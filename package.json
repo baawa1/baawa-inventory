@@ -21,10 +21,14 @@
     "test:debug": "jest --verbose --detectOpenHandles"
   },
   "dependencies": {
+    "@auth/supabase-adapter": "^1.10.0",
     "@prisma/client": "^6.10.1",
     "@supabase/ssr": "^0.6.1",
     "@supabase/supabase-js": "^2.50.0",
+    "@types/bcryptjs": "^2.4.6",
+    "bcryptjs": "^3.0.2",
     "next": "15.3.4",
+    "next-auth": "^4.24.11",
     "prisma": "^6.10.1",
     "react": "^19.0.0",
     "react-dom": "^19.0.0",
