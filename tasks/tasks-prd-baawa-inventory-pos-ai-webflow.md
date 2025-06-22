@@ -104,7 +104,7 @@ Date: 22 June 2025
 
 ## Tasks
 
-- [ ] 1.0 Database Schema & Backend Setup
+- [x] 1.0 Database Schema & Backend Setup
 
   - [x] 1.1.0 Initialize Next.js 15 project with TypeScript and Tailwind.
   - [x] 1.1 Set up Supabase project and configure environment variables
