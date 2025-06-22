@@ -5,9 +5,13 @@ import {
   userQuerySchema,
   validateRequest,
 } from "@/lib/validations";
+import { withPermission, AuthenticatedRequest } from "@/lib/api-middleware";
 
 // GET /api/users - List users with optional filtering and pagination
-export async function GET(request: NextRequest) {
+// Requires permission to manage users (ADMIN only)
+export const GET = withPermission("canManageUsers")(async function (
+  request: AuthenticatedRequest
+) {
   try {
     const supabase = await createServerSupabaseClient();
     const { searchParams } = new URL(request.url);
@@ -92,10 +96,13 @@ export async function GET(request: NextRequest) {
       { status: 500 }
     );
   }
-}
+});
 
 // POST /api/users - Create a new user
-export async function POST(request: NextRequest) {
+// Requires permission to manage users (ADMIN only)
+export const POST = withPermission("canManageUsers")(async function (
+  request: AuthenticatedRequest
+) {
   try {
     const supabase = await createServerSupabaseClient();
     const body = await request.json();
@@ -156,4 +163,4 @@ export async function POST(request: NextRequest) {
       { status: 500 }
     );
   }
-}
+});
