@@ -73,8 +73,11 @@ export const authOptions: NextAuthOptions = {
           // Verify password with bcrypt
           // Note: In production, passwords should be hashed when storing users
           // For now, we'll check against a test password
-          const isValidPassword = await bcrypt.compare(credentials.password, user.passwordHash || "$2a$10$dummy.hash.for.testing");
-          
+          const isValidPassword = await bcrypt.compare(
+            credentials.password,
+            user.passwordHash || "$2a$10$dummy.hash.for.testing"
+          );
+
           if (isValidPassword) {
             return {
               id: user.id.toString(),

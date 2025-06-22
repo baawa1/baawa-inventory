@@ -29,7 +29,7 @@ describe("Authentication", () => {
   describe("credentials provider", () => {
     test("should return null for missing credentials", async () => {
       const provider = authOptions.providers[0] as any;
-      
+
       const result1 = await provider.authorize({});
       expect(result1).toBeNull();
 
@@ -45,7 +45,12 @@ describe("Authentication", () => {
         from: jest.fn().mockReturnThis(),
         select: jest.fn().mockReturnThis(),
         eq: jest.fn().mockReturnThis(),
-        single: jest.fn().mockResolvedValue({ data: null, error: new Error("User not found") }),
+        single: jest
+          .fn()
+          .mockResolvedValue({
+            data: null,
+            error: new Error("User not found"),
+          }),
       };
 
       (createServerSupabaseClient as jest.Mock).mockResolvedValue(mockSupabase);
@@ -65,7 +70,12 @@ describe("Authentication", () => {
         from: jest.fn().mockReturnThis(),
         select: jest.fn().mockReturnThis(),
         eq: jest.fn().mockReturnThis(),
-        single: jest.fn().mockResolvedValue({ data: null, error: new Error("User not found") }),
+        single: jest
+          .fn()
+          .mockResolvedValue({
+            data: null,
+            error: new Error("User not found"),
+          }),
       };
 
       (createServerSupabaseClient as jest.Mock).mockResolvedValue(mockSupabase);
@@ -81,12 +91,12 @@ describe("Authentication", () => {
 
     test("should have valid provider configuration", async () => {
       const provider = authOptions.providers[0] as any;
-      
+
       // Test that the provider has the expected structure
       expect(typeof provider.authorize).toBe("function");
       expect(provider.name).toBe("Credentials");
       expect(provider.type).toBe("credentials");
-      
+
       // Verify it's a proper credentials provider configuration
       expect(provider).toHaveProperty("authorize");
     });
@@ -103,9 +113,9 @@ describe("Authentication", () => {
 
       const mockToken = { sub: "1" };
 
-      const result = await authOptions.callbacks!.jwt!({ 
-        token: mockToken, 
-        user: mockUser 
+      const result = await authOptions.callbacks!.jwt!({
+        token: mockToken,
+        user: mockUser,
       } as any);
 
       expect(result.role).toBe("EMPLOYEE");

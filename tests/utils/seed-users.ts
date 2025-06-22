@@ -52,7 +52,11 @@ export async function cleanupTestUsers() {
     const { error } = await supabaseAdmin
       .from("users")
       .delete()
-      .in("email", ["admin@baawa.com", "manager@baawa.com", "employee@baawa.com"]);
+      .in("email", [
+        "admin@baawa.com",
+        "manager@baawa.com",
+        "employee@baawa.com",
+      ]);
 
     if (error) {
       console.error("Error cleaning up test users:", error);
