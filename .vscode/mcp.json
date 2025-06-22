@@ -1,0 +1,31 @@
+{
+  "inputs": [
+    {
+      "type": "promptString",
+      "id": "supabase-access-token",
+      "description": "Supabase personal access token",
+      "password": true
+    }
+  ],
+  "servers": {
+    "supabase": {
+      "command": "npx",
+      "args": [
+        "-y",
+        "@supabase/mcp-server-supabase@latest",
+        // "--read-only",
+        "--project-ref=vyjacfdgdawdvxlzckci"
+      ],
+      "env": {
+        "SUPABASE_ACCESS_TOKEN": "${input:supabase-access-token}"
+      }
+    },
+    "webflow": {
+      "command": "npx",
+      "args": ["-y", "webflow-mcp-server"],
+      "env": {
+        "WEBFLOW_TOKEN": "c673bbf47d23a8573f4613f41673a8fa39082d2a488f548aa297ae65fae3f5a5"
+      }
+    }
+  }
+}

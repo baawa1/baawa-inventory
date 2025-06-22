@@ -1,0 +1,369 @@
+// This is your Prisma schema file,
+// learn more about it in the docs: https://pris.ly/d/prisma-schema
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider  = "postgresql"
+  url       = env("DATABASE_URL")
+  directUrl = env("DIRECT_URL")
+}
+
+// User Management
+model User {
+  id        String   @id @default(cuid())
+  email     String   @unique
+  name      String
+  role      UserRole @default(STAFF)
+  isActive  Boolean  @default(true)
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  // Relations
+  salesTransactions SalesTransaction[]
+  stockAdjustments  StockAdjustment[]
+  auditLogs         AuditLog[]
+
+  @@map("users")
+}
+
+enum UserRole {
+  ADMIN
+  MANAGER
+  STAFF
+}
+
+// Supplier Management
+model Supplier {
+  id          String  @id @default(cuid())
+  name        String
+  contactName String?
+  email       String?
+  phone       String?
+  address     String?
+  notes       String?
+  isActive    Boolean @default(true)
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  // Relations
+  products      Product[]
+  purchaseOrders PurchaseOrder[]
+
+  @@map("suppliers")
+}
+
+// Product Catalog
+model Product {
+  id               String            @id @default(cuid())
+  name             String
+  description      String?
+  sku              String            @unique
+  barcode          String?           @unique
+  category         String
+  brand            String?
+  cost             Decimal           @db.Decimal(10, 2)
+  price            Decimal           @db.Decimal(10, 2)
+  stock            Int               @default(0)
+  minStock         Int               @default(0)
+  maxStock         Int?
+  unit             String            @default("pcs")
+  weight           Decimal?          @db.Decimal(8, 3)
+  dimensions       String?
+  color            String?
+  size             String?
+  material         String?
+  status           ProductStatus     @default(ACTIVE)
+  hasVariants      Boolean           @default(false)
+  isArchived       Boolean           @default(false)
+  images           Json?             // Array of image URLs
+  tags             String[]          @default([])
+  metaTitle        String?
+  metaDescription  String?
+  seoKeywords      String[]          @default([])
+  createdAt        DateTime          @default(now())
+  updatedAt        DateTime          @updatedAt
+
+  // Relations
+  supplier         Supplier?         @relation(fields: [supplierId], references: [id])
+  supplierId       String?
+  variants         ProductVariant[]
+  stockAdjustments StockAdjustment[]
+  salesItems       SalesItem[]
+  purchaseOrderItems PurchaseOrderItem[]
+  aiContent        AIContent[]
+  webflowSync      WebflowSync?
+
+  @@map("products")
+}
+
+enum ProductStatus {
+  ACTIVE
+  INACTIVE
+  OUT_OF_STOCK
+  DISCONTINUED
+}
+
+// Product Variants
+model ProductVariant {
+  id        String   @id @default(cuid())
+  name      String
+  sku       String   @unique
+  barcode   String?  @unique
+  price     Decimal  @db.Decimal(10, 2)
+  cost      Decimal  @db.Decimal(10, 2)
+  stock     Int      @default(0)
+  minStock  Int      @default(0)
+  attributes Json    // e.g., {"color": "red", "size": "M"}
+  isActive  Boolean  @default(true)
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  // Relations
+  product   Product @relation(fields: [productId], references: [id], onDelete: Cascade)
+  productId String
+
+  stockAdjustments StockAdjustment[]
+  salesItems       SalesItem[]
+
+  @@map("product_variants")
+}
+
+// Sales Transactions
+model SalesTransaction {
+  id              String              @id @default(cuid())
+  transactionCode String              @unique
+  total           Decimal             @db.Decimal(10, 2)
+  subtotal        Decimal             @db.Decimal(10, 2)
+  tax             Decimal             @default(0) @db.Decimal(10, 2)
+  discount        Decimal             @default(0) @db.Decimal(10, 2)
+  discountType    DiscountType        @default(AMOUNT)
+  paymentMethod   PaymentMethod
+  paymentStatus   PaymentStatus       @default(PENDING)
+  customerName    String?
+  customerEmail   String?
+  customerPhone   String?
+  notes           String?
+  receiptNumber   String?             @unique
+  isRefund        Boolean             @default(false)
+  refundReason    String?
+  syncedToWebflow Boolean             @default(false)
+  syncedAt        DateTime?
+  createdAt       DateTime            @default(now())
+  updatedAt       DateTime            @updatedAt
+
+  // Relations
+  cashier     User        @relation(fields: [cashierId], references: [id])
+  cashierId   String
+  salesItems  SalesItem[]
+  auditLogs   AuditLog[]
+
+  @@map("sales_transactions")
+}
+
+enum PaymentMethod {
+  CASH
+  BANK_TRANSFER
+  POS_MACHINE
+  CREDIT_CARD
+  MOBILE_MONEY
+}
+
+enum PaymentStatus {
+  PENDING
+  PAID
+  REFUNDED
+  CANCELLED
+}
+
+enum DiscountType {
+  AMOUNT
+  PERCENTAGE
+}
+
+// Sales Items
+model SalesItem {
+  id         String   @id @default(cuid())
+  quantity   Int
+  unitPrice  Decimal  @db.Decimal(10, 2)
+  totalPrice Decimal  @db.Decimal(10, 2)
+  discount   Decimal  @default(0) @db.Decimal(10, 2)
+  createdAt  DateTime @default(now())
+
+  // Relations
+  transaction   SalesTransaction @relation(fields: [transactionId], references: [id], onDelete: Cascade)
+  transactionId String
+  product       Product?         @relation(fields: [productId], references: [id])
+  productId     String?
+  variant       ProductVariant?  @relation(fields: [variantId], references: [id])
+  variantId     String?
+
+  @@map("sales_items")
+}
+
+// Stock Management
+model StockAdjustment {
+  id            String              @id @default(cuid())
+  type          StockAdjustmentType
+  quantity      Int
+  previousStock Int
+  newStock      Int
+  reason        String
+  notes         String?
+  createdAt     DateTime            @default(now())
+
+  // Relations
+  user      User            @relation(fields: [userId], references: [id])
+  userId    String
+  product   Product?        @relation(fields: [productId], references: [id])
+  productId String?
+  variant   ProductVariant? @relation(fields: [variantId], references: [id])
+  variantId String?
+
+  @@map("stock_adjustments")
+}
+
+enum StockAdjustmentType {
+  INCREASE
+  DECREASE
+  RECOUNT
+  DAMAGE
+  TRANSFER
+  RETURN
+}
+
+// Purchase Orders
+model PurchaseOrder {
+  id            String              @id @default(cuid())
+  orderNumber   String              @unique
+  status        PurchaseOrderStatus @default(PENDING)
+  orderDate     DateTime            @default(now())
+  expectedDate  DateTime?
+  receivedDate  DateTime?
+  total         Decimal             @db.Decimal(10, 2)
+  notes         String?
+  createdAt     DateTime            @default(now())
+  updatedAt     DateTime            @updatedAt
+
+  // Relations
+  supplier Supplier            @relation(fields: [supplierId], references: [id])
+  supplierId String
+  items    PurchaseOrderItem[]
+
+  @@map("purchase_orders")
+}
+
+enum PurchaseOrderStatus {
+  PENDING
+  ORDERED
+  PARTIAL_RECEIVED
+  RECEIVED
+  CANCELLED
+}
+
+model PurchaseOrderItem {
+  id            String   @id @default(cuid())
+  quantity      Int
+  unitCost      Decimal  @db.Decimal(10, 2)
+  totalCost     Decimal  @db.Decimal(10, 2)
+  receivedQty   Int      @default(0)
+  createdAt     DateTime @default(now())
+
+  // Relations
+  purchaseOrder   PurchaseOrder @relation(fields: [purchaseOrderId], references: [id], onDelete: Cascade)
+  purchaseOrderId String
+  product         Product       @relation(fields: [productId], references: [id])
+  productId       String
+
+  @@map("purchase_order_items")
+}
+
+// Audit & Activity Logs
+model AuditLog {
+  id          String    @id @default(cuid())
+  action      String
+  entityType  String
+  entityId    String
+  oldValues   Json?
+  newValues   Json?
+  ipAddress   String?
+  userAgent   String?
+  createdAt   DateTime  @default(now())
+
+  // Relations
+  user          User?             @relation(fields: [userId], references: [id])
+  userId        String?
+  transaction   SalesTransaction? @relation(fields: [transactionId], references: [id])
+  transactionId String?
+
+  @@map("audit_logs")
+}
+
+// AI Generated Content
+model AIContent {
+  id              String        @id @default(cuid())
+  type            AIContentType
+  prompt          String
+  generatedText   String
+  status          ContentStatus @default(DRAFT)
+  tone            String?
+  keywords        String[]      @default([])
+  isApproved      Boolean       @default(false)
+  approvedAt      DateTime?
+  version         Int           @default(1)
+  createdAt       DateTime      @default(now())
+  updatedAt       DateTime      @updatedAt
+
+  // Relations
+  productId String?
+  product   Product? @relation(fields: [productId], references: [id])
+
+  @@map("ai_content")
+}
+
+enum AIContentType {
+  DESCRIPTION
+  SEO_TITLE
+  SEO_DESCRIPTION
+  SOCIAL_MEDIA_POST
+  PRODUCT_FEATURES
+  MARKETING_COPY
+}
+
+enum ContentStatus {
+  DRAFT
+  PENDING_APPROVAL
+  APPROVED
+  PUBLISHED
+  REJECTED
+}
+
+// Webflow Sync
+model WebflowSync {
+  id            String           @id @default(cuid())
+  productId     String
+  webflowItemId String?
+  status        WebflowSyncStatus
+  lastSyncAt    DateTime?
+  syncData      Json?            // Store sync payload
+  errorMessage  String?
+  retryCount    Int              @default(0)
+  createdAt     DateTime         @default(now())
+  updatedAt     DateTime         @updatedAt
+
+  // Relations
+  product Product @relation(fields: [productId], references: [id], onDelete: Cascade)
+
+  @@unique([productId])
+  @@map("webflow_syncs")
+}
+
+enum WebflowSyncStatus {
+  PENDING
+  SYNCING
+  SUCCESS
+  FAILED
+  RETRY
+}
