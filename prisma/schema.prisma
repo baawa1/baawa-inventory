@@ -13,7 +13,7 @@ datasource db {
 
 // User Management
 model User {
-  id        String   @id @default(cuid())
+  id        Int      @id @default(autoincrement())
   email     String   @unique
   name      String
   role      UserRole @default(STAFF)
@@ -37,7 +37,7 @@ enum UserRole {
 
 // Supplier Management
 model Supplier {
-  id          String  @id @default(cuid())
+  id          Int     @id @default(autoincrement())
   name        String
   contactName String?
   email       String?
@@ -57,7 +57,7 @@ model Supplier {
 
 // Product Catalog
 model Product {
-  id               String            @id @default(cuid())
+  id               Int               @id @default(autoincrement())
   name             String
   description      String?
   sku              String            @unique
@@ -88,7 +88,7 @@ model Product {
 
   // Relations
   supplier         Supplier?         @relation(fields: [supplierId], references: [id])
-  supplierId       String?
+  supplierId       Int?
   variants         ProductVariant[]
   stockAdjustments StockAdjustment[]
   salesItems       SalesItem[]
@@ -108,7 +108,7 @@ enum ProductStatus {
 
 // Product Variants
 model ProductVariant {
-  id        String   @id @default(cuid())
+  id        Int      @id @default(autoincrement())
   name      String
   sku       String   @unique
   barcode   String?  @unique
@@ -123,7 +123,7 @@ model ProductVariant {
 
   // Relations
   product   Product @relation(fields: [productId], references: [id], onDelete: Cascade)
-  productId String
+  productId Int
 
   stockAdjustments StockAdjustment[]
   salesItems       SalesItem[]
@@ -133,7 +133,7 @@ model ProductVariant {
 
 // Sales Transactions
 model SalesTransaction {
-  id              String              @id @default(cuid())
+  id              Int                 @id @default(autoincrement())
   transactionCode String              @unique
   total           Decimal             @db.Decimal(10, 2)
   subtotal        Decimal             @db.Decimal(10, 2)
@@ -156,7 +156,7 @@ model SalesTransaction {
 
   // Relations
   cashier     User        @relation(fields: [cashierId], references: [id])
-  cashierId   String
+  cashierId   Int
   salesItems  SalesItem[]
   auditLogs   AuditLog[]
 
@@ -185,27 +185,27 @@ enum DiscountType {
 
 // Sales Items
 model SalesItem {
-  id         String   @id @default(cuid())
+  id         Int     @id @default(autoincrement())
   quantity   Int
-  unitPrice  Decimal  @db.Decimal(10, 2)
-  totalPrice Decimal  @db.Decimal(10, 2)
-  discount   Decimal  @default(0) @db.Decimal(10, 2)
+  unitPrice  Decimal @db.Decimal(10, 2)
+  totalPrice Decimal @db.Decimal(10, 2)
+  discount   Decimal @default(0) @db.Decimal(10, 2)
   createdAt  DateTime @default(now())
 
   // Relations
   transaction   SalesTransaction @relation(fields: [transactionId], references: [id], onDelete: Cascade)
-  transactionId String
+  transactionId Int
   product       Product?         @relation(fields: [productId], references: [id])
-  productId     String?
+  productId     Int?
   variant       ProductVariant?  @relation(fields: [variantId], references: [id])
-  variantId     String?
+  variantId     Int?
 
   @@map("sales_items")
 }
 
 // Stock Management
 model StockAdjustment {
-  id            String              @id @default(cuid())
+  id            Int                 @id @default(autoincrement())
   type          StockAdjustmentType
   quantity      Int
   previousStock Int
@@ -216,11 +216,11 @@ model StockAdjustment {
 
   // Relations
   user      User            @relation(fields: [userId], references: [id])
-  userId    String
+  userId    Int
   product   Product?        @relation(fields: [productId], references: [id])
-  productId String?
+  productId Int?
   variant   ProductVariant? @relation(fields: [variantId], references: [id])
-  variantId String?
+  variantId Int?
 
   @@map("stock_adjustments")
 }
@@ -236,7 +236,7 @@ enum StockAdjustmentType {
 
 // Purchase Orders
 model PurchaseOrder {
-  id            String              @id @default(cuid())
+  id            Int                 @id @default(autoincrement())
   orderNumber   String              @unique
   status        PurchaseOrderStatus @default(PENDING)
   orderDate     DateTime            @default(now())
@@ -249,7 +249,7 @@ model PurchaseOrder {
 
   // Relations
   supplier Supplier            @relation(fields: [supplierId], references: [id])
-  supplierId String
+  supplierId Int
   items    PurchaseOrderItem[]
 
   @@map("purchase_orders")
@@ -264,7 +264,7 @@ enum PurchaseOrderStatus {
 }
 
 model PurchaseOrderItem {
-  id            String   @id @default(cuid())
+  id            Int      @id @default(autoincrement())
   quantity      Int
   unitCost      Decimal  @db.Decimal(10, 2)
   totalCost     Decimal  @db.Decimal(10, 2)
@@ -273,16 +273,16 @@ model PurchaseOrderItem {
 
   // Relations
   purchaseOrder   PurchaseOrder @relation(fields: [purchaseOrderId], references: [id], onDelete: Cascade)
-  purchaseOrderId String
+  purchaseOrderId Int
   product         Product       @relation(fields: [productId], references: [id])
-  productId       String
+  productId       Int
 
   @@map("purchase_order_items")
 }
 
 // Audit & Activity Logs
 model AuditLog {
-  id          String    @id @default(cuid())
+  id          Int       @id @default(autoincrement())
   action      String
   entityType  String
   entityId    String
@@ -294,16 +294,16 @@ model AuditLog {
 
   // Relations
   user          User?             @relation(fields: [userId], references: [id])
-  userId        String?
+  userId        Int?
   transaction   SalesTransaction? @relation(fields: [transactionId], references: [id])
-  transactionId String?
+  transactionId Int?
 
   @@map("audit_logs")
 }
 
 // AI Generated Content
 model AIContent {
-  id              String        @id @default(cuid())
+  id              Int           @id @default(autoincrement())
   type            AIContentType
   prompt          String
   generatedText   String
@@ -317,7 +317,7 @@ model AIContent {
   updatedAt       DateTime      @updatedAt
 
   // Relations
-  productId String?
+  productId Int?
   product   Product? @relation(fields: [productId], references: [id])
 
   @@map("ai_content")
@@ -342,8 +342,8 @@ enum ContentStatus {
 
 // Webflow Sync
 model WebflowSync {
-  id            String           @id @default(cuid())
-  productId     String
+  id            Int              @id @default(autoincrement())
+  productId     Int
   webflowItemId String?
   status        WebflowSyncStatus
   lastSyncAt    DateTime?

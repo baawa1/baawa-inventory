@@ -6,7 +6,19 @@
     "dev": "next dev --turbopack",
     "build": "next build",
     "start": "next start",
-    "lint": "next lint"
+    "lint": "next lint",
+    "test": "jest",
+    "test:all": "jest tests/",
+    "test:watch": "jest --watch",
+    "test:coverage": "jest --coverage",
+    "test:ci": "jest --ci --watchAll=false --coverage",
+    "test:unit": "jest tests/lib tests/types tests/utils",
+    "test:integration": "jest tests/integration",
+    "test:api": "jest tests/api",
+    "test:database": "node tests/database/prisma-connection.js",
+    "test:supabase": "jest tests/database/supabase-tables.test.ts",
+    "test:components": "jest tests/components",
+    "test:debug": "jest --verbose --detectOpenHandles"
   },
   "dependencies": {
     "@prisma/client": "^6.10.1",
@@ -20,12 +32,19 @@
   "devDependencies": {
     "@eslint/eslintrc": "^3",
     "@tailwindcss/postcss": "^4",
+    "@testing-library/jest-dom": "^6.6.3",
+    "@testing-library/react": "^16.3.0",
+    "@testing-library/user-event": "^14.6.1",
+    "@types/jest": "^30.0.0",
     "@types/node": "^20",
     "@types/react": "^19",
     "@types/react-dom": "^19",
     "eslint": "^9",
     "eslint-config-next": "15.3.4",
+    "jest": "^30.0.2",
+    "jest-environment-jsdom": "^30.0.2",
     "tailwindcss": "^4",
+    "ts-jest": "^29.4.0",
     "typescript": "^5"
   }
 }
