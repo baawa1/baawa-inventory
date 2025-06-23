@@ -1,6 +1,8 @@
 import { NextRequest, NextResponse } from "next/server";
 import { createServerSupabaseClient } from "@/lib/supabase";
+import { emailService } from "@/lib/email";
 import bcrypt from "bcryptjs";
+import crypto from "crypto";
 import { z } from "zod";
 
 // Registration schema - simpler than the admin user creation schema
@@ -50,7 +52,11 @@ export async function POST(request: NextRequest) {
     // Hash the password
     const hashedPassword = await bcrypt.hash(userData.password, 12);
 
-    // Create the user
+    // Generate email verification token
+    const verificationToken = crypto.randomBytes(32).toString("hex");
+    const verificationExpires = new Date(Date.now() + 24 * 60 * 60 * 1000); // 24 hours
+
+    // Create the user with email verification fields
     const { data: user, error } = await supabase
       .from("users")
       .insert({
@@ -60,8 +66,16 @@ export async function POST(request: NextRequest) {
         password_hash: hashedPassword,
         role: userData.role,
         is_active: true,
+        user_status: "PENDING",
+        email_verified: false,
+        email_verification_token: verificationToken,
+        email_verification_expires: verificationExpires.toISOString(),
+        email_notifications: true,
+        marketing_emails: false,
       })
-      .select("id, first_name, last_name, email, role, is_active, created_at")
+      .select(
+        "id, first_name, last_name, email, role, is_active, created_at, user_status"
+      )
       .single();
 
     if (error) {
@@ -72,17 +86,38 @@ export async function POST(request: NextRequest) {
       );
     }
 
-    // Return success without password
+    // Send verification email
+    try {
+      const verificationLink = `${process.env.NEXTAUTH_URL}/verify-email?token=${verificationToken}`;
+
+      await emailService.sendVerificationEmail(userData.email, {
+        firstName: userData.firstName,
+        verificationLink,
+        expiresInHours: 24,
+      });
+
+      console.log(`Verification email sent to ${userData.email}`);
+    } catch (emailError) {
+      console.error("Error sending verification email:", emailError);
+      // Don't fail registration if email fails, but log the error
+      // User can request a new verification email later
+    }
+
+    // Return success with verification message
     return NextResponse.json(
       {
-        message: "User created successfully",
+        message:
+          "Registration successful! Please check your email to verify your account.",
         user: {
           id: user.id,
           firstName: user.first_name,
           lastName: user.last_name,
           email: user.email,
           role: user.role,
+          status: user.user_status,
+          emailVerified: false,
         },
+        requiresVerification: true,
       },
       { status: 201 }
     );

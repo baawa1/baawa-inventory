@@ -1,12 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import { z } from "zod";
 import bcrypt from "bcryptjs";
-import { createClient } from "@supabase/supabase-js";
-
-const supabase = createClient(
-  process.env.NEXT_PUBLIC_SUPABASE_URL!,
-  process.env.SUPABASE_SERVICE_ROLE_KEY!
-);
+import { createServerSupabaseClient } from "@/lib/supabase";
 
 const resetPasswordSchema = z.object({
   token: z.string().min(1, "Token is required"),
@@ -24,7 +19,13 @@ export async function POST(request: NextRequest) {
     const body = await request.json();
     const { token, password } = resetPasswordSchema.parse(body);
 
-    // Find user with valid reset token using Supabase
+    // Use the same client approach as forgot password (which works)
+    const supabase = await createServerSupabaseClient();
+
+    console.log("🔄 Resetting password...");
+    console.log("🔑 Token (first 10 chars):", token.substring(0, 10) + "...");
+
+    // Find user with valid reset token using server client
     const { data: user, error: findError } = await supabase
       .from("users")
       .select("id, reset_token_expires, is_active")

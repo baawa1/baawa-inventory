@@ -137,15 +137,24 @@ export class EmailService {
  */
 export function createEmailService(): EmailService {
   // Determine which provider to use based on environment
-  const isDevelopment = process.env.NODE_ENV === "development";
   const hasResendKey = !!process.env.RESEND_API_KEY;
+  const hasSmtpConfig = !!(
+    process.env.SMTP_HOST &&
+    process.env.SMTP_USER &&
+    process.env.SMTP_PASS
+  );
 
   let provider: "resend" | "nodemailer";
 
-  if (hasResendKey && !isDevelopment) {
+  // Prefer Resend if available, fall back to nodemailer
+  if (hasResendKey) {
     provider = "resend";
-  } else {
+  } else if (hasSmtpConfig) {
     provider = "nodemailer";
+  } else {
+    throw new Error(
+      "No email provider configured. Set either RESEND_API_KEY or SMTP credentials."
+    );
   }
 
   const config: EmailServiceConfig = {
