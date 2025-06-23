@@ -63,7 +63,7 @@ export const authOptions: NextAuthOptions = {
             .from("users")
             .select("*")
             .eq("email", credentials.email)
-            .eq("isActive", true)
+            .eq("is_active", true)
             .single();
 
           if (error || !user) {
@@ -71,18 +71,22 @@ export const authOptions: NextAuthOptions = {
           }
 
           // Verify password with bcrypt
-          // Note: In production, passwords should be hashed when storing users
-          // For now, we'll check against a test password
           const isValidPassword = await bcrypt.compare(
             credentials.password,
-            user.passwordHash || "$2a$10$dummy.hash.for.testing"
+            user.password_hash || "$2a$10$dummy.hash.for.testing"
           );
 
           if (isValidPassword) {
+            // Update last login timestamp
+            await supabase
+              .from("users")
+              .update({ last_login: new Date().toISOString() })
+              .eq("id", user.id);
+
             return {
               id: user.id.toString(),
               email: user.email,
-              name: `${user.firstName} ${user.lastName}`,
+              name: `${user.first_name} ${user.last_name}`,
               role: user.role,
             };
           }

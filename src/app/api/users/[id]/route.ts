@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from "next/server";
 import { createServerSupabaseClient } from "@/lib/supabase";
+import bcrypt from "bcryptjs";
 import {
   userIdSchema,
   updateUserSchema,
@@ -25,24 +26,7 @@ export async function GET(request: NextRequest, { params }: RouteParams) {
     const { data: user, error } = await supabase
       .from("users")
       .select(
-        `
-        *,
-        salesTransactions:sales_transactions(
-          id,
-          total,
-          paymentMethod,
-          status,
-          createdAt
-        ),
-        stockAdjustments:stock_adjustments(
-          id,
-          type,
-          quantity,
-          reason,
-          createdAt,
-          product:products(id, name, sku)
-        )
-      `
+        "id, first_name, last_name, email, role, is_active, created_at, last_login"
       )
       .eq("id", userId)
       .single();
@@ -58,7 +42,19 @@ export async function GET(request: NextRequest, { params }: RouteParams) {
       );
     }
 
-    return NextResponse.json({ data: user });
+    // Transform response to camelCase
+    const transformedUser = {
+      id: user.id,
+      firstName: user.first_name,
+      lastName: user.last_name,
+      email: user.email,
+      role: user.role,
+      isActive: user.is_active,
+      createdAt: user.created_at,
+      lastLogin: user.last_login,
+    };
+
+    return NextResponse.json(transformedUser);
   } catch (error) {
     console.error("Error in GET /api/users/[id]:", error);
     return NextResponse.json(
@@ -129,12 +125,29 @@ export async function PUT(request: NextRequest, { params }: RouteParams) {
       }
     }
 
+    // Prepare update data with correct field names
+    const updateData: any = {};
+
+    if (body.firstName) updateData.first_name = body.firstName;
+    if (body.lastName) updateData.last_name = body.lastName;
+    if (body.email) updateData.email = body.email;
+    if (body.role) updateData.role = body.role;
+    if (body.phone) updateData.phone = body.phone;
+    if (body.isActive !== undefined) updateData.is_active = body.isActive;
+
+    // Hash password if provided
+    if (body.password) {
+      updateData.password_hash = await bcrypt.hash(body.password, 12);
+    }
+
     // Update the user
     const { data: user, error } = await supabase
       .from("users")
-      .update(body)
+      .update(updateData)
       .eq("id", userId)
-      .select("*")
+      .select(
+        "id, first_name, last_name, email, role, is_active, created_at, last_login"
+      )
       .single();
 
     if (error) {
@@ -145,7 +158,19 @@ export async function PUT(request: NextRequest, { params }: RouteParams) {
       );
     }
 
-    return NextResponse.json({ data: user });
+    // Transform response to camelCase
+    const transformedUser = {
+      id: user.id,
+      firstName: user.first_name,
+      lastName: user.last_name,
+      email: user.email,
+      role: user.role,
+      isActive: user.is_active,
+      createdAt: user.created_at,
+      lastLogin: user.last_login,
+    };
+
+    return NextResponse.json(transformedUser);
   } catch (error) {
     console.error("Error in PUT /api/users/[id]:", error);
     return NextResponse.json(

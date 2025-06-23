@@ -33,7 +33,14 @@ export default async function DashboardPage() {
               Welcome to BaaWA Inventory POS System
             </p>
           </div>
-          <LogoutButton />
+          <div className="flex gap-2">
+            {user.role === "ADMIN" && (
+              <Button asChild>
+                <a href="/admin">User Management</a>
+              </Button>
+            )}
+            <LogoutButton />
+          </div>
         </div>
 
         <div className="grid gap-6 md:grid-cols-2 lg:grid-cols-3">
@@ -46,6 +53,9 @@ export default async function DashboardPage() {
             </CardHeader>
             <CardContent>
               <div className="space-y-2">
+                <p className="text-sm">
+                  <span className="font-medium">Name:</span> {user.name}
+                </p>
                 <p className="text-sm">
                   <span className="font-medium">Email:</span> {user.email}
                 </p>

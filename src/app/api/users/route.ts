@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from "next/server";
 import { createServerSupabaseClient } from "@/lib/supabase";
+import bcrypt from "bcryptjs";
 import {
   createUserSchema,
   userQuerySchema,
@@ -42,13 +43,17 @@ export const GET = withPermission("canManageUsers")(async function (
     // Calculate offset for pagination
     const offset = (page - 1) * limit;
 
-    // Build query
-    let query = supabase.from("users").select("*");
+    // Build query - exclude password from response
+    let query = supabase
+      .from("users")
+      .select(
+        "id, first_name, last_name, email, role, is_active, created_at, last_login"
+      );
 
     // Apply filters
     if (search) {
       query = query.or(
-        `firstName.ilike.%${search}%,lastName.ilike.%${search}%,email.ilike.%${search}%`
+        `first_name.ilike.%${search}%,last_name.ilike.%${search}%,email.ilike.%${search}%`
       );
     }
 
@@ -57,12 +62,14 @@ export const GET = withPermission("canManageUsers")(async function (
     }
 
     if (isActive !== undefined) {
-      query = query.eq("isActive", isActive);
+      query = query.eq("is_active", isActive);
     }
 
     // Apply sorting and pagination
     query = query
-      .order(sortBy, { ascending: sortOrder === "asc" })
+      .order(sortBy === "createdAt" ? "created_at" : sortBy, {
+        ascending: sortOrder === "asc",
+      })
       .range(offset, offset + limit - 1);
 
     const { data: users, error, count } = await query;
@@ -75,20 +82,20 @@ export const GET = withPermission("canManageUsers")(async function (
       );
     }
 
-    // Get total count for pagination
-    const { count: totalCount } = await supabase
-      .from("users")
-      .select("*", { count: "exact", head: true });
+    // Transform the response to use camelCase for frontend compatibility
+    const transformedUsers =
+      users?.map((user) => ({
+        id: user.id,
+        firstName: user.first_name,
+        lastName: user.last_name,
+        email: user.email,
+        role: user.role,
+        isActive: user.is_active,
+        createdAt: user.created_at,
+        lastLogin: user.last_login,
+      })) || [];
 
-    return NextResponse.json({
-      data: users,
-      pagination: {
-        page,
-        limit,
-        total: totalCount || 0,
-        totalPages: Math.ceil((totalCount || 0) / limit),
-      },
-    });
+    return NextResponse.json(transformedUsers);
   } catch (error) {
     console.error("Error in GET /api/users:", error);
     return NextResponse.json(
@@ -132,19 +139,25 @@ export const POST = withPermission("canManageUsers")(async function (
       );
     }
 
+    // Hash the password
+    const hashedPassword = await bcrypt.hash(userData.password, 12);
+
     // Create the user
     const { data: user, error } = await supabase
       .from("users")
       .insert({
-        firstName: userData.firstName,
-        lastName: userData.lastName,
+        first_name: userData.firstName,
+        last_name: userData.lastName,
         email: userData.email,
+        password_hash: hashedPassword,
         phone: userData.phone,
         role: userData.role,
-        isActive: userData.isActive,
-        notes: userData.notes,
+        is_active: userData.isActive,
+        // notes: userData.notes, // Remove notes as it's not in the current schema
       })
-      .select("*")
+      .select(
+        "id, first_name, last_name, email, role, is_active, created_at, last_login"
+      )
       .single();
 
     if (error) {
@@ -155,7 +168,19 @@ export const POST = withPermission("canManageUsers")(async function (
       );
     }
 
-    return NextResponse.json({ data: user }, { status: 201 });
+    // Transform response to camelCase
+    const transformedUser = {
+      id: user.id,
+      firstName: user.first_name,
+      lastName: user.last_name,
+      email: user.email,
+      role: user.role,
+      isActive: user.is_active,
+      createdAt: user.created_at,
+      lastLogin: user.last_login,
+    };
+
+    return NextResponse.json(transformedUser, { status: 201 });
   } catch (error) {
     console.error("Error in POST /api/users:", error);
     return NextResponse.json(

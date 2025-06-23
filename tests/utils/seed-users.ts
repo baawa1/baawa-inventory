@@ -9,7 +9,7 @@ export async function seedTestUsers() {
       lastName: "User",
       role: "ADMIN",
       isActive: true,
-      passwordHash: await bcrypt.hash("admin123", 10),
+      password: await bcrypt.hash("admin123", 10),
     },
     {
       email: "manager@baawa.com",
@@ -17,15 +17,15 @@ export async function seedTestUsers() {
       lastName: "User",
       role: "MANAGER",
       isActive: true,
-      passwordHash: await bcrypt.hash("manager123", 10),
+      password: await bcrypt.hash("manager123", 10),
     },
     {
       email: "employee@baawa.com",
       firstName: "Employee",
       lastName: "User",
-      role: "EMPLOYEE",
+      role: "STAFF",
       isActive: true,
-      passwordHash: await bcrypt.hash("employee123", 10),
+      password: await bcrypt.hash("employee123", 10),
     },
   ];
 

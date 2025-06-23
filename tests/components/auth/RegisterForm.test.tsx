@@ -29,7 +29,8 @@ describe("RegisterForm", () => {
     expect(screen.getByRole("heading", { level: 1 })).toHaveTextContent(
       "Create Account"
     );
-    expect(screen.getByLabelText("Full Name")).toBeInTheDocument();
+    expect(screen.getByLabelText("First Name")).toBeInTheDocument();
+    expect(screen.getByLabelText("Last Name")).toBeInTheDocument();
     expect(screen.getByLabelText("Email")).toBeInTheDocument();
     expect(screen.getByLabelText("Password")).toBeInTheDocument();
     expect(screen.getByLabelText("Confirm Password")).toBeInTheDocument();
@@ -46,7 +47,10 @@ describe("RegisterForm", () => {
 
     await waitFor(() => {
       expect(
-        screen.getByText("Name must be at least 2 characters")
+        screen.getByText("First name must be at least 2 characters")
+      ).toBeInTheDocument();
+      expect(
+        screen.getByText("Last name must be at least 2 characters")
       ).toBeInTheDocument();
       expect(
         screen.getByText("Please enter a valid email address")
@@ -60,13 +64,15 @@ describe("RegisterForm", () => {
   it("shows error when passwords do not match", async () => {
     render(<RegisterForm />);
 
-    const nameInput = screen.getByLabelText("Full Name");
+    const firstNameInput = screen.getByLabelText("First Name");
+    const lastNameInput = screen.getByLabelText("Last Name");
     const emailInput = screen.getByLabelText("Email");
     const passwordInput = screen.getByLabelText("Password");
     const confirmPasswordInput = screen.getByLabelText("Confirm Password");
     const submitButton = screen.getByRole("button", { name: "Create Account" });
 
-    fireEvent.change(nameInput, { target: { value: "John Doe" } });
+    fireEvent.change(firstNameInput, { target: { value: "John" } });
+    fireEvent.change(lastNameInput, { target: { value: "Doe" } });
     fireEvent.change(emailInput, { target: { value: "john@example.com" } });
     fireEvent.change(passwordInput, { target: { value: "password123" } });
     fireEvent.change(confirmPasswordInput, {
@@ -84,20 +90,23 @@ describe("RegisterForm", () => {
       ok: true,
       json: async () => ({
         id: 1,
-        name: "John Doe",
+        firstName: "John",
+        lastName: "Doe",
         email: "john@example.com",
       }),
     } as Response);
 
     render(<RegisterForm />);
 
-    const nameInput = screen.getByLabelText("Full Name");
+    const firstNameInput = screen.getByLabelText("First Name");
+    const lastNameInput = screen.getByLabelText("Last Name");
     const emailInput = screen.getByLabelText("Email");
     const passwordInput = screen.getByLabelText("Password");
     const confirmPasswordInput = screen.getByLabelText("Confirm Password");
     const submitButton = screen.getByRole("button", { name: "Create Account" });
 
-    fireEvent.change(nameInput, { target: { value: "John Doe" } });
+    fireEvent.change(firstNameInput, { target: { value: "John" } });
+    fireEvent.change(lastNameInput, { target: { value: "Doe" } });
     fireEvent.change(emailInput, { target: { value: "john@example.com" } });
     fireEvent.change(passwordInput, { target: { value: "password123" } });
     fireEvent.change(confirmPasswordInput, {
@@ -106,13 +115,14 @@ describe("RegisterForm", () => {
     fireEvent.click(submitButton);
 
     await waitFor(() => {
-      expect(mockFetch).toHaveBeenCalledWith("/api/users", {
+      expect(mockFetch).toHaveBeenCalledWith("/api/auth/register", {
         method: "POST",
         headers: {
           "Content-Type": "application/json",
         },
         body: JSON.stringify({
-          name: "John Doe",
+          firstName: "John",
+          lastName: "Doe",
           email: "john@example.com",
           password: "password123",
           role: "STAFF",
@@ -126,20 +136,23 @@ describe("RegisterForm", () => {
       ok: true,
       json: async () => ({
         id: 1,
-        name: "John Doe",
+        firstName: "John",
+        lastName: "Doe",
         email: "john@example.com",
       }),
     } as Response);
 
     render(<RegisterForm />);
 
-    const nameInput = screen.getByLabelText("Full Name");
+    const firstNameInput = screen.getByLabelText("First Name");
+    const lastNameInput = screen.getByLabelText("Last Name");
     const emailInput = screen.getByLabelText("Email");
     const passwordInput = screen.getByLabelText("Password");
     const confirmPasswordInput = screen.getByLabelText("Confirm Password");
     const submitButton = screen.getByRole("button", { name: "Create Account" });
 
-    fireEvent.change(nameInput, { target: { value: "John Doe" } });
+    fireEvent.change(firstNameInput, { target: { value: "John" } });
+    fireEvent.change(lastNameInput, { target: { value: "Doe" } });
     fireEvent.change(emailInput, { target: { value: "john@example.com" } });
     fireEvent.change(passwordInput, { target: { value: "password123" } });
     fireEvent.change(confirmPasswordInput, {
@@ -165,13 +178,15 @@ describe("RegisterForm", () => {
 
     render(<RegisterForm />);
 
-    const nameInput = screen.getByLabelText("Full Name");
+    const firstNameInput = screen.getByLabelText("First Name");
+    const lastNameInput = screen.getByLabelText("Last Name");
     const emailInput = screen.getByLabelText("Email");
     const passwordInput = screen.getByLabelText("Password");
     const confirmPasswordInput = screen.getByLabelText("Confirm Password");
     const submitButton = screen.getByRole("button", { name: "Create Account" });
 
-    fireEvent.change(nameInput, { target: { value: "John Doe" } });
+    fireEvent.change(firstNameInput, { target: { value: "John" } });
+    fireEvent.change(lastNameInput, { target: { value: "Doe" } });
     fireEvent.change(emailInput, { target: { value: "john@example.com" } });
     fireEvent.change(passwordInput, { target: { value: "password123" } });
     fireEvent.change(confirmPasswordInput, {
@@ -189,20 +204,23 @@ describe("RegisterForm", () => {
       ok: true,
       json: async () => ({
         id: 1,
-        name: "John Doe",
+        firstName: "John",
+        lastName: "Doe",
         email: "john@example.com",
       }),
     } as Response);
 
     render(<RegisterForm defaultRole="MANAGER" />);
 
-    const nameInput = screen.getByLabelText("Full Name");
+    const firstNameInput = screen.getByLabelText("First Name");
+    const lastNameInput = screen.getByLabelText("Last Name");
     const emailInput = screen.getByLabelText("Email");
     const passwordInput = screen.getByLabelText("Password");
     const confirmPasswordInput = screen.getByLabelText("Confirm Password");
     const submitButton = screen.getByRole("button", { name: "Create Account" });
 
-    fireEvent.change(nameInput, { target: { value: "John Doe" } });
+    fireEvent.change(firstNameInput, { target: { value: "John" } });
+    fireEvent.change(lastNameInput, { target: { value: "Doe" } });
     fireEvent.change(emailInput, { target: { value: "john@example.com" } });
     fireEvent.change(passwordInput, { target: { value: "password123" } });
     fireEvent.change(confirmPasswordInput, {
@@ -211,13 +229,14 @@ describe("RegisterForm", () => {
     fireEvent.click(submitButton);
 
     await waitFor(() => {
-      expect(mockFetch).toHaveBeenCalledWith("/api/users", {
+      expect(mockFetch).toHaveBeenCalledWith("/api/auth/register", {
         method: "POST",
         headers: {
           "Content-Type": "application/json",
         },
         body: JSON.stringify({
-          name: "John Doe",
+          firstName: "John",
+          lastName: "Doe",
           email: "john@example.com",
           password: "password123",
           role: "MANAGER",
@@ -232,20 +251,23 @@ describe("RegisterForm", () => {
       ok: true,
       json: async () => ({
         id: 1,
-        name: "John Doe",
+        firstName: "John",
+        lastName: "Doe",
         email: "john@example.com",
       }),
     } as Response);
 
     render(<RegisterForm onSuccess={mockOnSuccess} />);
 
-    const nameInput = screen.getByLabelText("Full Name");
+    const firstNameInput = screen.getByLabelText("First Name");
+    const lastNameInput = screen.getByLabelText("Last Name");
     const emailInput = screen.getByLabelText("Email");
     const passwordInput = screen.getByLabelText("Password");
     const confirmPasswordInput = screen.getByLabelText("Confirm Password");
     const submitButton = screen.getByRole("button", { name: "Create Account" });
 
-    fireEvent.change(nameInput, { target: { value: "John Doe" } });
+    fireEvent.change(firstNameInput, { target: { value: "John" } });
+    fireEvent.change(lastNameInput, { target: { value: "Doe" } });
     fireEvent.change(emailInput, { target: { value: "john@example.com" } });
     fireEvent.change(passwordInput, { target: { value: "password123" } });
     fireEvent.change(confirmPasswordInput, {

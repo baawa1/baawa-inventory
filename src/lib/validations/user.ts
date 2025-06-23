@@ -14,7 +14,8 @@ export const createUserSchema = z.object({
   firstName: nameSchema,
   lastName: nameSchema,
   email: emailSchema,
-  phone: phoneSchema,
+  password: z.string().min(6, "Password must be at least 6 characters"),
+  phone: phoneSchema.optional(),
   role: userRoleSchema.default("STAFF"),
   isActive: z.boolean().default(true),
   notes: z
@@ -27,6 +28,12 @@ export const createUserSchema = z.object({
 // User update schema (all fields optional except validation rules)
 export const updateUserSchema = createUserSchema
   .partial()
+  .extend({
+    password: z
+      .string()
+      .min(6, "Password must be at least 6 characters")
+      .optional(),
+  })
   .refine((data) => Object.keys(data).length > 0, {
     message: "At least one field must be provided for update",
   });
