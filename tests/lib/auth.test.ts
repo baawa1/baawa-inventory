@@ -19,8 +19,8 @@ describe("Authentication", () => {
   describe("authOptions", () => {
     test("should have correct configuration", () => {
       expect(authOptions.session?.strategy).toBe("jwt");
-      expect(authOptions.pages?.signIn).toBe("/auth/signin");
-      expect(authOptions.pages?.error).toBe("/auth/error");
+      expect(authOptions.pages?.signIn).toBe("/login");
+      expect(authOptions.pages?.error).toBe("/login");
       expect(authOptions.providers).toHaveLength(1);
       expect(authOptions.providers[0].name).toBe("Credentials");
     });
@@ -45,12 +45,10 @@ describe("Authentication", () => {
         from: jest.fn().mockReturnThis(),
         select: jest.fn().mockReturnThis(),
         eq: jest.fn().mockReturnThis(),
-        single: jest
-          .fn()
-          .mockResolvedValue({
-            data: null,
-            error: new Error("User not found"),
-          }),
+        single: jest.fn().mockResolvedValue({
+          data: null,
+          error: new Error("User not found"),
+        }),
       };
 
       (createServerSupabaseClient as jest.Mock).mockResolvedValue(mockSupabase);
@@ -70,12 +68,10 @@ describe("Authentication", () => {
         from: jest.fn().mockReturnThis(),
         select: jest.fn().mockReturnThis(),
         eq: jest.fn().mockReturnThis(),
-        single: jest
-          .fn()
-          .mockResolvedValue({
-            data: null,
-            error: new Error("User not found"),
-          }),
+        single: jest.fn().mockResolvedValue({
+          data: null,
+          error: new Error("User not found"),
+        }),
       };
 
       (createServerSupabaseClient as jest.Mock).mockResolvedValue(mockSupabase);

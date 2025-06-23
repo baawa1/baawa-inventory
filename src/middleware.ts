@@ -7,44 +7,47 @@ export default withAuth(
     const { pathname } = req.nextUrl;
 
     // Public routes that don't require authentication
-    const publicRoutes = ["/", "/auth/signin", "/auth/signup", "/auth/error"];
+    const publicRoutes = ["/", "/login", "/register"];
 
+    // Allow public routes
     if (publicRoutes.includes(pathname)) {
       return NextResponse.next();
     }
 
-    // If no token, redirect to sign in
-    if (!token) {
-      return NextResponse.redirect(new URL("/auth/signin", req.url));
-    }
+    // Role-based route protection for authenticated users
+    if (token) {
+      const userRole = token.role as string;
 
-    // Role-based route protection
-    const userRole = token.role as string;
-
-    // Admin-only routes
-    if (pathname.startsWith("/admin")) {
-      if (userRole !== "ADMIN") {
-        return NextResponse.redirect(new URL("/unauthorized", req.url));
+      // Admin-only routes
+      if (pathname.startsWith("/admin")) {
+        if (userRole !== "ADMIN") {
+          return NextResponse.redirect(new URL("/unauthorized", req.url));
+        }
       }
-    }
 
-    // Manager and Admin routes
-    if (pathname.startsWith("/reports") || pathname.startsWith("/settings")) {
-      if (userRole !== "ADMIN" && userRole !== "MANAGER") {
-        return NextResponse.redirect(new URL("/unauthorized", req.url));
+      // Manager and Admin routes
+      if (pathname.startsWith("/reports") || pathname.startsWith("/settings")) {
+        if (userRole !== "ADMIN" && userRole !== "MANAGER") {
+          return NextResponse.redirect(new URL("/unauthorized", req.url));
+        }
       }
-    }
-
-    // All authenticated users can access inventory and POS
-    if (pathname.startsWith("/inventory") || pathname.startsWith("/pos")) {
-      return NextResponse.next();
     }
 
     return NextResponse.next();
   },
   {
     callbacks: {
-      authorized: ({ token }) => !!token,
+      authorized: ({ token, req }) => {
+        const { pathname } = req.nextUrl;
+
+        // Allow public routes
+        if (["/", "/login", "/register"].includes(pathname)) {
+          return true;
+        }
+
+        // Require authentication for all other routes
+        return !!token;
+      },
     },
   }
 );

@@ -1,9 +1,13 @@
-import { getServerSession } from "next-auth/next";
+import { getServerSession as nextAuthGetServerSession } from "next-auth/next";
 import { authOptions } from "./auth";
 import { UserRole, getRolePermissions, RolePermissions } from "./auth-rbac";
 
+export function getServerSession() {
+  return nextAuthGetServerSession(authOptions);
+}
+
 export async function getCurrentUser() {
-  const session = await getServerSession(authOptions);
+  const session = await getServerSession();
   return session?.user;
 }
 
