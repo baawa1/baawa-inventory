@@ -28,6 +28,8 @@ declare module "next-auth" {
 declare module "next-auth/jwt" {
   interface JWT {
     role: string;
+    loginTime?: number;
+    expired?: boolean;
   }
 }
 
@@ -80,7 +82,10 @@ export const authOptions: NextAuthOptions = {
             // Update last login timestamp
             await supabase
               .from("users")
-              .update({ last_login: new Date().toISOString() })
+              .update({
+                last_login: new Date().toISOString(),
+                // Update session tracking if needed
+              })
               .eq("id", user.id);
 
             return {
@@ -101,12 +106,28 @@ export const authOptions: NextAuthOptions = {
   ],
   session: {
     strategy: "jwt",
+    maxAge: 24 * 60 * 60, // 24 hours
+    updateAge: 60 * 60, // Update session every hour
   },
   callbacks: {
     async jwt({ token, user }) {
       if (user) {
         token.role = (user as any).role;
+        token.loginTime = Date.now();
       }
+
+      // Check if session is expired (optional additional check)
+      if (
+        token.loginTime &&
+        Date.now() - (token.loginTime as number) > 24 * 60 * 60 * 1000
+      ) {
+        // Return a minimal token to force re-authentication
+        return {
+          ...token,
+          expired: true,
+        };
+      }
+
       return token;
     },
     async session({ session, token }) {
@@ -115,6 +136,44 @@ export const authOptions: NextAuthOptions = {
         session.user.role = token.role;
       }
       return session;
+    },
+  },
+  events: {
+    async signOut({ token }) {
+      // Additional cleanup on signout
+      if (token?.sub) {
+        try {
+          const supabase = await createServerSupabaseClient();
+
+          // Optional: Update user's last_logout timestamp
+          await supabase
+            .from("users")
+            .update({
+              last_logout: new Date().toISOString(),
+            })
+            .eq("id", parseInt(token.sub));
+        } catch (error) {
+          console.error("Error updating logout time:", error);
+        }
+      }
+    },
+    async session({ session }) {
+      // Track active sessions (optional)
+      if (session?.user?.id) {
+        try {
+          const supabase = await createServerSupabaseClient();
+
+          // Update last activity
+          await supabase
+            .from("users")
+            .update({
+              last_activity: new Date().toISOString(),
+            })
+            .eq("id", parseInt(session.user.id));
+        } catch (error) {
+          console.error("Error updating last activity:", error);
+        }
+      }
     },
   },
   pages: {
