@@ -10,6 +10,7 @@ export default withAuth(
     const publicRoutes = [
       "/",
       "/login",
+      "/logout",
       "/register",
       "/forgot-password",
       "/reset-password",
@@ -66,6 +67,7 @@ export default withAuth(
           [
             "/",
             "/login",
+            "/logout",
             "/register",
             "/forgot-password",
             "/reset-password",
