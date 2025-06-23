@@ -14,19 +14,21 @@ datasource db {
 // User Management
 model User {
   id           Int      @id @default(autoincrement())
-  firstName    String
-  lastName     String
+  firstName    String   @map("first_name")
+  lastName     String   @map("last_name")
   email        String   @unique
-  password     String
+  password     String   @map("password_hash")
   phone        String?
   role         UserRole @default(STAFF)
-  isActive     Boolean  @default(true)
+  isActive     Boolean  @default(true) @map("is_active")
   notes        String?
-  lastLogin    DateTime?
-  lastLogout   DateTime?
-  lastActivity DateTime?
-  createdAt    DateTime @default(now())
-  updatedAt    DateTime @updatedAt
+  lastLogin          DateTime? @map("last_login")
+  lastLogout         DateTime? @map("last_logout")
+  lastActivity       DateTime? @map("last_activity")
+  resetToken         String?   @map("reset_token")
+  resetTokenExpires  DateTime? @map("reset_token_expires")
+  createdAt          DateTime @default(now()) @map("created_at")
+  updatedAt          DateTime @updatedAt @map("updated_at")
 
   // Relations
   salesTransactions SalesTransaction[]

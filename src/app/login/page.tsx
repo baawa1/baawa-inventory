@@ -14,11 +14,20 @@ function LoginFormWrapper({
 }: {
   searchParams: { callbackUrl?: string; message?: string };
 }) {
+  const getMessageContent = (message: string) => {
+    switch (message) {
+      case "password-reset-success":
+        return "Your password has been reset successfully. Please log in with your new password.";
+      default:
+        return message;
+    }
+  };
+
   return (
     <>
       {searchParams.message && (
         <div className="bg-green-50 text-green-700 text-sm p-3 rounded-md mb-4 text-center">
-          {searchParams.message}
+          {getMessageContent(searchParams.message)}
         </div>
       )}
       <LoginForm callbackUrl={searchParams.callbackUrl} />

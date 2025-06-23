@@ -6,6 +6,7 @@ import { useRouter } from "next/navigation";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { z } from "zod";
+import Link from "next/link";
 
 import { Button } from "@/components/ui/button";
 import {
@@ -131,6 +132,15 @@ export function LoginForm({ callbackUrl }: LoginFormProps) {
             <Button type="submit" className="w-full" disabled={isLoading}>
               {isLoading ? "Signing in..." : "Sign In"}
             </Button>
+
+            <div className="text-center">
+              <Link
+                href="/forgot-password"
+                className="text-sm text-muted-foreground hover:text-primary hover:underline"
+              >
+                Forgot your password?
+              </Link>
+            </div>
           </form>
         </Form>
       </CardContent>
