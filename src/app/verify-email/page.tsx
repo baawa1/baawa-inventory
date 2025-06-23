@@ -2,6 +2,7 @@
 
 import { useState, useEffect } from "react";
 import { useSearchParams, useRouter } from "next/navigation";
+import { useSession } from "next-auth/react";
 import {
   Card,
   CardContent,
@@ -17,6 +18,7 @@ import { CheckCircle, XCircle, Clock, Mail, AlertCircle } from "lucide-react";
 export default function VerifyEmailPage() {
   const searchParams = useSearchParams();
   const router = useRouter();
+  const { data: session, update } = useSession();
   const token = searchParams.get("token");
 
   const [status, setStatus] = useState<
@@ -49,6 +51,21 @@ export default function VerifyEmailPage() {
       if (response.ok) {
         setStatus("success");
         setMessage(data.message);
+
+        // Set a flag that email was just verified so pending approval page can refresh
+        sessionStorage.setItem("emailJustVerified", "true");
+
+        // If user is logged in and we get shouldRefreshSession, refresh the session
+        if (session && data.shouldRefreshSession) {
+          try {
+            // Use NextAuth's update method to refresh the session from the server
+            await update();
+            console.log("Session refreshed after email verification");
+          } catch (error) {
+            console.error("Error updating session:", error);
+          }
+        }
+
         // Redirect to pending approval page after 3 seconds
         setTimeout(() => {
           router.push("/pending-approval");

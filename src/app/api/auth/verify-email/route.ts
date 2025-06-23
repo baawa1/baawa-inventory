@@ -78,6 +78,8 @@ export async function POST(request: NextRequest) {
         status: "VERIFIED",
         emailVerified: true,
       },
+      // Indicate that the client should refresh the session
+      shouldRefreshSession: true,
     });
   } catch (error) {
     console.error("Error in POST /api/auth/verify-email:", error);

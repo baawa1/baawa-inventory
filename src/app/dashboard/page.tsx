@@ -19,6 +19,11 @@ export default async function DashboardPage() {
     redirect("/login");
   }
 
+  // Additional server-side checks for user status
+  if (session.user.status !== "APPROVED") {
+    redirect("/pending-approval");
+  }
+
   const user = session.user;
 
   return (

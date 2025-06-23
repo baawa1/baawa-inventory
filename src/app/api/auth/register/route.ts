@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import { createServerSupabaseClient } from "@/lib/supabase";
 import { emailService } from "@/lib/email";
+import { notifyAdmins } from "@/lib/utils/admin-notifications";
 import bcrypt from "bcryptjs";
 import crypto from "crypto";
 import { z } from "zod";
@@ -101,6 +102,34 @@ export async function POST(request: NextRequest) {
       console.error("Error sending verification email:", emailError);
       // Don't fail registration if email fails, but log the error
       // User can request a new verification email later
+    }
+
+    // Send admin notification for new user registration
+    try {
+      const approvalLink = `${process.env.NEXTAUTH_URL}/admin`;
+      const registrationDate = new Date().toLocaleDateString("en-US", {
+        year: "numeric",
+        month: "long",
+        day: "numeric",
+        hour: "2-digit",
+        minute: "2-digit",
+      });
+
+      await notifyAdmins(async (adminEmails) => {
+        await emailService.sendAdminNewUserNotification(adminEmails, {
+          userFirstName: userData.firstName,
+          userLastName: userData.lastName,
+          userEmail: userData.email,
+          userCompany: "", // Not collected in registration form
+          approvalLink,
+          registrationDate,
+        });
+      });
+
+      console.log(`Admin notification sent for new user: ${userData.email}`);
+    } catch (notificationError) {
+      console.error("Error sending admin notification:", notificationError);
+      // Don't fail registration if notification fails
     }
 
     // Return success with verification message

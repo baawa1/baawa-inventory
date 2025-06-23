@@ -14,6 +14,7 @@ declare module "next-auth" {
       name: string;
       role: string;
       status: string;
+      emailVerified: boolean;
       image?: string;
     };
   }
@@ -24,6 +25,7 @@ declare module "next-auth" {
     name: string;
     role: string;
     status: string;
+    emailVerified: boolean;
   }
 }
 
@@ -31,6 +33,7 @@ declare module "next-auth/jwt" {
   interface JWT {
     role: string;
     status: string;
+    emailVerified: boolean;
     loginTime?: number;
     expired?: boolean;
   }
@@ -123,6 +126,7 @@ export const authOptions: NextAuthOptions = {
               name: `${user.first_name} ${user.last_name}`,
               role: user.role,
               status: user.user_status,
+              emailVerified: user.email_verified,
             };
           }
 
@@ -140,11 +144,57 @@ export const authOptions: NextAuthOptions = {
     updateAge: 60 * 60, // Update session every hour
   },
   callbacks: {
-    async jwt({ token, user }) {
+    async jwt({ token, user, trigger, session }) {
       if (user) {
         token.role = (user as any).role;
         token.status = (user as any).status;
+        token.emailVerified = (user as any).emailVerified;
         token.loginTime = Date.now();
+      }
+
+      // Handle session updates (when update() is called)
+      if (trigger === "update") {
+        console.log("JWT update triggered");
+
+        // Always fetch fresh data from database when update() is called
+        if (token.sub) {
+          try {
+            const supabase = await createServerSupabaseClient();
+            const { data: user, error } = await supabase
+              .from("users")
+              .select("role, user_status, email_verified")
+              .eq("id", parseInt(token.sub))
+              .eq("is_active", true)
+              .single();
+
+            if (!error && user) {
+              const oldStatus = token.status;
+              token.role = user.role;
+              token.status = user.user_status;
+              token.emailVerified = user.email_verified;
+              console.log("JWT token refreshed from database:", {
+                oldStatus,
+                newStatus: user.user_status,
+                emailVerified: user.email_verified,
+              });
+            } else {
+              console.error(
+                "Error fetching user data for token refresh:",
+                error
+              );
+            }
+          } catch (error) {
+            console.error("Error refreshing token from database:", error);
+          }
+        }
+
+        // Override with any session data provided (if explicitly passed)
+        if (session?.user?.status) {
+          token.status = session.user.status;
+        }
+        if (session?.user?.emailVerified !== undefined) {
+          token.emailVerified = session.user.emailVerified;
+        }
       }
 
       // Check if session is expired (optional additional check)
@@ -166,6 +216,7 @@ export const authOptions: NextAuthOptions = {
         session.user.id = token.sub!;
         session.user.role = token.role;
         session.user.status = token.status;
+        (session.user as any).emailVerified = token.emailVerified;
       }
       return session;
     },

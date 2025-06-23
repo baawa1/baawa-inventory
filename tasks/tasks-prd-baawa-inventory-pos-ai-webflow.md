@@ -109,8 +109,16 @@ Date: 22 June 2025
 - `src/app/api/auth/register/route.ts` - Updated registration API with email verification ✅
 - `src/lib/auth.ts` - Updated authentication with verification status checking ✅
 - `src/components/auth/LoginForm.tsx` - Updated login form with verification error handling ✅
-- `scripts/test-email-verification-workflow.js` - Email verification workflow testing script ✅
-- `.env.local` - Updated with Resend configuration (migrated from SendGrid) ✅
+- `src/middleware.ts` - Enhanced Next.js middleware with comprehensive user status checking, role-based access control, and debug logging ✅
+- `src/lib/auth.ts` - Updated authentication with email verification status in JWT tokens ✅
+- `src/app/dashboard/page.tsx` - Added server-side user status protection for dashboard access ✅
+- `src/app/admin/page.tsx` - Added server-side authentication and role protection ✅
+- `src/app/pending-approval/page.tsx` - Enhanced pending approval page with dynamic status handling (already implemented) ✅
+- `tests/middleware/auth-middleware.test.ts` - Comprehensive middleware tests for user status and route protection (23 tests) ✅
+- `src/lib/utils/admin-notifications.ts` - Admin notification utilities for getting admin emails and sending notifications ✅
+- `src/app/api/auth/register/route.ts` - Updated registration API to send admin notifications for new user registrations ✅
+- `tests/lib/admin-notifications.test.ts` - Admin notification system tests (7 tests) ✅
+- `scripts/test-registration-with-admin-notification.js` - Test script for registration flow with admin notifications ✅
 
 ### Remaining Files (User Approval Workflow):
 
@@ -292,10 +300,10 @@ Date: 22 June 2025
     - [x] 2.1.4c Build email verification page (/verify-email)
     - [x] 2.1.4d Add verification status checking to login
   - [ ] 2.1.5 Create user approval workflow
-    - [ ] 2.1.5a Prevent dashboard access for unverified/unapproved users
-    - [ ] 2.1.5b Update middleware to check user status
-    - [ ] 2.1.5c Create pending approval page for users
-    - [ ] 2.1.5d Add admin notification for new user registrations
+    - [x] 2.1.5a Prevent dashboard access for unverified/unapproved users
+    - [x] 2.1.5b Update middleware to check user status
+    - [x] 2.1.5c Create pending approval page for users
+    - [x] 2.1.5d Add admin notification for new user registrations
   - [ ] 2.1.6 Build admin dashboard for user management
     - [ ] 2.1.6a Create pending users list for admin review
     - [ ] 2.1.6b Add approve/reject actions with role assignment
