@@ -87,8 +87,28 @@ describe("Session Management", () => {
 
   describe("secureLogout", () => {
     it("should clear local storage and sign out", async () => {
-      const mockLocalStorage = window.localStorage as jest.Mocked<Storage>;
-      const mockSessionStorage = window.sessionStorage as jest.Mocked<Storage>;
+      const mockLocalStorage = {
+        removeItem: jest.fn(),
+      };
+      const mockSessionStorage = {
+        clear: jest.fn(),
+      };
+
+      // Mock localStorage and sessionStorage
+      Object.defineProperty(window, 'localStorage', {
+        value: mockLocalStorage,
+        writable: true
+      });
+      Object.defineProperty(window, 'sessionStorage', {
+        value: mockSessionStorage,
+        writable: true
+      });
+
+      // Mock document.cookie
+      Object.defineProperty(document, 'cookie', {
+        value: 'test=value; another=value2',
+        writable: true
+      });
 
       await secureLogout();
 
@@ -96,6 +116,8 @@ describe("Session Management", () => {
         "inventory-cart"
       );
       expect(mockLocalStorage.removeItem).toHaveBeenCalledWith("pos-session");
+      expect(mockLocalStorage.removeItem).toHaveBeenCalledWith("user-preferences");
+      expect(mockLocalStorage.removeItem).toHaveBeenCalledWith("draft-data");
       expect(mockSessionStorage.clear).toHaveBeenCalled();
       expect(mockSignOut).toHaveBeenCalledWith({
         callbackUrl: "/login",
