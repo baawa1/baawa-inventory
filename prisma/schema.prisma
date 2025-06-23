@@ -22,11 +22,32 @@ model User {
   role         UserRole @default(STAFF)
   isActive     Boolean  @default(true) @map("is_active")
   notes        String?
+  
+  // Authentication & Session
   lastLogin          DateTime? @map("last_login")
   lastLogout         DateTime? @map("last_logout")
   lastActivity       DateTime? @map("last_activity")
+  
+  // Password Reset
   resetToken         String?   @map("reset_token")
   resetTokenExpires  DateTime? @map("reset_token_expires")
+  
+  // Email Verification & User Approval
+  emailVerified       Boolean   @default(false) @map("email_verified")
+  emailVerifiedAt     DateTime? @map("email_verified_at")
+  emailVerificationToken String? @map("email_verification_token")
+  emailVerificationExpires DateTime? @map("email_verification_expires")
+  
+  // User Approval Workflow
+  userStatus         UserStatus @default(PENDING) @map("user_status")
+  approvedBy         Int?      @map("approved_by")
+  approvedAt         DateTime? @map("approved_at")
+  rejectionReason    String?   @map("rejection_reason")
+  
+  // Email Preferences
+  emailNotifications Boolean   @default(true) @map("email_notifications")
+  marketingEmails    Boolean   @default(false) @map("marketing_emails")
+  
   createdAt          DateTime @default(now()) @map("created_at")
   updatedAt          DateTime @updatedAt @map("updated_at")
 
@@ -34,6 +55,10 @@ model User {
   salesTransactions SalesTransaction[]
   stockAdjustments  StockAdjustment[]
   auditLogs         AuditLog[]
+  
+  // Self-referential for approval workflow
+  approvedUsers     User[] @relation("UserApproval")
+  approver          User?  @relation("UserApproval", fields: [approvedBy], references: [id])
 
   @@map("users")
 }
@@ -42,6 +67,14 @@ enum UserRole {
   ADMIN
   MANAGER
   STAFF
+}
+
+enum UserStatus {
+  PENDING       // User registered but email not verified
+  VERIFIED      // Email verified but not approved by admin
+  APPROVED      // Approved by admin and can access dashboard
+  REJECTED      // Rejected by admin
+  SUSPENDED     // Temporarily suspended
 }
 
 // Supplier Management
