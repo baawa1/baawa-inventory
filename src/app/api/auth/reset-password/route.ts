@@ -1,7 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import { z } from "zod";
 import bcrypt from "bcryptjs";
-import { dbService } from "@/lib/db-service";
+import { createServerSupabaseClient } from "@/lib/supabase";
 
 const resetPasswordSchema = z.object({
   token: z.string().min(1, "Token is required"),
@@ -19,18 +19,18 @@ export async function POST(request: NextRequest) {
     const body = await request.json();
     const { token, password } = resetPasswordSchema.parse(body);
 
-    // Find user with valid reset token
-    const user = await dbService.user.findFirst({
-      where: {
-        resetToken: token,
-        resetTokenExpires: {
-          gt: new Date(), // Token must not be expired
-        },
-        isActive: true,
-      },
-    });
+    const supabase = await createServerSupabaseClient();
 
-    if (!user) {
+    // Find user with valid reset token
+    const { data: user, error } = await supabase
+      .from("users")
+      .select("*")
+      .eq("password_reset_token", token)
+      .eq("is_active", true)
+      .gte("password_reset_expires", new Date().toISOString())
+      .single();
+
+    if (!user || error) {
       return NextResponse.json(
         { error: "Invalid or expired reset token" },
         { status: 400 }
@@ -41,15 +41,23 @@ export async function POST(request: NextRequest) {
     const hashedPassword = await bcrypt.hash(password, 12);
 
     // Update user with new password and clear reset token
-    await dbService.user.update({
-      where: { id: user.id },
-      data: {
-        password: hashedPassword,
-        resetToken: null,
-        resetTokenExpires: null,
-        updatedAt: new Date(),
-      },
-    });
+    const { error: updateError } = await supabase
+      .from("users")
+      .update({
+        password_hash: hashedPassword,
+        password_reset_token: null,
+        password_reset_expires: null,
+        updated_at: new Date().toISOString(),
+      })
+      .eq("id", user.id);
+
+    if (updateError) {
+      console.error("Error updating password:", updateError);
+      return NextResponse.json(
+        { error: "Failed to update password" },
+        { status: 500 }
+      );
+    }
 
     return NextResponse.json(
       { message: "Password reset successfully" },

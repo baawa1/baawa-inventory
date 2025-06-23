@@ -13,6 +13,7 @@ declare module "next-auth" {
       email: string;
       name: string;
       role: string;
+      status: string;
       image?: string;
     };
   }
@@ -22,12 +23,14 @@ declare module "next-auth" {
     email: string;
     name: string;
     role: string;
+    status: string;
   }
 }
 
 declare module "next-auth/jwt" {
   interface JWT {
     role: string;
+    status: string;
     loginTime?: number;
     expired?: boolean;
   }
@@ -72,11 +75,37 @@ export const authOptions: NextAuthOptions = {
             return null;
           }
 
+          // Check if email is verified
+          if (!user.email_verified) {
+            throw new Error("UNVERIFIED_EMAIL");
+          }
+
+          // Check user status - allow VERIFIED and APPROVED users to login
+          if (user.user_status === "PENDING") {
+            throw new Error("PENDING_VERIFICATION");
+          } else if (user.user_status === "REJECTED") {
+            throw new Error("ACCOUNT_REJECTED");
+          } else if (user.user_status === "SUSPENDED") {
+            throw new Error("ACCOUNT_SUSPENDED");
+          } else if (!["VERIFIED", "APPROVED"].includes(user.user_status)) {
+            throw new Error("ACCOUNT_INACTIVE");
+          }
+
           // Verify password with bcrypt
+          console.log("🔐 Debug: Attempting password verification...");
+          console.log("📧 Email:", credentials.email);
+          console.log("🔑 Password hash exists:", !!user.password_hash);
+          console.log(
+            "🔑 Hash (first 20 chars):",
+            user.password_hash?.substring(0, 20) + "..."
+          );
+
           const isValidPassword = await bcrypt.compare(
             credentials.password,
             user.password_hash || "$2a$10$dummy.hash.for.testing"
           );
+
+          console.log("✅ Password valid:", isValidPassword);
 
           if (isValidPassword) {
             // Update last login timestamp
@@ -93,6 +122,7 @@ export const authOptions: NextAuthOptions = {
               email: user.email,
               name: `${user.first_name} ${user.last_name}`,
               role: user.role,
+              status: user.user_status,
             };
           }
 
@@ -113,6 +143,7 @@ export const authOptions: NextAuthOptions = {
     async jwt({ token, user }) {
       if (user) {
         token.role = (user as any).role;
+        token.status = (user as any).status;
         token.loginTime = Date.now();
       }
 
@@ -134,6 +165,7 @@ export const authOptions: NextAuthOptions = {
       if (token && session.user) {
         session.user.id = token.sub!;
         session.user.role = token.role;
+        session.user.status = token.status;
       }
       return session;
     },

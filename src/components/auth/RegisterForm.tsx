@@ -104,7 +104,7 @@ export function RegisterForm({
       if (onSuccess) {
         onSuccess();
       } else {
-        router.push("/login?message=Account created successfully");
+        router.push(`/check-email?email=${encodeURIComponent(data.email)}`);
       }
     } catch (error) {
       setError(
@@ -120,15 +120,23 @@ export function RegisterForm({
       <Card className="w-full max-w-md mx-auto">
         <CardHeader className="text-center">
           <CardTitle className="text-2xl text-green-600">
-            <h1>Account Created!</h1>
+            <h1>Check Your Email!</h1>
           </CardTitle>
           <CardDescription>
-            Your account has been created successfully. You can now sign in.
+            We've sent a verification link to your email address. Please check
+            your inbox and click the link to verify your account.
           </CardDescription>
         </CardHeader>
         <CardContent>
-          <Button onClick={() => router.push("/login")} className="w-full">
-            Go to Sign In
+          <Button
+            onClick={() =>
+              router.push(
+                `/check-email?email=${encodeURIComponent(form.getValues("email") || "")}`
+              )
+            }
+            className="w-full"
+          >
+            Go to Email Verification
           </Button>
         </CardContent>
       </Card>

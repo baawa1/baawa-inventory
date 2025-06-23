@@ -1,24 +1,24 @@
 #!/usr/bin/env node
 
-const { Resend } = require('resend');
-require('dotenv').config({ path: '.env.local' });
+const { Resend } = require("resend");
+require("dotenv").config({ path: ".env.local" });
 
 const resend = new Resend(process.env.RESEND_API_KEY);
 
 async function testEmailFlows() {
-  console.log('🔄 Testing various email flows with Resend...\n');
-  
-  const fromEmail = process.env.RESEND_FROM_EMAIL || 'noreply@baawa.ng';
-  const fromName = process.env.RESEND_FROM_NAME || 'Baawa Accessories';
-  
+  console.log("🔄 Testing various email flows with Resend...\n");
+
+  const fromEmail = process.env.RESEND_FROM_EMAIL || "noreply@baawa.ng";
+  const fromName = process.env.RESEND_FROM_NAME || "Baawa Accessories";
+
   try {
     // Test password reset email
-    console.log('📧 Testing password reset email...');
+    console.log("📧 Testing password reset email...");
     const passwordResetResult = await resend.emails.send({
       from: `${fromName} <${fromEmail}>`,
-      to: ['baawapay+password-reset@gmail.com'],
-      subject: 'Password Reset Request - Baawa Inventory',
-      text: 'Click the link to reset your password: http://localhost:3000/reset-password?token=test123',
+      to: ["baawapay+password-reset@gmail.com"],
+      subject: "Password Reset Request - Baawa Inventory",
+      text: "Click the link to reset your password: http://localhost:3000/reset-password?token=test123",
       html: `
         <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto;">
           <h2>Password Reset Request</h2>
@@ -31,17 +31,20 @@ async function testEmailFlows() {
           <p>If you didn't request this, please ignore this email.</p>
           <p>Best regards,<br>Baawa Accessories Team</p>
         </div>
-      `
+      `,
     });
-    console.log('✅ Password reset email sent - ID:', passwordResetResult.data?.id);
-    
+    console.log(
+      "✅ Password reset email sent - ID:",
+      passwordResetResult.data?.id
+    );
+
     // Test user verification email
-    console.log('\n📧 Testing user verification email...');
+    console.log("\n📧 Testing user verification email...");
     const verificationResult = await resend.emails.send({
       from: `${fromName} <${fromEmail}>`,
-      to: ['baawapay+verification@gmail.com'],
-      subject: 'Verify Your Account - Baawa Inventory',
-      text: 'Welcome! Please verify your email: http://localhost:3000/verify?token=verify123',
+      to: ["baawapay+verification@gmail.com"],
+      subject: "Verify Your Account - Baawa Inventory",
+      text: "Welcome! Please verify your email: http://localhost:3000/verify?token=verify123",
       html: `
         <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto;">
           <h2>Welcome to Baawa Inventory!</h2>
@@ -53,17 +56,20 @@ async function testEmailFlows() {
           <p>If you didn't create this account, please ignore this email.</p>
           <p>Best regards,<br>Baawa Accessories Team</p>
         </div>
-      `
+      `,
     });
-    console.log('✅ Verification email sent - ID:', verificationResult.data?.id);
-    
+    console.log(
+      "✅ Verification email sent - ID:",
+      verificationResult.data?.id
+    );
+
     // Test admin approval email
-    console.log('\n📧 Testing admin approval email...');
+    console.log("\n📧 Testing admin approval email...");
     const approvalResult = await resend.emails.send({
       from: `${fromName} <${fromEmail}>`,
-      to: ['baawapay+admin-approval@gmail.com'],
-      subject: 'New User Awaiting Approval - Baawa Inventory',
-      text: 'A new user has registered and requires approval. Login to the admin panel to review.',
+      to: ["baawapay+admin-approval@gmail.com"],
+      subject: "New User Awaiting Approval - Baawa Inventory",
+      text: "A new user has registered and requires approval. Login to the admin panel to review.",
       html: `
         <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto;">
           <h2>New User Registration</h2>
@@ -81,17 +87,17 @@ async function testEmailFlows() {
           </a>
           <p>Best regards,<br>Baawa Inventory System</p>
         </div>
-      `
+      `,
     });
-    console.log('✅ Admin approval email sent - ID:', approvalResult.data?.id);
-    
+    console.log("✅ Admin approval email sent - ID:", approvalResult.data?.id);
+
     // Test welcome email
-    console.log('\n📧 Testing welcome email...');
+    console.log("\n📧 Testing welcome email...");
     const welcomeResult = await resend.emails.send({
       from: `${fromName} <${fromEmail}>`,
-      to: ['baawapay+welcome@gmail.com'],
-      subject: 'Welcome to Baawa Inventory System!',
-      text: 'Welcome to Baawa Inventory! Your account has been approved and you can now access the system.',
+      to: ["baawapay+welcome@gmail.com"],
+      subject: "Welcome to Baawa Inventory System!",
+      text: "Welcome to Baawa Inventory! Your account has been approved and you can now access the system.",
       html: `
         <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto;">
           <h2>Welcome to Baawa Inventory!</h2>
@@ -109,27 +115,28 @@ async function testEmailFlows() {
           </a>
           <p>Best regards,<br>Baawa Accessories Team</p>
         </div>
-      `
+      `,
     });
-    console.log('✅ Welcome email sent - ID:', welcomeResult.data?.id);
-    
-    console.log('\n🎉 All email flows tested successfully with Resend!');
-    console.log('\n📬 Check these Gmail inboxes:');
-    console.log('   ✉️  baawapay+password-reset@gmail.com');
-    console.log('   ✉️  baawapay+verification@gmail.com');
-    console.log('   ✉️  baawapay+admin-approval@gmail.com');
-    console.log('   ✉️  baawapay+welcome@gmail.com');
-    
-    console.log('\n📊 Email Summary:');
-    console.log('   • Password Reset: ✅ Sent');
-    console.log('   • Email Verification: ✅ Sent');
-    console.log('   • Admin Approval: ✅ Sent');
-    console.log('   • Welcome Message: ✅ Sent');
-    
+    console.log("✅ Welcome email sent - ID:", welcomeResult.data?.id);
+
+    console.log("\n🎉 All email flows tested successfully with Resend!");
+    console.log("\n📬 Check these Gmail inboxes:");
+    console.log("   ✉️  baawapay+password-reset@gmail.com");
+    console.log("   ✉️  baawapay+verification@gmail.com");
+    console.log("   ✉️  baawapay+admin-approval@gmail.com");
+    console.log("   ✉️  baawapay+welcome@gmail.com");
+
+    console.log("\n📊 Email Summary:");
+    console.log("   • Password Reset: ✅ Sent");
+    console.log("   • Email Verification: ✅ Sent");
+    console.log("   • Admin Approval: ✅ Sent");
+    console.log("   • Welcome Message: ✅ Sent");
   } catch (error) {
-    console.error('❌ Email test failed:', error);
-    if (error.message?.includes('domain')) {
-      console.log('\n💡 Domain verification might be needed at: https://resend.com/domains');
+    console.error("❌ Email test failed:", error);
+    if (error.message?.includes("domain")) {
+      console.log(
+        "\n💡 Domain verification might be needed at: https://resend.com/domains"
+      );
     }
   }
 }
