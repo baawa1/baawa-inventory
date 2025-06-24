@@ -1,4 +1,4 @@
-import { seedTestUsers } from "../tests/utils/seed-users";
+import { seedTestUsers } from "../utils/seed-users";
 
 async function main() {
   try {

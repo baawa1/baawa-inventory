@@ -164,7 +164,13 @@ describe("ResetPasswordForm", () => {
   it("shows error message on reset failure", async () => {
     const user = userEvent.setup();
     mockSearchParams.get.mockReturnValue("valid-token");
-    (global.fetch as jest.Mock)
+
+    // Clear and setup fresh fetch mock
+    jest.clearAllMocks();
+    const mockFetch = jest.fn();
+    global.fetch = mockFetch;
+
+    mockFetch
       .mockResolvedValueOnce({ ok: true }) // Token validation
       .mockResolvedValueOnce({
         // Password reset failure

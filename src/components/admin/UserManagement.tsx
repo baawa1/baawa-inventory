@@ -330,10 +330,7 @@ export function UserManagement() {
             </DialogHeader>
 
             <Form {...form}>
-              <form
-                onSubmit={form.handleSubmit(onSubmit)}
-                className="space-y-4"
-              >
+              <div className="space-y-4">
                 {error && (
                   <div className="bg-destructive/15 text-destructive text-sm p-3 rounded-md">
                     {error}
@@ -452,7 +449,11 @@ export function UserManagement() {
                   >
                     Cancel
                   </Button>
-                  <Button type="submit" disabled={submitting}>
+                  <Button
+                    type="submit"
+                    disabled={submitting}
+                    onClick={form.handleSubmit(onSubmit)}
+                  >
                     {submitting
                       ? editingUser
                         ? "Updating..."
@@ -462,7 +463,7 @@ export function UserManagement() {
                         : "Create User"}
                   </Button>
                 </div>
-              </form>
+              </div>
             </Form>
           </DialogContent>
         </Dialog>

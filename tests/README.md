@@ -15,8 +15,6 @@ tests/
 │   ├── db.test.ts              # Database connection and Prisma client tests
 │   ├── supabase.test.ts        # Supabase client and authentication tests
 │   └── utils/                  # Utility function tests
-│       ├── inventory.test.ts   # Inventory management utility tests
-│       └── pos.test.ts         # POS calculation and transaction utility tests
 ├── api/                        # API route tests
 │   └── products.test.ts        # Product API endpoint tests
 ├── types/                      # Type validation tests
@@ -90,15 +88,6 @@ npx jest tests/lib/
 - TypeScript type structures
 
 **Example**:
-
-```typescript
-// tests/lib/utils/inventory.test.ts
-it("should calculate total stock correctly", () => {
-  const products = [{ stock: 50 }, { stock: 30 }, { stock: 20 }];
-  const totalStock = calculateTotalStock(products);
-  expect(totalStock).toBe(100);
-});
-```
 
 ### 2. Integration Tests (`tests/integration/`)
 
