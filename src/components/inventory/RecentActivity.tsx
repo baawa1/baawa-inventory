@@ -15,6 +15,7 @@ import {
   IconTruck,
   IconShoppingCart,
 } from "@tabler/icons-react";
+import { formatCurrency } from "@/lib/utils";
 
 interface ActivityItem {
   id: number;
@@ -64,7 +65,7 @@ export function RecentActivity() {
       {
         id: 4,
         type: "sale_completed",
-        description: "Sale completed - 3 items sold for $150.00",
+        description: `Sale completed - 3 items sold for ${formatCurrency(150.0)}`,
         timestamp: "2 hours ago",
         user: "Store Assistant",
         metadata: { saleId: "TXN-1234567890", amount: 150.0 },

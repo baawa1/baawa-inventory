@@ -4,7 +4,7 @@ import { useState } from "react";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { UserManagement } from "./UserManagement";
 import { PendingUsersManagement } from "./PendingUsersManagement";
-import { DeactivatedUsersManagement } from "./DeactivatedUsersManagement";
+import { DeactivatedUsersManagement } from "@/components/admin/DeactivatedUsersManagement";
 
 export function AdminDashboard() {
   const [activeTab, setActiveTab] = useState("users");
