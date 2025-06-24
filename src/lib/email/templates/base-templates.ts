@@ -548,3 +548,88 @@ export const adminDigestTemplate = (data: {
     text: `User Registration Digest\n\nHi ${data.adminName},\n\nSummary for ${data.digestPeriod}:\n- New Registrations: ${data.newUsersCount}\n- Pending Approvals: ${data.pendingUsersCount}\n\nNew Users:\n${usersListText || "None"}\n\nReview at: ${data.dashboardLink}\n\nBest regards,\nBaawa Inventory System`,
   };
 };
+
+/**
+ * User suspension notification template
+ */
+export const userSuspensionTemplate = (
+  data: EmailTemplateData["userSuspension"]
+): EmailTemplate => {
+  const content = `
+    <div class="container">
+        <div class="header">
+            <h1>Account Suspended</h1>
+        </div>
+        
+        <p>Dear ${data.firstName} ${data.lastName},</p>
+        
+        <p>We regret to inform you that your Baawa Accessories account has been temporarily suspended.</p>
+        
+        <div class="warning-box">
+            <h3>Suspension Reason:</h3>
+            <p>${data.reason}</p>
+        </div>
+        
+        <p>During this suspension period, you will not be able to access your account or use our services.</p>
+        
+        <p>If you believe this suspension was made in error or would like to discuss this matter, please contact our support team.</p>
+        
+        <div style="text-align: center; margin: 30px 0;">
+            <a href="mailto:${data.supportEmail || "support@baawa.com"}" class="button" style="background-color: #dc3545;">Contact Support</a>
+        </div>
+        
+        <p>Best regards,<br>Baawa Accessories Team</p>
+    </div>
+  `;
+
+  return {
+    subject: "Account Suspended - Baawa Accessories",
+    html: createBaseTemplate(content, "Account Suspended"),
+    text: `Account Suspended\n\nDear ${data.firstName} ${data.lastName},\n\nYour Baawa Accessories account has been temporarily suspended.\n\nReason: ${data.reason}\n\nDuring this suspension, you cannot access your account. Contact support if needed: ${data.supportEmail || "support@baawa.com"}\n\nBest regards,\nBaawa Accessories Team`,
+  };
+};
+
+/**
+ * User reactivation notification template
+ */
+export const userReactivationTemplate = (
+  data: EmailTemplateData["userReactivation"]
+): EmailTemplate => {
+  const content = `
+    <div class="container">
+        <div class="header">
+            <h1>Account Reactivated</h1>
+        </div>
+        
+        <p>Dear ${data.firstName} ${data.lastName},</p>
+        
+        <p>Good news! Your Baawa Accessories account has been reactivated and you can now access all services again.</p>
+        
+        <div class="success-box">
+            <h3>🎉 Welcome Back!</h3>
+            <p>Your account suspension has been lifted and you have full access to your account.</p>
+        </div>
+        
+        <p>You can now:</p>
+        <ul>
+            <li>Access your dashboard</li>
+            <li>Use all platform features</li>
+            <li>Manage your account settings</li>
+        </ul>
+        
+        <div style="text-align: center; margin: 30px 0;">
+            <a href="${data.loginLink || "https://inventory.baawa.com/login"}" class="button">Access Your Account</a>
+        </div>
+        
+        <p>If you have any questions or need assistance, please don't hesitate to contact our support team.</p>
+        
+        <p>Best regards,<br>Baawa Accessories Team</p>
+    </div>
+  `;
+
+  return {
+    subject: "Account Reactivated - Welcome Back! - Baawa Accessories",
+    html: createBaseTemplate(content, "Account Reactivated"),
+    text: `Account Reactivated\n\nDear ${data.firstName} ${data.lastName},\n\nGreat news! Your Baawa Accessories account has been reactivated.\n\nYou can now access your dashboard and use all features again.\n\nLogin at: ${data.loginLink || "https://inventory.baawa.com/login"}\n\nWelcome back!\n\nBest regards,\nBaawa Accessories Team`,
+  };
+};

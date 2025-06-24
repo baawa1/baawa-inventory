@@ -301,6 +301,49 @@ export const emailService = {
     const service = createEmailService();
     return service.sendTemplatedEmail("admin_digest", to, data);
   },
+
+  /**
+   * Send user suspension notification email
+   */
+  async sendUserSuspensionEmail(
+    to: string,
+    data: {
+      firstName: string;
+      lastName: string;
+      reason: string;
+      supportEmail?: string;
+    }
+  ): Promise<void> {
+    const service = createEmailService();
+    const template = await getEmailTemplate("user_suspension", data);
+    await service.sendEmail({
+      to,
+      subject: template.subject,
+      html: template.html,
+      text: template.text,
+    });
+  },
+
+  /**
+   * Send user reactivation notification email
+   */
+  async sendUserReactivationEmail(
+    to: string,
+    data: {
+      firstName: string;
+      lastName: string;
+      loginLink?: string;
+    }
+  ): Promise<void> {
+    const service = createEmailService();
+    const template = await getEmailTemplate("user_reactivation", data);
+    await service.sendEmail({
+      to,
+      subject: template.subject,
+      html: template.html,
+      text: template.text,
+    });
+  },
 };
 
 /**

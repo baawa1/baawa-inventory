@@ -69,7 +69,9 @@ export type EmailTemplateType =
   | "admin_user_registered"
   | "admin_digest"
   | "account_locked"
-  | "role_changed";
+  | "role_changed"
+  | "user_suspension"
+  | "user_reactivation";
 
 /**
  * Template data interfaces for type safety
@@ -138,19 +140,31 @@ export interface AdminDigestData {
   digestPeriod: string;
 }
 
+export interface UserSuspensionData {
+  firstName: string;
+  lastName: string;
+  reason: string;
+  supportEmail?: string;
+}
+
+export interface UserReactivationData {
+  firstName: string;
+  lastName: string;
+  loginLink?: string;
+}
+
 /**
  * Union type for all template data
  */
-export type EmailTemplateData =
-  | WelcomeEmailData
-  | EmailVerificationData
-  | PasswordResetData
-  | UserApprovalData
-  | UserRejectionData
-  | RoleChangeData
-  | AdminNotificationData
-  | AdminDigestData
-  | UserRejectionData
-  | RoleChangeData
-  | AdminDigestData
-  | Record<string, any>;
+export interface EmailTemplateData {
+  welcome: WelcomeEmailData;
+  emailVerification: EmailVerificationData;
+  passwordReset: PasswordResetData;
+  userApproval: UserApprovalData;
+  userRejection: UserRejectionData;
+  roleChange: RoleChangeData;
+  adminNotification: AdminNotificationData;
+  adminDigest: AdminDigestData;
+  userSuspension: UserSuspensionData;
+  userReactivation: UserReactivationData;
+}

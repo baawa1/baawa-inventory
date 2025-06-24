@@ -31,7 +31,7 @@ export async function GET(request: NextRequest, { params }: RouteParams) {
       const { data: user, error } = await supabase
         .from("users")
         .select(
-          "id, first_name, last_name, email, role, is_active, created_at, last_login"
+          "id, first_name, last_name, email, role, is_active, user_status, created_at, last_login"
         )
         .eq("id", userId)
         .single();
@@ -58,6 +58,7 @@ export async function GET(request: NextRequest, { params }: RouteParams) {
         email: user.email,
         role: user.role,
         isActive: user.is_active,
+        userStatus: user.user_status,
         createdAt: user.created_at,
         lastLogin: user.last_login,
       };
@@ -96,7 +97,7 @@ export async function PUT(request: NextRequest, { params }: RouteParams) {
       // Check if user exists
       const { data: existingUser } = await supabase
         .from("users")
-        .select("id, email, role, first_name, last_name")
+        .select("id, email, role, first_name, last_name, user_status")
         .eq("id", userId)
         .single();
 
