@@ -372,6 +372,8 @@ Date: 22 June 2025
     - [x] 3.1.1 Set up shadcn dashboard-01 block as foundation ✅
   - [x] 3.2 Implement product listing with search, filter, and pagination
     - [x] 3.2.1 Build product listing with search and filters ✅
+    - [ ] 3.2.2 Build product adding funtionality
+    - [ ] 3.2.3 Build product editing funtionality
   - [ ] 3.3 Create supplier management interface and purchase order tracking
   - [ ] 3.4 Build CSV import functionality with column mapping and validation
   - [ ] 3.5 Implement stock adjustment features with reason tracking
