@@ -43,7 +43,15 @@ export const updateUserSchema = createUserSchema
 export const userQuerySchema = paginationSchema.merge(searchSchema).extend({
   role: userRoleSchema.optional(),
   status: userStatusSchema.optional(),
-  isActive: z.coerce.boolean().optional(),
+  isActive: z
+    .string()
+    .optional()
+    .transform((val) => {
+      if (val === undefined) return undefined;
+      if (val === "true") return true;
+      if (val === "false") return false;
+      return undefined;
+    }),
 });
 
 // User ID parameter schema

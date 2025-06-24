@@ -14,36 +14,24 @@ export const GET = withPermission("canManageUsers")(async function (
   request: AuthenticatedRequest
 ) {
   try {
-    console.log("=== USERS API DEBUG ===");
-    console.log("Request URL:", request.url);
-
     const supabase = await createServerSupabaseClient();
-    console.log("Supabase client created successfully");
 
     const { searchParams } = new URL(request.url);
-    console.log("Search params:", Object.fromEntries(searchParams.entries()));
 
     // Convert search params to object for validation
     const queryParams = Object.fromEntries(searchParams.entries());
-    console.log("Query params object:", queryParams);
-    console.log("Query params keys:", Object.keys(queryParams));
-    console.log("Query params values:", Object.values(queryParams));
 
-    // Validate query parameters with detailed error logging
-    const validation = validateRequest(userQuerySchema, queryParams);
-    console.log("Validation result:", validation);
+    // Validate query parameters
+    const validation = userQuerySchema.safeParse(queryParams);
 
     if (!validation.success) {
-      console.log("Validation failed with errors:", validation.errors);
-      console.log("Query params that failed:", queryParams);
       return NextResponse.json(
-        { error: "Invalid query parameters", details: validation.errors },
+        { error: "Invalid query parameters", details: validation.error.issues },
         { status: 400 }
       );
     }
 
-    const validatedData = validation.data!;
-    console.log("Validated data:", validatedData);
+    const validatedData = validation.data;
     const {
       page = 1,
       limit = 10,
@@ -93,20 +81,6 @@ export const GET = withPermission("canManageUsers")(async function (
 
     const { data: users, error } = await query;
 
-    console.log("Database query result:");
-    console.log("- Error:", error);
-    console.log("- Users count:", users?.length || 0);
-    console.log(
-      "- First user sample:",
-      users?.[0]
-        ? {
-            id: users[0].id,
-            email: users[0].email,
-            role: users[0].role,
-          }
-        : "No users"
-    );
-
     if (error) {
       console.error("Error fetching users:", error);
       return NextResponse.json(
@@ -153,15 +127,15 @@ export const POST = withPermission("canManageUsers")(async function (
     const body = await request.json();
 
     // Validate request body
-    const validation = validateRequest(createUserSchema, body);
+    const validation = createUserSchema.safeParse(body);
     if (!validation.success) {
       return NextResponse.json(
-        { error: "Invalid user data", details: validation.errors },
+        { error: "Invalid user data", details: validation.error.issues },
         { status: 400 }
       );
     }
 
-    const userData = validation.data!;
+    const userData = validation.data;
 
     // Check if email already exists
     const { data: existingUser } = await supabase
@@ -190,8 +164,10 @@ export const POST = withPermission("canManageUsers")(async function (
         password_hash: hashedPassword,
         phone: userData.phone,
         role: userData.role,
-        is_active: userData.isActive,
-        // notes: userData.notes, // Remove notes as it's not in the current schema
+        is_active: userData.isActive ?? true, // Default to true if not specified
+        user_status: "APPROVED", // New users created by admin are auto-approved
+        email_verified: true, // Admin-created users are auto-verified
+        email_verified_at: new Date().toISOString(), // Set verification timestamp
       })
       .select(
         "id, first_name, last_name, email, role, is_active, created_at, last_login"
