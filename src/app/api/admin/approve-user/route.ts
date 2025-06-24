@@ -3,6 +3,7 @@ import { createServerSupabaseClient } from "@/lib/supabase";
 import { withPermission, AuthenticatedRequest } from "@/lib/api-middleware";
 import { z } from "zod";
 import { validateRequest } from "@/lib/validations";
+import { emailService } from "@/lib/email";
 
 // Schema for admin user approval/rejection
 const userApprovalSchema = z.object({
@@ -44,7 +45,9 @@ export const POST = withPermission("canManageUsers")(async function (
     // Check if user exists and is in a valid state for approval/rejection
     const { data: user, error: fetchError } = await supabase
       .from("users")
-      .select("id, user_status, email_verified, first_name, last_name, email")
+      .select(
+        "id, user_status, email_verified, first_name, last_name, email, role"
+      )
       .eq("id", userId)
       .single();
 
@@ -107,8 +110,39 @@ export const POST = withPermission("canManageUsers")(async function (
       );
     }
 
-    // TODO: Send notification email to user about approval/rejection
-    // This could be implemented later with the email service
+    // Send notification email to user about approval/rejection
+    try {
+      const adminName = request.user.name || "Administrator";
+      const supportEmail = process.env.SUPPORT_EMAIL || "support@baawa.com";
+      const dashboardUrl = process.env.NEXTAUTH_URL || "http://localhost:3000";
+
+      if (action === "approve") {
+        // Send approval notification
+        await emailService.sendUserApprovalEmail(updatedUser.email, {
+          firstName: updatedUser.first_name,
+          adminName,
+          dashboardLink: `${dashboardUrl}/dashboard`,
+          role: user.role || "STAFF",
+        });
+
+        // Send welcome email as well
+        await emailService.sendWelcomeEmail(updatedUser.email, {
+          firstName: updatedUser.first_name,
+          email: updatedUser.email,
+          companyName: "Baawa Accessories",
+        });
+      } else {
+        await emailService.sendUserRejectionEmail(updatedUser.email, {
+          firstName: updatedUser.first_name,
+          adminName,
+          rejectionReason,
+          supportEmail,
+        });
+      }
+    } catch (emailError) {
+      console.error("Failed to send notification email:", emailError);
+      // Don't fail the entire operation if email fails
+    }
 
     return NextResponse.json({
       success: true,

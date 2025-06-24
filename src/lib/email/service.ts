@@ -244,6 +244,63 @@ export const emailService = {
     const service = createEmailService();
     return service.sendTemplatedEmail("admin_new_user_pending", to, data);
   },
+
+  /**
+   * Send user rejection notification
+   */
+  sendUserRejectionEmail: async (
+    to: string,
+    data: {
+      firstName: string;
+      adminName: string;
+      rejectionReason?: string;
+      supportEmail: string;
+    }
+  ) => {
+    const service = createEmailService();
+    return service.sendTemplatedEmail("user_rejected", to, data);
+  },
+
+  /**
+   * Send role change notification
+   */
+  sendRoleChangeEmail: async (
+    to: string,
+    data: {
+      firstName: string;
+      oldRole: string;
+      newRole: string;
+      changedBy: string;
+      dashboardLink: string;
+    }
+  ) => {
+    const service = createEmailService();
+    return service.sendTemplatedEmail("role_changed", to, data);
+  },
+
+  /**
+   * Send admin digest email
+   */
+  sendAdminDigestEmail: async (
+    to: string | string[],
+    data: {
+      adminName: string;
+      newUsersCount: number;
+      pendingUsersCount: number;
+      newUsers: Array<{
+        firstName: string;
+        lastName: string;
+        email: string;
+        registrationDate: string;
+        status: string;
+      }>;
+      dashboardLink: string;
+      digestPeriod: string;
+    }
+  ) => {
+    const service = createEmailService();
+    return service.sendTemplatedEmail("admin_digest", to, data);
+  },
 };
 
 /**

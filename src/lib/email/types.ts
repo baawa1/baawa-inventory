@@ -67,6 +67,7 @@ export type EmailTemplateType =
   | "user_rejected"
   | "admin_new_user_pending"
   | "admin_user_registered"
+  | "admin_digest"
   | "account_locked"
   | "role_changed";
 
@@ -107,6 +108,36 @@ export interface AdminNotificationData {
   registrationDate: string;
 }
 
+export interface UserRejectionData {
+  firstName: string;
+  adminName: string;
+  rejectionReason?: string;
+  supportEmail: string;
+}
+
+export interface RoleChangeData {
+  firstName: string;
+  oldRole: string;
+  newRole: string;
+  changedBy: string;
+  dashboardLink: string;
+}
+
+export interface AdminDigestData {
+  adminName: string;
+  newUsersCount: number;
+  pendingUsersCount: number;
+  newUsers: Array<{
+    firstName: string;
+    lastName: string;
+    email: string;
+    registrationDate: string;
+    status: string;
+  }>;
+  dashboardLink: string;
+  digestPeriod: string;
+}
+
 /**
  * Union type for all template data
  */
@@ -115,5 +146,11 @@ export type EmailTemplateData =
   | EmailVerificationData
   | PasswordResetData
   | UserApprovalData
+  | UserRejectionData
+  | RoleChangeData
   | AdminNotificationData
+  | AdminDigestData
+  | UserRejectionData
+  | RoleChangeData
+  | AdminDigestData
   | Record<string, any>;

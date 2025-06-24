@@ -93,6 +93,12 @@ Date: 22 June 2025
 - `src/components/admin/DeactivatedUsersManagement.tsx` - New component for managing deactivated users with reactivation functionality ✅
 - `src/components/debug/AuthDebug.tsx` - Removed auth debug component and directory ✅
 - `src/app/api/users/route.ts` - Updated user creation API to set proper defaults for admin-created users ✅
+- `src/components/admin/PendingUsersManagement.tsx` - Complete pending users management component with approval/rejection actions ✅
+- `src/app/api/admin/approve-user/route.ts` - User approval/rejection API endpoint with proper validation and status updates ✅
+- `src/lib/email/templates/base-templates.ts` - Enhanced email templates including user rejection, role change, and admin digest templates ✅
+- `src/lib/email/types.ts` - Updated email types with UserRejectionData, RoleChangeData, and AdminDigestData interfaces ✅
+- `src/lib/email/service.ts` - Enhanced email service with approval, rejection, role change, and digest email helpers ✅
+- `src/app/api/users/[id]/route.ts` - Updated user update API with role change email notifications ✅
 
 ### Completed Files (Email System & SendGrid Setup):
 
@@ -317,16 +323,16 @@ Date: 22 June 2025
     - [x] 2.1.5e Implement automatic session refresh after email verification
     - [x] 2.1.5f Fix React hooks violations in pending approval page
     - [x] 2.1.5g Enhanced JWT callback with database refresh capability
-  - [ ] 2.1.6 Build admin dashboard for user management
-    - [ ] 2.1.6a Create pending users list for admin review
-    - [ ] 2.1.6b Add approve/reject actions with role assignment
-    - [ ] 2.1.6c Build user details modal for review
-    - [ ] 2.1.6d Add bulk approval/rejection features
-  - [ ] 2.1.7 Email notifications system
-    - [ ] 2.1.7a Send approval/rejection notification emails
-    - [ ] 2.1.7b Send welcome email upon approval
-    - [ ] 2.1.7c Add email for role changes
-    - [ ] 2.1.7d Create email digest for admin (new registrations)
+  - [x] 2.1.6 Build admin dashboard for user management
+    - [x] 2.1.6a Create pending users list for admin review
+    - [x] 2.1.6b Add approve/reject actions with role assignment
+    - [x] 2.1.6c Build user details modal for review
+    - [x] 2.1.6d Add bulk approval/rejection features
+  - [x] 2.1.7 Email notifications system ✅
+    - [x] 2.1.7a Send approval/rejection notification emails ✅
+    - [x] 2.1.7b Send welcome email upon approval ✅
+    - [x] 2.1.7c Add email for role changes ✅
+    - [x] 2.1.7d Create email digest for admin (new registrations) ✅
   - [ ] 2.1.8 Enhanced user status management
     - [ ] 2.1.8a Update login flow to handle all user statuses
     - [ ] 2.1.8b Create appropriate pages for each status
@@ -342,7 +348,7 @@ Date: 22 June 2025
     - [ ] 2.1.10b Test user approval workflow end-to-end
     - [ ] 2.1.10c Add email delivery monitoring
     - [ ] 2.1.10d Create email analytics dashboard
-    - [ ] 2.1.10e Test across multiple email providers
+    - [ ] 2.1.10e Test across multiple email providers -->
 
 - [ ] 3.0 Core Inventory Management Module
   - [ ] 3.1 Build product creation form with image upload and variant support
