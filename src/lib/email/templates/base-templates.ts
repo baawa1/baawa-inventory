@@ -283,8 +283,8 @@ export const adminNewUserNotificationTemplate = (data: {
             <p><strong>User Details:</strong></p>
             <ul>
                 <li>Name: <span class="highlight">${data.userFirstName} ${
-    data.userLastName
-  }</span></li>
+                  data.userLastName
+                }</span></li>
                 <li>Email: <span class="highlight">${data.userEmail}</span></li>
                 ${
                   data.userCompany
@@ -356,5 +356,195 @@ export const passwordResetConfirmationTemplate = (data: {
     subject: "Password Reset Successful - Baawa Accessories",
     html: createBaseTemplate(content, "Password Reset Successful"),
     text: `Hi ${data.firstName},\n\nYour password has been successfully reset.\n\nIf you did not make this change, please contact support immediately.\n\nBest regards,\nThe Baawa Team`,
+  };
+};
+
+/**
+ * User rejection notification template
+ */
+export const userRejectionTemplate = (data: {
+  firstName: string;
+  adminName: string;
+  rejectionReason?: string;
+  supportEmail: string;
+}): EmailTemplate => {
+  const content = `
+    <h1 class="title">Account Application Update</h1>
+    <div class="content">
+        <p>Hi ${data.firstName},</p>
+        <p>Thank you for your interest in joining Baawa Accessories. After careful review, we regret to inform you that your account application has not been approved at this time.</p>
+        
+        ${
+          data.rejectionReason
+            ? `
+        <div class="info">
+            <p><strong>Reason:</strong></p>
+            <p>${data.rejectionReason}</p>
+        </div>
+        `
+            : ""
+        }
+        
+        <p>If you believe this decision was made in error or if you have additional information to support your application, please don't hesitate to contact our support team.</p>
+        
+        <div class="info">
+            <p><strong>Contact Support:</strong></p>
+            <p>Email: <a href="mailto:${data.supportEmail}">${data.supportEmail}</a></p>
+        </div>
+        
+        <p>We appreciate your understanding and wish you all the best.</p>
+        <p>Best regards,<br>The Baawa Team</p>
+    </div>
+  `;
+
+  return {
+    subject: "Account Application Update - Baawa Accessories",
+    html: createBaseTemplate(content, "Account Application Update"),
+    text: `Hi ${data.firstName},\n\nYour account application has not been approved at this time.${data.rejectionReason ? `\n\nReason: ${data.rejectionReason}` : ""}\n\nFor questions, contact: ${data.supportEmail}\n\nBest regards,\nThe Baawa Team`,
+  };
+};
+
+/**
+ * Role change notification template
+ */
+export const roleChangeTemplate = (data: {
+  firstName: string;
+  oldRole: string;
+  newRole: string;
+  changedBy: string;
+  dashboardLink: string;
+}): EmailTemplate => {
+  const content = `
+    <h1 class="title">Your Role Has Been Updated</h1>
+    <div class="content">
+        <p>Hi ${data.firstName},</p>
+        <p>Your role in the Baawa Accessories system has been updated by ${data.changedBy}.</p>
+        
+        <div class="info">
+            <p><strong>Role Change Details:</strong></p>
+            <ul>
+                <li>Previous Role: <span class="highlight">${data.oldRole}</span></li>
+                <li>New Role: <span class="highlight">${data.newRole}</span></li>
+                <li>Changed By: ${data.changedBy}</li>
+                <li>Date: ${new Date().toLocaleDateString()}</li>
+            </ul>
+        </div>
+        
+        <p>Your new role may include different permissions and access levels. Please log into your dashboard to see the updated interface:</p>
+        
+        <div style="text-align: center;">
+            <a href="${data.dashboardLink}" class="button">Access Dashboard</a>
+        </div>
+        
+        <p>If you have any questions about your new role or need assistance, please contact our support team.</p>
+        <p>Best regards,<br>The Baawa Team</p>
+    </div>
+  `;
+
+  return {
+    subject: "Your Role Has Been Updated - Baawa Accessories",
+    html: createBaseTemplate(content, "Role Updated"),
+    text: `Hi ${data.firstName},\n\nYour role has been updated from ${data.oldRole} to ${data.newRole} by ${data.changedBy}.\n\nAccess your dashboard: ${data.dashboardLink}\n\nBest regards,\nThe Baawa Team`,
+  };
+};
+
+/**
+ * Admin digest email template for new user registrations
+ */
+export const adminDigestTemplate = (data: {
+  adminName: string;
+  newUsersCount: number;
+  pendingUsersCount: number;
+  newUsers: Array<{
+    firstName: string;
+    lastName: string;
+    email: string;
+    registrationDate: string;
+    status: string;
+  }>;
+  dashboardLink: string;
+  digestPeriod: string;
+}): EmailTemplate => {
+  const usersListHtml = data.newUsers
+    .map(
+      (user) => `
+    <tr style="border-bottom: 1px solid #e5e7eb;">
+      <td style="padding: 12px; border: 1px solid #e5e7eb;">${user.firstName} ${user.lastName}</td>
+      <td style="padding: 12px; border: 1px solid #e5e7eb;">${user.email}</td>
+      <td style="padding: 12px; border: 1px solid #e5e7eb;">${user.status}</td>
+      <td style="padding: 12px; border: 1px solid #e5e7eb;">${new Date(user.registrationDate).toLocaleDateString()}</td>
+    </tr>
+  `
+    )
+    .join("");
+
+  const content = `
+    <h1 class="title">User Registration Digest</h1>
+    <div class="content">
+        <p>Hi ${data.adminName},</p>
+        <p>Here's your ${data.digestPeriod} summary of user registration activity for Baawa Accessories:</p>
+        
+        <div class="info">
+            <h3 style="color: #2563eb; margin-bottom: 16px;">Summary</h3>
+            <ul>
+                <li><strong>New Registrations:</strong> ${data.newUsersCount} users</li>
+                <li><strong>Pending Approvals:</strong> ${data.pendingUsersCount} users</li>
+                <li><strong>Period:</strong> ${data.digestPeriod}</li>
+            </ul>
+        </div>
+
+        ${
+          data.newUsers.length > 0
+            ? `
+        <div style="margin: 24px 0;">
+            <h3 style="color: #2563eb; margin-bottom: 16px;">New Registrations</h3>
+            <table style="width: 100%; border-collapse: collapse; margin: 16px 0;">
+                <thead>
+                    <tr style="background-color: #f9fafb;">
+                        <th style="padding: 12px; border: 1px solid #e5e7eb; text-align: left;">Name</th>
+                        <th style="padding: 12px; border: 1px solid #e5e7eb; text-align: left;">Email</th>
+                        <th style="padding: 12px; border: 1px solid #e5e7eb; text-align: left;">Status</th>
+                        <th style="padding: 12px; border: 1px solid #e5e7eb; text-align: left;">Date</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    ${usersListHtml}
+                </tbody>
+            </table>
+        </div>
+        `
+            : ""
+        }
+        
+        ${
+          data.pendingUsersCount > 0
+            ? `
+        <div style="background-color: #fef3c7; border: 1px solid #f59e0b; border-radius: 6px; padding: 16px; margin: 20px 0;">
+            <p><strong>⚠️ Action Required:</strong></p>
+            <p>You have ${data.pendingUsersCount} user${data.pendingUsersCount === 1 ? "" : "s"} pending approval. Please review and approve or reject these registrations.</p>
+        </div>
+        `
+            : ""
+        }
+        
+        <div style="text-align: center; margin: 30px 0;">
+            <a href="${data.dashboardLink}" class="button">Review Pending Users</a>
+        </div>
+        
+        <p>Best regards,<br>Baawa Inventory System</p>
+    </div>
+  `;
+
+  const usersListText = data.newUsers
+    .map(
+      (user) =>
+        `- ${user.firstName} ${user.lastName} (${user.email}) - ${user.status} - ${new Date(user.registrationDate).toLocaleDateString()}`
+    )
+    .join("\n");
+
+  return {
+    subject: `User Registration Digest (${data.newUsersCount} new) - Baawa Accessories`,
+    html: createBaseTemplate(content, "User Registration Digest"),
+    text: `User Registration Digest\n\nHi ${data.adminName},\n\nSummary for ${data.digestPeriod}:\n- New Registrations: ${data.newUsersCount}\n- Pending Approvals: ${data.pendingUsersCount}\n\nNew Users:\n${usersListText || "None"}\n\nReview at: ${data.dashboardLink}\n\nBest regards,\nBaawa Inventory System`,
   };
 };

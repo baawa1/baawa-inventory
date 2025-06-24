@@ -7,6 +7,7 @@ import {
   validateRequest,
 } from "@/lib/validations";
 import { withPermission, AuthenticatedRequest } from "@/lib/api-middleware";
+import { emailService } from "@/lib/email";
 
 interface RouteParams {
   params: { id: string };
@@ -95,7 +96,7 @@ export async function PUT(request: NextRequest, { params }: RouteParams) {
       // Check if user exists
       const { data: existingUser } = await supabase
         .from("users")
-        .select("id, email")
+        .select("id, email, role, first_name, last_name")
         .eq("id", userId)
         .single();
 
@@ -173,6 +174,26 @@ export async function PUT(request: NextRequest, { params }: RouteParams) {
           { error: "Failed to update user" },
           { status: 500 }
         );
+      }
+
+      // Check if role changed and send notification email
+      if (body.role && body.role !== existingUser.role) {
+        try {
+          const adminName = authRequest.user?.name || "Administrator";
+          const dashboardUrl =
+            process.env.NEXTAUTH_URL || "http://localhost:3000";
+
+          await emailService.sendRoleChangeEmail(user.email, {
+            firstName: user.first_name,
+            oldRole: existingUser.role,
+            newRole: user.role,
+            changedBy: adminName,
+            dashboardLink: `${dashboardUrl}/dashboard`,
+          });
+        } catch (emailError) {
+          console.error("Failed to send role change email:", emailError);
+          // Don't fail the entire operation if email fails
+        }
       }
 
       // Transform response to camelCase

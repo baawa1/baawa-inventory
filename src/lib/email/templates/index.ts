@@ -5,7 +5,10 @@ import {
   passwordResetTemplate,
   passwordResetConfirmationTemplate,
   userApprovalTemplate,
+  userRejectionTemplate,
+  roleChangeTemplate,
   adminNewUserNotificationTemplate,
+  adminDigestTemplate,
 } from "./base-templates";
 
 /**
@@ -53,8 +56,13 @@ export async function getEmailTemplate(
       );
 
     case "user_rejected":
-      return getUserRejectedTemplate(
-        data as { firstName: string; reason?: string }
+      return userRejectionTemplate(
+        data as {
+          firstName: string;
+          adminName: string;
+          rejectionReason?: string;
+          supportEmail: string;
+        }
       );
 
     case "admin_new_user_pending":
@@ -86,12 +94,31 @@ export async function getEmailTemplate(
       );
 
     case "role_changed":
-      return getRoleChangedTemplate(
+      return roleChangeTemplate(
         data as {
           firstName: string;
           oldRole: string;
           newRole: string;
           changedBy: string;
+          dashboardLink: string;
+        }
+      );
+
+    case "admin_digest":
+      return adminDigestTemplate(
+        data as {
+          adminName: string;
+          newUsersCount: number;
+          pendingUsersCount: number;
+          newUsers: Array<{
+            firstName: string;
+            lastName: string;
+            email: string;
+            registrationDate: string;
+            status: string;
+          }>;
+          dashboardLink: string;
+          digestPeriod: string;
         }
       );
 
@@ -157,8 +184,8 @@ function getAdminUserRegisteredTemplate(data: {
             <p><strong>User Details:</strong></p>
             <ul>
                 <li>Name: <span class="highlight">${data.userFirstName} ${
-    data.userLastName
-  }</span></li>
+                  data.userLastName
+                }</span></li>
                 <li>Email: <span class="highlight">${data.userEmail}</span></li>
                 ${
                   data.userCompany
