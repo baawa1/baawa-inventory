@@ -2,7 +2,7 @@ const { createClient } = require("@supabase/supabase-js");
 
 const supabase = createClient(
   "https://bhwywfigcyotkxbujivm.supabase.co",
-  "***REMOVED***"
+  process.env.SUPABASE_SERVICE_ROLE_KEY || "your_supabase_service_role_key_here"
 );
 
 async function testVerifiedUserLogin() {

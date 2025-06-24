@@ -32,7 +32,7 @@ SENDGRID_FROM_EMAIL
 SENDGRID_FROM_NAME
 
 # ADDED
-RESEND_API_KEY="***REMOVED***"
+RESEND_API_KEY="your_resend_api_key_here"
 RESEND_FROM_EMAIL="noreply@baawa.ng"
 RESEND_FROM_NAME="Baawa Accessories"
 ```

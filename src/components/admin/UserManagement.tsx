@@ -110,7 +110,9 @@ export function UserManagement() {
   const fetchUsers = async () => {
     try {
       setLoading(true);
-      const response = await fetch("/api/users");
+      const response = await fetch("/api/users", {
+        credentials: "include",
+      });
 
       if (!response.ok) {
         throw new Error("Failed to fetch users");
@@ -150,6 +152,7 @@ export function UserManagement() {
 
       const response = await fetch(url, {
         method,
+        credentials: "include",
         headers: {
           "Content-Type": "application/json",
         },
@@ -180,6 +183,7 @@ export function UserManagement() {
     try {
       const response = await fetch(`/api/users/${user.id}`, {
         method: "PUT",
+        credentials: "include",
         headers: {
           "Content-Type": "application/json",
         },
@@ -388,8 +392,8 @@ export function UserManagement() {
                         ? "Updating..."
                         : "Creating..."
                       : editingUser
-                      ? "Update User"
-                      : "Create User"}
+                        ? "Update User"
+                        : "Create User"}
                   </Button>
                 </div>
               </form>
@@ -440,8 +444,8 @@ export function UserManagement() {
                           user.role === "ADMIN"
                             ? "destructive"
                             : user.role === "MANAGER"
-                            ? "default"
-                            : "secondary"
+                              ? "default"
+                              : "secondary"
                         }
                       >
                         {user.role}
