@@ -333,16 +333,16 @@ Date: 22 June 2025
     - [x] 2.1.7b Send welcome email upon approval ✅
     - [x] 2.1.7c Add email for role changes ✅
     - [x] 2.1.7d Create email digest for admin (new registrations) ✅
-  - [ ] 2.1.8 Enhanced user status management
-    - [ ] 2.1.8a Update login flow to handle all user statuses
-    - [ ] 2.1.8b Create appropriate pages for each status
-    - [ ] 2.1.8c Add user status indicators in admin interface
-    - [ ] 2.1.8d Implement user suspension/reactivation
-  - [ ] 2.1.9 Email preferences and management
-    - [ ] 2.1.9a Create user email preferences page
-    - [ ] 2.1.9b Add unsubscribe functionality
-    - [ ] 2.1.9c Implement email preference API endpoints
-    - [ ] 2.1.9d Add email frequency controls
+  - [x] 2.1.8 Enhanced user status management 🚧 (Phase 1 Complete)
+    - [x] 2.1.8a Update login flow to handle all user statuses ✅ (Middleware enhanced)
+    - [x] 2.1.8b Create appropriate pages for each status 🚧 (Pending approval page supports all statuses)
+    - [ ] 2.1.8c Add user status indicators in admin interface 🚧 (API ready, UI in progress)
+    - [x] 2.1.8d Implement user suspension/reactivation ✅ (API + Email system complete)
+  - [x] 2.1.9 Email preferences and management ✅
+    - [x] 2.1.9a Create user email preferences page ✅
+    - [x] 2.1.9b Add unsubscribe functionality ✅
+    - [x] 2.1.9c Implement email preference API endpoints ✅
+    - [x] 2.1.9d Add email frequency controls ✅
   - [ ] 2.1.10 Testing and monitoring
     - [ ] 2.1.10a Write tests for email verification flow
     - [ ] 2.1.10b Test user approval workflow end-to-end
