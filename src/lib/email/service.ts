@@ -3,7 +3,6 @@ import {
   EmailOptions,
   EmailServiceConfig,
   EmailTemplateType,
-  EmailTemplateData,
 } from "./types";
 import { ResendProvider } from "./providers/resend";
 import { NodemailerProvider } from "./providers/nodemailer";
@@ -57,7 +56,7 @@ export class EmailService {
   async sendTemplatedEmail(
     templateType: EmailTemplateType,
     to: string | string[],
-    templateData: EmailTemplateData
+    templateData: any
   ): Promise<void> {
     try {
       const template = await getEmailTemplate(templateType, templateData);
@@ -95,7 +94,7 @@ export class EmailService {
    */
   async sendBulkTemplatedEmails(
     templateType: EmailTemplateType,
-    recipients: Array<{ email: string; data: EmailTemplateData }>
+    recipients: Array<{ email: string; data: any }>
   ): Promise<void> {
     try {
       const emails: EmailOptions[] = await Promise.all(

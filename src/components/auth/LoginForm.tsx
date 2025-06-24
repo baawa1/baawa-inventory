@@ -125,9 +125,7 @@ export function LoginForm({ callbackUrl }: LoginFormProps) {
   return (
     <Card className="w-full max-w-md mx-auto">
       <CardHeader className="text-center">
-        <CardTitle className="text-2xl">
-          <h1>Sign In</h1>
-        </CardTitle>
+        <CardTitle>Sign In</CardTitle>
         <CardDescription>
           Enter your email and password to access your account
         </CardDescription>

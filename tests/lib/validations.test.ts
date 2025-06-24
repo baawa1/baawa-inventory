@@ -84,6 +84,7 @@ describe("Zod Validation Schemas", () => {
         firstName: "John",
         lastName: "Doe",
         email: "john.doe@example.com",
+        password: "password123",
         phone: "+1234567890",
         role: "STAFF",
       };
@@ -286,6 +287,7 @@ describe("Zod Validation Schemas", () => {
         firstName: "John",
         lastName: "Doe",
         email: "john@example.com",
+        password: "password123",
         role: "STAFF",
       };
 

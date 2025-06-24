@@ -115,8 +115,8 @@ export function formatZodError(error: z.ZodError) {
 }
 
 // Validation middleware helper
-export function validateRequest<T>(
-  schema: z.ZodSchema<T>,
+export function validateRequest<T = any>(
+  schema: z.ZodTypeAny,
   data: unknown
 ): {
   success: boolean;
@@ -124,7 +124,7 @@ export function validateRequest<T>(
   errors?: Record<string, string>;
 } {
   try {
-    const validatedData = schema.parse(data);
+    const validatedData = schema.parse(data) as T;
     return { success: true, data: validatedData };
   } catch (error) {
     if (error instanceof z.ZodError) {

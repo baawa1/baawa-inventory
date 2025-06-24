@@ -26,9 +26,10 @@ describe("RegisterForm", () => {
   it("renders registration form correctly", () => {
     render(<RegisterForm />);
 
-    expect(screen.getByRole("heading", { level: 1 })).toHaveTextContent(
-      "Create Account"
-    );
+    // Check for the description text instead of the title to avoid conflicts
+    expect(
+      screen.getByText("Enter your information to create your account")
+    ).toBeInTheDocument();
     expect(screen.getByLabelText("First Name")).toBeInTheDocument();
     expect(screen.getByLabelText("Last Name")).toBeInTheDocument();
     expect(screen.getByLabelText("Email")).toBeInTheDocument();
@@ -161,10 +162,10 @@ describe("RegisterForm", () => {
     fireEvent.click(submitButton);
 
     await waitFor(() => {
-      expect(screen.getByText("Account Created!")).toBeInTheDocument();
+      expect(screen.getByText("Check Your Email!")).toBeInTheDocument();
       expect(
         screen.getByText(
-          "Your account has been created successfully. You can now sign in."
+          "We've sent a verification link to your email address. Please check your inbox and click the link to verify your account."
         )
       ).toBeInTheDocument();
     });

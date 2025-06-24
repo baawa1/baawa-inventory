@@ -1,4 +1,9 @@
-import { EmailTemplate, EmailTemplateType, EmailTemplateData } from "../types";
+import {
+  EmailTemplate,
+  EmailTemplateType,
+  UserSuspensionData,
+  UserReactivationData,
+} from "../types";
 
 /**
  * Base template wrapper with consistent styling
@@ -553,7 +558,7 @@ export const adminDigestTemplate = (data: {
  * User suspension notification template
  */
 export const userSuspensionTemplate = (
-  data: EmailTemplateData["userSuspension"]
+  data: UserSuspensionData
 ): EmailTemplate => {
   const content = `
     <div class="container">
@@ -593,7 +598,7 @@ export const userSuspensionTemplate = (
  * User reactivation notification template
  */
 export const userReactivationTemplate = (
-  data: EmailTemplateData["userReactivation"]
+  data: UserReactivationData
 ): EmailTemplate => {
   const content = `
     <div class="container">

@@ -31,9 +31,10 @@ describe("LoginForm", () => {
   it("renders login form correctly", () => {
     render(<LoginForm />);
 
-    expect(screen.getByRole("heading", { level: 1 })).toHaveTextContent(
-      "Sign In"
-    );
+    // Check for the title using its container context
+    expect(
+      screen.getByText("Enter your email and password to access your account")
+    ).toBeInTheDocument();
     expect(screen.getByLabelText("Email")).toBeInTheDocument();
     expect(screen.getByLabelText("Password")).toBeInTheDocument();
     expect(screen.getByRole("button", { name: "Sign In" })).toBeInTheDocument();

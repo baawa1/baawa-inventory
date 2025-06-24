@@ -138,7 +138,27 @@ jest.mock("react-hook-form", () => ({
       fn({});
     },
     reset: jest.fn(),
+    clearErrors: jest.fn(),
+    formState: { errors: {} },
+    setValue: jest.fn(),
+    watch: jest.fn(),
   }),
+  Form: ({ children }: any) => <div data-testid="form">{children}</div>,
+  FormField: ({ children }: any) => (
+    <div data-testid="form-field">{children}</div>
+  ),
+  FormItem: ({ children }: any) => (
+    <div data-testid="form-item">{children}</div>
+  ),
+  FormLabel: ({ children }: any) => (
+    <label data-testid="form-label">{children}</label>
+  ),
+  FormControl: ({ children }: any) => (
+    <div data-testid="form-control">{children}</div>
+  ),
+  FormMessage: ({ children }: any) => (
+    <div data-testid="form-message">{children}</div>
+  ),
 }));
 
 jest.mock("@hookform/resolvers/zod", () => ({
@@ -193,14 +213,18 @@ describe("UserManagement Component", () => {
     render(<UserManagement />);
 
     await waitFor(() => {
-      expect(screen.getByText("User Management")).toBeInTheDocument();
+      expect(screen.getByText("Active Users")).toBeInTheDocument();
+    });
+
+    // Wait for the fetch to complete and the table to be rendered
+    await waitFor(() => {
+      expect(screen.getByTestId("table")).toBeInTheDocument();
     });
 
     expect(
-      screen.getByText("Manage user accounts, roles, and permissions")
+      screen.getByText("Manage active user accounts, roles, and permissions")
     ).toBeInTheDocument();
     expect(screen.getByText("Add New User")).toBeInTheDocument();
-    expect(screen.getByTestId("table")).toBeInTheDocument();
   });
 
   it("fetches and displays users for admin", async () => {
@@ -254,7 +278,7 @@ describe("UserManagement Component", () => {
     render(<UserManagement />);
 
     await waitFor(() => {
-      expect(screen.getByText("Network error")).toBeInTheDocument();
+      expect(screen.getAllByText("Network error")).toHaveLength(2);
     });
   });
 
