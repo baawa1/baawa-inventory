@@ -10,6 +10,7 @@ import {
 } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { IconTrendingUp, IconTrendingDown } from "@tabler/icons-react";
+import { formatCurrency } from "@/lib/utils";
 
 interface StockData {
   month: string;
@@ -125,7 +126,7 @@ export function InventoryCharts() {
                     </Badge>
                   </div>
                   <div className="text-sm text-gray-500">
-                    ${category.revenue.toLocaleString()} revenue
+                    {formatCurrency(category.revenue)} revenue
                   </div>
                   <div className="mt-2 h-2 bg-primary/20 rounded overflow-hidden">
                     <div

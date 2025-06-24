@@ -30,13 +30,14 @@ export async function GET(request: NextRequest) {
       limit = 10,
       search,
       category,
+      brand,
       status,
       supplierId,
       minPrice,
       maxPrice,
       lowStock,
       outOfStock,
-      sortBy = "createdAt",
+      sortBy = "created_at",
       sortOrder = "desc",
     } = validatedData;
 
@@ -49,10 +50,10 @@ export async function GET(request: NextRequest) {
       .select(
         `
         *,
-        supplier:suppliers(id, name)
+        supplier:suppliers(id, name, contact_person)
       `
       )
-      .eq("isArchived", false);
+      .eq("is_archived", false);
 
     // Apply filters
     if (search) {
@@ -65,36 +66,104 @@ export async function GET(request: NextRequest) {
       query = query.eq("category", category);
     }
 
+    if (brand) {
+      query = query.eq("brand", brand);
+    }
+
     if (status) {
       query = query.eq("status", status);
     }
 
     if (supplierId) {
-      query = query.eq("supplierId", supplierId);
+      query = query.eq("supplier_id", supplierId);
     }
 
     if (minPrice !== undefined) {
-      query = query.gte("sellingPrice", minPrice);
+      query = query.gte("price", minPrice);
     }
 
     if (maxPrice !== undefined) {
-      query = query.lte("sellingPrice", maxPrice);
-    }
-
-    if (lowStock) {
-      query = query.filter("currentStock", "lte", "minimumStock");
+      query = query.lte("price", maxPrice);
     }
 
     if (outOfStock) {
-      query = query.eq("currentStock", 0);
+      query = query.eq("stock", 0);
     }
 
-    // Apply sorting and pagination
+    // For low stock filter, we need to handle it differently
+    // Since we can't compare columns directly, we'll get all products and filter
+    if (lowStock) {
+      // Don't apply pagination yet - we need to filter first
+      const { data: allProducts, error: queryError } = await query;
+
+      if (queryError) {
+        console.error(
+          "Error fetching products for low stock filter:",
+          queryError
+        );
+        return NextResponse.json(
+          { error: "Failed to fetch products" },
+          { status: 500 }
+        );
+      }
+
+      // Filter for low stock products
+      const lowStockProducts = (allProducts || []).filter(
+        (product: any) => product.stock <= product.min_stock
+      );
+
+      // Apply sorting
+      const sortColumn =
+        sortBy === "price"
+          ? "price"
+          : sortBy === "stock"
+            ? "stock"
+            : sortBy === "created_at"
+              ? "created_at"
+              : "created_at";
+
+      lowStockProducts.sort((a: any, b: any) => {
+        const aVal = a[sortColumn];
+        const bVal = b[sortColumn];
+
+        if (sortOrder === "asc") {
+          return aVal < bVal ? -1 : aVal > bVal ? 1 : 0;
+        } else {
+          return aVal > bVal ? -1 : aVal < bVal ? 1 : 0;
+        }
+      });
+
+      // Apply pagination
+      const startIndex = offset;
+      const endIndex = offset + limit;
+      const paginatedProducts = lowStockProducts.slice(startIndex, endIndex);
+
+      return NextResponse.json({
+        data: paginatedProducts,
+        pagination: {
+          page,
+          limit,
+          total: lowStockProducts.length,
+          totalPages: Math.ceil(lowStockProducts.length / limit),
+        },
+      });
+    }
+
+    // Apply sorting and pagination for non-low-stock queries
+    const sortColumn =
+      sortBy === "price"
+        ? "price"
+        : sortBy === "stock"
+          ? "stock"
+          : sortBy === "created_at"
+            ? "created_at"
+            : sortBy;
+
     query = query
-      .order(sortBy, { ascending: sortOrder === "asc" })
+      .order(sortColumn, { ascending: sortOrder === "asc" })
       .range(offset, offset + limit - 1);
 
-    const { data: products, error, count } = await query;
+    const { data: products, error } = await query;
 
     if (error) {
       console.error("Error fetching products:", error);
@@ -105,10 +174,40 @@ export async function GET(request: NextRequest) {
     }
 
     // Get total count for pagination
-    const { count: totalCount } = await supabase
+    let countQuery = supabase
       .from("products")
       .select("*", { count: "exact", head: true })
-      .eq("isArchived", false);
+      .eq("is_archived", false);
+
+    // Apply the same filters to count query
+    if (search) {
+      countQuery = countQuery.or(
+        `name.ilike.%${search}%,sku.ilike.%${search}%,barcode.ilike.%${search}%`
+      );
+    }
+    if (category) {
+      countQuery = countQuery.eq("category", category);
+    }
+    if (brand) {
+      countQuery = countQuery.eq("brand", brand);
+    }
+    if (status) {
+      countQuery = countQuery.eq("status", status);
+    }
+    if (supplierId) {
+      countQuery = countQuery.eq("supplier_id", supplierId);
+    }
+    if (minPrice !== undefined) {
+      countQuery = countQuery.gte("price", minPrice);
+    }
+    if (maxPrice !== undefined) {
+      countQuery = countQuery.lte("price", maxPrice);
+    }
+    if (outOfStock) {
+      countQuery = countQuery.eq("stock", 0);
+    }
+
+    const { count: totalCount } = await countQuery;
 
     return NextResponse.json({
       data: products,

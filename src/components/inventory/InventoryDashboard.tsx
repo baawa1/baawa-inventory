@@ -1,10 +1,10 @@
 "use client";
 
 import { SiteHeader } from "@/components/site-header";
-import { InventoryMetrics } from "./InventoryMetrics";
-import { InventoryCharts } from "./InventoryCharts";
-import { RecentActivity } from "./RecentActivity";
-import { QuickActions } from "./QuickActions";
+import { InventoryMetrics } from "@/components/inventory/InventoryMetrics";
+import { InventoryCharts } from "@/components/inventory/InventoryCharts";
+import { RecentActivity } from "@/components/inventory/RecentActivity";
+import { QuickActions } from "@/components/inventory/QuickActions";
 
 interface User {
   id: string;

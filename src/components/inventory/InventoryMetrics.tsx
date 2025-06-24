@@ -18,6 +18,7 @@ import {
   CardHeader,
   CardTitle,
 } from "@/components/ui/card";
+import { formatCurrency } from "@/lib/utils";
 
 interface InventoryStats {
   totalProducts: number;
@@ -132,10 +133,8 @@ export function InventoryMetrics() {
         <CardHeader>
           <CardDescription>Total Stock Value</CardDescription>
           <CardTitle className="text-2xl font-semibold tabular-nums @[250px]/card:text-3xl flex items-center gap-2">
-            <IconCurrencyDollar className="h-6 w-6 text-green-600" />$
-            {stats.totalStockValue.toLocaleString(undefined, {
-              minimumFractionDigits: 2,
-            })}
+            <IconCurrencyDollar className="h-6 w-6 text-green-600" />
+            {formatCurrency(stats.totalStockValue)}
           </CardTitle>
           <CardAction>
             <Badge variant="outline">

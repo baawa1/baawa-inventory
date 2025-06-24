@@ -35,7 +35,7 @@ export const createProductSchema = z.object({
   maximumStock: stockSchema.optional().nullable(),
   currentStock: stockSchema.optional().default(0),
   supplierId: idSchema,
-  status: productStatusSchema.default("ACTIVE"),
+  status: productStatusSchema.default("active"),
   imageUrl: z.string().url("Invalid image URL").optional().nullable(),
   notes: z
     .string()
@@ -54,6 +54,7 @@ export const updateProductSchema = createProductSchema
 // Product query parameters schema
 export const productQuerySchema = paginationSchema.merge(searchSchema).extend({
   category: z.string().optional(),
+  brand: z.string().optional(),
   status: productStatusSchema.optional(),
   supplierId: z.coerce.number().int().positive().optional(),
   minPrice: z.coerce.number().positive().optional(),
