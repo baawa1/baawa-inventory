@@ -1,6 +1,6 @@
 import { redirect } from "next/navigation";
 import { getServerSession } from "@/lib/auth-helpers";
-import { UserManagement } from "@/components/admin/UserManagement";
+import { AdminDashboard } from "@/components/admin/AdminDashboard";
 
 export default async function AdminPage() {
   const session = await getServerSession();
@@ -21,7 +21,7 @@ export default async function AdminPage() {
 
   return (
     <div className="container mx-auto py-6">
-      <UserManagement />
+      <AdminDashboard />
     </div>
   );
 }

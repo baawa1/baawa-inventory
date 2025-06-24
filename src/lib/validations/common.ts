@@ -22,6 +22,14 @@ export const dateRangeSchema = z.object({
 // Enum schemas based on Prisma schema
 export const userRoleSchema = z.enum(["ADMIN", "MANAGER", "STAFF"]);
 
+export const userStatusSchema = z.enum([
+  "PENDING",
+  "VERIFIED",
+  "APPROVED",
+  "REJECTED",
+  "SUSPENDED",
+]);
+
 export const productStatusSchema = z.enum([
   "ACTIVE",
   "INACTIVE",
@@ -96,11 +104,14 @@ export const nameSchema = z
 
 // Error handling utility
 export function formatZodError(error: z.ZodError) {
-  return error.errors.reduce((acc, err) => {
-    const path = err.path.join(".");
-    acc[path] = err.message;
-    return acc;
-  }, {} as Record<string, string>);
+  return error.errors.reduce(
+    (acc, err) => {
+      const path = err.path.join(".");
+      acc[path] = err.message;
+      return acc;
+    },
+    {} as Record<string, string>
+  );
 }
 
 // Validation middleware helper

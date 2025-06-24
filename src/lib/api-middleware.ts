@@ -12,7 +12,7 @@ export interface AuthenticatedRequest extends NextRequest {
   };
 }
 
-export async function withAuth(
+export function withAuth(
   handler: (req: AuthenticatedRequest) => Promise<NextResponse>
 ) {
   return async (req: NextRequest) => {
@@ -88,20 +88,19 @@ export function withAuthAndRole(
   return function (
     handler: (req: AuthenticatedRequest) => Promise<NextResponse>
   ) {
-    let wrappedHandler = withAuth(handler);
+    let currentHandler = handler;
 
-    if (requiredRole) {
-      wrappedHandler = withRole(requiredRole)((req: AuthenticatedRequest) =>
-        handler(req)
-      );
-    }
-
+    // Apply permission check if required
     if (requiredPermission) {
-      wrappedHandler = withPermission(requiredPermission)(
-        (req: AuthenticatedRequest) => handler(req)
-      );
+      currentHandler = withPermission(requiredPermission)(currentHandler);
     }
 
-    return wrappedHandler;
+    // Apply role check if required
+    if (requiredRole) {
+      currentHandler = withRole(requiredRole)(currentHandler);
+    }
+
+    // Apply auth check (always required)
+    return withAuth(currentHandler);
   };
 }

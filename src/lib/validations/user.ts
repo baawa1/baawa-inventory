@@ -4,6 +4,7 @@ import {
   paginationSchema,
   searchSchema,
   userRoleSchema,
+  userStatusSchema,
   emailSchema,
   phoneSchema,
   nameSchema,
@@ -41,6 +42,7 @@ export const updateUserSchema = createUserSchema
 // User query parameters schema
 export const userQuerySchema = paginationSchema.merge(searchSchema).extend({
   role: userRoleSchema.optional(),
+  status: userStatusSchema.optional(),
   isActive: z.coerce.boolean().optional(),
 });
 

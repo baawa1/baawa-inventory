@@ -1,4 +1,4 @@
-import { NextRequest, NextResponse } from "next/server";
+import { NextResponse } from "next/server";
 import { createServerSupabaseClient } from "@/lib/supabase";
 import bcrypt from "bcryptjs";
 import {
@@ -14,15 +14,28 @@ export const GET = withPermission("canManageUsers")(async function (
   request: AuthenticatedRequest
 ) {
   try {
+    console.log("=== USERS API DEBUG ===");
+    console.log("Request URL:", request.url);
+
     const supabase = await createServerSupabaseClient();
+    console.log("Supabase client created successfully");
+
     const { searchParams } = new URL(request.url);
+    console.log("Search params:", Object.fromEntries(searchParams.entries()));
 
     // Convert search params to object for validation
     const queryParams = Object.fromEntries(searchParams.entries());
+    console.log("Query params object:", queryParams);
+    console.log("Query params keys:", Object.keys(queryParams));
+    console.log("Query params values:", Object.values(queryParams));
 
-    // Validate query parameters
+    // Validate query parameters with detailed error logging
     const validation = validateRequest(userQuerySchema, queryParams);
+    console.log("Validation result:", validation);
+
     if (!validation.success) {
+      console.log("Validation failed with errors:", validation.errors);
+      console.log("Query params that failed:", queryParams);
       return NextResponse.json(
         { error: "Invalid query parameters", details: validation.errors },
         { status: 400 }
@@ -30,11 +43,13 @@ export const GET = withPermission("canManageUsers")(async function (
     }
 
     const validatedData = validation.data!;
+    console.log("Validated data:", validatedData);
     const {
       page = 1,
       limit = 10,
       search,
       role,
+      status,
       isActive,
       sortBy = "createdAt",
       sortOrder = "desc",
@@ -47,7 +62,7 @@ export const GET = withPermission("canManageUsers")(async function (
     let query = supabase
       .from("users")
       .select(
-        "id, first_name, last_name, email, role, is_active, created_at, last_login"
+        "id, first_name, last_name, email, role, is_active, user_status, email_verified, created_at, last_login, approved_by, approved_at, rejection_reason"
       );
 
     // Apply filters
@@ -61,6 +76,10 @@ export const GET = withPermission("canManageUsers")(async function (
       query = query.eq("role", role);
     }
 
+    if (status) {
+      query = query.eq("user_status", status);
+    }
+
     if (isActive !== undefined) {
       query = query.eq("is_active", isActive);
     }
@@ -72,12 +91,26 @@ export const GET = withPermission("canManageUsers")(async function (
       })
       .range(offset, offset + limit - 1);
 
-    const { data: users, error, count } = await query;
+    const { data: users, error } = await query;
+
+    console.log("Database query result:");
+    console.log("- Error:", error);
+    console.log("- Users count:", users?.length || 0);
+    console.log(
+      "- First user sample:",
+      users?.[0]
+        ? {
+            id: users[0].id,
+            email: users[0].email,
+            role: users[0].role,
+          }
+        : "No users"
+    );
 
     if (error) {
       console.error("Error fetching users:", error);
       return NextResponse.json(
-        { error: "Failed to fetch users" },
+        { error: "Failed to fetch users", details: error.message },
         { status: 500 }
       );
     }
@@ -91,8 +124,13 @@ export const GET = withPermission("canManageUsers")(async function (
         email: user.email,
         role: user.role,
         isActive: user.is_active,
+        userStatus: user.user_status,
+        emailVerified: user.email_verified,
         createdAt: user.created_at,
         lastLogin: user.last_login,
+        approvedBy: user.approved_by,
+        approvedAt: user.approved_at,
+        rejectionReason: user.rejection_reason,
       })) || [];
 
     return NextResponse.json(transformedUsers);

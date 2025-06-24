@@ -119,6 +119,14 @@ Date: 22 June 2025
 - `src/app/api/auth/register/route.ts` - Updated registration API to send admin notifications for new user registrations ✅
 - `tests/lib/admin-notifications.test.ts` - Admin notification system tests (7 tests) ✅
 - `scripts/test-registration-with-admin-notification.js` - Test script for registration flow with admin notifications ✅
+- `src/app/api/auth/refresh-session/route.ts` - Session refresh API endpoint for manual status updates ✅
+- `src/lib/auth.ts` - Enhanced JWT callback with automatic database refresh on session.update() calls ✅
+- `src/app/pending-approval/page.tsx` - Fixed React hooks violations and added automatic session refresh logic ✅
+- `src/app/verify-email/page.tsx` - Added session storage flags to trigger automatic refresh after verification ✅
+- `src/types/next-auth.d.ts` - Extended NextAuth session types with emailVerified field ✅
+- `scripts/manual-session-test-guide.js` - Comprehensive manual test guide for session refresh functionality ✅
+- `SESSION_REFRESH_IMPLEMENTATION.md` - Complete implementation documentation (moved to commit-messages/) ✅
+- `commit-messages/` - Organized all commit messages and implementation documentation into dedicated folder ✅
 
 ### Remaining Files (User Approval Workflow):
 
@@ -299,11 +307,14 @@ Date: 22 June 2025
     - [x] 2.1.4b Create email verification token generation
     - [x] 2.1.4c Build email verification page (/verify-email)
     - [x] 2.1.4d Add verification status checking to login
-  - [ ] 2.1.5 Create user approval workflow
+  - [x] 2.1.5 Create user approval workflow
     - [x] 2.1.5a Prevent dashboard access for unverified/unapproved users
     - [x] 2.1.5b Update middleware to check user status
     - [x] 2.1.5c Create pending approval page for users
     - [x] 2.1.5d Add admin notification for new user registrations
+    - [x] 2.1.5e Implement automatic session refresh after email verification
+    - [x] 2.1.5f Fix React hooks violations in pending approval page
+    - [x] 2.1.5g Enhanced JWT callback with database refresh capability
   - [ ] 2.1.6 Build admin dashboard for user management
     - [ ] 2.1.6a Create pending users list for admin review
     - [ ] 2.1.6b Add approve/reject actions with role assignment
