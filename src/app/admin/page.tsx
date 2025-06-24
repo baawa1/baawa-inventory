@@ -2,7 +2,12 @@ import { redirect } from "next/navigation";
 import { getServerSession } from "@/lib/auth-helpers";
 import { AdminDashboard } from "@/components/admin/AdminDashboard";
 
-export default async function AdminPage() {
+export const metadata = {
+  title: "User Management - BaaWA Inventory",
+  description: "Manage users, pending approvals, and account settings",
+};
+
+export default async function UserManagementPage() {
   const session = await getServerSession();
 
   // Redirect if not authenticated

@@ -66,12 +66,22 @@ const userFormSchema = z.object({
   firstName: z.string().min(2, "First name must be at least 2 characters"),
   lastName: z.string().min(2, "Last name must be at least 2 characters"),
   email: z.string().email("Please enter a valid email address"),
-  password: z
-    .string()
-    .min(6, "Password must be at least 6 characters")
-    .optional(),
+  password: z.string().optional(),
   role: z.enum(["ADMIN", "MANAGER", "STAFF"]),
 });
+
+// Create a dynamic schema for validation based on editing state
+const createUserFormSchema = (isEditing: boolean) => {
+  return z.object({
+    firstName: z.string().min(2, "First name must be at least 2 characters"),
+    lastName: z.string().min(2, "Last name must be at least 2 characters"),
+    email: z.string().email("Please enter a valid email address"),
+    password: isEditing
+      ? z.string().optional()
+      : z.string().min(6, "Password must be at least 6 characters"),
+    role: z.enum(["ADMIN", "MANAGER", "STAFF"]),
+  });
+};
 
 type UserFormData = z.infer<typeof userFormSchema>;
 
@@ -85,8 +95,8 @@ export function UserManagement() {
   const [editingUser, setEditingUser] = useState<User | null>(null);
   const [submitting, setSubmitting] = useState(false);
 
+  // Create form with dynamic resolver
   const form = useForm<UserFormData>({
-    resolver: zodResolver(userFormSchema),
     defaultValues: {
       firstName: "",
       lastName: "",
@@ -95,6 +105,13 @@ export function UserManagement() {
       role: "STAFF",
     },
   });
+
+  // Update form resolver when editing state changes
+  useEffect(() => {
+    const schema = createUserFormSchema(!!editingUser);
+    form.clearErrors();
+    // We'll handle validation manually in onSubmit
+  }, [editingUser, form]);
 
   // Check if user is admin
   useEffect(() => {
@@ -110,12 +127,20 @@ export function UserManagement() {
   const fetchUsers = async () => {
     try {
       setLoading(true);
-      const response = await fetch("/api/users", {
+      setError(null);
+      const response = await fetch("/api/users?isActive=true", {
         credentials: "include",
       });
 
       if (!response.ok) {
-        throw new Error("Failed to fetch users");
+        let errorMessage = "Failed to fetch users";
+        try {
+          const errorData = await response.json();
+          errorMessage = errorData.error || errorMessage;
+        } catch (parseError) {
+          console.error("Failed to parse error response:", parseError);
+        }
+        throw new Error(errorMessage);
       }
 
       const data = await response.json();
@@ -141,13 +166,31 @@ export function UserManagement() {
     setError(null);
 
     try {
+      // Validate with dynamic schema
+      const schema = createUserFormSchema(!!editingUser);
+      const validationResult = schema.safeParse(data);
+
+      if (!validationResult.success) {
+        const firstError = validationResult.error.errors[0];
+        setError(firstError.message);
+        setSubmitting(false);
+        return;
+      }
+
       const url = editingUser ? `/api/users/${editingUser.id}` : "/api/users";
       const method = editingUser ? "PUT" : "POST";
 
-      // Don't send password if editing and it's empty
-      const payload = { ...data };
-      if (editingUser && !data.password) {
-        delete payload.password;
+      // Prepare payload
+      const payload: any = {
+        firstName: data.firstName,
+        lastName: data.lastName,
+        email: data.email,
+        role: data.role,
+      };
+
+      // Only add password if it's provided and not empty
+      if (data.password && data.password.trim() !== "") {
+        payload.password = data.password;
       }
 
       const response = await fetch(url, {
@@ -160,8 +203,24 @@ export function UserManagement() {
       });
 
       if (!response.ok) {
-        const errorData = await response.json();
-        throw new Error(errorData.message || "Failed to save user");
+        let errorMessage = "Failed to save user";
+        try {
+          const errorData = await response.json();
+          errorMessage = errorData.error || errorMessage;
+        } catch (parseError) {
+          // If we can't parse the error response, use the default message
+          console.error("Failed to parse error response:", parseError);
+        }
+        throw new Error(errorMessage);
+      }
+
+      // Try to parse success response
+      let responseData;
+      try {
+        responseData = await response.json();
+      } catch (parseError) {
+        console.error("Failed to parse success response:", parseError);
+        // If we can't parse the response but the request was successful, continue
       }
 
       // Refresh users list
@@ -212,6 +271,7 @@ export function UserManagement() {
   // Handle edit user
   const handleEditUser = (user: User) => {
     setEditingUser(user);
+    // Update the form resolver for editing mode (password optional)
     form.reset({
       firstName: user.firstName,
       lastName: user.lastName,
@@ -225,6 +285,7 @@ export function UserManagement() {
   // Handle new user
   const handleNewUser = () => {
     setEditingUser(null);
+    // Update the form resolver for creation mode (password required)
     form.reset({
       firstName: "",
       lastName: "",
@@ -247,9 +308,9 @@ export function UserManagement() {
     <div className="space-y-6">
       <div className="flex items-center justify-between">
         <div>
-          <h1 className="text-3xl font-bold">User Management</h1>
+          <h2 className="text-2xl font-bold">Active Users</h2>
           <p className="text-muted-foreground">
-            Manage user accounts, roles, and permissions
+            Manage active user accounts, roles, and permissions
           </p>
         </div>
         <Dialog open={isDialogOpen} onOpenChange={setIsDialogOpen}>
@@ -334,7 +395,7 @@ export function UserManagement() {
                     <FormItem>
                       <FormLabel>
                         Password{" "}
-                        {editingUser && "(leave empty to keep current)"}
+                        {editingUser ? "(leave empty to keep current)" : "*"}
                       </FormLabel>
                       <FormControl>
                         <Input
@@ -347,6 +408,11 @@ export function UserManagement() {
                           {...field}
                         />
                       </FormControl>
+                      {!editingUser && (
+                        <p className="text-sm text-muted-foreground">
+                          Password must be at least 6 characters
+                        </p>
+                      )}
                       <FormMessage />
                     </FormItem>
                   )}
