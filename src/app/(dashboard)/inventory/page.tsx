@@ -5,11 +5,11 @@ import { InventoryDashboard } from "@/components/inventory/InventoryDashboard";
 import { SidebarInset, SidebarProvider } from "@/components/ui/sidebar";
 
 export const metadata = {
-  title: "Dashboard - BaaWA Inventory POS",
-  description: "Inventory management and POS system dashboard",
+  title: "Inventory Management - BaaWA POS",
+  description: "Manage your inventory, products, suppliers, and stock levels",
 };
 
-export default async function DashboardPage() {
+export default async function InventoryPage() {
   const session = await getServerSession();
 
   // Redirect if not authenticated
@@ -20,6 +20,11 @@ export default async function DashboardPage() {
   // Check user status
   if (session.user.status !== "APPROVED") {
     redirect("/pending-approval");
+  }
+
+  // Check role permissions - only staff and above can access inventory
+  if (!["ADMIN", "MANAGER", "STAFF"].includes(session.user.role)) {
+    redirect("/unauthorized");
   }
 
   return (
