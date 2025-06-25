@@ -33,19 +33,11 @@ export async function GET(request: NextRequest, { params }: RouteParams) {
       .select(
         `
         *,
-        supplier:suppliers(id, name, contactName, email, phone),
-        variants:product_variants(*),
-        stockAdjustments:stock_adjustments(
-          id,
-          type,
-          quantity,
-          reason,
-          createdAt,
-          user:users(id, name)
-        )
+        supplier:suppliers(id, name, contact_person, email, phone)
       `
       )
       .eq("id", id)
+      .eq("is_archived", false)
       .single();
 
     if (error) {
@@ -130,9 +122,41 @@ export async function PUT(request: NextRequest, { params }: RouteParams) {
     }
 
     // Update the product
+    const dbUpdateData: any = {};
+
+    // Map form field names to database field names
+    if (updateData.name !== undefined) dbUpdateData.name = updateData.name;
+    if (updateData.sku !== undefined) dbUpdateData.sku = updateData.sku;
+    if (updateData.barcode !== undefined)
+      dbUpdateData.barcode = updateData.barcode;
+    if (updateData.description !== undefined)
+      dbUpdateData.description = updateData.description;
+    if (updateData.category !== undefined)
+      dbUpdateData.category = updateData.category;
+    if (updateData.brand !== undefined) dbUpdateData.brand = updateData.brand;
+    if (updateData.purchasePrice !== undefined)
+      dbUpdateData.cost = updateData.purchasePrice;
+    if (updateData.sellingPrice !== undefined)
+      dbUpdateData.price = updateData.sellingPrice;
+    if (updateData.minimumStock !== undefined)
+      dbUpdateData.min_stock = updateData.minimumStock;
+    if (updateData.maximumStock !== undefined)
+      dbUpdateData.max_stock = updateData.maximumStock;
+    if (updateData.currentStock !== undefined)
+      dbUpdateData.stock = updateData.currentStock;
+    if (updateData.supplierId !== undefined)
+      dbUpdateData.supplier_id = updateData.supplierId;
+    if (updateData.status !== undefined)
+      dbUpdateData.status = updateData.status;
+    if (updateData.imageUrl !== undefined) {
+      dbUpdateData.images = updateData.imageUrl
+        ? [{ url: updateData.imageUrl, isPrimary: true }]
+        : null;
+    }
+
     const { data: product, error } = await supabase
       .from("products")
-      .update(updateData)
+      .update(dbUpdateData)
       .eq("id", id)
       .select(
         `
@@ -230,9 +254,9 @@ export async function DELETE(request: NextRequest, { params }: RouteParams) {
       // Soft delete (archive)
       const { data: product, error } = await supabase
         .from("products")
-        .update({ isArchived: true })
+        .update({ is_archived: true })
         .eq("id", productId)
-        .select("id, name, isArchived")
+        .select("id, name, is_archived")
         .single();
 
       if (error) {

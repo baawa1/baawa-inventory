@@ -4,7 +4,6 @@ import { useState, useEffect } from "react";
 import { useRouter } from "next/navigation";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { useForm } from "react-hook-form";
-import { PageHeader } from "@/components/ui/page-header";
 import { Button } from "@/components/ui/button";
 import {
   Card,
@@ -35,11 +34,11 @@ import { Badge } from "@/components/ui/badge";
 import { AlertCircle, ArrowLeft, Loader2 } from "lucide-react";
 import { Alert, AlertDescription } from "@/components/ui/alert";
 import { formatCurrency } from "@/lib/utils";
-import { createProductSchema } from "@/lib/validations/product";
+import { updateProductSchema } from "@/lib/validations/product";
 import { toast } from "sonner";
 import type { z } from "zod";
 
-type CreateProductData = z.infer<typeof createProductSchema>;
+type UpdateProductData = z.infer<typeof updateProductSchema>;
 
 interface Category {
   value: string;
@@ -56,7 +55,29 @@ interface Supplier {
   name: string;
 }
 
-export default function AddProductForm() {
+interface Product {
+  id: number;
+  name: string;
+  description: string | null;
+  sku: string;
+  barcode: string | null;
+  category: string;
+  brand: string | null;
+  cost: number;
+  price: number;
+  stock: number;
+  min_stock: number;
+  max_stock: number | null;
+  supplier_id: number;
+  status: "active" | "inactive" | "discontinued";
+  images: Array<{ url: string; isPrimary: boolean }> | null;
+}
+
+interface EditProductFormProps {
+  productId: number;
+}
+
+export default function EditProductForm({ productId }: EditProductFormProps) {
   const router = useRouter();
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [submitError, setSubmitError] = useState<string | null>(null);
@@ -64,9 +85,10 @@ export default function AddProductForm() {
   const [categories, setCategories] = useState<Category[]>([]);
   const [brands, setBrands] = useState<Brand[]>([]);
   const [suppliers, setSuppliers] = useState<Supplier[]>([]);
+  const [product, setProduct] = useState<Product | null>(null);
 
   const form = useForm({
-    resolver: zodResolver(createProductSchema),
+    resolver: zodResolver(updateProductSchema),
     defaultValues: {
       name: "",
       description: "",
@@ -74,31 +96,60 @@ export default function AddProductForm() {
       barcode: "",
       category: "",
       brand: "",
-      supplierId: undefined, // Don't set a default value until suppliers load
+      supplierId: undefined as number | undefined,
       purchasePrice: 0,
       sellingPrice: 0,
       currentStock: 0,
       minimumStock: 0,
-      maximumStock: 100,
+      maximumStock: undefined as number | undefined,
       status: "active" as const,
       imageUrl: "",
-      notes: "",
     },
   }) as any; // Type assertion to work around complex React Hook Form + Zod integration issues
 
-  // Load dynamic data on component mount
+  // Load product data and dynamic data on component mount
   useEffect(() => {
-    const loadFormData = async () => {
+    const loadData = async () => {
       try {
         setLoading(true);
 
-        // Load categories, brands, and suppliers in parallel
-        const [categoriesRes, brandsRes, suppliersRes] = await Promise.all([
-          fetch("/api/categories"),
-          fetch("/api/brands"),
-          fetch("/api/suppliers"),
-        ]);
+        // Load product data and form data in parallel
+        const [productRes, categoriesRes, brandsRes, suppliersRes] =
+          await Promise.all([
+            fetch(`/api/products/${productId}`),
+            fetch("/api/categories"),
+            fetch("/api/brands"),
+            fetch("/api/suppliers"),
+          ]);
 
+        // Handle product data
+        if (productRes.ok) {
+          const productData = await productRes.json();
+          const productInfo = productData.data as Product;
+          setProduct(productInfo);
+
+          // Populate form with existing data
+          form.reset({
+            name: productInfo.name,
+            description: productInfo.description || "",
+            sku: productInfo.sku,
+            barcode: productInfo.barcode || "",
+            category: productInfo.category,
+            brand: productInfo.brand || "",
+            supplierId: productInfo.supplier_id,
+            purchasePrice: Number(productInfo.cost),
+            sellingPrice: Number(productInfo.price),
+            currentStock: productInfo.stock,
+            minimumStock: productInfo.min_stock,
+            maximumStock: productInfo.max_stock || undefined,
+            status: productInfo.status,
+            imageUrl: productInfo.images?.[0]?.url || "",
+          });
+        } else {
+          throw new Error("Product not found");
+        }
+
+        // Handle categories
         if (categoriesRes.ok) {
           const categoriesData = await categoriesRes.json();
           const categoryOptions = (categoriesData.categories || []).map(
@@ -110,6 +161,7 @@ export default function AddProductForm() {
           setCategories(categoryOptions);
         }
 
+        // Handle brands
         if (brandsRes.ok) {
           const brandsData = await brandsRes.json();
           const brandOptions = (brandsData.brands || []).map(
@@ -121,18 +173,10 @@ export default function AddProductForm() {
           setBrands(brandOptions);
         }
 
+        // Handle suppliers
         if (suppliersRes.ok) {
           const suppliersData = await suppliersRes.json();
-          console.log("Suppliers API response:", suppliersData);
           setSuppliers(suppliersData.data || []);
-
-          // Set first supplier as default if no suppliers are selected
-          if (
-            (suppliersData.data || []).length > 0 &&
-            !form.getValues("supplierId")
-          ) {
-            form.setValue("supplierId", suppliersData.data[0].id);
-          }
         } else {
           console.error(
             "Failed to fetch suppliers:",
@@ -142,17 +186,18 @@ export default function AddProductForm() {
           toast.error("Failed to load suppliers");
         }
       } catch (error) {
-        console.error("Error loading form data:", error);
-        toast.error("Failed to load form data. Please refresh the page.");
+        console.error("Error loading data:", error);
+        toast.error("Failed to load product data. Please try again.");
+        router.push("/inventory/products");
       } finally {
         setLoading(false);
       }
     };
 
-    loadFormData();
-  }, []);
+    loadData();
+  }, [productId, form, router]);
 
-  const onSubmit = async (data: CreateProductData) => {
+  const onSubmit = async (data: UpdateProductData) => {
     setIsSubmitting(true);
     setSubmitError(null);
 
@@ -164,12 +209,11 @@ export default function AddProductForm() {
         barcode: data.barcode?.trim() || null,
         brand: data.brand?.trim() || null,
         imageUrl: data.imageUrl?.trim() || null,
-        notes: data.notes?.trim() || null,
         maximumStock: data.maximumStock || null,
       };
 
-      const response = await fetch("/api/products", {
-        method: "POST",
+      const response = await fetch(`/api/products/${productId}`, {
+        method: "PUT",
         headers: {
           "Content-Type": "application/json",
         },
@@ -178,19 +222,19 @@ export default function AddProductForm() {
 
       if (!response.ok) {
         const errorData = await response.json();
-        throw new Error(errorData.message || "Failed to create product");
+        throw new Error(errorData.message || "Failed to update product");
       }
 
       const result = await response.json();
-      console.log("Product created successfully:", result);
+      console.log("Product updated successfully:", result);
 
       // Show success notification
-      toast.success("Product created successfully!");
+      toast.success("Product updated successfully!");
 
       // Redirect to products list
       router.push("/inventory/products");
     } catch (error) {
-      console.error("Error creating product:", error);
+      console.error("Error updating product:", error);
       const errorMessage =
         error instanceof Error ? error.message : "An unexpected error occurred";
       setSubmitError(errorMessage);
@@ -212,17 +256,14 @@ export default function AddProductForm() {
             <ArrowLeft className="mr-2 h-4 w-4" />
             Back to Products
           </Button>
-          <h1 className="text-3xl font-bold tracking-tight">Add New Product</h1>
-          <p className="text-muted-foreground">
-            Fill in the product details below to add it to your inventory.
-          </p>
+          <h1 className="text-3xl font-bold tracking-tight">Edit Product</h1>
+          <p className="text-muted-foreground">Loading product data...</p>
         </div>
 
         <Card>
           <CardContent className="p-6">
             <div className="flex items-center justify-center py-8">
-              <Loader2 className="h-6 w-6 animate-spin mr-2" />
-              <span>Loading form data...</span>
+              <Loader2 className="h-8 w-8 animate-spin" />
             </div>
           </CardContent>
         </Card>
@@ -237,9 +278,9 @@ export default function AddProductForm() {
           <ArrowLeft className="mr-2 h-4 w-4" />
           Back to Products
         </Button>
-        <h1 className="text-3xl font-bold tracking-tight">Add New Product</h1>
+        <h1 className="text-3xl font-bold tracking-tight">Edit Product</h1>
         <p className="text-muted-foreground">
-          Fill in the product details below to add it to your inventory.
+          Update the product details below.
         </p>
       </div>
 
@@ -254,7 +295,7 @@ export default function AddProductForm() {
         <CardHeader>
           <CardTitle>Product Information</CardTitle>
           <CardDescription>
-            Enter the basic details for your new product.
+            Update the details for {product?.name}.
           </CardDescription>
         </CardHeader>
         <CardContent className="space-y-6">
@@ -304,7 +345,7 @@ export default function AddProductForm() {
                         <FormLabel>Category *</FormLabel>
                         <Select
                           onValueChange={field.onChange}
-                          defaultValue={field.value}
+                          value={field.value}
                         >
                           <FormControl>
                             <SelectTrigger>
@@ -334,7 +375,7 @@ export default function AddProductForm() {
                         <FormLabel>Brand</FormLabel>
                         <Select
                           onValueChange={field.onChange}
-                          defaultValue={field.value}
+                          value={field.value || ""}
                         >
                           <FormControl>
                             <SelectTrigger>
@@ -637,7 +678,7 @@ export default function AddProductForm() {
                         <FormLabel>Status</FormLabel>
                         <Select
                           onValueChange={field.onChange}
-                          defaultValue={field.value}
+                          value={field.value}
                         >
                           <FormControl>
                             <SelectTrigger>
@@ -700,29 +741,6 @@ export default function AddProductForm() {
                     )}
                   />
                 </div>
-
-                <FormField
-                  control={form.control}
-                  name="notes"
-                  render={({ field }) => (
-                    <FormItem>
-                      <FormLabel>Notes</FormLabel>
-                      <FormControl>
-                        <Textarea
-                          placeholder="Additional notes about this product"
-                          className="resize-none"
-                          rows={3}
-                          {...field}
-                          value={field.value || ""}
-                          onChange={(e) =>
-                            field.onChange(e.target.value || null)
-                          }
-                        />
-                      </FormControl>
-                      <FormMessage />
-                    </FormItem>
-                  )}
-                />
               </div>
 
               {/* Submit Section */}
@@ -739,10 +757,10 @@ export default function AddProductForm() {
                   {isSubmitting ? (
                     <>
                       <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-                      Creating Product...
+                      Updating Product...
                     </>
                   ) : (
-                    "Create Product"
+                    "Update Product"
                   )}
                 </Button>
               </div>
