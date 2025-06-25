@@ -1,8 +1,6 @@
 import { redirect } from "next/navigation";
 import { getServerSession } from "@/lib/auth-helpers";
-import { AppSidebar } from "@/components/app-sidebar";
 import { InventoryDashboard } from "@/components/inventory/InventoryDashboard";
-import { SidebarInset, SidebarProvider } from "@/components/ui/sidebar";
 
 export const metadata = {
   title: "Dashboard - BaaWA Inventory POS",
@@ -22,19 +20,5 @@ export default async function DashboardPage() {
     redirect("/pending-approval");
   }
 
-  return (
-    <SidebarProvider
-      style={
-        {
-          "--sidebar-width": "calc(var(--spacing) * 72)",
-          "--header-height": "calc(var(--spacing) * 12)",
-        } as React.CSSProperties
-      }
-    >
-      <AppSidebar variant="inset" />
-      <SidebarInset>
-        <InventoryDashboard user={session.user} />
-      </SidebarInset>
-    </SidebarProvider>
-  );
+  return <InventoryDashboard user={session.user} />;
 }

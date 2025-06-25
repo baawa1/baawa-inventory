@@ -36,7 +36,7 @@ export const createProductSchema = z.object({
   currentStock: stockSchema.optional().default(0),
   supplierId: idSchema,
   status: productStatusSchema.default("active"),
-  imageUrl: z.string().url("Invalid image URL").optional().nullable(),
+  imageUrl: z.string().optional().nullable(),
   notes: z
     .string()
     .max(500, "Notes must be 500 characters or less")

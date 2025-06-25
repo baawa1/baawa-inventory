@@ -2,7 +2,8 @@
 
 import { useState, useEffect, useCallback } from "react";
 import Image from "next/image";
-import { SiteHeader } from "@/components/site-header";
+import Link from "next/link";
+import { PageHeader } from "@/components/ui/page-header";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import {
@@ -404,34 +405,23 @@ export function ProductList({ user }: ProductListProps) {
 
   return (
     <>
-      <SiteHeader />
       <div className="flex flex-1 flex-col">
         <div className="@container/main flex flex-1 flex-col gap-2">
           <div className="flex flex-col gap-4 py-4 md:gap-6 md:py-6">
             {/* Header Section */}
-            <div className="px-4 lg:px-6">
-              <div className="flex items-center justify-between">
-                <div>
-                  <h1 className="text-3xl font-bold text-gray-900 dark:text-gray-100">
-                    Products
-                  </h1>
-                  <p className="mt-2 text-sm text-gray-600 dark:text-gray-400">
-                    Manage your product inventory and stock levels
-                  </p>
-                </div>
-                {canManageProducts && (
-                  <Button asChild>
-                    <a
-                      href="/inventory/products/add"
-                      className="flex items-center gap-2"
-                    >
-                      <IconPlus className="h-4 w-4" />
-                      Add Product
-                    </a>
-                  </Button>
-                )}
-              </div>
-            </div>
+            <PageHeader
+              title="Products"
+              description="Manage your product inventory and stock levels"
+              action={
+                canManageProducts
+                  ? {
+                      label: "Add Product",
+                      href: "/inventory/products/add",
+                      icon: <IconPlus className="h-4 w-4" />,
+                    }
+                  : undefined
+              }
+            />
 
             {/* Filters Section */}
             <div className="px-4 lg:px-6">
@@ -703,13 +693,13 @@ export function ProductList({ user }: ProductListProps) {
                                     {canEditProducts && (
                                       <>
                                         <DropdownMenuItem asChild>
-                                          <a
+                                          <Link
                                             href={`/inventory/products/${product.id}/edit`}
                                             className="flex items-center gap-2"
                                           >
                                             <IconEdit className="h-4 w-4" />
                                             Edit Product
-                                          </a>
+                                          </Link>
                                         </DropdownMenuItem>
                                         <DropdownMenuItem asChild>
                                           <a
