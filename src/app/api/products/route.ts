@@ -268,15 +268,17 @@ export async function POST(request: NextRequest) {
         description: productData.description,
         category: productData.category,
         brand: productData.brand,
-        purchasePrice: productData.purchasePrice,
-        sellingPrice: productData.sellingPrice,
-        minimumStock: productData.minimumStock,
-        maximumStock: productData.maximumStock,
-        currentStock: productData.currentStock,
-        supplierId: productData.supplierId,
+        cost: productData.purchasePrice,
+        price: productData.sellingPrice,
+        min_stock: productData.minimumStock,
+        max_stock: productData.maximumStock,
+        stock: productData.currentStock,
+        supplier_id: productData.supplierId,
         status: productData.status,
-        imageUrl: productData.imageUrl,
-        notes: productData.notes,
+        images: productData.imageUrl
+          ? [{ url: productData.imageUrl, isPrimary: true }]
+          : null,
+        // notes field doesn't exist in the table - remove it for now
       })
       .select(
         `

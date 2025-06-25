@@ -17,28 +17,26 @@ export async function GET(request: NextRequest) {
     const limit = parseInt(searchParams.get("limit") || "10");
     const search = searchParams.get("search");
     const isActive = searchParams.get("isActive");
-    const sortBy = searchParams.get("sortBy") || "createdAt";
+    const sortBy = searchParams.get("sortBy") || "created_at";
     const sortOrder = searchParams.get("sortOrder") || "desc";
 
     // Calculate offset for pagination
     const offset = (page - 1) * limit;
 
-    // Build query
-    let query = supabase.from("suppliers").select(`
-        *,
-        products:products(count),
-        purchaseOrders:purchase_orders(count)
-      `);
+    // Build query - simplified for debugging
+    let query = supabase
+      .from("suppliers")
+      .select("id, name, contact_person, email, is_active");
 
     // Apply filters
     if (search) {
       query = query.or(
-        `name.ilike.%${search}%,contactName.ilike.%${search}%,email.ilike.%${search}%`
+        `name.ilike.%${search}%,contact_person.ilike.%${search}%,email.ilike.%${search}%`
       );
     }
 
     if (isActive !== null && isActive !== undefined) {
-      query = query.eq("isActive", isActive === "true");
+      query = query.eq("is_active", isActive === "true");
     }
 
     // Apply sorting and pagination
@@ -88,12 +86,12 @@ export async function POST(request: NextRequest) {
     // Validate required fields
     const {
       name,
-      contactName,
+      contact_person,
       email,
       phone,
       address,
       notes,
-      isActive = true,
+      is_active = true,
     } = body;
 
     if (!name) {
@@ -133,12 +131,12 @@ export async function POST(request: NextRequest) {
       .from("suppliers")
       .insert({
         name,
-        contactName,
+        contact_person,
         email,
         phone,
         address,
         notes,
-        isActive,
+        is_active,
       })
       .select("*")
       .single();
