@@ -85,11 +85,15 @@ const data = {
         },
         {
           title: "Add Product",
-          url: "/inventory/products/new",
+          url: "/inventory/products/add",
         },
         {
           title: "Categories",
           url: "/inventory/categories",
+        },
+        {
+          title: "Brands",
+          url: "/inventory/brands",
         },
         {
           title: "Low Stock",
