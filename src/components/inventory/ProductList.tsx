@@ -422,7 +422,7 @@ export function ProductList({ user }: ProductListProps) {
                 {canManageProducts && (
                   <Button asChild>
                     <a
-                      href="/inventory/products/new"
+                      href="/inventory/products/add"
                       className="flex items-center gap-2"
                     >
                       <IconPlus className="h-4 w-4" />
