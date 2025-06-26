@@ -4,6 +4,7 @@ import { useState, useEffect } from "react";
 import { useSession } from "next-auth/react";
 import { useRouter } from "next/navigation";
 import Link from "next/link";
+import { useDebounce } from "@/hooks/useDebounce";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -27,7 +28,14 @@ import {
 } from "@/components/ui/alert-dialog";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
-import { Plus, Search, Edit, Trash2, ExternalLink } from "lucide-react";
+import {
+  Plus,
+  Search,
+  Edit,
+  Trash2,
+  ExternalLink,
+  Loader2,
+} from "lucide-react";
 import { toast } from "sonner";
 
 interface Brand {
@@ -64,6 +72,12 @@ export default function BrandList() {
   const [totalBrands, setTotalBrands] = useState(0);
   const [deletingId, setDeletingId] = useState<number | null>(null);
 
+  // Debounce search term to avoid excessive API calls
+  const debouncedSearchTerm = useDebounce(searchTerm, 500);
+
+  // Show search loading when user is typing but search hasn't been triggered yet
+  const isSearching = searchTerm !== debouncedSearchTerm;
+
   // Redirect if not authenticated
   useEffect(() => {
     if (status === "unauthenticated") {
@@ -83,8 +97,8 @@ export default function BrandList() {
         sortOrder: "asc",
       });
 
-      if (searchTerm) {
-        params.append("search", searchTerm);
+      if (debouncedSearchTerm) {
+        params.append("search", debouncedSearchTerm);
       }
 
       if (statusFilter !== "all") {
@@ -116,7 +130,7 @@ export default function BrandList() {
 
   useEffect(() => {
     fetchBrands();
-  }, [currentPage, searchTerm, statusFilter, status]);
+  }, [currentPage, debouncedSearchTerm, statusFilter, status]);
 
   const handleSearch = (term: string) => {
     setSearchTerm(term);
@@ -135,18 +149,19 @@ export default function BrandList() {
         method: "DELETE",
       });
 
+      const responseData = await response.json();
+
       if (!response.ok) {
-        const errorData = await response.json();
-        throw new Error(errorData.error || "Failed to delete brand");
+        throw new Error(responseData.error || "Failed to delete brand");
       }
 
       toast.success("Brand deleted successfully");
       fetchBrands();
     } catch (error) {
       console.error("Error deleting brand:", error);
-      toast.error(
-        error instanceof Error ? error.message : "Failed to delete brand"
-      );
+      const errorMessage =
+        error instanceof Error ? error.message : "Failed to delete brand";
+      toast.error(errorMessage);
     } finally {
       setDeletingId(null);
     }
@@ -184,7 +199,11 @@ export default function BrandList() {
       <div className="flex flex-col sm:flex-row gap-4 justify-between">
         <div className="flex flex-col sm:flex-row gap-4">
           <div className="relative w-full sm:w-80">
-            <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 h-4 w-4" />
+            {isSearching ? (
+              <Loader2 className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 h-4 w-4 animate-spin" />
+            ) : (
+              <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 h-4 w-4" />
+            )}
             <Input
               placeholder="Search brands..."
               value={searchTerm}
@@ -193,18 +212,30 @@ export default function BrandList() {
             />
           </div>
 
-          <div className="w-full sm:w-48">
-            <Select value={statusFilter} onValueChange={handleStatusFilter}>
-              <SelectTrigger>
-                <SelectValue placeholder="Filter by status" />
-              </SelectTrigger>
-              <SelectContent>
-                <SelectItem value="all">All Brands</SelectItem>
-                <SelectItem value="active">Active</SelectItem>
-                <SelectItem value="inactive">Inactive</SelectItem>
-              </SelectContent>
-            </Select>
-          </div>
+          <Select value={statusFilter} onValueChange={handleStatusFilter}>
+            <SelectTrigger>
+              <SelectValue placeholder="Filter by status" />
+            </SelectTrigger>
+            <SelectContent>
+              <SelectItem value="all">All Brands</SelectItem>
+              <SelectItem value="active">Active</SelectItem>
+              <SelectItem value="inactive">Inactive</SelectItem>
+            </SelectContent>
+          </Select>
+
+          {/* Clear Filters */}
+          {(searchTerm || statusFilter !== "all") && (
+            <Button
+              variant="outline"
+              onClick={() => {
+                setSearchTerm("");
+                setStatusFilter("all");
+                setCurrentPage(1);
+              }}
+            >
+              Clear Filters
+            </Button>
+          )}
         </div>
 
         <Button asChild>

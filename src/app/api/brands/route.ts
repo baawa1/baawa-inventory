@@ -13,14 +13,88 @@ export async function GET(request: NextRequest) {
     }
 
     const { searchParams } = new URL(request.url);
-    const queryParams = Object.fromEntries(searchParams.entries());
+
+    // Check if this is a legacy request for product brands (dropdown)
+    const legacy = searchParams.get("legacy") === "true";
+
+    if (legacy) {
+      // Legacy functionality: Get unique brands from products for dropdowns
+      // First check if products table has brand column or brand_id
+      const supabase = await createServerSupabaseClient();
+      let { data: products, error } = await supabase
+        .from("products")
+        .select("brand")
+        .not("brand", "is", null)
+        .neq("brand", "")
+        .eq("is_archived", false)
+        .order("brand");
+
+      if (error && error.code === "42703") {
+        // Column doesn't exist, try getting from brands table directly
+        const { data: brandData, error: brandError } = await supabase
+          .from("brands")
+          .select("name")
+          .eq("is_active", true)
+          .order("name");
+
+        if (brandError) {
+          console.error("Error fetching brands:", brandError);
+          return NextResponse.json(
+            { error: "Failed to fetch brands" },
+            { status: 500 }
+          );
+        }
+
+        const uniqueBrands = (brandData || [])
+          .map((brand) => brand.name)
+          .sort();
+
+        return NextResponse.json({
+          success: true,
+          brands: uniqueBrands,
+        });
+      }
+
+      if (error) {
+        console.error("Error fetching product brands:", error);
+        return NextResponse.json(
+          { error: "Failed to fetch brands" },
+          { status: 500 }
+        );
+      }
+
+      const uniqueBrands = Array.from(
+        new Set(products?.map((item) => item.brand).filter(Boolean))
+      ).sort();
+
+      return NextResponse.json({
+        success: true,
+        brands: uniqueBrands,
+      });
+    }
+
+    // Convert search params to proper types for validation
+    const queryParams = {
+      search: searchParams.get("search") || undefined,
+      isActive: searchParams.get("isActive")
+        ? searchParams.get("isActive") === "true"
+        : undefined,
+      limit: searchParams.get("limit")
+        ? parseInt(searchParams.get("limit")!)
+        : 10,
+      offset: searchParams.get("offset")
+        ? parseInt(searchParams.get("offset")!)
+        : 0,
+      sortBy: searchParams.get("sortBy") || "name",
+      sortOrder: searchParams.get("sortOrder") || "asc",
+    };
 
     // Validate query parameters
     const validatedQuery = brandQuerySchema.parse(queryParams);
     const {
       limit = 10,
       offset = 0,
-      search = "",
+      search,
       isActive,
       sortBy = "name",
       sortOrder = "asc",
@@ -65,7 +139,7 @@ export async function GET(request: NextRequest) {
 
     return NextResponse.json({
       success: true,
-      brands,
+      data: brands,
       pagination: {
         page,
         limit,
@@ -110,10 +184,17 @@ export async function POST(request: NextRequest) {
       );
     }
 
+    // Transform form data (handle both isActive and is_active)
+    let brandData = { ...validatedData };
+    if ("isActive" in brandData) {
+      brandData.is_active = (brandData as any).isActive;
+      delete (brandData as any).isActive;
+    }
+
     // Create the brand
     const { data: brand, error } = await supabase
       .from("brands")
-      .insert([validatedData])
+      .insert([brandData])
       .select("*")
       .single();
 

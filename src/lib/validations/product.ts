@@ -20,13 +20,16 @@ export const createProductSchema = z.object({
     .max(1000, "Description must be 1000 characters or less")
     .optional()
     .nullable(),
-  category: z
-    .string()
-    .min(1, "Category is required")
-    .max(100, "Category must be 100 characters or less"),
-  brand: z
-    .string()
-    .max(100, "Brand must be 100 characters or less")
+  categoryId: z
+    .number()
+    .int()
+    .positive("Category is required")
+    .optional()
+    .nullable(),
+  brandId: z
+    .number()
+    .int()
+    .positive("Brand must be a valid ID")
     .optional()
     .nullable(),
   purchasePrice: priceSchema,
@@ -34,7 +37,7 @@ export const createProductSchema = z.object({
   minimumStock: stockSchema.optional().default(0),
   maximumStock: stockSchema.optional().nullable(),
   currentStock: stockSchema.optional().default(0),
-  supplierId: idSchema,
+  supplierId: idSchema.optional().nullable(),
   status: productStatusSchema.default("active"),
   imageUrl: z.string().optional().nullable(),
   notes: z

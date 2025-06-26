@@ -10,12 +10,14 @@ export const metadata: Metadata = {
 };
 
 interface EditBrandPageProps {
-  params: {
+  params: Promise<{
     id: string;
-  };
+  }>;
 }
 
-export default function EditBrandPage({ params }: EditBrandPageProps) {
+export default async function EditBrandPage({ params }: EditBrandPageProps) {
+  const { id } = await params;
+
   return (
     <div className="container mx-auto px-4 py-8">
       <div className="max-w-2xl mx-auto space-y-6">
@@ -35,7 +37,7 @@ export default function EditBrandPage({ params }: EditBrandPageProps) {
           </div>
         </div>
 
-        <EditBrandForm brandId={parseInt(params.id)} />
+        <EditBrandForm brandId={parseInt(id)} />
       </div>
     </div>
   );

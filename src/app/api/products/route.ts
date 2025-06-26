@@ -44,13 +44,15 @@ export async function GET(request: NextRequest) {
     // Calculate offset for pagination
     const offset = (page - 1) * limit;
 
-    // Build query
+    // Build query with proper relations
     let query = supabase
       .from("products")
       .select(
         `
         *,
-        supplier:suppliers(id, name, contact_person)
+        supplier:suppliers(id, name, contact_person),
+        category:categories(id, name),
+        brand:brands(id, name)
       `
       )
       .eq("is_archived", false);
@@ -63,11 +65,39 @@ export async function GET(request: NextRequest) {
     }
 
     if (category) {
-      query = query.eq("category", category);
+      // Handle both ID and name filtering for backward compatibility
+      const categoryId = parseInt(category as string);
+      if (!isNaN(categoryId)) {
+        query = query.eq("category_id", categoryId);
+      } else {
+        // Try to find category by name
+        const { data: categoryData } = await supabase
+          .from("categories")
+          .select("id")
+          .eq("name", category)
+          .single();
+        if (categoryData) {
+          query = query.eq("category_id", categoryData.id);
+        }
+      }
     }
 
     if (brand) {
-      query = query.eq("brand", brand);
+      // Handle both ID and name filtering for backward compatibility
+      const brandId = parseInt(brand as string);
+      if (!isNaN(brandId)) {
+        query = query.eq("brand_id", brandId);
+      } else {
+        // Try to find brand by name
+        const { data: brandData } = await supabase
+          .from("brands")
+          .select("id")
+          .eq("name", brand)
+          .single();
+        if (brandData) {
+          query = query.eq("brand_id", brandData.id);
+        }
+      }
     }
 
     if (status) {
@@ -186,10 +216,38 @@ export async function GET(request: NextRequest) {
       );
     }
     if (category) {
-      countQuery = countQuery.eq("category", category);
+      // Handle both ID and name filtering for backward compatibility
+      const categoryId = parseInt(category as string);
+      if (!isNaN(categoryId)) {
+        countQuery = countQuery.eq("category_id", categoryId);
+      } else {
+        // Try to find category by name
+        const { data: categoryData } = await supabase
+          .from("categories")
+          .select("id")
+          .eq("name", category)
+          .single();
+        if (categoryData) {
+          countQuery = countQuery.eq("category_id", categoryData.id);
+        }
+      }
     }
     if (brand) {
-      countQuery = countQuery.eq("brand", brand);
+      // Handle both ID and name filtering for backward compatibility
+      const brandId = parseInt(brand as string);
+      if (!isNaN(brandId)) {
+        countQuery = countQuery.eq("brand_id", brandId);
+      } else {
+        // Try to find brand by name
+        const { data: brandData } = await supabase
+          .from("brands")
+          .select("id")
+          .eq("name", brand)
+          .single();
+        if (brandData) {
+          countQuery = countQuery.eq("brand_id", brandData.id);
+        }
+      }
     }
     if (status) {
       countQuery = countQuery.eq("status", status);
@@ -266,24 +324,25 @@ export async function POST(request: NextRequest) {
         sku: productData.sku,
         barcode: productData.barcode,
         description: productData.description,
-        category: productData.category,
-        brand: productData.brand,
+        category_id: productData.categoryId,
+        brand_id: productData.brandId,
         cost: productData.purchasePrice,
         price: productData.sellingPrice,
-        min_stock: productData.minimumStock,
+        min_stock: productData.minimumStock || 0,
         max_stock: productData.maximumStock,
-        stock: productData.currentStock,
+        stock: productData.currentStock || 0,
         supplier_id: productData.supplierId,
-        status: productData.status,
+        status: productData.status || "ACTIVE",
         images: productData.imageUrl
           ? [{ url: productData.imageUrl, isPrimary: true }]
           : null,
-        // notes field doesn't exist in the table - remove it for now
       })
       .select(
         `
         *,
-        supplier:suppliers(id, name)
+        supplier:suppliers(id, name),
+        category:categories(id, name),
+        brand:brands(id, name)
       `
       )
       .single();

@@ -5,8 +5,8 @@ import { useRouter } from "next/navigation";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import {
-  createBrandSchema,
-  type CreateBrandData,
+  createBrandFormSchema,
+  type CreateBrandFormData,
 } from "@/lib/validations/brand";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -29,8 +29,8 @@ export default function AddBrandForm() {
     setValue,
     watch,
     formState: { errors },
-  } = useForm<CreateBrandData>({
-    resolver: zodResolver(createBrandSchema),
+  } = useForm<CreateBrandFormData>({
+    resolver: zodResolver(createBrandFormSchema),
     defaultValues: {
       name: "",
       description: null,
@@ -41,7 +41,7 @@ export default function AddBrandForm() {
 
   const isActive = watch("isActive");
 
-  const onSubmit = async (data: CreateBrandData) => {
+  const onSubmit = async (data: CreateBrandFormData) => {
     try {
       setIsSubmitting(true);
       setServerError(null);
@@ -51,12 +51,20 @@ export default function AddBrandForm() {
         data.website = null;
       }
 
+      // Transform form data to API format (isActive -> is_active)
+      const apiData = {
+        name: data.name,
+        description: data.description,
+        website: data.website,
+        is_active: data.isActive,
+      };
+
       const response = await fetch("/api/brands", {
         method: "POST",
         headers: {
           "Content-Type": "application/json",
         },
-        body: JSON.stringify(data),
+        body: JSON.stringify(apiData),
       });
 
       if (!response.ok) {

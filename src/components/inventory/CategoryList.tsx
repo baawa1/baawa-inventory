@@ -4,6 +4,7 @@ import { useState, useEffect, useCallback } from "react";
 import Link from "next/link";
 import { useSession } from "next-auth/react";
 import { toast } from "sonner";
+import { useDebounce } from "@/hooks/useDebounce";
 import { PageHeader } from "@/components/ui/page-header";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -113,6 +114,12 @@ export function CategoryList({ user }: CategoryListProps) {
     isActive: "",
   });
 
+  // Debounce search term to avoid excessive API calls
+  const debouncedSearchTerm = useDebounce(filters.search, 500);
+
+  // Show search loading when user is typing but search hasn't been triggered yet
+  const isSearching = filters.search !== debouncedSearchTerm;
+
   // Permission checks
   const canManageCategories = ["ADMIN", "MANAGER"].includes(user.role);
   const canDeleteCategories = user.role === "ADMIN";
@@ -135,8 +142,8 @@ export function CategoryList({ user }: CategoryListProps) {
         sortOrder: "asc",
       });
 
-      if (filters.search) {
-        queryParams.append("search", filters.search);
+      if (debouncedSearchTerm) {
+        queryParams.append("search", debouncedSearchTerm);
       }
 
       if (filters.isActive) {
@@ -162,7 +169,13 @@ export function CategoryList({ user }: CategoryListProps) {
     } finally {
       setLoading(false);
     }
-  }, [currentPage, itemsPerPage, filters, status]);
+  }, [
+    currentPage,
+    itemsPerPage,
+    debouncedSearchTerm,
+    filters.isActive,
+    status,
+  ]);
 
   useEffect(() => {
     fetchCategories();
@@ -194,9 +207,10 @@ export function CategoryList({ user }: CategoryListProps) {
         method: "DELETE",
       });
 
+      const responseData = await response.json();
+
       if (!response.ok) {
-        const error = await response.json();
-        throw new Error(error.error || "Failed to delete category");
+        throw new Error(responseData.error || "Failed to delete category");
       }
 
       toast.success("Category deleted successfully");
@@ -299,8 +313,13 @@ export function CategoryList({ user }: CategoryListProps) {
                         onChange={(e) =>
                           handleFilterChange("search", e.target.value)
                         }
-                        className="pl-9"
+                        className="pl-9 pr-8"
                       />
+                      {isSearching && (
+                        <div className="absolute right-3 top-1/2 transform -translate-y-1/2">
+                          <div className="h-4 w-4 animate-spin rounded-full border-2 border-gray-300 border-t-gray-600"></div>
+                        </div>
+                      )}
                     </div>
 
                     {/* Status Filter */}
@@ -355,7 +374,7 @@ export function CategoryList({ user }: CategoryListProps) {
                         No categories found
                       </h3>
                       <p className="text-sm text-gray-500 mb-4">
-                        {filters.search || filters.isActive
+                        {debouncedSearchTerm || filters.isActive
                           ? "Try adjusting your filters to see more results."
                           : "Get started by creating your first category."}
                       </p>

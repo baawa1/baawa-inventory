@@ -7,7 +7,7 @@ import { brandIdSchema, updateBrandSchema } from "@/lib/validations/brand";
 // GET /api/brands/[id] - Get a specific brand
 export async function GET(
   request: NextRequest,
-  { params }: { params: { id: string } }
+  { params }: { params: Promise<{ id: string }> }
 ) {
   try {
     const session = await getServerSession(authOptions);
@@ -15,8 +15,9 @@ export async function GET(
       return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
     }
 
-    // Validate brand ID
-    const { id } = brandIdSchema.parse(params);
+    // Await params first, then validate brand ID
+    const resolvedParams = await params;
+    const { id } = brandIdSchema.parse(resolvedParams);
 
     const supabase = await createServerSupabaseClient();
 
@@ -53,7 +54,7 @@ export async function GET(
 // PUT /api/brands/[id] - Update a specific brand
 export async function PUT(
   request: NextRequest,
-  { params }: { params: { id: string } }
+  { params }: { params: Promise<{ id: string }> }
 ) {
   try {
     const session = await getServerSession(authOptions);
@@ -61,8 +62,9 @@ export async function PUT(
       return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
     }
 
-    // Validate brand ID
-    const { id } = brandIdSchema.parse(params);
+    // Await params first, then validate brand ID
+    const resolvedParams = await params;
+    const { id } = brandIdSchema.parse(resolvedParams);
 
     const body = await request.json();
     const validatedData = updateBrandSchema.parse({ ...body, id });
@@ -101,8 +103,16 @@ export async function PUT(
     const updateData = Object.fromEntries(
       Object.entries(validatedData).filter(([key]) => key !== "id")
     );
+
+    // Transform form data (handle both isActive and is_active)
+    let transformedData = { ...updateData };
+    if ("isActive" in transformedData) {
+      transformedData.is_active = (transformedData as any).isActive;
+      delete (transformedData as any).isActive;
+    }
+
     const dataToUpdate = {
-      ...updateData,
+      ...transformedData,
       updated_at: new Date().toISOString(),
     };
 
@@ -137,7 +147,7 @@ export async function PUT(
 // DELETE /api/brands/[id] - Delete a specific brand
 export async function DELETE(
   request: NextRequest,
-  { params }: { params: { id: string } }
+  { params }: { params: Promise<{ id: string }> }
 ) {
   try {
     const session = await getServerSession(authOptions);
@@ -145,8 +155,9 @@ export async function DELETE(
       return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
     }
 
-    // Validate brand ID
-    const { id } = brandIdSchema.parse(params);
+    // Await params first, then validate brand ID
+    const resolvedParams = await params;
+    const { id } = brandIdSchema.parse(resolvedParams);
 
     const supabase = await createServerSupabaseClient();
 
