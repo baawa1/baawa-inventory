@@ -50,7 +50,7 @@ interface Brand {
 
 interface BrandListResponse {
   success: boolean;
-  brands: Brand[];
+  data: Brand[];
   pagination: {
     page: number;
     limit: number;
@@ -114,7 +114,7 @@ export default function BrandList() {
       const data: BrandListResponse = await response.json();
 
       if (data.success) {
-        setBrands(data.brands);
+        setBrands(data.data || []);
         setTotalPages(data.pagination.pages);
         setTotalBrands(data.pagination.total);
       } else {
@@ -248,11 +248,11 @@ export default function BrandList() {
 
       {/* Results Summary */}
       <div className="text-sm text-muted-foreground">
-        Showing {brands.length} of {totalBrands} brands
+        Showing {brands?.length || 0} of {totalBrands} brands
       </div>
 
       {/* Brands Grid */}
-      {brands.length === 0 ? (
+      {(brands?.length || 0) === 0 ? (
         <div className="text-center py-12">
           <div className="text-muted-foreground mb-4">
             {searchTerm || statusFilter !== "all"
@@ -268,7 +268,7 @@ export default function BrandList() {
         </div>
       ) : (
         <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3">
-          {brands.map((brand) => (
+          {(brands || []).map((brand) => (
             <Card key={brand.id} className="hover:shadow-md transition-shadow">
               <CardHeader className="flex flex-row items-start justify-between space-y-0 pb-2">
                 <div className="space-y-1">

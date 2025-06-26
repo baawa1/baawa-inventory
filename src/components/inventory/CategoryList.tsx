@@ -90,10 +90,13 @@ interface CategoryListProps {
 }
 
 interface CategoriesResponse {
-  categories: Category[];
-  total: number;
-  limit: number;
-  offset: number;
+  success: boolean;
+  data: Category[];
+  pagination: {
+    total: number;
+    limit: number;
+    offset: number;
+  };
 }
 
 export function CategoryList({ user }: CategoryListProps) {
@@ -159,8 +162,8 @@ export function CategoryList({ user }: CategoryListProps) {
 
       const data: CategoriesResponse = await response.json();
 
-      setCategories(data.categories);
-      setTotal(data.total);
+      setCategories(data.data || []);
+      setTotal(data.pagination?.total || 0);
     } catch (error) {
       console.error("Error fetching categories:", error);
       toast.error(
@@ -367,7 +370,7 @@ export function CategoryList({ user }: CategoryListProps) {
                         Loading categories...
                       </div>
                     </div>
-                  ) : categories.length === 0 ? (
+                  ) : (categories?.length || 0) === 0 ? (
                     <div className="flex flex-col items-center justify-center py-8 text-center">
                       <IconTag className="h-12 w-12 text-gray-400 mb-4" />
                       <h3 className="text-lg font-medium text-gray-900 mb-2">
@@ -404,7 +407,7 @@ export function CategoryList({ user }: CategoryListProps) {
                           </TableRow>
                         </TableHeader>
                         <TableBody>
-                          {categories.map((category) => (
+                          {(categories || []).map((category) => (
                             <TableRow key={category.id}>
                               <TableCell className="font-medium">
                                 {category.name}

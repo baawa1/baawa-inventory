@@ -42,13 +42,13 @@ import type { z } from "zod";
 type CreateProductData = z.infer<typeof createProductSchema>;
 
 interface Category {
-  value: string;
-  label: string;
+  id: number;
+  name: string;
 }
 
 interface Brand {
-  value: string;
-  label: string;
+  id: number;
+  name: string;
 }
 
 interface Supplier {
@@ -72,8 +72,8 @@ export default function AddProductForm() {
       description: "",
       sku: "",
       barcode: "",
-      category: "",
-      brand: "",
+      categoryId: undefined as number | undefined,
+      brandId: undefined as number | undefined,
       supplierId: undefined, // Don't set a default value until suppliers load
       purchasePrice: 0,
       sellingPrice: 0,
@@ -101,24 +101,12 @@ export default function AddProductForm() {
 
         if (categoriesRes.ok) {
           const categoriesData = await categoriesRes.json();
-          const categoryOptions = (categoriesData.categories || []).map(
-            (cat: string) => ({
-              value: cat,
-              label: cat,
-            })
-          );
-          setCategories(categoryOptions);
+          setCategories(categoriesData.data || []);
         }
 
         if (brandsRes.ok) {
           const brandsData = await brandsRes.json();
-          const brandOptions = (brandsData.brands || []).map(
-            (brand: string) => ({
-              value: brand,
-              label: brand,
-            })
-          );
-          setBrands(brandOptions);
+          setBrands(brandsData.data || []);
         }
 
         if (suppliersRes.ok) {
@@ -162,7 +150,6 @@ export default function AddProductForm() {
         ...data,
         description: data.description?.trim() || null,
         barcode: data.barcode?.trim() || null,
-        brand: data.brand?.trim() || null,
         imageUrl: data.imageUrl?.trim() || null,
         notes: data.notes?.trim() || null,
         maximumStock: data.maximumStock || null,
@@ -298,13 +285,15 @@ export default function AddProductForm() {
                 <div className="grid grid-cols-1 md:grid-cols-2 items-start justify-start gap-4">
                   <FormField
                     control={form.control}
-                    name="category"
+                    name="categoryId"
                     render={({ field }) => (
                       <FormItem>
                         <FormLabel>Category *</FormLabel>
                         <Select
-                          onValueChange={field.onChange}
-                          defaultValue={field.value}
+                          onValueChange={(value) =>
+                            field.onChange(parseInt(value))
+                          }
+                          value={field.value ? String(field.value) : undefined}
                         >
                           <FormControl>
                             <SelectTrigger>
@@ -314,10 +303,10 @@ export default function AddProductForm() {
                           <SelectContent>
                             {categories.map((category) => (
                               <SelectItem
-                                key={category.value}
-                                value={category.value}
+                                key={category.id}
+                                value={String(category.id)}
                               >
-                                {category.label}
+                                {category.name}
                               </SelectItem>
                             ))}
                           </SelectContent>
@@ -328,13 +317,15 @@ export default function AddProductForm() {
                   />
                   <FormField
                     control={form.control}
-                    name="brand"
+                    name="brandId"
                     render={({ field }) => (
                       <FormItem>
                         <FormLabel>Brand</FormLabel>
                         <Select
-                          onValueChange={field.onChange}
-                          defaultValue={field.value}
+                          onValueChange={(value) =>
+                            field.onChange(parseInt(value))
+                          }
+                          value={field.value ? String(field.value) : undefined}
                         >
                           <FormControl>
                             <SelectTrigger>
@@ -343,8 +334,11 @@ export default function AddProductForm() {
                           </FormControl>
                           <SelectContent>
                             {brands.map((brand) => (
-                              <SelectItem key={brand.value} value={brand.value}>
-                                {brand.label}
+                              <SelectItem
+                                key={brand.id}
+                                value={String(brand.id)}
+                              >
+                                {brand.name}
                               </SelectItem>
                             ))}
                             <SelectItem value="__custom__">
