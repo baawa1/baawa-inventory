@@ -112,7 +112,7 @@ const data = {
         },
         {
           title: "Add Supplier",
-          url: "/inventory/suppliers/new",
+          url: "/inventory/suppliers/add",
         },
         {
           title: "Purchase Orders",
