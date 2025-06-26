@@ -5,8 +5,8 @@ import { useRouter } from "next/navigation";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import {
-  updateBrandSchema,
-  type UpdateBrandData,
+  updateBrandFormSchema,
+  type UpdateBrandFormData,
 } from "@/lib/validations/brand";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -46,8 +46,8 @@ export default function EditBrandForm({ brandId }: EditBrandFormProps) {
     watch,
     reset,
     formState: { errors },
-  } = useForm<UpdateBrandData>({
-    resolver: zodResolver(updateBrandSchema),
+  } = useForm<UpdateBrandFormData>({
+    resolver: zodResolver(updateBrandFormSchema),
   });
 
   const isActive = watch("isActive");
@@ -92,7 +92,7 @@ export default function EditBrandForm({ brandId }: EditBrandFormProps) {
     }
   }, [brandId, reset, router]);
 
-  const onSubmit = async (data: UpdateBrandData) => {
+  const onSubmit = async (data: UpdateBrandFormData) => {
     try {
       setIsSubmitting(true);
       setServerError(null);
@@ -102,12 +102,21 @@ export default function EditBrandForm({ brandId }: EditBrandFormProps) {
         data.website = null;
       }
 
+      // Transform form data to API format (isActive -> is_active)
+      const apiData = {
+        id: data.id,
+        name: data.name,
+        description: data.description,
+        website: data.website,
+        is_active: data.isActive,
+      };
+
       const response = await fetch(`/api/brands/${brandId}`, {
         method: "PUT",
         headers: {
           "Content-Type": "application/json",
         },
-        body: JSON.stringify(data),
+        body: JSON.stringify(apiData),
       });
 
       if (!response.ok) {

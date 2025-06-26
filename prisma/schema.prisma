@@ -106,6 +106,9 @@ model Category {
   createdAt   DateTime @default(now()) @map("created_at")
   updatedAt   DateTime @updatedAt @map("updated_at")
 
+  // Relations
+  products    Product[]
+
   @@map("categories")
 }
 
@@ -119,6 +122,9 @@ model Brand {
   createdAt   DateTime @default(now()) @map("created_at")
   updatedAt   DateTime @updatedAt @map("updated_at")
 
+  // Relations
+  products    Product[]
+
   @@map("brands")
 }
 
@@ -129,13 +135,11 @@ model Product {
   description      String?
   sku              String            @unique
   barcode          String?           @unique
-  category         String
-  brand            String?
   cost             Decimal           @db.Decimal(10, 2)
   price            Decimal           @db.Decimal(10, 2)
   stock            Int               @default(0)
-  minStock         Int               @default(0)
-  maxStock         Int?
+  minStock         Int               @default(0) @map("min_stock")
+  maxStock         Int?              @map("max_stock")
   unit             String            @default("pcs")
   weight           Decimal?          @db.Decimal(8, 3)
   dimensions       String?
@@ -143,19 +147,23 @@ model Product {
   size             String?
   material         String?
   status           ProductStatus     @default(ACTIVE)
-  hasVariants      Boolean           @default(false)
-  isArchived       Boolean           @default(false)
+  hasVariants      Boolean           @default(false) @map("has_variants")
+  isArchived       Boolean           @default(false) @map("is_archived")
   images           Json?             // Array of image URLs
   tags             String[]          @default([])
-  metaTitle        String?
-  metaDescription  String?
-  seoKeywords      String[]          @default([])
-  createdAt        DateTime          @default(now())
-  updatedAt        DateTime          @updatedAt
+  metaTitle        String?           @map("meta_title")
+  metaDescription  String?           @map("meta_description")
+  seoKeywords      String[]          @default([]) @map("seo_keywords")
+  createdAt        DateTime          @default(now()) @map("created_at")
+  updatedAt        DateTime          @updatedAt @map("updated_at")
 
   // Relations
   supplier         Supplier?         @relation(fields: [supplierId], references: [id])
-  supplierId       Int?
+  supplierId       Int?              @map("supplier_id")
+  category         Category?         @relation(fields: [categoryId], references: [id])
+  categoryId       Int?              @map("category_id")
+  brand            Brand?            @relation(fields: [brandId], references: [id])
+  brandId          Int?              @map("brand_id")
   variants         ProductVariant[]
   stockAdjustments StockAdjustment[]
   salesItems       SalesItem[]

@@ -31,13 +31,40 @@ export async function GET(request: NextRequest) {
 
     if (legacy) {
       // Legacy functionality: Get unique categories from products for dropdowns
-      const { data: products, error } = await supabase
+      // First check if products table has category column or category_id
+      let { data: products, error } = await supabase
         .from("products")
         .select("category")
         .not("category", "is", null)
         .neq("category", "")
         .eq("is_archived", false)
         .order("category");
+
+      if (error && error.code === "42703") {
+        // Column doesn't exist, try with category_id and join with categories
+        const { data: categoryData, error: categoryError } = await supabase
+          .from("categories")
+          .select("name")
+          .eq("is_active", true)
+          .order("name");
+
+        if (categoryError) {
+          console.error("Error fetching categories:", categoryError);
+          return NextResponse.json(
+            { error: "Failed to fetch categories" },
+            { status: 500 }
+          );
+        }
+
+        const uniqueCategories = (categoryData || [])
+          .map((cat) => cat.name)
+          .sort();
+
+        return NextResponse.json({
+          success: true,
+          categories: uniqueCategories,
+        });
+      }
 
       if (error) {
         console.error("Error fetching product categories:", error);
@@ -127,10 +154,13 @@ export async function GET(request: NextRequest) {
       })) || [];
 
     return NextResponse.json({
-      categories: transformedCategories,
-      total: count || 0,
-      limit: validatedQuery.limit,
-      offset: validatedQuery.offset,
+      success: true,
+      data: transformedCategories,
+      pagination: {
+        total: count || 0,
+        limit: validatedQuery.limit,
+        offset: validatedQuery.offset,
+      },
     });
   } catch (error) {
     console.error("API error:", error);

@@ -41,13 +41,13 @@ import type { z } from "zod";
 type UpdateProductData = z.infer<typeof updateProductSchema>;
 
 interface Category {
-  value: string;
-  label: string;
+  id: number;
+  name: string;
 }
 
 interface Brand {
-  value: string;
-  label: string;
+  id: number;
+  name: string;
 }
 
 interface Supplier {
@@ -61,8 +61,14 @@ interface Product {
   description: string | null;
   sku: string;
   barcode: string | null;
-  category: string;
-  brand: string | null;
+  category?: {
+    id: number;
+    name: string;
+  };
+  brand?: {
+    id: number;
+    name: string;
+  };
   cost: number;
   price: number;
   stock: number;
@@ -94,8 +100,8 @@ export default function EditProductForm({ productId }: EditProductFormProps) {
       description: "",
       sku: "",
       barcode: "",
-      category: "",
-      brand: "",
+      categoryId: undefined as number | undefined,
+      brandId: undefined as number | undefined,
       supplierId: undefined as number | undefined,
       purchasePrice: 0,
       sellingPrice: 0,
@@ -122,6 +128,18 @@ export default function EditProductForm({ productId }: EditProductFormProps) {
             fetch("/api/suppliers"),
           ]);
 
+        // Handle categories
+        if (categoriesRes.ok) {
+          const categoriesData = await categoriesRes.json();
+          setCategories(categoriesData.data || []);
+        }
+
+        // Handle brands
+        if (brandsRes.ok) {
+          const brandsData = await brandsRes.json();
+          setBrands(brandsData.data || []);
+        }
+
         // Handle product data
         if (productRes.ok) {
           const productData = await productRes.json();
@@ -134,8 +152,8 @@ export default function EditProductForm({ productId }: EditProductFormProps) {
             description: productInfo.description || "",
             sku: productInfo.sku,
             barcode: productInfo.barcode || "",
-            category: productInfo.category,
-            brand: productInfo.brand || "",
+            categoryId: productInfo.category?.id,
+            brandId: productInfo.brand?.id,
             supplierId: productInfo.supplier_id,
             purchasePrice: Number(productInfo.cost),
             sellingPrice: Number(productInfo.price),
@@ -147,30 +165,6 @@ export default function EditProductForm({ productId }: EditProductFormProps) {
           });
         } else {
           throw new Error("Product not found");
-        }
-
-        // Handle categories
-        if (categoriesRes.ok) {
-          const categoriesData = await categoriesRes.json();
-          const categoryOptions = (categoriesData.categories || []).map(
-            (cat: string) => ({
-              value: cat,
-              label: cat,
-            })
-          );
-          setCategories(categoryOptions);
-        }
-
-        // Handle brands
-        if (brandsRes.ok) {
-          const brandsData = await brandsRes.json();
-          const brandOptions = (brandsData.brands || []).map(
-            (brand: string) => ({
-              value: brand,
-              label: brand,
-            })
-          );
-          setBrands(brandOptions);
         }
 
         // Handle suppliers
@@ -207,7 +201,6 @@ export default function EditProductForm({ productId }: EditProductFormProps) {
         ...data,
         description: data.description?.trim() || null,
         barcode: data.barcode?.trim() || null,
-        brand: data.brand?.trim() || null,
         imageUrl: data.imageUrl?.trim() || null,
         maximumStock: data.maximumStock || null,
       };
@@ -339,13 +332,15 @@ export default function EditProductForm({ productId }: EditProductFormProps) {
                 <div className="grid grid-cols-1 md:grid-cols-2 items-start justify-start gap-4">
                   <FormField
                     control={form.control}
-                    name="category"
+                    name="categoryId"
                     render={({ field }) => (
                       <FormItem>
                         <FormLabel>Category *</FormLabel>
                         <Select
-                          onValueChange={field.onChange}
-                          value={field.value}
+                          onValueChange={(value) =>
+                            field.onChange(parseInt(value))
+                          }
+                          value={field.value?.toString() || ""}
                         >
                           <FormControl>
                             <SelectTrigger>
@@ -355,10 +350,10 @@ export default function EditProductForm({ productId }: EditProductFormProps) {
                           <SelectContent>
                             {categories.map((category) => (
                               <SelectItem
-                                key={category.value}
-                                value={category.value}
+                                key={`category-${category.id}`}
+                                value={category.id.toString()}
                               >
-                                {category.label}
+                                {category.name}
                               </SelectItem>
                             ))}
                           </SelectContent>
@@ -369,13 +364,15 @@ export default function EditProductForm({ productId }: EditProductFormProps) {
                   />
                   <FormField
                     control={form.control}
-                    name="brand"
+                    name="brandId"
                     render={({ field }) => (
                       <FormItem>
                         <FormLabel>Brand</FormLabel>
                         <Select
-                          onValueChange={field.onChange}
-                          value={field.value || ""}
+                          onValueChange={(value) =>
+                            field.onChange(parseInt(value))
+                          }
+                          value={field.value?.toString() || ""}
                         >
                           <FormControl>
                             <SelectTrigger>
@@ -384,11 +381,14 @@ export default function EditProductForm({ productId }: EditProductFormProps) {
                           </FormControl>
                           <SelectContent>
                             {brands.map((brand) => (
-                              <SelectItem key={brand.value} value={brand.value}>
-                                {brand.label}
+                              <SelectItem
+                                key={`brand-${brand.id}`}
+                                value={brand.id.toString()}
+                              >
+                                {brand.name}
                               </SelectItem>
                             ))}
-                            <SelectItem value="__custom__">
+                            <SelectItem key="custom-brand" value="__custom__">
                               + Add new brand
                             </SelectItem>
                           </SelectContent>

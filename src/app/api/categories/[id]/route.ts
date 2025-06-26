@@ -235,7 +235,7 @@ export async function DELETE(
     const { data: productsUsing, error: productsError } = await supabase
       .from("products")
       .select("id")
-      .eq("category", existingCategory.name)
+      .eq("category_id", validatedId.id)
       .eq("is_archived", false)
       .limit(1);
 

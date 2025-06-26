@@ -9,18 +9,32 @@ interface EditCategoryPageProps {
 
 async function getCategory(id: string) {
   try {
-    const response = await fetch(
-      `${process.env.NEXT_PUBLIC_APP_URL}/api/categories/${id}`,
-      {
-        cache: "no-store",
-      }
-    );
+    // Use server-side API directly instead of HTTP fetch
+    const { supabase } = await import("@/lib/supabase");
+    const { categoryIdSchema } = await import("@/lib/validations/category");
 
-    if (!response.ok) {
+    const validatedId = categoryIdSchema.parse({ id });
+
+    const { data: category, error } = await supabase
+      .from("categories")
+      .select("*")
+      .eq("id", validatedId.id)
+      .single();
+
+    if (error) {
+      console.error("Error fetching category:", error);
       return null;
     }
 
-    return await response.json();
+    // Transform to camelCase for frontend
+    return {
+      id: category.id,
+      name: category.name,
+      description: category.description,
+      isActive: category.is_active,
+      createdAt: category.created_at,
+      updatedAt: category.updated_at,
+    };
   } catch (error) {
     console.error("Error fetching category:", error);
     return null;

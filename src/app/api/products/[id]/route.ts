@@ -14,10 +14,11 @@ interface RouteParams {
 export async function GET(request: NextRequest, { params }: RouteParams) {
   try {
     const supabase = await createServerSupabaseClient();
+    const { id: paramId } = await params;
 
     // Validate product ID parameter
     const validation = validateRequest(productIdSchema, {
-      id: parseInt(params.id),
+      id: parseInt(paramId),
     });
     if (!validation.success) {
       return NextResponse.json(
@@ -33,7 +34,9 @@ export async function GET(request: NextRequest, { params }: RouteParams) {
       .select(
         `
         *,
-        supplier:suppliers(id, name, contact_person, email, phone)
+        supplier:suppliers(id, name, contact_person, email, phone),
+        category:categories(id, name),
+        brand:brands(id, name)
       `
       )
       .eq("id", id)
@@ -69,10 +72,11 @@ export async function PUT(request: NextRequest, { params }: RouteParams) {
   try {
     const supabase = await createServerSupabaseClient();
     const body = await request.json();
+    const { id: paramId } = await params;
 
     // Validate product ID parameter
     const idValidation = validateRequest(productIdSchema, {
-      id: parseInt(params.id),
+      id: parseInt(paramId),
     });
     if (!idValidation.success) {
       return NextResponse.json(
@@ -131,9 +135,10 @@ export async function PUT(request: NextRequest, { params }: RouteParams) {
       dbUpdateData.barcode = updateData.barcode;
     if (updateData.description !== undefined)
       dbUpdateData.description = updateData.description;
-    if (updateData.category !== undefined)
-      dbUpdateData.category = updateData.category;
-    if (updateData.brand !== undefined) dbUpdateData.brand = updateData.brand;
+    if (updateData.categoryId !== undefined)
+      dbUpdateData.category_id = updateData.categoryId;
+    if (updateData.brandId !== undefined)
+      dbUpdateData.brand_id = updateData.brandId;
     if (updateData.purchasePrice !== undefined)
       dbUpdateData.cost = updateData.purchasePrice;
     if (updateData.sellingPrice !== undefined)
@@ -161,7 +166,9 @@ export async function PUT(request: NextRequest, { params }: RouteParams) {
       .select(
         `
         *,
-        supplier:suppliers(id, name)
+        supplier:suppliers(id, name),
+        category:categories(id, name),
+        brand:brands(id, name)
       `
       )
       .single();
@@ -188,10 +195,11 @@ export async function PUT(request: NextRequest, { params }: RouteParams) {
 export async function DELETE(request: NextRequest, { params }: RouteParams) {
   try {
     const supabase = await createServerSupabaseClient();
+    const { id: paramId } = await params;
 
     // Validate product ID parameter
     const validation = validateRequest(productIdSchema, {
-      id: parseInt(params.id),
+      id: parseInt(paramId),
     });
     if (!validation.success) {
       return NextResponse.json(

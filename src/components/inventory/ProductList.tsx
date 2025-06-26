@@ -3,6 +3,7 @@
 import { useState, useEffect, useCallback } from "react";
 import Image from "next/image";
 import Link from "next/link";
+import { useDebounce } from "@/hooks/useDebounce";
 import { PageHeader } from "@/components/ui/page-header";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -82,8 +83,14 @@ interface Product {
   description?: string;
   sku: string;
   barcode?: string;
-  category: string;
-  brand?: string;
+  category?: {
+    id: number;
+    name: string;
+  };
+  brand?: {
+    id: number;
+    name: string;
+  };
   cost: number;
   price: number;
   stock: number;
@@ -98,7 +105,7 @@ interface Product {
   status: "active" | "inactive" | "discontinued";
   has_variants: boolean;
   is_archived: boolean;
-  images?: string[];
+  images?: Array<{ url: string; isPrimary: boolean }>;
   tags?: string[];
   meta_title?: string;
   meta_description?: string;
@@ -114,6 +121,25 @@ interface Product {
 
 interface ProductListProps {
   user: User;
+}
+
+interface Brand {
+  id: number;
+  name: string;
+  description: string | null;
+  website: string | null;
+  is_active: boolean;
+  created_at: string;
+  updated_at: string;
+}
+
+interface Category {
+  id: number;
+  name: string;
+  description: string | null;
+  is_active: boolean;
+  created_at: string;
+  updated_at: string;
 }
 
 interface ProductFilters {
@@ -145,7 +171,8 @@ export function ProductList({ user }: ProductListProps) {
     totalProducts: 0,
   });
   const [visibleColumns, setVisibleColumns] = useState<string[]>([]);
-  const [brands, setBrands] = useState<string[]>([]);
+  const [brands, setBrands] = useState<Brand[]>([]);
+  const [categories, setCategories] = useState<Category[]>([]);
   const [filters, setFilters] = useState<ProductFilters>({
     search: "",
     category: "",
@@ -157,6 +184,12 @@ export function ProductList({ user }: ProductListProps) {
     sortOrder: "desc",
   });
 
+  // Debounce search term to avoid excessive API calls
+  const debouncedSearchTerm = useDebounce(filters.search, 500);
+
+  // Show search loading when user is typing but search hasn't been triggered yet
+  const isSearching = filters.search !== debouncedSearchTerm;
+
   const canManageProducts = ["ADMIN", "MANAGER"].includes(user.role);
   const canEditProducts = ["ADMIN", "MANAGER", "STAFF"].includes(user.role);
 
@@ -166,16 +199,29 @@ export function ProductList({ user }: ProductListProps) {
       const response = await fetch("/api/brands");
       if (response.ok) {
         const data = await response.json();
-        setBrands(data.brands || []);
+        setBrands(data.data || []);
       }
     } catch (error) {
       console.error("Error fetching brands:", error);
     }
   }, []);
 
+  const fetchCategories = useCallback(async () => {
+    try {
+      const response = await fetch("/api/categories");
+      if (response.ok) {
+        const data = await response.json();
+        setCategories(data.data || []);
+      }
+    } catch (error) {
+      console.error("Error fetching categories:", error);
+    }
+  }, []);
+
   useEffect(() => {
     fetchBrands();
-  }, [fetchBrands]);
+    fetchCategories();
+  }, [fetchBrands, fetchCategories]);
 
   const fetchProducts = useCallback(async () => {
     try {
@@ -189,7 +235,7 @@ export function ProductList({ user }: ProductListProps) {
         sortOrder: filters.sortOrder,
       });
 
-      if (filters.search) searchParams.set("search", filters.search);
+      if (debouncedSearchTerm) searchParams.set("search", debouncedSearchTerm);
       if (filters.category) searchParams.set("category", filters.category);
       if (filters.brand) searchParams.set("brand", filters.brand);
       if (filters.status) searchParams.set("status", filters.status);
@@ -216,7 +262,18 @@ export function ProductList({ user }: ProductListProps) {
     } finally {
       setLoading(false);
     }
-  }, [pagination.page, pagination.limit, filters]);
+  }, [
+    pagination.page,
+    pagination.limit,
+    debouncedSearchTerm,
+    filters.category,
+    filters.brand,
+    filters.status,
+    filters.supplier,
+    filters.lowStock,
+    filters.sortBy,
+    filters.sortOrder,
+  ]);
 
   useEffect(() => {
     fetchProducts();
@@ -297,12 +354,24 @@ export function ProductList({ user }: ProductListProps) {
   const renderCellContent = (product: Product, columnKey: string) => {
     switch (columnKey) {
       case "image":
+        const isValidUrl = (url: string) => {
+          return (
+            url.startsWith("/") ||
+            url.startsWith("http://") ||
+            url.startsWith("https://")
+          );
+        };
+
         return (
           <div className="flex items-center justify-center">
-            {product.images && product.images.length > 0 ? (
+            {product.images &&
+            product.images.length > 0 &&
+            product.images[0]?.url &&
+            product.images[0].url.trim() !== "" &&
+            isValidUrl(product.images[0].url.trim()) ? (
               <div className="relative h-12 w-12 overflow-hidden rounded-md border">
                 <Image
-                  src={product.images[0]}
+                  src={product.images[0].url}
                   alt={product.name}
                   fill
                   className="object-cover"
@@ -321,16 +390,16 @@ export function ProductList({ user }: ProductListProps) {
           <div>
             <div className="font-medium">{product.name}</div>
             {product.brand && (
-              <div className="text-sm text-gray-500">{product.brand}</div>
+              <div className="text-sm text-gray-500">{product.brand.name}</div>
             )}
           </div>
         );
       case "sku":
         return <span className="font-mono text-sm">{product.sku}</span>;
       case "category":
-        return product.category;
+        return product.category?.name || "-";
       case "brand":
-        return product.brand || "-";
+        return product.brand?.name || "-";
       case "stock":
         const stockStatus = getStockStatus(product);
         return (
@@ -446,8 +515,13 @@ export function ProductList({ user }: ProductListProps) {
                         onChange={(e) =>
                           handleFilterChange("search", e.target.value)
                         }
-                        className="pl-9"
+                        className="pl-9 pr-8"
                       />
+                      {isSearching && (
+                        <div className="absolute right-3 top-1/2 transform -translate-y-1/2">
+                          <div className="h-4 w-4 animate-spin rounded-full border-2 border-gray-300 border-t-gray-600"></div>
+                        </div>
+                      )}
                     </div>
 
                     {/* Category Filter */}
@@ -465,12 +539,11 @@ export function ProductList({ user }: ProductListProps) {
                       </SelectTrigger>
                       <SelectContent>
                         <SelectItem value="all">All Categories</SelectItem>
-                        <SelectItem value="Wristwatches">
-                          Wristwatches
-                        </SelectItem>
-                        <SelectItem value="Sunglasses">Sunglasses</SelectItem>
-                        <SelectItem value="Accessories">Accessories</SelectItem>
-                        <SelectItem value="Electronics">Electronics</SelectItem>
+                        {categories.map((category) => (
+                          <SelectItem key={category.id} value={category.name}>
+                            {category.name}
+                          </SelectItem>
+                        ))}
                       </SelectContent>
                     </Select>
 
@@ -490,8 +563,8 @@ export function ProductList({ user }: ProductListProps) {
                       <SelectContent>
                         <SelectItem value="all">All Brands</SelectItem>
                         {brands.map((brand) => (
-                          <SelectItem key={brand} value={brand}>
-                            {brand}
+                          <SelectItem key={brand.id} value={brand.name}>
+                            {brand.name}
                           </SelectItem>
                         ))}
                       </SelectContent>

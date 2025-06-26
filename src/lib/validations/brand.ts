@@ -18,7 +18,28 @@ const baseBrandSchema = z.object({
     .optional()
     .nullable()
     .or(z.literal("")),
-  isActive: z.boolean().default(true),
+  is_active: z.boolean().default(true),
+});
+
+// Client-side form schema (uses isActive instead of is_active)
+const clientBrandSchema = z.object({
+  name: z
+    .string()
+    .min(1, "Brand name is required")
+    .max(100, "Brand name must be less than 100 characters")
+    .trim(),
+  description: z
+    .string()
+    .max(500, "Description must be less than 500 characters")
+    .optional()
+    .nullable(),
+  website: z
+    .string()
+    .url("Please enter a valid website URL")
+    .optional()
+    .nullable()
+    .or(z.literal("")),
+  isActive: z.boolean(),
 });
 
 // Create brand schema
@@ -26,6 +47,12 @@ export const createBrandSchema = baseBrandSchema;
 
 // Update brand schema
 export const updateBrandSchema = baseBrandSchema.partial().extend({
+  id: z.number().int().positive("Brand ID must be a positive integer"),
+});
+
+// Client-side form schemas
+export const createBrandFormSchema = clientBrandSchema;
+export const updateBrandFormSchema = clientBrandSchema.partial().extend({
   id: z.number().int().positive("Brand ID must be a positive integer"),
 });
 
@@ -53,5 +80,7 @@ export const brandQuerySchema = z.object({
 // Type exports
 export type CreateBrandData = z.infer<typeof createBrandSchema>;
 export type UpdateBrandData = z.infer<typeof updateBrandSchema>;
+export type CreateBrandFormData = z.infer<typeof createBrandFormSchema>;
+export type UpdateBrandFormData = z.infer<typeof updateBrandFormSchema>;
 export type BrandIdParams = z.infer<typeof brandIdSchema>;
 export type BrandQueryParams = z.infer<typeof brandQuerySchema>;
