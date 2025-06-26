@@ -23,10 +23,20 @@ export async function GET(request: NextRequest) {
     // Calculate offset for pagination
     const offset = (page - 1) * limit;
 
-    // Build query - simplified for debugging
-    let query = supabase
-      .from("suppliers")
-      .select("id, name, contact_person, email, is_active");
+    // Build query with product and purchase order counts
+    let query = supabase.from("suppliers").select(`
+        id,
+        name,
+        contact_person,
+        email,
+        phone,
+        address,
+        is_active,
+        created_at,
+        updated_at,
+        products:products(count),
+        purchase_orders:purchase_orders(count)
+      `);
 
     // Apply filters
     if (search) {
@@ -44,7 +54,7 @@ export async function GET(request: NextRequest) {
       .order(sortBy, { ascending: sortOrder === "asc" })
       .range(offset, offset + limit - 1);
 
-    const { data: suppliers, error, count } = await query;
+    const { data: suppliersData, error, count } = await query;
 
     if (error) {
       console.error("Error fetching suppliers:", error);
@@ -54,19 +64,35 @@ export async function GET(request: NextRequest) {
       );
     }
 
+    // Transform the data to match the component interface
+    const suppliers =
+      suppliersData?.map((supplier: any) => ({
+        id: supplier.id,
+        name: supplier.name,
+        contactPerson: supplier.contact_person,
+        email: supplier.email,
+        phone: supplier.phone,
+        address: supplier.address,
+        isActive: supplier.is_active,
+        createdAt: supplier.created_at,
+        updatedAt: supplier.updated_at,
+        _count: {
+          products: supplier.products?.[0]?.count || 0,
+          purchaseOrders: supplier.purchase_orders?.[0]?.count || 0,
+        },
+      })) || [];
+
     // Get total count for pagination
     const { count: totalCount } = await supabase
       .from("suppliers")
       .select("*", { count: "exact", head: true });
 
     return NextResponse.json({
-      data: suppliers,
-      pagination: {
-        page,
-        limit,
-        total: totalCount || 0,
-        totalPages: Math.ceil((totalCount || 0) / limit),
-      },
+      suppliers,
+      total: totalCount || 0,
+      page,
+      limit,
+      totalPages: Math.ceil((totalCount || 0) / limit),
     });
   } catch (error) {
     console.error("Error in GET /api/suppliers:", error);
@@ -83,15 +109,22 @@ export async function POST(request: NextRequest) {
     const supabase = await createServerSupabaseClient();
     const body = await request.json();
 
-    // Validate required fields
+    // Transform frontend field names to database field names
     const {
       name,
-      contact_person,
+      contactPerson,
       email,
       phone,
       address,
+      city,
+      state,
+      country,
+      postalCode,
+      taxId,
+      paymentTerms,
+      creditLimit,
+      isActive = true,
       notes,
-      is_active = true,
     } = body;
 
     if (!name) {
@@ -126,17 +159,24 @@ export async function POST(request: NextRequest) {
       );
     }
 
-    // Create the supplier
+    // Create the supplier with mapped field names
     const { data: supplier, error } = await supabase
       .from("suppliers")
       .insert({
         name,
-        contact_person,
+        contact_person: contactPerson,
         email,
         phone,
         address,
+        city,
+        state,
+        country,
+        postal_code: postalCode,
+        tax_id: taxId,
+        payment_terms: paymentTerms,
+        credit_limit: creditLimit,
+        is_active: isActive,
         notes,
-        is_active,
       })
       .select("*")
       .single();

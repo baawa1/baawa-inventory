@@ -192,6 +192,17 @@ Date: 22 June 2025
 - `prisma/schema.prisma` - Category model added to schema ✅
 - `supabase/migrations/005_create_categories_table.sql` - Migration for categories table ✅
 
+### Completed Files (3.3.1 Supplier Management - Listing):
+
+- `src/app/(dashboard)/inventory/suppliers/page.tsx` - Suppliers listing page with authentication and role-based access ✅
+- `src/components/inventory/SupplierList.tsx` - Complete supplier listing with search, filters, pagination, and CRUD actions ✅
+- `src/app/(dashboard)/inventory/suppliers/add/page.tsx` - Add supplier page with proper authentication ✅
+- `src/components/inventory/AddSupplierForm.tsx` - Complete add supplier form with comprehensive validation ✅
+- `src/app/api/suppliers/route.ts` - Updated suppliers API with correct field mappings and response format ✅
+- `supabase/migrations/008_create_suppliers_table.sql` - Migration for suppliers table with all fields ✅
+- `supabase/migrations/009_create_purchase_orders_table_safe.sql` - Migration for purchase orders and items tables ✅
+- `src/components/app-sidebar.tsx` - Updated sidebar navigation with correct supplier URLs ✅
+
 **✅ FIXED ISSUES:**
 
 - **React Hooks Rule Violation**: Fixed hooks order and removed early returns that violated Rules of Hooks
