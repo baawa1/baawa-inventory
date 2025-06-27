@@ -21,7 +21,7 @@ export async function GET(request: NextRequest) {
       // Legacy functionality: Get unique brands from products for dropdowns
       // First check if products table has brand column or brand_id
       const supabase = await createServerSupabaseClient();
-      let { data: products, error } = await supabase
+      const { data: products, error } = await supabase
         .from("products")
         .select("brand")
         .not("brand", "is", null)
@@ -185,7 +185,7 @@ export async function POST(request: NextRequest) {
     }
 
     // Transform form data (handle both isActive and is_active)
-    let brandData = { ...validatedData };
+    const brandData = { ...validatedData };
     if ("isActive" in brandData) {
       brandData.is_active = (brandData as any).isActive;
       delete (brandData as any).isActive;

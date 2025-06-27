@@ -23,6 +23,7 @@ import { Alert, AlertDescription } from "@/components/ui/alert";
 import { Loader2, Save, ArrowLeft } from "lucide-react";
 import { toast } from "sonner";
 import Link from "next/link";
+import { phoneSchema, emailSchema } from "@/lib/validations/common";
 
 // Form validation schema
 const supplierFormSchema = z.object({
@@ -35,16 +36,8 @@ const supplierFormSchema = z.object({
     .max(255, "Contact person name must be less than 255 characters")
     .optional()
     .or(z.literal("")),
-  email: z
-    .string()
-    .email("Please enter a valid email address")
-    .optional()
-    .or(z.literal("")),
-  phone: z
-    .string()
-    .regex(/^[\+]?[1-9][\d]{0,15}$/, "Please enter a valid phone number")
-    .optional()
-    .or(z.literal("")),
+  email: emailSchema.optional().or(z.literal("")),
+  phone: phoneSchema.optional().or(z.literal("")),
   address: z
     .string()
     .max(500, "Address must be less than 500 characters")

@@ -172,7 +172,7 @@ export async function POST(request: NextRequest) {
         state,
         country,
         postal_code: postalCode,
-        tax_id: taxId,
+        tax_number: taxId,
         payment_terms: paymentTerms,
         credit_limit: creditLimit,
         is_active: isActive,

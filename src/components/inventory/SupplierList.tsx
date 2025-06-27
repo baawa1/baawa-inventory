@@ -54,6 +54,8 @@ import {
   IconTruck,
 } from "@tabler/icons-react";
 import { toast } from "sonner";
+import SupplierDetailModal from "./SupplierDetailModal";
+import EditSupplierModal from "./EditSupplierModal";
 
 interface Supplier {
   id: number;
@@ -95,6 +97,13 @@ export default function SupplierList() {
     isActive: "",
   });
 
+  // Modal states
+  const [detailModalOpen, setDetailModalOpen] = useState(false);
+  const [editModalOpen, setEditModalOpen] = useState(false);
+  const [selectedSupplierId, setSelectedSupplierId] = useState<number | null>(
+    null
+  );
+
   const limit = 10;
 
   // Debounce search term to avoid excessive API calls
@@ -108,6 +117,34 @@ export default function SupplierList() {
   const canManageSuppliers =
     user && ["ADMIN", "MANAGER"].includes(user.role || "");
   const canDeleteSuppliers = user && user.role === "ADMIN";
+
+  // Modal handlers
+  const handleViewSupplier = (supplierId: string) => {
+    setSelectedSupplierId(parseInt(supplierId));
+    setDetailModalOpen(true);
+  };
+
+  const handleEditSupplier = (supplierId: string | number) => {
+    setSelectedSupplierId(
+      typeof supplierId === "string" ? parseInt(supplierId) : supplierId
+    );
+    setEditModalOpen(true);
+  };
+
+  const handleCloseDetailModal = () => {
+    setDetailModalOpen(false);
+    setSelectedSupplierId(null);
+  };
+
+  const handleCloseEditModal = () => {
+    setEditModalOpen(false);
+    setSelectedSupplierId(null);
+  };
+
+  const handleSupplierUpdated = () => {
+    fetchSuppliers(); // Refresh the list after edit
+    handleCloseEditModal();
+  };
 
   // Fetch suppliers data
   const fetchSuppliers = useCallback(async () => {
@@ -402,21 +439,25 @@ export default function SupplierList() {
                             </TableCell>
                             <TableCell className="text-right">
                               <div className="flex items-center justify-end gap-2">
-                                <Link
-                                  href={`/inventory/suppliers/${supplier.id}`}
+                                <Button
+                                  variant="ghost"
+                                  size="sm"
+                                  onClick={() =>
+                                    handleViewSupplier(supplier.id.toString())
+                                  }
                                 >
-                                  <Button variant="ghost" size="sm">
-                                    <IconEye className="h-4 w-4" />
-                                  </Button>
-                                </Link>
+                                  <IconEye className="h-4 w-4" />
+                                </Button>
                                 {canManageSuppliers && (
-                                  <Link
-                                    href={`/inventory/suppliers/${supplier.id}/edit`}
+                                  <Button
+                                    variant="ghost"
+                                    size="sm"
+                                    onClick={() =>
+                                      handleEditSupplier(supplier.id.toString())
+                                    }
                                   >
-                                    <Button variant="ghost" size="sm">
-                                      <IconEdit className="h-4 w-4" />
-                                    </Button>
-                                  </Link>
+                                    <IconEdit className="h-4 w-4" />
+                                  </Button>
                                 )}
                                 {canDeleteSuppliers && (
                                   <AlertDialog>
@@ -500,6 +541,22 @@ export default function SupplierList() {
           </div>
         </div>
       </div>
+
+      {/* Modals */}
+      <SupplierDetailModal
+        supplierId={selectedSupplierId}
+        isOpen={detailModalOpen}
+        onClose={handleCloseDetailModal}
+        canEdit={canManageSuppliers}
+        canDelete={canDeleteSuppliers}
+        onEdit={handleEditSupplier}
+      />
+      <EditSupplierModal
+        supplierId={selectedSupplierId}
+        isOpen={editModalOpen}
+        onClose={handleCloseEditModal}
+        onSuccess={handleSupplierUpdated}
+      />
     </>
   );
 }

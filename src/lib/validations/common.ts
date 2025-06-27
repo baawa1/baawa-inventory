@@ -73,7 +73,10 @@ export const emailSchema = z.string().email("Invalid email format");
 
 export const phoneSchema = z
   .string()
-  .regex(/^[\+]?[1-9][\d]{0,15}$/, "Invalid phone number format")
+  .regex(
+    /^(\+234[7-9]\d{9}|0[7-9]\d{9})$/,
+    "Phone number must be in Nigerian format: +2347087367278 or 07039893476"
+  )
   .optional();
 
 export const priceSchema = z
