@@ -30,33 +30,36 @@ export async function GET(request: NextRequest) {
     let query = supabase.from("stock_adjustments").select(`
         *,
         product:products(id, name, sku, category),
-        user:users(id, name, email)
+        user:users(id, first_name, last_name, email),
+        approver:users!approved_by(id, first_name, last_name, email)
       `);
 
     // Apply filters
     if (productId) {
-      query = query.eq("productId", parseInt(productId));
+      query = query.eq("product_id", parseInt(productId));
     }
 
     if (userId) {
-      query = query.eq("userId", parseInt(userId));
+      query = query.eq("user_id", parseInt(userId));
     }
 
     if (type) {
-      query = query.eq("type", type);
+      query = query.eq("adjustment_type", type);
     }
 
     if (fromDate) {
-      query = query.gte("createdAt", fromDate);
+      query = query.gte("created_at", fromDate);
     }
 
     if (toDate) {
-      query = query.lte("createdAt", toDate);
+      query = query.lte("created_at", toDate);
     }
 
     // Apply sorting and pagination
     query = query
-      .order(sortBy, { ascending: sortOrder === "asc" })
+      .order(sortBy === "createdAt" ? "created_at" : sortBy, {
+        ascending: sortOrder === "asc",
+      })
       .range(offset, offset + limit - 1);
 
     const { data: stockAdjustments, error, count } = await query;
@@ -201,24 +204,26 @@ export async function POST(request: NextRequest) {
       );
     }
 
-    // Create the stock adjustment record
+    // Create the stock adjustment record (PENDING by default)
     const { data: stockAdjustment, error: adjustmentError } = await supabase
       .from("stock_adjustments")
       .insert({
-        productId,
-        userId,
-        type,
+        product_id: productId,
+        user_id: userId,
+        adjustment_type: type,
         quantity: actualQuantity,
-        previousStock: product.stock,
-        newStock,
+        old_quantity: product.stock,
+        new_quantity: newStock,
         reason,
         notes,
+        reference_number: body.referenceNumber || null,
+        status: "PENDING", // All adjustments start as pending
       })
       .select(
         `
         *,
         product:products(id, name, sku, category),
-        user:users(id, name, email)
+        user:users(id, first_name, last_name, email)
       `
       )
       .single();
@@ -231,29 +236,19 @@ export async function POST(request: NextRequest) {
       );
     }
 
-    // Update the product stock
-    const { error: stockUpdateError } = await supabase
-      .from("products")
-      .update({ stock: newStock })
-      .eq("id", productId);
-
-    if (stockUpdateError) {
-      console.error("Error updating product stock:", stockUpdateError);
-      return NextResponse.json(
-        { error: "Failed to update product stock" },
-        { status: 500 }
-      );
-    }
+    // NOTE: Stock is NOT updated here - it will be updated when approved
 
     return NextResponse.json(
       {
         data: stockAdjustment,
+        message: "Stock adjustment created and pending approval",
         stockChange: {
           productId,
           productName: product.name,
-          previousStock: product.stock,
-          newStock,
+          currentStock: product.stock,
+          proposedNewStock: newStock,
           adjustmentQuantity: actualQuantity,
+          status: "PENDING",
         },
       },
       { status: 201 }
