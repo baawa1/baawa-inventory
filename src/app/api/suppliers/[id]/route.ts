@@ -7,14 +7,14 @@ import {
 } from "@/lib/validations";
 
 interface RouteParams {
-  params: { id: string };
+  params: Promise<{ id: string }>;
 }
 
 // GET /api/suppliers/[id] - Get a specific supplier
 export async function GET(request: NextRequest, { params }: RouteParams) {
   try {
     const supabase = await createServerSupabaseClient();
-    const { id } = params;
+    const { id } = await params;
 
     // Validate ID
     const supplierId = parseInt(id);
@@ -27,29 +27,7 @@ export async function GET(request: NextRequest, { params }: RouteParams) {
 
     const { data: supplier, error } = await supabase
       .from("suppliers")
-      .select(
-        `
-        *,
-        products:products(
-          id,
-          name,
-          sku,
-          category,
-          price,
-          stock,
-          status,
-          createdAt
-        ),
-        purchaseOrders:purchase_orders(
-          id,
-          orderNumber,
-          status,
-          totalAmount,
-          orderDate,
-          expectedDelivery
-        )
-      `
-      )
+      .select("*")
       .eq("id", supplierId)
       .single();
 
@@ -67,7 +45,28 @@ export async function GET(request: NextRequest, { params }: RouteParams) {
       );
     }
 
-    return NextResponse.json({ data: supplier });
+    // Transform database field names to frontend field names
+    const transformedSupplier = {
+      id: supplier.id,
+      name: supplier.name,
+      contactPerson: supplier.contact_person,
+      email: supplier.email,
+      phone: supplier.phone,
+      address: supplier.address,
+      city: supplier.city,
+      state: supplier.state,
+      country: supplier.country,
+      postalCode: supplier.postal_code,
+      taxId: supplier.tax_number,
+      paymentTerms: supplier.payment_terms,
+      creditLimit: supplier.credit_limit,
+      isActive: supplier.is_active,
+      notes: supplier.notes,
+      createdAt: supplier.created_at,
+      updatedAt: supplier.updated_at,
+    };
+
+    return NextResponse.json({ data: transformedSupplier });
   } catch (error) {
     console.error("Error in GET /api/suppliers/[id]:", error);
     return NextResponse.json(
@@ -81,7 +80,7 @@ export async function GET(request: NextRequest, { params }: RouteParams) {
 export async function PUT(request: NextRequest, { params }: RouteParams) {
   try {
     const supabase = await createServerSupabaseClient();
-    const { id } = params;
+    const { id } = await params;
     const body = await request.json();
 
     // Validate ID
@@ -135,10 +134,31 @@ export async function PUT(request: NextRequest, { params }: RouteParams) {
       }
     }
 
+    // Map frontend field names to database field names
+    const updateData: any = {};
+
+    if (body.name !== undefined) updateData.name = body.name;
+    if (body.contactPerson !== undefined)
+      updateData.contact_person = body.contactPerson;
+    if (body.email !== undefined) updateData.email = body.email;
+    if (body.phone !== undefined) updateData.phone = body.phone;
+    if (body.address !== undefined) updateData.address = body.address;
+    if (body.city !== undefined) updateData.city = body.city;
+    if (body.state !== undefined) updateData.state = body.state;
+    if (body.country !== undefined) updateData.country = body.country;
+    if (body.postalCode !== undefined) updateData.postal_code = body.postalCode;
+    if (body.taxId !== undefined) updateData.tax_number = body.taxId;
+    if (body.paymentTerms !== undefined)
+      updateData.payment_terms = body.paymentTerms;
+    if (body.creditLimit !== undefined)
+      updateData.credit_limit = body.creditLimit;
+    if (body.isActive !== undefined) updateData.is_active = body.isActive;
+    if (body.notes !== undefined) updateData.notes = body.notes;
+
     // Update the supplier
     const { data: supplier, error } = await supabase
       .from("suppliers")
-      .update(body)
+      .update(updateData)
       .eq("id", supplierId)
       .select("*")
       .single();
@@ -151,7 +171,28 @@ export async function PUT(request: NextRequest, { params }: RouteParams) {
       );
     }
 
-    return NextResponse.json({ data: supplier });
+    // Transform database field names to frontend field names
+    const transformedSupplier = {
+      id: supplier.id,
+      name: supplier.name,
+      contactPerson: supplier.contact_person,
+      email: supplier.email,
+      phone: supplier.phone,
+      address: supplier.address,
+      city: supplier.city,
+      state: supplier.state,
+      country: supplier.country,
+      postalCode: supplier.postal_code,
+      taxId: supplier.tax_number,
+      paymentTerms: supplier.payment_terms,
+      creditLimit: supplier.credit_limit,
+      isActive: supplier.is_active,
+      notes: supplier.notes,
+      createdAt: supplier.created_at,
+      updatedAt: supplier.updated_at,
+    };
+
+    return NextResponse.json({ data: transformedSupplier });
   } catch (error) {
     console.error("Error in PUT /api/suppliers/[id]:", error);
     return NextResponse.json(
@@ -165,7 +206,7 @@ export async function PUT(request: NextRequest, { params }: RouteParams) {
 export async function DELETE(request: NextRequest, { params }: RouteParams) {
   try {
     const supabase = await createServerSupabaseClient();
-    const { id } = params;
+    const { id } = await params;
     const { searchParams } = new URL(request.url);
     const hardDelete = searchParams.get("hard") === "true";
 

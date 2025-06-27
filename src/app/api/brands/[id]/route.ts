@@ -105,7 +105,7 @@ export async function PUT(
     );
 
     // Transform form data (handle both isActive and is_active)
-    let transformedData = { ...updateData };
+    const transformedData = { ...updateData };
     if ("isActive" in transformedData) {
       transformedData.is_active = (transformedData as any).isActive;
       delete (transformedData as any).isActive;

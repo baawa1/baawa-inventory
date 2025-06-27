@@ -32,7 +32,7 @@ export async function GET(request: NextRequest) {
     if (legacy) {
       // Legacy functionality: Get unique categories from products for dropdowns
       // First check if products table has category column or category_id
-      let { data: products, error } = await supabase
+      const { data: products, error } = await supabase
         .from("products")
         .select("category")
         .not("category", "is", null)

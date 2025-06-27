@@ -43,7 +43,7 @@ const data = {
   user: {
     name: "BaaWA Admin",
     email: "admin@baawa.com",
-    avatar: "/avatars/admin.jpg",
+    avatar: "",
   },
   navMain: [
     {
