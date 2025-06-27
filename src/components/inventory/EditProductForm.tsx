@@ -170,7 +170,7 @@ export default function EditProductForm({ productId }: EditProductFormProps) {
         // Handle suppliers
         if (suppliersRes.ok) {
           const suppliersData = await suppliersRes.json();
-          setSuppliers(suppliersData.data || []);
+          setSuppliers(suppliersData.suppliers || []);
         } else {
           console.error(
             "Failed to fetch suppliers:",

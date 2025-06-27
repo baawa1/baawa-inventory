@@ -112,14 +112,14 @@ export default function AddProductForm() {
         if (suppliersRes.ok) {
           const suppliersData = await suppliersRes.json();
           console.log("Suppliers API response:", suppliersData);
-          setSuppliers(suppliersData.data || []);
+          setSuppliers(suppliersData.suppliers || []);
 
           // Set first supplier as default if no suppliers are selected
           if (
-            (suppliersData.data || []).length > 0 &&
+            (suppliersData.suppliers || []).length > 0 &&
             !form.getValues("supplierId")
           ) {
-            form.setValue("supplierId", suppliersData.data[0].id);
+            form.setValue("supplierId", suppliersData.suppliers[0].id);
           }
         } else {
           console.error(
