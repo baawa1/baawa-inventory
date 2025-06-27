@@ -27,6 +27,7 @@ import {
   IconClipboardList,
   IconUser,
   IconBuilding,
+  IconX,
 } from "@tabler/icons-react";
 import { toast } from "sonner";
 import Link from "next/link";
@@ -60,9 +61,9 @@ interface SupplierDetailModalProps {
   isOpen: boolean;
   onClose: () => void;
   onEdit?: (id: number) => void;
-  onDelete?: (id: number) => void;
+  onDeactivate?: (id: number) => void;
   canEdit?: boolean;
-  canDelete?: boolean;
+  canDeactivate?: boolean;
 }
 
 export default function SupplierDetailModal({
@@ -70,9 +71,9 @@ export default function SupplierDetailModal({
   isOpen,
   onClose,
   onEdit,
-  onDelete,
+  onDeactivate,
   canEdit = false,
-  canDelete = false,
+  canDeactivate = false,
 }: SupplierDetailModalProps) {
   const { data: session } = useSession();
   const [supplier, setSupplier] = useState<Supplier | null>(null);
@@ -117,9 +118,9 @@ export default function SupplierDetailModal({
     }
   };
 
-  const handleDelete = () => {
-    if (supplier && onDelete) {
-      onDelete(supplier.id);
+  const handleDeactivate = () => {
+    if (supplier && onDeactivate) {
+      onDeactivate(supplier.id);
       onClose();
     }
   };
@@ -196,14 +197,14 @@ export default function SupplierDetailModal({
                     Edit
                   </Button>
                 )}
-                {canDelete && (
+                {canDeactivate && (
                   <Button
-                    onClick={handleDelete}
+                    onClick={handleDeactivate}
                     variant="destructive"
                     size="sm"
                   >
-                    <IconTrash className="h-4 w-4 mr-2" />
-                    Delete
+                    <IconX className="h-4 w-4 mr-2" />
+                    Deactivate
                   </Button>
                 )}
               </div>
