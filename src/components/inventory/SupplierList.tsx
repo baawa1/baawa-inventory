@@ -53,6 +53,7 @@ import {
   IconFilter,
   IconTruck,
   IconX,
+  IconRefresh,
 } from "@tabler/icons-react";
 import { toast } from "sonner";
 import SupplierDetailModal from "./SupplierDetailModal";
@@ -218,6 +219,42 @@ export default function SupplierList() {
     } catch (err) {
       console.error("Error deactivating supplier:", err);
       toast.error("Failed to deactivate supplier");
+    }
+  };
+
+  // Reactivate supplier
+  const handleReactivate = async (supplierId: number) => {
+    try {
+      const response = await fetch(`/api/suppliers/${supplierId}`, {
+        method: "PATCH",
+        headers: {
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify({
+          isActive: true,
+        }),
+      });
+
+      if (!response.ok) {
+        throw new Error("Failed to reactivate supplier");
+      }
+
+      toast.success("Supplier reactivated successfully");
+
+      // Update local state immediately for instant feedback
+      setSuppliers((prevSuppliers) =>
+        prevSuppliers.map((supplier) =>
+          supplier.id === supplierId
+            ? { ...supplier, isActive: true }
+            : supplier
+        )
+      );
+
+      // Also refresh from server to ensure consistency
+      await fetchSuppliers();
+    } catch (err) {
+      console.error("Error reactivating supplier:", err);
+      toast.error("Failed to reactivate supplier");
     }
   };
 
@@ -472,43 +509,80 @@ export default function SupplierList() {
                                     <IconEdit className="h-4 w-4" />
                                   </Button>
                                 )}
-                                {canDeactivateSuppliers && (
-                                  <AlertDialog>
-                                    <AlertDialogTrigger asChild>
-                                      <Button variant="ghost" size="sm">
-                                        <IconX className="h-4 w-4" />
-                                      </Button>
-                                    </AlertDialogTrigger>
-                                    <AlertDialogContent>
-                                      <AlertDialogHeader>
-                                        <AlertDialogTitle>
-                                          Deactivate Supplier
-                                        </AlertDialogTitle>
-                                        <AlertDialogDescription>
-                                          Are you sure you want to deactivate "
-                                          {supplier.name}
-                                          "? This will mark the supplier as
-                                          inactive and they won't appear in
-                                          active supplier lists, but their data
-                                          will be preserved for historical
-                                          records.
-                                        </AlertDialogDescription>
-                                      </AlertDialogHeader>
-                                      <AlertDialogFooter>
-                                        <AlertDialogCancel>
-                                          Cancel
-                                        </AlertDialogCancel>
-                                        <AlertDialogAction
-                                          onClick={() =>
-                                            handleDeactivate(supplier.id)
-                                          }
-                                        >
-                                          Deactivate
-                                        </AlertDialogAction>
-                                      </AlertDialogFooter>
-                                    </AlertDialogContent>
-                                  </AlertDialog>
-                                )}
+                                {canDeactivateSuppliers &&
+                                  supplier.isActive && (
+                                    <AlertDialog>
+                                      <AlertDialogTrigger asChild>
+                                        <Button variant="ghost" size="sm">
+                                          <IconX className="h-4 w-4" />
+                                        </Button>
+                                      </AlertDialogTrigger>
+                                      <AlertDialogContent>
+                                        <AlertDialogHeader>
+                                          <AlertDialogTitle>
+                                            Deactivate Supplier
+                                          </AlertDialogTitle>
+                                          <AlertDialogDescription>
+                                            Are you sure you want to deactivate
+                                            "{supplier.name}
+                                            "? This will mark the supplier as
+                                            inactive and they won't appear in
+                                            active supplier lists, but their
+                                            data will be preserved for
+                                            historical records.
+                                          </AlertDialogDescription>
+                                        </AlertDialogHeader>
+                                        <AlertDialogFooter>
+                                          <AlertDialogCancel>
+                                            Cancel
+                                          </AlertDialogCancel>
+                                          <AlertDialogAction
+                                            onClick={() =>
+                                              handleDeactivate(supplier.id)
+                                            }
+                                          >
+                                            Deactivate
+                                          </AlertDialogAction>
+                                        </AlertDialogFooter>
+                                      </AlertDialogContent>
+                                    </AlertDialog>
+                                  )}
+                                {canDeactivateSuppliers &&
+                                  !supplier.isActive && (
+                                    <AlertDialog>
+                                      <AlertDialogTrigger asChild>
+                                        <Button variant="ghost" size="sm">
+                                          <IconRefresh className="h-4 w-4" />
+                                        </Button>
+                                      </AlertDialogTrigger>
+                                      <AlertDialogContent>
+                                        <AlertDialogHeader>
+                                          <AlertDialogTitle>
+                                            Reactivate Supplier
+                                          </AlertDialogTitle>
+                                          <AlertDialogDescription>
+                                            Are you sure you want to reactivate
+                                            "{supplier.name}
+                                            "? This will mark the supplier as
+                                            active and they will appear in
+                                            active supplier lists again.
+                                          </AlertDialogDescription>
+                                        </AlertDialogHeader>
+                                        <AlertDialogFooter>
+                                          <AlertDialogCancel>
+                                            Cancel
+                                          </AlertDialogCancel>
+                                          <AlertDialogAction
+                                            onClick={() =>
+                                              handleReactivate(supplier.id)
+                                            }
+                                          >
+                                            Reactivate
+                                          </AlertDialogAction>
+                                        </AlertDialogFooter>
+                                      </AlertDialogContent>
+                                    </AlertDialog>
+                                  )}
                               </div>
                             </TableCell>
                           </TableRow>
@@ -566,6 +640,7 @@ export default function SupplierList() {
         canDeactivate={canDeactivateSuppliers}
         onEdit={handleEditSupplier}
         onDeactivate={handleDeactivate}
+        onReactivate={handleReactivate}
       />
       <EditSupplierModal
         supplierId={selectedSupplierId}

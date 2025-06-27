@@ -298,3 +298,59 @@ export async function DELETE(request: NextRequest, { params }: RouteParams) {
     );
   }
 }
+
+// PATCH /api/suppliers/[id] - Update supplier status or other fields
+export async function PATCH(request: NextRequest, { params }: RouteParams) {
+  try {
+    const supabase = await createServerSupabaseClient();
+    const { id } = await params;
+
+    // Validate ID
+    const supplierId = parseInt(id);
+    if (isNaN(supplierId)) {
+      return NextResponse.json(
+        { error: "Invalid supplier ID" },
+        { status: 400 }
+      );
+    }
+
+    // Parse request body
+    const body = await request.json();
+
+    // Check if this is a status update (reactivation/deactivation)
+    if (body.hasOwnProperty("isActive")) {
+      const { data: supplier, error } = await supabase
+        .from("suppliers")
+        .update({ is_active: body.isActive })
+        .eq("id", supplierId)
+        .select("id, name, is_active")
+        .single();
+
+      if (error) {
+        console.error("Error updating supplier status:", error);
+        return NextResponse.json(
+          { error: "Failed to update supplier status" },
+          { status: 500 }
+        );
+      }
+
+      const action = body.isActive ? "reactivated" : "deactivated";
+      return NextResponse.json({
+        data: supplier,
+        message: `Supplier ${action} successfully`,
+      });
+    }
+
+    // Handle other patch operations (can be extended later)
+    return NextResponse.json(
+      { error: "Invalid patch operation" },
+      { status: 400 }
+    );
+  } catch (error) {
+    console.error("Error in PATCH /api/suppliers/[id]:", error);
+    return NextResponse.json(
+      { error: "Internal server error" },
+      { status: 500 }
+    );
+  }
+}

@@ -28,6 +28,7 @@ import {
   IconUser,
   IconBuilding,
   IconX,
+  IconRefresh,
 } from "@tabler/icons-react";
 import { toast } from "sonner";
 import Link from "next/link";
@@ -62,6 +63,7 @@ interface SupplierDetailModalProps {
   onClose: () => void;
   onEdit?: (id: number) => void;
   onDeactivate?: (id: number) => void;
+  onReactivate?: (id: number) => void;
   canEdit?: boolean;
   canDeactivate?: boolean;
 }
@@ -72,6 +74,7 @@ export default function SupplierDetailModal({
   onClose,
   onEdit,
   onDeactivate,
+  onReactivate,
   canEdit = false,
   canDeactivate = false,
 }: SupplierDetailModalProps) {
@@ -121,6 +124,13 @@ export default function SupplierDetailModal({
   const handleDeactivate = () => {
     if (supplier && onDeactivate) {
       onDeactivate(supplier.id);
+      onClose();
+    }
+  };
+
+  const handleReactivate = () => {
+    if (supplier && onReactivate) {
+      onReactivate(supplier.id);
       onClose();
     }
   };
@@ -197,7 +207,7 @@ export default function SupplierDetailModal({
                     Edit
                   </Button>
                 )}
-                {canDeactivate && (
+                {canDeactivate && supplier.isActive && (
                   <Button
                     onClick={handleDeactivate}
                     variant="destructive"
@@ -205,6 +215,16 @@ export default function SupplierDetailModal({
                   >
                     <IconX className="h-4 w-4 mr-2" />
                     Deactivate
+                  </Button>
+                )}
+                {canDeactivate && !supplier.isActive && (
+                  <Button
+                    onClick={handleReactivate}
+                    variant="default"
+                    size="sm"
+                  >
+                    <IconRefresh className="h-4 w-4 mr-2" />
+                    Reactivate
                   </Button>
                 )}
               </div>
