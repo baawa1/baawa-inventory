@@ -52,6 +52,7 @@ import {
   IconMail,
   IconFilter,
   IconTruck,
+  IconX,
 } from "@tabler/icons-react";
 import { toast } from "sonner";
 import SupplierDetailModal from "./SupplierDetailModal";
@@ -116,7 +117,7 @@ export default function SupplierList() {
   const user = session?.user;
   const canManageSuppliers =
     user && ["ADMIN", "MANAGER"].includes(user.role || "");
-  const canDeleteSuppliers = user && user.role === "ADMIN";
+  const canDeactivateSuppliers = user && user.role === "ADMIN";
 
   // Modal handlers
   const handleViewSupplier = (supplierId: string) => {
@@ -189,22 +190,34 @@ export default function SupplierList() {
     }
   }, [status, currentPage, debouncedSearchTerm, filters.isActive]);
 
-  // Delete supplier
-  const handleDelete = async (supplierId: number) => {
+  // Deactivate supplier
+  const handleDeactivate = async (supplierId: number) => {
     try {
       const response = await fetch(`/api/suppliers/${supplierId}`, {
         method: "DELETE",
       });
 
       if (!response.ok) {
-        throw new Error("Failed to delete supplier");
+        throw new Error("Failed to deactivate supplier");
       }
 
-      toast.success("Supplier deleted successfully");
-      fetchSuppliers(); // Refresh list
+      toast.success("Supplier deactivated successfully");
+
+      // Update local state immediately for instant feedback
+      // For soft delete, mark as inactive. For hard delete, remove from list
+      setSuppliers((prevSuppliers) =>
+        prevSuppliers.map((supplier) =>
+          supplier.id === supplierId
+            ? { ...supplier, isActive: false }
+            : supplier
+        )
+      );
+
+      // Also refresh from server to ensure consistency
+      await fetchSuppliers();
     } catch (err) {
-      console.error("Error deleting supplier:", err);
-      toast.error("Failed to delete supplier");
+      console.error("Error deactivating supplier:", err);
+      toast.error("Failed to deactivate supplier");
     }
   };
 
@@ -459,24 +472,26 @@ export default function SupplierList() {
                                     <IconEdit className="h-4 w-4" />
                                   </Button>
                                 )}
-                                {canDeleteSuppliers && (
+                                {canDeactivateSuppliers && (
                                   <AlertDialog>
                                     <AlertDialogTrigger asChild>
                                       <Button variant="ghost" size="sm">
-                                        <IconTrash className="h-4 w-4" />
+                                        <IconX className="h-4 w-4" />
                                       </Button>
                                     </AlertDialogTrigger>
                                     <AlertDialogContent>
                                       <AlertDialogHeader>
                                         <AlertDialogTitle>
-                                          Delete Supplier
+                                          Deactivate Supplier
                                         </AlertDialogTitle>
                                         <AlertDialogDescription>
-                                          Are you sure you want to delete "
+                                          Are you sure you want to deactivate "
                                           {supplier.name}
-                                          "? This action cannot be undone and
-                                          will affect all related products and
-                                          purchase orders.
+                                          "? This will mark the supplier as
+                                          inactive and they won't appear in
+                                          active supplier lists, but their data
+                                          will be preserved for historical
+                                          records.
                                         </AlertDialogDescription>
                                       </AlertDialogHeader>
                                       <AlertDialogFooter>
@@ -485,10 +500,10 @@ export default function SupplierList() {
                                         </AlertDialogCancel>
                                         <AlertDialogAction
                                           onClick={() =>
-                                            handleDelete(supplier.id)
+                                            handleDeactivate(supplier.id)
                                           }
                                         >
-                                          Delete
+                                          Deactivate
                                         </AlertDialogAction>
                                       </AlertDialogFooter>
                                     </AlertDialogContent>
@@ -548,8 +563,9 @@ export default function SupplierList() {
         isOpen={detailModalOpen}
         onClose={handleCloseDetailModal}
         canEdit={canManageSuppliers}
-        canDelete={canDeleteSuppliers}
+        canDeactivate={canDeactivateSuppliers}
         onEdit={handleEditSupplier}
+        onDeactivate={handleDeactivate}
       />
       <EditSupplierModal
         supplierId={selectedSupplierId}

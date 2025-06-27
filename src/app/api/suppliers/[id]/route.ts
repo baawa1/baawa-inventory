@@ -238,7 +238,7 @@ export async function DELETE(request: NextRequest, { params }: RouteParams) {
       const { data: products } = await supabase
         .from("products")
         .select("id")
-        .eq("supplierId", supplierId)
+        .eq("supplier_id", supplierId)
         .limit(1);
 
       if (products && products.length > 0) {
@@ -272,9 +272,9 @@ export async function DELETE(request: NextRequest, { params }: RouteParams) {
       // Soft delete (deactivate)
       const { data: supplier, error } = await supabase
         .from("suppliers")
-        .update({ isActive: false })
+        .update({ is_active: false })
         .eq("id", supplierId)
-        .select("id, name, isActive")
+        .select("id, name, is_active")
         .single();
 
       if (error) {

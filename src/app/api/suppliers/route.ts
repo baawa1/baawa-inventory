@@ -82,10 +82,23 @@ export async function GET(request: NextRequest) {
         },
       })) || [];
 
-    // Get total count for pagination
-    const { count: totalCount } = await supabase
+    // Get total count for pagination (applying same filters)
+    let countQuery = supabase
       .from("suppliers")
       .select("*", { count: "exact", head: true });
+
+    // Apply same filters to count query
+    if (search) {
+      countQuery = countQuery.or(
+        `name.ilike.%${search}%,contact_person.ilike.%${search}%,email.ilike.%${search}%`
+      );
+    }
+
+    if (isActive !== null && isActive !== undefined) {
+      countQuery = countQuery.eq("is_active", isActive === "true");
+    }
+
+    const { count: totalCount } = await countQuery;
 
     return NextResponse.json({
       suppliers,
