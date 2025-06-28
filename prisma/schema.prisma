@@ -1,6 +1,3 @@
-// This is your Prisma schema file,
-// learn more about it in the docs: https://pris.ly/d/prisma-schema
-
 generator client {
   provider = "prisma-client-js"
 }
@@ -8,525 +5,460 @@ generator client {
 datasource db {
   provider  = "postgresql"
   url       = env("DATABASE_URL")
+  directUrl = env("DIRECT_URL")
 }
 
-// User Management
 model User {
-  id           Int      @id @default(autoincrement())
-  firstName    String   @map("first_name")
-  lastName     String   @map("last_name")
-  email        String   @unique
-  password     String   @map("password_hash")
-  phone        String?
-  role         UserRole @default(STAFF)
-  isActive     Boolean  @default(true) @map("is_active")
-  notes        String?
-  
-  // Authentication & Session
-  lastLogin          DateTime? @map("last_login")
-  lastLogout         DateTime? @map("last_logout")
-  lastActivity       DateTime? @map("last_activity")
-  
-  // Password Reset
-  resetToken         String?   @map("reset_token")
-  resetTokenExpires  DateTime? @map("reset_token_expires")
-  
-  // Email Verification & User Approval
-  emailVerified       Boolean   @default(false) @map("email_verified")
-  emailVerifiedAt     DateTime? @map("email_verified_at")
-  emailVerificationToken String? @map("email_verification_token")
-  emailVerificationExpires DateTime? @map("email_verification_expires")
-  
-  // User Approval Workflow
-  userStatus         UserStatus @default(PENDING) @map("user_status")
-  approvedBy         Int?      @map("approved_by")
-  approvedAt         DateTime? @map("approved_at")
-  rejectionReason    String?   @map("rejection_reason")
-  
-  // Email Preferences
-  emailNotifications Boolean   @default(true) @map("email_notifications")
-  marketingEmails    Boolean   @default(false) @map("marketing_emails")
-  
-  createdAt          DateTime @default(now()) @map("created_at")
-  updatedAt          DateTime @updatedAt @map("updated_at")
+  id                                                     Int                   @id @default(autoincrement())
+  email                                                  String                @unique @db.VarChar(255)
+  password                                               String?               @map("password_hash") @db.VarChar(255)
+  firstName                                              String                @map("first_name") @db.VarChar(100)
+  lastName                                               String                @map("last_name") @db.VarChar(100)
+  phone                                                  String?               @db.VarChar(20)
+  role                                                   String                @default("employee") @db.VarChar(20)
+  permissions                                            String[]
+  isActive                                               Boolean               @default(true) @map("is_active")
+  lastLogin                                              DateTime?             @map("last_login") @db.Timestamptz(6)
+  emailVerified                                          Boolean               @default(false) @map("email_verified")
+  emailVerifiedAt                                        DateTime?             @map("email_verified_at") @db.Timestamptz(6)
+  avatar_url                                             String?
+  createdAt                                              DateTime?             @default(now()) @map("created_at") @db.Timestamptz(6)
+  updatedAt                                              DateTime?             @default(now()) @updatedAt @map("updated_at") @db.Timestamptz(6)
+  lastLogout                                             DateTime?             @map("last_logout") @db.Timestamptz(6)
+  lastActivity                                           DateTime?             @map("last_activity") @db.Timestamptz(6)
+  resetToken                                             String?               @map("reset_token") @db.VarChar(255)
+  resetTokenExpires                                      DateTime?             @map("reset_token_expires") @db.Timestamptz(6)
+  emailVerificationToken                                 String?               @map("email_verification_token") @db.VarChar(255)
+  emailVerificationExpires                               DateTime?             @map("email_verification_expires") @db.Timestamptz(6)
+  userStatus                                             String?               @default("PENDING") @map("user_status") @db.VarChar(20)
+  approvedBy                                             Int?                  @map("approved_by")
+  approvedAt                                             DateTime?             @map("approved_at") @db.Timestamptz(6)
+  rejectionReason                                        String?               @map("rejection_reason")
+  emailNotifications                                     Boolean?              @default(true) @map("email_notifications")
+  marketingEmails                                        Boolean?              @default(false) @map("marketing_emails")
+  ai_content                                             AIContent[]
+  audit_logs                                             AuditLog[]
+  purchase_orders                                        PurchaseOrder[]
+  sales_transactions                                     SalesTransaction[]
+  stockAdditions                                         StockAddition[]       @relation("StockAdditionCreator")
+  stock_adjustments_stock_adjustments_user_idTousers     StockAdjustment[]     @relation("stock_adjustments_user_idTousers")
+  stock_adjustments_stock_adjustments_approved_byTousers StockAdjustment[]     @relation("stock_adjustments_approved_byTousers")
+  approvedReconciliations                                StockReconciliation[] @relation("ReconciliationApprover")
+  createdReconciliations                                 StockReconciliation[] @relation("ReconciliationCreator")
+  approver                                               User?                 @relation("UserApproval", fields: [approvedBy], references: [id], onDelete: NoAction, onUpdate: NoAction)
+  approvedUsers                                          User[]                @relation("UserApproval")
 
-  // Relations
-  salesTransactions SalesTransaction[]
-  stockAdjustments  StockAdjustment[]
-  auditLogs         AuditLog[]
-  
-  // Stock Management Relations
-  stockAdditions       StockAddition[]         @relation("StockAdditionCreator")
-  createdReconciliations StockReconciliation[] @relation("ReconciliationCreator")
-  approvedReconciliations StockReconciliation[] @relation("ReconciliationApprover")
-  
-  // Self-referential for approval workflow
-  approvedUsers     User[] @relation("UserApproval")
-  approver          User?  @relation("UserApproval", fields: [approvedBy], references: [id])
-
+  @@index([approvedBy], map: "idx_users_approved_by")
+  @@index([email], map: "idx_users_email")
+  @@index([emailVerificationToken], map: "idx_users_email_verification_token")
+  @@index([emailVerified], map: "idx_users_email_verified")
+  @@index([isActive], map: "idx_users_is_active")
+  @@index([lastActivity], map: "idx_users_last_activity")
+  @@index([lastLogin], map: "idx_users_last_login")
+  @@index([role], map: "idx_users_role")
+  @@index([userStatus], map: "idx_users_user_status")
   @@map("users")
 }
 
-enum UserRole {
-  ADMIN
-  MANAGER
-  STAFF
-}
-
-enum UserStatus {
-  PENDING       // User registered but email not verified
-  VERIFIED      // Email verified but not approved by admin
-  APPROVED      // Approved by admin and can access dashboard
-  REJECTED      // Rejected by admin
-  SUSPENDED     // Temporarily suspended
-}
-
-// Supplier Management
+/// This model contains an expression index which requires additional setup for migrations. Visit https://pris.ly/d/expression-indexes for more info.
 model Supplier {
-  id            Int      @id @default(autoincrement())
-  name          String
-  contactPerson String?  @map("contact_person")
-  email         String?
-  phone         String?
-  address       String?
-  city          String?
-  state         String?
-  postalCode    String?  @map("postal_code")
-  country       String?  @default("Canada")
-  website       String?
-  taxNumber     String?  @map("tax_number")
-  paymentTerms  String?  @map("payment_terms")
-  creditLimit   Decimal? @map("credit_limit") @db.Decimal(10, 2)
-  notes         String?
-  isActive      Boolean  @default(true) @map("is_active")
-  createdAt     DateTime @default(now()) @map("created_at")
-  updatedAt     DateTime @updatedAt @map("updated_at")
+  id              Int             @id @default(autoincrement())
+  name            String          @db.VarChar(255)
+  contactPerson   String?         @map("contact_person") @db.VarChar(255)
+  email           String?         @db.VarChar(255)
+  phone           String?         @db.VarChar(20)
+  address         String?
+  city            String?         @db.VarChar(100)
+  state           String?         @db.VarChar(100)
+  postalCode      String?         @map("postal_code") @db.VarChar(20)
+  country         String?         @default("Canada") @db.VarChar(100)
+  website         String?         @db.VarChar(255)
+  taxNumber       String?         @map("tax_number") @db.VarChar(100)
+  paymentTerms    String?         @map("payment_terms") @db.VarChar(100)
+  notes           String?
+  isActive        Boolean         @default(true) @map("is_active")
+  createdAt       DateTime?       @default(now()) @map("created_at") @db.Timestamptz(6)
+  updatedAt       DateTime?       @default(now()) @updatedAt @map("updated_at") @db.Timestamptz(6)
+  creditLimit     Decimal?        @map("credit_limit") @db.Decimal(15, 2)
+  products        Product[]
+  purchase_orders PurchaseOrder[]
+  stockAdditions  StockAddition[]
 
-  // Relations
-  products       Product[]
-  purchaseOrders PurchaseOrder[]
-  stockAdditions StockAddition[]
-
+  @@index([isActive], map: "idx_suppliers_active")
+  @@index([contactPerson], map: "idx_suppliers_contact")
+  @@index([email], map: "idx_suppliers_email")
+  @@index([name], map: "idx_suppliers_name")
   @@map("suppliers")
 }
 
-// Category Management
 model Category {
-  id          Int      @id @default(autoincrement())
-  name        String   @unique
+  id          Int       @id @default(autoincrement())
+  name        String    @unique @db.VarChar(100)
   description String?
-  isActive    Boolean  @default(true) @map("is_active")
-  createdAt   DateTime @default(now()) @map("created_at")
-  updatedAt   DateTime @updatedAt @map("updated_at")
-
-  // Relations
+  isActive    Boolean   @default(true) @map("is_active")
+  createdAt   DateTime  @default(now()) @map("created_at") @db.Timestamptz(6)
+  updatedAt   DateTime  @default(now()) @updatedAt @map("updated_at") @db.Timestamptz(6)
   products    Product[]
 
   @@map("categories")
 }
 
-// Brand Management
 model Brand {
-  id          Int      @id @default(autoincrement())
-  name        String   @unique
+  id          Int       @id @default(autoincrement())
+  name        String    @unique @db.VarChar(100)
   description String?
-  website     String?
-  isActive    Boolean  @default(true) @map("is_active")
-  createdAt   DateTime @default(now()) @map("created_at")
-  updatedAt   DateTime @updatedAt @map("updated_at")
-
-  // Relations
+  website     String?   @db.VarChar(255)
+  isActive    Boolean?  @default(true) @map("is_active")
+  createdAt   DateTime? @default(now()) @map("created_at") @db.Timestamptz(6)
+  updatedAt   DateTime? @default(now()) @updatedAt @map("updated_at") @db.Timestamptz(6)
   products    Product[]
 
+  @@index([isActive], map: "idx_brands_is_active")
+  @@index([name], map: "idx_brands_name")
   @@map("brands")
 }
 
-// Product Catalog
 model Product {
-  id               Int               @id @default(autoincrement())
-  name             String
-  description      String?
-  sku              String            @unique
-  barcode          String?           @unique
-  cost             Decimal           @db.Decimal(10, 2)
-  price            Decimal           @db.Decimal(10, 2)
-  stock            Int               @default(0)
-  minStock         Int               @default(0) @map("min_stock")
-  maxStock         Int?              @map("max_stock")
-  unit             String            @default("pcs")
-  weight           Decimal?          @db.Decimal(8, 3)
-  dimensions       String?
-  color            String?
-  size             String?
-  material         String?
-  status           ProductStatus     @default(ACTIVE)
-  hasVariants      Boolean           @default(false) @map("has_variants")
-  isArchived       Boolean           @default(false) @map("is_archived")
-  images           Json?             // Array of image URLs
-  tags             String[]          @default([])
-  metaTitle        String?           @map("meta_title")
-  metaDescription  String?           @map("meta_description")
-  seoKeywords      String[]          @default([]) @map("seo_keywords")
-  createdAt        DateTime          @default(now()) @map("created_at")
-  updatedAt        DateTime          @updatedAt @map("updated_at")
+  id                   Int                       @id @default(autoincrement())
+  name                 String                    @db.VarChar(255)
+  description          String?
+  sku                  String                    @unique @db.VarChar(100)
+  barcode              String?                   @db.VarChar(100)
+  cost                 Decimal                   @db.Decimal(10, 2)
+  price                Decimal                   @db.Decimal(10, 2)
+  stock                Int                       @default(0)
+  minStock             Int                       @default(0) @map("min_stock")
+  maxStock             Int?                      @map("max_stock")
+  unit                 String                    @default("piece") @db.VarChar(20)
+  weight               Decimal?                  @db.Decimal(8, 3)
+  dimensions           String?                   @db.VarChar(100)
+  color                String?                   @db.VarChar(50)
+  size                 String?                   @db.VarChar(50)
+  material             String?                   @db.VarChar(100)
+  status               String                    @default("active") @db.VarChar(20)
+  hasVariants          Boolean                   @default(false) @map("has_variants")
+  isArchived           Boolean                   @default(false) @map("is_archived")
+  images               Json?
+  tags                 String[]
+  metaTitle            String?                   @map("meta_title") @db.VarChar(255)
+  metaDescription      String?                   @map("meta_description")
+  seoKeywords          String[]                  @map("seo_keywords")
+  supplierId           Int?                      @map("supplier_id")
+  createdAt            DateTime?                 @default(now()) @map("created_at") @db.Timestamptz(6)
+  updatedAt            DateTime?                 @default(now()) @updatedAt @map("updated_at") @db.Timestamptz(6)
+  categoryId           Int?                      @map("category_id")
+  brandId              Int?                      @map("brand_id")
+  ai_content           AIContent[]
+  product_variants     ProductVariant[]
+  brand                Brand?                    @relation(fields: [brandId], references: [id], onUpdate: NoAction)
+  category             Category?                 @relation(fields: [categoryId], references: [id], onUpdate: NoAction)
+  supplier             Supplier?                 @relation(fields: [supplierId], references: [id], onUpdate: NoAction)
+  purchase_order_items PurchaseOrderItem[]
+  sales_items          SalesItem[]
+  stockAdditions       StockAddition[]
+  stock_adjustments    StockAdjustment[]
+  reconciliationItems  StockReconciliationItem[]
+  webflow_sync         webflow_sync[]
 
-  // Relations
-  supplier         Supplier?         @relation(fields: [supplierId], references: [id])
-  supplierId       Int?              @map("supplier_id")
-  category         Category?         @relation(fields: [categoryId], references: [id])
-  categoryId       Int?              @map("category_id")
-  brand            Brand?            @relation(fields: [brandId], references: [id])
-  brandId          Int?              @map("brand_id")
-  variants         ProductVariant[]
-  stockAdjustments StockAdjustment[]
-  salesItems       SalesItem[]
-  purchaseOrderItems PurchaseOrderItem[]
-  aiContent        AIContent[]
-  webflowSync      WebflowSync?
-  
-  // New Stock Management Relations
-  stockAdditions         StockAddition[]
-  reconciliationItems    StockReconciliationItem[]
-
+  @@index([sku], map: "idx_products_sku")
+  @@index([status], map: "idx_products_status")
+  @@index([stock], map: "idx_products_stock")
+  @@index([supplierId], map: "idx_products_supplier_id")
   @@map("products")
 }
 
-enum ProductStatus {
-  ACTIVE
-  INACTIVE
-  OUT_OF_STOCK
-  DISCONTINUED
-}
-
-// Product Variants
 model ProductVariant {
-  id        Int      @id @default(autoincrement())
-  name      String
-  sku       String   @unique
-  barcode   String?  @unique
-  price     Decimal  @db.Decimal(10, 2)
-  cost      Decimal  @db.Decimal(10, 2)
-  stock     Int      @default(0)
-  minStock  Int      @default(0)
-  attributes Json    // e.g., {"color": "red", "size": "M"}
-  isActive  Boolean  @default(true)
-  createdAt DateTime @default(now())
-  updatedAt DateTime @updatedAt
+  id                   Int                 @id @default(autoincrement())
+  product_id           Int
+  sku                  String              @unique @db.VarChar(100)
+  name                 String              @db.VarChar(255)
+  color                String?             @db.VarChar(100)
+  size                 String?             @db.VarChar(50)
+  material             String?             @db.VarChar(100)
+  price                Decimal             @db.Decimal(10, 2)
+  cost                 Decimal?            @db.Decimal(10, 2)
+  current_stock        Int                 @default(0)
+  min_stock_level      Int?                @default(0)
+  max_stock_level      Int?
+  weight               Decimal?            @db.Decimal(8, 3)
+  dimensions           Json?
+  images               String[]
+  is_active            Boolean             @default(true)
+  created_at           DateTime?           @default(now()) @db.Timestamptz(6)
+  updated_at           DateTime?           @default(now()) @db.Timestamptz(6)
+  products             Product             @relation(fields: [product_id], references: [id], onDelete: Cascade, onUpdate: NoAction)
+  purchase_order_items PurchaseOrderItem[]
+  sales_items          SalesItem[]
+  stock_adjustments    StockAdjustment[]
 
-  // Relations
-  product   Product @relation(fields: [productId], references: [id], onDelete: Cascade)
-  productId Int
-
-  stockAdjustments StockAdjustment[]
-  salesItems       SalesItem[]
-
+  @@index([product_id], map: "idx_product_variants_product_id")
+  @@index([sku], map: "idx_product_variants_sku")
   @@map("product_variants")
 }
 
-// Sales Transactions
 model SalesTransaction {
-  id              Int                 @id @default(autoincrement())
-  transactionCode String              @unique
-  total           Decimal             @db.Decimal(10, 2)
-  subtotal        Decimal             @db.Decimal(10, 2)
-  tax             Decimal             @default(0) @db.Decimal(10, 2)
-  discount        Decimal             @default(0) @db.Decimal(10, 2)
-  discountType    DiscountType        @default(AMOUNT)
-  paymentMethod   PaymentMethod
-  paymentStatus   PaymentStatus       @default(PENDING)
-  customerName    String?
-  customerEmail   String?
-  customerPhone   String?
-  notes           String?
-  receiptNumber   String?             @unique
-  isRefund        Boolean             @default(false)
-  refundReason    String?
-  syncedToWebflow Boolean             @default(false)
-  syncedAt        DateTime?
-  createdAt       DateTime            @default(now())
-  updatedAt       DateTime            @updatedAt
+  id                 Int         @id @default(autoincrement())
+  transaction_number String      @unique @db.VarChar(50)
+  customer_name      String?     @db.VarChar(255)
+  customer_email     String?     @db.VarChar(255)
+  customer_phone     String?     @db.VarChar(20)
+  subtotal           Decimal     @db.Decimal(10, 2)
+  tax_amount         Decimal     @default(0) @db.Decimal(10, 2)
+  discount_amount    Decimal     @default(0) @db.Decimal(10, 2)
+  total_amount       Decimal     @db.Decimal(10, 2)
+  payment_method     String      @db.VarChar(50)
+  payment_status     String      @default("pending") @db.VarChar(20)
+  transaction_type   String      @default("sale") @db.VarChar(20)
+  notes              String?
+  user_id            Int
+  created_at         DateTime?   @default(now()) @db.Timestamptz(6)
+  updated_at         DateTime?   @default(now()) @db.Timestamptz(6)
+  sales_items        SalesItem[]
+  users              User        @relation(fields: [user_id], references: [id], onDelete: NoAction, onUpdate: NoAction)
 
-  // Relations
-  cashier     User        @relation(fields: [cashierId], references: [id])
-  cashierId   Int
-  salesItems  SalesItem[]
-  auditLogs   AuditLog[]
-
+  @@index([created_at], map: "idx_sales_transactions_created_at")
+  @@index([payment_status], map: "idx_sales_transactions_payment_status")
+  @@index([transaction_number], map: "idx_sales_transactions_transaction_number")
+  @@index([user_id], map: "idx_sales_transactions_user_id")
   @@map("sales_transactions")
 }
 
-enum PaymentMethod {
-  CASH
-  BANK_TRANSFER
-  POS_MACHINE
-  CREDIT_CARD
-  MOBILE_MONEY
-}
-
-enum PaymentStatus {
-  PENDING
-  PAID
-  REFUNDED
-  CANCELLED
-}
-
-enum DiscountType {
-  AMOUNT
-  PERCENTAGE
-}
-
-// Sales Items
 model SalesItem {
-  id         Int     @id @default(autoincrement())
-  quantity   Int
-  unitPrice  Decimal @db.Decimal(10, 2)
-  totalPrice Decimal @db.Decimal(10, 2)
-  discount   Decimal @default(0) @db.Decimal(10, 2)
-  createdAt  DateTime @default(now())
+  id                 Int              @id @default(autoincrement())
+  transaction_id     Int
+  product_id         Int?
+  variant_id         Int?
+  quantity           Int
+  unit_price         Decimal          @db.Decimal(10, 2)
+  total_price        Decimal          @db.Decimal(10, 2)
+  discount_amount    Decimal?         @default(0) @db.Decimal(10, 2)
+  created_at         DateTime?        @default(now()) @db.Timestamptz(6)
+  products           Product?         @relation(fields: [product_id], references: [id], onUpdate: NoAction)
+  sales_transactions SalesTransaction @relation(fields: [transaction_id], references: [id], onDelete: Cascade, onUpdate: NoAction)
+  product_variants   ProductVariant?  @relation(fields: [variant_id], references: [id], onUpdate: NoAction)
 
-  // Relations
-  transaction   SalesTransaction @relation(fields: [transactionId], references: [id], onDelete: Cascade)
-  transactionId Int
-  product       Product?         @relation(fields: [productId], references: [id])
-  productId     Int?
-  variant       ProductVariant?  @relation(fields: [variantId], references: [id])
-  variantId     Int?
-
+  @@index([product_id], map: "idx_sales_items_product_id")
+  @@index([transaction_id], map: "idx_sales_items_transaction_id")
+  @@index([variant_id], map: "idx_sales_items_variant_id")
   @@map("sales_items")
 }
 
-// Stock Addition - For new stock purchases
 model StockAddition {
-  id            Int      @id @default(autoincrement())
-  quantity      Int
-  costPerUnit   Decimal  @db.Decimal(10, 2) @map("cost_per_unit")
-  totalCost     Decimal  @db.Decimal(10, 2) @map("total_cost")
-  purchaseDate  DateTime @default(now()) @map("purchase_date")
-  notes         String?
-  referenceNo   String?  @map("reference_no") // Invoice/receipt number
-  createdAt     DateTime @default(now()) @map("created_at")
-  updatedAt     DateTime @updatedAt @map("updated_at")
+  id           Int       @id @default(autoincrement())
+  productId    Int       @map("product_id")
+  supplierId   Int?      @map("supplier_id")
+  createdById  Int       @map("created_by")
+  quantity     Int
+  costPerUnit  Decimal   @map("cost_per_unit") @db.Decimal(10, 2)
+  totalCost    Decimal   @map("total_cost") @db.Decimal(10, 2)
+  purchaseDate DateTime? @default(now()) @map("purchase_date") @db.Timestamptz(6)
+  notes        String?
+  referenceNo  String?   @map("reference_no") @db.VarChar(255)
+  createdAt    DateTime? @default(now()) @map("created_at") @db.Timestamptz(6)
+  updatedAt    DateTime? @default(now()) @updatedAt @map("updated_at") @db.Timestamptz(6)
+  createdBy    User      @relation("StockAdditionCreator", fields: [createdById], references: [id], onUpdate: NoAction)
+  product      Product   @relation(fields: [productId], references: [id], onDelete: Cascade, onUpdate: NoAction)
+  supplier     Supplier? @relation(fields: [supplierId], references: [id], onUpdate: NoAction)
 
-  // Relations
-  product     Product   @relation(fields: [productId], references: [id])
-  productId   Int       @map("product_id")
-  supplier    Supplier? @relation(fields: [supplierId], references: [id])
-  supplierId  Int?      @map("supplier_id")
-  createdBy   User      @relation("StockAdditionCreator", fields: [createdById], references: [id])
-  createdById Int       @map("created_by")
-
+  @@index([createdById], map: "idx_stock_additions_created_by")
+  @@index([productId], map: "idx_stock_additions_product_id")
+  @@index([purchaseDate], map: "idx_stock_additions_purchase_date")
+  @@index([supplierId], map: "idx_stock_additions_supplier_id")
   @@map("stock_additions")
 }
 
-// Stock Reconciliation - For multi-product stock counts with approval
 model StockReconciliation {
-  id          Int                      @id @default(autoincrement())
-  title       String
-  description String?
-  status      StockReconciliationStatus @default(DRAFT)
-  notes       String?
-  createdAt   DateTime                 @default(now()) @map("created_at")
-  updatedAt   DateTime                 @updatedAt @map("updated_at")
-  submittedAt DateTime?                @map("submitted_at")
-  approvedAt  DateTime?                @map("approved_at")
-
-  // Relations
-  createdBy    User                       @relation("ReconciliationCreator", fields: [createdById], references: [id])
-  createdById  Int                        @map("created_by")
-  approvedBy   User?                      @relation("ReconciliationApprover", fields: [approvedById], references: [id])
-  approvedById Int?                       @map("approved_by")
+  id           Int                          @id @default(autoincrement())
+  title        String                       @db.VarChar(255)
+  description  String?
+  status       stock_reconciliation_status? @default(DRAFT)
+  notes        String?
+  createdById  Int                          @map("created_by")
+  approvedById Int?                         @map("approved_by")
+  createdAt    DateTime?                    @default(now()) @map("created_at") @db.Timestamptz(6)
+  updatedAt    DateTime?                    @default(now()) @updatedAt @map("updated_at") @db.Timestamptz(6)
+  submittedAt  DateTime?                    @map("submitted_at") @db.Timestamptz(6)
+  approvedAt   DateTime?                    @map("approved_at") @db.Timestamptz(6)
   items        StockReconciliationItem[]
+  approvedBy   User?                        @relation("ReconciliationApprover", fields: [approvedById], references: [id], onUpdate: NoAction)
+  createdBy    User                         @relation("ReconciliationCreator", fields: [createdById], references: [id], onUpdate: NoAction)
 
+  @@index([approvedById], map: "idx_stock_reconciliations_approved_by")
+  @@index([createdAt], map: "idx_stock_reconciliations_created_at")
+  @@index([createdById], map: "idx_stock_reconciliations_created_by")
+  @@index([status], map: "idx_stock_reconciliations_status")
   @@map("stock_reconciliations")
 }
 
-enum StockReconciliationStatus {
-  DRAFT
-  PENDING
-  APPROVED
-  REJECTED
-}
-
-// Stock Reconciliation Items - Individual product adjustments within a reconciliation
 model StockReconciliationItem {
-  id               Int     @id @default(autoincrement())
-  systemCount      Int     @map("system_count")    // Current system stock count
-  physicalCount    Int     @map("physical_count")  // Actual counted stock
-  discrepancy      Int     @map("discrepancy")     // Calculated difference
-  discrepancyReason String? @map("discrepancy_reason")
-  estimatedImpact  Decimal? @db.Decimal(10, 2) @map("estimated_impact") // Financial impact
-  notes           String?
+  id                Int                 @id @default(autoincrement())
+  reconciliationId  Int                 @map("reconciliation_id")
+  productId         Int                 @map("product_id")
+  systemCount       Int                 @map("system_count")
+  physicalCount     Int                 @map("physical_count")
+  discrepancy       Int                 @map("discrepancy")
+  discrepancyReason String?             @map("discrepancy_reason")
+  estimatedImpact   Decimal?            @map("estimated_impact") @db.Decimal(10, 2)
+  notes             String?
+  product           Product             @relation(fields: [productId], references: [id], onDelete: Cascade, onUpdate: NoAction)
+  reconciliation    StockReconciliation @relation(fields: [reconciliationId], references: [id], onDelete: Cascade, onUpdate: NoAction)
 
-  // Relations
-  reconciliation   StockReconciliation @relation(fields: [reconciliationId], references: [id], onDelete: Cascade)
-  reconciliationId Int                 @map("reconciliation_id")
-  product          Product             @relation(fields: [productId], references: [id])
-  productId        Int                 @map("product_id")
-
+  @@index([productId], map: "idx_stock_reconciliation_items_product_id")
+  @@index([reconciliationId], map: "idx_stock_reconciliation_items_reconciliation_id")
   @@map("stock_reconciliation_items")
 }
 
-// Stock Management
 model StockAdjustment {
-  id            Int                 @id @default(autoincrement())
-  type          StockAdjustmentType
-  quantity      Int
-  previousStock Int
-  newStock      Int
-  reason        String
-  notes         String?
-  createdAt     DateTime            @default(now())
+  id                                         Int             @id @default(autoincrement())
+  product_id                                 Int?
+  variant_id                                 Int?
+  adjustment_type                            String          @db.VarChar(50)
+  quantity                                   Int
+  old_quantity                               Int
+  new_quantity                               Int
+  reason                                     String
+  notes                                      String?
+  reference_number                           String?         @db.VarChar(100)
+  user_id                                    Int
+  created_at                                 DateTime?       @default(now()) @db.Timestamptz(6)
+  updated_at                                 DateTime?       @default(now()) @db.Timestamptz(6)
+  status                                     String          @default("PENDING") @db.VarChar(20)
+  approved_by                                Int?
+  approved_at                                DateTime?       @db.Timestamptz(6)
+  rejection_reason                           String?
+  products                                   Product?        @relation(fields: [product_id], references: [id], onDelete: Cascade, onUpdate: NoAction, map: "fk_stock_adjustments_product_id")
+  users_stock_adjustments_user_idTousers     User            @relation("stock_adjustments_user_idTousers", fields: [user_id], references: [id], onUpdate: NoAction, map: "fk_stock_adjustments_user_id")
+  product_variants                           ProductVariant? @relation(fields: [variant_id], references: [id], onDelete: Cascade, onUpdate: NoAction, map: "fk_stock_adjustments_variant_id")
+  users_stock_adjustments_approved_byTousers User?           @relation("stock_adjustments_approved_byTousers", fields: [approved_by], references: [id], onDelete: NoAction, onUpdate: NoAction)
 
-  // Relations
-  user      User            @relation(fields: [userId], references: [id])
-  userId    Int
-  product   Product?        @relation(fields: [productId], references: [id])
-  productId Int?
-  variant   ProductVariant? @relation(fields: [variantId], references: [id])
-  variantId Int?
-
+  @@index([adjustment_type], map: "idx_stock_adjustments_adjustment_type")
+  @@index([approved_by], map: "idx_stock_adjustments_approved_by")
+  @@index([created_at], map: "idx_stock_adjustments_created_at")
+  @@index([product_id], map: "idx_stock_adjustments_product_id")
+  @@index([status], map: "idx_stock_adjustments_status")
+  @@index([user_id], map: "idx_stock_adjustments_user_id")
+  @@index([variant_id], map: "idx_stock_adjustments_variant_id")
   @@map("stock_adjustments")
 }
 
-enum StockAdjustmentType {
-  INCREASE
-  DECREASE
-  RECOUNT
-  DAMAGE
-  TRANSFER
-  RETURN
-}
-
-// Purchase Orders
 model PurchaseOrder {
-  id            Int                 @id @default(autoincrement())
-  orderNumber   String              @unique
-  status        PurchaseOrderStatus @default(PENDING)
-  orderDate     DateTime            @default(now())
-  expectedDate  DateTime?
-  receivedDate  DateTime?
-  total         Decimal             @db.Decimal(10, 2)
-  notes         String?
-  createdAt     DateTime            @default(now())
-  updatedAt     DateTime            @updatedAt
+  id                     Int                 @id @default(autoincrement())
+  order_number           String              @unique @db.VarChar(50)
+  supplier_id            Int
+  status                 String              @default("draft") @db.VarChar(20)
+  order_date             DateTime            @db.Date
+  expected_delivery_date DateTime?           @db.Date
+  actual_delivery_date   DateTime?           @db.Date
+  subtotal               Decimal             @db.Decimal(10, 2)
+  tax_amount             Decimal             @default(0) @db.Decimal(10, 2)
+  shipping_cost          Decimal?            @default(0) @db.Decimal(10, 2)
+  total_amount           Decimal             @db.Decimal(10, 2)
+  notes                  String?
+  user_id                Int
+  created_at             DateTime?           @default(now()) @db.Timestamptz(6)
+  updated_at             DateTime?           @default(now()) @db.Timestamptz(6)
+  purchase_order_items   PurchaseOrderItem[]
+  suppliers              Supplier            @relation(fields: [supplier_id], references: [id], onDelete: NoAction, onUpdate: NoAction)
+  users                  User                @relation(fields: [user_id], references: [id], onDelete: NoAction, onUpdate: NoAction)
 
-  // Relations
-  supplier Supplier            @relation(fields: [supplierId], references: [id])
-  supplierId Int
-  items    PurchaseOrderItem[]
-
+  @@index([order_number], map: "idx_purchase_orders_number")
+  @@index([order_date], map: "idx_purchase_orders_order_date")
+  @@index([status], map: "idx_purchase_orders_status")
+  @@index([supplier_id], map: "idx_purchase_orders_supplier")
+  @@index([supplier_id], map: "idx_purchase_orders_supplier_id")
+  @@index([user_id], map: "idx_purchase_orders_user_id")
   @@map("purchase_orders")
 }
 
-enum PurchaseOrderStatus {
-  PENDING
-  ORDERED
-  PARTIAL_RECEIVED
-  RECEIVED
-  CANCELLED
-}
-
 model PurchaseOrderItem {
-  id            Int      @id @default(autoincrement())
-  quantity      Int
-  unitCost      Decimal  @db.Decimal(10, 2)
-  totalCost     Decimal  @db.Decimal(10, 2)
-  receivedQty   Int      @default(0)
-  createdAt     DateTime @default(now())
+  id                Int             @id @default(autoincrement())
+  purchase_order_id Int
+  product_id        Int?
+  variant_id        Int?
+  quantity_ordered  Int
+  quantity_received Int?            @default(0)
+  unit_cost         Decimal         @db.Decimal(10, 2)
+  total_cost        Decimal         @db.Decimal(10, 2)
+  created_at        DateTime?       @default(now()) @db.Timestamptz(6)
+  products          Product?        @relation(fields: [product_id], references: [id], onUpdate: NoAction)
+  purchase_orders   PurchaseOrder   @relation(fields: [purchase_order_id], references: [id], onDelete: Cascade, onUpdate: NoAction)
+  product_variants  ProductVariant? @relation(fields: [variant_id], references: [id], onUpdate: NoAction)
 
-  // Relations
-  purchaseOrder   PurchaseOrder @relation(fields: [purchaseOrderId], references: [id], onDelete: Cascade)
-  purchaseOrderId Int
-  product         Product       @relation(fields: [productId], references: [id])
-  productId       Int
-
+  @@index([purchase_order_id], map: "idx_purchase_order_items_order")
+  @@index([product_id], map: "idx_purchase_order_items_product")
+  @@index([product_id], map: "idx_purchase_order_items_product_id")
+  @@index([purchase_order_id], map: "idx_purchase_order_items_purchase_order_id")
+  @@index([variant_id], map: "idx_purchase_order_items_variant_id")
   @@map("purchase_order_items")
 }
 
-// Audit & Activity Logs
 model AuditLog {
-  id          Int       @id @default(autoincrement())
-  action      String
-  entityType  String
-  entityId    String
-  oldValues   Json?
-  newValues   Json?
-  ipAddress   String?
-  userAgent   String?
-  createdAt   DateTime  @default(now())
+  id         Int       @id @default(autoincrement())
+  user_id    Int?
+  action     String    @db.VarChar(100)
+  table_name String    @db.VarChar(100)
+  record_id  Int?
+  old_values Json?
+  new_values Json?
+  ip_address String?   @db.Inet
+  user_agent String?
+  created_at DateTime? @default(now()) @db.Timestamptz(6)
+  users      User?     @relation(fields: [user_id], references: [id], onUpdate: NoAction)
 
-  // Relations
-  user          User?             @relation(fields: [userId], references: [id])
-  userId        Int?
-  transaction   SalesTransaction? @relation(fields: [transactionId], references: [id])
-  transactionId Int?
-
+  @@index([created_at], map: "idx_audit_logs_created_at")
+  @@index([record_id], map: "idx_audit_logs_record_id")
+  @@index([table_name], map: "idx_audit_logs_table_name")
+  @@index([user_id], map: "idx_audit_logs_user_id")
   @@map("audit_logs")
 }
 
-// AI Generated Content
 model AIContent {
-  id              Int           @id @default(autoincrement())
-  type            AIContentType
-  prompt          String
-  generatedText   String
-  status          ContentStatus @default(DRAFT)
-  tone            String?
-  keywords        String[]      @default([])
-  isApproved      Boolean       @default(false)
-  approvedAt      DateTime?
-  version         Int           @default(1)
-  createdAt       DateTime      @default(now())
-  updatedAt       DateTime      @updatedAt
+  id                Int       @id @default(autoincrement())
+  product_id        Int
+  content_type      String    @db.VarChar(50)
+  original_content  String?
+  generated_content String
+  prompt_used       String?
+  model_used        String?   @db.VarChar(100)
+  confidence_score  Decimal?  @db.Decimal(3, 2)
+  is_approved       Boolean?  @default(false)
+  approved_by       Int?
+  approved_at       DateTime? @db.Timestamptz(6)
+  created_at        DateTime? @default(now()) @db.Timestamptz(6)
+  updated_at        DateTime? @default(now()) @db.Timestamptz(6)
+  users             User?     @relation(fields: [approved_by], references: [id], onDelete: NoAction, onUpdate: NoAction)
+  products          Product   @relation(fields: [product_id], references: [id], onDelete: Cascade, onUpdate: NoAction)
 
-  // Relations
-  productId Int?
-  product   Product? @relation(fields: [productId], references: [id])
-
+  @@index([content_type], map: "idx_ai_content_content_type")
+  @@index([is_approved], map: "idx_ai_content_is_approved")
+  @@index([product_id], map: "idx_ai_content_product_id")
   @@map("ai_content")
 }
 
-enum AIContentType {
-  DESCRIPTION
-  SEO_TITLE
-  SEO_DESCRIPTION
-  SOCIAL_MEDIA_POST
-  PRODUCT_FEATURES
-  MARKETING_COPY
+/// This table contains check constraints and requires additional setup for migrations. Visit https://pris.ly/d/check-constraints for more info.
+model webflow_sync {
+  id              Int       @id @default(autoincrement())
+  product_id      Int
+  webflow_item_id String?   @unique @db.VarChar(255)
+  sync_status     String    @default("pending") @db.VarChar(20)
+  last_sync_at    DateTime? @db.Timestamptz(6)
+  sync_errors     String?
+  webflow_url     String?
+  is_published    Boolean?  @default(false)
+  auto_sync       Boolean?  @default(true)
+  created_at      DateTime? @default(now()) @db.Timestamptz(6)
+  updated_at      DateTime? @default(now()) @db.Timestamptz(6)
+  products        Product   @relation(fields: [product_id], references: [id], onDelete: Cascade, onUpdate: NoAction)
+
+  @@index([auto_sync], map: "idx_webflow_sync_auto_sync")
+  @@index([product_id], map: "idx_webflow_sync_product_id")
+  @@index([sync_status], map: "idx_webflow_sync_sync_status")
+  @@index([webflow_item_id], map: "idx_webflow_sync_webflow_item_id")
 }
 
-enum ContentStatus {
+enum stock_reconciliation_status {
   DRAFT
-  PENDING_APPROVAL
-  APPROVED
-  PUBLISHED
-  REJECTED
-}
-
-// Webflow Sync
-model WebflowSync {
-  id            Int              @id @default(autoincrement())
-  productId     Int
-  webflowItemId String?
-  status        WebflowSyncStatus
-  lastSyncAt    DateTime?
-  syncData      Json?            // Store sync payload
-  errorMessage  String?
-  retryCount    Int              @default(0)
-  createdAt     DateTime         @default(now())
-  updatedAt     DateTime         @updatedAt
-
-  // Relations
-  product Product @relation(fields: [productId], references: [id], onDelete: Cascade)
-
-  @@unique([productId])
-  @@map("webflow_syncs")
-}
-
-enum WebflowSyncStatus {
   PENDING
-  SYNCING
-  SUCCESS
-  FAILED
-  RETRY
+  APPROVED
+  REJECTED
 }

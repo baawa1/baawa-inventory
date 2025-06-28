@@ -159,6 +159,16 @@ export async function GET(request: NextRequest) {
       products = lowStockProducts.slice(skip, skip + limit);
     } else {
       // Normal query execution with pagination
+      console.log(
+        "🔍 Products API: Executing query with where:",
+        JSON.stringify(where, null, 2)
+      );
+      console.log("🔍 Products API: skip:", skip, "limit:", limit);
+
+      // Force a fresh connection test
+      await prisma.$executeRaw`SELECT 1`;
+      console.log("🔍 Products API: Connection test passed");
+
       [products, totalCount] = await Promise.all([
         prisma.product.findMany({
           where,
@@ -179,6 +189,18 @@ export async function GET(request: NextRequest) {
         }),
         prisma.product.count({ where }),
       ]);
+
+      console.log(
+        "🔍 Products API: Found",
+        totalCount,
+        "total products,",
+        products.length,
+        "in current page"
+      );
+      console.log(
+        "🔍 Products API: First product:",
+        products[0] ? { id: products[0].id, name: products[0].name } : "none"
+      );
     }
 
     return NextResponse.json({

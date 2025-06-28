@@ -138,6 +138,12 @@ export async function POST(request: NextRequest) {
       createStockAdditionSchema.parse(body);
     console.log("Validated data:", validatedData); // Debug log
 
+    // Ensure user ID is properly parsed
+    const userId = parseInt(session.user.id);
+    if (isNaN(userId)) {
+      throw new Error("Invalid user ID in session");
+    }
+
     // Execute all operations in a transaction
     const result = await prisma.$transaction(async (tx) => {
       // Check if product exists
@@ -157,7 +163,7 @@ export async function POST(request: NextRequest) {
       }
 
       // Check if supplier exists (if provided)
-      if (validatedData.supplierId) {
+      if (validatedData.supplierId && validatedData.supplierId > 0) {
         const supplier = await tx.supplier.findUnique({
           where: { id: validatedData.supplierId },
           select: { id: true, isActive: true },
@@ -179,16 +185,19 @@ export async function POST(request: NextRequest) {
       const stockAddition = await tx.stockAddition.create({
         data: {
           productId: validatedData.productId,
-          supplierId: validatedData.supplierId,
-          createdById: parseInt(session.user.id),
+          supplierId:
+            validatedData.supplierId && validatedData.supplierId > 0
+              ? validatedData.supplierId
+              : undefined,
+          createdById: userId,
           quantity: validatedData.quantity,
           costPerUnit: validatedData.costPerUnit,
           totalCost: totalCost,
           purchaseDate: validatedData.purchaseDate
             ? new Date(validatedData.purchaseDate)
             : new Date(),
-          notes: validatedData.notes,
-          referenceNo: validatedData.referenceNo,
+          notes: validatedData.notes || undefined,
+          referenceNo: validatedData.referenceNo || undefined,
         },
         include: {
           product: {
@@ -227,26 +236,33 @@ export async function POST(request: NextRequest) {
         },
       });
 
-      // Create audit log
-      await tx.auditLog.create({
-        data: {
-          action: "STOCK_ADDITION",
-          entityType: "PRODUCT",
-          entityId: validatedData.productId.toString(),
-          userId: parseInt(session.user.id),
-          newValues: {
-            productName: product.name,
-            quantityAdded: validatedData.quantity,
-            costPerUnit: validatedData.costPerUnit,
-            previousStock: product.stock,
-            newStock: newStock,
-            previousCost: product.cost,
-            newAverageCost: newAverageCost,
-            totalCost,
-            referenceNo: validatedData.referenceNo,
-          },
-        },
-      });
+      // Create audit log - using raw query to match schema field names
+      try {
+        await tx.$executeRaw`
+          INSERT INTO audit_logs (action, table_name, record_id, user_id, new_values, created_at)
+          VALUES (
+            'STOCK_ADDITION',
+            'PRODUCT',
+            ${validatedData.productId},
+            ${userId},
+            ${JSON.stringify({
+              productName: product.name,
+              quantityAdded: validatedData.quantity,
+              costPerUnit: validatedData.costPerUnit,
+              previousStock: product.stock,
+              newStock: newStock,
+              previousCost: product.cost,
+              newAverageCost: newAverageCost,
+              totalCost,
+              referenceNo: validatedData.referenceNo,
+            })}::jsonb,
+            NOW()
+          )
+        `;
+      } catch (auditError) {
+        console.warn("Failed to create audit log:", auditError);
+        // Don't fail the entire transaction for audit log issues
+      }
 
       return {
         stockAddition,

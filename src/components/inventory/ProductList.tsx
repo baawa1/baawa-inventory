@@ -206,13 +206,34 @@ export function ProductList({ user }: ProductListProps) {
   // Fetch brands for filter
   const fetchBrands = useCallback(async () => {
     try {
-      const response = await fetch("/api/brands");
+      // Add timeout and better error handling
+      const controller = new AbortController();
+      const timeoutId = setTimeout(() => controller.abort(), 10000);
+
+      const response = await fetch("/api/brands?limit=100", {
+        signal: controller.signal,
+      });
+
+      clearTimeout(timeoutId);
+
       if (response.ok) {
         const data = await response.json();
-        setBrands(data.data || []);
+        setBrands(data.data || data.brands || []);
+      } else {
+        console.warn(
+          "Brands API returned:",
+          response.status,
+          await response.text()
+        );
       }
     } catch (error) {
-      console.error("Error fetching brands:", error);
+      if (error instanceof Error && error.name === "AbortError") {
+        console.warn("Brands request timed out");
+      } else {
+        console.error("Error fetching brands:", error);
+      }
+      // Set empty array to prevent hanging UI
+      setBrands([]);
     }
   }, []);
 

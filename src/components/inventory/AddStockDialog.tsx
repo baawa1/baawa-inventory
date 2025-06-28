@@ -90,6 +90,7 @@ export function AddStockDialog({
     defaultValues: {
       quantity: 1,
       costPerUnit: product?.cost || 0,
+      supplierId: undefined,
       purchaseDate: new Date(),
       notes: "",
       referenceNo: "",
@@ -103,16 +104,50 @@ export function AddStockDialog({
     }
   }, [isOpen, suppliers.length]);
 
+  // Reset form when dialog opens or product changes
+  useEffect(() => {
+    if (isOpen && product) {
+      form.reset({
+        quantity: 1,
+        costPerUnit: product.cost || 0,
+        supplierId: undefined,
+        purchaseDate: new Date(),
+        notes: "",
+        referenceNo: "",
+      });
+    }
+  }, [isOpen, product, form]);
+
   const loadSuppliers = async () => {
     setLoadingSuppliers(true);
     try {
-      const response = await fetch("/api/suppliers?isActive=true&limit=100");
+      // Add timeout to prevent hanging requests
+      const controller = new AbortController();
+      const timeoutId = setTimeout(() => controller.abort(), 8000); // 8 second timeout
+
+      const response = await fetch("/api/suppliers?isActive=true&limit=100", {
+        signal: controller.signal,
+      });
+
+      clearTimeout(timeoutId);
+
       if (response.ok) {
         const data = await response.json();
-        setSuppliers(data.suppliers || []); // Use data.suppliers as per API response
+        setSuppliers(data.suppliers || data.data || []); // Handle different response formats
+      } else {
+        console.warn(
+          "Suppliers API returned:",
+          response.status,
+          response.statusText
+        );
       }
     } catch (error) {
-      console.error("Error loading suppliers:", error);
+      if (error instanceof Error && error.name === "AbortError") {
+        console.warn("Suppliers request timed out");
+      } else {
+        console.error("Error loading suppliers:", error);
+      }
+      // Don't show error to user for optional supplier selection
     } finally {
       setLoadingSuppliers(false);
     }
@@ -132,10 +167,12 @@ export function AddStockDialog({
           productId: product.id,
           quantity: data.quantity,
           costPerUnit: data.costPerUnit,
-          supplierId: data.supplierId,
-          purchaseDate: data.purchaseDate?.toISOString().split("T")[0],
-          notes: data.notes,
-          referenceNo: data.referenceNo,
+          supplierId: data.supplierId || undefined,
+          purchaseDate: data.purchaseDate
+            ? format(data.purchaseDate, "yyyy-MM-dd")
+            : undefined,
+          notes: data.notes || undefined,
+          referenceNo: data.referenceNo || undefined,
         }),
       });
 
@@ -143,7 +180,14 @@ export function AddStockDialog({
 
       if (response.ok) {
         toast.success(result.message || "Stock added successfully");
-        form.reset();
+        form.reset({
+          quantity: 1,
+          costPerUnit: product?.cost || 0,
+          supplierId: undefined,
+          purchaseDate: new Date(),
+          notes: "",
+          referenceNo: "",
+        });
         onSuccess?.();
         onClose();
       } else {
@@ -165,7 +209,7 @@ export function AddStockDialog({
   const newStock = (product?.stock || 0) + form.watch("quantity");
 
   return (
-    <Dialog open={isOpen} onOpenChange={onClose}>
+    <Dialog open={isOpen} onOpenChange={(open) => !open && onClose()}>
       <DialogContent className="sm:max-w-[500px]">
         <DialogHeader>
           <DialogTitle>Add Stock</DialogTitle>
@@ -250,7 +294,7 @@ export function AddStockDialog({
                     onValueChange={(value) =>
                       field.onChange(value ? parseInt(value) : undefined)
                     }
-                    value={field.value?.toString()}
+                    value={field.value?.toString() || ""}
                     disabled={loadingSuppliers}
                   >
                     <FormControl>
@@ -280,7 +324,7 @@ export function AddStockDialog({
               render={({ field }) => (
                 <FormItem className="flex flex-col">
                   <FormLabel>Purchase Date</FormLabel>
-                  <Popover>
+                  <Popover modal={true}>
                     <PopoverTrigger asChild>
                       <FormControl>
                         <Button

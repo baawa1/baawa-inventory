@@ -1,6 +1,13 @@
 # Product Requirements Document: BaaWA Accessories Inventory Manager & POS
 
-Our databe base uses snake case and not camel case, please take this into account always
+**Database & Auth Architecture Standard:**
+
+- Prisma: All database operations (CRUD, business logic, transactions, audit trails)
+- Supabase: Authentication only (login, sessions, password reset, user registration)
+- Never mix: No Supabase database queries in business logic, no Prisma in auth flows
+- Exception: Use existing `src/lib/db-service.ts` patterns for all data operations
+
+- Our database uses snake case and not camel case, please take this into account always
 
 ## 1. Introduction/Overview
 

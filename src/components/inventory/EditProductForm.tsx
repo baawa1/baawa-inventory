@@ -93,6 +93,11 @@ export default function EditProductForm({ productId }: EditProductFormProps) {
   const [suppliers, setSuppliers] = useState<Supplier[]>([]);
   const [product, setProduct] = useState<Product | null>(null);
 
+  // Add loading states for better UX
+  const [loadingCategories, setLoadingCategories] = useState(true);
+  const [loadingBrands, setLoadingBrands] = useState(true);
+  const [loadingSuppliers, setLoadingSuppliers] = useState(true);
+
   const form = useForm({
     resolver: zodResolver(updateProductSchema),
     defaultValues: {
@@ -119,66 +124,101 @@ export default function EditProductForm({ productId }: EditProductFormProps) {
       try {
         setLoading(true);
 
-        // Load product data and form data in parallel
+        // Create fetch function with timeout
+        const fetchWithTimeout = (url: string, timeout = 10000) => {
+          return Promise.race([
+            fetch(url),
+            new Promise<Response>((_, reject) =>
+              setTimeout(() => reject(new Error("Request timeout")), timeout)
+            ),
+          ]);
+        };
+
+        // Load product data and form data in parallel with timeout
         const [productRes, categoriesRes, brandsRes, suppliersRes] =
-          await Promise.all([
-            fetch(`/api/products/${productId}`),
-            fetch("/api/categories"),
-            fetch("/api/brands"),
-            fetch("/api/suppliers"),
+          await Promise.allSettled([
+            fetchWithTimeout(`/api/products/${productId}`),
+            fetchWithTimeout("/api/categories"),
+            fetchWithTimeout("/api/brands"),
+            fetchWithTimeout("/api/suppliers?limit=100"),
           ]);
 
         // Handle categories
-        if (categoriesRes.ok) {
-          const categoriesData = await categoriesRes.json();
-          setCategories(categoriesData.data || []);
+        if (categoriesRes.status === "fulfilled" && categoriesRes.value.ok) {
+          try {
+            const categoriesData = await categoriesRes.value.json();
+            setCategories(
+              categoriesData.data || categoriesData.categories || []
+            );
+          } catch (error) {
+            console.warn("Failed to parse categories data:", error);
+          }
+        } else {
+          console.warn("Failed to fetch categories");
         }
+        setLoadingCategories(false);
 
         // Handle brands
-        if (brandsRes.ok) {
-          const brandsData = await brandsRes.json();
-          setBrands(brandsData.data || []);
-        }
-
-        // Handle product data
-        if (productRes.ok) {
-          const productData = await productRes.json();
-          const productInfo = productData.data as Product;
-          setProduct(productInfo);
-
-          // Populate form with existing data
-          form.reset({
-            name: productInfo.name,
-            description: productInfo.description || "",
-            sku: productInfo.sku,
-            barcode: productInfo.barcode || "",
-            categoryId: productInfo.category?.id,
-            brandId: productInfo.brand?.id,
-            supplierId: productInfo.supplier_id,
-            purchasePrice: Number(productInfo.cost),
-            sellingPrice: Number(productInfo.price),
-            currentStock: productInfo.stock,
-            minimumStock: productInfo.min_stock,
-            maximumStock: productInfo.max_stock || undefined,
-            status: productInfo.status,
-            imageUrl: productInfo.images?.[0]?.url || "",
-          });
+        if (brandsRes.status === "fulfilled" && brandsRes.value.ok) {
+          try {
+            const brandsData = await brandsRes.value.json();
+            setBrands(brandsData.data || brandsData.brands || []);
+          } catch (error) {
+            console.warn("Failed to parse brands data:", error);
+          }
         } else {
+          console.warn("Failed to fetch brands");
+        }
+        setLoadingBrands(false);
+
+        // Handle product data (this is critical)
+        if (productRes.status === "fulfilled" && productRes.value.ok) {
+          try {
+            const productData = await productRes.value.json();
+            const productInfo = productData.data as Product;
+            setProduct(productInfo);
+
+            // Populate form with existing data
+            form.reset({
+              name: productInfo.name,
+              description: productInfo.description || "",
+              sku: productInfo.sku,
+              barcode: productInfo.barcode || "",
+              categoryId: productInfo.category?.id,
+              brandId: productInfo.brand?.id,
+              supplierId: productInfo.supplier_id,
+              purchasePrice: Number(productInfo.cost),
+              sellingPrice: Number(productInfo.price),
+              currentStock: productInfo.stock,
+              minimumStock: productInfo.min_stock,
+              maximumStock: productInfo.max_stock || undefined,
+              status: productInfo.status,
+              imageUrl: productInfo.images?.[0]?.url || "",
+            });
+          } catch (error) {
+            console.error("Failed to parse product data:", error);
+            throw new Error("Failed to load product data");
+          }
+        } else {
+          if (productRes.status === "rejected") {
+            console.error("Product fetch failed:", productRes.reason);
+          }
           throw new Error("Product not found");
         }
 
         // Handle suppliers
-        if (suppliersRes.ok) {
-          const suppliersData = await suppliersRes.json();
-          setSuppliers(suppliersData.suppliers || []);
+        if (suppliersRes.status === "fulfilled" && suppliersRes.value.ok) {
+          try {
+            const suppliersData = await suppliersRes.value.json();
+            setSuppliers(suppliersData.suppliers || suppliersData.data || []);
+          } catch (error) {
+            console.warn("Failed to parse suppliers data:", error);
+          }
         } else {
-          console.error(
-            "Failed to fetch suppliers:",
-            suppliersRes.status,
-            suppliersRes.statusText
-          );
-          toast.error("Failed to load suppliers");
+          console.warn("Failed to fetch suppliers");
+          // Don't fail the entire component for suppliers
         }
+        setLoadingSuppliers(false);
       } catch (error) {
         console.error("Error loading data:", error);
         toast.error("Failed to load product data. Please try again.");
@@ -340,7 +380,9 @@ export default function EditProductForm({ productId }: EditProductFormProps) {
                           onValueChange={(value) =>
                             field.onChange(parseInt(value))
                           }
-                          value={field.value?.toString() || ""}
+                          value={
+                            field.value ? field.value.toString() : undefined
+                          }
                         >
                           <FormControl>
                             <SelectTrigger>
@@ -372,7 +414,9 @@ export default function EditProductForm({ productId }: EditProductFormProps) {
                           onValueChange={(value) =>
                             field.onChange(parseInt(value))
                           }
-                          value={field.value?.toString() || ""}
+                          value={
+                            field.value ? field.value.toString() : undefined
+                          }
                         >
                           <FormControl>
                             <SelectTrigger>

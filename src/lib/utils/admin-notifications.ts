@@ -1,22 +1,21 @@
-import { supabaseAdmin } from "@/lib/supabase";
+import { prisma } from "@/lib/db";
 
 /**
  * Get all admin email addresses for notifications
  */
 export async function getAdminEmails(): Promise<string[]> {
   try {
-    const { data: admins, error } = await supabaseAdmin
-      .from("users")
-      .select("email")
-      .eq("role", "ADMIN")
-      .eq("is_active", true)
-      .eq("user_status", "APPROVED")
-      .eq("email_notifications", true);
-
-    if (error) {
-      console.error("Error fetching admin emails:", error);
-      return [];
-    }
+    const admins = await prisma.user.findMany({
+      where: {
+        role: "ADMIN",
+        isActive: true,
+        userStatus: "APPROVED",
+        emailNotifications: true,
+      },
+      select: {
+        email: true,
+      },
+    });
 
     return admins?.map((admin) => admin.email) || [];
   } catch (error) {
