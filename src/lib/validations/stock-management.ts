@@ -6,7 +6,21 @@ export const createStockAdditionSchema = z.object({
   supplierId: z.number().int().positive().optional(),
   quantity: z.number().int().positive(),
   costPerUnit: z.number().positive(),
-  purchaseDate: z.string().datetime().optional(),
+  purchaseDate: z
+    .string()
+    .optional()
+    .refine(
+      (date) => {
+        if (!date) return true;
+        // Accept both date strings (YYYY-MM-DD) and datetime strings
+        return /^\d{4}-\d{2}-\d{2}(T\d{2}:\d{2}:\d{2}(\.\d{3})?Z?)?$/.test(
+          date
+        );
+      },
+      {
+        message: "Purchase date must be in YYYY-MM-DD or ISO datetime format",
+      }
+    ),
   notes: z.string().optional(),
   referenceNo: z.string().optional(),
 });

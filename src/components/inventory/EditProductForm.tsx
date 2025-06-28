@@ -495,7 +495,7 @@ export default function EditProductForm({ productId }: EditProductFormProps) {
                     name="purchasePrice"
                     render={({ field }) => (
                       <FormItem>
-                        <FormLabel>Purchase Price *</FormLabel>
+                        <FormLabel>Purchase Price (₦) *</FormLabel>
                         <FormControl>
                           <div className="relative">
                             <span className="absolute left-3 top-1/2 transform -translate-y-1/2 text-muted-foreground">
@@ -526,7 +526,7 @@ export default function EditProductForm({ productId }: EditProductFormProps) {
                     name="sellingPrice"
                     render={({ field }) => (
                       <FormItem>
-                        <FormLabel>Selling Price *</FormLabel>
+                        <FormLabel>Selling Price (₦) *</FormLabel>
                         <FormControl>
                           <div className="relative">
                             <span className="absolute left-3 top-1/2 transform -translate-y-1/2 text-muted-foreground">
