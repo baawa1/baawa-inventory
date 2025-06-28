@@ -1,5 +1,5 @@
 import { NextResponse } from "next/server";
-import { createServerSupabaseClient } from "@/lib/supabase";
+import { createServerSupabaseClient } from "@/lib/supabase-server";
 import { withPermission, AuthenticatedRequest } from "@/lib/api-middleware";
 import { z } from "zod";
 import { validateRequest } from "@/lib/validations";

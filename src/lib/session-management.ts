@@ -4,7 +4,7 @@
  */
 
 import { getSession, signOut } from "next-auth/react";
-import { createServerSupabaseClient } from "@/lib/supabase";
+import { createServerSupabaseClient } from "@/lib/supabase-server";
 
 export interface SessionInfo {
   isValid: boolean;

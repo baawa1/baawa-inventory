@@ -56,11 +56,11 @@ export function QuickActions({ userRole }: QuickActionsProps) {
 
             <DropdownMenuItem asChild>
               <a
-                href="/inventory/stock-adjustments"
+                href="/inventory/stock-reconciliations"
                 className="flex items-center gap-2"
               >
                 <IconAdjustments className="h-4 w-4" />
-                Stock Adjustment
+                Stock Reconciliation
               </a>
             </DropdownMenuItem>
 

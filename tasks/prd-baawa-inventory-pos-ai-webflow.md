@@ -1,5 +1,7 @@
 # Product Requirements Document: BaaWA Accessories Inventory Manager & POS
 
+Our databe base uses snake case and not camel case, please take this into account always
+
 ## 1. Introduction/Overview
 
 This document outlines the requirements for a comprehensive Inventory Management System for BaaWA Accessories, a store specializing in wristwatches, shades, and accessories. The system aims to replace manual and fragmented processes by centralizing stock tracking, enabling efficient Point of Sale (POS) transactions, automating product content generation using AI, and seamlessly integrating with Webflow CMS for online product listings.
