@@ -48,6 +48,7 @@ import {
   IconSearch,
   IconCalculator,
 } from "@tabler/icons-react";
+import { formatCurrency } from "@/lib/utils";
 
 const reconciliationItemSchema = z.object({
   productId: z.number().int().positive(),
@@ -555,7 +556,7 @@ export function StockReconciliationDialog({
                         <p
                           className={`font-medium ${estimatedImpact === 0 ? "text-green-600" : estimatedImpact > 0 ? "text-blue-600" : "text-red-600"}`}
                         >
-                          ${Math.abs(estimatedImpact).toFixed(2)}
+                          {formatCurrency(Math.abs(estimatedImpact))}
                         </p>
                       </div>
                       <div>

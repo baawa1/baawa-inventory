@@ -41,7 +41,7 @@ import { Button } from "@/components/ui/button";
 import { Textarea } from "@/components/ui/textarea";
 import { Badge } from "@/components/ui/badge";
 import { CalendarIcon } from "lucide-react";
-import { cn } from "@/lib/utils";
+import { cn, formatCurrency } from "@/lib/utils";
 
 const addStockSchema = z.object({
   quantity: z.number().int().positive("Quantity must be a positive integer"),
@@ -109,7 +109,7 @@ export function AddStockDialog({
       const response = await fetch("/api/suppliers?isActive=true&limit=100");
       if (response.ok) {
         const data = await response.json();
-        setSuppliers(data.data || []); // Use data.data instead of data.suppliers
+        setSuppliers(data.suppliers || []); // Use data.suppliers as per API response
       }
     } catch (error) {
       console.error("Error loading suppliers:", error);
@@ -147,7 +147,11 @@ export function AddStockDialog({
         onSuccess?.();
         onClose();
       } else {
-        toast.error(result.error || "Failed to add stock");
+        console.error("API Error:", result);
+        const errorMessage = result.details
+          ? `${result.error}: ${result.details}`
+          : result.error || "Failed to add stock";
+        toast.error(errorMessage);
       }
     } catch (error) {
       console.error("Error adding stock:", error);
@@ -217,7 +221,7 @@ export function AddStockDialog({
                 name="costPerUnit"
                 render={({ field }) => (
                   <FormItem>
-                    <FormLabel>Cost per Unit *</FormLabel>
+                    <FormLabel>Cost per Unit (₦) *</FormLabel>
                     <FormControl>
                       <Input
                         type="number"
@@ -353,7 +357,9 @@ export function AddStockDialog({
               <div className="space-y-1 text-sm">
                 <div className="flex justify-between">
                   <span>Total Cost:</span>
-                  <span className="font-medium">${totalCost.toFixed(2)}</span>
+                  <span className="font-medium">
+                    {formatCurrency(totalCost)}
+                  </span>
                 </div>
                 <div className="flex justify-between">
                   <span>New Stock Count:</span>
