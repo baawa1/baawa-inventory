@@ -1,79 +1,60 @@
-import { createClient } from '@supabase/supabase-js';
+import { prisma } from "@/lib/db";
 
-// Supabase client for direct database operations
-const supabase = createClient(
-  process.env.NEXT_PUBLIC_SUPABASE_URL!,
-  process.env.SUPABASE_SERVICE_ROLE_KEY!
-);
-
+// Database helper functions using Prisma
 export const dbHelper = {
   // User operations
   async findUserByEmail(email: string) {
-    const { data, error } = await supabase
-      .from('users')
-      .select('*')
-      .eq('email', email)
-      .eq('isActive', true)
-      .single();
-    
-    if (error && error.code !== 'PGRST116') { // PGRST116 is "not found"
-      throw error;
-    }
-    
-    return data;
+    const user = await prisma.user.findFirst({
+      where: {
+        email: email,
+        isActive: true,
+      },
+    });
+
+    return user;
   },
 
   async findUserByResetToken(token: string) {
-    const { data, error } = await supabase
-      .from('users')
-      .select('*')
-      .eq('reset_token', token)
-      .eq('isActive', true)
-      .gt('reset_token_expires', new Date().toISOString())
-      .single();
-    
-    if (error && error.code !== 'PGRST116') {
-      throw error;
-    }
-    
-    return data;
+    const user = await prisma.user.findFirst({
+      where: {
+        resetToken: token,
+        isActive: true,
+        resetTokenExpires: {
+          gt: new Date(),
+        },
+      },
+    });
+
+    return user;
   },
 
-  async updateUserResetToken(userId: number, resetToken: string, resetTokenExpires: Date) {
-    const { data, error } = await supabase
-      .from('users')
-      .update({
-        reset_token: resetToken,
-        reset_token_expires: resetTokenExpires.toISOString(),
-      })
-      .eq('id', userId)
-      .select()
-      .single();
-    
-    if (error) {
-      throw error;
-    }
-    
-    return data;
+  async updateUserResetToken(
+    userId: number,
+    resetToken: string,
+    resetTokenExpires: Date
+  ) {
+    const user = await prisma.user.update({
+      where: { id: userId },
+      data: {
+        resetToken: resetToken,
+        resetTokenExpires: resetTokenExpires,
+      },
+    });
+
+    return user;
   },
 
   async updateUserPassword(userId: number, hashedPassword: string) {
-    const { data, error } = await supabase
-      .from('users')
-      .update({
+    const user = await prisma.user.update({
+      where: { id: userId },
+      data: {
         password: hashedPassword,
-        reset_token: null,
-        reset_token_expires: null,
-        updatedAt: new Date().toISOString(),
-      })
-      .eq('id', userId)
-      .select()
-      .single();
-    
-    if (error) {
-      throw error;
-    }
-    
-    return data;
+        resetToken: null,
+        resetTokenExpires: null,
+        updatedAt: new Date(),
+      },
+    });
+
+    return user;
   },
 };

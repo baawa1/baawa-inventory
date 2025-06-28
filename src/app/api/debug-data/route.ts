@@ -1,31 +1,31 @@
 import { NextResponse } from "next/server";
-import { supabase } from "@/lib/supabase";
+import { prisma } from "@/lib/db";
 
 export async function GET() {
   try {
-    // Bypass auth for debugging - get data directly from Supabase
-    const { data: categoriesData, error: categoriesError } = await supabase
-      .from("categories")
-      .select("id, name")
-      .eq("is_active", true)
-      .order("name")
-      .limit(10);
+    // Bypass auth for debugging - get data directly from Prisma
+    const categoriesData = await prisma.category.findMany({
+      where: { isActive: true },
+      select: { id: true, name: true },
+      orderBy: { name: "asc" },
+      take: 10,
+    });
 
-    const { data: brandsData, error: brandsError } = await supabase
-      .from("brands")
-      .select("id, name")
-      .eq("is_active", true)
-      .order("name")
-      .limit(10);
+    const brandsData = await prisma.brand.findMany({
+      where: { isActive: true },
+      select: { id: true, name: true },
+      orderBy: { name: "asc" },
+      take: 10,
+    });
 
     return NextResponse.json({
       categories: {
         data: categoriesData || [],
-        error: categoriesError,
+        error: null,
       },
       brands: {
         data: brandsData || [],
-        error: brandsError,
+        error: null,
       },
       message: "Debug data fetched successfully",
     });

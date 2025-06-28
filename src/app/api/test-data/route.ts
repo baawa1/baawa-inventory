@@ -1,37 +1,21 @@
 import { NextResponse } from "next/server";
-import { supabase } from "@/lib/supabase";
+import { prisma } from "@/lib/db";
 
 export async function GET() {
   try {
     // Test categories
-    const { data: categoriesData, error: categoriesError } = await supabase
-      .from("categories")
-      .select("id, name")
-      .eq("is_active", true)
-      .order("name");
-
-    if (categoriesError) {
-      console.error("Categories error:", categoriesError);
-      return NextResponse.json(
-        { error: "Failed to fetch categories", details: categoriesError },
-        { status: 500 }
-      );
-    }
+    const categoriesData = await prisma.category.findMany({
+      where: { isActive: true },
+      select: { id: true, name: true },
+      orderBy: { name: "asc" },
+    });
 
     // Test brands
-    const { data: brandsData, error: brandsError } = await supabase
-      .from("brands")
-      .select("id, name")
-      .eq("is_active", true)
-      .order("name");
-
-    if (brandsError) {
-      console.error("Brands error:", brandsError);
-      return NextResponse.json(
-        { error: "Failed to fetch brands", details: brandsError },
-        { status: 500 }
-      );
-    }
+    const brandsData = await prisma.brand.findMany({
+      where: { isActive: true },
+      select: { id: true, name: true },
+      orderBy: { name: "asc" },
+    });
 
     return NextResponse.json({
       categories: { data: categoriesData || [] },

@@ -72,24 +72,43 @@ export async function GET(request: NextRequest) {
       });
     }
 
-    // Convert search params to proper types for validation
-    const queryParams = {
-      search: searchParams.get("search") || undefined,
-      isActive: searchParams.get("isActive")
+    // Parse query parameters with safe defaults
+    const queryParams: any = {};
+
+    // Safely parse each parameter
+    try {
+      queryParams.search = searchParams.get("search") || undefined;
+      queryParams.isActive = searchParams.get("isActive")
         ? searchParams.get("isActive") === "true"
-        : undefined,
-      limit: searchParams.get("limit")
-        ? parseInt(searchParams.get("limit")!)
-        : 10,
-      offset: searchParams.get("offset")
-        ? parseInt(searchParams.get("offset")!)
-        : 0,
-      sortBy: searchParams.get("sortBy") || "name",
-      sortOrder: searchParams.get("sortOrder") || "asc",
-    };
+        : undefined;
+      queryParams.limit = searchParams.get("limit")
+        ? Math.min(parseInt(searchParams.get("limit")!), 100)
+        : 10;
+      queryParams.offset = searchParams.get("offset")
+        ? Math.max(parseInt(searchParams.get("offset")!), 0)
+        : 0;
+      queryParams.sortBy = searchParams.get("sortBy") || "name";
+      queryParams.sortOrder = searchParams.get("sortOrder") || "asc";
+    } catch (parseError) {
+      console.error("Error parsing query parameters:", parseError);
+      return NextResponse.json(
+        { error: "Invalid query parameters" },
+        { status: 400 }
+      );
+    }
 
     // Validate query parameters
-    const validatedQuery = brandQuerySchema.parse(queryParams);
+    let validatedQuery;
+    try {
+      validatedQuery = brandQuerySchema.parse(queryParams);
+    } catch (validationError) {
+      console.error("Validation error:", validationError);
+      return NextResponse.json(
+        { error: "Invalid query parameters", details: validationError },
+        { status: 400 }
+      );
+    }
+
     const {
       limit = 10,
       offset = 0,
@@ -124,10 +143,24 @@ export async function GET(request: NextRequest) {
       orderBy.name = sortOrder;
     }
 
-    // Execute queries in parallel for better performance
+    // Execute queries in parallel for better performance with optimized selects
     const [brands, count] = await Promise.all([
       prisma.brand.findMany({
         where,
+        select: {
+          id: true,
+          name: true,
+          description: true,
+          website: true,
+          isActive: true,
+          createdAt: true,
+          updatedAt: true,
+          _count: {
+            select: {
+              products: true,
+            },
+          },
+        },
         orderBy,
         skip: offset,
         take: limit,
