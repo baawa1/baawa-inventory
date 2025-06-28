@@ -2,7 +2,7 @@ import { NextAuthOptions } from "next-auth";
 import { SupabaseAdapter } from "@auth/supabase-adapter";
 import { createClient } from "@supabase/supabase-js";
 import CredentialsProvider from "next-auth/providers/credentials";
-import { createServerSupabaseClient } from "@/lib/supabase";
+import { createServerSupabaseClient } from "@/lib/supabase-server";
 import bcrypt from "bcryptjs";
 
 // Extend NextAuth types

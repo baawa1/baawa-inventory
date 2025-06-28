@@ -8,7 +8,6 @@ generator client {
 datasource db {
   provider  = "postgresql"
   url       = env("DATABASE_URL")
-  directUrl = env("DIRECT_URL")
 }
 
 // User Management
@@ -56,6 +55,11 @@ model User {
   stockAdjustments  StockAdjustment[]
   auditLogs         AuditLog[]
   
+  // Stock Management Relations
+  stockAdditions       StockAddition[]         @relation("StockAdditionCreator")
+  createdReconciliations StockReconciliation[] @relation("ReconciliationCreator")
+  approvedReconciliations StockReconciliation[] @relation("ReconciliationApprover")
+  
   // Self-referential for approval workflow
   approvedUsers     User[] @relation("UserApproval")
   approver          User?  @relation("UserApproval", fields: [approvedBy], references: [id])
@@ -101,6 +105,7 @@ model Supplier {
   // Relations
   products       Product[]
   purchaseOrders PurchaseOrder[]
+  stockAdditions StockAddition[]
 
   @@map("suppliers")
 }
@@ -178,6 +183,10 @@ model Product {
   purchaseOrderItems PurchaseOrderItem[]
   aiContent        AIContent[]
   webflowSync      WebflowSync?
+  
+  // New Stock Management Relations
+  stockAdditions         StockAddition[]
+  reconciliationItems    StockReconciliationItem[]
 
   @@map("products")
 }
@@ -284,6 +293,77 @@ model SalesItem {
   variantId     Int?
 
   @@map("sales_items")
+}
+
+// Stock Addition - For new stock purchases
+model StockAddition {
+  id            Int      @id @default(autoincrement())
+  quantity      Int
+  costPerUnit   Decimal  @db.Decimal(10, 2) @map("cost_per_unit")
+  totalCost     Decimal  @db.Decimal(10, 2) @map("total_cost")
+  purchaseDate  DateTime @default(now()) @map("purchase_date")
+  notes         String?
+  referenceNo   String?  @map("reference_no") // Invoice/receipt number
+  createdAt     DateTime @default(now()) @map("created_at")
+  updatedAt     DateTime @updatedAt @map("updated_at")
+
+  // Relations
+  product     Product   @relation(fields: [productId], references: [id])
+  productId   Int       @map("product_id")
+  supplier    Supplier? @relation(fields: [supplierId], references: [id])
+  supplierId  Int?      @map("supplier_id")
+  createdBy   User      @relation("StockAdditionCreator", fields: [createdById], references: [id])
+  createdById Int       @map("created_by")
+
+  @@map("stock_additions")
+}
+
+// Stock Reconciliation - For multi-product stock counts with approval
+model StockReconciliation {
+  id          Int                      @id @default(autoincrement())
+  title       String
+  description String?
+  status      StockReconciliationStatus @default(DRAFT)
+  notes       String?
+  createdAt   DateTime                 @default(now()) @map("created_at")
+  updatedAt   DateTime                 @updatedAt @map("updated_at")
+  submittedAt DateTime?                @map("submitted_at")
+  approvedAt  DateTime?                @map("approved_at")
+
+  // Relations
+  createdBy    User                       @relation("ReconciliationCreator", fields: [createdById], references: [id])
+  createdById  Int                        @map("created_by")
+  approvedBy   User?                      @relation("ReconciliationApprover", fields: [approvedById], references: [id])
+  approvedById Int?                       @map("approved_by")
+  items        StockReconciliationItem[]
+
+  @@map("stock_reconciliations")
+}
+
+enum StockReconciliationStatus {
+  DRAFT
+  PENDING
+  APPROVED
+  REJECTED
+}
+
+// Stock Reconciliation Items - Individual product adjustments within a reconciliation
+model StockReconciliationItem {
+  id               Int     @id @default(autoincrement())
+  systemCount      Int     @map("system_count")    // Current system stock count
+  physicalCount    Int     @map("physical_count")  // Actual counted stock
+  discrepancy      Int     @map("discrepancy")     // Calculated difference
+  discrepancyReason String? @map("discrepancy_reason")
+  estimatedImpact  Decimal? @db.Decimal(10, 2) @map("estimated_impact") // Financial impact
+  notes           String?
+
+  // Relations
+  reconciliation   StockReconciliation @relation(fields: [reconciliationId], references: [id], onDelete: Cascade)
+  reconciliationId Int                 @map("reconciliation_id")
+  product          Product             @relation(fields: [productId], references: [id])
+  productId        Int                 @map("product_id")
+
+  @@map("stock_reconciliation_items")
 }
 
 // Stock Management

@@ -1,5 +1,5 @@
 import { authOptions } from "@/lib/auth";
-import { createServerSupabaseClient } from "@/lib/supabase";
+import { createServerSupabaseClient } from "@/lib/supabase-server";
 import bcrypt from "bcryptjs";
 
 // Mock NextAuth for testing

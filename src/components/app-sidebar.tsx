@@ -126,8 +126,8 @@ const data = {
       url: "/inventory/stock",
       items: [
         {
-          title: "Stock Adjustments",
-          url: "/inventory/stock-adjustments",
+          title: "Stock Reconciliations",
+          url: "/inventory/stock-reconciliations",
         },
         {
           title: "Stock History",

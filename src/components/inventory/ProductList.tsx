@@ -4,7 +4,6 @@ import { useState, useEffect, useCallback } from "react";
 import Image from "next/image";
 import Link from "next/link";
 import { useDebounce } from "@/hooks/useDebounce";
-import { PageHeader } from "@/components/ui/page-header";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import {
@@ -51,6 +50,8 @@ import {
   ColumnCustomizer,
   PRODUCT_COLUMNS,
 } from "@/components/inventory/ColumnCustomizer";
+import { AddStockDialog } from "@/components/inventory/AddStockDialog";
+import { StockReconciliationDialog } from "@/components/inventory/StockReconciliationDialog";
 import {
   IconSearch,
   IconPlus,
@@ -183,6 +184,15 @@ export function ProductList({ user }: ProductListProps) {
     sortBy: "created_at",
     sortOrder: "desc",
   });
+
+  // Add Stock Dialog state
+  const [addStockDialogOpen, setAddStockDialogOpen] = useState(false);
+  const [selectedProductForStock, setSelectedProductForStock] =
+    useState<Product | null>(null);
+
+  // Stock Reconciliation Dialog state
+  const [reconciliationDialogOpen, setReconciliationDialogOpen] =
+    useState(false);
 
   // Debounce search term to avoid excessive API calls
   const debouncedSearchTerm = useDebounce(filters.search, 500);
@@ -478,19 +488,39 @@ export function ProductList({ user }: ProductListProps) {
         <div className="@container/main flex flex-1 flex-col gap-2">
           <div className="flex flex-col gap-4 py-4 md:gap-6 md:py-6">
             {/* Header Section */}
-            <PageHeader
-              title="Products"
-              description="Manage your product inventory and stock levels"
-              action={
-                canManageProducts
-                  ? {
-                      label: "Add Product",
-                      href: "/inventory/products/add",
-                      icon: <IconPlus className="h-4 w-4" />,
-                    }
-                  : undefined
-              }
-            />
+            <div className="px-4 lg:px-6">
+              <div className="flex items-center justify-between">
+                <div>
+                  <h1 className="text-3xl font-bold text-gray-900 dark:text-gray-100">
+                    Products
+                  </h1>
+                  <p className="mt-2 text-sm text-gray-600 dark:text-gray-400">
+                    Manage your product inventory and stock levels
+                  </p>
+                </div>
+                {canManageProducts && (
+                  <div className="flex items-center gap-2">
+                    <Button
+                      variant="outline"
+                      onClick={() => setReconciliationDialogOpen(true)}
+                      className="flex items-center gap-2"
+                    >
+                      <IconAdjustments className="h-4 w-4" />
+                      Reconcile Stock
+                    </Button>
+                    <Button asChild>
+                      <Link
+                        href="/inventory/products/add"
+                        className="flex items-center gap-2"
+                      >
+                        <IconPlus className="h-4 w-4" />
+                        Add Product
+                      </Link>
+                    </Button>
+                  </div>
+                )}
+              </div>
+            </div>
 
             {/* Filters Section */}
             <div className="px-4 lg:px-6">
@@ -774,14 +804,15 @@ export function ProductList({ user }: ProductListProps) {
                                             Edit Product
                                           </Link>
                                         </DropdownMenuItem>
-                                        <DropdownMenuItem asChild>
-                                          <a
-                                            href={`/inventory/stock-adjustments?productId=${product.id}`}
-                                            className="flex items-center gap-2"
-                                          >
-                                            <IconAdjustments className="h-4 w-4" />
-                                            Adjust Stock
-                                          </a>
+                                        <DropdownMenuItem
+                                          onClick={() => {
+                                            setSelectedProductForStock(product);
+                                            setAddStockDialogOpen(true);
+                                          }}
+                                          className="flex items-center gap-2"
+                                        >
+                                          <IconPackages className="h-4 w-4" />
+                                          Add Stock
                                         </DropdownMenuItem>
                                       </>
                                     )}
@@ -967,6 +998,28 @@ export function ProductList({ user }: ProductListProps) {
           </div>
         </div>
       </div>
+
+      {/* Add Stock Dialog */}
+      <AddStockDialog
+        isOpen={addStockDialogOpen}
+        onClose={() => {
+          setAddStockDialogOpen(false);
+          setSelectedProductForStock(null);
+        }}
+        product={selectedProductForStock}
+        onSuccess={() => {
+          fetchProducts(); // Refresh the product list
+        }}
+      />
+
+      {/* Stock Reconciliation Dialog */}
+      <StockReconciliationDialog
+        isOpen={reconciliationDialogOpen}
+        onClose={() => setReconciliationDialogOpen(false)}
+        onSuccess={() => {
+          fetchProducts(); // Refresh the product list
+        }}
+      />
     </>
   );
 }
