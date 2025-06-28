@@ -72,32 +72,45 @@ export async function GET(request: NextRequest) {
       });
     }
 
-    // Parse query parameters with safe defaults
-    const queryParams: any = {};
+    // Parse query parameters with safe defaults and performance optimization
+    const isActiveParam = searchParams.get("isActive");
+    const limitParam = searchParams.get("limit");
+    const limit = limitParam ? Math.min(parseInt(limitParam), 100) : 50; // Increased default and cap
+    const search = searchParams.get("search");
 
-    // Safely parse each parameter
-    try {
-      queryParams.search = searchParams.get("search") || undefined;
-      queryParams.isActive = searchParams.get("isActive")
-        ? searchParams.get("isActive") === "true"
-        : undefined;
-      queryParams.limit = searchParams.get("limit")
-        ? Math.min(parseInt(searchParams.get("limit")!), 100)
-        : 10;
-      queryParams.offset = searchParams.get("offset")
-        ? Math.max(parseInt(searchParams.get("offset")!), 0)
-        : 0;
-      queryParams.sortBy = searchParams.get("sortBy") || "name";
-      queryParams.sortOrder = searchParams.get("sortOrder") || "asc";
-    } catch (parseError) {
-      console.error("Error parsing query parameters:", parseError);
-      return NextResponse.json(
-        { error: "Invalid query parameters" },
-        { status: 400 }
-      );
+    // For simple dropdown requests, optimize the query
+    if (isActiveParam === "true" && !search && !searchParams.get("offset")) {
+      // Optimized query for dropdowns
+      const brands = await prisma.brand.findMany({
+        where: {
+          isActive: true,
+        },
+        select: {
+          id: true,
+          name: true,
+        },
+        orderBy: {
+          name: "asc",
+        },
+        take: limit,
+      });
+
+      return NextResponse.json({
+        success: true,
+        data: brands,
+      });
     }
 
     // Validate query parameters
+    const queryParams: any = {
+      search,
+      isActive: isActiveParam ? isActiveParam === "true" : undefined,
+      limit,
+      offset: parseInt(searchParams.get("offset") || "0"),
+      sortBy: searchParams.get("sortBy") || "name",
+      sortOrder: searchParams.get("sortOrder") || "asc",
+    };
+
     let validatedQuery;
     try {
       validatedQuery = brandQuerySchema.parse(queryParams);
@@ -109,14 +122,7 @@ export async function GET(request: NextRequest) {
       );
     }
 
-    const {
-      limit = 10,
-      offset = 0,
-      search,
-      isActive,
-      sortBy = "name",
-      sortOrder = "asc",
-    } = validatedQuery;
+    const { offset = 0, sortBy = "name", sortOrder = "asc" } = validatedQuery;
 
     // Build where clause for Prisma
     const where: any = {};
@@ -129,8 +135,8 @@ export async function GET(request: NextRequest) {
       ];
     }
 
-    if (isActive !== undefined) {
-      where.isActive = isActive;
+    if (validatedQuery.isActive !== undefined) {
+      where.isActive = validatedQuery.isActive;
     }
 
     // Build orderBy clause
