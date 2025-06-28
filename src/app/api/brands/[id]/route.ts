@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from "next/server";
-import { createServerSupabaseClient } from "@/lib/supabase-server";
+import { prisma } from "@/lib/db";
 import { getServerSession } from "next-auth";
 import { authOptions } from "@/lib/auth";
 import { brandIdSchema, updateBrandSchema } from "@/lib/validations/brand";
@@ -19,23 +19,12 @@ export async function GET(
     const resolvedParams = await params;
     const { id } = brandIdSchema.parse(resolvedParams);
 
-    const supabase = await createServerSupabaseClient();
+    const brand = await prisma.brand.findUnique({
+      where: { id },
+    });
 
-    const { data: brand, error } = await supabase
-      .from("brands")
-      .select("*")
-      .eq("id", id)
-      .single();
-
-    if (error) {
-      if (error.code === "PGRST116") {
-        return NextResponse.json({ error: "Brand not found" }, { status: 404 });
-      }
-      console.error("Error fetching brand:", error);
-      return NextResponse.json(
-        { error: "Failed to fetch brand" },
-        { status: 500 }
-      );
+    if (!brand) {
+      return NextResponse.json({ error: "Brand not found" }, { status: 404 });
     }
 
     return NextResponse.json({
@@ -69,14 +58,11 @@ export async function PUT(
     const body = await request.json();
     const validatedData = updateBrandSchema.parse({ ...body, id });
 
-    const supabase = await createServerSupabaseClient();
-
     // Check if brand exists
-    const { data: existingBrand } = await supabase
-      .from("brands")
-      .select("id")
-      .eq("id", id)
-      .single();
+    const existingBrand = await prisma.brand.findUnique({
+      where: { id },
+      select: { id: true },
+    });
 
     if (!existingBrand) {
       return NextResponse.json({ error: "Brand not found" }, { status: 404 });
@@ -84,12 +70,13 @@ export async function PUT(
 
     // Check if name is already taken by another brand
     if (validatedData.name) {
-      const { data: nameCheck } = await supabase
-        .from("brands")
-        .select("id")
-        .eq("name", validatedData.name)
-        .neq("id", id)
-        .single();
+      const nameCheck = await prisma.brand.findFirst({
+        where: {
+          name: validatedData.name,
+          id: { not: id },
+        },
+        select: { id: true },
+      });
 
       if (nameCheck) {
         return NextResponse.json(
@@ -99,37 +86,21 @@ export async function PUT(
       }
     }
 
+    // Prepare update data - remove id and handle field mapping
+    const updateData: any = {};
+    if (validatedData.name !== undefined) updateData.name = validatedData.name;
+    if (validatedData.description !== undefined)
+      updateData.description = validatedData.description;
+    if (validatedData.website !== undefined)
+      updateData.website = validatedData.website;
+    if (validatedData.is_active !== undefined)
+      updateData.isActive = validatedData.is_active;
+
     // Update the brand
-    const updateData = Object.fromEntries(
-      Object.entries(validatedData).filter(([key]) => key !== "id")
-    );
-
-    // Transform form data (handle both isActive and is_active)
-    const transformedData = { ...updateData };
-    if ("isActive" in transformedData) {
-      transformedData.is_active = (transformedData as any).isActive;
-      delete (transformedData as any).isActive;
-    }
-
-    const dataToUpdate = {
-      ...transformedData,
-      updated_at: new Date().toISOString(),
-    };
-
-    const { data: brand, error } = await supabase
-      .from("brands")
-      .update(dataToUpdate)
-      .eq("id", id)
-      .select("*")
-      .single();
-
-    if (error) {
-      console.error("Error updating brand:", error);
-      return NextResponse.json(
-        { error: "Failed to update brand" },
-        { status: 500 }
-      );
-    }
+    const brand = await prisma.brand.update({
+      where: { id },
+      data: updateData,
+    });
 
     return NextResponse.json({
       success: true,
@@ -159,35 +130,23 @@ export async function DELETE(
     const resolvedParams = await params;
     const { id } = brandIdSchema.parse(resolvedParams);
 
-    const supabase = await createServerSupabaseClient();
-
     // Check if brand exists
-    const { data: existingBrand } = await supabase
-      .from("brands")
-      .select("id")
-      .eq("id", id)
-      .single();
+    const existingBrand = await prisma.brand.findUnique({
+      where: { id },
+      select: { id: true },
+    });
 
     if (!existingBrand) {
       return NextResponse.json({ error: "Brand not found" }, { status: 404 });
     }
 
     // Check if brand is being used by products
-    const { data: products, error: productsError } = await supabase
-      .from("products")
-      .select("id")
-      .eq("brand_id", id)
-      .limit(1);
+    const products = await prisma.product.findFirst({
+      where: { brandId: id },
+      select: { id: true },
+    });
 
-    if (productsError) {
-      console.error("Error checking product references:", productsError);
-      return NextResponse.json(
-        { error: "Failed to check brand usage" },
-        { status: 500 }
-      );
-    }
-
-    if (products && products.length > 0) {
+    if (products) {
       return NextResponse.json(
         { error: "Cannot delete brand that is being used by products" },
         { status: 400 }
@@ -195,15 +154,9 @@ export async function DELETE(
     }
 
     // Delete the brand
-    const { error } = await supabase.from("brands").delete().eq("id", id);
-
-    if (error) {
-      console.error("Error deleting brand:", error);
-      return NextResponse.json(
-        { error: "Failed to delete brand" },
-        { status: 500 }
-      );
-    }
+    await prisma.brand.delete({
+      where: { id },
+    });
 
     return NextResponse.json({
       success: true,

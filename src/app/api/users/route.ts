@@ -1,5 +1,5 @@
 import { NextResponse } from "next/server";
-import { createServerSupabaseClient } from "@/lib/supabase-server";
+import { prisma } from "@/lib/db";
 import bcrypt from "bcryptjs";
 import {
   createUserSchema,
@@ -14,8 +14,6 @@ export const GET = withPermission("canManageUsers")(async function (
   request: AuthenticatedRequest
 ) {
   try {
-    const supabase = await createServerSupabaseClient();
-
     const { searchParams } = new URL(request.url);
 
     // Convert search params to object for validation
@@ -44,68 +42,82 @@ export const GET = withPermission("canManageUsers")(async function (
     } = validatedData;
 
     // Calculate offset for pagination
-    const offset = (page - 1) * limit;
+    const skip = (page - 1) * limit;
 
-    // Build query - exclude password from response
-    let query = supabase
-      .from("users")
-      .select(
-        "id, first_name, last_name, email, role, is_active, user_status, email_verified, created_at, last_login, approved_by, approved_at, rejection_reason"
-      );
+    // Build where clause for filtering
+    const where: any = {};
 
-    // Apply filters
+    // Apply search filter across multiple fields
     if (search) {
-      query = query.or(
-        `first_name.ilike.%${search}%,last_name.ilike.%${search}%,email.ilike.%${search}%`
-      );
+      where.OR = [
+        { firstName: { contains: search, mode: "insensitive" } },
+        { lastName: { contains: search, mode: "insensitive" } },
+        { email: { contains: search, mode: "insensitive" } },
+      ];
     }
 
+    // Apply role filter
     if (role) {
-      query = query.eq("role", role);
+      where.role = role;
     }
 
+    // Apply status filter
     if (status) {
-      query = query.eq("user_status", status);
+      where.userStatus = status;
     }
 
+    // Apply active status filter
     if (isActive !== undefined) {
-      query = query.eq("is_active", isActive);
+      where.isActive = isActive;
     }
 
-    // Apply sorting and pagination
-    query = query
-      .order(sortBy === "createdAt" ? "created_at" : sortBy, {
-        ascending: sortOrder === "asc",
-      })
-      .range(offset, offset + limit - 1);
-
-    const { data: users, error } = await query;
-
-    if (error) {
-      console.error("Error fetching users:", error);
-      return NextResponse.json(
-        { error: "Failed to fetch users", details: error.message },
-        { status: 500 }
-      );
+    // Build orderBy clause
+    const orderBy: any = {};
+    if (sortBy === "createdAt") {
+      orderBy.createdAt = sortOrder;
+    } else {
+      orderBy[sortBy] = sortOrder;
     }
 
-    // Transform the response to use camelCase for frontend compatibility
-    const transformedUsers =
-      users?.map((user) => ({
-        id: user.id,
-        firstName: user.first_name,
-        lastName: user.last_name,
-        email: user.email,
-        role: user.role,
-        isActive: user.is_active,
-        userStatus: user.user_status,
-        emailVerified: user.email_verified,
-        createdAt: user.created_at,
-        lastLogin: user.last_login,
-        approvedBy: user.approved_by,
-        approvedAt: user.approved_at,
-        rejectionReason: user.rejection_reason,
-      })) || [];
+    // Fetch users with Prisma - exclude password from response
+    const users = await prisma.user.findMany({
+      where,
+      select: {
+        id: true,
+        firstName: true,
+        lastName: true,
+        email: true,
+        role: true,
+        isActive: true,
+        userStatus: true,
+        emailVerified: true,
+        createdAt: true,
+        lastLogin: true,
+        approvedBy: true,
+        approvedAt: true,
+        rejectionReason: true,
+      },
+      orderBy,
+      skip,
+      take: limit,
+    });
+
+    // Transform the response to match the expected camelCase format
+    const transformedUsers = users.map((user) => ({
+      id: user.id,
+      firstName: user.firstName,
+      lastName: user.lastName,
+      email: user.email,
+      role: user.role,
+      isActive: user.isActive,
+      userStatus: user.userStatus,
+      emailVerified: user.emailVerified,
+      createdAt: user.createdAt,
+      lastLogin: user.lastLogin,
+      approvedBy: user.approvedBy,
+      approvedAt: user.approvedAt,
+      rejectionReason: user.rejectionReason,
+    }));
 
     return NextResponse.json(transformedUsers);
   } catch (error) {
@@ -123,7 +135,6 @@ export const POST = withPermission("canManageUsers")(async function (
   request: AuthenticatedRequest
 ) {
   try {
-    const supabase = await createServerSupabaseClient();
     const body = await request.json();
 
     // Validate request body
@@ -138,11 +149,10 @@ export const POST = withPermission("canManageUsers")(async function (
     const userData = validation.data;
 
     // Check if email already exists
-    const { data: existingUser } = await supabase
-      .from("users")
-      .select("id")
-      .eq("email", userData.email)
-      .single();
+    const existingUser = await prisma.user.findUnique({
+      where: { email: userData.email },
+      select: { id: true },
+    });
 
     if (existingUser) {
       return NextResponse.json(
@@ -154,44 +164,43 @@ export const POST = withPermission("canManageUsers")(async function (
     // Hash the password
     const hashedPassword = await bcrypt.hash(userData.password, 12);
 
-    // Create the user
-    const { data: user, error } = await supabase
-      .from("users")
-      .insert({
-        first_name: userData.firstName,
-        last_name: userData.lastName,
+    // Create the user with Prisma
+    const user = await prisma.user.create({
+      data: {
+        firstName: userData.firstName,
+        lastName: userData.lastName,
         email: userData.email,
-        password_hash: hashedPassword,
+        password: hashedPassword,
         phone: userData.phone,
         role: userData.role,
-        is_active: userData.isActive ?? true, // Default to true if not specified
-        user_status: "APPROVED", // New users created by admin are auto-approved
-        email_verified: true, // Admin-created users are auto-verified
-        email_verified_at: new Date().toISOString(), // Set verification timestamp
-      })
-      .select(
-        "id, first_name, last_name, email, role, is_active, created_at, last_login"
-      )
-      .single();
+        isActive: userData.isActive ?? true, // Default to true if not specified
+        userStatus: "APPROVED", // New users created by admin are auto-approved
+        emailVerified: true, // Admin-created users are auto-verified
+        emailVerifiedAt: new Date(), // Set verification timestamp
+        notes: userData.notes,
+      },
+      select: {
+        id: true,
+        firstName: true,
+        lastName: true,
+        email: true,
+        role: true,
+        isActive: true,
+        createdAt: true,
+        lastLogin: true,
+      },
+    });
 
-    if (error) {
-      console.error("Error creating user:", error);
-      return NextResponse.json(
-        { error: "Failed to create user" },
-        { status: 500 }
-      );
-    }
-
-    // Transform response to camelCase
+    // Transform response to match expected format
     const transformedUser = {
       id: user.id,
-      firstName: user.first_name,
-      lastName: user.last_name,
+      firstName: user.firstName,
+      lastName: user.lastName,
       email: user.email,
       role: user.role,
-      isActive: user.is_active,
-      createdAt: user.created_at,
-      lastLogin: user.last_login,
+      isActive: user.isActive,
+      createdAt: user.createdAt,
+      lastLogin: user.lastLogin,
     };
 
     return NextResponse.json(transformedUser, { status: 201 });

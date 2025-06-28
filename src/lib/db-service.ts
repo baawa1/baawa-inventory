@@ -1,63 +1,32 @@
 import { User } from "@prisma/client";
-import { createClient } from "@supabase/supabase-js";
+import { prisma } from "@/lib/db";
 import bcrypt from "bcryptjs";
 
-// Supabase client for direct database operations
-const supabase = createClient(
-  process.env.NEXT_PUBLIC_SUPABASE_URL!,
-  process.env.SUPABASE_SERVICE_ROLE_KEY!
-);
-
 /**
- * Database service that uses Prisma types but Supabase client for operations
- * This is a workaround for Prisma connection issues with Supabase
+ * Database service that provides a consistent interface for user operations
+ * Now using Prisma for all database operations
  */
 export const dbService = {
   user: {
     async findUnique(params: {
       where: { email?: string; id?: number };
     }): Promise<User | null> {
-      let query = supabase.from("users").select("*");
+      const where: any = {};
 
       if (params.where.email) {
-        query = query.eq("email", params.where.email);
+        where.email = params.where.email;
       }
       if (params.where.id) {
-        query = query.eq("id", params.where.id);
+        where.id = params.where.id;
       }
 
-      query = query.eq("is_active", true);
+      where.isActive = true;
 
-      const { data, error } = await query.single();
+      const user = await prisma.user.findFirst({
+        where,
+      });
 
-      if (error && error.code !== "PGRST116") {
-        // PGRST116 is "not found"
-        throw new Error(`Database error: ${error.message}`);
-      }
-
-      // Transform Supabase response to match Prisma User type
-      if (!data) return null;
-
-      return {
-        id: data.id,
-        firstName: data.first_name,
-        lastName: data.last_name,
-        email: data.email,
-        password: data.password_hash,
-        phone: data.phone,
-        role: data.role,
-        isActive: data.is_active,
-        notes: data.notes,
-        lastLogin: data.last_login ? new Date(data.last_login) : null,
-        lastLogout: data.last_logout ? new Date(data.last_logout) : null,
-        lastActivity: data.last_activity ? new Date(data.last_activity) : null,
-        resetToken: data.reset_token,
-        resetTokenExpires: data.reset_token_expires
-          ? new Date(data.reset_token_expires)
-          : null,
-        createdAt: new Date(data.created_at),
-        updatedAt: new Date(data.updated_at),
-      } as User;
+      return user;
     },
 
     async findFirst(params: {
@@ -67,49 +36,25 @@ export const dbService = {
         isActive?: boolean;
       };
     }): Promise<User | null> {
-      let query = supabase.from("users").select("*");
+      const where: any = {};
 
       if (params.where.resetToken) {
-        query = query.eq("reset_token", params.where.resetToken);
+        where.resetToken = params.where.resetToken;
       }
       if (params.where.resetTokenExpires?.gt) {
-        query = query.gt(
-          "reset_token_expires",
-          params.where.resetTokenExpires.gt.toISOString()
-        );
+        where.resetTokenExpires = {
+          gt: params.where.resetTokenExpires.gt,
+        };
       }
       if (params.where.isActive !== undefined) {
-        query = query.eq("is_active", params.where.isActive);
+        where.isActive = params.where.isActive;
       }
 
-      const { data, error } = await query.single();
+      const user = await prisma.user.findFirst({
+        where,
+      });
 
-      if (error && error.code !== "PGRST116") {
-        throw new Error(`Database error: ${error.message}`);
-      }
-
-      if (!data) return null;
-
-      return {
-        id: data.id,
-        firstName: data.first_name,
-        lastName: data.last_name,
-        email: data.email,
-        password: data.password_hash,
-        phone: data.phone,
-        role: data.role,
-        isActive: data.is_active,
-        notes: data.notes,
-        lastLogin: data.last_login ? new Date(data.last_login) : null,
-        lastLogout: data.last_logout ? new Date(data.last_logout) : null,
-        lastActivity: data.last_activity ? new Date(data.last_activity) : null,
-        resetToken: data.reset_token,
-        resetTokenExpires: data.reset_token_expires
-          ? new Date(data.reset_token_expires)
-          : null,
-        createdAt: new Date(data.created_at),
-        updatedAt: new Date(data.updated_at),
-      } as User;
+      return user;
     },
 
     async update(params: {
@@ -124,50 +69,24 @@ export const dbService = {
       const updateData: any = {};
 
       if (params.data.resetToken !== undefined) {
-        updateData.reset_token = params.data.resetToken;
+        updateData.resetToken = params.data.resetToken;
       }
       if (params.data.resetTokenExpires !== undefined) {
-        updateData.reset_token_expires =
-          params.data.resetTokenExpires?.toISOString() || null;
+        updateData.resetTokenExpires = params.data.resetTokenExpires;
       }
       if (params.data.password) {
-        updateData.password_hash = params.data.password;
+        updateData.password = params.data.password;
       }
       if (params.data.updatedAt) {
-        updateData.updated_at = params.data.updatedAt.toISOString();
+        updateData.updatedAt = params.data.updatedAt;
       }
 
-      const { data, error } = await supabase
-        .from("users")
-        .update(updateData)
-        .eq("id", params.where.id)
-        .select()
-        .single();
+      const user = await prisma.user.update({
+        where: { id: params.where.id },
+        data: updateData,
+      });
 
-      if (error) {
-        throw new Error(`Database error: ${error.message}`);
-      }
-
-      return {
-        id: data.id,
-        firstName: data.first_name,
-        lastName: data.last_name,
-        email: data.email,
-        password: data.password_hash,
-        phone: data.phone,
-        role: data.role,
-        isActive: data.is_active,
-        notes: data.notes,
-        lastLogin: data.last_login ? new Date(data.last_login) : null,
-        lastLogout: data.last_logout ? new Date(data.last_logout) : null,
-        lastActivity: data.last_activity ? new Date(data.last_activity) : null,
-        resetToken: data.reset_token,
-        resetTokenExpires: data.reset_token_expires
-          ? new Date(data.reset_token_expires)
-          : null,
-        createdAt: new Date(data.created_at),
-        updatedAt: new Date(data.updated_at),
-      } as User;
+      return user;
     },
 
     async create(params: {
@@ -183,44 +102,19 @@ export const dbService = {
     }): Promise<User> {
       const hashedPassword = await bcrypt.hash(params.data.password, 12);
 
-      const { data, error } = await supabase
-        .from("users")
-        .insert({
-          first_name: params.data.firstName,
-          last_name: params.data.lastName,
+      const user = await prisma.user.create({
+        data: {
+          firstName: params.data.firstName,
+          lastName: params.data.lastName,
           email: params.data.email,
-          password_hash: hashedPassword,
+          password: hashedPassword,
           phone: params.data.phone || null,
-          role: params.data.role || "STAFF",
-          is_active: params.data.isActive !== false,
-        })
-        .select()
-        .single();
+          role: (params.data.role as any) || "STAFF",
+          isActive: params.data.isActive !== false,
+        },
+      });
 
-      if (error) {
-        throw new Error(`Database error: ${error.message}`);
-      }
-
-      return {
-        id: data.id,
-        firstName: data.first_name,
-        lastName: data.last_name,
-        email: data.email,
-        password: data.password_hash,
-        phone: data.phone,
-        role: data.role,
-        isActive: data.is_active,
-        notes: data.notes,
-        lastLogin: data.last_login ? new Date(data.last_login) : null,
-        lastLogout: data.last_logout ? new Date(data.last_logout) : null,
-        lastActivity: data.last_activity ? new Date(data.last_activity) : null,
-        resetToken: data.reset_token,
-        resetTokenExpires: data.reset_token_expires
-          ? new Date(data.reset_token_expires)
-          : null,
-        createdAt: new Date(data.created_at),
-        updatedAt: new Date(data.updated_at),
-      } as User;
+      return user;
     },
   },
 };

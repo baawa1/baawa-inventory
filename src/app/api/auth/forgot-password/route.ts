@@ -1,7 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import { z } from "zod";
 import crypto from "crypto";
-import { createServerSupabaseClient } from "@/lib/supabase-server";
+import { prisma } from "@/lib/db";
 import { emailService } from "@/lib/email";
 
 const forgotPasswordSchema = z.object({
@@ -13,46 +13,47 @@ export async function POST(request: NextRequest) {
     const body = await request.json();
     const validatedData = forgotPasswordSchema.parse(body);
 
-    // Use the same client approach as registration
-    const supabase = await createServerSupabaseClient();
-
-    console.log("🔧 Using server Supabase client (like registration)...");
+    console.log("🔧 Using Prisma for user lookup...");
 
     // Check if user exists
-    const { data: user, error } = await supabase
-      .from("users")
-      .select("*")
-      .eq("email", validatedData.email)
-      .eq("is_active", true)
-      .single();
+    const user = await prisma.user.findFirst({
+      where: {
+        email: validatedData.email,
+        isActive: true,
+      },
+      select: {
+        id: true,
+        email: true,
+        firstName: true,
+      },
+    });
 
     console.log("🔍 User lookup result:");
     console.log("📧 Looking for email:", validatedData.email);
     console.log("👤 User found:", !!user);
-    console.log("❌ Error:", error?.message || "none");
     if (user) {
       console.log("📊 User details:", {
         id: user.id,
         email: user.email,
-        first_name: user.first_name,
+        first_name: user.firstName,
       });
     }
 
     // Always return success to prevent email enumeration attacks
     // But only send email if user actually exists
-    if (user && !error) {
+    if (user) {
       // Generate reset token
       const resetToken = crypto.randomBytes(32).toString("hex");
       const resetTokenExpiry = new Date(Date.now() + 60 * 60 * 1000); // 1 hour
 
       // Save reset token to database
-      await supabase
-        .from("users")
-        .update({
-          reset_token: resetToken,
-          reset_token_expires: resetTokenExpiry.toISOString(),
-        })
-        .eq("id", user.id);
+      await prisma.user.update({
+        where: { id: user.id },
+        data: {
+          resetToken: resetToken,
+          resetTokenExpires: resetTokenExpiry,
+        },
+      });
 
       // Send email with reset link using the new email service
       const resetUrl = `${process.env.NEXTAUTH_URL}/reset-password?token=${resetToken}`;
@@ -61,10 +62,10 @@ export async function POST(request: NextRequest) {
         console.log("🔄 Attempting to send password reset email...");
         console.log("📧 Email:", validatedData.email);
         console.log("🔗 Reset URL:", resetUrl);
-        console.log("👤 User name:", user.first_name);
+        console.log("👤 User name:", user.firstName);
 
         await emailService.sendPasswordResetEmail(validatedData.email, {
-          firstName: user.first_name,
+          firstName: user.firstName,
           resetLink: resetUrl,
           expiresInHours: 1,
         });

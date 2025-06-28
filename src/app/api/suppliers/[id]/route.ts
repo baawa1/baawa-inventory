@@ -1,47 +1,35 @@
 import { NextRequest, NextResponse } from "next/server";
-import { createServerSupabaseClient } from "@/lib/supabase-server";
+import { prisma } from "@/lib/db";
+import { getServerSession } from "next-auth";
+import { authOptions } from "@/lib/auth";
 import {
   supplierIdSchema,
   updateSupplierSchema,
-  validateRequest,
-} from "@/lib/validations";
-
-interface RouteParams {
-  params: Promise<{ id: string }>;
-}
+} from "@/lib/validations/supplier";
 
 // GET /api/suppliers/[id] - Get a specific supplier
-export async function GET(request: NextRequest, { params }: RouteParams) {
+export async function GET(
+  request: NextRequest,
+  { params }: { params: Promise<{ id: string }> }
+) {
   try {
-    const supabase = await createServerSupabaseClient();
-    const { id } = await params;
-
-    // Validate ID
-    const supplierId = parseInt(id);
-    if (isNaN(supplierId)) {
-      return NextResponse.json(
-        { error: "Invalid supplier ID" },
-        { status: 400 }
-      );
+    const session = await getServerSession(authOptions);
+    if (!session) {
+      return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
     }
 
-    const { data: supplier, error } = await supabase
-      .from("suppliers")
-      .select("*")
-      .eq("id", supplierId)
-      .single();
+    // Await params first, then validate supplier ID
+    const resolvedParams = await params;
+    const { id } = supplierIdSchema.parse(resolvedParams);
 
-    if (error) {
-      if (error.code === "PGRST116") {
-        return NextResponse.json(
-          { error: "Supplier not found" },
-          { status: 404 }
-        );
-      }
-      console.error("Error fetching supplier:", error);
+    const supplier = await prisma.supplier.findUnique({
+      where: { id },
+    });
+
+    if (!supplier) {
       return NextResponse.json(
-        { error: "Failed to fetch supplier" },
-        { status: 500 }
+        { error: "Supplier not found" },
+        { status: 404 }
       );
     }
 
@@ -49,21 +37,21 @@ export async function GET(request: NextRequest, { params }: RouteParams) {
     const transformedSupplier = {
       id: supplier.id,
       name: supplier.name,
-      contactPerson: supplier.contact_person,
+      contactPerson: supplier.contactPerson,
       email: supplier.email,
       phone: supplier.phone,
       address: supplier.address,
       city: supplier.city,
       state: supplier.state,
       country: supplier.country,
-      postalCode: supplier.postal_code,
-      taxId: supplier.tax_number,
-      paymentTerms: supplier.payment_terms,
-      creditLimit: supplier.credit_limit,
-      isActive: supplier.is_active,
+      postalCode: supplier.postalCode,
+      taxId: supplier.taxNumber,
+      paymentTerms: supplier.paymentTerms,
+      creditLimit: supplier.creditLimit,
+      isActive: supplier.isActive,
       notes: supplier.notes,
-      createdAt: supplier.created_at,
-      updatedAt: supplier.updated_at,
+      createdAt: supplier.createdAt,
+      updatedAt: supplier.updatedAt,
     };
 
     return NextResponse.json({ data: transformedSupplier });
@@ -77,27 +65,28 @@ export async function GET(request: NextRequest, { params }: RouteParams) {
 }
 
 // PUT /api/suppliers/[id] - Update a supplier
-export async function PUT(request: NextRequest, { params }: RouteParams) {
+export async function PUT(
+  request: NextRequest,
+  { params }: { params: Promise<{ id: string }> }
+) {
   try {
-    const supabase = await createServerSupabaseClient();
-    const { id } = await params;
-    const body = await request.json();
-
-    // Validate ID
-    const supplierId = parseInt(id);
-    if (isNaN(supplierId)) {
-      return NextResponse.json(
-        { error: "Invalid supplier ID" },
-        { status: 400 }
-      );
+    const session = await getServerSession(authOptions);
+    if (!session) {
+      return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
     }
 
+    // Await params first, then validate supplier ID
+    const resolvedParams = await params;
+    const { id } = supplierIdSchema.parse(resolvedParams);
+
+    const body = await request.json();
+    const validatedData = updateSupplierSchema.parse(body);
+
     // Check if supplier exists
-    const { data: existingSupplier } = await supabase
-      .from("suppliers")
-      .select("id, name")
-      .eq("id", supplierId)
-      .single();
+    const existingSupplier = await prisma.supplier.findUnique({
+      where: { id },
+      select: { id: true, name: true },
+    });
 
     if (!existingSupplier) {
       return NextResponse.json(
@@ -107,13 +96,14 @@ export async function PUT(request: NextRequest, { params }: RouteParams) {
     }
 
     // If name is being updated, check for conflicts
-    if (body.name && body.name !== existingSupplier.name) {
-      const { data: conflictSupplier } = await supabase
-        .from("suppliers")
-        .select("id")
-        .eq("name", body.name)
-        .neq("id", supplierId)
-        .single();
+    if (validatedData.name && validatedData.name !== existingSupplier.name) {
+      const conflictSupplier = await prisma.supplier.findFirst({
+        where: {
+          name: validatedData.name,
+          id: { not: id },
+        },
+        select: { id: true },
+      });
 
       if (conflictSupplier) {
         return NextResponse.json(
@@ -123,73 +113,60 @@ export async function PUT(request: NextRequest, { params }: RouteParams) {
       }
     }
 
-    // Validate email format if provided
-    if (body.email) {
-      const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
-      if (!emailRegex.test(body.email)) {
-        return NextResponse.json(
-          { error: "Invalid email format" },
-          { status: 400 }
-        );
-      }
-    }
-
-    // Map frontend field names to database field names
+    // Prepare update data - map frontend field names to database field names
     const updateData: any = {};
-
-    if (body.name !== undefined) updateData.name = body.name;
-    if (body.contactPerson !== undefined)
-      updateData.contact_person = body.contactPerson;
-    if (body.email !== undefined) updateData.email = body.email;
-    if (body.phone !== undefined) updateData.phone = body.phone;
-    if (body.address !== undefined) updateData.address = body.address;
-    if (body.city !== undefined) updateData.city = body.city;
-    if (body.state !== undefined) updateData.state = body.state;
-    if (body.country !== undefined) updateData.country = body.country;
-    if (body.postalCode !== undefined) updateData.postal_code = body.postalCode;
-    if (body.taxId !== undefined) updateData.tax_number = body.taxId;
-    if (body.paymentTerms !== undefined)
-      updateData.payment_terms = body.paymentTerms;
-    if (body.creditLimit !== undefined)
-      updateData.credit_limit = body.creditLimit;
-    if (body.isActive !== undefined) updateData.is_active = body.isActive;
-    if (body.notes !== undefined) updateData.notes = body.notes;
+    if (validatedData.name !== undefined) updateData.name = validatedData.name;
+    if (validatedData.contactPerson !== undefined)
+      updateData.contactPerson = validatedData.contactPerson;
+    if (validatedData.email !== undefined)
+      updateData.email = validatedData.email;
+    if (validatedData.phone !== undefined)
+      updateData.phone = validatedData.phone;
+    if (validatedData.address !== undefined)
+      updateData.address = validatedData.address;
+    if (validatedData.city !== undefined) updateData.city = validatedData.city;
+    if (validatedData.state !== undefined)
+      updateData.state = validatedData.state;
+    if (validatedData.country !== undefined)
+      updateData.country = validatedData.country;
+    if (validatedData.postalCode !== undefined)
+      updateData.postalCode = validatedData.postalCode;
+    if (validatedData.taxId !== undefined)
+      updateData.taxNumber = validatedData.taxId;
+    if (validatedData.paymentTerms !== undefined)
+      updateData.paymentTerms = validatedData.paymentTerms;
+    if (validatedData.creditLimit !== undefined)
+      updateData.creditLimit = validatedData.creditLimit;
+    if (validatedData.isActive !== undefined)
+      updateData.isActive = validatedData.isActive;
+    if (validatedData.notes !== undefined)
+      updateData.notes = validatedData.notes;
 
     // Update the supplier
-    const { data: supplier, error } = await supabase
-      .from("suppliers")
-      .update(updateData)
-      .eq("id", supplierId)
-      .select("*")
-      .single();
-
-    if (error) {
-      console.error("Error updating supplier:", error);
-      return NextResponse.json(
-        { error: "Failed to update supplier" },
-        { status: 500 }
-      );
-    }
+    const supplier = await prisma.supplier.update({
+      where: { id },
+      data: updateData,
+    });
 
     // Transform database field names to frontend field names
     const transformedSupplier = {
       id: supplier.id,
       name: supplier.name,
-      contactPerson: supplier.contact_person,
+      contactPerson: supplier.contactPerson,
       email: supplier.email,
       phone: supplier.phone,
       address: supplier.address,
       city: supplier.city,
       state: supplier.state,
       country: supplier.country,
-      postalCode: supplier.postal_code,
-      taxId: supplier.tax_number,
-      paymentTerms: supplier.payment_terms,
-      creditLimit: supplier.credit_limit,
-      isActive: supplier.is_active,
+      postalCode: supplier.postalCode,
+      taxId: supplier.taxNumber,
+      paymentTerms: supplier.paymentTerms,
+      creditLimit: supplier.creditLimit,
+      isActive: supplier.isActive,
       notes: supplier.notes,
-      createdAt: supplier.created_at,
-      updatedAt: supplier.updated_at,
+      createdAt: supplier.createdAt,
+      updatedAt: supplier.updatedAt,
     };
 
     return NextResponse.json({ data: transformedSupplier });
@@ -203,28 +180,28 @@ export async function PUT(request: NextRequest, { params }: RouteParams) {
 }
 
 // DELETE /api/suppliers/[id] - Delete or deactivate a supplier
-export async function DELETE(request: NextRequest, { params }: RouteParams) {
+export async function DELETE(
+  request: NextRequest,
+  { params }: { params: Promise<{ id: string }> }
+) {
   try {
-    const supabase = await createServerSupabaseClient();
-    const { id } = await params;
+    const session = await getServerSession(authOptions);
+    if (!session) {
+      return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+    }
+
+    // Await params first, then validate supplier ID
+    const resolvedParams = await params;
+    const { id } = supplierIdSchema.parse(resolvedParams);
+
     const { searchParams } = new URL(request.url);
     const hardDelete = searchParams.get("hard") === "true";
 
-    // Validate ID
-    const supplierId = parseInt(id);
-    if (isNaN(supplierId)) {
-      return NextResponse.json(
-        { error: "Invalid supplier ID" },
-        { status: 400 }
-      );
-    }
-
     // Check if supplier exists
-    const { data: existingSupplier } = await supabase
-      .from("suppliers")
-      .select("id, name")
-      .eq("id", supplierId)
-      .single();
+    const existingSupplier = await prisma.supplier.findUnique({
+      where: { id },
+      select: { id: true, name: true },
+    });
 
     if (!existingSupplier) {
       return NextResponse.json(
@@ -235,13 +212,12 @@ export async function DELETE(request: NextRequest, { params }: RouteParams) {
 
     if (hardDelete) {
       // Check for related records that would prevent deletion
-      const { data: products } = await supabase
-        .from("products")
-        .select("id")
-        .eq("supplier_id", supplierId)
-        .limit(1);
+      const products = await prisma.product.findFirst({
+        where: { supplierId: id },
+        select: { id: true },
+      });
 
-      if (products && products.length > 0) {
+      if (products) {
         return NextResponse.json(
           {
             error:
@@ -252,38 +228,20 @@ export async function DELETE(request: NextRequest, { params }: RouteParams) {
       }
 
       // Hard delete
-      const { error } = await supabase
-        .from("suppliers")
-        .delete()
-        .eq("id", supplierId);
-
-      if (error) {
-        console.error("Error deleting supplier:", error);
-        return NextResponse.json(
-          { error: "Failed to delete supplier" },
-          { status: 500 }
-        );
-      }
+      await prisma.supplier.delete({
+        where: { id },
+      });
 
       return NextResponse.json({
         message: "Supplier deleted successfully",
       });
     } else {
       // Soft delete (deactivate)
-      const { data: supplier, error } = await supabase
-        .from("suppliers")
-        .update({ is_active: false })
-        .eq("id", supplierId)
-        .select("id, name, is_active")
-        .single();
-
-      if (error) {
-        console.error("Error deactivating supplier:", error);
-        return NextResponse.json(
-          { error: "Failed to deactivate supplier" },
-          { status: 500 }
-        );
-      }
+      const supplier = await prisma.supplier.update({
+        where: { id },
+        data: { isActive: false },
+        select: { id: true, name: true, isActive: true },
+      });
 
       return NextResponse.json({
         data: supplier,
@@ -300,39 +258,30 @@ export async function DELETE(request: NextRequest, { params }: RouteParams) {
 }
 
 // PATCH /api/suppliers/[id] - Update supplier status or other fields
-export async function PATCH(request: NextRequest, { params }: RouteParams) {
+export async function PATCH(
+  request: NextRequest,
+  { params }: { params: Promise<{ id: string }> }
+) {
   try {
-    const supabase = await createServerSupabaseClient();
-    const { id } = await params;
-
-    // Validate ID
-    const supplierId = parseInt(id);
-    if (isNaN(supplierId)) {
-      return NextResponse.json(
-        { error: "Invalid supplier ID" },
-        { status: 400 }
-      );
+    const session = await getServerSession(authOptions);
+    if (!session) {
+      return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
     }
+
+    // Await params first, then validate supplier ID
+    const resolvedParams = await params;
+    const { id } = supplierIdSchema.parse(resolvedParams);
 
     // Parse request body
     const body = await request.json();
 
     // Check if this is a status update (reactivation/deactivation)
     if (body.hasOwnProperty("isActive")) {
-      const { data: supplier, error } = await supabase
-        .from("suppliers")
-        .update({ is_active: body.isActive })
-        .eq("id", supplierId)
-        .select("id, name, is_active")
-        .single();
-
-      if (error) {
-        console.error("Error updating supplier status:", error);
-        return NextResponse.json(
-          { error: "Failed to update supplier status" },
-          { status: 500 }
-        );
-      }
+      const supplier = await prisma.supplier.update({
+        where: { id },
+        data: { isActive: body.isActive },
+        select: { id: true, name: true, isActive: true },
+      });
 
       const action = body.isActive ? "reactivated" : "deactivated";
       return NextResponse.json({

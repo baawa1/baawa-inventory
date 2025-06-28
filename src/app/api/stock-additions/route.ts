@@ -1,7 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import { getServerSession } from "next-auth";
 import { authOptions } from "@/lib/auth";
-import { createServerSupabaseClient } from "@/lib/supabase-server";
+import { prisma } from "@/lib/db";
 import { ZodError } from "zod";
 import {
   createStockAdditionSchema,
@@ -18,7 +18,6 @@ export async function GET(request: NextRequest) {
       return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
     }
 
-    const supabase = await createServerSupabaseClient();
     const { searchParams } = new URL(request.url);
     const queryParams: Record<string, unknown> = {};
 
@@ -39,68 +38,69 @@ export async function GET(request: NextRequest) {
 
     const validatedQuery = stockAdditionQuerySchema.parse(queryParams);
 
-    // Build Supabase query
-    let query = supabase.from("stock_additions").select(`
-        id,
-        quantity,
-        cost_per_unit,
-        total_cost,
-        purchase_date,
-        notes,
-        reference_no,
-        created_at,
-        products:product_id (id, name, sku, stock),
-        suppliers:supplier_id (id, name),
-        users:created_by (id, first_name, last_name, email)
-      `);
-
-    // Apply filters
-    if (validatedQuery.productId) {
-      query = query.eq("product_id", validatedQuery.productId);
-    }
-    if (validatedQuery.supplierId) {
-      query = query.eq("supplier_id", validatedQuery.supplierId);
-    }
-    if (validatedQuery.createdBy) {
-      query = query.eq("created_by", validatedQuery.createdBy);
-    }
-    if (validatedQuery.startDate) {
-      query = query.gte("purchase_date", validatedQuery.startDate);
-    }
-    if (validatedQuery.endDate) {
-      query = query.lte("purchase_date", validatedQuery.endDate);
+    // Build Prisma where clause
+    const where: any = {};
+    if (validatedQuery.productId) where.productId = validatedQuery.productId;
+    if (validatedQuery.supplierId) where.supplierId = validatedQuery.supplierId;
+    if (validatedQuery.createdBy) where.createdById = validatedQuery.createdBy;
+    if (validatedQuery.startDate || validatedQuery.endDate) {
+      where.purchaseDate = {};
+      if (validatedQuery.startDate)
+        where.purchaseDate.gte = new Date(validatedQuery.startDate);
+      if (validatedQuery.endDate)
+        where.purchaseDate.lte = new Date(validatedQuery.endDate);
     }
 
-    // Apply sorting and pagination
-    const sortColumn =
-      validatedQuery.sortBy === "createdAt"
-        ? "created_at"
-        : validatedQuery.sortBy;
-    query = query
-      .order(sortColumn, { ascending: validatedQuery.sortOrder === "asc" })
-      .range(
-        (validatedQuery.page - 1) * validatedQuery.limit,
-        validatedQuery.page * validatedQuery.limit - 1
-      );
+    // Calculate pagination
+    const skip = (validatedQuery.page - 1) * validatedQuery.limit;
 
-    const { data: stockAdditions, error, count } = await query;
+    // Get stock additions with relations
+    const [stockAdditions, totalCount] = await Promise.all([
+      prisma.stockAddition.findMany({
+        where,
+        include: {
+          product: {
+            select: {
+              id: true,
+              name: true,
+              sku: true,
+              stock: true,
+            },
+          },
+          supplier: {
+            select: {
+              id: true,
+              name: true,
+            },
+          },
+          createdBy: {
+            select: {
+              id: true,
+              firstName: true,
+              lastName: true,
+              email: true,
+            },
+          },
+        },
+        orderBy: {
+          [validatedQuery.sortBy === "createdAt"
+            ? "createdAt"
+            : validatedQuery.sortBy]: validatedQuery.sortOrder,
+        },
+        skip,
+        take: validatedQuery.limit,
+      }),
+      prisma.stockAddition.count({ where }),
+    ]);
 
-    if (error) {
-      console.error("Error fetching stock additions:", error);
-      return NextResponse.json(
-        { error: "Failed to fetch stock additions" },
-        { status: 500 }
-      );
-    }
-
-    const totalPages = Math.ceil((count || 0) / validatedQuery.limit);
+    const totalPages = Math.ceil(totalCount / validatedQuery.limit);
 
     return NextResponse.json({
       stockAdditions: stockAdditions || [],
       pagination: {
         page: validatedQuery.page,
         limit: validatedQuery.limit,
-        total: count || 0,
+        total: totalCount,
         totalPages,
         hasNext: validatedQuery.page < totalPages,
         hasPrev: validatedQuery.page > 1,
@@ -131,7 +131,6 @@ export async function POST(request: NextRequest) {
   }
 
   try {
-    const supabase = await createServerSupabaseClient();
     const body = await request.json();
     console.log("Received body:", body); // Debug log
 
@@ -139,140 +138,127 @@ export async function POST(request: NextRequest) {
       createStockAdditionSchema.parse(body);
     console.log("Validated data:", validatedData); // Debug log
 
-    // Check if product exists
-    console.log("Checking if product exists for ID:", validatedData.productId);
-    const { data: product, error: productError } = await supabase
-      .from("products")
-      .select("id, name, stock, cost")
-      .eq("id", validatedData.productId)
-      .single();
+    // Execute all operations in a transaction
+    const result = await prisma.$transaction(async (tx) => {
+      // Check if product exists
+      console.log(
+        "Checking if product exists for ID:",
+        validatedData.productId
+      );
+      const product = await tx.product.findUnique({
+        where: { id: validatedData.productId },
+        select: { id: true, name: true, stock: true, cost: true },
+      });
 
-    console.log("Found product:", product);
+      console.log("Found product:", product);
 
-    if (productError || !product) {
-      return NextResponse.json({ error: "Product not found" }, { status: 404 });
-    }
-
-    // Check if supplier exists (if provided)
-    if (validatedData.supplierId) {
-      const { data: supplier, error: supplierError } = await supabase
-        .from("suppliers")
-        .select("id, is_active")
-        .eq("id", validatedData.supplierId)
-        .single();
-
-      if (supplierError || !supplier) {
-        return NextResponse.json(
-          { error: "Supplier not found" },
-          { status: 404 }
-        );
+      if (!product) {
+        throw new Error("Product not found");
       }
 
-      if (!supplier.is_active) {
-        return NextResponse.json(
-          { error: "Supplier is inactive" },
-          { status: 400 }
-        );
+      // Check if supplier exists (if provided)
+      if (validatedData.supplierId) {
+        const supplier = await tx.supplier.findUnique({
+          where: { id: validatedData.supplierId },
+          select: { id: true, isActive: true },
+        });
+
+        if (!supplier) {
+          throw new Error("Supplier not found");
+        }
+
+        if (!supplier.isActive) {
+          throw new Error("Supplier is inactive");
+        }
       }
-    }
 
-    // Calculate total cost
-    const totalCost = validatedData.quantity * validatedData.costPerUnit;
+      // Calculate total cost
+      const totalCost = validatedData.quantity * validatedData.costPerUnit;
 
-    // Create stock addition record
-    const { data: stockAddition, error: additionError } = await supabase
-      .from("stock_additions")
-      .insert({
-        product_id: validatedData.productId,
-        supplier_id: validatedData.supplierId,
-        created_by: parseInt(session.user.id),
-        quantity: validatedData.quantity,
-        cost_per_unit: validatedData.costPerUnit,
-        total_cost: totalCost,
-        purchase_date:
-          validatedData.purchaseDate || new Date().toISOString().split("T")[0],
-        notes: validatedData.notes,
-        reference_no: validatedData.referenceNo,
-      })
-      .select(
-        `
-        id,
-        quantity,
-        cost_per_unit,
-        total_cost,
-        purchase_date,
-        notes,
-        reference_no,
-        created_at,
-        products:product_id (id, name, sku, stock, cost),
-        suppliers:supplier_id (id, name),
-        users:created_by (id, first_name, last_name, email)
-      `
-      )
-      .single();
+      // Create stock addition record
+      const stockAddition = await tx.stockAddition.create({
+        data: {
+          productId: validatedData.productId,
+          supplierId: validatedData.supplierId,
+          createdById: parseInt(session.user.id),
+          quantity: validatedData.quantity,
+          costPerUnit: validatedData.costPerUnit,
+          totalCost: totalCost,
+          purchaseDate: validatedData.purchaseDate
+            ? new Date(validatedData.purchaseDate)
+            : new Date(),
+          notes: validatedData.notes,
+          referenceNo: validatedData.referenceNo,
+        },
+        include: {
+          product: {
+            select: {
+              id: true,
+              name: true,
+              sku: true,
+              stock: true,
+              cost: true,
+            },
+          },
+          supplier: {
+            select: { id: true, name: true },
+          },
+          createdBy: {
+            select: { id: true, firstName: true, lastName: true, email: true },
+          },
+        },
+      });
 
-    if (additionError) {
-      console.error("Error creating stock addition:", additionError);
-      return NextResponse.json(
-        { error: "Failed to create stock addition" },
-        { status: 500 }
-      );
-    }
+      // Calculate weighted average cost
+      const currentValue = product.stock * Number(product.cost);
+      const additionValue = validatedData.quantity * validatedData.costPerUnit;
+      const newStock = product.stock + validatedData.quantity;
+      const newAverageCost =
+        newStock > 0
+          ? (currentValue + additionValue) / newStock
+          : validatedData.costPerUnit;
 
-    // Calculate weighted average cost
-    const currentValue = product.stock * product.cost;
-    const additionValue = validatedData.quantity * validatedData.costPerUnit;
-    const newStock = product.stock + validatedData.quantity;
-    const newAverageCost =
-      newStock > 0
-        ? (currentValue + additionValue) / newStock
-        : validatedData.costPerUnit;
+      // Update product stock and cost
+      await tx.product.update({
+        where: { id: validatedData.productId },
+        data: {
+          stock: newStock,
+          cost: newAverageCost,
+        },
+      });
 
-    // Update product stock and cost
-    const { error: updateError } = await supabase
-      .from("products")
-      .update({
-        stock: newStock,
-        cost: newAverageCost,
-      })
-      .eq("id", validatedData.productId);
+      // Create audit log
+      await tx.auditLog.create({
+        data: {
+          action: "STOCK_ADDITION",
+          entityType: "PRODUCT",
+          entityId: validatedData.productId.toString(),
+          userId: parseInt(session.user.id),
+          newValues: {
+            productName: product.name,
+            quantityAdded: validatedData.quantity,
+            costPerUnit: validatedData.costPerUnit,
+            previousStock: product.stock,
+            newStock: newStock,
+            previousCost: product.cost,
+            newAverageCost: newAverageCost,
+            totalCost,
+            referenceNo: validatedData.referenceNo,
+          },
+        },
+      });
 
-    if (updateError) {
-      console.error("Error updating product:", updateError);
-      return NextResponse.json(
-        { error: "Failed to update product stock" },
-        { status: 500 }
-      );
-    }
-
-    // Create audit log
-    const { error: auditError } = await supabase.from("audit_logs").insert({
-      action: "STOCK_ADDITION",
-      entity_type: "PRODUCT",
-      entity_id: validatedData.productId.toString(),
-      user_id: parseInt(session.user.id),
-      new_values: {
+      return {
+        stockAddition,
         productName: product.name,
-        quantityAdded: validatedData.quantity,
-        costPerUnit: validatedData.costPerUnit,
-        previousStock: product.stock,
-        newStock: newStock,
-        previousCost: product.cost,
-        newAverageCost: newAverageCost,
-        totalCost,
-        referenceNo: validatedData.referenceNo,
-      },
+        newStock,
+      };
     });
-
-    if (auditError) {
-      console.error("Error creating audit log:", auditError);
-      // Don't fail the request for audit log errors
-    }
 
     return NextResponse.json(
       {
-        stockAddition,
-        message: `Successfully added ${validatedData.quantity} units to ${product.name}. New stock: ${newStock}`,
+        stockAddition: result.stockAddition,
+        message: `Successfully added ${validatedData.quantity} units to ${result.productName}. New stock: ${result.newStock}`,
       },
       { status: 201 }
     );
@@ -291,6 +277,28 @@ export async function POST(request: NextRequest) {
         },
         { status: 400 }
       );
+    }
+
+    // Handle custom transaction errors
+    if (error instanceof Error) {
+      if (error.message === "Product not found") {
+        return NextResponse.json(
+          { error: "Product not found" },
+          { status: 404 }
+        );
+      }
+      if (error.message === "Supplier not found") {
+        return NextResponse.json(
+          { error: "Supplier not found" },
+          { status: 404 }
+        );
+      }
+      if (error.message === "Supplier is inactive") {
+        return NextResponse.json(
+          { error: "Supplier is inactive" },
+          { status: 400 }
+        );
+      }
     }
 
     return NextResponse.json(

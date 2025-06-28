@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from "next/server";
 import { z } from "zod";
-import { createServerSupabaseClient } from "@/lib/supabase-server";
+import { prisma } from "@/lib/db";
 
 const validateTokenSchema = z.object({
   token: z.string().min(1, "Token is required"),
@@ -11,22 +11,24 @@ export async function POST(request: NextRequest) {
     const body = await request.json();
     const { token } = validateTokenSchema.parse(body);
 
-    // Use the same client approach as forgot password (which works)
-    const supabase = await createServerSupabaseClient();
-
-    console.log("🔐 Validating reset token...");
+    console.log("🔐 Validating reset token with Prisma...");
     console.log("🔑 Token (first 10 chars):", token.substring(0, 10) + "...");
 
-    // Find user with valid reset token using server client
-    const { data: user, error } = await supabase
-      .from("users")
-      .select("*")
-      .eq("reset_token", token)
-      .eq("is_active", true)
-      .gte("reset_token_expires", new Date().toISOString())
-      .single();
+    // Find user with valid reset token
+    const user = await prisma.user.findFirst({
+      where: {
+        resetToken: token,
+        isActive: true,
+        resetTokenExpires: {
+          gte: new Date(),
+        },
+      },
+      select: {
+        id: true,
+      },
+    });
 
-    if (!user || error) {
+    if (!user) {
       return NextResponse.json(
         { error: "Invalid or expired token" },
         { status: 400 }
