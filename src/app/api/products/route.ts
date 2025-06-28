@@ -54,37 +54,29 @@ export async function GET(request: NextRequest) {
       ];
     }
 
-    // Category filtering (handle both ID and name)
+    // Category filtering (prefer ID for performance)
     if (category) {
       const categoryId = parseInt(category as string);
       if (!isNaN(categoryId)) {
         where.categoryId = categoryId;
       } else {
-        // Find category by name first
-        const categoryRecord = await prisma.category.findFirst({
-          where: { name: category },
-          select: { id: true },
-        });
-        if (categoryRecord) {
-          where.categoryId = categoryRecord.id;
-        }
+        // Only use name lookup if absolutely necessary
+        where.category = {
+          name: { equals: category, mode: "insensitive" },
+        };
       }
     }
 
-    // Brand filtering (handle both ID and name)
+    // Brand filtering (prefer ID for performance)
     if (brand) {
       const brandId = parseInt(brand as string);
       if (!isNaN(brandId)) {
         where.brandId = brandId;
       } else {
-        // Find brand by name first
-        const brandRecord = await prisma.brand.findFirst({
-          where: { name: brand },
-          select: { id: true },
-        });
-        if (brandRecord) {
-          where.brandId = brandRecord.id;
-        }
+        // Only use name lookup if absolutely necessary
+        where.brand = {
+          name: { equals: brand, mode: "insensitive" },
+        };
       }
     }
 
@@ -158,29 +150,49 @@ export async function GET(request: NextRequest) {
       totalCount = lowStockProducts.length;
       products = lowStockProducts.slice(skip, skip + limit);
     } else {
-      // Normal query execution with pagination
+      // Normal query execution with pagination and optimized includes
       console.log(
         "🔍 Products API: Executing query with where:",
         JSON.stringify(where, null, 2)
       );
       console.log("🔍 Products API: skip:", skip, "limit:", limit);
 
-      // Force a fresh connection test
-      await prisma.$executeRaw`SELECT 1`;
-      console.log("🔍 Products API: Connection test passed");
-
       [products, totalCount] = await Promise.all([
         prisma.product.findMany({
           where,
-          include: {
+          select: {
+            id: true,
+            name: true,
+            sku: true,
+            barcode: true,
+            cost: true,
+            price: true,
+            stock: true,
+            minStock: true,
+            maxStock: true,
+            unit: true,
+            status: true,
+            images: true,
+            createdAt: true,
+            updatedAt: true,
             supplier: {
-              select: { id: true, name: true, contactPerson: true },
+              select: {
+                id: true,
+                name: true,
+                contactPerson: true,
+              },
             },
             category: {
-              select: { id: true, name: true },
+              select: {
+                id: true,
+                name: true,
+              },
             },
             brand: {
-              select: { id: true, name: true },
+              select: {
+                id: true,
+                name: true,
+              },
             },
           },
           orderBy,

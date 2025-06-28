@@ -16,10 +16,9 @@ export const prisma =
         url: process.env.DATABASE_URL,
       },
     },
-    // Add connection pool settings for better performance
-    // errorFormat: 'minimal',
     // Connection pool configuration for better performance
-    // These will help with concurrent requests
+    errorFormat: "minimal",
+    // These settings help with concurrent requests and performance
   });
 
 if (process.env.NODE_ENV !== "production") globalForPrisma.prisma = prisma;

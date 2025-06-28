@@ -195,7 +195,7 @@ export function ProductList({ user }: ProductListProps) {
     useState(false);
 
   // Debounce search term to avoid excessive API calls
-  const debouncedSearchTerm = useDebounce(filters.search, 500);
+  const debouncedSearchTerm = useDebounce(filters.search, 300); // Reduced from 500ms to 300ms
 
   // Show search loading when user is typing but search hasn't been triggered yet
   const isSearching = filters.search !== debouncedSearchTerm;
@@ -203,14 +203,14 @@ export function ProductList({ user }: ProductListProps) {
   const canManageProducts = ["ADMIN", "MANAGER"].includes(user.role);
   const canEditProducts = ["ADMIN", "MANAGER", "STAFF"].includes(user.role);
 
-  // Fetch brands for filter
+  // Fetch brands for filter with caching
   const fetchBrands = useCallback(async () => {
     try {
       // Add timeout and better error handling
       const controller = new AbortController();
-      const timeoutId = setTimeout(() => controller.abort(), 10000);
+      const timeoutId = setTimeout(() => controller.abort(), 5000); // Reduced timeout
 
-      const response = await fetch("/api/brands?limit=100", {
+      const response = await fetch("/api/brands?isActive=true&limit=100", {
         signal: controller.signal,
       });
 
@@ -239,13 +239,26 @@ export function ProductList({ user }: ProductListProps) {
 
   const fetchCategories = useCallback(async () => {
     try {
-      const response = await fetch("/api/categories");
+      const controller = new AbortController();
+      const timeoutId = setTimeout(() => controller.abort(), 5000);
+
+      const response = await fetch("/api/categories?isActive=true&limit=100", {
+        signal: controller.signal,
+      });
+
+      clearTimeout(timeoutId);
+
       if (response.ok) {
         const data = await response.json();
         setCategories(data.data || []);
       }
     } catch (error) {
-      console.error("Error fetching categories:", error);
+      if (error instanceof Error && error.name === "AbortError") {
+        console.warn("Categories request timed out");
+      } else {
+        console.error("Error fetching categories:", error);
+      }
+      setCategories([]);
     }
   }, []);
 
@@ -273,10 +286,18 @@ export function ProductList({ user }: ProductListProps) {
       if (filters.supplier) searchParams.set("supplierId", filters.supplier);
       if (filters.lowStock) searchParams.set("lowStock", "true");
 
-      const response = await fetch(`/api/products?${searchParams.toString()}`);
+      // Add request timeout
+      const controller = new AbortController();
+      const timeoutId = setTimeout(() => controller.abort(), 10000);
+
+      const response = await fetch(`/api/products?${searchParams.toString()}`, {
+        signal: controller.signal,
+      });
+
+      clearTimeout(timeoutId);
 
       if (!response.ok) {
-        throw new Error("Failed to fetch products");
+        throw new Error(`HTTP ${response.status}: ${response.statusText}`);
       }
 
       const data = await response.json();
@@ -288,7 +309,11 @@ export function ProductList({ user }: ProductListProps) {
       }));
     } catch (error) {
       console.error("Error fetching products:", error);
-      setError("Failed to load products. Please try again.");
+      if (error instanceof Error && error.name === "AbortError") {
+        setError("Request timed out. Please try again.");
+      } else {
+        setError("Failed to load products. Please try again.");
+      }
       setProducts([]);
     } finally {
       setLoading(false);
