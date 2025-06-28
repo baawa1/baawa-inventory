@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from "next/server";
-import { createServerSupabaseClient } from "@/lib/supabase-server";
+import { prisma } from "@/lib/db";
 import { getServerSession } from "next-auth";
 import { authOptions } from "@/lib/auth";
 import { brandQuerySchema, createBrandSchema } from "@/lib/validations/brand";
@@ -19,53 +19,52 @@ export async function GET(request: NextRequest) {
 
     if (legacy) {
       // Legacy functionality: Get unique brands from products for dropdowns
-      // First check if products table has brand column or brand_id
-      const supabase = await createServerSupabaseClient();
-      const { data: products, error } = await supabase
-        .from("products")
-        .select("brand")
-        .not("brand", "is", null)
-        .neq("brand", "")
-        .eq("is_archived", false)
-        .order("brand");
-
-      if (error && error.code === "42703") {
-        // Column doesn't exist, try getting from brands table directly
-        const { data: brandData, error: brandError } = await supabase
-          .from("brands")
-          .select("name")
-          .eq("is_active", true)
-          .order("name");
-
-        if (brandError) {
-          console.error("Error fetching brands:", brandError);
-          return NextResponse.json(
-            { error: "Failed to fetch brands" },
-            { status: 500 }
-          );
-        }
-
-        const uniqueBrands = (brandData || [])
-          .map((brand) => brand.name)
-          .sort();
-
-        return NextResponse.json({
-          success: true,
-          brands: uniqueBrands,
+      try {
+        // Get brands through product relations (since products reference brandId)
+        const brands = await prisma.brand.findMany({
+          where: {
+            isActive: true,
+            products: {
+              some: {
+                isArchived: false,
+              },
+            },
+          },
+          select: {
+            name: true,
+          },
+          orderBy: {
+            name: "asc",
+          },
         });
+
+        if (brands.length > 0) {
+          const uniqueBrands = brands.map((brand) => brand.name).sort();
+
+          return NextResponse.json({
+            success: true,
+            brands: uniqueBrands,
+          });
+        }
+      } catch (brandError) {
+        // If there's an error, fall back to all brands
+        console.log("Falling back to all brands:", brandError);
       }
 
-      if (error) {
-        console.error("Error fetching product brands:", error);
-        return NextResponse.json(
-          { error: "Failed to fetch brands" },
-          { status: 500 }
-        );
-      }
+      // Fallback: Get all brands from the brands table
+      const brandData = await prisma.brand.findMany({
+        where: {
+          isActive: true,
+        },
+        select: {
+          name: true,
+        },
+        orderBy: {
+          name: "asc",
+        },
+      });
 
-      const uniqueBrands = Array.from(
-        new Set(products?.map((item) => item.brand).filter(Boolean))
-      ).sort();
+      const uniqueBrands = brandData.map((brand) => brand.name).sort();
 
       return NextResponse.json({
         success: true,
@@ -100,40 +99,41 @@ export async function GET(request: NextRequest) {
       sortOrder = "asc",
     } = validatedQuery;
 
-    const supabase = await createServerSupabaseClient();
-
-    // Build query
-    let query = supabase.from("brands").select("*", { count: "exact" });
+    // Build where clause for Prisma
+    const where: any = {};
 
     // Apply filters
     if (search) {
-      query = query.or(`name.ilike.%${search}%,description.ilike.%${search}%`);
+      where.OR = [
+        { name: { contains: search, mode: "insensitive" } },
+        { description: { contains: search, mode: "insensitive" } },
+      ];
     }
 
     if (isActive !== undefined) {
-      query = query.eq("is_active", isActive);
+      where.isActive = isActive;
     }
 
-    // Apply sorting and pagination
-    const orderColumn =
-      sortBy === "createdAt"
-        ? "created_at"
-        : sortBy === "updatedAt"
-          ? "updated_at"
-          : "name";
-    query = query
-      .order(orderColumn, { ascending: sortOrder === "asc" })
-      .range(offset, offset + limit - 1);
-
-    const { data: brands, error, count } = await query;
-
-    if (error) {
-      console.error("Error fetching brands:", error);
-      return NextResponse.json(
-        { error: "Failed to fetch brands" },
-        { status: 500 }
-      );
+    // Build orderBy clause
+    const orderBy: any = {};
+    if (sortBy === "createdAt") {
+      orderBy.createdAt = sortOrder;
+    } else if (sortBy === "updatedAt") {
+      orderBy.updatedAt = sortOrder;
+    } else {
+      orderBy.name = sortOrder;
     }
+
+    // Execute queries in parallel for better performance
+    const [brands, count] = await Promise.all([
+      prisma.brand.findMany({
+        where,
+        orderBy,
+        skip: offset,
+        take: limit,
+      }),
+      prisma.brand.count({ where }),
+    ]);
 
     const page = Math.floor(offset / limit) + 1;
 
@@ -144,8 +144,8 @@ export async function GET(request: NextRequest) {
         page,
         limit,
         offset,
-        total: count || 0,
-        pages: Math.ceil((count || 0) / limit),
+        total: count,
+        pages: Math.ceil(count / limit),
       },
     });
   } catch (error) {
@@ -168,14 +168,11 @@ export async function POST(request: NextRequest) {
     const body = await request.json();
     const validatedData = createBrandSchema.parse(body);
 
-    const supabase = await createServerSupabaseClient();
-
     // Check if brand name already exists
-    const { data: existingBrand } = await supabase
-      .from("brands")
-      .select("id")
-      .eq("name", validatedData.name)
-      .single();
+    const existingBrand = await prisma.brand.findUnique({
+      where: { name: validatedData.name },
+      select: { id: true },
+    });
 
     if (existingBrand) {
       return NextResponse.json(
@@ -184,27 +181,15 @@ export async function POST(request: NextRequest) {
       );
     }
 
-    // Transform form data (handle both isActive and is_active)
-    const brandData = { ...validatedData };
-    if ("isActive" in brandData) {
-      brandData.is_active = (brandData as any).isActive;
-      delete (brandData as any).isActive;
-    }
-
-    // Create the brand
-    const { data: brand, error } = await supabase
-      .from("brands")
-      .insert([brandData])
-      .select("*")
-      .single();
-
-    if (error) {
-      console.error("Error creating brand:", error);
-      return NextResponse.json(
-        { error: "Failed to create brand" },
-        { status: 500 }
-      );
-    }
+    // Create the brand with Prisma
+    const brand = await prisma.brand.create({
+      data: {
+        name: validatedData.name,
+        description: validatedData.description,
+        website: validatedData.website,
+        isActive: validatedData.is_active ?? true,
+      },
+    });
 
     return NextResponse.json({
       success: true,

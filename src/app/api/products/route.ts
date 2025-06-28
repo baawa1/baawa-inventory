@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from "next/server";
-import { createServerSupabaseClient } from "@/lib/supabase-server";
+import { prisma } from "@/lib/db";
 import {
   createProductSchema,
   productQuerySchema,
@@ -9,7 +9,6 @@ import {
 // GET /api/products - List products with optional filtering and pagination
 export async function GET(request: NextRequest) {
   try {
-    const supabase = await createServerSupabaseClient();
     const { searchParams } = new URL(request.url);
 
     // Convert search params to object for validation
@@ -37,243 +36,158 @@ export async function GET(request: NextRequest) {
       maxPrice,
       lowStock,
       outOfStock,
-      sortBy = "created_at",
+      sortBy = "createdAt",
       sortOrder = "desc",
     } = validatedData;
 
-    // Calculate offset for pagination
-    const offset = (page - 1) * limit;
+    // Build Prisma where clause
+    const where: any = {
+      isArchived: false,
+    };
 
-    // Build query with proper relations
-    let query = supabase
-      .from("products")
-      .select(
-        `
-        *,
-        supplier:suppliers(id, name, contact_person),
-        category:categories(id, name),
-        brand:brands(id, name)
-      `
-      )
-      .eq("is_archived", false);
-
-    // Apply filters
+    // Handle search with OR conditions
     if (search) {
-      query = query.or(
-        `name.ilike.%${search}%,sku.ilike.%${search}%,barcode.ilike.%${search}%`
-      );
+      where.OR = [
+        { name: { contains: search, mode: "insensitive" } },
+        { sku: { contains: search, mode: "insensitive" } },
+        { barcode: { contains: search, mode: "insensitive" } },
+      ];
     }
 
+    // Category filtering (handle both ID and name)
     if (category) {
-      // Handle both ID and name filtering for backward compatibility
       const categoryId = parseInt(category as string);
       if (!isNaN(categoryId)) {
-        query = query.eq("category_id", categoryId);
+        where.categoryId = categoryId;
       } else {
-        // Try to find category by name
-        const { data: categoryData } = await supabase
-          .from("categories")
-          .select("id")
-          .eq("name", category)
-          .single();
-        if (categoryData) {
-          query = query.eq("category_id", categoryData.id);
+        // Find category by name first
+        const categoryRecord = await prisma.category.findFirst({
+          where: { name: category },
+          select: { id: true },
+        });
+        if (categoryRecord) {
+          where.categoryId = categoryRecord.id;
         }
       }
     }
 
+    // Brand filtering (handle both ID and name)
     if (brand) {
-      // Handle both ID and name filtering for backward compatibility
       const brandId = parseInt(brand as string);
       if (!isNaN(brandId)) {
-        query = query.eq("brand_id", brandId);
+        where.brandId = brandId;
       } else {
-        // Try to find brand by name
-        const { data: brandData } = await supabase
-          .from("brands")
-          .select("id")
-          .eq("name", brand)
-          .single();
-        if (brandData) {
-          query = query.eq("brand_id", brandData.id);
+        // Find brand by name first
+        const brandRecord = await prisma.brand.findFirst({
+          where: { name: brand },
+          select: { id: true },
+        });
+        if (brandRecord) {
+          where.brandId = brandRecord.id;
         }
       }
     }
 
+    // Additional filters
     if (status) {
-      query = query.eq("status", status);
+      where.status = status;
     }
 
     if (supplierId) {
-      query = query.eq("supplier_id", supplierId);
+      where.supplierId = supplierId;
     }
 
-    if (minPrice !== undefined) {
-      query = query.gte("price", minPrice);
+    // Price range filtering
+    if (minPrice !== undefined || maxPrice !== undefined) {
+      where.price = {};
+      if (minPrice !== undefined) where.price.gte = minPrice;
+      if (maxPrice !== undefined) where.price.lte = maxPrice;
     }
 
-    if (maxPrice !== undefined) {
-      query = query.lte("price", maxPrice);
-    }
-
+    // Stock level filtering
     if (outOfStock) {
-      query = query.eq("stock", 0);
+      where.stock = { lte: 0 };
     }
 
-    // For low stock filter, we need to handle it differently
-    // Since we can't compare columns directly, we'll get all products and filter
+    // Low stock filtering - products where stock <= minStock
+    // Note: Prisma doesn't support column comparisons in where clauses
+    // We'll handle this by getting products and filtering after if needed
+    let needsLowStockFilter = false;
     if (lowStock) {
-      // Don't apply pagination yet - we need to filter first
-      const { data: allProducts, error: queryError } = await query;
+      needsLowStockFilter = true;
+      // Remove the lowStock from where clause for now
+    }
 
-      if (queryError) {
-        console.error(
-          "Error fetching products for low stock filter:",
-          queryError
-        );
-        return NextResponse.json(
-          { error: "Failed to fetch products" },
-          { status: 500 }
-        );
-      }
+    // Handle sorting
+    const orderBy: any = {};
+    const sortField = sortBy === "created_at" ? "createdAt" : sortBy;
+    orderBy[sortField] = sortOrder;
+
+    // Calculate pagination
+    const skip = (page - 1) * limit;
+
+    // Execute queries - handle low stock filtering differently
+    let products;
+    let totalCount;
+
+    if (needsLowStockFilter) {
+      // For low stock, we need to get all matching products first
+      // then filter where stock <= minStock
+      const allProducts = await prisma.product.findMany({
+        where,
+        include: {
+          supplier: {
+            select: { id: true, name: true, contactPerson: true },
+          },
+          category: {
+            select: { id: true, name: true },
+          },
+          brand: {
+            select: { id: true, name: true },
+          },
+        },
+        orderBy,
+      });
 
       // Filter for low stock products
-      const lowStockProducts = (allProducts || []).filter(
-        (product: any) => product.stock <= product.min_stock
+      const lowStockProducts = allProducts.filter(
+        (product) => product.stock <= product.minStock
       );
 
-      // Apply sorting
-      const sortColumn =
-        sortBy === "price"
-          ? "price"
-          : sortBy === "stock"
-            ? "stock"
-            : sortBy === "created_at"
-              ? "created_at"
-              : "created_at";
-
-      lowStockProducts.sort((a: any, b: any) => {
-        const aVal = a[sortColumn];
-        const bVal = b[sortColumn];
-
-        if (sortOrder === "asc") {
-          return aVal < bVal ? -1 : aVal > bVal ? 1 : 0;
-        } else {
-          return aVal > bVal ? -1 : aVal < bVal ? 1 : 0;
-        }
-      });
-
-      // Apply pagination
-      const startIndex = offset;
-      const endIndex = offset + limit;
-      const paginatedProducts = lowStockProducts.slice(startIndex, endIndex);
-
-      return NextResponse.json({
-        data: paginatedProducts,
-        pagination: {
-          page,
-          limit,
-          total: lowStockProducts.length,
-          totalPages: Math.ceil(lowStockProducts.length / limit),
-        },
-      });
+      // Apply pagination to filtered results
+      totalCount = lowStockProducts.length;
+      products = lowStockProducts.slice(skip, skip + limit);
+    } else {
+      // Normal query execution with pagination
+      [products, totalCount] = await Promise.all([
+        prisma.product.findMany({
+          where,
+          include: {
+            supplier: {
+              select: { id: true, name: true, contactPerson: true },
+            },
+            category: {
+              select: { id: true, name: true },
+            },
+            brand: {
+              select: { id: true, name: true },
+            },
+          },
+          orderBy,
+          skip,
+          take: limit,
+        }),
+        prisma.product.count({ where }),
+      ]);
     }
-
-    // Apply sorting and pagination for non-low-stock queries
-    const sortColumn =
-      sortBy === "price"
-        ? "price"
-        : sortBy === "stock"
-          ? "stock"
-          : sortBy === "created_at"
-            ? "created_at"
-            : sortBy;
-
-    query = query
-      .order(sortColumn, { ascending: sortOrder === "asc" })
-      .range(offset, offset + limit - 1);
-
-    const { data: products, error } = await query;
-
-    if (error) {
-      console.error("Error fetching products:", error);
-      return NextResponse.json(
-        { error: "Failed to fetch products" },
-        { status: 500 }
-      );
-    }
-
-    // Get total count for pagination
-    let countQuery = supabase
-      .from("products")
-      .select("*", { count: "exact", head: true })
-      .eq("is_archived", false);
-
-    // Apply the same filters to count query
-    if (search) {
-      countQuery = countQuery.or(
-        `name.ilike.%${search}%,sku.ilike.%${search}%,barcode.ilike.%${search}%`
-      );
-    }
-    if (category) {
-      // Handle both ID and name filtering for backward compatibility
-      const categoryId = parseInt(category as string);
-      if (!isNaN(categoryId)) {
-        countQuery = countQuery.eq("category_id", categoryId);
-      } else {
-        // Try to find category by name
-        const { data: categoryData } = await supabase
-          .from("categories")
-          .select("id")
-          .eq("name", category)
-          .single();
-        if (categoryData) {
-          countQuery = countQuery.eq("category_id", categoryData.id);
-        }
-      }
-    }
-    if (brand) {
-      // Handle both ID and name filtering for backward compatibility
-      const brandId = parseInt(brand as string);
-      if (!isNaN(brandId)) {
-        countQuery = countQuery.eq("brand_id", brandId);
-      } else {
-        // Try to find brand by name
-        const { data: brandData } = await supabase
-          .from("brands")
-          .select("id")
-          .eq("name", brand)
-          .single();
-        if (brandData) {
-          countQuery = countQuery.eq("brand_id", brandData.id);
-        }
-      }
-    }
-    if (status) {
-      countQuery = countQuery.eq("status", status);
-    }
-    if (supplierId) {
-      countQuery = countQuery.eq("supplier_id", supplierId);
-    }
-    if (minPrice !== undefined) {
-      countQuery = countQuery.gte("price", minPrice);
-    }
-    if (maxPrice !== undefined) {
-      countQuery = countQuery.lte("price", maxPrice);
-    }
-    if (outOfStock) {
-      countQuery = countQuery.eq("stock", 0);
-    }
-
-    const { count: totalCount } = await countQuery;
 
     return NextResponse.json({
       data: products,
       pagination: {
         page,
         limit,
-        total: totalCount || 0,
-        totalPages: Math.ceil((totalCount || 0) / limit),
+        total: totalCount,
+        totalPages: Math.ceil(totalCount / limit),
       },
     });
   } catch (error) {
@@ -288,7 +202,6 @@ export async function GET(request: NextRequest) {
 // POST /api/products - Create a new product
 export async function POST(request: NextRequest) {
   try {
-    const supabase = await createServerSupabaseClient();
     const body = await request.json();
 
     // Validate request body
@@ -303,11 +216,10 @@ export async function POST(request: NextRequest) {
     const productData = validation.data!;
 
     // Check if SKU already exists
-    const { data: existingProduct } = await supabase
-      .from("products")
-      .select("id")
-      .eq("sku", productData.sku)
-      .single();
+    const existingProduct = await prisma.product.findUnique({
+      where: { sku: productData.sku },
+      select: { id: true },
+    });
 
     if (existingProduct) {
       return NextResponse.json(
@@ -317,43 +229,37 @@ export async function POST(request: NextRequest) {
     }
 
     // Create the product
-    const { data: product, error } = await supabase
-      .from("products")
-      .insert({
+    const product = await prisma.product.create({
+      data: {
         name: productData.name,
         sku: productData.sku,
         barcode: productData.barcode,
         description: productData.description,
-        category_id: productData.categoryId,
-        brand_id: productData.brandId,
+        categoryId: productData.categoryId,
+        brandId: productData.brandId,
         cost: productData.purchasePrice,
         price: productData.sellingPrice,
-        min_stock: productData.minimumStock || 0,
-        max_stock: productData.maximumStock,
+        minStock: productData.minimumStock || 0,
+        maxStock: productData.maximumStock,
         stock: productData.currentStock || 0,
-        supplier_id: productData.supplierId,
+        supplierId: productData.supplierId,
         status: productData.status || "ACTIVE",
         images: productData.imageUrl
           ? [{ url: productData.imageUrl, isPrimary: true }]
-          : null,
-      })
-      .select(
-        `
-        *,
-        supplier:suppliers(id, name),
-        category:categories(id, name),
-        brand:brands(id, name)
-      `
-      )
-      .single();
-
-    if (error) {
-      console.error("Error creating product:", error);
-      return NextResponse.json(
-        { error: "Failed to create product" },
-        { status: 500 }
-      );
-    }
+          : undefined,
+      },
+      include: {
+        supplier: {
+          select: { id: true, name: true },
+        },
+        category: {
+          select: { id: true, name: true },
+        },
+        brand: {
+          select: { id: true, name: true },
+        },
+      },
+    });
 
     return NextResponse.json({ data: product }, { status: 201 });
   } catch (error) {

@@ -1,5 +1,5 @@
 import { NextResponse } from "next/server";
-import { createServerSupabaseClient } from "@/lib/supabase-server";
+import { prisma } from "@/lib/db";
 import { withPermission, AuthenticatedRequest } from "@/lib/api-middleware";
 import { z } from "zod";
 import { validateRequest } from "@/lib/validations";
@@ -18,7 +18,6 @@ export const POST = withPermission("canManageUsers")(async function (
   request: AuthenticatedRequest
 ) {
   try {
-    const supabase = await createServerSupabaseClient();
     const body = await request.json();
 
     // Validate request body
@@ -43,20 +42,25 @@ export const POST = withPermission("canManageUsers")(async function (
     const adminId = request.user.id;
 
     // Check if user exists and is in a valid state for approval/rejection
-    const { data: user, error: fetchError } = await supabase
-      .from("users")
-      .select(
-        "id, user_status, email_verified, first_name, last_name, email, role"
-      )
-      .eq("id", userId)
-      .single();
+    const user = await prisma.user.findUnique({
+      where: { id: userId },
+      select: {
+        id: true,
+        userStatus: true,
+        emailVerified: true,
+        firstName: true,
+        lastName: true,
+        email: true,
+        role: true,
+      },
+    });
 
-    if (fetchError || !user) {
+    if (!user) {
       return NextResponse.json({ error: "User not found" }, { status: 404 });
     }
 
     // Check if user is in a valid state for approval/rejection
-    if (user.user_status !== "VERIFIED" && user.user_status !== "PENDING") {
+    if (user.userStatus !== "VERIFIED" && user.userStatus !== "PENDING") {
       return NextResponse.json(
         {
           error:
@@ -75,40 +79,32 @@ export const POST = withPermission("canManageUsers")(async function (
     }
 
     // Update user status
-    const updateData: {
-      approved_by: string;
-      approved_at: string;
-      user_status?: string;
-      rejection_reason?: string | null;
-    } = {
-      approved_by: adminId,
-      approved_at: new Date().toISOString(),
+    const updateData: any = {
+      approvedBy: parseInt(adminId),
+      approvedAt: new Date(),
     };
 
     if (action === "approve") {
-      updateData.user_status = "APPROVED";
-      updateData.rejection_reason = null;
+      updateData.userStatus = "APPROVED";
+      updateData.rejectionReason = null;
     } else {
-      updateData.user_status = "REJECTED";
-      updateData.rejection_reason = rejectionReason;
+      updateData.userStatus = "REJECTED";
+      updateData.rejectionReason = rejectionReason;
     }
 
-    const { data: updatedUser, error: updateError } = await supabase
-      .from("users")
-      .update(updateData)
-      .eq("id", userId)
-      .select(
-        "id, first_name, last_name, email, user_status, approved_at, rejection_reason"
-      )
-      .single();
-
-    if (updateError) {
-      console.error("Error updating user status:", updateError);
-      return NextResponse.json(
-        { error: "Failed to update user status" },
-        { status: 500 }
-      );
-    }
+    const updatedUser = await prisma.user.update({
+      where: { id: userId },
+      data: updateData,
+      select: {
+        id: true,
+        firstName: true,
+        lastName: true,
+        email: true,
+        userStatus: true,
+        approvedAt: true,
+        rejectionReason: true,
+      },
+    });
 
     // Send notification email to user about approval/rejection
     try {
@@ -119,7 +115,7 @@ export const POST = withPermission("canManageUsers")(async function (
       if (action === "approve") {
         // Send approval notification
         await emailService.sendUserApprovalEmail(updatedUser.email, {
-          firstName: updatedUser.first_name,
+          firstName: updatedUser.firstName,
           adminName,
           dashboardLink: `${dashboardUrl}/dashboard`,
           role: user.role || "STAFF",
@@ -127,13 +123,13 @@ export const POST = withPermission("canManageUsers")(async function (
 
         // Send welcome email as well
         await emailService.sendWelcomeEmail(updatedUser.email, {
-          firstName: updatedUser.first_name,
+          firstName: updatedUser.firstName,
           email: updatedUser.email,
           companyName: "Baawa Accessories",
         });
       } else {
         await emailService.sendUserRejectionEmail(updatedUser.email, {
-          firstName: updatedUser.first_name,
+          firstName: updatedUser.firstName,
           adminName,
           rejectionReason,
           supportEmail,
@@ -149,12 +145,12 @@ export const POST = withPermission("canManageUsers")(async function (
       message: `User ${action === "approve" ? "approved" : "rejected"} successfully`,
       user: {
         id: updatedUser.id,
-        firstName: updatedUser.first_name,
-        lastName: updatedUser.last_name,
+        firstName: updatedUser.firstName,
+        lastName: updatedUser.lastName,
         email: updatedUser.email,
-        userStatus: updatedUser.user_status,
-        approvedAt: updatedUser.approved_at,
-        rejectionReason: updatedUser.rejection_reason,
+        userStatus: updatedUser.userStatus,
+        approvedAt: updatedUser.approvedAt,
+        rejectionReason: updatedUser.rejectionReason,
       },
     });
   } catch (error) {

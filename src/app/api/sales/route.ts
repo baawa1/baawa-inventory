@@ -1,100 +1,127 @@
 import { NextRequest, NextResponse } from "next/server";
-import { createServerSupabaseClient } from "@/lib/supabase-server";
-import {
-  createSaleSchema,
-  saleQuerySchema,
-  validateRequest,
-} from "@/lib/validations";
+import { prisma } from "@/lib/db";
+import { getServerSession } from "next-auth";
+import { authOptions } from "@/lib/auth";
+import { createSaleSchema, saleQuerySchema } from "@/lib/validations/sale";
 
 // GET /api/sales - List sales transactions with optional filtering and pagination
 export async function GET(request: NextRequest) {
   try {
-    const supabase = await createServerSupabaseClient();
+    const session = await getServerSession(authOptions);
+    if (!session) {
+      return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+    }
+
     const { searchParams } = new URL(request.url);
 
-    // Extract query parameters
-    const page = parseInt(searchParams.get("page") || "1");
-    const limit = parseInt(searchParams.get("limit") || "10");
-    const search = searchParams.get("search");
-    const status = searchParams.get("status");
-    const paymentMethod = searchParams.get("paymentMethod");
-    const userId = searchParams.get("userId");
-    const fromDate = searchParams.get("fromDate");
-    const toDate = searchParams.get("toDate");
-    const sortBy = searchParams.get("sortBy") || "createdAt";
-    const sortOrder = searchParams.get("sortOrder") || "desc";
+    // Convert search params to proper types for validation
+    const queryParams = {
+      page: searchParams.get("page") ? parseInt(searchParams.get("page")!) : 1,
+      limit: searchParams.get("limit")
+        ? parseInt(searchParams.get("limit")!)
+        : 10,
+      search: searchParams.get("search") || undefined,
+      paymentStatus: searchParams.get("paymentStatus") || undefined,
+      paymentMethod: searchParams.get("paymentMethod") || undefined,
+      userId: searchParams.get("userId")
+        ? parseInt(searchParams.get("userId")!)
+        : undefined,
+      fromDate: searchParams.get("fromDate") || undefined,
+      toDate: searchParams.get("toDate") || undefined,
+      sortBy: searchParams.get("sortBy") || "createdAt",
+      sortOrder: searchParams.get("sortOrder") || "desc",
+    };
+
+    // Validate query parameters
+    const validatedQuery = saleQuerySchema.parse(queryParams);
+    const {
+      page,
+      limit,
+      search,
+      paymentStatus,
+      paymentMethod,
+      userId,
+      fromDate,
+      toDate,
+      sortBy,
+      sortOrder,
+    } = validatedQuery;
 
     // Calculate offset for pagination
     const offset = (page - 1) * limit;
 
-    // Build query
-    let query = supabase.from("sales_transactions").select(`
-        *,
-        user:users(id, name, email),
-        salesItems:sales_items(
-          id,
-          quantity,
-          unitPrice,
-          subtotal,
-          discount,
-          product:products(id, name, sku)
-        )
-      `);
+    // Build where clause for Prisma
+    const where: any = {};
 
     // Apply filters
     if (search) {
-      query = query.or(
-        `transactionNumber.ilike.%${search}%,customerName.ilike.%${search}%,notes.ilike.%${search}%`
-      );
+      where.OR = [
+        { transactionCode: { contains: search, mode: "insensitive" } },
+        { customerName: { contains: search, mode: "insensitive" } },
+        { notes: { contains: search, mode: "insensitive" } },
+      ];
     }
 
-    if (status) {
-      query = query.eq("status", status);
+    if (paymentStatus) {
+      where.paymentStatus = paymentStatus;
     }
 
     if (paymentMethod) {
-      query = query.eq("paymentMethod", paymentMethod);
+      where.paymentMethod = paymentMethod;
     }
 
     if (userId) {
-      query = query.eq("userId", parseInt(userId));
+      where.cashierId = userId;
     }
 
-    if (fromDate) {
-      query = query.gte("createdAt", fromDate);
+    if (fromDate || toDate) {
+      where.createdAt = {};
+      if (fromDate) where.createdAt.gte = new Date(fromDate);
+      if (toDate) where.createdAt.lte = new Date(toDate);
     }
 
-    if (toDate) {
-      query = query.lte("createdAt", toDate);
+    // Build orderBy clause
+    const orderBy: any = {};
+    if (sortBy === "createdAt") {
+      orderBy.createdAt = sortOrder;
+    } else if (sortBy === "total") {
+      orderBy.total = sortOrder;
+    } else if (sortBy === "transactionCode") {
+      orderBy.transactionCode = sortOrder;
+    } else {
+      orderBy.createdAt = sortOrder; // default fallback
     }
 
-    // Apply sorting and pagination
-    query = query
-      .order(sortBy, { ascending: sortOrder === "asc" })
-      .range(offset, offset + limit - 1);
-
-    const { data: salesTransactions, error, count } = await query;
-
-    if (error) {
-      console.error("Error fetching sales transactions:", error);
-      return NextResponse.json(
-        { error: "Failed to fetch sales transactions" },
-        { status: 500 }
-      );
-    }
-
-    // Get total count for pagination
-    const { count: totalCount } = await supabase
-      .from("sales_transactions")
-      .select("*", { count: "exact", head: true });
+    // Execute queries in parallel for better performance
+    const [salesTransactions, totalCount] = await Promise.all([
+      prisma.salesTransaction.findMany({
+        where,
+        orderBy,
+        skip: offset,
+        take: limit,
+        include: {
+          cashier: {
+            select: { id: true, firstName: true, lastName: true, email: true },
+          },
+          salesItems: {
+            include: {
+              product: {
+                select: { id: true, name: true, sku: true },
+              },
+            },
+          },
+        },
+      }),
+      prisma.salesTransaction.count({ where }),
+    ]);
 
     return NextResponse.json({
       data: salesTransactions,
       pagination: {
         page,
         limit,
-        total: totalCount || 0,
-        totalPages: Math.ceil((totalCount || 0) / limit),
+        total: totalCount,
+        totalPages: Math.ceil(totalCount / limit),
       },
     });
   } catch (error) {
@@ -109,229 +136,170 @@ export async function GET(request: NextRequest) {
 // POST /api/sales - Create a new sales transaction
 export async function POST(request: NextRequest) {
   try {
-    const supabase = await createServerSupabaseClient();
+    const session = await getServerSession(authOptions);
+    if (!session) {
+      return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+    }
+
     const body = await request.json();
-
-    // Validate required fields
-    const {
-      userId,
-      items,
-      paymentMethod,
-      subtotal,
-      tax = 0,
-      discount = 0,
-      total,
-      customerName,
-      customerEmail,
-      customerPhone,
-      notes,
-      status = "PAID",
-    } = body;
-
-    if (
-      !userId ||
-      !items ||
-      !Array.isArray(items) ||
-      items.length === 0 ||
-      !paymentMethod ||
-      total === undefined
-    ) {
-      return NextResponse.json(
-        {
-          error: "Missing required fields: userId, items, paymentMethod, total",
-        },
-        { status: 400 }
-      );
-    }
-
-    // Validate payment method
-    const validPaymentMethods = [
-      "CASH",
-      "BANK_TRANSFER",
-      "POS_MACHINE",
-      "CREDIT_CARD",
-      "MOBILE_MONEY",
-    ];
-    if (!validPaymentMethods.includes(paymentMethod)) {
-      return NextResponse.json(
-        { error: "Invalid payment method" },
-        { status: 400 }
-      );
-    }
-
-    // Validate status
-    const validStatuses = ["PENDING", "PAID", "REFUNDED", "CANCELLED"];
-    if (!validStatuses.includes(status)) {
-      return NextResponse.json({ error: "Invalid status" }, { status: 400 });
-    }
+    const validatedData = createSaleSchema.parse(body);
 
     // Validate user exists
-    const { data: user } = await supabase
-      .from("users")
-      .select("id")
-      .eq("id", userId)
-      .single();
+    const user = await prisma.user.findUnique({
+      where: { id: validatedData.userId },
+      select: { id: true },
+    });
 
     if (!user) {
       return NextResponse.json({ error: "User not found" }, { status: 404 });
     }
 
-    // Generate transaction number
+    // Generate transaction code
     const timestamp = Date.now();
-    const transactionNumber = `TXN-${timestamp}`;
+    const transactionCode = `TXN-${timestamp}`;
 
-    // Start transaction
-    const { data: salesTransaction, error: transactionError } = await supabase
-      .from("sales_transactions")
-      .insert({
-        transactionNumber,
-        userId,
-        subtotal: parseFloat(subtotal),
-        tax: parseFloat(tax),
-        discount: parseFloat(discount),
-        total: parseFloat(total),
-        paymentMethod,
-        status,
-        customerName,
-        customerEmail,
-        customerPhone,
-        notes,
-      })
-      .select("*")
-      .single();
+    // Use Prisma transaction to ensure data consistency
+    const result = await prisma.$transaction(async (tx) => {
+      // Calculate totals from items
+      let subtotal = 0;
+      const itemsWithProducts = [];
 
-    if (transactionError) {
-      console.error("Error creating sales transaction:", transactionError);
-      return NextResponse.json(
-        { error: "Failed to create sales transaction" },
-        { status: 500 }
-      );
-    }
+      // First, validate all products and calculate totals
+      for (const item of validatedData.items) {
+        const product = await tx.product.findUnique({
+          where: { id: item.productId },
+          select: { id: true, name: true, stock: true, price: true },
+        });
 
-    // Create sales items and update stock
-    const salesItems = [];
-    const stockUpdates = [];
+        if (!product) {
+          throw new Error(`Product with ID ${item.productId} not found`);
+        }
 
-    for (const item of items) {
-      const {
-        productId,
-        quantity,
-        unitPrice,
-        discount: itemDiscount = 0,
-      } = item;
+        if (product.stock < item.quantity) {
+          throw new Error(
+            `Insufficient stock for product ${product.name}. Available: ${product.stock}, Required: ${item.quantity}`
+          );
+        }
 
-      if (!productId || !quantity || !unitPrice) {
-        return NextResponse.json(
-          { error: "Each item must have productId, quantity, and unitPrice" },
-          { status: 400 }
-        );
+        // Calculate item total (quantity * unitPrice) with discount applied
+        const itemTotal = item.quantity * item.unitPrice;
+        const discountedTotal = itemTotal * (1 - item.discount / 100);
+        subtotal += discountedTotal;
+
+        itemsWithProducts.push({
+          ...item,
+          product,
+          totalPrice: discountedTotal,
+        });
       }
 
-      // Verify product exists and has sufficient stock
-      const { data: product } = await supabase
-        .from("products")
-        .select("id, name, stock, price")
-        .eq("id", productId)
-        .single();
+      // Calculate final total with tax and discount
+      const total =
+        subtotal + validatedData.taxAmount - validatedData.discountAmount;
 
-      if (!product) {
-        return NextResponse.json(
-          { error: `Product with ID ${productId} not found` },
-          { status: 404 }
-        );
-      }
-
-      if (product.stock < quantity) {
-        return NextResponse.json(
-          {
-            error: `Insufficient stock for product ${product.name}. Available: ${product.stock}, Required: ${quantity}`,
-          },
-          { status: 400 }
-        );
-      }
-
-      // Calculate subtotal for this item
-      const itemSubtotal =
-        quantity * parseFloat(unitPrice) - parseFloat(itemDiscount);
-
-      // Create sales item
-      const { data: salesItem, error: itemError } = await supabase
-        .from("sales_items")
-        .insert({
-          salesTransactionId: salesTransaction.id,
-          productId,
-          quantity: parseInt(quantity),
-          unitPrice: parseFloat(unitPrice),
-          subtotal: itemSubtotal,
-          discount: parseFloat(itemDiscount),
-        })
-        .select("*")
-        .single();
-
-      if (itemError) {
-        console.error("Error creating sales item:", itemError);
-        return NextResponse.json(
-          { error: "Failed to create sales item" },
-          { status: 500 }
-        );
-      }
-
-      salesItems.push(salesItem);
-
-      // Update product stock
-      const newStock = product.stock - quantity;
-      const { error: stockError } = await supabase
-        .from("products")
-        .update({ stock: newStock })
-        .eq("id", productId);
-
-      if (stockError) {
-        console.error("Error updating product stock:", stockError);
-        return NextResponse.json(
-          { error: "Failed to update product stock" },
-          { status: 500 }
-        );
-      }
-
-      stockUpdates.push({
-        productId,
-        oldStock: product.stock,
-        newStock,
-        quantity,
+      // Create the sales transaction
+      const salesTransaction = await tx.salesTransaction.create({
+        data: {
+          transactionCode,
+          cashierId: validatedData.userId,
+          subtotal,
+          tax: validatedData.taxAmount,
+          discount: validatedData.discountAmount,
+          total,
+          paymentMethod: validatedData.paymentMethod,
+          paymentStatus: validatedData.paymentStatus,
+          customerName: body.customerName,
+          customerEmail: body.customerEmail,
+          customerPhone: body.customerPhone,
+          notes: validatedData.notes,
+        },
       });
-    }
+
+      // Create sales items and update stock
+      const salesItems = [];
+      const stockUpdates = [];
+
+      for (const item of itemsWithProducts) {
+        // Create sales item
+        const salesItem = await tx.salesItem.create({
+          data: {
+            transactionId: salesTransaction.id,
+            productId: item.productId,
+            quantity: item.quantity,
+            unitPrice: item.unitPrice,
+            totalPrice: item.totalPrice,
+            discount: (item.quantity * item.unitPrice * item.discount) / 100, // Discount amount
+          },
+        });
+
+        salesItems.push(salesItem);
+
+        // Update product stock
+        const newStock = item.product.stock - item.quantity;
+        await tx.product.update({
+          where: { id: item.productId },
+          data: { stock: newStock },
+        });
+
+        stockUpdates.push({
+          productId: item.productId,
+          oldStock: item.product.stock,
+          newStock,
+          quantity: item.quantity,
+        });
+
+        // Create audit log for stock reduction
+        await tx.auditLog.create({
+          data: {
+            action: "STOCK_REDUCTION",
+            entityType: "PRODUCT",
+            entityId: item.productId.toString(),
+            userId: validatedData.userId,
+            oldValues: {
+              stock: item.product.stock,
+            },
+            newValues: {
+              stock: newStock,
+              transactionCode: salesTransaction.transactionCode,
+              quantitySold: item.quantity,
+            },
+          },
+        });
+      }
+
+      return { salesTransaction, stockUpdates };
+    });
 
     // Fetch the complete transaction with relations
-    const { data: completeSalesTransaction } = await supabase
-      .from("sales_transactions")
-      .select(
-        `
-        *,
-        user:users(id, name, email),
-        salesItems:sales_items(
-          id,
-          quantity,
-          unitPrice,
-          subtotal,
-          discount,
-          product:products(id, name, sku)
-        )
-      `
-      )
-      .eq("id", salesTransaction.id)
-      .single();
+    const completeSalesTransaction = await prisma.salesTransaction.findUnique({
+      where: { id: result.salesTransaction.id },
+      include: {
+        cashier: {
+          select: { id: true, firstName: true, lastName: true, email: true },
+        },
+        salesItems: {
+          include: {
+            product: {
+              select: { id: true, name: true, sku: true },
+            },
+          },
+        },
+      },
+    });
 
     return NextResponse.json(
       {
         data: completeSalesTransaction,
-        stockUpdates,
+        stockUpdates: result.stockUpdates,
       },
       { status: 201 }
     );
   } catch (error) {
     console.error("Error in POST /api/sales:", error);
     return NextResponse.json(
-      { error: "Internal server error" },
+      {
+        error: error instanceof Error ? error.message : "Internal server error",
+      },
       { status: 500 }
     );
   }

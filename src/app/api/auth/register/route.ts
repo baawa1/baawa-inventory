@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from "next/server";
-import { createServerSupabaseClient } from "@/lib/supabase-server";
+import { prisma } from "@/lib/db";
 import { emailService } from "@/lib/email";
 import { notifyAdmins } from "@/lib/utils/admin-notifications";
 import bcrypt from "bcryptjs";
@@ -19,7 +19,6 @@ type RegisterData = z.infer<typeof registerSchema>;
 
 export async function POST(request: NextRequest) {
   try {
-    const supabase = await createServerSupabaseClient();
     const body = await request.json();
 
     // Validate request body
@@ -37,11 +36,10 @@ export async function POST(request: NextRequest) {
     const userData = validation.data;
 
     // Check if email already exists
-    const { data: existingUser } = await supabase
-      .from("users")
-      .select("id")
-      .eq("email", userData.email)
-      .single();
+    const existingUser = await prisma.user.findUnique({
+      where: { email: userData.email },
+      select: { id: true },
+    });
 
     if (existingUser) {
       return NextResponse.json(
@@ -58,34 +56,32 @@ export async function POST(request: NextRequest) {
     const verificationExpires = new Date(Date.now() + 24 * 60 * 60 * 1000); // 24 hours
 
     // Create the user with email verification fields
-    const { data: user, error } = await supabase
-      .from("users")
-      .insert({
-        first_name: userData.firstName,
-        last_name: userData.lastName,
+    const user = await prisma.user.create({
+      data: {
+        firstName: userData.firstName,
+        lastName: userData.lastName,
         email: userData.email,
-        password_hash: hashedPassword,
+        password: hashedPassword,
         role: userData.role,
-        is_active: true,
-        user_status: "PENDING",
-        email_verified: false,
-        email_verification_token: verificationToken,
-        email_verification_expires: verificationExpires.toISOString(),
-        email_notifications: true,
-        marketing_emails: false,
-      })
-      .select(
-        "id, first_name, last_name, email, role, is_active, created_at, user_status"
-      )
-      .single();
-
-    if (error) {
-      console.error("Error creating user:", error);
-      return NextResponse.json(
-        { error: "Failed to create user" },
-        { status: 500 }
-      );
-    }
+        isActive: true,
+        userStatus: "PENDING",
+        emailVerified: false,
+        emailVerificationToken: verificationToken,
+        emailVerificationExpires: verificationExpires,
+        emailNotifications: true,
+        marketingEmails: false,
+      },
+      select: {
+        id: true,
+        firstName: true,
+        lastName: true,
+        email: true,
+        role: true,
+        isActive: true,
+        createdAt: true,
+        userStatus: true,
+      },
+    });
 
     // Send verification email
     try {
@@ -139,11 +135,11 @@ export async function POST(request: NextRequest) {
           "Registration successful! Please check your email to verify your account.",
         user: {
           id: user.id,
-          firstName: user.first_name,
-          lastName: user.last_name,
+          firstName: user.firstName,
+          lastName: user.lastName,
           email: user.email,
           role: user.role,
-          status: user.user_status,
+          status: user.userStatus,
           emailVerified: false,
         },
         requiresVerification: true,

@@ -1,5 +1,5 @@
 import { NextResponse } from "next/server";
-import { createServerSupabaseClient } from "@/lib/supabase-server";
+import { prisma } from "@/lib/db";
 import { withPermission, AuthenticatedRequest } from "@/lib/api-middleware";
 import { emailService } from "@/lib/email";
 import { z } from "zod";
@@ -15,7 +15,6 @@ export const POST = withPermission("canManageUsers")(async function (
   request: AuthenticatedRequest
 ) {
   try {
-    const supabase = await createServerSupabaseClient();
     const body = await request.json();
 
     console.log("POST /api/admin/suspend-user - Received data:", body);
@@ -32,26 +31,31 @@ export const POST = withPermission("canManageUsers")(async function (
     const { userId, reason, action } = validation.data;
 
     // Check if user exists
-    const { data: user, error: userError } = await supabase
-      .from("users")
-      .select("id, first_name, last_name, email, user_status")
-      .eq("id", userId)
-      .single();
+    const user = await prisma.user.findUnique({
+      where: { id: userId },
+      select: {
+        id: true,
+        firstName: true,
+        lastName: true,
+        email: true,
+        userStatus: true,
+      },
+    });
 
-    if (userError || !user) {
-      console.error("Error fetching user:", userError);
+    if (!user) {
+      console.error("User not found:", userId);
       return NextResponse.json({ error: "User not found" }, { status: 404 });
     }
 
     // Prevent suspending already suspended users or reactivating active users
-    if (action === "suspend" && user.user_status === "SUSPENDED") {
+    if (action === "suspend" && user.userStatus === "SUSPENDED") {
       return NextResponse.json(
         { error: "User is already suspended" },
         { status: 400 }
       );
     }
 
-    if (action === "reactivate" && user.user_status !== "SUSPENDED") {
+    if (action === "reactivate" && user.userStatus !== "SUSPENDED") {
       return NextResponse.json(
         { error: "User is not currently suspended" },
         { status: 400 }
@@ -60,34 +64,26 @@ export const POST = withPermission("canManageUsers")(async function (
 
     // Update user status
     const newStatus = action === "suspend" ? "SUSPENDED" : "APPROVED";
-    const { error: updateError } = await supabase
-      .from("users")
-      .update({
-        user_status: newStatus,
-        is_active: action === "reactivate",
-      })
-      .eq("id", userId);
-
-    if (updateError) {
-      console.error("Error updating user status:", updateError);
-      return NextResponse.json(
-        { error: "Failed to update user status" },
-        { status: 500 }
-      );
-    }
+    await prisma.user.update({
+      where: { id: userId },
+      data: {
+        userStatus: newStatus,
+        isActive: action === "reactivate",
+      },
+    });
 
     // Send notification email
     try {
       if (action === "suspend") {
         await emailService.sendUserSuspensionEmail(user.email, {
-          firstName: user.first_name,
-          lastName: user.last_name,
+          firstName: user.firstName,
+          lastName: user.lastName,
           reason,
         });
       } else {
         await emailService.sendUserReactivationEmail(user.email, {
-          firstName: user.first_name,
-          lastName: user.last_name,
+          firstName: user.firstName,
+          lastName: user.lastName,
         });
       }
     } catch (emailError) {

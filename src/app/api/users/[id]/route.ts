@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from "next/server";
-import { createServerSupabaseClient } from "@/lib/supabase-server";
+import { prisma } from "@/lib/db";
 import bcrypt from "bcryptjs";
 import {
   userIdSchema,
@@ -19,7 +19,6 @@ export async function GET(request: NextRequest, { params }: RouteParams) {
     authRequest: AuthenticatedRequest
   ) => {
     try {
-      const supabase = await createServerSupabaseClient();
       const { id } = params;
 
       // Validate ID
@@ -28,39 +27,36 @@ export async function GET(request: NextRequest, { params }: RouteParams) {
         return NextResponse.json({ error: "Invalid user ID" }, { status: 400 });
       }
 
-      const { data: user, error } = await supabase
-        .from("users")
-        .select(
-          "id, first_name, last_name, email, role, is_active, user_status, created_at, last_login"
-        )
-        .eq("id", userId)
-        .single();
+      const user = await prisma.user.findUnique({
+        where: { id: userId },
+        select: {
+          id: true,
+          firstName: true,
+          lastName: true,
+          email: true,
+          role: true,
+          isActive: true,
+          userStatus: true,
+          createdAt: true,
+          lastLogin: true,
+        },
+      });
 
-      if (error) {
-        if (error.code === "PGRST116") {
-          return NextResponse.json(
-            { error: "User not found" },
-            { status: 404 }
-          );
-        }
-        console.error("Error fetching user:", error);
-        return NextResponse.json(
-          { error: "Failed to fetch user" },
-          { status: 500 }
-        );
+      if (!user) {
+        return NextResponse.json({ error: "User not found" }, { status: 404 });
       }
 
-      // Transform response to camelCase
+      // Transform response to match expected format
       const transformedUser = {
         id: user.id,
-        firstName: user.first_name,
-        lastName: user.last_name,
+        firstName: user.firstName,
+        lastName: user.lastName,
         email: user.email,
         role: user.role,
-        isActive: user.is_active,
-        userStatus: user.user_status,
-        createdAt: user.created_at,
-        lastLogin: user.last_login,
+        isActive: user.isActive,
+        userStatus: user.userStatus,
+        createdAt: user.createdAt,
+        lastLogin: user.lastLogin,
       };
 
       return NextResponse.json(transformedUser);
@@ -82,7 +78,6 @@ export async function PUT(request: NextRequest, { params }: RouteParams) {
     authRequest: AuthenticatedRequest
   ) => {
     try {
-      const supabase = await createServerSupabaseClient();
       const { id } = params;
       const body = await authRequest.json();
 
@@ -95,11 +90,17 @@ export async function PUT(request: NextRequest, { params }: RouteParams) {
       }
 
       // Check if user exists
-      const { data: existingUser } = await supabase
-        .from("users")
-        .select("id, email, role, first_name, last_name, user_status")
-        .eq("id", userId)
-        .single();
+      const existingUser = await prisma.user.findUnique({
+        where: { id: userId },
+        select: {
+          id: true,
+          email: true,
+          role: true,
+          firstName: true,
+          lastName: true,
+          userStatus: true,
+        },
+      });
 
       if (!existingUser) {
         return NextResponse.json({ error: "User not found" }, { status: 404 });
@@ -116,12 +117,13 @@ export async function PUT(request: NextRequest, { params }: RouteParams) {
           );
         }
 
-        const { data: conflictUser } = await supabase
-          .from("users")
-          .select("id")
-          .eq("email", body.email)
-          .neq("id", userId)
-          .single();
+        const conflictUser = await prisma.user.findFirst({
+          where: {
+            email: body.email,
+            id: { not: userId },
+          },
+          select: { id: true },
+        });
 
         if (conflictUser) {
           return NextResponse.json(
@@ -142,40 +144,39 @@ export async function PUT(request: NextRequest, { params }: RouteParams) {
         }
       }
 
-      // Prepare update data with correct field names
+      // Prepare update data
       const updateData: any = {};
 
-      if (body.firstName) updateData.first_name = body.firstName;
-      if (body.lastName) updateData.last_name = body.lastName;
+      if (body.firstName) updateData.firstName = body.firstName;
+      if (body.lastName) updateData.lastName = body.lastName;
       if (body.email) updateData.email = body.email;
       if (body.role) updateData.role = body.role;
       if (body.phone) updateData.phone = body.phone;
-      if (body.isActive !== undefined) updateData.is_active = body.isActive;
+      if (body.isActive !== undefined) updateData.isActive = body.isActive;
+      if (body.notes !== undefined) updateData.notes = body.notes;
 
       // Hash password if provided
       if (body.password && body.password.trim() !== "") {
-        updateData.password_hash = await bcrypt.hash(body.password, 12);
+        updateData.password = await bcrypt.hash(body.password, 12);
       }
 
       console.log("Updating user with data:", updateData);
 
       // Update the user
-      const { data: user, error } = await supabase
-        .from("users")
-        .update(updateData)
-        .eq("id", userId)
-        .select(
-          "id, first_name, last_name, email, role, is_active, created_at, last_login"
-        )
-        .single();
-
-      if (error) {
-        console.error("Error updating user:", error);
-        return NextResponse.json(
-          { error: "Failed to update user" },
-          { status: 500 }
-        );
-      }
+      const user = await prisma.user.update({
+        where: { id: userId },
+        data: updateData,
+        select: {
+          id: true,
+          firstName: true,
+          lastName: true,
+          email: true,
+          role: true,
+          isActive: true,
+          createdAt: true,
+          lastLogin: true,
+        },
+      });
 
       // Check if role changed and send notification email
       if (body.role && body.role !== existingUser.role) {
@@ -185,7 +186,7 @@ export async function PUT(request: NextRequest, { params }: RouteParams) {
             process.env.NEXTAUTH_URL || "http://localhost:3000";
 
           await emailService.sendRoleChangeEmail(user.email, {
-            firstName: user.first_name,
+            firstName: user.firstName,
             oldRole: existingUser.role,
             newRole: user.role,
             changedBy: adminName,
@@ -197,16 +198,16 @@ export async function PUT(request: NextRequest, { params }: RouteParams) {
         }
       }
 
-      // Transform response to camelCase
+      // Transform response to match expected format
       const transformedUser = {
         id: user.id,
-        firstName: user.first_name,
-        lastName: user.last_name,
+        firstName: user.firstName,
+        lastName: user.lastName,
         email: user.email,
         role: user.role,
-        isActive: user.is_active,
-        createdAt: user.created_at,
-        lastLogin: user.last_login,
+        isActive: user.isActive,
+        createdAt: user.createdAt,
+        lastLogin: user.lastLogin,
       };
 
       console.log("Successfully updated user:", transformedUser);
@@ -230,7 +231,6 @@ export async function DELETE(request: NextRequest, { params }: RouteParams) {
     authRequest: AuthenticatedRequest
   ) => {
     try {
-      const supabase = await createServerSupabaseClient();
       const { id } = params;
       const { searchParams } = new URL(authRequest.url);
       const hardDelete = searchParams.get("hard") === "true";
@@ -242,11 +242,15 @@ export async function DELETE(request: NextRequest, { params }: RouteParams) {
       }
 
       // Check if user exists
-      const { data: existingUser } = await supabase
-        .from("users")
-        .select("id, first_name, last_name, email")
-        .eq("id", userId)
-        .single();
+      const existingUser = await prisma.user.findUnique({
+        where: { id: userId },
+        select: {
+          id: true,
+          firstName: true,
+          lastName: true,
+          email: true,
+        },
+      });
 
       if (!existingUser) {
         return NextResponse.json({ error: "User not found" }, { status: 404 });
@@ -254,13 +258,12 @@ export async function DELETE(request: NextRequest, { params }: RouteParams) {
 
       if (hardDelete) {
         // Check for related records that would prevent deletion
-        const { data: salesTransactions } = await supabase
-          .from("sales_transactions")
-          .select("id")
-          .eq("user_id", userId)
-          .limit(1);
+        const salesTransactions = await prisma.salesTransaction.findFirst({
+          where: { cashierId: userId },
+          select: { id: true },
+        });
 
-        if (salesTransactions && salesTransactions.length > 0) {
+        if (salesTransactions) {
           return NextResponse.json(
             {
               error:
@@ -271,46 +274,34 @@ export async function DELETE(request: NextRequest, { params }: RouteParams) {
         }
 
         // Hard delete
-        const { error } = await supabase
-          .from("users")
-          .delete()
-          .eq("id", userId);
-
-        if (error) {
-          console.error("Error deleting user:", error);
-          return NextResponse.json(
-            { error: "Failed to delete user" },
-            { status: 500 }
-          );
-        }
+        await prisma.user.delete({
+          where: { id: userId },
+        });
 
         return NextResponse.json({
           message: "User deleted successfully",
         });
       } else {
         // Soft delete (deactivate)
-        const { data: user, error } = await supabase
-          .from("users")
-          .update({ is_active: false })
-          .eq("id", userId)
-          .select("id, first_name, last_name, email, is_active")
-          .single();
+        const user = await prisma.user.update({
+          where: { id: userId },
+          data: { isActive: false },
+          select: {
+            id: true,
+            firstName: true,
+            lastName: true,
+            email: true,
+            isActive: true,
+          },
+        });
 
-        if (error) {
-          console.error("Error deactivating user:", error);
-          return NextResponse.json(
-            { error: "Failed to deactivate user" },
-            { status: 500 }
-          );
-        }
-
-        // Transform response to camelCase
+        // Transform response to match expected format
         const transformedUser = {
           id: user.id,
-          firstName: user.first_name,
-          lastName: user.last_name,
+          firstName: user.firstName,
+          lastName: user.lastName,
           email: user.email,
-          isActive: user.is_active,
+          isActive: user.isActive,
         };
 
         return NextResponse.json({

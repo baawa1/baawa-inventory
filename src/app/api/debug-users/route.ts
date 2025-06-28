@@ -1,5 +1,5 @@
 import { NextResponse } from "next/server";
-import { createServerSupabaseClient } from "@/lib/supabase-server";
+import { prisma } from "@/lib/db";
 import { getServerSession } from "next-auth/next";
 import { authOptions } from "@/lib/auth";
 
@@ -28,25 +28,19 @@ export async function GET() {
     }
 
     // Try database connection
-    const supabase = await createServerSupabaseClient();
-    console.log("Supabase client created");
+    console.log("Prisma client created");
 
     // Simple query
-    const { data: users, error } = await supabase
-      .from("users")
-      .select("id, first_name, last_name, email, role")
-      .limit(3);
-
-    if (error) {
-      console.error("Database error:", error);
-      return NextResponse.json(
-        {
-          error: "Database error",
-          details: error.message,
-        },
-        { status: 500 }
-      );
-    }
+    const users = await prisma.user.findMany({
+      select: {
+        id: true,
+        firstName: true,
+        lastName: true,
+        email: true,
+        role: true,
+      },
+      take: 3,
+    });
 
     console.log("Users found:", users?.length || 0);
 

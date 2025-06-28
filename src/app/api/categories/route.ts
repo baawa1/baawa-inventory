@@ -1,7 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import { getServerSession } from "next-auth";
 import { authOptions } from "@/lib/auth";
-import { supabase } from "@/lib/supabase";
+import { prisma } from "@/lib/db";
 import {
   createCategorySchema,
   categoryQuerySchema,
@@ -31,52 +31,52 @@ export async function GET(request: NextRequest) {
 
     if (legacy) {
       // Legacy functionality: Get unique categories from products for dropdowns
-      // First check if products table has category column or category_id
-      const { data: products, error } = await supabase
-        .from("products")
-        .select("category")
-        .not("category", "is", null)
-        .neq("category", "")
-        .eq("is_archived", false)
-        .order("category");
-
-      if (error && error.code === "42703") {
-        // Column doesn't exist, try with category_id and join with categories
-        const { data: categoryData, error: categoryError } = await supabase
-          .from("categories")
-          .select("name")
-          .eq("is_active", true)
-          .order("name");
-
-        if (categoryError) {
-          console.error("Error fetching categories:", categoryError);
-          return NextResponse.json(
-            { error: "Failed to fetch categories" },
-            { status: 500 }
-          );
-        }
-
-        const uniqueCategories = (categoryData || [])
-          .map((cat) => cat.name)
-          .sort();
-
-        return NextResponse.json({
-          success: true,
-          categories: uniqueCategories,
+      try {
+        // Get categories through product relations (since products reference categoryId)
+        const categories = await prisma.category.findMany({
+          where: {
+            isActive: true,
+            products: {
+              some: {
+                isArchived: false,
+              },
+            },
+          },
+          select: {
+            name: true,
+          },
+          orderBy: {
+            name: "asc",
+          },
         });
+
+        if (categories.length > 0) {
+          const uniqueCategories = categories.map((cat) => cat.name).sort();
+
+          return NextResponse.json({
+            success: true,
+            categories: uniqueCategories,
+          });
+        }
+      } catch (categoryError) {
+        // If there's an error, fall back to all categories
+        console.log("Falling back to all categories:", categoryError);
       }
 
-      if (error) {
-        console.error("Error fetching product categories:", error);
-        return NextResponse.json(
-          { error: "Failed to fetch categories" },
-          { status: 500 }
-        );
-      }
+      // Fallback: Get all categories from the categories table
+      const categoryData = await prisma.category.findMany({
+        where: {
+          isActive: true,
+        },
+        select: {
+          name: true,
+        },
+        orderBy: {
+          name: "asc",
+        },
+      });
 
-      const uniqueCategories = Array.from(
-        new Set(products?.map((item) => item.category).filter(Boolean))
-      ).sort();
+      const uniqueCategories = categoryData.map((cat) => cat.name).sort();
 
       return NextResponse.json({
         success: true,
@@ -102,62 +102,57 @@ export async function GET(request: NextRequest) {
 
     const validatedQuery = categoryQuerySchema.parse(queryParams);
 
-    // Build the query
-    let query = supabase.from("categories").select("*", { count: "exact" });
+    // Build where clause for Prisma
+    const where: any = {};
 
     // Apply filters
     if (validatedQuery.search) {
-      query = query.ilike("name", `%${validatedQuery.search}%`);
+      where.name = {
+        contains: validatedQuery.search,
+        mode: "insensitive",
+      };
     }
 
     if (validatedQuery.isActive !== undefined) {
-      query = query.eq("is_active", validatedQuery.isActive);
+      where.isActive = validatedQuery.isActive;
     }
 
-    // Apply sorting
-    const sortColumn =
-      validatedQuery.sortBy === "createdAt"
-        ? "created_at"
-        : validatedQuery.sortBy === "updatedAt"
-          ? "updated_at"
-          : "name";
-
-    query = query.order(sortColumn, {
-      ascending: validatedQuery.sortOrder === "asc",
-    });
-
-    // Apply pagination
-    query = query.range(
-      validatedQuery.offset,
-      validatedQuery.offset + validatedQuery.limit - 1
-    );
-
-    const { data: categories, error, count } = await query;
-
-    if (error) {
-      console.error("Database error:", error);
-      return NextResponse.json(
-        { error: "Failed to fetch categories" },
-        { status: 500 }
-      );
+    // Build orderBy clause
+    const orderBy: any = {};
+    if (validatedQuery.sortBy === "createdAt") {
+      orderBy.createdAt = validatedQuery.sortOrder;
+    } else if (validatedQuery.sortBy === "updatedAt") {
+      orderBy.updatedAt = validatedQuery.sortOrder;
+    } else {
+      orderBy.name = validatedQuery.sortOrder;
     }
 
-    // Transform to camelCase for frontend
-    const transformedCategories =
-      categories?.map((category) => ({
-        id: category.id,
-        name: category.name,
-        description: category.description,
-        isActive: category.is_active,
-        createdAt: category.created_at,
-        updatedAt: category.updated_at,
-      })) || [];
+    // Execute queries in parallel for better performance
+    const [categories, count] = await Promise.all([
+      prisma.category.findMany({
+        where,
+        orderBy,
+        skip: validatedQuery.offset,
+        take: validatedQuery.limit,
+      }),
+      prisma.category.count({ where }),
+    ]);
+
+    // Transform to camelCase for frontend (Prisma already returns camelCase)
+    const transformedCategories = categories.map((category) => ({
+      id: category.id,
+      name: category.name,
+      description: category.description,
+      isActive: category.isActive,
+      createdAt: category.createdAt,
+      updatedAt: category.updatedAt,
+    }));
 
     return NextResponse.json({
       success: true,
       data: transformedCategories,
       pagination: {
-        total: count || 0,
+        total: count,
         limit: validatedQuery.limit,
         offset: validatedQuery.offset,
       },
@@ -192,11 +187,10 @@ export async function POST(request: NextRequest) {
     const validatedData = createCategorySchema.parse(body);
 
     // Check if category name already exists
-    const { data: existingCategory } = await supabase
-      .from("categories")
-      .select("id")
-      .eq("name", validatedData.name)
-      .single();
+    const existingCategory = await prisma.category.findUnique({
+      where: { name: validatedData.name },
+      select: { id: true },
+    });
 
     if (existingCategory) {
       return NextResponse.json(
@@ -205,33 +199,23 @@ export async function POST(request: NextRequest) {
       );
     }
 
-    // Create the category with snake_case field names
-    const { data: category, error } = await supabase
-      .from("categories")
-      .insert({
+    // Create the category
+    const category = await prisma.category.create({
+      data: {
         name: validatedData.name,
         description: validatedData.description,
-        is_active: validatedData.isActive,
-      })
-      .select()
-      .single();
+        isActive: validatedData.isActive,
+      },
+    });
 
-    if (error) {
-      console.error("Database error:", error);
-      return NextResponse.json(
-        { error: "Failed to create category" },
-        { status: 500 }
-      );
-    }
-
-    // Transform response to camelCase
+    // Transform response to match expected format (Prisma already returns camelCase)
     const transformedCategory = {
       id: category.id,
       name: category.name,
       description: category.description,
-      isActive: category.is_active,
-      createdAt: category.created_at,
-      updatedAt: category.updated_at,
+      isActive: category.isActive,
+      createdAt: category.createdAt,
+      updatedAt: category.updatedAt,
     };
 
     return NextResponse.json(transformedCategory, { status: 201 });

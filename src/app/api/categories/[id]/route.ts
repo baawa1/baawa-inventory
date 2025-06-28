@@ -1,7 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import { getServerSession } from "next-auth";
 import { authOptions } from "@/lib/auth";
-import { supabase } from "@/lib/supabase";
+import { prisma } from "@/lib/db";
 import {
   updateCategorySchema,
   categoryIdSchema,
@@ -30,34 +30,25 @@ export async function GET(
     const { id } = await params;
     const validatedId = categoryIdSchema.parse({ id });
 
-    const { data: category, error } = await supabase
-      .from("categories")
-      .select("*")
-      .eq("id", validatedId.id)
-      .single();
+    const category = await prisma.category.findUnique({
+      where: { id: validatedId.id },
+    });
 
-    if (error) {
-      if (error.code === "PGRST116") {
-        return NextResponse.json(
-          { error: "Category not found" },
-          { status: 404 }
-        );
-      }
-      console.error("Database error:", error);
+    if (!category) {
       return NextResponse.json(
-        { error: "Failed to fetch category" },
-        { status: 500 }
+        { error: "Category not found" },
+        { status: 404 }
       );
     }
 
-    // Transform to camelCase for frontend
+    // Transform to match expected format (Prisma already returns camelCase)
     const transformedCategory = {
       id: category.id,
       name: category.name,
       description: category.description,
-      isActive: category.is_active,
-      createdAt: category.created_at,
-      updatedAt: category.updated_at,
+      isActive: category.isActive,
+      createdAt: category.createdAt,
+      updatedAt: category.updatedAt,
     };
 
     return NextResponse.json(transformedCategory);
@@ -103,34 +94,27 @@ export async function PUT(
     });
 
     // Check if category exists
-    const { data: existingCategory, error: fetchError } = await supabase
-      .from("categories")
-      .select("id")
-      .eq("id", validatedId.id)
-      .single();
+    const existingCategory = await prisma.category.findUnique({
+      where: { id: validatedId.id },
+      select: { id: true },
+    });
 
-    if (fetchError) {
-      if (fetchError.code === "PGRST116") {
-        return NextResponse.json(
-          { error: "Category not found" },
-          { status: 404 }
-        );
-      }
-      console.error("Database error:", fetchError);
+    if (!existingCategory) {
       return NextResponse.json(
-        { error: "Failed to fetch category" },
-        { status: 500 }
+        { error: "Category not found" },
+        { status: 404 }
       );
     }
 
     // Check if name is being changed and doesn't conflict with existing categories
     if (validatedData.name) {
-      const { data: nameConflict } = await supabase
-        .from("categories")
-        .select("id")
-        .eq("name", validatedData.name)
-        .neq("id", validatedId.id)
-        .single();
+      const nameConflict = await prisma.category.findFirst({
+        where: {
+          name: validatedData.name,
+          id: { not: validatedId.id },
+        },
+        select: { id: true },
+      });
 
       if (nameConflict) {
         return NextResponse.json(
@@ -140,38 +124,28 @@ export async function PUT(
       }
     }
 
-    // Build update object with snake_case field names
+    // Build update object
     const updateData: any = {};
     if (validatedData.name !== undefined) updateData.name = validatedData.name;
     if (validatedData.description !== undefined)
       updateData.description = validatedData.description;
     if (validatedData.isActive !== undefined)
-      updateData.is_active = validatedData.isActive;
+      updateData.isActive = validatedData.isActive;
 
     // Update the category
-    const { data: category, error } = await supabase
-      .from("categories")
-      .update(updateData)
-      .eq("id", validatedId.id)
-      .select()
-      .single();
+    const category = await prisma.category.update({
+      where: { id: validatedId.id },
+      data: updateData,
+    });
 
-    if (error) {
-      console.error("Database error:", error);
-      return NextResponse.json(
-        { error: "Failed to update category" },
-        { status: 500 }
-      );
-    }
-
-    // Transform response to camelCase
+    // Transform response to match expected format (Prisma already returns camelCase)
     const transformedCategory = {
       id: category.id,
       name: category.name,
       description: category.description,
-      isActive: category.is_active,
-      createdAt: category.created_at,
-      updatedAt: category.updated_at,
+      isActive: category.isActive,
+      createdAt: category.createdAt,
+      updatedAt: category.updatedAt,
     };
 
     return NextResponse.json(transformedCategory);
@@ -211,43 +185,28 @@ export async function DELETE(
     const validatedId = categoryIdSchema.parse({ id });
 
     // Check if category exists
-    const { data: existingCategory, error: fetchError } = await supabase
-      .from("categories")
-      .select("id, name")
-      .eq("id", validatedId.id)
-      .single();
+    const existingCategory = await prisma.category.findUnique({
+      where: { id: validatedId.id },
+      select: { id: true, name: true },
+    });
 
-    if (fetchError) {
-      if (fetchError.code === "PGRST116") {
-        return NextResponse.json(
-          { error: "Category not found" },
-          { status: 404 }
-        );
-      }
-      console.error("Database error:", fetchError);
+    if (!existingCategory) {
       return NextResponse.json(
-        { error: "Failed to fetch category" },
-        { status: 500 }
+        { error: "Category not found" },
+        { status: 404 }
       );
     }
 
     // Check if category is being used by any products
-    const { data: productsUsing, error: productsError } = await supabase
-      .from("products")
-      .select("id")
-      .eq("category_id", validatedId.id)
-      .eq("is_archived", false)
-      .limit(1);
+    const productsUsing = await prisma.product.findFirst({
+      where: {
+        categoryId: validatedId.id,
+        isArchived: false,
+      },
+      select: { id: true },
+    });
 
-    if (productsError) {
-      console.error("Database error:", productsError);
-      return NextResponse.json(
-        { error: "Failed to check category usage" },
-        { status: 500 }
-      );
-    }
-
-    if (productsUsing && productsUsing.length > 0) {
+    if (productsUsing) {
       return NextResponse.json(
         {
           error:
@@ -258,18 +217,9 @@ export async function DELETE(
     }
 
     // Delete the category
-    const { error } = await supabase
-      .from("categories")
-      .delete()
-      .eq("id", validatedId.id);
-
-    if (error) {
-      console.error("Database error:", error);
-      return NextResponse.json(
-        { error: "Failed to delete category" },
-        { status: 500 }
-      );
-    }
+    await prisma.category.delete({
+      where: { id: validatedId.id },
+    });
 
     return NextResponse.json({ message: "Category deleted successfully" });
   } catch (error) {
