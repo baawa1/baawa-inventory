@@ -5,9 +5,10 @@ import {
   productQuerySchema,
   validateRequest,
 } from "@/lib/validations";
+import { withAuth, AuthenticatedRequest } from "@/lib/api-middleware";
 
 // GET /api/products - List products with optional filtering and pagination
-export async function GET(request: NextRequest) {
+export const GET = withAuth(async function (request: AuthenticatedRequest) {
   try {
     const { searchParams } = new URL(request.url);
 
@@ -39,6 +40,12 @@ export async function GET(request: NextRequest) {
       sortBy = "createdAt",
       sortOrder = "desc",
     } = validatedData;
+
+    // Enforce maximum limit as a safety check
+    const safeLimit = Math.min(limit, 100);
+
+    // Calculate offset for pagination
+    const offset = (page - 1) * safeLimit;
 
     // Build Prisma where clause
     const where: any = {
@@ -115,9 +122,6 @@ export async function GET(request: NextRequest) {
     const sortField = sortBy === "created_at" ? "createdAt" : sortBy;
     orderBy[sortField] = sortOrder;
 
-    // Calculate pagination
-    const skip = (page - 1) * limit;
-
     // Execute queries - handle low stock filtering differently
     let products;
     let totalCount;
@@ -148,15 +152,9 @@ export async function GET(request: NextRequest) {
 
       // Apply pagination to filtered results
       totalCount = lowStockProducts.length;
-      products = lowStockProducts.slice(skip, skip + limit);
+      products = lowStockProducts.slice(offset, offset + safeLimit);
     } else {
       // Normal query execution with pagination and optimized includes
-      console.log(
-        "🔍 Products API: Executing query with where:",
-        JSON.stringify(where, null, 2)
-      );
-      console.log("🔍 Products API: skip:", skip, "limit:", limit);
-
       [products, totalCount] = await Promise.all([
         prisma.product.findMany({
           where,
@@ -196,32 +194,23 @@ export async function GET(request: NextRequest) {
             },
           },
           orderBy,
-          skip,
-          take: limit,
+          skip: offset,
+          take: safeLimit,
         }),
         prisma.product.count({ where }),
       ]);
-
-      console.log(
-        "🔍 Products API: Found",
-        totalCount,
-        "total products,",
-        products.length,
-        "in current page"
-      );
-      console.log(
-        "🔍 Products API: First product:",
-        products[0] ? { id: products[0].id, name: products[0].name } : "none"
-      );
     }
 
+    // Return paginated response with metadata
     return NextResponse.json({
       data: products,
       pagination: {
         page,
-        limit,
+        limit: safeLimit,
         total: totalCount,
-        totalPages: Math.ceil(totalCount / limit),
+        totalPages: Math.ceil(totalCount / safeLimit),
+        hasNext: offset + safeLimit < totalCount,
+        hasPrev: page > 1,
       },
     });
   } catch (error) {
@@ -231,10 +220,10 @@ export async function GET(request: NextRequest) {
       { status: 500 }
     );
   }
-}
+});
 
 // POST /api/products - Create a new product
-export async function POST(request: NextRequest) {
+export const POST = withAuth(async function (request: AuthenticatedRequest) {
   try {
     const body = await request.json();
 
@@ -303,4 +292,4 @@ export async function POST(request: NextRequest) {
       { status: 500 }
     );
   }
-}
+});

@@ -34,11 +34,11 @@ export const createProductSchema = z.object({
     .nullable(),
   purchasePrice: priceSchema,
   sellingPrice: priceSchema,
-  minimumStock: stockSchema.optional().default(0),
+  minimumStock: stockSchema,
   maximumStock: stockSchema.optional().nullable(),
-  currentStock: stockSchema.optional().default(0),
+  currentStock: stockSchema,
   supplierId: idSchema.optional().nullable(),
-  status: productStatusSchema.default("active"),
+  status: productStatusSchema,
   imageUrl: z.string().optional().nullable(),
   notes: z
     .string()

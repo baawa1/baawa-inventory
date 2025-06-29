@@ -6,6 +6,7 @@ import {
   createCategorySchema,
   categoryQuerySchema,
 } from "@/lib/validations/category";
+import { handleApiError, createApiResponse } from "@/lib/api-error-handler";
 
 // GET /api/categories - List categories with filtering
 export async function GET(request: NextRequest) {
@@ -13,15 +14,12 @@ export async function GET(request: NextRequest) {
     const session = await getServerSession(authOptions);
 
     if (!session?.user) {
-      return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+      return handleApiError(new Error("Unauthorized"), 401);
     }
 
     // Check if user has permission to view categories
     if (!["ADMIN", "MANAGER", "STAFF"].includes(session.user.role)) {
-      return NextResponse.json(
-        { error: "Insufficient permissions" },
-        { status: 403 }
-      );
+      return handleApiError(new Error("Insufficient permissions"), 403);
     }
 
     const { searchParams } = new URL(request.url);
@@ -53,13 +51,12 @@ export async function GET(request: NextRequest) {
         if (categories.length > 0) {
           const uniqueCategories = categories.map((cat) => cat.name).sort();
 
-          return NextResponse.json({
+          return createApiResponse({
             success: true,
             categories: uniqueCategories,
           });
         }
       } catch (categoryError) {
-        // If there's an error, fall back to all categories
         console.log("Falling back to all categories:", categoryError);
       }
 
@@ -78,7 +75,7 @@ export async function GET(request: NextRequest) {
 
       const uniqueCategories = categoryData.map((cat) => cat.name).sort();
 
-      return NextResponse.json({
+      return createApiResponse({
         success: true,
         categories: uniqueCategories,
       });
@@ -90,12 +87,8 @@ export async function GET(request: NextRequest) {
       isActive: searchParams.get("isActive")
         ? searchParams.get("isActive") === "true"
         : undefined,
-      limit: searchParams.get("limit")
-        ? parseInt(searchParams.get("limit")!)
-        : 10,
-      offset: searchParams.get("offset")
-        ? parseInt(searchParams.get("offset")!)
-        : 0,
+      limit: Math.min(parseInt(searchParams.get("limit") || "10"), 100),
+      offset: Math.max(parseInt(searchParams.get("offset") || "0"), 0),
       sortBy: searchParams.get("sortBy") || "name",
       sortOrder: searchParams.get("sortOrder") || "asc",
     };
@@ -148,21 +141,19 @@ export async function GET(request: NextRequest) {
       updatedAt: category.updatedAt,
     }));
 
-    return NextResponse.json({
+    return createApiResponse({
       success: true,
       data: transformedCategories,
       pagination: {
         total: count,
         limit: validatedQuery.limit,
         offset: validatedQuery.offset,
+        page: Math.floor(validatedQuery.offset / validatedQuery.limit) + 1,
+        totalPages: Math.ceil(count / validatedQuery.limit),
       },
     });
   } catch (error) {
-    console.error("API error:", error);
-    return NextResponse.json(
-      { error: "Internal server error" },
-      { status: 500 }
-    );
+    return handleApiError(error);
   }
 }
 
@@ -172,15 +163,12 @@ export async function POST(request: NextRequest) {
     const session = await getServerSession(authOptions);
 
     if (!session?.user) {
-      return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+      return handleApiError(new Error("Unauthorized"), 401);
     }
 
     // Check if user has permission to create categories
     if (!["ADMIN", "MANAGER"].includes(session.user.role)) {
-      return NextResponse.json(
-        { error: "Insufficient permissions" },
-        { status: 403 }
-      );
+      return handleApiError(new Error("Insufficient permissions"), 403);
     }
 
     const body = await request.json();
@@ -193,9 +181,9 @@ export async function POST(request: NextRequest) {
     });
 
     if (existingCategory) {
-      return NextResponse.json(
-        { error: "Category with this name already exists" },
-        { status: 400 }
+      return handleApiError(
+        new Error("Category with this name already exists"),
+        400
       );
     }
 
@@ -218,15 +206,8 @@ export async function POST(request: NextRequest) {
       updatedAt: category.updatedAt,
     };
 
-    return NextResponse.json(transformedCategory, { status: 201 });
+    return createApiResponse(transformedCategory, 201);
   } catch (error) {
-    console.error("API error:", error);
-    if (error instanceof Error) {
-      return NextResponse.json({ error: error.message }, { status: 400 });
-    }
-    return NextResponse.json(
-      { error: "Internal server error" },
-      { status: 500 }
-    );
+    return handleApiError(error);
   }
 }

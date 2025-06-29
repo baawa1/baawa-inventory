@@ -41,8 +41,11 @@ export const GET = withPermission("canManageUsers")(async function (
       sortOrder = "desc",
     } = validatedData;
 
+    // Enforce maximum limit as a safety check
+    const safeLimit = Math.min(limit, 100);
+
     // Calculate offset for pagination
-    const skip = (page - 1) * limit;
+    const skip = (page - 1) * safeLimit;
 
     // Build where clause for filtering
     const where: any = {};
@@ -80,27 +83,30 @@ export const GET = withPermission("canManageUsers")(async function (
     }
 
     // Fetch users with Prisma - exclude password from response
-    const users = await prisma.user.findMany({
-      where,
-      select: {
-        id: true,
-        firstName: true,
-        lastName: true,
-        email: true,
-        role: true,
-        isActive: true,
-        userStatus: true,
-        emailVerified: true,
-        createdAt: true,
-        lastLogin: true,
-        approvedBy: true,
-        approvedAt: true,
-        rejectionReason: true,
-      },
-      orderBy,
-      skip,
-      take: limit,
-    });
+    const [users, totalCount] = await Promise.all([
+      prisma.user.findMany({
+        where,
+        select: {
+          id: true,
+          firstName: true,
+          lastName: true,
+          email: true,
+          role: true,
+          isActive: true,
+          userStatus: true,
+          emailVerified: true,
+          createdAt: true,
+          lastLogin: true,
+          approvedBy: true,
+          approvedAt: true,
+          rejectionReason: true,
+        },
+        orderBy,
+        skip,
+        take: safeLimit,
+      }),
+      prisma.user.count({ where }),
+    ]);
 
     // Transform the response to match the expected camelCase format
     const transformedUsers = users.map((user) => ({
@@ -119,7 +125,18 @@ export const GET = withPermission("canManageUsers")(async function (
       rejectionReason: user.rejectionReason,
     }));
 
-    return NextResponse.json(transformedUsers);
+    // Return paginated response with metadata
+    return NextResponse.json({
+      data: transformedUsers,
+      pagination: {
+        page,
+        limit: safeLimit,
+        total: totalCount,
+        totalPages: Math.ceil(totalCount / safeLimit),
+        hasNext: skip + safeLimit < totalCount,
+        hasPrev: page > 1,
+      },
+    });
   } catch (error) {
     console.error("Error in GET /api/users:", error);
     return NextResponse.json(

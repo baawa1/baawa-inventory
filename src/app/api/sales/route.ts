@@ -1,17 +1,11 @@
 import { NextRequest, NextResponse } from "next/server";
 import { prisma } from "@/lib/db";
-import { getServerSession } from "next-auth";
-import { authOptions } from "@/lib/auth";
 import { createSaleSchema, saleQuerySchema } from "@/lib/validations/sale";
+import { withAuth, AuthenticatedRequest } from "@/lib/api-middleware";
 
 // GET /api/sales - List sales transactions with optional filtering and pagination
-export async function GET(request: NextRequest) {
+export const GET = withAuth(async function (request: AuthenticatedRequest) {
   try {
-    const session = await getServerSession(authOptions);
-    if (!session) {
-      return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
-    }
-
     const { searchParams } = new URL(request.url);
 
     // Convert search params to proper types for validation
@@ -47,8 +41,11 @@ export async function GET(request: NextRequest) {
       sortOrder,
     } = validatedQuery;
 
+    // Enforce maximum limit as a safety check
+    const safeLimit = Math.min(limit, 100);
+
     // Calculate offset for pagination
-    const offset = (page - 1) * limit;
+    const offset = (page - 1) * safeLimit;
 
     // Build where clause for Prisma
     const where: any = {};
@@ -92,19 +89,31 @@ export async function GET(request: NextRequest) {
       orderBy.createdAt = sortOrder; // default fallback
     }
 
-    // Execute queries in parallel for better performance
+    // Execute queries in parallel for better performance with optimized includes
     const [salesTransactions, totalCount] = await Promise.all([
       prisma.salesTransaction.findMany({
         where,
         orderBy,
         skip: offset,
-        take: limit,
-        include: {
+        take: safeLimit,
+        select: {
+          id: true,
+          transactionCode: true,
+          customerName: true,
+          total: true,
+          paymentStatus: true,
+          paymentMethod: true,
+          notes: true,
+          createdAt: true,
+          updatedAt: true,
           cashier: {
             select: { id: true, firstName: true, lastName: true, email: true },
           },
           salesItems: {
-            include: {
+            select: {
+              id: true,
+              quantity: true,
+              unitPrice: true,
               product: {
                 select: { id: true, name: true, sku: true },
               },
@@ -119,9 +128,11 @@ export async function GET(request: NextRequest) {
       data: salesTransactions,
       pagination: {
         page,
-        limit,
+        limit: safeLimit,
         total: totalCount,
-        totalPages: Math.ceil(totalCount / limit),
+        totalPages: Math.ceil(totalCount / safeLimit),
+        hasNext: offset + safeLimit < totalCount,
+        hasPrev: page > 1,
       },
     });
   } catch (error) {
@@ -131,16 +142,11 @@ export async function GET(request: NextRequest) {
       { status: 500 }
     );
   }
-}
+});
 
 // POST /api/sales - Create a new sales transaction
-export async function POST(request: NextRequest) {
+export const POST = withAuth(async function (request: AuthenticatedRequest) {
   try {
-    const session = await getServerSession(authOptions);
-    if (!session) {
-      return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
-    }
-
     const body = await request.json();
     const validatedData = createSaleSchema.parse(body);
 
@@ -303,4 +309,4 @@ export async function POST(request: NextRequest) {
       { status: 500 }
     );
   }
-}
+});

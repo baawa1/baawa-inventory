@@ -132,11 +132,9 @@ export async function POST(request: NextRequest) {
 
   try {
     const body = await request.json();
-    console.log("Received body:", body); // Debug log
 
     const validatedData: CreateStockAdditionData =
       createStockAdditionSchema.parse(body);
-    console.log("Validated data:", validatedData); // Debug log
 
     // Ensure user ID is properly parsed
     const userId = parseInt(session.user.id);

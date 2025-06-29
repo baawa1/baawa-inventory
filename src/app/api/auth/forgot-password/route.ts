@@ -13,8 +13,6 @@ export async function POST(request: NextRequest) {
     const body = await request.json();
     const validatedData = forgotPasswordSchema.parse(body);
 
-    console.log("🔧 Using Prisma for user lookup...");
-
     // Check if user exists
     const user = await prisma.user.findFirst({
       where: {
@@ -27,17 +25,6 @@ export async function POST(request: NextRequest) {
         firstName: true,
       },
     });
-
-    console.log("🔍 User lookup result:");
-    console.log("📧 Looking for email:", validatedData.email);
-    console.log("👤 User found:", !!user);
-    if (user) {
-      console.log("📊 User details:", {
-        id: user.id,
-        email: user.email,
-        first_name: user.firstName,
-      });
-    }
 
     // Always return success to prevent email enumeration attacks
     // But only send email if user actually exists
@@ -59,28 +46,13 @@ export async function POST(request: NextRequest) {
       const resetUrl = `${process.env.NEXTAUTH_URL}/reset-password?token=${resetToken}`;
 
       try {
-        console.log("🔄 Attempting to send password reset email...");
-        console.log("📧 Email:", validatedData.email);
-        console.log("🔗 Reset URL:", resetUrl);
-        console.log("👤 User name:", user.firstName);
-
         await emailService.sendPasswordResetEmail(validatedData.email, {
           firstName: user.firstName,
           resetLink: resetUrl,
           expiresInHours: 1,
         });
-
-        console.log("✅ Password reset email sent successfully");
       } catch (emailError) {
-        console.error("❌ Failed to send reset email:", emailError);
-        console.error("📧 Email service error details:", {
-          message:
-            emailError instanceof Error
-              ? emailError.message
-              : String(emailError),
-          stack: emailError instanceof Error ? emailError.stack : undefined,
-          name: emailError instanceof Error ? emailError.name : "Unknown",
-        });
+        console.error("Failed to send reset email:", emailError);
         // Don't expose email sending errors to the client
         // In production, you might want to queue this for retry
       }

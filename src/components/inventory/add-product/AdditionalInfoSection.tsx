@@ -1,0 +1,128 @@
+"use client";
+
+import { UseFormReturn } from "react-hook-form";
+import {
+  FormControl,
+  FormField,
+  FormItem,
+  FormLabel,
+  FormMessage,
+} from "@/components/ui/form";
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
+import { Textarea } from "@/components/ui/textarea";
+import { Badge } from "@/components/ui/badge";
+import type { CreateProductData } from "./types";
+
+interface AdditionalInfoSectionProps {
+  form: UseFormReturn<CreateProductData>;
+}
+
+export function AdditionalInfoSection({ form }: AdditionalInfoSectionProps) {
+  const getStatusColor = (status: string) => {
+    switch (status) {
+      case "active":
+        return "bg-green-100 text-green-800 border-green-200";
+      case "inactive":
+        return "bg-red-100 text-red-800 border-red-200";
+      case "discontinued":
+        return "bg-gray-100 text-gray-800 border-gray-200";
+      default:
+        return "bg-gray-100 text-gray-800 border-gray-200";
+    }
+  };
+
+  return (
+    <div className="space-y-4">
+      <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+        <FormField
+          control={form.control}
+          name="status"
+          render={({ field }) => (
+            <FormItem>
+              <FormLabel>Status</FormLabel>
+              <Select onValueChange={field.onChange} defaultValue={field.value}>
+                <FormControl>
+                  <SelectTrigger>
+                    <SelectValue placeholder="Select status" />
+                  </SelectTrigger>
+                </FormControl>
+                <SelectContent>
+                  <SelectItem value="active">
+                    <div className="flex items-center gap-2">
+                      <Badge
+                        variant="outline"
+                        className={getStatusColor("active")}
+                      >
+                        Active
+                      </Badge>
+                    </div>
+                  </SelectItem>
+                  <SelectItem value="inactive">
+                    <div className="flex items-center gap-2">
+                      <Badge
+                        variant="outline"
+                        className={getStatusColor("inactive")}
+                      >
+                        Inactive
+                      </Badge>
+                    </div>
+                  </SelectItem>
+                  <SelectItem value="discontinued">
+                    <div className="flex items-center gap-2">
+                      <Badge
+                        variant="outline"
+                        className={getStatusColor("discontinued")}
+                      >
+                        Discontinued
+                      </Badge>
+                    </div>
+                  </SelectItem>
+                </SelectContent>
+              </Select>
+              <FormMessage />
+            </FormItem>
+          )}
+        />
+
+        <div className="flex items-center">
+          <div className="text-sm text-muted-foreground">
+            Current Status:
+            <Badge
+              variant="outline"
+              className={`ml-2 ${getStatusColor(form.watch("status"))}`}
+            >
+              {form.watch("status") || "active"}
+            </Badge>
+          </div>
+        </div>
+      </div>
+
+      <FormField
+        control={form.control}
+        name="notes"
+        render={({ field }) => (
+          <FormItem>
+            <FormLabel>Notes</FormLabel>
+            <FormControl>
+              <Textarea
+                placeholder="Additional notes about this product"
+                className="resize-none"
+                rows={3}
+                {...field}
+                value={field.value || ""}
+                onChange={(e) => field.onChange(e.target.value || null)}
+              />
+            </FormControl>
+            <FormMessage />
+          </FormItem>
+        )}
+      />
+    </div>
+  );
+}
