@@ -8,6 +8,9 @@ import {
   emailSchema,
   phoneSchema,
   nameSchema,
+  passwordSchema,
+  simplePasswordSchema,
+  currentPasswordSchema,
 } from "./common";
 
 // User creation schema
@@ -15,7 +18,7 @@ export const createUserSchema = z.object({
   firstName: nameSchema,
   lastName: nameSchema,
   email: emailSchema,
-  password: z.string().min(6, "Password must be at least 6 characters"),
+  password: simplePasswordSchema,
   phone: phoneSchema.optional(),
   role: userRoleSchema.default("STAFF"),
   isActive: z.boolean().default(true),
@@ -30,10 +33,7 @@ export const createUserSchema = z.object({
 export const updateUserSchema = createUserSchema
   .partial()
   .extend({
-    password: z
-      .string()
-      .min(6, "Password must be at least 6 characters")
-      .optional(),
+    password: simplePasswordSchema.optional(),
   })
   .refine((data) => Object.keys(data).length > 0, {
     message: "At least one field must be provided for update",
@@ -62,20 +62,14 @@ export const userIdSchema = z.object({
 // User login schema (for future authentication)
 export const userLoginSchema = z.object({
   email: emailSchema,
-  password: z.string().min(8, "Password must be at least 8 characters"),
+  password: passwordSchema,
 });
 
 // User password change schema
 export const changePasswordSchema = z
   .object({
-    currentPassword: z.string().min(1, "Current password is required"),
-    newPassword: z
-      .string()
-      .min(8, "Password must be at least 8 characters")
-      .regex(
-        /^(?=.*[a-z])(?=.*[A-Z])(?=.*\d)/,
-        "Password must contain at least one lowercase letter, one uppercase letter, and one number"
-      ),
+    currentPassword: currentPasswordSchema,
+    newPassword: passwordSchema,
     confirmPassword: z.string(),
   })
   .refine((data) => data.newPassword === data.confirmPassword, {

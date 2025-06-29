@@ -131,8 +131,8 @@ export async function PUT(
       updateData.country = validatedData.country;
     if (validatedData.postalCode !== undefined)
       updateData.postalCode = validatedData.postalCode;
-    if (validatedData.taxId !== undefined)
-      updateData.taxNumber = validatedData.taxId;
+    if (validatedData.taxNumber !== undefined)
+      updateData.taxNumber = validatedData.taxNumber;
     if (validatedData.paymentTerms !== undefined)
       updateData.paymentTerms = validatedData.paymentTerms;
     if (validatedData.creditLimit !== undefined)

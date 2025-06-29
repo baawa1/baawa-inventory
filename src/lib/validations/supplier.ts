@@ -8,16 +8,12 @@ import {
   nameSchema,
 } from "./common";
 
-// Supplier creation schema
-export const createSupplierSchema = z.object({
-  name: nameSchema,
-  contactPerson: z
-    .string()
-    .max(255, "Contact person name must be 255 characters or less")
-    .optional()
-    .nullable(),
+// Base supplier schema for forms
+export const supplierFormSchema = z.object({
+  name: nameSchema.optional(),
+  contactPerson: z.string().optional().nullable(),
   email: emailSchema.optional().nullable(),
-  phone: phoneSchema,
+  phone: phoneSchema.optional().nullable(),
   address: z
     .string()
     .max(500, "Address must be 500 characters or less")
@@ -43,9 +39,15 @@ export const createSupplierSchema = z.object({
     .max(20, "Postal code must be 20 characters or less")
     .optional()
     .nullable(),
-  taxId: z
+  website: z
     .string()
-    .max(50, "Tax ID must be 50 characters or less")
+    .url("Website must be a valid URL")
+    .max(255, "Website must be 255 characters or less")
+    .optional()
+    .nullable(),
+  taxNumber: z
+    .string()
+    .max(100, "Tax number must be 100 characters or less")
     .optional()
     .nullable(),
   paymentTerms: z
@@ -58,7 +60,7 @@ export const createSupplierSchema = z.object({
     .positive("Credit limit must be positive")
     .optional()
     .nullable(),
-  isActive: z.boolean().default(true),
+  isActive: z.boolean().optional(),
   notes: z
     .string()
     .max(1000, "Notes must be 1000 characters or less")
@@ -66,12 +68,19 @@ export const createSupplierSchema = z.object({
     .nullable(),
 });
 
+// Supplier creation schema (requires name and isActive)
+export const createSupplierSchema = supplierFormSchema.extend({
+  name: nameSchema,
+  isActive: z.boolean(),
+});
+
 // Supplier update schema (all fields optional except validation rules)
-export const updateSupplierSchema = createSupplierSchema
-  .partial()
-  .refine((data) => Object.keys(data).length > 0, {
+export const updateSupplierSchema = supplierFormSchema.refine(
+  (data) => Object.keys(data).length > 0,
+  {
     message: "At least one field must be provided for update",
-  });
+  }
+);
 
 // Supplier query parameters schema
 export const supplierQuerySchema = paginationSchema.merge(searchSchema).extend({

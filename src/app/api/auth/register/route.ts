@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from "next/server";
 import { prisma } from "@/lib/db";
 import { emailService } from "@/lib/email";
 import { notifyAdmins } from "@/lib/utils/admin-notifications";
+import { withAuthRateLimit } from "@/lib/rate-limit";
 import bcrypt from "bcryptjs";
 import crypto from "crypto";
 import { z } from "zod";
@@ -17,7 +18,7 @@ const registerSchema = z.object({
 
 type RegisterData = z.infer<typeof registerSchema>;
 
-export async function POST(request: NextRequest) {
+async function handleRegister(request: NextRequest) {
   try {
     const body = await request.json();
 
@@ -154,3 +155,6 @@ export async function POST(request: NextRequest) {
     );
   }
 }
+
+// Apply rate limiting to registration endpoint
+export const POST = withAuthRateLimit(handleRegister);
