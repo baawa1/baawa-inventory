@@ -23,71 +23,25 @@ import { Alert, AlertDescription } from "@/components/ui/alert";
 import { Loader2, Save, ArrowLeft } from "lucide-react";
 import { toast } from "sonner";
 import Link from "next/link";
-import { phoneSchema, emailSchema } from "@/lib/validations/common";
+import { nameSchema } from "@/lib/validations/common";
 
-// Form validation schema
+// Form validation schema - simplified for form handling
 const supplierFormSchema = z.object({
-  name: z
-    .string()
-    .min(1, "Supplier name is required")
-    .max(255, "Name must be less than 255 characters"),
-  contactPerson: z
-    .string()
-    .max(255, "Contact person name must be less than 255 characters")
-    .optional()
-    .or(z.literal("")),
-  email: emailSchema.optional().or(z.literal("")),
-  phone: phoneSchema.optional().or(z.literal("")),
-  address: z
-    .string()
-    .max(500, "Address must be less than 500 characters")
-    .optional()
-    .or(z.literal("")),
-  city: z
-    .string()
-    .max(100, "City must be less than 100 characters")
-    .optional()
-    .or(z.literal("")),
-  state: z
-    .string()
-    .max(100, "State must be less than 100 characters")
-    .optional()
-    .or(z.literal("")),
-  country: z
-    .string()
-    .max(100, "Country must be less than 100 characters")
-    .optional()
-    .or(z.literal("")),
-  postalCode: z
-    .string()
-    .max(20, "Postal code must be less than 20 characters")
-    .optional()
-    .or(z.literal("")),
-  taxId: z
-    .string()
-    .max(50, "Tax ID must be less than 50 characters")
-    .optional()
-    .or(z.literal("")),
-  paymentTerms: z
-    .string()
-    .max(255, "Payment terms must be less than 255 characters")
-    .optional()
-    .or(z.literal("")),
-  creditLimit: z
-    .string()
-    .refine((val) => {
-      if (!val) return true;
-      const num = parseFloat(val);
-      return !isNaN(num) && num >= 0;
-    }, "Credit limit must be a valid positive number")
-    .optional()
-    .or(z.literal("")),
+  name: nameSchema,
+  contactPerson: z.string().optional(),
+  email: z.string().email("Invalid email format").optional().or(z.literal("")),
+  phone: z.string().optional(),
+  address: z.string().optional(),
+  city: z.string().optional(),
+  state: z.string().optional(),
+  country: z.string().optional(),
+  postalCode: z.string().optional(),
+  website: z.string().url("Invalid URL format").optional().or(z.literal("")),
+  taxNumber: z.string().optional(),
+  paymentTerms: z.string().optional(),
+  creditLimit: z.string().optional(),
   isActive: z.boolean(),
-  notes: z
-    .string()
-    .max(1000, "Notes must be less than 1000 characters")
-    .optional()
-    .or(z.literal("")),
+  notes: z.string().optional(),
 });
 
 type SupplierFormData = z.infer<typeof supplierFormSchema>;
@@ -109,7 +63,8 @@ export default function AddSupplierForm() {
       state: "",
       country: "",
       postalCode: "",
-      taxId: "",
+      website: "",
+      taxNumber: "",
       paymentTerms: "",
       creditLimit: "",
       isActive: true,
@@ -122,7 +77,7 @@ export default function AddSupplierForm() {
       setIsSubmitting(true);
       setSubmitError(null);
 
-      // Transform data for API
+      // Transform form data to match API expectations
       const apiData = {
         name: data.name,
         contactPerson: data.contactPerson || null,
@@ -133,7 +88,8 @@ export default function AddSupplierForm() {
         state: data.state || null,
         country: data.country || null,
         postalCode: data.postalCode || null,
-        taxId: data.taxId || null,
+        website: data.website || null,
+        taxNumber: data.taxNumber || null,
         paymentTerms: data.paymentTerms || null,
         creditLimit: data.creditLimit ? parseFloat(data.creditLimit) : null,
         isActive: data.isActive,
@@ -153,17 +109,15 @@ export default function AddSupplierForm() {
         throw new Error(errorData.error || "Failed to create supplier");
       }
 
-      const responseData = await response.json();
+      const supplier = await response.json();
       toast.success("Supplier created successfully!");
-
-      // Redirect to suppliers list
-      router.push("/inventory/suppliers");
+      router.push("/dashboard/inventory/suppliers");
     } catch (error) {
       console.error("Error creating supplier:", error);
-      const errorMessage =
-        error instanceof Error ? error.message : "Failed to create supplier";
-      setSubmitError(errorMessage);
-      toast.error(errorMessage);
+      setSubmitError(
+        error instanceof Error ? error.message : "An unexpected error occurred"
+      );
+      toast.error("Failed to create supplier");
     } finally {
       setIsSubmitting(false);
     }
@@ -171,24 +125,21 @@ export default function AddSupplierForm() {
 
   return (
     <div className="space-y-6">
-      {/* Header */}
-      <div className="flex items-center gap-4">
-        <Link href="/inventory/suppliers">
+      <div className="flex items-center space-x-2">
+        <Link href="/dashboard/inventory/suppliers">
           <Button variant="outline" size="sm">
-            <ArrowLeft className="h-4 w-4 mr-2" />
+            <ArrowLeft className="h-4 w-4 mr-1" />
             Back to Suppliers
           </Button>
         </Link>
       </div>
 
-      {/* Error Alert */}
       {submitError && (
         <Alert variant="destructive">
           <AlertDescription>{submitError}</AlertDescription>
         </Alert>
       )}
 
-      {/* Form */}
       <Form {...form}>
         <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-6">
           {/* Basic Information */}
@@ -197,92 +148,87 @@ export default function AddSupplierForm() {
               <CardTitle>Basic Information</CardTitle>
             </CardHeader>
             <CardContent className="space-y-4">
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                <FormField
-                  control={form.control}
-                  name="name"
-                  render={({ field }) => (
-                    <FormItem>
-                      <FormLabel>Supplier Name *</FormLabel>
-                      <FormControl>
-                        <Input placeholder="Enter supplier name" {...field} />
-                      </FormControl>
-                      <FormMessage />
-                    </FormItem>
-                  )}
-                />
-
-                <FormField
-                  control={form.control}
-                  name="contactPerson"
-                  render={({ field }) => (
-                    <FormItem>
-                      <FormLabel>Contact Person</FormLabel>
-                      <FormControl>
-                        <Input
-                          placeholder="Enter contact person name"
-                          {...field}
-                        />
-                      </FormControl>
-                      <FormMessage />
-                    </FormItem>
-                  )}
-                />
-
-                <FormField
-                  control={form.control}
-                  name="email"
-                  render={({ field }) => (
-                    <FormItem>
-                      <FormLabel>Email</FormLabel>
-                      <FormControl>
-                        <Input
-                          type="email"
-                          placeholder="Enter email address"
-                          {...field}
-                        />
-                      </FormControl>
-                      <FormMessage />
-                    </FormItem>
-                  )}
-                />
-
-                <FormField
-                  control={form.control}
-                  name="phone"
-                  render={({ field }) => (
-                    <FormItem>
-                      <FormLabel>Phone</FormLabel>
-                      <FormControl>
-                        <Input
-                          type="tel"
-                          placeholder="Enter phone number"
-                          {...field}
-                        />
-                      </FormControl>
-                      <FormMessage />
-                    </FormItem>
-                  )}
-                />
-              </div>
+              <FormField
+                control={form.control}
+                name="name"
+                render={({ field }) => (
+                  <FormItem>
+                    <FormLabel>Supplier Name *</FormLabel>
+                    <FormControl>
+                      <Input placeholder="Enter supplier name" {...field} />
+                    </FormControl>
+                    <FormMessage />
+                  </FormItem>
+                )}
+              />
 
               <FormField
                 control={form.control}
-                name="isActive"
+                name="contactPerson"
                 render={({ field }) => (
-                  <FormItem className="flex items-center justify-between rounded-lg border p-4">
-                    <div className="space-y-0.5">
-                      <FormLabel className="text-base">Active Status</FormLabel>
-                      <FormDescription>
-                        Enable this supplier for new orders and transactions
-                      </FormDescription>
-                    </div>
+                  <FormItem>
+                    <FormLabel>Contact Person</FormLabel>
                     <FormControl>
-                      <Switch
-                        checked={field.value}
-                        onCheckedChange={field.onChange}
+                      <Input
+                        placeholder="Enter contact person name"
+                        {...field}
                       />
                     </FormControl>
+                    <FormMessage />
+                  </FormItem>
+                )}
+              />
+
+              <FormField
+                control={form.control}
+                name="email"
+                render={({ field }) => (
+                  <FormItem>
+                    <FormLabel>Email</FormLabel>
+                    <FormControl>
+                      <Input
+                        type="email"
+                        placeholder="Enter email address"
+                        {...field}
+                      />
+                    </FormControl>
+                    <FormMessage />
+                  </FormItem>
+                )}
+              />
+
+              <FormField
+                control={form.control}
+                name="phone"
+                render={({ field }) => (
+                  <FormItem>
+                    <FormLabel>Phone</FormLabel>
+                    <FormControl>
+                      <Input
+                        type="tel"
+                        placeholder="Enter phone number"
+                        {...field}
+                      />
+                    </FormControl>
+                    <FormMessage />
+                  </FormItem>
+                )}
+              />
+
+              <FormField
+                control={form.control}
+                name="website"
+                render={({ field }) => (
+                  <FormItem>
+                    <FormLabel>Website</FormLabel>
+                    <FormControl>
+                      <Input
+                        type="url"
+                        placeholder="Enter website URL"
+                        {...field}
+                      />
+                    </FormControl>
+                    <FormMessage />
                   </FormItem>
                 )}
               />
@@ -313,7 +259,7 @@ export default function AddSupplierForm() {
                 )}
               />
 
-              <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                 <FormField
                   control={form.control}
                   name="city"
@@ -355,21 +301,21 @@ export default function AddSupplierForm() {
                     </FormItem>
                   )}
                 />
-              </div>
 
-              <FormField
-                control={form.control}
-                name="postalCode"
-                render={({ field }) => (
-                  <FormItem className="md:w-1/3">
-                    <FormLabel>Postal Code</FormLabel>
-                    <FormControl>
-                      <Input placeholder="Enter postal code" {...field} />
-                    </FormControl>
-                    <FormMessage />
-                  </FormItem>
-                )}
-              />
+                <FormField
+                  control={form.control}
+                  name="postalCode"
+                  render={({ field }) => (
+                    <FormItem>
+                      <FormLabel>Postal Code</FormLabel>
+                      <FormControl>
+                        <Input placeholder="Enter postal code" {...field} />
+                      </FormControl>
+                      <FormMessage />
+                    </FormItem>
+                  )}
+                />
+              </div>
             </CardContent>
           </Card>
 
@@ -379,44 +325,19 @@ export default function AddSupplierForm() {
               <CardTitle>Business Information</CardTitle>
             </CardHeader>
             <CardContent className="space-y-4">
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                <FormField
-                  control={form.control}
-                  name="taxId"
-                  render={({ field }) => (
-                    <FormItem>
-                      <FormLabel>Tax ID</FormLabel>
-                      <FormControl>
-                        <Input
-                          placeholder="Enter tax identification number"
-                          {...field}
-                        />
-                      </FormControl>
-                      <FormMessage />
-                    </FormItem>
-                  )}
-                />
-
-                <FormField
-                  control={form.control}
-                  name="creditLimit"
-                  render={({ field }) => (
-                    <FormItem>
-                      <FormLabel>Credit Limit</FormLabel>
-                      <FormControl>
-                        <Input
-                          type="number"
-                          step="0.01"
-                          min="0"
-                          placeholder="0.00"
-                          {...field}
-                        />
-                      </FormControl>
-                      <FormMessage />
-                    </FormItem>
-                  )}
-                />
-              </div>
+              <FormField
+                control={form.control}
+                name="taxNumber"
+                render={({ field }) => (
+                  <FormItem>
+                    <FormLabel>Tax Number</FormLabel>
+                    <FormControl>
+                      <Input placeholder="Enter tax number" {...field} />
+                    </FormControl>
+                    <FormMessage />
+                  </FormItem>
+                )}
+              />
 
               <FormField
                 control={form.control}
@@ -426,18 +347,67 @@ export default function AddSupplierForm() {
                     <FormLabel>Payment Terms</FormLabel>
                     <FormControl>
                       <Input
-                        placeholder="e.g., Net 30, COD, 2/10 Net 30"
+                        placeholder="e.g., Net 30, Due on receipt"
+                        {...field}
+                      />
+                    </FormControl>
+                    <FormMessage />
+                  </FormItem>
+                )}
+              />
+
+              <FormField
+                control={form.control}
+                name="creditLimit"
+                render={({ field }) => (
+                  <FormItem>
+                    <FormLabel>Credit Limit</FormLabel>
+                    <FormControl>
+                      <Input
+                        type="number"
+                        step="0.01"
+                        min="0"
+                        placeholder="Enter credit limit"
                         {...field}
                       />
                     </FormControl>
                     <FormDescription>
-                      Describe the payment terms for this supplier
+                      Maximum credit amount for this supplier
                     </FormDescription>
                     <FormMessage />
                   </FormItem>
                 )}
               />
 
+              <FormField
+                control={form.control}
+                name="isActive"
+                render={({ field }) => (
+                  <FormItem className="flex flex-row items-center justify-between rounded-lg border p-4">
+                    <div className="space-y-0.5">
+                      <FormLabel className="text-base">Active Status</FormLabel>
+                      <FormDescription>
+                        Enable or disable this supplier
+                      </FormDescription>
+                    </div>
+                    <FormControl>
+                      <Switch
+                        checked={field.value}
+                        onCheckedChange={field.onChange}
+                      />
+                    </FormControl>
+                  </FormItem>
+                )}
+              />
+            </CardContent>
+          </Card>
+
+          {/* Additional Information */}
+          <Card>
+            <CardHeader>
+              <CardTitle>Additional Information</CardTitle>
+            </CardHeader>
+            <CardContent>
               <FormField
                 control={form.control}
                 name="notes"
@@ -448,7 +418,7 @@ export default function AddSupplierForm() {
                       <Textarea
                         placeholder="Enter any additional notes about this supplier"
                         className="resize-none"
-                        rows={3}
+                        rows={4}
                         {...field}
                       />
                     </FormControl>
@@ -460,24 +430,26 @@ export default function AddSupplierForm() {
           </Card>
 
           {/* Submit Button */}
-          <div className="flex justify-end gap-4">
-            <Link href="/inventory/suppliers">
-              <Button type="button" variant="outline">
-                Cancel
-              </Button>
-            </Link>
+          <div className="flex gap-4">
             <Button type="submit" disabled={isSubmitting}>
               {isSubmitting ? (
                 <>
-                  <Loader2 className="h-4 w-4 mr-2 animate-spin" />
+                  <Loader2 className="mr-2 h-4 w-4 animate-spin" />
                   Creating...
                 </>
               ) : (
                 <>
-                  <Save className="h-4 w-4 mr-2" />
+                  <Save className="mr-2 h-4 w-4" />
                   Create Supplier
                 </>
               )}
+            </Button>
+            <Button
+              type="button"
+              variant="outline"
+              onClick={() => router.push("/dashboard/inventory/suppliers")}
+            >
+              Cancel
             </Button>
           </div>
         </form>

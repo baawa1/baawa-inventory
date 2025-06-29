@@ -30,7 +30,7 @@ export default function AddSupplierForm() {
       state: null,
       country: null,
       postalCode: null,
-      taxId: null,
+      taxNumber: null,
       paymentTerms: null,
       creditLimit: null,
       isActive: true,

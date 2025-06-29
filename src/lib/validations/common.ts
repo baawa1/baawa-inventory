@@ -76,8 +76,7 @@ export const phoneSchema = z
   .regex(
     /^(\+234[7-9]\d{9}|0[7-9]\d{9})$/,
     "Phone number must be in Nigerian format: +2347087367278 or 07039893476"
-  )
-  .optional();
+  );
 
 export const priceSchema = z
   .number()
@@ -103,6 +102,23 @@ export const nameSchema = z
   .min(1, "Name is required")
   .max(255, "Name must be 255 characters or less")
   .trim();
+
+// Password validation schemas
+export const passwordSchema = z
+  .string()
+  .min(8, "Password must be at least 8 characters")
+  .regex(
+    /^(?=.*[a-z])(?=.*[A-Z])(?=.*\d)/,
+    "Password must contain at least one lowercase letter, one uppercase letter, and one number"
+  );
+
+export const simplePasswordSchema = z
+  .string()
+  .min(6, "Password must be at least 6 characters");
+
+export const currentPasswordSchema = z
+  .string()
+  .min(1, "Current password is required");
 
 // Error handling utility
 export function formatZodError(error: z.ZodError): Record<string, string> {

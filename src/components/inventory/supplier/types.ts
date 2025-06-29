@@ -18,7 +18,7 @@ export interface Supplier {
   state?: string | null;
   country?: string | null;
   postalCode?: string | null;
-  taxId?: string | null;
+  taxNumber?: string | null;
   paymentTerms?: string | null;
   creditLimit?: number | null;
   isActive: boolean;

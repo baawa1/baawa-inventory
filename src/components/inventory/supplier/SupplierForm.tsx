@@ -3,7 +3,7 @@
 import React from "react";
 import { UseFormReturn } from "react-hook-form";
 import {
-  updateSupplierSchema,
+  supplierFormSchema,
   createSupplierSchema,
 } from "@/lib/validations/supplier";
 import { z } from "zod";
@@ -23,12 +23,11 @@ import {
 } from "@/components/ui/form";
 import { IconLoader2, IconDeviceFloppy } from "@tabler/icons-react";
 
-type SupplierFormData = z.infer<typeof updateSupplierSchema>;
-type CreateSupplierFormData = z.infer<typeof createSupplierSchema>;
+type SupplierFormData = z.infer<typeof supplierFormSchema>;
 
 interface SupplierFormProps {
-  form: UseFormReturn<SupplierFormData> | UseFormReturn<CreateSupplierFormData>;
-  onSubmit: (data: SupplierFormData | CreateSupplierFormData) => Promise<void>;
+  form: UseFormReturn<SupplierFormData>;
+  onSubmit: (data: SupplierFormData) => Promise<void>;
   onCancel: () => void;
   isSubmitting: boolean;
   isEditing?: boolean;
@@ -249,13 +248,13 @@ export function SupplierForm({
             <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
               <FormField
                 control={form.control}
-                name="taxId"
+                name="taxNumber"
                 render={({ field }) => (
                   <FormItem>
-                    <FormLabel>Tax ID</FormLabel>
+                    <FormLabel>Tax Number</FormLabel>
                     <FormControl>
                       <Input
-                        placeholder="Enter tax ID"
+                        placeholder="Enter tax number"
                         {...field}
                         value={field.value || ""}
                         disabled={isSubmitting}

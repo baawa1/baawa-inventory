@@ -6,6 +6,7 @@ import {
   createStockAdjustmentSchema,
   stockAdjustmentQuerySchema,
 } from "@/lib/validations/stock-adjustment";
+import { withApiRateLimit } from "@/lib/rate-limit";
 
 // GET /api/stock-adjustments - List stock adjustments with optional filtering and pagination
 export async function GET(request: NextRequest) {
@@ -121,7 +122,7 @@ export async function GET(request: NextRequest) {
 }
 
 // POST /api/stock-adjustments - Create a new stock adjustment
-export async function POST(request: NextRequest) {
+export const POST = withApiRateLimit(async function (request: NextRequest) {
   try {
     const session = await getServerSession(authOptions);
     if (!session) {
@@ -287,4 +288,4 @@ export async function POST(request: NextRequest) {
       { status: 500 }
     );
   }
-}
+});
