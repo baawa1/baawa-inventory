@@ -105,7 +105,7 @@ export const nameSchema = z
   .trim();
 
 // Error handling utility
-export function formatZodError(error: z.ZodError) {
+export function formatZodError(error: z.ZodError): Record<string, string> {
   return error.errors.reduce(
     (acc, err) => {
       const path = err.path.join(".");
@@ -116,17 +116,20 @@ export function formatZodError(error: z.ZodError) {
   );
 }
 
-// Validation middleware helper
-export function validateRequest<T = any>(
-  schema: z.ZodTypeAny,
-  data: unknown
-): {
+// Type-safe validation result
+export interface ValidationResult<T> {
   success: boolean;
   data?: T;
   errors?: Record<string, string>;
-} {
+}
+
+// Validation middleware helper with proper typing
+export function validateRequest<T>(
+  schema: z.ZodType<T>,
+  data: unknown
+): ValidationResult<T> {
   try {
-    const validatedData = schema.parse(data) as T;
+    const validatedData = schema.parse(data);
     return { success: true, data: validatedData };
   } catch (error) {
     if (error instanceof z.ZodError) {
@@ -135,3 +138,114 @@ export function validateRequest<T = any>(
     return { success: false, errors: { general: "Validation failed" } };
   }
 }
+
+// Async validation helper for API routes
+export async function validateRequestBody<T>(
+  schema: z.ZodType<T>,
+  request: Request
+): Promise<ValidationResult<T>> {
+  try {
+    const body = await request.json();
+    return validateRequest(schema, body);
+  } catch (error) {
+    return {
+      success: false,
+      errors: { general: "Invalid JSON in request body" },
+    };
+  }
+}
+
+// Query parameter validation helper
+export function validateSearchParams<T>(
+  schema: z.ZodType<T>,
+  searchParams: URLSearchParams
+): ValidationResult<T> {
+  try {
+    const params: Record<string, string | string[]> = {};
+
+    // Convert URLSearchParams to a plain object
+    searchParams.forEach((value, key) => {
+      if (params[key]) {
+        // Handle multiple values for the same key
+        if (Array.isArray(params[key])) {
+          (params[key] as string[]).push(value);
+        } else {
+          params[key] = [params[key] as string, value];
+        }
+      } else {
+        params[key] = value;
+      }
+    });
+
+    return validateRequest(schema, params);
+  } catch (error) {
+    return {
+      success: false,
+      errors: { general: "Invalid search parameters" },
+    };
+  }
+}
+
+// Standard error response format for API routes
+export interface ApiError {
+  message: string;
+  errors?: Record<string, string>;
+  code?: string;
+}
+
+// Create standardized error response
+export function createValidationError(
+  message: string,
+  errors?: Record<string, string>,
+  code?: string
+): ApiError {
+  return {
+    message,
+    errors,
+    code: code || "VALIDATION_ERROR",
+  };
+}
+
+// Common validation patterns for forms
+export const baseFormValidations = {
+  required: (fieldName: string) =>
+    z.string().min(1, `${fieldName} is required`),
+
+  optionalString: (maxLength: number = 255) =>
+    z.string().max(maxLength).optional().nullable(),
+
+  optionalNumber: () => z.number().optional().nullable(),
+
+  currency: () => priceSchema,
+
+  percentage: () =>
+    z
+      .number()
+      .min(0, "Percentage cannot be negative")
+      .max(100, "Percentage cannot exceed 100"),
+
+  positiveInteger: () => z.number().int().positive("Must be a positive number"),
+
+  optionalPositiveInteger: () =>
+    z.number().int().positive().optional().nullable(),
+} as const;
+
+// Validation schema builders for common entities
+export const entityValidations = {
+  withTimestamps: <T extends z.ZodRawShape>(baseSchema: z.ZodObject<T>) =>
+    baseSchema.extend({
+      createdAt: z.date().optional(),
+      updatedAt: z.date().optional(),
+    }),
+
+  withId: <T extends z.ZodRawShape>(baseSchema: z.ZodObject<T>) =>
+    baseSchema.extend({
+      id: idSchema.optional(),
+    }),
+
+  withAudit: <T extends z.ZodRawShape>(baseSchema: z.ZodObject<T>) =>
+    baseSchema.extend({
+      createdBy: idSchema.optional(),
+      updatedBy: idSchema.optional(),
+    }),
+} as const;

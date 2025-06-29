@@ -76,32 +76,32 @@ export type EmailTemplateType =
 /**
  * Template data interfaces for type safety
  */
-export interface WelcomeEmailData {
+export interface WelcomeEmailData extends Record<string, unknown> {
   firstName: string;
   email: string;
   companyName?: string;
 }
 
-export interface EmailVerificationData {
+export interface EmailVerificationData extends Record<string, unknown> {
   firstName: string;
   verificationLink: string;
   expiresInHours: number;
 }
 
-export interface PasswordResetData {
+export interface PasswordResetData extends Record<string, unknown> {
   firstName: string;
   resetLink: string;
   expiresInHours: number;
 }
 
-export interface UserApprovalData {
+export interface UserApprovalData extends Record<string, unknown> {
   firstName: string;
   adminName: string;
   dashboardLink: string;
   role: string;
 }
 
-export interface AdminNotificationData {
+export interface AdminNotificationData extends Record<string, unknown> {
   userFirstName: string;
   userLastName: string;
   userEmail: string;
@@ -110,14 +110,14 @@ export interface AdminNotificationData {
   registrationDate: string;
 }
 
-export interface UserRejectionData {
+export interface UserRejectionData extends Record<string, unknown> {
   firstName: string;
   adminName: string;
   rejectionReason?: string;
   supportEmail: string;
 }
 
-export interface RoleChangeData {
+export interface RoleChangeData extends Record<string, unknown> {
   firstName: string;
   oldRole: string;
   newRole: string;
@@ -125,7 +125,7 @@ export interface RoleChangeData {
   dashboardLink: string;
 }
 
-export interface AdminDigestData {
+export interface AdminDigestData extends Record<string, unknown> {
   adminName: string;
   newUsersCount: number;
   pendingUsersCount: number;
@@ -140,31 +140,34 @@ export interface AdminDigestData {
   digestPeriod: string;
 }
 
-export interface UserSuspensionData {
+export interface UserSuspensionData extends Record<string, unknown> {
   firstName: string;
   lastName: string;
   reason: string;
   supportEmail?: string;
 }
 
-export interface UserReactivationData {
+export interface UserReactivationData extends Record<string, unknown> {
   firstName: string;
   lastName: string;
   loginLink?: string;
 }
 
 /**
- * Union type for all template data
+ * Union type for all template data with proper mapping
  */
-export interface EmailTemplateData {
+export type EmailTemplateData = {
   welcome: WelcomeEmailData;
-  emailVerification: EmailVerificationData;
-  passwordReset: PasswordResetData;
-  userApproval: UserApprovalData;
-  userRejection: UserRejectionData;
-  roleChange: RoleChangeData;
-  adminNotification: AdminNotificationData;
-  adminDigest: AdminDigestData;
-  userSuspension: UserSuspensionData;
-  userReactivation: UserReactivationData;
-}
+  email_verification: EmailVerificationData;
+  password_reset: PasswordResetData;
+  password_reset_confirmation: PasswordResetData;
+  user_approved: UserApprovalData;
+  user_rejected: UserRejectionData;
+  admin_new_user_pending: AdminNotificationData;
+  admin_user_registered: AdminNotificationData;
+  admin_digest: AdminDigestData;
+  account_locked: UserSuspensionData;
+  role_changed: RoleChangeData;
+  user_suspension: UserSuspensionData;
+  user_reactivation: UserReactivationData;
+};

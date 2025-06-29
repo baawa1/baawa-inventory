@@ -6,23 +6,27 @@ import {
   createSupplierSchema,
   supplierQuerySchema,
 } from "@/lib/validations/supplier";
+import { handleApiError, createApiResponse } from "@/lib/api-error-handler";
 
 // GET /api/suppliers - List suppliers with optional filtering and pagination
 export async function GET(request: NextRequest) {
   try {
     const session = await getServerSession(authOptions);
     if (!session) {
-      return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+      return handleApiError(new Error("Unauthorized"), 401);
+    }
+
+    // Check permissions
+    if (!["ADMIN", "MANAGER", "EMPLOYEE"].includes(session.user.role)) {
+      return handleApiError(new Error("Insufficient permissions"), 403);
     }
 
     const { searchParams } = new URL(request.url);
 
     // Convert search params to proper types for validation
     const queryParams = {
-      page: searchParams.get("page") ? parseInt(searchParams.get("page")!) : 1,
-      limit: searchParams.get("limit")
-        ? parseInt(searchParams.get("limit")!)
-        : 10,
+      page: Math.max(parseInt(searchParams.get("page") || "1"), 1),
+      limit: Math.min(parseInt(searchParams.get("limit") || "10"), 100),
       search: searchParams.get("search") || undefined,
       isActive: searchParams.get("isActive")
         ? searchParams.get("isActive") === "true"
@@ -77,7 +81,6 @@ export async function GET(request: NextRequest) {
           _count: {
             select: {
               products: true,
-              // Note: purchaseOrders relation may need to be added to schema if needed
             },
           },
         },
@@ -102,19 +105,19 @@ export async function GET(request: NextRequest) {
       },
     }));
 
-    return NextResponse.json({
-      suppliers,
-      total: totalCount,
-      page,
-      limit,
-      totalPages: Math.ceil(totalCount / limit),
+    return createApiResponse({
+      success: true,
+      data: suppliers,
+      pagination: {
+        total: totalCount,
+        page,
+        limit,
+        totalPages: Math.ceil(totalCount / limit),
+        offset,
+      },
     });
   } catch (error) {
-    console.error("Error in GET /api/suppliers:", error);
-    return NextResponse.json(
-      { error: "Internal server error" },
-      { status: 500 }
-    );
+    return handleApiError(error);
   }
 }
 
@@ -123,7 +126,12 @@ export async function POST(request: NextRequest) {
   try {
     const session = await getServerSession(authOptions);
     if (!session) {
-      return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+      return handleApiError(new Error("Unauthorized"), 401);
+    }
+
+    // Check permissions
+    if (!["ADMIN", "MANAGER"].includes(session.user.role)) {
+      return handleApiError(new Error("Insufficient permissions"), 403);
     }
 
     const body = await request.json();
@@ -136,9 +144,9 @@ export async function POST(request: NextRequest) {
     });
 
     if (existingSupplier) {
-      return NextResponse.json(
-        { error: "Supplier with this name already exists" },
-        { status: 409 }
+      return handleApiError(
+        new Error("Supplier with this name already exists"),
+        409
       );
     }
 
@@ -162,12 +170,8 @@ export async function POST(request: NextRequest) {
       },
     });
 
-    return NextResponse.json({ data: supplier }, { status: 201 });
+    return createApiResponse({ data: supplier }, 201);
   } catch (error) {
-    console.error("Error in POST /api/suppliers:", error);
-    return NextResponse.json(
-      { error: "Internal server error" },
-      { status: 500 }
-    );
+    return handleApiError(error);
   }
 }

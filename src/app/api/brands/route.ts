@@ -3,13 +3,14 @@ import { prisma } from "@/lib/db";
 import { getServerSession } from "next-auth";
 import { authOptions } from "@/lib/auth";
 import { brandQuerySchema, createBrandSchema } from "@/lib/validations/brand";
+import { handleApiError, createApiResponse } from "@/lib/api-error-handler";
 
 // GET /api/brands - List brands with pagination and filtering
 export async function GET(request: NextRequest) {
   try {
     const session = await getServerSession(authOptions);
     if (!session) {
-      return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+      return handleApiError(new Error("Unauthorized"), 401);
     }
 
     const { searchParams } = new URL(request.url);
@@ -41,13 +42,12 @@ export async function GET(request: NextRequest) {
         if (brands.length > 0) {
           const uniqueBrands = brands.map((brand) => brand.name).sort();
 
-          return NextResponse.json({
+          return createApiResponse({
             success: true,
             brands: uniqueBrands,
           });
         }
       } catch (brandError) {
-        // If there's an error, fall back to all brands
         console.log("Falling back to all brands:", brandError);
       }
 
@@ -66,7 +66,7 @@ export async function GET(request: NextRequest) {
 
       const uniqueBrands = brandData.map((brand) => brand.name).sort();
 
-      return NextResponse.json({
+      return createApiResponse({
         success: true,
         brands: uniqueBrands,
       });
@@ -75,7 +75,7 @@ export async function GET(request: NextRequest) {
     // Parse query parameters with safe defaults and performance optimization
     const isActiveParam = searchParams.get("isActive");
     const limitParam = searchParams.get("limit");
-    const limit = limitParam ? Math.min(parseInt(limitParam), 100) : 50; // Increased default and cap
+    const limit = limitParam ? Math.min(parseInt(limitParam), 100) : 50;
     const search = searchParams.get("search");
 
     // For simple dropdown requests, optimize the query
@@ -95,7 +95,7 @@ export async function GET(request: NextRequest) {
         take: limit,
       });
 
-      return NextResponse.json({
+      return createApiResponse({
         success: true,
         data: brands,
       });
@@ -106,22 +106,12 @@ export async function GET(request: NextRequest) {
       search,
       isActive: isActiveParam ? isActiveParam === "true" : undefined,
       limit,
-      offset: parseInt(searchParams.get("offset") || "0"),
+      offset: Math.max(parseInt(searchParams.get("offset") || "0"), 0),
       sortBy: searchParams.get("sortBy") || "name",
       sortOrder: searchParams.get("sortOrder") || "asc",
     };
 
-    let validatedQuery;
-    try {
-      validatedQuery = brandQuerySchema.parse(queryParams);
-    } catch (validationError) {
-      console.error("Validation error:", validationError);
-      return NextResponse.json(
-        { error: "Invalid query parameters", details: validationError },
-        { status: 400 }
-      );
-    }
-
+    const validatedQuery = brandQuerySchema.parse(queryParams);
     const { offset = 0, sortBy = "name", sortOrder = "asc" } = validatedQuery;
 
     // Build where clause for Prisma
@@ -176,7 +166,7 @@ export async function GET(request: NextRequest) {
 
     const page = Math.floor(offset / limit) + 1;
 
-    return NextResponse.json({
+    return createApiResponse({
       success: true,
       data: brands,
       pagination: {
@@ -184,15 +174,11 @@ export async function GET(request: NextRequest) {
         limit,
         offset,
         total: count,
-        pages: Math.ceil(count / limit),
+        totalPages: Math.ceil(count / limit),
       },
     });
   } catch (error) {
-    console.error("Brands API error:", error);
-    return NextResponse.json(
-      { error: "Internal server error" },
-      { status: 500 }
-    );
+    return handleApiError(error);
   }
 }
 
@@ -201,7 +187,12 @@ export async function POST(request: NextRequest) {
   try {
     const session = await getServerSession(authOptions);
     if (!session) {
-      return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+      return handleApiError(new Error("Unauthorized"), 401);
+    }
+
+    // Check permissions
+    if (!["ADMIN", "MANAGER"].includes(session.user.role)) {
+      return handleApiError(new Error("Insufficient permissions"), 403);
     }
 
     const body = await request.json();
@@ -214,10 +205,7 @@ export async function POST(request: NextRequest) {
     });
 
     if (existingBrand) {
-      return NextResponse.json(
-        { error: "Brand name already exists" },
-        { status: 400 }
-      );
+      return handleApiError(new Error("Brand name already exists"), 400);
     }
 
     // Create the brand with Prisma
@@ -230,15 +218,14 @@ export async function POST(request: NextRequest) {
       },
     });
 
-    return NextResponse.json({
-      success: true,
-      brand,
-    });
-  } catch (error) {
-    console.error("Create brand API error:", error);
-    return NextResponse.json(
-      { error: "Internal server error" },
-      { status: 500 }
+    return createApiResponse(
+      {
+        success: true,
+        brand,
+      },
+      201
     );
+  } catch (error) {
+    return handleApiError(error);
   }
 }

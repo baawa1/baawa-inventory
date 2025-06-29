@@ -4,7 +4,7 @@
  */
 
 import { getSession, signOut } from "next-auth/react";
-import { createServerSupabaseClient } from "@/lib/supabase-server";
+import { createServerSupabaseClient } from "./supabase-server";
 
 export interface SessionInfo {
   isValid: boolean;
@@ -227,7 +227,7 @@ export function useSessionActivity() {
 
       try {
         const session = await getSession();
-        if (session?.user?.id) {
+        if (session?.user?.email) {
           // Could make an API call to update activity
           // For now, just refresh the session
           await refreshSession();

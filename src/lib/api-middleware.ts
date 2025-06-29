@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from "next/server";
 import { getServerSession } from "next-auth/next";
 import { authOptions } from "@/lib/auth";
 import { UserRole, getRolePermissions, RolePermissions } from "@/lib/auth-rbac";
+import { withErrorHandling } from "@/lib/api-error-handler";
 
 export interface AuthenticatedRequest extends NextRequest {
   user?: {
@@ -15,21 +16,42 @@ export interface AuthenticatedRequest extends NextRequest {
 export function withAuth(
   handler: (req: AuthenticatedRequest) => Promise<NextResponse>
 ) {
-  return async (req: NextRequest) => {
+  return withErrorHandling(async (req: NextRequest) => {
     const session = await getServerSession(authOptions);
 
     if (!session?.user) {
       return NextResponse.json(
-        { error: "Authentication required" },
+        { error: "Authentication required", code: "UNAUTHORIZED" },
+        { status: 401 }
+      );
+    }
+
+    // Validate user object structure instead of using type assertion
+    const user = session.user;
+    if (
+      !user.id ||
+      !user.email ||
+      !user.role ||
+      typeof user.id !== "string" ||
+      typeof user.email !== "string" ||
+      typeof user.role !== "string"
+    ) {
+      return NextResponse.json(
+        { error: "Invalid user session", code: "INVALID_SESSION" },
         { status: 401 }
       );
     }
 
     const authenticatedReq = req as AuthenticatedRequest;
-    authenticatedReq.user = session.user as any;
+    authenticatedReq.user = {
+      id: user.id,
+      email: user.email,
+      name: user.name || "",
+      role: user.role as UserRole,
+    };
 
     return handler(authenticatedReq);
-  };
+  });
 }
 
 export function withRole(requiredRole: UserRole | UserRole[]) {
@@ -50,7 +72,10 @@ export function withRole(requiredRole: UserRole | UserRole[]) {
 
       if (!allowedRoles.includes(userRole)) {
         return NextResponse.json(
-          { error: `Role ${allowedRoles.join(" or ")} required` },
+          {
+            error: `Role ${allowedRoles.join(" or ")} required`,
+            code: "INSUFFICIENT_ROLE",
+          },
           { status: 403 }
         );
       }
@@ -70,7 +95,10 @@ export function withPermission(requiredPermission: keyof RolePermissions) {
 
       if (!permissions[requiredPermission]) {
         return NextResponse.json(
-          { error: `Permission ${requiredPermission} required` },
+          {
+            error: `Permission ${requiredPermission} required`,
+            code: "INSUFFICIENT_PERMISSION",
+          },
           { status: 403 }
         );
       }

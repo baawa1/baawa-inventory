@@ -57,23 +57,8 @@ import {
 } from "@tabler/icons-react";
 import { toast } from "sonner";
 import SupplierDetailModal from "./SupplierDetailModal";
-import EditSupplierModal from "./EditSupplierModal";
-
-interface Supplier {
-  id: number;
-  name: string;
-  contactPerson?: string;
-  email?: string;
-  phone?: string;
-  address?: string;
-  isActive: boolean;
-  createdAt: string;
-  updatedAt: string;
-  _count?: {
-    products: number;
-    purchaseOrders: number;
-  };
-}
+import { EditSupplierModal } from "./EditSupplierModal";
+import { Supplier } from "./supplier/types";
 
 interface SupplierListResponse {
   suppliers: Supplier[];
@@ -143,8 +128,13 @@ export default function SupplierList() {
     setSelectedSupplierId(null);
   };
 
-  const handleSupplierUpdated = () => {
-    fetchSuppliers(); // Refresh the list after edit
+  const handleSupplierUpdated = (updatedSupplier: Supplier) => {
+    // Update the supplier in the local state
+    setSuppliers((prevSuppliers) =>
+      prevSuppliers.map((supplier) =>
+        supplier.id === updatedSupplier.id ? updatedSupplier : supplier
+      )
+    );
     handleCloseEditModal();
   };
 
@@ -643,10 +633,14 @@ export default function SupplierList() {
         onReactivate={handleReactivate}
       />
       <EditSupplierModal
-        supplierId={selectedSupplierId}
+        supplier={
+          selectedSupplierId
+            ? suppliers.find((s) => s.id === selectedSupplierId) || null
+            : null
+        }
         isOpen={editModalOpen}
         onClose={handleCloseEditModal}
-        onSuccess={handleSupplierUpdated}
+        onSave={handleSupplierUpdated}
       />
     </>
   );

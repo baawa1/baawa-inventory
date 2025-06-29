@@ -3,9 +3,19 @@ import {
   EmailOptions,
   EmailServiceConfig,
   EmailTemplateType,
+  EmailTemplateData,
+  WelcomeEmailData,
+  EmailVerificationData,
+  PasswordResetData,
+  UserApprovalData,
+  AdminNotificationData,
+  UserRejectionData,
+  RoleChangeData,
+  AdminDigestData,
+  UserSuspensionData,
+  UserReactivationData,
 } from "./types";
-import { ResendProvider } from "./providers/resend";
-import { NodemailerProvider } from "./providers/nodemailer";
+import { EmailProviderFactory } from "./providers/factory";
 import { getEmailTemplate } from "./templates";
 
 /**
@@ -18,45 +28,16 @@ export class EmailService {
 
   constructor(config: EmailServiceConfig) {
     this.config = config;
-    this.provider = this.createProvider();
-  }
-
-  private createProvider(): EmailProvider {
-    switch (this.config.provider) {
-      case "resend":
-        const resendApiKey = process.env.RESEND_API_KEY;
-        if (!resendApiKey) {
-          throw new Error("RESEND_API_KEY environment variable is required");
-        }
-        return new ResendProvider(
-          resendApiKey,
-          this.config.fromEmail,
-          this.config.fromName
-        );
-
-      case "nodemailer":
-        const smtpConfig = {
-          host: process.env.SMTP_HOST || "",
-          port: parseInt(process.env.SMTP_PORT || "587"),
-          user: process.env.SMTP_USER || "",
-          pass: process.env.SMTP_PASS || "",
-          fromEmail: this.config.fromEmail,
-          fromName: this.config.fromName,
-        };
-        return new NodemailerProvider(smtpConfig);
-
-      default:
-        throw new Error(`Unsupported email provider: ${this.config.provider}`);
-    }
+    this.provider = EmailProviderFactory.createProvider(config);
   }
 
   /**
-   * Send a templated email
+   * Send a templated email with type safety
    */
-  async sendTemplatedEmail(
+  async sendTemplatedEmail<T extends Record<string, unknown>>(
     templateType: EmailTemplateType,
     to: string | string[],
-    templateData: any
+    templateData: T
   ): Promise<void> {
     try {
       const template = await getEmailTemplate(templateType, templateData);
@@ -94,7 +75,7 @@ export class EmailService {
    */
   async sendBulkTemplatedEmails(
     templateType: EmailTemplateType,
-    recipients: Array<{ email: string; data: any }>
+    recipients: Array<{ email: string; data: Record<string, unknown> }>
   ): Promise<void> {
     try {
       const emails: EmailOptions[] = await Promise.all(
@@ -133,53 +114,32 @@ export class EmailService {
 
 /**
  * Create and return a configured email service instance
+ * Uses the factory to auto-detect the best available provider
  */
 export function createEmailService(): EmailService {
-  // Determine which provider to use based on environment
-  const hasResendKey = !!process.env.RESEND_API_KEY;
-  const hasSmtpConfig = !!(
-    process.env.SMTP_HOST &&
-    process.env.SMTP_USER &&
-    process.env.SMTP_PASS
+  const fromEmail =
+    process.env.RESEND_FROM_EMAIL ||
+    process.env.FROM_EMAIL ||
+    "noreply@baawa.com";
+  const fromName = process.env.RESEND_FROM_NAME || "Baawa Inventory POS";
+  const replyToEmail = process.env.REPLY_TO_EMAIL;
+
+  const config = EmailProviderFactory.detectProviderConfig(
+    fromEmail,
+    fromName,
+    replyToEmail
   );
-
-  let provider: "resend" | "nodemailer";
-
-  // Prefer Resend if available, fall back to nodemailer
-  if (hasResendKey) {
-    provider = "resend";
-  } else if (hasSmtpConfig) {
-    provider = "nodemailer";
-  } else {
-    throw new Error(
-      "No email provider configured. Set either RESEND_API_KEY or SMTP credentials."
-    );
-  }
-
-  const config: EmailServiceConfig = {
-    provider,
-    fromEmail:
-      process.env.RESEND_FROM_EMAIL ||
-      process.env.FROM_EMAIL ||
-      "noreply@baawa.com",
-    fromName: process.env.RESEND_FROM_NAME || "Baawa Inventory POS",
-    replyToEmail: process.env.REPLY_TO_EMAIL,
-  };
-
   return new EmailService(config);
 }
 
 /**
- * Quick helper functions for common email operations
+ * Type-safe helper functions for common email operations
  */
 export const emailService = {
   /**
    * Send welcome email to new user
    */
-  sendWelcomeEmail: async (
-    to: string,
-    data: { firstName: string; email: string; companyName?: string }
-  ) => {
+  sendWelcomeEmail: async (to: string, data: WelcomeEmailData) => {
     const service = createEmailService();
     return service.sendTemplatedEmail("welcome", to, data);
   },
@@ -187,14 +147,7 @@ export const emailService = {
   /**
    * Send email verification email
    */
-  sendVerificationEmail: async (
-    to: string,
-    data: {
-      firstName: string;
-      verificationLink: string;
-      expiresInHours: number;
-    }
-  ) => {
+  sendVerificationEmail: async (to: string, data: EmailVerificationData) => {
     const service = createEmailService();
     return service.sendTemplatedEmail("email_verification", to, data);
   },
@@ -202,10 +155,7 @@ export const emailService = {
   /**
    * Send password reset email
    */
-  sendPasswordResetEmail: async (
-    to: string,
-    data: { firstName: string; resetLink: string; expiresInHours: number }
-  ) => {
+  sendPasswordResetEmail: async (to: string, data: PasswordResetData) => {
     const service = createEmailService();
     return service.sendTemplatedEmail("password_reset", to, data);
   },
@@ -213,15 +163,7 @@ export const emailService = {
   /**
    * Send user approval notification
    */
-  sendUserApprovalEmail: async (
-    to: string,
-    data: {
-      firstName: string;
-      adminName: string;
-      dashboardLink: string;
-      role: string;
-    }
-  ) => {
+  sendUserApprovalEmail: async (to: string, data: UserApprovalData) => {
     const service = createEmailService();
     return service.sendTemplatedEmail("user_approved", to, data);
   },
@@ -231,14 +173,7 @@ export const emailService = {
    */
   sendAdminNewUserNotification: async (
     to: string | string[],
-    data: {
-      userFirstName: string;
-      userLastName: string;
-      userEmail: string;
-      userCompany?: string;
-      approvalLink: string;
-      registrationDate: string;
-    }
+    data: AdminNotificationData
   ) => {
     const service = createEmailService();
     return service.sendTemplatedEmail("admin_new_user_pending", to, data);
@@ -247,15 +182,7 @@ export const emailService = {
   /**
    * Send user rejection notification
    */
-  sendUserRejectionEmail: async (
-    to: string,
-    data: {
-      firstName: string;
-      adminName: string;
-      rejectionReason?: string;
-      supportEmail: string;
-    }
-  ) => {
+  sendUserRejectionEmail: async (to: string, data: UserRejectionData) => {
     const service = createEmailService();
     return service.sendTemplatedEmail("user_rejected", to, data);
   },
@@ -263,16 +190,7 @@ export const emailService = {
   /**
    * Send role change notification
    */
-  sendRoleChangeEmail: async (
-    to: string,
-    data: {
-      firstName: string;
-      oldRole: string;
-      newRole: string;
-      changedBy: string;
-      dashboardLink: string;
-    }
-  ) => {
+  sendRoleChangeEmail: async (to: string, data: RoleChangeData) => {
     const service = createEmailService();
     return service.sendTemplatedEmail("role_changed", to, data);
   },
@@ -282,20 +200,7 @@ export const emailService = {
    */
   sendAdminDigestEmail: async (
     to: string | string[],
-    data: {
-      adminName: string;
-      newUsersCount: number;
-      pendingUsersCount: number;
-      newUsers: Array<{
-        firstName: string;
-        lastName: string;
-        email: string;
-        registrationDate: string;
-        status: string;
-      }>;
-      dashboardLink: string;
-      digestPeriod: string;
-    }
+    data: AdminDigestData
   ) => {
     const service = createEmailService();
     return service.sendTemplatedEmail("admin_digest", to, data);
@@ -306,12 +211,7 @@ export const emailService = {
    */
   async sendUserSuspensionEmail(
     to: string,
-    data: {
-      firstName: string;
-      lastName: string;
-      reason: string;
-      supportEmail?: string;
-    }
+    data: UserSuspensionData
   ): Promise<void> {
     const service = createEmailService();
     const template = await getEmailTemplate("user_suspension", data);
@@ -328,11 +228,7 @@ export const emailService = {
    */
   async sendUserReactivationEmail(
     to: string,
-    data: {
-      firstName: string;
-      lastName: string;
-      loginLink?: string;
-    }
+    data: UserReactivationData
   ): Promise<void> {
     const service = createEmailService();
     const template = await getEmailTemplate("user_reactivation", data);
