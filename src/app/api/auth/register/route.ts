@@ -3,19 +3,22 @@ import { prisma } from "@/lib/db";
 import { emailService } from "@/lib/email";
 import { notifyAdmins } from "@/lib/utils/admin-notifications";
 import { withAuthRateLimit } from "@/lib/rate-limit";
+import { TokenSecurity } from "@/lib/utils/token-security";
 import bcrypt from "bcryptjs";
-import crypto from "crypto";
 import { z } from "zod";
 
-// Registration schema - simpler than the admin user creation schema
+import { passwordSchema } from "@/lib/validations/common";
+
+// Registration schema - users cannot set their own role for security
 const registerSchema = z.object({
   firstName: z.string().min(2, "First name must be at least 2 characters"),
   lastName: z.string().min(2, "Last name must be at least 2 characters"),
   email: z.string().email("Please enter a valid email address"),
-  password: z.string().min(6, "Password must be at least 6 characters"),
-  role: z.enum(["ADMIN", "MANAGER", "STAFF"]).default("STAFF"),
+  password: passwordSchema, // Use strong password requirements
+  // Remove role from registration - all self-registered users start as EMPLOYEE
 });
 
+// Type inference for the registration schema
 type RegisterData = z.infer<typeof registerSchema>;
 
 async function handleRegister(request: NextRequest) {
@@ -52,22 +55,24 @@ async function handleRegister(request: NextRequest) {
     // Hash the password
     const hashedPassword = await bcrypt.hash(userData.password, 12);
 
-    // Generate email verification token
-    const verificationToken = crypto.randomBytes(32).toString("hex");
-    const verificationExpires = new Date(Date.now() + 24 * 60 * 60 * 1000); // 24 hours
+    // Generate secure email verification token
+    const { rawToken: verificationToken, hashedToken: hashedVerificationToken } = 
+      TokenSecurity.generateSecureToken(32);
+    const verificationExpires = TokenSecurity.generateExpiry(24); // 24 hours
 
     // Create the user with email verification fields
+    // Security: Force role to EMPLOYEE regardless of input
     const user = await prisma.user.create({
       data: {
         firstName: userData.firstName,
         lastName: userData.lastName,
         email: userData.email,
         password: hashedPassword,
-        role: userData.role,
+        role: "EMPLOYEE", // Force role to EMPLOYEE for security
         isActive: true,
         userStatus: "PENDING",
         emailVerified: false,
-        emailVerificationToken: verificationToken,
+        emailVerificationToken: hashedVerificationToken, // Store hashed token
         emailVerificationExpires: verificationExpires,
         emailNotifications: true,
         marketingEmails: false,
@@ -86,6 +91,7 @@ async function handleRegister(request: NextRequest) {
 
     // Send verification email
     try {
+      // Use raw token for email link (user will use this to verify)
       const verificationLink = `${process.env.NEXTAUTH_URL}/verify-email?token=${verificationToken}`;
 
       await emailService.sendVerificationEmail(userData.email, {

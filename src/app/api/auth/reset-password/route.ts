@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from "next/server";
 import { z } from "zod";
 import bcrypt from "bcryptjs";
 import { prisma } from "@/lib/db";
+import { TokenSecurity } from "@/lib/utils/token-security";
 
 const resetPasswordSchema = z.object({
   token: z.string().min(1, "Token is required"),
@@ -19,11 +20,13 @@ export async function POST(request: NextRequest) {
     const body = await request.json();
     const { token, password } = resetPasswordSchema.parse(body);
 
-    // Find user with valid reset token
-    const user = await prisma.user.findFirst({
+    // Find users with non-expired reset tokens
+    const users = await prisma.user.findMany({
       where: {
-        resetToken: token,
         isActive: true,
+        resetToken: {
+          not: null,
+        },
         resetTokenExpires: {
           gte: new Date(),
         },
@@ -31,10 +34,20 @@ export async function POST(request: NextRequest) {
       select: {
         id: true,
         email: true,
+        resetToken: true,
       },
     });
 
-    if (!user) {
+    // Check each user's hashed token against the provided token
+    let validUser = null;
+    for (const user of users) {
+      if (user.resetToken && await TokenSecurity.verifyToken(token, user.resetToken)) {
+        validUser = user;
+        break;
+      }
+    }
+
+    if (!validUser) {
       return NextResponse.json(
         { error: "Invalid or expired reset token" },
         { status: 400 }
@@ -46,7 +59,7 @@ export async function POST(request: NextRequest) {
 
     // Update user with new password and clear reset token
     await prisma.user.update({
-      where: { id: user.id },
+      where: { id: validUser.id },
       data: {
         password: hashedPassword,
         resetToken: null,

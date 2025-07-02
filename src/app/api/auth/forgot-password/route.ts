@@ -1,8 +1,8 @@
 import { NextRequest, NextResponse } from "next/server";
 import { z } from "zod";
-import crypto from "crypto";
 import { prisma } from "@/lib/db";
 import { emailService } from "@/lib/email";
+import { TokenSecurity } from "@/lib/utils/token-security";
 
 const forgotPasswordSchema = z.object({
   email: z.string().email("Invalid email address"),
@@ -29,21 +29,21 @@ export async function POST(request: NextRequest) {
     // Always return success to prevent email enumeration attacks
     // But only send email if user actually exists
     if (user) {
-      // Generate reset token
-      const resetToken = crypto.randomBytes(32).toString("hex");
-      const resetTokenExpiry = new Date(Date.now() + 60 * 60 * 1000); // 1 hour
+      // Generate secure hashed reset token
+      const { rawToken, hashedToken } = TokenSecurity.generateSecureToken(32);
+      const resetTokenExpiry = TokenSecurity.generateExpiry(1); // 1 hour
 
-      // Save reset token to database
+      // Save hashed token to database (more secure)
       await prisma.user.update({
         where: { id: user.id },
         data: {
-          resetToken: resetToken,
+          resetToken: hashedToken,
           resetTokenExpires: resetTokenExpiry,
         },
       });
 
-      // Send email with reset link using the new email service
-      const resetUrl = `${process.env.NEXTAUTH_URL}/reset-password?token=${resetToken}`;
+      // Send email with raw token (what user will use)
+      const resetUrl = `${process.env.NEXTAUTH_URL}/reset-password?token=${rawToken}`;
 
       try {
         await emailService.sendPasswordResetEmail(validatedData.email, {

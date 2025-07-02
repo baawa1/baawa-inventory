@@ -1,6 +1,7 @@
 import { NextAuthOptions } from "next-auth";
 import CredentialsProvider from "next-auth/providers/credentials";
 import { authService } from "./auth-service";
+import { AuditLogger } from "./utils/audit-logger";
 
 // Extend NextAuth types
 declare module "next-auth" {
@@ -100,20 +101,29 @@ export const authOptions: NextAuthOptions = {
         }
       }
 
-      // Check if session is expired
+      // Check if session is expired and invalidate completely
       if (
         token.loginTime &&
         Date.now() - (token.loginTime as number) > 24 * 60 * 60 * 1000
       ) {
-        return {
-          ...token,
-          expired: true,
-        };
+        // Session is expired - invalidate completely by returning null
+        // This will force the user to log in again
+        if (token.sub) {
+          const userId = parseInt(token.sub);
+          await authService.updateLastLogout(userId);
+          await AuditLogger.logSessionExpired(userId, token.email || "unknown");
+        }
+        return {};
       }
 
       return token;
     },
     async session({ session, token }) {
+      // If token is empty (expired), return null to invalidate session
+      if (!token || !token.sub) {
+        return null;
+      }
+
       if (token && session.user) {
         session.user.id = token.sub!;
         session.user.role = token.role;
@@ -128,6 +138,7 @@ export const authOptions: NextAuthOptions = {
       if (token?.sub) {
         const userId = parseInt(token.sub);
         await authService.updateLastLogout(userId);
+        await AuditLogger.logLogout(userId, token.email || "unknown");
       }
     },
     async session({ session }) {

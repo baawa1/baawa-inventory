@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import { z } from "zod";
 import { prisma } from "@/lib/db";
+import { TokenSecurity } from "@/lib/utils/token-security";
 
 const validateTokenSchema = z.object({
   token: z.string().min(1, "Token is required"),
@@ -11,24 +12,33 @@ export async function POST(request: NextRequest) {
     const body = await request.json();
     const { token } = validateTokenSchema.parse(body);
 
-    console.log("🔐 Validating reset token with Prisma...");
-    console.log("🔑 Token (first 10 chars):", token.substring(0, 10) + "...");
-
-    // Find user with valid reset token
-    const user = await prisma.user.findFirst({
+    // Find users with non-expired reset tokens
+    const users = await prisma.user.findMany({
       where: {
-        resetToken: token,
         isActive: true,
+        resetToken: {
+          not: null,
+        },
         resetTokenExpires: {
           gte: new Date(),
         },
       },
       select: {
         id: true,
+        resetToken: true,
       },
     });
 
-    if (!user) {
+    // Check each user's hashed token against the provided token
+    let validUser = null;
+    for (const user of users) {
+      if (user.resetToken && await TokenSecurity.verifyToken(token, user.resetToken)) {
+        validUser = user;
+        break;
+      }
+    }
+
+    if (!validUser) {
       return NextResponse.json(
         { error: "Invalid or expired token" },
         { status: 400 }
