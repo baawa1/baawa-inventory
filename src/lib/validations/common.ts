@@ -103,18 +103,36 @@ export const nameSchema = z
   .max(255, "Name must be 255 characters or less")
   .trim();
 
-// Password validation schemas
+// Password validation schemas - Enhanced security requirements
 export const passwordSchema = z
+  .string()
+  .min(12, "Password must be at least 12 characters")
+  .max(128, "Password must be less than 128 characters")
+  .regex(
+    /^(?=.*[a-z])(?=.*[A-Z])(?=.*\d)(?=.*[@$!%*?&])[A-Za-z\d@$!%*?&]/,
+    "Password must contain at least one lowercase letter, one uppercase letter, one number, and one special character (@$!%*?&)"
+  )
+  .refine(
+    (password) => {
+      // Check for common weak passwords
+      const commonPasswords = [
+        "123456789012", "password123!", "Password123!",
+        "qwerty123456", "admin123456!", "welcome123!"
+      ];
+      return !commonPasswords.includes(password.toLowerCase());
+    },
+    "Password is too common. Please choose a more secure password."
+  );
+
+// Legacy simple password schema - for backwards compatibility only
+// DEPRECATED: Use passwordSchema for new implementations
+export const simplePasswordSchema = z
   .string()
   .min(8, "Password must be at least 8 characters")
   .regex(
     /^(?=.*[a-z])(?=.*[A-Z])(?=.*\d)/,
     "Password must contain at least one lowercase letter, one uppercase letter, and one number"
   );
-
-export const simplePasswordSchema = z
-  .string()
-  .min(6, "Password must be at least 6 characters");
 
 export const currentPasswordSchema = z
   .string()

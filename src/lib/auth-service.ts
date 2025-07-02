@@ -1,5 +1,8 @@
-import { createServerSupabaseClient } from "./supabase-server";
+import { prisma } from "./db";
+import { AuditLogger } from "./utils/audit-logger";
+import { AccountLockout } from "./utils/account-lockout";
 import * as bcrypt from "bcryptjs";
+import { NextRequest } from "next/server";
 
 export interface AuthUser {
   id: string;
@@ -14,6 +17,16 @@ export interface AuthValidationResult {
   success: boolean;
   user?: AuthUser;
   error?: string;
+  details?: string;
+}
+
+/**
+ * Sanitize error for logging to prevent sensitive information disclosure
+ */
+function sanitizeError(error: any): string {
+  if (typeof error === 'string') return 'Authentication operation failed';
+  if (error?.message) return 'Authentication operation failed';
+  return 'Authentication operation failed';
 }
 
 export class AuthenticationService {
@@ -22,60 +35,102 @@ export class AuthenticationService {
    */
   async validateCredentials(
     email: string,
-    password: string
+    password: string,
+    request?: NextRequest
   ): Promise<AuthValidationResult> {
     try {
-      const supabase = await createServerSupabaseClient();
+      // Extract IP address for lockout checking
+      const ipAddress = this.getClientIpAddress(request);
 
-      // Get user from our users table
-      const { data: user, error } = await supabase
-        .from("users")
-        .select("*")
-        .eq("email", email)
-        .eq("is_active", true)
-        .single();
+      // Check if email is locked out
+      const emailLockoutStatus = await AccountLockout.checkLockoutStatus(email, "email");
+      if (emailLockoutStatus.isLocked) {
+        const message = AccountLockout.getLockoutMessage(emailLockoutStatus);
+        await AuditLogger.logLoginFailed(email, `Account locked: ${message}`, request);
+        return { success: false, error: "ACCOUNT_LOCKED", details: message };
+      }
 
-      if (error || !user) {
+      // Check if IP is locked out
+      const ipLockoutStatus = await AccountLockout.checkLockoutStatus(ipAddress, "ip");
+      if (ipLockoutStatus.isLocked) {
+        const message = AccountLockout.getLockoutMessage(ipLockoutStatus);
+        await AuditLogger.logLoginFailed(email, `IP locked: ${message}`, request);
+        return { success: false, error: "IP_LOCKED", details: message };
+      }
+
+      // Get user from database using Prisma
+      const user = await prisma.user.findFirst({
+        where: {
+          email: email,
+          isActive: true,
+        },
+        select: {
+          id: true,
+          email: true,
+          password: true,
+          firstName: true,
+          lastName: true,
+          role: true,
+          userStatus: true,
+          emailVerified: true,
+        },
+      });
+
+      if (!user) {
+        await AuditLogger.logLoginFailed(email, "User not found", request);
         return { success: false, error: "INVALID_CREDENTIALS" };
       }
 
       // Check if email is verified
-      if (!user.email_verified) {
+      if (!user.emailVerified) {
+        await AuditLogger.logLoginFailed(email, "Email not verified", request);
         return { success: false, error: "UNVERIFIED_EMAIL" };
       }
 
       // Check user status
-      const statusValidation = this.validateUserStatus(user.user_status);
+      const statusValidation = this.validateUserStatus(user.userStatus);
       if (!statusValidation.success) {
+        await AuditLogger.logLoginFailed(email, `User status: ${user.userStatus}`, request);
         return statusValidation;
       }
 
+      // Check if password exists - fail immediately if null
+      if (!user.password) {
+        await AuditLogger.logLoginFailed(email, "No password set", request);
+        return { success: false, error: "INVALID_CREDENTIALS" };
+      }
+
       // Verify password with bcrypt
-      const isValidPassword = await bcrypt.compare(
-        password,
-        user.password_hash || "$2a$10$dummy.hash.for.testing"
-      );
+      const isValidPassword = await bcrypt.compare(password, user.password);
 
       if (!isValidPassword) {
+        await AuditLogger.logLoginFailed(email, "Invalid password", request);
         return { success: false, error: "INVALID_CREDENTIALS" };
       }
 
       // Update last login timestamp
       await this.updateLastLogin(user.id);
 
+      // Reset failed attempts on successful login
+      await AccountLockout.resetFailedAttempts(user.email, ipAddress);
+
+      // Log successful login
+      await AuditLogger.logLoginSuccess(user.id, user.email, request);
+
       return {
         success: true,
         user: {
           id: user.id.toString(),
           email: user.email,
-          name: `${user.first_name} ${user.last_name}`,
+          name: `${user.firstName} ${user.lastName}`,
           role: user.role,
-          status: user.user_status,
-          emailVerified: user.email_verified,
+          status: user.userStatus || "PENDING",
+          emailVerified: user.emailVerified,
         },
       };
     } catch (error) {
-      console.error("Authentication error:", error);
+      // Use sanitized error logging
+      console.error("Authentication operation failed:", sanitizeError(error));
       return { success: false, error: "AUTHENTICATION_FAILED" };
     }
   }
@@ -83,7 +138,7 @@ export class AuthenticationService {
   /**
    * Validate user status for login eligibility
    */
-  private validateUserStatus(status: string): AuthValidationResult {
+  private validateUserStatus(status: string | null): AuthValidationResult {
     switch (status) {
       case "PENDING":
         return { success: false, error: "PENDING_VERIFICATION" };
@@ -104,15 +159,14 @@ export class AuthenticationService {
    */
   async updateLastLogin(userId: number): Promise<void> {
     try {
-      const supabase = await createServerSupabaseClient();
-      await supabase
-        .from("users")
-        .update({
-          last_login: new Date().toISOString(),
-        })
-        .eq("id", userId);
+      await prisma.user.update({
+        where: { id: userId },
+        data: {
+          lastLogin: new Date(),
+        },
+      });
     } catch (error) {
-      console.error("Error updating last login:", error);
+      console.error("Authentication operation failed:", sanitizeError(error));
     }
   }
 
@@ -121,15 +175,14 @@ export class AuthenticationService {
    */
   async updateLastLogout(userId: number): Promise<void> {
     try {
-      const supabase = await createServerSupabaseClient();
-      await supabase
-        .from("users")
-        .update({
-          last_logout: new Date().toISOString(),
-        })
-        .eq("id", userId);
+      await prisma.user.update({
+        where: { id: userId },
+        data: {
+          lastLogout: new Date(),
+        },
+      });
     } catch (error) {
-      console.error("Error updating logout time:", error);
+      console.error("Authentication operation failed:", sanitizeError(error));
     }
   }
 
@@ -138,15 +191,14 @@ export class AuthenticationService {
    */
   async updateLastActivity(userId: number): Promise<void> {
     try {
-      const supabase = await createServerSupabaseClient();
-      await supabase
-        .from("users")
-        .update({
-          last_activity: new Date().toISOString(),
-        })
-        .eq("id", userId);
+      await prisma.user.update({
+        where: { id: userId },
+        data: {
+          lastActivity: new Date(),
+        },
+      });
     } catch (error) {
-      console.error("Error updating last activity:", error);
+      console.error("Authentication operation failed:", sanitizeError(error));
     }
   }
 
@@ -155,27 +207,49 @@ export class AuthenticationService {
    */
   async refreshUserData(userId: number): Promise<Partial<AuthUser> | null> {
     try {
-      const supabase = await createServerSupabaseClient();
-      const { data: user, error } = await supabase
-        .from("users")
-        .select("role, user_status, email_verified")
-        .eq("id", userId)
-        .eq("is_active", true)
-        .single();
+      const user = await prisma.user.findFirst({
+        where: {
+          id: userId,
+          isActive: true,
+        },
+        select: {
+          role: true,
+          userStatus: true,
+          emailVerified: true,
+        },
+      });
 
-      if (error || !user) {
+      if (!user) {
         return null;
       }
 
       return {
         role: user.role,
-        status: user.user_status,
-        emailVerified: user.email_verified,
+        status: user.userStatus || "PENDING",
+        emailVerified: user.emailVerified,
       };
     } catch (error) {
-      console.error("Error refreshing user data:", error);
+      console.error("Authentication operation failed:", sanitizeError(error));
       return null;
     }
+  }
+
+  /**
+   * Extract client IP address from request headers
+   */
+  private getClientIpAddress(request?: NextRequest): string {
+    if (!request) return "unknown";
+
+    const forwarded = request.headers.get("x-forwarded-for");
+    const realIp = request.headers.get("x-real-ip");
+    const cfConnectingIp = request.headers.get("cf-connecting-ip");
+    
+    return (
+      forwarded?.split(",")[0]?.trim() || 
+      realIp || 
+      cfConnectingIp || 
+      "unknown"
+    );
   }
 }
 
