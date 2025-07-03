@@ -1,7 +1,12 @@
+/**
+ * Enhanced SessionProvider with TanStack Query integration
+ * Provides session management with timeout warnings and activity tracking
+ */
+
 "use client";
 
 import React, { createContext, useContext, useState, useEffect } from "react";
-import { useSessionManagement } from "@/hooks/useSessionManagement";
+import { useEnhancedSession } from "@/hooks/api/session";
 import { Button } from "@/components/ui/button";
 import {
   Dialog,
@@ -11,12 +16,15 @@ import {
   DialogHeader,
   DialogTitle,
 } from "@/components/ui/dialog";
-import { refreshSession } from "@/lib/session-management";
 
 interface SessionContextType {
   isAuthenticated: boolean;
+  isValidatingSession: boolean;
+  sessionValidation: any;
   logout: () => Promise<void>;
-  extendSession: () => Promise<void>;
+  extendSession: () => Promise<boolean>;
+  checkSession: () => Promise<boolean>;
+  recoverSession: () => Promise<boolean>;
 }
 
 const SessionContext = createContext<SessionContextType | null>(null);
@@ -31,20 +39,35 @@ export function useSessionContext() {
 
 interface SessionProviderProps {
   children: React.ReactNode;
-  useTanStackQuery?: boolean; // Optional flag to use new implementation
+  enableActivityTracking?: boolean;
+  enableTimeoutWarning?: boolean;
+  enablePeriodicValidation?: boolean;
+  activityCheckInterval?: number;
 }
 
 export function SessionProvider({ 
-  children, 
-  useTanStackQuery = false 
+  children,
+  enableActivityTracking = true,
+  enableTimeoutWarning = true,
+  enablePeriodicValidation = true,
+  activityCheckInterval = 30000,
 }: SessionProviderProps) {
   const [showTimeoutWarning, setShowTimeoutWarning] = useState(false);
   const [timeLeft, setTimeLeft] = useState(0);
 
-  // Use the updated session management hook (now powered by TanStack Query)
-  const { isAuthenticated, logout, checkSession, extendSession: extendSessionQuery } = useSessionManagement({
-    enableActivityTracking: true,
-    enableTimeoutWarning: true,
+  const {
+    isAuthenticated,
+    sessionValidation,
+    isValidatingSession,
+    logout,
+    extendSession,
+    checkSession,
+    recoverSession,
+  } = useEnhancedSession({
+    enableActivityTracking,
+    enableTimeoutWarning,
+    enablePeriodicValidation,
+    activityCheckInterval,
     onSessionWarning: () => {
       setShowTimeoutWarning(true);
       setTimeLeft(300); // 5 minutes in seconds
@@ -73,26 +96,22 @@ export function SessionProvider({
     return () => clearInterval(timer);
   }, [showTimeoutWarning, timeLeft, logout]);
 
-  const extendSession = async () => {
+  const handleExtendSession = async (): Promise<boolean> => {
     try {
-      if (extendSessionQuery) {
-        // Use the new TanStack Query-based extend session
-        const success = await extendSessionQuery();
-        if (success) {
-          setShowTimeoutWarning(false);
-          setTimeLeft(0);
-        } else {
-          throw new Error('Session extension failed');
-        }
-      } else {
-        // Fallback to manual refresh
-        await refreshSession();
+      const success = await extendSession();
+      if (success) {
         setShowTimeoutWarning(false);
         setTimeLeft(0);
+        return true;
+      } else {
+        console.error("Failed to extend session");
+        await logout();
+        return false;
       }
     } catch (error) {
       console.error("Failed to extend session:", error);
       await logout();
+      return false;
     }
   };
 
@@ -109,8 +128,12 @@ export function SessionProvider({
 
   const contextValue: SessionContextType = {
     isAuthenticated,
+    isValidatingSession,
+    sessionValidation,
     logout: handleLogout,
-    extendSession,
+    extendSession: handleExtendSession,
+    checkSession,
+    recoverSession,
   };
 
   return (
@@ -134,7 +157,7 @@ export function SessionProvider({
             <Button variant="outline" onClick={handleLogout}>
               Sign Out
             </Button>
-            <Button onClick={extendSession}>Extend Session</Button>
+            <Button onClick={handleExtendSession}>Extend Session</Button>
           </DialogFooter>
         </DialogContent>
       </Dialog>
