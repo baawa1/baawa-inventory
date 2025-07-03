@@ -1,11 +1,7 @@
 import { NextResponse } from "next/server";
 import { prisma } from "@/lib/db";
 import bcrypt from "bcryptjs";
-import {
-  createUserSchema,
-  userQuerySchema,
-  validateRequest,
-} from "@/lib/validations";
+import { createUserSchema, userQuerySchema } from "@/lib/validations";
 import { withPermission, AuthenticatedRequest } from "@/lib/api-middleware";
 import { withApiRateLimit } from "@/lib/rate-limit";
 

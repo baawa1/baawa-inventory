@@ -50,7 +50,7 @@ export default function CheckEmailPage() {
       } else {
         setResendMessage(data.error || "Failed to send verification email");
       }
-    } catch (error) {
+    } catch {
       setResendMessage("Failed to send verification email. Please try again.");
     } finally {
       setResendLoading(false);
@@ -73,7 +73,7 @@ export default function CheckEmailPage() {
               Check Your Email
             </CardTitle>
             <CardDescription className="text-center">
-              We've sent a verification link to your email address
+              We&apos;ve sent a verification link to your email address
             </CardDescription>
           </CardHeader>
 
@@ -91,7 +91,9 @@ export default function CheckEmailPage() {
               <ol className="list-decimal list-inside space-y-2">
                 <li>Check your email inbox (and spam folder)</li>
                 <li>Click the verification link in the email</li>
-                <li>You'll be redirected back to complete your registration</li>
+                <li>
+                  You&apos;ll be redirected back to complete your registration
+                </li>
                 <li>Wait for admin approval to access your account</li>
               </ol>
             </div>
@@ -107,7 +109,7 @@ export default function CheckEmailPage() {
 
             <div className="pt-4 border-t">
               <p className="text-sm text-gray-600 mb-3">
-                Didn't receive the email?
+                Didn&apos;t receive the email?
               </p>
 
               <form onSubmit={handleResendVerification} className="space-y-3">

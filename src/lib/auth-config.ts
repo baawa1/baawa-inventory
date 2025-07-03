@@ -183,34 +183,21 @@ export const authOptions: NextAuthOptions = {
       return session;
     },
   },
-  // events: {
-  //   async signOut({ token }) {
-  //     try {
-  //       console.log("SignOut event triggered, token:", token?.sub);
-  //       if (token?.sub) {
-  //         const userId = parseInt(token.sub);
-  //         console.log("Updating logout timestamp for user:", userId);
-  //         await authService.updateLastLogout(userId);
-  //         await AuditLogger.logLogout(userId, token.email || "unknown");
-  //         console.log("Logout event completed successfully");
-  //       }
-  //     } catch (error) {
-  //       console.error("Error in signOut event:", error);
-  //       // Don't throw the error to prevent logout from failing
-  //     }
-  //   },
-  //   async session({ session }) {
-  //     try {
-  //       if (session?.user?.id) {
-  //         const userId = parseInt(session.user.id);
-  //         await authService.updateLastActivity(userId);
-  //       }
-  //     } catch (error) {
-  //       console.error("Error in session event:", error);
-  //       // Don't throw the error to prevent session from failing
-  //     }
-  //   },
-  // },
+  events: {
+    async signOut({ token }) {
+      if (token?.sub) {
+        const userId = parseInt(token.sub);
+        await authService.updateLastLogout(userId);
+        await AuditLogger.logLogout(userId, token.email || "unknown");
+      }
+    },
+    async session({ session }) {
+      if (session?.user?.id) {
+        const userId = parseInt(session.user.id);
+        await authService.updateLastActivity(userId);
+      }
+    },
+  },
   pages: {
     signIn: "/login",
     error: "/login",

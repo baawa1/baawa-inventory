@@ -22,25 +22,14 @@ import {
 } from "@/components/ui/table";
 import { Badge } from "@/components/ui/badge";
 import {
-  Dialog,
-  DialogContent,
-  DialogDescription,
-  DialogHeader,
-  DialogTitle,
-  DialogTrigger,
-} from "@/components/ui/dialog";
-
-import { UserRole } from "@/types/app";
-import {
   useDeactivatedUsers,
   useReactivateUser,
   type APIUser,
 } from "@/hooks/api/users";
 import { toast } from "sonner";
 
-interface User extends APIUser {
-  // Use APIUser interface but keep backward compatibility
-}
+// Use APIUser type directly
+type User = APIUser;
 
 export function DeactivatedUsersManagement() {
   const { data: session, status } = useSession();

@@ -6,7 +6,6 @@ import {
   createStockReconciliationSchema,
   stockReconciliationQuerySchema,
   type CreateStockReconciliationData,
-  type StockReconciliationQuery,
 } from "@/lib/validations/stock-management";
 
 // GET /api/stock-reconciliations - List stock reconciliations with filtering
@@ -192,7 +191,7 @@ export async function POST(request: NextRequest) {
         };
       });
 
-      const createdItems = await tx.stockReconciliationItem.createMany({
+      await tx.stockReconciliationItem.createMany({
         data: itemsData,
       });
 

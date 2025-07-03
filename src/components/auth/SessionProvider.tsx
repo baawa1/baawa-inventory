@@ -34,10 +34,7 @@ interface SessionProviderProps {
   useTanStackQuery?: boolean; // Optional flag to use new implementation
 }
 
-export function SessionProvider({
-  children,
-  useTanStackQuery = false,
-}: SessionProviderProps) {
+export function SessionProvider({ children }: SessionProviderProps) {
   const [showTimeoutWarning, setShowTimeoutWarning] = useState(false);
   const [timeLeft, setTimeLeft] = useState(0);
 
@@ -45,7 +42,6 @@ export function SessionProvider({
   const {
     isAuthenticated,
     logout,
-    checkSession,
     extendSession: extendSessionQuery,
   } = useSessionManagement({
     enableActivityTracking: true,

@@ -36,7 +36,7 @@ export function UserManagement() {
   const [editingUser, setEditingUser] = useState<User | null>(null);
 
   // TanStack Query hooks
-  const { data: users = [], isLoading, error, refetch } = useActiveUsers();
+  const { data: users = [], isLoading, error } = useActiveUsers();
   const createUserMutation = useCreateUser();
   const updateUserMutation = useUpdateUser();
   const deleteUserMutation = useDeleteUser();

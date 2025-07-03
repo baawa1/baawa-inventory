@@ -13,7 +13,6 @@ import {
   CardTitle,
 } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
-import { Label } from "@/components/ui/label";
 import {
   Form,
   FormControl,
@@ -81,8 +80,8 @@ export function ForgotPasswordForm({ className }: ForgotPasswordFormProps) {
           <CardHeader>
             <CardTitle className="text-xl">Check Your Email</CardTitle>
             <CardDescription>
-              If an account with that email exists, we've sent you a password
-              reset link.
+              If an account with that email exists, we&apos;ve sent you a
+              password reset link.
             </CardDescription>
           </CardHeader>
           <CardContent>
@@ -114,7 +113,7 @@ export function ForgotPasswordForm({ className }: ForgotPasswordFormProps) {
         <CardHeader>
           <CardTitle className="text-xl">Reset Password</CardTitle>
           <CardDescription>
-            Enter your email address and we'll send you a reset link
+            Enter your email address and we&apos;ll send you a reset link
           </CardDescription>
         </CardHeader>
         <CardContent>

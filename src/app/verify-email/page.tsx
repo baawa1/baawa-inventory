@@ -80,7 +80,7 @@ export default function VerifyEmailPage() {
         }
         setMessage(data.error);
       }
-    } catch (error) {
+    } catch {
       setStatus("error");
       setMessage("Failed to verify email. Please try again.");
     }
@@ -107,7 +107,7 @@ export default function VerifyEmailPage() {
       } else {
         setResendMessage(data.error || "Failed to send verification email");
       }
-    } catch (error) {
+    } catch {
       setResendMessage("Failed to send verification email. Please try again.");
     } finally {
       setResendLoading(false);

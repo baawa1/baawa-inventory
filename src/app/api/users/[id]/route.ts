@@ -1,11 +1,6 @@
 import { NextRequest, NextResponse } from "next/server";
 import { prisma } from "@/lib/db";
 import bcrypt from "bcryptjs";
-import {
-  userIdSchema,
-  updateUserSchema,
-  validateRequest,
-} from "@/lib/validations";
 import { withPermission, AuthenticatedRequest } from "@/lib/api-middleware";
 import { emailService } from "@/lib/email";
 
@@ -15,9 +10,7 @@ interface RouteParams {
 
 // GET /api/users/[id] - Get a specific user
 export async function GET(request: NextRequest, { params }: RouteParams) {
-  const handler = withPermission("canManageUsers")(async (
-    authRequest: AuthenticatedRequest
-  ) => {
+  const handler = withPermission("canManageUsers")(async () => {
     try {
       const { id } = params;
 
