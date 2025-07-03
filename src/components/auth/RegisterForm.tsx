@@ -24,13 +24,14 @@ import {
 } from "@/components/ui/form";
 import { Input } from "@/components/ui/input";
 import { UserRole } from "@/types/app";
+import { passwordSchema } from "@/lib/validations/common";
 
 const registerSchema = z
   .object({
     firstName: z.string().min(2, "First name must be at least 2 characters"),
     lastName: z.string().min(2, "Last name must be at least 2 characters"),
     email: z.string().email("Please enter a valid email address"),
-    password: z.string().min(6, "Password must be at least 6 characters"),
+    password: passwordSchema, // Use the same password schema as backend
     confirmPassword: z.string(),
   })
   .refine((data) => data.password === data.confirmPassword, {
@@ -80,7 +81,7 @@ export function RegisterForm({
           lastName: data.lastName,
           email: data.email,
           password: data.password,
-          role: defaultRole,
+          // Remove role from request since backend ignores it
         }),
       });
 
@@ -217,11 +218,15 @@ export function RegisterForm({
                   <FormControl>
                     <Input
                       type="password"
-                      placeholder="Enter your password"
+                      placeholder="Enter a strong password (12+ chars)"
                       {...field}
                     />
                   </FormControl>
                   <FormMessage />
+                  <div className="text-xs text-muted-foreground mt-1">
+                    Password must be at least 12 characters with uppercase,
+                    lowercase, number, and special character
+                  </div>
                 </FormItem>
               )}
             />

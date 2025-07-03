@@ -24,9 +24,9 @@ export interface AuthValidationResult {
  * Sanitize error for logging to prevent sensitive information disclosure
  */
 function sanitizeError(error: any): string {
-  if (typeof error === 'string') return 'Authentication operation failed';
-  if (error?.message) return 'Authentication operation failed';
-  return 'Authentication operation failed';
+  if (typeof error === "string") return "Authentication operation failed";
+  if (error?.message) return "Authentication operation failed";
+  return "Authentication operation failed";
 }
 
 export class AuthenticationService {
@@ -43,18 +43,32 @@ export class AuthenticationService {
       const ipAddress = this.getClientIpAddress(request);
 
       // Check if email is locked out
-      const emailLockoutStatus = await AccountLockout.checkLockoutStatus(email, "email");
+      const emailLockoutStatus = await AccountLockout.checkLockoutStatus(
+        email,
+        "email"
+      );
       if (emailLockoutStatus.isLocked) {
         const message = AccountLockout.getLockoutMessage(emailLockoutStatus);
-        await AuditLogger.logLoginFailed(email, `Account locked: ${message}`, request);
+        await AuditLogger.logLoginFailed(
+          email,
+          `Account locked: ${message}`,
+          request
+        );
         return { success: false, error: "ACCOUNT_LOCKED", details: message };
       }
 
       // Check if IP is locked out
-      const ipLockoutStatus = await AccountLockout.checkLockoutStatus(ipAddress, "ip");
+      const ipLockoutStatus = await AccountLockout.checkLockoutStatus(
+        ipAddress,
+        "ip"
+      );
       if (ipLockoutStatus.isLocked) {
         const message = AccountLockout.getLockoutMessage(ipLockoutStatus);
-        await AuditLogger.logLoginFailed(email, `IP locked: ${message}`, request);
+        await AuditLogger.logLoginFailed(
+          email,
+          `IP locked: ${message}`,
+          request
+        );
         return { success: false, error: "IP_LOCKED", details: message };
       }
 
@@ -90,7 +104,11 @@ export class AuthenticationService {
       // Check user status
       const statusValidation = this.validateUserStatus(user.userStatus);
       if (!statusValidation.success) {
-        await AuditLogger.logLoginFailed(email, `User status: ${user.userStatus}`, request);
+        await AuditLogger.logLoginFailed(
+          email,
+          `User status: ${user.userStatus}`,
+          request
+        );
         return statusValidation;
       }
 
@@ -207,6 +225,7 @@ export class AuthenticationService {
    */
   async refreshUserData(userId: number): Promise<Partial<AuthUser> | null> {
     try {
+      console.log("Auth service: Refreshing user data for ID", userId);
       const user = await prisma.user.findFirst({
         where: {
           id: userId,
@@ -220,14 +239,18 @@ export class AuthenticationService {
       });
 
       if (!user) {
+        console.warn("Auth service: No user found for ID", userId);
         return null;
       }
 
-      return {
+      const result = {
         role: user.role,
         status: user.userStatus || "PENDING",
         emailVerified: user.emailVerified,
       };
+
+      console.log("Auth service: Returning refreshed data:", result);
+      return result;
     } catch (error) {
       console.error("Authentication operation failed:", sanitizeError(error));
       return null;
@@ -243,12 +266,9 @@ export class AuthenticationService {
     const forwarded = request.headers.get("x-forwarded-for");
     const realIp = request.headers.get("x-real-ip");
     const cfConnectingIp = request.headers.get("cf-connecting-ip");
-    
+
     return (
-      forwarded?.split(",")[0]?.trim() || 
-      realIp || 
-      cfConnectingIp || 
-      "unknown"
+      forwarded?.split(",")[0]?.trim() || realIp || cfConnectingIp || "unknown"
     );
   }
 }

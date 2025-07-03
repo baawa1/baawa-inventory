@@ -1,47 +1,79 @@
 import { NextRequest, NextResponse } from "next/server";
-import { createServerSupabaseClient } from "@/lib/supabase-server";
-import crypto from "crypto";
+import { prisma } from "@/lib/db";
+import { emailService } from "@/lib/email";
+import { withAuthRateLimit } from "@/lib/rate-limit";
+import { TokenSecurity } from "@/lib/utils/token-security";
+import { z } from "zod";
 
-export async function POST(request: NextRequest) {
+// Validation schemas
+const verifyTokenSchema = z.object({
+  token: z.string().min(1, "Token is required"),
+});
+
+const resendEmailSchema = z.object({
+  email: z.string().email("Valid email is required"),
+});
+
+async function handleVerifyEmail(request: NextRequest) {
   try {
-    const { token } = await request.json();
+    const body = await request.json();
 
-    if (!token) {
+    // Validate request body
+    const validation = verifyTokenSchema.safeParse(body);
+    if (!validation.success) {
       return NextResponse.json(
-        { error: "Verification token is required" },
+        {
+          error: "Invalid request data",
+          details: validation.error.format(),
+        },
         { status: 400 }
       );
     }
 
-    const supabase = await createServerSupabaseClient();
+    const { token } = validation.data;
 
-    // Find user with this verification token
-    const { data: user, error: findError } = await supabase
-      .from("users")
-      .select("id, email, first_name, email_verification_expires, user_status")
-      .eq("email_verification_token", token)
-      .single();
+    // Find all users with verification tokens that haven't expired
+    const users = await prisma.user.findMany({
+      where: {
+        emailVerificationToken: { not: null },
+        emailVerificationExpires: { gte: new Date() },
+        userStatus: "PENDING",
+      },
+      select: {
+        id: true,
+        email: true,
+        firstName: true,
+        emailVerificationToken: true,
+        emailVerificationExpires: true,
+        userStatus: true,
+        emailVerified: true,
+      },
+    });
 
-    if (findError || !user) {
+    // Check token against each user's hashed token
+    let matchedUser = null;
+    for (const user of users) {
+      if (user.emailVerificationToken) {
+        const isValid = await TokenSecurity.verifyEmailToken(
+          token,
+          user.emailVerificationToken
+        );
+        if (isValid) {
+          matchedUser = user;
+          break;
+        }
+      }
+    }
+
+    if (!matchedUser) {
       return NextResponse.json(
         { error: "Invalid or expired verification token" },
         { status: 400 }
       );
     }
 
-    // Check if token has expired
-    const now = new Date();
-    const expiresAt = new Date(user.email_verification_expires);
-
-    if (now > expiresAt) {
-      return NextResponse.json(
-        { error: "Verification token has expired. Please request a new one." },
-        { status: 400 }
-      );
-    }
-
     // Check if user is already verified
-    if (user.user_status !== "PENDING") {
+    if (matchedUser.emailVerified || matchedUser.userStatus !== "PENDING") {
       return NextResponse.json(
         { error: "Email is already verified" },
         { status: 400 }
@@ -49,36 +81,33 @@ export async function POST(request: NextRequest) {
     }
 
     // Update user as email verified
-    const { error: updateError } = await supabase
-      .from("users")
-      .update({
-        email_verified: true,
-        email_verified_at: new Date().toISOString(),
-        email_verification_token: null,
-        email_verification_expires: null,
-        user_status: "VERIFIED", // Email verified, but still needs admin approval
-      })
-      .eq("id", user.id);
-
-    if (updateError) {
-      console.error("Error updating user verification status:", updateError);
-      return NextResponse.json(
-        { error: "Failed to verify email" },
-        { status: 500 }
-      );
-    }
+    const updatedUser = await prisma.user.update({
+      where: { id: matchedUser.id },
+      data: {
+        emailVerified: true,
+        emailVerificationToken: null,
+        emailVerificationExpires: null,
+        userStatus: "VERIFIED", // Email verified, but still needs admin approval
+      },
+      select: {
+        id: true,
+        email: true,
+        firstName: true,
+        userStatus: true,
+        emailVerified: true,
+      },
+    });
 
     return NextResponse.json({
       message:
         "Email verified successfully! Your account is now pending admin approval.",
       user: {
-        id: user.id,
-        email: user.email,
-        firstName: user.first_name,
-        status: "VERIFIED",
-        emailVerified: true,
+        id: updatedUser.id,
+        email: updatedUser.email,
+        firstName: updatedUser.firstName,
+        status: updatedUser.userStatus,
+        emailVerified: updatedUser.emailVerified,
       },
-      // Indicate that the client should refresh the session
       shouldRefreshSession: true,
     });
   } catch (error) {
@@ -91,29 +120,42 @@ export async function POST(request: NextRequest) {
 }
 
 // Generate new verification token for existing user
-export async function PUT(request: NextRequest) {
+async function handleResendVerification(request: NextRequest) {
   try {
-    const { email } = await request.json();
+    const body = await request.json();
 
-    if (!email) {
-      return NextResponse.json({ error: "Email is required" }, { status: 400 });
+    // Validate request body
+    const validation = resendEmailSchema.safeParse(body);
+    if (!validation.success) {
+      return NextResponse.json(
+        {
+          error: "Invalid request data",
+          details: validation.error.format(),
+        },
+        { status: 400 }
+      );
     }
 
-    const supabase = await createServerSupabaseClient();
+    const { email } = validation.data;
 
     // Find user by email
-    const { data: user, error: findError } = await supabase
-      .from("users")
-      .select("id, first_name, email, user_status, email_verified")
-      .eq("email", email)
-      .single();
+    const user = await prisma.user.findUnique({
+      where: { email },
+      select: {
+        id: true,
+        firstName: true,
+        email: true,
+        userStatus: true,
+        emailVerified: true,
+      },
+    });
 
-    if (findError || !user) {
+    if (!user) {
       return NextResponse.json({ error: "User not found" }, { status: 404 });
     }
 
     // Check if user is already verified
-    if (user.email_verified || user.user_status !== "PENDING") {
+    if (user.emailVerified || user.userStatus !== "PENDING") {
       return NextResponse.json(
         { error: "Email is already verified" },
         { status: 400 }
@@ -121,33 +163,27 @@ export async function PUT(request: NextRequest) {
     }
 
     // Generate new verification token
-    const verificationToken = crypto.randomBytes(32).toString("hex");
-    const verificationExpires = new Date(Date.now() + 24 * 60 * 60 * 1000); // 24 hours
+    const {
+      rawToken: verificationToken,
+      hashedToken: hashedVerificationToken,
+      expires: verificationExpires,
+    } = TokenSecurity.generateEmailVerificationToken(32);
 
     // Update user with new token
-    const { error: updateError } = await supabase
-      .from("users")
-      .update({
-        email_verification_token: verificationToken,
-        email_verification_expires: verificationExpires.toISOString(),
-      })
-      .eq("id", user.id);
-
-    if (updateError) {
-      console.error("Error updating verification token:", updateError);
-      return NextResponse.json(
-        { error: "Failed to generate new verification token" },
-        { status: 500 }
-      );
-    }
+    await prisma.user.update({
+      where: { id: user.id },
+      data: {
+        emailVerificationToken: hashedVerificationToken,
+        emailVerificationExpires: verificationExpires,
+      },
+    });
 
     // Send new verification email
     try {
-      const { emailService } = await import("@/lib/email");
       const verificationLink = `${process.env.NEXTAUTH_URL}/verify-email?token=${verificationToken}`;
 
       await emailService.sendVerificationEmail(email, {
-        firstName: user.first_name,
+        firstName: user.firstName,
         verificationLink,
         expiresInHours: 24,
       });
@@ -170,3 +206,7 @@ export async function PUT(request: NextRequest) {
     );
   }
 }
+
+// Apply rate limiting to both endpoints
+export const POST = withAuthRateLimit(handleVerifyEmail);
+export const PUT = withAuthRateLimit(handleResendVerification);

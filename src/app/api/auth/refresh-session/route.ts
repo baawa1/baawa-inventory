@@ -1,9 +1,10 @@
 import { NextRequest, NextResponse } from "next/server";
 import { getServerSession } from "next-auth/next";
 import { authOptions } from "@/lib/auth";
-import { createServerSupabaseClient } from "@/lib/supabase-server";
+import { prisma } from "@/lib/db";
+import { withAuthRateLimit } from "@/lib/rate-limit";
 
-export async function POST(request: NextRequest) {
+async function handleRefreshSession(request: NextRequest) {
   try {
     const session = await getServerSession(authOptions);
 
@@ -11,19 +12,24 @@ export async function POST(request: NextRequest) {
       return NextResponse.json({ error: "Not authenticated" }, { status: 401 });
     }
 
-    const supabase = await createServerSupabaseClient();
-
     // Fetch the latest user data from database
-    const { data: user, error } = await supabase
-      .from("users")
-      .select(
-        "id, email, first_name, last_name, role, user_status, email_verified"
-      )
-      .eq("id", parseInt(session.user.id))
-      .eq("is_active", true)
-      .single();
+    const user = await prisma.user.findUnique({
+      where: {
+        id: parseInt(session.user.id),
+        isActive: true,
+      },
+      select: {
+        id: true,
+        email: true,
+        firstName: true,
+        lastName: true,
+        role: true,
+        userStatus: true,
+        emailVerified: true,
+      },
+    });
 
-    if (error || !user) {
+    if (!user) {
       return NextResponse.json({ error: "User not found" }, { status: 404 });
     }
 
@@ -32,10 +38,10 @@ export async function POST(request: NextRequest) {
       user: {
         id: user.id.toString(),
         email: user.email,
-        name: `${user.first_name} ${user.last_name}`,
+        name: `${user.firstName} ${user.lastName}`,
         role: user.role,
-        status: user.user_status,
-        emailVerified: user.email_verified,
+        status: user.userStatus,
+        emailVerified: user.emailVerified,
       },
     });
   } catch (error) {
@@ -46,3 +52,6 @@ export async function POST(request: NextRequest) {
     );
   }
 }
+
+// Apply rate limiting
+export const POST = withAuthRateLimit(handleRefreshSession);

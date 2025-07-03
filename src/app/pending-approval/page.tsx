@@ -36,6 +36,7 @@ export default function PendingApprovalPage() {
     setHasTriedRefresh(true);
 
     try {
+      console.log("Refreshing session for user ID:", session.user.id);
       // Use NextAuth's update() to trigger a fresh JWT token fetch
       await update();
       console.log("Session refreshed successfully");
@@ -49,7 +50,10 @@ export default function PendingApprovalPage() {
   // ALL HOOKS MUST BE CALLED BEFORE ANY CONDITIONAL RETURNS
   useEffect(() => {
     if (session?.user?.status) {
+      console.log("Setting user status from session:", session.user.status);
       setUserStatus(session.user.status);
+    } else {
+      console.log("No status in session:", session);
     }
   }, [session]);
 
@@ -58,11 +62,15 @@ export default function PendingApprovalPage() {
     if (session && !hasTriedRefresh) {
       const shouldAutoRefresh =
         !userStatus || // No status detected
+        userStatus === "undefined" || // Status is string "undefined"
         (userStatus === "PENDING" &&
           sessionStorage.getItem("emailJustVerified")); // User just verified email but still shows PENDING
 
       if (shouldAutoRefresh) {
         console.log("Auto-refreshing session due to potentially stale status");
+        console.log("Current session data:", session);
+        console.log("Current userStatus:", userStatus);
+        console.log("Session.user.status:", session.user?.status);
         refreshUserStatus();
 
         // Clear the flag after attempting refresh
@@ -159,6 +167,7 @@ export default function PendingApprovalPage() {
           },
         };
       default:
+        console.warn("Unknown user status:", userStatus, "Session:", session);
         return {
           icon: <Clock className="h-16 w-16 text-gray-500" />,
           title: "Account Status Unknown",
@@ -182,6 +191,21 @@ export default function PendingApprovalPage() {
   return (
     <div className="min-h-screen flex items-center justify-center bg-gray-50">
       <div className="w-full max-w-md">
+        {/* Debug panel for development */}
+        {process.env.NODE_ENV === "development" && (
+          <div className="mb-4 p-4 bg-yellow-50 border border-yellow-200 rounded-lg text-xs">
+            <h3 className="font-semibold text-yellow-800 mb-2">Debug Info:</h3>
+            <p>Session Status: {status}</p>
+            <p>User Status: {userStatus || "undefined"}</p>
+            <p>Session User ID: {session?.user?.id || "undefined"}</p>
+            <p>
+              Email Verified:{" "}
+              {session?.user?.emailVerified?.toString() || "undefined"}
+            </p>
+            <p>Has Tried Refresh: {hasTriedRefresh.toString()}</p>
+          </div>
+        )}
+
         <Card>
           <CardHeader className="text-center">
             <div className="flex justify-center mb-4">{statusInfo.icon}</div>
