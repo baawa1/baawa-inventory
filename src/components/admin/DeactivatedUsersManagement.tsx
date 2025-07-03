@@ -31,25 +31,25 @@ import {
 } from "@/components/ui/dialog";
 
 import { UserRole } from "@/types/app";
+import {
+  useDeactivatedUsers,
+  useReactivateUser,
+  type APIUser,
+} from "@/hooks/api/users";
+import { toast } from "sonner";
 
-interface User {
-  id: number;
-  firstName: string;
-  lastName: string;
-  email: string;
-  role: UserRole;
-  isActive: boolean;
-  createdAt: string;
-  lastLogin?: string;
+interface User extends APIUser {
+  // Use APIUser interface but keep backward compatibility
 }
 
 export function DeactivatedUsersManagement() {
   const { data: session, status } = useSession();
   const router = useRouter();
-  const [users, setUsers] = useState<User[]>([]);
-  const [loading, setLoading] = useState(true);
-  const [error, setError] = useState<string | null>(null);
   const [activatingUser, setActivatingUser] = useState<number | null>(null);
+
+  // TanStack Query hooks
+  const { data: users = [], isLoading, error } = useDeactivatedUsers();
+  const reactivateUserMutation = useReactivateUser();
 
   // Check if user is admin
   useEffect(() => {
@@ -61,66 +61,24 @@ export function DeactivatedUsersManagement() {
     }
   }, [session, status, router]);
 
-  // Fetch deactivated users
-  const fetchDeactivatedUsers = async () => {
-    try {
-      setLoading(true);
-      const response = await fetch("/api/users?isActive=false", {
-        credentials: "include",
-      });
-
-      if (!response.ok) {
-        throw new Error("Failed to fetch deactivated users");
-      }
-
-      const data = await response.json();
-      setUsers(data);
-    } catch (error) {
-      setError(
-        error instanceof Error
-          ? error.message
-          : "Failed to fetch deactivated users"
-      );
-    } finally {
-      setLoading(false);
-    }
-  };
-
-  useEffect(() => {
-    if (session?.user.role === "ADMIN") {
-      fetchDeactivatedUsers();
-    }
-  }, [session]);
-
   // Handle user reactivation
   const reactivateUser = async (user: User) => {
     try {
       setActivatingUser(user.id);
-      const response = await fetch(`/api/users/${user.id}`, {
-        method: "PUT",
-        credentials: "include",
-        headers: {
-          "Content-Type": "application/json",
-        },
-        body: JSON.stringify({
-          firstName: user.firstName,
-          lastName: user.lastName,
-          email: user.email,
-          role: user.role,
-          isActive: true,
-        }),
+
+      await reactivateUserMutation.mutateAsync({
+        id: user.id,
+        firstName: user.firstName,
+        lastName: user.lastName,
+        email: user.email,
+        role: user.role,
       });
 
-      if (!response.ok) {
-        const errorData = await response.json();
-        throw new Error(errorData.message || "Failed to reactivate user");
-      }
-
-      await fetchDeactivatedUsers();
+      toast.success("User reactivated successfully");
     } catch (error) {
-      setError(
-        error instanceof Error ? error.message : "Failed to reactivate user"
-      );
+      const errorMessage =
+        error instanceof Error ? error.message : "Failed to reactivate user";
+      toast.error(errorMessage);
     } finally {
       setActivatingUser(null);
     }
@@ -153,13 +111,13 @@ export function DeactivatedUsersManagement() {
           </CardDescription>
         </CardHeader>
         <CardContent>
-          {loading ? (
+          {isLoading ? (
             <div className="flex items-center justify-center py-4">
               <div>Loading deactivated users...</div>
             </div>
           ) : error ? (
             <div className="bg-destructive/15 text-destructive text-sm p-3 rounded-md">
-              {error}
+              {error instanceof Error ? error.message : "Failed to load users"}
             </div>
           ) : users.length === 0 ? (
             <div className="flex items-center justify-center py-8">

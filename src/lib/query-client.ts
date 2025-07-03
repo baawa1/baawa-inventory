@@ -116,7 +116,8 @@ export const queryKeys = {
       [...queryKeys.users.lists(), filters] as const,
     details: () => [...queryKeys.users.all, "detail"] as const,
     detail: (id: string) => [...queryKeys.users.details(), id] as const,
-    pending: () => [...queryKeys.users.all, "pending"] as const,
+    pending: (status?: string) =>
+      [...queryKeys.users.all, "pending", status || "all"] as const,
     deactivated: () => [...queryKeys.users.all, "deactivated"] as const,
   },
 

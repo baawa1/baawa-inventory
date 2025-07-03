@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useEffect } from "react";
+import { useState } from "react";
 import { useSession } from "next-auth/react";
 import { useRouter } from "next/navigation";
 import { Button } from "@/components/ui/button";
@@ -18,16 +18,28 @@ import {
   type UserFormData,
   type EditUserFormData,
 } from "./types/user";
+import {
+  useActiveUsers,
+  useCreateUser,
+  useUpdateUser,
+  useDeleteUser,
+  type CreateUserData,
+  type UpdateUserData,
+} from "@/hooks/api/users";
+import { useEffect } from "react";
+import { toast } from "sonner";
 
 export function UserManagement() {
   const { data: session, status } = useSession();
   const router = useRouter();
-  const [users, setUsers] = useState<User[]>([]);
-  const [loading, setLoading] = useState(true);
-  const [error, setError] = useState<string | null>(null);
   const [isDialogOpen, setIsDialogOpen] = useState(false);
   const [editingUser, setEditingUser] = useState<User | null>(null);
-  const [submitting, setSubmitting] = useState(false);
+
+  // TanStack Query hooks
+  const { data: users = [], isLoading, error, refetch } = useActiveUsers();
+  const createUserMutation = useCreateUser();
+  const updateUserMutation = useUpdateUser();
+  const deleteUserMutation = useDeleteUser();
 
   // Check if user is admin
   useEffect(() => {
@@ -39,122 +51,68 @@ export function UserManagement() {
     }
   }, [session, status, router]);
 
-  // Fetch users
-  const fetchUsers = async () => {
-    try {
-      setLoading(true);
-      setError(null);
-      const response = await fetch("/api/users?isActive=true", {
-        credentials: "include",
-      });
-
-      if (!response.ok) {
-        let errorMessage = "Failed to fetch users";
-        try {
-          const errorData = await response.json();
-          errorMessage = errorData.error || errorMessage;
-        } catch (parseError) {
-          console.error("Failed to parse error response:", parseError);
-        }
-        throw new Error(errorMessage);
-      }
-
-      const data = await response.json();
-      setUsers(data.users || data); // Handle both pagination and direct array responses
-    } catch (error) {
-      setError(
-        error instanceof Error ? error.message : "Failed to fetch users"
-      );
-    } finally {
-      setLoading(false);
-    }
-  };
-
-  useEffect(() => {
-    if (session?.user.role === "ADMIN") {
-      fetchUsers();
-    }
-  }, [session]);
-
   // Handle form submission
   const handleSubmit = async (data: UserFormData | EditUserFormData) => {
-    setSubmitting(true);
-    setError(null);
-
     try {
-      const url = editingUser ? `/api/users/${editingUser.id}` : "/api/users";
-      const method = editingUser ? "PUT" : "POST";
+      if (editingUser) {
+        // Update existing user
+        const updateData: UpdateUserData = {
+          firstName: data.firstName,
+          lastName: data.lastName,
+          email: data.email,
+          role: data.role,
+          userStatus: data.userStatus,
+        };
 
-      // Prepare payload
-      const payload: any = {
-        firstName: data.firstName,
-        lastName: data.lastName,
-        email: data.email,
-        role: data.role,
-        userStatus: data.userStatus,
-      };
+        await updateUserMutation.mutateAsync({
+          id: editingUser.id,
+          ...updateData,
+        });
 
-      // Only add password if it's provided (for new users)
-      if ("password" in data && data.password) {
-        payload.password = data.password;
-      }
-
-      const response = await fetch(url, {
-        method,
-        credentials: "include",
-        headers: {
-          "Content-Type": "application/json",
-        },
-        body: JSON.stringify(payload),
-      });
-
-      if (!response.ok) {
-        let errorMessage = "Failed to save user";
-        try {
-          const errorData = await response.json();
-          errorMessage = errorData.error || errorMessage;
-        } catch (parseError) {
-          console.error("Failed to parse error response:", parseError);
+        toast.success("User updated successfully");
+      } else {
+        // Create new user
+        if (!("password" in data) || !data.password) {
+          throw new Error("Password is required for new users");
         }
-        throw new Error(errorMessage);
-      }
 
-      // Refresh users list
-      await fetchUsers();
+        const createData: CreateUserData = {
+          firstName: data.firstName,
+          lastName: data.lastName,
+          email: data.email,
+          role: data.role,
+          userStatus: data.userStatus,
+          password: data.password,
+        };
+
+        await createUserMutation.mutateAsync(createData);
+        toast.success("User created successfully");
+      }
 
       // Close dialog and reset state
       setIsDialogOpen(false);
       setEditingUser(null);
     } catch (error) {
-      setError(error instanceof Error ? error.message : "Failed to save user");
-    } finally {
-      setSubmitting(false);
+      const errorMessage =
+        error instanceof Error ? error.message : "Failed to save user";
+      toast.error(errorMessage);
     }
   };
 
   // Handle user deletion/deactivation
   const handleDeleteUser = async (userId: number) => {
     if (userId.toString() === session?.user.id) {
-      setError("Cannot delete your own account");
+      toast.error("Cannot delete your own account");
       return;
     }
 
     try {
-      const response = await fetch(`/api/users/${userId}`, {
-        method: "DELETE",
-        credentials: "include",
-      });
-
-      if (!response.ok) {
-        const errorData = await response.json();
-        throw new Error(errorData.error || "Failed to delete user");
-      }
-
-      await fetchUsers();
+      await deleteUserMutation.mutateAsync(userId);
+      toast.success("User deactivated successfully");
     } catch (error) {
-      setError(
-        error instanceof Error ? error.message : "Failed to delete user"
-      );
+      const errorMessage =
+        error instanceof Error ? error.message : "Failed to delete user";
+      toast.error(errorMessage);
     }
   };
 
@@ -175,7 +133,6 @@ export function UserManagement() {
     setIsDialogOpen(open);
     if (!open) {
       setEditingUser(null);
-      setError(null);
     }
   };
 
@@ -186,6 +143,11 @@ export function UserManagement() {
   if (!session || session.user.role !== "ADMIN") {
     return null;
   }
+
+  // Show error if there's a fetch error
+  const errorMessage = error instanceof Error ? error.message : null;
+  const isSubmitting =
+    createUserMutation.isPending || updateUserMutation.isPending;
 
   return (
     <div className="space-y-6">
@@ -199,9 +161,9 @@ export function UserManagement() {
         <Button onClick={handleNewUser}>Add New User</Button>
       </div>
 
-      {error && (
+      {errorMessage && (
         <div className="bg-destructive/15 text-destructive text-sm p-3 rounded-md">
-          {error}
+          {errorMessage}
         </div>
       )}
 
@@ -217,7 +179,7 @@ export function UserManagement() {
             users={users}
             onEditUserAction={handleEditUser}
             onDeleteUserAction={handleDeleteUser}
-            isLoading={loading}
+            isLoading={isLoading}
           />
         </CardContent>
       </Card>
@@ -227,7 +189,7 @@ export function UserManagement() {
         onOpenChangeAction={handleDialogChange}
         user={editingUser}
         onSubmitAction={handleSubmit}
-        isSubmitting={submitting}
+        isSubmitting={isSubmitting}
       />
     </div>
   );

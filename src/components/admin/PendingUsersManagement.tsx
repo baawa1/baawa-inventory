@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useEffect, useCallback } from "react";
+import { useState, useEffect } from "react";
 import { useSession } from "next-auth/react";
 import { useRouter } from "next/navigation";
 
@@ -48,20 +48,15 @@ import {
   RefreshCw,
 } from "lucide-react";
 
-interface PendingUser {
-  id: number;
-  firstName: string;
-  lastName: string;
-  email: string;
-  userStatus: "PENDING" | "VERIFIED" | "APPROVED" | "REJECTED" | "SUSPENDED";
-  emailVerified: boolean;
-  role: string;
-  isActive: boolean;
-  createdAt: string;
-  lastLogin?: string;
-  approvedBy?: number;
-  approvedAt?: string;
-  rejectionReason?: string;
+import {
+  usePendingUsers,
+  useApproveUser,
+  type APIUser,
+} from "@/hooks/api/users";
+import { toast } from "sonner";
+
+interface PendingUser extends APIUser {
+  // Use APIUser interface but keep backward compatibility
 }
 
 const statusConfig = {
@@ -95,13 +90,18 @@ const statusConfig = {
 export function PendingUsersManagement() {
   const { data: session, status } = useSession();
   const router = useRouter();
-  const [pendingUsers, setPendingUsers] = useState<PendingUser[]>([]);
-  const [loading, setLoading] = useState(true);
-  const [error, setError] = useState<string | null>(null);
-  const [selectedUser, setSelectedUser] = useState<PendingUser | null>(null);
+  const [selectedUser, setSelectedUser] = useState<APIUser | null>(null);
   const [isDetailsDialogOpen, setIsDetailsDialogOpen] = useState(false);
-  const [processingUserId, setProcessingUserId] = useState<number | null>(null);
   const [filterStatus, setFilterStatus] = useState<string>("all");
+
+  // TanStack Query hooks
+  const {
+    data: pendingUsers = [],
+    isLoading,
+    error,
+    refetch,
+  } = usePendingUsers(filterStatus);
+  const approveUserMutation = useApproveUser();
 
   // Check if user is admin
   useEffect(() => {
@@ -113,117 +113,41 @@ export function PendingUsersManagement() {
     }
   }, [session, status, router]);
 
-  // Fetch pending users
-  const fetchPendingUsers = useCallback(async () => {
-    try {
-      setLoading(true);
-      setError(null);
-
-      // Fetch all users first, then filter based on selected status
-      const url =
-        filterStatus === "all"
-          ? "/api/users"
-          : `/api/users?status=${filterStatus}`;
-
-      const response = await fetch(url, {
-        credentials: "include",
-      });
-
-      if (!response.ok) {
-        throw new Error("Failed to fetch users");
-      }
-
-      const data = await response.json();
-
-      // Filter users to show non-approved users for management
-      const filteredUsers =
-        filterStatus === "all"
-          ? data.filter((user: PendingUser) => user.userStatus !== "APPROVED")
-          : data;
-
-      setPendingUsers(filteredUsers || []);
-    } catch (error) {
-      setError(
-        error instanceof Error ? error.message : "Failed to fetch users"
-      );
-    } finally {
-      setLoading(false);
-    }
-  }, [filterStatus]);
-
-  useEffect(() => {
-    if (session?.user.role === "ADMIN") {
-      fetchPendingUsers();
-    }
-  }, [session, fetchPendingUsers]);
-
   // Filter users based on selected status
   const filteredUsers = pendingUsers;
 
   // Handle user approval
-  const handleApproveUser = async (user: PendingUser) => {
-    setProcessingUserId(user.id);
+  const handleApproveUser = async (user: APIUser) => {
     try {
-      const response = await fetch(`/api/admin/approve-user`, {
-        method: "POST",
-        credentials: "include",
-        headers: {
-          "Content-Type": "application/json",
-        },
-        body: JSON.stringify({
-          userId: user.id,
-          action: "approve",
-        }),
+      await approveUserMutation.mutateAsync({
+        userId: user.id,
+        action: "approve",
       });
 
-      if (!response.ok) {
-        const errorData = await response.json();
-        throw new Error(errorData.message || "Failed to approve user");
-      }
-
-      // Refresh the list
-      await fetchPendingUsers();
+      toast.success("User approved successfully");
       setIsDetailsDialogOpen(false);
     } catch (error) {
-      setError(
-        error instanceof Error ? error.message : "Failed to approve user"
-      );
-    } finally {
-      setProcessingUserId(null);
+      const errorMessage =
+        error instanceof Error ? error.message : "Failed to approve user";
+      toast.error(errorMessage);
     }
   };
 
   // Handle user rejection
-  const handleRejectUser = async (user: PendingUser, reason?: string) => {
-    setProcessingUserId(user.id);
+  const handleRejectUser = async (user: APIUser, reason?: string) => {
     try {
-      const response = await fetch(`/api/admin/approve-user`, {
-        method: "POST",
-        credentials: "include",
-        headers: {
-          "Content-Type": "application/json",
-        },
-        body: JSON.stringify({
-          userId: user.id,
-          action: "reject",
-          rejectionReason: reason || "Application rejected by administrator",
-        }),
+      await approveUserMutation.mutateAsync({
+        userId: user.id,
+        action: "reject",
+        rejectionReason: reason || "Application rejected by administrator",
       });
 
-      if (!response.ok) {
-        const errorData = await response.json();
-        throw new Error(errorData.message || "Failed to reject user");
-      }
-
-      // Refresh the list
-      await fetchPendingUsers();
+      toast.success("User rejected successfully");
       setIsDetailsDialogOpen(false);
     } catch (error) {
-      setError(
-        error instanceof Error ? error.message : "Failed to reject user"
-      );
-    } finally {
-      setProcessingUserId(null);
+      const errorMessage =
+        error instanceof Error ? error.message : "Failed to reject user";
+      toast.error(errorMessage);
     }
   };
 
@@ -240,12 +164,12 @@ export function PendingUsersManagement() {
   };
 
   // Show user details in dialog
-  const showUserDetails = (user: PendingUser) => {
+  const showUserDetails = (user: APIUser) => {
     setSelectedUser(user);
     setIsDetailsDialogOpen(true);
   };
 
-  if (status === "loading" || loading) {
+  if (status === "loading" || isLoading) {
     return (
       <Card>
         <CardContent className="flex items-center justify-center py-8">
@@ -255,6 +179,9 @@ export function PendingUsersManagement() {
       </Card>
     );
   }
+
+  const errorMessage = error instanceof Error ? error.message : null;
+  const isProcessing = approveUserMutation.isPending;
 
   return (
     <div className="space-y-6">
@@ -270,18 +197,18 @@ export function PendingUsersManagement() {
                 Review and approve users waiting for account activation
               </CardDescription>
             </div>
-            <Button onClick={fetchPendingUsers} variant="outline" size="sm">
+            <Button onClick={() => refetch()} variant="outline" size="sm">
               <RefreshCw className="h-4 w-4 mr-2" />
               Refresh
             </Button>
           </div>
         </CardHeader>
         <CardContent>
-          {error && (
+          {errorMessage && (
             <div className="bg-red-50 border border-red-200 rounded-md p-4 mb-4">
               <div className="flex items-center">
                 <AlertCircle className="h-4 w-4 text-red-600 mr-2" />
-                <span className="text-red-800">{error}</span>
+                <span className="text-red-800">{errorMessage}</span>
               </div>
             </div>
           )}
@@ -386,9 +313,9 @@ export function PendingUsersManagement() {
                                 variant="default"
                                 size="sm"
                                 onClick={() => handleApproveUser(user)}
-                                disabled={processingUserId === user.id}
+                                disabled={isProcessing}
                               >
-                                {processingUserId === user.id ? (
+                                {isProcessing ? (
                                   <RefreshCw className="h-3 w-3 animate-spin" />
                                 ) : (
                                   "Approve"
@@ -398,7 +325,7 @@ export function PendingUsersManagement() {
                                 variant="destructive"
                                 size="sm"
                                 onClick={() => handleRejectUser(user)}
-                                disabled={processingUserId === user.id}
+                                disabled={isProcessing}
                               >
                                 Reject
                               </Button>
@@ -490,9 +417,9 @@ export function PendingUsersManagement() {
                   <Button
                     variant="destructive"
                     onClick={() => handleRejectUser(selectedUser)}
-                    disabled={processingUserId === selectedUser.id}
+                    disabled={isProcessing}
                   >
-                    {processingUserId === selectedUser.id ? (
+                    {isProcessing ? (
                       <RefreshCw className="h-4 w-4 animate-spin mr-2" />
                     ) : (
                       <XCircle className="h-4 w-4 mr-2" />
@@ -501,9 +428,9 @@ export function PendingUsersManagement() {
                   </Button>
                   <Button
                     onClick={() => handleApproveUser(selectedUser)}
-                    disabled={processingUserId === selectedUser.id}
+                    disabled={isProcessing}
                   >
-                    {processingUserId === selectedUser.id ? (
+                    {isProcessing ? (
                       <RefreshCw className="h-4 w-4 animate-spin mr-2" />
                     ) : (
                       <CheckCircle className="h-4 w-4 mr-2" />
