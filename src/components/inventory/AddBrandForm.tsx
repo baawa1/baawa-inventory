@@ -1,6 +1,5 @@
 "use client";
 
-import { useState } from "react";
 import { useRouter } from "next/navigation";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
@@ -14,14 +13,13 @@ import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
 import { Switch } from "@/components/ui/switch";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import { Alert, AlertDescription } from "@/components/ui/alert";
 import { Loader2, Save } from "lucide-react";
 import { toast } from "sonner";
+import { useCreateBrand } from "@/hooks/api/brands";
 
 export default function AddBrandForm() {
   const router = useRouter();
-  const [isSubmitting, setIsSubmitting] = useState(false);
-  const [serverError, setServerError] = useState<string | null>(null);
+  const createBrandMutation = useCreateBrand();
 
   const {
     register,
@@ -42,53 +40,26 @@ export default function AddBrandForm() {
   const isActive = watch("isActive");
 
   const onSubmit = async (data: CreateBrandFormData) => {
-    try {
-      setIsSubmitting(true);
-      setServerError(null);
+    // Clean up website URL and description to match Brand interface types
+    const brandData = {
+      name: data.name,
+      description: data.description || undefined,
+      website: data.website || undefined,
+      isActive: data.isActive,
+    };
 
-      // Clean up website URL
-      if (data.website && data.website.trim() === "") {
-        data.website = null;
-      }
-
-      // Transform form data to API format (isActive -> is_active)
-      const apiData = {
-        name: data.name,
-        description: data.description,
-        website: data.website,
-        is_active: data.isActive,
-      };
-
-      const response = await fetch("/api/brands", {
-        method: "POST",
-        headers: {
-          "Content-Type": "application/json",
-        },
-        body: JSON.stringify(apiData),
-      });
-
-      if (!response.ok) {
-        const errorData = await response.json();
-        throw new Error(errorData.error || "Failed to create brand");
-      }
-
-      const result = await response.json();
-
-      if (result.success) {
+    createBrandMutation.mutate(brandData, {
+      onSuccess: () => {
         toast.success("Brand created successfully!");
         router.push("/inventory/brands");
-      } else {
-        throw new Error("Failed to create brand");
-      }
-    } catch (error) {
-      console.error("Error creating brand:", error);
-      const errorMessage =
-        error instanceof Error ? error.message : "Failed to create brand";
-      setServerError(errorMessage);
-      toast.error(errorMessage);
-    } finally {
-      setIsSubmitting(false);
-    }
+      },
+      onError: (error) => {
+        console.error("Error creating brand:", error);
+        const errorMessage =
+          error instanceof Error ? error.message : "Failed to create brand";
+        toast.error(errorMessage);
+      },
+    });
   };
 
   return (
@@ -98,12 +69,6 @@ export default function AddBrandForm() {
           <CardTitle>Brand Information</CardTitle>
         </CardHeader>
         <CardContent className="space-y-4">
-          {serverError && (
-            <Alert variant="destructive">
-              <AlertDescription>{serverError}</AlertDescription>
-            </Alert>
-          )}
-
           <div className="space-y-2">
             <Label htmlFor="name">
               Brand Name <span className="text-destructive">*</span>
@@ -112,7 +77,7 @@ export default function AddBrandForm() {
               id="name"
               {...register("name")}
               placeholder="Enter brand name"
-              disabled={isSubmitting}
+              disabled={createBrandMutation.isPending}
             />
             {errors.name && (
               <p className="text-sm text-destructive">{errors.name.message}</p>
@@ -126,7 +91,7 @@ export default function AddBrandForm() {
               {...register("description")}
               placeholder="Enter brand description (optional)"
               rows={3}
-              disabled={isSubmitting}
+              disabled={createBrandMutation.isPending}
             />
             {errors.description && (
               <p className="text-sm text-destructive">
@@ -142,7 +107,7 @@ export default function AddBrandForm() {
               type="url"
               {...register("website")}
               placeholder="https://example.com (optional)"
-              disabled={isSubmitting}
+              disabled={createBrandMutation.isPending}
             />
             {errors.website && (
               <p className="text-sm text-destructive">
@@ -156,7 +121,7 @@ export default function AddBrandForm() {
               id="isActive"
               checked={isActive}
               onCheckedChange={(checked) => setValue("isActive", checked)}
-              disabled={isSubmitting}
+              disabled={createBrandMutation.isPending}
             />
             <Label htmlFor="isActive">Active Brand</Label>
           </div>
@@ -173,18 +138,18 @@ export default function AddBrandForm() {
           type="button"
           variant="outline"
           onClick={() => router.push("/inventory/brands")}
-          disabled={isSubmitting}
+          disabled={createBrandMutation.isPending}
         >
           Cancel
         </Button>
 
-        <Button type="submit" disabled={isSubmitting}>
-          {isSubmitting ? (
+        <Button type="submit" disabled={createBrandMutation.isPending}>
+          {createBrandMutation.isPending ? (
             <Loader2 className="h-4 w-4 mr-2 animate-spin" />
           ) : (
             <Save className="h-4 w-4 mr-2" />
           )}
-          {isSubmitting ? "Creating..." : "Create Brand"}
+          {createBrandMutation.isPending ? "Creating..." : "Create Brand"}
         </Button>
       </div>
     </form>

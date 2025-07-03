@@ -16,9 +16,9 @@ import { Textarea } from "@/components/ui/textarea";
 import { Switch } from "@/components/ui/switch";
 import { Badge } from "@/components/ui/badge";
 import { ArrowLeft, Loader2 } from "lucide-react";
-import { Alert, AlertDescription } from "@/components/ui/alert";
 import { createCategorySchema } from "@/lib/validations/category";
 import { toast } from "sonner";
+import { useCreateCategory } from "@/hooks/api/categories";
 
 type CreateCategoryFormData = {
   name: string;
@@ -28,8 +28,7 @@ type CreateCategoryFormData = {
 
 export default function AddCategoryForm() {
   const router = useRouter();
-  const [isSubmitting, setIsSubmitting] = useState(false);
-  const [error, setError] = useState<string | null>(null);
+  const createCategoryMutation = useCreateCategory();
   const [validationErrors, setValidationErrors] = useState<
     Record<string, string>
   >({});
@@ -65,37 +64,27 @@ export default function AddCategoryForm() {
     if (!validateForm(formData)) {
       return;
     }
-    try {
-      setIsSubmitting(true);
-      setError(null);
 
-      const response = await fetch("/api/categories", {
-        method: "POST",
-        headers: {
-          "Content-Type": "application/json",
-        },
-        body: JSON.stringify(formData),
-      });
+    // Transform form data to match Category interface
+    const categoryData = {
+      name: formData.name,
+      description: formData.description || undefined,
+      isActive: formData.isActive,
+    };
 
-      if (!response.ok) {
-        const errorData = await response.json();
-        throw new Error(errorData.error || "Failed to create category");
-      }
-
-      const result = await response.json();
-
-      toast.success("Category created successfully!");
-      router.push("/inventory/categories");
-      router.refresh();
-    } catch (error) {
-      console.error("Error creating category:", error);
-      const errorMessage =
-        error instanceof Error ? error.message : "Failed to create category";
-      setError(errorMessage);
-      toast.error(errorMessage);
-    } finally {
-      setIsSubmitting(false);
-    }
+    createCategoryMutation.mutate(categoryData, {
+      onSuccess: () => {
+        toast.success("Category created successfully!");
+        router.push("/inventory/categories");
+        router.refresh();
+      },
+      onError: (error) => {
+        console.error("Error creating category:", error);
+        const errorMessage =
+          error instanceof Error ? error.message : "Failed to create category";
+        toast.error(errorMessage);
+      },
+    });
   };
 
   const handleCancel = () => {
@@ -153,12 +142,6 @@ export default function AddCategoryForm() {
                 </CardDescription>
               </CardHeader>
               <CardContent>
-                {error && (
-                  <Alert className="mb-6">
-                    <AlertDescription>{error}</AlertDescription>
-                  </Alert>
-                )}
-
                 <form onSubmit={onSubmit} className="space-y-6">
                   {/* Category Name */}
                   <div className="space-y-2">
@@ -234,20 +217,22 @@ export default function AddCategoryForm() {
                   <div className="flex items-center gap-4 pt-4">
                     <Button
                       type="submit"
-                      disabled={isSubmitting}
+                      disabled={createCategoryMutation.isPending}
                       className="flex items-center gap-2"
                     >
-                      {isSubmitting && (
+                      {createCategoryMutation.isPending && (
                         <Loader2 className="h-4 w-4 animate-spin" />
                       )}
-                      {isSubmitting ? "Creating..." : "Create Category"}
+                      {createCategoryMutation.isPending
+                        ? "Creating..."
+                        : "Create Category"}
                     </Button>
 
                     <Button
                       type="button"
                       variant="outline"
                       onClick={handleCancel}
-                      disabled={isSubmitting}
+                      disabled={createCategoryMutation.isPending}
                     >
                       Cancel
                     </Button>

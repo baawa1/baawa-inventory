@@ -1,6 +1,6 @@
 "use client";
 
-import React, { useState } from "react";
+import React from "react";
 import { useRouter } from "next/navigation";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
@@ -19,11 +19,11 @@ import {
   FormLabel,
   FormMessage,
 } from "@/components/ui/form";
-import { Alert, AlertDescription } from "@/components/ui/alert";
 import { Loader2, Save, ArrowLeft } from "lucide-react";
 import { toast } from "sonner";
 import Link from "next/link";
 import { nameSchema } from "@/lib/validations/common";
+import { useCreateSupplier } from "@/hooks/api/suppliers";
 
 // Form validation schema - simplified for form handling
 const supplierFormSchema = z.object({
@@ -48,8 +48,7 @@ type SupplierFormData = z.infer<typeof supplierFormSchema>;
 
 export default function AddSupplierForm() {
   const router = useRouter();
-  const [isSubmitting, setIsSubmitting] = useState(false);
-  const [submitError, setSubmitError] = useState<string | null>(null);
+  const createSupplierMutation = useCreateSupplier();
 
   const form = useForm<SupplierFormData>({
     resolver: zodResolver(supplierFormSchema),
@@ -73,54 +72,39 @@ export default function AddSupplierForm() {
   });
 
   const onSubmit = async (data: SupplierFormData) => {
-    try {
-      setIsSubmitting(true);
-      setSubmitError(null);
+    // Transform form data to match API expectations
+    const supplierData = {
+      name: data.name,
+      contactPerson: data.contactPerson || undefined,
+      email: data.email || undefined,
+      phone: data.phone || undefined,
+      address: data.address || undefined,
+      city: data.city || undefined,
+      state: data.state || undefined,
+      country: data.country || undefined,
+      postalCode: data.postalCode || undefined,
+      website: data.website || undefined,
+      taxNumber: data.taxNumber || undefined,
+      paymentTerms: data.paymentTerms || undefined,
+      creditLimit: data.creditLimit ? parseFloat(data.creditLimit) : undefined,
+      isActive: data.isActive,
+      notes: data.notes || undefined,
+    };
 
-      // Transform form data to match API expectations
-      const apiData = {
-        name: data.name,
-        contactPerson: data.contactPerson || null,
-        email: data.email || null,
-        phone: data.phone || null,
-        address: data.address || null,
-        city: data.city || null,
-        state: data.state || null,
-        country: data.country || null,
-        postalCode: data.postalCode || null,
-        website: data.website || null,
-        taxNumber: data.taxNumber || null,
-        paymentTerms: data.paymentTerms || null,
-        creditLimit: data.creditLimit ? parseFloat(data.creditLimit) : null,
-        isActive: data.isActive,
-        notes: data.notes || null,
-      };
-
-      const response = await fetch("/api/suppliers", {
-        method: "POST",
-        headers: {
-          "Content-Type": "application/json",
-        },
-        body: JSON.stringify(apiData),
-      });
-
-      if (!response.ok) {
-        const errorData = await response.json();
-        throw new Error(errorData.error || "Failed to create supplier");
-      }
-
-      const supplier = await response.json();
-      toast.success("Supplier created successfully!");
-      router.push("/dashboard/inventory/suppliers");
-    } catch (error) {
-      console.error("Error creating supplier:", error);
-      setSubmitError(
-        error instanceof Error ? error.message : "An unexpected error occurred"
-      );
-      toast.error("Failed to create supplier");
-    } finally {
-      setIsSubmitting(false);
-    }
+    createSupplierMutation.mutate(supplierData, {
+      onSuccess: () => {
+        toast.success("Supplier created successfully!");
+        router.push("/dashboard/inventory/suppliers");
+      },
+      onError: (error) => {
+        console.error("Error creating supplier:", error);
+        const errorMessage =
+          error instanceof Error
+            ? error.message
+            : "An unexpected error occurred";
+        toast.error(errorMessage);
+      },
+    });
   };
 
   return (
@@ -133,12 +117,6 @@ export default function AddSupplierForm() {
           </Button>
         </Link>
       </div>
-
-      {submitError && (
-        <Alert variant="destructive">
-          <AlertDescription>{submitError}</AlertDescription>
-        </Alert>
-      )}
 
       <Form {...form}>
         <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-6">
@@ -431,8 +409,8 @@ export default function AddSupplierForm() {
 
           {/* Submit Button */}
           <div className="flex gap-4">
-            <Button type="submit" disabled={isSubmitting}>
-              {isSubmitting ? (
+            <Button type="submit" disabled={createSupplierMutation.isPending}>
+              {createSupplierMutation.isPending ? (
                 <>
                   <Loader2 className="mr-2 h-4 w-4 animate-spin" />
                   Creating...
