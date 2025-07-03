@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useEffect } from "react";
+import { useState } from "react";
 import { useSession } from "next-auth/react";
 import Link from "next/link";
 import {
@@ -55,6 +55,12 @@ import {
 } from "@/components/ui/alert-dialog";
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
+import {
+  useStockAdjustments,
+  useApproveStockAdjustment,
+  useRejectStockAdjustment,
+  type StockAdjustmentFilters,
+} from "@/hooks/api/stock-management";
 
 interface StockAdjustment {
   id: number;
@@ -100,55 +106,34 @@ interface StockAdjustmentListProps {}
 
 export function StockAdjustmentList({}: StockAdjustmentListProps) {
   const { data: session } = useSession();
-  const [adjustments, setAdjustments] = useState<StockAdjustment[]>([]);
-  const [loading, setLoading] = useState(true);
   const [searchTerm, setSearchTerm] = useState("");
   const [filterType, setFilterType] = useState<string>("");
   const [filterStatus, setFilterStatus] = useState<string>("");
   const [currentPage, setCurrentPage] = useState(1);
-  const [totalPages, setTotalPages] = useState(1);
   const [rejectionReason, setRejectionReason] = useState("");
   const itemsPerPage = 10;
 
-  const fetchAdjustments = async () => {
-    try {
-      setLoading(true);
-      const params = new URLSearchParams({
-        page: currentPage.toString(),
-        limit: itemsPerPage.toString(),
-      });
-
-      if (searchTerm) {
-        params.append("search", searchTerm);
-      }
-
-      if (filterType) {
-        params.append("type", filterType);
-      }
-
-      if (filterStatus) {
-        params.append("status", filterStatus);
-      }
-
-      const response = await fetch(`/api/stock-adjustments?${params}`);
-      if (!response.ok) {
-        throw new Error("Failed to fetch stock adjustments");
-      }
-
-      const result = await response.json();
-      setAdjustments(result.data || []);
-      setTotalPages(result.pagination?.totalPages || 1);
-    } catch (error) {
-      console.error("Error fetching stock adjustments:", error);
-      toast.error("Failed to load stock adjustments");
-    } finally {
-      setLoading(false);
-    }
+  // TanStack Query hooks
+  const filters: StockAdjustmentFilters = {
+    search: searchTerm || undefined,
+    type: filterType || undefined,
+    status: filterStatus || undefined,
+    page: currentPage,
+    limit: itemsPerPage,
   };
 
-  useEffect(() => {
-    fetchAdjustments();
-  }, [currentPage, searchTerm, filterType, filterStatus]);
+  const {
+    data: adjustmentData,
+    isLoading: loading,
+    error,
+    refetch: refetchAdjustments,
+  } = useStockAdjustments(filters);
+
+  const approveAdjustment = useApproveStockAdjustment();
+  const rejectAdjustment = useRejectStockAdjustment();
+
+  const adjustments = adjustmentData?.data || [];
+  const totalPages = adjustmentData?.pagination?.totalPages || 1;
 
   const handleSearch = (value: string) => {
     setSearchTerm(value);
@@ -167,20 +152,8 @@ export function StockAdjustmentList({}: StockAdjustmentListProps) {
 
   const handleApprove = async (adjustmentId: number) => {
     try {
-      const response = await fetch(
-        `/api/stock-adjustments/${adjustmentId}/approve`,
-        {
-          method: "POST",
-        }
-      );
-
-      if (!response.ok) {
-        const error = await response.json();
-        throw new Error(error.error || "Failed to approve adjustment");
-      }
-
+      await approveAdjustment.mutateAsync(adjustmentId.toString());
       toast.success("Stock adjustment approved successfully");
-      fetchAdjustments();
     } catch (error) {
       console.error("Error approving adjustment:", error);
       toast.error(
@@ -196,23 +169,12 @@ export function StockAdjustmentList({}: StockAdjustmentListProps) {
     }
 
     try {
-      const response = await fetch(
-        `/api/stock-adjustments/${adjustmentId}/approve`,
-        {
-          method: "DELETE",
-          headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({ rejectionReason }),
-        }
-      );
-
-      if (!response.ok) {
-        const error = await response.json();
-        throw new Error(error.error || "Failed to reject adjustment");
-      }
-
+      await rejectAdjustment.mutateAsync({
+        id: adjustmentId.toString(),
+        rejectionReason,
+      });
       toast.success("Stock adjustment rejected successfully");
       setRejectionReason("");
-      fetchAdjustments();
     } catch (error) {
       console.error("Error rejecting adjustment:", error);
       toast.error(
@@ -379,7 +341,7 @@ export function StockAdjustmentList({}: StockAdjustmentListProps) {
                     </TableCell>
                   </TableRow>
                 ) : (
-                  adjustments.map((adjustment) => (
+                  adjustments.map((adjustment: StockAdjustment) => (
                     <TableRow key={adjustment.id}>
                       <TableCell>
                         <div>

@@ -1,12 +1,12 @@
 /**
  * Session Migration Utilities
- * Helper functions and hooks for migrating from manual session management 
+ * Helper functions and hooks for migrating from manual session management
  * to TanStack Query-based session management
  */
 
-import { useSession } from 'next-auth/react';
-import { useEnhancedSession, useSessionQuery } from '@/hooks/api/session';
-import { secureLogout } from '@/lib/session-management';
+import { useSession } from "next-auth/react";
+import { useEnhancedSession, useSessionQuery } from "@/hooks/api/session";
+import { secureLogout } from "@/lib/session-management";
 
 /**
  * Legacy session management hook compatibility wrapper
@@ -20,7 +20,9 @@ interface LegacySessionManagementOptions {
   activityCheckInterval?: number;
 }
 
-export function useSessionManagement(options: LegacySessionManagementOptions = {}) {
+export function useSessionManagement(
+  options: LegacySessionManagementOptions = {}
+) {
   const { data: session, status } = useSession();
   const enhancedSession = useEnhancedSession({
     enableActivityTracking: options.enableActivityTracking ?? true,
@@ -35,7 +37,7 @@ export function useSessionManagement(options: LegacySessionManagementOptions = {
   return {
     session,
     status,
-    isAuthenticated: status === 'authenticated',
+    isAuthenticated: status === "authenticated",
     checkSession: enhancedSession.checkSession,
     recoverSession: enhancedSession.recoverSession,
     logout: enhancedSession.logout,
@@ -51,7 +53,7 @@ export function useSessionManagement(options: LegacySessionManagementOptions = {
  */
 export function useSessionState() {
   const sessionQuery = useSessionQuery();
-  
+
   return {
     session: sessionQuery.session,
     status: sessionQuery.status,
@@ -117,7 +119,7 @@ export const MIGRATION_GUIDE = {
       onSessionTimeout: () => handleTimeout(),
     });
   `,
-  
+
   // New pattern
   NEW_USAGE: `
     // New way with TanStack Query
@@ -142,27 +144,27 @@ export const MIGRATION_GUIDE = {
     const sessionActions = useSessionActions();
     const sessionValidation = useSessionValidationState();
   `,
-  
+
   // Migration steps
   MIGRATION_STEPS: [
-    '1. Replace useSessionManagement import with the new version',
-    '2. Update SessionProvider to use SessionProviderQuery if needed',
-    '3. Test session timeout and recovery functionality',
-    '4. Update components to use new session validation states',
-    '5. Remove manual session state management code',
-    '6. Update error handling to use TanStack Query error states',
+    "1. Replace useSessionManagement import with the new version",
+    "2. Update SessionProvider to use SessionProviderQuery if needed",
+    "3. Test session timeout and recovery functionality",
+    "4. Update components to use new session validation states",
+    "5. Remove manual session state management code",
+    "6. Update error handling to use TanStack Query error states",
   ],
-  
+
   // Benefits
   BENEFITS: [
-    'Automatic query invalidation and cache management',
-    'Built-in loading states and error handling', 
-    'Background session validation and refresh',
-    'Optimistic updates and retry logic',
-    'DevTools integration for debugging',
-    'Better TypeScript support',
-    'Reduced boilerplate code',
-    'Consistent error handling patterns',
+    "Automatic query invalidation and cache management",
+    "Built-in loading states and error handling",
+    "Background session validation and refresh",
+    "Optimistic updates and retry logic",
+    "DevTools integration for debugging",
+    "Better TypeScript support",
+    "Reduced boilerplate code",
+    "Consistent error handling patterns",
   ],
 } as const;
 
@@ -170,11 +172,11 @@ export const MIGRATION_GUIDE = {
  * Development helper to identify components using old session patterns
  */
 export function logSessionMigrationStatus() {
-  if (process.env.NODE_ENV === 'development') {
-    console.group('🔄 Session Migration Status');
-    console.log('✅ TanStack Query session hooks available');
-    console.log('✅ Legacy compatibility wrapper active');
-    console.log('📚 Migration guide available:', MIGRATION_GUIDE);
+  if (process.env.NODE_ENV === "development") {
+    console.group("🔄 Session Migration Status");
+    console.log("✅ TanStack Query session hooks available");
+    console.log("✅ Legacy compatibility wrapper active");
+    console.log("📚 Migration guide available:", MIGRATION_GUIDE);
     console.groupEnd();
   }
 }

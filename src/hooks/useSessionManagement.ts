@@ -7,10 +7,7 @@ import { useSessionManagement as useNewSessionManagement } from "./api/session-m
 export { useSessionManagement } from "./api/session-migration";
 
 // Export additional new hooks for enhanced functionality
-export { 
-  useEnhancedSession,
-  useSessionQuery,
-} from "./api/session";
+export { useEnhancedSession, useSessionQuery } from "./api/session";
 
 export {
   useSessionState,
@@ -19,4 +16,7 @@ export {
 } from "./api/session-migration";
 
 // Migration utilities
-export { MIGRATION_GUIDE, logSessionMigrationStatus } from "./api/session-migration";
+export {
+  MIGRATION_GUIDE,
+  logSessionMigrationStatus,
+} from "./api/session-migration";
