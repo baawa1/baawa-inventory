@@ -1,9 +1,12 @@
 "use client";
 
-import { useState, useEffect, useCallback } from "react";
+import { useState } from "react";
 import Image from "next/image";
 import Link from "next/link";
 import { useDebounce } from "@/hooks/useDebounce";
+import { useProducts, type Product as APIProduct } from "@/hooks/api/products";
+import { useBrands } from "@/hooks/api/brands";
+import { useCategories } from "@/hooks/api/categories";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import {
@@ -78,48 +81,6 @@ interface User {
   image?: string;
 }
 
-interface Product {
-  id: number;
-  name: string;
-  description?: string;
-  sku: string;
-  barcode?: string;
-  category?: {
-    id: number;
-    name: string;
-  };
-  brand?: {
-    id: number;
-    name: string;
-  };
-  cost: number;
-  price: number;
-  stock: number;
-  min_stock: number;
-  max_stock?: number;
-  unit: string;
-  weight?: number;
-  dimensions?: string;
-  color?: string;
-  size?: string;
-  material?: string;
-  status: "active" | "inactive" | "discontinued";
-  has_variants: boolean;
-  is_archived: boolean;
-  images?: Array<{ url: string; isPrimary: boolean }>;
-  tags?: string[];
-  meta_title?: string;
-  meta_description?: string;
-  seo_keywords?: string[];
-  supplier: {
-    id: number;
-    name: string;
-    contact_person?: string;
-  };
-  created_at: string;
-  updated_at: string;
-}
-
 interface ProductListProps {
   user: User;
 }
@@ -162,9 +123,6 @@ interface PaginationState {
 }
 
 export function ProductList({ user }: ProductListProps) {
-  const [products, setProducts] = useState<Product[]>([]);
-  const [loading, setLoading] = useState(true);
-  const [error, setError] = useState<string | null>(null);
   const [pagination, setPagination] = useState<PaginationState>({
     page: 1,
     limit: 10,
@@ -172,8 +130,6 @@ export function ProductList({ user }: ProductListProps) {
     totalProducts: 0,
   });
   const [visibleColumns, setVisibleColumns] = useState<string[]>([]);
-  const [brands, setBrands] = useState<Brand[]>([]);
-  const [categories, setCategories] = useState<Category[]>([]);
   const [filters, setFilters] = useState<ProductFilters>({
     search: "",
     category: "",
@@ -188,7 +144,7 @@ export function ProductList({ user }: ProductListProps) {
   // Add Stock Dialog state
   const [addStockDialogOpen, setAddStockDialogOpen] = useState(false);
   const [selectedProductForStock, setSelectedProductForStock] =
-    useState<Product | null>(null);
+    useState<APIProduct | null>(null);
 
   // Stock Reconciliation Dialog state
   const [reconciliationDialogOpen, setReconciliationDialogOpen] =
@@ -200,140 +156,30 @@ export function ProductList({ user }: ProductListProps) {
   // Show search loading when user is typing but search hasn't been triggered yet
   const isSearching = filters.search !== debouncedSearchTerm;
 
+  // TanStack Query hooks for data fetching
+  const productsQuery = useProducts({
+    search: debouncedSearchTerm,
+    category: filters.category,
+    brand: filters.brand,
+    status: filters.status,
+    supplier: filters.supplier,
+    lowStock: filters.lowStock,
+    sortBy: filters.sortBy,
+    sortOrder: filters.sortOrder,
+  });
+
+  const brandsQuery = useBrands({ isActive: true });
+  const categoriesQuery = useCategories({ status: "active" });
+
+  // Extract data from queries
+  const products = productsQuery.data?.data || [];
+  const loading = productsQuery.isLoading;
+  const error = productsQuery.error?.message || null;
+  const brands = brandsQuery.data?.data || [];
+  const categories = categoriesQuery.data?.data || [];
+
   const canManageProducts = ["ADMIN", "MANAGER"].includes(user.role);
   const canEditProducts = ["ADMIN", "MANAGER", "STAFF"].includes(user.role);
-
-  // Fetch brands for filter with caching
-  const fetchBrands = useCallback(async () => {
-    try {
-      // Add timeout and better error handling
-      const controller = new AbortController();
-      const timeoutId = setTimeout(() => controller.abort(), 5000); // Reduced timeout
-
-      const response = await fetch("/api/brands?isActive=true&limit=100", {
-        signal: controller.signal,
-      });
-
-      clearTimeout(timeoutId);
-
-      if (response.ok) {
-        const data = await response.json();
-        setBrands(data.data || data.brands || []);
-      } else {
-        console.warn(
-          "Brands API returned:",
-          response.status,
-          await response.text()
-        );
-      }
-    } catch (error) {
-      if (error instanceof Error && error.name === "AbortError") {
-        console.warn("Brands request timed out");
-      } else {
-        console.error("Error fetching brands:", error);
-      }
-      // Set empty array to prevent hanging UI
-      setBrands([]);
-    }
-  }, []);
-
-  const fetchCategories = useCallback(async () => {
-    try {
-      const controller = new AbortController();
-      const timeoutId = setTimeout(() => controller.abort(), 5000);
-
-      const response = await fetch("/api/categories?isActive=true&limit=100", {
-        signal: controller.signal,
-      });
-
-      clearTimeout(timeoutId);
-
-      if (response.ok) {
-        const data = await response.json();
-        setCategories(data.data || []);
-      }
-    } catch (error) {
-      if (error instanceof Error && error.name === "AbortError") {
-        console.warn("Categories request timed out");
-      } else {
-        console.error("Error fetching categories:", error);
-      }
-      setCategories([]);
-    }
-  }, []);
-
-  useEffect(() => {
-    fetchBrands();
-    fetchCategories();
-  }, [fetchBrands, fetchCategories]);
-
-  const fetchProducts = useCallback(async () => {
-    try {
-      setLoading(true);
-      setError(null);
-
-      const searchParams = new URLSearchParams({
-        page: pagination.page.toString(),
-        limit: pagination.limit.toString(),
-        sortBy: filters.sortBy,
-        sortOrder: filters.sortOrder,
-      });
-
-      if (debouncedSearchTerm) searchParams.set("search", debouncedSearchTerm);
-      if (filters.category) searchParams.set("category", filters.category);
-      if (filters.brand) searchParams.set("brand", filters.brand);
-      if (filters.status) searchParams.set("status", filters.status);
-      if (filters.supplier) searchParams.set("supplierId", filters.supplier);
-      if (filters.lowStock) searchParams.set("lowStock", "true");
-
-      // Add request timeout
-      const controller = new AbortController();
-      const timeoutId = setTimeout(() => controller.abort(), 10000);
-
-      const response = await fetch(`/api/products?${searchParams.toString()}`, {
-        signal: controller.signal,
-      });
-
-      clearTimeout(timeoutId);
-
-      if (!response.ok) {
-        throw new Error(`HTTP ${response.status}: ${response.statusText}`);
-      }
-
-      const data = await response.json();
-      setProducts(data.data || []);
-      setPagination((prev) => ({
-        ...prev,
-        totalPages: data.pagination?.totalPages || 1,
-        totalProducts: data.pagination?.total || 0,
-      }));
-    } catch (error) {
-      console.error("Error fetching products:", error);
-      if (error instanceof Error && error.name === "AbortError") {
-        setError("Request timed out. Please try again.");
-      } else {
-        setError("Failed to load products. Please try again.");
-      }
-      setProducts([]);
-    } finally {
-      setLoading(false);
-    }
-  }, [
-    pagination.page,
-    pagination.limit,
-    debouncedSearchTerm,
-    filters.category,
-    filters.brand,
-    filters.status,
-    filters.supplier,
-    filters.lowStock,
-    filters.sortBy,
-    filters.sortOrder,
-  ]);
-
-  useEffect(() => {
-    fetchProducts();
-  }, [fetchProducts]);
 
   const handleFilterChange = (
     key: keyof ProductFilters,
@@ -369,7 +215,7 @@ export function ProductList({ user }: ProductListProps) {
     setPagination((prev) => ({ ...prev, page: 1 }));
   };
 
-  const getStatusBadge = (status: Product["status"]) => {
+  const getStatusBadge = (status: APIProduct["status"]) => {
     switch (status) {
       case "active":
         return (
@@ -379,14 +225,12 @@ export function ProductList({ user }: ProductListProps) {
         );
       case "inactive":
         return <Badge variant="secondary">Inactive</Badge>;
-      case "discontinued":
-        return <Badge variant="outline">Discontinued</Badge>;
       default:
         return <Badge variant="secondary">{status}</Badge>;
     }
   };
 
-  const getStockStatus = (product: Product) => {
+  const getStockStatus = (product: APIProduct) => {
     if (product.stock === 0) {
       return {
         icon: <IconAlertTriangle className="h-4 w-4 text-red-500" />,
@@ -407,7 +251,7 @@ export function ProductList({ user }: ProductListProps) {
     };
   };
 
-  const renderCellContent = (product: Product, columnKey: string) => {
+  const renderCellContent = (product: APIProduct, columnKey: string) => {
     switch (columnKey) {
       case "image":
         const isValidUrl = (url: string) => {
@@ -420,14 +264,12 @@ export function ProductList({ user }: ProductListProps) {
 
         return (
           <div className="flex items-center justify-center">
-            {product.images &&
-            product.images.length > 0 &&
-            product.images[0]?.url &&
-            product.images[0].url.trim() !== "" &&
-            isValidUrl(product.images[0].url.trim()) ? (
+            {product.image &&
+            product.image.trim() !== "" &&
+            isValidUrl(product.image.trim()) ? (
               <div className="relative h-12 w-12 overflow-hidden rounded-md border">
                 <Image
-                  src={product.images[0].url}
+                  src={product.image}
                   alt={product.name}
                   fill
                   className="object-cover"
@@ -497,27 +339,10 @@ export function ProductList({ user }: ProductListProps) {
         return product.max_stock || "-";
       case "unit":
         return product.unit;
-      case "weight":
-        return product.weight ? `${product.weight}kg` : "-";
-      case "dimensions":
-        return product.dimensions || "-";
-      case "color":
-        return product.color || "-";
-      case "size":
-        return product.size || "-";
-      case "material":
-        return product.material || "-";
-      case "has_variants":
-        return product.has_variants ? "Yes" : "No";
-      case "tags":
-        return product.tags && product.tags.length > 0
-          ? product.tags.slice(0, 2).join(", ") +
-              (product.tags.length > 2 ? "..." : "")
-          : "-";
       case "created_at":
-        return new Date(product.created_at).toLocaleDateString();
+        return new Date(product.createdAt).toLocaleDateString();
       case "updated_at":
-        return new Date(product.updated_at).toLocaleDateString();
+        return new Date(product.updatedAt).toLocaleDateString();
       default:
         return "-";
     }
@@ -777,7 +602,10 @@ export function ProductList({ user }: ProductListProps) {
                   ) : error ? (
                     <div className="text-center py-8">
                       <p className="text-red-500">{error}</p>
-                      <Button onClick={fetchProducts} className="mt-4">
+                      <Button
+                        onClick={() => productsQuery.refetch()}
+                        className="mt-4"
+                      >
                         Try Again
                       </Button>
                     </div>
@@ -1054,7 +882,7 @@ export function ProductList({ user }: ProductListProps) {
         }}
         product={selectedProductForStock}
         onSuccess={() => {
-          fetchProducts(); // Refresh the product list
+          productsQuery.refetch(); // Refresh the product list
         }}
       />
 
@@ -1063,7 +891,7 @@ export function ProductList({ user }: ProductListProps) {
         isOpen={reconciliationDialogOpen}
         onClose={() => setReconciliationDialogOpen(false)}
         onSuccess={() => {
-          fetchProducts(); // Refresh the product list
+          productsQuery.refetch(); // Refresh the product list
         }}
       />
     </>

@@ -1,10 +1,15 @@
 "use client";
 
-import React, { useState, useEffect, useCallback } from "react";
+import React, { useState } from "react";
 import { useSession } from "next-auth/react";
 import { useRouter } from "next/navigation";
 import Link from "next/link";
 import { useDebounce } from "@/hooks/useDebounce";
+import {
+  useSuppliers,
+  useDeleteSupplier,
+  useUpdateSupplier,
+} from "@/hooks/api/suppliers";
 import { PageHeader } from "@/components/ui/page-header";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -71,12 +76,7 @@ interface SupplierListResponse {
 export default function SupplierList() {
   const { data: session, status } = useSession();
   const router = useRouter();
-  const [suppliers, setSuppliers] = useState<Supplier[]>([]);
-  const [loading, setLoading] = useState(true);
-  const [error, setError] = useState<string | null>(null);
   const [currentPage, setCurrentPage] = useState(1);
-  const [totalPages, setTotalPages] = useState(1);
-  const [total, setTotal] = useState(0);
 
   // Filters
   const [filters, setFilters] = useState({
@@ -98,6 +98,24 @@ export default function SupplierList() {
 
   // Show search loading when user is typing but search hasn't been triggered yet
   const isSearching = filters.search !== debouncedSearchTerm;
+
+  // TanStack Query hooks for data fetching
+  const suppliersQuery = useSuppliers({
+    search: debouncedSearchTerm,
+    status: filters.isActive,
+    sortBy: "name",
+    sortOrder: "asc",
+  });
+
+  const deleteSupplierMutation = useDeleteSupplier();
+  const updateSupplierMutation = useUpdateSupplier();
+
+  // Extract data from queries
+  const suppliers = suppliersQuery.data?.data || [];
+  const loading = suppliersQuery.isLoading;
+  const error = suppliersQuery.error?.message || null;
+  const totalPages = suppliersQuery.data?.pagination?.totalPages || 1;
+  const total = suppliersQuery.data?.pagination?.totalSuppliers || 0;
 
   // Permission checks
   const user = session?.user;
@@ -128,120 +146,31 @@ export default function SupplierList() {
     setSelectedSupplierId(null);
   };
 
-  const handleSupplierUpdated = (updatedSupplier: Supplier) => {
-    // Update the supplier in the local state
-    setSuppliers((prevSuppliers) =>
-      prevSuppliers.map((supplier) =>
-        supplier.id === updatedSupplier.id ? updatedSupplier : supplier
-      )
-    );
+  const handleSupplierUpdated = () => {
+    // Refresh the suppliers data from server
+    suppliersQuery.refetch();
     handleCloseEditModal();
   };
 
-  // Fetch suppliers data
-  const fetchSuppliers = useCallback(async () => {
-    // Don't fetch if session is still loading or not authenticated
-    if (status === "loading" || status === "unauthenticated") {
-      return;
-    }
-
-    try {
-      setLoading(true);
-      setError(null);
-
-      const params = new URLSearchParams({
-        page: currentPage.toString(),
-        limit: limit.toString(),
-      });
-
-      if (debouncedSearchTerm) {
-        params.append("search", debouncedSearchTerm);
-      }
-
-      if (filters.isActive) {
-        params.append("isActive", filters.isActive);
-      }
-
-      const response = await fetch(`/api/suppliers?${params}`);
-
-      if (!response.ok) {
-        throw new Error("Failed to fetch suppliers");
-      }
-
-      const data: SupplierListResponse = await response.json();
-      setSuppliers(data.suppliers || []);
-      setTotalPages(data.totalPages || 1);
-      setTotal(data.total || 0);
-    } catch (err) {
-      console.error("Error fetching suppliers:", err);
-      setError("Failed to load suppliers. Please try again.");
-      toast.error("Failed to load suppliers");
-    } finally {
-      setLoading(false);
-    }
-  }, [status, currentPage, debouncedSearchTerm, filters.isActive]);
-
-  // Deactivate supplier
+  // Handle delete with TanStack Query mutation
   const handleDeactivate = async (supplierId: number) => {
     try {
-      const response = await fetch(`/api/suppliers/${supplierId}`, {
-        method: "DELETE",
-      });
-
-      if (!response.ok) {
-        throw new Error("Failed to deactivate supplier");
-      }
-
-      toast.success("Supplier deactivated successfully");
-
-      // Update local state immediately for instant feedback
-      // For soft delete, mark as inactive. For hard delete, remove from list
-      setSuppliers((prevSuppliers) =>
-        prevSuppliers.map((supplier) =>
-          supplier.id === supplierId
-            ? { ...supplier, isActive: false }
-            : supplier
-        )
-      );
-
-      // Also refresh from server to ensure consistency
-      await fetchSuppliers();
+      await deleteSupplierMutation.mutateAsync(supplierId);
+      toast.success("Supplier deleted successfully");
     } catch (err) {
-      console.error("Error deactivating supplier:", err);
-      toast.error("Failed to deactivate supplier");
+      console.error("Error deleting supplier:", err);
+      toast.error("Failed to delete supplier");
     }
   };
 
-  // Reactivate supplier
+  // Handle reactivate with TanStack Query mutation
   const handleReactivate = async (supplierId: number) => {
     try {
-      const response = await fetch(`/api/suppliers/${supplierId}`, {
-        method: "PATCH",
-        headers: {
-          "Content-Type": "application/json",
-        },
-        body: JSON.stringify({
-          isActive: true,
-        }),
+      await updateSupplierMutation.mutateAsync({
+        id: supplierId,
+        data: { isActive: true },
       });
-
-      if (!response.ok) {
-        throw new Error("Failed to reactivate supplier");
-      }
-
       toast.success("Supplier reactivated successfully");
-
-      // Update local state immediately for instant feedback
-      setSuppliers((prevSuppliers) =>
-        prevSuppliers.map((supplier) =>
-          supplier.id === supplierId
-            ? { ...supplier, isActive: true }
-            : supplier
-        )
-      );
-
-      // Also refresh from server to ensure consistency
-      await fetchSuppliers();
     } catch (err) {
       console.error("Error reactivating supplier:", err);
       toast.error("Failed to reactivate supplier");
@@ -264,11 +193,6 @@ export default function SupplierList() {
     });
     setCurrentPage(1);
   };
-
-  // Load data on component mount and when dependencies change
-  useEffect(() => {
-    fetchSuppliers();
-  }, [fetchSuppliers]);
 
   // Handle loading and authentication states
   if (status === "loading") {
@@ -308,7 +232,9 @@ export default function SupplierList() {
           <div className="flex flex-col gap-4 py-4 md:gap-6 md:py-6">
             <div className="text-center">
               <p className="text-red-600 mb-4">{error}</p>
-              <Button onClick={fetchSuppliers}>Try Again</Button>
+              <Button onClick={() => suppliersQuery.refetch()}>
+                Try Again
+              </Button>
             </div>
           </div>
         </div>
@@ -462,12 +388,8 @@ export default function SupplierList() {
                                 {!supplier.email && !supplier.phone && "-"}
                               </div>
                             </TableCell>
-                            <TableCell>
-                              {supplier._count?.products || 0}
-                            </TableCell>
-                            <TableCell>
-                              {supplier._count?.purchaseOrders || 0}
-                            </TableCell>
+                            <TableCell>0</TableCell>
+                            <TableCell>0</TableCell>
                             <TableCell>
                               <Badge
                                 variant={

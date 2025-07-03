@@ -1,10 +1,15 @@
 "use client";
 
-import { useState, useEffect, useCallback } from "react";
+import { useState } from "react";
 import Link from "next/link";
 import { useSession } from "next-auth/react";
 import { toast } from "sonner";
 import { useDebounce } from "@/hooks/useDebounce";
+import {
+  useCategories,
+  useDeleteCategory,
+  type Category as APICategory,
+} from "@/hooks/api/categories";
 import { PageHeader } from "@/components/ui/page-header";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -76,22 +81,13 @@ interface User {
   image?: string;
 }
 
-interface Category {
-  id: number;
-  name: string;
-  description: string | null;
-  isActive: boolean;
-  createdAt: string;
-  updatedAt: string;
-}
-
 interface CategoryListProps {
   user: User;
 }
 
 interface CategoriesResponse {
   success: boolean;
-  data: Category[];
+  data: APICategory[];
   pagination: {
     total: number;
     limit: number;
@@ -101,13 +97,10 @@ interface CategoriesResponse {
 
 export function CategoryList({ user }: CategoryListProps) {
   const { status } = useSession();
-  const [categories, setCategories] = useState<Category[]>([]);
-  const [loading, setLoading] = useState(true);
-  const [total, setTotal] = useState(0);
   const [currentPage, setCurrentPage] = useState(1);
   const [itemsPerPage] = useState(10);
   const [deleteDialogOpen, setDeleteDialogOpen] = useState(false);
-  const [categoryToDelete, setCategoryToDelete] = useState<Category | null>(
+  const [categoryToDelete, setCategoryToDelete] = useState<APICategory | null>(
     null
   );
 
@@ -123,66 +116,24 @@ export function CategoryList({ user }: CategoryListProps) {
   // Show search loading when user is typing but search hasn't been triggered yet
   const isSearching = filters.search !== debouncedSearchTerm;
 
+  // TanStack Query hooks for data fetching
+  const categoriesQuery = useCategories({
+    search: debouncedSearchTerm,
+    status: filters.isActive,
+    sortBy: "name",
+    sortOrder: "asc",
+  });
+
+  const deleteCategoryMutation = useDeleteCategory();
+
+  // Extract data from queries
+  const categories = categoriesQuery.data?.data || [];
+  const loading = categoriesQuery.isLoading;
+  const total = categoriesQuery.data?.pagination?.totalCategories || 0;
+
   // Permission checks
   const canManageCategories = ["ADMIN", "MANAGER"].includes(user.role);
   const canDeleteCategories = user.role === "ADMIN";
-
-  // Fetch categories
-  const fetchCategories = useCallback(async () => {
-    // Don't fetch if session is still loading or not authenticated
-    if (status === "loading" || status === "unauthenticated") {
-      return;
-    }
-
-    try {
-      setLoading(true);
-      const offset = (currentPage - 1) * itemsPerPage;
-
-      const queryParams = new URLSearchParams({
-        limit: itemsPerPage.toString(),
-        offset: offset.toString(),
-        sortBy: "name",
-        sortOrder: "asc",
-      });
-
-      if (debouncedSearchTerm) {
-        queryParams.append("search", debouncedSearchTerm);
-      }
-
-      if (filters.isActive) {
-        queryParams.append("isActive", filters.isActive);
-      }
-
-      const response = await fetch(`/api/categories?${queryParams}`);
-
-      if (!response.ok) {
-        const errorData = await response.json();
-        throw new Error(errorData.error || "Failed to fetch categories");
-      }
-
-      const data: CategoriesResponse = await response.json();
-
-      setCategories(data.data || []);
-      setTotal(data.pagination?.total || 0);
-    } catch (error) {
-      console.error("Error fetching categories:", error);
-      toast.error(
-        error instanceof Error ? error.message : "Failed to fetch categories"
-      );
-    } finally {
-      setLoading(false);
-    }
-  }, [
-    currentPage,
-    itemsPerPage,
-    debouncedSearchTerm,
-    filters.isActive,
-    status,
-  ]);
-
-  useEffect(() => {
-    fetchCategories();
-  }, [fetchCategories]);
 
   // Handle filter changes
   const handleFilterChange = (key: string, value: string) => {
@@ -206,18 +157,8 @@ export function CategoryList({ user }: CategoryListProps) {
     if (!categoryToDelete) return;
 
     try {
-      const response = await fetch(`/api/categories/${categoryToDelete.id}`, {
-        method: "DELETE",
-      });
-
-      const responseData = await response.json();
-
-      if (!response.ok) {
-        throw new Error(responseData.error || "Failed to delete category");
-      }
-
+      await deleteCategoryMutation.mutateAsync(categoryToDelete.id);
       toast.success("Category deleted successfully");
-      fetchCategories();
     } catch (error) {
       console.error("Error deleting category:", error);
       toast.error(
