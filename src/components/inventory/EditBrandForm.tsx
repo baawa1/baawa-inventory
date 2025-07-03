@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useEffect } from "react";
+import { useState } from "react";
 import { useRouter } from "next/navigation";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
@@ -17,6 +17,7 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Alert, AlertDescription } from "@/components/ui/alert";
 import { Loader2, Save } from "lucide-react";
 import { toast } from "sonner";
+import { useBrandById, useUpdateBrand } from "@/hooks/api/brands";
 
 interface Brand {
   id: number;
@@ -34,10 +35,16 @@ interface EditBrandFormProps {
 
 export default function EditBrandForm({ brandId }: EditBrandFormProps) {
   const router = useRouter();
-  const [isLoading, setIsLoading] = useState(true);
-  const [isSubmitting, setIsSubmitting] = useState(false);
   const [serverError, setServerError] = useState<string | null>(null);
-  const [brand, setBrand] = useState<Brand | null>(null);
+
+  // TanStack Query hooks
+  const {
+    data: brand,
+    isLoading,
+    error,
+  } = useBrandById(brandId);
+
+  const updateBrandMutation = useUpdateBrand();
 
   const {
     register,
@@ -48,53 +55,19 @@ export default function EditBrandForm({ brandId }: EditBrandFormProps) {
     formState: { errors },
   } = useForm<UpdateBrandFormData>({
     resolver: zodResolver(updateBrandFormSchema),
+    values: brand ? {
+      id: brand.id,
+      name: brand.name,
+      description: brand.description,
+      website: brand.website,
+      isActive: brand.is_active,
+    } : undefined,
   });
 
   const isActive = watch("isActive");
 
-  // Fetch brand data
-  useEffect(() => {
-    const fetchBrand = async () => {
-      try {
-        setIsLoading(true);
-        const response = await fetch(`/api/brands/${brandId}`);
-
-        if (!response.ok) {
-          throw new Error("Failed to fetch brand");
-        }
-
-        const data = await response.json();
-
-        if (data.success && data.brand) {
-          setBrand(data.brand);
-          // Set form values
-          reset({
-            id: data.brand.id,
-            name: data.brand.name,
-            description: data.brand.description,
-            website: data.brand.website,
-            isActive: data.brand.is_active,
-          });
-        } else {
-          throw new Error("Brand not found");
-        }
-      } catch (error) {
-        console.error("Error fetching brand:", error);
-        toast.error("Failed to load brand data");
-        router.push("/inventory/brands");
-      } finally {
-        setIsLoading(false);
-      }
-    };
-
-    if (brandId) {
-      fetchBrand();
-    }
-  }, [brandId, reset, router]);
-
   const onSubmit = async (data: UpdateBrandFormData) => {
     try {
-      setIsSubmitting(true);
       setServerError(null);
 
       // Clean up website URL
@@ -106,40 +79,20 @@ export default function EditBrandForm({ brandId }: EditBrandFormProps) {
       const apiData = {
         id: data.id,
         name: data.name,
-        description: data.description,
-        website: data.website,
+        description: data.description || undefined,
+        website: data.website || undefined,
         is_active: data.isActive,
       };
 
-      const response = await fetch(`/api/brands/${brandId}`, {
-        method: "PUT",
-        headers: {
-          "Content-Type": "application/json",
-        },
-        body: JSON.stringify(apiData),
-      });
-
-      if (!response.ok) {
-        const errorData = await response.json();
-        throw new Error(errorData.error || "Failed to update brand");
-      }
-
-      const result = await response.json();
-
-      if (result.success) {
-        toast.success("Brand updated successfully!");
-        router.push("/inventory/brands");
-      } else {
-        throw new Error("Failed to update brand");
-      }
+      await updateBrandMutation.mutateAsync(apiData);
+      toast.success("Brand updated successfully!");
+      router.push("/inventory/brands");
     } catch (error) {
       console.error("Error updating brand:", error);
       const errorMessage =
         error instanceof Error ? error.message : "Failed to update brand";
       setServerError(errorMessage);
       toast.error(errorMessage);
-    } finally {
-      setIsSubmitting(false);
     }
   };
 
@@ -194,7 +147,7 @@ export default function EditBrandForm({ brandId }: EditBrandFormProps) {
               id="name"
               {...register("name")}
               placeholder="Enter brand name"
-              disabled={isSubmitting}
+              disabled={updateBrandMutation.isPending}
             />
             {errors.name && (
               <p className="text-sm text-destructive">{errors.name.message}</p>
@@ -208,7 +161,7 @@ export default function EditBrandForm({ brandId }: EditBrandFormProps) {
               {...register("description")}
               placeholder="Enter brand description (optional)"
               rows={3}
-              disabled={isSubmitting}
+              disabled={updateBrandMutation.isPending}
             />
             {errors.description && (
               <p className="text-sm text-destructive">
@@ -224,7 +177,7 @@ export default function EditBrandForm({ brandId }: EditBrandFormProps) {
               type="url"
               {...register("website")}
               placeholder="https://example.com (optional)"
-              disabled={isSubmitting}
+              disabled={updateBrandMutation.isPending}
             />
             {errors.website && (
               <p className="text-sm text-destructive">
@@ -238,7 +191,7 @@ export default function EditBrandForm({ brandId }: EditBrandFormProps) {
               id="isActive"
               checked={isActive}
               onCheckedChange={(checked) => setValue("isActive", checked)}
-              disabled={isSubmitting}
+              disabled={updateBrandMutation.isPending}
             />
             <Label htmlFor="isActive">Active Brand</Label>
           </div>
@@ -255,18 +208,18 @@ export default function EditBrandForm({ brandId }: EditBrandFormProps) {
           type="button"
           variant="outline"
           onClick={() => router.push("/inventory/brands")}
-          disabled={isSubmitting}
+          disabled={updateBrandMutation.isPending}
         >
           Cancel
         </Button>
 
-        <Button type="submit" disabled={isSubmitting}>
-          {isSubmitting ? (
+        <Button type="submit" disabled={updateBrandMutation.isPending}>
+          {updateBrandMutation.isPending ? (
             <Loader2 className="h-4 w-4 mr-2 animate-spin" />
           ) : (
             <Save className="h-4 w-4 mr-2" />
           )}
-          {isSubmitting ? "Updating..." : "Update Brand"}
+          {updateBrandMutation.isPending ? "Updating..." : "Update Brand"}
         </Button>
       </div>
     </form>

@@ -34,15 +34,20 @@ interface SessionProviderProps {
   useTanStackQuery?: boolean; // Optional flag to use new implementation
 }
 
-export function SessionProvider({ 
-  children, 
-  useTanStackQuery = false 
+export function SessionProvider({
+  children,
+  useTanStackQuery = false,
 }: SessionProviderProps) {
   const [showTimeoutWarning, setShowTimeoutWarning] = useState(false);
   const [timeLeft, setTimeLeft] = useState(0);
 
   // Use the updated session management hook (now powered by TanStack Query)
-  const { isAuthenticated, logout, checkSession, extendSession: extendSessionQuery } = useSessionManagement({
+  const {
+    isAuthenticated,
+    logout,
+    checkSession,
+    extendSession: extendSessionQuery,
+  } = useSessionManagement({
     enableActivityTracking: true,
     enableTimeoutWarning: true,
     onSessionWarning: () => {
@@ -82,7 +87,7 @@ export function SessionProvider({
           setShowTimeoutWarning(false);
           setTimeLeft(0);
         } else {
-          throw new Error('Session extension failed');
+          throw new Error("Session extension failed");
         }
       } else {
         // Fallback to manual refresh

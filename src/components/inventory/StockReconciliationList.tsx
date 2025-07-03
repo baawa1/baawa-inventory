@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useEffect } from "react";
+import { useState } from "react";
 import Link from "next/link";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -48,6 +48,14 @@ import {
 } from "@tabler/icons-react";
 import { formatCurrency } from "@/lib/utils";
 import { toast } from "sonner";
+import {
+  useStockReconciliations,
+  useSubmitStockReconciliation,
+  useApproveStockReconciliation,
+  useRejectStockReconciliation,
+  useDeleteStockReconciliation,
+  type StockReconciliationFilters,
+} from "@/hooks/api/stock-management";
 
 interface User {
   id: number;
@@ -99,108 +107,51 @@ export function StockReconciliationList({
   userRole,
   userId,
 }: StockReconciliationListProps) {
-  const [reconciliations, setReconciliations] = useState<StockReconciliation[]>(
-    []
-  );
-  const [isLoading, setIsLoading] = useState(true);
   const [searchTerm, setSearchTerm] = useState("");
   const [statusFilter, setStatusFilter] = useState<string>("all");
   const [createdByFilter, setCreatedByFilter] = useState<string>("all");
-  const [actionLoading, setActionLoading] = useState<number | null>(null);
 
   const isAdmin = userRole === "ADMIN";
 
-  const fetchReconciliations = async () => {
-    setIsLoading(true);
-    try {
-      const params = new URLSearchParams();
-      if (statusFilter !== "all") {
-        params.append("status", statusFilter);
-      }
-      if (createdByFilter !== "all") {
-        params.append("createdBy", createdByFilter);
-      }
-
-      const response = await fetch(
-        `/api/stock-reconciliations?${params.toString()}`
-      );
-      const data = await response.json();
-
-      if (response.ok) {
-        setReconciliations(data.reconciliations || []);
-      } else {
-        toast.error(data.error || "Failed to fetch reconciliations");
-        setReconciliations([]);
-      }
-    } catch (error) {
-      console.error("Error fetching reconciliations:", error);
-      toast.error("Failed to fetch reconciliations");
-      setReconciliations([]);
-    } finally {
-      setIsLoading(false);
-    }
+  // TanStack Query hooks
+  const filters: StockReconciliationFilters = {
+    search: searchTerm || undefined,
+    status: statusFilter !== "all" ? statusFilter : undefined,
+    sortBy: "createdAt",
+    sortOrder: "desc",
   };
 
-  useEffect(() => {
-    fetchReconciliations();
-  }, [statusFilter, createdByFilter]);
+  const {
+    data: reconciliationData,
+    isLoading,
+    error,
+    refetch: refetchReconciliations,
+  } = useStockReconciliations(filters);
+
+  const submitReconciliation = useSubmitStockReconciliation();
+  const approveReconciliation = useApproveStockReconciliation();
+  const rejectReconciliation = useRejectStockReconciliation();
+  const deleteReconciliation = useDeleteStockReconciliation();
+
+  const reconciliations = reconciliationData?.data || [];
 
   const handleSubmitForApproval = async (reconciliationId: number) => {
-    setActionLoading(reconciliationId);
     try {
-      const response = await fetch(
-        `/api/stock-reconciliations/${reconciliationId}/submit`,
-        {
-          method: "POST",
-          headers: {
-            "Content-Type": "application/json",
-          },
-        }
-      );
-
-      const data = await response.json();
-
-      if (response.ok) {
-        toast.success("Reconciliation submitted for approval");
-        fetchReconciliations();
-      } else {
-        toast.error(data.error || "Failed to submit reconciliation");
-      }
+      await submitReconciliation.mutateAsync(reconciliationId.toString());
+      toast.success("Reconciliation submitted for approval");
     } catch (error) {
       console.error("Error submitting reconciliation:", error);
       toast.error("Failed to submit reconciliation");
-    } finally {
-      setActionLoading(null);
     }
   };
 
   const handleApprove = async (reconciliationId: number) => {
-    setActionLoading(reconciliationId);
     try {
-      const response = await fetch(
-        `/api/stock-reconciliations/${reconciliationId}/approve`,
-        {
-          method: "POST",
-          headers: {
-            "Content-Type": "application/json",
-          },
-          body: JSON.stringify({ notes: "Approved via list view" }),
-        }
-      );
-
-      const data = await response.json();
-
-      if (response.ok) {
-        toast.success("Reconciliation approved successfully");
-        fetchReconciliations();
-      } else {
-        toast.error(data.error || "Failed to approve reconciliation");
-      }
+      await approveReconciliation.mutateAsync(reconciliationId.toString());
+      toast.success("Reconciliation approved successfully");
     } catch (error) {
       console.error("Error approving reconciliation:", error);
       toast.error("Failed to approve reconciliation");
-    } finally {
-      setActionLoading(null);
     }
   };
 
@@ -208,32 +159,12 @@ export function StockReconciliationList({
     const reason = prompt("Please provide a reason for rejection:");
     if (!reason) return;
 
-    setActionLoading(reconciliationId);
     try {
-      const response = await fetch(
-        `/api/stock-reconciliations/${reconciliationId}/reject`,
-        {
-          method: "POST",
-          headers: {
-            "Content-Type": "application/json",
-          },
-          body: JSON.stringify({ reason, notes: "Rejected via list view" }),
-        }
-      );
-
-      const data = await response.json();
-
-      if (response.ok) {
-        toast.success("Reconciliation rejected");
-        fetchReconciliations();
-      } else {
-        toast.error(data.error || "Failed to reject reconciliation");
-      }
+      await rejectReconciliation.mutateAsync(reconciliationId.toString());
+      toast.success("Reconciliation rejected");
     } catch (error) {
       console.error("Error rejecting reconciliation:", error);
       toast.error("Failed to reject reconciliation");
-    } finally {
-      setActionLoading(null);
     }
   };
 
@@ -241,32 +172,16 @@ export function StockReconciliationList({
     if (!confirm("Are you sure you want to delete this reconciliation?"))
       return;
 
-    setActionLoading(reconciliationId);
     try {
-      const response = await fetch(
-        `/api/stock-reconciliations/${reconciliationId}`,
-        {
-          method: "DELETE",
-        }
-      );
-
-      const data = await response.json();
-
-      if (response.ok) {
-        toast.success("Reconciliation deleted successfully");
-        fetchReconciliations();
-      } else {
-        toast.error(data.error || "Failed to delete reconciliation");
-      }
+      await deleteReconciliation.mutateAsync(reconciliationId.toString());
+      toast.success("Reconciliation deleted successfully");
     } catch (error) {
       console.error("Error deleting reconciliation:", error);
       toast.error("Failed to delete reconciliation");
-    } finally {
-      setActionLoading(null);
     }
   };
 
-  const filteredReconciliations = reconciliations.filter((reconciliation) => {
+  const filteredReconciliations = reconciliations.filter((reconciliation: any) => {
     const matchesSearch =
       searchTerm === "" ||
       reconciliation.title.toLowerCase().includes(searchTerm.toLowerCase()) ||
@@ -375,7 +290,7 @@ export function StockReconciliationList({
                   </TableCell>
                 </TableRow>
               ) : (
-                filteredReconciliations.map((reconciliation) => {
+                filteredReconciliations.map((reconciliation: any) => {
                   const totalDiscrepancy =
                     calculateTotalDiscrepancy(reconciliation);
                   const totalImpact = calculateTotalImpact(reconciliation);
@@ -409,10 +324,10 @@ export function StockReconciliationList({
                       <TableCell>
                         <Badge
                           variant={
-                            statusConfig[reconciliation.status].color as any
+                            statusConfig[reconciliation.status as keyof typeof statusConfig]?.color as any
                           }
                         >
-                          {statusConfig[reconciliation.status].label}
+                          {statusConfig[reconciliation.status as keyof typeof statusConfig]?.label}
                         </Badge>
                       </TableCell>
                       <TableCell>
@@ -494,7 +409,7 @@ export function StockReconciliationList({
                                 onClick={() =>
                                   handleSubmitForApproval(reconciliation.id)
                                 }
-                                disabled={actionLoading === reconciliation.id}
+                                disabled={submitReconciliation.isPending}
                               >
                                 <IconSend className="mr-2 h-4 w-4" />
                                 Submit for Approval
@@ -508,7 +423,7 @@ export function StockReconciliationList({
                                   onClick={() =>
                                     handleApprove(reconciliation.id)
                                   }
-                                  disabled={actionLoading === reconciliation.id}
+                                  disabled={approveReconciliation.isPending}
                                   className="text-green-600"
                                 >
                                   <IconCheck className="mr-2 h-4 w-4" />
@@ -518,7 +433,7 @@ export function StockReconciliationList({
                                   onClick={() =>
                                     handleReject(reconciliation.id)
                                   }
-                                  disabled={actionLoading === reconciliation.id}
+                                  disabled={rejectReconciliation.isPending}
                                   className="text-red-600"
                                 >
                                   <IconX className="mr-2 h-4 w-4" />
@@ -534,7 +449,7 @@ export function StockReconciliationList({
                                   onClick={() =>
                                     handleDelete(reconciliation.id)
                                   }
-                                  disabled={actionLoading === reconciliation.id}
+                                  disabled={deleteReconciliation.isPending}
                                   className="text-red-600"
                                 >
                                   <IconTrash className="mr-2 h-4 w-4" />

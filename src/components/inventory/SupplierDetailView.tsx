@@ -1,6 +1,6 @@
 "use client";
 
-import React, { useState, useEffect } from "react";
+import React, { useState } from "react";
 import { useRouter } from "next/navigation";
 import Link from "next/link";
 import { Button } from "@/components/ui/button";
@@ -35,6 +35,7 @@ import {
 } from "@tabler/icons-react";
 import { toast } from "sonner";
 import { useSession } from "next-auth/react";
+import { useSupplier, useDeleteSupplier } from "@/hooks/api/suppliers";
 
 interface Supplier {
   id: number;
@@ -69,9 +70,6 @@ export default function SupplierDetailView({
 }: SupplierDetailViewProps) {
   const router = useRouter();
   const { data: session } = useSession();
-  const [supplier, setSupplier] = useState<Supplier | null>(null);
-  const [loading, setLoading] = useState(true);
-  const [error, setError] = useState<string | null>(null);
   const [deleteDialogOpen, setDeleteDialogOpen] = useState(false);
 
   // Permission checks
@@ -80,51 +78,21 @@ export default function SupplierDetailView({
     user && ["ADMIN", "MANAGER"].includes(user.role || "");
   const canDeleteSuppliers = user && user.role === "ADMIN";
 
-  // Fetch supplier details
-  useEffect(() => {
-    const fetchSupplier = async () => {
-      try {
-        setLoading(true);
-        setError(null);
+  // TanStack Query hooks
+  const {
+    data: supplier,
+    isLoading: loading,
+    error,
+  } = useSupplier(supplierId);
 
-        const response = await fetch(`/api/suppliers/${supplierId}`);
-
-        if (!response.ok) {
-          if (response.status === 404) {
-            throw new Error("Supplier not found");
-          }
-          throw new Error("Failed to fetch supplier details");
-        }
-
-        const data = await response.json();
-        setSupplier(data.data);
-      } catch (err) {
-        console.error("Error fetching supplier:", err);
-        const errorMessage =
-          err instanceof Error ? err.message : "Failed to load supplier";
-        setError(errorMessage);
-        toast.error(errorMessage);
-      } finally {
-        setLoading(false);
-      }
-    };
-
-    fetchSupplier();
-  }, [supplierId]);
+  const deleteSupplierMutation = useDeleteSupplier();
 
   // Handle delete supplier
   const handleDelete = async () => {
     if (!supplier) return;
 
     try {
-      const response = await fetch(`/api/suppliers/${supplier.id}`, {
-        method: "DELETE",
-      });
-
-      if (!response.ok) {
-        throw new Error("Failed to delete supplier");
-      }
-
+      await deleteSupplierMutation.mutateAsync(supplier.id);
       toast.success("Supplier deleted successfully");
       router.push("/inventory/suppliers");
     } catch (err) {
@@ -161,7 +129,7 @@ export default function SupplierDetailView({
         <div className="text-center py-8">
           <IconAlertTriangle className="mx-auto h-12 w-12 text-red-500 mb-4" />
           <h3 className="text-lg font-medium text-gray-900 mb-2">
-            {error || "Supplier not found"}
+            {error?.message || "Supplier not found"}
           </h3>
           <p className="text-sm text-gray-500 mb-4">
             The supplier you're looking for doesn't exist or you don't have

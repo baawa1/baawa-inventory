@@ -45,7 +45,7 @@ interface SessionProviderProps {
   activityCheckInterval?: number;
 }
 
-export function SessionProvider({ 
+export function SessionProvider({
   children,
   enableActivityTracking = true,
   enableTimeoutWarning = true,
