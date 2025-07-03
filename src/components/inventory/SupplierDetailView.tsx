@@ -79,11 +79,7 @@ export default function SupplierDetailView({
   const canDeleteSuppliers = user && user.role === "ADMIN";
 
   // TanStack Query hooks
-  const {
-    data: supplier,
-    isLoading: loading,
-    error,
-  } = useSupplier(supplierId);
+  const { data: supplier, isLoading: loading, error } = useSupplier(supplierId);
 
   const deleteSupplierMutation = useDeleteSupplier();
 

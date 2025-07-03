@@ -181,19 +181,21 @@ export function StockReconciliationList({
     }
   };
 
-  const filteredReconciliations = reconciliations.filter((reconciliation: any) => {
-    const matchesSearch =
-      searchTerm === "" ||
-      reconciliation.title.toLowerCase().includes(searchTerm.toLowerCase()) ||
-      reconciliation.description
-        ?.toLowerCase()
-        .includes(searchTerm.toLowerCase()) ||
-      `${reconciliation.createdBy.firstName} ${reconciliation.createdBy.lastName}`
-        .toLowerCase()
-        .includes(searchTerm.toLowerCase());
+  const filteredReconciliations = reconciliations.filter(
+    (reconciliation: any) => {
+      const matchesSearch =
+        searchTerm === "" ||
+        reconciliation.title.toLowerCase().includes(searchTerm.toLowerCase()) ||
+        reconciliation.description
+          ?.toLowerCase()
+          .includes(searchTerm.toLowerCase()) ||
+        `${reconciliation.createdBy.firstName} ${reconciliation.createdBy.lastName}`
+          .toLowerCase()
+          .includes(searchTerm.toLowerCase());
 
-    return matchesSearch;
-  });
+      return matchesSearch;
+    }
+  );
 
   const calculateTotalDiscrepancy = (reconciliation: StockReconciliation) => {
     return reconciliation.items.reduce(
@@ -324,10 +326,16 @@ export function StockReconciliationList({
                       <TableCell>
                         <Badge
                           variant={
-                            statusConfig[reconciliation.status as keyof typeof statusConfig]?.color as any
+                            statusConfig[
+                              reconciliation.status as keyof typeof statusConfig
+                            ]?.color as any
                           }
                         >
-                          {statusConfig[reconciliation.status as keyof typeof statusConfig]?.label}
+                          {
+                            statusConfig[
+                              reconciliation.status as keyof typeof statusConfig
+                            ]?.label
+                          }
                         </Badge>
                       </TableCell>
                       <TableCell>

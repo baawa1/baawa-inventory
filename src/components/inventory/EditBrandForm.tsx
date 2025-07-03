@@ -38,11 +38,7 @@ export default function EditBrandForm({ brandId }: EditBrandFormProps) {
   const [serverError, setServerError] = useState<string | null>(null);
 
   // TanStack Query hooks
-  const {
-    data: brand,
-    isLoading,
-    error,
-  } = useBrandById(brandId);
+  const { data: brand, isLoading, error } = useBrandById(brandId);
 
   const updateBrandMutation = useUpdateBrand();
 
@@ -55,13 +51,15 @@ export default function EditBrandForm({ brandId }: EditBrandFormProps) {
     formState: { errors },
   } = useForm<UpdateBrandFormData>({
     resolver: zodResolver(updateBrandFormSchema),
-    values: brand ? {
-      id: brand.id,
-      name: brand.name,
-      description: brand.description,
-      website: brand.website,
-      isActive: brand.is_active,
-    } : undefined,
+    values: brand
+      ? {
+          id: brand.id,
+          name: brand.name,
+          description: brand.description,
+          website: brand.website,
+          isActive: brand.is_active,
+        }
+      : undefined,
   });
 
   const isActive = watch("isActive");
