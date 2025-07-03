@@ -76,20 +76,32 @@ export const authOptions: NextAuthOptions = {
         token.status = user.status;
         token.emailVerified = Boolean(user.emailVerified);
         token.loginTime = Date.now();
+        console.log("JWT callback: New login, setting token data:", {
+          role: token.role,
+          status: token.status,
+          emailVerified: token.emailVerified,
+        });
       }
 
       // Handle session updates (when update() is called)
       if (trigger === "update" && token.sub) {
+        console.log("JWT callback: Refreshing user data for user", token.sub);
         const userId = parseInt(token.sub);
         const refreshedData = await authService.refreshUserData(userId);
 
         if (refreshedData) {
+          console.log("JWT callback: Received refreshed data:", refreshedData);
           token.role = refreshedData.role || token.role;
           token.status = refreshedData.status || token.status;
           token.emailVerified =
             refreshedData.emailVerified !== undefined
               ? Boolean(refreshedData.emailVerified)
               : token.emailVerified;
+        } else {
+          console.warn(
+            "JWT callback: No refreshed data received for user",
+            userId
+          );
         }
 
         // Override with any session data provided
@@ -101,53 +113,104 @@ export const authOptions: NextAuthOptions = {
         }
       }
 
+      // Ensure required properties are always present
+      if (!token.status && token.sub) {
+        console.log(
+          "JWT callback: Missing status, fetching from database for user",
+          token.sub
+        );
+        const userId = parseInt(token.sub);
+        const refreshedData = await authService.refreshUserData(userId);
+        if (refreshedData) {
+          token.role = refreshedData.role || token.role || "STAFF";
+          token.status = refreshedData.status || "PENDING";
+          token.emailVerified = refreshedData.emailVerified || false;
+          console.log("JWT callback: Set missing status to:", token.status);
+        }
+      }
+
       // Check if session is expired and invalidate completely
       if (
         token.loginTime &&
         Date.now() - (token.loginTime as number) > 24 * 60 * 60 * 1000
       ) {
-        // Session is expired - invalidate completely by returning null
+        // Session is expired - invalidate completely by returning an empty token with required properties
         // This will force the user to log in again
         if (token.sub) {
           const userId = parseInt(token.sub);
           await authService.updateLastLogout(userId);
           await AuditLogger.logSessionExpired(userId, token.email || "unknown");
         }
-        return {};
+        return {
+          role: "",
+          status: "",
+          emailVerified: false,
+          expired: true,
+        } as any;
       }
+
+      console.log("JWT callback: Final token data:", {
+        sub: token.sub,
+        role: token.role,
+        status: token.status,
+        emailVerified: token.emailVerified,
+      });
 
       return token;
     },
     async session({ session, token }) {
-      // If token is empty (expired), return null to invalidate session
-      if (!token || !token.sub) {
-        return null;
+      // If token is empty or expired, return null to invalidate session
+      if (!token || !token.sub || token.expired) {
+        console.log(
+          "Session callback: Token is empty or expired, invalidating session"
+        );
+        return null as any;
       }
 
       if (token && session.user) {
         session.user.id = token.sub!;
-        session.user.role = token.role;
-        session.user.status = token.status;
-        session.user.emailVerified = token.emailVerified;
+        session.user.role = token.role || "STAFF";
+        session.user.status = token.status || "PENDING";
+        session.user.emailVerified = Boolean(token.emailVerified);
+
+        console.log("Session callback: Setting session user data:", {
+          id: session.user.id,
+          role: session.user.role,
+          status: session.user.status,
+          emailVerified: session.user.emailVerified,
+        });
       }
       return session;
     },
   },
-  events: {
-    async signOut({ token }) {
-      if (token?.sub) {
-        const userId = parseInt(token.sub);
-        await authService.updateLastLogout(userId);
-        await AuditLogger.logLogout(userId, token.email || "unknown");
-      }
-    },
-    async session({ session }) {
-      if (session?.user?.id) {
-        const userId = parseInt(session.user.id);
-        await authService.updateLastActivity(userId);
-      }
-    },
-  },
+  // events: {
+  //   async signOut({ token }) {
+  //     try {
+  //       console.log("SignOut event triggered, token:", token?.sub);
+  //       if (token?.sub) {
+  //         const userId = parseInt(token.sub);
+  //         console.log("Updating logout timestamp for user:", userId);
+  //         await authService.updateLastLogout(userId);
+  //         await AuditLogger.logLogout(userId, token.email || "unknown");
+  //         console.log("Logout event completed successfully");
+  //       }
+  //     } catch (error) {
+  //       console.error("Error in signOut event:", error);
+  //       // Don't throw the error to prevent logout from failing
+  //     }
+  //   },
+  //   async session({ session }) {
+  //     try {
+  //       if (session?.user?.id) {
+  //         const userId = parseInt(session.user.id);
+  //         await authService.updateLastActivity(userId);
+  //       }
+  //     } catch (error) {
+  //       console.error("Error in session event:", error);
+  //       // Don't throw the error to prevent session from failing
+  //     }
+  //   },
+  // },
   pages: {
     signIn: "/login",
     error: "/login",

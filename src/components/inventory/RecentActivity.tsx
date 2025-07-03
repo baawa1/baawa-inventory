@@ -1,6 +1,5 @@
 "use client";
 
-import { useEffect, useState } from "react";
 import {
   Card,
   CardContent,
@@ -16,7 +15,9 @@ import {
   IconShoppingCart,
 } from "@tabler/icons-react";
 import { formatCurrency } from "@/lib/utils";
+import { useRecentActivity } from "@/hooks/api/inventory";
 
+// Legacy interface for backward compatibility
 interface ActivityItem {
   id: number;
   type:
@@ -31,57 +32,65 @@ interface ActivityItem {
 }
 
 export function RecentActivity() {
-  const [activities, setActivities] = useState<ActivityItem[]>([]);
-  const [loading, setLoading] = useState(true);
+  const { data, isLoading, error } = useRecentActivity();
 
-  useEffect(() => {
-    // Mock data for recent activities - in real implementation, fetch from API
-    setActivities([
-      {
-        id: 1,
-        type: "product_added",
-        description: 'Added new product "Samsung Galaxy Watch"',
-        timestamp: "2 minutes ago",
-        user: "John Doe",
-        metadata: { productId: 123, sku: "SGW-001" },
-      },
-      {
-        id: 2,
-        type: "stock_adjustment",
-        description:
-          'Stock adjusted for "iPhone 14 Case" - Increased by 50 units',
-        timestamp: "15 minutes ago",
-        user: "Jane Smith",
-        metadata: { productId: 456, adjustment: 50, reason: "New shipment" },
-      },
-      {
-        id: 3,
-        type: "supplier_added",
-        description: 'New supplier "Tech Accessories Ltd." added',
-        timestamp: "1 hour ago",
-        user: "Admin User",
-        metadata: { supplierId: 789 },
-      },
-      {
-        id: 4,
-        type: "sale_completed",
-        description: `Sale completed - 3 items sold for ${formatCurrency(150.0)}`,
-        timestamp: "2 hours ago",
-        user: "Store Assistant",
-        metadata: { saleId: "TXN-1234567890", amount: 150.0 },
-      },
-      {
-        id: 5,
-        type: "stock_adjustment",
-        description:
-          'Stock adjusted for "Wireless Earbuds" - Decreased by 2 units',
-        timestamp: "3 hours ago",
-        user: "John Doe",
-        metadata: { productId: 321, adjustment: -2, reason: "Damage reported" },
-      },
-    ]);
-    setLoading(false);
-  }, []);
+  // Fallback data for when API is not ready yet
+  const fallbackActivities: ActivityItem[] = [
+    {
+      id: 1,
+      type: "product_added",
+      description: 'Added new product "Samsung Galaxy Watch"',
+      timestamp: "2 minutes ago",
+      user: "John Doe",
+      metadata: { productId: 123, sku: "SGW-001" },
+    },
+    {
+      id: 2,
+      type: "stock_adjustment",
+      description:
+        'Stock adjusted for "iPhone 14 Case" - Increased by 50 units',
+      timestamp: "15 minutes ago",
+      user: "Jane Smith",
+      metadata: { productId: 456, adjustment: 50, reason: "New shipment" },
+    },
+    {
+      id: 3,
+      type: "supplier_added",
+      description: 'New supplier "Tech Accessories Ltd." added',
+      timestamp: "1 hour ago",
+      user: "Admin User",
+      metadata: { supplierId: 789 },
+    },
+    {
+      id: 4,
+      type: "sale_completed",
+      description: `Sale completed - 3 items sold for ${formatCurrency(150.0)}`,
+      timestamp: "2 hours ago",
+      user: "Store Assistant",
+      metadata: { saleId: "TXN-1234567890", amount: 150.0 },
+    },
+    {
+      id: 5,
+      type: "stock_adjustment",
+      description:
+        'Stock adjusted for "Wireless Earbuds" - Decreased by 2 units',
+      timestamp: "3 hours ago",
+      user: "John Doe",
+      metadata: { productId: 321, adjustment: -2, reason: "Damage reported" },
+    },
+  ];
+
+  // Convert API data to legacy format if needed, otherwise use fallback
+  const activities = data
+    ? data.map((item, index) => ({
+        id: index + 1,
+        type: item.type as ActivityItem["type"],
+        description: item.description,
+        timestamp: item.timestamp,
+        user: item.user || "System",
+        metadata: item,
+      }))
+    : fallbackActivities;
 
   const getActivityIcon = (type: ActivityItem["type"]) => {
     switch (type) {
@@ -129,7 +138,24 @@ export function RecentActivity() {
     }
   };
 
-  if (loading) {
+  if (error && !data) {
+    return (
+      <div className="px-4 lg:px-6">
+        <Card>
+          <CardHeader>
+            <CardTitle className="text-red-600">
+              Error Loading Activity
+            </CardTitle>
+            <CardDescription>
+              Failed to load recent activity. Using fallback data.
+            </CardDescription>
+          </CardHeader>
+        </Card>
+      </div>
+    );
+  }
+
+  if (isLoading) {
     return (
       <div className="px-4 lg:px-6">
         <Card>

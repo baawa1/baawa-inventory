@@ -1,6 +1,5 @@
 "use client";
 
-import { useEffect, useState } from "react";
 import {
   IconTrendingDown,
   IconTrendingUp,
@@ -19,49 +18,41 @@ import {
   CardTitle,
 } from "@/components/ui/card";
 import { formatCurrency } from "@/lib/utils";
-
-interface InventoryStats {
-  totalProducts: number;
-  lowStockItems: number;
-  totalStockValue: number;
-  activeSuppliers: number;
-  recentSales: number;
-  stockMovement: number;
-}
+import { useInventoryStats } from "@/hooks/api/inventory";
 
 export function InventoryMetrics() {
-  const [stats, setStats] = useState<InventoryStats>({
-    totalProducts: 0,
-    lowStockItems: 0,
-    totalStockValue: 0,
-    activeSuppliers: 0,
-    recentSales: 0,
-    stockMovement: 0,
-  });
-  const [loading, setLoading] = useState(true);
+  const { data: stats, isLoading: loading, error } = useInventoryStats();
 
-  useEffect(() => {
-    // Fetch inventory statistics
-    const fetchStats = async () => {
-      try {
-        // For now, using mock data. In real implementation, this would fetch from API
-        setStats({
-          totalProducts: 1247,
-          lowStockItems: 23,
-          totalStockValue: 125480.5,
-          activeSuppliers: 15,
-          recentSales: 89,
-          stockMovement: 12.5,
-        });
-      } catch (error) {
-        console.error("Failed to fetch inventory stats:", error);
-      } finally {
-        setLoading(false);
-      }
-    };
+  // Fallback data for when API is not ready yet
+  const fallbackStats = {
+    totalProducts: 1247,
+    lowStockItems: 23,
+    totalStockValue: 125480.5,
+    activeSuppliers: 15,
+    recentSales: 89,
+    stockMovement: 12.5,
+  };
 
-    fetchStats();
-  }, []);
+  // Use actual data if available, otherwise fallback
+  const displayStats = stats || fallbackStats;
+
+  // Show error state if there's an error and no cached data
+  if (error && !stats) {
+    return (
+      <div className="grid grid-cols-1 gap-4 px-4 lg:px-6 @xl/main:grid-cols-2 @5xl/main:grid-cols-4">
+        <Card className="col-span-full">
+          <CardHeader>
+            <CardTitle className="text-red-600">
+              Error Loading Metrics
+            </CardTitle>
+            <CardDescription>
+              Failed to load inventory metrics. Using fallback data.
+            </CardDescription>
+          </CardHeader>
+        </Card>
+      </div>
+    );
+  }
 
   if (loading) {
     return (
@@ -86,7 +77,7 @@ export function InventoryMetrics() {
           <CardDescription>Total Products</CardDescription>
           <CardTitle className="text-2xl font-semibold tabular-nums @[250px]/card:text-3xl flex items-center gap-2">
             <IconPackages className="h-6 w-6 text-blue-600" />
-            {stats.totalProducts.toLocaleString()}
+            {displayStats.totalProducts.toLocaleString()}
           </CardTitle>
           <CardAction>
             <Badge variant="outline">
@@ -109,7 +100,7 @@ export function InventoryMetrics() {
           <CardDescription>Low Stock Items</CardDescription>
           <CardTitle className="text-2xl font-semibold tabular-nums @[250px]/card:text-3xl flex items-center gap-2">
             <IconAlertTriangle className="h-6 w-6 text-yellow-600" />
-            {stats.lowStockItems}
+            {displayStats.lowStockItems}
           </CardTitle>
           <CardAction>
             <Badge variant="outline" className="text-yellow-600">
@@ -134,11 +125,11 @@ export function InventoryMetrics() {
           <CardDescription>Total Stock Value</CardDescription>
           <CardTitle className="text-2xl font-semibold tabular-nums @[250px]/card:text-3xl flex items-center gap-2">
             <IconCurrencyDollar className="h-6 w-6 text-green-600" />
-            {formatCurrency(stats.totalStockValue)}
+            {formatCurrency(displayStats.totalStockValue)}
           </CardTitle>
           <CardAction>
             <Badge variant="outline">
-              <IconTrendingUp />+{stats.stockMovement}%
+              <IconTrendingUp />+{displayStats.stockMovement}%
             </Badge>
           </CardAction>
         </CardHeader>
@@ -156,7 +147,7 @@ export function InventoryMetrics() {
           <CardDescription>Active Suppliers</CardDescription>
           <CardTitle className="text-2xl font-semibold tabular-nums @[250px]/card:text-3xl flex items-center gap-2">
             <IconUsers className="h-6 w-6 text-purple-600" />
-            {stats.activeSuppliers}
+            {displayStats.activeSuppliers}
           </CardTitle>
           <CardAction>
             <Badge variant="outline">

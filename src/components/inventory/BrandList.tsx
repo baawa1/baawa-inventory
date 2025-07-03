@@ -1,10 +1,11 @@
 "use client";
 
-import { useState, useEffect } from "react";
+import { useState } from "react";
 import { useSession } from "next-auth/react";
 import { useRouter } from "next/navigation";
 import Link from "next/link";
 import { useDebounce } from "@/hooks/useDebounce";
+import { useBrands, useDeleteBrand } from "@/hooks/api/brands";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -38,39 +39,12 @@ import {
 } from "lucide-react";
 import { toast } from "sonner";
 
-interface Brand {
-  id: number;
-  name: string;
-  description: string | null;
-  website: string | null;
-  is_active: boolean;
-  created_at: string;
-  updated_at: string;
-}
-
-interface BrandListResponse {
-  success: boolean;
-  data: Brand[];
-  pagination: {
-    page: number;
-    limit: number;
-    offset: number;
-    total: number;
-    pages: number;
-  };
-}
-
 export default function BrandList() {
   const { data: session, status } = useSession();
   const router = useRouter();
-  const [brands, setBrands] = useState<Brand[]>([]);
-  const [loading, setLoading] = useState(true);
   const [searchTerm, setSearchTerm] = useState("");
   const [statusFilter, setStatusFilter] = useState<string>("all");
   const [currentPage, setCurrentPage] = useState(1);
-  const [totalPages, setTotalPages] = useState(1);
-  const [totalBrands, setTotalBrands] = useState(0);
-  const [deletingId, setDeletingId] = useState<number | null>(null);
 
   // Debounce search term to avoid excessive API calls
   const debouncedSearchTerm = useDebounce(searchTerm, 500);
@@ -78,59 +52,38 @@ export default function BrandList() {
   // Show search loading when user is typing but search hasn't been triggered yet
   const isSearching = searchTerm !== debouncedSearchTerm;
 
-  // Redirect if not authenticated
-  useEffect(() => {
-    if (status === "unauthenticated") {
-      router.push("/login");
-    }
-  }, [status, router]);
-
-  const fetchBrands = async () => {
-    if (status !== "authenticated") return;
-
-    try {
-      setLoading(true);
-      const params = new URLSearchParams({
-        offset: ((currentPage - 1) * 10).toString(),
-        limit: "10",
-        sortBy: "name",
-        sortOrder: "asc",
-      });
-
-      if (debouncedSearchTerm) {
-        params.append("search", debouncedSearchTerm);
-      }
-
-      if (statusFilter !== "all") {
-        params.append("isActive", statusFilter === "active" ? "true" : "false");
-      }
-
-      const response = await fetch(`/api/brands?${params.toString()}`);
-
-      if (!response.ok) {
-        throw new Error("Failed to fetch brands");
-      }
-
-      const data: BrandListResponse = await response.json();
-
-      if (data.success) {
-        setBrands(data.data || []);
-        setTotalPages(data.pagination.pages);
-        setTotalBrands(data.pagination.total);
-      } else {
-        throw new Error("Failed to fetch brands");
-      }
-    } catch (error) {
-      console.error("Error fetching brands:", error);
-      toast.error("Failed to fetch brands");
-    } finally {
-      setLoading(false);
-    }
+  // Build query filters
+  const filters = {
+    offset: (currentPage - 1) * 10,
+    limit: 10,
+    sortBy: "name",
+    sortOrder: "asc" as const,
+    ...(debouncedSearchTerm && { search: debouncedSearchTerm }),
+    ...(statusFilter !== "all" && {
+      isActive: statusFilter === "active",
+    }),
   };
 
-  useEffect(() => {
-    fetchBrands();
-  }, [currentPage, debouncedSearchTerm, statusFilter, status]);
+  // Fetch brands with TanStack Query (only when authenticated)
+  const {
+    data: brandsData,
+    isLoading,
+    error,
+    isError,
+  } = useBrands(status === "authenticated" ? filters : {});
+
+  // Delete mutation
+  const deleteBrandMutation = useDeleteBrand();
+
+  // Redirect if not authenticated
+  if (status === "unauthenticated") {
+    router.push("/login");
+    return null;
+  }
+
+  const brands = brandsData?.data || [];
+  const totalPages = brandsData?.pagination?.pages || 1;
+  const totalBrands = brandsData?.pagination?.total || 0;
 
   const handleSearch = (term: string) => {
     setSearchTerm(term);
@@ -144,30 +97,17 @@ export default function BrandList() {
 
   const handleDelete = async (id: number) => {
     try {
-      setDeletingId(id);
-      const response = await fetch(`/api/brands/${id}`, {
-        method: "DELETE",
-      });
-
-      const responseData = await response.json();
-
-      if (!response.ok) {
-        throw new Error(responseData.error || "Failed to delete brand");
-      }
-
+      await deleteBrandMutation.mutateAsync(id);
       toast.success("Brand deleted successfully");
-      fetchBrands();
     } catch (error) {
       console.error("Error deleting brand:", error);
       const errorMessage =
         error instanceof Error ? error.message : "Failed to delete brand";
       toast.error(errorMessage);
-    } finally {
-      setDeletingId(null);
     }
   };
 
-  if (status === "loading" || loading) {
+  if (status === "loading" || isLoading) {
     return (
       <div className="space-y-4">
         <div className="flex flex-col sm:flex-row gap-4 justify-between">
@@ -187,10 +127,6 @@ export default function BrandList() {
         </div>
       </div>
     );
-  }
-
-  if (status === "unauthenticated") {
-    return null;
   }
 
   return (
@@ -275,8 +211,8 @@ export default function BrandList() {
                   <CardTitle className="text-lg font-semibold">
                     {brand.name}
                   </CardTitle>
-                  <Badge variant={brand.is_active ? "default" : "secondary"}>
-                    {brand.is_active ? "Active" : "Inactive"}
+                  <Badge variant={brand.isActive ? "default" : "secondary"}>
+                    {brand.isActive ? "Active" : "Inactive"}
                   </Badge>
                 </div>
                 <div className="flex gap-2">
@@ -291,7 +227,7 @@ export default function BrandList() {
                       <Button
                         variant="outline"
                         size="sm"
-                        disabled={deletingId === brand.id}
+                        disabled={deleteBrandMutation.isPending}
                       >
                         <Trash2 className="h-4 w-4" />
                       </Button>
@@ -302,8 +238,7 @@ export default function BrandList() {
                         <AlertDialogDescription>
                           Are you sure you want to delete "{brand.name}"? This
                           action cannot be undone.
-                          {brand.is_active &&
-                            " This brand is currently active."}
+                          {brand.isActive && " This brand is currently active."}
                         </AlertDialogDescription>
                       </AlertDialogHeader>
                       <AlertDialogFooter>
@@ -348,7 +283,7 @@ export default function BrandList() {
                 )}
 
                 <div className="text-xs text-muted-foreground">
-                  Created: {new Date(brand.created_at).toLocaleDateString()}
+                  Created: {new Date(brand.createdAt).toLocaleDateString()}
                 </div>
               </CardContent>
             </Card>

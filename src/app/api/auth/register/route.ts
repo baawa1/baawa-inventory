@@ -6,6 +6,7 @@ import { withAuthRateLimit } from "@/lib/rate-limit";
 import { TokenSecurity } from "@/lib/utils/token-security";
 import bcrypt from "bcryptjs";
 import { z } from "zod";
+import crypto from "crypto";
 
 import { passwordSchema } from "@/lib/validations/common";
 
@@ -15,7 +16,7 @@ const registerSchema = z.object({
   lastName: z.string().min(2, "Last name must be at least 2 characters"),
   email: z.string().email("Please enter a valid email address"),
   password: passwordSchema, // Use strong password requirements
-  // Remove role from registration - all self-registered users start as EMPLOYEE
+  // Remove role from registration - all self-registered users start as STAFF
 });
 
 // Type inference for the registration schema
@@ -55,20 +56,22 @@ async function handleRegister(request: NextRequest) {
     // Hash the password
     const hashedPassword = await bcrypt.hash(userData.password, 12);
 
-    // Generate secure email verification token
-    const { rawToken: verificationToken, hashedToken: hashedVerificationToken } = 
-      TokenSecurity.generateSecureToken(32);
-    const verificationExpires = TokenSecurity.generateExpiry(24); // 24 hours
+    // Generate email verification token
+    const {
+      rawToken: verificationToken,
+      hashedToken: hashedVerificationToken,
+      expires: verificationExpires,
+    } = TokenSecurity.generateEmailVerificationToken(32);
 
     // Create the user with email verification fields
-    // Security: Force role to EMPLOYEE regardless of input
+    // Security: Force role to STAFF regardless of input
     const user = await prisma.user.create({
       data: {
         firstName: userData.firstName,
         lastName: userData.lastName,
         email: userData.email,
         password: hashedPassword,
-        role: "EMPLOYEE", // Force role to EMPLOYEE for security
+        role: "STAFF", // Force role to STAFF for security
         isActive: true,
         userStatus: "PENDING",
         emailVerified: false,
