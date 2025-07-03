@@ -1,6 +1,5 @@
 "use client";
 
-import { useState } from "react";
 import { useRouter } from "next/navigation";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
@@ -14,7 +13,6 @@ import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
 import { Switch } from "@/components/ui/switch";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import { Alert, AlertDescription } from "@/components/ui/alert";
 import { Loader2, Save } from "lucide-react";
 import { toast } from "sonner";
 import { useBrandById, useUpdateBrand } from "@/hooks/api/brands";
@@ -131,12 +129,6 @@ export default function EditBrandForm({ brandId }: EditBrandFormProps) {
           <CardTitle>Brand Information</CardTitle>
         </CardHeader>
         <CardContent className="space-y-4">
-          {serverError && (
-            <Alert variant="destructive">
-              <AlertDescription>{serverError}</AlertDescription>
-            </Alert>
-          )}
-
           <div className="space-y-2">
             <Label htmlFor="name">
               Brand Name <span className="text-destructive">*</span>
