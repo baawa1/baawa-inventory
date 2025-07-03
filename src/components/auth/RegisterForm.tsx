@@ -46,10 +46,7 @@ interface RegisterFormProps {
   onSuccess?: () => void;
 }
 
-export function RegisterForm({
-  defaultRole = "STAFF",
-  onSuccess,
-}: RegisterFormProps) {
+export function RegisterForm({ onSuccess }: RegisterFormProps) {
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [success, setSuccess] = useState(false);
@@ -90,14 +87,14 @@ export function RegisterForm({
         try {
           const errorData = await response.json();
           errorMessage = errorData.error || errorData.message || errorMessage;
-        } catch (jsonError) {
+        } catch {
           // If we can't parse JSON, use the response status text
           errorMessage = `Server error: ${response.status} ${response.statusText}`;
         }
         throw new Error(errorMessage);
       }
 
-      const result = await response.json();
+      await response.json();
 
       setSuccess(true);
       form.reset();
@@ -124,8 +121,8 @@ export function RegisterForm({
             <h1>Check Your Email!</h1>
           </CardTitle>
           <CardDescription>
-            We've sent a verification link to your email address. Please check
-            your inbox and click the link to verify your account.
+            We&apos;ve sent a verification link to your email address. Please
+            check your inbox and click the link to verify your account.
           </CardDescription>
         </CardHeader>
         <CardContent>

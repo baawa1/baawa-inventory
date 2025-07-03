@@ -1,10 +1,5 @@
 import { NextRequest, NextResponse } from "next/server";
 import { createServerSupabaseClient } from "@/lib/supabase-server";
-import {
-  saleIdSchema,
-  updateSaleSchema,
-  validateRequest,
-} from "@/lib/validations";
 
 interface RouteParams {
   params: { id: string };

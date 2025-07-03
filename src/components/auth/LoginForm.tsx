@@ -94,7 +94,7 @@ export function LoginForm({ callbackUrl }: LoginFormProps) {
         router.push(callbackUrl || "/dashboard");
         router.refresh();
       }
-    } catch (error) {
+    } catch {
       setError("An unexpected error occurred. Please try again.");
     } finally {
       setIsLoading(false);
@@ -117,7 +117,7 @@ export function LoginForm({ callbackUrl }: LoginFormProps) {
         const data = await response.json();
         setError(data.error || "Failed to send verification email");
       }
-    } catch (error) {
+    } catch {
       setError("Failed to send verification email. Please try again.");
     }
   };

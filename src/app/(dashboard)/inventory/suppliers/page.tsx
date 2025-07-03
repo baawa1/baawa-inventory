@@ -1,7 +1,7 @@
 import { redirect } from "next/navigation";
 import { getServerSession } from "next-auth";
 import { authOptions } from "@/lib/auth";
-import { getRolePermissions } from "@/lib/auth-rbac";
+import { getRolePermissions, UserRole } from "@/lib/auth-rbac";
 import SupplierList from "@/components/inventory/SupplierList";
 
 export const metadata = {
@@ -17,7 +17,7 @@ export default async function SuppliersPage() {
   }
 
   // Check if user has permission to manage suppliers
-  const permissions = getRolePermissions(session.user.role as any);
+  const permissions = getRolePermissions(session.user.role as UserRole);
   if (!permissions.canManageSuppliers) {
     redirect("/unauthorized");
   }

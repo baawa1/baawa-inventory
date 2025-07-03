@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useEffect } from "react";
+import { useState, useEffect, useCallback } from "react";
 import { useRouter } from "next/navigation";
 import { useSession } from "next-auth/react";
 import {
@@ -29,7 +29,7 @@ export default function PendingApprovalPage() {
   const [hasTriedRefresh, setHasTriedRefresh] = useState(false);
 
   // Function to refresh user status from the server
-  const refreshUserStatus = async () => {
+  const refreshUserStatus = useCallback(async () => {
     if (!session?.user?.id) return;
 
     setIsRefreshing(true);
@@ -45,7 +45,7 @@ export default function PendingApprovalPage() {
     } finally {
       setIsRefreshing(false);
     }
-  };
+  }, [session, update]);
 
   // ALL HOOKS MUST BE CALLED BEFORE ANY CONDITIONAL RETURNS
   useEffect(() => {
@@ -79,7 +79,7 @@ export default function PendingApprovalPage() {
         }
       }
     }
-  }, [session, userStatus, hasTriedRefresh]);
+  }, [session, userStatus, hasTriedRefresh, refreshUserStatus]);
 
   // Redirect if user is already approved
   useEffect(() => {
@@ -180,7 +180,7 @@ export default function PendingApprovalPage() {
             icon: <AlertTriangle className="h-4 w-4" />,
             title: "Status Unknown",
             description:
-              "We're unable to determine your account status. Please contact support.",
+              "We&apos;re unable to determine your account status. Please contact support.",
           },
         };
     }
@@ -257,7 +257,9 @@ export default function PendingApprovalPage() {
                 </h3>
                 <ol className="list-decimal list-inside space-y-2">
                   <li>An administrator will review your account</li>
-                  <li>You'll receive an email notification when approved</li>
+                  <li>
+                    You&apos;ll receive an email notification when approved
+                  </li>
                   <li>Once approved, you can log in to access the system</li>
                 </ol>
               </div>
@@ -268,7 +270,8 @@ export default function PendingApprovalPage() {
                 <div className="flex items-center space-x-2">
                   <Mail className="h-4 w-4 text-blue-600" />
                   <p className="text-sm text-blue-700">
-                    You'll be notified by email once your account is approved
+                    You&apos;ll be notified by email once your account is
+                    approved
                   </p>
                 </div>
               </div>

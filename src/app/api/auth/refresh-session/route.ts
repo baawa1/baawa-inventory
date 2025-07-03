@@ -1,10 +1,10 @@
-import { NextRequest, NextResponse } from "next/server";
+import { NextResponse } from "next/server";
 import { getServerSession } from "next-auth/next";
 import { authOptions } from "@/lib/auth";
 import { prisma } from "@/lib/db";
 import { withAuthRateLimit } from "@/lib/rate-limit";
 
-async function handleRefreshSession(request: NextRequest) {
+async function handleRefreshSession() {
   try {
     const session = await getServerSession(authOptions);
 

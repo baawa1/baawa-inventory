@@ -617,6 +617,7 @@ globs: **/components/**/_.tsx, **/app/**/_.tsx, **/pages/**/\*.tsx
 - Use proper link styling with hover effects
 - Implement underline-offset for better readability
 - Position navigation elements logically within the form
+- Do not use <a> tags for navigation links, use shadcn/ui/Next Link components instead
 
 ## **Best Practices**
 

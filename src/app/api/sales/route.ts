@@ -1,4 +1,4 @@
-import { NextRequest, NextResponse } from "next/server";
+import { NextResponse } from "next/server";
 import { prisma } from "@/lib/db";
 import { createSaleSchema, saleQuerySchema } from "@/lib/validations/sale";
 import { withAuth, AuthenticatedRequest } from "@/lib/api-middleware";

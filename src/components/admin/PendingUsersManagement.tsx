@@ -55,10 +55,6 @@ import {
 } from "@/hooks/api/users";
 import { toast } from "sonner";
 
-interface PendingUser extends APIUser {
-  // Use APIUser interface but keep backward compatibility
-}
-
 const statusConfig = {
   PENDING: {
     label: "Pending Verification",

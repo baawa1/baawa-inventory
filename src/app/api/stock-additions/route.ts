@@ -7,7 +7,6 @@ import {
   createStockAdditionSchema,
   stockAdditionQuerySchema,
   type CreateStockAdditionData,
-  type StockAdditionQuery,
 } from "@/lib/validations/stock-management";
 
 // GET /api/stock-additions - List stock additions with filtering

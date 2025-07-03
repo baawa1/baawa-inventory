@@ -6,7 +6,6 @@ import { withAuthRateLimit } from "@/lib/rate-limit";
 import { TokenSecurity } from "@/lib/utils/token-security";
 import bcrypt from "bcryptjs";
 import { z } from "zod";
-import crypto from "crypto";
 
 import { passwordSchema } from "@/lib/validations/common";
 
@@ -18,9 +17,6 @@ const registerSchema = z.object({
   password: passwordSchema, // Use strong password requirements
   // Remove role from registration - all self-registered users start as STAFF
 });
-
-// Type inference for the registration schema
-type RegisterData = z.infer<typeof registerSchema>;
 
 async function handleRegister(request: NextRequest) {
   try {

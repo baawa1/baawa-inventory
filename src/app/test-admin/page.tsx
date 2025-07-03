@@ -1,12 +1,8 @@
 "use client";
 
-import bcrypt from "bcryptjs";
-
-export default async function TestCreateAdmin() {
+export default function TestCreateAdmin() {
   const handleCreateAdmin = async () => {
     try {
-      const hashedPassword = await bcrypt.hash("admin123", 12);
-
       const response = await fetch("/api/users", {
         method: "POST",
         headers: {
