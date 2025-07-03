@@ -281,3 +281,27 @@ export function useDeleteProduct() {
     },
   });
 }
+
+// Utility Hooks
+export const useProductOptions = () => {
+  return useQuery({
+    queryKey: [...queryKeys.products.all, "options"] as const,
+    queryFn: async () => {
+      const response = await fetch("/api/products?status=active");
+      if (!response.ok) {
+        throw new Error(
+          `Failed to fetch product options: ${response.statusText}`
+        );
+      }
+      const result = await response.json();
+      return result.data.map((product: Product) => ({
+        value: product.id.toString(),
+        label: `${product.name} (${product.sku})`,
+        sku: product.sku,
+        stock: product.stock,
+        category: product.category?.name || "No Category",
+      }));
+    },
+    staleTime: 5 * 60 * 1000, // 5 minutes for product options
+  });
+};

@@ -3,7 +3,7 @@
 import { useEffect } from "react";
 import { useRouter } from "next/navigation";
 import { zodResolver } from "@hookform/resolvers/zod";
-import { useForm, UseFormReturn } from "react-hook-form";
+import { useForm } from "react-hook-form";
 import { PageHeader } from "@/components/ui/page-header";
 import { Button } from "@/components/ui/button";
 import {
@@ -23,9 +23,9 @@ import { CategoryBrandSection } from "./add-product/CategoryBrandSection";
 import { PricingInventorySection } from "./add-product/PricingInventorySection";
 import { AdditionalInfoSection } from "./add-product/AdditionalInfoSection";
 import { FormActions } from "./add-product/FormActions";
-import { useFormData } from "./add-product/useFormData";
+import { useFormDataQuery } from "./add-product/useFormDataQuery";
 import { useProductSubmit } from "./add-product/useProductSubmit";
-import { CreateProductData, defaultFormValues } from "./add-product/types";
+import { defaultFormValues } from "./add-product/types";
 
 export default function AddProductForm() {
   const router = useRouter();
@@ -38,7 +38,7 @@ export default function AddProductForm() {
     suppliers,
     setIsSubmitting,
     setSubmitError,
-  } = useFormData();
+  } = useFormDataQuery();
 
   const form = useForm({
     resolver: zodResolver(createProductSchema),

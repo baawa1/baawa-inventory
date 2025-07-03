@@ -42,6 +42,7 @@ import { Textarea } from "@/components/ui/textarea";
 import { Badge } from "@/components/ui/badge";
 import { CalendarIcon } from "lucide-react";
 import { cn, formatCurrency } from "@/lib/utils";
+import { useSupplierOptions } from "@/hooks/api/suppliers";
 
 const addStockSchema = z.object({
   quantity: z.number().int().positive("Quantity must be a positive integer"),
@@ -53,12 +54,6 @@ const addStockSchema = z.object({
 });
 
 type AddStockFormData = z.infer<typeof addStockSchema>;
-
-interface Supplier {
-  id: number;
-  name: string;
-  isActive: boolean;
-}
 
 interface Product {
   id: number;
@@ -82,8 +77,19 @@ export function AddStockDialog({
   onSuccess,
 }: AddStockDialogProps) {
   const [isLoading, setIsLoading] = useState(false);
-  const [suppliers, setSuppliers] = useState<Supplier[]>([]);
-  const [loadingSuppliers, setLoadingSuppliers] = useState(false);
+
+  // Use TanStack Query for suppliers data
+  const { data: supplierOptions = [], isLoading: loadingSuppliers } =
+    useSupplierOptions();
+
+  // Convert options to supplier objects for compatibility
+  const suppliers = supplierOptions.map(
+    (option: { value: string; label: string }) => ({
+      id: parseInt(option.value),
+      name: option.label,
+      isActive: true,
+    })
+  );
 
   const form = useForm<AddStockFormData>({
     resolver: zodResolver(addStockSchema),
@@ -96,13 +102,6 @@ export function AddStockDialog({
       referenceNo: "",
     },
   });
-
-  // Load suppliers when dialog opens
-  useEffect(() => {
-    if (isOpen && suppliers.length === 0) {
-      loadSuppliers();
-    }
-  }, [isOpen, suppliers.length]);
 
   // Reset form when dialog opens or product changes
   useEffect(() => {
@@ -117,41 +116,6 @@ export function AddStockDialog({
       });
     }
   }, [isOpen, product, form]);
-
-  const loadSuppliers = async () => {
-    setLoadingSuppliers(true);
-    try {
-      // Add timeout to prevent hanging requests
-      const controller = new AbortController();
-      const timeoutId = setTimeout(() => controller.abort(), 8000); // 8 second timeout
-
-      const response = await fetch("/api/suppliers?isActive=true&limit=100", {
-        signal: controller.signal,
-      });
-
-      clearTimeout(timeoutId);
-
-      if (response.ok) {
-        const data = await response.json();
-        setSuppliers(data.suppliers || data.data || []); // Handle different response formats
-      } else {
-        console.warn(
-          "Suppliers API returned:",
-          response.status,
-          response.statusText
-        );
-      }
-    } catch (error) {
-      if (error instanceof Error && error.name === "AbortError") {
-        console.warn("Suppliers request timed out");
-      } else {
-        console.error("Error loading suppliers:", error);
-      }
-      // Don't show error to user for optional supplier selection
-    } finally {
-      setLoadingSuppliers(false);
-    }
-  };
 
   const onSubmit = async (data: AddStockFormData) => {
     if (!product) return;
@@ -303,14 +267,20 @@ export function AddStockDialog({
                       </SelectTrigger>
                     </FormControl>
                     <SelectContent>
-                      {suppliers.map((supplier) => (
-                        <SelectItem
-                          key={supplier.id}
-                          value={supplier.id.toString()}
-                        >
-                          {supplier.name}
-                        </SelectItem>
-                      ))}
+                      {suppliers.map(
+                        (supplier: {
+                          id: number;
+                          name: string;
+                          isActive: boolean;
+                        }) => (
+                          <SelectItem
+                            key={supplier.id}
+                            value={supplier.id.toString()}
+                          >
+                            {supplier.name}
+                          </SelectItem>
+                        )
+                      )}
                     </SelectContent>
                   </Select>
                   <FormMessage />

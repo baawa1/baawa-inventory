@@ -1,4 +1,4 @@
-# Tan## Migration Status: 🚀 PHASE 2 IN PROGRESS
+# TanStack Query Migration Status: 🚀 PHASE 4 IN PROGRESS
 
 ### Phase 1: Setup and Foundation (COMPLETED ✅)
 
@@ -9,7 +9,7 @@
 - [x] Set up development tools
 - [x] Migrate first three simple components
 
-### Phase 2: Simple Data Fetching Migrations (CURRENT 🔄)
+### Phase 2: Simple Data Fetching Migrations (COMPLETED ✅)
 
 #### Simple Components ✅
 
@@ -463,3 +463,54 @@ Forms requiring:
 - Supplier selection dependencies
 - Product selection with real-time validation
 - Multi-step form state management
+
+### Phase 4: Form Components with Dependent Queries (IN PROGRESS 🔄)
+
+- [x] **Created option hooks** for dropdowns:
+  - ✅ `useBrandOptions` - Brand dropdown options
+  - ✅ `useCategoryOptions` - Category dropdown options
+  - ✅ `useSupplierOptions` - Supplier dropdown options
+  - ✅ `useProductOptions` - Product selection options
+- [x] **Migrate `AddProductForm.tsx`** (Brand/Category dropdowns)
+  - ✅ **Replaced `useFormData`** with new `useFormDataQuery` hook
+  - ✅ **Migrated dropdown data fetching** to use TanStack Query option hooks
+  - ✅ **Removed useEffect patterns** for categories, brands, suppliers loading
+  - ✅ **Type-safe option conversion** for form compatibility
+  - ✅ **Better error handling** with TanStack Query built-in error states
+- [x] **Migrate `AddStockAdjustmentForm.tsx`** (Product selection dependency)
+  - ✅ **Created `useStockAdjustmentProducts`** hook with product filtering
+  - ✅ **Created `useProductForAdjustment`** hook for selected product state
+  - ✅ **Replaced useEffect fetch logic** with TanStack Query hooks
+  - ✅ **Removed manual state management** for products array and selected product
+  - ✅ **Improved loading states** and error handling
+- [x] **Migrate `AddStockDialog.tsx`** (Supplier dropdown)
+  - ✅ **Replaced supplier fetch logic** with `useSupplierOptions` hook
+  - ✅ **Removed manual setState patterns** for suppliers data
+  - ✅ **Type-safe option mapping** for supplier dropdown
+  - ✅ **Better loading states** with TanStack Query built-in indicators
+- [ ] **Migrate `EditProductFormOriginal.tsx`** (Complex edit form with dependencies)
+
+### Key Patterns Established in Phase 4:
+
+- **Option Hooks**: Consistent pattern for dropdown data with value/label structure
+- **Form Data Composition**: Combine multiple option hooks in single form data hook
+- **Type Safety**: Proper TypeScript interfaces for option mapping and conversion
+- **Backward Compatibility**: Convert options to legacy object format for existing form sections
+- **Error Resilience**: TanStack Query automatic retry and error handling
+- **Loading Coordination**: Multiple query loading states combined intelligently
+
+### Phase 4 Benefits Achieved:
+
+- **✅ Eliminated manual fetch logic**: No more useEffect for dropdown data loading
+- **✅ Automatic caching**: Form dropdowns load instantly from cache on subsequent visits
+- **✅ Better error handling**: Built-in retry and error states for form dependencies
+- **✅ Type safety**: All option hooks properly typed with consistent interfaces
+- **✅ Loading coordination**: Smart loading states across multiple dependent queries
+
+### Ready for Phase 5: Admin and User Management
+
+Next priority components:
+
+- UserManagement.tsx (User CRUD operations)
+- PendingUsersManagement.tsx (Complex state management)
+- DeactivatedUsersManagement.tsx (Filtered user lists)

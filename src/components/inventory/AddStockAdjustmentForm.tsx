@@ -1,12 +1,12 @@
 "use client";
 
-import { useState, useEffect } from "react";
+import { useState } from "react";
 import { useSession } from "next-auth/react";
 import { useRouter } from "next/navigation";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { z } from "zod";
-import { ArrowLeft, Package, AlertCircle } from "lucide-react";
+import { ArrowLeft, Package } from "lucide-react";
 import Link from "next/link";
 
 import { Button } from "@/components/ui/button";
@@ -38,6 +38,7 @@ import {
 import { Alert, AlertDescription } from "@/components/ui/alert";
 import { ProductCombobox } from "@/components/inventory/ProductCombobox";
 import { toast } from "sonner";
+import { useProductForAdjustment } from "@/hooks/api/stock-adjustments";
 
 // Stock adjustment form schema
 const stockAdjustmentSchema = z.object({
@@ -67,14 +68,6 @@ const stockAdjustmentSchema = z.object({
 });
 
 type StockAdjustmentFormData = z.infer<typeof stockAdjustmentSchema>;
-
-interface Product {
-  id: number;
-  name: string;
-  sku: string;
-  stock: number;
-  category: string;
-}
 
 const adjustmentTypes = [
   {
@@ -112,10 +105,7 @@ const adjustmentTypes = [
 export function AddStockAdjustmentForm() {
   const { data: session } = useSession();
   const router = useRouter();
-  const [products, setProducts] = useState<Product[]>([]);
-  const [selectedProduct, setSelectedProduct] = useState<Product | null>(null);
   const [loading, setLoading] = useState(false);
-  const [productsLoading, setProductsLoading] = useState(true);
 
   const form = useForm<StockAdjustmentFormData>({
     resolver: zodResolver(stockAdjustmentSchema),
@@ -131,45 +121,18 @@ export function AddStockAdjustmentForm() {
 
   const {
     watch,
-    setValue,
     formState: { errors },
   } = form;
   const watchedProductId = watch("productId");
   const watchedType = watch("type");
   const watchedQuantity = watch("quantity");
 
-  // Fetch products for selection
-  useEffect(() => {
-    const fetchProducts = async () => {
-      try {
-        // Fetch products without limit or with a reasonable limit
-        const response = await fetch("/api/products?status=active");
-        if (!response.ok) throw new Error("Failed to fetch products");
-
-        const result = await response.json();
-        setProducts(result.data || []);
-      } catch (error) {
-        console.error("Error fetching products:", error);
-        toast.error("Failed to load products");
-      } finally {
-        setProductsLoading(false);
-      }
-    };
-
-    fetchProducts();
-  }, []);
-
-  // Update selected product when product ID changes
-  useEffect(() => {
-    if (watchedProductId) {
-      const product = products.find(
-        (p) => p.id.toString() === watchedProductId
-      );
-      setSelectedProduct(product || null);
-    } else {
-      setSelectedProduct(null);
-    }
-  }, [watchedProductId, products]);
+  // Use TanStack Query for products data
+  const {
+    products,
+    selectedProduct,
+    isLoading: productsLoading,
+  } = useProductForAdjustment(watchedProductId);
 
   // Validate quantity based on adjustment type and current stock
   const validateQuantity = (

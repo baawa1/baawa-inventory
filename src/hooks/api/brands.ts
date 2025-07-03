@@ -175,3 +175,24 @@ export function useOptimisticBrandUpdate() {
     );
   };
 }
+
+// Utility Hooks
+export const useBrandOptions = () => {
+  return useQuery({
+    queryKey: [...queryKeys.brands.all, "options"] as const,
+    queryFn: async () => {
+      const response = await fetch("/api/brands?status=active");
+      if (!response.ok) {
+        throw new Error(
+          `Failed to fetch brand options: ${response.statusText}`
+        );
+      }
+      const result = await response.json();
+      return result.data.map((brand: Brand) => ({
+        value: brand.id.toString(),
+        label: brand.name,
+      }));
+    },
+    staleTime: 10 * 60 * 1000, // 10 minutes for options
+  });
+};
