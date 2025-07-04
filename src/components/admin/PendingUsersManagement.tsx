@@ -1,8 +1,6 @@
 "use client";
 
-import { useState, useEffect } from "react";
-import { useSession } from "next-auth/react";
-import { useRouter } from "next/navigation";
+import { useState } from "react";
 
 import { Button } from "@/components/ui/button";
 import {
@@ -54,6 +52,7 @@ import {
   type APIUser,
 } from "@/hooks/api/users";
 import { toast } from "sonner";
+import { useAdminGuard } from "@/hooks/useAdminGuard";
 
 const statusConfig = {
   PENDING: {
@@ -84,8 +83,7 @@ const statusConfig = {
 };
 
 export function PendingUsersManagement() {
-  const { data: session, status } = useSession();
-  const router = useRouter();
+  const { isAdmin, isLoading: isAuthLoading } = useAdminGuard();
   const [selectedUser, setSelectedUser] = useState<APIUser | null>(null);
   const [isDetailsDialogOpen, setIsDetailsDialogOpen] = useState(false);
   const [filterStatus, setFilterStatus] = useState<string>("all");
@@ -98,16 +96,6 @@ export function PendingUsersManagement() {
     refetch,
   } = usePendingUsers(filterStatus);
   const approveUserMutation = useApproveUser();
-
-  // Check if user is admin
-  useEffect(() => {
-    if (status === "loading") return;
-
-    if (!session || session.user.role !== "ADMIN") {
-      router.push("/unauthorized");
-      return;
-    }
-  }, [session, status, router]);
 
   // Filter users based on selected status
   const filteredUsers = pendingUsers;
@@ -165,7 +153,7 @@ export function PendingUsersManagement() {
     setIsDetailsDialogOpen(true);
   };
 
-  if (status === "loading" || isLoading) {
+  if (isAuthLoading || isLoading) {
     return (
       <Card>
         <CardContent className="flex items-center justify-center py-8">
@@ -174,6 +162,10 @@ export function PendingUsersManagement() {
         </CardContent>
       </Card>
     );
+  }
+
+  if (!isAdmin) {
+    return null;
   }
 
   const errorMessage = error instanceof Error ? error.message : null;

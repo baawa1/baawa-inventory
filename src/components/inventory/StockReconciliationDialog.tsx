@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useEffect } from "react";
+import { useState } from "react";
 import { useForm, useFieldArray } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { z } from "zod";
@@ -49,6 +49,11 @@ import {
   IconCalculator,
 } from "@tabler/icons-react";
 import { formatCurrency } from "@/lib/utils";
+import { useProductSearch } from "@/hooks/useProductSearch";
+import {
+  useCreateStockReconciliation,
+  useSubmitStockReconciliation,
+} from "@/hooks/api/stock-management";
 
 const reconciliationItemSchema = z.object({
   productId: z.number().int().positive(),
@@ -90,10 +95,15 @@ export function StockReconciliationDialog({
   onClose,
   onSuccess,
 }: StockReconciliationDialogProps) {
-  const [isLoading, setIsLoading] = useState(false);
-  const [products, setProducts] = useState<Product[]>([]);
   const [searchTerm, setSearchTerm] = useState("");
-  const [loadingProducts, setLoadingProducts] = useState(false);
+
+  // TanStack Query hooks
+  const { data: productsData, isLoading: loadingProducts } =
+    useProductSearch(searchTerm);
+  const createMutation = useCreateStockReconciliation();
+  const submitMutation = useSubmitStockReconciliation();
+
+  const products = productsData?.products || [];
 
   const form = useForm<ReconciliationFormData>({
     resolver: zodResolver(reconciliationSchema),
@@ -110,44 +120,8 @@ export function StockReconciliationDialog({
     name: "items",
   });
 
-  // Load products when dialog opens
-  useEffect(() => {
-    if (isOpen) {
-      loadProducts();
-    }
-  }, [isOpen]);
-
-  const loadProducts = async (search = "") => {
-    setLoadingProducts(true);
-    try {
-      const params = new URLSearchParams({
-        limit: "100",
-        sortBy: "name",
-        sortOrder: "asc",
-      });
-
-      if (search) {
-        params.append("search", search);
-      }
-
-      const response = await fetch(`/api/products?${params}`);
-      if (response.ok) {
-        const data = await response.json();
-        setProducts(data.products || []);
-      }
-    } catch (error) {
-      console.error("Error loading products:", error);
-      toast.error("Failed to load products");
-    } finally {
-      setLoadingProducts(false);
-    }
-  };
-
   const handleSearchProducts = (search: string) => {
     setSearchTerm(search);
-    if (search.length >= 2 || search.length === 0) {
-      loadProducts(search);
-    }
   };
 
   const addProduct = (product: Product) => {
@@ -189,7 +163,7 @@ export function StockReconciliationDialog({
         item.systemCount,
         item.physicalCount
       );
-      const product = products.find((p) => p.id === item.productId);
+      const product = products.find((p: Product) => p.id === item.productId);
       if (product) {
         return total + discrepancy * product.cost;
       }
@@ -198,7 +172,6 @@ export function StockReconciliationDialog({
   };
 
   const onSubmit = async (data: ReconciliationFormData, saveAsDraft = true) => {
-    setIsLoading(true);
     try {
       // Calculate discrepancies and estimated impacts
       const itemsWithCalculations = data.items.map((item) => {
@@ -206,7 +179,7 @@ export function StockReconciliationDialog({
           item.systemCount,
           item.physicalCount
         );
-        const product = products.find((p) => p.id === item.productId);
+        const product = products.find((p: Product) => p.id === item.productId);
         const estimatedImpact = product ? discrepancy * product.cost : 0;
 
         return {
@@ -219,57 +192,28 @@ export function StockReconciliationDialog({
         };
       });
 
-      const response = await fetch("/api/stock-reconciliations", {
-        method: "POST",
-        headers: {
-          "Content-Type": "application/json",
-        },
-        body: JSON.stringify({
-          title: data.title,
-          description: data.description,
-          notes: data.notes,
-          items: itemsWithCalculations,
-        }),
-      });
+      const reconciliationData = {
+        title: data.title,
+        description: data.description,
+        notes: data.notes,
+        items: itemsWithCalculations,
+      } as any; // Type assertion to work with the API
 
-      const result = await response.json();
+      const result = await createMutation.mutateAsync(reconciliationData);
 
-      if (response.ok) {
-        // If not saving as draft, submit for approval immediately
-        if (!saveAsDraft) {
-          const submitResponse = await fetch(
-            `/api/stock-reconciliations/${result.reconciliation.id}/submit`,
-            {
-              method: "POST",
-              headers: {
-                "Content-Type": "application/json",
-              },
-            }
-          );
-
-          if (submitResponse.ok) {
-            toast.success("Stock reconciliation submitted for approval");
-          } else {
-            toast.error("Failed to submit reconciliation for approval");
-            return;
-          }
-        } else {
-          toast.success(
-            result.message || "Stock reconciliation saved as draft"
-          );
-        }
-
-        form.reset();
-        onSuccess?.();
-        onClose();
+      // If not saving as draft, submit for approval immediately
+      if (!saveAsDraft) {
+        await submitMutation.mutateAsync(result.reconciliation.id);
+        toast.success("Stock reconciliation submitted for approval");
       } else {
-        toast.error(result.error || "Failed to create stock reconciliation");
+        toast.success("Stock reconciliation saved as draft");
       }
+
+      form.reset();
+      onSuccess?.();
+      onClose();
     } catch (error) {
-      console.error("Error creating stock reconciliation:", error);
       toast.error("Failed to create stock reconciliation");
-    } finally {
-      setIsLoading(false);
     }
   };
 
@@ -281,6 +225,7 @@ export function StockReconciliationDialog({
     form.handleSubmit((data) => onSubmit(data, false))();
   };
 
+  const isLoading = createMutation.isPending || submitMutation.isPending;
   const totalDiscrepancy = calculateTotalDiscrepancy();
   const estimatedImpact = calculateEstimatedImpact();
 
@@ -356,7 +301,7 @@ export function StockReconciliationDialog({
 
                   {searchTerm && products.length > 0 && (
                     <div className="border rounded-lg max-h-48 overflow-y-auto">
-                      {products.map((product) => (
+                      {products.map((product: Product) => (
                         <div
                           key={product.id}
                           className="flex items-center justify-between p-3 border-b last:border-b-0 hover:bg-muted cursor-pointer"

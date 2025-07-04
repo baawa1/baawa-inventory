@@ -30,26 +30,41 @@ export interface StockAdjustment {
   };
 }
 
+export interface User {
+  id: number;
+  firstName: string;
+  lastName: string;
+  email: string;
+}
+
 export interface StockReconciliation {
-  id: string;
-  name: string;
-  status: "DRAFT" | "SUBMITTED" | "APPROVED" | "REJECTED";
-  scheduledDate: string;
+  id: number;
+  title: string;
+  description?: string;
+  status: "DRAFT" | "PENDING" | "APPROVED" | "REJECTED";
+  notes?: string;
   createdAt: string;
   updatedAt: string;
+  submittedAt?: string;
+  approvedAt?: string;
+  createdBy: User;
+  approvedBy?: User;
   items: StockReconciliationItem[];
 }
 
 export interface StockReconciliationItem {
-  id: string;
-  productId: string;
-  expectedQuantity: number;
-  actualQuantity: number;
-  variance: number;
-  product?: {
-    id: string;
+  id: number;
+  systemCount: number;
+  physicalCount: number;
+  discrepancy: number;
+  discrepancyReason?: string;
+  estimatedImpact?: number;
+  notes?: string;
+  product: {
+    id: number;
     name: string;
     sku: string;
+    stock: number;
   };
 }
 
@@ -126,7 +141,7 @@ const fetchStockReconciliations = async (
   return response.json();
 };
 
-const fetchStockReconciliation = async (id: string) => {
+const fetchStockReconciliation = async (id: number) => {
   const response = await fetch(`/api/stock-reconciliations/${id}`);
   if (!response.ok) {
     throw new Error(
@@ -237,7 +252,7 @@ const updateStockReconciliation = async ({
   return response.json();
 };
 
-const submitStockReconciliation = async (id: string) => {
+const submitStockReconciliation = async (id: number) => {
   const response = await fetch(`/api/stock-reconciliations/${id}/submit`, {
     method: "POST",
   });
@@ -249,10 +264,18 @@ const submitStockReconciliation = async (id: string) => {
   return response.json();
 };
 
-const approveStockReconciliation = async (id: string) => {
-  const response = await fetch(`/api/stock-reconciliations/${id}/approve`, {
-    method: "POST",
-  });
+const approveStockReconciliation = async (params: {
+  id: number;
+  notes?: string;
+}) => {
+  const response = await fetch(
+    `/api/stock-reconciliations/${params.id}/approve`,
+    {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ notes: params.notes }),
+    }
+  );
   if (!response.ok) {
     throw new Error(
       `Failed to approve stock reconciliation: ${response.statusText}`
@@ -261,10 +284,18 @@ const approveStockReconciliation = async (id: string) => {
   return response.json();
 };
 
-const rejectStockReconciliation = async (id: string) => {
-  const response = await fetch(`/api/stock-reconciliations/${id}/reject`, {
-    method: "POST",
-  });
+const rejectStockReconciliation = async (params: {
+  id: number;
+  reason: string;
+}) => {
+  const response = await fetch(
+    `/api/stock-reconciliations/${params.id}/reject`,
+    {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ reason: params.reason }),
+    }
+  );
   if (!response.ok) {
     throw new Error(
       `Failed to reject stock reconciliation: ${response.statusText}`
@@ -317,7 +348,7 @@ export const useStockReconciliations = (
   });
 };
 
-export const useStockReconciliation = (id: string) => {
+export const useStockReconciliation = (id: number) => {
   return useQuery({
     queryKey: ["stock-reconciliations", id],
     queryFn: () => fetchStockReconciliation(id),
@@ -434,12 +465,12 @@ export const useApproveStockReconciliation = () => {
 
   return useMutation({
     mutationFn: approveStockReconciliation,
-    onSuccess: (data, id) => {
+    onSuccess: (data, params) => {
       queryClient.invalidateQueries({
         queryKey: queryKeys.inventory.stockReconciliation.all(),
       });
       queryClient.invalidateQueries({
-        queryKey: ["stock-reconciliations", id],
+        queryKey: ["stock-reconciliations", params.id],
       });
     },
   });
@@ -450,12 +481,12 @@ export const useRejectStockReconciliation = () => {
 
   return useMutation({
     mutationFn: rejectStockReconciliation,
-    onSuccess: (data, id) => {
+    onSuccess: (data, params) => {
       queryClient.invalidateQueries({
         queryKey: queryKeys.inventory.stockReconciliation.all(),
       });
       queryClient.invalidateQueries({
-        queryKey: ["stock-reconciliations", id],
+        queryKey: ["stock-reconciliations", params.id],
       });
     },
   });
