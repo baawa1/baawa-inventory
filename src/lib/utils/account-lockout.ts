@@ -14,9 +14,9 @@ export interface LockoutStatus {
 export class AccountLockout {
   // Lockout thresholds and delays (in minutes)
   private static readonly LOCKOUT_THRESHOLDS = [
-    { attempts: 3, delayMinutes: 5 },    // 3 attempts: 5 min lockout
-    { attempts: 5, delayMinutes: 15 },   // 5 attempts: 15 min lockout
-    { attempts: 7, delayMinutes: 60 },   // 7 attempts: 1 hour lockout
+    { attempts: 3, delayMinutes: 5 }, // 3 attempts: 5 min lockout
+    { attempts: 5, delayMinutes: 15 }, // 5 attempts: 15 min lockout
+    { attempts: 7, delayMinutes: 60 }, // 7 attempts: 1 hour lockout
     { attempts: 10, delayMinutes: 240 }, // 10 attempts: 4 hours lockout
     { attempts: 15, delayMinutes: 1440 }, // 15+ attempts: 24 hours lockout
   ];
@@ -42,14 +42,17 @@ export class AccountLockout {
 
       // Find the appropriate lockout threshold
       const lockoutRule = this.getLockoutRule(failedAttempts);
-      
+
       if (!lockoutRule) {
         return { isLocked: false, failedAttempts };
       }
 
       // Get the timestamp of the last failed attempt
-      const lastFailedAttempt = await this.getLastFailedAttempt(identifier, type);
-      
+      const lastFailedAttempt = await this.getLastFailedAttempt(
+        identifier,
+        type
+      );
+
       if (!lastFailedAttempt) {
         return { isLocked: false, failedAttempts };
       }
@@ -60,11 +63,13 @@ export class AccountLockout {
       );
 
       const now = new Date();
-      
+
       if (now < lockoutExpiry) {
         // Still locked out
-        const remainingTime = Math.ceil((lockoutExpiry.getTime() - now.getTime()) / 1000);
-        
+        const remainingTime = Math.ceil(
+          (lockoutExpiry.getTime() - now.getTime()) / 1000
+        );
+
         return {
           isLocked: true,
           remainingTime,
@@ -106,11 +111,11 @@ export class AccountLockout {
 
       const lastAttempt = await prisma.auditLog.findFirst({
         where,
-        orderBy: { timestamp: "desc" },
-        select: { timestamp: true },
+        orderBy: { created_at: "desc" },
+        select: { created_at: true },
       });
 
-      return lastAttempt?.timestamp || null;
+      return lastAttempt?.created_at || null;
     } catch (error) {
       console.error("Error getting last failed attempt:", error);
       return null;
@@ -144,7 +149,7 @@ export class AccountLockout {
       // For this implementation, we rely on the natural expiry of audit logs
       // In a production system, you might want to mark attempts as "resolved"
       // or maintain a separate lockout table
-      
+
       // Log that the lockout has been reset
       await AuditLogger.logAuthEvent({
         action: "LOGIN_SUCCESS", // This will naturally reset the failed attempt count
@@ -167,13 +172,13 @@ export class AccountLockout {
     }
 
     const remainingMinutes = Math.ceil((status.remainingTime || 0) / 60);
-    
+
     if (remainingMinutes < 60) {
-      return `Account temporarily locked. Please try again in ${remainingMinutes} minute${remainingMinutes !== 1 ? 's' : ''}.`;
+      return `Account temporarily locked. Please try again in ${remainingMinutes} minute${remainingMinutes !== 1 ? "s" : ""}.`;
     }
-    
+
     const remainingHours = Math.ceil(remainingMinutes / 60);
-    return `Account temporarily locked. Please try again in ${remainingHours} hour${remainingHours !== 1 ? 's' : ''}.`;
+    return `Account temporarily locked. Please try again in ${remainingHours} hour${remainingHours !== 1 ? "s" : ""}.`;
   }
 
   /**
@@ -188,9 +193,9 @@ export class AccountLockout {
    */
   static getWarningMessage(failedAttempts: number): string | null {
     if (failedAttempts === 0) return null;
-    
+
     const nextThreshold = this.LOCKOUT_THRESHOLDS.find(
-      threshold => failedAttempts < threshold.attempts
+      (threshold) => failedAttempts < threshold.attempts
     );
 
     if (!nextThreshold) {
@@ -201,10 +206,10 @@ export class AccountLockout {
     const lockoutDuration = nextThreshold.delayMinutes;
 
     if (lockoutDuration < 60) {
-      return `${attemptsRemaining} attempt${attemptsRemaining !== 1 ? 's' : ''} remaining before ${lockoutDuration}-minute lockout.`;
+      return `${attemptsRemaining} attempt${attemptsRemaining !== 1 ? "s" : ""} remaining before ${lockoutDuration}-minute lockout.`;
     } else {
       const hours = lockoutDuration / 60;
-      return `${attemptsRemaining} attempt${attemptsRemaining !== 1 ? 's' : ''} remaining before ${hours}-hour lockout.`;
+      return `${attemptsRemaining} attempt${attemptsRemaining !== 1 ? "s" : ""} remaining before ${hours}-hour lockout.`;
     }
   }
 }

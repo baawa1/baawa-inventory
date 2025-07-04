@@ -8,10 +8,17 @@ interface ToastMessages {
 }
 
 interface UseToastMutationOptions<TData, TError, TVariables, TContext>
-  extends Omit<UseMutationOptions<TData, TError, TVariables, TContext>, 'onSuccess' | 'onError'> {
+  extends Omit<
+    UseMutationOptions<TData, TError, TVariables, TContext>,
+    "onSuccess" | "onError"
+  > {
   messages?: ToastMessages;
   onSuccess?: (data: TData, variables: TVariables, context: TContext) => void;
-  onError?: (error: TError, variables: TVariables, context: TContext | undefined) => void;
+  onError?: (
+    error: TError,
+    variables: TVariables,
+    context: TContext | undefined
+  ) => void;
   showToast?: boolean;
 }
 
@@ -23,7 +30,7 @@ export function useToastMutation<
   TData = unknown,
   TError = Error,
   TVariables = void,
-  TContext = unknown
+  TContext = unknown,
 >({
   messages = {},
   onSuccess,
@@ -31,7 +38,6 @@ export function useToastMutation<
   showToast = true,
   ...mutationOptions
 }: UseToastMutationOptions<TData, TError, TVariables, TContext>) {
-  
   const {
     loading = "Processing...",
     success = "Operation completed successfully",
@@ -49,9 +55,8 @@ export function useToastMutation<
     onSuccess: (data, variables, context) => {
       if (showToast) {
         toast.dismiss();
-        const successMessage = typeof success === "function" 
-          ? success(data) 
-          : success;
+        const successMessage =
+          typeof success === "function" ? success(data) : success;
         toast.success(successMessage);
       }
       onSuccess?.(data, variables, context);
@@ -59,9 +64,7 @@ export function useToastMutation<
     onError: (err, variables, context) => {
       if (showToast) {
         toast.dismiss();
-        const errorMessage = typeof error === "function" 
-          ? error(err) 
-          : error;
+        const errorMessage = typeof error === "function" ? error(err) : error;
         toast.error(errorMessage);
       }
       onError?.(err, variables, context);

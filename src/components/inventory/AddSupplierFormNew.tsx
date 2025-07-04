@@ -9,9 +9,9 @@ import { Alert, AlertDescription } from "@/components/ui/alert";
 import { AlertCircle, ArrowLeft } from "lucide-react";
 import Link from "next/link";
 import { SupplierForm } from "./supplier/SupplierForm";
-import { useSupplierSubmit } from "./supplier/useSupplierSubmit";
 import { createSupplierSchema } from "@/lib/validations/supplier";
 import { CreateSupplierData } from "./supplier/types";
+import { toast } from "sonner";
 
 export default function AddSupplierForm() {
   const router = useRouter();
@@ -38,16 +38,33 @@ export default function AddSupplierForm() {
     },
   });
 
-  const { onSubmit } = useSupplierSubmit(
-    form,
-    null, // No supplier ID for creation
-    setIsSubmitting,
-    setSubmitError,
-    () => {
-      // Success callback
-      router.push("/inventory/suppliers");
-    }
-  );
+  const { onSubmit } = {
+    onSubmit: async (data: CreateSupplierData) => {
+      setIsSubmitting(true);
+      setSubmitError(null);
+
+      try {
+        const response = await fetch("/api/suppliers", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify(data),
+        });
+
+        if (!response.ok) {
+          throw new Error("Failed to create supplier");
+        }
+
+        toast.success("Supplier created successfully");
+        router.push("/inventory/suppliers");
+      } catch (error) {
+        console.error("Error creating supplier:", error);
+        setSubmitError("Failed to create supplier. Please try again.");
+        toast.error("Failed to create supplier");
+      } finally {
+        setIsSubmitting(false);
+      }
+    },
+  };
 
   const handleCancel = () => {
     router.push("/inventory/suppliers");
@@ -78,8 +95,8 @@ export default function AddSupplierForm() {
           )}
 
           <SupplierForm
-            form={form}
-            onSubmit={onSubmit}
+            form={form as any}
+            onSubmit={onSubmit as any}
             onCancel={handleCancel}
             isSubmitting={isSubmitting}
             isEditing={false}

@@ -1,8 +1,8 @@
 import { prisma } from "@/lib/db";
 import { NextRequest } from "next/server";
 
-export type AuditAction = 
-  | "LOGIN_SUCCESS" 
+export type AuditAction =
+  | "LOGIN_SUCCESS"
   | "LOGIN_FAILED"
   | "LOGOUT"
   | "REGISTRATION"
@@ -45,12 +45,9 @@ function extractRequestInfo(request?: NextRequest): {
   const forwarded = request.headers.get("x-forwarded-for");
   const realIp = request.headers.get("x-real-ip");
   const cfConnectingIp = request.headers.get("cf-connecting-ip");
-  
-  const ipAddress = 
-    forwarded?.split(",")[0] || 
-    realIp || 
-    cfConnectingIp || 
-    "unknown";
+
+  const ipAddress =
+    forwarded?.split(",")[0] || realIp || cfConnectingIp || "unknown";
 
   const userAgent = request.headers.get("user-agent") || "unknown";
 
@@ -77,14 +74,12 @@ export class AuditLogger {
       await prisma.auditLog.create({
         data: {
           action: data.action,
-          userId: data.userId || null,
-          userEmail: data.userEmail || null,
-          ipAddress: data.ipAddress || ipAddress,
-          userAgent: data.userAgent || userAgent,
-          details: data.details ? JSON.stringify(data.details) : null,
-          success: data.success,
-          errorMessage: data.errorMessage || null,
-          timestamp: new Date(),
+          user_id: data.userId || null,
+          table_name: "users", // Default table for auth events
+          record_id: data.userId || null,
+          ip_address: data.ipAddress || ipAddress,
+          user_agent: data.userAgent || userAgent,
+          new_values: data.details ? JSON.stringify(data.details) : undefined,
         },
       });
     } catch (error) {
@@ -101,12 +96,15 @@ export class AuditLogger {
     userEmail: string,
     request?: NextRequest
   ): Promise<void> {
-    await this.logAuthEvent({
-      action: "LOGIN_SUCCESS",
-      userId,
-      userEmail,
-      success: true,
-    }, request);
+    await this.logAuthEvent(
+      {
+        action: "LOGIN_SUCCESS",
+        userId,
+        userEmail,
+        success: true,
+      },
+      request
+    );
   }
 
   /**
@@ -117,12 +115,15 @@ export class AuditLogger {
     reason: string,
     request?: NextRequest
   ): Promise<void> {
-    await this.logAuthEvent({
-      action: "LOGIN_FAILED",
-      userEmail,
-      success: false,
-      errorMessage: reason,
-    }, request);
+    await this.logAuthEvent(
+      {
+        action: "LOGIN_FAILED",
+        userEmail,
+        success: false,
+        errorMessage: reason,
+      },
+      request
+    );
   }
 
   /**
@@ -133,12 +134,15 @@ export class AuditLogger {
     userEmail: string,
     request?: NextRequest
   ): Promise<void> {
-    await this.logAuthEvent({
-      action: "LOGOUT",
-      userId,
-      userEmail,
-      success: true,
-    }, request);
+    await this.logAuthEvent(
+      {
+        action: "LOGOUT",
+        userId,
+        userEmail,
+        success: true,
+      },
+      request
+    );
   }
 
   /**
@@ -149,12 +153,15 @@ export class AuditLogger {
     role: string,
     request?: NextRequest
   ): Promise<void> {
-    await this.logAuthEvent({
-      action: "REGISTRATION",
-      userEmail,
-      success: true,
-      details: { role },
-    }, request);
+    await this.logAuthEvent(
+      {
+        action: "REGISTRATION",
+        userEmail,
+        success: true,
+        details: { role },
+      },
+      request
+    );
   }
 
   /**
@@ -164,11 +171,14 @@ export class AuditLogger {
     userEmail: string,
     request?: NextRequest
   ): Promise<void> {
-    await this.logAuthEvent({
-      action: "PASSWORD_RESET_REQUEST",
-      userEmail,
-      success: true,
-    }, request);
+    await this.logAuthEvent(
+      {
+        action: "PASSWORD_RESET_REQUEST",
+        userEmail,
+        success: true,
+      },
+      request
+    );
   }
 
   /**
@@ -179,12 +189,15 @@ export class AuditLogger {
     userEmail: string,
     request?: NextRequest
   ): Promise<void> {
-    await this.logAuthEvent({
-      action: "PASSWORD_RESET_SUCCESS",
-      userId,
-      userEmail,
-      success: true,
-    }, request);
+    await this.logAuthEvent(
+      {
+        action: "PASSWORD_RESET_SUCCESS",
+        userId,
+        userEmail,
+        success: true,
+      },
+      request
+    );
   }
 
   /**
@@ -195,12 +208,15 @@ export class AuditLogger {
     userEmail: string,
     request?: NextRequest
   ): Promise<void> {
-    await this.logAuthEvent({
-      action: "EMAIL_VERIFICATION",
-      userId,
-      userEmail,
-      success: true,
-    }, request);
+    await this.logAuthEvent(
+      {
+        action: "EMAIL_VERIFICATION",
+        userId,
+        userEmail,
+        success: true,
+      },
+      request
+    );
   }
 
   /**
@@ -214,19 +230,23 @@ export class AuditLogger {
     reason?: string,
     request?: NextRequest
   ): Promise<void> {
-    const action = newStatus === "APPROVED" ? "ADMIN_USER_APPROVED" : "ADMIN_USER_REJECTED";
-    
-    await this.logAuthEvent({
-      action,
-      userId: adminUserId,
-      userEmail: targetUserEmail,
-      success: true,
-      details: {
-        targetUserId,
-        newStatus,
-        reason,
+    const action =
+      newStatus === "APPROVED" ? "ADMIN_USER_APPROVED" : "ADMIN_USER_REJECTED";
+
+    await this.logAuthEvent(
+      {
+        action,
+        userId: adminUserId,
+        userEmail: targetUserEmail,
+        success: true,
+        details: {
+          targetUserId,
+          newStatus,
+          reason,
+        },
       },
-    }, request);
+      request
+    );
   }
 
   /**
@@ -240,17 +260,20 @@ export class AuditLogger {
     newRole: string,
     request?: NextRequest
   ): Promise<void> {
-    await this.logAuthEvent({
-      action: "ROLE_CHANGED",
-      userId: adminUserId,
-      userEmail: targetUserEmail,
-      success: true,
-      details: {
-        targetUserId,
-        oldRole,
-        newRole,
+    await this.logAuthEvent(
+      {
+        action: "ROLE_CHANGED",
+        userId: adminUserId,
+        userEmail: targetUserEmail,
+        success: true,
+        details: {
+          targetUserId,
+          oldRole,
+          newRole,
+        },
       },
-    }, request);
+      request
+    );
   }
 
   /**
@@ -276,22 +299,22 @@ export class AuditLogger {
     userId?: number
   ): Promise<any[]> {
     try {
-      const where = userId ? { userId } : {};
-      
+      const where = userId ? { user_id: userId } : {};
+
       return await prisma.auditLog.findMany({
         where,
-        orderBy: { timestamp: "desc" },
+        orderBy: { created_at: "desc" },
         take: limit,
         select: {
           id: true,
           action: true,
-          userId: true,
-          userEmail: true,
-          ipAddress: true,
-          success: true,
-          errorMessage: true,
-          timestamp: true,
-          details: true,
+          user_id: true,
+          table_name: true,
+          record_id: true,
+          ip_address: true,
+          created_at: true,
+          old_values: true,
+          new_values: true,
         },
       });
     } catch (error) {
@@ -310,7 +333,7 @@ export class AuditLogger {
   ): Promise<number> {
     try {
       const since = new Date(Date.now() - hoursBack * 60 * 60 * 1000);
-      
+
       const where: any = {
         action: "LOGIN_FAILED",
         timestamp: { gte: since },
@@ -318,10 +341,7 @@ export class AuditLogger {
       };
 
       if (email) {
-        where.OR = [
-          { ipAddress },
-          { userEmail: email }
-        ];
+        where.OR = [{ ipAddress }, { userEmail: email }];
       } else {
         where.ipAddress = ipAddress;
       }

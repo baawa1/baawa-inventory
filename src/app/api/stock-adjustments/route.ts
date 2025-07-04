@@ -92,10 +92,10 @@ export async function GET(request: NextRequest) {
         skip: offset,
         take: limit,
         include: {
-          product: {
+          products: {
             select: { id: true, name: true, sku: true, category: true },
           },
-          user: {
+          users_stock_adjustments_user_idTousers: {
             select: { id: true, firstName: true, lastName: true, email: true },
           },
         },
@@ -217,20 +217,20 @@ export const POST = withApiRateLimit(async function (request: NextRequest) {
       // Create the stock adjustment record
       const stockAdjustment = await tx.stockAdjustment.create({
         data: {
-          productId: validatedData.productId,
-          userId: validatedData.userId,
-          type: validatedData.type,
+          product_id: validatedData.productId,
+          user_id: validatedData.userId,
+          adjustment_type: validatedData.type,
           quantity: adjustmentQuantity,
-          previousStock: product.stock,
-          newStock: newStock,
+          old_quantity: product.stock,
+          new_quantity: newStock,
           reason: validatedData.reason,
           notes: validatedData.notes,
         },
         include: {
-          product: {
+          products: {
             select: { id: true, name: true, sku: true, category: true },
           },
-          user: {
+          users_stock_adjustments_user_idTousers: {
             select: { id: true, firstName: true, lastName: true, email: true },
           },
         },
@@ -246,13 +246,13 @@ export const POST = withApiRateLimit(async function (request: NextRequest) {
       await tx.auditLog.create({
         data: {
           action: "STOCK_ADJUSTMENT",
-          entityType: "PRODUCT",
-          entityId: validatedData.productId.toString(),
-          userId: validatedData.userId,
-          oldValues: {
+          table_name: "products",
+          record_id: validatedData.productId,
+          user_id: validatedData.userId,
+          old_values: {
             stock: product.stock,
           },
-          newValues: {
+          new_values: {
             stock: newStock,
             adjustmentType: validatedData.type,
             adjustmentQuantity: adjustmentQuantity,

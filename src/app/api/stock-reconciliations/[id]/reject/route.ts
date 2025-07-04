@@ -2,7 +2,6 @@ import { NextRequest, NextResponse } from "next/server";
 import { getServerSession } from "next-auth";
 import { authOptions } from "@/lib/auth";
 import { prisma } from "@/lib/db";
-import { UserRole } from "@prisma/client";
 import { sendReconciliationNotification } from "@/lib/notifications/stock-reconciliation";
 
 export async function POST(
@@ -11,7 +10,7 @@ export async function POST(
 ) {
   try {
     const session = await getServerSession(authOptions);
-    if (!session || session.user.role !== UserRole.ADMIN) {
+    if (!session || session.user.role !== "ADMIN") {
       return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
     }
 

@@ -24,7 +24,7 @@ import { useUserStatusValidation } from "@/hooks/useUserStatusValidation";
 export default function PendingApprovalPage() {
   const router = useRouter();
   const { data: session } = useSession();
-  
+
   // Use the custom hook for all session validation logic
   const {
     userStatus,

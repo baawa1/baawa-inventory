@@ -28,7 +28,7 @@ export function useUserStatusValidation(
     autoRefresh = true,
     pollInterval,
   } = options;
-  
+
   const router = useRouter();
   const { data: session, status, update } = useSession();
   const [userStatus, setUserStatus] = useState<string | null>(null);
@@ -67,7 +67,7 @@ export function useUserStatusValidation(
   // Automatically refresh session if user status is unknown or seems stale
   useEffect(() => {
     if (!autoRefresh) return;
-    
+
     if (session && !hasTriedRefresh) {
       const shouldAutoRefresh =
         !userStatus || // No status detected
