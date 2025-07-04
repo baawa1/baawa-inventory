@@ -2,6 +2,7 @@
 
 import React, { createContext, useContext, useState, useEffect } from "react";
 import { useSessionManagement } from "@/hooks/useSessionManagement";
+import { useRouter } from "next/navigation";
 import { Button } from "@/components/ui/button";
 import {
   Dialog,
@@ -37,6 +38,16 @@ interface SessionProviderProps {
 export function SessionProvider({ children }: SessionProviderProps) {
   const [showTimeoutWarning, setShowTimeoutWarning] = useState(false);
   const [timeLeft, setTimeLeft] = useState(0);
+  const [shouldLogout, setShouldLogout] = useState(false);
+  const router = useRouter();
+
+  // Handle logout redirect in useEffect to avoid setState during render
+  useEffect(() => {
+    if (shouldLogout) {
+      router.push("/logout/immediate");
+      setShouldLogout(false);
+    }
+  }, [shouldLogout, router]);
 
   // Use the updated session management hook (now powered by TanStack Query)
   const {
@@ -52,7 +63,8 @@ export function SessionProvider({ children }: SessionProviderProps) {
     },
     onSessionTimeout: () => {
       setShowTimeoutWarning(false);
-      logout();
+      // Use immediate logout for security-triggered timeouts
+      setShouldLogout(true);
     },
   });
 
@@ -64,7 +76,8 @@ export function SessionProvider({ children }: SessionProviderProps) {
       setTimeLeft((prev) => {
         if (prev <= 1) {
           setShowTimeoutWarning(false);
-          logout();
+          // Use immediate logout for security-triggered timeouts
+          setShouldLogout(true);
           return 0;
         }
         return prev - 1;
@@ -72,7 +85,7 @@ export function SessionProvider({ children }: SessionProviderProps) {
     }, 1000);
 
     return () => clearInterval(timer);
-  }, [showTimeoutWarning, timeLeft, logout]);
+  }, [showTimeoutWarning, timeLeft]);
 
   const extendSession = async () => {
     try {

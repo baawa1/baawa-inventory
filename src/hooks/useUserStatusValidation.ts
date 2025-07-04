@@ -59,7 +59,12 @@ export function useUserStatusValidation(
     if (session?.user?.status) {
       console.log("Setting user status from session:", session.user.status);
       setUserStatus(session.user.status);
+    } else if (session === null) {
+      // Session is explicitly null (unauthenticated)
+      console.log("User is unauthenticated, clearing status");
+      setUserStatus(null);
     } else {
+      // Session is undefined (still loading) or has no status
       console.log("No status in session:", session);
     }
   }, [session]);
