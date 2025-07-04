@@ -2,15 +2,30 @@ import { useEffect } from "react";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { updateProductSchema } from "@/lib/validations/product";
-import { FormData, FormState, Product, UpdateProductFormData } from "./types";
 import { useProduct, useCategories, useBrands } from "@/hooks/api/products";
 import { useSuppliers } from "@/hooks/api/suppliers";
 import type { z } from "zod";
 
 type UpdateProductData = z.infer<typeof updateProductSchema>;
 
-export function useEditProductData(productId: number) {
-  const form = useForm<UpdateProductFormData>({
+export interface UseEditProductFormResult {
+  form: ReturnType<typeof useForm<UpdateProductData>>;
+  product: any;
+  categories: any[];
+  brands: any[];
+  suppliers: any[];
+  isLoading: boolean;
+  error: string | null;
+}
+
+/**
+ * Custom hook for edit product form that combines all necessary data queries
+ * Uses TanStack Query for optimized data fetching with automatic caching and deduplication
+ */
+export function useEditProductForm(
+  productId: number
+): UseEditProductFormResult {
+  const form = useForm<UpdateProductData>({
     resolver: zodResolver(updateProductSchema),
     defaultValues: {
       name: "",
@@ -37,15 +52,19 @@ export function useEditProductData(productId: number) {
   const suppliers = useSuppliers({ status: "active" });
 
   // Combine loading states
-  const loading =
+  const isLoading =
     product.isLoading ||
     categories.isLoading ||
     brands.isLoading ||
     suppliers.isLoading;
 
-  const loadingCategories = categories.isLoading;
-  const loadingBrands = brands.isLoading;
-  const loadingSuppliers = suppliers.isLoading;
+  // Combine error states
+  const error =
+    product.error?.message ||
+    categories.error?.message ||
+    brands.error?.message ||
+    suppliers.error?.message ||
+    null;
 
   // Populate form when product data is loaded
   useEffect(() => {
@@ -76,15 +95,7 @@ export function useEditProductData(productId: number) {
     categories: categories.data || [],
     brands: brands.data || [],
     suppliers: suppliers.data?.data || [],
-    loading,
-    loadingCategories,
-    loadingBrands,
-    loadingSuppliers,
-    setIsSubmitting: () => {
-      // This is now handled in the parent component or submit hook
-    },
-    setSubmitError: () => {
-      // This is now handled in the parent component or submit hook
-    },
+    isLoading,
+    error,
   };
 }

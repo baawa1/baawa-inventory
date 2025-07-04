@@ -1,8 +1,6 @@
 "use client";
 
-import { useState, useEffect } from "react";
-import { useSession } from "next-auth/react";
-import { useRouter } from "next/navigation";
+import { useState } from "react";
 
 import { Button } from "@/components/ui/button";
 import {
@@ -27,28 +25,18 @@ import {
   type APIUser,
 } from "@/hooks/api/users";
 import { toast } from "sonner";
+import { useAdminGuard } from "@/hooks/useAdminGuard";
 
 // Use APIUser type directly
 type User = APIUser;
 
 export function DeactivatedUsersManagement() {
-  const { data: session, status } = useSession();
-  const router = useRouter();
+  const { isAdmin, isLoading: isAuthLoading } = useAdminGuard();
   const [activatingUser, setActivatingUser] = useState<number | null>(null);
 
   // TanStack Query hooks
   const { data: users = [], isLoading, error } = useDeactivatedUsers();
   const reactivateUserMutation = useReactivateUser();
-
-  // Check if user is admin
-  useEffect(() => {
-    if (status === "loading") return;
-
-    if (!session || session.user.role !== "ADMIN") {
-      router.push("/unauthorized");
-      return;
-    }
-  }, [session, status, router]);
 
   // Handle user reactivation
   const reactivateUser = async (user: User) => {
@@ -73,11 +61,11 @@ export function DeactivatedUsersManagement() {
     }
   };
 
-  if (status === "loading") {
+  if (isAuthLoading) {
     return <div>Loading...</div>;
   }
 
-  if (!session || session.user.role !== "ADMIN") {
+  if (!isAdmin) {
     return null;
   }
 

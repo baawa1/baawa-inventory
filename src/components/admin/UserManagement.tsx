@@ -1,8 +1,6 @@
 "use client";
 
 import { useState } from "react";
-import { useSession } from "next-auth/react";
-import { useRouter } from "next/navigation";
 import { Button } from "@/components/ui/button";
 import {
   Card,
@@ -26,12 +24,11 @@ import {
   type CreateUserData,
   type UpdateUserData,
 } from "@/hooks/api/users";
-import { useEffect } from "react";
 import { toast } from "sonner";
+import { useAdminGuard } from "@/hooks/useAdminGuard";
 
 export function UserManagement() {
-  const { data: session, status } = useSession();
-  const router = useRouter();
+  const { isAdmin, isLoading: isAuthLoading, session } = useAdminGuard();
   const [isDialogOpen, setIsDialogOpen] = useState(false);
   const [editingUser, setEditingUser] = useState<User | null>(null);
 
@@ -40,16 +37,6 @@ export function UserManagement() {
   const createUserMutation = useCreateUser();
   const updateUserMutation = useUpdateUser();
   const deleteUserMutation = useDeleteUser();
-
-  // Check if user is admin
-  useEffect(() => {
-    if (status === "loading") return;
-
-    if (!session || session.user.role !== "ADMIN") {
-      router.push("/unauthorized");
-      return;
-    }
-  }, [session, status, router]);
 
   // Handle form submission
   const handleSubmit = async (data: UserFormData | EditUserFormData) => {
@@ -136,11 +123,11 @@ export function UserManagement() {
     }
   };
 
-  if (status === "loading") {
+  if (isAuthLoading) {
     return <div>Loading...</div>;
   }
 
-  if (!session || session.user.role !== "ADMIN") {
+  if (!isAdmin) {
     return null;
   }
 
