@@ -9,6 +9,7 @@ import { z } from "zod";
 import { toast } from "sonner";
 import Link from "next/link";
 import { ArrowLeft } from "lucide-react";
+import { useStockAdjustment } from "@/hooks/api/stock-management";
 
 import { Button } from "@/components/ui/button";
 import {
@@ -93,8 +94,14 @@ export function EditStockAdjustmentForm({
   const router = useRouter();
   const { data: session } = useSession();
   const [loading, setLoading] = useState(false);
-  const [fetchingData, setFetchingData] = useState(true);
-  const [adjustment, setAdjustment] = useState<StockAdjustment | null>(null);
+
+  // Use TanStack Query hook for fetching stock adjustment data
+  const {
+    data: adjustment,
+    isLoading: fetchingData,
+    error,
+    isError,
+  } = useStockAdjustment(adjustmentId);
 
   const form = useForm<EditStockAdjustmentFormData>({
     resolver: zodResolver(editStockAdjustmentSchema),
@@ -105,36 +112,25 @@ export function EditStockAdjustmentForm({
     },
   });
 
-  // Fetch stock adjustment data
+  // Update form when adjustment data is loaded
   useEffect(() => {
-    const fetchAdjustment = async () => {
-      try {
-        const response = await fetch(`/api/stock-adjustments/${adjustmentId}`);
-        if (!response.ok) {
-          throw new Error("Failed to fetch stock adjustment");
-        }
-        const data = await response.json();
-        setAdjustment(data);
-
-        // Update form with fetched data
-        form.reset({
-          reason: data.reason,
-          referenceNumber: data.reference_number || "",
-          notes: data.notes || "",
-        });
-      } catch (error) {
-        console.error("Error fetching stock adjustment:", error);
-        toast.error("Failed to load stock adjustment data");
-        router.push("/inventory/stock-adjustments");
-      } finally {
-        setFetchingData(false);
-      }
-    };
-
-    if (adjustmentId) {
-      fetchAdjustment();
+    if (adjustment) {
+      form.reset({
+        reason: adjustment.reason,
+        referenceNumber: adjustment.reference_number || "",
+        notes: adjustment.notes || "",
+      });
     }
-  }, [adjustmentId, form, router]);
+  }, [adjustment, form]);
+
+  // Handle errors from data fetching
+  useEffect(() => {
+    if (isError && error) {
+      console.error("Error fetching stock adjustment:", error);
+      toast.error("Failed to load stock adjustment data");
+      router.push("/inventory/stock-adjustments");
+    }
+  }, [isError, error, router]);
 
   const onSubmit = async (data: EditStockAdjustmentFormData) => {
     if (!session?.user?.id) {

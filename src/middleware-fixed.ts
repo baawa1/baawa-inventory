@@ -43,7 +43,7 @@ export default withAuth(
     const userRole = token.role as UserRole;
     const userStatus = token.status as UserStatus;
     const emailVerified = token.emailVerified as boolean;
-    const userId = token.sub;
+    const _userId = token.sub;
 
     // Helper function to safely redirect and prevent loops
     const safeRedirect = (targetPath: string, reason: string) => {

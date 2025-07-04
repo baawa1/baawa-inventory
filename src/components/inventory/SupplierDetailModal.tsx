@@ -1,7 +1,8 @@
 "use client";
 
-import React, { useState, useEffect } from "react";
+import React, { useState } from "react";
 import { useSession } from "next-auth/react";
+import { useSupplier } from "@/hooks/api/suppliers";
 import {
   Dialog,
   DialogContent,
@@ -79,40 +80,16 @@ export default function SupplierDetailModal({
   canDeactivate = false,
 }: SupplierDetailModalProps) {
   const { data: session } = useSession();
-  const [supplier, setSupplier] = useState<Supplier | null>(null);
-  const [loading, setLoading] = useState(false);
-  const [error, setError] = useState<string | null>(null);
 
-  // Fetch supplier details when modal opens
-  useEffect(() => {
-    if (isOpen && supplierId) {
-      fetchSupplierDetails();
-    }
-  }, [isOpen, supplierId]);
+  // Use TanStack Query hook for fetching supplier data
+  const {
+    data: supplier,
+    isLoading: loading,
+    error,
+    isError,
+  } = useSupplier(supplierId || 0);
 
-  const fetchSupplierDetails = async () => {
-    if (!supplierId) return;
-
-    try {
-      setLoading(true);
-      setError(null);
-
-      const response = await fetch(`/api/suppliers/${supplierId}`);
-
-      if (!response.ok) {
-        throw new Error("Failed to fetch supplier details");
-      }
-
-      const data = await response.json();
-      setSupplier(data.data);
-    } catch (err) {
-      console.error("Error fetching supplier details:", err);
-      setError("Failed to load supplier details. Please try again.");
-      toast.error("Failed to load supplier details");
-    } finally {
-      setLoading(false);
-    }
-  };
+  const errorMessage = isError && error ? (error as Error).message : null;
 
   const handleEdit = () => {
     if (supplier && onEdit) {
@@ -183,12 +160,12 @@ export default function SupplierDetailModal({
               Loading supplier details...
             </div>
           </div>
-        ) : error ? (
+        ) : errorMessage ? (
           <div className="text-center py-8">
-            <p className="text-red-600 mb-4">{error}</p>
-            <Button onClick={fetchSupplierDetails} variant="outline">
-              Try Again
-            </Button>
+            <p className="text-red-600 mb-4">{errorMessage}</p>
+            <p className="text-sm text-gray-500">
+              Please try again or contact support if the problem persists.
+            </p>
           </div>
         ) : supplier ? (
           <div className="space-y-6">

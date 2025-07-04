@@ -78,7 +78,8 @@ export const useRequireAuth = () => {
 };
 
 export const useRequireRole = (requiredRole: UserRole | UserRole[]) => {
-  const { role, isLoading, isAuthenticated } = useAuth();
+  const authData = useAuth();
+  const { role, isLoading, isAuthenticated } = authData;
 
   if (!isLoading && !isAuthenticated) {
     redirect("/auth/signin");
@@ -91,7 +92,7 @@ export const useRequireRole = (requiredRole: UserRole | UserRole[]) => {
 
     // Admin always has access
     if (role === "ADMIN") {
-      return useAuth();
+      return authData;
     }
 
     if (!allowedRoles.includes(role)) {
@@ -99,11 +100,12 @@ export const useRequireRole = (requiredRole: UserRole | UserRole[]) => {
     }
   }
 
-  return useAuth();
+  return authData;
 };
 
 export const useRequirePermission = (permission: keyof RolePermissions) => {
-  const { permissions, isLoading, isAuthenticated } = useAuth();
+  const authData = useAuth();
+  const { permissions, isLoading, isAuthenticated } = authData;
 
   if (!isLoading && !isAuthenticated) {
     redirect("/auth/signin");
@@ -118,5 +120,5 @@ export const useRequirePermission = (permission: keyof RolePermissions) => {
     redirect("/unauthorized");
   }
 
-  return useAuth();
+  return authData;
 };

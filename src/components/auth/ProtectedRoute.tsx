@@ -1,13 +1,7 @@
 "use client";
 
 import React from "react";
-import {
-  useAuth,
-  useRequireRole,
-  useRequirePermission,
-  UserRole,
-  RolePermissions,
-} from "@/lib/auth-rbac";
+import { useAuth, UserRole, RolePermissions } from "@/lib/auth-rbac";
 import {
   Card,
   CardContent,
@@ -31,7 +25,8 @@ export function ProtectedRoute({
   requiredPermission,
   fallback,
 }: ProtectedRouteProps) {
-  const { isLoading, isAuthenticated } = useAuth();
+  // Call all hooks at the top level
+  const { isLoading, isAuthenticated, role, permissions } = useAuth();
 
   // Show loading state
   if (isLoading) {
@@ -65,7 +60,6 @@ export function ProtectedRoute({
 
   // Check role-based access
   if (requiredRole) {
-    const { role, permissions } = useAuth();
     const userRole = role as UserRole;
 
     // Admin always has access
@@ -82,8 +76,6 @@ export function ProtectedRoute({
 
   // Check permission-based access
   if (requiredPermission) {
-    const { permissions } = useAuth();
-
     if (!permissions || !permissions[requiredPermission]) {
       return fallback || <UnauthorizedFallback />;
     }
@@ -99,7 +91,7 @@ function UnauthorizedFallback() {
         <CardHeader className="text-center">
           <CardTitle className="text-destructive">Access Denied</CardTitle>
           <CardDescription>
-            You don't have permission to access this page.
+            You don&apos;t have permission to access this page.
           </CardDescription>
         </CardHeader>
         <CardContent className="space-y-4">
