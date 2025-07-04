@@ -21,10 +21,12 @@ import {
   RefreshCw,
 } from "lucide-react";
 import { useUserStatusValidation } from "@/hooks/useUserStatusValidation";
+import { useLogout } from "@/hooks/useLogout";
 
 export default function PendingApprovalPage() {
   const router = useRouter();
   const { data: session, status } = useSession();
+  const { logout, isLoggingOut } = useLogout();
 
   // Use the custom hook for all session validation logic
   const {
@@ -168,7 +170,6 @@ export default function PendingApprovalPage() {
           },
         };
       default:
-        console.warn("Unknown user status:", userStatus, "Session:", session);
         return {
           icon: <Clock className="h-16 w-16 text-gray-500" />,
           title: "Account Status Unknown",
@@ -192,21 +193,6 @@ export default function PendingApprovalPage() {
   return (
     <div className="min-h-screen flex items-center justify-center bg-gray-50">
       <div className="w-full max-w-md">
-        {/* Debug panel for development */}
-        {process.env.NODE_ENV === "development" && (
-          <div className="mb-4 p-4 bg-yellow-50 border border-yellow-200 rounded-lg text-xs">
-            <h3 className="font-semibold text-yellow-800 mb-2">Debug Info:</h3>
-            <p>Session Status: {status}</p>
-            <p>User Status: {userStatus || "undefined"}</p>
-            <p>Session User ID: {session?.user?.id || "undefined"}</p>
-            <p>
-              Email Verified:{" "}
-              {session?.user?.emailVerified?.toString() || "undefined"}
-            </p>
-            <p>Has Tried Refresh: {hasTriedRefresh.toString()}</p>
-          </div>
-        )}
-
         <Card>
           <CardHeader className="text-center">
             <div className="flex justify-center mb-4">{statusInfo.icon}</div>
@@ -300,8 +286,12 @@ export default function PendingApprovalPage() {
                 </Button>
               )}
 
-              <Button onClick={() => router.push("/login")} className="w-full">
-                Back to Login
+              <Button
+                onClick={logout}
+                disabled={isLoggingOut}
+                className="w-full"
+              >
+                {isLoggingOut ? "Logging out..." : "Logout"}
               </Button>
 
               <Button
