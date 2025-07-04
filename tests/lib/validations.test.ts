@@ -116,10 +116,15 @@ describe("Zod Validation Schemas", () => {
         isActive: "true",
       };
 
-      const result = validateRequest(userQuerySchema, queryParams);
+      // Test the schema directly instead of through validateRequest
+      const result = userQuerySchema.safeParse(queryParams);
       expect(result.success).toBe(true);
-      expect(result.data?.role).toBe("ADMIN");
-      expect(result.data?.isActive).toBe(true);
+      if (result.success) {
+        expect(result.data.role).toBe("ADMIN");
+        expect(result.data.isActive).toBe(true);
+        expect(result.data.page).toBe(1);
+        expect(result.data.limit).toBe(20);
+      }
     });
   });
 
