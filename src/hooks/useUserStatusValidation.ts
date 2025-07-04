@@ -43,10 +43,8 @@ export function useUserStatusValidation(
     setHasTriedRefresh(true);
 
     try {
-      console.log("Refreshing session for user ID:", session.user.id);
       // Use NextAuth's update() to trigger a fresh JWT token fetch
       await update();
-      console.log("Session refreshed successfully");
     } catch (error) {
       console.error("Error refreshing session:", error);
     } finally {
@@ -57,16 +55,12 @@ export function useUserStatusValidation(
   // Update user status when session changes
   useEffect(() => {
     if (session?.user?.status) {
-      console.log("Setting user status from session:", session.user.status);
       setUserStatus(session.user.status);
     } else if (session === null) {
       // Session is explicitly null (unauthenticated)
-      console.log("User is unauthenticated, clearing status");
       setUserStatus(null);
-    } else {
-      // Session is undefined (still loading) or has no status
-      console.log("No status in session:", session);
     }
+    // Session is undefined (still loading) or has no status - do nothing
   }, [session]);
 
   // Automatically refresh session if user status is unknown or seems stale
@@ -81,10 +75,6 @@ export function useUserStatusValidation(
           sessionStorage.getItem("emailJustVerified")); // User just verified email but still shows PENDING
 
       if (shouldAutoRefresh) {
-        console.log("Auto-refreshing session due to potentially stale status");
-        console.log("Current session data:", session);
-        console.log("Current userStatus:", userStatus);
-        console.log("Session.user.status:", session.user?.status);
         refreshUserStatus();
 
         // Clear the flag after attempting refresh
