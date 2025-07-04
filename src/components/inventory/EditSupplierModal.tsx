@@ -11,7 +11,6 @@ import {
   DialogTitle,
 } from "@/components/ui/dialog";
 import { SupplierForm } from "./supplier/SupplierForm";
-import { useSupplierData } from "./supplier/useSupplierData";
 import { useSupplierSubmit } from "./supplier/useSupplierSubmit";
 import { EditSupplierModalProps, SupplierFormData } from "./supplier/types";
 import { updateSupplierSchema } from "@/lib/validations/supplier";

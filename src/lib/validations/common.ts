@@ -112,17 +112,18 @@ export const passwordSchema = z
     /^(?=.*[a-z])(?=.*[A-Z])(?=.*\d)(?=.*[@$!%*?&])[A-Za-z\d@$!%*?&]/,
     "Password must contain at least one lowercase letter, one uppercase letter, one number, and one special character (@$!%*?&)"
   )
-  .refine(
-    (password) => {
-      // Check for common weak passwords
-      const commonPasswords = [
-        "123456789012", "password123!", "Password123!",
-        "qwerty123456", "admin123456!", "welcome123!"
-      ];
-      return !commonPasswords.includes(password.toLowerCase());
-    },
-    "Password is too common. Please choose a more secure password."
-  );
+  .refine((password) => {
+    // Check for common weak passwords
+    const commonPasswords = [
+      "123456789012",
+      "password123!",
+      "Password123!",
+      "qwerty123456",
+      "admin123456!",
+      "welcome123!",
+    ];
+    return !commonPasswords.includes(password.toLowerCase());
+  }, "Password is too common. Please choose a more secure password.");
 
 // Legacy simple password schema - for backwards compatibility only
 // DEPRECATED: Use passwordSchema for new implementations
@@ -181,7 +182,7 @@ export async function validateRequestBody<T>(
   try {
     const body = await request.json();
     return validateRequest(schema, body);
-  } catch (error) {
+  } catch (_error) {
     return {
       success: false,
       errors: { general: "Invalid JSON in request body" },
@@ -212,7 +213,7 @@ export function validateSearchParams<T>(
     });
 
     return validateRequest(schema, params);
-  } catch (error) {
+  } catch (_error) {
     return {
       success: false,
       errors: { general: "Invalid search parameters" },

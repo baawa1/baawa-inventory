@@ -1,74 +1,54 @@
 "use client";
 
-import { useState, useEffect } from "react";
-import { toast } from "sonner";
+import { useState } from "react";
+import { useCategories } from "@/hooks/api/categories";
+import { useBrands } from "@/hooks/api/brands";
+import { useSuppliers } from "@/hooks/api/suppliers";
 import type { Category, Brand, Supplier, FormState } from "./types";
 
 export function useFormData() {
-  const [state, setState] = useState<FormState>({
-    loading: true,
-    isSubmitting: false,
-    submitError: null,
-    categories: [],
-    brands: [],
-    suppliers: [],
-  });
+  // Use TanStack Query hooks for data fetching
+  const {
+    data: categoriesData,
+    isLoading: categoriesLoading,
+    error: categoriesError,
+  } = useCategories();
+  const {
+    data: brandsData,
+    isLoading: brandsLoading,
+    error: brandsError,
+  } = useBrands();
+  const {
+    data: suppliersData,
+    isLoading: suppliersLoading,
+    error: suppliersError,
+  } = useSuppliers();
 
-  useEffect(() => {
-    const loadFormData = async () => {
-      try {
-        const [categoriesRes, brandsRes, suppliersRes] = await Promise.all([
-          fetch("/api/categories"),
-          fetch("/api/brands"),
-          fetch("/api/suppliers"),
-        ]);
+  // Local state for form submission
+  const [isSubmitting, setIsSubmitting] = useState(false);
+  const [submitError, setSubmitError] = useState<string | null>(null);
 
-        const updates: Partial<FormState> = {};
+  // Combine loading states
+  const loading = categoriesLoading || brandsLoading || suppliersLoading;
 
-        if (categoriesRes.ok) {
-          const categoriesData = await categoriesRes.json();
-          updates.categories = categoriesData.data || [];
-        }
+  // Extract data arrays with proper fallbacks
+  const categories: Category[] = categoriesData?.data || [];
+  const brands: Brand[] = brandsData?.data || [];
+  const suppliers: Supplier[] = suppliersData?.data || [];
 
-        if (brandsRes.ok) {
-          const brandsData = await brandsRes.json();
-          updates.brands = brandsData.data || [];
-        }
-
-        if (suppliersRes.ok) {
-          const suppliersData = await suppliersRes.json();
-          updates.suppliers = suppliersData.suppliers || [];
-        } else {
-          console.error(
-            "Failed to fetch suppliers:",
-            suppliersRes.status,
-            suppliersRes.statusText
-          );
-          toast.error("Failed to load suppliers");
-        }
-
-        setState((prev) => ({ ...prev, ...updates, loading: false }));
-      } catch (error) {
-        console.error("Error loading form data:", error);
-        toast.error("Failed to load form data. Please refresh the page.");
-        setState((prev) => ({ ...prev, loading: false }));
-      }
-    };
-
-    loadFormData();
-  }, []);
-
-  const setIsSubmitting = (isSubmitting: boolean) => {
-    setState((prev) => ({ ...prev, isSubmitting }));
-  };
-
-  const setSubmitError = (error: string | null) => {
-    setState((prev) => ({ ...prev, submitError: error }));
-  };
+  // Handle errors (TanStack Query handles retry and error states automatically)
+  const hasError = categoriesError || brandsError || suppliersError;
 
   return {
-    ...state,
+    loading,
+    isSubmitting,
+    submitError,
+    categories,
+    brands,
+    suppliers,
     setIsSubmitting,
-    setSubmitError,
+    setSubmitError: (error: string | null) => setSubmitError(error),
+    hasDataError: !!hasError,
+    dataError: hasError ? (hasError as Error).message : null,
   };
 }

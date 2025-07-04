@@ -8,7 +8,6 @@ import { useDebounce } from "@/hooks/useDebounce";
 import { useBrands, useDeleteBrand } from "@/hooks/api/brands";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
-import { Label } from "@/components/ui/label";
 import {
   Select,
   SelectContent,
@@ -40,7 +39,7 @@ import {
 import { toast } from "sonner";
 
 export default function BrandList() {
-  const { data: session, status } = useSession();
+  const { data: _session, status } = useSession();
   const router = useRouter();
   const [searchTerm, setSearchTerm] = useState("");
   const [statusFilter, setStatusFilter] = useState<string>("all");
@@ -68,8 +67,8 @@ export default function BrandList() {
   const {
     data: brandsData,
     isLoading,
-    error,
-    isError,
+    error: _error,
+    isError: _isError,
   } = useBrands(status === "authenticated" ? filters : {});
 
   // Delete mutation

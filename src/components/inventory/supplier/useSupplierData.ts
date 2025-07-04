@@ -1,4 +1,4 @@
-import { useState, useEffect } from "react";
+import { useQuery } from "@tanstack/react-query";
 
 interface Supplier {
   id: number;
@@ -30,42 +30,30 @@ export function useSupplierData(
   supplierId: number | null,
   isOpen: boolean
 ): UseSupplierDataResult {
-  const [supplier, setSupplier] = useState<Supplier | null>(null);
-  const [loading, setLoading] = useState(false);
-  const [error, setError] = useState<string | null>(null);
+  // Use TanStack Query hook with conditional fetching
+  const {
+    data: supplier,
+    isLoading: loading,
+    error,
+  } = useQuery({
+    queryKey: ["suppliers", supplierId],
+    queryFn: async () => {
+      if (!supplierId) throw new Error("No supplier ID provided");
 
-  useEffect(() => {
-    if (isOpen && supplierId) {
-      setLoading(true);
-      setError(null);
+      const response = await fetch(`/api/suppliers/${supplierId}`);
+      if (!response.ok) {
+        throw new Error(`Failed to fetch supplier: ${response.statusText}`);
+      }
+      const result = await response.json();
+      return result.data;
+    },
+    enabled: isOpen && !!supplierId,
+    staleTime: 5 * 60 * 1000, // 5 minutes
+  });
 
-      fetch(`/api/suppliers/${supplierId}`)
-        .then((response) => {
-          if (!response.ok) {
-            throw new Error("Failed to fetch supplier");
-          }
-          return response.json();
-        })
-        .then((data) => {
-          if (data.success && data.supplier) {
-            setSupplier(data.supplier);
-          } else {
-            throw new Error(data.message || "Failed to fetch supplier");
-          }
-        })
-        .catch((error) => {
-          setError(error.message);
-          console.error("Error fetching supplier:", error);
-        })
-        .finally(() => {
-          setLoading(false);
-        });
-    } else if (!isOpen) {
-      // Reset state when modal is closed
-      setSupplier(null);
-      setError(null);
-    }
-  }, [isOpen, supplierId]);
-
-  return { supplier, loading, error };
+  return {
+    supplier: supplier || null,
+    loading,
+    error: error ? (error as Error).message : null,
+  };
 }

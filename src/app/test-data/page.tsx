@@ -1,58 +1,36 @@
 "use client";
 
-import { useState, useEffect } from "react";
+import { useCategories } from "@/hooks/api/categories";
+import { useBrands } from "@/hooks/api/brands";
 
 export default function TestDataPage() {
-  const [categories, setCategories] = useState([]);
-  const [brands, setBrands] = useState([]);
-  const [loading, setLoading] = useState(true);
-  const [error, setError] = useState<string | null>(null);
+  // Use TanStack Query hooks instead of manual state management
+  const {
+    data: categoriesData,
+    isLoading: categoriesLoading,
+    error: categoriesError,
+  } = useCategories();
 
-  useEffect(() => {
-    const loadData = async () => {
-      try {
-        setLoading(true);
+  const {
+    data: brandsData,
+    isLoading: brandsLoading,
+    error: brandsError,
+  } = useBrands();
 
-        // Test categories
-        const categoriesRes = await fetch("/api/categories");
-        console.log("Categories response status:", categoriesRes.status);
+  // Combine loading states
+  const loading = categoriesLoading || brandsLoading;
 
-        if (categoriesRes.ok) {
-          const categoriesData = await categoriesRes.json();
-          console.log("Categories full response:", categoriesData);
-          setCategories(categoriesData.data || []);
-        } else {
-          const errorData = await categoriesRes.text();
-          console.error("Categories error:", errorData);
-          setError(`Categories: ${categoriesRes.status} - ${errorData}`);
-        }
+  // Extract data arrays
+  const categories = categoriesData?.data || [];
+  const brands = brandsData?.data || [];
 
-        // Test brands
-        const brandsRes = await fetch("/api/brands");
-        console.log("Brands response status:", brandsRes.status);
+  // Combine error states
+  const error = categoriesError || brandsError;
+  const errorMessage = error ? (error as Error).message : null;
 
-        if (brandsRes.ok) {
-          const brandsData = await brandsRes.json();
-          console.log("Brands full response:", brandsData);
-          setBrands(brandsData.data || []);
-        } else {
-          const errorData = await brandsRes.text();
-          console.error("Brands error:", errorData);
-          setError(
-            (prev) =>
-              `${prev || ""} | Brands: ${brandsRes.status} - ${errorData}`
-          );
-        }
-      } catch (err) {
-        console.error("Error loading data:", err);
-        setError(err instanceof Error ? err.message : "Unknown error");
-      } finally {
-        setLoading(false);
-      }
-    };
-
-    loadData();
-  }, []);
+  // Log data for debugging (same as before)
+  console.log("Categories data:", categoriesData);
+  console.log("Brands data:", brandsData);
 
   if (loading) return <div>Loading...</div>;
 
@@ -60,9 +38,9 @@ export default function TestDataPage() {
     <div className="p-6">
       <h1 className="text-2xl font-bold mb-4">API Data Test</h1>
 
-      {error && (
+      {errorMessage && (
         <div className="bg-red-100 border border-red-400 text-red-700 px-4 py-3 rounded mb-4">
-          Error: {error}
+          Error: {errorMessage}
         </div>
       )}
 
