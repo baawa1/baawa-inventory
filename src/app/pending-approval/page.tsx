@@ -1,6 +1,5 @@
 "use client";
 
-import { useState, useEffect, useCallback } from "react";
 import { useRouter } from "next/navigation";
 import { useSession } from "next-auth/react";
 import {
@@ -20,76 +19,26 @@ import {
   AlertTriangle,
   RefreshCw,
 } from "lucide-react";
+import { useUserStatusValidation } from "@/hooks/useUserStatusValidation";
 
 export default function PendingApprovalPage() {
   const router = useRouter();
-  const { data: session, status, update } = useSession();
-  const [userStatus, setUserStatus] = useState<string | null>(null);
-  const [isRefreshing, setIsRefreshing] = useState(false);
-  const [hasTriedRefresh, setHasTriedRefresh] = useState(false);
+  const { data: session } = useSession();
+  
+  // Use the custom hook for all session validation logic
+  const {
+    userStatus,
+    isRefreshing,
+    hasTriedRefresh,
+    refreshUserStatus,
+    isLoading,
+  } = useUserStatusValidation({
+    redirectOnApproved: true,
+    autoRefresh: true,
+  });
 
-  // Function to refresh user status from the server
-  const refreshUserStatus = useCallback(async () => {
-    if (!session?.user?.id) return;
-
-    setIsRefreshing(true);
-    setHasTriedRefresh(true);
-
-    try {
-      console.log("Refreshing session for user ID:", session.user.id);
-      // Use NextAuth's update() to trigger a fresh JWT token fetch
-      await update();
-      console.log("Session refreshed successfully");
-    } catch (error) {
-      console.error("Error refreshing session:", error);
-    } finally {
-      setIsRefreshing(false);
-    }
-  }, [session, update]);
-
-  // ALL HOOKS MUST BE CALLED BEFORE ANY CONDITIONAL RETURNS
-  useEffect(() => {
-    if (session?.user?.status) {
-      console.log("Setting user status from session:", session.user.status);
-      setUserStatus(session.user.status);
-    } else {
-      console.log("No status in session:", session);
-    }
-  }, [session]);
-
-  // Automatically refresh session if user status is unknown or seems stale
-  useEffect(() => {
-    if (session && !hasTriedRefresh) {
-      const shouldAutoRefresh =
-        !userStatus || // No status detected
-        userStatus === "undefined" || // Status is string "undefined"
-        (userStatus === "PENDING" &&
-          sessionStorage.getItem("emailJustVerified")); // User just verified email but still shows PENDING
-
-      if (shouldAutoRefresh) {
-        console.log("Auto-refreshing session due to potentially stale status");
-        console.log("Current session data:", session);
-        console.log("Current userStatus:", userStatus);
-        console.log("Session.user.status:", session.user?.status);
-        refreshUserStatus();
-
-        // Clear the flag after attempting refresh
-        if (sessionStorage.getItem("emailJustVerified")) {
-          sessionStorage.removeItem("emailJustVerified");
-        }
-      }
-    }
-  }, [session, userStatus, hasTriedRefresh, refreshUserStatus]);
-
-  // Redirect if user is already approved
-  useEffect(() => {
-    if (userStatus === "APPROVED") {
-      router.push("/dashboard");
-    }
-  }, [userStatus, router]);
-
-  // Show loading state AFTER all hooks are called
-  if (status === "loading") {
+  // Show loading state
+  if (isLoading) {
     return (
       <div className="min-h-screen flex items-center justify-center bg-gray-50">
         <div className="text-center">
