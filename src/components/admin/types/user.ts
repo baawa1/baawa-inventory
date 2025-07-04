@@ -34,7 +34,15 @@ const passwordSchema = z
   });
 
 // User form validation schema for creating users
-export const createUserFormSchema = baseUserSchema.merge(passwordSchema);
+export const createUserFormSchema = baseUserSchema
+  .extend({
+    password: z.string().min(8, "Password must be at least 8 characters"),
+    confirmPassword: z.string(),
+  })
+  .refine((data) => data.password === data.confirmPassword, {
+    message: "Passwords don't match",
+    path: ["confirmPassword"],
+  });
 
 // User form validation schema for editing users
 export const editUserFormSchema = baseUserSchema;

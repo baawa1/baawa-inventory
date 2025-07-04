@@ -2,7 +2,6 @@ import { NextRequest, NextResponse } from "next/server";
 import { getServerSession } from "next-auth";
 import { authOptions } from "@/lib/auth";
 import { prisma } from "@/lib/db";
-import { UserRole } from "@prisma/client";
 import { sendReconciliationNotification } from "@/lib/notifications/stock-reconciliation";
 
 export async function POST(
@@ -11,7 +10,7 @@ export async function POST(
 ) {
   try {
     const session = await getServerSession(authOptions);
-    if (!session || session.user.role !== UserRole.ADMIN) {
+    if (!session || session.user.role !== "ADMIN") {
       return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
     }
 
@@ -67,15 +66,15 @@ export async function POST(
           // Create stock adjustment record for audit trail
           await tx.stockAdjustment.create({
             data: {
-              productId: item.productId,
-              type: discrepancy > 0 ? "INCREASE" : "DECREASE",
+              product_id: item.productId,
+              adjustment_type: discrepancy > 0 ? "INCREASE" : "DECREASE",
               quantity: Math.abs(discrepancy),
-              previousStock: item.systemCount,
-              newStock: item.physicalCount,
+              old_quantity: item.systemCount,
+              new_quantity: item.physicalCount,
               reason:
                 item.discrepancyReason || "Stock reconciliation adjustment",
               notes: `Stock reconciliation #${reconciliation.id} - ${item.discrepancyReason || "Inventory count correction"}`,
-              userId: parseInt(session.user.id),
+              user_id: parseInt(session.user.id),
             },
           });
         }

@@ -28,21 +28,21 @@ export function useAuthGuard(
     redirectTo = "/unauthorized",
     allowedStatuses = ["APPROVED"],
   } = options;
-  
+
   const { data: session, status } = useSession();
   const router = useRouter();
 
   const isLoading = status === "loading";
   const isAuthenticated = !!session?.user;
-  
-  const hasRequiredRole = requiredRole 
-    ? session?.user?.role === requiredRole 
+
+  const hasRequiredRole = requiredRole
+    ? session?.user?.role === requiredRole
     : true;
-    
-  const hasAllowedStatus = session?.user?.status 
+
+  const hasAllowedStatus = session?.user?.status
     ? allowedStatuses.includes(session.user.status)
     : false;
-  
+
   const isAuthorized = isAuthenticated && hasRequiredRole && hasAllowedStatus;
 
   useEffect(() => {

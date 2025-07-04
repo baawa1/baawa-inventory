@@ -137,7 +137,7 @@ export function StockReconciliationList({
 
   const handleSubmitForApproval = async (reconciliationId: number) => {
     try {
-      await submitReconciliation.mutateAsync(reconciliationId.toString());
+      await submitReconciliation.mutateAsync(reconciliationId);
       toast.success("Reconciliation submitted for approval");
     } catch (error) {
       console.error("Error submitting reconciliation:", error);
@@ -147,7 +147,7 @@ export function StockReconciliationList({
 
   const handleApprove = async (reconciliationId: number) => {
     try {
-      await approveReconciliation.mutateAsync(reconciliationId.toString());
+      await approveReconciliation.mutateAsync({ id: reconciliationId });
       toast.success("Reconciliation approved successfully");
     } catch (error) {
       console.error("Error approving reconciliation:", error);
@@ -160,7 +160,7 @@ export function StockReconciliationList({
     if (!reason) return;
 
     try {
-      await rejectReconciliation.mutateAsync(reconciliationId.toString());
+      await rejectReconciliation.mutateAsync({ id: reconciliationId, reason });
       toast.success("Reconciliation rejected");
     } catch (error) {
       console.error("Error rejecting reconciliation:", error);

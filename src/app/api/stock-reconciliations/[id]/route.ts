@@ -3,7 +3,6 @@ import { getServerSession } from "next-auth";
 import { authOptions } from "@/lib/auth";
 import { prisma } from "@/lib/db";
 import { updateStockReconciliationSchema } from "@/lib/validations/stock-management";
-import { UserRole } from "@prisma/client";
 
 export async function GET(
   request: NextRequest,
@@ -68,7 +67,7 @@ export async function GET(
 
     // Check permissions - users can only see their own reconciliations unless they're admin
     if (
-      session.user.role !== UserRole.ADMIN &&
+      session.user.role !== "ADMIN" &&
       reconciliation.createdById !== parseInt(session.user.id)
     ) {
       return NextResponse.json({ error: "Forbidden" }, { status: 403 });
@@ -133,7 +132,7 @@ export async function PUT(
 
     // Check permissions - only creator or admin can edit
     if (
-      session.user.role !== UserRole.ADMIN &&
+      session.user.role !== "ADMIN" &&
       existingReconciliation.createdById !== parseInt(session.user.id)
     ) {
       return NextResponse.json({ error: "Forbidden" }, { status: 403 });
@@ -212,7 +211,7 @@ export async function DELETE(
 ) {
   try {
     const session = await getServerSession(authOptions);
-    if (!session || session.user.role !== UserRole.ADMIN) {
+    if (!session || session.user.role !== "ADMIN") {
       return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
     }
 

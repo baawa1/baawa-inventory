@@ -99,23 +99,23 @@ export const GET = withAuth(async function (request: AuthenticatedRequest) {
         take: safeLimit,
         select: {
           id: true,
-          transactionCode: true,
-          customerName: true,
-          total: true,
-          paymentStatus: true,
-          paymentMethod: true,
+          transaction_number: true,
+          customer_name: true,
+          total_amount: true,
+          payment_status: true,
+          payment_method: true,
           notes: true,
-          createdAt: true,
-          updatedAt: true,
-          cashier: {
+          created_at: true,
+          updated_at: true,
+          users: {
             select: { id: true, firstName: true, lastName: true, email: true },
           },
-          salesItems: {
+          sales_items: {
             select: {
               id: true,
               quantity: true,
-              unitPrice: true,
-              product: {
+              unit_price: true,
+              products: {
                 select: { id: true, name: true, sku: true },
               },
             },
@@ -206,17 +206,17 @@ export const POST = withApiRateLimit(
           subtotal + validatedData.taxAmount - validatedData.discountAmount; // Create the sales transaction
         const salesTransaction = await tx.salesTransaction.create({
           data: {
-            transactionCode: transactionCode,
-            cashierId: validatedData.userId,
+            transaction_number: transactionCode,
+            user_id: validatedData.userId,
             subtotal,
-            tax: validatedData.taxAmount,
-            discount: validatedData.discountAmount,
-            total: total,
-            paymentMethod: validatedData.paymentMethod,
-            paymentStatus: validatedData.paymentStatus,
-            customerName: body.customerName,
-            customerEmail: body.customerEmail,
-            customerPhone: body.customerPhone,
+            tax_amount: validatedData.taxAmount,
+            discount_amount: validatedData.discountAmount,
+            total_amount: total,
+            payment_method: validatedData.paymentMethod,
+            payment_status: validatedData.paymentStatus,
+            customer_name: body.customerName,
+            customer_email: body.customerEmail,
+            customer_phone: body.customerPhone,
             notes: validatedData.notes,
           },
         });
@@ -229,12 +229,13 @@ export const POST = withApiRateLimit(
           // Create sales item
           const salesItem = await tx.salesItem.create({
             data: {
-              transactionId: salesTransaction.id,
-              productId: item.productId,
+              transaction_id: salesTransaction.id,
+              product_id: item.productId,
               quantity: item.quantity,
-              unitPrice: item.unitPrice,
-              totalPrice: item.totalPrice,
-              discount: (item.quantity * item.unitPrice * item.discount) / 100, // Discount amount
+              unit_price: item.unitPrice,
+              total_price: item.totalPrice,
+              discount_amount:
+                (item.quantity * item.unitPrice * item.discount) / 100, // Discount amount
             },
           });
 
@@ -280,7 +281,7 @@ export const POST = withApiRateLimit(
         {
           where: { id: result.salesTransaction.id },
           include: {
-            cashier: {
+            users: {
               select: {
                 id: true,
                 firstName: true,
@@ -288,9 +289,9 @@ export const POST = withApiRateLimit(
                 email: true,
               },
             },
-            salesItems: {
+            sales_items: {
               include: {
-                product: {
+                products: {
                   select: { id: true, name: true, sku: true },
                 },
               },

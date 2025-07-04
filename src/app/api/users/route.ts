@@ -192,7 +192,6 @@ export const POST = withApiRateLimit(
           userStatus: "APPROVED", // New users created by admin are auto-approved
           emailVerified: true, // Admin-created users are auto-verified
           emailVerifiedAt: new Date(), // Set verification timestamp
-          notes: userData.notes,
         },
         select: {
           id: true,

@@ -252,7 +252,7 @@ export async function DELETE(request: NextRequest, { params }: RouteParams) {
       if (hardDelete) {
         // Check for related records that would prevent deletion
         const salesTransactions = await prisma.salesTransaction.findFirst({
-          where: { cashierId: userId },
+          where: { user_id: userId },
           select: { id: true },
         });
 
