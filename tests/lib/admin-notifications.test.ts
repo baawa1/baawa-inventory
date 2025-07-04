@@ -1,4 +1,4 @@
-import { createServerSupabaseClient } from "@/lib/supabase";
+import { supabaseAdmin } from "@/lib/supabase";
 import { emailService } from "@/lib/email";
 import {
   getAdminEmailsWithFallback,
