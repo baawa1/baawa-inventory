@@ -629,3 +629,66 @@ globs: **/components/**/_.tsx, **/app/**/_.tsx, **/pages/**/\*.tsx
 - Maintain consistent code formatting and structure
 - Use meaningful component and variable names
 - Implement proper error handling and loading states
+
+## React Data Fetching
+
+- Never use API calls inside useEffect
+- Use TanStack Query for all data fetching
+- Use useMutation for all data modifications
+- Implement proper error boundaries
+- Handle loading states consistently
+- Use proper query key patterns
+
+## TanStack Query Standards
+
+- Use consistent query key naming
+- Implement proper cache invalidation
+- Use proper stale time configurations
+- Handle dependent queries correctly
+- Implement optimistic updates
+- Use proper retry strategies
+
+## API Endpoint Design
+
+- Check for existing endpoints before creating new ones
+- Use RESTful naming conventions
+- Implement proper HTTP status codes
+- Use consistent response formats
+- Handle errors uniformly
+- Implement proper validation
+
+## API Reuse Strategy
+
+- Search codebase for similar patterns first
+- Extend existing endpoints with parameters
+- Reuse existing custom hooks
+- Follow established naming conventions
+- Document endpoint capabilities
+- Avoid duplicate functionality
+
+## Authentication Patterns
+
+- Never trigger auth actions in useEffect
+- Use explicit user-initiated actions only
+- Implement proper session management
+- Handle auth errors gracefully
+- Use consistent auth state patterns
+- Implement proper logout procedures
+
+## Component Architecture
+
+- Separate concerns properly
+- Use composition over inheritance
+- Implement proper prop typing
+- Avoid props drilling
+- Use React.memo for expensive components
+- Implement proper error boundaries
+
+## State Management
+
+- Avoid duplicating server state locally
+- Use TanStack Query as single source of truth
+- Minimize global state usage
+- Use proper state lifting patterns
+- Implement proper form state management
+- Handle state updates immutably

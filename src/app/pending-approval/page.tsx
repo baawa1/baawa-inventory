@@ -2,6 +2,7 @@
 
 import { useRouter } from "next/navigation";
 import { useSession } from "next-auth/react";
+import { useEffect } from "react";
 import {
   Card,
   CardContent,
@@ -23,7 +24,7 @@ import { useUserStatusValidation } from "@/hooks/useUserStatusValidation";
 
 export default function PendingApprovalPage() {
   const router = useRouter();
-  const { data: session } = useSession();
+  const { data: session, status } = useSession();
 
   // Use the custom hook for all session validation logic
   const {
@@ -37,13 +38,64 @@ export default function PendingApprovalPage() {
     autoRefresh: true,
   });
 
+  // Handle redirects in useEffect to avoid setState during render
+  useEffect(() => {
+    if (status === "loading" || isLoading) return; // Wait for loading to complete
+
+    // Redirect unauthenticated users to login
+    if (status === "unauthenticated" || !session) {
+      router.push("/login");
+      return;
+    }
+
+    // Only allow users with specific statuses to access this page
+    const allowedStatuses = ["PENDING", "VERIFIED", "REJECTED", "SUSPENDED"];
+    if (session && userStatus && !allowedStatuses.includes(userStatus)) {
+      // If user is APPROVED, they should be redirected to dashboard (handled by useUserStatusValidation)
+      // If user has any other status, redirect to login
+      if (userStatus !== "APPROVED") {
+        router.push("/login");
+      }
+    }
+  }, [status, session, userStatus, router, isLoading]);
+
   // Show loading state
-  if (isLoading) {
+  if (isLoading || status === "loading") {
     return (
       <div className="min-h-screen flex items-center justify-center bg-gray-50">
         <div className="text-center">
           <Clock className="h-8 w-8 text-gray-400 mx-auto mb-4 animate-spin" />
           <p className="text-gray-600">Loading...</p>
+        </div>
+      </div>
+    );
+  }
+
+  // Show loading state during redirects
+  if (status === "unauthenticated" || !session) {
+    return (
+      <div className="min-h-screen flex items-center justify-center bg-gray-50">
+        <div className="text-center">
+          <Clock className="h-8 w-8 text-gray-400 mx-auto mb-4 animate-spin" />
+          <p className="text-gray-600">Redirecting to login...</p>
+        </div>
+      </div>
+    );
+  }
+
+  // Show loading state for unauthorized access
+  const allowedStatuses = ["PENDING", "VERIFIED", "REJECTED", "SUSPENDED"];
+  if (
+    session &&
+    userStatus &&
+    !allowedStatuses.includes(userStatus) &&
+    userStatus !== "APPROVED"
+  ) {
+    return (
+      <div className="min-h-screen flex items-center justify-center bg-gray-50">
+        <div className="text-center">
+          <AlertTriangle className="h-8 w-8 text-red-400 mx-auto mb-4" />
+          <p className="text-gray-600">Access denied. Redirecting...</p>
         </div>
       </div>
     );

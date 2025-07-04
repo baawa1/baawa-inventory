@@ -1,8 +1,7 @@
 "use client";
 
-import { signOut } from "next-auth/react";
 import { Button } from "@/components/ui/button";
-import { useState } from "react";
+import { useRouter } from "next/navigation";
 
 interface LogoutButtonProps {
   variant?:
@@ -15,6 +14,7 @@ interface LogoutButtonProps {
   size?: "default" | "sm" | "lg" | "icon";
   className?: string;
   children?: React.ReactNode;
+  immediate?: boolean; // Optional prop to force immediate logout
 }
 
 export function LogoutButton({
@@ -22,32 +22,17 @@ export function LogoutButton({
   size = "default",
   className = "ml-auto",
   children,
+  immediate = false,
 }: LogoutButtonProps) {
-  const [isLoggingOut, setIsLoggingOut] = useState(false);
+  const router = useRouter();
 
-  const handleLogout = async () => {
-    try {
-      setIsLoggingOut(true);
-
-      // Clear any local storage items (if any)
-      if (typeof window !== "undefined") {
-        // Clear any app-specific local storage
-        localStorage.removeItem("inventory-cart");
-        localStorage.removeItem("pos-session");
-        sessionStorage.clear();
-      }
-
-      // Sign out with NextAuth
-      await signOut({
-        callbackUrl: "/login",
-        redirect: true,
-      });
-    } catch (error) {
-      console.error("Logout error:", error);
-      // Still attempt to redirect even if there's an error
-      window.location.href = "/login";
-    } finally {
-      setIsLoggingOut(false);
+  const handleLogout = () => {
+    if (immediate) {
+      // Use immediate logout for security-critical scenarios
+      router.push("/logout/immediate");
+    } else {
+      // Use confirmation logout for normal user-initiated logouts
+      router.push("/logout");
     }
   };
 
@@ -57,9 +42,8 @@ export function LogoutButton({
       size={size}
       onClick={handleLogout}
       className={className}
-      disabled={isLoggingOut}
     >
-      {isLoggingOut ? "Signing out..." : children || "Sign Out"}
+      {children || "Sign Out"}
     </Button>
   );
 }
