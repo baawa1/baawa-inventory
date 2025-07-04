@@ -60,7 +60,6 @@ export default function VerifyEmailPage() {
           try {
             // Use NextAuth's update method to refresh the session from the server
             await update();
-            console.log("Session refreshed after email verification");
           } catch (error) {
             console.error("Error updating session:", error);
           }
@@ -233,15 +232,15 @@ export default function VerifyEmailPage() {
               <div className="text-center space-y-4">
                 <div className="bg-yellow-50 border border-yellow-200 rounded-lg p-4">
                   <p className="text-sm text-yellow-700">
-                    Your email is already verified. If your account is approved,
-                    you can log in.
+                    Your email is already verified. Please check your account
+                    status.
                   </p>
                 </div>
                 <Button
-                  onClick={() => router.push("/login")}
+                  onClick={() => router.push("/pending-approval")}
                   className="w-full"
                 >
-                  Go to Login
+                  Check Account Status
                 </Button>
               </div>
             )}
