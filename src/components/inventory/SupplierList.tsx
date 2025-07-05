@@ -67,9 +67,9 @@ export default function SupplierList() {
   const [visibleColumns, setVisibleColumns] = useState([
     "name",
     "contactPerson",
-    "contactInfo",
-    "products",
-    "purchaseOrders",
+    "email",
+    "phone",
+    "address",
     "status",
   ]);
 
@@ -116,9 +116,9 @@ export default function SupplierList() {
   const columns: ColumnConfig[] = [
     { key: "name", label: "Name", sortable: true },
     { key: "contactPerson", label: "Contact Person" },
-    { key: "contactInfo", label: "Contact Info" },
-    { key: "products", label: "Products" },
-    { key: "purchaseOrders", label: "Purchase Orders" },
+    { key: "email", label: "Email" },
+    { key: "phone", label: "Phone" },
+    { key: "address", label: "Address" },
     { key: "status", label: "Status" },
   ];
 
@@ -226,29 +226,37 @@ export default function SupplierList() {
       case "name":
         return <div className="font-medium">{supplier.name}</div>;
       case "contactPerson":
-        return supplier.contactPerson || "-";
-      case "contactInfo":
         return (
-          <div className="space-y-1">
-            {supplier.email && (
-              <div className="flex items-center text-sm text-muted-foreground">
-                <IconMail className="h-3 w-3 mr-1" />
-                {supplier.email}
-              </div>
-            )}
-            {supplier.phone && (
-              <div className="flex items-center text-sm text-muted-foreground">
-                <IconPhone className="h-3 w-3 mr-1" />
-                {supplier.phone}
-              </div>
-            )}
-            {!supplier.email && !supplier.phone && "-"}
-          </div>
+          supplier.contactPerson || (
+            <span className="text-gray-400 italic">No contact</span>
+          )
         );
-      case "products":
-        return "0";
-      case "purchaseOrders":
-        return "0";
+      case "email":
+        return supplier.email ? (
+          <div className="flex items-center text-sm">
+            <IconMail className="h-3 w-3 mr-1" />
+            {supplier.email}
+          </div>
+        ) : (
+          <span className="text-gray-400 italic">No email</span>
+        );
+      case "phone":
+        return supplier.phone ? (
+          <div className="flex items-center text-sm">
+            <IconPhone className="h-3 w-3 mr-1" />
+            {supplier.phone}
+          </div>
+        ) : (
+          <span className="text-gray-400 italic">No phone</span>
+        );
+      case "address":
+        return supplier.address ? (
+          <div className="max-w-xs truncate" title={supplier.address}>
+            {supplier.address}
+          </div>
+        ) : (
+          <span className="text-gray-400 italic">No address</span>
+        );
       case "status":
         return (
           <Badge variant={supplier.isActive ? "default" : "secondary"}>
