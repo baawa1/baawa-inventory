@@ -51,7 +51,7 @@ const fetchCategories = async (
   });
 
   if (filters.search) searchParams.set("search", filters.search);
-  if (filters.status) searchParams.set("status", filters.status);
+  if (filters.status) searchParams.set("isActive", filters.status);
 
   const response = await fetch(`/api/categories?${searchParams.toString()}`);
 
@@ -185,7 +185,7 @@ export const useCategoryOptions = () => {
   return useQuery({
     queryKey: [...queryKeys.categories.all, "options"] as const,
     queryFn: async () => {
-      const response = await fetch("/api/categories?status=active");
+      const response = await fetch("/api/categories?isActive=true");
       if (!response.ok) {
         throw new Error(
           `Failed to fetch category options: ${response.statusText}`
