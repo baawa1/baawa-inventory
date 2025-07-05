@@ -57,7 +57,7 @@ const fetchSuppliers = async (
   });
 
   if (filters.search) searchParams.set("search", filters.search);
-  if (filters.status) searchParams.set("status", filters.status);
+  if (filters.status) searchParams.set("isActive", filters.status);
 
   const response = await fetch(`/api/suppliers?${searchParams.toString()}`);
 
@@ -191,7 +191,7 @@ export const useSupplierOptions = () => {
   return useQuery({
     queryKey: [...queryKeys.suppliers.all, "options"] as const,
     queryFn: async () => {
-      const response = await fetch("/api/suppliers?status=active");
+      const response = await fetch("/api/suppliers?isActive=true");
       if (!response.ok) {
         throw new Error(
           `Failed to fetch supplier options: ${response.statusText}`
