@@ -62,11 +62,11 @@ const fetchCategories = async (
   const data = await response.json();
   return {
     data: data.data || [],
-    pagination: data.pagination || {
-      page: 1,
-      limit: 10,
-      totalPages: 1,
-      totalCategories: 0,
+    pagination: {
+      page: data.pagination?.page || 1,
+      limit: data.pagination?.limit || 10,
+      totalPages: data.pagination?.totalPages || 1,
+      totalCategories: data.pagination?.total || 0,
     },
   };
 };
