@@ -264,6 +264,22 @@ export default function SupplierList() {
             {supplier.isActive ? "Active" : "Inactive"}
           </Badge>
         );
+      case "createdAt":
+        return supplier.createdAt ? (
+          <span className="text-sm">
+            {new Date(supplier.createdAt).toLocaleDateString()}
+          </span>
+        ) : (
+          <span className="text-gray-400 italic">-</span>
+        );
+      case "updatedAt":
+        return supplier.updatedAt ? (
+          <span className="text-sm">
+            {new Date(supplier.updatedAt).toLocaleDateString()}
+          </span>
+        ) : (
+          <span className="text-gray-400 italic">-</span>
+        );
       default:
         return null;
     }

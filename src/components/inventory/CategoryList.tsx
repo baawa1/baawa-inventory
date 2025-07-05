@@ -205,6 +205,14 @@ export function CategoryList({ user }: CategoryListProps) {
         return getStatusBadge(category.isActive);
       case "createdAt":
         return new Date(category.createdAt).toLocaleDateString();
+      case "updatedAt":
+        return category.updatedAt ? (
+          <span className="text-sm">
+            {new Date(category.updatedAt).toLocaleDateString()}
+          </span>
+        ) : (
+          <span className="text-gray-400 italic">-</span>
+        );
       default:
         return null;
     }
