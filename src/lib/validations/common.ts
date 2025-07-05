@@ -20,7 +20,7 @@ export const dateRangeSchema = z.object({
 });
 
 // Enum schemas based on Prisma schema
-export const userRoleSchema = z.enum(["ADMIN", "MANAGER", "STAFF"]);
+export const userRoleSchema = z.enum(["ADMIN", "MANAGER", "EMPLOYEE"]);
 
 export const userStatusSchema = z.enum([
   "PENDING",

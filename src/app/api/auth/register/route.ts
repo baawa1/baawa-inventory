@@ -15,7 +15,7 @@ const registerSchema = z.object({
   lastName: z.string().min(2, "Last name must be at least 2 characters"),
   email: z.string().email("Please enter a valid email address"),
   password: passwordSchema, // Use strong password requirements
-  // Remove role from registration - all self-registered users start as STAFF
+  // Remove role from registration - all self-registered users start as EMPLOYEE
 });
 
 async function handleRegister(request: NextRequest) {
@@ -60,14 +60,14 @@ async function handleRegister(request: NextRequest) {
     } = TokenSecurity.generateEmailVerificationToken(32);
 
     // Create the user with email verification fields
-    // Security: Force role to STAFF regardless of input
+    // Security: Force role to EMPLOYEE regardless of input
     const user = await prisma.user.create({
       data: {
         firstName: userData.firstName,
         lastName: userData.lastName,
         email: userData.email,
         password: hashedPassword,
-        role: "STAFF", // Force role to STAFF for security
+        role: "EMPLOYEE", // Force role to EMPLOYEE for security
         isActive: true,
         userStatus: "PENDING",
         emailVerified: false,

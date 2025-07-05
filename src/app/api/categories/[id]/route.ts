@@ -20,7 +20,7 @@ export async function GET(
     }
 
     // Check if user has permission to view categories
-    if (!["ADMIN", "MANAGER", "STAFF"].includes(session.user.role)) {
+    if (!["ADMIN", "MANAGER", "EMPLOYEE"].includes(session.user.role)) {
       return NextResponse.json(
         { error: "Insufficient permissions" },
         { status: 403 }

@@ -20,7 +20,7 @@ export const createUserSchema = z.object({
   email: emailSchema,
   password: simplePasswordSchema,
   phone: phoneSchema.optional(),
-  role: userRoleSchema.default("STAFF"),
+  role: userRoleSchema.default("EMPLOYEE"),
   isActive: z.boolean().default(true),
   notes: z
     .string()

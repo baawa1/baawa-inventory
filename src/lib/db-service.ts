@@ -109,7 +109,7 @@ export const dbService = {
           email: params.data.email,
           password: hashedPassword,
           phone: params.data.phone || null,
-          role: (params.data.role as any) || "STAFF",
+          role: (params.data.role as any) || "EMPLOYEE",
           isActive: params.data.isActive !== false,
         },
       });

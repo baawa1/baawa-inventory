@@ -179,7 +179,7 @@ export function ProductList({ user }: ProductListProps) {
   const categories = categoriesQuery.data?.data || [];
 
   const canManageProducts = ["ADMIN", "MANAGER"].includes(user.role);
-  const canEditProducts = ["ADMIN", "MANAGER", "STAFF"].includes(user.role);
+  const canEditProducts = ["ADMIN", "MANAGER", "EMPLOYEE"].includes(user.role);
 
   const handleFilterChange = (
     key: keyof ProductFilters,

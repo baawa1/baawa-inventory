@@ -131,7 +131,7 @@ export async function POST(request: NextRequest) {
     }
 
     // Check if user has proper role
-    if (!["ADMIN", "MANAGER", "STAFF"].includes(session.user.role)) {
+    if (!["ADMIN", "MANAGER", "EMPLOYEE"].includes(session.user.role)) {
       return NextResponse.json(
         { error: "Insufficient permissions" },
         { status: 403 }

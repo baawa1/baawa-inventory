@@ -172,7 +172,7 @@ describe("Supabase Database Schema Validation", () => {
 
     it("should validate enum fields", () => {
       const enumFields = {
-        users: { role: ["ADMIN", "MANAGER", "STAFF"] },
+        users: { role: ["ADMIN", "MANAGER", "EMPLOYEE"] },
         products: {
           status: ["ACTIVE", "INACTIVE", "OUT_OF_STOCK", "DISCONTINUED"],
         },
