@@ -692,3 +692,5 @@ globs: **/components/**/_.tsx, **/app/**/_.tsx, **/pages/**/\*.tsx
 - Use proper state lifting patterns
 - Implement proper form state management
 - Handle state updates immutably
+
+- Prices must be in Naira

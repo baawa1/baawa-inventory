@@ -20,6 +20,7 @@ import {
 import { InventoryPageLayout } from "@/components/inventory/InventoryPageLayout";
 import { AddStockDialog } from "@/components/inventory/AddStockDialog";
 import { StockReconciliationDialog } from "@/components/inventory/StockReconciliationDialog";
+import { ProductDetailModal } from "@/components/inventory/ProductDetailModal";
 import {
   IconPlus,
   IconDots,
@@ -100,6 +101,10 @@ export function ProductList({ user }: ProductListProps) {
     useState<APIProduct | null>(null);
   const [reconciliationDialogOpen, setReconciliationDialogOpen] =
     useState(false);
+  const [productDetailModalOpen, setProductDetailModalOpen] = useState(false);
+  const [selectedProductForDetail, setSelectedProductForDetail] = useState<
+    number | null
+  >(null);
 
   // Debounce search term
   const debouncedSearchTerm = useDebounce(filters.search, 300);
@@ -348,14 +353,15 @@ export function ProductList({ user }: ProductListProps) {
       </DropdownMenuTrigger>
       <DropdownMenuContent align="end">
         <DropdownMenuLabel>Actions</DropdownMenuLabel>
-        <DropdownMenuItem asChild>
-          <Link
-            href={`/inventory/products/${product.id}`}
-            className="flex items-center gap-2"
-          >
-            <IconEye className="h-4 w-4" />
-            View Details
-          </Link>
+        <DropdownMenuItem
+          onClick={() => {
+            setSelectedProductForDetail(product.id);
+            setProductDetailModalOpen(true);
+          }}
+          className="flex items-center gap-2"
+        >
+          <IconEye className="h-4 w-4" />
+          View Details
         </DropdownMenuItem>
         {canEditProducts && (
           <>
@@ -510,6 +516,14 @@ export function ProductList({ user }: ProductListProps) {
             onClose={() => setReconciliationDialogOpen(false)}
             onSuccess={() => {
               productsQuery.refetch();
+            }}
+          />
+          <ProductDetailModal
+            productId={selectedProductForDetail}
+            open={productDetailModalOpen}
+            onCloseAction={() => {
+              setProductDetailModalOpen(false);
+              setSelectedProductForDetail(null);
             }}
           />
         </>
