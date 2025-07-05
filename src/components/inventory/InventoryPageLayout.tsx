@@ -73,6 +73,7 @@ export function InventoryPageLayout({
   visibleColumns,
   onColumnsChange,
   columnCustomizerKey,
+  columnCustomizerColumns,
   data,
   renderCell,
   renderActions,
@@ -257,6 +258,7 @@ export function InventoryPageLayout({
                   </div>
                   {onColumnsChange && columnCustomizerKey && (
                     <ColumnCustomizer
+                      columns={columnCustomizerColumns}
                       onColumnsChange={onColumnsChange}
                       localStorageKey={columnCustomizerKey}
                     />

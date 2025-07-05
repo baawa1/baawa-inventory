@@ -13,6 +13,7 @@ import {
 import { InventoryPageLayout } from "@/components/inventory/InventoryPageLayout";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
+import { CATEGORY_COLUMNS } from "@/components/inventory/ColumnCustomizer";
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -176,7 +177,7 @@ export function CategoryList({ user }: CategoryListProps) {
     }
   };
 
-  // Column configuration
+  // Column configuration - only showing actual category fields
   const columns: ColumnConfig[] = [
     { key: "name", label: "Name", sortable: true },
     { key: "description", label: "Description" },
@@ -282,6 +283,7 @@ export function CategoryList({ user }: CategoryListProps) {
         visibleColumns={visibleColumns}
         onColumnsChange={setVisibleColumns}
         columnCustomizerKey="categories-visible-columns"
+        columnCustomizerColumns={CATEGORY_COLUMNS}
         data={categories}
         renderCell={renderCell}
         renderActions={renderActions}
