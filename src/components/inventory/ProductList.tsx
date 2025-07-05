@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import Image from "next/image";
 import Link from "next/link";
 import { useDebounce } from "@/hooks/useDebounce";
@@ -69,6 +69,7 @@ import {
   IconChevronLeft,
   IconChevronRight,
 } from "@tabler/icons-react";
+import { Loader2 } from "lucide-react";
 import { formatCurrency } from "@/lib/utils";
 
 interface User {
@@ -157,16 +158,22 @@ export function ProductList({ user }: ProductListProps) {
   const isSearching = filters.search !== debouncedSearchTerm;
 
   // TanStack Query hooks for data fetching
-  const productsQuery = useProducts({
-    search: debouncedSearchTerm,
-    category: filters.category,
-    brand: filters.brand,
-    status: filters.status,
-    supplier: filters.supplier,
-    lowStock: filters.lowStock,
-    sortBy: filters.sortBy,
-    sortOrder: filters.sortOrder,
-  });
+  const productsQuery = useProducts(
+    {
+      search: debouncedSearchTerm,
+      category: filters.category,
+      brand: filters.brand,
+      status: filters.status,
+      supplier: filters.supplier,
+      lowStock: filters.lowStock,
+      sortBy: filters.sortBy,
+      sortOrder: filters.sortOrder,
+    },
+    {
+      page: pagination.page,
+      limit: pagination.limit,
+    }
+  );
 
   const brandsQuery = useBrands({ isActive: true });
   const categoriesQuery = useCategories({ status: "active" });
@@ -174,6 +181,10 @@ export function ProductList({ user }: ProductListProps) {
   // Extract data from queries
   const products = productsQuery.data?.data || [];
   const loading = productsQuery.isLoading;
+  // Add isFetching state to detect background fetching
+  const isFetching = productsQuery.isFetching;
+  // Determine if this is a refetch (has data but is fetching)
+  const isRefetching = isFetching && !loading;
   const error = productsQuery.error?.message || null;
   const brands = brandsQuery.data?.data || [];
   const categories = categoriesQuery.data?.data || [];
@@ -353,6 +364,20 @@ export function ProductList({ user }: ProductListProps) {
     return column?.label || columnKey;
   };
 
+  // Update pagination state when API response changes
+  useEffect(() => {
+    if (productsQuery.data?.pagination) {
+      const apiPagination = productsQuery.data.pagination;
+      setPagination((prev) => ({
+        ...prev,
+        totalPages:
+          apiPagination.totalPages ||
+          Math.ceil((apiPagination.total || 0) / prev.limit),
+        totalProducts: apiPagination.total || 0,
+      }));
+    }
+  }, [productsQuery.data?.pagination]);
+
   return (
     <>
       <div className="flex flex-1 flex-col">
@@ -420,7 +445,7 @@ export function ProductList({ user }: ProductListProps) {
                       />
                       {isSearching && (
                         <div className="absolute right-3 top-1/2 transform -translate-y-1/2">
-                          <div className="h-4 w-4 animate-spin rounded-full border-2 border-gray-300 border-t-gray-600"></div>
+                          <Loader2 className="h-4 w-4 animate-spin text-gray-400" />
                         </div>
                       )}
                     </div>
@@ -623,89 +648,104 @@ export function ProductList({ user }: ProductListProps) {
                     </div>
                   ) : (
                     <>
-                      <Table>
-                        <TableHeader>
-                          <TableRow>
-                            {visibleColumns.map((columnKey) => (
-                              <TableHead key={columnKey}>
-                                {getColumnLabel(columnKey)}
-                              </TableHead>
-                            ))}
-                            <TableHead className="text-right">
-                              Actions
-                            </TableHead>
-                          </TableRow>
-                        </TableHeader>
-                        <TableBody>
-                          {products.map((product) => (
-                            <TableRow key={product.id}>
+                      <div className="relative">
+                        {/* Loading overlay for refetching data */}
+                        {isRefetching && (
+                          <div className="absolute inset-0 bg-white/80 backdrop-blur-sm z-10 flex items-center justify-center rounded-md">
+                            <div className="flex items-center gap-2 bg-white px-4 py-2 rounded-lg shadow-sm border">
+                              <Loader2 className="w-4 h-4 animate-spin text-blue-600" />
+                              <span className="text-sm text-gray-600">
+                                {isSearching ? "Searching..." : "Loading..."}
+                              </span>
+                            </div>
+                          </div>
+                        )}
+                        <Table>
+                          <TableHeader>
+                            <TableRow>
                               {visibleColumns.map((columnKey) => (
-                                <TableCell key={columnKey}>
-                                  {renderCellContent(product, columnKey)}
-                                </TableCell>
+                                <TableHead key={columnKey}>
+                                  {getColumnLabel(columnKey)}
+                                </TableHead>
                               ))}
-                              <TableCell className="text-right">
-                                <DropdownMenu>
-                                  <DropdownMenuTrigger asChild>
-                                    <Button
-                                      variant="ghost"
-                                      className="h-8 w-8 p-0"
-                                    >
-                                      <IconDots className="h-4 w-4" />
-                                    </Button>
-                                  </DropdownMenuTrigger>
-                                  <DropdownMenuContent align="end">
-                                    <DropdownMenuLabel>
-                                      Actions
-                                    </DropdownMenuLabel>
-                                    <DropdownMenuItem asChild>
-                                      <a
-                                        href={`/inventory/products/${product.id}`}
-                                        className="flex items-center gap-2"
+                              <TableHead className="text-right">
+                                Actions
+                              </TableHead>
+                            </TableRow>
+                          </TableHeader>
+                          <TableBody>
+                            {products.map((product) => (
+                              <TableRow key={product.id}>
+                                {visibleColumns.map((columnKey) => (
+                                  <TableCell key={columnKey}>
+                                    {renderCellContent(product, columnKey)}
+                                  </TableCell>
+                                ))}
+                                <TableCell className="text-right">
+                                  <DropdownMenu>
+                                    <DropdownMenuTrigger asChild>
+                                      <Button
+                                        variant="ghost"
+                                        className="h-8 w-8 p-0"
                                       >
-                                        <IconEye className="h-4 w-4" />
-                                        View Details
-                                      </a>
-                                    </DropdownMenuItem>
-                                    {canEditProducts && (
-                                      <>
-                                        <DropdownMenuItem asChild>
-                                          <Link
-                                            href={`/inventory/products/${product.id}/edit`}
-                                            className="flex items-center gap-2"
-                                          >
-                                            <IconEdit className="h-4 w-4" />
-                                            Edit Product
-                                          </Link>
-                                        </DropdownMenuItem>
-                                        <DropdownMenuItem
-                                          onClick={() => {
-                                            setSelectedProductForStock(product);
-                                            setAddStockDialogOpen(true);
-                                          }}
+                                        <IconDots className="h-4 w-4" />
+                                      </Button>
+                                    </DropdownMenuTrigger>
+                                    <DropdownMenuContent align="end">
+                                      <DropdownMenuLabel>
+                                        Actions
+                                      </DropdownMenuLabel>
+                                      <DropdownMenuItem asChild>
+                                        <a
+                                          href={`/inventory/products/${product.id}`}
                                           className="flex items-center gap-2"
                                         >
-                                          <IconPackages className="h-4 w-4" />
-                                          Add Stock
-                                        </DropdownMenuItem>
-                                      </>
-                                    )}
-                                    {canManageProducts && (
-                                      <>
-                                        <DropdownMenuSeparator />
-                                        <DropdownMenuItem className="text-red-600">
-                                          <IconTrash className="h-4 w-4 mr-2" />
-                                          Archive Product
-                                        </DropdownMenuItem>
-                                      </>
-                                    )}
-                                  </DropdownMenuContent>
-                                </DropdownMenu>
-                              </TableCell>
-                            </TableRow>
-                          ))}
-                        </TableBody>
-                      </Table>
+                                          <IconEye className="h-4 w-4" />
+                                          View Details
+                                        </a>
+                                      </DropdownMenuItem>
+                                      {canEditProducts && (
+                                        <>
+                                          <DropdownMenuItem asChild>
+                                            <Link
+                                              href={`/inventory/products/${product.id}/edit`}
+                                              className="flex items-center gap-2"
+                                            >
+                                              <IconEdit className="h-4 w-4" />
+                                              Edit Product
+                                            </Link>
+                                          </DropdownMenuItem>
+                                          <DropdownMenuItem
+                                            onClick={() => {
+                                              setSelectedProductForStock(
+                                                product
+                                              );
+                                              setAddStockDialogOpen(true);
+                                            }}
+                                            className="flex items-center gap-2"
+                                          >
+                                            <IconPackages className="h-4 w-4" />
+                                            Add Stock
+                                          </DropdownMenuItem>
+                                        </>
+                                      )}
+                                      {canManageProducts && (
+                                        <>
+                                          <DropdownMenuSeparator />
+                                          <DropdownMenuItem className="text-red-600">
+                                            <IconTrash className="h-4 w-4 mr-2" />
+                                            Archive Product
+                                          </DropdownMenuItem>
+                                        </>
+                                      )}
+                                    </DropdownMenuContent>
+                                  </DropdownMenu>
+                                </TableCell>
+                              </TableRow>
+                            ))}
+                          </TableBody>
+                        </Table>
+                      </div>
 
                       {/* Pagination */}
                       {pagination.totalPages > 1 && (
@@ -748,12 +788,13 @@ export function ProductList({ user }: ProductListProps) {
                                 <PaginationItem>
                                   <PaginationPrevious
                                     onClick={() =>
+                                      !isRefetching &&
                                       handlePageChange(
                                         Math.max(1, pagination.page - 1)
                                       )
                                     }
                                     className={
-                                      pagination.page === 1
+                                      pagination.page === 1 || isRefetching
                                         ? "pointer-events-none opacity-50"
                                         : "cursor-pointer"
                                     }
@@ -765,8 +806,14 @@ export function ProductList({ user }: ProductListProps) {
                                   <>
                                     <PaginationItem>
                                       <PaginationLink
-                                        onClick={() => handlePageChange(1)}
-                                        className="cursor-pointer"
+                                        onClick={() =>
+                                          !isRefetching && handlePageChange(1)
+                                        }
+                                        className={
+                                          isRefetching
+                                            ? "cursor-not-allowed opacity-50"
+                                            : "cursor-pointer"
+                                        }
                                       >
                                         1
                                       </PaginationLink>
@@ -784,9 +831,14 @@ export function ProductList({ user }: ProductListProps) {
                                   <PaginationItem>
                                     <PaginationLink
                                       onClick={() =>
+                                        !isRefetching &&
                                         handlePageChange(pagination.page - 1)
                                       }
-                                      className="cursor-pointer"
+                                      className={
+                                        isRefetching
+                                          ? "cursor-not-allowed opacity-50"
+                                          : "cursor-pointer"
+                                      }
                                     >
                                       {pagination.page - 1}
                                     </PaginationLink>
@@ -808,9 +860,14 @@ export function ProductList({ user }: ProductListProps) {
                                   <PaginationItem>
                                     <PaginationLink
                                       onClick={() =>
+                                        !isRefetching &&
                                         handlePageChange(pagination.page + 1)
                                       }
-                                      className="cursor-pointer"
+                                      className={
+                                        isRefetching
+                                          ? "cursor-not-allowed opacity-50"
+                                          : "cursor-pointer"
+                                      }
                                     >
                                       {pagination.page + 1}
                                     </PaginationLink>
@@ -830,11 +887,16 @@ export function ProductList({ user }: ProductListProps) {
                                     <PaginationItem>
                                       <PaginationLink
                                         onClick={() =>
+                                          !isRefetching &&
                                           handlePageChange(
                                             pagination.totalPages
                                           )
                                         }
-                                        className="cursor-pointer"
+                                        className={
+                                          isRefetching
+                                            ? "cursor-not-allowed opacity-50"
+                                            : "cursor-pointer"
+                                        }
                                       >
                                         {pagination.totalPages}
                                       </PaginationLink>
@@ -845,6 +907,7 @@ export function ProductList({ user }: ProductListProps) {
                                 <PaginationItem>
                                   <PaginationNext
                                     onClick={() =>
+                                      !isRefetching &&
                                       handlePageChange(
                                         Math.min(
                                           pagination.totalPages,
@@ -853,7 +916,8 @@ export function ProductList({ user }: ProductListProps) {
                                       )
                                     }
                                     className={
-                                      pagination.page === pagination.totalPages
+                                      pagination.page ===
+                                        pagination.totalPages || isRefetching
                                         ? "pointer-events-none opacity-50"
                                         : "cursor-pointer"
                                     }
