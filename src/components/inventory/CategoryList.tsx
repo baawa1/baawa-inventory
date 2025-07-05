@@ -101,7 +101,7 @@ export function CategoryList({ user }: CategoryListProps) {
 
   // Update pagination when data changes
   React.useEffect(() => {
-    setPagination(prev => ({
+    setPagination((prev) => ({
       ...prev,
       totalItems: total,
       totalPages: Math.ceil(total / prev.limit),
@@ -195,8 +195,10 @@ export function CategoryList({ user }: CategoryListProps) {
       case "name":
         return <span className="font-medium">{category.name}</span>;
       case "description":
-        return category.description || (
-          <span className="text-gray-400 italic">No description</span>
+        return (
+          category.description || (
+            <span className="text-gray-400 italic">No description</span>
+          )
         );
       case "isActive":
         return getStatusBadge(category.isActive);
