@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import React, { useState } from "react";
 import Link from "next/link";
 import { useSession } from "next-auth/react";
 import { toast } from "sonner";
@@ -10,40 +10,9 @@ import {
   useDeleteCategory,
   type Category as APICategory,
 } from "@/hooks/api/categories";
-import { PageHeader } from "@/components/ui/page-header";
+import { InventoryPageLayout } from "@/components/inventory/InventoryPageLayout";
 import { Button } from "@/components/ui/button";
-import { Input } from "@/components/ui/input";
-import {
-  Card,
-  CardContent,
-  CardDescription,
-  CardHeader,
-  CardTitle,
-} from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
-import {
-  Table,
-  TableBody,
-  TableCell,
-  TableHead,
-  TableHeader,
-  TableRow,
-} from "@/components/ui/table";
-import {
-  Select,
-  SelectContent,
-  SelectItem,
-  SelectTrigger,
-  SelectValue,
-} from "@/components/ui/select";
-import {
-  Pagination,
-  PaginationContent,
-  PaginationItem,
-  PaginationLink,
-  PaginationNext,
-  PaginationPrevious,
-} from "@/components/ui/pagination";
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -61,15 +30,14 @@ import {
   AlertDialogTitle,
 } from "@/components/ui/alert-dialog";
 import {
-  IconSearch,
   IconPlus,
   IconDots,
   IconEdit,
   IconTrash,
-  IconFilter,
   IconTag,
   IconAlertTriangle,
 } from "@tabler/icons-react";
+import type { ColumnConfig, FilterConfig } from "@/types/inventory";
 
 interface User {
   id: string;
@@ -85,24 +53,24 @@ interface CategoryListProps {
   user: User;
 }
 
-interface CategoriesResponse {
-  success: boolean;
-  data: APICategory[];
-  pagination: {
-    total: number;
-    limit: number;
-    offset: number;
-  };
-}
-
 export function CategoryList({ user }: CategoryListProps) {
-  const { status } = useSession();
-  const [currentPage, setCurrentPage] = useState(1);
-  const [itemsPerPage] = useState(10);
   const [deleteDialogOpen, setDeleteDialogOpen] = useState(false);
   const [categoryToDelete, setCategoryToDelete] = useState<APICategory | null>(
     null
   );
+
+  const [pagination, setPagination] = useState({
+    page: 1,
+    limit: 10,
+    totalPages: 1,
+    totalItems: 0,
+  });
+  const [visibleColumns, setVisibleColumns] = useState<string[]>([
+    "name",
+    "description",
+    "isActive",
+    "createdAt",
+  ]);
 
   // Filters
   const [filters, setFilters] = useState({
@@ -131,25 +99,54 @@ export function CategoryList({ user }: CategoryListProps) {
   const loading = categoriesQuery.isLoading;
   const total = categoriesQuery.data?.pagination?.totalCategories || 0;
 
+  // Update pagination when data changes
+  React.useEffect(() => {
+    setPagination(prev => ({
+      ...prev,
+      totalItems: total,
+      totalPages: Math.ceil(total / prev.limit),
+    }));
+  }, [total]);
+
   // Permission checks
   const canManageCategories = ["ADMIN", "MANAGER"].includes(user.role);
   const canDeleteCategories = user.role === "ADMIN";
 
+  // Filter configurations
+  const filterConfigs: FilterConfig[] = [
+    {
+      key: "isActive",
+      label: "Status",
+      type: "select",
+      options: [
+        { value: "true", label: "Active" },
+        { value: "false", label: "Inactive" },
+      ],
+      placeholder: "All Status",
+    },
+  ];
+
   // Handle filter changes
-  const handleFilterChange = (key: string, value: string) => {
-    // Convert "all" back to empty string for the API
-    const apiValue = value === "all" ? "" : value;
-    setFilters((prev) => ({ ...prev, [key]: apiValue }));
-    setCurrentPage(1); // Reset to first page when filtering
+  const handleFilterChange = (key: string, value: any) => {
+    setFilters((prev) => ({ ...prev, [key]: value }));
+    setPagination((prev) => ({ ...prev, page: 1 }));
   };
 
   // Clear all filters
-  const clearFilters = () => {
+  const handleResetFilters = () => {
     setFilters({
       search: "",
       isActive: "",
     });
-    setCurrentPage(1);
+    setPagination((prev) => ({ ...prev, page: 1 }));
+  };
+
+  const handlePageChange = (newPage: number) => {
+    setPagination((prev) => ({ ...prev, page: newPage }));
+  };
+
+  const handlePageSizeChange = (newSize: number) => {
+    setPagination((prev) => ({ ...prev, limit: newSize, page: 1 }));
   };
 
   // Handle delete category
@@ -179,289 +176,139 @@ export function CategoryList({ user }: CategoryListProps) {
     }
   };
 
-  // Calculate pagination
-  const totalPages = Math.ceil(total / itemsPerPage);
-  const showPagination = totalPages > 1;
+  // Column configuration
+  const columns: ColumnConfig[] = [
+    { key: "name", label: "Name", sortable: true },
+    { key: "description", label: "Description" },
+    { key: "isActive", label: "Status" },
+    { key: "createdAt", label: "Created" },
+  ];
 
-  // Handle loading and authentication states
-  if (status === "loading") {
-    return (
-      <div className="flex flex-1 flex-col">
-        <div className="@container/main flex flex-1 flex-col gap-2">
-          <div className="flex flex-col gap-4 py-4 md:gap-6 md:py-6">
-            <div className="flex items-center justify-center py-8">
-              <div className="text-sm text-gray-500">Loading...</div>
-            </div>
-          </div>
-        </div>
-      </div>
-    );
+  // Add actions column if user has permissions
+  if (canManageCategories) {
+    columns.push({ key: "actions", label: "Actions" });
   }
 
-  if (status === "unauthenticated") {
+  // Render cell function
+  const renderCell = (category: APICategory, columnKey: string) => {
+    switch (columnKey) {
+      case "name":
+        return <span className="font-medium">{category.name}</span>;
+      case "description":
+        return category.description || (
+          <span className="text-gray-400 italic">No description</span>
+        );
+      case "isActive":
+        return getStatusBadge(category.isActive);
+      case "createdAt":
+        return new Date(category.createdAt).toLocaleDateString();
+      default:
+        return null;
+    }
+  };
+
+  // Render actions
+  const renderActions = (category: APICategory) => {
+    if (!canManageCategories) return null;
+
     return (
-      <div className="flex flex-1 flex-col">
-        <div className="@container/main flex flex-1 flex-col gap-2">
-          <div className="flex flex-col gap-4 py-4 md:gap-6 md:py-6">
-            <div className="flex items-center justify-center py-8">
-              <div className="text-sm text-gray-500">
-                Please log in to access categories.
-              </div>
-            </div>
-          </div>
-        </div>
-      </div>
+      <DropdownMenu>
+        <DropdownMenuTrigger asChild>
+          <Button variant="ghost" className="h-8 w-8 p-0">
+            <span className="sr-only">Open menu</span>
+            <IconDots className="h-4 w-4" />
+          </Button>
+        </DropdownMenuTrigger>
+        <DropdownMenuContent align="end">
+          <DropdownMenuItem asChild>
+            <Link href={`/inventory/categories/${category.id}/edit`}>
+              <IconEdit className="mr-2 h-4 w-4" />
+              Edit
+            </Link>
+          </DropdownMenuItem>
+          {canDeleteCategories && (
+            <DropdownMenuItem
+              className="text-red-600"
+              onClick={() => {
+                setCategoryToDelete(category);
+                setDeleteDialogOpen(true);
+              }}
+            >
+              <IconTrash className="mr-2 h-4 w-4" />
+              Delete
+            </DropdownMenuItem>
+          )}
+        </DropdownMenuContent>
+      </DropdownMenu>
     );
-  }
+  };
 
   return (
     <>
-      <div className="flex flex-1 flex-col">
-        <div className="@container/main flex flex-1 flex-col gap-2">
-          <div className="flex flex-col gap-4 py-4 md:gap-6 md:py-6">
-            {/* Header Section */}
-            <PageHeader
-              title="Categories"
-              description="Manage product categories and organize your inventory"
-              action={
-                canManageCategories
-                  ? {
-                      label: "Add Category",
-                      href: "/inventory/categories/add",
-                      icon: <IconPlus className="h-4 w-4" />,
-                    }
-                  : undefined
-              }
-            />
-
-            {/* Filters Section */}
-            <div className="px-4 lg:px-6">
-              <Card>
-                <CardHeader>
-                  <CardTitle className="flex items-center gap-2">
-                    <IconFilter className="h-5 w-5" />
-                    Filters & Search
-                  </CardTitle>
-                  <CardDescription>
-                    Filter and search through your product categories
-                  </CardDescription>
-                </CardHeader>
-                <CardContent>
-                  <div className="flex items-center justify-start gap-4">
-                    {/* Search */}
-                    <div className="relative">
-                      <IconSearch className="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-gray-400" />
-                      <Input
-                        placeholder="Search categories..."
-                        value={filters.search}
-                        onChange={(e) =>
-                          handleFilterChange("search", e.target.value)
-                        }
-                        className="pl-9 pr-8"
-                      />
-                      {isSearching && (
-                        <div className="absolute right-3 top-1/2 transform -translate-y-1/2">
-                          <div className="h-4 w-4 animate-spin rounded-full border-2 border-gray-300 border-t-gray-600"></div>
-                        </div>
-                      )}
-                    </div>
-
-                    {/* Status Filter */}
-                    <Select
-                      value={filters.isActive === "" ? "all" : filters.isActive}
-                      onValueChange={(value) =>
-                        handleFilterChange("isActive", value)
-                      }
-                    >
-                      <SelectTrigger className="w-48">
-                        <SelectValue placeholder="Filter by status" />
-                      </SelectTrigger>
-                      <SelectContent>
-                        <SelectItem value="all">All Status</SelectItem>
-                        <SelectItem value="true">Active</SelectItem>
-                        <SelectItem value="false">Inactive</SelectItem>
-                      </SelectContent>
-                    </Select>
-
-                    {/* Clear Filters */}
-                    <Button variant="outline" onClick={clearFilters}>
-                      Clear Filters
-                    </Button>
-                  </div>
-                </CardContent>
-              </Card>
-            </div>
-
-            {/* Categories Table */}
-            <div className="px-4 lg:px-6">
-              <Card>
-                <CardHeader>
-                  <CardTitle className="flex items-center gap-2">
-                    <IconTag className="h-5 w-5" />
-                    Categories ({total})
-                  </CardTitle>
-                  <CardDescription>
-                    Manage your product categories
-                  </CardDescription>
-                </CardHeader>
-                <CardContent>
-                  {loading ? (
-                    <div className="flex items-center justify-center py-8">
-                      <div className="text-sm text-gray-500">
-                        Loading categories...
-                      </div>
-                    </div>
-                  ) : (categories?.length || 0) === 0 ? (
-                    <div className="flex flex-col items-center justify-center py-8 text-center">
-                      <IconTag className="h-12 w-12 text-gray-400 mb-4" />
-                      <h3 className="text-lg font-medium text-gray-900 mb-2">
-                        No categories found
-                      </h3>
-                      <p className="text-sm text-gray-500 mb-4">
-                        {debouncedSearchTerm || filters.isActive
-                          ? "Try adjusting your filters to see more results."
-                          : "Get started by creating your first category."}
-                      </p>
-                      {canManageCategories && (
-                        <Button asChild>
-                          <Link href="/inventory/categories/add">
-                            <IconPlus className="h-4 w-4 mr-2" />
-                            Add Category
-                          </Link>
-                        </Button>
-                      )}
-                    </div>
-                  ) : (
-                    <>
-                      <Table>
-                        <TableHeader>
-                          <TableRow>
-                            <TableHead>Name</TableHead>
-                            <TableHead>Description</TableHead>
-                            <TableHead>Status</TableHead>
-                            <TableHead>Created</TableHead>
-                            {canManageCategories && (
-                              <TableHead className="w-[70px]">
-                                Actions
-                              </TableHead>
-                            )}
-                          </TableRow>
-                        </TableHeader>
-                        <TableBody>
-                          {(categories || []).map((category) => (
-                            <TableRow key={category.id}>
-                              <TableCell className="font-medium">
-                                {category.name}
-                              </TableCell>
-                              <TableCell>
-                                {category.description || (
-                                  <span className="text-gray-400 italic">
-                                    No description
-                                  </span>
-                                )}
-                              </TableCell>
-                              <TableCell>
-                                {getStatusBadge(category.isActive)}
-                              </TableCell>
-                              <TableCell>
-                                {new Date(
-                                  category.createdAt
-                                ).toLocaleDateString()}
-                              </TableCell>
-                              {canManageCategories && (
-                                <TableCell>
-                                  <DropdownMenu>
-                                    <DropdownMenuTrigger asChild>
-                                      <Button
-                                        variant="ghost"
-                                        className="h-8 w-8 p-0"
-                                      >
-                                        <span className="sr-only">
-                                          Open menu
-                                        </span>
-                                        <IconDots className="h-4 w-4" />
-                                      </Button>
-                                    </DropdownMenuTrigger>
-                                    <DropdownMenuContent align="end">
-                                      <DropdownMenuItem asChild>
-                                        <Link
-                                          href={`/inventory/categories/${category.id}/edit`}
-                                        >
-                                          <IconEdit className="mr-2 h-4 w-4" />
-                                          Edit
-                                        </Link>
-                                      </DropdownMenuItem>
-                                      {canDeleteCategories && (
-                                        <DropdownMenuItem
-                                          className="text-red-600"
-                                          onClick={() => {
-                                            setCategoryToDelete(category);
-                                            setDeleteDialogOpen(true);
-                                          }}
-                                        >
-                                          <IconTrash className="mr-2 h-4 w-4" />
-                                          Delete
-                                        </DropdownMenuItem>
-                                      )}
-                                    </DropdownMenuContent>
-                                  </DropdownMenu>
-                                </TableCell>
-                              )}
-                            </TableRow>
-                          ))}
-                        </TableBody>
-                      </Table>
-
-                      {/* Pagination */}
-                      {showPagination && (
-                        <div className="mt-4">
-                          <Pagination>
-                            <PaginationContent>
-                              <PaginationPrevious
-                                onClick={() =>
-                                  setCurrentPage(Math.max(1, currentPage - 1))
-                                }
-                                className={
-                                  currentPage === 1
-                                    ? "pointer-events-none opacity-50"
-                                    : "cursor-pointer"
-                                }
-                              />
-                              {Array.from({ length: totalPages }, (_, i) => (
-                                <PaginationItem key={i + 1}>
-                                  <PaginationLink
-                                    onClick={() => setCurrentPage(i + 1)}
-                                    isActive={currentPage === i + 1}
-                                    className="cursor-pointer"
-                                  >
-                                    {i + 1}
-                                  </PaginationLink>
-                                </PaginationItem>
-                              ))}
-                              <PaginationNext
-                                onClick={() =>
-                                  setCurrentPage(
-                                    Math.min(totalPages, currentPage + 1)
-                                  )
-                                }
-                                className={
-                                  currentPage === totalPages
-                                    ? "pointer-events-none opacity-50"
-                                    : "cursor-pointer"
-                                }
-                              />
-                            </PaginationContent>
-                          </Pagination>
-                        </div>
-                      )}
-                    </>
-                  )}
-                </CardContent>
-              </Card>
-            </div>
-          </div>
-        </div>
-      </div>
+      <InventoryPageLayout
+        // Header
+        title="Categories"
+        description="Manage product categories and organize your inventory"
+        actions={
+          canManageCategories ? (
+            <Button asChild>
+              <Link
+                href="/inventory/categories/add"
+                className="flex items-center gap-2"
+              >
+                <IconPlus className="h-4 w-4" />
+                Add Category
+              </Link>
+            </Button>
+          ) : undefined
+        }
+        // Filters
+        searchPlaceholder="Search categories..."
+        searchValue={filters.search}
+        onSearchChange={(value) => handleFilterChange("search", value)}
+        isSearching={isSearching}
+        filters={filterConfigs}
+        filterValues={filters}
+        onFilterChange={handleFilterChange}
+        onResetFilters={handleResetFilters}
+        // Table
+        tableTitle="Categories"
+        totalCount={total}
+        currentCount={categories.length}
+        showingText={`Showing ${categories.length} of ${total} categories`}
+        columns={columns}
+        visibleColumns={visibleColumns}
+        onColumnsChange={setVisibleColumns}
+        columnCustomizerKey="categories-visible-columns"
+        data={categories}
+        renderCell={renderCell}
+        renderActions={renderActions}
+        // Pagination
+        pagination={pagination}
+        onPageChange={handlePageChange}
+        onPageSizeChange={handlePageSizeChange}
+        // Loading states
+        isLoading={loading}
+        isRefetching={categoriesQuery.isFetching && !loading}
+        error={categoriesQuery.error?.message}
+        // Empty state
+        emptyStateIcon={<IconTag className="h-12 w-12 text-gray-400" />}
+        emptyStateMessage={
+          debouncedSearchTerm || filters.isActive
+            ? "No categories found matching your filters."
+            : "No categories found. Get started by creating your first category."
+        }
+        emptyStateAction={
+          canManageCategories ? (
+            <Button asChild>
+              <Link href="/inventory/categories/add">
+                <IconPlus className="h-4 w-4 mr-2" />
+                Add Category
+              </Link>
+            </Button>
+          ) : undefined
+        }
+      />
 
       {/* Delete Confirmation Dialog */}
       <AlertDialog open={deleteDialogOpen} onOpenChange={setDeleteDialogOpen}>
