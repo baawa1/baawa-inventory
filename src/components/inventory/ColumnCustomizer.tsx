@@ -100,12 +100,100 @@ export const PRODUCT_COLUMNS: TableColumn[] = [
   },
 ];
 
+export const SUPPLIER_COLUMNS: TableColumn[] = [
+  {
+    key: "name",
+    label: "Name",
+    sortable: true,
+    defaultVisible: true,
+    required: true,
+  },
+  {
+    key: "contactPerson",
+    label: "Contact Person",
+    sortable: false,
+    defaultVisible: true,
+  },
+  {
+    key: "email",
+    label: "Email",
+    sortable: false,
+    defaultVisible: true,
+  },
+  {
+    key: "phone",
+    label: "Phone",
+    sortable: false,
+    defaultVisible: true,
+  },
+  {
+    key: "address",
+    label: "Address",
+    sortable: false,
+    defaultVisible: true,
+  },
+  {
+    key: "status",
+    label: "Status",
+    sortable: true,
+    defaultVisible: true,
+  },
+  {
+    key: "createdAt",
+    label: "Created Date",
+    sortable: true,
+    defaultVisible: false,
+  },
+  {
+    key: "updatedAt",
+    label: "Updated Date",
+    sortable: true,
+    defaultVisible: false,
+  },
+];
+
+export const CATEGORY_COLUMNS: TableColumn[] = [
+  {
+    key: "name",
+    label: "Name",
+    sortable: true,
+    defaultVisible: true,
+    required: true,
+  },
+  {
+    key: "description",
+    label: "Description",
+    sortable: false,
+    defaultVisible: true,
+  },
+  {
+    key: "isActive",
+    label: "Status",
+    sortable: true,
+    defaultVisible: true,
+  },
+  {
+    key: "createdAt",
+    label: "Created Date",
+    sortable: true,
+    defaultVisible: true,
+  },
+  {
+    key: "updatedAt",
+    label: "Updated Date",
+    sortable: true,
+    defaultVisible: false,
+  },
+];
+
 interface ColumnCustomizerProps {
+  columns?: TableColumn[];
   onColumnsChange: (visibleColumns: string[]) => void;
   localStorageKey?: string;
 }
 
 export function ColumnCustomizer({
+  columns = PRODUCT_COLUMNS,
   onColumnsChange,
   localStorageKey = "products-visible-columns",
 }: ColumnCustomizerProps) {
@@ -118,33 +206,33 @@ export function ColumnCustomizer({
       try {
         const parsed = JSON.parse(savedColumns);
         // Ensure required columns are always included
-        const requiredColumns = PRODUCT_COLUMNS.filter(
-          (col) => col.required
-        ).map((col) => col.key);
+        const requiredColumns = columns
+          .filter((col) => col.required)
+          .map((col) => col.key);
         const mergedColumns = [...new Set([...requiredColumns, ...parsed])];
         setVisibleColumns(mergedColumns);
         onColumnsChange(mergedColumns);
       } catch {
         // Fallback to defaults if parsing fails
-        const defaultColumns = PRODUCT_COLUMNS.filter(
-          (col) => col.defaultVisible
-        ).map((col) => col.key);
+        const defaultColumns = columns
+          .filter((col) => col.defaultVisible)
+          .map((col) => col.key);
         setVisibleColumns(defaultColumns);
         onColumnsChange(defaultColumns);
       }
     } else {
       // Use default visible columns
-      const defaultColumns = PRODUCT_COLUMNS.filter(
-        (col) => col.defaultVisible
-      ).map((col) => col.key);
+      const defaultColumns = columns
+        .filter((col) => col.defaultVisible)
+        .map((col) => col.key);
       setVisibleColumns(defaultColumns);
       onColumnsChange(defaultColumns);
     }
-  }, [localStorageKey, onColumnsChange]);
+  }, [localStorageKey, onColumnsChange, columns]);
 
   const handleColumnToggle = (columnKey: string, checked: boolean) => {
     // Don't allow disabling required columns
-    const column = PRODUCT_COLUMNS.find((col) => col.key === columnKey);
+    const column = columns.find((col) => col.key === columnKey);
     if (!checked && column?.required) {
       return;
     }
@@ -161,9 +249,9 @@ export function ColumnCustomizer({
   };
 
   const resetToDefaults = () => {
-    const defaultColumns = PRODUCT_COLUMNS.filter(
-      (col) => col.defaultVisible
-    ).map((col) => col.key);
+    const defaultColumns = columns
+      .filter((col) => col.defaultVisible)
+      .map((col) => col.key);
 
     setVisibleColumns(defaultColumns);
     onColumnsChange(defaultColumns);
@@ -171,16 +259,16 @@ export function ColumnCustomizer({
   };
 
   const showAllColumns = () => {
-    const allColumns = PRODUCT_COLUMNS.map((col) => col.key);
+    const allColumns = columns.map((col) => col.key);
     setVisibleColumns(allColumns);
     onColumnsChange(allColumns);
     localStorage.setItem(localStorageKey, JSON.stringify(allColumns));
   };
 
   const hideOptionalColumns = () => {
-    const requiredColumns = PRODUCT_COLUMNS.filter((col) => col.required).map(
-      (col) => col.key
-    );
+    const requiredColumns = columns
+      .filter((col) => col.required)
+      .map((col) => col.key);
 
     setVisibleColumns(requiredColumns);
     onColumnsChange(requiredColumns);
@@ -188,7 +276,7 @@ export function ColumnCustomizer({
   };
 
   const visibleCount = visibleColumns.length;
-  const totalCount = PRODUCT_COLUMNS.length;
+  const totalCount = columns.length;
 
   return (
     <DropdownMenu>
@@ -243,7 +331,7 @@ export function ColumnCustomizer({
         <DropdownMenuSeparator />
 
         <div className="max-h-64 overflow-y-auto">
-          {PRODUCT_COLUMNS.map((column) => (
+          {columns.map((column) => (
             <DropdownMenuCheckboxItem
               key={column.key}
               checked={visibleColumns.includes(column.key)}

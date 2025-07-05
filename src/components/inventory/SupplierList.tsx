@@ -12,6 +12,7 @@ import {
 import { InventoryPageLayout } from "./InventoryPageLayout";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
+import { SUPPLIER_COLUMNS } from "@/components/inventory/ColumnCustomizer";
 import {
   AlertDialog,
   AlertDialogAction,
@@ -112,7 +113,7 @@ export default function SupplierList() {
     user && ["ADMIN", "MANAGER"].includes(user.role || "");
   const canDeactivateSuppliers = user && user.role === "ADMIN";
 
-  // Column definitions
+  // Column definitions - only showing actual supplier fields
   const columns: ColumnConfig[] = [
     { key: "name", label: "Name", sortable: true },
     { key: "contactPerson", label: "Contact Person" },
@@ -411,6 +412,7 @@ export default function SupplierList() {
         visibleColumns={visibleColumns}
         onColumnsChange={setVisibleColumns}
         columnCustomizerKey="suppliers-columns"
+        columnCustomizerColumns={SUPPLIER_COLUMNS}
         data={suppliers}
         renderCell={renderCell}
         renderActions={renderActions}

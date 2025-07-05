@@ -61,6 +61,7 @@ export interface InventoryPageLayoutProps {
   visibleColumns: string[];
   onColumnsChange?: (columns: string[]) => void;
   columnCustomizerKey?: string;
+  columnCustomizerColumns?: import("@/components/inventory/ColumnCustomizer").TableColumn[];
   data: any[];
   renderCell: (item: any, columnKey: string) => React.ReactNode;
   renderActions?: (item: any) => React.ReactNode;
