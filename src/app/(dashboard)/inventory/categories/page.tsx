@@ -14,7 +14,7 @@ export default async function CategoriesPage() {
   // Check role permissions - only staff and above can access category management
   if (
     !session?.user ||
-    !["ADMIN", "MANAGER", "STAFF"].includes(session.user.role)
+    !["ADMIN", "MANAGER", "EMPLOYEE"].includes(session.user.role)
   ) {
     redirect("/unauthorized");
   }

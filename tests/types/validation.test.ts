@@ -112,7 +112,7 @@ describe("Type Validation Tests", () => {
       expect(typeof user.id).toBe("number");
       expect(typeof user.email).toBe("string");
       expect(typeof user.name).toBe("string");
-      expect(["ADMIN", "MANAGER", "STAFF"]).toContain(user.role);
+      expect(["ADMIN", "MANAGER", "EMPLOYEE"]).toContain(user.role);
       expect(typeof user.isActive).toBe("boolean");
       expect(user.createdAt).toBeInstanceOf(Date);
       expect(user.updatedAt).toBeInstanceOf(Date);

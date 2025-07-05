@@ -151,7 +151,7 @@ export const authOptions: NextAuthOptions = {
         const userId = parseInt(token.sub);
         const refreshedData = await authService.refreshUserData(userId);
         if (refreshedData) {
-          token.role = refreshedData.role || token.role || "STAFF";
+          token.role = refreshedData.role || token.role || "EMPLOYEE";
           token.status = refreshedData.status || "PENDING";
           token.emailVerified = refreshedData.emailVerified || false;
           console.log("JWT callback: Set missing status to:", token.status);
@@ -198,7 +198,7 @@ export const authOptions: NextAuthOptions = {
 
       if (token && session.user) {
         session.user.id = token.sub!;
-        session.user.role = token.role || "STAFF";
+        session.user.role = token.role || "EMPLOYEE";
         session.user.status = token.status || "PENDING";
         session.user.emailVerified = Boolean(token.emailVerified);
 

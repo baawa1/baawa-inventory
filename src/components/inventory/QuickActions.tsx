@@ -27,14 +27,14 @@ export function QuickActions({ userRole }: QuickActionsProps) {
       description: "Create new product entry",
       icon: <IconPackage className="h-4 w-4" />,
       href: "/dashboard/inventory/products/new",
-      roles: ["ADMIN", "MANAGER", "STAFF"],
+      roles: ["ADMIN", "MANAGER", "EMPLOYEE"],
     },
     {
       title: "Stock Reconciliation",
       description: "Start inventory count",
       icon: <IconClipboardCheck className="h-4 w-4" />,
       href: "/dashboard/inventory/stock-reconciliation/new",
-      roles: ["ADMIN", "MANAGER", "STAFF"],
+      roles: ["ADMIN", "MANAGER", "EMPLOYEE"],
     },
     {
       title: "Add Supplier",

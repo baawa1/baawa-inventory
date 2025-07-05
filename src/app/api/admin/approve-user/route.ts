@@ -121,7 +121,7 @@ export const POST = withAdminRateLimit(
             firstName: updatedUser.firstName,
             adminName,
             dashboardLink: `${dashboardUrl}/dashboard`,
-            role: user.role || "STAFF",
+            role: user.role || "EMPLOYEE",
           });
 
           // Send welcome email as well

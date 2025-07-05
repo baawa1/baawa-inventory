@@ -128,10 +128,10 @@ export async function PUT(request: NextRequest, { params }: RouteParams) {
 
       // Validate role if provided
       if (body.role) {
-        const validRoles = ["ADMIN", "MANAGER", "STAFF"];
+        const validRoles = ["ADMIN", "MANAGER", "EMPLOYEE"];
         if (!validRoles.includes(body.role)) {
           return NextResponse.json(
-            { error: "Invalid role. Must be one of: ADMIN, MANAGER, STAFF" },
+            { error: "Invalid role. Must be one of: ADMIN, MANAGER, EMPLOYEE" },
             { status: 400 }
           );
         }

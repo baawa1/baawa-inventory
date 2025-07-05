@@ -22,7 +22,7 @@ export default async function ReconciliationDetailPage({
   // Check role permissions - only staff and above can access inventory
   if (
     !session?.user ||
-    !["ADMIN", "MANAGER", "STAFF"].includes(session.user.role)
+    !["ADMIN", "MANAGER", "EMPLOYEE"].includes(session.user.role)
   ) {
     redirect("/unauthorized");
   }

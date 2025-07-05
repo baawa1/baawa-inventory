@@ -1,6 +1,6 @@
 import { redirect } from "next/navigation";
 import { getServerSession } from "@/lib/auth-helpers";
-import { InventoryDashboard } from "@/components/inventory/InventoryDashboard";
+import { ProductList } from "@/components/inventory/ProductList";
 
 export const metadata = {
   title: "Inventory Management - BaaWA POS",
@@ -13,10 +13,10 @@ export default async function InventoryPage() {
   // Check role permissions - only staff and above can access inventory
   if (
     !session?.user ||
-    !["ADMIN", "MANAGER", "STAFF"].includes(session.user.role)
+    !["ADMIN", "MANAGER", "EMPLOYEE"].includes(session.user.role)
   ) {
     redirect("/unauthorized");
   }
 
-  return <InventoryDashboard user={session.user} />;
+  return <ProductList user={session.user} />;
 }

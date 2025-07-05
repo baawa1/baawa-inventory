@@ -1,5 +1,5 @@
 // Base types for the application
-export type UserRole = "ADMIN" | "MANAGER" | "STAFF";
+export type UserRole = "ADMIN" | "MANAGER" | "EMPLOYEE";
 
 export type ProductStatus =
   | "ACTIVE"
