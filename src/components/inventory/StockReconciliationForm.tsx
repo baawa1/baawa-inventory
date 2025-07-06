@@ -79,12 +79,12 @@ export function StockReconciliationForm() {
   const router = useRouter();
 
   // TanStack Query hooks
-  const { data: productsData, isLoading: _loadingProducts } =
+  const { data: productsData, isLoading: isLoadingProducts } =
     useProductSearch(searchTerm);
   const createMutation = useCreateStockReconciliation();
   const submitMutation = useSubmitStockReconciliation();
 
-  const products = productsData?.products || [];
+  const products = productsData?.data || [];
 
   const form = useForm<ReconciliationFormData>({
     resolver: zodResolver(reconciliationSchema),
@@ -197,12 +197,6 @@ export function StockReconciliationForm() {
       toast.error("Failed to create stock reconciliation");
     }
   };
-
-  const filteredProducts = products.filter(
-    (product: Product) =>
-      product.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
-      product.sku.toLowerCase().includes(searchTerm.toLowerCase())
-  );
 
   return (
     <div className="space-y-6">
@@ -318,32 +312,43 @@ export function StockReconciliationForm() {
                     />
                   </div>
 
-                  {searchTerm && (
-                    <div className="max-h-48 overflow-y-auto space-y-2">
-                      {filteredProducts.map((product: Product) => (
-                        <div
-                          key={product.id}
-                          className="flex items-center justify-between p-2 hover:bg-muted rounded cursor-pointer"
-                          onClick={() => addProduct(product)}
-                        >
-                          <div>
-                            <div className="font-medium">{product.name}</div>
-                            <div className="text-sm text-muted-foreground">
-                              SKU: {product.sku} • Stock: {product.stock}
+                  <div className="max-h-48 overflow-y-auto space-y-2">
+                    {isLoadingProducts ? (
+                      <div className="text-center py-4 text-muted-foreground">
+                        Loading products...
+                      </div>
+                    ) : (
+                      <>
+                        {products.map((product: Product) => (
+                          <div
+                            key={product.id}
+                            className="flex items-center justify-between p-2 hover:bg-muted rounded cursor-pointer"
+                            onClick={() => addProduct(product)}
+                          >
+                            <div>
+                              <div className="font-medium">{product.name}</div>
+                              <div className="text-sm text-muted-foreground">
+                                SKU: {product.sku} • Stock: {product.stock}
+                              </div>
                             </div>
+                            <Button size="sm" variant="outline">
+                              Add
+                            </Button>
                           </div>
-                          <Button size="sm" variant="outline">
-                            Add
-                          </Button>
-                        </div>
-                      ))}
-                      {filteredProducts.length === 0 && (
-                        <div className="text-center py-4 text-muted-foreground">
-                          No products found matching "{searchTerm}"
-                        </div>
-                      )}
-                    </div>
-                  )}
+                        ))}
+                        {products.length === 0 && searchTerm && (
+                          <div className="text-center py-4 text-muted-foreground">
+                            No products found matching "{searchTerm}"
+                          </div>
+                        )}
+                        {products.length === 0 && !searchTerm && (
+                          <div className="text-center py-4 text-muted-foreground">
+                            Start typing to search for products...
+                          </div>
+                        )}
+                      </>
+                    )}
+                  </div>
                 </div>
               )}
 

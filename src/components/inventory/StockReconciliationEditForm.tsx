@@ -95,7 +95,7 @@ export function StockReconciliationEditForm({
   const submitMutation = useSubmitStockReconciliation();
 
   const reconciliation = reconciliationData?.reconciliation;
-  const products = productsData?.products || [];
+  const products = productsData?.data || [];
 
   const form = useForm<ReconciliationFormData>({
     resolver: zodResolver(reconciliationSchema),
@@ -236,12 +236,6 @@ export function StockReconciliationEditForm({
       toast.error("Failed to update stock reconciliation");
     }
   };
-
-  const filteredProducts = products.filter(
-    (product: Product) =>
-      product.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
-      product.sku.toLowerCase().includes(searchTerm.toLowerCase())
-  );
 
   if (loadingReconciliation) {
     return (
@@ -406,7 +400,7 @@ export function StockReconciliationEditForm({
 
                   {searchTerm && (
                     <div className="max-h-48 overflow-y-auto space-y-2">
-                      {filteredProducts.map((product: Product) => (
+                      {products.map((product: Product) => (
                         <div
                           key={product.id}
                           className="flex items-center justify-between p-2 hover:bg-muted rounded cursor-pointer"
@@ -423,7 +417,7 @@ export function StockReconciliationEditForm({
                           </Button>
                         </div>
                       ))}
-                      {filteredProducts.length === 0 && (
+                      {products.length === 0 && (
                         <div className="text-center py-4 text-muted-foreground">
                           No products found matching "{searchTerm}"
                         </div>
