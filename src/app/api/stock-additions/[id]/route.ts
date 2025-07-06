@@ -10,7 +10,7 @@ import {
 // GET /api/stock-additions/[id] - Get individual stock addition
 export async function GET(
   request: NextRequest,
-  { params }: { params: { id: string } }
+  { params }: { params: Promise<{ id: string }> }
 ) {
   try {
     const session = await getServerSession(authOptions);
@@ -18,8 +18,10 @@ export async function GET(
       return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
     }
 
-    const id = parseInt(params.id);
-    if (isNaN(id)) {
+    const { id } = await params;
+
+    const additionId = parseInt(id);
+    if (isNaN(additionId)) {
       return NextResponse.json(
         { error: "Invalid stock addition ID" },
         { status: 400 }
@@ -27,7 +29,7 @@ export async function GET(
     }
 
     const stockAddition = await prisma.stockAddition.findUnique({
-      where: { id },
+      where: { id: additionId },
       include: {
         product: {
           select: {
@@ -74,7 +76,7 @@ export async function GET(
 // PUT /api/stock-additions/[id] - Update stock addition (limited fields)
 export async function PUT(
   request: NextRequest,
-  { params }: { params: { id: string } }
+  { params }: { params: Promise<{ id: string }> }
 ) {
   try {
     const session = await getServerSession(authOptions);
@@ -90,8 +92,9 @@ export async function PUT(
       );
     }
 
-    const id = parseInt(params.id);
-    if (isNaN(id)) {
+    const { id } = await params;
+    const additionId = parseInt(id);
+    if (isNaN(additionId)) {
       return NextResponse.json(
         { error: "Invalid stock addition ID" },
         { status: 400 }
@@ -104,7 +107,7 @@ export async function PUT(
 
     // Check if stock addition exists
     const existingStockAddition = await prisma.stockAddition.findUnique({
-      where: { id },
+      where: { id: additionId },
       select: { id: true, quantity: true, productId: true },
     });
 
@@ -161,7 +164,7 @@ export async function PUT(
       const updateData: any = { ...validatedData };
       if (validatedData.costPerUnit || validatedData.quantity) {
         const currentRecord = await tx.stockAddition.findUnique({
-          where: { id },
+          where: { id: additionId },
           select: { costPerUnit: true, quantity: true },
         });
 
@@ -173,7 +176,7 @@ export async function PUT(
 
       // Update stock addition
       const updatedStockAddition = await tx.stockAddition.update({
-        where: { id },
+        where: { id: additionId },
         data: updateData,
         include: {
           product: {
@@ -228,7 +231,7 @@ export async function PUT(
 // DELETE /api/stock-additions/[id] - Delete stock addition (admin only)
 export async function DELETE(
   request: NextRequest,
-  { params }: { params: { id: string } }
+  { params }: { params: Promise<{ id: string }> }
 ) {
   try {
     const session = await getServerSession(authOptions);
@@ -244,8 +247,9 @@ export async function DELETE(
       );
     }
 
-    const id = parseInt(params.id);
-    if (isNaN(id)) {
+    const { id } = await params;
+    const additionId = parseInt(id);
+    if (isNaN(additionId)) {
       return NextResponse.json(
         { error: "Invalid stock addition ID" },
         { status: 400 }
@@ -254,7 +258,7 @@ export async function DELETE(
 
     // Check if stock addition exists
     const stockAddition = await prisma.stockAddition.findUnique({
-      where: { id },
+      where: { id: additionId },
       select: {
         id: true,
         quantity: true,
@@ -284,7 +288,7 @@ export async function DELETE(
 
       // Delete stock addition
       await tx.stockAddition.delete({
-        where: { id },
+        where: { id: additionId },
       });
     });
 

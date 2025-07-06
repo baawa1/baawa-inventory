@@ -18,14 +18,6 @@ export type PaymentStatus = "PENDING" | "PAID" | "REFUNDED" | "CANCELLED";
 
 export type DiscountType = "AMOUNT" | "PERCENTAGE";
 
-export type StockAdjustmentType =
-  | "INCREASE"
-  | "DECREASE"
-  | "RECOUNT"
-  | "DAMAGE"
-  | "TRANSFER"
-  | "RETURN";
-
 export type PurchaseOrderStatus =
   | "PENDING"
   | "ORDERED"
@@ -165,30 +157,6 @@ export interface CreateSalesTransactionData {
   discount?: number;
   discountType?: DiscountType;
   notes?: string;
-}
-
-// Stock Management types
-export interface StockAdjustmentData {
-  id: string;
-  type: StockAdjustmentType;
-  quantity: number;
-  previousStock: number;
-  newStock: number;
-  reason: string;
-  notes?: string;
-  userId: string;
-  productId?: string;
-  variantId?: string;
-  createdAt: Date;
-}
-
-export interface CreateStockAdjustmentData {
-  type: StockAdjustmentType;
-  quantity: number;
-  reason: string;
-  notes?: string;
-  productId?: string;
-  variantId?: string;
 }
 
 // Supplier types

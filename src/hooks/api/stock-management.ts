@@ -1,35 +1,12 @@
 /**
  * Stock Management API Hooks using TanStack Query
- * Provides hooks for stock adjustments, reconciliations, and related operations
+ * Provides hooks for stock reconciliations and related operations
  */
 
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { queryKeys } from "@/lib/query-client";
 
 // Types
-export interface StockAdjustment {
-  id: string;
-  productId: string;
-  quantity: number;
-  reason: string;
-  type: "INCREASE" | "DECREASE";
-  status: "PENDING" | "APPROVED" | "REJECTED";
-  createdAt: string;
-  updatedAt: string;
-  product?: {
-    id: string;
-    name: string;
-    sku: string;
-    category: string;
-  };
-  user?: {
-    id: string;
-    firstName: string;
-    lastName: string;
-    email: string;
-  };
-}
-
 export interface User {
   id: number;
   firstName: string;
@@ -68,18 +45,6 @@ export interface StockReconciliationItem {
   };
 }
 
-export interface StockAdjustmentFilters {
-  search?: string;
-  type?: string;
-  status?: string;
-  fromDate?: string;
-  toDate?: string;
-  sortBy?: string;
-  sortOrder?: "asc" | "desc";
-  page?: number;
-  limit?: number;
-}
-
 export interface StockReconciliationFilters {
   search?: string;
   status?: string;
@@ -90,33 +55,6 @@ export interface StockReconciliationFilters {
 }
 
 // API Functions
-const fetchStockAdjustments = async (
-  filters: Partial<StockAdjustmentFilters> = {}
-) => {
-  const searchParams = new URLSearchParams({
-    page: filters.page?.toString() || "1",
-    limit: filters.limit?.toString() || "10",
-    sortBy: filters.sortBy || "createdAt",
-    sortOrder: filters.sortOrder || "desc",
-  });
-
-  if (filters.search) searchParams.set("search", filters.search);
-  if (filters.type) searchParams.set("type", filters.type);
-  if (filters.status) searchParams.set("status", filters.status);
-  if (filters.fromDate) searchParams.set("fromDate", filters.fromDate);
-  if (filters.toDate) searchParams.set("toDate", filters.toDate);
-
-  const response = await fetch(
-    `/api/stock-adjustments?${searchParams.toString()}`
-  );
-  if (!response.ok) {
-    throw new Error(
-      `Failed to fetch stock adjustments: ${response.statusText}`
-    );
-  }
-  return response.json();
-};
-
 const fetchStockReconciliations = async (
   filters: Partial<StockReconciliationFilters> = {}
 ) => {
@@ -141,79 +79,11 @@ const fetchStockReconciliations = async (
   return response.json();
 };
 
-const fetchStockReconciliation = async (id: number) => {
+const fetchStockReconciliation = async (id: string) => {
   const response = await fetch(`/api/stock-reconciliations/${id}`);
   if (!response.ok) {
     throw new Error(
       `Failed to fetch stock reconciliation: ${response.statusText}`
-    );
-  }
-  return response.json();
-};
-
-const fetchStockAdjustment = async (id: string) => {
-  const response = await fetch(`/api/stock-adjustments/${id}`);
-  if (!response.ok) {
-    throw new Error(`Failed to fetch stock adjustment: ${response.statusText}`);
-  }
-  return response.json();
-};
-
-const createStockAdjustment = async (data: Partial<StockAdjustment>) => {
-  const response = await fetch("/api/stock-adjustments", {
-    method: "POST",
-    headers: { "Content-Type": "application/json" },
-    body: JSON.stringify(data),
-  });
-  if (!response.ok) {
-    throw new Error(
-      `Failed to create stock adjustment: ${response.statusText}`
-    );
-  }
-  return response.json();
-};
-
-const updateStockAdjustment = async ({
-  id,
-  ...data
-}: { id: string } & Partial<StockAdjustment>) => {
-  const response = await fetch(`/api/stock-adjustments/${id}`, {
-    method: "PUT",
-    headers: { "Content-Type": "application/json" },
-    body: JSON.stringify(data),
-  });
-  if (!response.ok) {
-    throw new Error(
-      `Failed to update stock adjustment: ${response.statusText}`
-    );
-  }
-  return response.json();
-};
-
-const approveStockAdjustment = async (id: string) => {
-  const response = await fetch(`/api/stock-adjustments/${id}/approve`, {
-    method: "POST",
-  });
-  if (!response.ok) {
-    throw new Error(
-      `Failed to approve stock adjustment: ${response.statusText}`
-    );
-  }
-  return response.json();
-};
-
-const rejectStockAdjustment = async (params: {
-  id: string;
-  rejectionReason?: string;
-}) => {
-  const response = await fetch(`/api/stock-adjustments/${params.id}/reject`, {
-    method: "POST",
-    headers: { "Content-Type": "application/json" },
-    body: JSON.stringify({ rejectionReason: params.rejectionReason }),
-  });
-  if (!response.ok) {
-    throw new Error(
-      `Failed to reject stock adjustment: ${response.statusText}`
     );
   }
   return response.json();
@@ -252,7 +122,7 @@ const updateStockReconciliation = async ({
   return response.json();
 };
 
-const submitStockReconciliation = async (id: number) => {
+const submitStockReconciliation = async (id: string) => {
   const response = await fetch(`/api/stock-reconciliations/${id}/submit`, {
     method: "POST",
   });
@@ -264,18 +134,10 @@ const submitStockReconciliation = async (id: number) => {
   return response.json();
 };
 
-const approveStockReconciliation = async (params: {
-  id: number;
-  notes?: string;
-}) => {
-  const response = await fetch(
-    `/api/stock-reconciliations/${params.id}/approve`,
-    {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ notes: params.notes }),
-    }
-  );
+const approveStockReconciliation = async (id: string) => {
+  const response = await fetch(`/api/stock-reconciliations/${id}/approve`, {
+    method: "POST",
+  });
   if (!response.ok) {
     throw new Error(
       `Failed to approve stock reconciliation: ${response.statusText}`
@@ -285,15 +147,15 @@ const approveStockReconciliation = async (params: {
 };
 
 const rejectStockReconciliation = async (params: {
-  id: number;
-  reason: string;
+  id: string;
+  rejectionReason: string;
 }) => {
   const response = await fetch(
     `/api/stock-reconciliations/${params.id}/reject`,
     {
       method: "POST",
       headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ reason: params.reason }),
+      body: JSON.stringify({ rejectionReason: params.rejectionReason }),
     }
   );
   if (!response.ok) {
@@ -317,40 +179,20 @@ const deleteStockReconciliation = async (id: string) => {
 };
 
 // Query Hooks
-export const useStockAdjustments = (
-  filters: Partial<StockAdjustmentFilters> = {}
-) => {
-  return useQuery({
-    queryKey: queryKeys.inventory.stockAdjustments.list(filters),
-    queryFn: () => fetchStockAdjustments(filters),
-    staleTime: 2 * 60 * 1000, // 2 minutes
-    gcTime: 10 * 60 * 1000, // 10 minutes
-  });
-};
-
-export const useStockAdjustment = (id: string) => {
-  return useQuery({
-    queryKey: ["stock-adjustments", id],
-    queryFn: () => fetchStockAdjustment(id),
-    enabled: !!id,
-    staleTime: 5 * 60 * 1000, // 5 minutes
-  });
-};
-
 export const useStockReconciliations = (
   filters: Partial<StockReconciliationFilters> = {}
 ) => {
   return useQuery({
-    queryKey: queryKeys.inventory.stockReconciliation.list(filters),
+    queryKey: queryKeys.inventory.stockReconciliations.list(filters),
     queryFn: () => fetchStockReconciliations(filters),
     staleTime: 2 * 60 * 1000, // 2 minutes
     gcTime: 10 * 60 * 1000, // 10 minutes
   });
 };
 
-export const useStockReconciliation = (id: number) => {
+export const useStockReconciliation = (id: string) => {
   return useQuery({
-    queryKey: ["stock-reconciliations", id],
+    queryKey: queryKeys.inventory.stockReconciliations.detail(id),
     queryFn: () => fetchStockReconciliation(id),
     enabled: !!id,
     staleTime: 5 * 60 * 1000, // 5 minutes
@@ -358,63 +200,6 @@ export const useStockReconciliation = (id: number) => {
 };
 
 // Mutation Hooks
-export const useCreateStockAdjustment = () => {
-  const queryClient = useQueryClient();
-
-  return useMutation({
-    mutationFn: createStockAdjustment,
-    onSuccess: () => {
-      queryClient.invalidateQueries({
-        queryKey: queryKeys.inventory.stockAdjustments.all(),
-      });
-    },
-  });
-};
-
-export const useUpdateStockAdjustment = () => {
-  const queryClient = useQueryClient();
-
-  return useMutation({
-    mutationFn: updateStockAdjustment,
-    onSuccess: (data, variables) => {
-      queryClient.invalidateQueries({
-        queryKey: queryKeys.inventory.stockAdjustments.all(),
-      });
-      queryClient.invalidateQueries({
-        queryKey: ["stock-adjustments", variables.id],
-      });
-    },
-  });
-};
-
-export const useApproveStockAdjustment = () => {
-  const queryClient = useQueryClient();
-
-  return useMutation({
-    mutationFn: approveStockAdjustment,
-    onSuccess: (data, id) => {
-      queryClient.invalidateQueries({
-        queryKey: queryKeys.inventory.stockAdjustments.all(),
-      });
-      queryClient.invalidateQueries({ queryKey: ["stock-adjustments", id] });
-    },
-  });
-};
-
-export const useRejectStockAdjustment = () => {
-  const queryClient = useQueryClient();
-
-  return useMutation({
-    mutationFn: rejectStockAdjustment,
-    onSuccess: (data, id) => {
-      queryClient.invalidateQueries({
-        queryKey: queryKeys.inventory.stockAdjustments.all(),
-      });
-      queryClient.invalidateQueries({ queryKey: ["stock-adjustments", id] });
-    },
-  });
-};
-
 export const useCreateStockReconciliation = () => {
   const queryClient = useQueryClient();
 
@@ -422,7 +207,7 @@ export const useCreateStockReconciliation = () => {
     mutationFn: createStockReconciliation,
     onSuccess: () => {
       queryClient.invalidateQueries({
-        queryKey: queryKeys.inventory.stockReconciliation.all(),
+        queryKey: queryKeys.inventory.stockReconciliations.all(),
       });
     },
   });
@@ -435,10 +220,10 @@ export const useUpdateStockReconciliation = () => {
     mutationFn: updateStockReconciliation,
     onSuccess: (data, variables) => {
       queryClient.invalidateQueries({
-        queryKey: queryKeys.inventory.stockReconciliation.all(),
+        queryKey: queryKeys.inventory.stockReconciliations.all(),
       });
       queryClient.invalidateQueries({
-        queryKey: ["stock-reconciliations", variables.id],
+        queryKey: queryKeys.inventory.stockReconciliations.detail(variables.id),
       });
     },
   });
@@ -451,10 +236,10 @@ export const useSubmitStockReconciliation = () => {
     mutationFn: submitStockReconciliation,
     onSuccess: (data, id) => {
       queryClient.invalidateQueries({
-        queryKey: queryKeys.inventory.stockReconciliation.all(),
+        queryKey: queryKeys.inventory.stockReconciliations.all(),
       });
       queryClient.invalidateQueries({
-        queryKey: ["stock-reconciliations", id],
+        queryKey: queryKeys.inventory.stockReconciliations.detail(id),
       });
     },
   });
@@ -465,12 +250,12 @@ export const useApproveStockReconciliation = () => {
 
   return useMutation({
     mutationFn: approveStockReconciliation,
-    onSuccess: (data, params) => {
+    onSuccess: (data, id) => {
       queryClient.invalidateQueries({
-        queryKey: queryKeys.inventory.stockReconciliation.all(),
+        queryKey: queryKeys.inventory.stockReconciliations.all(),
       });
       queryClient.invalidateQueries({
-        queryKey: ["stock-reconciliations", params.id],
+        queryKey: queryKeys.inventory.stockReconciliations.detail(id),
       });
     },
   });
@@ -483,10 +268,10 @@ export const useRejectStockReconciliation = () => {
     mutationFn: rejectStockReconciliation,
     onSuccess: (data, params) => {
       queryClient.invalidateQueries({
-        queryKey: queryKeys.inventory.stockReconciliation.all(),
+        queryKey: queryKeys.inventory.stockReconciliations.all(),
       });
       queryClient.invalidateQueries({
-        queryKey: ["stock-reconciliations", params.id],
+        queryKey: queryKeys.inventory.stockReconciliations.detail(params.id),
       });
     },
   });
@@ -499,10 +284,10 @@ export const useDeleteStockReconciliation = () => {
     mutationFn: deleteStockReconciliation,
     onSuccess: (data, id) => {
       queryClient.invalidateQueries({
-        queryKey: queryKeys.inventory.stockReconciliation.all(),
+        queryKey: queryKeys.inventory.stockReconciliations.all(),
       });
-      queryClient.invalidateQueries({
-        queryKey: ["stock-reconciliations", id],
+      queryClient.removeQueries({
+        queryKey: queryKeys.inventory.stockReconciliations.detail(id),
       });
     },
   });

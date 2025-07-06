@@ -4,7 +4,7 @@ export * from "./product";
 export * from "./user";
 export * from "./supplier";
 export * from "./sale";
-export * from "./stock-adjustment";
+export * from "./stock-management";
 
 // Re-export commonly used schemas for convenience
 export {
@@ -43,10 +43,3 @@ export {
   saleQuerySchema,
   saleIdSchema,
 } from "./sale";
-
-export {
-  createStockAdjustmentSchema,
-  updateStockAdjustmentSchema,
-  stockAdjustmentQuerySchema,
-  stockAdjustmentIdSchema,
-} from "./stock-adjustment";

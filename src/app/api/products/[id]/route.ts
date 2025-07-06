@@ -7,7 +7,7 @@ import {
 } from "@/lib/validations";
 
 interface RouteParams {
-  params: { id: string };
+  params: Promise<{ id: string }>;
 }
 
 // GET /api/products/[id] - Get a specific product

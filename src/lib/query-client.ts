@@ -88,22 +88,19 @@ export const queryKeys = {
     metrics: () => [...queryKeys.inventory.all, "metrics"] as const,
     charts: () => [...queryKeys.inventory.all, "charts"] as const,
     activity: () => [...queryKeys.inventory.all, "activity"] as const,
-    stockAdjustments: {
-      all: () => [...queryKeys.inventory.all, "stock-adjustments"] as const,
+    stockReconciliations: {
+      all: () => [...queryKeys.inventory.all, "stock-reconciliations"] as const,
       list: (filters: Record<string, any>) =>
         [
-          ...queryKeys.inventory.stockAdjustments.all(),
+          ...queryKeys.inventory.stockReconciliations.all(),
           "list",
           filters,
         ] as const,
-    },
-    stockReconciliation: {
-      all: () => [...queryKeys.inventory.all, "stock-reconciliation"] as const,
-      list: (filters: Record<string, any>) =>
+      detail: (id: string) =>
         [
-          ...queryKeys.inventory.stockReconciliation.all(),
-          "list",
-          filters,
+          ...queryKeys.inventory.stockReconciliations.all(),
+          "detail",
+          id,
         ] as const,
     },
   },

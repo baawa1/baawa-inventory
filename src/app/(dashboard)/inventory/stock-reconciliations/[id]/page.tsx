@@ -11,7 +11,7 @@ export const metadata = {
 };
 
 interface ReconciliationDetailPageProps {
-  params: { id: string };
+  params: Promise<{ id: string }>;
 }
 
 export default async function ReconciliationDetailPage({
@@ -27,7 +27,8 @@ export default async function ReconciliationDetailPage({
     redirect("/unauthorized");
   }
 
-  const reconciliationId = parseInt(params.id);
+  const resolvedParams = await params;
+  const reconciliationId = parseInt(resolvedParams.id);
 
   if (isNaN(reconciliationId)) {
     redirect("/inventory/stock-reconciliations");

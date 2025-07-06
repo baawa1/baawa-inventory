@@ -12,9 +12,6 @@ import {
   createSaleSchema,
   updateSaleSchema,
   saleQuerySchema,
-  createStockAdjustmentSchema,
-  updateStockAdjustmentSchema,
-  stockAdjustmentQuerySchema,
   validateRequest,
   formatZodError,
 } from "@/lib/validations";
@@ -217,57 +214,6 @@ describe("Zod Validation Schemas", () => {
       const result = validateRequest(saleQuerySchema, queryParams);
       expect(result.success).toBe(true);
       expect(result.data?.paymentMethod).toBe("CASH");
-    });
-  });
-
-  describe("Stock Adjustment Validation", () => {
-    it("should validate valid stock adjustment data", () => {
-      const validAdjustment = {
-        productId: 1,
-        type: "INCREASE",
-        quantity: 10,
-        reason: "Stock received from supplier",
-        userId: 1,
-      };
-
-      const result = validateRequest(
-        createStockAdjustmentSchema,
-        validAdjustment
-      );
-      expect(result.success).toBe(true);
-      expect(result.data).toBeDefined();
-    });
-
-    it("should reject stock adjustment with wrong quantity sign", () => {
-      const invalidAdjustment = {
-        productId: 1,
-        type: "INCREASE",
-        quantity: -10, // Negative quantity for increase type
-        reason: "Stock received",
-        userId: 1,
-      };
-
-      const result = validateRequest(
-        createStockAdjustmentSchema,
-        invalidAdjustment
-      );
-      expect(result.success).toBe(false);
-      expect(result.errors).toBeDefined();
-    });
-
-    it("should validate stock adjustment query parameters", () => {
-      const queryParams = {
-        page: "1",
-        limit: "25",
-        productId: "123",
-        type: "INCREASE",
-        fromDate: "2024-01-01T00:00:00Z",
-      };
-
-      const result = validateRequest(stockAdjustmentQuerySchema, queryParams);
-      expect(result.success).toBe(true);
-      expect(result.data?.productId).toBe(123);
-      expect(result.data?.type).toBe("INCREASE");
     });
   });
 

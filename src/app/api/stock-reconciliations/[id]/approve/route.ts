@@ -6,7 +6,7 @@ import { sendReconciliationNotification } from "@/lib/notifications/stock-reconc
 
 export async function POST(
   request: NextRequest,
-  { params }: { params: { id: string } }
+  { params }: { params: Promise<{ id: string }> }
 ) {
   try {
     const session = await getServerSession(authOptions);
@@ -14,7 +14,8 @@ export async function POST(
       return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
     }
 
-    const reconciliationId = parseInt(params.id);
+    const { id } = await params;
+    const reconciliationId = parseInt(id);
     if (isNaN(reconciliationId)) {
       return NextResponse.json(
         { error: "Invalid reconciliation ID" },
@@ -63,20 +64,7 @@ export async function POST(
             },
           });
 
-          // Create stock adjustment record for audit trail
-          await tx.stockAdjustment.create({
-            data: {
-              product_id: item.productId,
-              adjustment_type: discrepancy > 0 ? "INCREASE" : "DECREASE",
-              quantity: Math.abs(discrepancy),
-              old_quantity: item.systemCount,
-              new_quantity: item.physicalCount,
-              reason:
-                item.discrepancyReason || "Stock reconciliation adjustment",
-              notes: `Stock reconciliation #${reconciliation.id} - ${item.discrepancyReason || "Inventory count correction"}`,
-              user_id: parseInt(session.user.id),
-            },
-          });
+          // Stock reconciliation serves as the audit trail for these changes
         }
       }
 

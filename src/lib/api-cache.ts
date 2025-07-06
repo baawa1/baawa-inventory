@@ -267,6 +267,6 @@ export const cachePresets = {
   // Stock - cache for 1 minute, frequently updated
   stock: {
     ttlMs: 1 * 60 * 1000,
-    invalidateOn: ["/api/stock-adjustments", "/api/products", "/api/sales"],
+    invalidateOn: ["/api/stock-additions", "/api/products", "/api/sales"],
   },
 };

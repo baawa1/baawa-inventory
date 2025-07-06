@@ -6,7 +6,7 @@ import { updateStockReconciliationSchema } from "@/lib/validations/stock-managem
 
 export async function GET(
   request: NextRequest,
-  { params }: { params: { id: string } }
+  { params }: { params: Promise<{ id: string }> }
 ) {
   try {
     const session = await getServerSession(authOptions);
@@ -14,7 +14,8 @@ export async function GET(
       return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
     }
 
-    const reconciliationId = parseInt(params.id);
+    const { id } = await params;
+    const reconciliationId = parseInt(id);
     if (isNaN(reconciliationId)) {
       return NextResponse.json(
         { error: "Invalid reconciliation ID" },
@@ -85,7 +86,7 @@ export async function GET(
 
 export async function PUT(
   request: NextRequest,
-  { params }: { params: { id: string } }
+  { params }: { params: Promise<{ id: string }> }
 ) {
   try {
     const session = await getServerSession(authOptions);
@@ -93,7 +94,8 @@ export async function PUT(
       return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
     }
 
-    const reconciliationId = parseInt(params.id);
+    const { id } = await params;
+    const reconciliationId = parseInt(id);
     if (isNaN(reconciliationId)) {
       return NextResponse.json(
         { error: "Invalid reconciliation ID" },
@@ -207,7 +209,7 @@ export async function PUT(
 
 export async function DELETE(
   request: NextRequest,
-  { params }: { params: { id: string } }
+  { params }: { params: Promise<{ id: string }> }
 ) {
   try {
     const session = await getServerSession(authOptions);
@@ -215,7 +217,8 @@ export async function DELETE(
       return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
     }
 
-    const reconciliationId = parseInt(params.id);
+    const { id } = await params;
+    const reconciliationId = parseInt(id);
     if (isNaN(reconciliationId)) {
       return NextResponse.json(
         { error: "Invalid reconciliation ID" },
