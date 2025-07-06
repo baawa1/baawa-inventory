@@ -525,6 +525,17 @@ export function ProductList({ user }: ProductListProps) {
               setProductDetailModalOpen(false);
               setSelectedProductForDetail(null);
             }}
+            onAddStock={(productId) => {
+              // Find the product and set it for the AddStockDialog
+              const product = products?.find((p) => p.id === productId);
+              if (product) {
+                setSelectedProductForStock(product);
+                setAddStockDialogOpen(true);
+                // Close the detail modal
+                setProductDetailModalOpen(false);
+                setSelectedProductForDetail(null);
+              }
+            }}
           />
         </>
       }
