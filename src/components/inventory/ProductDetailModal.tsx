@@ -36,12 +36,14 @@ interface ProductDetailModalProps {
   productId: number | null;
   open: boolean;
   onCloseAction: () => void;
+  onAddStock?: (productId: number) => void;
 }
 
 export const ProductDetailModal: React.FC<ProductDetailModalProps> = ({
   productId,
   open,
   onCloseAction,
+  onAddStock,
 }) => {
   const {
     data: product,
@@ -339,13 +341,16 @@ export const ProductDetailModal: React.FC<ProductDetailModalProps> = ({
                   Edit Product
                 </Link>
               </Button>
-              <Button variant="outline" asChild>
-                <Link
-                  href={`/inventory/stock-adjustments/add?productId=${product.id}`}
-                >
-                  <IconPlus className="h-4 w-4 mr-2" />
-                  Add Stock
-                </Link>
+              <Button
+                variant="outline"
+                onClick={() => {
+                  if (onAddStock) {
+                    onAddStock(product.id);
+                  }
+                }}
+              >
+                <IconPlus className="h-4 w-4 mr-2" />
+                Add Stock
               </Button>
             </div>
           </div>

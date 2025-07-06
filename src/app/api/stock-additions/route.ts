@@ -50,6 +50,34 @@ export async function GET(request: NextRequest) {
         where.purchaseDate.lte = new Date(validatedQuery.endDate);
     }
 
+    // Add search functionality
+    if (validatedQuery.search) {
+      where.OR = [
+        {
+          product: {
+            name: {
+              contains: validatedQuery.search,
+              mode: "insensitive",
+            },
+          },
+        },
+        {
+          product: {
+            sku: {
+              contains: validatedQuery.search,
+              mode: "insensitive",
+            },
+          },
+        },
+        {
+          referenceNo: {
+            contains: validatedQuery.search,
+            mode: "insensitive",
+          },
+        },
+      ];
+    }
+
     // Calculate pagination
     const skip = (validatedQuery.page - 1) * validatedQuery.limit;
 
@@ -64,6 +92,11 @@ export async function GET(request: NextRequest) {
               name: true,
               sku: true,
               stock: true,
+              category: {
+                select: {
+                  name: true,
+                },
+              },
             },
           },
           supplier: {
@@ -92,10 +125,45 @@ export async function GET(request: NextRequest) {
       prisma.stockAddition.count({ where }),
     ]);
 
+    // Format the response for the StockHistoryList component
+    const formattedStockAdditions = stockAdditions.map((addition) => ({
+      id: addition.id.toString(),
+      product: {
+        id: addition.product.id.toString(),
+        name: addition.product.name,
+        sku: addition.product.sku,
+        category: addition.product.category?.name || "Uncategorized",
+      },
+      quantity: addition.quantity,
+      costPerUnit: Number(addition.costPerUnit),
+      totalCost: Number(addition.totalCost),
+      supplier: addition.supplier
+        ? {
+            id: addition.supplier.id.toString(),
+            name: addition.supplier.name,
+          }
+        : null,
+      purchaseDate: addition.purchaseDate
+        ? addition.purchaseDate.toISOString()
+        : new Date().toISOString(),
+      referenceNumber: addition.referenceNo,
+      notes: addition.notes,
+      createdBy: {
+        id: addition.createdBy.id.toString(),
+        name: `${addition.createdBy.firstName} ${addition.createdBy.lastName}`.trim(),
+      },
+      createdAt: addition.createdAt
+        ? addition.createdAt.toISOString()
+        : new Date().toISOString(),
+      // Calculate previous stock (current stock - quantity added)
+      previousStock: Math.max(0, addition.product.stock - addition.quantity),
+      newStock: addition.product.stock,
+    }));
+
     const totalPages = Math.ceil(totalCount / validatedQuery.limit);
 
     return NextResponse.json({
-      stockAdditions: stockAdditions || [],
+      data: formattedStockAdditions,
       pagination: {
         page: validatedQuery.page,
         limit: validatedQuery.limit,

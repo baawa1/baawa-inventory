@@ -1,53 +1,10 @@
 "use client";
 
-import { useState } from "react";
+import React, { useState } from "react";
 import Link from "next/link";
-import { Button } from "@/components/ui/button";
-import { Input } from "@/components/ui/input";
-import {
-  Card,
-  CardContent,
-  CardDescription,
-  CardHeader,
-  CardTitle,
-} from "@/components/ui/card";
-import { Badge } from "@/components/ui/badge";
-import {
-  Table,
-  TableBody,
-  TableCell,
-  TableHead,
-  TableHeader,
-  TableRow,
-} from "@/components/ui/table";
-import {
-  Select,
-  SelectContent,
-  SelectItem,
-  SelectTrigger,
-  SelectValue,
-} from "@/components/ui/select";
-import {
-  DropdownMenu,
-  DropdownMenuContent,
-  DropdownMenuItem,
-  DropdownMenuLabel,
-  DropdownMenuSeparator,
-  DropdownMenuTrigger,
-} from "@/components/ui/dropdown-menu";
-import {
-  IconSearch,
-  IconPlus,
-  IconDots,
-  IconEdit,
-  IconEye,
-  IconCheck,
-  IconX,
-  IconTrash,
-  IconSend,
-} from "@tabler/icons-react";
-import { formatCurrency } from "@/lib/utils";
+import { useSession } from "next-auth/react";
 import { toast } from "sonner";
+import { useDebounce } from "@/hooks/useDebounce";
 import {
   useStockReconciliations,
   useSubmitStockReconciliation,
@@ -56,6 +13,38 @@ import {
   useDeleteStockReconciliation,
   type StockReconciliationFilters,
 } from "@/hooks/api/stock-management";
+import { InventoryPageLayout } from "@/components/inventory/InventoryPageLayout";
+import { Button } from "@/components/ui/button";
+import { Badge } from "@/components/ui/badge";
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuTrigger,
+} from "@/components/ui/dropdown-menu";
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+} from "@/components/ui/alert-dialog";
+import {
+  IconPlus,
+  IconDots,
+  IconEdit,
+  IconEye,
+  IconCheck,
+  IconX,
+  IconTrash,
+  IconSend,
+  IconClipboard,
+  IconAlertTriangle,
+} from "@tabler/icons-react";
+import type { ColumnConfig, FilterConfig } from "@/types/inventory";
 
 interface User {
   id: number;
@@ -91,50 +80,134 @@ interface StockReconciliation {
   }[];
 }
 
+interface UserProps {
+  id: string;
+  name: string;
+  email: string;
+  role: string;
+  status: string;
+  emailVerified: boolean;
+  image?: string;
+}
+
 interface StockReconciliationListProps {
   userRole: string;
   userId: number;
+  user: UserProps;
 }
-
-const statusConfig = {
-  DRAFT: { color: "secondary", label: "Draft" },
-  PENDING: { color: "warning", label: "Pending" },
-  APPROVED: { color: "success", label: "Approved" },
-  REJECTED: { color: "destructive", label: "Rejected" },
-} as const;
 
 export function StockReconciliationList({
   userRole,
   userId,
+  user,
 }: StockReconciliationListProps) {
-  const [searchTerm, setSearchTerm] = useState("");
-  const [statusFilter, setStatusFilter] = useState<string>("all");
-  const [createdByFilter, setCreatedByFilter] = useState<string>("all");
+  const [deleteDialogOpen, setDeleteDialogOpen] = useState(false);
+  const [reconciliationToDelete, setReconciliationToDelete] =
+    useState<StockReconciliation | null>(null);
+
+  const [pagination, setPagination] = useState({
+    page: 1,
+    limit: 10,
+    totalPages: 1,
+    totalItems: 0,
+  });
+  const [visibleColumns, setVisibleColumns] = useState<string[]>([
+    "title",
+    "status",
+    "itemCount",
+    "totalDiscrepancy",
+    "createdBy",
+    "createdAt",
+  ]);
+
+  // Filters
+  const [filters, setFilters] = useState({
+    search: "",
+    status: "",
+    createdBy: "",
+  });
+
+  // Debounce search term to avoid excessive API calls
+  const debouncedSearchTerm = useDebounce(filters.search, 500);
+
+  // Show search loading when user is typing but search hasn't been triggered yet
+  const isSearching = filters.search !== debouncedSearchTerm;
 
   const isAdmin = userRole === "ADMIN";
 
-  // TanStack Query hooks
-  const filters: StockReconciliationFilters = {
-    search: searchTerm || undefined,
-    status: statusFilter !== "all" ? statusFilter : undefined,
+  // TanStack Query hooks for data fetching
+  const stockFilters: StockReconciliationFilters = {
+    search: debouncedSearchTerm,
+    status: filters.status !== "all" ? filters.status : undefined,
     sortBy: "createdAt",
     sortOrder: "desc",
   };
 
-  const {
-    data: reconciliationData,
-    isLoading,
-    error,
-    refetch: refetchReconciliations,
-  } = useStockReconciliations(filters);
-
+  const reconciliationsQuery = useStockReconciliations(stockFilters);
   const submitReconciliation = useSubmitStockReconciliation();
   const approveReconciliation = useApproveStockReconciliation();
   const rejectReconciliation = useRejectStockReconciliation();
   const deleteReconciliation = useDeleteStockReconciliation();
 
-  const reconciliations = reconciliationData?.data || [];
+  // Extract data from queries
+  const reconciliations = reconciliationsQuery.data?.data || [];
+  const loading = reconciliationsQuery.isLoading;
 
+  // Update pagination when data changes
+  React.useEffect(() => {
+    const totalItems = reconciliations.length;
+    setPagination((prev) => ({
+      ...prev,
+      totalItems,
+      totalPages: Math.ceil(totalItems / prev.limit),
+    }));
+  }, [reconciliations.length]);
+
+  // Permission checks
+  const canManageReconciliations = ["ADMIN", "MANAGER"].includes(userRole);
+  const canApproveReconciliations = userRole === "ADMIN";
+
+  // Filter configurations
+  const filterConfigs: FilterConfig[] = [
+    {
+      key: "status",
+      label: "Status",
+      type: "select",
+      options: [
+        { value: "DRAFT", label: "Draft" },
+        { value: "PENDING", label: "Pending" },
+        { value: "APPROVED", label: "Approved" },
+        { value: "REJECTED", label: "Rejected" },
+      ],
+      placeholder: "All Status",
+    },
+  ];
+
+  // Handle filter changes
+  const handleFilterChange = (key: string, value: any) => {
+    setFilters((prev) => ({ ...prev, [key]: value }));
+    setPagination((prev) => ({ ...prev, page: 1 }));
+  };
+
+  // Clear all filters
+  const handleResetFilters = () => {
+    setFilters({
+      search: "",
+      status: "",
+      createdBy: "",
+    });
+    setPagination((prev) => ({ ...prev, page: 1 }));
+  };
+
+  const handlePageChange = (newPage: number) => {
+    setPagination((prev) => ({ ...prev, page: newPage }));
+  };
+
+  const handlePageSizeChange = (newSize: number) => {
+    setPagination((prev) => ({ ...prev, limit: newSize, page: 1 }));
+  };
+
+  // Handle submit for approval
   const handleSubmitForApproval = async (reconciliationId: number) => {
     try {
       await submitReconciliation.mutateAsync(reconciliationId);
@@ -145,6 +218,7 @@ export function StockReconciliationList({
     }
   };
 
+  // Handle approve
   const handleApprove = async (reconciliationId: number) => {
     try {
       await approveReconciliation.mutateAsync({ id: reconciliationId });
@@ -155,6 +229,7 @@ export function StockReconciliationList({
     }
   };
 
+  // Handle reject
   const handleReject = async (reconciliationId: number) => {
     const reason = prompt("Please provide a reason for rejection:");
     if (!reason) return;
@@ -168,314 +243,299 @@ export function StockReconciliationList({
     }
   };
 
-  const handleDelete = async (reconciliationId: number) => {
-    if (!confirm("Are you sure you want to delete this reconciliation?"))
-      return;
+  // Handle delete
+  const handleDelete = async () => {
+    if (!reconciliationToDelete) return;
 
     try {
-      await deleteReconciliation.mutateAsync(reconciliationId.toString());
+      await deleteReconciliation.mutateAsync(
+        reconciliationToDelete.id.toString()
+      );
       toast.success("Reconciliation deleted successfully");
+      setDeleteDialogOpen(false);
+      setReconciliationToDelete(null);
     } catch (error) {
       console.error("Error deleting reconciliation:", error);
       toast.error("Failed to delete reconciliation");
     }
   };
 
-  const filteredReconciliations = reconciliations.filter(
-    (reconciliation: any) => {
-      const matchesSearch =
-        searchTerm === "" ||
-        reconciliation.title.toLowerCase().includes(searchTerm.toLowerCase()) ||
-        reconciliation.description
-          ?.toLowerCase()
-          .includes(searchTerm.toLowerCase()) ||
-        `${reconciliation.createdBy.firstName} ${reconciliation.createdBy.lastName}`
-          .toLowerCase()
-          .includes(searchTerm.toLowerCase());
-
-      return matchesSearch;
+  // Get status badge
+  const getStatusBadge = (status: string) => {
+    switch (status) {
+      case "DRAFT":
+        return <Badge variant="secondary">Draft</Badge>;
+      case "PENDING":
+        return (
+          <Badge variant="secondary" className="bg-yellow-100 text-yellow-800">
+            Pending
+          </Badge>
+        );
+      case "APPROVED":
+        return (
+          <Badge variant="default" className="bg-green-100 text-green-800">
+            Approved
+          </Badge>
+        );
+      case "REJECTED":
+        return <Badge variant="destructive">Rejected</Badge>;
+      default:
+        return <Badge variant="outline">{status}</Badge>;
     }
-  );
+  };
 
+  // Calculate total discrepancy
   const calculateTotalDiscrepancy = (reconciliation: StockReconciliation) => {
     return reconciliation.items.reduce(
-      (total, item) => total + item.discrepancy,
+      (total, item) => total + Math.abs(item.discrepancy),
       0
     );
   };
 
-  const calculateTotalImpact = (reconciliation: StockReconciliation) => {
-    return reconciliation.items.reduce(
-      (total, item) => total + (item.estimatedImpact || 0),
-      0
+  // Column configuration
+  const columns: ColumnConfig[] = [
+    { key: "title", label: "Title", sortable: true },
+    { key: "status", label: "Status" },
+    { key: "itemCount", label: "Items" },
+    { key: "totalDiscrepancy", label: "Total Discrepancy" },
+    { key: "createdBy", label: "Created By" },
+    { key: "createdAt", label: "Created" },
+  ];
+
+  // Add actions column if user has permissions
+  if (canManageReconciliations || canApproveReconciliations) {
+    columns.push({ key: "actions", label: "Actions" });
+  }
+
+  // Render cell function
+  const renderCell = (
+    reconciliation: StockReconciliation,
+    columnKey: string
+  ) => {
+    switch (columnKey) {
+      case "title":
+        return (
+          <div>
+            <div className="font-medium">{reconciliation.title}</div>
+            {reconciliation.description && (
+              <div className="text-sm text-gray-500 truncate max-w-xs">
+                {reconciliation.description}
+              </div>
+            )}
+          </div>
+        );
+      case "status":
+        return getStatusBadge(reconciliation.status);
+      case "itemCount":
+        return (
+          <div className="text-center">
+            <span className="font-mono">{reconciliation.items.length}</span>
+          </div>
+        );
+      case "totalDiscrepancy":
+        const totalDiscrepancy = calculateTotalDiscrepancy(reconciliation);
+        return (
+          <div className="text-center">
+            <span
+              className={`font-mono ${totalDiscrepancy > 0 ? "text-red-600" : "text-green-600"}`}
+            >
+              {totalDiscrepancy}
+            </span>
+          </div>
+        );
+      case "createdBy":
+        return (
+          <div className="text-sm">
+            <div>{`${reconciliation.createdBy.firstName} ${reconciliation.createdBy.lastName}`}</div>
+            <div className="text-gray-500">
+              {reconciliation.createdBy.email}
+            </div>
+          </div>
+        );
+      case "createdAt":
+        return (
+          <div className="text-sm">
+            {new Date(reconciliation.createdAt).toLocaleDateString()}
+          </div>
+        );
+      default:
+        return null;
+    }
+  };
+
+  // Render actions
+  const renderActions = (reconciliation: StockReconciliation) => {
+    const isOwner = reconciliation.createdBy.id === userId;
+    const canEdit = reconciliation.status === "DRAFT" && (isOwner || isAdmin);
+    const canSubmit = reconciliation.status === "DRAFT" && (isOwner || isAdmin);
+    const canApprove = reconciliation.status === "PENDING" && isAdmin;
+    const canDelete = reconciliation.status === "DRAFT" && (isOwner || isAdmin);
+
+    return (
+      <DropdownMenu>
+        <DropdownMenuTrigger asChild>
+          <Button variant="ghost" className="h-8 w-8 p-0">
+            <span className="sr-only">Open menu</span>
+            <IconDots className="h-4 w-4" />
+          </Button>
+        </DropdownMenuTrigger>
+        <DropdownMenuContent align="end">
+          <DropdownMenuItem asChild>
+            <Link
+              href={`/inventory/stock-reconciliations/${reconciliation.id}`}
+            >
+              <IconEye className="mr-2 h-4 w-4" />
+              View Details
+            </Link>
+          </DropdownMenuItem>
+
+          {canEdit && (
+            <DropdownMenuItem asChild>
+              <Link
+                href={`/inventory/stock-reconciliations/${reconciliation.id}/edit`}
+              >
+                <IconEdit className="mr-2 h-4 w-4" />
+                Edit
+              </Link>
+            </DropdownMenuItem>
+          )}
+
+          {canSubmit && (
+            <DropdownMenuItem
+              onClick={() => handleSubmitForApproval(reconciliation.id)}
+            >
+              <IconSend className="mr-2 h-4 w-4" />
+              Submit for Approval
+            </DropdownMenuItem>
+          )}
+
+          {canApprove && (
+            <>
+              <DropdownMenuItem
+                className="text-green-600"
+                onClick={() => handleApprove(reconciliation.id)}
+              >
+                <IconCheck className="mr-2 h-4 w-4" />
+                Approve
+              </DropdownMenuItem>
+              <DropdownMenuItem
+                className="text-red-600"
+                onClick={() => handleReject(reconciliation.id)}
+              >
+                <IconX className="mr-2 h-4 w-4" />
+                Reject
+              </DropdownMenuItem>
+            </>
+          )}
+
+          {canDelete && (
+            <DropdownMenuItem
+              className="text-red-600"
+              onClick={() => {
+                setReconciliationToDelete(reconciliation);
+                setDeleteDialogOpen(true);
+              }}
+            >
+              <IconTrash className="mr-2 h-4 w-4" />
+              Delete
+            </DropdownMenuItem>
+          )}
+        </DropdownMenuContent>
+      </DropdownMenu>
     );
   };
 
   return (
-    <Card>
-      <CardHeader>
-        <div className="flex items-center justify-between">
-          <div>
-            <CardTitle>Stock Reconciliations</CardTitle>
-            <CardDescription>
-              Manage inventory reconciliations and approval workflows
-            </CardDescription>
-          </div>
-        </div>
-      </CardHeader>
+    <>
+      <InventoryPageLayout
+        // Header
+        title="Stock Reconciliations"
+        description="Compare physical stock counts with system records and resolve discrepancies"
+        actions={
+          canManageReconciliations ? (
+            <Button asChild>
+              <Link
+                href="/inventory/stock-reconciliations/add"
+                className="flex items-center gap-2"
+              >
+                <IconPlus className="h-4 w-4" />
+                New Reconciliation
+              </Link>
+            </Button>
+          ) : undefined
+        }
+        // Filters
+        searchPlaceholder="Search reconciliations..."
+        searchValue={filters.search}
+        onSearchChange={(value) => handleFilterChange("search", value)}
+        isSearching={isSearching}
+        filters={filterConfigs}
+        filterValues={filters}
+        onFilterChange={handleFilterChange}
+        onResetFilters={handleResetFilters}
+        // Table
+        tableTitle="Stock Reconciliations"
+        totalCount={reconciliations.length}
+        currentCount={reconciliations.length}
+        showingText={`Showing ${reconciliations.length} reconciliations`}
+        columns={columns}
+        visibleColumns={visibleColumns}
+        onColumnsChange={setVisibleColumns}
+        columnCustomizerKey="stock-reconciliations-visible-columns"
+        data={reconciliations}
+        renderCell={renderCell}
+        renderActions={renderActions}
+        // Pagination
+        pagination={pagination}
+        onPageChange={handlePageChange}
+        onPageSizeChange={handlePageSizeChange}
+        // Loading states
+        isLoading={loading}
+        isRefetching={reconciliationsQuery.isFetching && !loading}
+        error={reconciliationsQuery.error?.message}
+        // Empty state
+        emptyStateIcon={<IconClipboard className="h-12 w-12 text-gray-400" />}
+        emptyStateMessage={
+          debouncedSearchTerm || filters.status
+            ? "No stock reconciliations found matching your filters."
+            : "No stock reconciliations found. Create your first reconciliation to get started."
+        }
+        emptyStateAction={
+          canManageReconciliations ? (
+            <Button asChild>
+              <Link href="/inventory/stock-reconciliations/add">
+                <IconPlus className="h-4 w-4 mr-2" />
+                New Reconciliation
+              </Link>
+            </Button>
+          ) : undefined
+        }
+      />
 
-      <CardContent>
-        {/* Filters */}
-        <div className="flex flex-col sm:flex-row gap-4 mb-6">
-          <div className="relative flex-1">
-            <IconSearch className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 h-4 w-4" />
-            <Input
-              placeholder="Search reconciliations..."
-              value={searchTerm}
-              onChange={(e) => setSearchTerm(e.target.value)}
-              className="pl-10"
-            />
-          </div>
-
-          <Select value={statusFilter} onValueChange={setStatusFilter}>
-            <SelectTrigger className="w-full sm:w-[180px]">
-              <SelectValue placeholder="Filter by status" />
-            </SelectTrigger>
-            <SelectContent>
-              <SelectItem value="all">All Statuses</SelectItem>
-              <SelectItem value="DRAFT">Draft</SelectItem>
-              <SelectItem value="PENDING">Pending</SelectItem>
-              <SelectItem value="APPROVED">Approved</SelectItem>
-              <SelectItem value="REJECTED">Rejected</SelectItem>
-            </SelectContent>
-          </Select>
-
-          <Select value={createdByFilter} onValueChange={setCreatedByFilter}>
-            <SelectTrigger className="w-full sm:w-[180px]">
-              <SelectValue placeholder="Filter by creator" />
-            </SelectTrigger>
-            <SelectContent>
-              <SelectItem value="all">All Creators</SelectItem>
-              <SelectItem value={userId.toString()}>
-                My Reconciliations
-              </SelectItem>
-            </SelectContent>
-          </Select>
-        </div>
-
-        {/* Table */}
-        <div className="rounded-md border">
-          <Table>
-            <TableHeader>
-              <TableRow>
-                <TableHead>Title</TableHead>
-                <TableHead>Status</TableHead>
-                <TableHead>Created By</TableHead>
-                <TableHead>Items</TableHead>
-                <TableHead>Total Discrepancy</TableHead>
-                <TableHead>Est. Impact</TableHead>
-                <TableHead>Created</TableHead>
-                <TableHead className="text-right">Actions</TableHead>
-              </TableRow>
-            </TableHeader>
-            <TableBody>
-              {isLoading ? (
-                <TableRow>
-                  <TableCell colSpan={8} className="text-center py-8">
-                    Loading reconciliations...
-                  </TableCell>
-                </TableRow>
-              ) : filteredReconciliations.length === 0 ? (
-                <TableRow>
-                  <TableCell colSpan={8} className="text-center py-8">
-                    No reconciliations found
-                  </TableCell>
-                </TableRow>
-              ) : (
-                filteredReconciliations.map((reconciliation: any) => {
-                  const totalDiscrepancy =
-                    calculateTotalDiscrepancy(reconciliation);
-                  const totalImpact = calculateTotalImpact(reconciliation);
-                  const canEdit =
-                    reconciliation.status === "DRAFT" &&
-                    (isAdmin || reconciliation.createdBy.id === userId);
-                  const canSubmit =
-                    reconciliation.status === "DRAFT" &&
-                    (isAdmin || reconciliation.createdBy.id === userId);
-                  const canApprove =
-                    reconciliation.status === "PENDING" && isAdmin;
-                  const canDelete =
-                    (reconciliation.status === "DRAFT" ||
-                      reconciliation.status === "REJECTED") &&
-                    (isAdmin || reconciliation.createdBy.id === userId);
-
-                  return (
-                    <TableRow key={reconciliation.id}>
-                      <TableCell>
-                        <div>
-                          <div className="font-medium">
-                            {reconciliation.title}
-                          </div>
-                          {reconciliation.description && (
-                            <div className="text-sm text-muted-foreground">
-                              {reconciliation.description}
-                            </div>
-                          )}
-                        </div>
-                      </TableCell>
-                      <TableCell>
-                        <Badge
-                          variant={
-                            statusConfig[
-                              reconciliation.status as keyof typeof statusConfig
-                            ]?.color as any
-                          }
-                        >
-                          {
-                            statusConfig[
-                              reconciliation.status as keyof typeof statusConfig
-                            ]?.label
-                          }
-                        </Badge>
-                      </TableCell>
-                      <TableCell>
-                        <div>
-                          <div className="font-medium">
-                            {reconciliation.createdBy.firstName}{" "}
-                            {reconciliation.createdBy.lastName}
-                          </div>
-                          <div className="text-sm text-muted-foreground">
-                            {reconciliation.createdBy.email}
-                          </div>
-                        </div>
-                      </TableCell>
-                      <TableCell>{reconciliation.items.length}</TableCell>
-                      <TableCell>
-                        <span
-                          className={
-                            totalDiscrepancy === 0
-                              ? "text-green-600"
-                              : totalDiscrepancy > 0
-                                ? "text-blue-600"
-                                : "text-red-600"
-                          }
-                        >
-                          {totalDiscrepancy > 0 ? "+" : ""}
-                          {totalDiscrepancy}
-                        </span>
-                      </TableCell>
-                      <TableCell>
-                        <span
-                          className={
-                            totalImpact === 0
-                              ? "text-green-600"
-                              : totalImpact > 0
-                                ? "text-blue-600"
-                                : "text-red-600"
-                          }
-                        >
-                          {formatCurrency(totalImpact)}
-                        </span>
-                      </TableCell>
-                      <TableCell>
-                        {new Date(
-                          reconciliation.createdAt
-                        ).toLocaleDateString()}
-                      </TableCell>
-                      <TableCell className="text-right">
-                        <DropdownMenu>
-                          <DropdownMenuTrigger asChild>
-                            <Button variant="ghost" className="h-8 w-8 p-0">
-                              <span className="sr-only">Open menu</span>
-                              <IconDots className="h-4 w-4" />
-                            </Button>
-                          </DropdownMenuTrigger>
-                          <DropdownMenuContent align="end">
-                            <DropdownMenuLabel>Actions</DropdownMenuLabel>
-                            <DropdownMenuItem asChild>
-                              <Link
-                                href={`/inventory/stock-reconciliations/${reconciliation.id}`}
-                              >
-                                <IconEye className="mr-2 h-4 w-4" />
-                                View Details
-                              </Link>
-                            </DropdownMenuItem>
-
-                            {canEdit && (
-                              <DropdownMenuItem asChild>
-                                <Link
-                                  href={`/inventory/stock-reconciliations/${reconciliation.id}/edit`}
-                                >
-                                  <IconEdit className="mr-2 h-4 w-4" />
-                                  Edit
-                                </Link>
-                              </DropdownMenuItem>
-                            )}
-
-                            {canSubmit && (
-                              <DropdownMenuItem
-                                onClick={() =>
-                                  handleSubmitForApproval(reconciliation.id)
-                                }
-                                disabled={submitReconciliation.isPending}
-                              >
-                                <IconSend className="mr-2 h-4 w-4" />
-                                Submit for Approval
-                              </DropdownMenuItem>
-                            )}
-
-                            {canApprove && (
-                              <>
-                                <DropdownMenuSeparator />
-                                <DropdownMenuItem
-                                  onClick={() =>
-                                    handleApprove(reconciliation.id)
-                                  }
-                                  disabled={approveReconciliation.isPending}
-                                  className="text-green-600"
-                                >
-                                  <IconCheck className="mr-2 h-4 w-4" />
-                                  Approve
-                                </DropdownMenuItem>
-                                <DropdownMenuItem
-                                  onClick={() =>
-                                    handleReject(reconciliation.id)
-                                  }
-                                  disabled={rejectReconciliation.isPending}
-                                  className="text-red-600"
-                                >
-                                  <IconX className="mr-2 h-4 w-4" />
-                                  Reject
-                                </DropdownMenuItem>
-                              </>
-                            )}
-
-                            {canDelete && (
-                              <>
-                                <DropdownMenuSeparator />
-                                <DropdownMenuItem
-                                  onClick={() =>
-                                    handleDelete(reconciliation.id)
-                                  }
-                                  disabled={deleteReconciliation.isPending}
-                                  className="text-red-600"
-                                >
-                                  <IconTrash className="mr-2 h-4 w-4" />
-                                  Delete
-                                </DropdownMenuItem>
-                              </>
-                            )}
-                          </DropdownMenuContent>
-                        </DropdownMenu>
-                      </TableCell>
-                    </TableRow>
-                  );
-                })
-              )}
-            </TableBody>
-          </Table>
-        </div>
-      </CardContent>
-    </Card>
+      {/* Delete Confirmation Dialog */}
+      <AlertDialog open={deleteDialogOpen} onOpenChange={setDeleteDialogOpen}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle className="flex items-center gap-2">
+              <IconAlertTriangle className="h-5 w-5 text-red-500" />
+              Delete Stock Reconciliation
+            </AlertDialogTitle>
+            <AlertDialogDescription>
+              Are you sure you want to delete the reconciliation "
+              {reconciliationToDelete?.title}"? This action cannot be undone.
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel>Cancel</AlertDialogCancel>
+            <AlertDialogAction
+              onClick={handleDelete}
+              className="bg-red-600 hover:bg-red-700"
+            >
+              Delete
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
+    </>
   );
 }

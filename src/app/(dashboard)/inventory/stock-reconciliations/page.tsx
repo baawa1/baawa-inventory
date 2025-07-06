@@ -20,6 +20,7 @@ export default async function StockReconciliationsPage() {
     <StockReconciliationList
       userRole={session.user.role}
       userId={parseInt(session.user.id, 10)}
+      user={session.user}
     />
   );
 }

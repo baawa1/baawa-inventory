@@ -40,6 +40,7 @@ export const stockAdditionQuerySchema = z.object({
   createdBy: z.number().int().positive().optional(),
   startDate: z.string().datetime().optional(),
   endDate: z.string().datetime().optional(),
+  search: z.string().optional(),
   page: z.number().int().positive().default(1),
   limit: z.number().int().positive().max(100).default(10),
   sortBy: z
