@@ -29,6 +29,13 @@ import { Textarea } from "@/components/ui/textarea";
 import { Badge } from "@/components/ui/badge";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
+import {
   IconPlus,
   IconTrash,
   IconSearch,
@@ -45,6 +52,7 @@ import {
   useUpdateStockReconciliation,
   useSubmitStockReconciliation,
 } from "@/hooks/api/stock-management";
+import { DISCREPANCY_REASONS } from "@/lib/constants/stock-reconciliation";
 
 const reconciliationItemSchema = z.object({
   productId: z.number().int().positive(),
@@ -537,11 +545,18 @@ export function StockReconciliationEditForm({
                                 control={form.control}
                                 name={`items.${index}.discrepancyReason`}
                                 render={({ field }) => (
-                                  <Input
-                                    placeholder="Reason for discrepancy..."
-                                    {...field}
-                                    className="min-w-48"
-                                  />
+                                  <Select onValueChange={field.onChange} value={field.value}>
+                                    <SelectTrigger className="min-w-48">
+                                      <SelectValue placeholder="Select reason..." />
+                                    </SelectTrigger>
+                                    <SelectContent>
+                                      {DISCREPANCY_REASONS.map((reason) => (
+                                        <SelectItem key={reason.value} value={reason.value}>
+                                          {reason.label}
+                                        </SelectItem>
+                                      ))}
+                                    </SelectContent>
+                                  </Select>
                                 )}
                               />
                             </TableCell>
