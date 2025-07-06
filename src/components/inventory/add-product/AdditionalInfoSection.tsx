@@ -1,6 +1,7 @@
 "use client";
 
 import { UseFormReturn } from "react-hook-form";
+import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import {
   FormControl,
   FormField,
@@ -38,91 +39,99 @@ export function AdditionalInfoSection({ form }: AdditionalInfoSectionProps) {
   };
 
   return (
-    <div className="space-y-4">
-      <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+    <Card>
+      <CardHeader>
+        <CardTitle>Additional Information</CardTitle>
+      </CardHeader>
+      <CardContent className="space-y-4">
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+          <FormField
+            control={form.control}
+            name="status"
+            render={({ field }) => (
+              <FormItem>
+                <FormLabel>Status</FormLabel>
+                <Select
+                  onValueChange={field.onChange}
+                  defaultValue={field.value}
+                >
+                  <FormControl>
+                    <SelectTrigger>
+                      <SelectValue placeholder="Select status" />
+                    </SelectTrigger>
+                  </FormControl>
+                  <SelectContent>
+                    <SelectItem value="active">
+                      <div className="flex items-center gap-2">
+                        <Badge
+                          variant="outline"
+                          className={getStatusColor("active")}
+                        >
+                          Active
+                        </Badge>
+                      </div>
+                    </SelectItem>
+                    <SelectItem value="inactive">
+                      <div className="flex items-center gap-2">
+                        <Badge
+                          variant="outline"
+                          className={getStatusColor("inactive")}
+                        >
+                          Inactive
+                        </Badge>
+                      </div>
+                    </SelectItem>
+                    <SelectItem value="discontinued">
+                      <div className="flex items-center gap-2">
+                        <Badge
+                          variant="outline"
+                          className={getStatusColor("discontinued")}
+                        >
+                          Discontinued
+                        </Badge>
+                      </div>
+                    </SelectItem>
+                  </SelectContent>
+                </Select>
+                <FormMessage />
+              </FormItem>
+            )}
+          />
+
+          <div className="flex items-center">
+            <div className="text-sm text-muted-foreground">
+              Current Status:
+              <Badge
+                variant="outline"
+                className={`ml-2 ${getStatusColor(form.watch("status"))}`}
+              >
+                {form.watch("status") || "active"}
+              </Badge>
+            </div>
+          </div>
+        </div>
+
         <FormField
           control={form.control}
-          name="status"
+          name="notes"
           render={({ field }) => (
             <FormItem>
-              <FormLabel>Status</FormLabel>
-              <Select onValueChange={field.onChange} defaultValue={field.value}>
-                <FormControl>
-                  <SelectTrigger>
-                    <SelectValue placeholder="Select status" />
-                  </SelectTrigger>
-                </FormControl>
-                <SelectContent>
-                  <SelectItem value="active">
-                    <div className="flex items-center gap-2">
-                      <Badge
-                        variant="outline"
-                        className={getStatusColor("active")}
-                      >
-                        Active
-                      </Badge>
-                    </div>
-                  </SelectItem>
-                  <SelectItem value="inactive">
-                    <div className="flex items-center gap-2">
-                      <Badge
-                        variant="outline"
-                        className={getStatusColor("inactive")}
-                      >
-                        Inactive
-                      </Badge>
-                    </div>
-                  </SelectItem>
-                  <SelectItem value="discontinued">
-                    <div className="flex items-center gap-2">
-                      <Badge
-                        variant="outline"
-                        className={getStatusColor("discontinued")}
-                      >
-                        Discontinued
-                      </Badge>
-                    </div>
-                  </SelectItem>
-                </SelectContent>
-              </Select>
+              <FormLabel>Notes</FormLabel>
+              <FormControl>
+                <Textarea
+                  placeholder="Additional notes about this product"
+                  className="resize-none"
+                  rows={3}
+                  {...field}
+                  value={field.value || ""}
+                  onChange={(e) => field.onChange(e.target.value || null)}
+                />
+              </FormControl>
               <FormMessage />
             </FormItem>
           )}
         />
-
-        <div className="flex items-center">
-          <div className="text-sm text-muted-foreground">
-            Current Status:
-            <Badge
-              variant="outline"
-              className={`ml-2 ${getStatusColor(form.watch("status"))}`}
-            >
-              {form.watch("status") || "active"}
-            </Badge>
-          </div>
-        </div>
-      </div>
-
-      <FormField
-        control={form.control}
-        name="notes"
-        render={({ field }) => (
-          <FormItem>
-            <FormLabel>Notes</FormLabel>
-            <FormControl>
-              <Textarea
-                placeholder="Additional notes about this product"
-                className="resize-none"
-                rows={3}
-                {...field}
-                value={field.value || ""}
-                onChange={(e) => field.onChange(e.target.value || null)}
-              />
-            </FormControl>
-            <FormMessage />
-          </FormItem>
-        )}
-      />
-    </div>
+      </CardContent>
+    </Card>
   );
 }
