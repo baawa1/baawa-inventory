@@ -18,6 +18,7 @@ import {
 
 import { NavDocuments } from "@/components/nav-documents";
 import { NavMain } from "@/components/nav-main";
+import { NavInventory } from "@/components/nav-inventory";
 import { NavSecondary } from "@/components/nav-secondary";
 import { NavUser } from "@/components/nav-user";
 import {
@@ -43,11 +44,6 @@ const data = {
       icon: IconDashboard,
     },
     {
-      title: "Inventory",
-      url: "/inventory",
-      icon: IconPackages,
-    },
-    {
       title: "POS System",
       url: "/pos",
       icon: IconShoppingCart,
@@ -61,74 +57,6 @@ const data = {
       title: "Settings",
       url: "/settings",
       icon: IconSettings,
-    },
-  ],
-  navClouds: [
-    {
-      title: "Products",
-      icon: IconPackages,
-      isActive: true,
-      url: "/inventory/products",
-      items: [
-        {
-          title: "All Products",
-          url: "/inventory/products",
-        },
-        {
-          title: "Add Product",
-          url: "/inventory/products/add",
-        },
-        {
-          title: "Categories",
-          url: "/inventory/categories",
-        },
-        {
-          title: "Brands",
-          url: "/inventory/brands",
-        },
-        {
-          title: "Low Stock",
-          url: "/inventory/products?filter=low-stock",
-        },
-      ],
-    },
-    {
-      title: "Suppliers",
-      icon: IconTruck,
-      url: "/inventory/suppliers",
-      items: [
-        {
-          title: "All Suppliers",
-          url: "/inventory/suppliers",
-        },
-        {
-          title: "Add Supplier",
-          url: "/inventory/suppliers/add",
-        },
-        {
-          title: "Purchase Orders",
-          url: "/inventory/purchase-orders",
-        },
-      ],
-    },
-    {
-      title: "Stock Management",
-      icon: IconAdjustments,
-      url: "/inventory/stock",
-      items: [
-        {
-          title: "Stock Reconciliations",
-          url: "/inventory/stock-reconciliations",
-        },
-        {
-          title: "Stock History",
-          url: "/inventory/stock-history",
-        },
-        {
-          title: "Import Products",
-          url: "/inventory/import",
-        },
-      ],
     },
   ],
   navSecondary: [
@@ -179,7 +107,7 @@ export function AppSidebar({ ...props }: React.ComponentProps<typeof Sidebar>) {
             >
               <a href="#">
                 <IconInnerShadowTop className="!size-5" />
-                <span className="text-base font-semibold">Acme Inc.</span>
+                <span className="text-base font-semibold">BaaWA Inventory</span>
               </a>
             </SidebarMenuButton>
           </SidebarMenuItem>
@@ -187,6 +115,7 @@ export function AppSidebar({ ...props }: React.ComponentProps<typeof Sidebar>) {
       </SidebarHeader>
       <SidebarContent>
         <NavMain items={data.navMain} />
+        <NavInventory />
         <NavDocuments items={data.documents} />
         <NavSecondary items={data.navSecondary} className="mt-auto" />
       </SidebarContent>
