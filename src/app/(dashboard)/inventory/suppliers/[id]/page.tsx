@@ -10,9 +10,9 @@ export const metadata = {
 };
 
 interface SupplierDetailPageProps {
-  params: {
+  params: Promise<{
     id: string;
-  };
+  }>;
 }
 
 export default async function SupplierDetailPage({
@@ -30,7 +30,8 @@ export default async function SupplierDetailPage({
     redirect("/unauthorized");
   }
 
-  const supplierId = parseInt(params.id);
+  const resolvedParams = await params;
+  const supplierId = parseInt(resolvedParams.id);
 
   if (isNaN(supplierId)) {
     redirect("/inventory/suppliers");

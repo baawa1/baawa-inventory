@@ -5,14 +5,14 @@ import { withPermission, AuthenticatedRequest } from "@/lib/api-middleware";
 import { emailService } from "@/lib/email";
 
 interface RouteParams {
-  params: { id: string };
+  params: Promise<{ id: string }>;
 }
 
 // GET /api/users/[id] - Get a specific user
 export async function GET(request: NextRequest, { params }: RouteParams) {
   const handler = withPermission("canManageUsers")(async () => {
     try {
-      const { id } = params;
+      const { id } = await params;
 
       // Validate ID
       const userId = parseInt(id);
@@ -71,7 +71,7 @@ export async function PUT(request: NextRequest, { params }: RouteParams) {
     authRequest: AuthenticatedRequest
   ) => {
     try {
-      const { id } = params;
+      const { id } = await params;
       const body = await authRequest.json();
 
       console.log("PUT /api/users/[id] - Received data:", { id, body });
@@ -224,7 +224,7 @@ export async function DELETE(request: NextRequest, { params }: RouteParams) {
     authRequest: AuthenticatedRequest
   ) => {
     try {
-      const { id } = params;
+      const { id } = await params;
       const { searchParams } = new URL(authRequest.url);
       const hardDelete = searchParams.get("hard") === "true";
 

@@ -51,15 +51,6 @@ export const paymentStatusSchema = z.enum([
   "CANCELLED",
 ]);
 
-export const stockAdjustmentTypeSchema = z.enum([
-  "INCREASE",
-  "DECREASE",
-  "RECOUNT",
-  "DAMAGE",
-  "TRANSFER",
-  "RETURN",
-]);
-
 export const purchaseOrderStatusSchema = z.enum([
   "PENDING",
   "ORDERED",
