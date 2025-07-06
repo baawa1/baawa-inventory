@@ -274,7 +274,7 @@ export const POST = withApiRateLimit(
           maxStock: productData.maximumStock,
           stock: productData.currentStock || 0,
           supplierId: productData.supplierId,
-          status: (productData.status as any) || "ACTIVE",
+          status: productData.status || "active",
           images: productData.imageUrl
             ? [{ url: productData.imageUrl, isPrimary: true }]
             : undefined,

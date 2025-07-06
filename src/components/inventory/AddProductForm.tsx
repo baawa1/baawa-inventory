@@ -60,7 +60,7 @@ export default function AddProductForm() {
         <div className="mb-6">
           <Button
             variant="ghost"
-            onClick={() => router.back()}
+            onClick={() => router.push("/inventory/products")}
             className="mb-4"
           >
             <ArrowLeft className="mr-2 h-4 w-4" />
@@ -87,7 +87,11 @@ export default function AddProductForm() {
   return (
     <div className="container mx-auto max-w-4xl py-6">
       <div className="mb-6">
-        <Button variant="ghost" onClick={() => router.back()} className="mb-4">
+        <Button
+          variant="ghost"
+          onClick={() => router.push("/inventory/products")}
+          className="mb-4"
+        >
           <ArrowLeft className="mr-2 h-4 w-4" />
           Back to Products
         </Button>
@@ -150,7 +154,7 @@ export default function AddProductForm() {
 
               <FormActions
                 isSubmitting={isSubmitting}
-                onCancelAction={() => router.back()}
+                onCancelAction={() => router.push("/inventory/products")}
               />
             </form>
           </Form>

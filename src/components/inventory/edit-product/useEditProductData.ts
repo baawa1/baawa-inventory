@@ -73,9 +73,9 @@ export function useEditProductData(productId: number) {
   return {
     form,
     product: product.data,
-    categories: categories.data || [],
-    brands: brands.data || [],
-    suppliers: suppliers.data?.data || [],
+    categories: Array.isArray(categories.data) ? categories.data : [],
+    brands: Array.isArray(brands.data) ? brands.data : [],
+    suppliers: Array.isArray(suppliers.data?.data) ? suppliers.data.data : [],
     loading,
     loadingCategories,
     loadingBrands,

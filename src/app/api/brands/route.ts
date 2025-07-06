@@ -104,7 +104,7 @@ export async function GET(request: NextRequest) {
     // Validate query parameters
     const queryParams: any = {
       search,
-      isActive: isActiveParam ? isActiveParam === "true" : undefined,
+      isActive: isActiveParam,
       limit,
       offset: Math.max(parseInt(searchParams.get("offset") || "0"), 0),
       sortBy: searchParams.get("sortBy") || "name",

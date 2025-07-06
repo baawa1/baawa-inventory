@@ -70,7 +70,9 @@ export const brandIdSchema = z.object({
 // Brand query schema for listing/filtering
 export const brandQuerySchema = z.object({
   search: z.string().optional(),
-  isActive: z.boolean().optional(),
+  isActive: z
+    .union([z.boolean(), z.string().transform((val) => val === "true")])
+    .optional(),
   limit: z.number().int().min(1).max(100).default(10),
   offset: z.number().int().min(0).default(0),
   sortBy: z.enum(["name", "createdAt", "updatedAt"]).default("name"),

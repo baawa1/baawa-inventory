@@ -76,9 +76,9 @@ export function CategoryBrandSection({
               <Select
                 disabled={loading}
                 onValueChange={(value) =>
-                  field.onChange(value ? parseInt(value) : undefined)
+                  field.onChange(value === "none" ? undefined : parseInt(value))
                 }
-                value={field.value?.toString() || ""}
+                value={field.value?.toString() || "none"}
               >
                 <FormControl>
                   <SelectTrigger>
@@ -86,7 +86,7 @@ export function CategoryBrandSection({
                   </SelectTrigger>
                 </FormControl>
                 <SelectContent>
-                  <SelectItem value="">No brand</SelectItem>
+                  <SelectItem value="none">No brand</SelectItem>
                   {brands.map((brand) => (
                     <SelectItem key={brand.id} value={brand.id.toString()}>
                       {brand.name}
