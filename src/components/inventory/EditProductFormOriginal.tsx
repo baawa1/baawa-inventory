@@ -94,9 +94,9 @@ export default function EditProductForm({ productId }: EditProductFormProps) {
   const [product, setProduct] = useState<Product | null>(null);
 
   // Add loading states for better UX
-  const [loadingCategories, setLoadingCategories] = useState(true);
-  const [loadingBrands, setLoadingBrands] = useState(true);
-  const [loadingSuppliers, setLoadingSuppliers] = useState(true);
+  const [_loadingCategories, setLoadingCategories] = useState(true);
+  const [_loadingBrands, setLoadingBrands] = useState(true);
+  const [_loadingSuppliers, setLoadingSuppliers] = useState(true);
 
   const form = useForm({
     resolver: zodResolver(updateProductSchema),

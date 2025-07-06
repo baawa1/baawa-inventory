@@ -23,13 +23,6 @@ import {
   FormMessage,
 } from "@/components/ui/form";
 import {
-  Select,
-  SelectContent,
-  SelectItem,
-  SelectTrigger,
-  SelectValue,
-} from "@/components/ui/select";
-import {
   Table,
   TableBody,
   TableCell,
@@ -98,7 +91,7 @@ export function StockReconciliationDialog({
   const [searchTerm, setSearchTerm] = useState("");
 
   // TanStack Query hooks
-  const { data: productsData, isLoading: loadingProducts } =
+  const { data: productsData, isLoading: _loadingProducts } =
     useProductSearch(searchTerm);
   const createMutation = useCreateStockReconciliation();
   const submitMutation = useSubmitStockReconciliation();
@@ -212,7 +205,7 @@ export function StockReconciliationDialog({
       form.reset();
       onSuccess?.();
       onClose();
-    } catch (error) {
+    } catch (_error) {
       toast.error("Failed to create stock reconciliation");
     }
   };

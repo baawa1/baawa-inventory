@@ -34,10 +34,10 @@ interface EditBrandFormProps {
 
 export default function EditBrandForm({ brandId }: EditBrandFormProps) {
   const router = useRouter();
-  const [serverError, setServerError] = useState<string | null>(null);
+  const [_serverError, setServerError] = useState<string | null>(null);
 
   // TanStack Query hooks
-  const { data: brand, isLoading, error } = useBrandById(brandId);
+  const { data: brand, isLoading, error: _error } = useBrandById(brandId);
 
   const updateBrandMutation = useUpdateBrand();
 
@@ -46,7 +46,7 @@ export default function EditBrandForm({ brandId }: EditBrandFormProps) {
     handleSubmit,
     setValue,
     watch,
-    reset,
+    reset: _reset,
     formState: { errors },
   } = useForm<UpdateBrandFormData>({
     resolver: zodResolver(updateBrandFormSchema),

@@ -32,12 +32,7 @@ import {
   IconAlertTriangle,
 } from "@tabler/icons-react";
 import { formatCurrency } from "@/lib/utils";
-import {
-  FilterConfig,
-  SortOption,
-  ColumnConfig,
-  PaginationState,
-} from "@/types/inventory";
+import { FilterConfig, SortOption, PaginationState } from "@/types/inventory";
 import { PRODUCT_COLUMNS } from "@/components/inventory/ColumnCustomizer";
 
 interface User {

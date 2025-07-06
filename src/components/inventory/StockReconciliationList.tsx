@@ -2,7 +2,6 @@
 
 import React, { useState } from "react";
 import Link from "next/link";
-import { useSession } from "next-auth/react";
 import { toast } from "sonner";
 import { useDebounce } from "@/hooks/useDebounce";
 import {
@@ -99,7 +98,7 @@ interface StockReconciliationListProps {
 export function StockReconciliationList({
   userRole,
   userId,
-  user,
+  user: _user,
 }: StockReconciliationListProps) {
   const [deleteDialogOpen, setDeleteDialogOpen] = useState(false);
   const [reconciliationToDelete, setReconciliationToDelete] =

@@ -122,7 +122,7 @@ const updateStockReconciliation = async ({
   return response.json();
 };
 
-const submitStockReconciliation = async (id: string) => {
+const submitStockReconciliation = async (id: number) => {
   const response = await fetch(`/api/stock-reconciliations/${id}/submit`, {
     method: "POST",
   });
@@ -134,10 +134,18 @@ const submitStockReconciliation = async (id: string) => {
   return response.json();
 };
 
-const approveStockReconciliation = async (id: string) => {
-  const response = await fetch(`/api/stock-reconciliations/${id}/approve`, {
-    method: "POST",
-  });
+const approveStockReconciliation = async (params: {
+  id: number;
+  notes?: string;
+}) => {
+  const response = await fetch(
+    `/api/stock-reconciliations/${params.id}/approve`,
+    {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ notes: params.notes }),
+    }
+  );
   if (!response.ok) {
     throw new Error(
       `Failed to approve stock reconciliation: ${response.statusText}`
@@ -147,15 +155,15 @@ const approveStockReconciliation = async (id: string) => {
 };
 
 const rejectStockReconciliation = async (params: {
-  id: string;
-  rejectionReason: string;
+  id: number;
+  reason: string;
 }) => {
   const response = await fetch(
     `/api/stock-reconciliations/${params.id}/reject`,
     {
       method: "POST",
       headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ rejectionReason: params.rejectionReason }),
+      body: JSON.stringify({ reason: params.reason }),
     }
   );
   if (!response.ok) {
@@ -239,7 +247,9 @@ export const useSubmitStockReconciliation = () => {
         queryKey: queryKeys.inventory.stockReconciliations.all(),
       });
       queryClient.invalidateQueries({
-        queryKey: queryKeys.inventory.stockReconciliations.detail(id),
+        queryKey: queryKeys.inventory.stockReconciliations.detail(
+          id.toString()
+        ),
       });
     },
   });
@@ -250,12 +260,14 @@ export const useApproveStockReconciliation = () => {
 
   return useMutation({
     mutationFn: approveStockReconciliation,
-    onSuccess: (data, id) => {
+    onSuccess: (data, params) => {
       queryClient.invalidateQueries({
         queryKey: queryKeys.inventory.stockReconciliations.all(),
       });
       queryClient.invalidateQueries({
-        queryKey: queryKeys.inventory.stockReconciliations.detail(id),
+        queryKey: queryKeys.inventory.stockReconciliations.detail(
+          params.id.toString()
+        ),
       });
     },
   });
@@ -271,7 +283,9 @@ export const useRejectStockReconciliation = () => {
         queryKey: queryKeys.inventory.stockReconciliations.all(),
       });
       queryClient.invalidateQueries({
-        queryKey: queryKeys.inventory.stockReconciliations.detail(params.id),
+        queryKey: queryKeys.inventory.stockReconciliations.detail(
+          params.id.toString()
+        ),
       });
     },
   });
