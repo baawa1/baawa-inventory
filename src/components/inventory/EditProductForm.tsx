@@ -1,6 +1,7 @@
 "use client";
 
 import { Button } from "@/components/ui/button";
+import { useRouter } from "next/navigation";
 import {
   Card,
   CardContent,
@@ -17,6 +18,7 @@ import { BasicInfoSection } from "./edit-product/BasicInfoSection";
 import { CategoryBrandSupplierSection } from "./edit-product/CategoryBrandSupplierSection";
 import { PricingInventorySection } from "./edit-product/PricingInventorySection";
 import { Skeleton } from "@/components/ui/skeleton";
+import { PageHeader } from "../ui/page-header";
 
 interface EditProductFormProps {
   productId: number;
@@ -64,6 +66,7 @@ function LoadingSkeleton() {
 }
 
 export default function EditProductForm({ productId }: EditProductFormProps) {
+  const router = useRouter();
   const {
     form,
     product,
@@ -100,17 +103,19 @@ export default function EditProductForm({ productId }: EditProductFormProps) {
 
   return (
     <div className="max-w-4xl mx-auto p-6 space-y-6">
-      <div className="flex items-center space-x-2">
+      <div className="mb-6">
         <Button
           variant="ghost"
-          size="sm"
-          onClick={() => window.history.back()}
-          className="hover:bg-gray-100"
+          onClick={() => router.push("/inventory/products")}
+          className="mb-4 px-4 lg:px-6"
         >
-          <ArrowLeft className="h-4 w-4 mr-2" />
-          Back
+          <ArrowLeft className="mr-2 h-4 w-4" />
+          Back to Products
         </Button>
-        <h1 className="text-2xl font-bold text-gray-900">Edit Product</h1>
+        <PageHeader
+          title="Edit Product"
+          description="Update the details for your product"
+        />
       </div>
 
       {submitError && (

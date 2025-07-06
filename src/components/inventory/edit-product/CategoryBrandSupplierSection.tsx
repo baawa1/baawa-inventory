@@ -74,14 +74,15 @@ export function CategoryBrandSupplierSection({
                     </SelectTrigger>
                   </FormControl>
                   <SelectContent>
-                    {categories.map((category) => (
-                      <SelectItem
-                        key={category.id}
-                        value={category.id.toString()}
-                      >
-                        {category.name}
-                      </SelectItem>
-                    ))}
+                    {Array.isArray(categories) &&
+                      categories.map((category) => (
+                        <SelectItem
+                          key={category.id}
+                          value={category.id.toString()}
+                        >
+                          {category.name}
+                        </SelectItem>
+                      ))}
                   </SelectContent>
                 </Select>
                 <FormMessage />
@@ -119,11 +120,12 @@ export function CategoryBrandSupplierSection({
                     </SelectTrigger>
                   </FormControl>
                   <SelectContent>
-                    {brands.map((brand) => (
-                      <SelectItem key={brand.id} value={brand.id.toString()}>
-                        {brand.name}
-                      </SelectItem>
-                    ))}
+                    {Array.isArray(brands) &&
+                      brands.map((brand) => (
+                        <SelectItem key={brand.id} value={brand.id.toString()}>
+                          {brand.name}
+                        </SelectItem>
+                      ))}
                   </SelectContent>
                 </Select>
                 <FormMessage />
@@ -161,14 +163,15 @@ export function CategoryBrandSupplierSection({
                     </SelectTrigger>
                   </FormControl>
                   <SelectContent>
-                    {suppliers.map((supplier) => (
-                      <SelectItem
-                        key={supplier.id}
-                        value={supplier.id.toString()}
-                      >
-                        {supplier.name}
-                      </SelectItem>
-                    ))}
+                    {Array.isArray(suppliers) &&
+                      suppliers.map((supplier) => (
+                        <SelectItem
+                          key={supplier.id}
+                          value={supplier.id.toString()}
+                        >
+                          {supplier.name}
+                        </SelectItem>
+                      ))}
                   </SelectContent>
                 </Select>
                 <FormMessage />

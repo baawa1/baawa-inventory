@@ -181,7 +181,7 @@ export const useBrandOptions = () => {
   return useQuery({
     queryKey: [...queryKeys.brands.all, "options"] as const,
     queryFn: async () => {
-      const response = await fetch("/api/brands?status=active");
+      const response = await fetch("/api/brands?isActive=true");
       if (!response.ok) {
         throw new Error(
           `Failed to fetch brand options: ${response.statusText}`
