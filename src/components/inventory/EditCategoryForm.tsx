@@ -96,7 +96,7 @@ export default function EditCategoryForm({ category }: EditCategoryFormProps) {
         throw new Error(errorData.error || "Failed to update category");
       }
 
-      const result = await response.json();
+      const _result = await response.json();
 
       toast.success("Category updated successfully!");
       router.push("/inventory/categories");

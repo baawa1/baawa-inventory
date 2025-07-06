@@ -32,7 +32,7 @@ export default function PendingApprovalPage() {
   const {
     userStatus,
     isRefreshing,
-    hasTriedRefresh,
+    hasTriedRefresh: _hasTriedRefresh,
     refreshUserStatus,
     isLoading,
   } = useUserStatusValidation({

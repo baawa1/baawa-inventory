@@ -72,7 +72,7 @@ interface StockHistoryListProps {
   };
 }
 
-export function StockHistoryList({ user }: StockHistoryListProps) {
+export function StockHistoryList({ user: _user }: StockHistoryListProps) {
   const [searchTerm, setSearchTerm] = useState("");
   const [sortBy, setSortBy] = useState("createdAt");
   const [sortOrder, setSortOrder] = useState<"asc" | "desc">("desc");
@@ -143,7 +143,7 @@ export function StockHistoryList({ user }: StockHistoryListProps) {
       document.body.removeChild(a);
 
       toast.success("Stock history exported successfully");
-    } catch (error) {
+    } catch (_error) {
       toast.error("Failed to export stock history");
     }
   };

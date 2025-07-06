@@ -1,7 +1,6 @@
 "use client";
 
 import {
-  IconTrendingDown,
   IconTrendingUp,
   IconPackages,
   IconAlertTriangle,

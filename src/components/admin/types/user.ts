@@ -23,7 +23,7 @@ const baseUserSchema = z.object({
 });
 
 // Password fields schema
-const passwordSchema = z
+const _passwordSchema = z
   .object({
     password: z.string().min(8, "Password must be at least 8 characters"),
     confirmPassword: z.string(),

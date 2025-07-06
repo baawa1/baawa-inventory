@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useEffect } from "react";
+import { useState, useEffect, useCallback } from "react";
 import { useSearchParams, useRouter } from "next/navigation";
 import { useSession } from "next-auth/react";
 import {
@@ -29,6 +29,57 @@ export default function VerifyEmailPage() {
   const [resendLoading, setResendLoading] = useState(false);
   const [resendMessage, setResendMessage] = useState("");
 
+  const verifyEmailToken = useCallback(
+    async (verificationToken: string) => {
+      try {
+        const response = await fetch("/api/auth/verify-email", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ token: verificationToken }),
+        });
+
+        const data = await response.json();
+
+        if (response.ok) {
+          setStatus("success");
+          setMessage(data.message);
+
+          // Set a flag that email was just verified so pending approval page can refresh
+          sessionStorage.setItem("emailJustVerified", "true");
+
+          // If user is logged in and we get shouldRefreshSession, refresh the session
+          if (session && data.shouldRefreshSession) {
+            try {
+              // Use NextAuth's update method to refresh the session from the server
+              await update();
+            } catch (error) {
+              console.error("Error updating session:", error);
+            }
+          }
+
+          // Redirect to pending approval page after 3 seconds
+          setTimeout(() => {
+            router.push("/pending-approval");
+          }, 3000);
+        } else {
+          if (data.error.includes("expired")) {
+            setStatus("expired");
+          } else if (data.error.includes("already verified")) {
+            setStatus("already-verified");
+          } else {
+            setStatus("error");
+          }
+          setMessage(data.error);
+        }
+      } catch (error) {
+        console.error("Error verifying email:", error);
+        setStatus("error");
+        setMessage("An error occurred while verifying your email");
+      }
+    },
+    [session, update, router]
+  );
+
   useEffect(() => {
     if (token) {
       verifyEmailToken(token);
@@ -36,54 +87,7 @@ export default function VerifyEmailPage() {
       setStatus("error");
       setMessage("No verification token provided");
     }
-  }, [token]);
-
-  const verifyEmailToken = async (verificationToken: string) => {
-    try {
-      const response = await fetch("/api/auth/verify-email", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ token: verificationToken }),
-      });
-
-      const data = await response.json();
-
-      if (response.ok) {
-        setStatus("success");
-        setMessage(data.message);
-
-        // Set a flag that email was just verified so pending approval page can refresh
-        sessionStorage.setItem("emailJustVerified", "true");
-
-        // If user is logged in and we get shouldRefreshSession, refresh the session
-        if (session && data.shouldRefreshSession) {
-          try {
-            // Use NextAuth's update method to refresh the session from the server
-            await update();
-          } catch (error) {
-            console.error("Error updating session:", error);
-          }
-        }
-
-        // Redirect to pending approval page after 3 seconds
-        setTimeout(() => {
-          router.push("/pending-approval");
-        }, 3000);
-      } else {
-        if (data.error.includes("expired")) {
-          setStatus("expired");
-        } else if (data.error.includes("already verified")) {
-          setStatus("already-verified");
-        } else {
-          setStatus("error");
-        }
-        setMessage(data.error);
-      }
-    } catch {
-      setStatus("error");
-      setMessage("Failed to verify email. Please try again.");
-    }
-  };
+  }, [token, verifyEmailToken]);
 
   const handleResendVerification = async (e: React.FormEvent) => {
     e.preventDefault();

@@ -15,12 +15,8 @@ import { Badge } from "@/components/ui/badge";
 import { Separator } from "@/components/ui/separator";
 import {
   IconPackage,
-  IconBarcode,
   IconTag,
   IconCurrencyDollar,
-  IconCalendar,
-  IconTruck,
-  IconBuilding,
   IconFileText,
   IconX,
   IconRefresh,

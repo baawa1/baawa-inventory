@@ -33,7 +33,6 @@ import {
   IconX,
   IconEdit,
   IconSend,
-  IconTrash,
   IconUser,
   IconCalendar,
   IconFileText,
@@ -45,8 +44,6 @@ import {
   useSubmitStockReconciliation,
   useApproveStockReconciliation,
   useRejectStockReconciliation,
-  type User,
-  type StockReconciliation,
   type StockReconciliationItem,
 } from "@/hooks/api/stock-management";
 
@@ -95,7 +92,7 @@ export function StockReconciliationDetail({
       await submitMutation.mutateAsync(reconciliationId);
       toast.success("Reconciliation submitted for approval");
       onUpdate?.();
-    } catch (error) {
+    } catch (_error) {
       toast.error("Failed to submit reconciliation");
     }
   };
@@ -110,7 +107,7 @@ export function StockReconciliationDetail({
       setShowApprovalDialog(false);
       setApprovalNotes("");
       onUpdate?.();
-    } catch (error) {
+    } catch (_error) {
       toast.error("Failed to approve reconciliation");
     }
   };
@@ -130,7 +127,7 @@ export function StockReconciliationDetail({
       setShowRejectionDialog(false);
       setRejectionReason("");
       onUpdate?.();
-    } catch (error) {
+    } catch (_error) {
       toast.error("Failed to reject reconciliation");
     }
   };
