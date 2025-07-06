@@ -307,7 +307,7 @@ export function StockReconciliationEditForm({
       </div>
 
       <Form {...form}>
-        <form className="space-y-6">
+        <form className="space-y-6" onSubmit={(e) => e.preventDefault()}>
           {/* Basic Information */}
           <Card>
             <CardHeader>
@@ -411,8 +411,7 @@ export function StockReconciliationEditForm({
                       {products.map((product: Product) => (
                         <div
                           key={product.id}
-                          className="flex items-center justify-between p-2 hover:bg-muted rounded cursor-pointer"
-                          onClick={() => addProduct(product)}
+                          className="flex items-center justify-between p-2 hover:bg-muted rounded"
                         >
                           <div>
                             <div className="font-medium">{product.name}</div>
@@ -420,7 +419,16 @@ export function StockReconciliationEditForm({
                               SKU: {product.sku} • Stock: {product.stock}
                             </div>
                           </div>
-                          <Button size="sm" variant="outline">
+                          <Button
+                            size="sm"
+                            variant="outline"
+                            type="button"
+                            onClick={(e) => {
+                              e.preventDefault();
+                              e.stopPropagation();
+                              addProduct(product);
+                            }}
+                          >
                             Add
                           </Button>
                         </div>
@@ -545,13 +553,19 @@ export function StockReconciliationEditForm({
                                 control={form.control}
                                 name={`items.${index}.discrepancyReason`}
                                 render={({ field }) => (
-                                  <Select onValueChange={field.onChange} value={field.value}>
+                                  <Select
+                                    onValueChange={field.onChange}
+                                    value={field.value}
+                                  >
                                     <SelectTrigger className="min-w-48">
                                       <SelectValue placeholder="Select reason..." />
                                     </SelectTrigger>
                                     <SelectContent>
                                       {DISCREPANCY_REASONS.map((reason) => (
-                                        <SelectItem key={reason.value} value={reason.value}>
+                                        <SelectItem
+                                          key={reason.value}
+                                          value={reason.value}
+                                        >
                                           {reason.label}
                                         </SelectItem>
                                       ))}

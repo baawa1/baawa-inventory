@@ -14,4 +14,5 @@ export const DISCREPANCY_REASONS = [
   { value: "other", label: "Other" },
 ] as const;
 
-export type DiscrepancyReasonValue = typeof DISCREPANCY_REASONS[number]["value"];
+export type DiscrepancyReasonValue =
+  (typeof DISCREPANCY_REASONS)[number]["value"];
