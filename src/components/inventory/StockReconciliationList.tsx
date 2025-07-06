@@ -43,6 +43,7 @@ import {
   IconClipboard,
   IconAlertTriangle,
 } from "@tabler/icons-react";
+import { STOCK_RECONCILIATION_COLUMNS } from "@/components/inventory/ColumnCustomizer";
 import type { ColumnConfig, FilterConfig } from "@/types/inventory";
 
 interface User {
@@ -119,6 +120,30 @@ export function StockReconciliationList({
     "createdAt",
   ]);
 
+  // Clear old localStorage to ensure fresh start with correct columns
+  React.useEffect(() => {
+    const hasOldData = localStorage.getItem(
+      "stock-reconciliations-visible-columns"
+    );
+    if (hasOldData) {
+      try {
+        const parsed = JSON.parse(hasOldData);
+        // Check if it contains product columns (which shouldn't be there)
+        if (
+          parsed.includes("name") ||
+          parsed.includes("sku") ||
+          parsed.includes("image")
+        ) {
+          // Clear the old data
+          localStorage.removeItem("stock-reconciliations-visible-columns");
+        }
+      } catch (e) {
+        // If parsing fails, clear the data
+        localStorage.removeItem("stock-reconciliations-visible-columns");
+      }
+    }
+  }, []);
+
   // Filters
   const [filters, setFilters] = useState({
     search: "",
@@ -149,7 +174,7 @@ export function StockReconciliationList({
   const deleteReconciliation = useDeleteStockReconciliation();
 
   // Extract data from queries
-  const reconciliations = reconciliationsQuery.data?.data || [];
+  const reconciliations = reconciliationsQuery.data?.reconciliations || [];
   const loading = reconciliationsQuery.isLoading;
 
   // Update pagination when data changes
@@ -291,14 +316,14 @@ export function StockReconciliationList({
     );
   };
 
-  // Column configuration
+  // Column configuration for reconciliation data
   const columns: ColumnConfig[] = [
-    { key: "title", label: "Title", sortable: true },
+    { key: "title", label: "Reconciliation Title", sortable: true },
     { key: "status", label: "Status" },
-    { key: "itemCount", label: "Items" },
+    { key: "itemCount", label: "Items Count" },
     { key: "totalDiscrepancy", label: "Total Discrepancy" },
     { key: "createdBy", label: "Created By" },
-    { key: "createdAt", label: "Created" },
+    { key: "createdAt", label: "Created Date" },
   ];
 
   // Add actions column if user has permissions
@@ -327,14 +352,14 @@ export function StockReconciliationList({
         return getStatusBadge(reconciliation.status);
       case "itemCount":
         return (
-          <div className="text-center">
+          <div>
             <span className="font-mono">{reconciliation.items.length}</span>
           </div>
         );
       case "totalDiscrepancy":
         const totalDiscrepancy = calculateTotalDiscrepancy(reconciliation);
         return (
-          <div className="text-center">
+          <div>
             <span
               className={`font-mono ${totalDiscrepancy > 0 ? "text-red-600" : "text-green-600"}`}
             >
@@ -355,6 +380,14 @@ export function StockReconciliationList({
         return (
           <div className="text-sm">
             {new Date(reconciliation.createdAt).toLocaleDateString()}
+          </div>
+        );
+      case "updatedAt":
+        return (
+          <div className="text-sm">
+            {reconciliation.updatedAt
+              ? new Date(reconciliation.updatedAt).toLocaleDateString()
+              : "-"}
           </div>
         );
       default:
@@ -481,6 +514,7 @@ export function StockReconciliationList({
         visibleColumns={visibleColumns}
         onColumnsChange={setVisibleColumns}
         columnCustomizerKey="stock-reconciliations-visible-columns"
+        columnCustomizerColumns={STOCK_RECONCILIATION_COLUMNS}
         data={reconciliations}
         renderCell={renderCell}
         renderActions={renderActions}

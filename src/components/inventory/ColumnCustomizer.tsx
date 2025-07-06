@@ -186,6 +186,53 @@ export const CATEGORY_COLUMNS: TableColumn[] = [
   },
 ];
 
+export const STOCK_RECONCILIATION_COLUMNS: TableColumn[] = [
+  {
+    key: "title",
+    label: "Reconciliation Title",
+    sortable: true,
+    defaultVisible: true,
+    required: true,
+  },
+  {
+    key: "status",
+    label: "Status",
+    sortable: true,
+    defaultVisible: true,
+    required: true,
+  },
+  {
+    key: "itemCount",
+    label: "Items Count",
+    sortable: true,
+    defaultVisible: true,
+  },
+  {
+    key: "totalDiscrepancy",
+    label: "Total Discrepancy",
+    sortable: true,
+    defaultVisible: true,
+  },
+  {
+    key: "createdBy",
+    label: "Created By",
+    sortable: true,
+    defaultVisible: true,
+  },
+  {
+    key: "createdAt",
+    label: "Created Date",
+    sortable: true,
+    defaultVisible: true,
+  },
+  {
+    key: "updatedAt",
+    label: "Updated Date",
+    sortable: true,
+    defaultVisible: false,
+  },
+];
+
 interface ColumnCustomizerProps {
   columns?: TableColumn[];
   onColumnsChange: (visibleColumns: string[]) => void;
