@@ -154,7 +154,7 @@ export default function EditProductForm({ productId }: EditProductFormProps) {
                 <Button
                   type="button"
                   variant="outline"
-                  onClick={() => window.history.back()}
+                  onClick={() => router.push("/inventory/products")}
                   disabled={isSubmitting}
                 >
                   Cancel
