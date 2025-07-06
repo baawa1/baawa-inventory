@@ -59,10 +59,12 @@ export function PricingInventorySection({
                     step="0.01"
                     min="0"
                     placeholder="0.00"
-                    value={field.value?.toString() || ""}
+                    value={
+                      field.value === 0 ? "" : field.value?.toString() || ""
+                    }
                     onChange={(e) => {
                       const value = e.target.value;
-                      field.onChange(value ? parseFloat(value) : undefined);
+                      field.onChange(value ? parseFloat(value) : 0);
                     }}
                   />
                 </FormControl>
@@ -84,10 +86,12 @@ export function PricingInventorySection({
                     step="0.01"
                     min="0"
                     placeholder="0.00"
-                    value={field.value?.toString() || ""}
+                    value={
+                      field.value === 0 ? "" : field.value?.toString() || ""
+                    }
                     onChange={(e) => {
                       const value = e.target.value;
-                      field.onChange(value ? parseFloat(value) : undefined);
+                      field.onChange(value ? parseFloat(value) : 0);
                     }}
                   />
                 </FormControl>
@@ -130,10 +134,13 @@ export function PricingInventorySection({
                     type="number"
                     min="0"
                     placeholder="0"
-                    {...field}
-                    onChange={(e) =>
-                      field.onChange(parseInt(e.target.value) || 0)
+                    value={
+                      field.value === 0 ? "" : field.value?.toString() || ""
                     }
+                    onChange={(e) => {
+                      const value = e.target.value;
+                      field.onChange(value ? parseInt(value) : 0);
+                    }}
                   />
                 </FormControl>
                 <FormDescription>Current quantity in stock</FormDescription>
@@ -153,10 +160,13 @@ export function PricingInventorySection({
                     type="number"
                     min="0"
                     placeholder="0"
-                    {...field}
-                    onChange={(e) =>
-                      field.onChange(parseInt(e.target.value) || 0)
+                    value={
+                      field.value === 0 ? "" : field.value?.toString() || ""
                     }
+                    onChange={(e) => {
+                      const value = e.target.value;
+                      field.onChange(value ? parseInt(value) : 0);
+                    }}
                   />
                 </FormControl>
                 <FormDescription>Alert when stock is low</FormDescription>
