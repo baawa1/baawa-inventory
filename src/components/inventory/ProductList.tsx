@@ -19,7 +19,6 @@ import {
 } from "@/components/ui/dropdown-menu";
 import { InventoryPageLayout } from "@/components/inventory/InventoryPageLayout";
 import { AddStockDialog } from "@/components/inventory/AddStockDialog";
-import { StockReconciliationDialog } from "@/components/inventory/StockReconciliationDialog";
 import { ProductDetailModal } from "@/components/inventory/ProductDetailModal";
 import {
   IconPlus,
@@ -94,8 +93,6 @@ export function ProductList({ user }: ProductListProps) {
   const [addStockDialogOpen, setAddStockDialogOpen] = useState(false);
   const [selectedProductForStock, setSelectedProductForStock] =
     useState<APIProduct | null>(null);
-  const [reconciliationDialogOpen, setReconciliationDialogOpen] =
-    useState(false);
   const [productDetailModalOpen, setProductDetailModalOpen] = useState(false);
   const [selectedProductForDetail, setSelectedProductForDetail] = useState<
     number | null
@@ -417,12 +414,14 @@ export function ProductList({ user }: ProductListProps) {
         canManageProducts ? (
           <>
             <Button
+              asChild
               variant="outline"
-              onClick={() => setReconciliationDialogOpen(true)}
               className="flex items-center gap-2"
             >
-              <IconAdjustments className="h-4 w-4" />
-              Reconcile Stock
+              <Link href="/inventory/stock-reconciliations/add">
+                <IconAdjustments className="h-4 w-4" />
+                Reconcile Stock
+              </Link>
             </Button>
             <Button asChild>
               <Link
@@ -502,13 +501,6 @@ export function ProductList({ user }: ProductListProps) {
               setSelectedProductForStock(null);
             }}
             product={selectedProductForStock}
-            onSuccess={() => {
-              productsQuery.refetch();
-            }}
-          />
-          <StockReconciliationDialog
-            isOpen={reconciliationDialogOpen}
-            onClose={() => setReconciliationDialogOpen(false)}
             onSuccess={() => {
               productsQuery.refetch();
             }}
