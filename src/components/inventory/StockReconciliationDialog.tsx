@@ -242,7 +242,7 @@ export function StockReconciliationDialog({
         </DialogHeader>
 
         <Form {...form}>
-          <form className="space-y-6">
+          <form className="space-y-6" onSubmit={(e) => e.preventDefault()}>
             {/* Basic Information */}
             <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
               <FormField
@@ -305,8 +305,7 @@ export function StockReconciliationDialog({
                       {products.map((product: Product) => (
                         <div
                           key={product.id}
-                          className="flex items-center justify-between p-3 border-b last:border-b-0 hover:bg-muted cursor-pointer"
-                          onClick={() => addProduct(product)}
+                          className="flex items-center justify-between p-3 border-b last:border-b-0 hover:bg-muted"
                         >
                           <div>
                             <p className="font-medium">{product.name}</p>
@@ -315,7 +314,15 @@ export function StockReconciliationDialog({
                               {product.stock}
                             </p>
                           </div>
-                          <Button size="sm" type="button">
+                          <Button
+                            size="sm"
+                            type="button"
+                            onClick={(e) => {
+                              e.preventDefault();
+                              e.stopPropagation();
+                              addProduct(product);
+                            }}
+                          >
                             <IconPlus className="h-4 w-4" />
                           </Button>
                         </div>
@@ -432,16 +439,24 @@ export function StockReconciliationDialog({
                                   render={({ field }) => (
                                     <FormItem>
                                       <FormControl>
-                                        <Select onValueChange={field.onChange} value={field.value}>
+                                        <Select
+                                          onValueChange={field.onChange}
+                                          value={field.value}
+                                        >
                                           <SelectTrigger>
                                             <SelectValue placeholder="Select reason..." />
                                           </SelectTrigger>
                                           <SelectContent>
-                                            {DISCREPANCY_REASONS.map((reason) => (
-                                              <SelectItem key={reason.value} value={reason.value}>
-                                                {reason.label}
-                                              </SelectItem>
-                                            ))}
+                                            {DISCREPANCY_REASONS.map(
+                                              (reason) => (
+                                                <SelectItem
+                                                  key={reason.value}
+                                                  value={reason.value}
+                                                >
+                                                  {reason.label}
+                                                </SelectItem>
+                                              )
+                                            )}
                                           </SelectContent>
                                         </Select>
                                       </FormControl>

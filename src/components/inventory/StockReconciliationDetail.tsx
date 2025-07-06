@@ -76,7 +76,7 @@ export function StockReconciliationDetail({
   // Helper function to get human-readable discrepancy reason
   const getDiscrepancyReasonLabel = (reason: string | null | undefined) => {
     if (!reason) return "-";
-    const found = DISCREPANCY_REASONS.find(r => r.value === reason);
+    const found = DISCREPANCY_REASONS.find((r) => r.value === reason);
     return found ? found.label : reason;
   };
 
@@ -432,7 +432,9 @@ export function StockReconciliationDetail({
                         {formatCurrency(item.estimatedImpact || 0)}
                       </span>
                     </TableCell>
-                    <TableCell>{getDiscrepancyReasonLabel(item.discrepancyReason)}</TableCell>
+                    <TableCell>
+                      {getDiscrepancyReasonLabel(item.discrepancyReason)}
+                    </TableCell>
                   </TableRow>
                 ))}
               </TableBody>
