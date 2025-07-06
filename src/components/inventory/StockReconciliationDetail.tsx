@@ -46,6 +46,7 @@ import {
   useRejectStockReconciliation,
   type StockReconciliationItem,
 } from "@/hooks/api/stock-management";
+import { DISCREPANCY_REASONS } from "@/lib/constants/stock-reconciliation";
 
 interface StockReconciliationDetailProps {
   reconciliationId: number;
@@ -71,6 +72,13 @@ export function StockReconciliationDetail({
   const [showRejectionDialog, setShowRejectionDialog] = useState(false);
   const [approvalNotes, setApprovalNotes] = useState("");
   const [rejectionReason, setRejectionReason] = useState("");
+
+  // Helper function to get human-readable discrepancy reason
+  const getDiscrepancyReasonLabel = (reason: string | null | undefined) => {
+    if (!reason) return "-";
+    const found = DISCREPANCY_REASONS.find(r => r.value === reason);
+    return found ? found.label : reason;
+  };
 
   const isAdmin = userRole === "ADMIN";
 
@@ -424,7 +432,7 @@ export function StockReconciliationDetail({
                         {formatCurrency(item.estimatedImpact || 0)}
                       </span>
                     </TableCell>
-                    <TableCell>{item.discrepancyReason || "-"}</TableCell>
+                    <TableCell>{getDiscrepancyReasonLabel(item.discrepancyReason)}</TableCell>
                   </TableRow>
                 ))}
               </TableBody>
