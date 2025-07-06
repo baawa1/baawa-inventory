@@ -384,6 +384,7 @@ export function StockReconciliationDialog({
                                         <Input
                                           type="number"
                                           min="0"
+                                          disabled
                                           {...field}
                                           onChange={(e) =>
                                             field.onChange(

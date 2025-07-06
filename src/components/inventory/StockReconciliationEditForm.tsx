@@ -505,6 +505,7 @@ export function StockReconciliationEditForm({
                                     type="number"
                                     min="0"
                                     className="w-20 text-center"
+                                    disabled
                                     {...field}
                                     onChange={(e) =>
                                       field.onChange(
