@@ -22,6 +22,7 @@ import {
 } from "@tabler/icons-react";
 import { useQuery } from "@tanstack/react-query";
 import { toast } from "sonner";
+import { usePOSErrorHandler } from "./POSErrorBoundary";
 
 interface Product {
   id: number;
@@ -44,6 +45,7 @@ export function ProductGrid({
   onProductSelect,
   disabled = false,
 }: ProductGridProps) {
+  const { handleError } = usePOSErrorHandler();
   const [searchTerm, setSearchTerm] = useState("");
   const [selectedCategory, setSelectedCategory] = useState<string>("all");
   const [selectedBrand, setSelectedBrand] = useState<string>("all");
@@ -130,7 +132,9 @@ export function ProductGrid({
         toast.error("Product not found");
       }
     } catch (error) {
-      toast.error("Error searching for product");
+      const errorMessage = "Error searching for product";
+      toast.error(errorMessage);
+      handleError(error instanceof Error ? error : new Error(errorMessage));
     }
   };
 
@@ -144,7 +148,9 @@ export function ProductGrid({
         setIsCameraOpen(true);
       }
     } catch (error) {
-      toast.error("Unable to access camera");
+      const errorMessage = "Unable to access camera";
+      toast.error(errorMessage);
+      handleError(error instanceof Error ? error : new Error(errorMessage));
     }
   };
 

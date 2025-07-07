@@ -53,6 +53,7 @@ import { format } from "date-fns";
 import { toast } from "sonner";
 import { offlineStorage } from "@/lib/utils/offline-storage";
 import { useOffline } from "@/hooks/useOffline";
+import { usePOSErrorHandler } from "./POSErrorBoundary";
 
 interface TransactionItem {
   id: number;
@@ -121,6 +122,7 @@ const statusIcons = {
 export function TransactionHistory() {
   const { data: session } = useSession();
   const { isOnline, syncNow } = useOffline();
+  const { handleError } = usePOSErrorHandler();
   const [transactions, setTransactions] = useState<Transaction[]>([]);
   const [loading, setLoading] = useState(true);
   const [selectedTransaction, setSelectedTransaction] =
@@ -156,6 +158,11 @@ export function TransactionHistory() {
           }
         } catch (error) {
           console.error("Failed to load online transactions:", error);
+          handleError(
+            error instanceof Error
+              ? error
+              : new Error("Failed to load online transactions")
+          );
         }
       }
 
@@ -171,6 +178,11 @@ export function TransactionHistory() {
         allTransactions.push(...mappedOfflineTransactions);
       } catch (error) {
         console.error("Failed to load offline transactions:", error);
+        handleError(
+          error instanceof Error
+            ? error
+            : new Error("Failed to load offline transactions")
+        );
       }
 
       // Sort by timestamp (newest first) and remove duplicates
@@ -185,6 +197,11 @@ export function TransactionHistory() {
     } catch (error) {
       console.error("Error loading transactions:", error);
       toast.error("Failed to load transaction history");
+      handleError(
+        error instanceof Error
+          ? error
+          : new Error("Failed to load transaction history")
+      );
     } finally {
       setLoading(false);
     }
@@ -252,6 +269,7 @@ export function TransactionHistory() {
       loadTransactions(); // Reload to get updated status
     } catch (error) {
       toast.error("Sync failed");
+      handleError(error instanceof Error ? error : new Error("Sync failed"));
     }
   };
 

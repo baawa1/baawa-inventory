@@ -1,40 +1,21 @@
 import { NextRequest, NextResponse } from "next/server";
-import { getServerSession } from "next-auth/next";
-import { authOptions } from "@/lib/auth";
 import { prisma } from "@/lib/db";
 import { z } from "zod";
+import { withPOSAuth, AuthenticatedRequest } from "@/lib/api-auth-middleware";
+import { PRODUCT_STATUS, API_LIMITS, ERROR_MESSAGES } from "@/lib/constants";
 
 // Validation schema for search parameters
 const searchParamsSchema = z.object({
   search: z.string().min(1, "Search term is required"),
-  limit: z.string().optional().default("20"),
-  status: z.string().optional().default("active"),
+  limit: z
+    .string()
+    .optional()
+    .default(API_LIMITS.PRODUCT_SEARCH_LIMIT.toString()),
+  status: z.string().optional().default(PRODUCT_STATUS.ACTIVE),
 });
 
-export async function GET(request: NextRequest) {
+async function handleSearchProducts(request: AuthenticatedRequest) {
   try {
-    // Check authentication
-    const session = await getServerSession(authOptions);
-    if (!session) {
-      return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
-    }
-
-    // Check user status and role (POS requires at least STAFF role)
-    const user = session.user;
-    if (user.status !== "APPROVED") {
-      return NextResponse.json(
-        { error: "Account not approved" },
-        { status: 403 }
-      );
-    }
-
-    if (!["ADMIN", "MANAGER", "STAFF"].includes(user.role || "")) {
-      return NextResponse.json(
-        { error: "Insufficient permissions" },
-        { status: 403 }
-      );
-    }
-
     // Parse and validate query parameters
     const { searchParams } = new URL(request.url);
     const validatedParams = searchParamsSchema.parse({
@@ -140,14 +121,16 @@ export async function GET(request: NextRequest) {
 
     if (error instanceof z.ZodError) {
       return NextResponse.json(
-        { error: "Invalid parameters", details: error.errors },
+        { error: ERROR_MESSAGES.VALIDATION_ERROR, details: error.errors },
         { status: 400 }
       );
     }
 
     return NextResponse.json(
-      { error: "Internal server error" },
+      { error: ERROR_MESSAGES.INTERNAL_ERROR },
       { status: 500 }
     );
   }
 }
+
+export const GET = withPOSAuth(handleSearchProducts);

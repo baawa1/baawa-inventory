@@ -3,16 +3,12 @@
  * Displayed when the user is offline and tries to access a non-cached page
  */
 
-import { Metadata } from "next";
+"use client";
+
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { IconWifi, IconRefresh, IconHome } from "@tabler/icons-react";
 import Link from "next/link";
-
-export const metadata: Metadata = {
-  title: "Offline | BaaWA Accessories POS",
-  description: "You are currently offline",
-};
 
 export default function OfflinePage() {
   return (

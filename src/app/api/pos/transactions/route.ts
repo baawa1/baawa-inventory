@@ -4,32 +4,32 @@
  */
 
 import { NextRequest, NextResponse } from "next/server";
-import { getServerSession } from "next-auth";
-import { authOptions } from "@/lib/auth";
-import { PrismaClient } from "@prisma/client";
+import { prisma } from "@/lib/db";
 import { z } from "zod";
-
-const prisma = new PrismaClient();
+import { withPOSAuth, AuthenticatedRequest } from "@/lib/api-auth-middleware";
+import {
+  ALL_PAYMENT_METHODS,
+  API_LIMITS,
+  ERROR_MESSAGES,
+} from "@/lib/constants";
 
 const querySchema = z.object({
   page: z.string().optional().default("1"),
-  limit: z.string().optional().default("50"),
+  limit: z
+    .string()
+    .optional()
+    .default(API_LIMITS.TRANSACTION_HISTORY_LIMIT.toString()),
   search: z.string().optional(),
   paymentMethod: z
-    .enum(["cash", "pos", "bank_transfer", "mobile_money"])
+    .enum(ALL_PAYMENT_METHODS as [string, ...string[]])
     .optional(),
   dateFrom: z.string().optional(),
   dateTo: z.string().optional(),
   staffId: z.string().optional(),
 });
 
-export async function GET(request: NextRequest) {
+async function handleGetTransactions(request: AuthenticatedRequest) {
   try {
-    const session = await getServerSession(authOptions);
-    if (!session) {
-      return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
-    }
-
     // Parse query parameters
     const url = new URL(request.url);
     const params = Object.fromEntries(url.searchParams.entries());
@@ -37,7 +37,7 @@ export async function GET(request: NextRequest) {
       querySchema.parse(params);
 
     const pageNum = parseInt(page);
-    const limitNum = parseInt(limit);
+    const limitNum = Math.min(parseInt(limit), API_LIMITS.MAX_PAGE_SIZE);
     const offset = (pageNum - 1) * limitNum;
 
     // Build where clause
@@ -114,6 +114,7 @@ export async function GET(request: NextRequest) {
     // Transform data for frontend
     const transformedTransactions = transactions.map((sale: any) => ({
       id: sale.id,
+      transactionNumber: sale.transaction_number,
       items: sale.sales_items.map((item: any) => ({
         id: item.id,
         productId: item.product_id,
@@ -127,6 +128,7 @@ export async function GET(request: NextRequest) {
       discount: sale.discount_amount,
       total: sale.total_amount,
       paymentMethod: sale.payment_method,
+      paymentStatus: sale.payment_status,
       customerName: sale.customer_name,
       customerPhone: sale.customer_phone,
       customerEmail: sale.customer_email,
@@ -148,103 +150,20 @@ export async function GET(request: NextRequest) {
     });
   } catch (error) {
     console.error("Error fetching transactions:", error);
-    return NextResponse.json(
-      { error: "Failed to fetch transactions" },
-      { status: 500 }
-    );
-  }
-}
 
-export async function POST(request: NextRequest) {
-  try {
-    const session = await getServerSession(authOptions);
-    if (!session) {
-      return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
-    }
-
-    // Only admins can manually create transactions via API
-    if (session.user.role !== "ADMIN") {
+    if (error instanceof z.ZodError) {
       return NextResponse.json(
-        { error: "Insufficient permissions" },
-        { status: 403 }
+        { error: ERROR_MESSAGES.VALIDATION_ERROR, details: error.errors },
+        { status: 400 }
       );
     }
 
-    const body = await request.json();
-
-    const transactionSchema = z.object({
-      items: z.array(
-        z.object({
-          productId: z.number(),
-          quantity: z.number().positive(),
-          price: z.number().positive(),
-        })
-      ),
-      subtotal: z.number().min(0),
-      discount: z.number().min(0).default(0),
-      total: z.number().positive(),
-      paymentMethod: z.enum(["cash", "pos", "bank_transfer", "mobile_money"]),
-      customerName: z.string().optional(),
-      customerPhone: z.string().optional(),
-      customerEmail: z.string().email().optional(),
-      staffId: z.number().optional(),
-    });
-
-    const validatedData = transactionSchema.parse(body);
-    const staffId = validatedData.staffId || parseInt(session.user.id);
-
-    // Create transaction in database
-    const result = await prisma.$transaction(async (tx) => {
-      // Create sale record
-      const sale = await tx.salesTransaction.create({
-        data: {
-          transaction_number: `TXN-${Date.now()}`,
-          subtotal: validatedData.subtotal,
-          discount_amount: validatedData.discount,
-          total_amount: validatedData.total,
-          payment_method: validatedData.paymentMethod,
-          customer_name: validatedData.customerName,
-          customer_phone: validatedData.customerPhone,
-          customer_email: validatedData.customerEmail,
-          user_id: staffId,
-        },
-      });
-
-      // Create sale items
-      for (const item of validatedData.items) {
-        await tx.salesItem.create({
-          data: {
-            transaction_id: sale.id,
-            product_id: item.productId,
-            quantity: item.quantity,
-            unit_price: item.price,
-            total_price: item.price * item.quantity,
-          },
-        });
-
-        // Update product stock
-        await tx.product.update({
-          where: { id: item.productId },
-          data: {
-            stock: {
-              decrement: item.quantity,
-            },
-          },
-        });
-      }
-
-      return sale;
-    });
-
-    return NextResponse.json({
-      id: result.id,
-      message: "Transaction created successfully",
-    });
-  } catch (error) {
-    console.error("Error creating transaction:", error);
     return NextResponse.json(
-      { error: "Failed to create transaction" },
+      { error: ERROR_MESSAGES.INTERNAL_ERROR },
       { status: 500 }
     );
   }
 }
+
+// Only GET endpoint - POST has been moved to /api/pos/create-sale
+export const GET = withPOSAuth(handleGetTransactions);
