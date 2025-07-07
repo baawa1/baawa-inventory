@@ -27,7 +27,13 @@ import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
 import { Textarea } from "@/components/ui/textarea";
 import { Badge } from "@/components/ui/badge";
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import {
+  Card,
+  CardContent,
+  CardHeader,
+  CardTitle,
+  CardDescription,
+} from "@/components/ui/card";
 import {
   Select,
   SelectContent,
@@ -40,10 +46,12 @@ import {
   IconTrash,
   IconSearch,
   IconCalculator,
-  IconArrowLeft,
   IconDeviceFloppy,
   IconSend,
 } from "@tabler/icons-react";
+import { ArrowLeft, Loader2 } from "lucide-react";
+import { PageHeader } from "@/components/ui/page-header";
+import { FormLoading } from "@/components/ui/form-loading";
 import { formatCurrency } from "@/lib/utils";
 import { useProductSearch } from "@/hooks/useProductSearch";
 import {
@@ -206,18 +214,34 @@ export function StockReconciliationForm() {
     }
   };
 
+  // Show loading state during form submission
+  if (createMutation.isPending || submitMutation.isPending) {
+    return (
+      <FormLoading
+        title="Create Stock Reconciliation"
+        description="Create a new stock reconciliation to track inventory adjustments"
+        backLabel="Back to Reconciliations"
+        onBack={() => router.push("/inventory/stock-reconciliations")}
+        backUrl="/inventory/stock-reconciliations"
+      />
+    );
+  }
+
   return (
-    <div className="space-y-6">
-      {/* Header with navigation */}
-      <div className="flex items-center justify-between">
+    <div className="max-w-4xl mx-auto p-6 space-y-6">
+      <div className="mb-6">
         <Button
-          variant="outline"
+          variant="ghost"
           onClick={() => router.push("/inventory/stock-reconciliations")}
-          className="gap-2"
+          className="mb-4 px-4 lg:px-6"
         >
-          <IconArrowLeft className="h-4 w-4" />
+          <ArrowLeft className="mr-2 h-4 w-4" />
           Back to Reconciliations
         </Button>
+        <PageHeader
+          title="Stock Reconciliation"
+          description="Create a new stock reconciliation to track inventory discrepancies"
+        />
       </div>
 
       <Form {...form}>
@@ -226,6 +250,9 @@ export function StockReconciliationForm() {
           <Card>
             <CardHeader>
               <CardTitle>Reconciliation Details</CardTitle>
+              <CardDescription>
+                Enter the basic information for this stock reconciliation.
+              </CardDescription>
             </CardHeader>
             <CardContent className="space-y-4">
               <FormField
@@ -305,6 +332,9 @@ export function StockReconciliationForm() {
                   Add Product
                 </Button>
               </CardTitle>
+              <CardDescription>
+                Add products to reconcile and enter their physical counts.
+              </CardDescription>
             </CardHeader>
             <CardContent>
               {/* Product Search */}
@@ -323,6 +353,7 @@ export function StockReconciliationForm() {
                   <div className="max-h-48 overflow-y-auto space-y-2">
                     {isLoadingProducts ? (
                       <div className="text-center py-4 text-muted-foreground">
+                        <Loader2 className="h-4 w-4 animate-spin mx-auto mb-2" />
                         Loading products...
                       </div>
                     ) : (
@@ -533,9 +564,12 @@ export function StockReconciliationForm() {
                   <IconCalculator className="h-5 w-5 mr-2" />
                   Summary
                 </CardTitle>
+                <CardDescription>
+                  Overview of the reconciliation results.
+                </CardDescription>
               </CardHeader>
               <CardContent>
-                <div className="grid grid-cols-2 gap-4">
+                <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
                   <div>
                     <div className="text-sm font-medium">Total Products</div>
                     <div className="text-2xl font-bold">{fields.length}</div>
@@ -558,14 +592,24 @@ export function StockReconciliationForm() {
             </Card>
           )}
 
-          {/* Action Buttons */}
-          <div className="flex justify-end gap-3">
+          {/* Form Actions */}
+          <div className="flex items-center gap-4 pt-4">
             <Button
               type="button"
-              variant="outline"
-              onClick={() => router.push("/inventory/stock-reconciliations")}
+              onClick={form.handleSubmit((data) => onSubmit(data, false))}
+              disabled={createMutation.isPending || submitMutation.isPending}
             >
-              Cancel
+              {submitMutation.isPending ? (
+                <>
+                  <Loader2 className="h-4 w-4 mr-2 animate-spin" />
+                  Submitting...
+                </>
+              ) : (
+                <>
+                  <IconSend className="h-4 w-4 mr-2" />
+                  Submit for Approval
+                </>
+              )}
             </Button>
             <Button
               type="button"
@@ -573,18 +617,25 @@ export function StockReconciliationForm() {
               onClick={form.handleSubmit((data) => onSubmit(data, true))}
               disabled={createMutation.isPending || submitMutation.isPending}
             >
-              <IconDeviceFloppy className="h-4 w-4 mr-2" />
-              {createMutation.isPending ? "Saving..." : "Save Draft"}
+              {createMutation.isPending ? (
+                <>
+                  <Loader2 className="h-4 w-4 mr-2 animate-spin" />
+                  Saving...
+                </>
+              ) : (
+                <>
+                  <IconDeviceFloppy className="h-4 w-4 mr-2" />
+                  Save Draft
+                </>
+              )}
             </Button>
             <Button
               type="button"
-              onClick={form.handleSubmit((data) => onSubmit(data, false))}
+              variant="ghost"
+              onClick={() => router.push("/inventory/stock-reconciliations")}
               disabled={createMutation.isPending || submitMutation.isPending}
             >
-              <IconSend className="h-4 w-4 mr-2" />
-              {submitMutation.isPending
-                ? "Submitting..."
-                : "Submit for Approval"}
+              Cancel
             </Button>
           </div>
         </form>

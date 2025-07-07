@@ -13,20 +13,18 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
 import { Switch } from "@/components/ui/switch";
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import { Loader2, Save } from "lucide-react";
+import {
+  Card,
+  CardContent,
+  CardHeader,
+  CardTitle,
+  CardDescription,
+} from "@/components/ui/card";
+import { ArrowLeft, Loader2 } from "lucide-react";
+import { PageHeader } from "@/components/ui/page-header";
+import { FormLoading } from "@/components/ui/form-loading";
 import { toast } from "sonner";
 import { useBrandById, useUpdateBrand } from "@/hooks/api/brands";
-
-interface Brand {
-  id: number;
-  name: string;
-  description: string | null;
-  website: string | null;
-  is_active: boolean;
-  created_at: string;
-  updated_at: string;
-}
 
 interface EditBrandFormProps {
   brandId: number;
@@ -95,27 +93,26 @@ export default function EditBrandForm({ brandId }: EditBrandFormProps) {
 
   if (isLoading) {
     return (
-      <div className="space-y-6">
-        <Card>
-          <CardHeader>
-            <div className="h-6 bg-gray-200 animate-pulse rounded w-1/3" />
-          </CardHeader>
-          <CardContent className="space-y-4">
-            <div className="space-y-2">
-              <div className="h-4 bg-gray-200 animate-pulse rounded w-1/4" />
-              <div className="h-10 bg-gray-200 animate-pulse rounded" />
-            </div>
-            <div className="space-y-2">
-              <div className="h-4 bg-gray-200 animate-pulse rounded w-1/4" />
-              <div className="h-20 bg-gray-200 animate-pulse rounded" />
-            </div>
-            <div className="space-y-2">
-              <div className="h-4 bg-gray-200 animate-pulse rounded w-1/4" />
-              <div className="h-10 bg-gray-200 animate-pulse rounded" />
-            </div>
-          </CardContent>
-        </Card>
-      </div>
+      <FormLoading
+        title="Edit Brand"
+        description="Loading brand information..."
+        backLabel="Back to Brands"
+        onBack={() => router.push("/inventory/brands")}
+        backUrl="/inventory/brands"
+      />
+    );
+  }
+
+  // Show loading state during update
+  if (updateBrandMutation.isPending) {
+    return (
+      <FormLoading
+        title="Edit Brand"
+        description="Updating brand information..."
+        backLabel="Back to Brands"
+        onBack={() => router.push("/inventory/brands")}
+        backUrl="/inventory/brands"
+      />
     );
   }
 
@@ -124,95 +121,127 @@ export default function EditBrandForm({ brandId }: EditBrandFormProps) {
   }
 
   return (
-    <form onSubmit={handleSubmit(onSubmit)} className="space-y-6">
+    <div className="max-w-4xl mx-auto p-6 space-y-6">
+      <div className="mb-6">
+        <Button
+          variant="ghost"
+          onClick={() => router.push("/inventory/brands")}
+          className="mb-4 px-4 lg:px-6"
+        >
+          <ArrowLeft className="mr-2 h-4 w-4" />
+          Back to Brands
+        </Button>
+        <PageHeader
+          title="Edit Brand"
+          description={`Update the details for "${brand.name}" brand`}
+        />
+      </div>
+
       <Card>
         <CardHeader>
           <CardTitle>Brand Information</CardTitle>
+          <CardDescription>
+            Update the details for this brand. Required fields are marked with
+            an asterisk (*).
+          </CardDescription>
         </CardHeader>
-        <CardContent className="space-y-4">
-          <div className="space-y-2">
-            <Label htmlFor="name">
-              Brand Name <span className="text-destructive">*</span>
-            </Label>
-            <Input
-              id="name"
-              {...register("name")}
-              placeholder="Enter brand name"
-              disabled={updateBrandMutation.isPending}
-            />
-            {errors.name && (
-              <p className="text-sm text-destructive">{errors.name.message}</p>
-            )}
-          </div>
+        <CardContent className="space-y-6">
+          <form onSubmit={handleSubmit(onSubmit)} className="space-y-6">
+            <div className="space-y-2">
+              <Label htmlFor="name">
+                Brand Name <span className="text-destructive">*</span>
+              </Label>
+              <Input
+                id="name"
+                {...register("name")}
+                placeholder="Enter brand name"
+                disabled={updateBrandMutation.isPending}
+              />
+              {errors.name && (
+                <p className="text-sm text-destructive">
+                  {errors.name.message}
+                </p>
+              )}
+            </div>
 
-          <div className="space-y-2">
-            <Label htmlFor="description">Description</Label>
-            <Textarea
-              id="description"
-              {...register("description")}
-              placeholder="Enter brand description (optional)"
-              rows={3}
-              disabled={updateBrandMutation.isPending}
-            />
-            {errors.description && (
+            <div className="space-y-2">
+              <Label htmlFor="description">Description</Label>
+              <Textarea
+                id="description"
+                {...register("description")}
+                placeholder="Enter brand description (optional)"
+                rows={3}
+                disabled={updateBrandMutation.isPending}
+              />
+              {errors.description && (
+                <p className="text-sm text-destructive">
+                  {errors.description.message}
+                </p>
+              )}
+            </div>
+
+            <div className="space-y-2">
+              <Label htmlFor="website">Website URL</Label>
+              <Input
+                id="website"
+                type="url"
+                {...register("website")}
+                placeholder="https://example.com (optional)"
+                disabled={updateBrandMutation.isPending}
+              />
+              {errors.website && (
+                <p className="text-sm text-destructive">
+                  {errors.website.message}
+                </p>
+              )}
+            </div>
+
+            <div className="flex items-center justify-between rounded-lg border p-4">
+              <div className="space-y-0.5">
+                <Label htmlFor="isActive" className="text-base">
+                  Active Status
+                </Label>
+                <p className="text-sm text-gray-600 dark:text-gray-400">
+                  Active brands will be available for product assignment.
+                </p>
+              </div>
+              <Switch
+                id="isActive"
+                checked={isActive}
+                onCheckedChange={(checked) => setValue("isActive", checked)}
+                disabled={updateBrandMutation.isPending}
+              />
+            </div>
+            {errors.isActive && (
               <p className="text-sm text-destructive">
-                {errors.description.message}
+                {errors.isActive.message}
               </p>
             )}
-          </div>
 
-          <div className="space-y-2">
-            <Label htmlFor="website">Website URL</Label>
-            <Input
-              id="website"
-              type="url"
-              {...register("website")}
-              placeholder="https://example.com (optional)"
-              disabled={updateBrandMutation.isPending}
-            />
-            {errors.website && (
-              <p className="text-sm text-destructive">
-                {errors.website.message}
-              </p>
-            )}
-          </div>
+            <div className="flex items-center gap-4 pt-4">
+              <Button
+                type="submit"
+                disabled={updateBrandMutation.isPending}
+                className="flex items-center gap-2"
+              >
+                {updateBrandMutation.isPending && (
+                  <Loader2 className="h-4 w-4 animate-spin" />
+                )}
+                {updateBrandMutation.isPending ? "Updating..." : "Update Brand"}
+              </Button>
 
-          <div className="flex items-center space-x-2">
-            <Switch
-              id="isActive"
-              checked={isActive}
-              onCheckedChange={(checked) => setValue("isActive", checked)}
-              disabled={updateBrandMutation.isPending}
-            />
-            <Label htmlFor="isActive">Active Brand</Label>
-          </div>
-          {errors.isActive && (
-            <p className="text-sm text-destructive">
-              {errors.isActive.message}
-            </p>
-          )}
+              <Button
+                type="button"
+                variant="outline"
+                onClick={() => router.push("/inventory/brands")}
+                disabled={updateBrandMutation.isPending}
+              >
+                Cancel
+              </Button>
+            </div>
+          </form>
         </CardContent>
       </Card>
-
-      <div className="flex gap-4">
-        <Button
-          type="button"
-          variant="outline"
-          onClick={() => router.push("/inventory/brands")}
-          disabled={updateBrandMutation.isPending}
-        >
-          Cancel
-        </Button>
-
-        <Button type="submit" disabled={updateBrandMutation.isPending}>
-          {updateBrandMutation.isPending ? (
-            <Loader2 className="h-4 w-4 mr-2 animate-spin" />
-          ) : (
-            <Save className="h-4 w-4 mr-2" />
-          )}
-          {updateBrandMutation.isPending ? "Updating..." : "Update Brand"}
-        </Button>
-      </div>
-    </form>
+    </div>
   );
 }

@@ -59,7 +59,7 @@ export default function AddProductForm() {
       <div className="max-w-4xl mx-auto p-6 space-y-6">
         <div className="mb-6">
           <Button
-            variant="ghost"
+            variant="outline"
             onClick={() => router.push("/inventory/products")}
             className="mb-4 px-4 lg:px-6"
           >
