@@ -1,14 +1,21 @@
 import { NextRequest, NextResponse } from "next/server";
-import { getServerSession } from "next-auth/next";
-import { authOptions } from "@/lib/auth";
 import { emailService } from "@/lib/email";
 import { z } from "zod";
+import { withPOSAuth, AuthenticatedRequest } from "@/lib/api-auth-middleware";
+import {
+  ERROR_MESSAGES,
+  SUCCESS_MESSAGES,
+  VALIDATION_RULES,
+} from "@/lib/constants";
 
 // Validation schema for email receipt
 const emailReceiptSchema = z.object({
-  customerEmail: z.string().email("Invalid email address"),
+  customerEmail: z
+    .string()
+    .email("Invalid email address")
+    .max(VALIDATION_RULES.MAX_EMAIL_LENGTH),
   saleId: z.string().min(1, "Sale ID is required"),
-  customerName: z.string().optional(),
+  customerName: z.string().max(VALIDATION_RULES.MAX_NAME_LENGTH).optional(),
   receiptData: z.object({
     items: z.array(
       z.object({
@@ -27,30 +34,8 @@ const emailReceiptSchema = z.object({
   }),
 });
 
-export async function POST(request: NextRequest) {
+async function handleEmailReceipt(request: AuthenticatedRequest) {
   try {
-    // Check authentication
-    const session = await getServerSession(authOptions);
-    if (!session) {
-      return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
-    }
-
-    // Check user status and role
-    const user = session.user;
-    if (user.status !== "active") {
-      return NextResponse.json(
-        { error: "Account not active" },
-        { status: 403 }
-      );
-    }
-
-    if (!["ADMIN", "MANAGER", "STAFF"].includes(user.role || "")) {
-      return NextResponse.json(
-        { error: "Insufficient permissions" },
-        { status: 403 }
-      );
-    }
-
     // Parse and validate request body
     const body = await request.json();
     const validatedData = emailReceiptSchema.parse(body);
@@ -80,7 +65,7 @@ export async function POST(request: NextRequest) {
 
     return NextResponse.json({
       success: true,
-      message: "Receipt sent successfully",
+      message: SUCCESS_MESSAGES.EMAIL_SENT,
       saleId,
       customerEmail,
     });
@@ -89,14 +74,16 @@ export async function POST(request: NextRequest) {
 
     if (error instanceof z.ZodError) {
       return NextResponse.json(
-        { error: "Invalid request data", details: error.errors },
+        { error: ERROR_MESSAGES.VALIDATION_ERROR, details: error.errors },
         { status: 400 }
       );
     }
 
     return NextResponse.json(
-      { error: "Internal server error" },
+      { error: ERROR_MESSAGES.INTERNAL_ERROR },
       { status: 500 }
     );
   }
 }
+
+export const POST = withPOSAuth(handleEmailReceipt);

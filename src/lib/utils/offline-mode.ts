@@ -116,11 +116,11 @@ class OfflineModeManager {
   }
 
   private getConnectionType(): string | undefined {
-    // @ts-ignore - navigator.connection is experimental
+    // navigator.connection is experimental
     const connection =
-      navigator.connection ||
-      navigator.mozConnection ||
-      navigator.webkitConnection;
+      (navigator as any).connection ||
+      (navigator as any).mozConnection ||
+      (navigator as any).webkitConnection;
     return connection?.effectiveType || connection?.type || undefined;
   }
 

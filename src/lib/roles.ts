@@ -3,6 +3,12 @@
  * This file defines all user roles and permissions to prevent inconsistencies
  */
 
+import {
+  USER_STATUS,
+  POS_ALLOWED_STATUSES,
+  type UserStatus,
+} from "./constants";
+
 // Define the exact role names used in the database
 export const USER_ROLES = {
   ADMIN: "ADMIN",
@@ -121,6 +127,66 @@ export const canViewLowStock = (userRole: string | undefined): boolean => {
 
 export const canAccessPOS = (userRole: string | undefined): boolean => {
   return hasPermission(userRole, "POS_ACCESS");
+};
+
+// Centralized user status validation
+export const isUserStatusValid = (status: string | undefined): boolean => {
+  if (!status) return false;
+  return Object.values(USER_STATUS).includes(status as UserStatus);
+};
+
+export const canUserAccessPOS = (status: string | undefined): boolean => {
+  if (!status) return false;
+  return POS_ALLOWED_STATUSES.includes(status as UserStatus);
+};
+
+// Centralized authentication check
+export const isUserAuthorizedForPOS = (
+  role: string | undefined,
+  status: string | undefined
+): { authorized: boolean; reason?: string } => {
+  // Check if role has POS access permission
+  if (!hasPermission(role, "POS_ACCESS")) {
+    return {
+      authorized: false,
+      reason: "Insufficient permissions",
+    };
+  }
+
+  // Check if user status allows POS access
+  if (!canUserAccessPOS(status)) {
+    return {
+      authorized: false,
+      reason: "Account not approved",
+    };
+  }
+
+  return { authorized: true };
+};
+
+// Validate complete user authorization
+export const validateUserAuthorization = (
+  role: string | undefined,
+  status: string | undefined,
+  permission: keyof typeof PERMISSIONS
+): { authorized: boolean; reason?: string } => {
+  // Check role permission
+  if (!hasPermission(role, permission)) {
+    return {
+      authorized: false,
+      reason: "Insufficient permissions",
+    };
+  }
+
+  // Check user status
+  if (!canUserAccessPOS(status)) {
+    return {
+      authorized: false,
+      reason: "Account not approved",
+    };
+  }
+
+  return { authorized: true };
 };
 
 // Role display names

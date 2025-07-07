@@ -1,32 +1,10 @@
 import { NextRequest, NextResponse } from "next/server";
-import { getServerSession } from "next-auth/next";
-import { authOptions } from "@/lib/auth";
 import { prisma } from "@/lib/db";
+import { withPOSAuth, AuthenticatedRequest } from "@/lib/api-auth-middleware";
+import { PRODUCT_STATUS, ERROR_MESSAGES, API_LIMITS } from "@/lib/constants";
 
-export async function GET(request: NextRequest) {
+async function handleGetProducts(request: AuthenticatedRequest) {
   try {
-    // Check authentication
-    const session = await getServerSession(authOptions);
-    if (!session) {
-      return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
-    }
-
-    // Check user status and role (POS requires at least STAFF role)
-    const user = session.user;
-    if (!["APPROVED", "VERIFIED"].includes(user.status)) {
-      return NextResponse.json(
-        { error: "Account not approved" },
-        { status: 403 }
-      );
-    }
-
-    if (!["ADMIN", "MANAGER", "STAFF"].includes(user.role || "")) {
-      return NextResponse.json(
-        { error: "Insufficient permissions" },
-        { status: 403 }
-      );
-    }
-
     // Get query parameters
     const { searchParams } = new URL(request.url);
     const page = parseInt(searchParams.get("page") || "1");
@@ -36,7 +14,7 @@ export async function GET(request: NextRequest) {
 
     // Build where clause
     const whereClause: any = {
-      status: "active",
+      status: PRODUCT_STATUS.ACTIVE,
       stock: {
         gt: 0, // Only show products with stock
       },
@@ -62,7 +40,8 @@ export async function GET(request: NextRequest) {
 
     // Calculate pagination (skip pagination if limit is 0)
     const skip = limit > 0 ? (page - 1) * limit : 0;
-    const take = limit > 0 ? limit : undefined;
+    const take =
+      limit > 0 ? Math.min(limit, API_LIMITS.MAX_PAGE_SIZE) : undefined;
 
     // Fetch products
     const [products, totalCount] = await Promise.all([
@@ -122,8 +101,10 @@ export async function GET(request: NextRequest) {
   } catch (error) {
     console.error("Error fetching products:", error);
     return NextResponse.json(
-      { error: "Internal server error" },
+      { error: ERROR_MESSAGES.INTERNAL_ERROR },
       { status: 500 }
     );
   }
 }
+
+export const GET = withPOSAuth(handleGetProducts);

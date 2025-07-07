@@ -1,38 +1,16 @@
 import { NextRequest, NextResponse } from "next/server";
-import { getServerSession } from "next-auth/next";
-import { authOptions } from "@/lib/auth";
 import { prisma } from "@/lib/db";
 import { z } from "zod";
+import { withPOSAuth, AuthenticatedRequest } from "@/lib/api-auth-middleware";
+import { PRODUCT_STATUS, ERROR_MESSAGES } from "@/lib/constants";
 
 // Validation schema for barcode lookup
 const barcodeSchema = z.object({
   barcode: z.string().min(1, "Barcode is required"),
 });
 
-export async function GET(request: NextRequest) {
+async function handleBarcodeSearch(request: AuthenticatedRequest) {
   try {
-    // Check authentication
-    const session = await getServerSession(authOptions);
-    if (!session) {
-      return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
-    }
-
-    // Check user status and role (POS requires at least STAFF role)
-    const user = session.user;
-    if (user.status !== "APPROVED") {
-      return NextResponse.json(
-        { error: "Account not approved" },
-        { status: 403 }
-      );
-    }
-
-    if (!["ADMIN", "MANAGER", "STAFF"].includes(user.role || "")) {
-      return NextResponse.json(
-        { error: "Insufficient permissions" },
-        { status: 403 }
-      );
-    }
-
     // Parse and validate query parameters
     const { searchParams } = new URL(request.url);
     const validatedParams = barcodeSchema.parse({
@@ -45,7 +23,7 @@ export async function GET(request: NextRequest) {
     const product = await prisma.product.findFirst({
       where: {
         barcode: barcode,
-        status: "active",
+        status: PRODUCT_STATUS.ACTIVE,
       },
       include: {
         category: {
@@ -64,7 +42,10 @@ export async function GET(request: NextRequest) {
     });
 
     if (!product) {
-      return NextResponse.json({ error: "Product not found" }, { status: 404 });
+      return NextResponse.json(
+        { error: ERROR_MESSAGES.NOT_FOUND },
+        { status: 404 }
+      );
     }
 
     // Format response
@@ -86,14 +67,16 @@ export async function GET(request: NextRequest) {
 
     if (error instanceof z.ZodError) {
       return NextResponse.json(
-        { error: "Invalid barcode", details: error.errors },
+        { error: ERROR_MESSAGES.VALIDATION_ERROR, details: error.errors },
         { status: 400 }
       );
     }
 
     return NextResponse.json(
-      { error: "Internal server error" },
+      { error: ERROR_MESSAGES.INTERNAL_ERROR },
       { status: 500 }
     );
   }
 }
+
+export const GET = withPOSAuth(handleBarcodeSearch);
