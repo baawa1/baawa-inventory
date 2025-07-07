@@ -120,7 +120,7 @@ export function LowStockAlerts() {
     try {
       await refetch();
       toast.success("Low stock data refreshed");
-    } catch {
+    } catch (_error) {
       toast.error("Failed to refresh data");
     }
   };
