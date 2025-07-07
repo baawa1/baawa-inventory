@@ -21,9 +21,9 @@ export async function GET(request: NextRequest) {
 
     // Check user status and role (POS requires at least STAFF role)
     const user = session.user;
-    if (user.status !== "active") {
+    if (user.status !== "APPROVED") {
       return NextResponse.json(
-        { error: "Account not active" },
+        { error: "Account not approved" },
         { status: 403 }
       );
     }
