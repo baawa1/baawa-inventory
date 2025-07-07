@@ -46,6 +46,7 @@ export interface InventoryPageLayoutProps {
   onFilterChange: (key: string, value: any) => void;
   onResetFilters: () => void;
   quickFilters?: React.ReactNode;
+  beforeFiltersContent?: React.ReactNode;
 
   // Sort
   sortOptions?: SortOption[];

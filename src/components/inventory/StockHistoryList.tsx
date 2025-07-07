@@ -1,40 +1,14 @@
 "use client";
 
-import React, { useState } from "react";
+import React, { useState, useEffect } from "react";
 import { useQuery } from "@tanstack/react-query";
-import {
-  Card,
-  CardContent,
-  CardDescription,
-  CardHeader,
-  CardTitle,
-} from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
-import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
-import {
-  Select,
-  SelectContent,
-  SelectItem,
-  SelectTrigger,
-  SelectValue,
-} from "@/components/ui/select";
-import {
-  Table,
-  TableBody,
-  TableCell,
-  TableHead,
-  TableHeader,
-  TableRow,
-} from "@/components/ui/table";
-import {
-  IconSearch,
-  IconDownload,
-  IconPackage,
-  IconTrendingUp,
-} from "@tabler/icons-react";
+import { InventoryPageLayout } from "@/components/inventory/InventoryPageLayout";
+import { IconDownload, IconTrendingUp, IconHistory } from "@tabler/icons-react";
 import { toast } from "sonner";
 import { format } from "date-fns";
+import { FilterConfig, SortOption, PaginationState } from "@/types/inventory";
 
 interface StockHistoryItem {
   id: string;
@@ -77,11 +51,18 @@ export function StockHistoryList({ user: _user }: StockHistoryListProps) {
   const [sortBy, setSortBy] = useState("createdAt");
   const [sortOrder, setSortOrder] = useState<"asc" | "desc">("desc");
   const [supplierFilter, setSupplierFilter] = useState<string>("all");
+  const [pagination, setPagination] = useState<PaginationState>({
+    page: 1,
+    limit: 10,
+    totalPages: 1,
+    totalItems: 0,
+  });
 
   const {
     data: stockHistory,
     isLoading,
     error,
+    refetch,
   } = useQuery({
     queryKey: [
       "stock-history",
@@ -155,194 +136,206 @@ export function StockHistoryList({ user: _user }: StockHistoryListProps) {
     }).format(amount);
   };
 
-  if (error) {
-    return (
-      <Card>
-        <CardContent className="pt-6">
-          <div className="text-center text-red-600">
-            Failed to load stock history. Please try again.
+  const handleFilterChange = (key: string, value: any) => {
+    if (key === "supplier") {
+      setSupplierFilter(value);
+    }
+    setPagination((prev) => ({ ...prev, page: 1 }));
+  };
+
+  const handleResetFilters = () => {
+    setSearchTerm("");
+    setSupplierFilter("all");
+    setSortBy("createdAt");
+    setSortOrder("desc");
+    setPagination((prev) => ({ ...prev, page: 1 }));
+  };
+
+  const handleSortChange = (value: string) => {
+    const [field, order] = value.split("-");
+    setSortBy(field);
+    setSortOrder(order as "asc" | "desc");
+  };
+
+  const handlePageChange = (newPage: number) => {
+    setPagination((prev) => ({ ...prev, page: newPage }));
+  };
+
+  const handlePageSizeChange = (newPageSize: number) => {
+    setPagination((prev) => ({
+      ...prev,
+      limit: newPageSize,
+      page: 1,
+    }));
+  };
+
+  const renderCell = (item: StockHistoryItem, columnKey: string) => {
+    switch (columnKey) {
+      case "date":
+        return (
+          <div className="text-sm">
+            <div className="font-medium">
+              {format(new Date(item.createdAt), "MMM dd, yyyy")}
+            </div>
+            <div className="text-gray-500">
+              {format(new Date(item.createdAt), "HH:mm")}
+            </div>
           </div>
-        </CardContent>
-      </Card>
-    );
-  }
+        );
+      case "product":
+        return (
+          <div>
+            <div className="font-medium">{item.product.name}</div>
+            <div className="text-sm text-gray-500">{item.product.sku}</div>
+          </div>
+        );
+      case "previous_stock":
+        return (
+          <Badge variant="secondary">{item.previousStock || 0} units</Badge>
+        );
+      case "added":
+        return (
+          <Badge variant="default" className="bg-green-100 text-green-800">
+            <IconTrendingUp className="h-3 w-3 mr-1" />+{item.quantity}
+          </Badge>
+        );
+      case "new_stock":
+        return (
+          <Badge variant="outline">
+            {(item.previousStock || 0) + item.quantity} units
+          </Badge>
+        );
+      case "cost_per_unit":
+        return formatCurrency(item.costPerUnit);
+      case "total_cost":
+        return (
+          <span className="font-medium">{formatCurrency(item.totalCost)}</span>
+        );
+      case "supplier":
+        return item.supplier ? (
+          <Badge variant="outline">{item.supplier.name}</Badge>
+        ) : (
+          <span className="text-gray-400">-</span>
+        );
+      case "reference":
+        return item.referenceNumber ? (
+          <Badge variant="secondary" className="font-mono text-xs">
+            {item.referenceNumber}
+          </Badge>
+        ) : (
+          <span className="text-gray-400">-</span>
+        );
+      case "added_by":
+        return <div className="text-sm">{item.createdBy.name}</div>;
+      default:
+        return "-";
+    }
+  };
+
+  const columns = [
+    { key: "date", label: "Date/Time", sortable: true },
+    { key: "product", label: "Product", sortable: true },
+    { key: "previous_stock", label: "Previous Stock", sortable: false },
+    { key: "added", label: "Added", sortable: true },
+    { key: "new_stock", label: "New Stock", sortable: false },
+    { key: "cost_per_unit", label: "Cost per Unit", sortable: true },
+    { key: "total_cost", label: "Total Cost", sortable: true },
+    { key: "supplier", label: "Supplier", sortable: true },
+    { key: "reference", label: "Reference", sortable: false },
+    { key: "added_by", label: "Added By", sortable: true },
+  ];
+
+  const filterConfigs: FilterConfig[] = [
+    {
+      key: "supplier",
+      label: "Suppliers",
+      type: "select",
+      options: [
+        { value: "all", label: "All Suppliers" },
+        ...(suppliers?.data?.map((supplier: any) => ({
+          value: supplier.id,
+          label: supplier.name,
+        })) || []),
+      ],
+      placeholder: "All Suppliers",
+    },
+  ];
+
+  const sortOptions: SortOption[] = [
+    { value: "createdAt-desc", label: "Newest First" },
+    { value: "createdAt-asc", label: "Oldest First" },
+    { value: "product-asc", label: "Product A-Z" },
+    { value: "product-desc", label: "Product Z-A" },
+    { value: "quantity-desc", label: "Highest Quantity" },
+    { value: "quantity-asc", label: "Lowest Quantity" },
+    { value: "totalCost-desc", label: "Highest Cost" },
+    { value: "totalCost-asc", label: "Lowest Cost" },
+  ];
+
+  // Update pagination when data changes
+  useEffect(() => {
+    const data = stockHistory?.data || [];
+    setPagination((prev) => ({
+      ...prev,
+      totalPages: Math.ceil(data.length / prev.limit),
+      totalItems: data.length,
+    }));
+  }, [stockHistory?.data]);
 
   return (
-    <div className="space-y-4">
-      <Card>
-        <CardHeader>
-          <CardTitle className="flex items-center gap-2">
-            <IconPackage className="h-5 w-5" />
-            Stock History
-          </CardTitle>
-          <CardDescription>
-            Track all stock additions and purchases made to your inventory
-          </CardDescription>
-        </CardHeader>
-        <CardContent>
-          <div className="flex flex-col sm:flex-row gap-4 mb-6">
-            <div className="flex-1">
-              <div className="relative">
-                <IconSearch className="absolute left-3 top-3 h-4 w-4 text-gray-400" />
-                <Input
-                  placeholder="Search by product name, SKU, or reference number..."
-                  value={searchTerm}
-                  onChange={(e) => setSearchTerm(e.target.value)}
-                  className="pl-10"
-                />
-              </div>
-            </div>
-            <Select value={supplierFilter} onValueChange={setSupplierFilter}>
-              <SelectTrigger className="w-full sm:w-[200px]">
-                <SelectValue placeholder="Filter by supplier" />
-              </SelectTrigger>
-              <SelectContent>
-                <SelectItem value="all">All Suppliers</SelectItem>
-                {suppliers?.data?.map((supplier: any) => (
-                  <SelectItem key={supplier.id} value={supplier.id}>
-                    {supplier.name}
-                  </SelectItem>
-                ))}
-              </SelectContent>
-            </Select>
-            <Select
-              value={`${sortBy}-${sortOrder}`}
-              onValueChange={(value) => {
-                const [field, order] = value.split("-");
-                setSortBy(field);
-                setSortOrder(order as "asc" | "desc");
-              }}
-            >
-              <SelectTrigger className="w-full sm:w-[200px]">
-                <SelectValue />
-              </SelectTrigger>
-              <SelectContent>
-                <SelectItem value="createdAt-desc">Newest First</SelectItem>
-                <SelectItem value="createdAt-asc">Oldest First</SelectItem>
-                <SelectItem value="product-asc">Product A-Z</SelectItem>
-                <SelectItem value="product-desc">Product Z-A</SelectItem>
-                <SelectItem value="quantity-desc">Highest Quantity</SelectItem>
-                <SelectItem value="quantity-asc">Lowest Quantity</SelectItem>
-                <SelectItem value="totalCost-desc">Highest Cost</SelectItem>
-                <SelectItem value="totalCost-asc">Lowest Cost</SelectItem>
-              </SelectContent>
-            </Select>
-            <Button
-              onClick={exportStockHistory}
-              variant="outline"
-              className="gap-2"
-            >
-              <IconDownload className="h-4 w-4" />
-              Export
-            </Button>
-          </div>
-
-          {isLoading ? (
-            <div className="text-center py-8">Loading stock history...</div>
-          ) : (
-            <div className="rounded-md border">
-              <Table>
-                <TableHeader>
-                  <TableRow>
-                    <TableHead>Date/Time</TableHead>
-                    <TableHead>Product</TableHead>
-                    <TableHead>Previous Stock</TableHead>
-                    <TableHead>Added</TableHead>
-                    <TableHead>New Stock</TableHead>
-                    <TableHead>Cost per Unit</TableHead>
-                    <TableHead>Total Cost</TableHead>
-                    <TableHead>Supplier</TableHead>
-                    <TableHead>Reference</TableHead>
-                    <TableHead>Added By</TableHead>
-                  </TableRow>
-                </TableHeader>
-                <TableBody>
-                  {stockHistory?.data?.length === 0 ? (
-                    <TableRow>
-                      <TableCell
-                        colSpan={10}
-                        className="text-center py-8 text-gray-500"
-                      >
-                        No stock history found
-                      </TableCell>
-                    </TableRow>
-                  ) : (
-                    stockHistory?.data?.map((item: StockHistoryItem) => (
-                      <TableRow key={item.id}>
-                        <TableCell>
-                          <div className="text-sm">
-                            <div className="font-medium">
-                              {format(new Date(item.createdAt), "MMM dd, yyyy")}
-                            </div>
-                            <div className="text-gray-500">
-                              {format(new Date(item.createdAt), "HH:mm")}
-                            </div>
-                          </div>
-                        </TableCell>
-                        <TableCell>
-                          <div className="font-medium">{item.product.name}</div>
-                          <div className="text-sm text-gray-500">
-                            {item.product.sku}
-                          </div>
-                        </TableCell>
-                        <TableCell>
-                          <Badge variant="secondary">
-                            {item.previousStock || 0} units
-                          </Badge>
-                        </TableCell>
-                        <TableCell>
-                          <Badge
-                            variant="default"
-                            className="bg-green-100 text-green-800"
-                          >
-                            <IconTrendingUp className="h-3 w-3 mr-1" />+
-                            {item.quantity}
-                          </Badge>
-                        </TableCell>
-                        <TableCell>
-                          <Badge variant="outline">
-                            {(item.previousStock || 0) + item.quantity} units
-                          </Badge>
-                        </TableCell>
-                        <TableCell>
-                          {formatCurrency(item.costPerUnit)}
-                        </TableCell>
-                        <TableCell className="font-medium">
-                          {formatCurrency(item.totalCost)}
-                        </TableCell>
-                        <TableCell>
-                          {item.supplier ? (
-                            <Badge variant="outline">
-                              {item.supplier.name}
-                            </Badge>
-                          ) : (
-                            <span className="text-gray-400">-</span>
-                          )}
-                        </TableCell>
-                        <TableCell>
-                          {item.referenceNumber ? (
-                            <Badge
-                              variant="secondary"
-                              className="font-mono text-xs"
-                            >
-                              {item.referenceNumber}
-                            </Badge>
-                          ) : (
-                            <span className="text-gray-400">-</span>
-                          )}
-                        </TableCell>
-                        <TableCell>
-                          <div className="text-sm">{item.createdBy.name}</div>
-                        </TableCell>
-                      </TableRow>
-                    ))
-                  )}
-                </TableBody>
-              </Table>
-            </div>
-          )}
-        </CardContent>
-      </Card>
-    </div>
+    <InventoryPageLayout
+      // Header
+      title="Stock History"
+      description="Track all stock additions and purchases made to your inventory"
+      actions={
+        <Button
+          onClick={exportStockHistory}
+          variant="outline"
+          className="gap-2"
+        >
+          <IconDownload className="h-4 w-4" />
+          Export
+        </Button>
+      }
+      // Filters
+      searchPlaceholder="Search by product name, SKU, or reference number..."
+      searchValue={searchTerm}
+      onSearchChange={setSearchTerm}
+      isSearching={false}
+      filters={filterConfigs}
+      filterValues={{ supplier: supplierFilter }}
+      onFilterChange={handleFilterChange}
+      onResetFilters={handleResetFilters}
+      // Sort
+      sortOptions={sortOptions}
+      currentSort={`${sortBy}-${sortOrder}`}
+      onSortChange={handleSortChange}
+      // Table
+      tableTitle="Stock History"
+      totalCount={stockHistory?.data?.length || 0}
+      currentCount={stockHistory?.data?.length || 0}
+      showingText={`Showing ${stockHistory?.data?.length || 0} stock additions`}
+      columns={columns}
+      visibleColumns={columns.map((col) => col.key)}
+      onColumnsChange={() => {}}
+      columnCustomizerKey="stock-history-visible-columns"
+      data={stockHistory?.data || []}
+      renderCell={renderCell}
+      renderActions={() => null}
+      // Pagination
+      pagination={pagination}
+      onPageChange={handlePageChange}
+      onPageSizeChange={handlePageSizeChange}
+      // Loading states
+      isLoading={isLoading}
+      isRefetching={false}
+      error={error ? String(error) : undefined}
+      onRetry={() => refetch()}
+      // Empty state
+      emptyStateIcon={
+        <IconHistory className="h-12 w-12 text-gray-400 mx-auto mb-4" />
+      }
+      emptyStateMessage="No stock history found"
+    />
   );
 }
