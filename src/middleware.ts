@@ -1,6 +1,6 @@
 import { withAuth } from "next-auth/middleware";
 import { NextResponse } from "next/server";
-import { USER_ROLES, type UserRole } from "@/lib/roles";
+import { USER_ROLES, type UserRole, hasPermission } from "@/lib/roles";
 
 // Define user statuses for better type safety
 type UserStatus =
@@ -60,26 +60,22 @@ export default withAuth(
     };
 
     // Status-based access control
-    // 1. Check email verification status
-    if (emailVerified === false) {
-      if (pathname !== "/verify-email" && pathname !== "/pending-approval") {
-        return safeRedirect("/verify-email", "Unverified email");
-      }
-    }
-
-    // 2. Handle users pending email verification
+    // 1. Handle users pending email verification (PENDING status)
     if (userStatus === "PENDING") {
       if (pathname !== "/verify-email" && pathname !== "/pending-approval") {
         return safeRedirect("/verify-email", "Pending verification");
       }
     }
 
-    // 3. Handle verified but unapproved users
+    // 2. Handle verified but unapproved users (VERIFIED status)
     if (userStatus === "VERIFIED") {
       if (pathname !== "/pending-approval") {
         return safeRedirect("/pending-approval", "Waiting for approval");
       }
     }
+
+    // 3. For APPROVED users, allow access regardless of email verification
+    // (email verification is not required for approved users to access protected routes)
 
     // 4. Handle rejected users
     if (userStatus === "REJECTED") {
@@ -139,10 +135,19 @@ export default withAuth(
         }
       }
 
-      // Staff can access dashboard, inventory, and POS
+      // POS access - ADMIN, MANAGER, and STAFF can access
+      if (pathname.startsWith("/pos")) {
+        if (!hasPermission(userRole, "POS_ACCESS")) {
+          return safeRedirect(
+            "/unauthorized",
+            `Access denied for ${userRole} to POS system`
+          );
+        }
+      }
+
+      // Staff can access dashboard and inventory
       if (
         pathname.startsWith("/inventory") ||
-        pathname.startsWith("/pos") ||
         pathname.startsWith("/dashboard")
       ) {
         // All approved users can access these routes

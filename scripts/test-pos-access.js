@@ -1,10 +1,28 @@
 #!/usr/bin/env node
 /**
- * Test script to verify POS access control logic
+ * Test script to verify POS access control logic with centralized role system
  * This script simulates the session logic to test if users can access POS
  */
 
 const { PrismaClient } = require("@prisma/client");
+
+// Define the role system inline (copied from src/lib/roles.ts)
+const USER_ROLES = {
+  ADMIN: "ADMIN",
+  MANAGER: "MANAGER",
+  STAFF: "STAFF",
+};
+
+const PERMISSIONS = {
+  POS_ACCESS: [USER_ROLES.ADMIN, USER_ROLES.MANAGER, USER_ROLES.STAFF],
+};
+
+const hasPermission = (userRole, permission) => {
+  if (!userRole) return false;
+  const allowedRoles = PERMISSIONS[permission];
+  return allowedRoles.includes(userRole);
+};
+
 const prisma = new PrismaClient();
 
 // Mock session object structure (similar to NextAuth)
@@ -21,7 +39,7 @@ function createMockSession(user) {
   };
 }
 
-// Simulate POS access control logic
+// Simulate POS access control logic using centralized role system
 function checkPOSAccess(session) {
   // Check if user is logged in
   if (!session) {
@@ -37,12 +55,21 @@ function checkPOSAccess(session) {
     };
   }
 
-  // POS access requires at least Staff role
-  if (!["ADMIN", "MANAGER", "STAFF"].includes(session.user.role || "")) {
+  // Check email verification
+  if (!session.user.emailVerified) {
+    return {
+      access: false,
+      redirect: "/verify-email",
+      reason: "Email not verified",
+    };
+  }
+
+  // POS access using centralized role system
+  if (!hasPermission(session.user.role, "POS_ACCESS")) {
     return {
       access: false,
       redirect: "/unauthorized",
-      reason: `Role is ${session.user.role}`,
+      reason: `Role ${session.user.role} lacks POS_ACCESS permission`,
     };
   }
 
