@@ -1,6 +1,6 @@
 "use client";
 
-import React, { useState } from "react";
+import React from "react";
 import { useSession } from "next-auth/react";
 import { useSupplier } from "@/hooks/api/suppliers";
 import {
@@ -20,7 +20,6 @@ import {
   IconMail,
   IconMapPin,
   IconEdit,
-  IconTrash,
   IconCreditCard,
   IconCalendar,
   IconFileText,
@@ -31,8 +30,6 @@ import {
   IconX,
   IconRefresh,
 } from "@tabler/icons-react";
-import { toast } from "sonner";
-import Link from "next/link";
 
 interface Supplier {
   id: number;
@@ -79,7 +76,7 @@ export default function SupplierDetailModal({
   canEdit = false,
   canDeactivate = false,
 }: SupplierDetailModalProps) {
-  const { data: session } = useSession();
+  const { data: _session } = useSession();
 
   // Use TanStack Query hook for fetching supplier data
   const {

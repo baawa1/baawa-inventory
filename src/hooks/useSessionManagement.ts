@@ -1,7 +1,5 @@
 "use client";
 
-import { useSessionManagement as useNewSessionManagement } from "./api/session-migration";
-
 // Re-export the new TanStack Query-based session management hook
 // This maintains backward compatibility while using the new implementation
 export { useSessionManagement } from "./api/session-migration";

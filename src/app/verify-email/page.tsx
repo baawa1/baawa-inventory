@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useEffect, useCallback } from "react";
+import { useState, useEffect, useCallback, Suspense } from "react";
 import { useSearchParams, useRouter } from "next/navigation";
 import { useSession } from "next-auth/react";
 import {
@@ -15,7 +15,7 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { CheckCircle, XCircle, Clock, Mail, AlertCircle } from "lucide-react";
 
-export default function VerifyEmailPage() {
+function VerifyEmailContent() {
   const searchParams = useSearchParams();
   const router = useRouter();
   const { data: session, update } = useSession();
@@ -262,5 +262,13 @@ export default function VerifyEmailPage() {
         </Card>
       </div>
     </div>
+  );
+}
+
+export default function VerifyEmailPage() {
+  return (
+    <Suspense fallback={<div>Loading...</div>}>
+      <VerifyEmailContent />
+    </Suspense>
   );
 }

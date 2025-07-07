@@ -1,6 +1,5 @@
 import { useQuery } from "@tanstack/react-query";
 import { useDebounce } from "@/hooks/useDebounce";
-import { queryKeys } from "@/lib/query-client";
 
 // API function for product search
 const fetchProducts = async (filters: {

@@ -2,6 +2,7 @@
 
 import { Button } from "@/components/ui/button";
 import { useRouter } from "next/navigation";
+import Link from "next/link";
 import {
   Card,
   CardContent,
@@ -10,7 +11,7 @@ import {
   CardTitle,
 } from "@/components/ui/card";
 import { Form } from "@/components/ui/form";
-import { AlertCircle, ArrowLeft } from "lucide-react";
+import { AlertCircle, ArrowLeft, Image as ImageIcon } from "lucide-react";
 import { Alert, AlertDescription } from "@/components/ui/alert";
 import { useEditProductData } from "./edit-product/useEditProductData";
 import { useEditProductSubmit } from "./edit-product/useEditProductSubmitNew";
@@ -112,10 +113,18 @@ export default function EditProductForm({ productId }: EditProductFormProps) {
           <ArrowLeft className="mr-2 h-4 w-4" />
           Back to Products
         </Button>
-        <PageHeader
-          title="Edit Product"
-          description="Update the details for your product"
-        />
+        <div className="flex items-center justify-between">
+          <PageHeader
+            title="Edit Product"
+            description="Update the details for your product"
+          />
+          <Button variant="outline" asChild>
+            <Link href={`/inventory/products/${productId}/images`}>
+              <ImageIcon className="mr-2 h-4 w-4" />
+              Manage Images
+            </Link>
+          </Button>
+        </div>
       </div>
 
       {submitError && (

@@ -2,12 +2,10 @@ import { useEffect } from "react";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { updateProductSchema } from "@/lib/validations/product";
-import { FormData, FormState, Product, UpdateProductFormData } from "./types";
+import { UpdateProductFormData } from "./types";
 import { useProduct, useCategories, useBrands } from "@/hooks/api/products";
 import { useSuppliers } from "@/hooks/api/suppliers";
 import type { z } from "zod";
-
-type UpdateProductData = z.infer<typeof updateProductSchema>;
 
 export function useEditProductData(productId: number) {
   const form = useForm<UpdateProductFormData>({

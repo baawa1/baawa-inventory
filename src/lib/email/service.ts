@@ -3,7 +3,6 @@ import {
   EmailOptions,
   EmailServiceConfig,
   EmailTemplateType,
-  EmailTemplateData,
   WelcomeEmailData,
   EmailVerificationData,
   PasswordResetData,

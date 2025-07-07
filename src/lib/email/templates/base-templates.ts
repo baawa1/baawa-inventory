@@ -1,6 +1,5 @@
 import {
   EmailTemplate,
-  EmailTemplateType,
   UserSuspensionData,
   UserReactivationData,
 } from "../types";
