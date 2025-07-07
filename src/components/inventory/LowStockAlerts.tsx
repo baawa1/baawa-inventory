@@ -1,12 +1,12 @@
 "use client";
 
-import { useState, useEffect } from "react";
+import React, { useState, useEffect } from "react";
 import { useQuery } from "@tanstack/react-query";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { InventoryPageLayout } from "@/components/inventory/InventoryPageLayout";
-import { AlertTriangle, Package, RefreshCw } from "lucide-react";
+import { AlertTriangle, Package, RefreshCw, Loader2 } from "lucide-react";
 import { toast } from "sonner";
 import { formatCurrency } from "@/lib/utils";
 import { PaginationState } from "@/types/inventory";
@@ -116,9 +116,13 @@ export function LowStockAlerts() {
       product.brand?.name.toLowerCase().includes(searchTerm.toLowerCase())
   );
 
-  const handleRefresh = () => {
-    refetch();
-    toast.success("Low stock data refreshed");
+  const handleRefresh = async () => {
+    try {
+      await refetch();
+      toast.success("Low stock data refreshed");
+    } catch (error) {
+      toast.error("Failed to refresh data");
+    }
   };
 
   const handlePageChange = (newPage: number) => {
@@ -270,7 +274,7 @@ export function LowStockAlerts() {
           </CardHeader>
           <CardContent>
             <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-              <Card className="gap-2">
+              <Card>
                 <CardHeader className="pb-2">
                   <CardTitle className="text-sm font-medium">
                     Critical Stock
@@ -280,7 +284,11 @@ export function LowStockAlerts() {
                   <div className="flex items-center gap-2">
                     <AlertTriangle className="h-4 w-4 text-red-500" />
                     <span className="text-2xl font-bold text-red-600">
-                      {metrics.criticalStock}
+                      {isLoading || isRefetching ? (
+                        <Loader2 className="h-6 w-6 animate-spin" />
+                      ) : (
+                        metrics.criticalStock
+                      )}
                     </span>
                   </div>
                   <p className="text-xs text-muted-foreground mt-1">
@@ -289,7 +297,7 @@ export function LowStockAlerts() {
                 </CardContent>
               </Card>
 
-              <Card className="gap-2">
+              <Card>
                 <CardHeader className="pb-2">
                   <CardTitle className="text-sm font-medium">
                     Low Stock
@@ -299,7 +307,11 @@ export function LowStockAlerts() {
                   <div className="flex items-center gap-2">
                     <Package className="h-4 w-4 text-orange-500" />
                     <span className="text-2xl font-bold text-orange-600">
-                      {metrics.lowStock}
+                      {isLoading || isRefetching ? (
+                        <Loader2 className="h-6 w-6 animate-spin" />
+                      ) : (
+                        metrics.lowStock
+                      )}
                     </span>
                   </div>
                   <p className="text-xs text-muted-foreground mt-1">
@@ -308,7 +320,7 @@ export function LowStockAlerts() {
                 </CardContent>
               </Card>
 
-              <Card className="gap-2">
+              <Card>
                 <CardHeader className="pb-2">
                   <CardTitle className="text-sm font-medium">
                     Total Value
@@ -318,7 +330,11 @@ export function LowStockAlerts() {
                   <div className="flex items-center gap-2">
                     <Package className="h-4 w-4 text-blue-500" />
                     <span className="text-2xl font-bold text-blue-600">
-                      {formatCurrency(metrics.totalValue)}
+                      {isLoading || isRefetching ? (
+                        <Loader2 className="h-6 w-6 animate-spin" />
+                      ) : (
+                        formatCurrency(metrics.totalValue)
+                      )}
                     </span>
                   </div>
                   <p className="text-xs text-muted-foreground mt-1">
@@ -337,11 +353,11 @@ export function LowStockAlerts() {
       showingText={`Showing ${filteredProducts.length} low stock products`}
       columns={columns}
       visibleColumns={columns.map((col) => col.key)}
-      onColumnsChange={() => {}}
-      columnCustomizerKey="low-stock-visible-columns"
+      onColumnsChange={undefined}
+      columnCustomizerKey={undefined}
       data={filteredProducts}
       renderCell={renderCell}
-      renderActions={() => null}
+      renderActions={undefined}
       // Pagination
       pagination={pagination}
       onPageChange={handlePageChange}
