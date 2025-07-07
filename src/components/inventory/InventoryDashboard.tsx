@@ -4,6 +4,7 @@ import { InventoryMetrics } from "@/components/inventory/InventoryMetrics";
 import { InventoryCharts } from "@/components/inventory/InventoryCharts";
 import { RecentActivity } from "@/components/inventory/RecentActivity";
 import { QuickActions } from "@/components/inventory/QuickActions";
+import { LowStockWidget } from "@/components/inventory/LowStockWidget";
 
 interface User {
   id: string;
@@ -47,8 +48,13 @@ export function InventoryDashboard({ user }: InventoryDashboardProps) {
             <InventoryCharts />
           </div>
 
-          {/* Recent Activity */}
-          <RecentActivity />
+          {/* Low Stock Widget and Recent Activity */}
+          <div className="px-4 lg:px-6">
+            <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+              <LowStockWidget />
+              <RecentActivity />
+            </div>
+          </div>
         </div>
       </div>
     </div>

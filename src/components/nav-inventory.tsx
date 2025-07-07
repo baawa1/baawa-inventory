@@ -2,6 +2,7 @@
 
 import * as React from "react";
 import { ChevronDown } from "lucide-react";
+import Link from "next/link";
 import {
   IconPackages,
   IconTag,
@@ -41,9 +42,10 @@ const inventoryNavItems = [
         title: "Add Product",
         url: "/inventory/products/add",
       },
+
       {
         title: "Low Stock",
-        url: "/inventory/products?filter=low-stock",
+        url: "/inventory/low-stock",
       },
     ],
   },
@@ -140,9 +142,9 @@ function CollapsibleNavItem({ item }: { item: (typeof inventoryNavItems)[0] }) {
               {item.items?.map((subItem) => (
                 <SidebarMenuSubItem key={subItem.title}>
                   <SidebarMenuSubButton asChild>
-                    <a href={subItem.url}>
+                    <Link href={subItem.url}>
                       <span>{subItem.title}</span>
-                    </a>
+                    </Link>
                   </SidebarMenuSubButton>
                 </SidebarMenuSubItem>
               ))}
