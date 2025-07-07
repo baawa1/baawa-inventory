@@ -1,5 +1,6 @@
 import { withAuth } from "next-auth/middleware";
 import { NextResponse } from "next/server";
+import { USER_ROLES, type UserRole } from "@/lib/roles";
 
 // Define user statuses for better type safety
 type UserStatus =
@@ -8,7 +9,6 @@ type UserStatus =
   | "APPROVED"
   | "REJECTED"
   | "SUSPENDED";
-type UserRole = "ADMIN" | "MANAGER" | "EMPLOYEE";
 
 export default withAuth(
   function middleware(req) {
@@ -131,7 +131,7 @@ export default withAuth(
 
       // Manager and Admin routes
       if (pathname.startsWith("/reports") || pathname.startsWith("/settings")) {
-        if (userRole !== "ADMIN" && userRole !== "MANAGER") {
+        if (userRole !== USER_ROLES.ADMIN && userRole !== USER_ROLES.MANAGER) {
           return safeRedirect(
             "/unauthorized",
             `Access denied for ${userRole} to manager/admin route`
@@ -139,7 +139,7 @@ export default withAuth(
         }
       }
 
-      // Employee can access dashboard, inventory, and POS
+      // Staff can access dashboard, inventory, and POS
       if (
         pathname.startsWith("/inventory") ||
         pathname.startsWith("/pos") ||

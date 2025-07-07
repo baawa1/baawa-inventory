@@ -17,23 +17,23 @@ export async function GET() {
       return NextResponse.json({ error: "Forbidden" }, { status: 403 });
     }
 
-    const { data: brands, error } = await supabase
-      .from("brands")
+    const { data: categories, error } = await supabase
+      .from("categories")
       .select("id, name")
-      .eq("is_archived", false)
+      .eq("is_active", true)
       .order("name");
 
     if (error) {
-      console.error("Error fetching brands:", error);
+      console.error("Error fetching categories:", error);
       return NextResponse.json(
-        { error: "Failed to fetch brands" },
+        { error: "Failed to fetch categories" },
         { status: 500 }
       );
     }
 
-    return NextResponse.json(brands || []);
+    return NextResponse.json(categories || []);
   } catch (error) {
-    console.error("Error in brands API:", error);
+    console.error("Error in categories API:", error);
     return NextResponse.json(
       { error: "Internal server error" },
       { status: 500 }
