@@ -58,6 +58,7 @@ export function InventoryPageLayout({
   onFilterChange,
   onResetFilters,
   quickFilters,
+  beforeFiltersContent,
 
   // Sort
   sortOptions = [],
@@ -168,6 +169,11 @@ export function InventoryPageLayout({
               )}
             </div>
           </div>
+
+          {/* Before Filters Content */}
+          {beforeFiltersContent && (
+            <div className="px-4 lg:px-6">{beforeFiltersContent}</div>
+          )}
 
           {/* Filters Section */}
           <div className="px-4 lg:px-6">

@@ -99,17 +99,17 @@ const inventoryNavItems = [
     ],
   },
   {
-    title: "Stock Adjustments",
-    url: "/inventory/stock-adjustments",
+    title: "Stock Reconciliation",
+    url: "/inventory/stock-reconciliations",
     icon: IconAdjustments,
     items: [
       {
-        title: "All Adjustments",
-        url: "/inventory/stock-adjustments",
+        title: "All Reconciliations",
+        url: "/inventory/stock-reconciliations",
       },
       {
-        title: "Add Adjustment",
-        url: "/inventory/stock-adjustments/add",
+        title: "Add Reconciliation",
+        url: "/inventory/stock-reconciliations/add",
       },
       {
         title: "Stock History",
