@@ -57,6 +57,13 @@ export const PERMISSIONS = {
     USER_ROLES.STAFF,
   ] as UserRole[],
 
+  // POS permissions
+  POS_ACCESS: [
+    USER_ROLES.ADMIN,
+    USER_ROLES.MANAGER,
+    USER_ROLES.STAFF,
+  ] as UserRole[],
+
   // Reports permissions
   REPORTS_READ: [
     USER_ROLES.ADMIN,
@@ -110,6 +117,10 @@ export const canManageUsers = (userRole: string | undefined): boolean => {
 
 export const canViewLowStock = (userRole: string | undefined): boolean => {
   return hasPermission(userRole, "LOW_STOCK_READ");
+};
+
+export const canAccessPOS = (userRole: string | undefined): boolean => {
+  return hasPermission(userRole, "POS_ACCESS");
 };
 
 // Role display names

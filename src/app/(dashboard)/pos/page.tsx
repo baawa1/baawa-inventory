@@ -2,6 +2,7 @@ import { Metadata } from "next";
 import { redirect } from "next/navigation";
 import { getServerSession } from "next-auth/next";
 import { authOptions } from "@/lib/auth";
+import { hasPermission } from "@/lib/roles";
 import { POSInterface } from "@/components/pos/POSInterface";
 
 export const metadata: Metadata = {
@@ -17,12 +18,12 @@ export default async function POSPage() {
   }
 
   // Check if user is active and approved
-  if (!["APPROVED", "VERIFIED"].includes(session.user.status)) {
+  if (session.user.status !== "APPROVED") {
     redirect("/pending-approval");
   }
 
-  // POS access requires at least Staff role
-  if (!["ADMIN", "MANAGER", "STAFF"].includes(session.user.role || "")) {
+  // POS access requires POS_ACCESS permission (ADMIN, MANAGER, STAFF)
+  if (!hasPermission(session.user.role, "POS_ACCESS")) {
     redirect("/unauthorized");
   }
 
