@@ -11,7 +11,7 @@ export async function testDatabaseConnection(): Promise<{
     await prisma.$connect();
 
     // Test basic query capability
-    const result = await prisma.$queryRaw`SELECT 1 as test`;
+    const _result = await prisma.$queryRaw`SELECT 1 as test`;
 
     return {
       success: true,

@@ -9,7 +9,7 @@ import {
   IconTruck,
   IconAdjustments,
   IconBuildingStore,
-  type Icon,
+  IconChartBar,
 } from "@tabler/icons-react";
 
 import {
@@ -42,10 +42,13 @@ const inventoryNavItems = [
         title: "Add Product",
         url: "/inventory/products/add",
       },
-
       {
         title: "Low Stock",
         url: "/inventory/low-stock",
+      },
+      {
+        title: "Archived Products",
+        url: "/inventory/products/archived",
       },
     ],
   },
@@ -114,6 +117,29 @@ const inventoryNavItems = [
       {
         title: "Stock History",
         url: "/inventory/stock-history",
+      },
+    ],
+  },
+  {
+    title: "Reports",
+    url: "/inventory/reports",
+    icon: IconChartBar,
+    items: [
+      {
+        title: "Inventory Reports",
+        url: "/inventory/reports",
+      },
+      {
+        title: "Current Stock",
+        url: "/inventory/reports?type=current_stock",
+      },
+      {
+        title: "Stock Value",
+        url: "/inventory/reports?type=stock_value",
+      },
+      {
+        title: "Low Stock",
+        url: "/inventory/reports?type=low_stock",
       },
     ],
   },

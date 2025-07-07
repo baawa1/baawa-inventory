@@ -6,7 +6,7 @@ import { useRouter } from "next/navigation";
 
 export function useEditProductSubmit(
   productId: number,
-  form: UseFormReturn<UpdateProductFormData>
+  _form: UseFormReturn<UpdateProductFormData>
 ) {
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [submitError, setSubmitError] = useState<string | null>(null);

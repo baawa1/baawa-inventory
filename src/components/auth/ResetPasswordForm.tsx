@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useEffect } from "react";
+import { useState, useEffect, Suspense } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { useForm } from "react-hook-form";
@@ -46,6 +46,14 @@ interface ResetPasswordFormProps {
 }
 
 export function ResetPasswordForm({ className }: ResetPasswordFormProps) {
+  return (
+    <Suspense fallback={<div>Loading...</div>}>
+      <ResetPasswordFormContent className={className} />
+    </Suspense>
+  );
+}
+
+function ResetPasswordFormContent({ className }: ResetPasswordFormProps) {
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [isValidToken, setIsValidToken] = useState<boolean | null>(null);
@@ -69,16 +77,13 @@ export function ResetPasswordForm({ className }: ResetPasswordFormProps) {
       }
 
       try {
-        const response = await fetch(
-          "/api/auth/validate-reset-token",
-          {
-            method: "POST",
-            headers: {
-              "Content-Type": "application/json",
-            },
-            body: JSON.stringify({ token }),
-          }
-        );
+        const response = await fetch("/api/auth/validate-reset-token", {
+          method: "POST",
+          headers: {
+            "Content-Type": "application/json",
+          },
+          body: JSON.stringify({ token }),
+        });
 
         setIsValidToken(response.ok);
       } catch (error) {

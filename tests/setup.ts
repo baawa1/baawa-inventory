@@ -105,6 +105,67 @@ jest.mock("next/router", () => ({
   }),
 }));
 
+// Mock next-auth/react hooks
+jest.mock("next-auth/react", () => ({
+  useSession: jest.fn(() => ({
+    data: {
+      user: {
+        id: "1",
+        email: "test@example.com",
+        name: "Test User",
+        role: "ADMIN",
+        status: "APPROVED",
+        emailVerified: true,
+      },
+      expires: new Date(Date.now() + 24 * 60 * 60 * 1000).toISOString(),
+    },
+    status: "authenticated",
+  })),
+  SessionProvider: ({ children }: { children: React.ReactNode }) => children,
+  signIn: jest.fn(),
+  signOut: jest.fn(),
+  getSession: jest.fn(),
+}));
+
+// Mock admin guard hook
+jest.mock("@/hooks/useAdminGuard", () => ({
+  useAdminGuard: jest.fn(() => ({
+    isAdmin: true,
+    isLoading: false,
+    session: {
+      user: {
+        id: "1",
+        email: "test@example.com",
+        name: "Test User",
+        role: "ADMIN",
+      },
+    },
+  })),
+}));
+
+// Mock auth guard hook
+jest.mock("@/hooks/useAuthGuard", () => ({
+  useAuthGuard: jest.fn(() => ({
+    isAuthenticated: true,
+    isAuthorized: true,
+    user: {
+      id: "1",
+      email: "test@example.com",
+      name: "Test User",
+      role: "ADMIN",
+    },
+    session: {
+      user: {
+        id: "1",
+        email: "test@example.com",
+        name: "Test User",
+        role: "ADMIN",
+      },
+    },
+    isLoading: false,
+  })),
+}));
+
 // Clean up after each test
 afterEach(() => {
   jest.clearAllMocks();

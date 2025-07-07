@@ -6,7 +6,6 @@
 
 import { useSession } from "next-auth/react";
 import { useEnhancedSession, useSessionQuery } from "@/hooks/api/session";
-import { secureLogout } from "@/lib/session-management";
 
 /**
  * Legacy session management hook compatibility wrapper

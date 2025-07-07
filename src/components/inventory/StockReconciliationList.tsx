@@ -137,7 +137,7 @@ export function StockReconciliationList({
           // Clear the old data
           localStorage.removeItem("stock-reconciliations-visible-columns");
         }
-      } catch (e) {
+      } catch (_e) {
         // If parsing fails, clear the data
         localStorage.removeItem("stock-reconciliations-visible-columns");
       }

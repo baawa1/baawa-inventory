@@ -26,7 +26,6 @@ import {
   IconMail,
   IconMapPin,
   IconBuilding,
-  IconCreditCard,
   IconCalendar,
   IconPackages,
   IconClipboardList,
@@ -36,30 +35,6 @@ import {
 import { toast } from "sonner";
 import { useSession } from "next-auth/react";
 import { useSupplier, useDeleteSupplier } from "@/hooks/api/suppliers";
-
-interface Supplier {
-  id: number;
-  name: string;
-  contactPerson?: string;
-  email?: string;
-  phone?: string;
-  address?: string;
-  city?: string;
-  state?: string;
-  country?: string;
-  postalCode?: string;
-  taxId?: string;
-  paymentTerms?: string;
-  creditLimit?: number;
-  isActive: boolean;
-  notes?: string;
-  createdAt: string;
-  updatedAt: string;
-  _count?: {
-    products: number;
-    purchaseOrders: number;
-  };
-}
 
 interface SupplierDetailViewProps {
   supplierId: number;

@@ -10,7 +10,7 @@ export function useEditProductSubmit(
 ) {
   const onSubmit = async (
     data: UpdateProductFormData,
-    form: UseFormReturn<UpdateProductFormData>
+    _form: UseFormReturn<UpdateProductFormData>
   ) => {
     setIsSubmitting(true);
     setSubmitError(null);

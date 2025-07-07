@@ -4,14 +4,12 @@
  */
 
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
-import { getSession } from "next-auth/react";
 import { useSession } from "next-auth/react";
 import { useCallback, useRef, useEffect } from "react";
 import {
   checkSessionValidity,
   refreshSession,
   secureLogout,
-  SessionInfo,
   SessionTimeoutManager,
   updateUserActivity,
 } from "@/lib/session-management";

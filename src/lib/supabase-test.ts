@@ -8,7 +8,7 @@ export async function testSupabaseConnection(): Promise<{
   message: string;
 }> {
   try {
-    const { data, error } = await supabase
+    const { data: _data, error } = await supabase
       .from("_test_connection")
       .select("*")
       .limit(1);

@@ -2,10 +2,7 @@
 
 import React from "react";
 import { UseFormReturn } from "react-hook-form";
-import {
-  supplierFormSchema,
-  createSupplierSchema,
-} from "@/lib/validations/supplier";
+import { supplierFormSchema } from "@/lib/validations/supplier";
 import { z } from "zod";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";

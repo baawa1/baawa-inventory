@@ -29,10 +29,13 @@ import {
   IconAdjustments,
   IconPackages,
   IconAlertTriangle,
+  IconArchive,
+  IconPhoto,
 } from "@tabler/icons-react";
 import { formatCurrency } from "@/lib/utils";
 import { FilterConfig, SortOption, PaginationState } from "@/types/inventory";
 import { PRODUCT_COLUMNS } from "@/components/inventory/ColumnCustomizer";
+import { toast } from "sonner";
 
 interface User {
   id: string;
@@ -203,6 +206,35 @@ export function ProductList({ user }: ProductListProps) {
     }));
   };
 
+  // Archive product handler
+  const handleArchiveProduct = async (
+    productId: number,
+    productName: string
+  ) => {
+    try {
+      const response = await fetch(`/api/products/${productId}/archive`, {
+        method: "PATCH",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          archived: true,
+          reason: `Archived by ${user.role}`,
+        }),
+      });
+
+      if (!response.ok) {
+        throw new Error("Failed to archive product");
+      }
+
+      toast.success(`Product "${productName}" has been archived`);
+      productsQuery.refetch(); // Refresh the products list
+    } catch (err) {
+      const message =
+        err instanceof Error ? err.message : "Failed to archive product";
+      toast.error(message);
+      console.error("Error archiving product:", err);
+    }
+  };
+
   const getStatusBadge = (status: APIProduct["status"]) => {
     switch (status) {
       case "active":
@@ -366,6 +398,15 @@ export function ProductList({ user }: ProductListProps) {
                 Edit Product
               </Link>
             </DropdownMenuItem>
+            <DropdownMenuItem asChild>
+              <Link
+                href={`/inventory/products/${product.id}/images`}
+                className="flex items-center gap-2"
+              >
+                <IconPhoto className="h-4 w-4" />
+                Manage Images
+              </Link>
+            </DropdownMenuItem>
             <DropdownMenuItem
               onClick={() => {
                 setSelectedProductForStock(product);
@@ -381,7 +422,10 @@ export function ProductList({ user }: ProductListProps) {
         {canManageProducts && (
           <>
             <DropdownMenuSeparator />
-            <DropdownMenuItem className="text-red-600">
+            <DropdownMenuItem
+              className="text-red-600"
+              onClick={() => handleArchiveProduct(product.id, product.name)}
+            >
               <IconTrash className="h-4 w-4 mr-2" />
               Archive Product
             </DropdownMenuItem>
@@ -413,6 +457,16 @@ export function ProductList({ user }: ProductListProps) {
       actions={
         canManageProducts ? (
           <>
+            <Button
+              asChild
+              variant="outline"
+              className="flex items-center gap-2"
+            >
+              <Link href="/inventory/products/archived">
+                <IconArchive className="h-4 w-4" />
+                View Archived
+              </Link>
+            </Button>
             <Button
               asChild
               variant="outline"
