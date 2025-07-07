@@ -84,7 +84,7 @@ export function ProductSearchBar({
           limit: "20",
         });
 
-        const response = await fetch(`/api/products?${params}`);
+        const response = await fetch(`/api/pos/search-products?${params}`);
 
         if (!response.ok) {
           throw new Error("Failed to search products");
