@@ -9,7 +9,10 @@ import { ProductGrid } from "./ProductGrid";
 import { ShoppingCart } from "./ShoppingCart";
 import { PaymentInterface } from "./PaymentInterface";
 import { ReceiptGenerator } from "./ReceiptGenerator";
+import { OfflineStatusIndicator } from "./OfflineStatusIndicator";
 import { IconShoppingCart, IconCash, IconReceipt } from "@tabler/icons-react";
+import { useOffline } from "@/hooks/useOffline";
+import { toast } from "sonner";
 
 export interface CartItem {
   id: number;
@@ -38,6 +41,7 @@ export interface Sale {
 
 export function POSInterface() {
   const { data: session } = useSession();
+  const { isOnline, queueTransaction } = useOffline();
   const [cart, setCart] = useState<CartItem[]>([]);
   const [currentStep, setCurrentStep] = useState<
     "search" | "payment" | "receipt"
@@ -101,10 +105,52 @@ export function POSInterface() {
   };
 
   // Handle successful payment
-  const handlePaymentSuccess = (sale: Sale) => {
-    setCompletedSale(sale);
-    setCurrentStep("receipt");
-    clearCart();
+  const handlePaymentSuccess = async (sale: Sale) => {
+    // If offline, queue the transaction
+    if (!isOnline) {
+      try {
+        const transactionId = await queueTransaction({
+          items: cart.map((item) => ({
+            productId: item.id,
+            name: item.name,
+            sku: item.sku,
+            price: item.price,
+            quantity: item.quantity,
+            total: item.price * item.quantity,
+          })),
+          subtotal,
+          discount,
+          total,
+          paymentMethod: sale.paymentMethod as any,
+          customerName: customerInfo.name || undefined,
+          customerPhone: customerInfo.phone || undefined,
+          customerEmail: customerInfo.email || undefined,
+          staffName: session?.user?.name || "Staff",
+          staffId: parseInt(session?.user?.id || "0"),
+        });
+
+        // Create offline sale record
+        const offlineSale: Sale = {
+          ...sale,
+          id: transactionId,
+          timestamp: new Date(),
+        };
+
+        setCompletedSale(offlineSale);
+        setCurrentStep("receipt");
+        clearCart();
+
+        toast.success("Transaction saved offline. Will sync when online.");
+      } catch (error) {
+        toast.error("Failed to save transaction offline");
+        console.error("Offline transaction error:", error);
+      }
+    } else {
+      // Online - normal flow
+      setCompletedSale(sale);
+      setCurrentStep("receipt");
+      clearCart();
+    }
   };
 
   // Start new sale
@@ -119,6 +165,12 @@ export function POSInterface() {
 
   return (
     <div className="h-screen overflow-hidden">
+      {/* Offline Status Indicator */}
+      <div className="flex justify-between items-center p-4 border-b">
+        <h1 className="text-2xl font-bold">Point of Sale</h1>
+        <OfflineStatusIndicator />
+      </div>
+
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-6 h-full p-6">
         {/* Left Column - Product Search and Grid */}
         <div className="lg:col-span-2 h-full">
