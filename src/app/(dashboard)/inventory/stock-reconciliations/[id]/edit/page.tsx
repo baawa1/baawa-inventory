@@ -28,20 +28,5 @@ export default async function EditStockReconciliationPage({
     redirect("/inventory/stock-reconciliations");
   }
 
-  return (
-    <div className="container mx-auto px-4 py-8">
-      <div className="max-w-4xl mx-auto">
-        <div className="mb-8">
-          <h1 className="text-3xl font-bold tracking-tight">
-            Edit Stock Reconciliation
-          </h1>
-          <p className="text-muted-foreground">
-            Modify the stock reconciliation details and items
-          </p>
-        </div>
-
-        <StockReconciliationEditForm reconciliationId={reconciliationId} />
-      </div>
-    </div>
-  );
+  return <StockReconciliationEditForm reconciliationId={reconciliationId} />;
 }

@@ -8,7 +8,13 @@ import { z } from "zod";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import {
+  Card,
+  CardContent,
+  CardHeader,
+  CardTitle,
+  CardDescription,
+} from "@/components/ui/card";
 import { Switch } from "@/components/ui/switch";
 import {
   Form,
@@ -19,9 +25,10 @@ import {
   FormLabel,
   FormMessage,
 } from "@/components/ui/form";
-import { Loader2, Save, ArrowLeft } from "lucide-react";
+import { ArrowLeft, Loader2 } from "lucide-react";
+import { PageHeader } from "@/components/ui/page-header";
+import { FormLoading } from "@/components/ui/form-loading";
 import { toast } from "sonner";
-import Link from "next/link";
 import { nameSchema } from "@/lib/validations/common";
 import { useCreateSupplier } from "@/hooks/api/suppliers";
 
@@ -107,15 +114,34 @@ export default function AddSupplierForm() {
     });
   };
 
+  // Show loading state
+  if (createSupplierMutation.isPending) {
+    return (
+      <FormLoading
+        title="Add Supplier"
+        description="Create a new supplier to manage your inventory sources"
+        backLabel="Back to Suppliers"
+        onBack={() => router.push("/dashboard/inventory/suppliers")}
+        backUrl="/dashboard/inventory/suppliers"
+      />
+    );
+  }
+
   return (
-    <div className="space-y-6">
-      <div className="flex items-center space-x-2">
-        <Link href="/dashboard/inventory/suppliers">
-          <Button variant="outline" size="sm">
-            <ArrowLeft className="h-4 w-4 mr-1" />
-            Back to Suppliers
-          </Button>
-        </Link>
+    <div className="max-w-4xl mx-auto p-6 space-y-6">
+      <div className="mb-6">
+        <Button
+          variant="ghost"
+          onClick={() => router.push("/dashboard/inventory/suppliers")}
+          className="mb-4 px-4 lg:px-6"
+        >
+          <ArrowLeft className="mr-2 h-4 w-4" />
+          Back to Suppliers
+        </Button>
+        <PageHeader
+          title="Add Supplier"
+          description="Create a new supplier to manage your inventory sources"
+        />
       </div>
 
       <Form {...form}>
@@ -124,6 +150,9 @@ export default function AddSupplierForm() {
           <Card>
             <CardHeader>
               <CardTitle>Basic Information</CardTitle>
+              <CardDescription>
+                Enter the supplier's contact and business details.
+              </CardDescription>
             </CardHeader>
             <CardContent className="space-y-4">
               <FormField
@@ -133,7 +162,11 @@ export default function AddSupplierForm() {
                   <FormItem>
                     <FormLabel>Supplier Name *</FormLabel>
                     <FormControl>
-                      <Input placeholder="Enter supplier name" {...field} />
+                      <Input
+                        placeholder="Enter supplier name"
+                        {...field}
+                        disabled={createSupplierMutation.isPending}
+                      />
                     </FormControl>
                     <FormMessage />
                   </FormItem>
@@ -150,6 +183,7 @@ export default function AddSupplierForm() {
                       <Input
                         placeholder="Enter contact person name"
                         {...field}
+                        disabled={createSupplierMutation.isPending}
                       />
                     </FormControl>
                     <FormMessage />
@@ -168,6 +202,7 @@ export default function AddSupplierForm() {
                         type="email"
                         placeholder="Enter email address"
                         {...field}
+                        disabled={createSupplierMutation.isPending}
                       />
                     </FormControl>
                     <FormMessage />
@@ -186,6 +221,7 @@ export default function AddSupplierForm() {
                         type="tel"
                         placeholder="Enter phone number"
                         {...field}
+                        disabled={createSupplierMutation.isPending}
                       />
                     </FormControl>
                     <FormMessage />
@@ -204,6 +240,7 @@ export default function AddSupplierForm() {
                         type="url"
                         placeholder="Enter website URL"
                         {...field}
+                        disabled={createSupplierMutation.isPending}
                       />
                     </FormControl>
                     <FormMessage />
@@ -217,6 +254,9 @@ export default function AddSupplierForm() {
           <Card>
             <CardHeader>
               <CardTitle>Address Information</CardTitle>
+              <CardDescription>
+                Supplier's physical address and location details.
+              </CardDescription>
             </CardHeader>
             <CardContent className="space-y-4">
               <FormField
@@ -230,6 +270,7 @@ export default function AddSupplierForm() {
                         placeholder="Enter full address"
                         className="resize-none"
                         {...field}
+                        disabled={createSupplierMutation.isPending}
                       />
                     </FormControl>
                     <FormMessage />
@@ -245,7 +286,11 @@ export default function AddSupplierForm() {
                     <FormItem>
                       <FormLabel>City</FormLabel>
                       <FormControl>
-                        <Input placeholder="Enter city" {...field} />
+                        <Input
+                          placeholder="Enter city"
+                          {...field}
+                          disabled={createSupplierMutation.isPending}
+                        />
                       </FormControl>
                       <FormMessage />
                     </FormItem>
@@ -259,7 +304,11 @@ export default function AddSupplierForm() {
                     <FormItem>
                       <FormLabel>State/Province</FormLabel>
                       <FormControl>
-                        <Input placeholder="Enter state/province" {...field} />
+                        <Input
+                          placeholder="Enter state/province"
+                          {...field}
+                          disabled={createSupplierMutation.isPending}
+                        />
                       </FormControl>
                       <FormMessage />
                     </FormItem>
@@ -273,7 +322,11 @@ export default function AddSupplierForm() {
                     <FormItem>
                       <FormLabel>Country</FormLabel>
                       <FormControl>
-                        <Input placeholder="Enter country" {...field} />
+                        <Input
+                          placeholder="Enter country"
+                          {...field}
+                          disabled={createSupplierMutation.isPending}
+                        />
                       </FormControl>
                       <FormMessage />
                     </FormItem>
@@ -287,7 +340,11 @@ export default function AddSupplierForm() {
                     <FormItem>
                       <FormLabel>Postal Code</FormLabel>
                       <FormControl>
-                        <Input placeholder="Enter postal code" {...field} />
+                        <Input
+                          placeholder="Enter postal code"
+                          {...field}
+                          disabled={createSupplierMutation.isPending}
+                        />
                       </FormControl>
                       <FormMessage />
                     </FormItem>
@@ -301,6 +358,9 @@ export default function AddSupplierForm() {
           <Card>
             <CardHeader>
               <CardTitle>Business Information</CardTitle>
+              <CardDescription>
+                Financial and business-related details for the supplier.
+              </CardDescription>
             </CardHeader>
             <CardContent className="space-y-4">
               <FormField
@@ -310,7 +370,11 @@ export default function AddSupplierForm() {
                   <FormItem>
                     <FormLabel>Tax Number</FormLabel>
                     <FormControl>
-                      <Input placeholder="Enter tax number" {...field} />
+                      <Input
+                        placeholder="Enter tax number"
+                        {...field}
+                        disabled={createSupplierMutation.isPending}
+                      />
                     </FormControl>
                     <FormMessage />
                   </FormItem>
@@ -327,6 +391,7 @@ export default function AddSupplierForm() {
                       <Input
                         placeholder="e.g., Net 30, Due on receipt"
                         {...field}
+                        disabled={createSupplierMutation.isPending}
                       />
                     </FormControl>
                     <FormMessage />
@@ -347,6 +412,7 @@ export default function AddSupplierForm() {
                         min="0"
                         placeholder="Enter credit limit"
                         {...field}
+                        disabled={createSupplierMutation.isPending}
                       />
                     </FormControl>
                     <FormDescription>
@@ -372,6 +438,7 @@ export default function AddSupplierForm() {
                       <Switch
                         checked={field.value}
                         onCheckedChange={field.onChange}
+                        disabled={createSupplierMutation.isPending}
                       />
                     </FormControl>
                   </FormItem>
@@ -384,6 +451,9 @@ export default function AddSupplierForm() {
           <Card>
             <CardHeader>
               <CardTitle>Additional Information</CardTitle>
+              <CardDescription>
+                Any additional notes or comments about this supplier.
+              </CardDescription>
             </CardHeader>
             <CardContent>
               <FormField
@@ -398,6 +468,7 @@ export default function AddSupplierForm() {
                         className="resize-none"
                         rows={4}
                         {...field}
+                        disabled={createSupplierMutation.isPending}
                       />
                     </FormControl>
                     <FormMessage />
@@ -407,8 +478,8 @@ export default function AddSupplierForm() {
             </CardContent>
           </Card>
 
-          {/* Submit Button */}
-          <div className="flex gap-4">
+          {/* Form Actions */}
+          <div className="flex items-center gap-4 pt-4">
             <Button type="submit" disabled={createSupplierMutation.isPending}>
               {createSupplierMutation.isPending ? (
                 <>
@@ -416,16 +487,14 @@ export default function AddSupplierForm() {
                   Creating...
                 </>
               ) : (
-                <>
-                  <Save className="mr-2 h-4 w-4" />
-                  Create Supplier
-                </>
+                "Create Supplier"
               )}
             </Button>
             <Button
               type="button"
               variant="outline"
               onClick={() => router.push("/dashboard/inventory/suppliers")}
+              disabled={createSupplierMutation.isPending}
             >
               Cancel
             </Button>

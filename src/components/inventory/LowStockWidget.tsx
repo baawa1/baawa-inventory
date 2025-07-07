@@ -6,7 +6,6 @@ import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { AlertTriangle, Package, TrendingUp, ExternalLink } from "lucide-react";
 import { useRouter } from "next/navigation";
-import { toast } from "sonner";
 
 interface LowStockProduct {
   id: number;

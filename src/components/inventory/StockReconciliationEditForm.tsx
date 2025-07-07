@@ -40,11 +40,12 @@ import {
   IconTrash,
   IconSearch,
   IconCalculator,
-  IconArrowLeft,
   IconDeviceFloppy,
   IconSend,
-  IconLoader2,
 } from "@tabler/icons-react";
+import { ArrowLeft } from "lucide-react";
+import { PageHeader } from "@/components/ui/page-header";
+import { FormLoading } from "@/components/ui/form-loading";
 import { formatCurrency } from "@/lib/utils";
 import { useProductSearch } from "@/hooks/useProductSearch";
 import {
@@ -247,63 +248,129 @@ export function StockReconciliationEditForm({
 
   if (loadingReconciliation) {
     return (
-      <div className="flex items-center justify-center py-12">
-        <IconLoader2 className="h-6 w-6 animate-spin mr-2" />
-        Loading reconciliation...
-      </div>
+      <FormLoading
+        title="Edit Stock Reconciliation"
+        description="Loading reconciliation..."
+        backLabel="Back to Reconciliations"
+        onBack={() => router.push("/inventory/stock-reconciliations")}
+        backUrl="/inventory/stock-reconciliations"
+      />
+    );
+  }
+
+  // Show loading state during form submission
+  if (updateMutation.isPending || submitMutation.isPending) {
+    return (
+      <FormLoading
+        title="Edit Stock Reconciliation"
+        description="Updating reconciliation..."
+        backLabel="Back to Reconciliations"
+        onBack={() => router.push("/inventory/stock-reconciliations")}
+        backUrl="/inventory/stock-reconciliations"
+      />
     );
   }
 
   if (!reconciliation) {
     return (
-      <div className="text-center py-12">
-        <p className="text-lg text-muted-foreground">
-          Reconciliation not found
-        </p>
-        <Button
-          variant="outline"
-          onClick={() => router.push("/inventory/stock-reconciliations")}
-          className="mt-4"
-        >
-          Back to Reconciliations
-        </Button>
+      <div className="max-w-4xl mx-auto p-6 space-y-6">
+        <div className="mb-6">
+          <Button
+            variant="ghost"
+            onClick={() => router.push("/inventory/stock-reconciliations")}
+            className="mb-4 px-4 lg:px-6"
+          >
+            <ArrowLeft className="mr-2 h-4 w-4" />
+            Back to Reconciliations
+          </Button>
+          <PageHeader
+            title="Edit Stock Reconciliation"
+            description="Reconciliation not found"
+          />
+        </div>
+
+        <Card>
+          <CardContent className="p-6">
+            <div className="text-center py-12">
+              <p className="text-lg text-muted-foreground mb-4">
+                Reconciliation not found
+              </p>
+              <Button
+                variant="outline"
+                onClick={() => router.push("/inventory/stock-reconciliations")}
+              >
+                Back to Reconciliations
+              </Button>
+            </div>
+          </CardContent>
+        </Card>
       </div>
     );
   }
 
   if (!canEdit) {
     return (
-      <div className="text-center py-12">
-        <p className="text-lg text-muted-foreground">
-          This reconciliation cannot be edited (Status: {reconciliation.status})
-        </p>
-        <Button
-          variant="outline"
-          onClick={() =>
-            router.push(`/inventory/stock-reconciliations/${reconciliationId}`)
-          }
-          className="mt-4"
-        >
-          View Reconciliation
-        </Button>
+      <div className="max-w-4xl mx-auto p-6 space-y-6">
+        <div className="mb-6">
+          <Button
+            variant="ghost"
+            onClick={() =>
+              router.push(
+                `/inventory/stock-reconciliations/${reconciliationId}`
+              )
+            }
+            className="mb-4 px-4 lg:px-6"
+          >
+            <ArrowLeft className="mr-2 h-4 w-4" />
+            Back to Reconciliation
+          </Button>
+          <PageHeader
+            title="Edit Stock Reconciliation"
+            description="Cannot edit this reconciliation"
+          />
+        </div>
+
+        <Card>
+          <CardContent className="p-6">
+            <div className="text-center py-12">
+              <p className="text-lg text-muted-foreground mb-4">
+                This reconciliation cannot be edited (Status:{" "}
+                {reconciliation.status})
+              </p>
+              <Button
+                variant="outline"
+                onClick={() =>
+                  router.push(
+                    `/inventory/stock-reconciliations/${reconciliationId}`
+                  )
+                }
+              >
+                View Reconciliation
+              </Button>
+            </div>
+          </CardContent>
+        </Card>
       </div>
     );
   }
 
   return (
-    <div className="space-y-6">
-      {/* Header with navigation */}
-      <div className="flex items-center justify-between">
+    <div className="max-w-4xl mx-auto p-6 space-y-6">
+      <div className="mb-6">
         <Button
-          variant="outline"
+          variant="ghost"
           onClick={() =>
             router.push(`/inventory/stock-reconciliations/${reconciliationId}`)
           }
-          className="gap-2"
+          className="mb-4 px-4 lg:px-6"
         >
-          <IconArrowLeft className="h-4 w-4" />
+          <ArrowLeft className="mr-2 h-4 w-4" />
           Back to Reconciliation
         </Button>
+        <PageHeader
+          title="Edit Stock Reconciliation"
+          description={`Update "${reconciliation.title}" reconciliation details`}
+        />
       </div>
 
       <Form {...form}>

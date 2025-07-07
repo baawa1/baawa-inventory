@@ -11,9 +11,6 @@ import {
   IconSettings,
   IconUsers,
   IconShoppingCart,
-  IconPackages,
-  IconTruck,
-  IconAdjustments,
 } from "@tabler/icons-react";
 
 import { NavDocuments } from "@/components/nav-documents";

@@ -87,7 +87,7 @@ export function StockReconciliationDetail({
     data: reconciliationData,
     isLoading,
     error,
-  } = useStockReconciliation(reconciliationId);
+  } = useStockReconciliation(reconciliationId.toString());
 
   const submitMutation = useSubmitStockReconciliation();
   const approveMutation = useApproveStockReconciliation();
