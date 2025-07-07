@@ -317,11 +317,11 @@ export function StockHistoryList({ user: _user }: StockHistoryListProps) {
       showingText={`Showing ${stockHistory?.data?.length || 0} stock additions`}
       columns={columns}
       visibleColumns={columns.map((col) => col.key)}
-      onColumnsChange={() => {}}
-      columnCustomizerKey="stock-history-visible-columns"
+      onColumnsChange={undefined}
+      columnCustomizerKey={undefined}
       data={stockHistory?.data || []}
       renderCell={renderCell}
-      renderActions={() => null}
+      renderActions={undefined}
       // Pagination
       pagination={pagination}
       onPageChange={handlePageChange}
