@@ -71,7 +71,8 @@ export type EmailTemplateType =
   | "account_locked"
   | "role_changed"
   | "user_suspension"
-  | "user_reactivation";
+  | "user_reactivation"
+  | "receipt_email";
 
 /**
  * Template data interfaces for type safety
@@ -153,6 +154,23 @@ export interface UserReactivationData extends Record<string, unknown> {
   loginLink?: string;
 }
 
+export interface ReceiptEmailData extends Record<string, unknown> {
+  customerName: string;
+  saleId: string;
+  items: Array<{
+    name: string;
+    quantity: number;
+    price: number;
+    total: number;
+  }>;
+  subtotal: number;
+  discount: number;
+  total: number;
+  paymentMethod: string;
+  timestamp: Date;
+  staffName: string;
+}
+
 /**
  * Union type for all template data with proper mapping
  */
@@ -170,4 +188,5 @@ export type EmailTemplateData = {
   role_changed: RoleChangeData;
   user_suspension: UserSuspensionData;
   user_reactivation: UserReactivationData;
+  receipt_email: ReceiptEmailData;
 };

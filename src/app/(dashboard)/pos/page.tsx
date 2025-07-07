@@ -17,7 +17,7 @@ export default async function POSPage() {
   }
 
   // Check if user is active and approved
-  if (session.user.status !== "active") {
+  if (!["APPROVED", "VERIFIED"].includes(session.user.status)) {
     redirect("/pending-approval");
   }
 

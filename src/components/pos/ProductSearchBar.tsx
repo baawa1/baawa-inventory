@@ -7,6 +7,7 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Separator } from "@/components/ui/separator";
 import { useDebounce } from "@/hooks/useDebounce";
+import { BarcodeScanner } from "./BarcodeScanner";
 import {
   IconSearch,
   IconBarcode,
@@ -14,6 +15,7 @@ import {
   IconPackage,
   IconTag,
   IconCurrency,
+  IconCamera,
 } from "@tabler/icons-react";
 import { toast } from "sonner";
 
@@ -57,7 +59,10 @@ export function ProductSearchBar({
   const [products, setProducts] = useState<Product[]>([]);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
-  const [searchMode, setSearchMode] = useState<"text" | "barcode">("text");
+  const [searchMode, setSearchMode] = useState<"text" | "barcode" | "camera">(
+    "text"
+  );
+  const [showScanner, setShowScanner] = useState(false);
 
   const debouncedSearchTerm = useDebounce(searchTerm, 300);
 
@@ -99,7 +104,7 @@ export function ProductSearchBar({
     searchProducts();
   }, [debouncedSearchTerm]);
 
-  // Handle barcode scan
+  // Handle barcode scan (manual entry or camera)
   const handleBarcodeScan = async (barcode: string) => {
     if (!barcode.trim()) return;
 
@@ -140,6 +145,17 @@ export function ProductSearchBar({
     } finally {
       setLoading(false);
     }
+  };
+
+  // Handle camera scan
+  const handleCameraScan = (barcode: string) => {
+    setShowScanner(false);
+    handleBarcodeScan(barcode);
+  };
+
+  // Start camera scanning
+  const startCameraScanning = () => {
+    setShowScanner(true);
   };
 
   // Handle product selection
@@ -192,6 +208,15 @@ export function ProductSearchBar({
         >
           <IconBarcode className="h-4 w-4 mr-2" />
           Barcode
+        </Button>
+        <Button
+          variant="outline"
+          size="sm"
+          onClick={startCameraScanning}
+          disabled={disabled}
+        >
+          <IconCamera className="h-4 w-4 mr-2" />
+          Camera
         </Button>
       </div>
 
@@ -308,6 +333,13 @@ export function ProductSearchBar({
             <p className="text-sm">Try adjusting your search terms</p>
           </div>
         )}
+
+      {/* Camera Barcode Scanner */}
+      <BarcodeScanner
+        isOpen={showScanner}
+        onScan={handleCameraScan}
+        onClose={() => setShowScanner(false)}
+      />
     </div>
   );
 }

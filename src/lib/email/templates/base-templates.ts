@@ -2,6 +2,7 @@ import {
   EmailTemplate,
   UserSuspensionData,
   UserReactivationData,
+  ReceiptEmailData,
 } from "../types";
 
 /**
@@ -635,5 +636,98 @@ export const userReactivationTemplate = (
     subject: "Account Reactivated - Welcome Back! - Baawa Accessories",
     html: createBaseTemplate(content, "Account Reactivated"),
     text: `Account Reactivated\n\nDear ${data.firstName} ${data.lastName},\n\nGreat news! Your Baawa Accessories account has been reactivated.\n\nYou can now access your dashboard and use all features again.\n\nLogin at: ${data.loginLink || "https://inventory.baawa.com/login"}\n\nWelcome back!\n\nBest regards,\nBaawa Accessories Team`,
+  };
+};
+
+/**
+ * Receipt Email Template
+ */
+export const createReceiptEmailTemplate = (
+  data: ReceiptEmailData
+): EmailTemplate => {
+  const formattedDate = data.timestamp.toLocaleDateString("en-US", {
+    year: "numeric",
+    month: "long",
+    day: "numeric",
+    hour: "2-digit",
+    minute: "2-digit",
+  });
+
+  const itemsHtml = data.items
+    .map(
+      (item) => `
+    <tr>
+      <td style="padding: 10px; border-bottom: 1px solid #eee;">${item.name}</td>
+      <td style="padding: 10px; border-bottom: 1px solid #eee; text-align: center;">${item.quantity}</td>
+      <td style="padding: 10px; border-bottom: 1px solid #eee; text-align: right;">₦${item.price.toLocaleString()}</td>
+      <td style="padding: 10px; border-bottom: 1px solid #eee; text-align: right; font-weight: bold;">₦${item.total.toLocaleString()}</td>
+    </tr>
+  `
+    )
+    .join("");
+
+  const content = `
+    <div class="content">
+        <h2 style="color: #2563eb; margin-bottom: 20px;">Thank you for your purchase!</h2>
+        
+        <p>Dear ${data.customerName},</p>
+        
+        <p>Thank you for shopping with Baawa Accessories! Here's your receipt for your recent purchase:</p>
+        
+        <div style="background-color: #f8f9fa; padding: 20px; border-radius: 8px; margin: 20px 0;">
+            <h3 style="margin: 0 0 10px 0; color: #1f2937;">Purchase Details</h3>
+            <p><strong>Receipt #:</strong> ${data.saleId}</p>
+            <p><strong>Date:</strong> ${formattedDate}</p>
+            <p><strong>Payment Method:</strong> ${data.paymentMethod}</p>
+            <p><strong>Served by:</strong> ${data.staffName}</p>
+        </div>
+        
+        <div style="margin: 30px 0;">
+            <h3 style="color: #1f2937; margin-bottom: 15px;">Items Purchased</h3>
+            <table style="width: 100%; border-collapse: collapse; border: 1px solid #ddd;">
+                <thead>
+                    <tr style="background-color: #f8f9fa;">
+                        <th style="padding: 12px; text-align: left; border-bottom: 2px solid #ddd;">Item</th>
+                        <th style="padding: 12px; text-align: center; border-bottom: 2px solid #ddd;">Qty</th>
+                        <th style="padding: 12px; text-align: right; border-bottom: 2px solid #ddd;">Price</th>
+                        <th style="padding: 12px; text-align: right; border-bottom: 2px solid #ddd;">Total</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    ${itemsHtml}
+                </tbody>
+            </table>
+        </div>
+        
+        <div style="border-top: 2px solid #2563eb; padding-top: 20px; margin-top: 30px;">
+            <div style="text-align: right; font-size: 16px;">
+                <p><strong>Subtotal: ₦${data.subtotal.toLocaleString()}</strong></p>
+                ${data.discount > 0 ? `<p style="color: #dc2626;"><strong>Discount: -₦${data.discount.toLocaleString()}</strong></p>` : ""}
+                <p style="font-size: 18px; color: #2563eb;"><strong>Total: ₦${data.total.toLocaleString()}</strong></p>
+            </div>
+        </div>
+        
+        <div style="background-color: #f0f9ff; padding: 20px; border-radius: 8px; margin: 30px 0;">
+            <h3 style="margin: 0 0 10px 0; color: #1f2937;">Return Policy</h3>
+            <p style="margin: 0; font-size: 14px;">Items can be returned within 7 days of purchase with the original receipt. Please contact us if you have any issues with your purchase.</p>
+        </div>
+        
+        <p>Thank you for choosing Baawa Accessories. We appreciate your business!</p>
+        
+        <p>Best regards,<br>Baawa Accessories Team</p>
+    </div>
+  `;
+
+  return {
+    subject: `Receipt for Your Purchase - ${data.saleId} - Baawa Accessories`,
+    html: createBaseTemplate(content, "Purchase Receipt"),
+    text: `Purchase Receipt\n\nDear ${data.customerName},\n\nThank you for your purchase!\n\nReceipt #: ${data.saleId}\nDate: ${formattedDate}\nPayment Method: ${data.paymentMethod}\nServed by: ${data.staffName}\n\nItems:\n${data.items
+      .map(
+        (item) =>
+          `${item.name} x${item.quantity} - ₦${item.total.toLocaleString()}`
+      )
+      .join(
+        "\n"
+      )}\n\nSubtotal: ₦${data.subtotal.toLocaleString()}\n${data.discount > 0 ? `Discount: -₦${data.discount.toLocaleString()}\n` : ""}Total: ₦${data.total.toLocaleString()}\n\nThank you for choosing Baawa Accessories!\n\nBest regards,\nBaawa Accessories Team`,
   };
 };

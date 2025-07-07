@@ -11,6 +11,7 @@ import {
   adminDigestTemplate,
   userSuspensionTemplate,
   userReactivationTemplate,
+  createReceiptEmailTemplate,
 } from "./base-templates";
 
 /**
@@ -47,6 +48,8 @@ export async function getEmailTemplate(
       return userSuspensionTemplate(data);
     case "user_reactivation":
       return userReactivationTemplate(data);
+    case "receipt_email":
+      return createReceiptEmailTemplate(data);
     default:
       throw new Error(`Unknown email template type: ${templateType}`);
   }
@@ -97,4 +100,5 @@ export {
   adminDigestTemplate,
   userSuspensionTemplate,
   userReactivationTemplate,
+  createReceiptEmailTemplate,
 };
