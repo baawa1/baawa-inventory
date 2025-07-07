@@ -13,6 +13,7 @@ import {
   AdminDigestData,
   UserSuspensionData,
   UserReactivationData,
+  ReceiptEmailData,
 } from "./types";
 import { EmailProviderFactory } from "./providers/factory";
 import { getEmailTemplate } from "./templates";
@@ -237,6 +238,48 @@ export const emailService = {
       html: template.html,
       text: template.text,
     });
+  },
+
+  /**
+   * Send receipt email to customer
+   */
+  async sendReceiptEmail(data: {
+    to: string;
+    customerName: string;
+    saleId: string;
+    items: Array<{
+      name: string;
+      quantity: number;
+      price: number;
+      total: number;
+    }>;
+    subtotal: number;
+    discount: number;
+    total: number;
+    paymentMethod: string;
+    timestamp: Date;
+    staffName: string;
+  }): Promise<boolean> {
+    try {
+      const service = createEmailService();
+      const receiptData: ReceiptEmailData = {
+        customerName: data.customerName,
+        saleId: data.saleId,
+        items: data.items,
+        subtotal: data.subtotal,
+        discount: data.discount,
+        total: data.total,
+        paymentMethod: data.paymentMethod,
+        timestamp: data.timestamp,
+        staffName: data.staffName,
+      };
+
+      await service.sendTemplatedEmail("receipt_email", data.to, receiptData);
+      return true;
+    } catch (error) {
+      console.error("Failed to send receipt email:", error);
+      return false;
+    }
   },
 };
 
