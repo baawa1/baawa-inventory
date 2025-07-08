@@ -1,23 +1,8 @@
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { queryKeys } from "@/lib/query-client";
+import type { AppUser } from "@/types/user";
 
 // Types for Users API
-export interface APIUser {
-  id: number;
-  firstName: string;
-  lastName: string;
-  email: string;
-  role: "ADMIN" | "MANAGER" | "EMPLOYEE";
-  userStatus: "PENDING" | "VERIFIED" | "APPROVED" | "REJECTED" | "SUSPENDED";
-  isActive: boolean;
-  emailVerified: boolean;
-  createdAt: string;
-  lastLogin?: string;
-  approvedBy?: number;
-  approvedAt?: string;
-  rejectionReason?: string;
-}
-
 export interface CreateUserData {
   firstName: string;
   lastName: string;
@@ -42,7 +27,7 @@ export interface UserFilters {
 }
 
 // API Functions
-const fetchUsers = async (filters: UserFilters = {}): Promise<APIUser[]> => {
+const fetchUsers = async (filters: UserFilters = {}): Promise<AppUser[]> => {
   const params = new URLSearchParams();
 
   if (filters.isActive !== undefined) {
@@ -69,7 +54,7 @@ const fetchUsers = async (filters: UserFilters = {}): Promise<APIUser[]> => {
   return data.users || data; // Handle both pagination and direct array responses
 };
 
-const createUser = async (userData: CreateUserData): Promise<APIUser> => {
+const createUser = async (userData: CreateUserData): Promise<AppUser> => {
   const response = await fetch("/api/users", {
     method: "POST",
     credentials: "include",
@@ -91,7 +76,7 @@ const createUser = async (userData: CreateUserData): Promise<APIUser> => {
 const updateUser = async ({
   id,
   ...userData
-}: UpdateUserData & { id: number }): Promise<APIUser> => {
+}: UpdateUserData & { id: number }): Promise<AppUser> => {
   const response = await fetch(`/api/users/${id}`, {
     method: "PUT",
     credentials: "include",

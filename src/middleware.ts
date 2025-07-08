@@ -2,18 +2,10 @@ import { withAuth } from "next-auth/middleware";
 import { NextResponse } from "next/server";
 import {
   USER_ROLES,
-  type UserRole,
   hasPermission,
   authorizeUserForRoute,
 } from "@/lib/auth/roles";
-
-// Define user statuses for better type safety
-type UserStatus =
-  | "PENDING"
-  | "VERIFIED"
-  | "APPROVED"
-  | "REJECTED"
-  | "SUSPENDED";
+import type { UserRole, UserStatus } from "@/types/user";
 
 export default withAuth(
   function middleware(req) {

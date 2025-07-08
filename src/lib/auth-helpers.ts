@@ -1,6 +1,7 @@
 import { getServerSession as nextAuthGetServerSession } from "next-auth/next";
 import { authOptions } from "./auth";
-import { UserRole, getRolePermissions, RolePermissions } from "./auth-rbac";
+import { getRolePermissions, RolePermissions } from "./auth-rbac";
+import type { UserRole } from "@/types/user";
 
 export function getServerSession() {
   return nextAuthGetServerSession(authOptions);

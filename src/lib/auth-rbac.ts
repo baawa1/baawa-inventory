@@ -1,7 +1,6 @@
 import { useSession } from "next-auth/react";
 import { redirect } from "next/navigation";
-
-export type UserRole = "ADMIN" | "MANAGER" | "EMPLOYEE";
+import type { UserRole } from "@/types/user";
 
 export interface RolePermissions {
   canAccessAdmin: boolean;

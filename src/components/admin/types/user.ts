@@ -1,4 +1,5 @@
 import { z } from "zod";
+import type { AppUser, UserRole, UserStatus } from "@/types/user";
 
 // Base user schema without password fields
 const baseUserSchema = z.object({
@@ -60,18 +61,6 @@ export const createUserFormSchemaFunction = (isEditing: boolean) => {
 export type UserFormData = z.infer<typeof createUserFormSchema>;
 export type EditUserFormData = z.infer<typeof editUserFormSchema>;
 
-export interface User {
-  id: number;
-  firstName: string;
-  lastName: string;
-  email: string;
-  role: "ADMIN" | "MANAGER" | "EMPLOYEE";
-  userStatus: "PENDING" | "VERIFIED" | "APPROVED" | "REJECTED" | "SUSPENDED";
-  isActive: boolean;
-  emailVerified: boolean;
-  createdAt: string;
-  lastLogin?: string;
-  approvedBy?: number;
-  approvedAt?: string;
-  rejectionReason?: string;
-}
+// Use AppUser from unified types
+export type User = AppUser;
+export type { UserRole, UserStatus };

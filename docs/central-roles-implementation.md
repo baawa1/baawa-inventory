@@ -95,6 +95,6 @@ After each batch of changes:
 
 ## Conclusion
 
-The central roles system provides a robust framework for role-based access control throughout the application. By centralizing all role and permission definitions, we can easily manage and maintain the security model as the application evolves.
+The central roles system provides a robust framework for role-based access control throughout the application. All role and status types are now unified in `src/types/user.ts`, and all role-based logic should use these types and the central helpers. This ensures consistency, security, and maintainability as the application evolves.
 
-When adding new features or routes, remember to use the central roles system for access control to maintain consistency and security.
+When adding new features or routes, always use the central roles system and unified types for access control.
