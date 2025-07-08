@@ -1,5 +1,10 @@
 import { withAuth } from "next-auth/middleware";
 import { NextResponse } from "next/server";
+import {
+  USER_ROLES,
+  type UserRole,
+  authorizeUserForRoute,
+} from "@/lib/auth/roles";
 
 // Define user statuses for better type safety
 type UserStatus =
@@ -8,7 +13,6 @@ type UserStatus =
   | "APPROVED"
   | "REJECTED"
   | "SUSPENDED";
-type UserRole = "ADMIN" | "MANAGER" | "EMPLOYEE";
 
 export default withAuth(
   function middleware(req) {
@@ -43,7 +47,7 @@ export default withAuth(
     const userRole = token.role as UserRole;
     const userStatus = token.status as UserStatus;
     const emailVerified = token.emailVerified as boolean;
-    const _userId = token.sub;
+    const userId = token.sub;
 
     // Helper function to safely redirect and prevent loops
     const safeRedirect = (targetPath: string, reason: string) => {
@@ -119,34 +123,11 @@ export default withAuth(
 
     // Role-based access control for approved users
     if (userStatus === "APPROVED") {
-      // Admin-only routes
-      if (pathname.startsWith("/admin")) {
-        if (userRole !== "ADMIN") {
-          return safeRedirect(
-            "/unauthorized",
-            `Access denied for ${userRole} to admin route`
-          );
-        }
-      }
-
-      // Manager and Admin routes
-      if (pathname.startsWith("/reports") || pathname.startsWith("/settings")) {
-        if (userRole !== "ADMIN" && userRole !== "MANAGER") {
-          return safeRedirect(
-            "/unauthorized",
-            `Access denied for ${userRole} to manager/admin route`
-          );
-        }
-      }
-
-      // Employee can access dashboard, inventory, and POS
-      if (
-        pathname.startsWith("/inventory") ||
-        pathname.startsWith("/pos") ||
-        pathname.startsWith("/dashboard")
-      ) {
-        // All approved users can access these routes
-        // Additional permission checks can be added here if needed
+      if (!authorizeUserForRoute(userRole, pathname)) {
+        return safeRedirect(
+          "/unauthorized",
+          `Access denied for ${userRole} to route ${pathname}`
+        );
       }
     }
 

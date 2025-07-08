@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from "next/server";
 import { getServerSession } from "@/lib/auth-helpers";
 import { prisma } from "@/lib/db";
 import { format } from "date-fns";
+import { hasPermission } from "@/lib/auth/roles";
 
 export async function GET(request: NextRequest) {
   try {
@@ -11,7 +12,7 @@ export async function GET(request: NextRequest) {
     }
 
     // Check role permissions
-    if (!["ADMIN", "MANAGER", "EMPLOYEE"].includes(session.user.role)) {
+    if (!hasPermission(session.user.role, "REPORTS_READ")) {
       return NextResponse.json({ error: "Forbidden" }, { status: 403 });
     }
 

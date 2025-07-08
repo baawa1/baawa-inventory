@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from "next/server";
 import { getServerSession } from "next-auth";
 import { authOptions } from "@/lib/auth";
 import { prisma } from "@/lib/db";
+import { hasPermission } from "@/lib/auth/roles";
 import {
   updateStockAdditionSchema,
   type UpdateStockAdditionData,
@@ -85,7 +86,7 @@ export async function PUT(
     }
 
     // Check if user has proper role
-    if (!["ADMIN", "MANAGER"].includes(session.user.role)) {
+    if (!hasPermission(session.user.role, "INVENTORY_WRITE")) {
       return NextResponse.json(
         { error: "Insufficient permissions" },
         { status: 403 }

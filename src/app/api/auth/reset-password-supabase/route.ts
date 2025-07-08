@@ -1,7 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import { z } from "zod";
 import bcrypt from "bcryptjs";
-import { createServerSupabaseClient } from "@/lib/supabase-server";
+import { prisma } from "@/lib/db";
 
 const resetPasswordSchema = z.object({
   token: z.string().min(1, "Token is required"),
@@ -19,21 +19,23 @@ export async function POST(request: NextRequest) {
     const body = await request.json();
     const { token, password } = resetPasswordSchema.parse(body);
 
-    // Use the same client approach as forgot password (which works)
-    const supabase = await createServerSupabaseClient();
-
     console.log("🔄 Resetting password...");
     console.log("🔑 Token (first 10 chars):", token.substring(0, 10) + "...");
 
-    // Find user with valid reset token using server client
-    const { data: user, error: findError } = await supabase
-      .from("users")
-      .select("id, reset_token_expires, is_active")
-      .eq("reset_token", token)
-      .eq("is_active", true)
-      .single();
+    // Find user with valid reset token using Prisma
+    const user = await prisma.user.findFirst({
+      where: {
+        resetToken: token,
+        isActive: true,
+      },
+      select: {
+        id: true,
+        resetTokenExpires: true,
+        isActive: true,
+      },
+    });
 
-    if (findError || !user) {
+    if (!user) {
       return NextResponse.json(
         { error: "Invalid or expired reset token" },
         { status: 400 }
@@ -41,7 +43,7 @@ export async function POST(request: NextRequest) {
     }
 
     // Check if token is expired
-    const tokenExpiry = new Date(user.reset_token_expires);
+    const tokenExpiry = new Date(user.resetTokenExpires || 0);
     const now = new Date();
 
     if (tokenExpiry <= now) {
@@ -54,18 +56,20 @@ export async function POST(request: NextRequest) {
     // Hash the new password
     const hashedPassword = await bcrypt.hash(password, 12);
 
-    // Update user with new password and clear reset token using Supabase
-    const { error: updateError } = await supabase
-      .from("users")
-      .update({
-        password_hash: hashedPassword,
-        reset_token: null,
-        reset_token_expires: null,
-        updated_at: new Date().toISOString(),
-      })
-      .eq("id", user.id);
-
-    if (updateError) {
+    // Update user with new password and clear reset token using Prisma
+    try {
+      await prisma.user.update({
+        where: {
+          id: user.id,
+        },
+        data: {
+          password: hashedPassword,
+          resetToken: null,
+          resetTokenExpires: null,
+          updatedAt: new Date(),
+        },
+      });
+    } catch (updateError) {
       console.error("Failed to update password:", updateError);
       return NextResponse.json(
         { error: "Failed to reset password" },

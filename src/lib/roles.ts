@@ -13,7 +13,7 @@ import {
 export const USER_ROLES = {
   ADMIN: "ADMIN",
   MANAGER: "MANAGER",
-  STAFF: "STAFF", // Changed from EMPLOYEE to STAFF
+  EMPLOYEE: "EMPLOYEE",
 } as const;
 
 // Type for user roles
@@ -24,7 +24,7 @@ export const ALL_ROLES: UserRole[] = Object.values(USER_ROLES);
 
 // Role hierarchy (higher number = more permissions)
 export const ROLE_HIERARCHY: Record<UserRole, number> = {
-  [USER_ROLES.STAFF]: 1,
+  [USER_ROLES.EMPLOYEE]: 1,
   [USER_ROLES.MANAGER]: 2,
   [USER_ROLES.ADMIN]: 3,
 };
@@ -35,7 +35,7 @@ export const PERMISSIONS = {
   INVENTORY_READ: [
     USER_ROLES.ADMIN,
     USER_ROLES.MANAGER,
-    USER_ROLES.STAFF,
+    USER_ROLES.EMPLOYEE,
   ] as UserRole[],
   INVENTORY_WRITE: [USER_ROLES.ADMIN, USER_ROLES.MANAGER] as UserRole[],
   INVENTORY_DELETE: [USER_ROLES.ADMIN] as UserRole[],
@@ -44,7 +44,7 @@ export const PERMISSIONS = {
   LOW_STOCK_READ: [
     USER_ROLES.ADMIN,
     USER_ROLES.MANAGER,
-    USER_ROLES.STAFF,
+    USER_ROLES.EMPLOYEE,
   ] as UserRole[],
 
   // User management permissions
@@ -55,26 +55,26 @@ export const PERMISSIONS = {
   SALES_READ: [
     USER_ROLES.ADMIN,
     USER_ROLES.MANAGER,
-    USER_ROLES.STAFF,
+    USER_ROLES.EMPLOYEE,
   ] as UserRole[],
   SALES_WRITE: [
     USER_ROLES.ADMIN,
     USER_ROLES.MANAGER,
-    USER_ROLES.STAFF,
+    USER_ROLES.EMPLOYEE,
   ] as UserRole[],
 
   // POS permissions
   POS_ACCESS: [
     USER_ROLES.ADMIN,
     USER_ROLES.MANAGER,
-    USER_ROLES.STAFF,
+    USER_ROLES.EMPLOYEE,
   ] as UserRole[],
 
   // Reports permissions
   REPORTS_READ: [
     USER_ROLES.ADMIN,
     USER_ROLES.MANAGER,
-    USER_ROLES.STAFF,
+    USER_ROLES.EMPLOYEE,
   ] as UserRole[],
   REPORTS_ADVANCED: [USER_ROLES.ADMIN, USER_ROLES.MANAGER] as UserRole[],
 } as const;
@@ -105,8 +105,8 @@ export const isManager = (userRole: string | undefined): boolean => {
   return userRole === USER_ROLES.MANAGER;
 };
 
-export const isStaff = (userRole: string | undefined): boolean => {
-  return userRole === USER_ROLES.STAFF;
+export const isEmployee = (userRole: string | undefined): boolean => {
+  return userRole === USER_ROLES.EMPLOYEE;
 };
 
 export const canManageInventory = (userRole: string | undefined): boolean => {
@@ -193,7 +193,7 @@ export const validateUserAuthorization = (
 export const ROLE_DISPLAY_NAMES: Record<UserRole, string> = {
   [USER_ROLES.ADMIN]: "Administrator",
   [USER_ROLES.MANAGER]: "Manager",
-  [USER_ROLES.STAFF]: "Staff Member",
+  [USER_ROLES.EMPLOYEE]: "Employee",
 };
 
 // Role descriptions
@@ -201,6 +201,6 @@ export const ROLE_DESCRIPTIONS: Record<UserRole, string> = {
   [USER_ROLES.ADMIN]: "Full access to all system features and user management",
   [USER_ROLES.MANAGER]:
     "Can manage inventory, view reports, and handle day-to-day operations",
-  [USER_ROLES.STAFF]:
+  [USER_ROLES.EMPLOYEE]:
     "Can view inventory, process sales, and access basic reports",
 };

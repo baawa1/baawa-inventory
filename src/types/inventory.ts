@@ -1,3 +1,31 @@
+import {
+  Product,
+  Supplier,
+  Category,
+  Brand,
+  StockAdjustment,
+  StockAddition,
+  StockReconciliation,
+} from "@prisma/client";
+
+// Product with related entities
+export type ProductWithRelations = Product & {
+  supplier?: Supplier | null;
+  category?: Category | null;
+  brand?: Brand | null;
+};
+
+// Stock adjustment with related entities
+export type StockAdjustmentWithRelations = StockAdjustment & {
+  product?: Product | null;
+};
+
+// Stock addition with related entities
+export type StockAdditionWithRelations = StockAddition & {
+  product: Product;
+  supplier?: Supplier | null;
+};
+
 export interface FilterOption {
   value: string;
   label: string;

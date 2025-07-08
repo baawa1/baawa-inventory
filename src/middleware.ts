@@ -1,6 +1,11 @@
 import { withAuth } from "next-auth/middleware";
 import { NextResponse } from "next/server";
-import { USER_ROLES, type UserRole, hasPermission } from "@/lib/roles";
+import {
+  USER_ROLES,
+  type UserRole,
+  hasPermission,
+  authorizeUserForRoute,
+} from "@/lib/auth/roles";
 
 // Define user statuses for better type safety
 type UserStatus =

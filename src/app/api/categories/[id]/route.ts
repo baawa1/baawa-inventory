@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from "next/server";
 import { getServerSession } from "next-auth";
 import { authOptions } from "@/lib/auth";
 import { prisma } from "@/lib/db";
+import { hasPermission } from "@/lib/auth/roles";
 import {
   updateCategorySchema,
   categoryIdSchema,
@@ -20,7 +21,7 @@ export async function GET(
     }
 
     // Check if user has permission to view categories
-    if (!["ADMIN", "MANAGER", "EMPLOYEE"].includes(session.user.role)) {
+    if (!hasPermission(session.user.role, "INVENTORY_READ")) {
       return NextResponse.json(
         { error: "Insufficient permissions" },
         { status: 403 }
@@ -77,7 +78,7 @@ export async function PUT(
     }
 
     // Check if user has permission to update categories
-    if (!["ADMIN", "MANAGER"].includes(session.user.role)) {
+    if (!hasPermission(session.user.role, "INVENTORY_WRITE")) {
       return NextResponse.json(
         { error: "Insufficient permissions" },
         { status: 403 }
@@ -174,7 +175,7 @@ export async function DELETE(
     }
 
     // Check if user has permission to delete categories
-    if (!["ADMIN"].includes(session.user.role)) {
+    if (!hasPermission(session.user.role, "INVENTORY_DELETE")) {
       return NextResponse.json(
         { error: "Insufficient permissions" },
         { status: 403 }

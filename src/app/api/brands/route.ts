@@ -1,8 +1,8 @@
 import { NextResponse } from "next/server";
 import { getServerSession } from "next-auth";
 import { authOptions } from "@/lib/auth";
-import { canViewLowStock } from "@/lib/roles";
-import { supabase } from "@/lib/supabase";
+import { canViewLowStock } from "@/lib/auth/roles";
+import { prisma } from "@/lib/db";
 
 export async function GET() {
   try {
@@ -17,21 +17,20 @@ export async function GET() {
       return NextResponse.json({ error: "Forbidden" }, { status: 403 });
     }
 
-    const { data: brands, error } = await supabase
-      .from("brands")
-      .select("id, name")
-      .eq("is_archived", false)
-      .order("name");
+    const brands = await prisma.brand.findMany({
+      where: {
+        isActive: true,
+      },
+      select: {
+        id: true,
+        name: true,
+      },
+      orderBy: {
+        name: "asc",
+      },
+    });
 
-    if (error) {
-      console.error("Error fetching brands:", error);
-      return NextResponse.json(
-        { error: "Failed to fetch brands" },
-        { status: 500 }
-      );
-    }
-
-    return NextResponse.json(brands || []);
+    return NextResponse.json(brands);
   } catch (error) {
     console.error("Error in brands API:", error);
     return NextResponse.json(
