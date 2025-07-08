@@ -7,6 +7,7 @@ import {
   categoryQuerySchema,
 } from "@/lib/validations/category";
 import { handleApiError, createApiResponse } from "@/lib/api-error-handler";
+import { USER_ROLES, hasPermission } from "@/lib/auth/roles";
 
 // GET /api/categories - List categories with filtering
 export async function GET(request: NextRequest) {
@@ -18,7 +19,7 @@ export async function GET(request: NextRequest) {
     }
 
     // Check if user has permission to view categories
-    if (!["ADMIN", "MANAGER", "EMPLOYEE"].includes(session.user.role)) {
+    if (!hasPermission(session.user.role, "INVENTORY_READ")) {
       return handleApiError(new Error("Insufficient permissions"), 403);
     }
 
@@ -167,7 +168,7 @@ export async function POST(request: NextRequest) {
     }
 
     // Check if user has permission to create categories
-    if (!["ADMIN", "MANAGER"].includes(session.user.role)) {
+    if (!hasPermission(session.user.role, "INVENTORY_WRITE")) {
       return handleApiError(new Error("Insufficient permissions"), 403);
     }
 

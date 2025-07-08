@@ -1,5 +1,8 @@
 import { NextRequest, NextResponse } from "next/server";
-import { createServerSupabaseClient } from "@/lib/supabase-server";
+import { getServerSession } from "next-auth";
+import { authOptions } from "@/lib/auth";
+import { canManageInventory, canDeleteInventory } from "@/lib/auth/roles";
+import { InventoryService } from "@/lib/inventory-service";
 import {
   productIdSchema,
   updateProductSchema,
@@ -13,7 +16,6 @@ interface RouteParams {
 // GET /api/products/[id] - Get a specific product
 export async function GET(request: NextRequest, { params }: RouteParams) {
   try {
-    const supabase = await createServerSupabaseClient();
     const { id: paramId } = await params;
 
     // Validate product ID parameter
@@ -29,32 +31,38 @@ export async function GET(request: NextRequest, { params }: RouteParams) {
 
     const { id } = validation.data!;
 
-    const { data: product, error } = await supabase
-      .from("products")
-      .select(
-        `
-        *,
-        supplier:suppliers(id, name, contact_person, email, phone),
-        category:categories(id, name),
-        brand:brands(id, name)
-      `
-      )
-      .eq("id", id)
-      .eq("is_archived", false)
-      .single();
+    const product = await prisma.product.findFirst({
+      where: {
+        id: id,
+        isArchived: false,
+      },
+      include: {
+        supplier: {
+          select: {
+            id: true,
+            name: true,
+            contactPerson: true,
+            email: true,
+            phone: true,
+          },
+        },
+        category: {
+          select: {
+            id: true,
+            name: true,
+          },
+        },
+        brand: {
+          select: {
+            id: true,
+            name: true,
+          },
+        },
+      },
+    });
 
-    if (error) {
-      if (error.code === "PGRST116") {
-        return NextResponse.json(
-          { error: "Product not found" },
-          { status: 404 }
-        );
-      }
-      console.error("Error fetching product:", error);
-      return NextResponse.json(
-        { error: "Failed to fetch product" },
-        { status: 500 }
-      );
+    if (!product) {
+      return NextResponse.json({ error: "Product not found" }, { status: 404 });
     }
 
     return NextResponse.json({ data: product });
@@ -70,7 +78,6 @@ export async function GET(request: NextRequest, { params }: RouteParams) {
 // PUT /api/products/[id] - Update a product
 export async function PUT(request: NextRequest, { params }: RouteParams) {
   try {
-    const supabase = await createServerSupabaseClient();
     const body = await request.json();
     const { id: paramId } = await params;
 
@@ -98,11 +105,10 @@ export async function PUT(request: NextRequest, { params }: RouteParams) {
     const updateData = bodyValidation.data!;
 
     // Check if product exists
-    const { data: existingProduct } = await supabase
-      .from("products")
-      .select("id, sku")
-      .eq("id", id)
-      .single();
+    const existingProduct = await prisma.product.findUnique({
+      where: { id },
+      select: { id: true, sku: true },
+    });
 
     if (!existingProduct) {
       return NextResponse.json({ error: "Product not found" }, { status: 404 });
@@ -110,12 +116,13 @@ export async function PUT(request: NextRequest, { params }: RouteParams) {
 
     // If SKU is being updated, check for conflicts
     if (updateData.sku && updateData.sku !== existingProduct.sku) {
-      const { data: conflictProduct } = await supabase
-        .from("products")
-        .select("id")
-        .eq("sku", updateData.sku)
-        .neq("id", id)
-        .single();
+      const conflictProduct = await prisma.product.findFirst({
+        where: {
+          sku: updateData.sku,
+          id: { not: id },
+        },
+        select: { id: true },
+      });
 
       if (conflictProduct) {
         return NextResponse.json(
@@ -125,61 +132,55 @@ export async function PUT(request: NextRequest, { params }: RouteParams) {
       }
     }
 
-    // Update the product
-    const dbUpdateData: any = {};
+    // Prepare update data with proper field mapping
+    const prismaUpdateData: any = {};
 
-    // Map form field names to database field names
-    if (updateData.name !== undefined) dbUpdateData.name = updateData.name;
-    if (updateData.sku !== undefined) dbUpdateData.sku = updateData.sku;
+    if (updateData.name !== undefined) prismaUpdateData.name = updateData.name;
+    if (updateData.sku !== undefined) prismaUpdateData.sku = updateData.sku;
     if (updateData.barcode !== undefined)
-      dbUpdateData.barcode = updateData.barcode;
+      prismaUpdateData.barcode = updateData.barcode;
     if (updateData.description !== undefined)
-      dbUpdateData.description = updateData.description;
+      prismaUpdateData.description = updateData.description;
     if (updateData.categoryId !== undefined)
-      dbUpdateData.category_id = updateData.categoryId;
+      prismaUpdateData.categoryId = updateData.categoryId;
     if (updateData.brandId !== undefined)
-      dbUpdateData.brand_id = updateData.brandId;
+      prismaUpdateData.brandId = updateData.brandId;
     if (updateData.purchasePrice !== undefined)
-      dbUpdateData.cost = updateData.purchasePrice;
+      prismaUpdateData.cost = updateData.purchasePrice;
     if (updateData.sellingPrice !== undefined)
-      dbUpdateData.price = updateData.sellingPrice;
+      prismaUpdateData.price = updateData.sellingPrice;
     if (updateData.minimumStock !== undefined)
-      dbUpdateData.min_stock = updateData.minimumStock;
+      prismaUpdateData.minStock = updateData.minimumStock;
     if (updateData.maximumStock !== undefined)
-      dbUpdateData.max_stock = updateData.maximumStock;
+      prismaUpdateData.maxStock = updateData.maximumStock;
     if (updateData.currentStock !== undefined)
-      dbUpdateData.stock = updateData.currentStock;
+      prismaUpdateData.stock = updateData.currentStock;
     if (updateData.supplierId !== undefined)
-      dbUpdateData.supplier_id = updateData.supplierId;
+      prismaUpdateData.supplierId = updateData.supplierId;
     if (updateData.status !== undefined)
-      dbUpdateData.status = updateData.status;
+      prismaUpdateData.status = updateData.status;
     if (updateData.imageUrl !== undefined) {
-      dbUpdateData.images = updateData.imageUrl
+      prismaUpdateData.images = updateData.imageUrl
         ? [{ url: updateData.imageUrl, isPrimary: true }]
         : null;
     }
 
-    const { data: product, error } = await supabase
-      .from("products")
-      .update(dbUpdateData)
-      .eq("id", id)
-      .select(
-        `
-        *,
-        supplier:suppliers(id, name),
-        category:categories(id, name),
-        brand:brands(id, name)
-      `
-      )
-      .single();
-
-    if (error) {
-      console.error("Error updating product:", error);
-      return NextResponse.json(
-        { error: "Failed to update product" },
-        { status: 500 }
-      );
-    }
+    // Update the product
+    const product = await prisma.product.update({
+      where: { id },
+      data: prismaUpdateData,
+      include: {
+        supplier: {
+          select: { id: true, name: true },
+        },
+        category: {
+          select: { id: true, name: true },
+        },
+        brand: {
+          select: { id: true, name: true },
+        },
+      },
+    });
 
     return NextResponse.json({ data: product });
   } catch (error) {

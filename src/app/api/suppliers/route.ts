@@ -2,6 +2,7 @@ import { NextRequest } from "next/server";
 import { prisma } from "@/lib/db";
 import { getServerSession } from "next-auth";
 import { authOptions } from "@/lib/auth";
+import { hasPermission } from "@/lib/auth/roles";
 import {
   createSupplierSchema,
   supplierQuerySchema,
@@ -17,7 +18,7 @@ export async function GET(request: NextRequest) {
     }
 
     // Check permissions
-    if (!["ADMIN", "MANAGER", "EMPLOYEE"].includes(session.user.role)) {
+    if (!hasPermission(session.user.role, "INVENTORY_READ")) {
       return handleApiError(new Error("Insufficient permissions"), 403);
     }
 
@@ -130,7 +131,7 @@ export async function POST(request: NextRequest) {
     }
 
     // Check permissions
-    if (!["ADMIN", "MANAGER"].includes(session.user.role)) {
+    if (!hasPermission(session.user.role, "INVENTORY_WRITE")) {
       return handleApiError(new Error("Insufficient permissions"), 403);
     }
 

@@ -1,0 +1,155 @@
+import { NextRequest, NextResponse } from "next/server";
+import { z } from "zod";
+import { getServerSession } from "next-auth";
+import { authOptions } from "@/lib/auth";
+import { canViewLowStock } from "@/lib/auth/roles";
+import { InventoryService } from "@/lib/inventory-service";
+
+const lowStockQuerySchema = z.object({
+  limit: z
+    .string()
+    .optional()
+    .transform((val) => (val ? parseInt(val) : 50)),
+  offset: z
+    .string()
+    .optional()
+    .transform((val) => (val ? parseInt(val) : 0)),
+  category: z.string().optional(),
+  brand: z.string().optional(),
+  supplier: z.string().optional(),
+  threshold: z
+    .string()
+    .optional()
+    .transform((val) => (val ? parseInt(val) : undefined)),
+});
+
+export async function GET(request: NextRequest) {
+  try {
+    const session = await getServerSession(authOptions);
+
+    if (!session?.user) {
+      return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+    }
+
+    // Check if user has required permissions
+    if (!canViewLowStock(session.user.role)) {
+      return NextResponse.json({ error: "Forbidden" }, { status: 403 });
+    }
+
+    const { searchParams } = new URL(request.url);
+    const queryParams = Object.fromEntries(searchParams.entries());
+
+    const validatedQuery = lowStockQuerySchema.parse(queryParams);
+    const { limit, offset, category, brand, supplier, threshold } =
+      validatedQuery;
+
+    // Use the inventory service to get low stock products
+    const result = await InventoryService.getLowStockProducts({
+      limit,
+      offset,
+      categoryId: category ? parseInt(category) : undefined,
+      brandId: brand ? parseInt(brand) : undefined,
+      supplierId: supplier ? parseInt(supplier) : undefined,
+      threshold,
+    });
+
+    // Apply threshold filter
+    if (threshold !== undefined) {
+      whereClause.stock = { lte: threshold };
+    }
+
+    // Apply additional filters
+    if (category) {
+      whereClause.categoryId = parseInt(category);
+    }
+    if (brand) {
+      whereClause.brandId = parseInt(brand);
+    }
+    if (supplier) {
+      whereClause.supplierId = parseInt(supplier);
+    }
+
+    // Fetch products with count for pagination
+    const [products, totalCount] = await Promise.all([
+      prisma.product.findMany({
+        where: whereClause,
+        select: {
+          id: true,
+          name: true,
+          sku: true,
+          stock: true,
+          minStock: true,
+          cost: true,
+          price: true,
+          status: true,
+          category: {
+            select: {
+              id: true,
+              name: true,
+            },
+          },
+          brand: {
+            select: {
+              id: true,
+              name: true,
+            },
+          },
+          supplier: {
+            select: {
+              id: true,
+              name: true,
+            },
+          },
+          createdAt: true,
+          updatedAt: true,
+        },
+        orderBy: [{ stock: "asc" }, { minStock: "desc" }],
+        skip: offset,
+        take: limit,
+      }),
+      prisma.product.count({
+        where: whereClause,
+      }),
+    ]);
+
+    // Filter products where stock <= min_stock (if no threshold is specified)
+    let filteredProducts = products;
+    if (threshold === undefined) {
+      filteredProducts = products.filter(
+        (product) => product.stock <= product.minStock
+      );
+    }
+
+    // Calculate additional metrics
+    const totalValue = filteredProducts.reduce((sum, product) => {
+      return sum + Number(product.cost) * product.stock;
+    }, 0);
+
+    const criticalStock = filteredProducts.filter((p) => p.stock === 0).length;
+    const lowStock = filteredProducts.filter(
+      (p) => p.stock > 0 && p.stock <= p.minStock
+    ).length;
+
+    return NextResponse.json({
+      products: filteredProducts,
+      pagination: {
+        total: totalCount,
+        limit,
+        offset,
+        hasMore: totalCount > offset + limit,
+      },
+      metrics: {
+        totalValue,
+        criticalStock,
+        lowStock,
+        totalProducts: filteredProducts.length,
+      },
+    });
+  } catch (error) {
+    console.error("Error in low stock API:", error);
+    return NextResponse.json(
+      { error: "Internal server error" },
+      { status: 500 }
+    );
+  }
+}

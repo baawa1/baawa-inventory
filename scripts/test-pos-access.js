@@ -14,7 +14,7 @@ const USER_ROLES = {
 };
 
 const PERMISSIONS = {
-  POS_ACCESS: [USER_ROLES.ADMIN, USER_ROLES.MANAGER, USER_ROLES.STAFF],
+  POS_ACCESS: [USER_ROLES.ADMIN, USER_ROLES.MANAGER, USER_ROLES.EMPLOYEE],
 };
 
 const hasPermission = (userRole, permission) => {

@@ -1,8 +1,8 @@
 import { NextResponse } from "next/server";
 import { getServerSession } from "next-auth";
 import { authOptions } from "@/lib/auth";
-import { canViewLowStock } from "@/lib/roles";
-import { supabase } from "@/lib/supabase";
+import { canViewLowStock } from "@/lib/auth/roles";
+import { prisma } from "@/lib/db";
 
 export async function GET() {
   try {
@@ -17,19 +17,18 @@ export async function GET() {
       return NextResponse.json({ error: "Forbidden" }, { status: 403 });
     }
 
-    const { data: suppliers, error } = await supabase
-      .from("suppliers")
-      .select("id, name")
-      .eq("is_archived", false)
-      .order("name");
-
-    if (error) {
-      console.error("Error fetching suppliers:", error);
-      return NextResponse.json(
-        { error: "Failed to fetch suppliers" },
-        { status: 500 }
-      );
-    }
+    const suppliers = await prisma.supplier.findMany({
+      where: {
+        isActive: true,
+      },
+      select: {
+        id: true,
+        name: true,
+      },
+      orderBy: {
+        name: "asc",
+      },
+    });
 
     return NextResponse.json(suppliers || []);
   } catch (error) {
