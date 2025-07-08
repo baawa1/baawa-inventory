@@ -6,18 +6,12 @@
 import { NextRequest, NextResponse } from "next/server";
 import { getServerSession } from "next-auth/next";
 import { authOptions } from "@/lib/auth";
-import { validateUserAuthorization, type UserRole } from "@/lib/roles";
+import { validateUserAuthorization } from "@/lib/roles";
+import type { AuthUser } from "@/types/user";
 import { PERMISSIONS } from "@/lib/roles";
 import { ERROR_MESSAGES } from "@/lib/constants";
 
-export interface AuthenticatedUser {
-  id: string;
-  email: string;
-  name: string;
-  role: UserRole;
-  status: string;
-  emailVerified: boolean;
-}
+export type AuthenticatedUser = AuthUser;
 
 export interface AuthenticatedRequest extends NextRequest {
   user: AuthenticatedUser;
@@ -25,7 +19,7 @@ export interface AuthenticatedRequest extends NextRequest {
 
 export type AuthRequirement = {
   permission?: keyof typeof PERMISSIONS;
-  roles?: UserRole[];
+  roles?: AuthUser["role"][];
   requireEmailVerified?: boolean;
 };
 
@@ -85,7 +79,7 @@ export function withAuth<T extends any[]>(
       // Check specific roles if provided
       if (
         requirements.roles &&
-        !requirements.roles.includes(user.role as UserRole)
+        !requirements.roles.includes(user.role as AuthUser["role"])
       ) {
         return NextResponse.json(
           { error: ERROR_MESSAGES.FORBIDDEN },

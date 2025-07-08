@@ -1,11 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
-import { prisma } from "@/lib/db";
-import { emailService } from "@/lib/email";
-import { notifyAdmins } from "@/lib/utils/admin-notifications";
 import { withAuthRateLimit } from "@/lib/rate-limit";
-import { TokenSecurity } from "@/lib/utils/token-security";
-import bcrypt from "bcryptjs";
 import { z } from "zod";
+import { AuthenticationService } from "@/lib/auth-service";
 
 import { passwordSchema } from "@/lib/validations/common";
 
@@ -35,123 +31,27 @@ async function handleRegister(request: NextRequest) {
     }
 
     const userData = validation.data;
+    const authService = new AuthenticationService();
+    const result = await authService.registerUser(userData);
 
-    // Check if email already exists
-    const existingUser = await prisma.user.findUnique({
-      where: { email: userData.email },
-      select: { id: true },
-    });
-
-    if (existingUser) {
+    if (result.success) {
       return NextResponse.json(
-        { error: "User with this email already exists" },
-        { status: 409 }
+        {
+          message: result.message,
+          user: result.user,
+          requiresVerification: result.requiresVerification,
+        },
+        { status: 201 }
+      );
+    } else {
+      return NextResponse.json(
+        { error: result.error || "Registration failed" },
+        {
+          status:
+            result.error === "User with this email already exists" ? 409 : 500,
+        }
       );
     }
-
-    // Hash the password
-    const hashedPassword = await bcrypt.hash(userData.password, 12);
-
-    // Generate email verification token
-    const {
-      rawToken: verificationToken,
-      hashedToken: hashedVerificationToken,
-      expires: verificationExpires,
-    } = TokenSecurity.generateEmailVerificationToken(32);
-
-    // Create the user with email verification fields
-    // Security: Force role to EMPLOYEE regardless of input
-    const user = await prisma.user.create({
-      data: {
-        firstName: userData.firstName,
-        lastName: userData.lastName,
-        email: userData.email,
-        password: hashedPassword,
-        role: "EMPLOYEE", // Force role to EMPLOYEE for security
-        isActive: true,
-        userStatus: "PENDING",
-        emailVerified: false,
-        emailVerificationToken: hashedVerificationToken, // Store hashed token
-        emailVerificationExpires: verificationExpires,
-        emailNotifications: true,
-        marketingEmails: false,
-      },
-      select: {
-        id: true,
-        firstName: true,
-        lastName: true,
-        email: true,
-        role: true,
-        isActive: true,
-        createdAt: true,
-        userStatus: true,
-      },
-    });
-
-    // Send verification email
-    try {
-      // Use raw token for email link (user will use this to verify)
-      const verificationLink = `${process.env.NEXTAUTH_URL}/verify-email?token=${verificationToken}`;
-
-      await emailService.sendVerificationEmail(userData.email, {
-        firstName: userData.firstName,
-        verificationLink,
-        expiresInHours: 24,
-      });
-
-      console.log(`Verification email sent to ${userData.email}`);
-    } catch (emailError) {
-      console.error("Error sending verification email:", emailError);
-      // Don't fail registration if email fails, but log the error
-      // User can request a new verification email later
-    }
-
-    // Send admin notification for new user registration
-    try {
-      const approvalLink = `${process.env.NEXTAUTH_URL}/admin`;
-      const registrationDate = new Date().toLocaleDateString("en-US", {
-        year: "numeric",
-        month: "long",
-        day: "numeric",
-        hour: "2-digit",
-        minute: "2-digit",
-      });
-
-      await notifyAdmins(async (adminEmails) => {
-        await emailService.sendAdminNewUserNotification(adminEmails, {
-          userFirstName: userData.firstName,
-          userLastName: userData.lastName,
-          userEmail: userData.email,
-          userCompany: "", // Not collected in registration form
-          approvalLink,
-          registrationDate,
-        });
-      });
-
-      console.log(`Admin notification sent for new user: ${userData.email}`);
-    } catch (notificationError) {
-      console.error("Error sending admin notification:", notificationError);
-      // Don't fail registration if notification fails
-    }
-
-    // Return success with verification message
-    return NextResponse.json(
-      {
-        message:
-          "Registration successful! Please check your email to verify your account.",
-        user: {
-          id: user.id,
-          firstName: user.firstName,
-          lastName: user.lastName,
-          email: user.email,
-          role: user.role,
-          status: user.userStatus,
-          emailVerified: false,
-        },
-        requiresVerification: true,
-      },
-      { status: 201 }
-    );
   } catch (error) {
     console.error("Error in POST /api/auth/register:", error);
     return NextResponse.json(

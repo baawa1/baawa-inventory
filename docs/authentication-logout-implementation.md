@@ -182,3 +182,19 @@ The system now properly cleans up these cookies:
 2. **Session Management**: Add session management dashboard
 3. **Multi-Device Logout**: Allow users to logout from all devices
 4. **Logout Reason**: Track logout reasons (user-initiated, timeout, security)
+
+#
+
+# 2025 Update: Unified Types and Service-Based Logic
+
+All authentication and logout flows now use unified types from `src/types/user.ts` and centralized service logic in `src/lib/auth-service.ts`. All new logic should use these types and the service methods for consistency and maintainability.
+
+## Usage Example: Service-Based Logout
+
+```typescript
+import { AuthenticationService } from "@/lib/auth-service";
+const authService = new AuthenticationService();
+// Call logout logic as needed, e.g.:
+await authService.updateLastLogout(userId);
+// Client-side: use the /api/auth/logout endpoint for cookie/session cleanup
+```

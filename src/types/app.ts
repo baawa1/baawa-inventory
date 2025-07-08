@@ -106,16 +106,7 @@ export interface ProductFormData {
   seoKeywords?: string[];
 }
 
-// User types
-export interface AppUser {
-  id: string;
-  email: string;
-  name: string;
-  role: UserRole;
-  isActive: boolean;
-  createdAt: Date;
-  updatedAt: Date;
-}
+// User types are now defined in src/types/user.ts
 
 // Sales types
 export interface SalesTransactionData {

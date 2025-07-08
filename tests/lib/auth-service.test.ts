@@ -1,5 +1,6 @@
 import { authService } from "@/lib/auth-service";
 import * as bcrypt from "bcryptjs";
+import type { AuthUser, AppUser, UserRole, UserStatus } from "@/types/user";
 
 // Mock the entire db module
 jest.mock("@/lib/db", () => ({
@@ -54,16 +55,18 @@ describe("AuthService", () => {
   });
 
   describe("validateCredentials", () => {
-    const mockUser = {
-      id: 1,
+    const mockUser: AppUser & { password: string } = {
+      id: "1",
       email: "test@example.com",
       password: "hashedPassword",
       firstName: "John",
       lastName: "Doe",
+      name: "John Doe",
       role: "EMPLOYEE",
-      userStatus: "APPROVED",
+      status: "APPROVED",
       isActive: true,
       emailVerified: true,
+      createdAt: new Date().toISOString(),
     };
 
     it("should return success for valid credentials", async () => {
@@ -133,7 +136,7 @@ describe("AuthService", () => {
     it("should return failure for suspended user", async () => {
       mockPrisma.user.findFirst.mockResolvedValue({
         ...mockUser,
-        userStatus: "SUSPENDED",
+        status: "SUSPENDED",
       });
 
       const result = await authService.validateCredentials(
@@ -148,7 +151,7 @@ describe("AuthService", () => {
     it("should return failure for rejected user", async () => {
       mockPrisma.user.findFirst.mockResolvedValue({
         ...mockUser,
-        userStatus: "REJECTED",
+        status: "REJECTED",
       });
 
       const result = await authService.validateCredentials(
@@ -163,7 +166,7 @@ describe("AuthService", () => {
     it("should return failure for pending user", async () => {
       mockPrisma.user.findFirst.mockResolvedValue({
         ...mockUser,
-        userStatus: "PENDING",
+        status: "PENDING",
       });
 
       const result = await authService.validateCredentials(
@@ -176,8 +179,8 @@ describe("AuthService", () => {
     });
 
     it("should allow login for approved and verified users", async () => {
-      const approvedUser = { ...mockUser, userStatus: "APPROVED" };
-      const verifiedUser = { ...mockUser, userStatus: "VERIFIED" };
+      const approvedUser = { ...mockUser, status: "APPROVED" };
+      const verifiedUser = { ...mockUser, status: "VERIFIED" };
 
       // Test approved user
       mockPrisma.user.findFirst.mockResolvedValue(approvedUser);
@@ -263,7 +266,7 @@ describe("AuthService", () => {
     it("should refresh user data from database", async () => {
       const mockUser = {
         role: "EMPLOYEE",
-        userStatus: "APPROVED",
+        status: "APPROVED",
         emailVerified: true,
       };
 
@@ -332,6 +335,219 @@ describe("AuthService", () => {
       mockPrisma.user.update.mockRejectedValue(new Error("Database error"));
 
       await expect(authService.updateLastLogout(1)).resolves.not.toThrow();
+    });
+  });
+
+  describe("registerUser", () => {
+    it("should register a new user successfully", async () => {
+      mockPrisma.user.findUnique.mockResolvedValue(null);
+      mockPrisma.user.create.mockResolvedValue({
+        id: 2,
+        firstName: "Jane",
+        lastName: "Smith",
+        email: "jane@example.com",
+        role: "EMPLOYEE",
+        status: "PENDING",
+        isActive: true,
+        emailVerified: false,
+        createdAt: new Date().toISOString(),
+      });
+      const result = await authService.registerUser({
+        firstName: "Jane",
+        lastName: "Smith",
+        email: "jane@example.com",
+        password: "Password123!",
+      });
+      expect(result.success).toBe(true);
+      expect(result.user?.email).toBe("jane@example.com");
+      expect(result.requiresVerification).toBe(true);
+    });
+    it("should fail if email already exists", async () => {
+      mockPrisma.user.findUnique.mockResolvedValue({ id: 2 });
+      const result = await authService.registerUser({
+        firstName: "Jane",
+        lastName: "Smith",
+        email: "jane@example.com",
+        password: "Password123!",
+      });
+      expect(result.success).toBe(false);
+      expect(result.error).toBe("User with this email already exists");
+    });
+  });
+
+  describe("requestPasswordReset", () => {
+    it("should always return success for valid email", async () => {
+      mockPrisma.user.findFirst.mockResolvedValue({
+        id: 1,
+        email: "test@example.com",
+        firstName: "John",
+        isActive: true,
+      });
+      const result = await authService.requestPasswordReset("test@example.com");
+      expect(result.success).toBe(true);
+      expect(result.message).toMatch(/reset link has been sent/);
+    });
+    it("should always return success for non-existent email", async () => {
+      mockPrisma.user.findFirst.mockResolvedValue(null);
+      const result = await authService.requestPasswordReset("nope@example.com");
+      expect(result.success).toBe(true);
+    });
+  });
+
+  describe("resetPassword", () => {
+    it("should reset password for valid token", async () => {
+      const token = "validtoken";
+      const user = { id: 1, resetToken: "hashed", isActive: true };
+      mockPrisma.user.findMany.mockResolvedValue([user]);
+      const TokenSecurity = require("@/lib/utils/token-security").TokenSecurity;
+      TokenSecurity.verifyToken = jest.fn().mockResolvedValue(true);
+      mockPrisma.user.update.mockResolvedValue({
+        ...user,
+        password: "hashedNew",
+      });
+      const result = await authService.resetPassword(token, "NewPassword123!");
+      expect(result.success).toBe(true);
+      expect(result.message).toMatch(/Password reset successfully/);
+    });
+    it("should fail for invalid or expired token", async () => {
+      mockPrisma.user.findMany.mockResolvedValue([]);
+      const result = await authService.resetPassword(
+        "badtoken",
+        "NewPassword123!"
+      );
+      expect(result.success).toBe(false);
+      expect(result.error).toBe("Invalid or expired reset token");
+    });
+  });
+
+  describe("verifyEmail", () => {
+    it("should verify email for valid token", async () => {
+      const token = "validtoken";
+      const user = {
+        id: 1,
+        emailVerificationToken: "hashed",
+        emailVerificationExpires: new Date(Date.now() + 10000),
+        status: "PENDING",
+        emailVerified: false,
+        firstName: "John",
+      };
+      mockPrisma.user.findMany.mockResolvedValue([user]);
+      const TokenSecurity = require("@/lib/utils/token-security").TokenSecurity;
+      TokenSecurity.verifyEmailToken = jest.fn().mockResolvedValue(true);
+      mockPrisma.user.update.mockResolvedValue({
+        ...user,
+        emailVerified: true,
+        status: "VERIFIED",
+      });
+      const result = await authService.verifyEmail(token);
+      expect(result.success).toBe(true);
+      expect(result.user?.emailVerified).toBe(true);
+      expect(result.user?.status).toBe("VERIFIED");
+    });
+    it("should fail for invalid or expired token", async () => {
+      mockPrisma.user.findMany.mockResolvedValue([]);
+      const result = await authService.verifyEmail("badtoken");
+      expect(result.success).toBe(false);
+      expect(result.error).toBe("Invalid or expired verification token");
+    });
+    it("should fail if already verified", async () => {
+      const user = {
+        id: 1,
+        emailVerificationToken: "hashed",
+        emailVerificationExpires: new Date(Date.now() + 10000),
+        status: "VERIFIED",
+        emailVerified: true,
+        firstName: "John",
+      };
+      mockPrisma.user.findMany.mockResolvedValue([user]);
+      const TokenSecurity = require("@/lib/utils/token-security").TokenSecurity;
+      TokenSecurity.verifyEmailToken = jest.fn().mockResolvedValue(true);
+      const result = await authService.verifyEmail("validtoken");
+      expect(result.success).toBe(false);
+      expect(result.error).toBe("Email is already verified");
+    });
+  });
+
+  describe("resendVerificationEmail", () => {
+    it("should resend verification email for pending user", async () => {
+      const user = {
+        id: 1,
+        firstName: "John",
+        email: "test@example.com",
+        status: "PENDING",
+        emailVerified: false,
+      };
+      mockPrisma.user.findUnique.mockResolvedValue(user);
+      mockPrisma.user.update.mockResolvedValue(user);
+      const result =
+        await authService.resendVerificationEmail("test@example.com");
+      expect(result.success).toBe(true);
+      expect(result.message).toMatch(/verification email sent/);
+    });
+    it("should fail if user not found", async () => {
+      mockPrisma.user.findUnique.mockResolvedValue(null);
+      const result =
+        await authService.resendVerificationEmail("nope@example.com");
+      expect(result.success).toBe(false);
+      expect(result.error).toBe("User not found");
+    });
+    it("should fail if already verified", async () => {
+      const user = {
+        id: 1,
+        firstName: "John",
+        email: "test@example.com",
+        status: "VERIFIED",
+        emailVerified: true,
+      };
+      mockPrisma.user.findUnique.mockResolvedValue(user);
+      const result =
+        await authService.resendVerificationEmail("test@example.com");
+      expect(result.success).toBe(false);
+      expect(result.error).toBe("Email is already verified");
+    });
+  });
+
+  describe("refreshUserSession", () => {
+    it("should return user data for valid userId", async () => {
+      const user = {
+        id: 1,
+        email: "test@example.com",
+        firstName: "John",
+        lastName: "Doe",
+        role: "EMPLOYEE",
+        status: "APPROVED",
+        isActive: true,
+        emailVerified: true,
+        createdAt: new Date().toISOString(),
+      };
+      mockPrisma.user.findUnique.mockResolvedValue(user);
+      const result = await authService.refreshUserSession(1);
+      expect(result.success).toBe(true);
+      expect(result.user?.email).toBe("test@example.com");
+    });
+    it("should fail for non-existent user", async () => {
+      mockPrisma.user.findUnique.mockResolvedValue(null);
+      const result = await authService.refreshUserSession(999);
+      expect(result.success).toBe(false);
+      expect(result.error).toBe("User not found");
+    });
+  });
+
+  describe("validateResetToken", () => {
+    it("should return valid for correct token", async () => {
+      const token = "validtoken";
+      const user = { id: 1, resetToken: "hashed", isActive: true };
+      mockPrisma.user.findMany.mockResolvedValue([user]);
+      const TokenSecurity = require("@/lib/utils/token-security").TokenSecurity;
+      TokenSecurity.verifyToken = jest.fn().mockResolvedValue(true);
+      const result = await authService.validateResetToken(token);
+      expect(result.valid).toBe(true);
+    });
+    it("should return invalid for incorrect token", async () => {
+      mockPrisma.user.findMany.mockResolvedValue([]);
+      const result = await authService.validateResetToken("badtoken");
+      expect(result.valid).toBe(false);
+      expect(result.error).toBe("Invalid or expired token");
     });
   });
 });
