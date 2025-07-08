@@ -277,3 +277,49 @@ Create a dedicated constants file for all auth-related constants:
 The authentication system in the BaaWA Inventory POS application is comprehensive but contains several inconsistencies and potential areas for improvement. By addressing these issues, the system will become more secure, maintainable, and easier to understand for future development.
 
 The most critical issue to address is the inconsistent role naming convention, followed by direct Supabase usage in auth-related endpoints. These changes will improve the security and maintainability of the authentication system.
+
+#
+
+# 2025 Refactor: Service-Based Auth, Unified Types, and Centralized Logic
+
+## New Authentication Architecture (July 2025)
+
+The authentication system is now fully service-based and type-safe:
+
+- **All business logic is centralized** in `src/lib/auth-service.ts`.
+- **Unified user/session types** are defined in `src/types/user.ts` and used across backend, frontend, and tests.
+- **API routes are thin** and only call service methods, handling validation and response formatting.
+- **Role and status definitions** are consolidated and imported from a single source.
+- **Supabase has been fully removed** from all authentication flows; only Prisma is used for DB access.
+- **Comprehensive test coverage** for all major and edge-case flows.
+
+### Usage Example: Registering a User
+
+```typescript
+import { AuthenticationService } from "@/lib/auth-service";
+const authService = new AuthenticationService();
+const result = await authService.registerUser({
+  firstName: "Jane",
+  lastName: "Smith",
+  email: "jane@example.com",
+  password: "Password123!",
+});
+if (result.success) {
+  // User registered
+}
+```
+
+### Unified Types Example
+
+```typescript
+import type { AppUser, AuthUser, UserRole, UserStatus } from "@/types/user";
+```
+
+### Migration Notes for Contributors
+
+- All user/session types should be imported from `src/types/user.ts`.
+- All new authentication logic should be added to `AuthenticationService`.
+- API routes should not contain business logic.
+- Remove any remaining Supabase usage in your features.
+
+See also: `docs/authentication-logout-implementation.md`, `docs/central-roles-implementation.md` for related updates.
