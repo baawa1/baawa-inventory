@@ -11,6 +11,7 @@ import {
 } from "@/components/ui/table";
 import { Badge } from "@/components/ui/badge";
 import { type User } from "./types/user";
+import Link from "next/link";
 
 interface UserTableProps {
   users: User[];
@@ -128,6 +129,11 @@ export function UserTable({
               >
                 Delete
               </Button>
+              <Link href={`/dashboard/audit-logs?userId=${user.id}`}>
+                <Button variant="secondary" size="sm" asChild>
+                  <span>View Audit Logs</span>
+                </Button>
+              </Link>
             </TableCell>
           </TableRow>
         ))}

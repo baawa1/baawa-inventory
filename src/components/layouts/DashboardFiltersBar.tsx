@@ -1,0 +1,170 @@
+import React from "react";
+import {
+  DashboardCard,
+  CardHeader,
+  CardTitle,
+  CardDescription,
+  CardContent,
+} from "@/components/dashboard/DashboardCard";
+import { Button } from "@/components/ui/button";
+import { Input } from "@/components/ui/input";
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
+import { IconSearch, IconFilter } from "@tabler/icons-react";
+import { Loader2 } from "lucide-react";
+
+export interface FilterConfig {
+  key: string;
+  label: string;
+  type: "select" | "boolean" | "text";
+  options?: Array<{ label: string; value: string }>;
+  placeholder?: string;
+}
+
+interface DashboardFiltersBarProps {
+  title?: string;
+  description?: string;
+  searchPlaceholder?: string;
+  searchValue?: string;
+  onSearchChange?: (value: string) => void;
+  isSearching?: boolean;
+  filters?: FilterConfig[];
+  filterValues?: Record<string, any>;
+  onFilterChange?: (key: string, value: any) => void;
+  onResetFilters?: () => void;
+  quickFilters?: React.ReactNode;
+  sortOptions?: Array<{ label: string; value: string }>;
+  currentSort?: string;
+  onSortChange?: (value: string) => void;
+}
+
+export function DashboardFiltersBar({
+  title = "Filters & Search",
+  description,
+  searchPlaceholder = "Search...",
+  searchValue = "",
+  onSearchChange = () => {},
+  isSearching = false,
+  filters = [],
+  filterValues = {},
+  onFilterChange = () => {},
+  onResetFilters = () => {},
+  quickFilters,
+  sortOptions = [],
+  currentSort = "",
+  onSortChange = () => {},
+}: DashboardFiltersBarProps) {
+  const renderFilterControl = (filter: FilterConfig) => {
+    const value = filterValues[filter.key] || "";
+    switch (filter.type) {
+      case "select":
+        return (
+          <Select
+            key={filter.key}
+            value={value || "all"}
+            onValueChange={(val: string) =>
+              onFilterChange(filter.key, val === "all" ? "" : val)
+            }
+          >
+            <SelectTrigger>
+              <SelectValue placeholder={filter.placeholder || filter.label} />
+            </SelectTrigger>
+            <SelectContent>
+              <SelectItem value="all">All {filter.label}</SelectItem>
+              {filter.options?.map((option) => (
+                <SelectItem key={option.value} value={option.value}>
+                  {option.label}
+                </SelectItem>
+              ))}
+            </SelectContent>
+          </Select>
+        );
+      case "boolean":
+        return (
+          <Button
+            key={filter.key}
+            variant={value ? "default" : "outline"}
+            size="sm"
+            onClick={() => onFilterChange(filter.key, !value)}
+          >
+            {filter.label}
+          </Button>
+        );
+      case "text":
+        return (
+          <Input
+            key={filter.key}
+            placeholder={filter.placeholder || filter.label}
+            value={value}
+            onChange={(e: React.ChangeEvent<HTMLInputElement>) =>
+              onFilterChange(filter.key, e.target.value)
+            }
+          />
+        );
+      default:
+        return null;
+    }
+  };
+
+  return (
+    <DashboardCard className="mb-6">
+      <CardHeader>
+        <CardTitle className="flex items-center gap-2">
+          <IconFilter className="h-5 w-5" /> {title}
+        </CardTitle>
+        {description && <CardDescription>{description}</CardDescription>}
+      </CardHeader>
+      <CardContent>
+        <div className="flex items-center justify-start gap-4">
+          <div className="relative">
+            <IconSearch className="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-gray-400" />
+            <Input
+              placeholder={searchPlaceholder}
+              value={searchValue}
+              onChange={(e: React.ChangeEvent<HTMLInputElement>) =>
+                onSearchChange(e.target.value)
+              }
+              className="pl-9 pr-8"
+            />
+            {isSearching && (
+              <div className="absolute right-3 top-1/2 transform -translate-y-1/2">
+                <Loader2 className="h-4 w-4 animate-spin text-gray-400" />
+              </div>
+            )}
+          </div>
+          {filters.map(renderFilterControl)}
+          <Button
+            variant="outline"
+            size="sm"
+            onClick={onResetFilters}
+            className="whitespace-nowrap"
+          >
+            Reset Filters
+          </Button>
+          {sortOptions.length > 0 && onSortChange && (
+            <div className="flex items-center justify-center ml-auto">
+              <Select value={currentSort || ""} onValueChange={onSortChange}>
+                <SelectTrigger>
+                  <SelectValue placeholder="Sort by" />
+                </SelectTrigger>
+                <SelectContent>
+                  {sortOptions.map((option) => (
+                    <SelectItem key={option.value} value={option.value}>
+                      {option.label}
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+            </div>
+          )}
+        </div>
+        {quickFilters && <div className="flex gap-2 mt-4">{quickFilters}</div>}
+      </CardContent>
+    </DashboardCard>
+  );
+}
