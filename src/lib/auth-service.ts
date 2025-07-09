@@ -4,6 +4,7 @@ import { AccountLockout } from "./utils/account-lockout";
 import * as bcrypt from "bcryptjs";
 import { NextRequest } from "next/server";
 import type { AuthUser, UserRole, UserStatus } from "@/types/user";
+import { logger } from "./logger";
 
 export interface AuthValidationResult {
   success: boolean;
@@ -73,12 +74,12 @@ export class AuthenticationService {
         select: {
           id: true,
           email: true,
-          password: true,
-          firstName: true,
-          lastName: true,
+          password: true, // Maps to password_hash in DB via @map
+          firstName: true, // Maps to first_name in DB via @map
+          lastName: true, // Maps to last_name in DB via @map
           role: true,
-          userStatus: true,
-          emailVerified: true,
+          userStatus: true, // Maps to user_status in DB via @map
+          emailVerified: true, // Maps to email_verified in DB via @map
         },
       });
 
@@ -140,7 +141,9 @@ export class AuthenticationService {
       };
     } catch (error) {
       // Use sanitized error logging
-      console.error("Authentication operation failed:", sanitizeError(error));
+      logger.error("Authentication operation failed", {
+        error: sanitizeError(error),
+      });
       return { success: false, error: "AUTHENTICATION_FAILED" };
     }
   }
@@ -176,7 +179,9 @@ export class AuthenticationService {
         },
       });
     } catch (error) {
-      console.error("Authentication operation failed:", sanitizeError(error));
+      logger.error("Authentication operation failed", {
+        error: sanitizeError(error),
+      });
     }
   }
 
@@ -192,7 +197,9 @@ export class AuthenticationService {
         },
       });
     } catch (error) {
-      console.error("Authentication operation failed:", sanitizeError(error));
+      logger.error("Authentication operation failed", {
+        error: sanitizeError(error),
+      });
     }
   }
 
@@ -208,7 +215,9 @@ export class AuthenticationService {
         },
       });
     } catch (error) {
-      console.error("Authentication operation failed:", sanitizeError(error));
+      logger.error("Authentication operation failed", {
+        error: sanitizeError(error),
+      });
     }
   }
 
