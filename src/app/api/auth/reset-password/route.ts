@@ -1,6 +1,8 @@
 import { NextRequest, NextResponse } from "next/server";
 import { z } from "zod";
 import { AuthenticationService } from "@/lib/auth-service";
+import { withAuthRateLimit } from "@/lib/rate-limit";
+import { withCSRF } from "@/lib/csrf-protection";
 
 const resetPasswordSchema = z.object({
   token: z.string().min(1, "Token is required"),
@@ -13,7 +15,7 @@ const resetPasswordSchema = z.object({
     ),
 });
 
-export async function POST(request: NextRequest) {
+async function handleResetPassword(request: NextRequest) {
   try {
     const body = await request.json();
     const { token, password } = resetPasswordSchema.parse(body);
@@ -45,3 +47,6 @@ export async function POST(request: NextRequest) {
     );
   }
 }
+
+// Apply rate limiting and CSRF protection
+export const POST = withAuthRateLimit(withCSRF(handleResetPassword));

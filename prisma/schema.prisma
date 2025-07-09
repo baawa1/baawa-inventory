@@ -456,6 +456,17 @@ model webflow_sync {
   @@index([webflow_item_id], map: "idx_webflow_sync_webflow_item_id")
 }
 
+model RateLimit {
+  id        Int      @id @default(autoincrement())
+  key       String   @db.VarChar(255)
+  count     Int      @default(1)
+  createdAt DateTime @default(now()) @map("created_at") @db.Timestamptz(6)
+
+  @@index([key], map: "idx_rate_limit_key")
+  @@index([createdAt], map: "idx_rate_limit_created_at")
+  @@map("rate_limits")
+}
+
 enum stock_reconciliation_status {
   DRAFT
   PENDING

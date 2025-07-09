@@ -697,3 +697,5 @@ globs: **/components/**/_.tsx, **/app/**/_.tsx, **/pages/**/\*.tsx
 - Handle state updates immutably
 
 - Prices must be in Naira
+
+- Rule files must be .mdc and not just .md

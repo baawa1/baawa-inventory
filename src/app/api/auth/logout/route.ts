@@ -1,6 +1,8 @@
 import { NextRequest, NextResponse } from "next/server";
+import { withAuthRateLimit } from "@/lib/rate-limit";
+import { withCSRF } from "@/lib/csrf-protection";
 
-export async function POST(_request: NextRequest) {
+async function handleLogout(_request: NextRequest) {
   try {
     // List of NextAuth cookies to clear
     const authCookies = [
@@ -40,3 +42,6 @@ export async function POST(_request: NextRequest) {
     );
   }
 }
+
+// Apply rate limiting and CSRF protection
+export const POST = withAuthRateLimit(withCSRF(handleLogout));
