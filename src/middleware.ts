@@ -43,7 +43,7 @@ export default withAuth(
     // Extract user information from token
     const userRole = token.role as UserRole;
     const userStatus = token.status as UserStatus;
-    const emailVerified = token.emailVerified as boolean;
+    const _emailVerified = token.emailVerified as boolean; // Prefixed with _ to indicate intentionally unused
     const _userId = token.sub; // Prefixed with _ to indicate intentionally unused
 
     // Helper function to safely redirect and prevent loops
@@ -61,14 +61,7 @@ export default withAuth(
     };
 
     // Status-based access control
-    // 1. Check email verification status
-    if (emailVerified === false) {
-      if (pathname !== "/verify-email" && pathname !== "/pending-approval") {
-        return safeRedirect("/verify-email", "Unverified email");
-      }
-    }
-
-    // 2. Handle users pending email verification
+    // 1. Handle users pending email verification (PENDING status)
     if (userStatus === "PENDING") {
       if (pathname !== "/verify-email" && pathname !== "/pending-approval") {
         return safeRedirect("/verify-email", "Pending verification");
