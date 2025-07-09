@@ -105,7 +105,7 @@ function ResetPasswordFormContent({ className }: ResetPasswordFormProps) {
     setError(null);
 
     try {
-      const response = await fetch("/api/auth/reset-password-supabase", {
+      const response = await fetch("/api/auth/reset-password", {
         method: "POST",
         headers: {
           "Content-Type": "application/json",

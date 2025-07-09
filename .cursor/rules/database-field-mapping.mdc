@@ -1,0 +1,92 @@
+---
+description: Anything that has to do with data or database mapping or implementation, API routes etc.
+alwaysApply: false
+---
+
+# Database Field Mapping Consistency Rule
+
+## Purpose
+
+To ensure all database field access in the codebase is consistent, maintainable, and avoids subtle bugs due to mismatched field names or mapping.
+
+## Rule
+
+- **Always use Prisma's model property names** in all application code (TypeScript, API, services, etc.).
+- **Never use raw database column names** (e.g., snake_case) in application logic. Use the camelCase property as defined in the Prisma schema.
+- **Let Prisma handle mapping** between model property names and actual database column names using the `@map` attribute in `schema.prisma`.
+- **When adding new fields:**
+  - Use camelCase for Prisma model properties.
+  - Use `@map("snake_case_column")` to map to the actual database column if needed.
+- **When querying or updating:**
+  - Always refer to the Prisma property name (e.g., `user.emailVerified` not `user.email_verified`).
+- **Never mix direct SQL or Supabase queries with Prisma for the same table.**
+- **Document any exceptions** in this file.
+
+## Example
+
+```prisma
+model User {
+  emailVerified Boolean @default(false) @map("email_verified")
+}
+```
+
+**Correct:**
+
+```ts
+const user = await prisma.user.findFirst({ select: { emailVerified: true } });
+```
+
+**Incorrect:**
+
+```ts
+const user = await prisma.user.findFirst({ select: { email_verified: true } }); // ❌
+```
+
+## Enforcement
+
+- All code reviews must check for field mapping consistency.
+- Any new direct SQL or Supabase usage must be justified and documented.
+
+# Database Field Mapping Consistency Rule
+
+## Purpose
+
+To ensure all database field access in the codebase is consistent, maintainable, and avoids subtle bugs due to mismatched field names or mapping.
+
+## Rule
+
+- **Always use Prisma's model property names** in all application code (TypeScript, API, services, etc.).
+- **Never use raw database column names** (e.g., snake_case) in application logic. Use the camelCase property as defined in the Prisma schema.
+- **Let Prisma handle mapping** between model property names and actual database column names using the `@map` attribute in `schema.prisma`.
+- **When adding new fields:**
+  - Use camelCase for Prisma model properties.
+  - Use `@map("snake_case_column")` to map to the actual database column if needed.
+- **When querying or updating:**
+  - Always refer to the Prisma property name (e.g., `user.emailVerified` not `user.email_verified`).
+- **Never mix direct SQL or Supabase queries with Prisma for the same table.**
+- **Document any exceptions** in this file.
+
+## Example
+
+```prisma
+model User {
+  emailVerified Boolean @default(false) @map("email_verified")
+}
+```
+
+**Correct:**
+
+```ts
+const user = await prisma.user.findFirst({ select: { emailVerified: true } });
+```
+
+**Incorrect:**
+
+```ts
+const user = await prisma.user.findFirst({ select: { email_verified: true } }); // ❌
+```
+
+## Enforcement
+
+- All code reviews must check for field mapping consistency.
+- Any new direct SQL or Supabase usage must be justified and documented.

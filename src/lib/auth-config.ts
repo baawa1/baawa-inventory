@@ -2,6 +2,7 @@ import { NextAuthOptions } from "next-auth";
 import CredentialsProvider from "next-auth/providers/credentials";
 import { authService } from "./auth-service";
 import { AuditLogger } from "./utils/audit-logger";
+import { logger } from "./logger";
 
 // Extend NextAuth types
 declare module "next-auth" {
@@ -105,7 +106,7 @@ export const authOptions: NextAuthOptions = {
         token.status = user.status;
         token.emailVerified = Boolean(user.emailVerified);
         token.loginTime = Date.now();
-        console.log("JWT callback: New login, setting token data:", {
+        logger.auth("JWT callback: New login, setting token data", {
           role: token.role,
           status: token.status,
           emailVerified: token.emailVerified,
@@ -114,12 +115,17 @@ export const authOptions: NextAuthOptions = {
 
       // Handle session updates (when update() is called)
       if (trigger === "update" && token.sub) {
-        console.log("JWT callback: Refreshing user data for user", token.sub);
+        logger.session("JWT callback: Refreshing user data for user", {
+          userId: token.sub,
+        });
         const userId = parseInt(token.sub);
         const refreshedData = await authService.refreshUserData(userId);
 
         if (refreshedData) {
-          console.log("JWT callback: Received refreshed data:", refreshedData);
+          logger.session(
+            "JWT callback: Received refreshed data",
+            refreshedData
+          );
           token.role = refreshedData.role || token.role;
           token.status = refreshedData.status || token.status;
           token.emailVerified =
@@ -127,10 +133,9 @@ export const authOptions: NextAuthOptions = {
               ? Boolean(refreshedData.emailVerified)
               : token.emailVerified;
         } else {
-          console.warn(
-            "JWT callback: No refreshed data received for user",
-            userId
-          );
+          logger.warn("JWT callback: No refreshed data received for user", {
+            userId,
+          });
         }
 
         // Override with any session data provided
@@ -144,9 +149,9 @@ export const authOptions: NextAuthOptions = {
 
       // Ensure required properties are always present
       if (!token.status && token.sub) {
-        console.log(
+        logger.session(
           "JWT callback: Missing status, fetching from database for user",
-          token.sub
+          { userId: token.sub }
         );
         const userId = parseInt(token.sub);
         const refreshedData = await authService.refreshUserData(userId);
@@ -154,7 +159,9 @@ export const authOptions: NextAuthOptions = {
           token.role = refreshedData.role || token.role || "EMPLOYEE";
           token.status = refreshedData.status || "PENDING";
           token.emailVerified = refreshedData.emailVerified || false;
-          console.log("JWT callback: Set missing status to:", token.status);
+          logger.session("JWT callback: Set missing status", {
+            status: token.status,
+          });
         }
       }
 
@@ -178,7 +185,7 @@ export const authOptions: NextAuthOptions = {
         } as any;
       }
 
-      console.log("JWT callback: Final token data:", {
+      logger.debug("JWT callback: Final token data", {
         sub: token.sub,
         role: token.role,
         status: token.status,
@@ -190,7 +197,7 @@ export const authOptions: NextAuthOptions = {
     async session({ session, token }) {
       // If token is empty or expired, return null to invalidate session
       if (!token || !token.sub || token.expired) {
-        console.log(
+        logger.session(
           "Session callback: Token is empty or expired, invalidating session"
         );
         return null as any;
@@ -202,7 +209,7 @@ export const authOptions: NextAuthOptions = {
         session.user.status = token.status || "PENDING";
         session.user.emailVerified = Boolean(token.emailVerified);
 
-        console.log("Session callback: Setting session user data:", {
+        logger.debug("Session callback: Setting session user data", {
           id: session.user.id,
           role: session.user.role,
           status: session.user.status,
