@@ -2,6 +2,7 @@ import type { Metadata, Viewport } from "next";
 import { Oxanium, Plus_Jakarta_Sans, Roboto } from "next/font/google";
 import "./globals.css";
 import { AuthProvider } from "@/components/auth/AuthProvider";
+import { UnifiedSessionProvider } from "@/components/auth/UnifiedSessionProvider";
 import { QueryProvider } from "@/components/providers/QueryProvider";
 import { ThemeProvider } from "@/components/theme-provider";
 import { Toaster } from "@/components/ui/sonner";
@@ -94,8 +95,10 @@ export default function RootLayout({
         >
           <QueryProvider>
             <AuthProvider>
-              {children}
-              <PWAManager />
+              <UnifiedSessionProvider>
+                {children}
+                <PWAManager />
+              </UnifiedSessionProvider>
             </AuthProvider>
             <Toaster />
           </QueryProvider>

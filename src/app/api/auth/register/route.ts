@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from "next/server";
 import { withAuthRateLimit } from "@/lib/rate-limit";
+import { withCSRF } from "@/lib/csrf-protection";
 import { z } from "zod";
 import { AuthenticationService } from "@/lib/auth-service";
 
@@ -61,5 +62,5 @@ async function handleRegister(request: NextRequest) {
   }
 }
 
-// Apply rate limiting to registration endpoint
-export const POST = withAuthRateLimit(handleRegister);
+// Apply rate limiting and CSRF protection to registration endpoint
+export const POST = withAuthRateLimit(withCSRF(handleRegister));

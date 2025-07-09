@@ -1,4 +1,5 @@
 import { NextRequest, NextResponse } from "next/server";
+import { logger } from "./logger";
 
 // In-memory store for rate limiting (use Redis in production)
 interface RateLimitStore {
@@ -112,6 +113,14 @@ export function withRateLimit(config: RateLimitConfig) {
 
       if (current.count >= config.maxRequests) {
         // Rate limit exceeded
+        logger.security("Rate limit exceeded", {
+          key,
+          count: current.count,
+          limit: config.maxRequests,
+          resetTime: new Date(current.resetTime).toISOString(),
+          pathname: req.nextUrl.pathname,
+        });
+
         return NextResponse.json(
           {
             error: config.message || "Rate limit exceeded",

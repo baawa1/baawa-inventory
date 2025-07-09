@@ -1,12 +1,14 @@
 import { NextRequest, NextResponse } from "next/server";
 import { z } from "zod";
 import { AuthenticationService } from "@/lib/auth-service";
+import { withAuthRateLimit } from "@/lib/rate-limit";
+import { withCSRF } from "@/lib/csrf-protection";
 
 const forgotPasswordSchema = z.object({
   email: z.string().email("Invalid email address"),
 });
 
-export async function POST(request: NextRequest) {
+async function handleForgotPassword(request: NextRequest) {
   try {
     const body = await request.json();
     const validatedData = forgotPasswordSchema.parse(body);
@@ -29,3 +31,6 @@ export async function POST(request: NextRequest) {
     );
   }
 }
+
+// Apply rate limiting and CSRF protection
+export const POST = withAuthRateLimit(withCSRF(handleForgotPassword));
