@@ -466,6 +466,21 @@ model RateLimit {
   @@map("rate_limits")
 }
 
+model SessionBlacklist {
+  id            Int      @id @default(autoincrement())
+  sessionId     String   @map("session_id") @db.VarChar(255)
+  userId        Int      @map("user_id")
+  reason        String   @db.VarChar(100)
+  blacklistedAt DateTime @map("blacklisted_at") @db.Timestamptz(6)
+  expiresAt     DateTime @map("expires_at") @db.Timestamptz(6)
+  createdAt     DateTime @default(now()) @map("created_at") @db.Timestamptz(6)
+
+  @@index([sessionId], map: "idx_session_blacklist_session_id")
+  @@index([userId], map: "idx_session_blacklist_user_id")
+  @@index([expiresAt], map: "idx_session_blacklist_expires_at")
+  @@map("session_blacklist")
+}
+
 enum stock_reconciliation_status {
   DRAFT
   PENDING
