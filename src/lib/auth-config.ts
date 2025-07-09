@@ -2,6 +2,7 @@ import { NextAuthOptions } from "next-auth";
 import CredentialsProvider from "next-auth/providers/credentials";
 import { authService } from "./auth-service";
 import { AuditLogger } from "./utils/audit-logger";
+import { SessionBlacklist } from "./session-blacklist";
 import { logger } from "./logger";
 
 // Extend NextAuth types
@@ -100,6 +101,22 @@ export const authOptions: NextAuthOptions = {
   },
   callbacks: {
     async jwt({ token, user, trigger, session }) {
+      // Check if session is blacklisted
+      if (
+        token.sub &&
+        (await SessionBlacklist.isSessionBlacklisted(token.sub))
+      ) {
+        logger.session("Session is blacklisted, invalidating", {
+          sessionId: token.sub.slice(-8),
+        });
+        return {
+          role: "",
+          status: "",
+          emailVerified: false,
+          expired: true,
+        } as any;
+      }
+
       // Handle new login
       if (user) {
         token.role = user.role;
@@ -170,10 +187,14 @@ export const authOptions: NextAuthOptions = {
         token.loginTime &&
         Date.now() - (token.loginTime as number) > 24 * 60 * 60 * 1000
       ) {
-        // Session is expired - invalidate completely by returning an empty token with required properties
-        // This will force the user to log in again
+        // Session is expired - blacklist it and invalidate completely
         if (token.sub) {
           const userId = parseInt(token.sub);
+          await SessionBlacklist.blacklistSession(
+            token.sub,
+            userId,
+            "session_expired"
+          );
           await authService.updateLastLogout(userId);
           await AuditLogger.logSessionExpired(userId, token.email || "unknown");
         }
@@ -223,6 +244,11 @@ export const authOptions: NextAuthOptions = {
     async signOut({ token }) {
       if (token?.sub) {
         const userId = parseInt(token.sub);
+        await SessionBlacklist.blacklistSession(
+          token.sub,
+          userId,
+          "manual_logout"
+        );
         await authService.updateLastLogout(userId);
         await AuditLogger.logLogout(userId, token.email || "unknown");
       }

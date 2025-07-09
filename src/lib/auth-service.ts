@@ -1,10 +1,11 @@
 import { prisma } from "./db";
 import { AuditLogger } from "./utils/audit-logger";
 import { AccountLockout } from "./utils/account-lockout";
+import { ErrorSanitizer } from "./utils/error-sanitizer";
+import { SecureTokenManager } from "./utils/secure-token-manager";
 import * as bcrypt from "bcryptjs";
 import { NextRequest } from "next/server";
 import type { AuthUser, UserRole, UserStatus } from "@/types/user";
-import { logger } from "./logger";
 
 export interface AuthValidationResult {
   success: boolean;
@@ -141,8 +142,8 @@ export class AuthenticationService {
       };
     } catch (error) {
       // Use sanitized error logging
-      logger.error("Authentication operation failed", {
-        error: sanitizeError(error),
+      ErrorSanitizer.logAuthError(error, email, {
+        operation: "validateCredentials",
       });
       return { success: false, error: "AUTHENTICATION_FAILED" };
     }
@@ -179,9 +180,7 @@ export class AuthenticationService {
         },
       });
     } catch (error) {
-      logger.error("Authentication operation failed", {
-        error: sanitizeError(error),
-      });
+      ErrorSanitizer.logError(error, "updateLastLogin", { userId });
     }
   }
 
@@ -197,9 +196,7 @@ export class AuthenticationService {
         },
       });
     } catch (error) {
-      logger.error("Authentication operation failed", {
-        error: sanitizeError(error),
-      });
+      ErrorSanitizer.logError(error, "updateLastLogout", { userId });
     }
   }
 
@@ -215,9 +212,7 @@ export class AuthenticationService {
         },
       });
     } catch (error) {
-      logger.error("Authentication operation failed", {
-        error: sanitizeError(error),
-      });
+      ErrorSanitizer.logError(error, "updateLastActivity", { userId });
     }
   }
 
@@ -308,10 +303,8 @@ export class AuthenticationService {
       const {
         rawToken: verificationToken,
         hashedToken: hashedVerificationToken,
-        expires: verificationExpires,
-      } = require("@/lib/utils/token-security").TokenSecurity.generateEmailVerificationToken(
-        32
-      );
+        expiresAt: verificationExpires,
+      } = SecureTokenManager.generateEmailVerificationToken();
 
       // Create the user
       const user = await prisma.user.create({
@@ -432,19 +425,15 @@ export class AuthenticationService {
       // Always return success to prevent email enumeration
       if (user) {
         // Generate secure hashed reset token
-        const { rawToken, hashedToken } =
-          require("@/lib/utils/token-security").TokenSecurity.generateSecureToken(
-            32
-          );
-        const resetTokenExpiry =
-          require("@/lib/utils/token-security").TokenSecurity.generateExpiry(1); // 1 hour
+        const { rawToken, hashedToken, expiresAt } =
+          SecureTokenManager.generatePasswordResetToken();
 
         // Save hashed token to database
         await prisma.user.update({
           where: { id: user.id },
           data: {
             resetToken: hashedToken,
-            resetTokenExpires: resetTokenExpiry,
+            resetTokenExpires: expiresAt,
           },
         });
 
@@ -512,15 +501,15 @@ export class AuthenticationService {
       // Check each user's hashed token against the provided token
       let validUser = null;
       for (const user of users) {
-        if (
-          user.resetToken &&
-          (await require("@/lib/utils/token-security").TokenSecurity.verifyToken(
+        if (user.resetToken) {
+          const verification = await SecureTokenManager.verifyToken(
             token,
             user.resetToken
-          ))
-        ) {
-          validUser = user;
-          break;
+          );
+          if (verification.isValid) {
+            validUser = user;
+            break;
+          }
         }
       }
 
@@ -591,12 +580,11 @@ export class AuthenticationService {
       let matchedUser = null;
       for (const user of users) {
         if (user.emailVerificationToken) {
-          const isValid =
-            await require("@/lib/utils/token-security").TokenSecurity.verifyEmailToken(
-              token,
-              user.emailVerificationToken
-            );
-          if (isValid) {
+          const verification = await SecureTokenManager.verifyToken(
+            token,
+            user.emailVerificationToken
+          );
+          if (verification.isValid) {
             matchedUser = user;
             break;
           }
@@ -692,10 +680,8 @@ export class AuthenticationService {
       const {
         rawToken: verificationToken,
         hashedToken: hashedVerificationToken,
-        expires: verificationExpires,
-      } = require("@/lib/utils/token-security").TokenSecurity.generateEmailVerificationToken(
-        32
-      );
+        expiresAt: verificationExpires,
+      } = SecureTokenManager.generateEmailVerificationToken();
 
       // Update user with new token
       await prisma.user.update({
@@ -799,15 +785,15 @@ export class AuthenticationService {
       });
       let validUser = null;
       for (const user of users) {
-        if (
-          user.resetToken &&
-          (await require("@/lib/utils/token-security").TokenSecurity.verifyToken(
+        if (user.resetToken) {
+          const verification = await SecureTokenManager.verifyToken(
             token,
             user.resetToken
-          ))
-        ) {
-          validUser = user;
-          break;
+          );
+          if (verification.isValid) {
+            validUser = user;
+            break;
+          }
         }
       }
       if (!validUser) {

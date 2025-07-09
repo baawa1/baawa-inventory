@@ -1,5 +1,6 @@
 import { prisma } from "@/lib/db";
 import { NextRequest } from "next/server";
+import { ErrorSanitizer } from "./error-sanitizer";
 
 export type AuditAction =
   | "LOGIN_SUCCESS"
@@ -14,7 +15,10 @@ export type AuditAction =
   | "ROLE_CHANGED"
   | "ACCOUNT_SUSPENDED"
   | "ACCOUNT_REACTIVATED"
-  | "SESSION_EXPIRED";
+  | "SESSION_EXPIRED"
+  | "SESSION_BLACKLISTED"
+  | "SUSPICIOUS_ACTIVITY"
+  | "RATE_LIMIT_EXCEEDED";
 
 export interface AuditLogData {
   action: AuditAction;
@@ -28,32 +32,57 @@ export interface AuditLogData {
 }
 
 /**
- * Extract client IP and user agent from request
+ * Extract client IP and user agent from request with enhanced security info
  */
 function extractRequestInfo(request?: NextRequest): {
   ipAddress: string;
   userAgent: string;
+  securityInfo: Record<string, any>;
 } {
   if (!request) {
     return {
       ipAddress: "unknown",
       userAgent: "unknown",
+      securityInfo: {},
     };
   }
 
-  // Extract IP address from various headers
+  // Extract IP address from various headers (prioritize most reliable sources)
   const forwarded = request.headers.get("x-forwarded-for");
   const realIp = request.headers.get("x-real-ip");
   const cfConnectingIp = request.headers.get("cf-connecting-ip");
+  const remoteAddr = request.headers.get("x-remote-addr");
 
   const ipAddress =
-    forwarded?.split(",")[0] || realIp || cfConnectingIp || "unknown";
+    cfConnectingIp || // Cloudflare (most reliable)
+    realIp || // Nginx/Apache
+    forwarded?.split(",")[0] || // Load balancer
+    remoteAddr ||
+    "unknown";
 
   const userAgent = request.headers.get("user-agent") || "unknown";
+
+  // Collect additional security-relevant information
+  const securityInfo = {
+    origin: request.headers.get("origin"),
+    referer: request.headers.get("referer"),
+    acceptLanguage: request.headers.get("accept-language"),
+    acceptEncoding: request.headers.get("accept-encoding"),
+    connection: request.headers.get("connection"),
+    upgradeInsecureRequests: request.headers.get("upgrade-insecure-requests"),
+    secFetchSite: request.headers.get("sec-fetch-site"),
+    secFetchMode: request.headers.get("sec-fetch-mode"),
+    secFetchDest: request.headers.get("sec-fetch-dest"),
+    forwardedChain: forwarded, // Full forwarded chain for analysis
+    timestamp: new Date().toISOString(),
+    method: request.method,
+    url: request.url,
+  };
 
   return {
     ipAddress: ipAddress.trim(),
     userAgent,
+    securityInfo,
   };
 }
 
@@ -69,7 +98,16 @@ export class AuditLogger {
     request?: NextRequest
   ): Promise<void> {
     try {
-      const { ipAddress, userAgent } = extractRequestInfo(request);
+      const { ipAddress, userAgent, securityInfo } =
+        extractRequestInfo(request);
+
+      // Combine user details with security info
+      const auditDetails = {
+        ...data.details,
+        securityInfo,
+        success: data.success,
+        errorMessage: data.errorMessage,
+      };
 
       await prisma.auditLog.create({
         data: {
@@ -79,12 +117,16 @@ export class AuditLogger {
           record_id: data.userId || null,
           ip_address: data.ipAddress || ipAddress,
           user_agent: data.userAgent || userAgent,
-          new_values: data.details ? JSON.stringify(data.details) : undefined,
+          new_values: JSON.stringify(auditDetails),
         },
       });
     } catch (error) {
-      // Don't throw on audit logging failures - log to console instead
-      console.error("Audit logging failed:", error);
+      // Use sanitized error logging to prevent sensitive data exposure
+      ErrorSanitizer.logError(error, "Audit logging failed", {
+        action: data.action,
+        userId: data.userId,
+        // Don't log full details to prevent sensitive data in error logs
+      });
     }
   }
 
@@ -289,6 +331,79 @@ export class AuditLogger {
       userEmail,
       success: true,
     });
+  }
+
+  /**
+   * Log session blacklisting
+   */
+  static async logSessionBlacklisted(
+    userId: number,
+    userEmail: string,
+    reason: string,
+    sessionId?: string,
+    request?: NextRequest
+  ): Promise<void> {
+    await this.logAuthEvent(
+      {
+        action: "SESSION_BLACKLISTED",
+        userId,
+        userEmail,
+        success: true,
+        details: {
+          reason,
+          sessionId: sessionId?.slice(-8), // Only log last 8 chars
+        },
+      },
+      request
+    );
+  }
+
+  /**
+   * Log suspicious activity
+   */
+  static async logSuspiciousActivity(
+    description: string,
+    userId?: number,
+    userEmail?: string,
+    request?: NextRequest
+  ): Promise<void> {
+    await this.logAuthEvent(
+      {
+        action: "SUSPICIOUS_ACTIVITY",
+        userId,
+        userEmail,
+        success: false,
+        details: {
+          description,
+          severity: "high",
+        },
+      },
+      request
+    );
+  }
+
+  /**
+   * Log rate limit exceeded
+   */
+  static async logRateLimitExceeded(
+    endpoint: string,
+    userId?: number,
+    userEmail?: string,
+    request?: NextRequest
+  ): Promise<void> {
+    await this.logAuthEvent(
+      {
+        action: "RATE_LIMIT_EXCEEDED",
+        userId,
+        userEmail,
+        success: false,
+        details: {
+          endpoint,
+          timestamp: new Date().toISOString(),
+        },
+      },
+      request
+    );
   }
 
   /**
