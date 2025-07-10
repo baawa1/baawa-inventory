@@ -170,9 +170,18 @@ export const SUCCESS_MESSAGES = {
   DATA_SYNCED: "Data synchronized successfully",
 } as const;
 
+// User Role Constants (must match Prisma enum)
+export const USER_ROLES = {
+  ADMIN: "ADMIN",
+  MANAGER: "MANAGER",
+  STAFF: "STAFF",
+} as const;
+
+export type UserRole = (typeof USER_ROLES)[keyof typeof USER_ROLES];
+
 // Default Values
 export const DEFAULTS = {
-  USER_ROLE: "STAFF",
+  USER_ROLE: USER_ROLES.STAFF,
   USER_STATUS: USER_STATUS.PENDING,
   PRODUCT_STATUS: PRODUCT_STATUS.ACTIVE,
   PAYMENT_METHOD: PAYMENT_METHODS.CASH,

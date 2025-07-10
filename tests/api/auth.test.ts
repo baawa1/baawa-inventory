@@ -35,10 +35,12 @@ jest.mock("@/lib/email/providers/nodemailer", () => ({
   sendWelcomeEmail: jest.fn(),
 }));
 
-jest.mock("@/lib/utils/token-service", () => ({
-  generateVerificationToken: jest.fn(),
-  generatePasswordResetToken: jest.fn(),
-  validateToken: jest.fn(),
+jest.mock("@/lib/utils/secure-token-manager", () => ({
+  SecureTokenManager: {
+    generatePasswordResetToken: jest.fn(),
+    generateEmailVerificationToken: jest.fn(),
+    verifyToken: jest.fn(),
+  },
 }));
 
 // Get mocked modules

@@ -1,14 +1,26 @@
 import { authOptions } from "@/lib/auth";
-import { createServerSupabaseClient } from "@/lib/supabase-server";
-import bcrypt from "bcryptjs";
+import { authService } from "@/lib/auth-service";
 
-// Mock NextAuth for testing
-jest.mock("next-auth", () => ({
-  getServerSession: jest.fn(),
+// Mock dependencies
+jest.mock("@/lib/auth-service", () => ({
+  authService: {
+    validateCredentials: jest.fn(),
+    refreshUserData: jest.fn(),
+    updateLastLogout: jest.fn(),
+  },
 }));
 
-jest.mock("@/lib/supabase", () => ({
-  createServerSupabaseClient: jest.fn(),
+jest.mock("@/lib/utils/audit-logger", () => ({
+  AuditLogger: {
+    logSessionExpired: jest.fn(),
+  },
+}));
+
+jest.mock("@/lib/session-blacklist", () => ({
+  SessionBlacklist: {
+    isSessionBlacklisted: jest.fn(),
+    blacklistSession: jest.fn(),
+  },
 }));
 
 describe("Authentication", () => {
@@ -41,17 +53,10 @@ describe("Authentication", () => {
     });
 
     test("should return null for non-existent user", async () => {
-      const mockSupabase = {
-        from: jest.fn().mockReturnThis(),
-        select: jest.fn().mockReturnThis(),
-        eq: jest.fn().mockReturnThis(),
-        single: jest.fn().mockResolvedValue({
-          data: null,
-          error: new Error("User not found"),
-        }),
-      };
-
-      (createServerSupabaseClient as jest.Mock).mockResolvedValue(mockSupabase);
+      (authService.validateCredentials as jest.Mock).mockResolvedValue({
+        success: false,
+        error: "INVALID_CREDENTIALS",
+      });
 
       const provider = authOptions.providers[0] as any;
       const result = await provider.authorize({
@@ -63,18 +68,10 @@ describe("Authentication", () => {
     });
 
     test("should return null for inactive user", async () => {
-      // Mock that the query returns no user for inactive users
-      const mockSupabase = {
-        from: jest.fn().mockReturnThis(),
-        select: jest.fn().mockReturnThis(),
-        eq: jest.fn().mockReturnThis(),
-        single: jest.fn().mockResolvedValue({
-          data: null,
-          error: new Error("User not found"),
-        }),
-      };
-
-      (createServerSupabaseClient as jest.Mock).mockResolvedValue(mockSupabase);
+      (authService.validateCredentials as jest.Mock).mockResolvedValue({
+        success: false,
+        error: "ACCOUNT_INACTIVE",
+      });
 
       const provider = authOptions.providers[0] as any;
       const result = await provider.authorize({
@@ -85,12 +82,36 @@ describe("Authentication", () => {
       expect(result).toBeNull();
     });
 
+    test("should return user for valid credentials", async () => {
+      const mockUser = {
+        id: "1",
+        email: "test@example.com",
+        name: "Test User",
+        role: "EMPLOYEE",
+        status: "APPROVED",
+        emailVerified: true,
+      };
+
+      (authService.validateCredentials as jest.Mock).mockResolvedValue({
+        success: true,
+        user: mockUser,
+      });
+
+      const provider = authOptions.providers[0] as any;
+      const result = await provider.authorize({
+        email: "test@example.com",
+        password: "password123",
+      });
+
+      expect(result).toEqual(mockUser);
+    });
+
     test("should have valid provider configuration", async () => {
       const provider = authOptions.providers[0] as any;
 
       // Test that the provider has the expected structure
       expect(typeof provider.authorize).toBe("function");
-      expect(provider.name).toBe("Credentials");
+      expect(provider.name).toBe("credentials");
       expect(provider.type).toBe("credentials");
 
       // Verify it's a proper credentials provider configuration

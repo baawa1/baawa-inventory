@@ -7,6 +7,20 @@ datasource db {
   url      = env("DATABASE_URL")
 }
 
+enum UserRole {
+  ADMIN
+  MANAGER
+  STAFF
+}
+
+enum UserStatus {
+  PENDING
+  VERIFIED
+  APPROVED
+  REJECTED
+  SUSPENDED
+}
+
 model User {
   id                                                     Int                   @id @default(autoincrement())
   email                                                  String                @unique @db.VarChar(255)
@@ -14,7 +28,7 @@ model User {
   firstName                                              String                @map("first_name") @db.VarChar(100)
   lastName                                               String                @map("last_name") @db.VarChar(100)
   phone                                                  String?               @db.VarChar(20)
-  role                                                   String                @default("employee") @db.VarChar(20)
+  role                                                   UserRole              @default(STAFF)
   permissions                                            String[]
   isActive                                               Boolean               @default(true) @map("is_active")
   lastLogin                                              DateTime?             @map("last_login") @db.Timestamptz(6)
@@ -29,7 +43,7 @@ model User {
   resetTokenExpires                                      DateTime?             @map("reset_token_expires") @db.Timestamptz(6)
   emailVerificationToken                                 String?               @map("email_verification_token") @db.VarChar(255)
   emailVerificationExpires                               DateTime?             @map("email_verification_expires") @db.Timestamptz(6)
-  userStatus                                             String?               @default("PENDING") @map("user_status") @db.VarChar(20)
+  userStatus                                             UserStatus            @default(PENDING) @map("user_status")
   approvedBy                                             Int?                  @map("approved_by")
   approvedAt                                             DateTime?             @map("approved_at") @db.Timestamptz(6)
   rejectionReason                                        String?               @map("rejection_reason")
