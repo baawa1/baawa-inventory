@@ -1,13 +1,13 @@
 // Unified user and session types for backend and frontend
 
 // User roles
-export type UserRole = "ADMIN" | "MANAGER" | "EMPLOYEE";
+export type UserRole = "ADMIN" | "MANAGER" | "STAFF";
 
 // User status
 export type UserStatus =
   | "PENDING"
   | "VERIFIED"
-  | "APPROVED"
+  | "ACTIVE"
   | "REJECTED"
   | "SUSPENDED";
 
@@ -18,7 +18,7 @@ export interface AuthUser {
   name: string;
   role: UserRole;
   status: UserStatus | string;
-  emailVerified: boolean;
+  isEmailVerified: boolean;
 }
 
 // Full user type for app logic (extends AuthUser)
@@ -41,7 +41,7 @@ export interface SessionUser {
   name: string;
   role: UserRole;
   status: UserStatus | string;
-  emailVerified?: boolean;
+  isEmailVerified?: boolean;
   image?: string;
 }
 

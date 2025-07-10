@@ -1,6 +1,5 @@
+import { auth } from "../../../../../../auth";
 import { redirect } from "next/navigation";
-import { getServerSession } from "next-auth";
-import { authOptions } from "@/lib/auth";
 import { getRolePermissions, UserRole } from "@/lib/auth-rbac";
 import SupplierDetailView from "@/components/inventory/SupplierDetailView";
 
@@ -18,7 +17,7 @@ interface SupplierDetailPageProps {
 export default async function SupplierDetailPage({
   params,
 }: SupplierDetailPageProps) {
-  const session = await getServerSession(authOptions);
+  const session = await auth();
 
   if (!session?.user) {
     redirect("/login");

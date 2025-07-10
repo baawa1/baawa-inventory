@@ -1,7 +1,7 @@
 import { NextResponse } from "next/server";
 import { prisma } from "@/lib/db";
 import { withPermission, AuthenticatedRequest } from "@/lib/api-middleware";
-import { withAdminRateLimit } from "@/lib/rate-limit";
+
 import { z } from "zod";
 import { validateRequest } from "@/lib/validations";
 import { emailService } from "@/lib/email";
@@ -15,10 +15,9 @@ const userApprovalSchema = z.object({
 
 // POST /api/admin/approve-user - Approve or reject a user
 // Requires admin permission and rate limiting
-export const POST = withAdminRateLimit(
-  withPermission("canManageUsers")(async function (
-    request: AuthenticatedRequest
-  ) {
+export const POST = withPermission(
+  ["ADMIN"],
+  async function (request: AuthenticatedRequest) {
     try {
       const body = await request.json();
 
@@ -121,7 +120,7 @@ export const POST = withAdminRateLimit(
             firstName: updatedUser.firstName,
             adminName,
             dashboardLink: `${dashboardUrl}/dashboard`,
-            role: user.role || "EMPLOYEE",
+            role: user.role || "STAFF",
           });
 
           // Send welcome email as well
@@ -163,5 +162,5 @@ export const POST = withAdminRateLimit(
         { status: 500 }
       );
     }
-  })
+  }
 );

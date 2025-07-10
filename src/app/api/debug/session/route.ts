@@ -1,12 +1,10 @@
+import { auth } from "../../../../../auth";
 import { NextRequest, NextResponse } from "next/server";
-import { getServerSession } from "next-auth/next";
-import { authOptions } from "@/lib/auth";
-
-export async function GET(request: NextRequest) {
+export async function GET(_request: NextRequest) {
   try {
-    const session = await getServerSession(authOptions);
+    const session = await auth();
 
-    if (!session) {
+    if (!session?.user) {
       return NextResponse.json(
         {
           authenticated: false,
@@ -25,7 +23,7 @@ export async function GET(request: NextRequest) {
         name: session.user.name,
         role: session.user.role,
         status: session.user.status,
-        emailVerified: session.user.emailVerified,
+        isEmailVerified: session.user.isEmailVerified,
       },
       middlewareChecks: {
         isApproved: session.user.status === "APPROVED",

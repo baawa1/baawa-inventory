@@ -272,9 +272,11 @@ export function PendingUsersManagement() {
                       </TableCell>
                       <TableCell>
                         <Badge
-                          variant={user.emailVerified ? "default" : "secondary"}
+                          variant={
+                            user.isEmailVerified ? "default" : "secondary"
+                          }
                         >
-                          {user.emailVerified ? "Verified" : "Pending"}
+                          {user.isEmailVerified ? "Verified" : "Pending"}
                         </Badge>
                       </TableCell>
                       <TableCell>
@@ -388,7 +390,7 @@ export function PendingUsersManagement() {
                     Email Verified
                   </label>
                   <p className="text-sm">
-                    {selectedUser.emailVerified ? "Yes" : "No"}
+                    {selectedUser.isEmailVerified ? "Yes" : "No"}
                   </p>
                 </div>
               </div>

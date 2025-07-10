@@ -8,8 +8,16 @@ interface SessionProviderProps {
 
 /**
  * SessionProvider wrapper for Auth.js v5
- * Uses official NextAuth SessionProvider
+ * Uses official NextAuth SessionProvider with proper configuration
  */
 export function SessionProvider({ children }: SessionProviderProps) {
-  return <NextAuthSessionProvider>{children}</NextAuthSessionProvider>;
+  return (
+    <NextAuthSessionProvider
+      // In Auth.js v5, basePath is automatically handled
+      refetchInterval={0}
+      refetchOnWindowFocus={false}
+    >
+      {children}
+    </NextAuthSessionProvider>
+  );
 }

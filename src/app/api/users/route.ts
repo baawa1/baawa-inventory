@@ -3,152 +3,154 @@ import { prisma } from "@/lib/db";
 import bcrypt from "bcryptjs";
 import { createUserSchema, userQuerySchema } from "@/lib/validations";
 import { withPermission, AuthenticatedRequest } from "@/lib/api-middleware";
-import { withApiRateLimit } from "@/lib/rate-limit";
 
 // GET /api/users - List users with optional filtering and pagination
 // Requires permission to manage users (ADMIN only)
-export const GET = withPermission("canManageUsers")(async function (
-  request: AuthenticatedRequest
-) {
-  try {
-    const { searchParams } = new URL(request.url);
+export const GET = withPermission(
+  ["ADMIN"],
+  async function (request: AuthenticatedRequest) {
+    try {
+      const { searchParams } = new URL(request.url);
 
-    // Convert search params to object for validation
-    const queryParams = Object.fromEntries(searchParams.entries());
+      // Convert search params to object for validation
+      const queryParams = Object.fromEntries(searchParams.entries());
 
-    // Validate query parameters
-    const validation = userQuerySchema.safeParse(queryParams);
+      // Validate query parameters
+      const validation = userQuerySchema.safeParse(queryParams);
 
-    if (!validation.success) {
+      if (!validation.success) {
+        return NextResponse.json(
+          {
+            error: "Invalid query parameters",
+            details: validation.error.issues,
+          },
+          { status: 400 }
+        );
+      }
+
+      const validatedData = validation.data;
+      const {
+        page = 1,
+        limit = 10,
+        search,
+        role,
+        status,
+        isActive,
+        sortBy = "createdAt",
+        sortOrder = "desc",
+      } = validatedData;
+
+      // Enforce maximum limit as a safety check
+      const safeLimit = Math.min(limit, 100);
+
+      // Calculate offset for pagination
+      const skip = (page - 1) * safeLimit;
+
+      // Build where clause for filtering
+      const where: any = {};
+
+      // Apply search filter across multiple fields
+      if (search) {
+        where.OR = [
+          { firstName: { contains: search, mode: "insensitive" } },
+          { lastName: { contains: search, mode: "insensitive" } },
+          { email: { contains: search, mode: "insensitive" } },
+        ];
+      }
+
+      // Apply role filter
+      if (role) {
+        where.role = role;
+      }
+
+      // Apply status filter
+      if (status) {
+        where.userStatus = status;
+      }
+
+      // Apply active status filter
+      if (isActive !== undefined) {
+        where.isActive = isActive;
+      }
+
+      // Build orderBy clause
+      const orderBy: any = {};
+      if (sortBy === "createdAt") {
+        orderBy.createdAt = sortOrder;
+      } else {
+        orderBy[sortBy] = sortOrder;
+      }
+
+      // Fetch users with Prisma - exclude password from response
+      const [users, totalCount] = await Promise.all([
+        prisma.user.findMany({
+          where,
+          select: {
+            id: true,
+            firstName: true,
+            lastName: true,
+            email: true,
+            role: true,
+            isActive: true,
+            userStatus: true,
+            emailVerified: true,
+            createdAt: true,
+            lastLogin: true,
+            approvedBy: true,
+            approvedAt: true,
+            rejectionReason: true,
+          },
+          orderBy,
+          skip,
+          take: safeLimit,
+        }),
+        prisma.user.count({ where }),
+      ]);
+
+      // Transform the response to match the expected camelCase format
+      const transformedUsers = users.map((user) => ({
+        id: user.id,
+        firstName: user.firstName,
+        lastName: user.lastName,
+        email: user.email,
+        role: user.role,
+        isActive: user.isActive,
+        userStatus: user.userStatus,
+        emailVerified: user.emailVerified,
+        createdAt: user.createdAt,
+        lastLogin: user.lastLogin,
+        approvedBy: user.approvedBy,
+        approvedAt: user.approvedAt,
+        rejectionReason: user.rejectionReason,
+      }));
+
+      // Return paginated response with metadata
+      return NextResponse.json({
+        data: transformedUsers,
+        pagination: {
+          page,
+          limit: safeLimit,
+          total: totalCount,
+          totalPages: Math.ceil(totalCount / safeLimit),
+          hasNext: skip + safeLimit < totalCount,
+          hasPrev: page > 1,
+        },
+      });
+    } catch (error) {
+      console.error("Error in GET /api/users:", error);
       return NextResponse.json(
-        { error: "Invalid query parameters", details: validation.error.issues },
-        { status: 400 }
+        { error: "Internal server error" },
+        { status: 500 }
       );
     }
-
-    const validatedData = validation.data;
-    const {
-      page = 1,
-      limit = 10,
-      search,
-      role,
-      status,
-      isActive,
-      sortBy = "createdAt",
-      sortOrder = "desc",
-    } = validatedData;
-
-    // Enforce maximum limit as a safety check
-    const safeLimit = Math.min(limit, 100);
-
-    // Calculate offset for pagination
-    const skip = (page - 1) * safeLimit;
-
-    // Build where clause for filtering
-    const where: any = {};
-
-    // Apply search filter across multiple fields
-    if (search) {
-      where.OR = [
-        { firstName: { contains: search, mode: "insensitive" } },
-        { lastName: { contains: search, mode: "insensitive" } },
-        { email: { contains: search, mode: "insensitive" } },
-      ];
-    }
-
-    // Apply role filter
-    if (role) {
-      where.role = role;
-    }
-
-    // Apply status filter
-    if (status) {
-      where.userStatus = status;
-    }
-
-    // Apply active status filter
-    if (isActive !== undefined) {
-      where.isActive = isActive;
-    }
-
-    // Build orderBy clause
-    const orderBy: any = {};
-    if (sortBy === "createdAt") {
-      orderBy.createdAt = sortOrder;
-    } else {
-      orderBy[sortBy] = sortOrder;
-    }
-
-    // Fetch users with Prisma - exclude password from response
-    const [users, totalCount] = await Promise.all([
-      prisma.user.findMany({
-        where,
-        select: {
-          id: true,
-          firstName: true,
-          lastName: true,
-          email: true,
-          role: true,
-          isActive: true,
-          userStatus: true,
-          emailVerified: true,
-          createdAt: true,
-          lastLogin: true,
-          approvedBy: true,
-          approvedAt: true,
-          rejectionReason: true,
-        },
-        orderBy,
-        skip,
-        take: safeLimit,
-      }),
-      prisma.user.count({ where }),
-    ]);
-
-    // Transform the response to match the expected camelCase format
-    const transformedUsers = users.map((user) => ({
-      id: user.id,
-      firstName: user.firstName,
-      lastName: user.lastName,
-      email: user.email,
-      role: user.role,
-      isActive: user.isActive,
-      userStatus: user.userStatus,
-      emailVerified: user.emailVerified,
-      createdAt: user.createdAt,
-      lastLogin: user.lastLogin,
-      approvedBy: user.approvedBy,
-      approvedAt: user.approvedAt,
-      rejectionReason: user.rejectionReason,
-    }));
-
-    // Return paginated response with metadata
-    return NextResponse.json({
-      data: transformedUsers,
-      pagination: {
-        page,
-        limit: safeLimit,
-        total: totalCount,
-        totalPages: Math.ceil(totalCount / safeLimit),
-        hasNext: skip + safeLimit < totalCount,
-        hasPrev: page > 1,
-      },
-    });
-  } catch (error) {
-    console.error("Error in GET /api/users:", error);
-    return NextResponse.json(
-      { error: "Internal server error" },
-      { status: 500 }
-    );
   }
-});
+);
 
 // POST /api/users - Create a new user
 // Requires permission to manage users (ADMIN only)
-export const POST = withApiRateLimit(
-  withPermission("canManageUsers")(async function (
-    request: AuthenticatedRequest
-  ) {
+export const POST = withPermission(
+  ["ADMIN"],
+  async function (request: AuthenticatedRequest) {
     try {
       const body = await request.json();
 
@@ -225,5 +227,5 @@ export const POST = withApiRateLimit(
         { status: 500 }
       );
     }
-  })
+  }
 );

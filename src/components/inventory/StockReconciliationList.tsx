@@ -47,10 +47,12 @@ import { STOCK_RECONCILIATION_COLUMNS } from "@/components/inventory/ColumnCusto
 import type { ColumnConfig, FilterConfig } from "@/types/inventory";
 
 interface User {
-  id: number;
-  firstName: string;
-  lastName: string;
+  id: string;
   email: string;
+  name: string;
+  role: string;
+  status: string;
+  isEmailVerified: boolean;
 }
 
 interface StockReconciliation {
@@ -86,7 +88,7 @@ interface UserProps {
   email: string;
   role: string;
   status: string;
-  emailVerified: boolean;
+  isEmailVerified: boolean;
   image?: string;
 }
 
@@ -370,7 +372,7 @@ export function StockReconciliationList({
       case "createdBy":
         return (
           <div className="text-sm">
-            <div>{`${reconciliation.createdBy.firstName} ${reconciliation.createdBy.lastName}`}</div>
+            <div>{`${reconciliation.createdBy.name}`}</div>
             <div className="text-gray-500">
               {reconciliation.createdBy.email}
             </div>

@@ -1,6 +1,5 @@
+import { auth } from "../../../../../../../auth";
 import { redirect } from "next/navigation";
-import { getServerSession } from "next-auth";
-import { authOptions } from "@/lib/auth";
 import EditProductForm from "@/components/inventory/EditProductForm";
 
 interface PageProps {
@@ -8,10 +7,10 @@ interface PageProps {
 }
 
 export default async function EditProductPage({ params }: PageProps) {
-  const session = await getServerSession(authOptions);
+  const session = await auth();
 
-  // Only admins, managers, and employees can edit products
-  if (!["ADMIN", "MANAGER", "EMPLOYEE"].includes(session?.user.role || "")) {
+  // Only admins, managers, and staffs can edit products
+  if (!["ADMIN", "MANAGER", "STAFF"].includes(session?.user.role || "")) {
     redirect("/unauthorized");
   }
 

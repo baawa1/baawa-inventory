@@ -12,7 +12,7 @@ const baseUserSchema = z.object({
     .min(1, "Last name is required")
     .max(50, "Last name must not exceed 50 characters"),
   email: z.string().email("Invalid email address"),
-  role: z.enum(["ADMIN", "MANAGER", "EMPLOYEE"], {
+  role: z.enum(["ADMIN", "MANAGER", "STAFF"], {
     required_error: "Role is required",
   }),
   userStatus: z.enum(

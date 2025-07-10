@@ -31,7 +31,7 @@ import {
   IconRefresh,
 } from "@tabler/icons-react";
 
-interface Supplier {
+interface _Supplier {
   id: number;
   name: string;
   contactPerson?: string;

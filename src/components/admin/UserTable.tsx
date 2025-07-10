@@ -26,7 +26,7 @@ const getRoleColor = (role: string) => {
       return "destructive";
     case "MANAGER":
       return "default";
-    case "EMPLOYEE":
+    case "STAFF":
       return "secondary";
     default:
       return "outline";

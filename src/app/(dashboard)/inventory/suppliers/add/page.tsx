@@ -1,6 +1,5 @@
+import { auth } from "../../../../../../auth";
 import { redirect } from "next/navigation";
-import { getServerSession } from "next-auth";
-import { authOptions } from "@/lib/auth";
 import { getRolePermissions, UserRole } from "@/lib/auth-rbac";
 import AddSupplierForm from "@/components/inventory/AddSupplierForm";
 
@@ -10,7 +9,7 @@ export const metadata = {
 };
 
 export default async function AddSupplierPage() {
-  const session = await getServerSession(authOptions);
+  const session = await auth();
 
   if (!session?.user) {
     redirect("/login");

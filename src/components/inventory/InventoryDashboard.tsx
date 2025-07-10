@@ -8,12 +8,11 @@ import { LowStockWidget } from "@/components/inventory/LowStockWidget";
 
 interface User {
   id: string;
-  name: string;
   email: string;
+  name: string;
   role: string;
   status: string;
-  emailVerified: boolean;
-  image?: string;
+  isEmailVerified: boolean;
 }
 
 interface InventoryDashboardProps {

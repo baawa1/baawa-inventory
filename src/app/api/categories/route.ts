@@ -1,214 +1,193 @@
-import { NextRequest } from "next/server";
-import { getServerSession } from "next-auth";
-import { authOptions } from "@/lib/auth";
+import { NextRequest, NextResponse } from "next/server";
+import { auth } from "../../../../auth";
 import { prisma } from "@/lib/db";
-import {
-  createCategorySchema,
-  categoryQuerySchema,
-} from "@/lib/validations/category";
-import { handleApiError, createApiResponse } from "@/lib/api-error-handler";
-import { USER_ROLES, hasPermission } from "@/lib/auth/roles";
+import { z } from "zod";
 
-// GET /api/categories - List categories with filtering
+// Validation schema for category creation
+const CategoryCreateSchema = z.object({
+  name: z.string().min(1).max(100),
+  description: z.string().optional(),
+  isActive: z.boolean().default(true),
+});
+
+// Validation schema for category update (for future use)
+const _CategoryUpdateSchema = z.object({
+  name: z.string().min(1).max(100).optional(),
+  description: z.string().optional(),
+  isActive: z.boolean().optional(),
+});
+
+// GET /api/categories - List all categories
 export async function GET(request: NextRequest) {
   try {
-    const session = await getServerSession(authOptions);
+    const session = await auth();
 
     if (!session?.user) {
-      return handleApiError(new Error("Unauthorized"), 401);
+      return NextResponse.json(
+        { error: "Authentication required" },
+        { status: 401 }
+      );
     }
 
-    // Check if user has permission to view categories
-    if (!hasPermission(session.user.role, "INVENTORY_READ")) {
-      return handleApiError(new Error("Insufficient permissions"), 403);
+    if (session.user.status !== "ACTIVE") {
+      return NextResponse.json(
+        { error: "Account not active" },
+        { status: 403 }
+      );
     }
 
     const { searchParams } = new URL(request.url);
+    const activeOnly = searchParams.get("active") === "true";
+    const search = searchParams.get("search") || "";
 
-    // Check if this is a legacy request for product categories (dropdown)
-    const legacy = searchParams.get("legacy") === "true";
-
-    if (legacy) {
-      // Legacy functionality: Get unique categories from products for dropdowns
-      try {
-        // Get categories through product relations (since products reference categoryId)
-        const categories = await prisma.category.findMany({
-          where: {
-            isActive: true,
-            products: {
-              some: {
-                isArchived: false,
-              },
-            },
-          },
-          select: {
-            name: true,
-          },
-          orderBy: {
-            name: "asc",
-          },
-        });
-
-        if (categories.length > 0) {
-          const uniqueCategories = categories.map((cat) => cat.name).sort();
-
-          return createApiResponse({
-            success: true,
-            categories: uniqueCategories,
-          });
-        }
-      } catch (categoryError) {
-        console.log("Falling back to all categories:", categoryError);
-      }
-
-      // Fallback: Get all categories from the categories table
-      const categoryData = await prisma.category.findMany({
-        where: {
-          isActive: true,
-        },
-        select: {
-          name: true,
-        },
-        orderBy: {
-          name: "asc",
-        },
-      });
-
-      const uniqueCategories = categoryData.map((cat) => cat.name).sort();
-
-      return createApiResponse({
-        success: true,
-        categories: uniqueCategories,
-      });
-    }
-
-    // New functionality: Full category management
-    const queryParams = {
-      search: searchParams.get("search") || undefined,
-      isActive: searchParams.get("isActive")
-        ? searchParams.get("isActive") === "true"
-        : undefined,
-      limit: Math.min(parseInt(searchParams.get("limit") || "10"), 100),
-      offset: Math.max(parseInt(searchParams.get("offset") || "0"), 0),
-      sortBy: searchParams.get("sortBy") || "name",
-      sortOrder: searchParams.get("sortOrder") || "asc",
-    };
-
-    const validatedQuery = categoryQuerySchema.parse(queryParams);
-
-    // Build where clause for Prisma
+    // Build where clause
     const where: any = {};
 
-    // Apply filters
-    if (validatedQuery.search) {
-      where.name = {
-        contains: validatedQuery.search,
-        mode: "insensitive",
-      };
+    if (activeOnly) {
+      where.isActive = true;
     }
 
-    if (validatedQuery.isActive !== undefined) {
-      where.isActive = validatedQuery.isActive;
+    if (search) {
+      where.OR = [
+        { name: { contains: search, mode: "insensitive" } },
+        { description: { contains: search, mode: "insensitive" } },
+      ];
     }
 
-    // Build orderBy clause
-    const orderBy: any = {};
-    if (validatedQuery.sortBy === "createdAt") {
-      orderBy.createdAt = validatedQuery.sortOrder;
-    } else if (validatedQuery.sortBy === "updatedAt") {
-      orderBy.updatedAt = validatedQuery.sortOrder;
-    } else {
-      orderBy.name = validatedQuery.sortOrder;
-    }
+    const categories = await prisma.category.findMany({
+      where,
+      select: {
+        id: true,
+        name: true,
+        description: true,
+        isActive: true,
+        createdAt: true,
+        updatedAt: true,
+        _count: {
+          select: {
+            products: true,
+          },
+        },
+      },
+      orderBy: {
+        name: "asc",
+      },
+    });
 
-    // Execute queries in parallel for better performance
-    const [categories, count] = await Promise.all([
-      prisma.category.findMany({
-        where,
-        orderBy,
-        skip: validatedQuery.offset,
-        take: validatedQuery.limit,
-      }),
-      prisma.category.count({ where }),
-    ]);
-
-    // Transform to camelCase for frontend (Prisma already returns camelCase)
+    // Transform the response
     const transformedCategories = categories.map((category) => ({
       id: category.id,
       name: category.name,
       description: category.description,
       isActive: category.isActive,
-      createdAt: category.createdAt,
-      updatedAt: category.updatedAt,
+      productCount: category._count.products,
+      createdAt: category.createdAt.toISOString(),
+      updatedAt: category.updatedAt.toISOString(),
     }));
 
-    return createApiResponse({
-      success: true,
+    return NextResponse.json({
       data: transformedCategories,
-      pagination: {
-        total: count,
-        limit: validatedQuery.limit,
-        offset: validatedQuery.offset,
-        page: Math.floor(validatedQuery.offset / validatedQuery.limit) + 1,
-        totalPages: Math.ceil(count / validatedQuery.limit),
-      },
+      count: categories.length,
     });
   } catch (error) {
-    return handleApiError(error);
+    console.error("Error fetching categories:", error);
+    return NextResponse.json(
+      { error: "Failed to fetch categories" },
+      { status: 500 }
+    );
   }
 }
 
 // POST /api/categories - Create new category
 export async function POST(request: NextRequest) {
   try {
-    const session = await getServerSession(authOptions);
+    const session = await auth();
 
     if (!session?.user) {
-      return handleApiError(new Error("Unauthorized"), 401);
+      return NextResponse.json(
+        { error: "Authentication required" },
+        { status: 401 }
+      );
     }
 
-    // Check if user has permission to create categories
-    if (!hasPermission(session.user.role, "INVENTORY_WRITE")) {
-      return handleApiError(new Error("Insufficient permissions"), 403);
+    if (session.user.status !== "ACTIVE") {
+      return NextResponse.json(
+        { error: "Account not active" },
+        { status: 403 }
+      );
+    }
+
+    // Check permissions - only admins and managers can create categories
+    if (!["ADMIN", "MANAGER"].includes(session.user.role as string)) {
+      return NextResponse.json(
+        { error: "Insufficient permissions" },
+        { status: 403 }
+      );
     }
 
     const body = await request.json();
-    const validatedData = createCategorySchema.parse(body);
+    const validatedData = CategoryCreateSchema.parse(body);
 
     // Check if category name already exists
-    const existingCategory = await prisma.category.findUnique({
-      where: { name: validatedData.name },
-      select: { id: true },
+    const existingCategory = await prisma.category.findFirst({
+      where: {
+        name: {
+          equals: validatedData.name,
+          mode: "insensitive",
+        },
+      },
     });
 
     if (existingCategory) {
-      return handleApiError(
-        new Error("Category with this name already exists"),
-        400
+      return NextResponse.json(
+        { error: "Category with this name already exists" },
+        { status: 400 }
       );
     }
 
     // Create the category
     const category = await prisma.category.create({
-      data: {
-        name: validatedData.name,
-        description: validatedData.description,
-        isActive: validatedData.isActive,
+      data: validatedData,
+      select: {
+        id: true,
+        name: true,
+        description: true,
+        isActive: true,
+        createdAt: true,
+        updatedAt: true,
       },
     });
 
-    // Transform response to match expected format (Prisma already returns camelCase)
-    const transformedCategory = {
-      id: category.id,
-      name: category.name,
-      description: category.description,
-      isActive: category.isActive,
-      createdAt: category.createdAt,
-      updatedAt: category.updatedAt,
-    };
-
-    return createApiResponse(transformedCategory, 201);
+    return NextResponse.json(
+      {
+        message: "Category created successfully",
+        data: {
+          id: category.id,
+          name: category.name,
+          description: category.description,
+          isActive: category.isActive,
+          productCount: 0,
+          createdAt: category.createdAt.toISOString(),
+          updatedAt: category.updatedAt.toISOString(),
+        },
+      },
+      { status: 201 }
+    );
   } catch (error) {
-    return handleApiError(error);
+    if (error instanceof z.ZodError) {
+      return NextResponse.json(
+        {
+          error: "Validation failed",
+          details: error.errors,
+        },
+        { status: 400 }
+      );
+    }
+
+    console.error("Error creating category:", error);
+    return NextResponse.json(
+      { error: "Failed to create category" },
+      { status: 500 }
+    );
   }
 }

@@ -1,10 +1,9 @@
+import { auth } from "../../../../../../auth";
 import { redirect } from "next/navigation";
-import { getServerSession } from "next-auth";
-import { authOptions } from "@/lib/auth";
 import { ArchivedProductList } from "@/components/inventory/ArchivedProductList";
 
 export default async function ArchivedProductsPage() {
-  const session = await getServerSession(authOptions);
+  const session = await auth();
 
   if (!session?.user) {
     redirect("/login");

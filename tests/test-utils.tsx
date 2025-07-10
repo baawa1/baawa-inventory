@@ -2,7 +2,7 @@ import React, { ReactElement } from "react";
 import { render, RenderOptions } from "@testing-library/react";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { SessionProvider } from "next-auth/react";
-import { APIUser } from "@/hooks/api/users";
+import type { Session } from "next-auth";
 
 // Mock toast globally
 jest.mock("sonner", () => ({
@@ -14,38 +14,59 @@ jest.mock("sonner", () => ({
   },
 }));
 
-// Create a default user for tests
-const createMockUser = (overrides: Partial<APIUser> = {}): APIUser => ({
-  id: 1,
+// Define the user type for tests
+interface TestUser {
+  id: string;
+  email: string;
+  name: string;
+  role: string;
+  status: string;
+  isEmailVerified: boolean;
+  image?: string;
+}
+
+export const mockUser: TestUser = {
+  id: "1",
   email: "test@example.com",
-  firstName: "Test",
-  lastName: "User",
-  role: "ADMIN",
-  userStatus: "APPROVED",
-  isActive: true,
-  emailVerified: true,
-  createdAt: new Date().toISOString(),
+  name: "Test User",
+  role: "STAFF",
+  status: "ACTIVE",
+  isEmailVerified: true,
+  image: "https://example.com/avatar.jpg",
+};
+
+export const createMockUser = (
+  overrides: Partial<TestUser> = {}
+): TestUser => ({
+  id: "1",
+  email: "test@example.com",
+  name: "Test User",
+  role: "STAFF",
+  status: "ACTIVE",
+  isEmailVerified: true,
+  image: "https://example.com/avatar.jpg",
   ...overrides,
 });
 
 // Mock next-auth session
-const createMockSession = (userOverrides: Partial<APIUser> = {}) => {
+const createMockSession = (userOverrides: Partial<TestUser> = {}): Session => {
   const user = createMockUser(userOverrides);
   return {
     user: {
-      id: user.id.toString(),
+      id: user.id,
       email: user.email,
-      name: `${user.firstName} ${user.lastName}`,
+      name: user.name,
       role: user.role,
-      status: user.userStatus,
-      emailVerified: user.emailVerified,
+      status: user.status,
+      isEmailVerified: user.isEmailVerified,
+      image: user.image,
     },
     expires: new Date(Date.now() + 24 * 60 * 60 * 1000).toISOString(),
   };
 };
 
 interface TestWrapperProps {
-  user?: APIUser | null;
+  user?: TestUser | null;
   children: React.ReactNode;
 }
 
@@ -73,7 +94,7 @@ function TestWrapper({ user = createMockUser(), children }: TestWrapperProps) {
 }
 
 interface CustomRenderOptions extends Omit<RenderOptions, "wrapper"> {
-  user?: APIUser | null;
+  user?: TestUser | null;
 }
 
 const customRender = (
@@ -92,4 +113,4 @@ const customRender = (
 // Re-export everything
 export * from "@testing-library/react";
 export { customRender as render };
-export { createMockUser, createMockSession };
+export { createMockSession };

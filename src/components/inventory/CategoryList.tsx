@@ -41,19 +41,18 @@ import type { ColumnConfig, FilterConfig } from "@/types/inventory";
 
 interface User {
   id: string;
-  name: string;
   email: string;
+  name: string;
   role: string;
   status: string;
-  emailVerified: boolean;
-  image?: string;
+  isEmailVerified: boolean;
 }
 
 interface CategoryListProps {
   user: User;
 }
 
-export function CategoryList({ user }: CategoryListProps) {
+export default function CategoryList({ user }: CategoryListProps) {
   const [deleteDialogOpen, setDeleteDialogOpen] = useState(false);
   const [categoryToDelete, setCategoryToDelete] = useState<APICategory | null>(
     null

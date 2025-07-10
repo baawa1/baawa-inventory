@@ -1,8 +1,7 @@
 import { Suspense } from "react";
 import Link from "next/link";
 import { redirect } from "next/navigation";
-
-import { getServerSession } from "@/lib/auth-helpers";
+import { auth } from "../../../auth";
 import { LoginForm } from "@/components/auth/LoginForm";
 
 interface LoginPageProps {
@@ -36,7 +35,7 @@ function LoginFormWrapper({
 }
 
 export default async function LoginPage({ searchParams }: LoginPageProps) {
-  const session = await getServerSession();
+  const session = await auth();
   const resolvedSearchParams = await searchParams;
 
   // Redirect if already logged in

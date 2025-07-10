@@ -1,6 +1,6 @@
+import { auth } from "../../../../../../auth";
 import { redirect } from "next/navigation";
 import Link from "next/link";
-import { getServerSession } from "@/lib/auth-helpers";
 import { StockReconciliationDetail } from "@/components/inventory/StockReconciliationDetail";
 import { Button } from "@/components/ui/button";
 import { IconArrowLeft } from "@tabler/icons-react";
@@ -17,12 +17,12 @@ interface ReconciliationDetailPageProps {
 export default async function ReconciliationDetailPage({
   params,
 }: ReconciliationDetailPageProps) {
-  const session = await getServerSession();
+  const session = await auth();
 
   // Check role permissions - only staff and above can access inventory
   if (
     !session?.user ||
-    !["ADMIN", "MANAGER", "EMPLOYEE"].includes(session.user.role)
+    !["ADMIN", "MANAGER", "STAFF"].includes(session.user.role)
   ) {
     redirect("/unauthorized");
   }

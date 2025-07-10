@@ -1,69 +1,99 @@
+"use client";
+
+import { useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
 import { useSession } from "next-auth/react";
-import { useEffect } from "react";
+import type { UserRole } from "@/types/user";
+
+interface AuthSession {
+  user: {
+    id: string;
+    email: string;
+    name: string;
+    role: string;
+    status: string;
+    emailVerified: boolean;
+  };
+}
 
 interface UseAuthGuardOptions {
-  requiredRole?: "ADMIN" | "USER";
   redirectTo?: string;
-  allowedStatuses?: string[];
+  requireRole?: UserRole | UserRole[];
+  requireActiveStatus?: boolean;
 }
 
-interface AuthGuardResult {
-  isAuthenticated: boolean;
-  isAuthorized: boolean;
-  user: any;
-  session: any;
+interface UseAuthGuardReturn {
+  session: AuthSession | null;
   isLoading: boolean;
+  error: string | null;
 }
 
-/**
- * Hook for protecting routes with authentication and authorization
- * Automatically redirects unauthorized users
- */
 export function useAuthGuard(
   options: UseAuthGuardOptions = {}
-): AuthGuardResult {
+): UseAuthGuardReturn {
   const {
-    requiredRole,
-    redirectTo = "/unauthorized",
-    allowedStatuses = ["APPROVED"],
+    redirectTo = "/login",
+    requireRole,
+    requireActiveStatus = true,
   } = options;
 
   const { data: session, status } = useSession();
+  const [error, setError] = useState<string | null>(null);
   const router = useRouter();
 
-  const isLoading = status === "loading";
-  const isAuthenticated = !!session?.user;
-
-  const hasRequiredRole = requiredRole
-    ? session?.user?.role === requiredRole
-    : true;
-
-  const hasAllowedStatus = session?.user?.status
-    ? allowedStatuses.includes(session.user.status)
-    : false;
-
-  const isAuthorized = isAuthenticated && hasRequiredRole && hasAllowedStatus;
-
   useEffect(() => {
-    if (isLoading) return;
+    if (status === "loading") return;
 
-    if (!isAuthenticated) {
-      router.push("/login");
-      return;
-    }
-
-    if (!isAuthorized) {
+    if (status === "unauthenticated" || !session?.user) {
       router.push(redirectTo);
       return;
     }
-  }, [isAuthenticated, isAuthorized, isLoading, router, redirectTo]);
+
+    // Check status requirement
+    if (requireActiveStatus && session.user.status !== "ACTIVE") {
+      setError("Account not active");
+      router.push("/pending-approval");
+      return;
+    }
+
+    // Check role requirement
+    if (requireRole) {
+      const allowedRoles = Array.isArray(requireRole)
+        ? requireRole
+        : [requireRole];
+      if (!allowedRoles.includes(session.user.role as UserRole)) {
+        setError("Insufficient permissions");
+        router.push("/unauthorized");
+        return;
+      }
+    }
+
+    setError(null);
+  }, [session, status, redirectTo, requireRole, requireActiveStatus, router]);
 
   return {
-    isAuthenticated,
-    isAuthorized,
-    user: session?.user,
-    session,
-    isLoading,
+    session: session as AuthSession | null,
+    isLoading: status === "loading",
+    error,
   };
+}
+
+// Convenience hooks for common use cases
+export function useRequireAuth(redirectTo?: string) {
+  return useAuthGuard({ redirectTo });
+}
+
+export function useRequireRole(
+  role: UserRole | UserRole[],
+  redirectTo?: string
+) {
+  return useAuthGuard({ requireRole: role, redirectTo });
+}
+
+export function useRequireAdmin(redirectTo?: string) {
+  return useAuthGuard({ requireRole: "ADMIN", redirectTo });
+}
+
+export function useRequireManager(redirectTo?: string) {
+  return useAuthGuard({ requireRole: ["ADMIN", "MANAGER"], redirectTo });
 }

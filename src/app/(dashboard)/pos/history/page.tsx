@@ -3,38 +3,35 @@
  * Main page for viewing and managing transaction history in the POS system
  */
 
-import { Metadata } from "next";
-import { getServerSession } from "next-auth";
-import { authOptions } from "@/lib/auth";
+import React from "react";
 import { redirect } from "next/navigation";
+import { auth } from "../../../../../auth";
 import { TransactionHistory } from "@/components/pos/TransactionHistory";
 
-export const metadata: Metadata = {
-  title: "Transaction History | BaaWA Accessories",
-  description:
-    "View and manage sales transactions from both online and offline sources",
-};
+export default async function POSHistoryPage() {
+  const session = await auth();
 
-export default async function TransactionHistoryPage() {
-  const session = await getServerSession(authOptions);
-
-  if (!session) {
+  if (!session?.user) {
     redirect("/login");
   }
 
-  // Check if user has POS access
-  const hasAccess =
-    session.user.role === "ADMIN" ||
-    session.user.role === "MANAGER" ||
-    session.user.role === "STAFF";
-
-  if (!hasAccess) {
-    redirect("/unauthorized");
+  if (session.user.status !== "ACTIVE") {
+    redirect("/pending-approval");
   }
 
   return (
-    <div className="container mx-auto p-6">
-      <TransactionHistory />
+    <div className="container mx-auto py-6">
+      <div className="space-y-6">
+        <div>
+          <h1 className="text-3xl font-bold tracking-tight">
+            Transaction History
+          </h1>
+          <p className="text-muted-foreground">
+            View and manage your point-of-sale transaction history
+          </p>
+        </div>
+        <TransactionHistory />
+      </div>
     </div>
   );
 }
