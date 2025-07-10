@@ -153,9 +153,27 @@ export function RegisterForm({ onSuccess }: RegisterFormProps) {
       </CardHeader>
       <CardContent>
         <Form {...form}>
-          <form onSubmit={form.handleSubmit(onSubmit)} className="grid gap-4">
+          <form
+            data-testid="registration-form"
+            onSubmit={form.handleSubmit(onSubmit)}
+            className="grid gap-4"
+          >
+            {/* Validation errors container for E2E tests */}
+            {Object.keys(form.formState.errors).length > 0 && (
+              <div
+                data-testid="validation-errors"
+                className="bg-destructive/15 text-destructive text-sm p-3 rounded-md"
+              >
+                {Object.entries(form.formState.errors).map(([field, error]) => (
+                  <div key={field}>{error?.message}</div>
+                ))}
+              </div>
+            )}
             {error && (
-              <div className="bg-destructive/15 text-destructive text-sm p-3 rounded-md">
+              <div
+                data-testid="error-message"
+                className="bg-destructive/15 text-destructive text-sm p-3 rounded-md"
+              >
                 {error}
               </div>
             )}
@@ -167,7 +185,11 @@ export function RegisterForm({ onSuccess }: RegisterFormProps) {
                 <FormItem>
                   <FormLabel>First Name</FormLabel>
                   <FormControl>
-                    <Input placeholder="John" {...field} />
+                    <Input
+                      data-testid="firstName-input"
+                      placeholder="John"
+                      {...field}
+                    />
                   </FormControl>
                   <FormMessage />
                 </FormItem>
@@ -181,7 +203,11 @@ export function RegisterForm({ onSuccess }: RegisterFormProps) {
                 <FormItem>
                   <FormLabel>Last Name</FormLabel>
                   <FormControl>
-                    <Input placeholder="Doe" {...field} />
+                    <Input
+                      data-testid="lastName-input"
+                      placeholder="Doe"
+                      {...field}
+                    />
                   </FormControl>
                   <FormMessage />
                 </FormItem>
@@ -196,6 +222,7 @@ export function RegisterForm({ onSuccess }: RegisterFormProps) {
                   <FormLabel>Email</FormLabel>
                   <FormControl>
                     <Input
+                      data-testid="email-input"
                       type="email"
                       placeholder="name@example.com"
                       {...field}
@@ -214,12 +241,13 @@ export function RegisterForm({ onSuccess }: RegisterFormProps) {
                   <FormLabel>Password</FormLabel>
                   <FormControl>
                     <Input
+                      data-testid="password-input"
                       type="password"
                       placeholder="Enter a strong password (12+ chars)"
                       {...field}
                     />
                   </FormControl>
-                  <FormMessage />
+                  <FormMessage data-testid="password-error" />
                   <div className="text-xs text-muted-foreground mt-1">
                     Password must be at least 12 characters with uppercase,
                     lowercase, number, and special character
@@ -246,7 +274,12 @@ export function RegisterForm({ onSuccess }: RegisterFormProps) {
               )}
             />
 
-            <Button type="submit" className="w-full" disabled={isLoading}>
+            <Button
+              data-testid="register-button"
+              type="submit"
+              className="w-full"
+              disabled={isLoading}
+            >
               {isLoading ? "Creating account..." : "Create Account"}
             </Button>
           </form>

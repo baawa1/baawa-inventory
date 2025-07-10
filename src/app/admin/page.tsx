@@ -25,7 +25,7 @@ export default async function UserManagementPage() {
   }
 
   return (
-    <div className="container mx-auto py-6">
+    <div data-testid="admin-dashboard" className="container mx-auto py-6">
       <AdminDashboard />
     </div>
   );

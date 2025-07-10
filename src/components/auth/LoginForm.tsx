@@ -132,9 +132,16 @@ export function LoginForm({ callbackUrl }: LoginFormProps) {
       </CardHeader>
       <CardContent>
         <Form {...form}>
-          <form onSubmit={form.handleSubmit(onSubmit)} className="grid gap-4">
+          <form
+            data-testid="login-form"
+            onSubmit={form.handleSubmit(onSubmit)}
+            className="grid gap-4"
+          >
             {error && (
-              <div className="bg-destructive/15 text-destructive text-sm p-3 rounded-md">
+              <div
+                data-testid="login-error"
+                className="bg-destructive/15 text-destructive text-sm p-3 rounded-md"
+              >
                 {error}
                 {verificationEmail && (
                   <Button
@@ -149,6 +156,25 @@ export function LoginForm({ callbackUrl }: LoginFormProps) {
               </div>
             )}
 
+            {/* Specific error message containers for E2E tests */}
+            {error?.includes("suspended") && (
+              <div
+                data-testid="suspended-message"
+                className="bg-destructive/15 text-destructive text-sm p-3 rounded-md"
+              >
+                {error}
+              </div>
+            )}
+
+            {error?.includes("locked") && (
+              <div
+                data-testid="lockout-message"
+                className="bg-destructive/15 text-destructive text-sm p-3 rounded-md"
+              >
+                {error}
+              </div>
+            )}
+
             <FormField
               control={form.control}
               name="email"
@@ -157,6 +183,7 @@ export function LoginForm({ callbackUrl }: LoginFormProps) {
                   <FormLabel>Email</FormLabel>
                   <FormControl>
                     <Input
+                      data-testid="email-input"
                       type="email"
                       placeholder="name@example.com"
                       {...field}
@@ -175,6 +202,7 @@ export function LoginForm({ callbackUrl }: LoginFormProps) {
                   <FormLabel>Password</FormLabel>
                   <FormControl>
                     <Input
+                      data-testid="password-input"
                       type="password"
                       placeholder="Enter your password"
                       {...field}
@@ -185,7 +213,12 @@ export function LoginForm({ callbackUrl }: LoginFormProps) {
               )}
             />
 
-            <Button type="submit" className="w-full" disabled={isLoading}>
+            <Button
+              data-testid="login-button"
+              type="submit"
+              className="w-full"
+              disabled={isLoading}
+            >
               {isLoading ? "Signing in..." : "Sign In"}
             </Button>
 

@@ -199,7 +199,10 @@ export default function PendingApprovalPage() {
             <CardTitle className={`text-2xl ${statusInfo.titleColor}`}>
               {statusInfo.title}
             </CardTitle>
-            <CardDescription className="text-center">
+            <CardDescription
+              data-testid="pending-approval-message"
+              className="text-center"
+            >
               {statusInfo.description}
             </CardDescription>
           </CardHeader>
