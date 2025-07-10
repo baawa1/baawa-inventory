@@ -1,255 +1,452 @@
 import { NextRequest, NextResponse } from "next/server";
-import { withAuth } from "next-auth/middleware";
+import { withAuth } from "@/lib/api-auth-middleware";
+import { hasPermission } from "@/lib/auth/roles";
+import { getServerSession } from "next-auth/next";
+import { authOptions } from "@/lib/auth-config";
 
-// Mock NextAuth middleware
-jest.mock("next-auth/middleware", () => ({
-  withAuth: jest.fn(),
-}));
-
-// Mock NextResponse
+// Mock Next.js server
 jest.mock("next/server", () => ({
+  NextRequest: class MockNextRequest {
+    url: string;
+    headers: Headers;
+    method: string;
+
+    constructor(url: string, options: any = {}) {
+      this.url = url;
+      this.headers = new Headers(options.headers || {});
+      this.method = options.method || "GET";
+    }
+  },
   NextResponse: {
-    next: jest.fn(),
-    redirect: jest.fn(),
+    json: jest.fn().mockReturnValue({
+      status: 200,
+      json: jest.fn(),
+    }),
   },
 }));
 
-describe("Authentication Middleware", () => {
-  describe("Public Routes Access", () => {
-    const publicRoutes = [
-      "/",
-      "/login",
-      "/logout",
-      "/register",
-      "/forgot-password",
-      "/reset-password",
-      "/check-email",
-      "/verify-email",
-      "/pending-approval",
-      "/unauthorized",
-    ];
+// Mock dependencies
+jest.mock("next-auth/next", () => ({
+  getServerSession: jest.fn(),
+}));
 
-    test.each(publicRoutes)("should define %s as a public route", (route) => {
-      expect(publicRoutes).toContain(route);
+jest.mock("@/lib/auth/roles", () => ({
+  hasPermission: jest.fn(),
+}));
+
+jest.mock("@/lib/auth-config", () => ({
+  authOptions: {},
+}));
+
+const mockGetServerSession = getServerSession as jest.MockedFunction<
+  typeof getServerSession
+>;
+const mockHasPermission = hasPermission as jest.MockedFunction<
+  typeof hasPermission
+>;
+
+describe("Authentication Middleware", () => {
+  beforeEach(() => {
+    jest.clearAllMocks();
+  });
+
+  describe("withAuth middleware", () => {
+    const mockHandler = jest.fn();
+    const mockRequest = {
+      url: "http://localhost:3000/api/test",
+      headers: new Headers(),
+      method: "GET",
+    } as NextRequest;
+
+    it("should allow access with valid session", async () => {
+      const mockSession = {
+        user: {
+          id: "1",
+          email: "test@example.com",
+          role: "ADMIN",
+          status: "APPROVED",
+          emailVerified: true,
+        },
+      };
+
+      mockGetServerSession.mockResolvedValue(mockSession);
+      mockHandler.mockResolvedValue(NextResponse.json({ success: true }));
+
+      const wrappedHandler = withAuth(mockHandler);
+      const response = await wrappedHandler(mockRequest);
+
+      expect(response.status).toBe(200);
+      expect(mockHandler).toHaveBeenCalledWith(
+        expect.objectContaining({
+          user: mockSession.user,
+        }),
+        mockRequest
+      );
+    });
+
+    it("should reject request without session", async () => {
+      mockGetServerSession.mockResolvedValue(null);
+
+      const wrappedHandler = withAuth(mockHandler);
+      const response = await wrappedHandler(mockRequest);
+
+      expect(response.status).toBe(401);
+      expect(await response.json()).toEqual({
+        error: "Unauthorized access",
+      });
+      expect(mockHandler).not.toHaveBeenCalled();
+    });
+
+    it("should reject request with incomplete user data", async () => {
+      const mockSession = {
+        user: {
+          id: "1",
+          email: "test@example.com",
+          // Missing role and status
+        },
+      };
+
+      mockGetServerSession.mockResolvedValue(mockSession);
+
+      const wrappedHandler = withAuth(mockHandler);
+      const response = await wrappedHandler(mockRequest);
+
+      expect(response.status).toBe(400);
+      expect(await response.json()).toEqual({
+        error: "Incomplete user session data",
+      });
+      expect(mockHandler).not.toHaveBeenCalled();
+    });
+
+    it("should require email verification when specified", async () => {
+      const mockSession = {
+        user: {
+          id: "1",
+          email: "test@example.com",
+          role: "ADMIN",
+          status: "APPROVED",
+          emailVerified: false,
+        },
+      };
+
+      mockGetServerSession.mockResolvedValue(mockSession);
+
+      const wrappedHandler = withAuth(mockHandler, {
+        requireEmailVerified: true,
+      });
+      const response = await wrappedHandler(mockRequest);
+
+      expect(response.status).toBe(403);
+      expect(await response.json()).toEqual({
+        error: "Email verification required",
+      });
+      expect(mockHandler).not.toHaveBeenCalled();
+    });
+
+    it("should check authorization permissions", async () => {
+      const mockSession = {
+        user: {
+          id: "1",
+          email: "test@example.com",
+          role: "EMPLOYEE",
+          status: "APPROVED",
+          emailVerified: true,
+        },
+      };
+
+      mockGetServerSession.mockResolvedValue(mockSession);
+      mockHasPermission.mockReturnValue(false);
+
+      const wrappedHandler = withAuth(mockHandler, {
+        permission: "USER_MANAGEMENT",
+      });
+      const response = await wrappedHandler(mockRequest);
+
+      expect(response.status).toBe(403);
+      expect(await response.json()).toEqual({
+        error: "Forbidden access",
+      });
+      expect(mockHandler).not.toHaveBeenCalled();
+    });
+
+    it("should check specific roles", async () => {
+      const mockSession = {
+        user: {
+          id: "1",
+          email: "test@example.com",
+          role: "EMPLOYEE",
+          status: "APPROVED",
+          emailVerified: true,
+        },
+      };
+
+      mockGetServerSession.mockResolvedValue(mockSession);
+
+      const wrappedHandler = withAuth(mockHandler, {
+        roles: ["ADMIN", "MANAGER"],
+      });
+      const response = await wrappedHandler(mockRequest);
+
+      expect(response.status).toBe(403);
+      expect(await response.json()).toEqual({
+        error: "Forbidden access",
+      });
+      expect(mockHandler).not.toHaveBeenCalled();
+    });
+
+    it("should allow access with correct role", async () => {
+      const mockSession = {
+        user: {
+          id: "1",
+          email: "test@example.com",
+          role: "ADMIN",
+          status: "APPROVED",
+          emailVerified: true,
+        },
+      };
+
+      mockGetServerSession.mockResolvedValue(mockSession);
+      mockHandler.mockResolvedValue(NextResponse.json({ success: true }));
+
+      const wrappedHandler = withAuth(mockHandler, {
+        roles: ["ADMIN", "MANAGER"],
+      });
+      const response = await wrappedHandler(mockRequest);
+
+      expect(response.status).toBe(200);
+      expect(mockHandler).toHaveBeenCalled();
+    });
+
+    it("should handle authorization success", async () => {
+      const mockSession = {
+        user: {
+          id: "1",
+          email: "test@example.com",
+          role: "ADMIN",
+          status: "APPROVED",
+          emailVerified: true,
+        },
+      };
+
+      mockGetServerSession.mockResolvedValue(mockSession);
+      mockHasPermission.mockReturnValue(true);
+      mockHandler.mockResolvedValue(NextResponse.json({ success: true }));
+
+      const wrappedHandler = withAuth(mockHandler, {
+        permission: "USER_MANAGEMENT",
+      });
+      const response = await wrappedHandler(mockRequest);
+
+      expect(response.status).toBe(200);
+      expect(mockHandler).toHaveBeenCalled();
+    });
+
+    it("should handle middleware errors gracefully", async () => {
+      mockGetServerSession.mockRejectedValue(new Error("Session error"));
+
+      const wrappedHandler = withAuth(mockHandler);
+      const response = await wrappedHandler(mockRequest);
+
+      expect(response.status).toBe(500);
+      expect(await response.json()).toEqual({
+        error: "Internal server error",
+      });
+      expect(mockHandler).not.toHaveBeenCalled();
+    });
+  });
+
+  describe("Route Protection", () => {
+    it("should protect API routes requiring authentication", async () => {
+      const mockRequest = {
+        url: "http://localhost:3000/api/protected",
+        headers: new Headers(),
+        method: "GET",
+      } as NextRequest;
+
+      mockGetServerSession.mockResolvedValue(null);
+
+      const protectedHandler = withAuth(async () =>
+        NextResponse.json({ data: "protected" })
+      );
+      const response = await protectedHandler(mockRequest);
+
+      expect(response.status).toBe(401);
+    });
+
+    it("should allow access to protected routes with valid session", async () => {
+      const mockRequest = {
+        url: "http://localhost:3000/api/protected",
+        headers: new Headers(),
+        method: "GET",
+      } as NextRequest;
+
+      const mockSession = {
+        user: {
+          id: "1",
+          email: "test@example.com",
+          role: "ADMIN",
+          status: "APPROVED",
+          emailVerified: true,
+        },
+      };
+
+      mockGetServerSession.mockResolvedValue(mockSession);
+
+      const protectedHandler = withAuth(async () =>
+        NextResponse.json({ data: "protected" })
+      );
+      const response = await protectedHandler(mockRequest);
+
+      expect(response.status).toBe(200);
+      expect(await response.json()).toEqual({ data: "protected" });
     });
   });
 
   describe("User Status Validation", () => {
-    test("should identify user statuses correctly", () => {
-      const validStatuses = [
-        "PENDING",
-        "VERIFIED",
-        "APPROVED",
-        "REJECTED",
-        "SUSPENDED",
-      ];
-      const validRoles = ["ADMIN", "MANAGER", "EMPLOYEE"];
+    it("should reject users with PENDING status", async () => {
+      const mockSession = {
+        user: {
+          id: "1",
+          email: "test@example.com",
+          role: "EMPLOYEE",
+          status: "PENDING",
+          emailVerified: true,
+        },
+      };
 
-      expect(validStatuses).toHaveLength(5);
-      expect(validRoles).toHaveLength(3);
+      mockGetServerSession.mockResolvedValue(mockSession);
 
-      expect(validStatuses).toContain("PENDING");
-      expect(validStatuses).toContain("VERIFIED");
-      expect(validStatuses).toContain("APPROVED");
-      expect(validStatuses).toContain("REJECTED");
-      expect(validStatuses).toContain("SUSPENDED");
+      const wrappedHandler = withAuth(async () =>
+        NextResponse.json({ success: true })
+      );
+      const response = await wrappedHandler(mockRequest);
+
+      expect(response.status).toBe(403);
+    });
+
+    it("should reject users with SUSPENDED status", async () => {
+      const mockSession = {
+        user: {
+          id: "1",
+          email: "test@example.com",
+          role: "EMPLOYEE",
+          status: "SUSPENDED",
+          emailVerified: true,
+        },
+      };
+
+      mockGetServerSession.mockResolvedValue(mockSession);
+
+      const wrappedHandler = withAuth(async () =>
+        NextResponse.json({ success: true })
+      );
+      const response = await wrappedHandler(mockRequest);
+
+      expect(response.status).toBe(403);
+    });
+
+    it("should allow users with APPROVED status", async () => {
+      const mockSession = {
+        user: {
+          id: "1",
+          email: "test@example.com",
+          role: "EMPLOYEE",
+          status: "APPROVED",
+          emailVerified: true,
+        },
+      };
+
+      mockGetServerSession.mockResolvedValue(mockSession);
+
+      const wrappedHandler = withAuth(async () =>
+        NextResponse.json({ success: true })
+      );
+      const response = await wrappedHandler(mockRequest);
+
+      expect(response.status).toBe(200);
     });
   });
 
-  describe("Role-based Access Control", () => {
-    test("should validate admin access to all routes", () => {
-      const adminUser = {
-        role: "ADMIN",
-        status: "APPROVED",
-        emailVerified: true,
+  describe("Session Validation", () => {
+    it("should validate session structure", async () => {
+      const invalidSession = {
+        user: {
+          id: "1",
+          // Missing required fields
+        },
       };
 
-      const canAccessAdmin = adminUser.role === "ADMIN";
-      const canAccessManager =
-        adminUser.role === "ADMIN" || adminUser.role === "MANAGER";
-      const canAccessEmployee = ["ADMIN", "MANAGER", "EMPLOYEE"].includes(
-        adminUser.role
+      mockGetServerSession.mockResolvedValue(invalidSession);
+
+      const wrappedHandler = withAuth(async () =>
+        NextResponse.json({ success: true })
       );
+      const response = await wrappedHandler(mockRequest);
 
-      expect(canAccessAdmin).toBe(true);
-      expect(canAccessManager).toBe(true);
-      expect(canAccessEmployee).toBe(true);
-    });
-
-    test("should validate manager access limitations", () => {
-      const managerUser = {
-        role: "MANAGER",
-        status: "APPROVED",
-        emailVerified: true,
-      };
-
-      const canAccessAdmin = managerUser.role === "ADMIN";
-      const canAccessManager =
-        managerUser.role === "ADMIN" || managerUser.role === "MANAGER";
-      const canAccessEmployee = ["ADMIN", "MANAGER", "EMPLOYEE"].includes(
-        managerUser.role
-      );
-
-      expect(canAccessAdmin).toBe(false);
-      expect(canAccessManager).toBe(true);
-      expect(canAccessEmployee).toBe(true);
-    });
-
-    test("should validate employee access limitations", () => {
-      const employeeUser = {
-        role: "EMPLOYEE",
-        status: "APPROVED",
-        emailVerified: true,
-      };
-
-      const canAccessAdmin = employeeUser.role === "ADMIN";
-      const canAccessManager =
-        employeeUser.role === "ADMIN" || employeeUser.role === "MANAGER";
-      const canAccessEmployee = ["ADMIN", "MANAGER", "EMPLOYEE"].includes(
-        employeeUser.role
-      );
-
-      expect(canAccessAdmin).toBe(false);
-      expect(canAccessManager).toBe(false);
-      expect(canAccessEmployee).toBe(true);
-    });
-  });
-
-  describe("Status-based Access Control", () => {
-    test("should handle pending users correctly", () => {
-      const pendingUserFlow = {
-        status: "PENDING",
-        emailVerified: false,
-        expectedRedirect: "/verify-email",
-      };
-
-      expect(pendingUserFlow.status).toBe("PENDING");
-      expect(pendingUserFlow.emailVerified).toBe(false);
-      expect(pendingUserFlow.expectedRedirect).toBe("/verify-email");
-    });
-
-    test("should handle verified users correctly", () => {
-      const verifiedUserFlow = {
-        status: "VERIFIED",
-        emailVerified: true,
-        expectedRedirect: "/pending-approval",
-      };
-
-      expect(verifiedUserFlow.status).toBe("VERIFIED");
-      expect(verifiedUserFlow.emailVerified).toBe(true);
-      expect(verifiedUserFlow.expectedRedirect).toBe("/pending-approval");
-    });
-
-    test("should handle approved users correctly", () => {
-      const approvedUserFlow = {
-        status: "APPROVED",
-        emailVerified: true,
-        canAccessDashboard: true,
-      };
-
-      expect(approvedUserFlow.status).toBe("APPROVED");
-      expect(approvedUserFlow.emailVerified).toBe(true);
-      expect(approvedUserFlow.canAccessDashboard).toBe(true);
-    });
-
-    test("should handle rejected users correctly", () => {
-      const rejectedUserFlow = {
-        status: "REJECTED",
-        expectedRedirect: "/pending-approval",
-        canAccessDashboard: false,
-      };
-
-      expect(rejectedUserFlow.status).toBe("REJECTED");
-      expect(rejectedUserFlow.expectedRedirect).toBe("/pending-approval");
-      expect(rejectedUserFlow.canAccessDashboard).toBe(false);
-    });
-
-    test("should handle suspended users correctly", () => {
-      const suspendedUserFlow = {
-        status: "SUSPENDED",
-        expectedRedirect: "/pending-approval",
-        canAccessDashboard: false,
-      };
-
-      expect(suspendedUserFlow.status).toBe("SUSPENDED");
-      expect(suspendedUserFlow.expectedRedirect).toBe("/pending-approval");
-      expect(suspendedUserFlow.canAccessDashboard).toBe(false);
-    });
-  });
-
-  describe("Route Protection Logic", () => {
-    test("should identify protected routes correctly", () => {
-      const protectedRoutes = [
-        "/dashboard",
-        "/admin",
-        "/reports",
-        "/settings",
-        "/inventory",
-        "/pos",
-      ];
-
-      protectedRoutes.forEach((route) => {
-        expect(
-          route.startsWith("/dashboard") ||
-            route.startsWith("/admin") ||
-            route.startsWith("/reports") ||
-            route.startsWith("/settings") ||
-            route.startsWith("/inventory") ||
-            route.startsWith("/pos")
-        ).toBe(true);
+      expect(response.status).toBe(400);
+      expect(await response.json()).toEqual({
+        error: "Incomplete user session data",
       });
     });
 
-    test("should validate admin-only routes", () => {
-      const adminRoutes = ["/admin"];
-      const managerRoutes = ["/reports", "/settings"];
-      const employeeRoutes = ["/dashboard", "/inventory", "/pos"];
+    it("should handle malformed session data", async () => {
+      const malformedSession = {
+        user: null,
+      };
 
-      expect(adminRoutes).toContain("/admin");
-      expect(managerRoutes).toContain("/reports");
-      expect(managerRoutes).toContain("/settings");
-      expect(employeeRoutes).toContain("/dashboard");
-      expect(employeeRoutes).toContain("/inventory");
-      expect(employeeRoutes).toContain("/pos");
+      mockGetServerSession.mockResolvedValue(malformedSession);
+
+      const wrappedHandler = withAuth(async () =>
+        NextResponse.json({ success: true })
+      );
+      const response = await wrappedHandler(mockRequest);
+
+      expect(response.status).toBe(400);
     });
   });
 
-  describe("Redirect Logic", () => {
-    test("should prevent redirect loops", () => {
-      const redirectScenarios = [
-        {
-          currentPath: "/verify-email",
-          targetPath: "/verify-email",
-          shouldRedirect: false,
-        },
-        {
-          currentPath: "/pending-approval",
-          targetPath: "/pending-approval",
-          shouldRedirect: false,
-        },
-        {
-          currentPath: "/dashboard",
-          targetPath: "/verify-email",
-          shouldRedirect: true,
-        },
-      ];
+  describe("Error Handling", () => {
+    it("should handle session retrieval errors", async () => {
+      mockGetServerSession.mockRejectedValue(
+        new Error("Database connection failed")
+      );
 
-      redirectScenarios.forEach((scenario) => {
-        const shouldRedirect = scenario.currentPath !== scenario.targetPath;
-        expect(shouldRedirect).toBe(scenario.shouldRedirect);
+      const wrappedHandler = withAuth(async () =>
+        NextResponse.json({ success: true })
+      );
+      const response = await wrappedHandler(mockRequest);
+
+      expect(response.status).toBe(500);
+      expect(await response.json()).toEqual({
+        error: "Internal server error",
       });
     });
-  });
 
-  describe("Middleware Configuration", () => {
-    test("should properly configure route matching", () => {
-      const matcherPattern =
-        "/((?!api|_next/static|_next/image|favicon.ico|.*\\.(?:svg|png|jpg|jpeg|gif|webp|ico)$).*)";
+    it("should handle authorization validation errors", async () => {
+      const mockSession = {
+        user: {
+          id: "1",
+          email: "test@example.com",
+          role: "ADMIN",
+          status: "APPROVED",
+          emailVerified: true,
+        },
+      };
 
-      expect(matcherPattern).toContain("(?!api");
-      expect(matcherPattern).toContain("_next/static");
-      expect(matcherPattern).toContain("_next/image");
-      expect(matcherPattern).toContain("svg|png|jpg");
+      mockGetServerSession.mockResolvedValue(mockSession);
+      mockHasPermission.mockImplementation(() => {
+        throw new Error("Authorization validation failed");
+      });
+
+      const wrappedHandler = withAuth(
+        async () => NextResponse.json({ success: true }),
+        {
+          permission: "USER_MANAGEMENT",
+        }
+      );
+      const response = await wrappedHandler(mockRequest);
+
+      expect(response.status).toBe(500);
     });
   });
 });

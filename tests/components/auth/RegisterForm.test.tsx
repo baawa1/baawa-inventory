@@ -57,7 +57,7 @@ describe("RegisterForm", () => {
         screen.getByText("Please enter a valid email address")
       ).toBeInTheDocument();
       expect(
-        screen.getByText("Password must be at least 6 characters")
+        screen.getByText("Password must be at least 12 characters")
       ).toBeInTheDocument();
     });
   });
@@ -75,7 +75,7 @@ describe("RegisterForm", () => {
     fireEvent.change(firstNameInput, { target: { value: "John" } });
     fireEvent.change(lastNameInput, { target: { value: "Doe" } });
     fireEvent.change(emailInput, { target: { value: "john@example.com" } });
-    fireEvent.change(passwordInput, { target: { value: "password123" } });
+    fireEvent.change(passwordInput, { target: { value: "SecurePass123!" } });
     fireEvent.change(confirmPasswordInput, {
       target: { value: "differentpassword" },
     });
@@ -109,9 +109,9 @@ describe("RegisterForm", () => {
     fireEvent.change(firstNameInput, { target: { value: "John" } });
     fireEvent.change(lastNameInput, { target: { value: "Doe" } });
     fireEvent.change(emailInput, { target: { value: "john@example.com" } });
-    fireEvent.change(passwordInput, { target: { value: "password123" } });
+    fireEvent.change(passwordInput, { target: { value: "SecurePass123!" } });
     fireEvent.change(confirmPasswordInput, {
-      target: { value: "password123" },
+      target: { value: "SecurePass123!" },
     });
     fireEvent.click(submitButton);
 
@@ -125,8 +125,7 @@ describe("RegisterForm", () => {
           firstName: "John",
           lastName: "Doe",
           email: "john@example.com",
-          password: "password123",
-          role: "STAFF",
+          password: "SecurePass123!",
         }),
       });
     });
@@ -155,9 +154,9 @@ describe("RegisterForm", () => {
     fireEvent.change(firstNameInput, { target: { value: "John" } });
     fireEvent.change(lastNameInput, { target: { value: "Doe" } });
     fireEvent.change(emailInput, { target: { value: "john@example.com" } });
-    fireEvent.change(passwordInput, { target: { value: "password123" } });
+    fireEvent.change(passwordInput, { target: { value: "SecurePass123!" } });
     fireEvent.change(confirmPasswordInput, {
-      target: { value: "password123" },
+      target: { value: "SecurePass123!" },
     });
     fireEvent.click(submitButton);
 
@@ -189,9 +188,9 @@ describe("RegisterForm", () => {
     fireEvent.change(firstNameInput, { target: { value: "John" } });
     fireEvent.change(lastNameInput, { target: { value: "Doe" } });
     fireEvent.change(emailInput, { target: { value: "john@example.com" } });
-    fireEvent.change(passwordInput, { target: { value: "password123" } });
+    fireEvent.change(passwordInput, { target: { value: "SecurePass123!" } });
     fireEvent.change(confirmPasswordInput, {
-      target: { value: "password123" },
+      target: { value: "SecurePass123!" },
     });
     fireEvent.click(submitButton);
 
@@ -223,9 +222,9 @@ describe("RegisterForm", () => {
     fireEvent.change(firstNameInput, { target: { value: "John" } });
     fireEvent.change(lastNameInput, { target: { value: "Doe" } });
     fireEvent.change(emailInput, { target: { value: "john@example.com" } });
-    fireEvent.change(passwordInput, { target: { value: "password123" } });
+    fireEvent.change(passwordInput, { target: { value: "SecurePass123!" } });
     fireEvent.change(confirmPasswordInput, {
-      target: { value: "password123" },
+      target: { value: "SecurePass123!" },
     });
     fireEvent.click(submitButton);
 
@@ -239,8 +238,7 @@ describe("RegisterForm", () => {
           firstName: "John",
           lastName: "Doe",
           email: "john@example.com",
-          password: "password123",
-          role: "MANAGER",
+          password: "SecurePass123!",
         }),
       });
     });
@@ -270,9 +268,9 @@ describe("RegisterForm", () => {
     fireEvent.change(firstNameInput, { target: { value: "John" } });
     fireEvent.change(lastNameInput, { target: { value: "Doe" } });
     fireEvent.change(emailInput, { target: { value: "john@example.com" } });
-    fireEvent.change(passwordInput, { target: { value: "password123" } });
+    fireEvent.change(passwordInput, { target: { value: "SecurePass123!" } });
     fireEvent.change(confirmPasswordInput, {
-      target: { value: "password123" },
+      target: { value: "SecurePass123!" },
     });
     fireEvent.click(submitButton);
 
