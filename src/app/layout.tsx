@@ -3,6 +3,7 @@ import { Oxanium, Plus_Jakarta_Sans, Roboto } from "next/font/google";
 import "./globals.css";
 import { UnifiedSessionProvider } from "@/components/auth/UnifiedSessionProvider";
 import { QueryProvider } from "@/components/providers/QueryProvider";
+import { SessionProvider } from "@/components/providers/SessionProvider";
 import { ThemeProvider } from "@/components/theme-provider";
 import { Toaster } from "@/components/ui/sonner";
 import { PWAManager } from "@/components/pwa/PWAManager";
@@ -92,13 +93,15 @@ export default function RootLayout({
           enableSystem
           disableTransitionOnChange
         >
-          <QueryProvider>
-            <UnifiedSessionProvider>
-              {children}
-              <PWAManager />
-            </UnifiedSessionProvider>
-            <Toaster />
-          </QueryProvider>
+          <SessionProvider>
+            <QueryProvider>
+              <UnifiedSessionProvider>
+                {children}
+                <PWAManager />
+              </UnifiedSessionProvider>
+              <Toaster />
+            </QueryProvider>
+          </SessionProvider>
         </ThemeProvider>
       </body>
     </html>

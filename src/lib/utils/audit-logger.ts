@@ -115,7 +115,7 @@ export class AuditLogger {
           user_id: data.userId || null,
           table_name: "users", // Default table for auth events
           record_id: data.userId || null,
-          ip_address: data.ipAddress || ipAddress,
+          ip_address: ipAddress === "unknown" ? null : ipAddress,
           user_agent: data.userAgent || userAgent,
           new_values: JSON.stringify(auditDetails),
         },
@@ -451,14 +451,19 @@ export class AuditLogger {
 
       const where: any = {
         action: "LOGIN_FAILED",
-        timestamp: { gte: since },
-        success: false,
+        created_at: { gte: since },
       };
 
-      if (email) {
-        where.OR = [{ ipAddress }, { userEmail: email }];
-      } else {
-        where.ipAddress = ipAddress;
+      // Only add IP address filter if it's not "unknown"
+      if (ipAddress !== "unknown") {
+        if (email) {
+          where.OR = [{ ip_address: ipAddress }, { userEmail: email }];
+        } else {
+          where.ip_address = ipAddress;
+        }
+      } else if (email) {
+        // If IP is unknown but we have email, only filter by email
+        where.userEmail = email;
       }
 
       return await prisma.auditLog.count({ where });

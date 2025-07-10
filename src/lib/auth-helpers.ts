@@ -3,8 +3,8 @@ import { authOptions } from "./auth";
 import { getRolePermissions, RolePermissions } from "./auth-rbac";
 import type { UserRole } from "@/types/user";
 
-export function getServerSession() {
-  return nextAuthGetServerSession(authOptions);
+export async function getServerSession() {
+  return await nextAuthGetServerSession(authOptions);
 }
 
 export async function getCurrentUser() {

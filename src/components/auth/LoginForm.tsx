@@ -137,6 +137,18 @@ export function LoginForm({ callbackUrl }: LoginFormProps) {
             onSubmit={form.handleSubmit(onSubmit)}
             className="grid gap-4"
           >
+            {/* Validation errors container for E2E tests */}
+            {Object.keys(form.formState.errors).length > 0 && (
+              <div
+                data-testid="validation-errors"
+                className="bg-destructive/15 text-destructive text-sm p-3 rounded-md"
+              >
+                {Object.entries(form.formState.errors).map(([field, error]) => (
+                  <div key={field}>{error?.message}</div>
+                ))}
+              </div>
+            )}
+
             {error && (
               <div
                 data-testid="login-error"
