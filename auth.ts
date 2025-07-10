@@ -17,8 +17,17 @@ const config: NextAuthConfig = {
       async authorize(credentials, req) {
         const email = credentials?.email as string;
         const password = credentials?.password as string;
-        if (!email || !password) return null;
+
+        if (!email || !password) {
+          await AuditLogger.logLoginFailed(
+            email || "unknown",
+            "Missing credentials"
+          );
+          return null;
+        }
+
         try {
+          // Check account lockout status
           const emailLockoutStatus = await AccountLockout.checkLockoutStatus(
             email,
             "email"
@@ -30,6 +39,8 @@ const config: NextAuthConfig = {
             );
             return null;
           }
+
+          // Check IP lockout status
           const ipAddress =
             req.headers?.get("x-forwarded-for") ||
             req.headers?.get("x-real-ip") ||
@@ -45,8 +56,13 @@ const config: NextAuthConfig = {
             );
             return null;
           }
+
+          // Find user and validate
           const user = await prisma.user.findFirst({
-            where: { email, isActive: true },
+            where: {
+              email: email.toLowerCase(),
+              isActive: true,
+            },
             select: {
               id: true,
               email: true,
@@ -56,16 +72,25 @@ const config: NextAuthConfig = {
               role: true,
               userStatus: true,
               emailVerified: true,
+              emailVerifiedAt: true,
+              isActive: true,
+              createdAt: true,
+              approvedAt: true,
+              approvedBy: true,
             },
           });
+
           if (!user) {
             await AuditLogger.logLoginFailed(email, "User not found");
             return null;
           }
+
+          // Validate user status
           if (!user.emailVerified) {
             await AuditLogger.logLoginFailed(email, "Email not verified");
             return null;
           }
+
           if (
             ["PENDING", "REJECTED", "SUSPENDED"].includes(user.userStatus || "")
           ) {
@@ -75,21 +100,31 @@ const config: NextAuthConfig = {
             );
             return null;
           }
+
           if (!user.password) {
             await AuditLogger.logLoginFailed(email, "No password set");
             return null;
           }
+
+          // Validate password
           const isValidPassword = await bcrypt.compare(password, user.password);
           if (!isValidPassword) {
             await AuditLogger.logLoginFailed(email, "Invalid password");
             return null;
           }
+
+          // Update last login and reset lockout counters
           await prisma.user.update({
             where: { id: user.id },
-            data: { lastLogin: new Date() },
+            data: {
+              lastLogin: new Date(),
+              lastActivity: new Date(),
+            },
           });
+
           await AccountLockout.resetFailedAttempts(email, ipAddress);
           await AuditLogger.logLoginSuccess(user.id, user.email);
+
           return {
             id: user.id.toString(),
             email: user.email,
@@ -97,6 +132,8 @@ const config: NextAuthConfig = {
             role: user.role,
             status: user.userStatus || "PENDING",
             isEmailVerified: Boolean(user.emailVerified),
+            firstName: user.firstName,
+            lastName: user.lastName,
           };
         } catch (error) {
           console.error("Authentication error:", error);
@@ -108,15 +145,29 @@ const config: NextAuthConfig = {
   ],
   session: {
     strategy: "jwt" as const,
-    maxAge: 24 * 60 * 60,
+    maxAge: 24 * 60 * 60, // 24 hours
+    updateAge: 2 * 60 * 60, // Update session every 2 hours
   },
   callbacks: {
-    async jwt({ token, user }) {
+    async jwt({ token, user, trigger, session }) {
+      // Store user data in JWT on sign in
       if (user) {
-        token.role = user.role;
-        token.status = user.status;
-        token.isEmailVerified = Boolean(user.isEmailVerified);
+        token.role = (user as any).role;
+        token.status = (user as any).status;
+        token.isEmailVerified = Boolean((user as any).isEmailVerified);
+        token.firstName = (user as any).firstName;
+        token.lastName = (user as any).lastName;
       }
+
+      // Handle session updates
+      if (trigger === "update" && session) {
+        token.role = session.role || token.role;
+        token.status = session.status || token.status;
+        token.isEmailVerified = Boolean(
+          session.isEmailVerified ?? token.isEmailVerified
+        );
+      }
+
       return token;
     },
     async session({ session, token }) {
@@ -125,27 +176,71 @@ const config: NextAuthConfig = {
         session.user.role = token.role as string;
         session.user.status = token.status as string;
         session.user.isEmailVerified = Boolean(token.isEmailVerified);
+        (session.user as any).firstName = token.firstName as string;
+        (session.user as any).lastName = token.lastName as string;
       }
       return session;
     },
+    async signIn({ user, account: _account, profile: _profile }) {
+      // Additional sign-in checks can be added here
+      // For now, return true to allow sign-in if user object is valid
+      return !!user;
+    },
   },
   events: {
+    async signIn(message) {
+      if (message.user) {
+        // Log successful sign-in
+        await AuditLogger.logLoginSuccess(
+          parseInt(message.user.id),
+          message.user.email || "unknown"
+        );
+      }
+    },
     async signOut(message) {
       if ("token" in message && message.token?.sub) {
         const userId = parseInt(message.token.sub);
+        const userEmail = message.token.email as string;
+
+        // Update last logout timestamp
         await prisma.user.update({
           where: { id: userId },
           data: { lastLogout: new Date() },
         });
-        await AuditLogger.logLogout(userId, message.token.email || "unknown");
+
+        // Log logout event
+        await AuditLogger.logLogout(userId, userEmail || "unknown");
+      }
+    },
+    async session(message) {
+      if ("token" in message && message.token?.sub) {
+        const userId = parseInt(message.token.sub);
+
+        // Update last activity timestamp
+        await prisma.user.update({
+          where: { id: userId },
+          data: { lastActivity: new Date() },
+        });
       }
     },
   },
   pages: {
     signIn: "/login",
     error: "/login",
+    verifyRequest: "/check-email",
+    newUser: "/register",
   },
+  // Enhanced security settings
+  useSecureCookies: process.env.NODE_ENV === "production",
   secret: process.env.NEXTAUTH_SECRET,
+  // Enhanced JWT options
+  jwt: {
+    maxAge: 24 * 60 * 60, // 24 hours
+  },
+  // Enhanced debug logging in development
+  debug: process.env.NODE_ENV === "development",
+  // Trust host for deployment
+  trustHost: true,
 };
 
-export const { auth, handlers } = NextAuth(config);
+export const { auth, handlers, signIn, signOut } = NextAuth(config);
