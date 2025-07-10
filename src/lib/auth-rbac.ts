@@ -1,55 +1,96 @@
+"use client";
+
 import { useSession } from "next-auth/react";
-import { redirect } from "next/navigation";
 import type { UserRole } from "@/types/user";
 
-export interface RolePermissions {
-  canAccessAdmin: boolean;
-  canAccessReports: boolean;
-  canAccessSettings: boolean;
-  canManageUsers: boolean;
-  canManageSuppliers: boolean;
-  canDeleteTransactions: boolean;
-  canViewAllSales: boolean;
-  canProcessRefunds: boolean;
-}
-
-export const getRolePermissions = (role: UserRole): RolePermissions => {
-  const permissions: Record<UserRole, RolePermissions> = {
-    ADMIN: {
-      canAccessAdmin: true,
-      canAccessReports: true,
-      canAccessSettings: true,
-      canManageUsers: true,
-      canManageSuppliers: true,
-      canDeleteTransactions: true,
-      canViewAllSales: true,
-      canProcessRefunds: true,
-    },
-    MANAGER: {
-      canAccessAdmin: false,
-      canAccessReports: true,
-      canAccessSettings: true,
-      canManageUsers: false,
-      canManageSuppliers: true,
-      canDeleteTransactions: true,
-      canViewAllSales: true,
-      canProcessRefunds: true,
-    },
-    EMPLOYEE: {
-      canAccessAdmin: false,
-      canAccessReports: false,
-      canAccessSettings: false,
-      canManageUsers: false,
-      canManageSuppliers: false,
-      canDeleteTransactions: false,
-      canViewAllSales: false,
-      canProcessRefunds: false,
-    },
-  };
-
-  return permissions[role];
+// Role permissions mapping
+const rolePermissions: Record<UserRole, string[]> = {
+  ADMIN: [
+    "users:read",
+    "users:write",
+    "users:delete",
+    "inventory:read",
+    "inventory:write",
+    "inventory:delete",
+    "reports:read",
+    "reports:write",
+    "settings:read",
+    "settings:write",
+    "audit:read",
+    "pos:read",
+    "pos:write",
+  ],
+  MANAGER: [
+    "users:read",
+    "inventory:read",
+    "inventory:write",
+    "reports:read",
+    "reports:write",
+    "settings:read",
+    "pos:read",
+    "pos:write",
+  ],
+  STAFF: [
+    "inventory:read",
+    "inventory:write",
+    "reports:read",
+    "pos:read",
+    "pos:write",
+  ],
 };
 
+/**
+ * Get permissions for a specific role
+ */
+export function getRolePermissions(role: UserRole): string[] {
+  return rolePermissions[role] || [];
+}
+
+/**
+ * Check if a role has a specific permission
+ */
+export function hasPermission(role: UserRole, permission: string): boolean {
+  const permissions = getRolePermissions(role);
+  return permissions.includes(permission);
+}
+
+/**
+ * Check if a role has any of the specified permissions
+ */
+export function hasAnyPermission(
+  role: UserRole,
+  permissions: string[]
+): boolean {
+  return permissions.some((permission) => hasPermission(role, permission));
+}
+
+/**
+ * Check if a role has all of the specified permissions
+ */
+export function hasAllPermissions(
+  role: UserRole,
+  permissions: string[]
+): boolean {
+  return permissions.every((permission) => hasPermission(role, permission));
+}
+
+/**
+ * Get all available permissions
+ */
+export function getAllPermissions(): string[] {
+  return Object.values(rolePermissions).flat();
+}
+
+/**
+ * Get all available roles
+ */
+export function getAvailableRoles(): UserRole[] {
+  return Object.keys(rolePermissions) as UserRole[];
+}
+
+/**
+ * Custom hook for role-based access control using Auth.js v5
+ */
 export const useAuth = () => {
   const { data: session, status } = useSession();
 
@@ -62,62 +103,6 @@ export const useAuth = () => {
     role,
     permissions,
     isLoading: status === "loading",
-    isAuthenticated: !!session,
+    isAuthenticated: status === "authenticated" && !!session,
   };
-};
-
-export const useRequireAuth = () => {
-  const { isAuthenticated, isLoading } = useAuth();
-
-  if (!isLoading && !isAuthenticated) {
-    redirect("/auth/signin");
-  }
-
-  return useAuth();
-};
-
-export const useRequireRole = (requiredRole: UserRole | UserRole[]) => {
-  const authData = useAuth();
-  const { role, isLoading, isAuthenticated } = authData;
-
-  if (!isLoading && !isAuthenticated) {
-    redirect("/auth/signin");
-  }
-
-  if (!isLoading && isAuthenticated && role) {
-    const allowedRoles = Array.isArray(requiredRole)
-      ? requiredRole
-      : [requiredRole];
-
-    // Admin always has access
-    if (role === "ADMIN") {
-      return authData;
-    }
-
-    if (!allowedRoles.includes(role)) {
-      redirect("/unauthorized");
-    }
-  }
-
-  return authData;
-};
-
-export const useRequirePermission = (permission: keyof RolePermissions) => {
-  const authData = useAuth();
-  const { permissions, isLoading, isAuthenticated } = authData;
-
-  if (!isLoading && !isAuthenticated) {
-    redirect("/auth/signin");
-  }
-
-  if (
-    !isLoading &&
-    isAuthenticated &&
-    permissions &&
-    !permissions[permission]
-  ) {
-    redirect("/unauthorized");
-  }
-
-  return authData;
 };

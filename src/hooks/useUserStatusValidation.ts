@@ -1,3 +1,5 @@
+"use client";
+
 import { useState, useEffect, useCallback } from "react";
 import { useRouter } from "next/navigation";
 import { useSession } from "next-auth/react";
@@ -13,12 +15,11 @@ interface UserStatusValidationResult {
   isRefreshing: boolean;
   hasTriedRefresh: boolean;
   refreshUserStatus: () => Promise<void>;
-  isLoading: boolean;
 }
 
 /**
- * Hook for managing user status validation and session management
- * Handles complex session validation, auto-refresh, and routing logic
+ * Hook for managing user status validation using Auth.js v5
+ * Uses only official Auth.js v5 patterns - no API calls in useEffect
  */
 export function useUserStatusValidation(
   options: UseUserStatusValidationOptions = {}
@@ -35,7 +36,7 @@ export function useUserStatusValidation(
   const [isRefreshing, setIsRefreshing] = useState(false);
   const [hasTriedRefresh, setHasTriedRefresh] = useState(false);
 
-  // Function to refresh user status from the server
+  // Function to refresh user status using Auth.js v5 update
   const refreshUserStatus = useCallback(async () => {
     if (!session?.user?.id) return;
 
@@ -43,7 +44,7 @@ export function useUserStatusValidation(
     setHasTriedRefresh(true);
 
     try {
-      // Use NextAuth's update() to trigger a fresh JWT token fetch
+      // Use Auth.js v5 update() to trigger a fresh session fetch
       await update();
     } catch (error) {
       console.error("Error refreshing session:", error);
@@ -52,7 +53,7 @@ export function useUserStatusValidation(
     }
   }, [session, update]);
 
-  // Update user status when session changes
+  // Update user status when session changes (no API calls)
   useEffect(() => {
     if (session?.user?.status) {
       setUserStatus(session.user.status);
@@ -63,51 +64,49 @@ export function useUserStatusValidation(
     // Session is undefined (still loading) or has no status - do nothing
   }, [session]);
 
-  // Automatically refresh session if user status is unknown or seems stale
+  // Handle status-based routing (no API calls)
   useEffect(() => {
-    if (!autoRefresh) return;
+    if (!userStatus || status === "loading") return;
 
-    if (session && !hasTriedRefresh) {
-      const shouldAutoRefresh =
-        !userStatus || // No status detected
-        userStatus === "undefined" || // Status is string "undefined"
-        (userStatus === "PENDING" &&
-          sessionStorage.getItem("emailJustVerified")); // User just verified email but still shows PENDING
-
-      if (shouldAutoRefresh) {
-        refreshUserStatus();
-
-        // Clear the flag after attempting refresh
-        if (sessionStorage.getItem("emailJustVerified")) {
-          sessionStorage.removeItem("emailJustVerified");
-        }
-      }
-    }
-  }, [session, userStatus, hasTriedRefresh, refreshUserStatus, autoRefresh]);
-
-  // Redirect if user is already approved
-  useEffect(() => {
+    // Redirect approved users to dashboard
     if (redirectOnApproved && userStatus === "APPROVED") {
       router.push("/dashboard");
+      return;
     }
-  }, [userStatus, router, redirectOnApproved]);
 
-  // Optional polling for status changes
+    // Keep pending users on current page
+    if (userStatus === "PENDING") {
+      // Stay on current page
+      return;
+    }
+
+    // Redirect rejected/suspended users to appropriate pages
+    if (userStatus === "REJECTED") {
+      router.push("/unauthorized");
+      return;
+    }
+
+    if (userStatus === "SUSPENDED") {
+      router.push("/unauthorized");
+      return;
+    }
+  }, [userStatus, redirectOnApproved, router, status]);
+
+  // Auto-refresh logic using Auth.js v5 update (no API calls)
   useEffect(() => {
-    if (!pollInterval || !session?.user?.id) return;
+    if (!autoRefresh || !session?.user?.id || !pollInterval) return;
 
     const interval = setInterval(() => {
       refreshUserStatus();
     }, pollInterval);
 
     return () => clearInterval(interval);
-  }, [pollInterval, session?.user?.id, refreshUserStatus]);
+  }, [autoRefresh, session, pollInterval, refreshUserStatus]);
 
   return {
     userStatus,
     isRefreshing,
     hasTriedRefresh,
     refreshUserStatus,
-    isLoading: status === "loading",
   };
 }

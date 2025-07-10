@@ -1,66 +1,63 @@
-import { useCallback, useState } from "react";
-import { signOut, useSession } from "next-auth/react";
-import { useRouter } from "next/navigation";
+"use client";
 
-interface UseLogoutOptions {
-  callbackUrl?: string;
+import { useState, useCallback } from "react";
+import { useRouter } from "next/navigation";
+import { signOut } from "next-auth/react";
+
+interface LogoutOptions {
   redirect?: boolean;
+  callbackUrl?: string;
 }
 
-export function useLogout(options: UseLogoutOptions = {}) {
-  const { callbackUrl = "/login", redirect = true } = options;
+interface UseLogoutReturn {
+  logout: (options?: LogoutOptions) => Promise<void>;
+  isLoading: boolean;
+}
+
+/**
+ * Custom hook for handling logout functionality
+ * Uses official Auth.js v5 signOut function
+ */
+export function useLogout(): UseLogoutReturn {
+  const [isLoading, setIsLoading] = useState(false);
   const router = useRouter();
-  const { data: session } = useSession();
-  const [isLoggingOut, setIsLoggingOut] = useState(false);
 
-  const logout = useCallback(async () => {
-    setIsLoggingOut(true);
+  const logout = useCallback(
+    async (options: LogoutOptions = {}) => {
+      const { redirect = true, callbackUrl = "/login" } = options;
 
-    try {
-      // Clear any client-side storage
-      sessionStorage.clear();
-      localStorage.clear();
+      setIsLoading(true);
 
-      // Call our logout API to clear cookies
       try {
-        await fetch("/api/auth/logout", {
-          method: "POST",
-          headers: {
-            "Content-Type": "application/json",
-          },
-        });
-      } catch (apiError) {
-        console.warn("Logout API call failed:", apiError);
-      }
+        if (redirect) {
+          await signOut({
+            callbackUrl,
+            redirect: true,
+          });
+        } else {
+          await signOut({
+            redirect: false,
+          });
 
-      // Sign out using NextAuth
-      await signOut({
-        callbackUrl,
-        redirect,
-      });
-
-      return { success: true };
-    } catch (error) {
-      console.error("Logout error:", error);
-
-      // Fallback: clear storage and redirect manually
-      sessionStorage.clear();
-      localStorage.clear();
-
-      if (redirect) {
+          // Manual redirect after signOut
+          router.push(callbackUrl);
+        }
+      } catch (error) {
+        console.error("Logout error:", error);
+        // Fallback redirect on error
         router.push(callbackUrl);
+      } finally {
+        setIsLoading(false);
       }
-
-      return { success: false, error };
-    } finally {
-      setIsLoggingOut(false);
-    }
-  }, [callbackUrl, redirect, router]);
+    },
+    [router]
+  );
 
   return {
     logout,
-    isLoggingOut,
-    isLoggedIn: !!session,
-    session,
+    isLoading,
   };
 }
+
+// Export alias for backward compatibility
+export const useSignOut = useLogout;
