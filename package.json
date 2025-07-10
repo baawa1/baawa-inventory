@@ -19,6 +19,10 @@
     "test:supabase": "jest tests/database/supabase-tables.test.ts",
     "test:components": "jest tests/components",
     "test:debug": "jest --verbose --detectOpenHandles",
+    "test:e2e": "playwright test",
+    "test:e2e:ui": "playwright test --ui",
+    "test:e2e:headed": "playwright test --headed",
+    "test:e2e:debug": "playwright test --debug",
     "cleanup:deprecated": "bash src/scripts/cleanup-deprecated-components.sh"
   },
   "dependencies": {
@@ -81,6 +85,7 @@
   },
   "devDependencies": {
     "@eslint/eslintrc": "^3",
+    "@playwright/test": "^1.53.2",
     "@tailwindcss/postcss": "^4",
     "@testing-library/dom": "^10.4.0",
     "@testing-library/jest-dom": "^6.6.3",
