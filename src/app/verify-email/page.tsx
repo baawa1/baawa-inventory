@@ -1,8 +1,11 @@
 "use client";
 
-import { useState, useEffect, useCallback, Suspense } from "react";
-import { useSearchParams, useRouter } from "next/navigation";
-import { useSession } from "next-auth/react";
+import { useState, useCallback, useEffect, Suspense } from "react";
+import { useRouter, useSearchParams } from "next/navigation";
+// import { useSession } from "next-auth/react";
+import { Button } from "@/components/ui/button";
+import { Input } from "@/components/ui/input";
+import { Label } from "@/components/ui/label";
 import {
   Card,
   CardContent,
@@ -10,16 +13,12 @@ import {
   CardHeader,
   CardTitle,
 } from "@/components/ui/card";
-import { Button } from "@/components/ui/button";
-import { Input } from "@/components/ui/input";
-import { Label } from "@/components/ui/label";
-import { CheckCircle, XCircle, Clock, Mail, AlertCircle } from "lucide-react";
+import { Clock, CheckCircle, XCircle, AlertCircle, Mail } from "lucide-react";
 
 function VerifyEmailContent() {
-  const searchParams = useSearchParams();
   const router = useRouter();
-  const { data: session, update } = useSession();
-  const token = searchParams.get("token");
+  const searchParams = useSearchParams();
+  // const { data: session, update } = useSession();
 
   const [status, setStatus] = useState<
     "loading" | "success" | "error" | "expired" | "already-verified"
@@ -28,6 +27,8 @@ function VerifyEmailContent() {
   const [email, setEmail] = useState("");
   const [resendLoading, setResendLoading] = useState(false);
   const [resendMessage, setResendMessage] = useState("");
+
+  const token = searchParams.get("token");
 
   const verifyEmailToken = useCallback(
     async (verificationToken: string) => {
@@ -48,14 +49,14 @@ function VerifyEmailContent() {
           sessionStorage.setItem("emailJustVerified", "true");
 
           // If user is logged in and we get shouldRefreshSession, refresh the session
-          if (session && data.shouldRefreshSession) {
-            try {
-              // Use NextAuth's update method to refresh the session from the server
-              await update();
-            } catch (error) {
-              console.error("Error updating session:", error);
-            }
-          }
+          // if (session && data.shouldRefreshSession) {
+          //   try {
+          //     // Use Auth.js v5 update method to refresh the session from the server
+          //     await update();
+          //   } catch (error) {
+          //     console.error("Error updating session:", error);
+          //   }
+          // }
 
           // Redirect to pending approval page after 3 seconds
           setTimeout(() => {
@@ -77,9 +78,10 @@ function VerifyEmailContent() {
         setMessage("An error occurred while verifying your email");
       }
     },
-    [session, update, router]
+    [router]
   );
 
+  // Only verify token on mount if token exists - no API calls in useEffect
   useEffect(() => {
     if (token) {
       verifyEmailToken(token);
