@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from "next/server";
-import { createServerSupabaseClient } from "@/lib/supabase-server";
-import { validateRequest } from "@/lib/validations/common";
+import { auth } from "../../../../../../auth";
+import { prisma } from "@/lib/db";
 import { z } from "zod";
 
 // Archive/Unarchive product endpoint
@@ -16,38 +16,39 @@ export async function PATCH(
   { params }: { params: Promise<{ id: string }> }
 ) {
   try {
-    const supabase = await createServerSupabaseClient();
-    const { id: paramId } = await params;
-    const body = await request.json();
+    const session = await auth();
 
-    // Validate request
-    const validation = validateRequest(archiveProductSchema, {
-      productId: parseInt(paramId),
-      ...body,
-    });
-
-    if (!validation.success) {
+    if (!session?.user) {
       return NextResponse.json(
-        { error: "Invalid request", details: validation.errors },
-        { status: 400 }
+        { error: "Authentication required" },
+        { status: 401 }
       );
     }
 
-    const { productId, archived, reason } = validation.data!;
+    const { id: paramId } = await params;
+    const body = await request.json();
+    const productId = parseInt(paramId);
+
+    // Validate request
+    const validatedData = archiveProductSchema.parse({
+      productId,
+      ...body,
+    });
+
+    const { archived, reason } = validatedData;
 
     // Check if product exists
-    const { data: existingProduct, error: fetchError } = await supabase
-      .from("products")
-      .select("id, name, is_archived, status")
-      .eq("id", productId)
-      .single();
+    const existingProduct = await prisma.product.findUnique({
+      where: { id: productId },
+      select: { id: true, name: true, isArchived: true, status: true },
+    });
 
-    if (fetchError || !existingProduct) {
+    if (!existingProduct) {
       return NextResponse.json({ error: "Product not found" }, { status: 404 });
     }
 
     // Check if already in requested state
-    if (existingProduct.is_archived === archived) {
+    if (existingProduct.isArchived === archived) {
       return NextResponse.json(
         {
           error: `Product is already ${archived ? "archived" : "active"}`,
@@ -57,36 +58,34 @@ export async function PATCH(
     }
 
     // Update product archive status
-    const { data: updatedProduct, error: updateError } = await supabase
-      .from("products")
-      .update({
-        is_archived: archived,
-        archived_at: archived ? new Date().toISOString() : null,
-        updated_at: new Date().toISOString(),
-      })
-      .eq("id", productId)
-      .select("id, name, is_archived, status, archived_at")
-      .single();
-
-    if (updateError) {
-      console.error("Error updating product archive status:", updateError);
-      return NextResponse.json(
-        { error: "Failed to update product status" },
-        { status: 500 }
-      );
-    }
+    const updatedProduct = await prisma.product.update({
+      where: { id: productId },
+      data: {
+        isArchived: archived,
+        updatedAt: new Date(),
+      },
+      select: {
+        id: true,
+        name: true,
+        isArchived: true,
+        status: true,
+      },
+    });
 
     // Log the archive/unarchive action
     if (reason) {
-      await supabase.from("audit_logs").insert({
-        table_name: "products",
-        record_id: productId,
-        action: archived ? "ARCHIVE" : "UNARCHIVE",
-        changes: {
-          is_archived: archived,
-          reason,
+      await prisma.auditLog.create({
+        data: {
+          user_id: parseInt(session.user.id),
+          action: archived ? "ARCHIVE" : "UNARCHIVE",
+          table_name: "products",
+          record_id: productId,
+          new_values: {
+            isArchived: archived,
+            reason,
+          },
+          created_at: new Date(),
         },
-        created_at: new Date().toISOString(),
       });
     }
 

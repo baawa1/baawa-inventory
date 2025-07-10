@@ -1,14 +1,11 @@
 "use client";
 
 import { useState } from "react";
-import { signIn } from "next-auth/react";
 import { useRouter } from "next/navigation";
-import { useForm } from "react-hook-form";
-import { zodResolver } from "@hookform/resolvers/zod";
-import { z } from "zod";
-import Link from "next/link";
-
+import { signIn } from "next-auth/react";
 import { Button } from "@/components/ui/button";
+import { Input } from "@/components/ui/input";
+import { Label } from "@/components/ui/label";
 import {
   Card,
   CardContent,
@@ -16,234 +13,154 @@ import {
   CardHeader,
   CardTitle,
 } from "@/components/ui/card";
-import {
-  Form,
-  FormControl,
-  FormField,
-  FormItem,
-  FormLabel,
-  FormMessage,
-} from "@/components/ui/form";
-import { Input } from "@/components/ui/input";
-
-const loginSchema = z.object({
-  email: z.string().email("Please enter a valid email address"),
-  password: z.string().min(6, "Password must be at least 6 characters"),
-});
-
-type LoginFormData = z.infer<typeof loginSchema>;
+import { Alert, AlertDescription } from "@/components/ui/alert";
+import { Eye, EyeOff, Loader2 } from "lucide-react";
 
 interface LoginFormProps {
   callbackUrl?: string;
 }
 
 export function LoginForm({ callbackUrl }: LoginFormProps) {
+  const [formData, setFormData] = useState({
+    email: "",
+    password: "",
+  });
   const [isLoading, setIsLoading] = useState(false);
-  const [error, setError] = useState<string | null>(null);
-  const [verificationEmail, setVerificationEmail] = useState<string | null>(
-    null
-  );
+  const [showPassword, setShowPassword] = useState(false);
+  const [generalError, setGeneralError] = useState("");
   const router = useRouter();
 
-  const form = useForm<LoginFormData>({
-    resolver: zodResolver(loginSchema),
-    defaultValues: {
-      email: "",
-      password: "",
-    },
-  });
+  const validateForm = () => {
+    if (!formData.email || !formData.password) {
+      setGeneralError("Please fill in all fields");
+      return false;
+    }
+    if (!formData.email.includes("@")) {
+      setGeneralError("Please enter a valid email address");
+      return false;
+    }
+    return true;
+  };
 
-  const onSubmit = async (data: LoginFormData) => {
+  const handleSubmit = async (e: React.FormEvent) => {
+    e.preventDefault();
+
+    if (!validateForm()) {
+      return;
+    }
+
     setIsLoading(true);
-    setError(null);
-    setVerificationEmail(null);
+    setGeneralError("");
 
     try {
       const result = await signIn("credentials", {
-        email: data.email,
-        password: data.password,
+        email: formData.email,
+        password: formData.password,
+        callbackUrl: callbackUrl || "/dashboard",
         redirect: false,
       });
 
       if (result?.error) {
-        // Handle specific error types from auth.ts
-        if (result.error.includes("UNVERIFIED_EMAIL")) {
-          setError("Please verify your email address before logging in.");
-          setVerificationEmail(data.email);
-        } else if (result.error.includes("PENDING_VERIFICATION")) {
-          setError(
-            "Your account is pending email verification. Please check your email."
-          );
-          setVerificationEmail(data.email);
-        } else if (result.error.includes("PENDING_APPROVAL")) {
-          setError(
-            "Your email is verified but your account is pending admin approval. You will be notified once approved."
-          );
-        } else if (result.error.includes("ACCOUNT_REJECTED")) {
-          setError(
-            "Your account has been rejected. Please contact support for more information."
-          );
-        } else if (result.error.includes("ACCOUNT_SUSPENDED")) {
-          setError("Your account has been suspended. Please contact support.");
-        } else if (result.error.includes("ACCOUNT_INACTIVE")) {
-          setError("Your account is inactive. Please contact support.");
-        } else {
-          setError("Invalid email or password");
-        }
+        setGeneralError("Invalid email or password. Please try again.");
       } else if (result?.ok) {
         router.push(callbackUrl || "/dashboard");
-        router.refresh();
       }
-    } catch {
-      setError("An unexpected error occurred. Please try again.");
+    } catch (error) {
+      console.error("Login error:", error);
+      setGeneralError(
+        "Network error. Please check your connection and try again."
+      );
     } finally {
       setIsLoading(false);
     }
   };
 
-  const handleResendVerification = async () => {
-    if (!verificationEmail) return;
-
-    try {
-      const response = await fetch("/api/auth/verify-email", {
-        method: "PUT",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ email: verificationEmail }),
-      });
-
-      if (response.ok) {
-        setError("Verification email sent! Please check your inbox.");
-      } else {
-        const data = await response.json();
-        setError(data.error || "Failed to send verification email");
-      }
-    } catch {
-      setError("Failed to send verification email. Please try again.");
+  const handleInputChange = (field: string, value: string) => {
+    setFormData((prev) => ({ ...prev, [field]: value }));
+    if (generalError) {
+      setGeneralError("");
     }
   };
 
   return (
-    <Card className="w-full max-w-md mx-auto">
-      <CardHeader className="text-center">
-        <CardTitle>Sign In</CardTitle>
-        <CardDescription>
-          Enter your email and password to access your account
+    <Card className="w-full">
+      <CardHeader className="space-y-1">
+        <CardTitle className="text-2xl text-center">Sign in</CardTitle>
+        <CardDescription className="text-center">
+          Enter your credentials to access your account
         </CardDescription>
       </CardHeader>
-      <CardContent>
-        <Form {...form}>
-          <form
-            data-testid="login-form"
-            onSubmit={form.handleSubmit(onSubmit)}
-            className="grid gap-4"
-          >
-            {/* Validation errors container for E2E tests */}
-            {Object.keys(form.formState.errors).length > 0 && (
-              <div
-                data-testid="validation-errors"
-                className="bg-destructive/15 text-destructive text-sm p-3 rounded-md"
-              >
-                {Object.entries(form.formState.errors).map(([field, error]) => (
-                  <div key={field}>{error?.message}</div>
-                ))}
-              </div>
-            )}
+      <CardContent className="space-y-4">
+        <form onSubmit={handleSubmit} className="space-y-4">
+          {generalError && (
+            <Alert variant="destructive">
+              <AlertDescription>{generalError}</AlertDescription>
+            </Alert>
+          )}
 
-            {error && (
-              <div
-                data-testid="login-error"
-                className="bg-destructive/15 text-destructive text-sm p-3 rounded-md"
-              >
-                {error}
-                {verificationEmail && (
-                  <Button
-                    type="button"
-                    variant="link"
-                    className="mt-2 h-auto p-0 text-sm text-destructive hover:text-destructive/80"
-                    onClick={handleResendVerification}
-                  >
-                    Resend verification email
-                  </Button>
-                )}
-              </div>
-            )}
-
-            {/* Specific error message containers for E2E tests */}
-            {error?.includes("suspended") && (
-              <div
-                data-testid="suspended-message"
-                className="bg-destructive/15 text-destructive text-sm p-3 rounded-md"
-              >
-                {error}
-              </div>
-            )}
-
-            {error?.includes("locked") && (
-              <div
-                data-testid="lockout-message"
-                className="bg-destructive/15 text-destructive text-sm p-3 rounded-md"
-              >
-                {error}
-              </div>
-            )}
-
-            <FormField
-              control={form.control}
-              name="email"
-              render={({ field }) => (
-                <FormItem>
-                  <FormLabel>Email</FormLabel>
-                  <FormControl>
-                    <Input
-                      data-testid="email-input"
-                      type="email"
-                      placeholder="name@example.com"
-                      {...field}
-                    />
-                  </FormControl>
-                  <FormMessage />
-                </FormItem>
-              )}
-            />
-
-            <FormField
-              control={form.control}
-              name="password"
-              render={({ field }) => (
-                <FormItem>
-                  <FormLabel>Password</FormLabel>
-                  <FormControl>
-                    <Input
-                      data-testid="password-input"
-                      type="password"
-                      placeholder="Enter your password"
-                      {...field}
-                    />
-                  </FormControl>
-                  <FormMessage />
-                </FormItem>
-              )}
-            />
-
-            <Button
-              data-testid="login-button"
-              type="submit"
-              className="w-full"
+          <div className="space-y-2">
+            <Label htmlFor="email">Email</Label>
+            <Input
+              id="email"
+              type="email"
+              placeholder="Enter your email"
+              value={formData.email}
+              onChange={(e) => handleInputChange("email", e.target.value)}
+              required
               disabled={isLoading}
-            >
-              {isLoading ? "Signing in..." : "Sign In"}
-            </Button>
+            />
+          </div>
 
-            <div className="text-center">
-              <Link
-                href="/forgot-password"
-                className="text-sm text-muted-foreground hover:text-primary hover:underline"
+          <div className="space-y-2">
+            <Label htmlFor="password">Password</Label>
+            <div className="relative">
+              <Input
+                id="password"
+                type={showPassword ? "text" : "password"}
+                placeholder="Enter your password"
+                value={formData.password}
+                onChange={(e) => handleInputChange("password", e.target.value)}
+                required
+                disabled={isLoading}
+              />
+              <Button
+                type="button"
+                variant="ghost"
+                size="sm"
+                className="absolute right-0 top-0 h-full px-3 py-2 hover:bg-transparent"
+                onClick={() => setShowPassword(!showPassword)}
+                disabled={isLoading}
               >
-                Forgot your password?
-              </Link>
+                {showPassword ? (
+                  <EyeOff className="h-4 w-4" />
+                ) : (
+                  <Eye className="h-4 w-4" />
+                )}
+              </Button>
             </div>
-          </form>
-        </Form>
+          </div>
+
+          <Button type="submit" className="w-full" disabled={isLoading}>
+            {isLoading ? (
+              <>
+                <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                Signing in...
+              </>
+            ) : (
+              "Sign in"
+            )}
+          </Button>
+        </form>
+
+        <div className="text-center">
+          <Button
+            variant="link"
+            onClick={() => router.push("/forgot-password")}
+            className="text-sm"
+          >
+            Forgot your password?
+          </Button>
+        </div>
       </CardContent>
     </Card>
   );

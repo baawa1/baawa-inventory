@@ -5,7 +5,8 @@ import { prisma } from "@/lib/db";
 import { NextRequest } from "next/server";
 
 // Mock the auth helper
-jest.mock("@/lib/auth-helpers", () => ({
+// Temporarily using next-auth directly until Auth.js v5 migration is complete
+jest.mock("next-auth", () => ({
   getServerSession: jest.fn(),
 }));
 
@@ -29,7 +30,7 @@ jest.mock("@/lib/db", () => ({
   },
 }));
 
-const mockGetServerSession = require("@/lib/auth-helpers").getServerSession;
+const mockGetServerSession = require("next-auth").getServerSession;
 const mockPrisma = prisma as jest.Mocked<typeof prisma>;
 
 describe("Inventory Report API", () => {

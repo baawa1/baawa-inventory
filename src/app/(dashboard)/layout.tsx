@@ -1,40 +1,33 @@
+import { auth } from "../../../auth";
 import { redirect } from "next/navigation";
-import { getServerSession } from "@/lib/auth-helpers";
 import { AppSidebar } from "@/components/app-sidebar";
-import { SidebarInset, SidebarProvider } from "@/components/ui/sidebar";
-import { SiteHeader } from "@/components/site-header";
+import { SidebarProvider } from "@/components/ui/sidebar";
 
 export default async function DashboardLayout({
   children,
 }: {
   children: React.ReactNode;
 }) {
-  const session = await getServerSession();
+  const session = await auth();
 
-  // Redirect if not authenticated
-  if (!session) {
+  // Check if user is authenticated
+  if (!session?.user) {
     redirect("/login");
   }
 
-  // Check user status
-  if (session.user.status !== "APPROVED") {
+  // Check if user account is active
+  if (session.user.status !== "ACTIVE") {
     redirect("/pending-approval");
   }
 
   return (
-    <SidebarProvider
-      style={
-        {
-          "--sidebar-width": "calc(var(--spacing) * 72)",
-          "--header-height": "calc(var(--spacing) * 12)",
-        } as React.CSSProperties
-      }
-    >
-      <AppSidebar variant="inset" />
-      <SidebarInset>
-        <SiteHeader />
-        {children}
-      </SidebarInset>
+    <SidebarProvider>
+      <div className="min-h-screen flex w-full">
+        <AppSidebar />
+        <main className="flex-1 flex flex-col">
+          <div className="flex-1 space-y-4 p-4 pt-6">{children}</div>
+        </main>
+      </div>
     </SidebarProvider>
   );
 }

@@ -1,5 +1,5 @@
+import { auth } from "../../../../../auth";
 import { redirect } from "next/navigation";
-import { getServerSession } from "@/lib/auth-helpers";
 import { StockReconciliationList } from "@/components/inventory/StockReconciliationList";
 
 export const metadata = {
@@ -9,7 +9,7 @@ export const metadata = {
 };
 
 export default async function StockReconciliationsPage() {
-  const session = await getServerSession();
+  const session = await auth();
 
   // Check role permissions - only managers and above can access stock reconciliations
   if (!session?.user || !["ADMIN", "MANAGER"].includes(session.user.role)) {

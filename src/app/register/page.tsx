@@ -1,14 +1,12 @@
 import Link from "next/link";
 import { redirect } from "next/navigation";
-
-import { getServerSession } from "@/lib/auth-helpers";
+import { auth } from "../../../auth";
 import { RegisterForm } from "@/components/auth/RegisterForm";
 
 export default async function RegisterPage() {
-  const session = await getServerSession();
+  const session = await auth();
 
-  // Redirect if already logged in
-  if (session) {
+  if (session?.user) {
     redirect("/dashboard");
   }
 
@@ -20,7 +18,7 @@ export default async function RegisterPage() {
             BaaWA Inventory POS
           </h1>
           <p className="mt-2 text-sm text-gray-600 dark:text-gray-400">
-            Create your account to get started
+            Create your account
           </p>
         </div>
 

@@ -39,12 +39,11 @@ import { toast } from "sonner";
 
 interface User {
   id: string;
-  name: string;
   email: string;
+  name: string;
   role: string;
   status: string;
-  emailVerified: boolean;
-  image?: string;
+  isEmailVerified: boolean;
 }
 
 interface ProductListProps {
@@ -132,7 +131,7 @@ export function ProductList({ user }: ProductListProps) {
   const categories = categoriesQuery.data?.data || [];
 
   const canManageProducts = ["ADMIN", "MANAGER"].includes(user.role);
-  const canEditProducts = ["ADMIN", "MANAGER", "EMPLOYEE"].includes(user.role);
+  const canEditProducts = ["ADMIN", "MANAGER", "STAFF"].includes(user.role);
 
   // Filter configurations
   const filterConfigs: FilterConfig[] = [

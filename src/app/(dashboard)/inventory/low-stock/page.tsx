@@ -1,5 +1,5 @@
+import { auth } from "../../../../../auth";
 import { redirect } from "next/navigation";
-import { getServerSession } from "@/lib/auth-helpers";
 import { canViewLowStock } from "@/lib/roles";
 import { LowStockAlerts } from "@/components/inventory/LowStockAlerts";
 
@@ -9,7 +9,7 @@ export const metadata = {
 };
 
 export default async function LowStockAlertsPage() {
-  const session = await getServerSession();
+  const session = await auth();
 
   // Check role permissions - only authorized users can access low stock alerts
   if (!session?.user || !canViewLowStock(session.user.role)) {

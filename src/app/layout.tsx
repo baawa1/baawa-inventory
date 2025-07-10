@@ -1,7 +1,7 @@
 import type { Metadata, Viewport } from "next";
 import { Oxanium, Plus_Jakarta_Sans, Roboto } from "next/font/google";
 import "./globals.css";
-import { UnifiedSessionProvider } from "@/components/auth/UnifiedSessionProvider";
+
 import { QueryProvider } from "@/components/providers/QueryProvider";
 import { SessionProvider } from "@/components/providers/SessionProvider";
 import { ThemeProvider } from "@/components/theme-provider";
@@ -95,10 +95,8 @@ export default function RootLayout({
         >
           <SessionProvider>
             <QueryProvider>
-              <UnifiedSessionProvider>
-                {children}
-                <PWAManager />
-              </UnifiedSessionProvider>
+              {children}
+              <PWAManager />
               <Toaster />
             </QueryProvider>
           </SessionProvider>

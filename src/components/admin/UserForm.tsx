@@ -57,7 +57,7 @@ export function UserForm({
           firstName: "",
           lastName: "",
           email: "",
-          role: "EMPLOYEE",
+          role: "STAFF",
           userStatus: "PENDING",
           password: "",
           confirmPassword: "",
@@ -138,7 +138,7 @@ export function UserForm({
                     </SelectTrigger>
                   </FormControl>
                   <SelectContent>
-                    <SelectItem value="EMPLOYEE">Employee</SelectItem>
+                    <SelectItem value="STAFF">Staff</SelectItem>
                     <SelectItem value="MANAGER">Manager</SelectItem>
                     <SelectItem value="ADMIN">Admin</SelectItem>
                   </SelectContent>

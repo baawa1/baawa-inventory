@@ -581,7 +581,7 @@ describe("Authentication Integration Tests", () => {
           data: {
             role: "EMPLOYEE",
             status: "APPROVED",
-            emailVerified: true,
+            isEmailVerified: true,
           },
         }),
       } as Response);
@@ -616,17 +616,17 @@ describe("Authentication Integration Tests", () => {
       const adminUser = {
         role: "ADMIN",
         status: "APPROVED",
-        emailVerified: true,
+        isEmailVerified: true,
       };
       const managerUser = {
         role: "MANAGER",
         status: "APPROVED",
-        emailVerified: true,
+        isEmailVerified: true,
       };
       const employeeUser = {
         role: "EMPLOYEE",
         status: "APPROVED",
-        emailVerified: true,
+        isEmailVerified: true,
       };
 
       // Admin should access all routes

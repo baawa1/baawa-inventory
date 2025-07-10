@@ -24,7 +24,7 @@ global.Response = jest.fn().mockImplementation((body, init) => {
 });
 
 // Mock the auth helper
-jest.mock("@/lib/auth-helpers", () => ({
+jest.mock("next-auth", () => ({
   getServerSession: jest.fn(),
 }));
 
@@ -38,7 +38,7 @@ jest.mock("@/lib/db", () => ({
   },
 }));
 
-const mockGetServerSession = require("@/lib/auth-helpers").getServerSession;
+const mockGetServerSession = require("next-auth").getServerSession;
 
 describe("Product Images API", () => {
   beforeEach(() => {

@@ -8,7 +8,7 @@
 export const USER_ROLES = {
   ADMIN: "ADMIN",
   MANAGER: "MANAGER",
-  EMPLOYEE: "EMPLOYEE",
+  STAFF: "STAFF",
 } as const;
 
 // Type for user roles based on the USER_ROLES object
@@ -19,7 +19,7 @@ export const ALL_ROLES = Object.values(USER_ROLES);
 
 // Role hierarchy (higher number = more permissions)
 export const ROLE_HIERARCHY: Record<UserRole, number> = {
-  [USER_ROLES.EMPLOYEE]: 1,
+  [USER_ROLES.STAFF]: 1,
   [USER_ROLES.MANAGER]: 2,
   [USER_ROLES.ADMIN]: 3,
 };
@@ -28,7 +28,7 @@ export const ROLE_HIERARCHY: Record<UserRole, number> = {
 export const ROLE_DISPLAY_NAMES: Record<UserRole, string> = {
   [USER_ROLES.ADMIN]: "Administrator",
   [USER_ROLES.MANAGER]: "Manager",
-  [USER_ROLES.EMPLOYEE]: "Employee",
+  [USER_ROLES.STAFF]: "Staff",
 };
 
 // Role descriptions for documentation and UI
@@ -36,14 +36,14 @@ export const ROLE_DESCRIPTIONS: Record<UserRole, string> = {
   [USER_ROLES.ADMIN]: "Full access to all system features and user management",
   [USER_ROLES.MANAGER]:
     "Can manage inventory, view reports, and handle day-to-day operations",
-  [USER_ROLES.EMPLOYEE]:
+  [USER_ROLES.STAFF]:
     "Can view inventory, process sales, and access basic reports",
 };
 
 // Permission groups by role
 export const ROLE_PERMISSIONS = {
   // Inventory permissions
-  INVENTORY_READ: [USER_ROLES.ADMIN, USER_ROLES.MANAGER, USER_ROLES.EMPLOYEE],
+  INVENTORY_READ: [USER_ROLES.ADMIN, USER_ROLES.MANAGER, USER_ROLES.STAFF],
   INVENTORY_WRITE: [USER_ROLES.ADMIN, USER_ROLES.MANAGER],
   INVENTORY_DELETE: [USER_ROLES.ADMIN],
   INVENTORY_LOW_STOCK: [USER_ROLES.ADMIN, USER_ROLES.MANAGER],
@@ -53,11 +53,11 @@ export const ROLE_PERMISSIONS = {
   USER_APPROVAL: [USER_ROLES.ADMIN],
 
   // Sales permissions
-  SALES_READ: [USER_ROLES.ADMIN, USER_ROLES.MANAGER, USER_ROLES.EMPLOYEE],
-  SALES_WRITE: [USER_ROLES.ADMIN, USER_ROLES.MANAGER, USER_ROLES.EMPLOYEE],
+  SALES_READ: [USER_ROLES.ADMIN, USER_ROLES.MANAGER, USER_ROLES.STAFF],
+  SALES_WRITE: [USER_ROLES.ADMIN, USER_ROLES.MANAGER, USER_ROLES.STAFF],
 
   // POS permissions
-  POS_ACCESS: [USER_ROLES.ADMIN, USER_ROLES.MANAGER, USER_ROLES.EMPLOYEE],
+  POS_ACCESS: [USER_ROLES.ADMIN, USER_ROLES.MANAGER, USER_ROLES.STAFF],
 
   // Reports permissions
   REPORTS_READ: [USER_ROLES.ADMIN, USER_ROLES.MANAGER],
@@ -110,10 +110,10 @@ export const isManager = (userRole: string | undefined | null): boolean => {
 };
 
 /**
- * Check if a user has the Employee role
+ * Check if a user has the Staff role
  */
-export const isEmployee = (userRole: string | undefined | null): boolean => {
-  return userRole === USER_ROLES.EMPLOYEE;
+export const isStaff = (userRole: string | undefined | null): boolean => {
+  return userRole === USER_ROLES.STAFF;
 };
 
 /**

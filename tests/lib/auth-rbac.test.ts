@@ -1,250 +1,186 @@
-import { getRolePermissions, UserRole } from "@/lib/auth-rbac";
 import {
-  requireRole,
-  requirePermission,
-  hasRole,
+  getRolePermissions,
   hasPermission,
-} from "@/lib/auth-helpers";
-import { getServerSession } from "next-auth/next";
+  hasAnyPermission,
+  hasAllPermissions,
+  getAllPermissions,
+  getAvailableRoles,
+} from "@/lib/auth-rbac";
+import type { UserRole } from "@/types/user";
 
-// Mock NextAuth
-jest.mock("next-auth/next", () => ({
-  getServerSession: jest.fn(),
-}));
-
-const mockGetServerSession = getServerSession as jest.MockedFunction<
-  typeof getServerSession
->;
-
-describe("Role-Based Authentication", () => {
-  beforeEach(() => {
-    jest.clearAllMocks();
-  });
-
-  describe("Role Permissions", () => {
-    test("should return correct permissions for ADMIN role", () => {
+describe("RBAC Helper Functions", () => {
+  describe("getRolePermissions", () => {
+    test("should return correct permissions for ADMIN", () => {
       const permissions = getRolePermissions("ADMIN");
-
-      expect(permissions.canAccessAdmin).toBe(true);
-      expect(permissions.canAccessReports).toBe(true);
-      expect(permissions.canAccessSettings).toBe(true);
-      expect(permissions.canManageUsers).toBe(true);
-      expect(permissions.canManageSuppliers).toBe(true);
-      expect(permissions.canDeleteTransactions).toBe(true);
-      expect(permissions.canViewAllSales).toBe(true);
-      expect(permissions.canProcessRefunds).toBe(true);
+      expect(permissions).toContain("users:read");
+      expect(permissions).toContain("users:write");
+      expect(permissions).toContain("users:delete");
+      expect(permissions).toContain("inventory:read");
+      expect(permissions).toContain("inventory:write");
+      expect(permissions).toContain("inventory:delete");
+      expect(permissions).toContain("reports:read");
+      expect(permissions).toContain("reports:write");
+      expect(permissions).toContain("settings:read");
+      expect(permissions).toContain("settings:write");
+      expect(permissions).toContain("audit:read");
+      expect(permissions).toContain("pos:read");
+      expect(permissions).toContain("pos:write");
     });
 
-    test("should return correct permissions for MANAGER role", () => {
+    test("should return correct permissions for MANAGER", () => {
       const permissions = getRolePermissions("MANAGER");
+      expect(permissions).toContain("users:read");
+      expect(permissions).toContain("inventory:read");
+      expect(permissions).toContain("inventory:write");
+      expect(permissions).toContain("reports:read");
+      expect(permissions).toContain("reports:write");
+      expect(permissions).toContain("settings:read");
+      expect(permissions).toContain("pos:read");
+      expect(permissions).toContain("pos:write");
 
-      expect(permissions.canAccessAdmin).toBe(false);
-      expect(permissions.canAccessReports).toBe(true);
-      expect(permissions.canAccessSettings).toBe(true);
-      expect(permissions.canManageUsers).toBe(false);
-      expect(permissions.canManageSuppliers).toBe(true);
-      expect(permissions.canDeleteTransactions).toBe(true);
-      expect(permissions.canViewAllSales).toBe(true);
-      expect(permissions.canProcessRefunds).toBe(true);
+      // Should NOT have admin-only permissions
+      expect(permissions).not.toContain("users:write");
+      expect(permissions).not.toContain("users:delete");
+      expect(permissions).not.toContain("inventory:delete");
+      expect(permissions).not.toContain("settings:write");
+      expect(permissions).not.toContain("audit:read");
     });
 
-    test("should return correct permissions for EMPLOYEE role", () => {
-      const permissions = getRolePermissions("EMPLOYEE");
+    test("should return correct permissions for STAFF", () => {
+      const permissions = getRolePermissions("STAFF");
+      expect(permissions).toContain("inventory:read");
+      expect(permissions).toContain("inventory:write");
+      expect(permissions).toContain("reports:read");
+      expect(permissions).toContain("pos:read");
+      expect(permissions).toContain("pos:write");
 
-      expect(permissions.canAccessAdmin).toBe(false);
-      expect(permissions.canAccessReports).toBe(false);
-      expect(permissions.canAccessSettings).toBe(false);
-      expect(permissions.canManageUsers).toBe(false);
-      expect(permissions.canManageSuppliers).toBe(false);
-      expect(permissions.canDeleteTransactions).toBe(false);
-      expect(permissions.canViewAllSales).toBe(false);
-      expect(permissions.canProcessRefunds).toBe(false);
+      // Should NOT have admin or manager permissions
+      expect(permissions).not.toContain("users:read");
+      expect(permissions).not.toContain("users:write");
+      expect(permissions).not.toContain("users:delete");
+      expect(permissions).not.toContain("inventory:delete");
+      expect(permissions).not.toContain("reports:write");
+      expect(permissions).not.toContain("settings:read");
+      expect(permissions).not.toContain("settings:write");
+      expect(permissions).not.toContain("audit:read");
+    });
+
+    test("should return empty array for invalid role", () => {
+      const permissions = getRolePermissions("INVALID" as UserRole);
+      expect(permissions).toEqual([]);
     });
   });
 
-  describe("Server-side Role Checking", () => {
-    test("should allow access for matching role", async () => {
-      mockGetServerSession.mockResolvedValue({
-        user: {
-          id: "1",
-          email: "manager@baawa.com",
-          name: "Manager User",
-          role: "MANAGER",
-        },
-      } as any);
-
-      const user = await requireRole("MANAGER");
-      expect(user.role).toBe("MANAGER");
+  describe("hasPermission", () => {
+    test("should return true for ADMIN with any permission", () => {
+      expect(hasPermission("ADMIN", "users:read")).toBe(true);
+      expect(hasPermission("ADMIN", "users:write")).toBe(true);
+      expect(hasPermission("ADMIN", "users:delete")).toBe(true);
+      expect(hasPermission("ADMIN", "inventory:delete")).toBe(true);
+      expect(hasPermission("ADMIN", "audit:read")).toBe(true);
     });
 
-    test("should allow admin access to any role requirement", async () => {
-      mockGetServerSession.mockResolvedValue({
-        user: {
-          id: "1",
-          email: "admin@baawa.com",
-          name: "Admin User",
-          role: "ADMIN",
-        },
-      } as any);
+    test("should return correct permissions for MANAGER", () => {
+      expect(hasPermission("MANAGER", "users:read")).toBe(true);
+      expect(hasPermission("MANAGER", "inventory:read")).toBe(true);
+      expect(hasPermission("MANAGER", "reports:read")).toBe(true);
 
-      const user = await requireRole("EMPLOYEE");
-      expect(user.role).toBe("ADMIN");
+      // Should NOT have admin-only permissions
+      expect(hasPermission("MANAGER", "users:write")).toBe(false);
+      expect(hasPermission("MANAGER", "users:delete")).toBe(false);
+      expect(hasPermission("MANAGER", "inventory:delete")).toBe(false);
+      expect(hasPermission("MANAGER", "audit:read")).toBe(false);
     });
 
-    test("should reject access for insufficient role", async () => {
-      mockGetServerSession.mockResolvedValue({
-        user: {
-          id: "1",
-          email: "employee@baawa.com",
-          name: "Employee User",
-          role: "EMPLOYEE",
-        },
-      } as any);
+    test("should return correct permissions for STAFF", () => {
+      expect(hasPermission("STAFF", "inventory:read")).toBe(true);
+      expect(hasPermission("STAFF", "pos:read")).toBe(true);
 
-      await expect(requireRole("MANAGER")).rejects.toThrow(
-        "Role MANAGER required"
+      // Should NOT have admin or manager permissions
+      expect(hasPermission("STAFF", "users:read")).toBe(false);
+      expect(hasPermission("STAFF", "users:write")).toBe(false);
+      expect(hasPermission("STAFF", "inventory:delete")).toBe(false);
+      expect(hasPermission("STAFF", "reports:write")).toBe(false);
+      expect(hasPermission("STAFF", "settings:read")).toBe(false);
+    });
+
+    test("should return false for invalid role", () => {
+      expect(hasPermission("INVALID" as UserRole, "users:read")).toBe(false);
+    });
+  });
+
+  describe("hasAnyPermission", () => {
+    test("should return true if role has any of the permissions", () => {
+      expect(hasAnyPermission("STAFF", ["users:read", "inventory:read"])).toBe(
+        true
+      );
+      expect(
+        hasAnyPermission("MANAGER", ["users:write", "inventory:read"])
+      ).toBe(true);
+      expect(hasAnyPermission("ADMIN", ["users:read", "inventory:read"])).toBe(
+        true
       );
     });
 
-    test("should handle multiple allowed roles", async () => {
-      mockGetServerSession.mockResolvedValue({
-        user: {
-          id: "1",
-          email: "manager@baawa.com",
-          name: "Manager User",
-          role: "MANAGER",
-        },
-      } as any);
-
-      const user = await requireRole(["ADMIN", "MANAGER"]);
-      expect(user.role).toBe("MANAGER");
-    });
-  });
-
-  describe("Permission-based Access Control", () => {
-    test("should allow access for valid permission", async () => {
-      mockGetServerSession.mockResolvedValue({
-        user: {
-          id: "1",
-          email: "manager@baawa.com",
-          name: "Manager User",
-          role: "MANAGER",
-        },
-      } as any);
-
-      const user = await requirePermission("canAccessReports");
-      expect(user.role).toBe("MANAGER");
-    });
-
-    test("should reject access for invalid permission", async () => {
-      mockGetServerSession.mockResolvedValue({
-        user: {
-          id: "1",
-          email: "employee@baawa.com",
-          name: "Employee User",
-          role: "EMPLOYEE",
-        },
-      } as any);
-
-      await expect(requirePermission("canAccessReports")).rejects.toThrow(
-        "Permission canAccessReports required"
+    test("should return false if role has none of the permissions", () => {
+      expect(hasAnyPermission("STAFF", ["users:read", "users:write"])).toBe(
+        false
+      );
+      expect(hasAnyPermission("MANAGER", ["users:write", "users:delete"])).toBe(
+        false
       );
     });
+  });
 
-    test("should allow admin access to any permission", async () => {
-      mockGetServerSession.mockResolvedValue({
-        user: {
-          id: "1",
-          email: "admin@baawa.com",
-          name: "Admin User",
-          role: "ADMIN",
-        },
-      } as any);
+  describe("hasAllPermissions", () => {
+    test("should return true if role has all of the permissions", () => {
+      expect(hasAllPermissions("ADMIN", ["users:read", "users:write"])).toBe(
+        true
+      );
+      expect(hasAllPermissions("STAFF", ["inventory:read", "pos:read"])).toBe(
+        true
+      );
+      expect(
+        hasAllPermissions("MANAGER", ["inventory:read", "reports:read"])
+      ).toBe(true);
+    });
 
-      const user = await requirePermission("canManageUsers");
-      expect(user.role).toBe("ADMIN");
+    test("should return false if role is missing any permission", () => {
+      expect(hasAllPermissions("STAFF", ["users:read", "inventory:read"])).toBe(
+        false
+      );
+      expect(
+        hasAllPermissions("MANAGER", ["users:write", "inventory:read"])
+      ).toBe(false);
     });
   });
 
-  describe("Role and Permission Checking Utilities", () => {
-    test("hasRole should return true for matching role", async () => {
-      mockGetServerSession.mockResolvedValue({
-        user: {
-          id: "1",
-          email: "manager@baawa.com",
-          name: "Manager User",
-          role: "MANAGER",
-        },
-      } as any);
-
-      const result = await hasRole("MANAGER");
-      expect(result).toBe(true);
+  describe("getAllPermissions", () => {
+    test("should return all available permissions", () => {
+      const permissions = getAllPermissions();
+      expect(permissions).toContain("users:read");
+      expect(permissions).toContain("users:write");
+      expect(permissions).toContain("users:delete");
+      expect(permissions).toContain("inventory:read");
+      expect(permissions).toContain("inventory:write");
+      expect(permissions).toContain("inventory:delete");
+      expect(permissions).toContain("reports:read");
+      expect(permissions).toContain("reports:write");
+      expect(permissions).toContain("settings:read");
+      expect(permissions).toContain("settings:write");
+      expect(permissions).toContain("audit:read");
+      expect(permissions).toContain("pos:read");
+      expect(permissions).toContain("pos:write");
     });
+  });
 
-    test("hasRole should return true for admin checking any role", async () => {
-      mockGetServerSession.mockResolvedValue({
-        user: {
-          id: "1",
-          email: "admin@baawa.com",
-          name: "Admin User",
-          role: "ADMIN",
-        },
-      } as any);
-
-      const result = await hasRole("EMPLOYEE");
-      expect(result).toBe(true);
-    });
-
-    test("hasRole should return false for insufficient role", async () => {
-      mockGetServerSession.mockResolvedValue({
-        user: {
-          id: "1",
-          email: "employee@baawa.com",
-          name: "Employee User",
-          role: "EMPLOYEE",
-        },
-      } as any);
-
-      const result = await hasRole("MANAGER");
-      expect(result).toBe(false);
-    });
-
-    test("hasPermission should return true for valid permission", async () => {
-      mockGetServerSession.mockResolvedValue({
-        user: {
-          id: "1",
-          email: "manager@baawa.com",
-          name: "Manager User",
-          role: "MANAGER",
-        },
-      } as any);
-
-      const result = await hasPermission("canAccessReports");
-      expect(result).toBe(true);
-    });
-
-    test("hasPermission should return false for invalid permission", async () => {
-      mockGetServerSession.mockResolvedValue({
-        user: {
-          id: "1",
-          email: "employee@baawa.com",
-          name: "Employee User",
-          role: "EMPLOYEE",
-        },
-      } as any);
-
-      const result = await hasPermission("canAccessReports");
-      expect(result).toBe(false);
-    });
-
-    test("should handle unauthenticated users gracefully", async () => {
-      mockGetServerSession.mockResolvedValue(null);
-
-      const roleResult = await hasRole("EMPLOYEE");
-      const permissionResult = await hasPermission("canAccessReports");
-
-      expect(roleResult).toBe(false);
-      expect(permissionResult).toBe(false);
+  describe("getAvailableRoles", () => {
+    test("should return all available roles", () => {
+      const roles = getAvailableRoles();
+      expect(roles).toContain("ADMIN");
+      expect(roles).toContain("MANAGER");
+      expect(roles).toContain("STAFF");
+      expect(roles).toHaveLength(3);
     });
   });
 });

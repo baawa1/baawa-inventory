@@ -1,5 +1,5 @@
+import { auth } from "../../../../../../../auth";
 import { redirect } from "next/navigation";
-import { getServerSession } from "@/lib/auth-helpers";
 import { StockReconciliationEditForm } from "@/components/inventory/StockReconciliationEditForm";
 
 export const metadata = {
@@ -14,7 +14,7 @@ interface EditStockReconciliationPageProps {
 export default async function EditStockReconciliationPage({
   params,
 }: EditStockReconciliationPageProps) {
-  const session = await getServerSession();
+  const session = await auth();
 
   // Check role permissions - only managers and above can edit stock reconciliations
   if (!session?.user || !["ADMIN", "MANAGER"].includes(session.user.role)) {

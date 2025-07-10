@@ -1,6 +1,5 @@
+import { auth } from "../../../../../auth";
 import { NextRequest, NextResponse } from "next/server";
-import { getServerSession } from "next-auth";
-import { authOptions } from "@/lib/auth";
 import { canAccessPOS } from "@/lib/auth/roles";
 import { InventoryService } from "@/lib/inventory-service";
 
@@ -11,21 +10,15 @@ interface RouteParams {
 // GET /api/sales/[id] - Get a specific sales transaction
 export async function GET(request: NextRequest, { params }: RouteParams) {
   try {
-    const session = await getServerSession(authOptions);
+    const session = await auth();
 
     if (!session?.user) {
-      return NextResponse.json(
-        { error: "Unauthorized" },
-        { status: 401 }
-      );
+      return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
     }
 
     // Check if user has required permissions
     if (!canAccessPOS(session.user.role)) {
-      return NextResponse.json(
-        { error: "Forbidden" },
-        { status: 403 }
-      );
+      return NextResponse.json({ error: "Forbidden" }, { status: 403 });
     }
 
     const { id } = await params;
@@ -39,7 +32,8 @@ export async function GET(request: NextRequest, { params }: RouteParams) {
       );
     }
 
-    const salesTransaction = await InventoryService.getSalesTransaction(salesId);
+    const salesTransaction =
+      await InventoryService.getSalesTransaction(salesId);
 
     if (!salesTransaction) {
       return NextResponse.json(
@@ -61,21 +55,15 @@ export async function GET(request: NextRequest, { params }: RouteParams) {
 // PATCH /api/sales/[id] - Update a sales transaction
 export async function PATCH(request: NextRequest, { params }: RouteParams) {
   try {
-    const session = await getServerSession(authOptions);
+    const session = await auth();
 
     if (!session?.user) {
-      return NextResponse.json(
-        { error: "Unauthorized" },
-        { status: 401 }
-      );
+      return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
     }
 
     // Check if user has required permissions
     if (!canAccessPOS(session.user.role)) {
-      return NextResponse.json(
-        { error: "Forbidden" },
-        { status: 403 }
-      );
+      return NextResponse.json({ error: "Forbidden" }, { status: 403 });
     }
 
     const { id } = await params;
@@ -91,27 +79,24 @@ export async function PATCH(request: NextRequest, { params }: RouteParams) {
     }
 
     const updatedTransaction = await InventoryService.updateSalesTransaction(
-      salesId, 
+      salesId,
       {
         ...body,
-        userId: session.user.id
+        userId: parseInt(session.user.id),
       }
     );
 
-    return NextResponse.json({ 
+    return NextResponse.json({
       data: updatedTransaction,
-      message: "Sales transaction updated successfully" 
+      message: "Sales transaction updated successfully",
     });
   } catch (error) {
     console.error("Error in PATCH /api/sales/[id]:", error);
-    
+
     if (error instanceof Error) {
-      return NextResponse.json(
-        { error: error.message },
-        { status: 400 }
-      );
+      return NextResponse.json({ error: error.message }, { status: 400 });
     }
-    
+
     return NextResponse.json(
       { error: "Internal server error" },
       { status: 500 }
@@ -122,21 +107,15 @@ export async function PATCH(request: NextRequest, { params }: RouteParams) {
 // DELETE /api/sales/[id] - Void a sales transaction
 export async function DELETE(request: NextRequest, { params }: RouteParams) {
   try {
-    const session = await getServerSession(authOptions);
+    const session = await auth();
 
     if (!session?.user) {
-      return NextResponse.json(
-        { error: "Unauthorized" },
-        { status: 401 }
-      );
+      return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
     }
 
     // Check if user has required permissions
     if (!canAccessPOS(session.user.role)) {
-      return NextResponse.json(
-        { error: "Forbidden" },
-        { status: 403 }
-      );
+      return NextResponse.json({ error: "Forbidden" }, { status: 403 });
     }
 
     const { id } = await params;
@@ -160,24 +139,21 @@ export async function DELETE(request: NextRequest, { params }: RouteParams) {
 
     const voidedTransaction = await InventoryService.voidSalesTransaction(
       salesId,
-      session.user.id,
+      parseInt(session.user.id),
       reason
     );
 
     return NextResponse.json({
       data: voidedTransaction,
-      message: "Sales transaction voided successfully"
+      message: "Sales transaction voided successfully",
     });
   } catch (error) {
     console.error("Error in DELETE /api/sales/[id]:", error);
-    
+
     if (error instanceof Error) {
-      return NextResponse.json(
-        { error: error.message },
-        { status: 400 }
-      );
+      return NextResponse.json({ error: error.message }, { status: 400 });
     }
-    
+
     return NextResponse.json(
       { error: "Internal server error" },
       { status: 500 }

@@ -1,5 +1,5 @@
 import { redirect } from "next/navigation";
-import { getServerSession } from "@/lib/auth-helpers";
+import { auth } from "../../../../../auth";
 import { ProductList } from "@/components/inventory/ProductList";
 
 export const metadata = {
@@ -9,13 +9,14 @@ export const metadata = {
 };
 
 export default async function ProductsPage() {
-  const session = await getServerSession();
+  const session = await auth();
+
+  if (!session?.user) {
+    redirect("/login");
+  }
 
   // Check role permissions - only staff and above can access inventory
-  if (
-    !session?.user ||
-    !["ADMIN", "MANAGER", "EMPLOYEE"].includes(session.user.role)
-  ) {
+  if (!["ADMIN", "MANAGER", "STAFF"].includes(session.user.role)) {
     redirect("/unauthorized");
   }
 

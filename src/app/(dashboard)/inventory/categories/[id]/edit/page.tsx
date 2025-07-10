@@ -1,5 +1,6 @@
 import { notFound } from "next/navigation";
 import EditCategoryForm from "@/components/inventory/EditCategoryForm";
+import { prisma } from "@/lib/db";
 
 interface EditCategoryPageProps {
   params: Promise<{
@@ -9,31 +10,28 @@ interface EditCategoryPageProps {
 
 async function getCategory(id: string) {
   try {
-    // Use server-side API directly instead of HTTP fetch
-    const { supabase } = await import("@/lib/supabase");
-    const { categoryIdSchema } = await import("@/lib/validations/category");
+    const categoryId = parseInt(id);
 
-    const validatedId = categoryIdSchema.parse({ id });
-
-    const { data: category, error } = await supabase
-      .from("categories")
-      .select("*")
-      .eq("id", validatedId.id)
-      .single();
-
-    if (error) {
-      console.error("Error fetching category:", error);
+    if (isNaN(categoryId)) {
       return null;
     }
 
-    // Transform to camelCase for frontend
+    const category = await prisma.category.findUnique({
+      where: { id: categoryId },
+    });
+
+    if (!category) {
+      return null;
+    }
+
+    // Transform to match expected interface
     return {
       id: category.id,
       name: category.name,
       description: category.description,
-      isActive: category.is_active,
-      createdAt: category.created_at,
-      updatedAt: category.updated_at,
+      isActive: category.isActive,
+      createdAt: category.createdAt.toISOString(),
+      updatedAt: category.updatedAt.toISOString(),
     };
   } catch (error) {
     console.error("Error fetching category:", error);

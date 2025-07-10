@@ -1,63 +1,58 @@
 import { NextRequest, NextResponse } from "next/server";
-import { getServerSession } from "next-auth";
-import { authOptions } from "@/lib/auth";
-import { canManageInventory, canDeleteInventory } from "@/lib/auth/roles";
-import { InventoryService } from "@/lib/inventory-service";
-import {
-  productIdSchema,
-  updateProductSchema,
-  validateRequest,
-} from "@/lib/validations";
+import { auth } from "../../../../../auth";
+import { prisma } from "@/lib/db";
+import { z } from "zod";
 
-interface RouteParams {
-  params: Promise<{ id: string }>;
-}
+// Input validation schemas
+const ProductUpdateSchema = z.object({
+  name: z.string().min(1).max(255).optional(),
+  description: z.string().optional(),
+  sku: z.string().min(1).max(100).optional(),
+  cost: z.number().min(0).optional(),
+  price: z.number().min(0).optional(),
+  stock: z.number().min(0).optional(),
+  minStock: z.number().min(0).optional(),
+  isArchived: z.boolean().optional(),
+});
 
-// GET /api/products/[id] - Get a specific product
-export async function GET(request: NextRequest, { params }: RouteParams) {
+// GET /api/products/[id] - Get single product
+export async function GET(
+  request: NextRequest,
+  { params }: { params: Promise<{ id: string }> }
+) {
   try {
-    const { id: paramId } = await params;
+    const session = await auth();
 
-    // Validate product ID parameter
-    const validation = validateRequest(productIdSchema, {
-      id: parseInt(paramId),
-    });
-    if (!validation.success) {
+    if (!session?.user) {
       return NextResponse.json(
-        { error: "Invalid product ID", details: validation.errors },
+        { error: "Authentication required" },
+        { status: 401 }
+      );
+    }
+
+    if (session.user.status !== "ACTIVE") {
+      return NextResponse.json(
+        { error: "Account not active" },
+        { status: 403 }
+      );
+    }
+
+    const resolvedParams = await params;
+    const productId = parseInt(resolvedParams.id);
+
+    if (isNaN(productId)) {
+      return NextResponse.json(
+        { error: "Invalid product ID" },
         { status: 400 }
       );
     }
 
-    const { id } = validation.data!;
-
-    const product = await prisma.product.findFirst({
-      where: {
-        id: id,
-        isArchived: false,
-      },
+    const product = await prisma.product.findUnique({
+      where: { id: productId },
       include: {
-        supplier: {
-          select: {
-            id: true,
-            name: true,
-            contactPerson: true,
-            email: true,
-            phone: true,
-          },
-        },
-        category: {
-          select: {
-            id: true,
-            name: true,
-          },
-        },
-        brand: {
-          select: {
-            id: true,
-            name: true,
-          },
-        },
+        category: true,
+        brand: true,
+        supplier: true,
       },
     });
 
@@ -67,224 +62,153 @@ export async function GET(request: NextRequest, { params }: RouteParams) {
 
     return NextResponse.json({ data: product });
   } catch (error) {
-    console.error("Error in GET /api/products/[id]:", error);
+    console.error("Error fetching product:", error);
     return NextResponse.json(
-      { error: "Internal server error" },
+      { error: "Failed to fetch product" },
       { status: 500 }
     );
   }
 }
 
-// PUT /api/products/[id] - Update a product
-export async function PUT(request: NextRequest, { params }: RouteParams) {
+// PUT /api/products/[id] - Update product
+export async function PUT(
+  request: NextRequest,
+  { params }: { params: Promise<{ id: string }> }
+) {
   try {
+    const session = await auth();
+
+    if (!session?.user) {
+      return NextResponse.json(
+        { error: "Authentication required" },
+        { status: 401 }
+      );
+    }
+
+    if (session.user.status !== "ACTIVE") {
+      return NextResponse.json(
+        { error: "Account not active" },
+        { status: 403 }
+      );
+    }
+
+    // Check permissions
+    if (!["ADMIN", "MANAGER"].includes(session.user.role as string)) {
+      return NextResponse.json(
+        { error: "Insufficient permissions" },
+        { status: 403 }
+      );
+    }
+
+    const resolvedParams = await params;
+    const productId = parseInt(resolvedParams.id);
     const body = await request.json();
-    const { id: paramId } = await params;
+    const validatedData = ProductUpdateSchema.parse(body);
 
-    // Validate product ID parameter
-    const idValidation = validateRequest(productIdSchema, {
-      id: parseInt(paramId),
-    });
-    if (!idValidation.success) {
+    if (isNaN(productId)) {
       return NextResponse.json(
-        { error: "Invalid product ID", details: idValidation.errors },
+        { error: "Invalid product ID" },
         { status: 400 }
       );
     }
-
-    // Validate request body
-    const bodyValidation = validateRequest(updateProductSchema, body);
-    if (!bodyValidation.success) {
-      return NextResponse.json(
-        { error: "Invalid product data", details: bodyValidation.errors },
-        { status: 400 }
-      );
-    }
-
-    const { id } = idValidation.data!;
-    const updateData = bodyValidation.data!;
 
     // Check if product exists
     const existingProduct = await prisma.product.findUnique({
-      where: { id },
-      select: { id: true, sku: true },
+      where: { id: productId },
     });
 
     if (!existingProduct) {
       return NextResponse.json({ error: "Product not found" }, { status: 404 });
     }
 
-    // If SKU is being updated, check for conflicts
-    if (updateData.sku && updateData.sku !== existingProduct.sku) {
-      const conflictProduct = await prisma.product.findFirst({
-        where: {
-          sku: updateData.sku,
-          id: { not: id },
-        },
-        select: { id: true },
-      });
-
-      if (conflictProduct) {
-        return NextResponse.json(
-          { error: "Product with this SKU already exists" },
-          { status: 409 }
-        );
-      }
-    }
-
-    // Prepare update data with proper field mapping
-    const prismaUpdateData: any = {};
-
-    if (updateData.name !== undefined) prismaUpdateData.name = updateData.name;
-    if (updateData.sku !== undefined) prismaUpdateData.sku = updateData.sku;
-    if (updateData.barcode !== undefined)
-      prismaUpdateData.barcode = updateData.barcode;
-    if (updateData.description !== undefined)
-      prismaUpdateData.description = updateData.description;
-    if (updateData.categoryId !== undefined)
-      prismaUpdateData.categoryId = updateData.categoryId;
-    if (updateData.brandId !== undefined)
-      prismaUpdateData.brandId = updateData.brandId;
-    if (updateData.purchasePrice !== undefined)
-      prismaUpdateData.cost = updateData.purchasePrice;
-    if (updateData.sellingPrice !== undefined)
-      prismaUpdateData.price = updateData.sellingPrice;
-    if (updateData.minimumStock !== undefined)
-      prismaUpdateData.minStock = updateData.minimumStock;
-    if (updateData.maximumStock !== undefined)
-      prismaUpdateData.maxStock = updateData.maximumStock;
-    if (updateData.currentStock !== undefined)
-      prismaUpdateData.stock = updateData.currentStock;
-    if (updateData.supplierId !== undefined)
-      prismaUpdateData.supplierId = updateData.supplierId;
-    if (updateData.status !== undefined)
-      prismaUpdateData.status = updateData.status;
-    if (updateData.imageUrl !== undefined) {
-      prismaUpdateData.images = updateData.imageUrl
-        ? [{ url: updateData.imageUrl, isPrimary: true }]
-        : null;
-    }
-
     // Update the product
-    const product = await prisma.product.update({
-      where: { id },
-      data: prismaUpdateData,
+    const updatedProduct = await prisma.product.update({
+      where: { id: productId },
+      data: validatedData,
       include: {
-        supplier: {
-          select: { id: true, name: true },
-        },
-        category: {
-          select: { id: true, name: true },
-        },
-        brand: {
-          select: { id: true, name: true },
-        },
+        category: true,
+        brand: true,
+        supplier: true,
       },
     });
 
-    return NextResponse.json({ data: product });
+    return NextResponse.json({
+      message: "Product updated successfully",
+      data: updatedProduct,
+    });
   } catch (error) {
-    console.error("Error in PUT /api/products/[id]:", error);
+    if (error instanceof z.ZodError) {
+      return NextResponse.json(
+        {
+          error: "Validation failed",
+          details: error.errors,
+        },
+        { status: 400 }
+      );
+    }
+
+    console.error("Error updating product:", error);
     return NextResponse.json(
-      { error: "Internal server error" },
+      { error: "Failed to update product" },
       { status: 500 }
     );
   }
 }
 
-// DELETE /api/products/[id] - Delete (archive) a product
-export async function DELETE(request: NextRequest, { params }: RouteParams) {
+// DELETE /api/products/[id] - Delete/Archive product
+export async function DELETE(
+  request: NextRequest,
+  { params }: { params: Promise<{ id: string }> }
+) {
   try {
-    const supabase = await createServerSupabaseClient();
-    const { id: paramId } = await params;
+    const session = await auth();
 
-    // Validate product ID parameter
-    const validation = validateRequest(productIdSchema, {
-      id: parseInt(paramId),
-    });
-    if (!validation.success) {
+    if (!session?.user) {
       return NextResponse.json(
-        { error: "Invalid product ID", details: validation.errors },
+        { error: "Authentication required" },
+        { status: 401 }
+      );
+    }
+
+    if (session.user.status !== "ACTIVE") {
+      return NextResponse.json(
+        { error: "Account not active" },
+        { status: 403 }
+      );
+    }
+
+    // Only admins can delete products
+    if (session.user.role !== "ADMIN") {
+      return NextResponse.json(
+        { error: "Admin access required" },
+        { status: 403 }
+      );
+    }
+
+    const resolvedParams = await params;
+    const productId = parseInt(resolvedParams.id);
+
+    if (isNaN(productId)) {
+      return NextResponse.json(
+        { error: "Invalid product ID" },
         { status: 400 }
       );
     }
 
-    const { id: productId } = validation.data!;
-    const { searchParams } = new URL(request.url);
-    const hardDelete = searchParams.get("hard") === "true";
+    // Archive the product instead of deleting
+    const archivedProduct = await prisma.product.update({
+      where: { id: productId },
+      data: { isArchived: true },
+    });
 
-    // Check if product exists
-    const { data: existingProduct } = await supabase
-      .from("products")
-      .select("id, name")
-      .eq("id", productId)
-      .single();
-
-    if (!existingProduct) {
-      return NextResponse.json({ error: "Product not found" }, { status: 404 });
-    }
-
-    if (hardDelete) {
-      // Check for related records that would prevent deletion
-      const { data: salesItems } = await supabase
-        .from("sales_items")
-        .select("id")
-        .eq("productId", productId)
-        .limit(1);
-
-      if (salesItems && salesItems.length > 0) {
-        return NextResponse.json(
-          {
-            error:
-              "Cannot delete product with existing sales records. Use archive instead.",
-          },
-          { status: 409 }
-        );
-      }
-
-      // Hard delete
-      const { error } = await supabase
-        .from("products")
-        .delete()
-        .eq("id", productId);
-
-      if (error) {
-        console.error("Error deleting product:", error);
-        return NextResponse.json(
-          { error: "Failed to delete product" },
-          { status: 500 }
-        );
-      }
-
-      return NextResponse.json({
-        message: "Product deleted successfully",
-      });
-    } else {
-      // Soft delete (archive)
-      const { data: product, error } = await supabase
-        .from("products")
-        .update({ is_archived: true })
-        .eq("id", productId)
-        .select("id, name, is_archived")
-        .single();
-
-      if (error) {
-        console.error("Error archiving product:", error);
-        return NextResponse.json(
-          { error: "Failed to archive product" },
-          { status: 500 }
-        );
-      }
-
-      return NextResponse.json({
-        data: product,
-        message: "Product archived successfully",
-      });
-    }
+    return NextResponse.json({
+      message: "Product archived successfully",
+      data: archivedProduct,
+    });
   } catch (error) {
-    console.error("Error in DELETE /api/products/[id]:", error);
+    console.error("Error deleting product:", error);
     return NextResponse.json(
-      { error: "Internal server error" },
+      { error: "Failed to delete product" },
       { status: 500 }
     );
   }

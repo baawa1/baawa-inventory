@@ -1,7 +1,7 @@
 "use client";
 
-import { useRouter } from "next/navigation";
 import { useSession } from "next-auth/react";
+import { useRouter } from "next/navigation";
 import { useEffect } from "react";
 import {
   Card,
@@ -11,300 +11,132 @@ import {
   CardTitle,
 } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
-import {
-  Clock,
-  CheckCircle,
-  Mail,
-  User,
-  XCircle,
-  AlertTriangle,
-  RefreshCw,
-} from "lucide-react";
-import { useUserStatusValidation } from "@/hooks/useUserStatusValidation";
-import { useLogout } from "@/hooks/useLogout";
+import { Clock, CheckCircle, AlertCircle } from "lucide-react";
 
 export default function PendingApprovalPage() {
-  const router = useRouter();
   const { data: session, status } = useSession();
-  const { logout, isLoggingOut } = useLogout();
+  const router = useRouter();
 
-  // Use the custom hook for all session validation logic
-  const {
-    userStatus,
-    isRefreshing,
-    hasTriedRefresh: _hasTriedRefresh,
-    refreshUserStatus,
-    isLoading,
-  } = useUserStatusValidation({
-    redirectOnApproved: true,
-    autoRefresh: true,
-  });
-
-  // Handle redirects in useEffect to avoid setState during render
   useEffect(() => {
-    if (status === "loading" || isLoading) return; // Wait for loading to complete
+    if (status === "loading") return; // Still loading
 
-    // Redirect unauthenticated users to login
-    if (status === "unauthenticated" || !session) {
+    if (status === "unauthenticated") {
       router.push("/login");
       return;
     }
 
-    // Only allow users with specific statuses to access this page
-    const allowedStatuses = ["PENDING", "VERIFIED", "REJECTED", "SUSPENDED"];
-    if (session && userStatus && !allowedStatuses.includes(userStatus)) {
-      // If user is APPROVED, they should be redirected to dashboard (handled by useUserStatusValidation)
-      // If user has any other status, redirect to login
-      if (userStatus !== "APPROVED") {
-        router.push("/login");
-      }
+    if (session?.user?.status === "APPROVED") {
+      router.push("/dashboard");
+      return;
     }
-  }, [status, session, userStatus, router, isLoading]);
+  }, [session, status, router]);
 
-  // Show loading state
-  if (isLoading || status === "loading") {
+  const handleLogout = () => {
+    router.push("/logout");
+  };
+
+  if (status === "loading") {
     return (
-      <div className="min-h-screen flex items-center justify-center bg-gray-50">
+      <div className="flex items-center justify-center min-h-screen">
         <div className="text-center">
-          <Clock className="h-8 w-8 text-gray-400 mx-auto mb-4 animate-spin" />
-          <p className="text-gray-600">Loading...</p>
+          <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-blue-600 mx-auto"></div>
+          <p className="mt-2 text-gray-600">Loading...</p>
         </div>
       </div>
     );
   }
 
-  // Show loading state during redirects
-  if (status === "unauthenticated" || !session) {
-    return (
-      <div className="min-h-screen flex items-center justify-center bg-gray-50">
-        <div className="text-center">
-          <Clock className="h-8 w-8 text-gray-400 mx-auto mb-4 animate-spin" />
-          <p className="text-gray-600">Redirecting to login...</p>
-        </div>
-      </div>
-    );
+  if (status === "unauthenticated") {
+    return null; // Will redirect
   }
 
-  // Show loading state for unauthorized access
-  const allowedStatuses = ["PENDING", "VERIFIED", "REJECTED", "SUSPENDED"];
-  if (
-    session &&
-    userStatus &&
-    !allowedStatuses.includes(userStatus) &&
-    userStatus !== "APPROVED"
-  ) {
-    return (
-      <div className="min-h-screen flex items-center justify-center bg-gray-50">
-        <div className="text-center">
-          <AlertTriangle className="h-8 w-8 text-red-400 mx-auto mb-4" />
-          <p className="text-gray-600">Access denied. Redirecting...</p>
-        </div>
-      </div>
-    );
-  }
+  const getStatusIcon = () => {
+    switch (session?.user?.status) {
+      case "PENDING":
+        return <Clock className="h-16 w-16 text-yellow-500" />;
+      case "APPROVED":
+        return <CheckCircle className="h-16 w-16 text-green-500" />;
+      case "REJECTED":
+        return <AlertCircle className="h-16 w-16 text-red-500" />;
+      default:
+        return <Clock className="h-16 w-16 text-gray-500" />;
+    }
+  };
 
-  const getStatusInfo = () => {
-    switch (userStatus) {
+  const getStatusMessage = () => {
+    switch (session?.user?.status) {
       case "PENDING":
         return {
-          icon: <Clock className="h-16 w-16 text-yellow-500" />,
-          title: "Email Verification Required",
-          titleColor: "text-yellow-600",
-          description: "Please check your email and verify your account",
-          statusCard: {
-            bgColor: "bg-yellow-50 border-yellow-200",
-            iconColor: "text-yellow-600",
-            textColor: "text-yellow-700",
-            icon: <Mail className="h-4 w-4" />,
-            title: "Awaiting Email Verification",
-            description:
-              "Please check your email and click the verification link to continue.",
-          },
-        };
-      case "VERIFIED":
-        return {
-          icon: <Clock className="h-16 w-16 text-blue-500" />,
           title: "Account Pending Approval",
-          titleColor: "text-blue-600",
-          description: "Your email has been verified successfully",
-          statusCard: {
-            bgColor: "bg-blue-50 border-blue-200",
-            iconColor: "text-blue-600",
-            textColor: "text-blue-700",
-            icon: <User className="h-4 w-4" />,
-            title: "Awaiting Admin Approval",
-            description:
-              "Your account is now pending approval from an administrator.",
-          },
+          description:
+            "Your account is currently under review. An administrator will approve your access soon.",
         };
       case "REJECTED":
         return {
-          icon: <XCircle className="h-16 w-16 text-red-500" />,
-          title: "Account Rejected",
-          titleColor: "text-red-600",
-          description: "Your account application has been rejected",
-          statusCard: {
-            bgColor: "bg-red-50 border-red-200",
-            iconColor: "text-red-600",
-            textColor: "text-red-700",
-            icon: <XCircle className="h-4 w-4" />,
-            title: "Application Rejected",
-            description:
-              "Your account application has been rejected. Please contact support for more information.",
-          },
-        };
-      case "SUSPENDED":
-        return {
-          icon: <AlertTriangle className="h-16 w-16 text-orange-500" />,
-          title: "Account Suspended",
-          titleColor: "text-orange-600",
-          description: "Your account has been temporarily suspended",
-          statusCard: {
-            bgColor: "bg-orange-50 border-orange-200",
-            iconColor: "text-orange-600",
-            textColor: "text-orange-700",
-            icon: <AlertTriangle className="h-4 w-4" />,
-            title: "Account Suspended",
-            description:
-              "Your account has been suspended. Please contact support to resolve this issue.",
-          },
+          title: "Account Access Denied",
+          description:
+            "Your account access has been denied. Please contact support for more information.",
         };
       default:
         return {
-          icon: <Clock className="h-16 w-16 text-gray-500" />,
           title: "Account Status Unknown",
-          titleColor: "text-gray-600",
-          description: "Please contact support for assistance",
-          statusCard: {
-            bgColor: "bg-gray-50 border-gray-200",
-            iconColor: "text-gray-600",
-            textColor: "text-gray-700",
-            icon: <AlertTriangle className="h-4 w-4" />,
-            title: "Status Unknown",
-            description:
-              "We&apos;re unable to determine your account status. Please contact support.",
-          },
+          description:
+            "There seems to be an issue with your account status. Please contact support.",
         };
     }
   };
 
-  const statusInfo = getStatusInfo();
+  const statusInfo = getStatusMessage();
 
   return (
-    <div className="min-h-screen flex items-center justify-center bg-gray-50">
-      <div className="w-full max-w-md">
+    <div className="min-h-screen flex items-center justify-center bg-gray-50 py-12 px-4 sm:px-6 lg:px-8">
+      <div className="max-w-md w-full space-y-8">
         <Card>
           <CardHeader className="text-center">
-            <div className="flex justify-center mb-4">{statusInfo.icon}</div>
-            <CardTitle className={`text-2xl ${statusInfo.titleColor}`}>
+            <div className="flex justify-center mb-4">{getStatusIcon()}</div>
+            <CardTitle className="text-2xl font-bold">
               {statusInfo.title}
             </CardTitle>
-            <CardDescription
-              data-testid="pending-approval-message"
-              className="text-center"
-            >
+            <CardDescription className="text-gray-600">
               {statusInfo.description}
             </CardDescription>
           </CardHeader>
-
           <CardContent className="space-y-4">
-            {userStatus === "VERIFIED" && (
-              <div className="bg-green-50 border border-green-200 rounded-lg p-4">
-                <div className="flex items-center space-x-2 mb-2">
-                  <CheckCircle className="h-4 w-4 text-green-600" />
-                  <p className="text-sm font-medium text-green-700">
-                    Email Verified
-                  </p>
-                </div>
-                <p className="text-sm text-green-600">
-                  Your email address has been successfully verified.
-                </p>
-              </div>
-            )}
-
-            <div
-              className={`${statusInfo.statusCard.bgColor} border rounded-lg p-4`}
-            >
-              <div className="flex items-center space-x-2 mb-2">
-                <span className={statusInfo.statusCard.iconColor}>
-                  {statusInfo.statusCard.icon}
-                </span>
-                <p
-                  className={`text-sm font-medium ${statusInfo.statusCard.textColor}`}
-                >
-                  {statusInfo.statusCard.title}
-                </p>
-              </div>
-              <p className={`text-sm ${statusInfo.statusCard.textColor}`}>
-                {statusInfo.statusCard.description}
+            <div className="text-center">
+              <p className="text-sm text-gray-500">
+                Logged in as:{" "}
+                <span className="font-medium">{session?.user?.email}</span>
+              </p>
+              <p className="text-sm text-gray-500">
+                Role: <span className="font-medium">{session?.user?.role}</span>
+              </p>
+              <p className="text-sm text-gray-500">
+                Status:{" "}
+                <span className="font-medium">{session?.user?.status}</span>
               </p>
             </div>
 
-            {userStatus === "VERIFIED" && (
-              <div className="space-y-3 text-sm text-gray-600">
-                <h3 className="font-medium text-gray-900">
-                  What happens next:
-                </h3>
-                <ol className="list-decimal list-inside space-y-2">
-                  <li>An administrator will review your account</li>
-                  <li>
-                    You&apos;ll receive an email notification when approved
-                  </li>
-                  <li>Once approved, you can log in to access the system</li>
-                </ol>
+            {session?.user?.status === "PENDING" && (
+              <div className="bg-yellow-50 border border-yellow-200 rounded-md p-3">
+                <p className="text-sm text-yellow-800">
+                  Your account registration was successful! Please wait for an
+                  administrator to approve your access.
+                </p>
               </div>
             )}
 
-            {(userStatus === "PENDING" || userStatus === "VERIFIED") && (
-              <div className="bg-blue-50 border border-blue-200 rounded-lg p-4">
-                <div className="flex items-center space-x-2">
-                  <Mail className="h-4 w-4 text-blue-600" />
-                  <p className="text-sm text-blue-700">
-                    You&apos;ll be notified by email once your account is
-                    approved
-                  </p>
-                </div>
+            {session?.user?.status === "REJECTED" && (
+              <div className="bg-red-50 border border-red-200 rounded-md p-3">
+                <p className="text-sm text-red-800">
+                  If you believe this is an error, please contact our support
+                  team for assistance.
+                </p>
               </div>
             )}
 
-            <div className="text-center pt-4 border-t space-y-2">
-              {!userStatus && (
-                <Button
-                  onClick={refreshUserStatus}
-                  disabled={isRefreshing}
-                  variant="outline"
-                  className="w-full mb-2"
-                >
-                  {isRefreshing ? (
-                    <>
-                      <RefreshCw className="h-4 w-4 mr-2 animate-spin" />
-                      Checking Status...
-                    </>
-                  ) : (
-                    <>
-                      <RefreshCw className="h-4 w-4 mr-2" />
-                      Refresh Status
-                    </>
-                  )}
-                </Button>
-              )}
-
-              <Button
-                onClick={logout}
-                disabled={isLoggingOut}
-                className="w-full"
-              >
-                {isLoggingOut ? "Logging out..." : "Logout"}
-              </Button>
-
-              <Button
-                variant="link"
-                onClick={() => router.push("/")}
-                className="text-sm"
-              >
-                Return to Home
-              </Button>
-            </div>
+            <Button onClick={handleLogout} variant="outline" className="w-full">
+              Sign Out
+            </Button>
           </CardContent>
         </Card>
       </div>

@@ -1,24 +1,23 @@
 import { redirect } from "next/navigation";
-import { getServerSession } from "@/lib/auth-helpers";
-import { InventoryDashboard } from "@/components/inventory/InventoryDashboard";
-
-export const metadata = {
-  title: "Dashboard - BaaWA Inventory POS",
-  description: "Inventory management and POS system dashboard",
-};
+import { auth } from "../../../auth";
+import { DashboardCard } from "@/components/dashboard/DashboardCard";
 
 export default async function DashboardPage() {
-  const session = await getServerSession();
+  const session = await auth();
 
-  // Redirect if not authenticated
-  if (!session) {
+  if (!session?.user) {
     redirect("/login");
   }
 
-  // Check user status
-  if (session.user.status !== "APPROVED") {
-    redirect("/pending-approval");
-  }
-
-  return <InventoryDashboard user={session.user} />;
+  return (
+    <div className="space-y-6">
+      <div>
+        <h1 className="text-3xl font-bold tracking-tight">Dashboard</h1>
+        <p className="text-muted-foreground">
+          Welcome back, {session.user.name}!
+        </p>
+      </div>
+      <DashboardCard />
+    </div>
+  );
 }

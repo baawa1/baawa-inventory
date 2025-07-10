@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from "next/server";
-import { createServerSupabaseClient } from "@/lib/supabase-server";
-import { validateRequest } from "@/lib/validations/common";
+import { auth } from "../../../../../auth";
+import { prisma } from "@/lib/db";
 import { z } from "zod";
 
 // Query schema for archived products
@@ -17,7 +17,15 @@ const archivedProductsQuerySchema = z.object({
 // GET /api/products/archived - Get archived products
 export async function GET(request: NextRequest) {
   try {
-    const supabase = await createServerSupabaseClient();
+    const session = await auth();
+
+    if (!session?.user) {
+      return NextResponse.json(
+        { error: "Authentication required" },
+        { status: 401 }
+      );
+    }
+
     const { searchParams } = new URL(request.url);
 
     // Parse and validate query parameters
@@ -31,21 +39,7 @@ export async function GET(request: NextRequest) {
       sortOrder: searchParams.get("sortOrder") || "desc",
     };
 
-    const validation = validateRequest(archivedProductsQuerySchema, queryData);
-    if (!validation.success) {
-      return NextResponse.json(
-        { error: "Invalid query parameters", details: validation.errors },
-        { status: 400 }
-      );
-    }
-
-    const validatedData = validation.data;
-    if (!validatedData) {
-      return NextResponse.json(
-        { error: "Invalid query parameters" },
-        { status: 400 }
-      );
-    }
+    const validatedData = archivedProductsQuerySchema.parse(queryData);
 
     const {
       search,
@@ -58,65 +52,47 @@ export async function GET(request: NextRequest) {
     } = validatedData;
     const offset = (page - 1) * limit;
 
-    // Build query for archived products
-    let query = supabase
-      .from("products")
-      .select(
-        `
-        id,
-        name,
-        sku,
-        status,
-        stock,
-        price,
-        cost,
-        is_archived,
-        archived_at,
-        created_at,
-        updated_at,
-        category:categories(id, name),
-        brand:brands(id, name),
-        supplier:suppliers(id, name)
-      `
-      )
-      .eq("is_archived", true);
+    // Build where clause for Prisma
+    const where: any = {
+      isArchived: true,
+    };
 
     // Apply filters
     if (search) {
-      query = query.or(`name.ilike.%${search}%,sku.ilike.%${search}%`);
+      where.OR = [
+        { name: { contains: search, mode: "insensitive" } },
+        { sku: { contains: search, mode: "insensitive" } },
+      ];
     }
 
     if (category) {
-      query = query.eq("category_id", parseInt(category));
+      where.categoryId = parseInt(category);
     }
 
     if (brand) {
-      query = query.eq("brand_id", parseInt(brand));
+      where.brandId = parseInt(brand);
     }
 
-    // Get total count for pagination
-    const { count } = await supabase
-      .from("products")
-      .select("*", { count: "exact", head: true })
-      .eq("is_archived", true);
-
-    // Apply sorting and pagination
-    query = query
-      .order(sortBy as any, { ascending: sortOrder === "asc" })
-      .range(offset, offset + limit - 1);
-
-    const { data: products, error } = await query;
-
-    if (error) {
-      console.error("Error fetching archived products:", error);
-      return NextResponse.json(
-        { error: "Failed to fetch archived products" },
-        { status: 500 }
-      );
-    }
+    // Get products and count in parallel
+    const [products, totalCount] = await Promise.all([
+      prisma.product.findMany({
+        where,
+        include: {
+          category: { select: { id: true, name: true } },
+          brand: { select: { id: true, name: true } },
+          supplier: { select: { id: true, name: true } },
+        },
+        orderBy: {
+          [sortBy === "archived_at" ? "updatedAt" : sortBy]: sortOrder,
+        },
+        skip: offset,
+        take: limit,
+      }),
+      prisma.product.count({ where }),
+    ]);
 
     // Calculate pagination info
-    const totalPages = Math.ceil((count || 0) / limit);
+    const totalPages = Math.ceil(totalCount / limit);
     const hasMore = page < totalPages;
 
     return NextResponse.json({
@@ -124,7 +100,7 @@ export async function GET(request: NextRequest) {
       pagination: {
         page,
         limit,
-        total: count || 0,
+        total: totalCount,
         totalPages,
         hasMore,
       },

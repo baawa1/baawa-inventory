@@ -1,38 +1,61 @@
 import { NextRequest, NextResponse } from "next/server";
-import { getServerSession } from "next-auth";
-import { authOptions } from "@/lib/auth";
+import { auth } from "../../../../../auth";
 import { prisma } from "@/lib/db";
-import { hasPermission } from "@/lib/auth/roles";
-import {
-  updateCategorySchema,
-  categoryIdSchema,
-} from "@/lib/validations/category";
+import { z } from "zod";
 
-// GET /api/categories/[id] - Get single category
+const CategoryUpdateSchema = z.object({
+  name: z.string().min(1).max(100).optional(),
+  description: z.string().optional(),
+  isActive: z.boolean().optional(),
+});
+
+// GET /api/categories/[id] - Get category by ID
 export async function GET(
   request: NextRequest,
   { params }: { params: Promise<{ id: string }> }
 ) {
   try {
-    const session = await getServerSession(authOptions);
+    const session = await auth();
 
     if (!session?.user) {
-      return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+      return NextResponse.json(
+        { error: "Authentication required" },
+        { status: 401 }
+      );
     }
 
-    // Check if user has permission to view categories
-    if (!hasPermission(session.user.role, "INVENTORY_READ")) {
+    if (session.user.status !== "ACTIVE") {
       return NextResponse.json(
-        { error: "Insufficient permissions" },
+        { error: "Account not active" },
         { status: 403 }
       );
     }
 
     const { id } = await params;
-    const validatedId = categoryIdSchema.parse({ id });
+    const categoryId = parseInt(id);
+
+    if (isNaN(categoryId)) {
+      return NextResponse.json(
+        { error: "Invalid category ID" },
+        { status: 400 }
+      );
+    }
 
     const category = await prisma.category.findUnique({
-      where: { id: validatedId.id },
+      where: { id: categoryId },
+      select: {
+        id: true,
+        name: true,
+        description: true,
+        isActive: true,
+        createdAt: true,
+        updatedAt: true,
+        _count: {
+          select: {
+            products: true,
+          },
+        },
+      },
     });
 
     if (!category) {
@@ -42,24 +65,21 @@ export async function GET(
       );
     }
 
-    // Transform to match expected format (Prisma already returns camelCase)
-    const transformedCategory = {
-      id: category.id,
-      name: category.name,
-      description: category.description,
-      isActive: category.isActive,
-      createdAt: category.createdAt,
-      updatedAt: category.updatedAt,
-    };
-
-    return NextResponse.json(transformedCategory);
+    return NextResponse.json({
+      data: {
+        id: category.id,
+        name: category.name,
+        description: category.description,
+        isActive: category.isActive,
+        productCount: category._count.products,
+        createdAt: category.createdAt.toISOString(),
+        updatedAt: category.updatedAt.toISOString(),
+      },
+    });
   } catch (error) {
-    console.error("API error:", error);
-    if (error instanceof Error) {
-      return NextResponse.json({ error: error.message }, { status: 400 });
-    }
+    console.error("Error fetching category:", error);
     return NextResponse.json(
-      { error: "Internal server error" },
+      { error: "Failed to fetch category" },
       { status: 500 }
     );
   }
@@ -71,14 +91,24 @@ export async function PUT(
   { params }: { params: Promise<{ id: string }> }
 ) {
   try {
-    const session = await getServerSession(authOptions);
+    const session = await auth();
 
     if (!session?.user) {
-      return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+      return NextResponse.json(
+        { error: "Authentication required" },
+        { status: 401 }
+      );
     }
 
-    // Check if user has permission to update categories
-    if (!hasPermission(session.user.role, "INVENTORY_WRITE")) {
+    if (session.user.status !== "ACTIVE") {
+      return NextResponse.json(
+        { error: "Account not active" },
+        { status: 403 }
+      );
+    }
+
+    // Check permissions - only admins and managers can update categories
+    if (!["ADMIN", "MANAGER"].includes(session.user.role as string)) {
       return NextResponse.json(
         { error: "Insufficient permissions" },
         { status: 403 }
@@ -86,18 +116,13 @@ export async function PUT(
     }
 
     const { id } = await params;
-    const validatedId = categoryIdSchema.parse({ id });
-
+    const categoryId = parseInt(id);
     const body = await request.json();
-    const validatedData = updateCategorySchema.parse({
-      ...body,
-      id: validatedId.id,
-    });
+    const validatedData = CategoryUpdateSchema.parse(body);
 
     // Check if category exists
     const existingCategory = await prisma.category.findUnique({
-      where: { id: validatedId.id },
-      select: { id: true },
+      where: { id: categoryId },
     });
 
     if (!existingCategory) {
@@ -107,17 +132,21 @@ export async function PUT(
       );
     }
 
-    // Check if name is being changed and doesn't conflict with existing categories
-    if (validatedData.name) {
-      const nameConflict = await prisma.category.findFirst({
+    // Check if name already exists (if name is being updated)
+    if (validatedData.name && validatedData.name !== existingCategory.name) {
+      const duplicateCategory = await prisma.category.findFirst({
         where: {
-          name: validatedData.name,
-          id: { not: validatedId.id },
+          name: {
+            equals: validatedData.name,
+            mode: "insensitive",
+          },
+          id: {
+            not: categoryId,
+          },
         },
-        select: { id: true },
       });
 
-      if (nameConflict) {
+      if (duplicateCategory) {
         return NextResponse.json(
           { error: "Category with this name already exists" },
           { status: 400 }
@@ -125,38 +154,51 @@ export async function PUT(
       }
     }
 
-    // Build update object
-    const updateData: any = {};
-    if (validatedData.name !== undefined) updateData.name = validatedData.name;
-    if (validatedData.description !== undefined)
-      updateData.description = validatedData.description;
-    if (validatedData.isActive !== undefined)
-      updateData.isActive = validatedData.isActive;
-
     // Update the category
-    const category = await prisma.category.update({
-      where: { id: validatedId.id },
-      data: updateData,
+    const updatedCategory = await prisma.category.update({
+      where: { id: categoryId },
+      data: validatedData,
+      select: {
+        id: true,
+        name: true,
+        description: true,
+        isActive: true,
+        createdAt: true,
+        updatedAt: true,
+        _count: {
+          select: {
+            products: true,
+          },
+        },
+      },
     });
 
-    // Transform response to match expected format (Prisma already returns camelCase)
-    const transformedCategory = {
-      id: category.id,
-      name: category.name,
-      description: category.description,
-      isActive: category.isActive,
-      createdAt: category.createdAt,
-      updatedAt: category.updatedAt,
-    };
-
-    return NextResponse.json(transformedCategory);
+    return NextResponse.json({
+      message: "Category updated successfully",
+      data: {
+        id: updatedCategory.id,
+        name: updatedCategory.name,
+        description: updatedCategory.description,
+        isActive: updatedCategory.isActive,
+        productCount: updatedCategory._count.products,
+        createdAt: updatedCategory.createdAt.toISOString(),
+        updatedAt: updatedCategory.updatedAt.toISOString(),
+      },
+    });
   } catch (error) {
-    console.error("API error:", error);
-    if (error instanceof Error) {
-      return NextResponse.json({ error: error.message }, { status: 400 });
+    if (error instanceof z.ZodError) {
+      return NextResponse.json(
+        {
+          error: "Validation failed",
+          details: error.errors,
+        },
+        { status: 400 }
+      );
     }
+
+    console.error("Error updating category:", error);
     return NextResponse.json(
-      { error: "Internal server error" },
+      { error: "Failed to update category" },
       { status: 500 }
     );
   }
@@ -168,27 +210,50 @@ export async function DELETE(
   { params }: { params: Promise<{ id: string }> }
 ) {
   try {
-    const session = await getServerSession(authOptions);
+    const session = await auth();
 
     if (!session?.user) {
-      return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+      return NextResponse.json(
+        { error: "Authentication required" },
+        { status: 401 }
+      );
     }
 
-    // Check if user has permission to delete categories
-    if (!hasPermission(session.user.role, "INVENTORY_DELETE")) {
+    if (session.user.status !== "ACTIVE") {
       return NextResponse.json(
-        { error: "Insufficient permissions" },
+        { error: "Account not active" },
+        { status: 403 }
+      );
+    }
+
+    // Check permissions - only admins can delete categories
+    if (session.user.role !== "ADMIN") {
+      return NextResponse.json(
+        { error: "Admin access required" },
         { status: 403 }
       );
     }
 
     const { id } = await params;
-    const validatedId = categoryIdSchema.parse({ id });
+    const categoryId = parseInt(id);
+
+    if (isNaN(categoryId)) {
+      return NextResponse.json(
+        { error: "Invalid category ID" },
+        { status: 400 }
+      );
+    }
 
     // Check if category exists
     const existingCategory = await prisma.category.findUnique({
-      where: { id: validatedId.id },
-      select: { id: true, name: true },
+      where: { id: categoryId },
+      include: {
+        _count: {
+          select: {
+            products: true,
+          },
+        },
+      },
     });
 
     if (!existingCategory) {
@@ -198,20 +263,12 @@ export async function DELETE(
       );
     }
 
-    // Check if category is being used by any products
-    const productsUsing = await prisma.product.findFirst({
-      where: {
-        categoryId: validatedId.id,
-        isArchived: false,
-      },
-      select: { id: true },
-    });
-
-    if (productsUsing) {
+    // Check if category has products
+    if (existingCategory._count.products > 0) {
       return NextResponse.json(
         {
-          error:
-            "Cannot delete category that is being used by products. Archive it instead.",
+          error: "Cannot delete category with associated products",
+          details: `This category has ${existingCategory._count.products} associated products`,
         },
         { status: 400 }
       );
@@ -219,17 +276,16 @@ export async function DELETE(
 
     // Delete the category
     await prisma.category.delete({
-      where: { id: validatedId.id },
+      where: { id: categoryId },
     });
 
-    return NextResponse.json({ message: "Category deleted successfully" });
+    return NextResponse.json({
+      message: "Category deleted successfully",
+    });
   } catch (error) {
-    console.error("API error:", error);
-    if (error instanceof Error) {
-      return NextResponse.json({ error: error.message }, { status: 400 });
-    }
+    console.error("Error deleting category:", error);
     return NextResponse.json(
-      { error: "Internal server error" },
+      { error: "Failed to delete category" },
       { status: 500 }
     );
   }

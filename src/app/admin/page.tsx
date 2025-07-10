@@ -1,5 +1,5 @@
 import { redirect } from "next/navigation";
-import { getServerSession } from "@/lib/auth-helpers";
+import { auth } from "../../../auth";
 import { AdminDashboard } from "@/components/admin/AdminDashboard";
 
 export const metadata = {
@@ -7,26 +7,17 @@ export const metadata = {
   description: "Manage users, pending approvals, and account settings",
 };
 
-export default async function UserManagementPage() {
-  const session = await getServerSession();
+export default async function AdminPage() {
+  const session = await auth();
 
-  // Redirect if not authenticated
-  if (!session) {
+  if (!session?.user) {
     redirect("/login");
   }
 
-  // Check if user is approved and has admin role
-  if (session.user.status !== "APPROVED") {
-    redirect("/pending-approval");
-  }
-
-  if (session.user.role !== "ADMIN") {
+  // Check if user has admin access
+  if (session.user.role !== "ADMIN" && session.user.role !== "SUPER_ADMIN") {
     redirect("/unauthorized");
   }
 
-  return (
-    <div data-testid="admin-dashboard" className="container mx-auto py-6">
-      <AdminDashboard />
-    </div>
-  );
+  return <AdminDashboard />;
 }

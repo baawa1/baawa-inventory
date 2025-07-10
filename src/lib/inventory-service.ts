@@ -1,9 +1,7 @@
-"use server";
-
 import { prisma } from "@/lib/db";
 import { AuditLogAction } from "@/types/audit";
 import { createAuditLog } from "@/lib/audit";
-import { ProductWithRelations } from "@/types/inventory";
+// import { ProductWithRelations } from "@/types/inventory";
 
 interface StockUpdateData {
   productId: number;

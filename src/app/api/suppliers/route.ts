@@ -1,7 +1,6 @@
+import { auth } from "../../../../auth";
 import { NextRequest } from "next/server";
 import { prisma } from "@/lib/db";
-import { getServerSession } from "next-auth";
-import { authOptions } from "@/lib/auth";
 import { hasPermission } from "@/lib/auth/roles";
 import {
   createSupplierSchema,
@@ -12,8 +11,8 @@ import { handleApiError, createApiResponse } from "@/lib/api-error-handler";
 // GET /api/suppliers - List suppliers with optional filtering and pagination
 export async function GET(request: NextRequest) {
   try {
-    const session = await getServerSession(authOptions);
-    if (!session) {
+    const session = await auth();
+    if (!session?.user) {
       return handleApiError(new Error("Unauthorized"), 401);
     }
 
@@ -125,8 +124,8 @@ export async function GET(request: NextRequest) {
 // POST /api/suppliers - Create a new supplier
 export async function POST(request: NextRequest) {
   try {
-    const session = await getServerSession(authOptions);
-    if (!session) {
+    const session = await auth();
+    if (!session?.user) {
       return handleApiError(new Error("Unauthorized"), 401);
     }
 

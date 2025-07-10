@@ -2,7 +2,6 @@ import { NextResponse } from "next/server";
 import { prisma } from "@/lib/db";
 import { createSaleSchema, saleQuerySchema } from "@/lib/validations/sale";
 import { withAuth, AuthenticatedRequest } from "@/lib/api-middleware";
-import { withApiRateLimit } from "@/lib/rate-limit";
 
 // GET /api/sales - List sales transactions with optional filtering and pagination
 export const GET = withAuth(async function (request: AuthenticatedRequest) {
@@ -146,176 +145,156 @@ export const GET = withAuth(async function (request: AuthenticatedRequest) {
 });
 
 // POST /api/sales - Create a new sales transaction
-export const POST = withApiRateLimit(
-  withAuth(async function (request: AuthenticatedRequest) {
-    try {
-      const body = await request.json();
-      const validatedData = createSaleSchema.parse(body);
+export const POST = withAuth(async function (request: AuthenticatedRequest) {
+  try {
+    const body = await request.json();
+    const validatedData = createSaleSchema.parse(body);
 
-      // Validate user exists
-      const user = await prisma.user.findUnique({
-        where: { id: validatedData.userId },
-        select: { id: true },
-      });
+    // Validate user exists
+    const user = await prisma.user.findUnique({
+      where: { id: validatedData.userId },
+      select: { id: true },
+    });
 
-      if (!user) {
-        return NextResponse.json({ error: "User not found" }, { status: 404 });
-      }
+    if (!user) {
+      return NextResponse.json({ error: "User not found" }, { status: 404 });
+    }
 
-      // Generate transaction code
-      const timestamp = Date.now();
-      const transactionCode = `TXN-${timestamp}`;
+    // Generate transaction code
+    const timestamp = Date.now();
+    const transactionCode = `TXN-${timestamp}`;
 
-      // Use Prisma transaction to ensure data consistency
-      const result = await prisma.$transaction(async (tx) => {
-        // Calculate totals from items
-        let subtotal = 0;
-        const itemsWithProducts = [];
+    // Use Prisma transaction to ensure data consistency
+    const result = await prisma.$transaction(async (tx) => {
+      // Calculate totals from items
+      let subtotal = 0;
+      const itemsWithProducts = [];
 
-        // First, validate all products and calculate totals
-        for (const item of validatedData.items) {
-          const product = await tx.product.findUnique({
-            where: { id: item.productId },
-            select: { id: true, name: true, stock: true, price: true },
-          });
+      // First, validate all products and calculate totals
+      for (const item of validatedData.items) {
+        const product = await tx.product.findUnique({
+          where: { id: item.productId },
+          select: { id: true, name: true, stock: true, price: true },
+        });
 
-          if (!product) {
-            throw new Error(`Product with ID ${item.productId} not found`);
-          }
-
-          if (product.stock < item.quantity) {
-            throw new Error(
-              `Insufficient stock for product ${product.name}. Available: ${product.stock}, Required: ${item.quantity}`
-            );
-          }
-
-          // Calculate item total (quantity * unitPrice) with discount applied
-          const itemTotal = item.quantity * item.unitPrice;
-          const discountedTotal = itemTotal * (1 - item.discount / 100);
-          subtotal += discountedTotal;
-
-          itemsWithProducts.push({
-            ...item,
-            product,
-            totalPrice: discountedTotal,
-          });
+        if (!product) {
+          throw new Error(`Product with ID ${item.productId} not found`);
         }
 
-        // Calculate final total with tax and discount
-        const total =
-          subtotal + validatedData.taxAmount - validatedData.discountAmount; // Create the sales transaction
-        const salesTransaction = await tx.salesTransaction.create({
+        if (product.stock < item.quantity) {
+          throw new Error(
+            `Insufficient stock for product ${product.name}. Available: ${product.stock}, Required: ${item.quantity}`
+          );
+        }
+
+        // Calculate item total (quantity * unitPrice) with discount applied
+        const itemTotal = item.quantity * item.unitPrice;
+        const discountedTotal = itemTotal * (1 - item.discount / 100);
+        subtotal += discountedTotal;
+
+        itemsWithProducts.push({
+          ...item,
+          product,
+          totalPrice: discountedTotal,
+        });
+      }
+
+      // Calculate final total with tax and discount
+      const total =
+        subtotal + validatedData.taxAmount - validatedData.discountAmount;
+
+      // Create the sales transaction
+      const salesTransaction = await tx.salesTransaction.create({
+        data: {
+          transaction_number: transactionCode,
+          user_id: validatedData.userId,
+          subtotal,
+          tax_amount: validatedData.taxAmount,
+          discount_amount: validatedData.discountAmount,
+          total_amount: total,
+          payment_method: validatedData.paymentMethod,
+          payment_status: validatedData.paymentStatus,
+          customer_name: body.customerName,
+          customer_email: body.customerEmail,
+          customer_phone: body.customerPhone,
+          notes: validatedData.notes,
+        },
+      });
+
+      // Create sales items and update stock
+      const salesItems = [];
+      const stockUpdates = [];
+
+      for (const item of itemsWithProducts) {
+        // Create sales item
+        const salesItem = await tx.salesItem.create({
           data: {
-            transaction_number: transactionCode,
-            user_id: validatedData.userId,
-            subtotal,
-            tax_amount: validatedData.taxAmount,
-            discount_amount: validatedData.discountAmount,
-            total_amount: total,
-            payment_method: validatedData.paymentMethod,
-            payment_status: validatedData.paymentStatus,
-            customer_name: body.customerName,
-            customer_email: body.customerEmail,
-            customer_phone: body.customerPhone,
-            notes: validatedData.notes,
+            transaction_id: salesTransaction.id,
+            product_id: item.productId,
+            quantity: item.quantity,
+            unit_price: item.unitPrice,
+            total_price: item.totalPrice,
+            discount_amount:
+              (item.quantity * item.unitPrice * item.discount) / 100,
           },
         });
 
-        // Create sales items and update stock
-        const salesItems = [];
-        const stockUpdates = [];
+        salesItems.push(salesItem);
 
-        for (const item of itemsWithProducts) {
-          // Create sales item
-          const salesItem = await tx.salesItem.create({
-            data: {
-              transaction_id: salesTransaction.id,
-              product_id: item.productId,
-              quantity: item.quantity,
-              unit_price: item.unitPrice,
-              total_price: item.totalPrice,
-              discount_amount:
-                (item.quantity * item.unitPrice * item.discount) / 100, // Discount amount
-            },
-          });
+        // Update product stock
+        const newStock = item.product.stock - item.quantity;
+        await tx.product.update({
+          where: { id: item.productId },
+          data: { stock: newStock },
+        });
 
-          salesItems.push(salesItem);
+        stockUpdates.push({
+          productId: item.productId,
+          oldStock: item.product.stock,
+          newStock,
+          quantity: item.quantity,
+        });
+      }
 
-          // Update product stock
-          const newStock = item.product.stock - item.quantity;
-          await tx.product.update({
-            where: { id: item.productId },
-            data: { stock: newStock },
-          });
+      return { salesTransaction, stockUpdates };
+    });
 
-          stockUpdates.push({
-            productId: item.productId,
-            oldStock: item.product.stock,
-            newStock,
-            quantity: item.quantity,
-          }); // TODO: Fix audit log field names to match Prisma schema
-          // Create audit log for stock reduction
-          // await tx.auditLog.create({
-          //   data: {
-          //     action: "STOCK_REDUCTION",
-          //     table_name: "PRODUCT",
-          //     record_id: item.productId,
-          //     user_id: validatedData.userId,
-          //     old_values: {
-          //       stock: item.product.stock,
-          //     },
-          //     new_values: {
-          //       stock: newStock,
-          //       transactionCode: salesTransaction.transactionCode,
-          //       quantitySold: item.quantity,
-          //     },
-          //   },
-          // });
-        }
-
-        return { salesTransaction, stockUpdates };
-      });
-
-      // Fetch the complete transaction with relations
-      const completeSalesTransaction = await prisma.salesTransaction.findUnique(
-        {
-          where: { id: result.salesTransaction.id },
+    // Fetch the complete transaction with relations
+    const completeSalesTransaction = await prisma.salesTransaction.findUnique({
+      where: { id: result.salesTransaction.id },
+      include: {
+        users: {
+          select: {
+            id: true,
+            firstName: true,
+            lastName: true,
+            email: true,
+          },
+        },
+        sales_items: {
           include: {
-            users: {
-              select: {
-                id: true,
-                firstName: true,
-                lastName: true,
-                email: true,
-              },
-            },
-            sales_items: {
-              include: {
-                products: {
-                  select: { id: true, name: true, sku: true },
-                },
-              },
+            products: {
+              select: { id: true, name: true, sku: true },
             },
           },
-        }
-      );
+        },
+      },
+    });
 
-      return NextResponse.json(
-        {
-          data: completeSalesTransaction,
-          stockUpdates: result.stockUpdates,
-        },
-        { status: 201 }
-      );
-    } catch (error) {
-      console.error("Error in POST /api/sales:", error);
-      return NextResponse.json(
-        {
-          error:
-            error instanceof Error ? error.message : "Internal server error",
-        },
-        { status: 500 }
-      );
-    }
-  })
-);
+    return NextResponse.json(
+      {
+        data: completeSalesTransaction,
+        stockUpdates: result.stockUpdates,
+      },
+      { status: 201 }
+    );
+  } catch (error) {
+    console.error("Error in POST /api/sales:", error);
+    return NextResponse.json(
+      {
+        error: error instanceof Error ? error.message : "Internal server error",
+      },
+      { status: 500 }
+    );
+  }
+});

@@ -1,6 +1,6 @@
+import { auth } from "../../../../../auth";
 import { redirect } from "next/navigation";
-import { getServerSession } from "@/lib/auth-helpers";
-import { CategoryList } from "@/components/inventory/CategoryList";
+import CategoryList from "@/components/inventory/CategoryList";
 
 export const metadata = {
   title: "Categories - BaaWA Inventory POS",
@@ -9,15 +9,25 @@ export const metadata = {
 };
 
 export default async function CategoriesPage() {
-  const session = await getServerSession();
+  const session = await auth();
 
-  // Check role permissions - only staff and above can access category management
-  if (
-    !session?.user ||
-    !["ADMIN", "MANAGER", "EMPLOYEE"].includes(session.user.role)
-  ) {
-    redirect("/unauthorized");
+  if (!session?.user) {
+    redirect("/login");
   }
 
-  return <CategoryList user={session.user} />;
+  if (session.user.status !== "ACTIVE") {
+    redirect("/pending-approval");
+  }
+
+  return (
+    <div className="space-y-6">
+      <div>
+        <h1 className="text-3xl font-bold tracking-tight">Categories</h1>
+        <p className="text-muted-foreground">
+          Manage your product categories and organize your inventory
+        </p>
+      </div>
+      <CategoryList user={session.user} />
+    </div>
+  );
 }
