@@ -97,16 +97,16 @@ export class AccountLockout {
     try {
       const where: any = {
         action: "LOGIN_FAILED",
-        success: false,
-        timestamp: {
+        created_at: {
           gte: new Date(Date.now() - 24 * 60 * 60 * 1000), // Last 24 hours
         },
       };
 
       if (type === "email") {
         where.userEmail = identifier;
-      } else {
-        where.ipAddress = identifier;
+      } else if (identifier !== "unknown") {
+        // Only add IP address filter if it's not "unknown"
+        where.ip_address = identifier;
       }
 
       const lastAttempt = await prisma.auditLog.findFirst({
