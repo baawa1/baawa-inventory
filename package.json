@@ -23,6 +23,13 @@
     "test:e2e:ui": "playwright test --ui",
     "test:e2e:headed": "playwright test --headed",
     "test:e2e:debug": "playwright test --debug",
+    "test:e2e:auth": "playwright test tests/e2e/auth-e2e.spec.ts",
+    "test:e2e:workflow": "playwright test tests/e2e/auth-workflow.spec.ts",
+    "test:e2e:basic": "playwright test tests/e2e/basic.spec.ts",
+    "test:e2e:all": "playwright test tests/e2e/",
+    "test:e2e:report": "playwright show-report",
+    "test:e2e:install": "playwright install",
+    "test:e2e:codegen": "playwright codegen",
     "cleanup:deprecated": "bash src/scripts/cleanup-deprecated-components.sh"
   },
   "dependencies": {
