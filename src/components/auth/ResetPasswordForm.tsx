@@ -150,7 +150,7 @@ function ResetPasswordFormContent({ className }: ResetPasswordFormProps) {
         <Card className="mx-auto max-w-sm">
           <CardHeader>
             <CardTitle className="text-xl">Invalid Reset Link</CardTitle>
-            <CardDescription>
+            <CardDescription data-testid="token-error">
               This password reset link is invalid or has expired
             </CardDescription>
           </CardHeader>
@@ -183,7 +183,11 @@ function ResetPasswordFormContent({ className }: ResetPasswordFormProps) {
         </CardHeader>
         <CardContent>
           <Form {...form}>
-            <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-4">
+            <form
+              data-testid="reset-password-form"
+              onSubmit={form.handleSubmit(onSubmit)}
+              className="space-y-4"
+            >
               <FormField
                 control={form.control}
                 name="password"
@@ -192,6 +196,7 @@ function ResetPasswordFormContent({ className }: ResetPasswordFormProps) {
                     <FormLabel>New Password</FormLabel>
                     <FormControl>
                       <Input
+                        data-testid="password-input"
                         type="password"
                         placeholder="Enter new password"
                         {...field}
@@ -211,6 +216,7 @@ function ResetPasswordFormContent({ className }: ResetPasswordFormProps) {
                     <FormLabel>Confirm Password</FormLabel>
                     <FormControl>
                       <Input
+                        data-testid="confirm-password-input"
                         type="password"
                         placeholder="Confirm new password"
                         {...field}
@@ -223,12 +229,20 @@ function ResetPasswordFormContent({ className }: ResetPasswordFormProps) {
               />
 
               {error && (
-                <div className="text-sm text-destructive bg-destructive/10 p-3 rounded-md">
+                <div
+                  data-testid="password-mismatch-error"
+                  className="text-sm text-destructive bg-destructive/10 p-3 rounded-md"
+                >
                   {error}
                 </div>
               )}
 
-              <Button type="submit" className="w-full" disabled={isLoading}>
+              <Button
+                data-testid="reset-button"
+                type="submit"
+                className="w-full"
+                disabled={isLoading}
+              >
                 {isLoading ? "Resetting..." : "Reset Password"}
               </Button>
             </form>

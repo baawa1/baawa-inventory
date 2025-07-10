@@ -16,7 +16,7 @@ export default function UnauthorizedPage() {
           <CardTitle className="text-2xl font-bold text-destructive">
             Access Denied
           </CardTitle>
-          <CardDescription>
+          <CardDescription data-testid="unauthorized-message">
             You don&apos;t have permission to access this page.
           </CardDescription>
         </CardHeader>

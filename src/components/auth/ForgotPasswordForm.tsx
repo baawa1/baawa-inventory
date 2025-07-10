@@ -79,7 +79,7 @@ export function ForgotPasswordForm({ className }: ForgotPasswordFormProps) {
         <Card className="mx-auto max-w-sm">
           <CardHeader>
             <CardTitle className="text-xl">Check Your Email</CardTitle>
-            <CardDescription>
+            <CardDescription data-testid="reset-sent-message">
               If an account with that email exists, we&apos;ve sent you a
               password reset link.
             </CardDescription>
@@ -118,7 +118,11 @@ export function ForgotPasswordForm({ className }: ForgotPasswordFormProps) {
         </CardHeader>
         <CardContent>
           <Form {...form}>
-            <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-4">
+            <form
+              data-testid="forgot-password-form"
+              onSubmit={form.handleSubmit(onSubmit)}
+              className="space-y-4"
+            >
               <FormField
                 control={form.control}
                 name="email"
@@ -127,6 +131,7 @@ export function ForgotPasswordForm({ className }: ForgotPasswordFormProps) {
                     <FormLabel>Email</FormLabel>
                     <FormControl>
                       <Input
+                        data-testid="email-input"
                         type="email"
                         placeholder="Enter your email"
                         {...field}
@@ -144,7 +149,12 @@ export function ForgotPasswordForm({ className }: ForgotPasswordFormProps) {
                 </div>
               )}
 
-              <Button type="submit" className="w-full" disabled={isLoading}>
+              <Button
+                data-testid="submit-button"
+                type="submit"
+                className="w-full"
+                disabled={isLoading}
+              >
                 {isLoading ? "Sending..." : "Send Reset Link"}
               </Button>
             </form>

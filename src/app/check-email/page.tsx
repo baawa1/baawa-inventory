@@ -72,7 +72,10 @@ function CheckEmailContent() {
             <CardTitle className="text-2xl text-blue-600">
               Check Your Email
             </CardTitle>
-            <CardDescription className="text-center">
+            <CardDescription
+              data-testid="email-sent-message"
+              className="text-center"
+            >
               We&apos;ve sent a verification link to your email address
             </CardDescription>
           </CardHeader>
