@@ -1,15 +1,10 @@
----
-description: Anything that has to do with data or database mapping or implementation, API routes etc.
-alwaysApply: false
----
-
-# Database Field Mapping Consistency Rule
+# Database Field Mapping, ENUMs, and RBAC Consistency Rules
 
 ## Purpose
 
-To ensure all database field access in the codebase is consistent, maintainable, and avoids subtle bugs due to mismatched field names or mapping.
+To ensure all database field access, ENUM usage, and Role-Based Access Control (RBAC) in the codebase is consistent, maintainable, and avoids subtle bugs due to mismatched field names, enum values, or role permissions.
 
-## Rule
+## Database Field Mapping Rule
 
 - **Always use Prisma's model property names** in all application code (TypeScript, API, services, etc.).
 - **Never use raw database column names** (e.g., snake_case) in application logic. Use the camelCase property as defined in the Prisma schema.
@@ -22,27 +17,197 @@ To ensure all database field access in the codebase is consistent, maintainable,
 - **Never mix direct SQL or Supabase queries with Prisma for the same table.**
 - **Document any exceptions** in this file.
 
-## Example
+## ENUM Usage Rules
+
+### Database ENUMs
+
+- **Always define ENUMs in Prisma schema** for fields with limited, predefined values.
+- **Use PascalCase for ENUM names** (e.g., `UserRole`, `UserStatus`).
+- **Use UPPERCASE for ENUM values** (e.g., `ADMIN`, `MANAGER`, `STAFF`).
+- **Never use string fields** for values that should be ENUMs.
+
+### ENUM Implementation
 
 ```prisma
+enum UserRole {
+  ADMIN
+  MANAGER
+  STAFF
+}
+
+enum UserStatus {
+  PENDING
+  VERIFIED
+  APPROVED
+  REJECTED
+  SUSPENDED
+}
+
 model User {
-  emailVerified Boolean @default(false) @map("email_verified")
+  role       UserRole   @default(STAFF)
+  userStatus UserStatus @default(PENDING) @map("user_status")
 }
 ```
 
-**Correct:**
+### TypeScript ENUM Usage
+
+- **Always use Prisma-generated types** for ENUM values.
+- **Create constants for ENUM values** in `src/lib/constants.ts` for consistency.
+- **Use type-safe validation** with Zod schemas that match Prisma ENUMs.
 
 ```ts
-const user = await prisma.user.findFirst({ select: { emailVerified: true } });
+// src/lib/constants.ts
+export const USER_ROLES = {
+  ADMIN: "ADMIN",
+  MANAGER: "MANAGER",
+  STAFF: "STAFF",
+} as const;
+
+export type UserRole = (typeof USER_ROLES)[keyof typeof USER_ROLES];
+
+// src/lib/validations/common.ts
+export const userRoleSchema = z.enum(["ADMIN", "MANAGER", "STAFF"]);
 ```
 
-**Incorrect:**
+### ENUM Validation
+
+- **Always validate ENUM values** in API routes and forms.
+- **Use Zod schemas** that match Prisma ENUM definitions exactly.
+- **Never hardcode ENUM values** in application logic.
+
+## Role-Based Access Control (RBAC) Rules
+
+### Role Hierarchy
+
+- **ADMIN**: Full system access, can manage all users and data
+- **MANAGER**: Can manage inventory, view reports, approve reconciliations
+- **STAFF**: Basic POS operations, view inventory, create sales
+
+### Permission System
+
+- **Define permissions per role** in `src/lib/auth/roles.ts`
+- **Use permission-based checks** for fine-grained access control
+- **Implement role hierarchy** where higher roles inherit lower role permissions
 
 ```ts
-const user = await prisma.user.findFirst({ select: { email_verified: true } }); // ❌
+// src/lib/auth/roles.ts
+export const ROLE_PERMISSIONS = {
+  ADMIN: [
+    "USER_MANAGEMENT",
+    "SYSTEM_CONFIGURATION",
+    "AUDIT_LOGS",
+    "INVENTORY_MANAGEMENT",
+    "SALES_MANAGEMENT",
+    "REPORTS_ACCESS",
+    "POS_ACCESS",
+  ],
+  MANAGER: [
+    "INVENTORY_MANAGEMENT",
+    "SALES_MANAGEMENT",
+    "REPORTS_ACCESS",
+    "POS_ACCESS",
+    "RECONCILIATION_APPROVAL",
+  ],
+  STAFF: ["POS_ACCESS", "INVENTORY_VIEW", "SALES_CREATION"],
+} as const;
+```
+
+### RBAC Implementation
+
+- **Use middleware for route protection** (`src/lib/api-auth-middleware.ts`)
+- **Check both role and permissions** for sensitive operations
+- **Validate user status** (APPROVED, VERIFIED) before granting access
+- **Log all authorization attempts** for audit purposes
+
+```ts
+// API route protection
+const handler = withAuth(
+  async (req, { user }) => {
+    // Handler logic
+  },
+  {
+    roles: ["ADMIN", "MANAGER"],
+    permission: "INVENTORY_MANAGEMENT",
+    requireEmailVerified: true,
+  }
+);
+```
+
+### RBAC Testing
+
+- **Test all role combinations** for each protected route
+- **Verify permission inheritance** (ADMIN should have all permissions)
+- **Test user status validation** (PENDING users should be blocked)
+- **Test edge cases** (suspended users, expired sessions)
+
+## Examples
+
+### Correct ENUM Usage
+
+```prisma
+model User {
+  role       UserRole   @default(STAFF)
+  userStatus UserStatus @default(PENDING) @map("user_status")
+}
+```
+
+```ts
+// Correct: Use Prisma property names
+const user = await prisma.user.findFirst({
+  select: {
+    role: true,
+    userStatus: true,
+  },
+});
+
+// Correct: Use ENUM constants
+if (user.role === USER_ROLES.ADMIN) {
+  // Admin logic
+}
+
+// Correct: Validate with Zod
+const validatedData = userRoleSchema.parse(requestBody.role);
+```
+
+### Incorrect Usage
+
+```ts
+// ❌ Wrong: Using raw column names
+const user = await prisma.user.findFirst({
+  select: {
+    user_status: true, // Should be userStatus
+  },
+});
+
+// ❌ Wrong: Hardcoding ENUM values
+if (user.role === "admin") {
+  // Should use USER_ROLES.ADMIN
+  // Logic
+}
+
+// ❌ Wrong: Inconsistent role naming
+const role = "EMPLOYEE"; // Should be "STAFF"
 ```
 
 ## Enforcement
+
+- **All code reviews** must check for field mapping consistency.
+- **All new ENUMs** must be defined in Prisma schema first.
+- **All RBAC checks** must use proper role constants and permissions.
+- **All API routes** must be protected with appropriate middleware.
+- **All tests** must verify ENUM validation and RBAC enforcement.
+- **Any exceptions** must be documented and justified.
+
+## Migration Guidelines
+
+When updating ENUMs or roles:
+
+1. **Create a new migration** to update the database schema
+2. **Update all constants** and validation schemas
+3. **Update all tests** to use new ENUM values
+4. **Update all RBAC logic** to reflect new permissions
+5. **Test thoroughly** to ensure no breaking changes
+6. **Document changes** in commit messages and documentation
 
 - All code reviews must check for field mapping consistency.
 - Any new direct SQL or Supabase usage must be justified and documented.
