@@ -100,7 +100,7 @@ describe("ResetPasswordForm", () => {
 
     await waitFor(() => {
       expect(
-        screen.getByText(/Password must be at least 8 characters/)
+        screen.getByText(/Password must be at least 12 characters/)
       ).toBeInTheDocument();
     });
   });

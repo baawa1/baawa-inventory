@@ -9,7 +9,6 @@ import {
   phoneSchema,
   nameSchema,
   passwordSchema,
-  simplePasswordSchema,
   currentPasswordSchema,
 } from "./common";
 
@@ -18,7 +17,7 @@ export const createUserSchema = z.object({
   firstName: nameSchema,
   lastName: nameSchema,
   email: emailSchema,
-  password: simplePasswordSchema,
+  password: passwordSchema, // Changed from simplePasswordSchema to passwordSchema
   phone: phoneSchema.optional(),
   role: userRoleSchema.default("STAFF"),
   isActive: z.boolean().default(true),
@@ -33,7 +32,7 @@ export const createUserSchema = z.object({
 export const updateUserSchema = createUserSchema
   .partial()
   .extend({
-    password: simplePasswordSchema.optional(),
+    password: passwordSchema.optional(), // Changed from simplePasswordSchema to passwordSchema
   })
   .refine((data) => Object.keys(data).length > 0, {
     message: "At least one field must be provided for update",
