@@ -238,7 +238,7 @@ const config: NextAuthConfig = {
     maxAge: 24 * 60 * 60, // 24 hours
   },
   // Enhanced debug logging in development
-  debug: process.env.NODE_ENV === "development",
+  debug: false, // Disabled to reduce console noise
   // Trust host for deployment
   trustHost: true,
 };
