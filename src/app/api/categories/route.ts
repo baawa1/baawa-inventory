@@ -29,9 +29,9 @@ export async function GET(request: NextRequest) {
       );
     }
 
-    if (session.user.status !== "ACTIVE") {
+    if (session.user.status !== "APPROVED") {
       return NextResponse.json(
-        { error: "Account not active" },
+        { error: "Account not approved" },
         { status: 403 }
       );
     }
@@ -110,9 +110,9 @@ export async function POST(request: NextRequest) {
       );
     }
 
-    if (session.user.status !== "ACTIVE") {
+    if (session.user.status !== "APPROVED") {
       return NextResponse.json(
-        { error: "Account not active" },
+        { error: "Account not approved" },
         { status: 403 }
       );
     }

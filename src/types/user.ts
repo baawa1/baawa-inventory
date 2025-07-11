@@ -3,11 +3,11 @@
 // User roles
 export type UserRole = "ADMIN" | "MANAGER" | "STAFF";
 
-// User status
+// User status - must match Prisma schema
 export type UserStatus =
   | "PENDING"
   | "VERIFIED"
-  | "ACTIVE"
+  | "APPROVED"
   | "REJECTED"
   | "SUSPENDED";
 

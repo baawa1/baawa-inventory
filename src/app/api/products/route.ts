@@ -1,7 +1,7 @@
-import { NextResponse } from "next/server";
+import { NextRequest, NextResponse } from "next/server";
+import { auth } from "../../../../auth";
 import { prisma } from "@/lib/db";
 import { z } from "zod";
-import { withAuth, AuthenticatedRequest } from "@/lib/api-middleware";
 
 // Simple validation schema based on actual Product model
 const ProductCreateSchema = z.object({
@@ -21,8 +21,24 @@ const ProductCreateSchema = z.object({
 });
 
 // GET /api/products - List products with filtering
-export const GET = withAuth(async function (request: AuthenticatedRequest) {
+export async function GET(request: NextRequest) {
   try {
+    const session = await auth();
+
+    if (!session?.user) {
+      return NextResponse.json(
+        { error: "Authentication required" },
+        { status: 401 }
+      );
+    }
+
+    if (session.user.status !== "APPROVED") {
+      return NextResponse.json(
+        { error: "Account not approved" },
+        { status: 403 }
+      );
+    }
+
     const { searchParams } = new URL(request.url);
     const page = parseInt(searchParams.get("page") || "1");
     const limit = parseInt(searchParams.get("limit") || "10");
@@ -189,13 +205,29 @@ export const GET = withAuth(async function (request: AuthenticatedRequest) {
       { status: 500 }
     );
   }
-});
+}
 
 // POST /api/products - Create new product
-export const POST = withAuth(async function (request: AuthenticatedRequest) {
+export async function POST(request: NextRequest) {
   try {
+    const session = await auth();
+
+    if (!session?.user) {
+      return NextResponse.json(
+        { error: "Authentication required" },
+        { status: 401 }
+      );
+    }
+
+    if (session.user.status !== "APPROVED") {
+      return NextResponse.json(
+        { error: "Account not approved" },
+        { status: 403 }
+      );
+    }
+
     // Check permissions
-    if (!["ADMIN", "MANAGER"].includes(request.user.role)) {
+    if (!["ADMIN", "MANAGER"].includes(session.user.role)) {
       return NextResponse.json(
         { error: "Insufficient permissions" },
         { status: 403 }
@@ -343,4 +375,4 @@ export const POST = withAuth(async function (request: AuthenticatedRequest) {
       { status: 500 }
     );
   }
-});
+}
