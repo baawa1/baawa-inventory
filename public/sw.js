@@ -7,24 +7,13 @@ const CACHE_NAME = "baawa-pos-v1";
 const OFFLINE_CACHE = "baawa-pos-offline-v1";
 const DYNAMIC_CACHE = "baawa-pos-dynamic-v1";
 
-// Files to cache immediately
+// Files to cache immediately - only include files that actually exist
 const STATIC_ASSETS = [
   "/",
-  "/pos",
-  "/pos/history",
-  "/inventory",
   "/login",
   "/offline",
   "/manifest.json",
-  // Add critical CSS and JS files
-  "/_next/static/css/app/layout.css",
-  "/_next/static/chunks/webpack.js",
-  "/_next/static/chunks/main.js",
-  // Add fonts
-  "/fonts/inter.woff2",
-  // Add icons
-  "/icons/icon-192x192.png",
-  "/icons/icon-512x512.png",
+  "/favicon.ico",
 ];
 
 // URLs that should always go to network first
@@ -45,16 +34,26 @@ self.addEventListener("install", (event) => {
   event.waitUntil(
     caches
       .open(CACHE_NAME)
-      .then((cache) => {
+      .then(async (cache) => {
         console.log("[SW] Caching static assets");
-        return cache.addAll(STATIC_ASSETS);
-      })
-      .then(() => {
-        console.log("[SW] Static assets cached");
+
+        // Cache each asset individually to avoid complete failure if one fails
+        const cachePromises = STATIC_ASSETS.map(async (asset) => {
+          try {
+            await cache.add(asset);
+            console.log(`[SW] Cached: ${asset}`);
+          } catch (error) {
+            console.warn(`[SW] Failed to cache ${asset}:`, error);
+          }
+        });
+
+        await Promise.allSettled(cachePromises);
+        console.log("[SW] Static assets caching completed");
         return self.skipWaiting();
       })
       .catch((error) => {
-        console.error("[SW] Failed to cache static assets:", error);
+        console.error("[SW] Failed to open cache:", error);
+        return self.skipWaiting(); // Continue installation even if caching fails
       })
   );
 });
