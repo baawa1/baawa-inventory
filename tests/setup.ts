@@ -29,30 +29,12 @@ Object.assign(process.env, {
 const mockFetch = jest.fn();
 global.fetch = mockFetch;
 
-// Mock window.location
-if (typeof window !== "undefined") {
-  if (!window.location || typeof window.location.href === "undefined") {
-    const locationMock = {
-      href: "http://localhost:3000",
-      origin: "http://localhost:3000",
-      pathname: "/",
-      search: "",
-      hash: "",
-    };
-
-    // Only redefine if needed
-    if (!Object.getOwnPropertyDescriptor(window, "location")?.configurable) {
-      // window.location is not configurable, so we can't redefine it
-      Object.assign(window.location, locationMock);
-    } else {
-      Object.defineProperty(window, "location", {
-        value: locationMock,
-        writable: true,
-        configurable: true,
-      });
-    }
-  }
-}
+// Mock window.location - temporarily disabled due to JSDOM limitations
+// The location mock is causing issues with navigation events
+// Tests will still work but may show some "Not implemented" warnings
+// if (typeof window !== "undefined") {
+//   // Location mocking temporarily disabled
+// }
 
 // Mock window.localStorage
 const localStorageMock = {

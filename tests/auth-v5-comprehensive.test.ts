@@ -15,7 +15,7 @@ jest.mock("next-auth", () => ({
 
 // Mock the auth function
 const mockAuth = jest.fn();
-jest.mock("../../auth", () => ({
+jest.mock("../auth", () => ({
   auth: mockAuth,
   handlers: {
     GET: jest.fn(),
@@ -24,7 +24,7 @@ jest.mock("../../auth", () => ({
 }));
 
 // Mock middleware
-jest.mock("../../src/middleware", () => ({
+jest.mock("../src/middleware", () => ({
   __esModule: true,
   default: jest.fn(),
 }));
@@ -36,7 +36,7 @@ describe("Auth.js v5 Comprehensive Tests", () => {
 
   describe("Auth Configuration", () => {
     it("should have correct auth exports", async () => {
-      const authModule = await import("../../auth");
+      const authModule = await import("../auth");
 
       expect(authModule.auth).toBeDefined();
       expect(typeof authModule.auth).toBe("function");
@@ -46,7 +46,7 @@ describe("Auth.js v5 Comprehensive Tests", () => {
     });
 
     it("should not export deprecated functions", async () => {
-      const authModule = await import("../../auth");
+      const authModule = await import("../auth");
 
       // Should not export signIn/signOut directly
       expect((authModule as any).signIn).toBeUndefined();
@@ -56,9 +56,7 @@ describe("Auth.js v5 Comprehensive Tests", () => {
 
   describe("API Route Handlers", () => {
     it("should have auth API route with handlers", async () => {
-      const apiRoute = await import(
-        "../../src/app/api/auth/[...nextauth]/route"
-      );
+      const apiRoute = await import("../src/app/api/auth/[...nextauth]/route");
 
       expect(apiRoute.GET).toBeDefined();
       expect(apiRoute.POST).toBeDefined();
@@ -66,7 +64,7 @@ describe("Auth.js v5 Comprehensive Tests", () => {
 
     it("should import handlers from auth.ts", async () => {
       const apiRouteContent = await import(
-        "../../src/app/api/auth/[...nextauth]/route"
+        "../src/app/api/auth/[...nextauth]/route"
       );
 
       // The route should export the handlers from auth.ts
@@ -77,14 +75,14 @@ describe("Auth.js v5 Comprehensive Tests", () => {
 
   describe("Middleware Configuration", () => {
     it("should have middleware that uses auth function", async () => {
-      const middleware = await import("../../src/middleware");
+      const middleware = await import("../src/middleware");
 
       expect(middleware.default).toBeDefined();
       expect(typeof middleware.default).toBe("function");
     });
 
     it("should import auth from auth.ts", async () => {
-      const middlewareContent = await import("../../src/middleware");
+      const middlewareContent = await import("../src/middleware");
 
       // The middleware should use the auth function
       expect(middlewareContent.default).toBeDefined();

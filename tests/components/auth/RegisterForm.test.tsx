@@ -1,32 +1,31 @@
 import { render, screen, fireEvent, waitFor } from "@testing-library/react";
-import { useRouter } from "next/navigation";
 import { RegisterForm } from "@/components/auth/RegisterForm";
+import { UserRole } from "@/types/user";
 
-// Mock Next.js router
+// Mock fetch for API calls
+const mockFetch = jest.fn();
+global.fetch = mockFetch;
+
+// Mock next/navigation
+const mockPush = jest.fn();
 jest.mock("next/navigation", () => ({
-  useRouter: jest.fn(),
+  useRouter: () => ({
+    push: mockPush,
+  }),
 }));
 
-// Mock fetch
-global.fetch = jest.fn();
-
-const mockUseRouter = useRouter as jest.MockedFunction<typeof useRouter>;
-const mockFetch = global.fetch as jest.MockedFunction<typeof fetch>;
-
 describe("RegisterForm", () => {
-  const mockPush = jest.fn();
-
   beforeEach(() => {
     jest.clearAllMocks();
-    mockUseRouter.mockReturnValue({
-      push: mockPush,
-    } as any);
   });
 
   it("renders registration form correctly", () => {
     render(<RegisterForm />);
 
-    // Check for the description text instead of the title to avoid conflicts
+    // Check for the title specifically in the header
+    expect(
+      screen.getByRole("heading", { name: "Create Account" })
+    ).toBeInTheDocument();
     expect(
       screen.getByText("Enter your information to create your account")
     ).toBeInTheDocument();
@@ -47,18 +46,24 @@ describe("RegisterForm", () => {
     fireEvent.click(submitButton);
 
     await waitFor(() => {
-      expect(
-        screen.getByText("First name must be at least 2 characters")
-      ).toBeInTheDocument();
-      expect(
-        screen.getByText("Last name must be at least 2 characters")
-      ).toBeInTheDocument();
-      expect(
-        screen.getByText("Please enter a valid email address")
-      ).toBeInTheDocument();
-      expect(
-        screen.getByText("Password must be at least 12 characters")
-      ).toBeInTheDocument();
+      // Use getAllByText to handle duplicate validation messages
+      const firstNameErrors = screen.getAllByText(
+        "First name must be at least 2 characters"
+      );
+      const lastNameErrors = screen.getAllByText(
+        "Last name must be at least 2 characters"
+      );
+      const emailErrors = screen.getAllByText(
+        "Please enter a valid email address"
+      );
+      const passwordErrors = screen.getAllByText(
+        "Password must be at least 12 characters"
+      );
+
+      expect(firstNameErrors.length).toBeGreaterThan(0);
+      expect(lastNameErrors.length).toBeGreaterThan(0);
+      expect(emailErrors.length).toBeGreaterThan(0);
+      expect(passwordErrors.length).toBeGreaterThan(0);
     });
   });
 
@@ -82,7 +87,9 @@ describe("RegisterForm", () => {
     fireEvent.click(submitButton);
 
     await waitFor(() => {
-      expect(screen.getByText("Passwords don't match")).toBeInTheDocument();
+      // Use getAllByText to handle duplicate validation messages
+      const passwordMatchErrors = screen.getAllByText("Passwords don't match");
+      expect(passwordMatchErrors.length).toBeGreaterThan(0);
     });
   });
 

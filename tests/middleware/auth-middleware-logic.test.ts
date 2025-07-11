@@ -1,29 +1,37 @@
-// Mock Next.js Request before any imports
+// Mock Next.js server components before imports
 global.Request = class MockRequest {
   constructor() {}
 } as any;
 
-import { NextRequest, NextResponse } from "next/server";
-import { authorizeUserForRoute } from "@/lib/auth/roles";
-import { generateSecurityHeaders } from "@/lib/security-headers";
+global.Response = class MockResponse {
+  constructor() {}
+} as any;
+
+// Mock Next.js modules
+const MockNextResponse = {
+  json: jest.fn(),
+  redirect: jest.fn(),
+  next: jest.fn(),
+};
+
+jest.mock("next/server", () => ({
+  NextRequest: class MockNextRequest {},
+  NextResponse: MockNextResponse,
+}));
 
 // Mock dependencies
+const mockAuthorizeUserForRoute = jest.fn();
+const mockGenerateSecurityHeaders = jest.fn();
+
 jest.mock("@/lib/auth/roles", () => ({
-  authorizeUserForRoute: jest.fn(),
+  authorizeUserForRoute: mockAuthorizeUserForRoute,
 }));
 
 jest.mock("@/lib/security-headers", () => ({
-  generateSecurityHeaders: jest.fn(),
+  generateSecurityHeaders: mockGenerateSecurityHeaders,
 }));
 
 describe("Authentication Middleware Logic", () => {
-  const mockAuthorizeUserForRoute =
-    authorizeUserForRoute as jest.MockedFunction<typeof authorizeUserForRoute>;
-  const mockGenerateSecurityHeaders =
-    generateSecurityHeaders as jest.MockedFunction<
-      typeof generateSecurityHeaders
-    >;
-
   beforeEach(() => {
     jest.clearAllMocks();
     mockGenerateSecurityHeaders.mockReturnValue({
@@ -231,15 +239,12 @@ describe("Authentication Middleware Logic", () => {
     });
 
     it("should apply headers to response", () => {
-      // Mock NextResponse.next() using jest.spyOn
-      const nextSpy = jest.spyOn(NextResponse, "next").mockImplementation(
-        () =>
-          ({
-            headers: new Map(),
-          }) as any
-      );
+      // Mock response object
+      MockNextResponse.next.mockReturnValue({
+        headers: new Map(),
+      });
 
-      const response = NextResponse.next() as any;
+      const response = MockNextResponse.next() as any;
       const securityHeaders = mockGenerateSecurityHeaders();
 
       Object.entries(securityHeaders).forEach(([key, value]) => {
@@ -249,9 +254,6 @@ describe("Authentication Middleware Logic", () => {
       Object.entries(securityHeaders).forEach(([key, value]) => {
         expect(response.headers.get(key)).toBe(value);
       });
-
-      // Restore original
-      nextSpy.mockRestore();
     });
   });
 

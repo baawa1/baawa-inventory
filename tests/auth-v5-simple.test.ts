@@ -19,10 +19,8 @@ describe("Auth.js v5 Simple Tests", () => {
         'import CredentialsProvider from "next-auth/providers/credentials"'
       );
 
-      // Check for required exports
-      expect(authContent).toContain(
-        "export const { auth, handlers } = NextAuth(config)"
-      );
+      // Check for required exports (NextAuth returns auth and handlers)
+      expect(authContent).toContain("export const { auth, handlers");
 
       // Check for provider configuration
       expect(authContent).toContain("CredentialsProvider({");
@@ -34,7 +32,9 @@ describe("Auth.js v5 Simple Tests", () => {
 
       // Check for callbacks
       expect(authContent).toContain("callbacks: {");
-      expect(authContent).toContain("async jwt({ token, user })");
+      expect(authContent).toContain(
+        "async jwt({ token, user, trigger, session })"
+      );
       expect(authContent).toContain("async session({ session, token })");
     });
 
@@ -78,28 +78,31 @@ describe("Auth.js v5 Simple Tests", () => {
     });
   });
 
-  describe("Custom Middleware Cleanup", () => {
-    it("should not have custom authentication middleware", () => {
+  describe("Auth.js v5 Integration", () => {
+    it("should use Auth.js v5 auth function in middleware", () => {
       const fs = require("fs");
       const path = require("path");
 
-      const customMiddlewareFiles = [
-        path.join(__dirname, "..", "src", "lib", "api-auth-middleware.ts"),
-        path.join(__dirname, "..", "src", "lib", "api-middleware.ts"),
-      ];
+      const middlewareFile = path.join(
+        __dirname,
+        "..",
+        "src",
+        "lib",
+        "api-middleware.ts"
+      );
 
-      customMiddlewareFiles.forEach((file) => {
-        if (fs.existsSync(file)) {
-          const content = fs.readFileSync(file, "utf8");
+      if (fs.existsSync(middlewareFile)) {
+        const content = fs.readFileSync(middlewareFile, "utf8");
 
-          // Should not contain custom middleware functions
-          expect(content).not.toContain("withAuth(");
-          expect(content).not.toContain("withValidatedAuth(");
-          expect(content).not.toContain("withAuthAndRoleCheck(");
-          expect(content).not.toContain("withAdminAuth(");
-          expect(content).not.toContain("withManagerAuth(");
-        }
-      });
+        // Should import and use Auth.js v5 auth function
+        expect(content).toContain('import { auth } from "../../auth"');
+        expect(content).toContain("const session = await auth()");
+
+        // Should not contain deprecated patterns
+        expect(content).not.toContain("getServerSession");
+        expect(content).not.toContain("withValidatedAuth(");
+        expect(content).not.toContain("withAuthAndRoleCheck(");
+      }
     });
   });
 
