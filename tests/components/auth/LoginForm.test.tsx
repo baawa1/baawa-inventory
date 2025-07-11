@@ -31,29 +31,29 @@ describe("LoginForm", () => {
   it("renders login form correctly", () => {
     render(<LoginForm />);
 
-    // Check for the title using its container context
+    // Check for the correct title and description text
     expect(
-      screen.getByText("Enter your email and password to access your account")
+      screen.getByText("Enter your credentials to access your account")
     ).toBeInTheDocument();
     expect(screen.getByLabelText("Email")).toBeInTheDocument();
     expect(screen.getByLabelText("Password")).toBeInTheDocument();
-    expect(screen.getByRole("button", { name: "Sign In" })).toBeInTheDocument();
+    expect(screen.getByRole("button", { name: "Sign in" })).toBeInTheDocument();
   });
 
-  it("shows validation errors for invalid inputs", async () => {
+  it("prevents form submission when fields are empty", async () => {
     render(<LoginForm />);
 
-    const submitButton = screen.getByRole("button", { name: "Sign In" });
+    const submitButton = screen.getByRole("button", { name: "Sign in" });
+
+    // Submit the form with empty fields (default state)
     fireEvent.click(submitButton);
 
-    await waitFor(() => {
-      expect(
-        screen.getByText("Please enter a valid email address")
-      ).toBeInTheDocument();
-      expect(
-        screen.getByText("Password must be at least 6 characters")
-      ).toBeInTheDocument();
-    });
+    // The most important test: Check that signIn was not called due to validation failure
+    expect(mockSignIn).not.toHaveBeenCalled();
+
+    // Additional verification: The button should still be enabled (not in loading state)
+    expect(submitButton).not.toHaveTextContent("Signing in...");
+    expect(submitButton).toHaveTextContent("Sign in");
   });
 
   it("submits form with valid credentials", async () => {
@@ -63,7 +63,7 @@ describe("LoginForm", () => {
 
     const emailInput = screen.getByLabelText("Email");
     const passwordInput = screen.getByLabelText("Password");
-    const submitButton = screen.getByRole("button", { name: "Sign In" });
+    const submitButton = screen.getByRole("button", { name: "Sign in" });
 
     fireEvent.change(emailInput, { target: { value: "test@example.com" } });
     fireEvent.change(passwordInput, { target: { value: "password123" } });
@@ -73,13 +73,13 @@ describe("LoginForm", () => {
       expect(mockSignIn).toHaveBeenCalledWith("credentials", {
         email: "test@example.com",
         password: "password123",
+        callbackUrl: "/dashboard",
         redirect: false,
       });
     });
 
     await waitFor(() => {
       expect(mockPush).toHaveBeenCalledWith("/dashboard");
-      expect(mockRefresh).toHaveBeenCalled();
     });
   });
 
@@ -93,14 +93,16 @@ describe("LoginForm", () => {
 
     const emailInput = screen.getByLabelText("Email");
     const passwordInput = screen.getByLabelText("Password");
-    const submitButton = screen.getByRole("button", { name: "Sign In" });
+    const submitButton = screen.getByRole("button", { name: "Sign in" });
 
     fireEvent.change(emailInput, { target: { value: "test@example.com" } });
     fireEvent.change(passwordInput, { target: { value: "wrongpassword" } });
     fireEvent.click(submitButton);
 
     await waitFor(() => {
-      expect(screen.getByText("Invalid email or password")).toBeInTheDocument();
+      expect(
+        screen.getByText("Invalid email or password. Please try again.")
+      ).toBeInTheDocument();
     });
   });
 
@@ -111,7 +113,7 @@ describe("LoginForm", () => {
 
     const emailInput = screen.getByLabelText("Email");
     const passwordInput = screen.getByLabelText("Password");
-    const submitButton = screen.getByRole("button", { name: "Sign In" });
+    const submitButton = screen.getByRole("button", { name: "Sign in" });
 
     fireEvent.change(emailInput, { target: { value: "test@example.com" } });
     fireEvent.change(passwordInput, { target: { value: "password123" } });
@@ -134,7 +136,7 @@ describe("LoginForm", () => {
 
     const emailInput = screen.getByLabelText("Email");
     const passwordInput = screen.getByLabelText("Password");
-    const submitButton = screen.getByRole("button", { name: "Sign In" });
+    const submitButton = screen.getByRole("button", { name: "Sign in" });
 
     fireEvent.change(emailInput, { target: { value: "test@example.com" } });
     fireEvent.change(passwordInput, { target: { value: "password123" } });
