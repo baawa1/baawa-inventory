@@ -16,7 +16,7 @@ export default async function DashboardLayout({
   }
 
   // Check if user account is active
-  if (session.user.status !== "ACTIVE") {
+  if (session.user.status !== "APPROVED") {
     redirect("/pending-approval");
   }
 
