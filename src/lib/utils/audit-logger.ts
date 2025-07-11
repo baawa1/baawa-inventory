@@ -457,13 +457,13 @@ export class AuditLogger {
       // Only add IP address filter if it's not "unknown"
       if (ipAddress !== "unknown") {
         if (email) {
-          where.OR = [{ ip_address: ipAddress }, { userEmail: email }];
+          where.OR = [{ ip_address: ipAddress }, { users: { email: email } }];
         } else {
           where.ip_address = ipAddress;
         }
       } else if (email) {
-        // If IP is unknown but we have email, only filter by email
-        where.userEmail = email;
+        // If IP is unknown but we have email, filter by user email through relation
+        where.users = { email: email };
       }
 
       return await prisma.auditLog.count({ where });
