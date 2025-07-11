@@ -8,7 +8,7 @@ This document summarizes the comprehensive security tests implemented for the au
 
 ### 1. Password Security (4 tests)
 
-- **Minimum password length**: Enforces 8+ character requirement
+- **Minimum password length**: Enforces 12+ character requirement with uppercase, lowercase, numbers, and special characters
 - **Password complexity**: Validates mixed case, numbers, and special characters
 - **Secure password hashing**: Uses bcrypt with minimum 12 rounds
 - **Password reuse prevention**: Maintains password history to prevent reuse
