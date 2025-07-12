@@ -105,6 +105,7 @@ export function RegisterForm({ onSuccess }: RegisterFormProps) {
       if (onSuccess) {
         onSuccess();
       } else {
+        // Redirect immediately after successful registration
         router.push(`/check-email?email=${encodeURIComponent(data.email)}`);
       }
     } catch (error) {

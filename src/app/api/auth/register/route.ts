@@ -126,40 +126,54 @@ async function registerHandler(request: NextRequest) {
 
     // Send verification email and get Resend email ID if possible
     let emailId: string | undefined = undefined;
-    if (
-      process.env.NODE_ENV !== "production" &&
-      typeof emailService.sendVerificationEmailWithId === "function"
-    ) {
-      emailId = await emailService.sendVerificationEmailWithId(email, {
-        firstName,
-        verificationLink: `${process.env.NEXTAUTH_URL || "http://localhost:3000"}/verify-email?token=${verificationToken}`,
-        expiresInHours: 24,
-      });
-    } else {
-      await emailService.sendVerificationEmail(email, {
-        firstName,
-        verificationLink: `${process.env.NEXTAUTH_URL || "http://localhost:3000"}/verify-email?token=${verificationToken}`,
-        expiresInHours: 24,
-      });
+    try {
+      if (
+        process.env.NODE_ENV !== "production" &&
+        typeof emailService.sendVerificationEmailWithId === "function"
+      ) {
+        emailId = await emailService.sendVerificationEmailWithId(email, {
+          firstName,
+          verificationLink: `${process.env.NEXTAUTH_URL || "http://localhost:3000"}/verify-email?token=${verificationToken}`,
+          expiresInHours: 24,
+        });
+      } else {
+        await emailService.sendVerificationEmail(email, {
+          firstName,
+          verificationLink: `${process.env.NEXTAUTH_URL || "http://localhost:3000"}/verify-email?token=${verificationToken}`,
+          expiresInHours: 24,
+        });
+      }
+    } catch (emailError) {
+      console.error("Failed to send verification email:", emailError);
+      // Don't fail the registration if email sending fails
+      // The user can request a new verification email later
     }
 
     // Send admin notification for new user
-    const adminUsers = await prisma.user.findMany({
-      where: { role: "ADMIN", isActive: true },
-      select: { email: true },
-    });
+    try {
+      const adminUsers = await prisma.user.findMany({
+        where: { role: "ADMIN", isActive: true },
+        select: { email: true },
+      });
 
-    if (adminUsers.length > 0) {
-      await emailService.sendAdminNewUserNotification(
-        adminUsers.map((admin) => admin.email),
-        {
-          userFirstName: firstName,
-          userLastName: lastName,
-          userEmail: email,
-          approvalLink: `${process.env.NEXTAUTH_URL || "http://localhost:3000"}/admin/users`,
-          registrationDate: new Date().toISOString(),
-        }
+      if (adminUsers.length > 0) {
+        await emailService.sendAdminNewUserNotification(
+          adminUsers.map((admin) => admin.email),
+          {
+            userFirstName: firstName,
+            userLastName: lastName,
+            userEmail: email,
+            approvalLink: `${process.env.NEXTAUTH_URL || "http://localhost:3000"}/admin/users`,
+            registrationDate: new Date().toISOString(),
+          }
+        );
+      }
+    } catch (adminEmailError) {
+      console.error(
+        "Failed to send admin notification email:",
+        adminEmailError
       );
+      // Don't fail the registration if admin notification fails
     }
 
     // Build response

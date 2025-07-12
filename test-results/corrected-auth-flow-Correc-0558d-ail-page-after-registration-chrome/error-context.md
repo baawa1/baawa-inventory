@@ -1,24 +1,22 @@
 # Page snapshot
 
 ```yaml
-- heading "BaaWA Inventory POS" [level=1]
-- paragraph: Create your account
-- heading "Create Account" [level=1]
-- text: Enter your information to create your account Registration failed. Please try again. First Name
-- textbox "First Name": Unverified
-- text: Last Name
-- textbox "Last Name": User
-- text: Email
-- textbox "Email": baawapay+unverified-flow-1752328347159-68brtq@gmail.com
-- text: Password
-- textbox "Password": StrongPassword123!
-- text: Password must be at least 12 characters with uppercase, lowercase, number, and special character Confirm Password
-- textbox "Confirm Password": StrongPassword123!
-- button "Create Account"
+- text: Check Your Email We've sent a verification link to your email address
 - paragraph:
-  - text: Already have an account?
-  - link "Sign in":
-    - /url: /login
+  - strong: "Email sent to:"
+  - text: baawapay+unverified-flow-1752328767258-qlwjzs@gmail.com
+- heading "Next steps:" [level=3]
+- list:
+  - listitem: Check your email inbox (and spam folder)
+  - listitem: Click the verification link in the email
+  - listitem: You'll be redirected back to complete your registration
+  - listitem: Wait for admin approval to access your account
+- paragraph: The verification link expires in 24 hours
+- paragraph: Didn't receive the email?
+- text: Email
+- textbox "Email": baawapay+unverified-flow-1752328767258-qlwjzs@gmail.com
+- button "Resend Verification Email"
+- button "Back to Login"
 - region "Notifications alt+T"
 - button "Open Tanstack query devtools":
   - img

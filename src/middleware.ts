@@ -41,9 +41,20 @@ export default auth((req: NextRequest & { auth: any }) => {
   }
 
   // Extract user information from token
-  const userRole = token.user.role as UserRole;
-  const userStatus = token.user.status as UserStatus;
-  const isEmailVerified = token.user.isEmailVerified as boolean;
+  const userRole = token.role as UserRole;
+  const userStatus = token.status as UserStatus;
+  const isEmailVerified = Boolean(token.isEmailVerified);
+
+  // Debug logging in development
+  if (process.env.NODE_ENV === "development") {
+    console.log("🔍 Middleware Debug:", {
+      pathname,
+      userRole,
+      userStatus,
+      isEmailVerified,
+      hasToken: !!token,
+    });
+  }
 
   // Helper function to safely redirect and prevent loops
   const safeRedirect = (targetPath: string, reason: string) => {
