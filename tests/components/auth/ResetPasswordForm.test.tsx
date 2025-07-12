@@ -1,4 +1,4 @@
-import { render, screen, waitFor } from "@testing-library/react";
+import { render, screen, waitFor, act } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
 import { useRouter, useSearchParams } from "next/navigation";
 import { ResetPasswordForm } from "@/components/auth/ResetPasswordForm";
@@ -52,7 +52,9 @@ describe("ResetPasswordForm", () => {
       ok: false,
     });
 
-    render(<ResetPasswordForm />);
+    await act(async () => {
+      render(<ResetPasswordForm />);
+    });
 
     await waitFor(() => {
       expect(screen.getByText("Invalid Reset Link")).toBeInTheDocument();
@@ -65,7 +67,9 @@ describe("ResetPasswordForm", () => {
       ok: true,
     });
 
-    render(<ResetPasswordForm />);
+    await act(async () => {
+      render(<ResetPasswordForm />);
+    });
 
     await waitFor(() => {
       expect(screen.getByText("Set New Password")).toBeInTheDocument();
@@ -94,13 +98,13 @@ describe("ResetPasswordForm", () => {
     const passwordInput = screen.getByPlaceholderText("Enter new password");
     const submitButton = screen.getByRole("button", { name: "Reset Password" });
 
-    // Try weak password
+    // Try weak password that doesn't meet requirements
     await user.type(passwordInput, "weak");
-    await user.click(submitButton);
+    await user.tab(); // Trigger blur event to validate
 
     await waitFor(() => {
       expect(
-        screen.getByText(/Password must be at least 12 characters/)
+        screen.getByText("Password must be at least 12 characters")
       ).toBeInTheDocument();
     });
   });
@@ -132,7 +136,13 @@ describe("ResetPasswordForm", () => {
   it("successfully resets password and redirects", async () => {
     const user = userEvent.setup();
     mockSearchParams.get.mockReturnValue("valid-token");
-    (global.fetch as jest.Mock)
+
+    // Clear and setup fresh fetch mock
+    jest.clearAllMocks();
+    const mockFetch = jest.fn();
+    global.fetch = mockFetch;
+
+    mockFetch
       .mockResolvedValueOnce({ ok: true }) // Token validation
       .mockResolvedValueOnce({
         // Password reset
@@ -150,8 +160,8 @@ describe("ResetPasswordForm", () => {
     const confirmInput = screen.getByPlaceholderText("Confirm new password");
     const submitButton = screen.getByRole("button", { name: "Reset Password" });
 
-    await user.type(passwordInput, "StrongPass123");
-    await user.type(confirmInput, "StrongPass123");
+    await user.type(passwordInput, "StrongPass123!");
+    await user.type(confirmInput, "StrongPass123!");
     await user.click(submitButton);
 
     await waitFor(() => {
@@ -188,8 +198,8 @@ describe("ResetPasswordForm", () => {
     const confirmInput = screen.getByPlaceholderText("Confirm new password");
     const submitButton = screen.getByRole("button", { name: "Reset Password" });
 
-    await user.type(passwordInput, "StrongPass123");
-    await user.type(confirmInput, "StrongPass123");
+    await user.type(passwordInput, "StrongPass123!");
+    await user.type(confirmInput, "StrongPass123!");
     await user.click(submitButton);
 
     await waitFor(() => {

@@ -64,6 +64,8 @@ function ResetPasswordFormContent({ className }: ResetPasswordFormProps) {
 
   const form = useForm<ResetPasswordFormData>({
     resolver: zodResolver(resetPasswordSchema),
+    mode: "onBlur",
+    reValidateMode: "onChange",
     defaultValues: {
       password: "",
       confirmPassword: "",
@@ -200,6 +202,7 @@ function ResetPasswordFormContent({ className }: ResetPasswordFormProps) {
                         data-testid="password-input"
                         type="password"
                         placeholder="Enter new password"
+                        required
                         {...field}
                         disabled={isLoading}
                       />
@@ -220,6 +223,7 @@ function ResetPasswordFormContent({ className }: ResetPasswordFormProps) {
                         data-testid="confirm-password-input"
                         type="password"
                         placeholder="Confirm new password"
+                        required
                         {...field}
                         disabled={isLoading}
                       />

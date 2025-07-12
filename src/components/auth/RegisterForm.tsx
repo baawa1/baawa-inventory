@@ -54,6 +54,8 @@ export function RegisterForm({ onSuccess }: RegisterFormProps) {
 
   const form = useForm<RegisterFormData>({
     resolver: zodResolver(registerSchema),
+    mode: "onBlur",
+    reValidateMode: "onChange",
     defaultValues: {
       firstName: "",
       lastName: "",
@@ -188,6 +190,7 @@ export function RegisterForm({ onSuccess }: RegisterFormProps) {
                     <Input
                       data-testid="firstName-input"
                       placeholder="John"
+                      required
                       {...field}
                     />
                   </FormControl>
@@ -206,6 +209,7 @@ export function RegisterForm({ onSuccess }: RegisterFormProps) {
                     <Input
                       data-testid="lastName-input"
                       placeholder="Doe"
+                      required
                       {...field}
                     />
                   </FormControl>
@@ -225,6 +229,7 @@ export function RegisterForm({ onSuccess }: RegisterFormProps) {
                       data-testid="email-input"
                       type="email"
                       placeholder="name@example.com"
+                      required
                       {...field}
                     />
                   </FormControl>
@@ -244,6 +249,7 @@ export function RegisterForm({ onSuccess }: RegisterFormProps) {
                       data-testid="password-input"
                       type="password"
                       placeholder="Enter a strong password (12+ chars)"
+                      required
                       {...field}
                     />
                   </FormControl>
@@ -266,6 +272,7 @@ export function RegisterForm({ onSuccess }: RegisterFormProps) {
                     <Input
                       type="password"
                       placeholder="Confirm your password"
+                      required
                       {...field}
                     />
                   </FormControl>

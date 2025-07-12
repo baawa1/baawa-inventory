@@ -39,7 +39,7 @@ export function ForgotPasswordForm({ className }: ForgotPasswordFormProps) {
 
   const form = useForm<ForgotPasswordFormData>({
     resolver: zodResolver(forgotPasswordSchema),
-    mode: "onSubmit",
+    mode: "onBlur",
     reValidateMode: "onChange",
     defaultValues: {
       email: "",
@@ -134,6 +134,7 @@ export function ForgotPasswordForm({ className }: ForgotPasswordFormProps) {
                         data-testid="email-input"
                         type="email"
                         placeholder="Enter your email"
+                        required
                         {...field}
                         disabled={isLoading}
                       />

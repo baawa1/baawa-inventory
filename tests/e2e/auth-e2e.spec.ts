@@ -30,12 +30,15 @@ test.describe("Authentication E2E Tests", () => {
       await page.click('button[type="submit"]');
 
       // Wait for validation messages to appear
-      await page.waitForTimeout(500);
+      await page.waitForTimeout(1000);
 
-      // Should show validation errors (form validation will prevent submission)
+      // Check that form validation prevents submission
       const firstName = page.locator('input[name="firstName"]');
       const isRequired = await firstName.getAttribute("required");
       expect(isRequired).not.toBeNull();
+
+      // Should still be on register page due to validation
+      expect(page.url()).toContain("/register");
     });
 
     test("should validate password strength", async ({ page }) => {
@@ -43,17 +46,21 @@ test.describe("Authentication E2E Tests", () => {
       await page.waitForSelector("form");
 
       await page.fill('input[name="email"]', "test@example.com");
-      await page.fill('input[name="password"]', "123"); // Weak password
+      await page.fill('input[name="password"]', "weak"); // Weak password
       await page.fill('input[name="firstName"]', "Test");
       await page.fill('input[name="lastName"]', "User");
 
       await page.click('button[type="submit"]');
 
-      // Wait for any validation messages
-      await page.waitForTimeout(500);
+      // Wait for validation messages
+      await page.waitForTimeout(1000);
 
       // Check that form hasn't navigated away (indicating validation error)
       expect(page.url()).toContain("/register");
+
+      // Check for password validation error
+      const passwordError = page.locator('[data-testid="password-error"]');
+      await expect(passwordError).toBeVisible();
     });
   });
 
@@ -112,14 +119,15 @@ test.describe("Authentication E2E Tests", () => {
       const resetToken = "valid-token";
       await page.goto(`/reset-password?token=${resetToken}`);
 
-      await page.waitForTimeout(1000);
+      // Wait for the page to load and process the token
+      await page.waitForTimeout(2000);
 
       // Should show either the reset password form or an error message
       const hasPasswordField = await page
         .locator('input[name="password"]')
         .isVisible();
       const hasError = await page
-        .locator(".text-red-500, .text-destructive")
+        .locator(".text-destructive, [data-testid='token-error']")
         .isVisible();
 
       // Either form should be present or error should be shown

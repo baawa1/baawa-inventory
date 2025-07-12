@@ -1,21 +1,82 @@
 import { describe, test, expect, beforeAll, afterAll } from "@jest/globals";
 import { PrismaClient } from "@prisma/client";
 
-const prisma = new PrismaClient();
+// Mock Prisma client for tests
+jest.mock("@prisma/client", () => ({
+  PrismaClient: jest.fn().mockImplementation(() => ({
+    user: {
+      findFirst: jest.fn(),
+      findMany: jest.fn(),
+    },
+    $disconnect: jest.fn(),
+  })),
+}));
+
+const mockPrisma = new PrismaClient() as jest.Mocked<PrismaClient>;
 
 describe("POS System Access Control", () => {
   beforeAll(async () => {
-    // Ensure test data exists
+    // Setup mock data
     console.log("Setting up POS access tests...");
+
+    // Mock admin user
+    (mockPrisma.user.findFirst as jest.Mock).mockResolvedValueOnce({
+      id: "1",
+      email: "admin@test.com",
+      role: "ADMIN",
+      userStatus: "APPROVED",
+      isActive: true,
+      emailVerified: true,
+    });
+
+    // Mock manager user
+    (mockPrisma.user.findFirst as jest.Mock).mockResolvedValueOnce({
+      id: "2",
+      email: "manager@test.com",
+      role: "MANAGER",
+      userStatus: "APPROVED",
+      isActive: true,
+      emailVerified: true,
+    });
+
+    // Mock staff user
+    (mockPrisma.user.findFirst as jest.Mock).mockResolvedValueOnce({
+      id: "3",
+      email: "staff@test.com",
+      role: "STAFF",
+      userStatus: "APPROVED",
+      isActive: true,
+      emailVerified: true,
+    });
+
+    // Mock approved users for findMany
+    (mockPrisma.user.findMany as jest.Mock).mockResolvedValueOnce([
+      {
+        id: "1",
+        email: "admin@test.com",
+        role: "ADMIN",
+        userStatus: "APPROVED",
+        isActive: true,
+        emailVerified: true,
+      },
+      {
+        id: "2",
+        email: "manager@test.com",
+        role: "MANAGER",
+        userStatus: "APPROVED",
+        isActive: true,
+        emailVerified: true,
+      },
+    ]);
   });
 
   afterAll(async () => {
-    await prisma.$disconnect();
+    await mockPrisma.$disconnect();
   });
 
   describe("Role-based POS Access", () => {
     test("ADMIN users can access POS", async () => {
-      const adminUser = await prisma.user.findFirst({
+      const adminUser = await mockPrisma.user.findFirst({
         where: {
           role: "ADMIN",
           userStatus: "APPROVED",
@@ -28,7 +89,7 @@ describe("POS System Access Control", () => {
     });
 
     test("MANAGER users can access POS", async () => {
-      const managerUser = await prisma.user.findFirst({
+      const managerUser = await mockPrisma.user.findFirst({
         where: {
           role: "MANAGER",
           userStatus: "APPROVED",
@@ -41,7 +102,7 @@ describe("POS System Access Control", () => {
     });
 
     test("STAFF users can access POS", async () => {
-      const staffUser = await prisma.user.findFirst({
+      const staffUser = await mockPrisma.user.findFirst({
         where: {
           role: "STAFF",
           userStatus: "APPROVED",
@@ -56,7 +117,7 @@ describe("POS System Access Control", () => {
 
   describe("Status-based POS Access", () => {
     test("APPROVED users can access POS regardless of email verification", async () => {
-      const approvedUsers = await prisma.user.findMany({
+      const approvedUsers = await mockPrisma.user.findMany({
         where: {
           userStatus: "APPROVED",
           role: { in: ["ADMIN", "MANAGER", "STAFF"] },

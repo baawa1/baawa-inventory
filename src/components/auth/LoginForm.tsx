@@ -91,10 +91,16 @@ export function LoginForm({ callbackUrl }: LoginFormProps) {
         </CardDescription>
       </CardHeader>
       <CardContent className="space-y-4">
-        <form onSubmit={handleSubmit} className="space-y-4">
+        <form
+          data-testid="login-form"
+          onSubmit={handleSubmit}
+          className="space-y-4"
+        >
           {generalError && (
             <Alert variant="destructive">
-              <AlertDescription>{generalError}</AlertDescription>
+              <AlertDescription data-testid="login-error">
+                {generalError}
+              </AlertDescription>
             </Alert>
           )}
 
@@ -102,6 +108,8 @@ export function LoginForm({ callbackUrl }: LoginFormProps) {
             <Label htmlFor="email">Email</Label>
             <Input
               id="email"
+              name="email"
+              data-testid="email-input"
               type="email"
               placeholder="Enter your email"
               value={formData.email}
@@ -116,6 +124,8 @@ export function LoginForm({ callbackUrl }: LoginFormProps) {
             <div className="relative">
               <Input
                 id="password"
+                name="password"
+                data-testid="password-input"
                 type={showPassword ? "text" : "password"}
                 placeholder="Enter your password"
                 value={formData.password}
@@ -140,7 +150,12 @@ export function LoginForm({ callbackUrl }: LoginFormProps) {
             </div>
           </div>
 
-          <Button type="submit" className="w-full" disabled={isLoading}>
+          <Button
+            type="submit"
+            data-testid="login-button"
+            className="w-full"
+            disabled={isLoading}
+          >
             {isLoading ? (
               <>
                 <Loader2 className="mr-2 h-4 w-4 animate-spin" />
