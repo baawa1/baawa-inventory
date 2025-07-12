@@ -24,6 +24,10 @@ export class ResendProvider implements EmailProvider {
   }
 
   async sendEmail(options: EmailOptions): Promise<void> {
+    await this.sendEmailWithId(options);
+  }
+
+  async sendEmailWithId(options: EmailOptions): Promise<string | undefined> {
     try {
       const emailData: any = {
         from: `${this.fromName} <${this.fromEmail}>`,
@@ -63,6 +67,8 @@ export class ResendProvider implements EmailProvider {
       if (result.error) {
         throw new Error(`Resend API Error: ${result.error.message}`);
       }
+      // Return the email ID if available
+      return result.data?.id;
     } catch (error) {
       console.error("Resend email error:", error);
 

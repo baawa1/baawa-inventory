@@ -144,6 +144,7 @@ describe("RegisterForm", () => {
           lastName: "Doe",
           email: "john@example.com",
           password: "SecurePass123!",
+          confirmPassword: "SecurePass123!",
         }),
       });
     });
@@ -257,6 +258,7 @@ describe("RegisterForm", () => {
           lastName: "Doe",
           email: "john@example.com",
           password: "SecurePass123!",
+          confirmPassword: "SecurePass123!",
         }),
       });
     });
