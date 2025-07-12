@@ -166,7 +166,7 @@ export function POSInterface() {
 
   return (
     <POSErrorBoundary componentName="POSInterface">
-      <div className="h-screen overflow-hidden">
+      <div data-testid="pos-interface" className="h-screen overflow-hidden">
         {/* Offline Status Indicator */}
         <div className="flex justify-between items-center p-4 border-b">
           <h1 className="text-2xl font-bold">Point of Sale</h1>
