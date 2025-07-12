@@ -5,18 +5,38 @@ export interface EmailTestConfig {
   resendApiKey?: string;
   baseEmail?: string;
   waitTime?: number;
+  rateLimitDelay?: number;
 }
 
 export class EmailTestUtils {
   private config: EmailTestConfig;
+  private lastEmailSent: number = 0;
 
   constructor(config: EmailTestConfig = {}) {
     this.config = {
       resendApiKey: process.env.RESEND_API_KEY,
       baseEmail: "baawapay@gmail.com",
       waitTime: 5000,
+      rateLimitDelay: 1000, // 1 second delay between emails
       ...config,
     };
+  }
+
+  /**
+   * Rate limiting utility to respect Resend API limits
+   */
+  private async respectRateLimit(): Promise<void> {
+    const now = Date.now();
+    const timeSinceLastEmail = now - this.lastEmailSent;
+    const requiredDelay = this.config.rateLimitDelay || 1000;
+    
+    if (timeSinceLastEmail < requiredDelay) {
+      const delayNeeded = requiredDelay - timeSinceLastEmail;
+      console.log(`⏳ Rate limiting: waiting ${delayNeeded}ms before next email`);
+      await new Promise(resolve => setTimeout(resolve, delayNeeded));
+    }
+    
+    this.lastEmailSent = Date.now();
   }
 
   /**
@@ -93,6 +113,9 @@ export class EmailTestUtils {
     expect(page.url()).toContain("/check-email");
     expect(page.url()).toContain(`email=${encodeURIComponent(testEmail)}`);
 
+    // Respect rate limiting after email sending
+    await this.respectRateLimit();
+
     return testEmail;
   }
 
@@ -121,6 +144,33 @@ export class EmailTestUtils {
       from: "noreply@baawa.com",
       created_at: new Date().toISOString(),
     };
+  }
+
+  /**
+   * Create multiple test accounts with rate limiting
+   */
+  async createMultipleTestAccounts(
+    page: any,
+    count: number,
+    baseName: string = "Test"
+  ): Promise<string[]> {
+    const emails: string[] = [];
+    
+    for (let i = 0; i < count; i++) {
+      const email = await this.createTestAccount(
+        page,
+        `${baseName}${i + 1}`,
+        "User"
+      );
+      emails.push(email);
+      
+      // Additional delay between multiple account creations
+      if (i < count - 1) {
+        await this.respectRateLimit();
+      }
+    }
+    
+    return emails;
   }
 }
 
