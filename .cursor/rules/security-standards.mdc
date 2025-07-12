@@ -1,3 +1,92 @@
+---
+description: Anything that has to do with API anc security
+alwaysApply: false
+---
+
+# Security Standards Rule
+
+## Purpose
+
+To ensure consistent implementation of security measures across the application, protecting against common vulnerabilities and maintaining a secure development environment.
+
+## Security Headers
+
+- **Always apply security headers** to all responses using `generateSecurityHeaders()` from `src/lib/security-headers.ts`
+- **Content Security Policy (CSP)** must be configured for all routes
+- **HTTP Strict Transport Security (HSTS)** must be enabled in production
+- **X-Frame-Options** must be set to DENY to prevent clickjacking
+- **X-Content-Type-Options** must be set to nosniff
+
+## CSRF Protection
+
+- **Use CSRF middleware** (`withCSRF`) for all state-changing operations (POST, PUT, DELETE)
+- **Include CSRF tokens** in all forms and API requests
+- **Validate CSRF tokens** on the server side before processing requests
+- **Use the `useCSRF` hook** for client-side CSRF token management
+
+## Rate Limiting
+
+- **Apply rate limiting** to all API endpoints using `withRateLimit()` from `src/lib/rate-limiting.ts`
+- **Use appropriate rate limits:**
+  - AUTH: 5 requests per 15 minutes for authentication endpoints
+  - API: 100 requests per 15 minutes for general API endpoints
+  - PUBLIC: 1000 requests per 15 minutes for public endpoints
+- **Monitor rate limit violations** and log them appropriately
+
+## Session Management
+
+- **Use UnifiedSessionProvider** for all session management
+- **Implement session timeout warnings** 5 minutes before expiry
+- **Track user activity** and extend sessions on activity
+- **Invalidate sessions** on logout and security violations
+- **Use secure cookie settings** (httpOnly, secure, sameSite)
+
+## Authentication
+
+- **Never store sensitive data** in client-side storage
+- **Use bcrypt** for password hashing with 12 rounds
+- **Implement account lockout** after failed attempts
+- **Log all authentication events** for audit purposes
+- **Validate user status** before allowing access
+
+## Input Validation
+
+- **Use Zod schemas** for all input validation
+- **Sanitize user inputs** before processing
+- **Implement proper error handling** without exposing sensitive information
+- **Use parameterized queries** (Prisma handles this automatically)
+
+## Logging
+
+- **Use structured logging** (`src/lib/logger.ts`) for all application events
+- **Never log sensitive data** (passwords, tokens, PII)
+- **Log security events** with appropriate context
+- **Use appropriate log levels** (error, warn, info, debug)
+
+## Database Security
+
+- **Use Prisma ORM** for all database operations
+- **Follow database field mapping rules** (see database-field-mapping.md)
+- **Implement proper access controls** at the database level
+- **Use transactions** for multi-step operations
+- **Validate data integrity** before saving
+
+## API Security
+
+- **Validate all inputs** using Zod schemas
+- **Implement proper error handling** with sanitized error messages
+- **Use authentication middleware** for protected endpoints
+- **Apply rate limiting** to prevent abuse
+- **Return appropriate HTTP status codes**
+
+## Enforcement
+
+- All code reviews must check for security compliance
+- Security headers must be applied to all responses
+- CSRF protection must be implemented for state-changing operations
+- Rate limiting must be applied to all API endpoints
+- No sensitive data in logs or error messages
+
 # Security Standards Rule
 
 ## Purpose

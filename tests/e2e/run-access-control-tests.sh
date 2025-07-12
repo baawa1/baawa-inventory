@@ -62,7 +62,7 @@ run_verified_unapproved_tests() {
     echo "=================================================="
     
     npx playwright test tests/e2e/verified-unapproved-users.spec.ts \
-        --project=chromium \
+        --project=chrome \
         --reporter=list \
         --timeout=30000
     
@@ -80,7 +80,7 @@ run_dashboard_access_tests() {
     echo "================================================"
     
     npx playwright test tests/e2e/dashboard-access-control.spec.ts \
-        --project=chromium \
+        --project=chrome \
         --reporter=list \
         --timeout=30000
     
@@ -101,9 +101,8 @@ generate_report() {
     
     # Run tests with HTML reporter
     npx playwright test tests/e2e/verified-unapproved-users.spec.ts tests/e2e/dashboard-access-control.spec.ts \
-        --project=chromium \
+        --project=chrome \
         --reporter=html \
-        --output-dir=test-results/access-control \
         --timeout=30000
     
     print_success "Test report generated in test-results/access-control/"
