@@ -1,21 +1,12 @@
 # Page snapshot
 
 ```yaml
-- heading "BaaWA Inventory POS" [level=1]
-- paragraph: Accessories Inventory Management System
-- text: Sign in Enter your credentials to access your account
-- alert: Invalid email or password. Please try again.
-- text: Email
-- textbox "Email": baawapay+login-block-1752313802392-baxxh7@gmail.com
-- text: Password
-- textbox "Password": StrongPassword123!
-- button
-- button "Sign in"
-- button "Forgot your password?"
-- paragraph:
-  - text: Don't have an account?
-  - link "Sign up":
-    - /url: /register
+- text: Verification Failed No verification token provided
+- paragraph: There was an error verifying your email. You can request a new verification link below.
+- text: Email Address
+- textbox "Email Address"
+- button "Send New Verification Email" [disabled]
+- button "Need a new account? Register here"
 - region "Notifications alt+T"
 - button "Open Tanstack query devtools":
   - img

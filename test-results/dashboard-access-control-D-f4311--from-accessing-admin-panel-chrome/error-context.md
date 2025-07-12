@@ -15,9 +15,4 @@
   - link "Sign up":
     - /url: /register
 - region "Notifications alt+T"
-- button "Open Tanstack query devtools":
-  - img
-- alert
-- button "Open Next.js Dev Tools":
-  - img
 ```

@@ -9,7 +9,7 @@
 - text: Last Name
 - textbox "Last Name": User
 - text: Email
-- textbox "Email": test-1752313808248@example.com
+- textbox "Email": test-1752328415422@example.com
 - text: Password
 - textbox "Password": StrongPassword123!
 - text: Password must be at least 12 characters with uppercase, lowercase, number, and special character Confirm Password
