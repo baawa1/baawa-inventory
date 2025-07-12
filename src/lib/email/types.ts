@@ -33,6 +33,11 @@ export interface EmailProvider {
   sendEmail(options: EmailOptions): Promise<void>;
 
   /**
+   * Optionally send a single email and return the provider email ID (for E2E)
+   */
+  sendEmailWithId?(options: EmailOptions): Promise<string | undefined>;
+
+  /**
    * Send multiple emails (batch)
    */
   sendBulkEmails(emails: EmailOptions[]): Promise<void>;

@@ -80,6 +80,7 @@ export function RegisterForm({ onSuccess }: RegisterFormProps) {
           lastName: data.lastName,
           email: data.email,
           password: data.password,
+          confirmPassword: data.confirmPassword,
           // Remove role from request since backend ignores it
         }),
       });

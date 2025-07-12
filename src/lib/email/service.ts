@@ -153,6 +153,29 @@ export const emailService = {
   },
 
   /**
+   * Send email verification email and return the provider email ID (for E2E)
+   */
+  sendVerificationEmailWithId: async (
+    to: string,
+    data: EmailVerificationData
+  ) => {
+    const service = createEmailService();
+    const template = await getEmailTemplate("email_verification", data);
+    const emailOptions = {
+      to,
+      subject: template.subject,
+      html: template.html,
+      text: template.text,
+    };
+    if (typeof service["provider"].sendEmailWithId === "function") {
+      return service["provider"].sendEmailWithId!(emailOptions);
+    } else {
+      await service.sendTemplatedEmail("email_verification", to, data);
+      return undefined;
+    }
+  },
+
+  /**
    * Send password reset email
    */
   sendPasswordResetEmail: async (to: string, data: PasswordResetData) => {

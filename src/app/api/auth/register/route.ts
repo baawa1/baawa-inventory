@@ -124,12 +124,24 @@ async function registerHandler(request: NextRequest) {
     // Log user registration
     await AuditLogger.logRegistration(user.email, user.role, request);
 
-    // Send verification email
-    await emailService.sendVerificationEmail(email, {
-      firstName,
-      verificationLink: `${process.env.NEXTAUTH_URL || "http://localhost:3000"}/verify-email?token=${verificationToken}`,
-      expiresInHours: 24,
-    });
+    // Send verification email and get Resend email ID if possible
+    let emailId: string | undefined = undefined;
+    if (
+      process.env.NODE_ENV !== "production" &&
+      typeof emailService.sendVerificationEmailWithId === "function"
+    ) {
+      emailId = await emailService.sendVerificationEmailWithId(email, {
+        firstName,
+        verificationLink: `${process.env.NEXTAUTH_URL || "http://localhost:3000"}/verify-email?token=${verificationToken}`,
+        expiresInHours: 24,
+      });
+    } else {
+      await emailService.sendVerificationEmail(email, {
+        firstName,
+        verificationLink: `${process.env.NEXTAUTH_URL || "http://localhost:3000"}/verify-email?token=${verificationToken}`,
+        expiresInHours: 24,
+      });
+    }
 
     // Send admin notification for new user
     const adminUsers = await prisma.user.findMany({
@@ -150,22 +162,25 @@ async function registerHandler(request: NextRequest) {
       );
     }
 
-    return NextResponse.json(
-      {
-        message:
-          "Registration successful! Please check your email to verify your account.",
-        user: {
-          id: user.id,
-          firstName: user.firstName,
-          lastName: user.lastName,
-          email: user.email,
-          status: user.userStatus,
-          role: user.role,
-        },
-        requiresVerification: true,
+    // Build response
+    const response: any = {
+      message:
+        "Registration successful! Please check your email to verify your account.",
+      user: {
+        id: user.id,
+        firstName: user.firstName,
+        lastName: user.lastName,
+        email: user.email,
+        status: user.userStatus,
+        role: user.role,
       },
-      { status: 201 }
-    );
+      requiresVerification: true,
+    };
+    if (emailId) {
+      response.emailId = emailId;
+    }
+
+    return NextResponse.json(response, { status: 201 });
   } catch (error) {
     console.error("Registration error:", error);
 
