@@ -43,6 +43,7 @@ export default auth((req: NextRequest & { auth: any }) => {
   // Extract user information from token
   const userRole = token.user.role as UserRole;
   const userStatus = token.user.status as UserStatus;
+  const isEmailVerified = token.user.isEmailVerified as boolean;
 
   // Helper function to safely redirect and prevent loops
   const safeRedirect = (targetPath: string, reason: string) => {
@@ -58,13 +59,41 @@ export default auth((req: NextRequest & { auth: any }) => {
     return NextResponse.redirect(new URL(targetPath, req.url));
   };
 
-  // Check user status
+  // Authentication Flow Logic:
+  // 1. Unverified users → verify-email page
+  // 2. Verified but unapproved users → pending-approval page
+  // 3. Approved users → dashboard
+  // 4. Rejected/denied users → unauthorized page
+
+  // Check if email is not verified
+  if (!isEmailVerified) {
+    return safeRedirect("/verify-email", "Email not verified");
+  }
+
+  // Check user status after email verification
   if (userStatus === "PENDING") {
-    return safeRedirect("/pending-approval", "User status is PENDING");
+    // Email verified but still pending admin approval
+    return safeRedirect(
+      "/pending-approval",
+      "User status is PENDING (needs admin approval)"
+    );
+  }
+
+  if (userStatus === "VERIFIED") {
+    // Email verified but not yet approved by admin
+    return safeRedirect(
+      "/pending-approval",
+      "User status is VERIFIED (needs admin approval)"
+    );
   }
 
   if (userStatus === "REJECTED" || userStatus === "SUSPENDED") {
     return safeRedirect("/unauthorized", `User status is ${userStatus}`);
+  }
+
+  // At this point, user should be APPROVED
+  if (userStatus !== "APPROVED") {
+    return safeRedirect("/unauthorized", `Invalid user status: ${userStatus}`);
   }
 
   // Check role-based access for protected routes

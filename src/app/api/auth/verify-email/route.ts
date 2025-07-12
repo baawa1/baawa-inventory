@@ -91,6 +91,7 @@ export async function POST(request: NextRequest) {
       },
       // Indicate that the client should refresh the session
       shouldRefreshSession: true,
+      redirectTo: "/pending-approval", // Add explicit redirect instruction
     });
   } catch (error) {
     console.error("Error in POST /api/auth/verify-email:", error);

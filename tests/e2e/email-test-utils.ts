@@ -71,17 +71,20 @@ export class EmailTestUtils {
     const testEmail = this.generateTestEmail("e2e");
 
     await page.goto("/register");
-    await page.waitForSelector("form");
+    await page.waitForSelector('[data-testid="registration-form"]');
 
-    // Fill in registration data
-    await page.fill('input[name="firstName"]', firstName);
-    await page.fill('input[name="lastName"]', lastName);
-    await page.fill('input[name="email"]', testEmail);
-    await page.fill('input[name="password"]', "SecurePass123!@#");
-    await page.fill('input[name="confirmPassword"]', "SecurePass123!@#");
+    // Fill in registration data using data-testid selectors
+    await page.fill('[data-testid="firstName-input"]', firstName);
+    await page.fill('[data-testid="lastName-input"]', lastName);
+    await page.fill('[data-testid="email-input"]', testEmail);
+    await page.fill('[data-testid="password-input"]', "SecurePass123!@#");
+    await page.fill(
+      '[data-testid="confirmPassword-input"]',
+      "SecurePass123!@#"
+    );
 
     // Submit the form
-    await page.click('button[type="submit"]');
+    await page.click('[data-testid="register-button"]');
 
     // Wait for redirect to check-email page
     await page.waitForURL(/\/check-email/, { timeout: 10000 });

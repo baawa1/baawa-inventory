@@ -175,6 +175,7 @@ async function registerHandler(request: NextRequest) {
         role: user.role,
       },
       requiresVerification: true,
+      redirectTo: "/check-email", // Add explicit redirect instruction
     };
     if (emailId) {
       response.emailId = emailId;

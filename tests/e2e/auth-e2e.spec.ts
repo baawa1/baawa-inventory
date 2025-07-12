@@ -70,17 +70,20 @@ test.describe("Authentication E2E Tests", () => {
       const testEmail = emailUtils.generateTestEmail("account");
 
       await page.goto("/register");
-      await page.waitForSelector("form");
+      await page.waitForSelector('[data-testid="registration-form"]');
 
-      // Fill in valid registration data
-      await page.fill('input[name="firstName"]', "Test");
-      await page.fill('input[name="lastName"]', "User");
-      await page.fill('input[name="email"]', testEmail);
-      await page.fill('input[name="password"]', "StrongPassword123!");
-      await page.fill('input[name="confirmPassword"]', "StrongPassword123!");
+      // Fill in valid registration data using data-testid selectors
+      await page.fill('[data-testid="firstName-input"]', "Test");
+      await page.fill('[data-testid="lastName-input"]', "User");
+      await page.fill('[data-testid="email-input"]', testEmail);
+      await page.fill('[data-testid="password-input"]', "StrongPassword123!");
+      await page.fill(
+        '[data-testid="confirmPassword-input"]',
+        "StrongPassword123!"
+      );
 
       // Submit the form
-      await page.click('button[type="submit"]');
+      await page.click('[data-testid="register-button"]');
 
       // Wait a bit for the form submission to process
       await page.waitForTimeout(3000);
@@ -136,7 +139,7 @@ test.describe("Authentication E2E Tests", () => {
       const testEmail = emailUtils.generateTestEmail("resend-verify");
 
       await page.goto("/register");
-      await page.waitForSelector("form");
+      await page.waitForSelector('[data-testid="registration-form"]');
 
       // Intercept the registration API response
       let emailId: string | undefined = undefined;
@@ -146,17 +149,20 @@ test.describe("Authentication E2E Tests", () => {
             resp.url().includes("/api/auth/register") && resp.status() === 201
         ),
         (async () => {
-          // Fill in valid registration data
-          await page.fill('input[name="firstName"]', "Resend");
-          await page.fill('input[name="lastName"]', "Verify");
-          await page.fill('input[name="email"]', testEmail);
-          await page.fill('input[name="password"]', "StrongPassword123!");
+          // Fill in valid registration data using data-testid selectors
+          await page.fill('[data-testid="firstName-input"]', "Resend");
+          await page.fill('[data-testid="lastName-input"]', "Verify");
+          await page.fill('[data-testid="email-input"]', testEmail);
           await page.fill(
-            'input[name="confirmPassword"]',
+            '[data-testid="password-input"]',
+            "StrongPassword123!"
+          );
+          await page.fill(
+            '[data-testid="confirmPassword-input"]',
             "StrongPassword123!"
           );
           // Submit the form
-          await page.click('button[type="submit"]');
+          await page.click('[data-testid="register-button"]');
         })(),
       ]);
 

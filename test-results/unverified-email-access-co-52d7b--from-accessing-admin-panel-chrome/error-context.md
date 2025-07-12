@@ -4,16 +4,16 @@
 - heading "BaaWA Inventory POS" [level=1]
 - paragraph: Create your account
 - heading "Create Account" [level=1]
-- text: Enter your information to create your account Registration failed. Please try again. First Name
-- textbox "First Name": Test
+- text: Enter your information to create your account First Name
+- textbox "First Name"
 - text: Last Name
-- textbox "Last Name": User
+- textbox "Last Name"
 - text: Email
-- textbox "Email": baawapay+account-1752313736847-9hhmya@gmail.com
+- textbox "Email"
 - text: Password
-- textbox "Password": StrongPassword123!
+- textbox "Password"
 - text: Password must be at least 12 characters with uppercase, lowercase, number, and special character Confirm Password
-- textbox "Confirm Password": StrongPassword123!
+- textbox "Confirm Password"
 - button "Create Account"
 - paragraph:
   - text: Already have an account?

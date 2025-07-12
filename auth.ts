@@ -85,31 +85,22 @@ const config: NextAuthConfig = {
             return null;
           }
 
-          // Validate user status
-          if (!user.emailVerified) {
-            await AuditLogger.logLoginFailed(email, "Email not verified");
-            return null;
-          }
-
-          if (
-            ["PENDING", "REJECTED", "SUSPENDED"].includes(user.userStatus || "")
-          ) {
-            await AuditLogger.logLoginFailed(
-              email,
-              `User status: ${user.userStatus || "UNKNOWN"}`
-            );
-            return null;
-          }
-
+          // Validate password first
           if (!user.password) {
             await AuditLogger.logLoginFailed(email, "No password set");
             return null;
           }
 
-          // Validate password
           const isValidPassword = await bcrypt.compare(password, user.password);
           if (!isValidPassword) {
             await AuditLogger.logLoginFailed(email, "Invalid password");
+            return null;
+          }
+
+          // Allow login for all active users regardless of status
+          // The middleware will handle redirects based on status
+          if (!user.isActive) {
+            await AuditLogger.logLoginFailed(email, "User account is inactive");
             return null;
           }
 

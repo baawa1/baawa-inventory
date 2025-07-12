@@ -4,7 +4,7 @@
 - text: Check Your Email We've sent a verification link to your email address
 - paragraph:
   - strong: "Email sent to:"
-  - text: baawapay+unverified-persistent-1752313743503-kax5jw@gmail.com
+  - text: baawapay+unverified-persistent-1752328347291-qjfhjt@gmail.com
 - heading "Next steps:" [level=3]
 - list:
   - listitem: Check your email inbox (and spam folder)
@@ -14,7 +14,7 @@
 - paragraph: The verification link expires in 24 hours
 - paragraph: Didn't receive the email?
 - text: Email
-- textbox "Email": baawapay+unverified-persistent-1752313743503-kax5jw@gmail.com
+- textbox "Email": baawapay+unverified-persistent-1752328347291-qjfhjt@gmail.com
 - button "Resend Verification Email"
 - button "Back to Login"
 - region "Notifications alt+T"

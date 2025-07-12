@@ -271,6 +271,7 @@ export function RegisterForm({ onSuccess }: RegisterFormProps) {
                   <FormLabel>Confirm Password</FormLabel>
                   <FormControl>
                     <Input
+                      data-testid="confirmPassword-input"
                       type="password"
                       placeholder="Confirm your password"
                       required
