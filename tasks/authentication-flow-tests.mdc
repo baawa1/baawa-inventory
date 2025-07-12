@@ -1,0 +1,342 @@
+# Authentication Flow Tests - Task List
+
+## Overview
+
+This document outlines the comprehensive testing tasks for the authentication flow, focusing on UI testing with API confirmation tests. Each task includes both UI and API testing components to ensure complete coverage.
+
+## Task 1: Unverified Email Users Access Control
+
+### Description
+
+Test that users who have signed up but not verified their email are properly redirected to the verify email page when trying to access dashboard pages.
+
+### UI Tests Required
+
+1. **Sign up flow completion**
+   - Navigate to `/register`
+   - Fill out registration form with valid data
+   - Submit form and verify redirect to `/check-email`
+   - Verify email verification message is displayed
+
+2. **Dashboard access attempts**
+   - Try to access `/dashboard` directly (should redirect to verify email)
+   - Try to access `/dashboard/inventory` directly (should redirect to verify email)
+   - Try to access `/dashboard/pos` directly (should redirect to verify email)
+   - Try to access `/admin` directly (should redirect to verify email)
+
+3. **Navigation attempts**
+   - Try to navigate to dashboard pages via browser URL
+   - Try to use browser back/forward buttons
+   - Verify all attempts redirect to verify email page
+
+### API Tests Required
+
+1. **Session validation**
+   - Test `/api/auth/session` returns user with `email_verified: false`
+   - Verify session contains correct user data but unverified status
+
+2. **Middleware behavior**
+   - Test middleware correctly identifies unverified users
+   - Verify middleware redirects to `/verify-email` for dashboard routes
+
+### Test Files to Create
+
+- `tests/e2e/unverified-user-access.spec.ts`
+- `tests/integration/auth-middleware-unverified.test.ts`
+
+---
+
+## Task 2: Verified but Unapproved Users Access Control
+
+### Description
+
+Test that users who have verified their email but not been approved by admin are redirected to the pending approval page when trying to access dashboard pages.
+
+### UI Tests Required
+
+1. **Email verification flow**
+   - Complete email verification process
+   - Verify redirect to pending approval page
+   - Verify pending approval message is displayed
+
+2. **Dashboard access attempts after verification**
+   - Try to access `/dashboard` directly (should redirect to pending approval)
+   - Try to access `/dashboard/inventory` directly (should redirect to pending approval)
+   - Try to access `/dashboard/pos` directly (should redirect to pending approval)
+   - Try to access `/admin` directly (should redirect to pending approval)
+
+3. **Pending approval page functionality**
+   - Verify page shows correct status message
+   - Test logout functionality from pending approval page
+   - Verify no navigation to dashboard is possible
+
+### API Tests Required
+
+1. **User status validation**
+   - Test `/api/auth/session` returns user with `email_verified: true` and `user_status: "PENDING"`
+   - Verify session contains correct verification status
+
+2. **Middleware behavior**
+   - Test middleware correctly identifies verified but unapproved users
+   - Verify middleware redirects to `/pending-approval` for dashboard routes
+
+### Test Files to Create
+
+- `tests/e2e/verified-unapproved-access.spec.ts`
+- `tests/integration/auth-middleware-pending.test.ts`
+
+---
+
+## Task 3: Approved Users Dashboard Access
+
+### Description
+
+Test that only logged in, verified, and admin-approved users can access dashboard pages.
+
+### UI Tests Required
+
+1. **Admin approval flow**
+   - Admin logs in and navigates to user management
+   - Admin approves a pending user
+   - Verify user status changes to "APPROVED"
+
+2. **Approved user access**
+   - Approved user logs in
+   - Verify successful access to `/dashboard`
+   - Verify successful access to `/dashboard/inventory`
+   - Verify successful access to `/dashboard/pos`
+   - Verify successful access to all dashboard sub-pages
+
+3. **Navigation within dashboard**
+   - Test all sidebar navigation links work
+   - Test breadcrumb navigation
+   - Test direct URL access to dashboard pages
+
+4. **Session persistence**
+   - Refresh page and verify user remains logged in
+   - Close and reopen browser, verify session persists
+   - Test logout functionality
+
+### API Tests Required
+
+1. **Session validation for approved users**
+   - Test `/api/auth/session` returns user with `email_verified: true` and `user_status: "APPROVED"`
+   - Verify session contains correct approval status
+
+2. **Middleware behavior**
+   - Test middleware allows access to dashboard for approved users
+   - Verify no unnecessary redirects occur
+
+3. **API endpoint access**
+   - Test that approved users can access dashboard API endpoints
+   - Verify proper authorization headers are sent
+
+### Test Files to Create
+
+- `tests/e2e/approved-user-access.spec.ts`
+- `tests/integration/auth-middleware-approved.test.ts`
+- `tests/api/dashboard-access.test.ts`
+
+---
+
+## Task 4: Admin-Specific Access Control
+
+### Description
+
+Test that admin users have access to admin-specific pages and functionality.
+
+### UI Tests Required
+
+1. **Admin login and access**
+   - Admin user logs in with admin credentials
+   - Verify access to `/admin` dashboard
+   - Verify access to user management features
+   - Verify access to audit logs
+
+2. **Admin user management**
+   - Test user approval functionality
+   - Test user suspension functionality
+   - Test user role management
+   - Verify audit trail creation
+
+3. **Non-admin access restrictions**
+   - Regular user tries to access `/admin` (should be denied)
+   - Verify proper error message or redirect
+
+### API Tests Required
+
+1. **Admin API endpoints**
+   - Test `/api/admin/approve-user` with admin session
+   - Test `/api/admin/suspend-user` with admin session
+   - Test `/api/admin/audit-logs` with admin session
+
+2. **Authorization checks**
+   - Test admin endpoints with non-admin user (should fail)
+   - Test admin endpoints without authentication (should fail)
+
+### Test Files to Create
+
+- `tests/e2e/admin-access-control.spec.ts`
+- `tests/api/admin-endpoints.test.ts`
+
+---
+
+## Task 5: Authentication State Transitions
+
+### Description
+
+Test the complete user journey from registration through approval and access.
+
+### UI Tests Required
+
+1. **Complete user journey**
+   - Register new user
+   - Verify email verification flow
+   - Admin approves user
+   - User logs in and accesses dashboard
+   - Test full dashboard functionality
+
+2. **State transition edge cases**
+   - User verifies email while admin is approving
+   - Admin approves user while user is logged out
+   - User tries to access dashboard during approval process
+
+3. **Error handling**
+   - Test expired verification links
+   - Test invalid approval tokens
+   - Test network errors during state transitions
+
+### API Tests Required
+
+1. **State transition validation**
+   - Test user status changes in database
+   - Verify audit logs for state changes
+   - Test session updates after status changes
+
+2. **Concurrent access handling**
+   - Test multiple admin approvals simultaneously
+   - Test user login during approval process
+
+### Test Files to Create
+
+- `tests/e2e/complete-auth-journey.spec.ts`
+- `tests/integration/auth-state-transitions.test.ts`
+
+---
+
+## Task 6: Security and Edge Cases
+
+### Description
+
+Test security measures and edge cases in the authentication flow.
+
+### UI Tests Required
+
+1. **Session security**
+   - Test session timeout behavior
+   - Test concurrent login attempts
+   - Test logout from multiple tabs
+
+2. **Input validation**
+   - Test malformed email addresses
+   - Test SQL injection attempts in forms
+   - Test XSS attempts in user input
+
+3. **Rate limiting**
+   - Test login rate limiting
+   - Test registration rate limiting
+   - Test password reset rate limiting
+
+### API Tests Required
+
+1. **Security headers**
+   - Test CSRF protection
+   - Test XSS protection headers
+   - Test content security policy
+
+2. **Input sanitization**
+   - Test API endpoint input validation
+   - Test database query injection prevention
+
+### Test Files to Create
+
+- `tests/security/auth-security.spec.ts`
+- `tests/integration/auth-edge-cases.test.ts`
+
+---
+
+## Implementation Priority
+
+### Phase 1 (High Priority)
+
+1. Task 1: Unverified Email Users Access Control
+2. Task 2: Verified but Unapproved Users Access Control
+3. Task 3: Approved Users Dashboard Access
+
+### Phase 2 (Medium Priority)
+
+4. Task 4: Admin-Specific Access Control
+5. Task 5: Authentication State Transitions
+
+### Phase 3 (Low Priority)
+
+6. Task 6: Security and Edge Cases
+
+---
+
+## Test Environment Setup
+
+### Prerequisites
+
+- Test database with sample users in different states
+- Admin user account for testing
+- Email verification testing setup
+- Mock email service for testing
+
+### Test Data Requirements
+
+- Unverified user accounts
+- Verified but unapproved user accounts
+- Approved user accounts
+- Admin user account
+- Test products and inventory data
+
+### Test Utilities Needed
+
+- User creation helpers
+- Authentication helpers
+- Email verification helpers
+- Admin approval helpers
+- Session management helpers
+
+---
+
+## Success Criteria
+
+### UI Tests
+
+- All authentication flows work correctly in browser
+- Proper redirects occur for unauthorized access
+- User-friendly error messages are displayed
+- Loading states are properly handled
+- Forms validate input correctly
+
+### API Tests
+
+- All endpoints return correct status codes
+- Proper error messages are returned
+- Database state is correctly updated
+- Audit logs are properly created
+- Security measures are enforced
+
+### Integration Tests
+
+- End-to-end flows work correctly
+- State transitions are handled properly
+- Concurrent access is handled safely
+- Performance is acceptable under load
+  description:
+  globs:
+  alwaysApply: false
+
+---

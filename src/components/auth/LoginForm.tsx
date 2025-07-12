@@ -97,8 +97,11 @@ export function LoginForm({ callbackUrl }: LoginFormProps) {
           className="space-y-4"
         >
           {generalError && (
-            <Alert variant="destructive">
-              <AlertDescription data-testid="login-error">
+            <Alert variant="default" className="bg-red-100 border-red-200">
+              <AlertDescription
+                data-testid="login-error"
+                className="text-red-700"
+              >
                 {generalError}
               </AlertDescription>
             </Alert>

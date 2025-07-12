@@ -62,7 +62,7 @@ function CheckEmailContent() {
   }
 
   return (
-    <div className="min-h-screen flex items-center justify-center bg-gray-50">
+    <div className="min-h-screen flex items-center justify-center">
       <div className="w-full max-w-md">
         <Card>
           <CardHeader className="text-center">
@@ -81,7 +81,7 @@ function CheckEmailContent() {
           </CardHeader>
 
           <CardContent className="space-y-4">
-            <div className="bg-blue-50 border border-blue-200 rounded-lg p-4">
+            <div className="bg-blue-100 border border-blue-200 rounded-lg p-4">
               <p className="text-sm text-blue-700 text-center">
                 <strong>Email sent to:</strong>
                 <br />
@@ -89,8 +89,8 @@ function CheckEmailContent() {
               </p>
             </div>
 
-            <div className="space-y-3 text-sm text-gray-600">
-              <h3 className="font-medium text-gray-900">Next steps:</h3>
+            <div className="space-y-3 text-sm ">
+              <h3 className="font-medium">Next steps:</h3>
               <ol className="list-decimal list-inside space-y-2">
                 <li>Check your email inbox (and spam folder)</li>
                 <li>Click the verification link in the email</li>
@@ -111,9 +111,7 @@ function CheckEmailContent() {
             </div>
 
             <div className="pt-4 border-t">
-              <p className="text-sm text-gray-600 mb-3">
-                Didn&apos;t receive the email?
-              </p>
+              <p className="text-sm  mb-3">Didn&apos;t receive the email?</p>
 
               <form onSubmit={handleResendVerification} className="space-y-3">
                 <div>
@@ -134,7 +132,7 @@ function CheckEmailContent() {
                   type="submit"
                   disabled={resendLoading || !resendEmail}
                   className="w-full"
-                  variant="outline"
+                  variant="secondary"
                 >
                   {resendLoading ? (
                     <>
