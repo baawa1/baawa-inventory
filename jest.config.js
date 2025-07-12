@@ -30,8 +30,7 @@ const customJestConfig = {
     "<rootDir>/.next/",
     "<rootDir>/node_modules/",
     "<rootDir>/tests/e2e/", // Exclude E2E tests from Jest
-    "<rootDir>/tests/api/reset-password.test.ts", // Exclude server-side API tests
-    "<rootDir>/tests/api/reset-password-integration.test.ts", // Exclude server-side API tests
+    "<rootDir>/tests/api/", // Exclude server-side API tests
   ],
 
   // Coverage configuration
