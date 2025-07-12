@@ -53,6 +53,7 @@ export default function PendingApprovalPage() {
   const getStatusIcon = () => {
     switch (session?.user?.status) {
       case "PENDING":
+      case "VERIFIED":
         return <Clock className="h-16 w-16 text-yellow-500" />;
       case "APPROVED":
         return <CheckCircle className="h-16 w-16 text-green-500" />;
@@ -70,6 +71,12 @@ export default function PendingApprovalPage() {
           title: "Account Pending Approval",
           description:
             "Your account is currently under review. An administrator will approve your access soon.",
+        };
+      case "VERIFIED":
+        return {
+          title: "Your account is pending approval",
+          description:
+            "Please wait for an administrator to approve your account.",
         };
       case "REJECTED":
         return {
@@ -116,7 +123,8 @@ export default function PendingApprovalPage() {
               </p>
             </div>
 
-            {session?.user?.status === "PENDING" && (
+            {(session?.user?.status === "PENDING" ||
+              session?.user?.status === "VERIFIED") && (
               <div className="bg-yellow-50 border border-yellow-200 rounded-md p-3">
                 <p className="text-sm text-yellow-800">
                   Your account registration was successful! Please wait for an
