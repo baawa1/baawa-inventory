@@ -30,9 +30,9 @@ export async function GET(
       );
     }
 
-    if (session.user.status !== "ACTIVE") {
+    if (session.user.status !== "APPROVED") {
       return NextResponse.json(
-        { error: "Account not active" },
+        { error: "Account not approved" },
         { status: 403 }
       );
     }
@@ -85,9 +85,9 @@ export async function PUT(
       );
     }
 
-    if (session.user.status !== "ACTIVE") {
+    if (session.user.status !== "APPROVED") {
       return NextResponse.json(
-        { error: "Account not active" },
+        { error: "Account not approved" },
         { status: 403 }
       );
     }
@@ -170,9 +170,9 @@ export async function DELETE(
       );
     }
 
-    if (session.user.status !== "ACTIVE") {
+    if (session.user.status !== "APPROVED") {
       return NextResponse.json(
-        { error: "Account not active" },
+        { error: "Account not approved" },
         { status: 403 }
       );
     }
