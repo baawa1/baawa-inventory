@@ -32,15 +32,19 @@ test.describe("Mock Auth Test", () => {
     // Test verify-email page
     await page.goto("/verify-email");
     await expect(page).toHaveURL("/verify-email");
-    // The title is in a CardTitle component, which renders as h2
-    // Without a token, it shows "Verification Failed"
-    await expect(page.locator("h2")).toContainText("Verification Failed");
+    // The title is in a CardTitle component, which renders as a div
+    // Without a token, it shows "Request Verification"
+    await expect(page.locator('[data-slot="card-title"]')).toContainText(
+      "Request Verification"
+    );
 
     // Test unauthorized page
     await page.goto("/unauthorized");
     await expect(page).toHaveURL("/unauthorized");
-    // The title is in a CardTitle component, which renders as h2
-    await expect(page.locator("h2")).toContainText("Access Denied");
+    // The title is in a CardTitle component, which renders as a div
+    await expect(page.locator('[data-slot="card-title"]')).toContainText(
+      "Access Denied"
+    );
   });
 
   test("should show proper error messages", async ({ page }) => {

@@ -20,75 +20,117 @@ function VerifyEmailContent() {
   const searchParams = useSearchParams();
   const { session, updateSession } = useSessionUpdate();
 
-  const [status, setStatus] = useState<
-    "loading" | "success" | "error" | "expired" | "already-verified"
-  >("loading");
-  const [message, setMessage] = useState("");
+  // Add hydration state to prevent SSR/client mismatch
+  const [isHydrated, setIsHydrated] = useState(false);
+
+  const [verificationStatus, setVerificationStatus] = useState<
+    "idle" | "verifying" | "success" | "error" | "expired"
+  >("idle");
+  const [verificationMessage, setVerificationMessage] = useState("");
   const [email, setEmail] = useState("");
   const [resendLoading, setResendLoading] = useState(false);
   const [resendMessage, setResendMessage] = useState("");
+  const [isRedirecting, setIsRedirecting] = useState(false);
 
   const token = searchParams.get("token");
 
-  const verifyEmailToken = useCallback(
-    async (verificationToken: string) => {
-      try {
-        const response = await fetch("/api/auth/verify-email", {
-          method: "POST",
-          headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({ token: verificationToken }),
-        });
-
-        const data = await response.json();
-
-        if (response.ok) {
-          setStatus("success");
-          setMessage(data.message);
-
-          // Set a flag that email was just verified so pending approval page can refresh
-          sessionStorage.setItem("emailJustVerified", "true");
-
-          // If user is logged in and we get shouldRefreshSession, refresh the session
-          if (session && data.shouldRefreshSession) {
-            try {
-              await updateSession();
-            } catch (error) {
-              console.error("Error updating session:", error);
-            }
-          }
-
-          // Redirect to pending approval page after 3 seconds
-          setTimeout(() => {
-            router.push("/pending-approval");
-          }, 3000);
-        } else {
-          if (data.error.includes("expired")) {
-            setStatus("expired");
-          } else if (data.error.includes("already verified")) {
-            setStatus("already-verified");
-          } else {
-            setStatus("error");
-          }
-          setMessage(data.error);
-        }
-      } catch (error) {
-        console.error("Error verifying email:", error);
-        setStatus("error");
-        setMessage("An error occurred while verifying your email");
-      }
-    },
-    [router, session, updateSession]
-  );
-
-  // Only verify token on mount if token exists - no API calls in useEffect
+  // Handle hydration
   useEffect(() => {
-    if (token) {
-      verifyEmailToken(token);
-    } else {
-      setStatus("error");
-      setMessage("No verification token provided");
+    setIsHydrated(true);
+  }, []);
+
+  // Determine overall status from session and verification state
+  const getOverallStatus = () => {
+    // During SSR or before hydration, show loading state
+    if (!isHydrated) {
+      return "loading";
     }
-  }, [token, verifyEmailToken]);
+
+    // If we're in the middle of verification, show that status
+    if (verificationStatus !== "idle") {
+      return verificationStatus;
+    }
+
+    // If user is logged in and email is already verified
+    if (session?.user?.isEmailVerified) {
+      return "already-verified";
+    }
+
+    // If there's a token but we haven't verified yet
+    if (token) {
+      return "has-token";
+    }
+
+    // No token and not verified - show form
+    return "no-token";
+  };
+
+  const overallStatus = getOverallStatus();
+
+  // Set email from session when available
+  useEffect(() => {
+    if (session?.user?.email && !email) {
+      setEmail(session.user.email);
+    }
+  }, [session?.user?.email, email]);
+
+  const handleVerifyToken = useCallback(async () => {
+    if (!token) return;
+
+    setVerificationStatus("verifying");
+    setVerificationMessage("Verifying your email...");
+
+    try {
+      const response = await fetch("/api/auth/verify-email", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ token }),
+      });
+
+      const data = await response.json();
+
+      if (response.ok) {
+        setVerificationStatus("success");
+        setVerificationMessage(data.message);
+        console.log("✅ Email verification successful:", data);
+
+        // Set flag for pending approval page
+        sessionStorage.setItem("emailJustVerified", "true");
+
+        // Refresh session if user is logged in
+        if (session && data.shouldRefreshSession) {
+          try {
+            console.log("🔄 Refreshing session after verification...");
+            await updateSession();
+            console.log("✅ Session refreshed successfully");
+          } catch (error) {
+            console.error("❌ Error updating session:", error);
+          }
+        }
+
+        // Auto-redirect after successful verification
+        setTimeout(() => {
+          if (!isRedirecting) {
+            setIsRedirecting(true);
+            console.log("🔄 Redirecting to pending approval...");
+            router.push("/pending-approval");
+          }
+        }, 2000);
+      } else {
+        // Handle different error cases
+        if (data.error.includes("expired")) {
+          setVerificationStatus("expired");
+        } else {
+          setVerificationStatus("error");
+        }
+        setVerificationMessage(data.error);
+      }
+    } catch (error) {
+      console.error("❌ Error verifying email:", error);
+      setVerificationStatus("error");
+      setVerificationMessage("An error occurred while verifying your email");
+    }
+  }, [token, router, session, updateSession, isRedirecting]);
 
   const handleResendVerification = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -119,8 +161,9 @@ function VerifyEmailContent() {
   };
 
   const getStatusIcon = () => {
-    switch (status) {
+    switch (overallStatus) {
       case "loading":
+      case "verifying":
         return <Clock className="h-16 w-16 text-blue-500 animate-spin" />;
       case "success":
         return <CheckCircle className="h-16 w-16 text-green-500" />;
@@ -129,14 +172,19 @@ function VerifyEmailContent() {
         return <XCircle className="h-16 w-16 text-red-500" />;
       case "already-verified":
         return <AlertCircle className="h-16 w-16 text-yellow-500" />;
+      case "has-token":
+        return <Mail className="h-16 w-16 text-blue-500" />;
+      case "no-token":
+        return <Mail className="h-16 w-16 text-gray-500" />;
       default:
         return <Mail className="h-16 w-16 text-gray-500" />;
     }
   };
 
   const getStatusColor = () => {
-    switch (status) {
+    switch (overallStatus) {
       case "loading":
+      case "verifying":
         return "text-blue-600";
       case "success":
         return "text-green-600";
@@ -145,10 +193,81 @@ function VerifyEmailContent() {
         return "text-red-600";
       case "already-verified":
         return "text-yellow-600";
+      case "has-token":
+        return "text-blue-600";
+      case "no-token":
+        return "text-gray-600";
       default:
         return "text-gray-600";
     }
   };
+
+  const getStatusTitle = () => {
+    switch (overallStatus) {
+      case "loading":
+        return "Loading...";
+      case "verifying":
+        return "Verifying Email...";
+      case "success":
+        return "Email Verified!";
+      case "error":
+        return "Verification Failed";
+      case "expired":
+        return "Token Expired";
+      case "already-verified":
+        return "Already Verified";
+      case "has-token":
+        return "Verify Your Email";
+      case "no-token":
+        return "Request Verification";
+      default:
+        return "Email Verification";
+    }
+  };
+
+  const getStatusMessage = () => {
+    if (overallStatus === "loading") {
+      return "Please wait while we load your verification status...";
+    }
+
+    if (verificationMessage) {
+      return verificationMessage;
+    }
+
+    switch (overallStatus) {
+      case "already-verified":
+        return "Your email is already verified. You can continue to your account.";
+      case "has-token":
+        return "Click the button below to verify your email address.";
+      case "no-token":
+        return "Please enter your email address to receive a verification link.";
+      default:
+        return "";
+    }
+  };
+
+  // Show loading state during hydration
+  if (!isHydrated) {
+    return (
+      <div className="min-h-screen flex items-center justify-center">
+        <div className="w-full max-w-md">
+          <Card>
+            <CardHeader className="text-center">
+              <div className="flex justify-center mb-4">
+                <Clock className="h-16 w-16 text-blue-500 animate-spin" />
+              </div>
+              <CardTitle className="text-2xl text-blue-600">
+                Loading...
+              </CardTitle>
+              <CardDescription className="text-center">
+                Please wait while we load your verification status...
+              </CardDescription>
+            </CardHeader>
+          </Card>
+        </div>
+      </div>
+    );
+  }
 
   return (
     <div className="min-h-screen flex items-center justify-center">
@@ -157,17 +276,27 @@ function VerifyEmailContent() {
           <CardHeader className="text-center">
             <div className="flex justify-center mb-4">{getStatusIcon()}</div>
             <CardTitle className={`text-2xl ${getStatusColor()}`}>
-              {status === "loading" && "Verifying Email..."}
-              {status === "success" && "Email Verified!"}
-              {status === "error" && "Verification Failed"}
-              {status === "expired" && "Token Expired"}
-              {status === "already-verified" && "Already Verified"}
+              {getStatusTitle()}
             </CardTitle>
-            <CardDescription className="text-center">{message}</CardDescription>
+            <CardDescription className="text-center">
+              {getStatusMessage()}
+            </CardDescription>
           </CardHeader>
 
           <CardContent className="space-y-4">
-            {status === "success" && (
+            {/* Loading State */}
+            {overallStatus === "loading" && (
+              <div className="text-center">
+                <div className="bg-blue-50 border border-blue-200 rounded-lg p-4">
+                  <p className="text-sm text-blue-700">
+                    Loading your verification status...
+                  </p>
+                </div>
+              </div>
+            )}
+
+            {/* Success State */}
+            {overallStatus === "success" && (
               <div className="text-center space-y-4">
                 <div className="bg-green-50 border border-green-200 rounded-lg p-4">
                   <p className="text-sm text-green-700">
@@ -176,27 +305,61 @@ function VerifyEmailContent() {
                     notification once your account is approved.
                   </p>
                 </div>
+                {isRedirecting ? (
+                  <div className="flex items-center justify-center space-x-2">
+                    <Clock className="h-4 w-4 animate-spin text-blue-500" />
+                    <span className="text-sm text-blue-600">
+                      Redirecting to pending approval...
+                    </span>
+                  </div>
+                ) : (
+                  <Button
+                    onClick={() => {
+                      setIsRedirecting(true);
+                      router.push("/pending-approval");
+                    }}
+                    className="w-full"
+                  >
+                    Continue to Pending Approval
+                  </Button>
+                )}
+              </div>
+            )}
+
+            {/* Has Token - Show Verify Button */}
+            {overallStatus === "has-token" && (
+              <div className="text-center space-y-4">
+                <div className="bg-blue-50 border border-blue-200 rounded-lg p-4">
+                  <p className="text-sm text-blue-700">
+                    We found a verification token in your link. Click below to
+                    verify your email address.
+                  </p>
+                </div>
                 <Button
-                  onClick={() => router.push("/pending-approval")}
+                  onClick={handleVerifyToken}
+                  disabled={verificationStatus === "verifying"}
                   className="w-full"
                 >
-                  Continue to Pending Approval
+                  {verificationStatus === "verifying"
+                    ? "Verifying..."
+                    : "Verify Email"}
                 </Button>
               </div>
             )}
 
-            {(status === "expired" || status === "error") && (
+            {/* Error/Expired State */}
+            {(overallStatus === "expired" || overallStatus === "error") && (
               <div className="space-y-4">
                 <div className="bg-red-50 border border-red-200 rounded-lg p-4">
                   <p className="text-sm text-red-700">
-                    {status === "expired"
+                    {overallStatus === "expired"
                       ? "Your verification link has expired. Please request a new one below."
                       : "There was an error verifying your email. You can request a new verification link below."}
                   </p>
                 </div>
 
                 <form onSubmit={handleResendVerification} className="space-y-4">
-                  <div>
+                  <div className="flex flex-col gap-3">
                     <Label htmlFor="email">Email Address</Label>
                     <Input
                       id="email"
@@ -233,20 +396,69 @@ function VerifyEmailContent() {
               </div>
             )}
 
-            {status === "already-verified" && (
+            {/* Already Verified State */}
+            {overallStatus === "already-verified" && (
               <div className="text-center space-y-4">
                 <div className="bg-yellow-50 border border-yellow-200 rounded-lg p-4">
                   <p className="text-sm text-yellow-700">
-                    Your email is already verified. Please check your account
-                    status.
+                    Your email is already verified. You can continue to your
+                    account.
                   </p>
                 </div>
                 <Button
-                  onClick={() => router.push("/pending-approval")}
+                  onClick={() => {
+                    setIsRedirecting(true);
+                    router.push("/pending-approval");
+                  }}
                   className="w-full"
                 >
-                  Check Account Status
+                  Continue to Account
                 </Button>
+              </div>
+            )}
+
+            {/* No Token State - Request Verification */}
+            {overallStatus === "no-token" && (
+              <div className="text-center space-y-4">
+                <div className="bg-blue-50 border border-blue-200 rounded-lg p-4">
+                  <p className="text-sm text-blue-700">
+                    Please enter your email address to receive a verification
+                    link.
+                  </p>
+                </div>
+                <form onSubmit={handleResendVerification} className="space-y-4">
+                  <div className="flex flex-col gap-3">
+                    <Label htmlFor="email">Email Address</Label>
+                    <Input
+                      id="email"
+                      type="email"
+                      placeholder="Enter your email address"
+                      value={email}
+                      onChange={(e) => setEmail(e.target.value)}
+                      required
+                    />
+                  </div>
+
+                  <Button
+                    type="submit"
+                    disabled={resendLoading || !email}
+                    className="w-full"
+                  >
+                    {resendLoading ? "Sending..." : "Send Verification Email"}
+                  </Button>
+
+                  {resendMessage && (
+                    <div
+                      className={`text-sm text-center ${
+                        resendMessage.includes("sent")
+                          ? "text-green-600"
+                          : "text-red-600"
+                      }`}
+                    >
+                      {resendMessage}
+                    </div>
+                  )}
+                </form>
               </div>
             )}
 
