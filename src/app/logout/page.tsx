@@ -5,12 +5,50 @@ import { Button } from "@/components/ui/button";
 import { LogOut, ArrowLeft } from "lucide-react";
 import { useLogout } from "@/hooks/useLogout";
 import Link from "next/link";
+import { useState } from "react";
 
 export default function LogoutPage() {
-  const { logout, isLoggingOut } = useLogout();
+  const { logout, isLoading: isLoggingOut } = useLogout();
+  const [error, setError] = useState<string | null>(null);
 
-  const handleLogout = () => {
-    logout();
+  const handleLogout = async () => {
+    try {
+      setError(null);
+      await logout();
+    } catch (err) {
+      console.error("Logout failed:", err);
+      setError("Logout failed. Redirecting anyway...");
+
+      // Force logout even if there's an error
+      setTimeout(() => {
+        window.location.href = "/login";
+      }, 2000);
+    }
+  };
+
+  const handleForceLogout = () => {
+    // Clear everything and redirect
+    if (typeof window !== "undefined") {
+      localStorage.clear();
+      sessionStorage.clear();
+
+      // Clear NextAuth cookies manually
+      const cookies = [
+        "next-auth.session-token",
+        "next-auth.csrf-token",
+        "next-auth.callback-url",
+        "__Secure-next-auth.session-token",
+        "__Secure-next-auth.csrf-token",
+      ];
+
+      cookies.forEach((cookieName) => {
+        document.cookie = `${cookieName}=; expires=Thu, 01 Jan 1970 00:00:00 UTC; path=/;`;
+        document.cookie = `${cookieName}=; expires=Thu, 01 Jan 1970 00:00:00 UTC; path=/; secure;`;
+        document.cookie = `${cookieName}=; expires=Thu, 01 Jan 1970 00:00:00 UTC; path=/; domain=${window.location.hostname};`;
+      });
+
+      window.location.href = "/login";
+    }
   };
 
   return (
@@ -21,6 +59,11 @@ export default function LogoutPage() {
           <p className="text-sm text-muted-foreground mt-2">
             Are you sure you want to log out of your account?
           </p>
+          {error && (
+            <div className="text-sm text-red-600 mt-2 p-2 bg-red-50 rounded">
+              {error}
+            </div>
+          )}
         </CardHeader>
         <CardContent className="space-y-4">
           <Button
@@ -41,6 +84,16 @@ export default function LogoutPage() {
               </>
             )}
           </Button>
+
+          {error && (
+            <Button
+              onClick={handleForceLogout}
+              className="w-full"
+              variant="outline"
+            >
+              Force Logout
+            </Button>
+          )}
 
           <Button
             asChild

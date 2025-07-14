@@ -7,48 +7,36 @@ datasource db {
   url      = env("DATABASE_URL")
 }
 
-enum UserRole {
-  ADMIN
-  MANAGER
-  STAFF
-}
-
-enum UserStatus {
-  PENDING
-  VERIFIED
-  APPROVED
-  REJECTED
-  SUSPENDED
-}
-
 model User {
   id                                                     Int                   @id @default(autoincrement())
-  email                                                  String                @unique @db.VarChar(255)
-  password                                               String?               @map("password_hash") @db.VarChar(255)
   firstName                                              String                @map("first_name") @db.VarChar(100)
   lastName                                               String                @map("last_name") @db.VarChar(100)
+  email                                                  String                @unique @db.VarChar(255)
+  password                                               String?               @map("password_hash") @db.VarChar(255)
   phone                                                  String?               @db.VarChar(20)
-  role                                                   UserRole              @default(STAFF)
-  permissions                                            String[]
   isActive                                               Boolean               @default(true) @map("is_active")
   lastLogin                                              DateTime?             @map("last_login") @db.Timestamptz(6)
-  emailVerified                                          Boolean               @default(false) @map("email_verified")
-  emailVerifiedAt                                        DateTime?             @map("email_verified_at") @db.Timestamptz(6)
-  avatar_url                                             String?
-  createdAt                                              DateTime?             @default(now()) @map("created_at") @db.Timestamptz(6)
-  updatedAt                                              DateTime?             @default(now()) @updatedAt @map("updated_at") @db.Timestamptz(6)
   lastLogout                                             DateTime?             @map("last_logout") @db.Timestamptz(6)
   lastActivity                                           DateTime?             @map("last_activity") @db.Timestamptz(6)
   resetToken                                             String?               @map("reset_token") @db.VarChar(255)
   resetTokenExpires                                      DateTime?             @map("reset_token_expires") @db.Timestamptz(6)
+  emailVerified                                          Boolean               @default(false) @map("email_verified")
+  emailVerifiedAt                                        DateTime?             @map("email_verified_at") @db.Timestamptz(6)
   emailVerificationToken                                 String?               @map("email_verification_token") @db.VarChar(255)
   emailVerificationExpires                               DateTime?             @map("email_verification_expires") @db.Timestamptz(6)
-  userStatus                                             UserStatus            @default(PENDING) @map("user_status")
   approvedBy                                             Int?                  @map("approved_by")
   approvedAt                                             DateTime?             @map("approved_at") @db.Timestamptz(6)
   rejectionReason                                        String?               @map("rejection_reason")
   emailNotifications                                     Boolean?              @default(true) @map("email_notifications")
   marketingEmails                                        Boolean?              @default(false) @map("marketing_emails")
+  createdAt                                              DateTime?             @default(now()) @map("created_at") @db.Timestamptz(6)
+  updatedAt                                              DateTime?             @default(now()) @updatedAt @map("updated_at") @db.Timestamptz(6)
+  avatar_url                                             String?
+  permissions                                            String[]
+  role                                                   UserRole              @default(STAFF)
+  userStatus                                             UserStatus            @default(PENDING) @map("user_status")
+  sessionNeedsRefresh                                    Boolean               @default(false) @map("session_needs_refresh")
+  sessionRefreshAt                                       DateTime?             @map("session_refresh_at") @db.Timestamptz(6)
   ai_content                                             AIContent[]
   audit_logs                                             AuditLog[]
   purchase_orders                                        PurchaseOrder[]
@@ -60,10 +48,6 @@ model User {
   createdReconciliations                                 StockReconciliation[] @relation("ReconciliationCreator")
   approver                                               User?                 @relation("UserApproval", fields: [approvedBy], references: [id], onDelete: NoAction, onUpdate: NoAction)
   approvedUsers                                          User[]                @relation("UserApproval")
-
-  // Session refresh tracking
-  sessionNeedsRefresh Boolean @default(false) @map("session_needs_refresh")
-  sessionRefreshAt    DateTime? @map("session_refresh_at") @db.Timestamptz(6)
 
   @@index([approvedBy], map: "idx_users_approved_by")
   @@index([email], map: "idx_users_email")
@@ -92,11 +76,11 @@ model Supplier {
   website         String?         @db.VarChar(255)
   taxNumber       String?         @map("tax_number") @db.VarChar(100)
   paymentTerms    String?         @map("payment_terms") @db.VarChar(100)
+  creditLimit     Decimal?        @map("credit_limit") @db.Decimal(15, 2)
   notes           String?
   isActive        Boolean         @default(true) @map("is_active")
   createdAt       DateTime?       @default(now()) @map("created_at") @db.Timestamptz(6)
   updatedAt       DateTime?       @default(now()) @updatedAt @map("updated_at") @db.Timestamptz(6)
-  creditLimit     Decimal?        @map("credit_limit") @db.Decimal(15, 2)
   products        Product[]
   purchase_orders PurchaseOrder[]
   stockAdditions  StockAddition[]
@@ -152,19 +136,29 @@ model Product {
   color                String?                   @db.VarChar(50)
   size                 String?                   @db.VarChar(50)
   material             String?                   @db.VarChar(100)
-  status               String                    @default("active") @db.VarChar(20)
   hasVariants          Boolean                   @default(false) @map("has_variants")
   isArchived           Boolean                   @default(false) @map("is_archived")
-  images               Json?
   tags                 String[]
   metaTitle            String?                   @map("meta_title") @db.VarChar(255)
   metaDescription      String?                   @map("meta_description")
   seoKeywords          String[]                  @map("seo_keywords")
-  supplierId           Int?                      @map("supplier_id")
   createdAt            DateTime?                 @default(now()) @map("created_at") @db.Timestamptz(6)
   updatedAt            DateTime?                 @default(now()) @updatedAt @map("updated_at") @db.Timestamptz(6)
+  supplierId           Int?                      @map("supplier_id")
   categoryId           Int?                      @map("category_id")
   brandId              Int?                      @map("brand_id")
+  status               String                    @default("active") @db.VarChar(20)
+  allowReviews         Boolean                   @default(true) @map("allow_reviews")
+  isFeatured           Boolean                   @default(false) @map("is_featured")
+  metaContent          String?                   @map("meta_content")
+  metaExcerpt          String?                   @map("meta_excerpt")
+  saleEndDate          DateTime?                 @map("sale_end_date") @db.Timestamptz(6)
+  salePrice            Decimal?                  @map("sale_price") @db.Decimal(10, 2)
+  saleStartDate        DateTime?                 @map("sale_start_date") @db.Timestamptz(6)
+  sortOrder            Int?                      @map("sort_order")
+  variantAttributes    Json?                     @map("variant_attributes")
+  variantValues        Json?                     @map("variant_values")
+  images               String[]
   ai_content           AIContent[]
   product_variants     ProductVariant[]
   brand                Brand?                    @relation(fields: [brandId], references: [id], onUpdate: NoAction)
@@ -181,28 +175,30 @@ model Product {
   @@index([status], map: "idx_products_status")
   @@index([stock], map: "idx_products_stock")
   @@index([supplierId], map: "idx_products_supplier_id")
+  @@index([isFeatured], map: "idx_products_is_featured")
+  @@index([sortOrder], map: "idx_products_sort_order")
   @@map("products")
 }
 
 model ProductVariant {
   id                   Int                 @id @default(autoincrement())
-  product_id           Int
-  sku                  String              @unique @db.VarChar(100)
   name                 String              @db.VarChar(255)
-  color                String?             @db.VarChar(100)
-  size                 String?             @db.VarChar(50)
-  material             String?             @db.VarChar(100)
+  sku                  String              @unique @db.VarChar(100)
   price                Decimal             @db.Decimal(10, 2)
   cost                 Decimal?            @db.Decimal(10, 2)
+  color                String?             @db.VarChar(100)
+  created_at           DateTime?           @default(now()) @db.Timestamptz(6)
   current_stock        Int                 @default(0)
-  min_stock_level      Int?                @default(0)
-  max_stock_level      Int?
-  weight               Decimal?            @db.Decimal(8, 3)
   dimensions           Json?
   images               String[]
   is_active            Boolean             @default(true)
-  created_at           DateTime?           @default(now()) @db.Timestamptz(6)
+  material             String?             @db.VarChar(100)
+  max_stock_level      Int?
+  min_stock_level      Int?                @default(0)
+  product_id           Int
+  size                 String?             @db.VarChar(50)
   updated_at           DateTime?           @default(now()) @db.Timestamptz(6)
+  weight               Decimal?            @db.Decimal(8, 3)
   products             Product             @relation(fields: [product_id], references: [id], onDelete: Cascade, onUpdate: NoAction)
   purchase_order_items PurchaseOrderItem[]
   sales_items          SalesItem[]
@@ -215,21 +211,21 @@ model ProductVariant {
 
 model SalesTransaction {
   id                 Int         @id @default(autoincrement())
-  transaction_number String      @unique @db.VarChar(50)
-  customer_name      String?     @db.VarChar(255)
-  customer_email     String?     @db.VarChar(255)
-  customer_phone     String?     @db.VarChar(20)
   subtotal           Decimal     @db.Decimal(10, 2)
-  tax_amount         Decimal     @default(0) @db.Decimal(10, 2)
+  notes              String?
+  created_at         DateTime?   @default(now()) @db.Timestamptz(6)
+  customer_email     String?     @db.VarChar(255)
+  customer_name      String?     @db.VarChar(255)
+  customer_phone     String?     @db.VarChar(20)
   discount_amount    Decimal     @default(0) @db.Decimal(10, 2)
-  total_amount       Decimal     @db.Decimal(10, 2)
   payment_method     String      @db.VarChar(50)
   payment_status     String      @default("pending") @db.VarChar(20)
+  tax_amount         Decimal     @default(0) @db.Decimal(10, 2)
+  total_amount       Decimal     @db.Decimal(10, 2)
+  transaction_number String      @unique @db.VarChar(50)
   transaction_type   String      @default("sale") @db.VarChar(20)
-  notes              String?
-  user_id            Int
-  created_at         DateTime?   @default(now()) @db.Timestamptz(6)
   updated_at         DateTime?   @default(now()) @db.Timestamptz(6)
+  user_id            Int
   sales_items        SalesItem[]
   users              User        @relation(fields: [user_id], references: [id], onDelete: NoAction, onUpdate: NoAction)
 
@@ -242,14 +238,14 @@ model SalesTransaction {
 
 model SalesItem {
   id                 Int              @id @default(autoincrement())
-  transaction_id     Int
-  product_id         Int?
-  variant_id         Int?
   quantity           Int
-  unit_price         Decimal          @db.Decimal(10, 2)
-  total_price        Decimal          @db.Decimal(10, 2)
-  discount_amount    Decimal?         @default(0) @db.Decimal(10, 2)
   created_at         DateTime?        @default(now()) @db.Timestamptz(6)
+  discount_amount    Decimal?         @default(0) @db.Decimal(10, 2)
+  product_id         Int?
+  total_price        Decimal          @db.Decimal(10, 2)
+  transaction_id     Int
+  unit_price         Decimal          @db.Decimal(10, 2)
+  variant_id         Int?
   products           Product?         @relation(fields: [product_id], references: [id], onUpdate: NoAction)
   sales_transactions SalesTransaction @relation(fields: [transaction_id], references: [id], onDelete: Cascade, onUpdate: NoAction)
   product_variants   ProductVariant?  @relation(fields: [variant_id], references: [id], onUpdate: NoAction)
@@ -262,9 +258,6 @@ model SalesItem {
 
 model StockAddition {
   id           Int       @id @default(autoincrement())
-  productId    Int       @map("product_id")
-  supplierId   Int?      @map("supplier_id")
-  createdById  Int       @map("created_by")
   quantity     Int
   costPerUnit  Decimal   @map("cost_per_unit") @db.Decimal(10, 2)
   totalCost    Decimal   @map("total_cost") @db.Decimal(10, 2)
@@ -273,6 +266,9 @@ model StockAddition {
   referenceNo  String?   @map("reference_no") @db.VarChar(255)
   createdAt    DateTime? @default(now()) @map("created_at") @db.Timestamptz(6)
   updatedAt    DateTime? @default(now()) @updatedAt @map("updated_at") @db.Timestamptz(6)
+  productId    Int       @map("product_id")
+  supplierId   Int?      @map("supplier_id")
+  createdById  Int       @map("created_by")
   createdBy    User      @relation("StockAdditionCreator", fields: [createdById], references: [id], onUpdate: NoAction)
   product      Product   @relation(fields: [productId], references: [id], onDelete: Cascade, onUpdate: NoAction)
   supplier     Supplier? @relation(fields: [supplierId], references: [id], onUpdate: NoAction)
@@ -288,14 +284,14 @@ model StockReconciliation {
   id           Int                          @id @default(autoincrement())
   title        String                       @db.VarChar(255)
   description  String?
-  status       stock_reconciliation_status? @default(DRAFT)
   notes        String?
-  createdById  Int                          @map("created_by")
-  approvedById Int?                         @map("approved_by")
   createdAt    DateTime?                    @default(now()) @map("created_at") @db.Timestamptz(6)
   updatedAt    DateTime?                    @default(now()) @updatedAt @map("updated_at") @db.Timestamptz(6)
   submittedAt  DateTime?                    @map("submitted_at") @db.Timestamptz(6)
   approvedAt   DateTime?                    @map("approved_at") @db.Timestamptz(6)
+  createdById  Int                          @map("created_by")
+  approvedById Int?                         @map("approved_by")
+  status       stock_reconciliation_status? @default(DRAFT)
   items        StockReconciliationItem[]
   approvedBy   User?                        @relation("ReconciliationApprover", fields: [approvedById], references: [id], onUpdate: NoAction)
   createdBy    User                         @relation("ReconciliationCreator", fields: [createdById], references: [id], onUpdate: NoAction)
@@ -309,14 +305,14 @@ model StockReconciliation {
 
 model StockReconciliationItem {
   id                Int                 @id @default(autoincrement())
-  reconciliationId  Int                 @map("reconciliation_id")
-  productId         Int                 @map("product_id")
   systemCount       Int                 @map("system_count")
   physicalCount     Int                 @map("physical_count")
   discrepancy       Int                 @map("discrepancy")
   discrepancyReason String?             @map("discrepancy_reason")
   estimatedImpact   Decimal?            @map("estimated_impact") @db.Decimal(10, 2)
   notes             String?
+  reconciliationId  Int                 @map("reconciliation_id")
+  productId         Int                 @map("product_id")
   product           Product             @relation(fields: [productId], references: [id], onDelete: Cascade, onUpdate: NoAction)
   reconciliation    StockReconciliation @relation(fields: [reconciliationId], references: [id], onDelete: Cascade, onUpdate: NoAction)
 
@@ -327,22 +323,22 @@ model StockReconciliationItem {
 
 model StockAdjustment {
   id                                         Int             @id @default(autoincrement())
-  product_id                                 Int?
-  variant_id                                 Int?
-  adjustment_type                            String          @db.VarChar(50)
   quantity                                   Int
-  old_quantity                               Int
-  new_quantity                               Int
   reason                                     String
   notes                                      String?
-  reference_number                           String?         @db.VarChar(100)
-  user_id                                    Int
-  created_at                                 DateTime?       @default(now()) @db.Timestamptz(6)
-  updated_at                                 DateTime?       @default(now()) @db.Timestamptz(6)
-  status                                     String          @default("PENDING") @db.VarChar(20)
-  approved_by                                Int?
+  adjustment_type                            String          @db.VarChar(50)
   approved_at                                DateTime?       @db.Timestamptz(6)
+  approved_by                                Int?
+  created_at                                 DateTime?       @default(now()) @db.Timestamptz(6)
+  new_quantity                               Int
+  old_quantity                               Int
+  product_id                                 Int?
+  reference_number                           String?         @db.VarChar(100)
   rejection_reason                           String?
+  status                                     String          @default("PENDING") @db.VarChar(20)
+  updated_at                                 DateTime?       @default(now()) @db.Timestamptz(6)
+  user_id                                    Int
+  variant_id                                 Int?
   products                                   Product?        @relation(fields: [product_id], references: [id], onDelete: Cascade, onUpdate: NoAction, map: "fk_stock_adjustments_product_id")
   users_stock_adjustments_user_idTousers     User            @relation("stock_adjustments_user_idTousers", fields: [user_id], references: [id], onUpdate: NoAction, map: "fk_stock_adjustments_user_id")
   product_variants                           ProductVariant? @relation(fields: [variant_id], references: [id], onDelete: Cascade, onUpdate: NoAction, map: "fk_stock_adjustments_variant_id")
@@ -360,20 +356,20 @@ model StockAdjustment {
 
 model PurchaseOrder {
   id                     Int                 @id @default(autoincrement())
-  order_number           String              @unique @db.VarChar(50)
-  supplier_id            Int
-  status                 String              @default("draft") @db.VarChar(20)
-  order_date             DateTime            @db.Date
-  expected_delivery_date DateTime?           @db.Date
-  actual_delivery_date   DateTime?           @db.Date
-  subtotal               Decimal             @db.Decimal(10, 2)
-  tax_amount             Decimal             @default(0) @db.Decimal(10, 2)
-  shipping_cost          Decimal?            @default(0) @db.Decimal(10, 2)
-  total_amount           Decimal             @db.Decimal(10, 2)
   notes                  String?
-  user_id                Int
+  actual_delivery_date   DateTime?           @db.Date
   created_at             DateTime?           @default(now()) @db.Timestamptz(6)
+  expected_delivery_date DateTime?           @db.Date
+  order_date             DateTime            @db.Date
+  order_number           String              @unique @db.VarChar(50)
+  shipping_cost          Decimal?            @default(0) @db.Decimal(10, 2)
+  subtotal               Decimal             @db.Decimal(10, 2)
+  supplier_id            Int
+  tax_amount             Decimal             @default(0) @db.Decimal(10, 2)
+  total_amount           Decimal             @db.Decimal(10, 2)
   updated_at             DateTime?           @default(now()) @db.Timestamptz(6)
+  user_id                Int
+  status                 String              @default("draft") @db.VarChar(20)
   purchase_order_items   PurchaseOrderItem[]
   suppliers              Supplier            @relation(fields: [supplier_id], references: [id], onDelete: NoAction, onUpdate: NoAction)
   users                  User                @relation(fields: [user_id], references: [id], onDelete: NoAction, onUpdate: NoAction)
@@ -389,14 +385,14 @@ model PurchaseOrder {
 
 model PurchaseOrderItem {
   id                Int             @id @default(autoincrement())
-  purchase_order_id Int
+  created_at        DateTime?       @default(now()) @db.Timestamptz(6)
   product_id        Int?
-  variant_id        Int?
+  purchase_order_id Int
   quantity_ordered  Int
   quantity_received Int?            @default(0)
-  unit_cost         Decimal         @db.Decimal(10, 2)
   total_cost        Decimal         @db.Decimal(10, 2)
-  created_at        DateTime?       @default(now()) @db.Timestamptz(6)
+  unit_cost         Decimal         @db.Decimal(10, 2)
+  variant_id        Int?
   products          Product?        @relation(fields: [product_id], references: [id], onUpdate: NoAction)
   purchase_orders   PurchaseOrder   @relation(fields: [purchase_order_id], references: [id], onDelete: Cascade, onUpdate: NoAction)
   product_variants  ProductVariant? @relation(fields: [variant_id], references: [id], onUpdate: NoAction)
@@ -411,15 +407,15 @@ model PurchaseOrderItem {
 
 model AuditLog {
   id         Int       @id @default(autoincrement())
-  user_id    Int?
   action     String    @db.VarChar(100)
-  table_name String    @db.VarChar(100)
-  record_id  Int?
-  old_values Json?
-  new_values Json?
-  ip_address String?   @db.Inet
-  user_agent String?
   created_at DateTime? @default(now()) @db.Timestamptz(6)
+  ip_address String?   @db.Inet
+  new_values Json?
+  old_values Json?
+  record_id  Int?
+  table_name String    @db.VarChar(100)
+  user_agent String?
+  user_id    Int?
   users      User?     @relation(fields: [user_id], references: [id], onUpdate: NoAction)
 
   @@index([created_at], map: "idx_audit_logs_created_at")
@@ -431,17 +427,17 @@ model AuditLog {
 
 model AIContent {
   id                Int       @id @default(autoincrement())
-  product_id        Int
-  content_type      String    @db.VarChar(50)
-  original_content  String?
-  generated_content String
-  prompt_used       String?
-  model_used        String?   @db.VarChar(100)
-  confidence_score  Decimal?  @db.Decimal(3, 2)
-  is_approved       Boolean?  @default(false)
-  approved_by       Int?
   approved_at       DateTime? @db.Timestamptz(6)
+  approved_by       Int?
+  confidence_score  Decimal?  @db.Decimal(3, 2)
+  content_type      String    @db.VarChar(50)
   created_at        DateTime? @default(now()) @db.Timestamptz(6)
+  generated_content String
+  is_approved       Boolean?  @default(false)
+  model_used        String?   @db.VarChar(100)
+  original_content  String?
+  product_id        Int
+  prompt_used       String?
   updated_at        DateTime? @default(now()) @db.Timestamptz(6)
   users             User?     @relation(fields: [approved_by], references: [id], onDelete: NoAction, onUpdate: NoAction)
   products          Product   @relation(fields: [product_id], references: [id], onDelete: Cascade, onUpdate: NoAction)
@@ -497,6 +493,20 @@ model SessionBlacklist {
   @@index([userId], map: "idx_session_blacklist_user_id")
   @@index([expiresAt], map: "idx_session_blacklist_expires_at")
   @@map("session_blacklist")
+}
+
+enum UserRole {
+  ADMIN
+  MANAGER
+  STAFF
+}
+
+enum UserStatus {
+  PENDING
+  VERIFIED
+  APPROVED
+  REJECTED
+  SUSPENDED
 }
 
 enum stock_reconciliation_status {

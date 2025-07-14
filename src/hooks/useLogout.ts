@@ -16,7 +16,7 @@ interface UseLogoutReturn {
 
 /**
  * Custom hook for handling logout functionality
- * Uses official Auth.js v5 signOut function
+ * Uses official Auth.js v5 signOut function with fallback error handling
  */
 export function useLogout(): UseLogoutReturn {
   const [isLoading, setIsLoading] = useState(false);
@@ -29,6 +29,13 @@ export function useLogout(): UseLogoutReturn {
       setIsLoading(true);
 
       try {
+        // Clear local storage first
+        if (typeof window !== "undefined") {
+          localStorage.removeItem("inventory-cart");
+          localStorage.removeItem("pos-session");
+          sessionStorage.clear();
+        }
+
         if (redirect) {
           await signOut({
             callbackUrl,
@@ -44,8 +51,39 @@ export function useLogout(): UseLogoutReturn {
         }
       } catch (error) {
         console.error("Logout error:", error);
-        // Fallback redirect on error
-        router.push(callbackUrl);
+
+        // Handle the specific NextAuth ClientFetchError
+        if (error && typeof error === "object" && "message" in error) {
+          console.log("Handling NextAuth error, forcing manual logout...");
+        }
+
+        // Fallback: Force logout by clearing everything and redirecting
+        if (typeof window !== "undefined") {
+          // Clear all possible auth-related data
+          localStorage.clear();
+          sessionStorage.clear();
+
+          // Clear NextAuth cookies manually
+          const cookies = [
+            "next-auth.session-token",
+            "next-auth.csrf-token",
+            "next-auth.callback-url",
+            "__Secure-next-auth.session-token",
+            "__Secure-next-auth.csrf-token",
+          ];
+
+          cookies.forEach((cookieName) => {
+            document.cookie = `${cookieName}=; expires=Thu, 01 Jan 1970 00:00:00 UTC; path=/;`;
+            document.cookie = `${cookieName}=; expires=Thu, 01 Jan 1970 00:00:00 UTC; path=/; secure;`;
+            document.cookie = `${cookieName}=; expires=Thu, 01 Jan 1970 00:00:00 UTC; path=/; domain=${window.location.hostname};`;
+          });
+
+          // Force a hard redirect to ensure session is cleared
+          window.location.href = callbackUrl;
+        } else {
+          // Fallback for server-side
+          router.push(callbackUrl);
+        }
       } finally {
         setIsLoading(false);
       }
