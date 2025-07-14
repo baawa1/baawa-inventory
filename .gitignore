@@ -34,6 +34,9 @@ yarn-error.log*
 .env*
 !.env.example
 
+# temporary database files
+temp_db_url.txt
+
 # vercel
 .vercel
 
