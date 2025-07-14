@@ -1,6 +1,6 @@
 "use client";
 
-import React from "react";
+import React, { useState } from "react";
 import { useProduct } from "@/hooks/api/products";
 import {
   Dialog,
@@ -12,7 +12,6 @@ import {
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
-import { Separator } from "@/components/ui/separator";
 import {
   IconPackage,
   IconTag,
@@ -30,6 +29,12 @@ import Image from "next/image";
 
 interface ProductDetailModalProps {
   productId: number | null;
+  product?: {
+    name: string;
+    sku: string;
+    category?: { name: string };
+    brand?: { name: string };
+  };
   open: boolean;
   onCloseAction: () => void;
   onAddStock?: (productId: number) => void;
@@ -37,6 +42,7 @@ interface ProductDetailModalProps {
 
 export const ProductDetailModal: React.FC<ProductDetailModalProps> = ({
   productId,
+  product: productBasicInfo,
   open,
   onCloseAction,
   onAddStock,
@@ -48,6 +54,10 @@ export const ProductDetailModal: React.FC<ProductDetailModalProps> = ({
     refetch,
   } = useProduct(productId || 0);
 
+  // Carousel and description state
+  const [currentImage, setCurrentImage] = useState(0);
+  const [showFullDescription, setShowFullDescription] = useState(false);
+
   const handleRefresh = () => {
     if (productId) {
       refetch();
@@ -55,20 +65,70 @@ export const ProductDetailModal: React.FC<ProductDetailModalProps> = ({
     }
   };
 
+  // Helper for images array
+  const images: string[] =
+    product?.images && product.images.length > 0
+      ? product.images
+      : product?.image
+        ? [product.image]
+        : [];
+
+  // Truncate description
+  const DESCRIPTION_LIMIT = 200;
+  const description = product?.description || "";
+  const isLongDescription = description.length > DESCRIPTION_LIMIT;
+  const displayedDescription =
+    showFullDescription || !isLongDescription
+      ? description
+      : description.slice(0, DESCRIPTION_LIMIT) + "...";
+
   if (!open) return null;
+
+  // Prefer prop for header and basic info, fallback to API data
+  const headerName =
+    productBasicInfo?.name || product?.name || "Product Details";
+  const headerCat = productBasicInfo?.category?.name || product?.category?.name;
+  const headerBrand = productBasicInfo?.brand?.name || product?.brand?.name;
+  const headerSKU = productBasicInfo?.sku || product?.sku || "N/A";
 
   return (
     <Dialog open={open} onOpenChange={onCloseAction}>
-      <DialogContent className="max-w-4xl max-h-[90vh] overflow-y-auto">
-        <DialogHeader>
+      <DialogContent className="max-w-4xl sm:max-w-3xl max-h-[90vh] overflow-y-auto">
+        <DialogHeader className="pb-4">
           <div className="flex items-center justify-between">
             <div>
               <DialogTitle className="text-2xl font-bold">
-                Product Details
+                {headerName}
               </DialogTitle>
               <DialogDescription>
-                View detailed information about this product
+                {[headerSKU, headerCat, headerBrand]
+                  .filter(Boolean)
+                  .join(" · ") || "N/A"}
               </DialogDescription>
+              <div className="flex items-center gap-2 mt-2">
+                <Badge
+                  variant={
+                    product?.status === "active" ? "default" : "secondary"
+                  }
+                >
+                  {product?.status === "active" ? "Active" : "Inactive"}
+                </Badge>
+                <Badge
+                  variant={
+                    product?.stock &&
+                    product?.minStock &&
+                    product?.stock <= product?.minStock
+                      ? "destructive"
+                      : "outline"
+                  }
+                >
+                  {product?.stock &&
+                  product?.minStock &&
+                  product?.stock <= product?.minStock
+                    ? "Low Stock"
+                    : "In Stock"}
+                </Badge>
+              </div>
             </div>
             <div className="flex items-center gap-2">
               <Button
@@ -111,90 +171,97 @@ export const ProductDetailModal: React.FC<ProductDetailModalProps> = ({
 
         {product && (
           <div className="space-y-6">
-            {/* Product Header */}
-            <div className="flex items-start gap-4">
-              <div className="flex-shrink-0">
-                {product.image ? (
+            {/* Image Carousel */}
+            <div className="flex flex-row-reverse items-start justify-center gap-4">
+              <div className="w-48 h-48 mb-2 flex items-center justify-center bg-muted rounded-lg">
+                {images.length > 0 ? (
                   <Image
-                    src={product.image}
-                    alt={product.name}
-                    width={100}
-                    height={100}
-                    className="rounded-lg object-cover"
+                    src={images[currentImage]}
+                    alt={headerName}
+                    width={192}
+                    height={192}
+                    className="rounded-lg object-cover w-48 h-48"
                   />
                 ) : (
-                  <div className="w-24 h-24 bg-muted rounded-lg flex items-center justify-center">
-                    <IconPackage className="h-8 w-8 text-muted-foreground" />
-                  </div>
+                  <IconPackage className="h-16 w-16 text-muted-foreground" />
                 )}
               </div>
-              <div className="flex-1">
-                <div className="flex items-start justify-between">
-                  <div>
-                    <h3 className="text-2xl font-bold">{product.name}</h3>
-                    <p className="text-muted-foreground">
-                      {product.description}
-                    </p>
-                  </div>
-                  <div className="flex items-center gap-2">
-                    <Badge
-                      variant={
-                        product.status === "active" ? "default" : "secondary"
-                      }
+              {images.length > 1 && (
+                <div className="flex flex-col flex-wrap h-48 gap-2">
+                  {images.map((img, idx) => (
+                    <button
+                      key={img}
+                      onClick={() => setCurrentImage(idx)}
+                      className={`w-12 h-12 rounded border ${idx === currentImage ? "border-primary" : "border-muted"} focus:outline-none`}
+                      type="button"
                     >
-                      {product.status === "active" ? "Active" : "Inactive"}
-                    </Badge>
-                    <Badge
-                      variant={
-                        product.stock <= product.minStock
-                          ? "destructive"
-                          : "outline"
-                      }
-                    >
-                      {product.stock <= product.minStock
-                        ? "Low Stock"
-                        : "In Stock"}
-                    </Badge>
-                  </div>
+                      <Image
+                        src={img}
+                        alt=""
+                        width={48}
+                        height={48}
+                        className="object-cover rounded w-12 h-12"
+                      />
+                    </button>
+                  ))}
                 </div>
-              </div>
+              )}
             </div>
 
-            <Separator />
+            {/* Description with Show More */}
+            <div>
+              <label className="text-sm font-medium text-muted-foreground">
+                Description
+              </label>
+              <p className="text-sm whitespace-pre-line">
+                {displayedDescription}
+              </p>
+              {isLongDescription && (
+                <Button
+                  variant="link"
+                  size="sm"
+                  onClick={() => setShowFullDescription((v) => !v)}
+                  className="p-0 h-auto"
+                >
+                  {showFullDescription ? "Show Less" : "Show More"}
+                </Button>
+              )}
+            </div>
 
-            {/* Basic Information */}
-            <Card>
-              <CardHeader>
-                <CardTitle className="flex items-center gap-2">
-                  <IconPackage className="h-5 w-5" />
-                  Basic Information
-                </CardTitle>
-              </CardHeader>
-              <CardContent className="space-y-4">
-                <div className="grid grid-cols-2 gap-4">
+            {/* Info Sections */}
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+              {/* Basic Info Card */}
+              <Card>
+                <CardHeader>
+                  <CardTitle className="flex items-center gap-2">
+                    <IconPackage className="h-5 w-5" />
+                    Basic Information
+                  </CardTitle>
+                </CardHeader>
+                <CardContent className="space-y-2">
                   <div>
                     <label className="text-sm font-medium text-muted-foreground">
                       Product Name
                     </label>
-                    <p className="text-sm">{product.name}</p>
+                    <p className="text-sm">{headerName}</p>
                   </div>
                   <div>
                     <label className="text-sm font-medium text-muted-foreground">
                       SKU
                     </label>
-                    <p className="text-sm font-mono">{product.sku}</p>
+                    <p className="text-sm font-mono">{headerSKU}</p>
                   </div>
                   <div>
                     <label className="text-sm font-medium text-muted-foreground">
                       Category
                     </label>
-                    <p className="text-sm">{product.category?.name || "N/A"}</p>
+                    <p className="text-sm">{headerCat || "N/A"}</p>
                   </div>
                   <div>
                     <label className="text-sm font-medium text-muted-foreground">
                       Brand
                     </label>
-                    <p className="text-sm">{product.brand?.name || "N/A"}</p>
+                    <p className="text-sm">{headerBrand || "N/A"}</p>
                   </div>
                   <div>
                     <label className="text-sm font-medium text-muted-foreground">
@@ -208,28 +275,18 @@ export const ProductDetailModal: React.FC<ProductDetailModalProps> = ({
                     </label>
                     <p className="text-sm">{product.unit || "N/A"}</p>
                   </div>
-                </div>
-                {product.description && (
-                  <div>
-                    <label className="text-sm font-medium text-muted-foreground">
-                      Description
-                    </label>
-                    <p className="text-sm">{product.description}</p>
-                  </div>
-                )}
-              </CardContent>
-            </Card>
+                </CardContent>
+              </Card>
 
-            {/* Pricing Information */}
-            <Card>
-              <CardHeader>
-                <CardTitle className="flex items-center gap-2">
-                  <IconCurrencyDollar className="h-5 w-5" />
-                  Pricing Information
-                </CardTitle>
-              </CardHeader>
-              <CardContent className="space-y-4">
-                <div className="grid grid-cols-2 gap-4">
+              {/* Pricing Info Card */}
+              <Card>
+                <CardHeader>
+                  <CardTitle className="flex items-center gap-2">
+                    <IconCurrencyDollar className="h-5 w-5" />
+                    Pricing Information
+                  </CardTitle>
+                </CardHeader>
+                <CardContent className="space-y-2">
                   <div>
                     <label className="text-sm font-medium text-muted-foreground">
                       Cost Price
@@ -246,20 +303,18 @@ export const ProductDetailModal: React.FC<ProductDetailModalProps> = ({
                       {formatCurrency(product.price || 0)}
                     </p>
                   </div>
-                </div>
-              </CardContent>
-            </Card>
+                </CardContent>
+              </Card>
 
-            {/* Stock Information */}
-            <Card>
-              <CardHeader>
-                <CardTitle className="flex items-center gap-2">
-                  <IconTag className="h-5 w-5" />
-                  Stock Information
-                </CardTitle>
-              </CardHeader>
-              <CardContent className="space-y-4">
-                <div className="grid grid-cols-2 gap-4">
+              {/* Stock Info Card */}
+              <Card>
+                <CardHeader>
+                  <CardTitle className="flex items-center gap-2">
+                    <IconTag className="h-5 w-5" />
+                    Stock Information
+                  </CardTitle>
+                </CardHeader>
+                <CardContent className="space-y-2">
                   <div>
                     <label className="text-sm font-medium text-muted-foreground">
                       Current Stock
@@ -278,20 +333,18 @@ export const ProductDetailModal: React.FC<ProductDetailModalProps> = ({
                     </label>
                     <p className="text-sm">{product.maxStock || 0}</p>
                   </div>
-                </div>
-              </CardContent>
-            </Card>
+                </CardContent>
+              </Card>
 
-            {/* Additional Information */}
-            <Card>
-              <CardHeader>
-                <CardTitle className="flex items-center gap-2">
-                  <IconFileText className="h-5 w-5" />
-                  Additional Information
-                </CardTitle>
-              </CardHeader>
-              <CardContent className="space-y-4">
-                <div className="grid grid-cols-2 gap-4">
+              {/* Additional Info Card */}
+              <Card>
+                <CardHeader>
+                  <CardTitle className="flex items-center gap-2">
+                    <IconFileText className="h-5 w-5" />
+                    Additional Information
+                  </CardTitle>
+                </CardHeader>
+                <CardContent className="space-y-2">
                   <div>
                     <label className="text-sm font-medium text-muted-foreground">
                       Created Date
@@ -325,9 +378,9 @@ export const ProductDetailModal: React.FC<ProductDetailModalProps> = ({
                       {product.status === "active" ? "Active" : "Inactive"}
                     </Badge>
                   </div>
-                </div>
-              </CardContent>
-            </Card>
+                </CardContent>
+              </Card>
+            </div>
 
             {/* Actions */}
             <div className="flex items-center gap-4 pt-4">

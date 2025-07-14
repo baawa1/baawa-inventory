@@ -145,7 +145,7 @@ export function DashboardFiltersBar({
             variant="outline"
             size="sm"
             onClick={onResetFilters}
-            className="whitespace-nowrap"
+            className="whitespace-nowrap py-4.5"
           >
             Reset Filters
           </Button>
