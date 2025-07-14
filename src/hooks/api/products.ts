@@ -28,6 +28,7 @@ export interface Product {
     name: string;
   };
   image?: string;
+  images?: string[];
   createdAt: string;
   updatedAt: string;
 }

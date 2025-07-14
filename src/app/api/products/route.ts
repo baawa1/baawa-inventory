@@ -163,6 +163,7 @@ export async function GET(request: NextRequest) {
       category: product.category,
       brand: product.brand,
       supplier: product.supplier,
+      images: product.images || [], // <-- Add this line
       // Calculated fields
       stockStatus: product.stock <= product.minStock ? "low" : "normal",
       profitMargin: Number(product.price) - Number(product.cost),
