@@ -277,6 +277,13 @@ export function ProductList({ user }: ProductListProps) {
   const renderCell = (product: APIProduct, columnKey: string) => {
     switch (columnKey) {
       case "image":
+        const getFirstImage = (product: APIProduct) => {
+          if (Array.isArray(product.images) && product.images.length > 0) {
+            return product.images[0];
+          }
+          return product.image;
+        };
+        const firstImage = getFirstImage(product);
         const isValidUrl = (url: string) => {
           return (
             url.startsWith("/") ||
@@ -286,13 +293,13 @@ export function ProductList({ user }: ProductListProps) {
         };
 
         return (
-          <div className="flex items-center justify-center">
-            {product.image &&
-            product.image.trim() !== "" &&
-            isValidUrl(product.image.trim()) ? (
+          <div className="flex items-center justify-start">
+            {firstImage &&
+            firstImage.trim() !== "" &&
+            isValidUrl(firstImage.trim()) ? (
               <div className="relative h-12 w-12 overflow-hidden rounded-md border">
                 <Image
-                  src={product.image}
+                  src={firstImage}
                   alt={product.name}
                   fill
                   className="object-cover"
