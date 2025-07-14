@@ -100,8 +100,10 @@ export async function GET(request: NextRequest) {
       orderBy.stock = sortOrder;
     } else if (sortBy === "price") {
       orderBy.price = sortOrder;
-    } else if (sortBy === "created") {
+    } else if (sortBy === "created" || sortBy === "created_at") {
       orderBy.createdAt = sortOrder;
+    } else if (sortBy === "updated" || sortBy === "updated_at") {
+      orderBy.updatedAt = sortOrder;
     } else {
       orderBy[sortBy] = sortOrder;
     }

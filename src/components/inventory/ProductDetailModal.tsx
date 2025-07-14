@@ -146,12 +146,12 @@ export const ProductDetailModal: React.FC<ProductDetailModalProps> = ({
                     </Badge>
                     <Badge
                       variant={
-                        product.stock <= product.min_stock
+                        product.stock <= product.minStock
                           ? "destructive"
                           : "outline"
                       }
                     >
-                      {product.stock <= product.min_stock
+                      {product.stock <= product.minStock
                         ? "Low Stock"
                         : "In Stock"}
                     </Badge>
@@ -270,13 +270,13 @@ export const ProductDetailModal: React.FC<ProductDetailModalProps> = ({
                     <label className="text-sm font-medium text-muted-foreground">
                       Minimum Stock Level
                     </label>
-                    <p className="text-sm">{product.min_stock || 0}</p>
+                    <p className="text-sm">{product.minStock || 0}</p>
                   </div>
                   <div>
                     <label className="text-sm font-medium text-muted-foreground">
                       Maximum Stock Level
                     </label>
-                    <p className="text-sm">{product.max_stock || 0}</p>
+                    <p className="text-sm">{product.maxStock || 0}</p>
                   </div>
                 </div>
               </CardContent>
@@ -297,8 +297,8 @@ export const ProductDetailModal: React.FC<ProductDetailModalProps> = ({
                       Created Date
                     </label>
                     <p className="text-sm">
-                      {product.created_at
-                        ? formatDate(product.created_at, { includeTime: false })
+                      {product.createdAt
+                        ? formatDate(product.createdAt, { includeTime: false })
                         : "N/A"}
                     </p>
                   </div>
@@ -307,8 +307,8 @@ export const ProductDetailModal: React.FC<ProductDetailModalProps> = ({
                       Last Updated
                     </label>
                     <p className="text-sm">
-                      {product.updated_at
-                        ? formatDate(product.updated_at, { includeTime: false })
+                      {product.updatedAt
+                        ? formatDate(product.updatedAt, { includeTime: false })
                         : "N/A"}
                     </p>
                   </div>

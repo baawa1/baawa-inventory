@@ -19,8 +19,8 @@ export interface Product {
   cost: number;
   price: number;
   stock: number;
-  min_stock: number;
-  max_stock?: number;
+  minStock: number;
+  maxStock?: number;
   unit: string;
   status: "active" | "inactive";
   supplier?: {
@@ -30,8 +30,6 @@ export interface Product {
   image?: string;
   createdAt: string;
   updatedAt: string;
-  created_at: string;
-  updated_at: string;
 }
 
 export interface ProductFilters {
