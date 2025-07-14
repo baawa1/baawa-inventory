@@ -61,6 +61,10 @@ model User {
   approver                                               User?                 @relation("UserApproval", fields: [approvedBy], references: [id], onDelete: NoAction, onUpdate: NoAction)
   approvedUsers                                          User[]                @relation("UserApproval")
 
+  // Session refresh tracking
+  sessionNeedsRefresh Boolean @default(false) @map("session_needs_refresh")
+  sessionRefreshAt    DateTime? @map("session_refresh_at") @db.Timestamptz(6)
+
   @@index([approvedBy], map: "idx_users_approved_by")
   @@index([email], map: "idx_users_email")
   @@index([emailVerificationToken], map: "idx_users_email_verification_token")

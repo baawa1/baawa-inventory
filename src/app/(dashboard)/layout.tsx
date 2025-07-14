@@ -10,14 +10,39 @@ export default async function DashboardLayout({
 }) {
   const session = await auth();
 
+  console.log("🔄 Session in layout:", session);
   // Check if user is authenticated
   if (!session?.user) {
     redirect("/login");
   }
 
-  // Check if user account is active
-  if (session.user.status !== "APPROVED") {
+  // Check if user account is active - match middleware logic
+  if (session.user.status === "PENDING") {
+    // PENDING users need email verification first
+    if (!session.user.isEmailVerified) {
+      redirect("/check-email");
+    } else {
+      // Email verified but still pending admin approval
+      redirect("/pending-approval");
+    }
+  }
+
+  if (session.user.status === "VERIFIED") {
+    // Email verified but not yet approved by admin
     redirect("/pending-approval");
+  }
+
+  if (
+    session.user.status === "REJECTED" ||
+    session.user.status === "SUSPENDED"
+  ) {
+    redirect("/unauthorized");
+  }
+
+  // At this point, user should be APPROVED
+  if (session.user.status !== "APPROVED") {
+    console.log("🚨 LAYOUT REDIRECTING - User status is:", session.user.status);
+    redirect("/unauthorized");
   }
 
   return (

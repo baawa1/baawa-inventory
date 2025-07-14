@@ -173,7 +173,16 @@ export async function PUT(request: NextRequest, { params }: RouteParams) {
         // Update the user
         const user = await prisma.user.update({
           where: { id: userId },
-          data: updateData,
+          data: {
+            ...updateData,
+            // Add session refresh tracking if role or status changed
+            ...(body.role || body.userStatus
+              ? {
+                  sessionNeedsRefresh: true,
+                  sessionRefreshAt: new Date(),
+                }
+              : {}),
+          },
           select: {
             id: true,
             firstName: true,
@@ -220,7 +229,11 @@ export async function PUT(request: NextRequest, { params }: RouteParams) {
 
         console.log("Successfully updated user:", transformedUser);
 
-        return NextResponse.json(transformedUser);
+        return NextResponse.json({
+          ...transformedUser,
+          // Add session refresh flag if role or status changed
+          sessionUpdated: !!(body.role || body.userStatus),
+        });
       } catch (error) {
         console.error("Error in PUT /api/users/[id]:", error);
         return NextResponse.json(

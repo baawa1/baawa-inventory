@@ -95,7 +95,12 @@ export const POST = withPermission(
 
       const updatedUser = await prisma.user.update({
         where: { id: userId },
-        data: updateData,
+        data: {
+          ...updateData,
+          // Add session refresh tracking
+          sessionNeedsRefresh: true,
+          sessionRefreshAt: new Date(),
+        },
         select: {
           id: true,
           firstName: true,
@@ -154,6 +159,8 @@ export const POST = withPermission(
           approvedAt: updatedUser.approvedAt,
           rejectionReason: updatedUser.rejectionReason,
         },
+        // Add session refresh flag
+        sessionUpdated: true,
       });
     } catch (error) {
       console.error("Error in POST /api/admin/approve-user:", error);

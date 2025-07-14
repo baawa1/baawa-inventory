@@ -137,26 +137,65 @@ const config: NextAuthConfig = {
   session: {
     strategy: "jwt" as const,
     maxAge: 24 * 60 * 60, // 24 hours
-    updateAge: 2 * 60 * 60, // Update session every 2 hours
+    updateAge: 0, // Disable automatic session updates
   },
   callbacks: {
-    async jwt({ token, user, trigger, session }) {
-      // Store user data in JWT on sign in
+    async jwt({ token, user, trigger }) {
+      // Always fetch fresh data from database for both initial login and updates
+      if (token.sub) {
+        try {
+          // Fetch fresh user data from database
+          const freshUser = await prisma.user.findUnique({
+            where: { id: parseInt(token.sub) },
+            select: {
+              id: true,
+              email: true,
+              firstName: true,
+              lastName: true,
+              role: true,
+              userStatus: true,
+              emailVerified: true,
+              isActive: true,
+            },
+          });
+
+          if (freshUser) {
+            console.log("✅ Fresh data fetched from database:", {
+              status: freshUser.userStatus,
+              role: freshUser.role,
+              emailVerified: freshUser.emailVerified,
+              firstName: freshUser.firstName,
+              lastName: freshUser.lastName,
+              trigger: trigger || "initial",
+            });
+
+            // Update token with fresh data from database
+            token.role = freshUser.role;
+            token.status = freshUser.userStatus || "PENDING";
+            token.isEmailVerified = Boolean(freshUser.emailVerified);
+            token.firstName = freshUser.firstName;
+            token.lastName = freshUser.lastName;
+          } else {
+            console.log("❌ User not found in database during JWT callback");
+          }
+        } catch (error) {
+          console.error("❌ Error fetching fresh user data:", error);
+        }
+      }
+
+      // Store user data in JWT on sign in (fallback to user object if database fetch fails)
       if (user) {
+        console.log("🔄 Initial login - using user object data:", {
+          status: (user as any).status,
+          role: (user as any).role,
+          emailVerified: (user as any).isEmailVerified,
+        });
+
         token.role = (user as any).role;
         token.status = (user as any).status;
         token.isEmailVerified = Boolean((user as any).isEmailVerified);
         token.firstName = (user as any).firstName;
         token.lastName = (user as any).lastName;
-      }
-
-      // Handle session updates
-      if (trigger === "update" && session) {
-        token.role = session.role || token.role;
-        token.status = session.status || token.status;
-        token.isEmailVerified = Boolean(
-          session.isEmailVerified ?? token.isEmailVerified
-        );
       }
 
       return token;
@@ -169,6 +208,19 @@ const config: NextAuthConfig = {
         session.user.isEmailVerified = Boolean(token.isEmailVerified);
         (session.user as any).firstName = token.firstName as string;
         (session.user as any).lastName = token.lastName as string;
+
+        // Update the name field with fresh firstName and lastName
+        if (token.firstName && token.lastName) {
+          session.user.name = `${token.firstName} ${token.lastName}`;
+        }
+
+        console.log("🔄 Session callback - updated session with:", {
+          name: session.user.name,
+          firstName: (session.user as any).firstName,
+          lastName: (session.user as any).lastName,
+          role: session.user.role,
+          status: session.user.status,
+        });
       }
       return session;
     },
@@ -229,7 +281,7 @@ const config: NextAuthConfig = {
     maxAge: 24 * 60 * 60, // 24 hours
   },
   // Enhanced debug logging in development
-  debug: false, // Disabled to reduce console noise
+  debug: process.env.NODE_ENV === "development", // Only in development
   // Trust host for deployment
   trustHost: true,
 };

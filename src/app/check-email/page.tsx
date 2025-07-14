@@ -1,7 +1,8 @@
 "use client";
 
-import { useState, useEffect, Suspense } from "react";
+import { useState, Suspense, useEffect } from "react";
 import { useSearchParams, useRouter } from "next/navigation";
+import { useSession } from "next-auth/react";
 import {
   Card,
   CardContent,
@@ -13,21 +14,20 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Mail, Clock, RefreshCw } from "lucide-react";
-
 function CheckEmailContent() {
   const searchParams = useSearchParams();
   const router = useRouter();
-  const email = searchParams.get("email");
+  const { data: session } = useSession(); // Add this line
+  const email = searchParams.get("email") || session?.user?.email || "";
   const [resendLoading, setResendLoading] = useState(false);
   const [resendMessage, setResendMessage] = useState("");
   const [resendEmail, setResendEmail] = useState(email || "");
 
   useEffect(() => {
-    if (!email) {
-      // If no email provided, redirect to register
-      router.push("/register");
+    if (email) {
+      setResendEmail(email);
     }
-  }, [email, router]);
+  }, [email]);
 
   const handleResendVerification = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -56,10 +56,6 @@ function CheckEmailContent() {
       setResendLoading(false);
     }
   };
-
-  if (!email) {
-    return null; // Will redirect
-  }
 
   return (
     <div className="min-h-screen flex items-center justify-center">

@@ -2,7 +2,7 @@
 
 import { useSession } from "next-auth/react";
 import { useRouter } from "next/navigation";
-import { useEffect } from "react";
+import { useEffect, useState } from "react";
 import {
   Card,
   CardContent,
@@ -11,11 +11,12 @@ import {
   CardTitle,
 } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
-import { Clock, CheckCircle, AlertCircle } from "lucide-react";
+import { Clock, RefreshCw } from "lucide-react";
 
 export default function PendingApprovalPage() {
-  const { data: session, status } = useSession();
+  const { data: session, status, update } = useSession();
   const router = useRouter();
+  const [isRefreshing, setIsRefreshing] = useState(false);
 
   useEffect(() => {
     if (status === "loading") return; // Still loading
@@ -25,8 +26,31 @@ export default function PendingApprovalPage() {
       return;
     }
 
+    // Only VERIFIED users should stay on this page
+    // PENDING users should be on check-email page
+    // APPROVED users should go to dashboard
+    // REJECTED/SUSPENDED users should go to unauthorized
+    if (session?.user?.status === "PENDING") {
+      router.push("/check-email");
+      return;
+    }
+
     if (session?.user?.status === "APPROVED") {
       router.push("/dashboard");
+      return;
+    }
+
+    if (
+      session?.user?.status === "REJECTED" ||
+      session?.user?.status === "SUSPENDED"
+    ) {
+      router.push("/unauthorized");
+      return;
+    }
+
+    // If status is not VERIFIED, redirect to unauthorized
+    if (session?.user?.status !== "VERIFIED") {
+      router.push("/unauthorized");
       return;
     }
   }, [session, status, router]);
@@ -35,12 +59,28 @@ export default function PendingApprovalPage() {
     router.push("/logout");
   };
 
+  const handleRefreshSession = async () => {
+    console.log("🔄 Refresh button clicked");
+    console.log("Current session before refresh:", session?.user);
+
+    setIsRefreshing(true);
+    try {
+      // Simply call NextAuth's update() - it will now fetch fresh data from DB
+      await update();
+      console.log("Session updated successfully");
+    } catch (error) {
+      console.error("Error refreshing session:", error);
+    } finally {
+      setIsRefreshing(false);
+    }
+  };
+
   if (status === "loading") {
     return (
       <div className="flex items-center justify-center min-h-screen">
         <div className="text-center">
           <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-blue-600 mx-auto"></div>
-          <p className="mt-2 text-gray-600">Loading...</p>
+          <p className="mt-2 ">Loading...</p>
         </div>
       </div>
     );
@@ -51,52 +91,23 @@ export default function PendingApprovalPage() {
   }
 
   const getStatusIcon = () => {
-    switch (session?.user?.status) {
-      case "PENDING":
-      case "VERIFIED":
-        return <Clock className="h-16 w-16 text-yellow-500" />;
-      case "APPROVED":
-        return <CheckCircle className="h-16 w-16 text-green-500" />;
-      case "REJECTED":
-        return <AlertCircle className="h-16 w-16 text-red-500" />;
-      default:
-        return <Clock className="h-16 w-16 text-gray-500" />;
-    }
+    // This page should only be accessible to VERIFIED users
+    return <Clock className="h-16 w-16 text-yellow-500" />;
   };
 
   const getStatusMessage = () => {
-    switch (session?.user?.status) {
-      case "PENDING":
-        return {
-          title: "Account Pending Approval",
-          description:
-            "Your account is currently under review. An administrator will approve your access soon.",
-        };
-      case "VERIFIED":
-        return {
-          title: "Your account is pending approval",
-          description:
-            "Please wait for an administrator to approve your account.",
-        };
-      case "REJECTED":
-        return {
-          title: "Account Access Denied",
-          description:
-            "Your account access has been denied. Please contact support for more information.",
-        };
-      default:
-        return {
-          title: "Account Status Unknown",
-          description:
-            "There seems to be an issue with your account status. Please contact support.",
-        };
-    }
+    // This page should only be accessible to VERIFIED users
+    // Other statuses should be redirected elsewhere
+    return {
+      title: "Your account is pending approval",
+      description: "Please wait for an administrator to approve your account.",
+    };
   };
 
   const statusInfo = getStatusMessage();
 
   return (
-    <div className="min-h-screen flex items-center justify-center bg-gray-50 py-12 px-4 sm:px-6 lg:px-8">
+    <div className="min-h-screen flex items-center justify-center  py-12 px-4 sm:px-6 lg:px-8">
       <div className="max-w-md w-full space-y-8">
         <Card>
           <CardHeader className="text-center">
@@ -104,46 +115,50 @@ export default function PendingApprovalPage() {
             <CardTitle className="text-2xl font-bold">
               {statusInfo.title}
             </CardTitle>
-            <CardDescription className="text-gray-600">
+            <CardDescription className="">
               {statusInfo.description}
             </CardDescription>
           </CardHeader>
           <CardContent className="space-y-4">
             <div className="text-center">
-              <p className="text-sm text-gray-500">
+              <p className="text-sm ">
                 Logged in as:{" "}
                 <span className="font-medium">{session?.user?.email}</span>
               </p>
-              <p className="text-sm text-gray-500">
+              <p className="text-sm ">
                 Role: <span className="font-medium">{session?.user?.role}</span>
               </p>
-              <p className="text-sm text-gray-500">
+              <p className="text-sm ">
                 Status:{" "}
                 <span className="font-medium">{session?.user?.status}</span>
               </p>
             </div>
 
-            {(session?.user?.status === "PENDING" ||
-              session?.user?.status === "VERIFIED") && (
-              <div className="bg-yellow-50 border border-yellow-200 rounded-md p-3">
-                <p className="text-sm text-yellow-800">
-                  Your account registration was successful! Please wait for an
-                  administrator to approve your access.
-                </p>
-              </div>
-            )}
+            <div className="bg-yellow-50 border border-yellow-200 rounded-md p-3">
+              <p className="text-sm text-yellow-800">
+                Your account registration was successful! Please wait for an
+                administrator to approve your access.
+              </p>
+            </div>
 
-            {session?.user?.status === "REJECTED" && (
-              <div className="bg-red-50 border border-red-200 rounded-md p-3">
-                <p className="text-sm text-red-800">
-                  If you believe this is an error, please contact our support
-                  team for assistance.
-                </p>
-              </div>
-            )}
-
-            <Button onClick={handleLogout} variant="outline" className="w-full">
+            <Button
+              onClick={handleLogout}
+              variant="secondary"
+              className="w-full"
+            >
               Sign Out
+            </Button>
+
+            <Button
+              onClick={handleRefreshSession}
+              disabled={isRefreshing}
+              variant="outline"
+              className="w-full"
+            >
+              <RefreshCw
+                className={`h-4 w-4 mr-2 ${isRefreshing ? "animate-spin" : ""}`}
+              />
+              {isRefreshing ? "Refreshing..." : "Refresh Status"}
             </Button>
           </CardContent>
         </Card>
