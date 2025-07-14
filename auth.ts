@@ -137,12 +137,36 @@ const config: NextAuthConfig = {
   session: {
     strategy: "jwt" as const,
     maxAge: 24 * 60 * 60, // 24 hours
-    updateAge: 0, // Disable automatic session updates
+    updateAge: 5 * 60, // Update session every 5 minutes instead of every request
   },
   callbacks: {
     async jwt({ token, user, trigger }) {
-      // Always fetch fresh data from database for both initial login and updates
-      if (token.sub) {
+      // Only fetch fresh data from database on initial sign-in or when explicitly triggered
+      if (user) {
+        console.log("🔄 Initial login - using user object data:", {
+          status: (user as any).status,
+          role: (user as any).role,
+          emailVerified: (user as any).isEmailVerified,
+        });
+
+        token.role = (user as any).role;
+        token.status = (user as any).status;
+        token.isEmailVerified = Boolean((user as any).isEmailVerified);
+        token.firstName = (user as any).firstName;
+        token.lastName = (user as any).lastName;
+
+        // Add timestamp to track when data was last fetched
+        token.dataFetchedAt = Date.now();
+      }
+
+      // Only fetch fresh data if it's been more than 5 minutes since last fetch
+      // or if this is a token refresh trigger
+      const shouldFetchFreshData =
+        trigger === "update" ||
+        !token.dataFetchedAt ||
+        Date.now() - (token.dataFetchedAt as number) > 5 * 60 * 1000; // 5 minutes
+
+      if (token.sub && shouldFetchFreshData && typeof window === "undefined") {
         try {
           // Fetch fresh user data from database
           const freshUser = await prisma.user.findUnique({
@@ -166,7 +190,7 @@ const config: NextAuthConfig = {
               emailVerified: freshUser.emailVerified,
               firstName: freshUser.firstName,
               lastName: freshUser.lastName,
-              trigger: trigger || "initial",
+              trigger: trigger || "timeout",
             });
 
             // Update token with fresh data from database
@@ -175,27 +199,13 @@ const config: NextAuthConfig = {
             token.isEmailVerified = Boolean(freshUser.emailVerified);
             token.firstName = freshUser.firstName;
             token.lastName = freshUser.lastName;
+            token.dataFetchedAt = Date.now();
           } else {
             console.log("❌ User not found in database during JWT callback");
           }
         } catch (error) {
           console.error("❌ Error fetching fresh user data:", error);
         }
-      }
-
-      // Store user data in JWT on sign in (fallback to user object if database fetch fails)
-      if (user) {
-        console.log("🔄 Initial login - using user object data:", {
-          status: (user as any).status,
-          role: (user as any).role,
-          emailVerified: (user as any).isEmailVerified,
-        });
-
-        token.role = (user as any).role;
-        token.status = (user as any).status;
-        token.isEmailVerified = Boolean((user as any).isEmailVerified);
-        token.firstName = (user as any).firstName;
-        token.lastName = (user as any).lastName;
       }
 
       return token;
@@ -214,13 +224,17 @@ const config: NextAuthConfig = {
           session.user.name = `${token.firstName} ${token.lastName}`;
         }
 
-        console.log("🔄 Session callback - updated session with:", {
-          name: session.user.name,
-          firstName: (session.user as any).firstName,
-          lastName: (session.user as any).lastName,
-          role: session.user.role,
-          status: session.user.status,
-        });
+        // Only log session updates in development and when there are significant changes
+        if (process.env.NODE_ENV === "development" && token.dataFetchedAt) {
+          console.log("🔄 Session updated with fresh data:", {
+            name: session.user.name,
+            role: session.user.role,
+            status: session.user.status,
+            dataFetchedAt: new Date(
+              token.dataFetchedAt as number
+            ).toISOString(),
+          });
+        }
       }
       return session;
     },
