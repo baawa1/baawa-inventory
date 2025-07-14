@@ -1,16 +1,16 @@
-import { NextResponse } from "next/server";
-import { auth } from "../../../../../auth";
+import { NextRequest, NextResponse } from "next/server";
+import { auth } from "#root/auth";
 import { prisma } from "@/lib/db";
 
-export async function POST() {
+export async function POST(request: NextRequest) {
   try {
     const session = await auth();
 
     if (!session?.user?.id) {
-      return NextResponse.json({ error: "No active session" }, { status: 401 });
+      return NextResponse.json({ error: "Not authenticated" }, { status: 401 });
     }
 
-    // Get updated user data from database
+    // Get current user data from database
     const user = await prisma.user.findUnique({
       where: { id: parseInt(session.user.id) },
       select: {
@@ -21,7 +21,6 @@ export async function POST() {
         role: true,
         userStatus: true,
         emailVerified: true,
-        emailVerifiedAt: true,
         isActive: true,
       },
     });
@@ -35,17 +34,17 @@ export async function POST() {
       user: {
         id: user.id.toString(),
         email: user.email,
-        firstName: user.firstName,
-        lastName: user.lastName,
+        name: `${user.firstName} ${user.lastName}`,
         role: user.role,
         status: user.userStatus,
         isEmailVerified: Boolean(user.emailVerified),
+        isActive: user.isActive,
       },
     });
   } catch (error) {
     console.error("Error refreshing session:", error);
     return NextResponse.json(
-      { error: "Failed to refresh session" },
+      { error: "Internal server error" },
       { status: 500 }
     );
   }

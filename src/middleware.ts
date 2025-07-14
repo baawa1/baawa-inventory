@@ -41,9 +41,11 @@ export default auth((req: NextRequest & { auth: any }) => {
   }
 
   // Extract user information from token
-  const userRole = token.role as UserRole;
-  const userStatus = token.status as UserStatus;
-  const isEmailVerified = Boolean(token.isEmailVerified);
+  const userRole = token.user?.role || (token.role as UserRole);
+  const userStatus = token.user?.status || (token.status as UserStatus);
+  const isEmailVerified = Boolean(
+    token.user?.isEmailVerified || token.isEmailVerified
+  );
 
   // Debug logging in development
   if (process.env.NODE_ENV === "development") {
@@ -53,6 +55,15 @@ export default auth((req: NextRequest & { auth: any }) => {
       userStatus,
       isEmailVerified,
       hasToken: !!token,
+      tokenData: token
+        ? {
+            sub: token.sub,
+            email: token.email,
+            role: token.role,
+            status: token.status,
+            isEmailVerified: token.isEmailVerified,
+          }
+        : null,
     });
   }
 
@@ -71,23 +82,23 @@ export default auth((req: NextRequest & { auth: any }) => {
   };
 
   // Authentication Flow Logic:
-  // 1. Unverified users → verify-email page
-  // 2. Verified but unapproved users → pending-approval page
-  // 3. Approved users → dashboard
-  // 4. Rejected/denied users → unauthorized page
+  // 1. PENDING users → check-email page (if email not verified) or pending-approval page
+  // 2. VERIFIED users → pending-approval page (email verified, awaiting admin approval)
+  // 3. APPROVED users → dashboard (full access)
+  // 4. REJECTED/SUSPENDED users → unauthorized page
 
-  // Check if email is not verified
-  if (!isEmailVerified) {
-    return safeRedirect("/verify-email", "Email not verified");
-  }
-
-  // Check user status after email verification
+  // Check user status first, then handle email verification for PENDING users
   if (userStatus === "PENDING") {
-    // Email verified but still pending admin approval
-    return safeRedirect(
-      "/pending-approval",
-      "User status is PENDING (needs admin approval)"
-    );
+    // PENDING users need email verification first
+    if (!isEmailVerified) {
+      return safeRedirect("/check-email", "Email not verified");
+    } else {
+      // Email verified but still pending admin approval
+      return safeRedirect(
+        "/pending-approval",
+        "User status is PENDING (needs admin approval)"
+      );
+    }
   }
 
   if (userStatus === "VERIFIED") {
@@ -104,6 +115,8 @@ export default auth((req: NextRequest & { auth: any }) => {
 
   // At this point, user should be APPROVED
   if (userStatus !== "APPROVED") {
+    console.log("🚨 MIDDLEWARE REDIRECTING - User status is:", userStatus);
+    console.log("🚨 Full token data:", JSON.stringify(token, null, 2));
     return safeRedirect("/unauthorized", `Invalid user status: ${userStatus}`);
   }
 

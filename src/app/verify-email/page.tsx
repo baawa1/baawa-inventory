@@ -2,7 +2,7 @@
 
 import { useState, useCallback, useEffect, Suspense } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
-// import { useSession } from "next-auth/react";
+import { useSessionUpdate } from "@/hooks/useSessionUpdate";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -18,7 +18,7 @@ import { Clock, CheckCircle, XCircle, AlertCircle, Mail } from "lucide-react";
 function VerifyEmailContent() {
   const router = useRouter();
   const searchParams = useSearchParams();
-  // const { data: session, update } = useSession();
+  const { session, updateSession } = useSessionUpdate();
 
   const [status, setStatus] = useState<
     "loading" | "success" | "error" | "expired" | "already-verified"
@@ -49,14 +49,13 @@ function VerifyEmailContent() {
           sessionStorage.setItem("emailJustVerified", "true");
 
           // If user is logged in and we get shouldRefreshSession, refresh the session
-          // if (session && data.shouldRefreshSession) {
-          //   try {
-          //     // Use Auth.js v5 update method to refresh the session from the server
-          //     await update();
-          //   } catch (error) {
-          //     console.error("Error updating session:", error);
-          //   }
-          // }
+          if (session && data.shouldRefreshSession) {
+            try {
+              await updateSession();
+            } catch (error) {
+              console.error("Error updating session:", error);
+            }
+          }
 
           // Redirect to pending approval page after 3 seconds
           setTimeout(() => {
@@ -78,7 +77,7 @@ function VerifyEmailContent() {
         setMessage("An error occurred while verifying your email");
       }
     },
-    [router]
+    [router, session, updateSession]
   );
 
   // Only verify token on mount if token exists - no API calls in useEffect

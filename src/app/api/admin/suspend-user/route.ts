@@ -69,6 +69,9 @@ export const POST = withPermission(
         data: {
           userStatus: newStatus,
           isActive: action === "reactivate",
+          // Add session refresh tracking
+          sessionNeedsRefresh: true,
+          sessionRefreshAt: new Date(),
         },
       });
 
@@ -103,6 +106,8 @@ export const POST = withPermission(
           action,
           reason,
         },
+        // Add session refresh flag
+        sessionUpdated: true,
       });
     } catch (error) {
       console.error("Error in POST /api/admin/suspend-user:", error);

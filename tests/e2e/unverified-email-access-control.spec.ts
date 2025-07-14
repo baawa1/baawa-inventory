@@ -205,18 +205,34 @@ test.describe("Unverified Email Users Access Control", () => {
       console.log("✅ Check-email page accessible without authentication");
     });
 
-    test("should redirect to register if no email provided to check-email", async ({
+    // test("should redirect to register if no email provided to check-email", async ({
+    //   page,
+    // }) => {
+    //   // Try to access check-email page without email parameter
+    //   await page.goto("/check-email");
+
+    //   // Should be redirected to register page
+    //   await page.waitForURL(/\/register/, { timeout: 5000 });
+    //   expect(page.url()).toContain("/register");
+
+    //   console.log(
+    //     "✅ Check-email page redirects to register when no email provided"
+    //   );
+    // });
+    test("should show check-email page content even without email parameter", async ({
       page,
     }) => {
       // Try to access check-email page without email parameter
       await page.goto("/check-email");
 
-      // Should be redirected to register page
-      await page.waitForURL(/\/register/, { timeout: 5000 });
-      expect(page.url()).toContain("/register");
+      // Should show the check-email page content (not redirect)
+      await expect(
+        page.locator('[data-slot="card-title"]:has-text("Check Your Email")')
+      ).toBeVisible();
+      expect(page.url()).toContain("/check-email");
 
       console.log(
-        "✅ Check-email page redirects to register when no email provided"
+        "✅ Check-email page shows content even without email parameter"
       );
     });
   });

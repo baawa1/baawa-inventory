@@ -11,7 +11,7 @@ export default async function InventoryPage() {
     redirect("/login");
   }
 
-  if (session.user.status !== "ACTIVE") {
+  if (session.user.status !== "APPROVED") {
     redirect("/pending-approval");
   }
 
