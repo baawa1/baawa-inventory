@@ -35,8 +35,8 @@ export interface Product {
 
 export interface ProductFilters {
   search: string;
-  category: string;
-  brand: string;
+  categoryId: string;
+  brandId: string;
   status: string;
   supplier: string;
   lowStock: boolean;
@@ -88,8 +88,8 @@ const fetchProducts = async (
   });
 
   if (filters.search) searchParams.set("search", filters.search);
-  if (filters.category) searchParams.set("category", filters.category);
-  if (filters.brand) searchParams.set("brand", filters.brand);
+  if (filters.categoryId) searchParams.set("categoryId", filters.categoryId);
+  if (filters.brandId) searchParams.set("brandId", filters.brandId);
   if (filters.status) searchParams.set("status", filters.status);
   if (filters.supplier) searchParams.set("supplierId", filters.supplier);
   if (filters.lowStock) searchParams.set("lowStock", "true");
