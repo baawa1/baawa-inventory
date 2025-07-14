@@ -161,12 +161,23 @@ const config: NextAuthConfig = {
 
       // Only fetch fresh data if it's been more than 5 minutes since last fetch
       // or if this is a token refresh trigger
+      // BUT NOT in middleware/edge runtime environment
       const shouldFetchFreshData =
         trigger === "update" ||
         !token.dataFetchedAt ||
         Date.now() - (token.dataFetchedAt as number) > 5 * 60 * 1000; // 5 minutes
 
-      if (token.sub && shouldFetchFreshData && typeof window === "undefined") {
+      // Check if we're in Edge Runtime (middleware) - if so, skip database calls
+      const isEdgeRuntime =
+        process.env.NEXT_RUNTIME === "edge" ||
+        typeof (globalThis as any).EdgeRuntime !== "undefined";
+
+      if (
+        token.sub &&
+        shouldFetchFreshData &&
+        typeof window === "undefined" &&
+        !isEdgeRuntime
+      ) {
         try {
           // Fetch fresh user data from database
           const freshUser = await prisma.user.findUnique({

@@ -12,7 +12,7 @@ interface LowStockProduct {
   name: string;
   sku: string;
   stock: number;
-  min_stock: number;
+  minStock: number;
   category: { name: string } | null;
   brand: { name: string } | null;
 }
@@ -184,7 +184,7 @@ export function LowStockWidget({ limit = 5 }: LowStockWidgetProps) {
               {products.map((product) => {
                 const stockStatus = getStockStatus(
                   product.stock,
-                  product.min_stock
+                  product.minStock
                 );
 
                 return (
@@ -206,7 +206,7 @@ export function LowStockWidget({ limit = 5 }: LowStockWidgetProps) {
                       <div className="flex items-center gap-4 text-sm text-muted-foreground">
                         <span>SKU: {product.sku}</span>
                         <span>Stock: {product.stock}</span>
-                        <span>Min: {product.min_stock}</span>
+                        <span>Min: {product.minStock}</span>
                       </div>
                       <div className="flex items-center gap-2 text-xs text-muted-foreground mt-1">
                         {product.category && (
@@ -226,7 +226,7 @@ export function LowStockWidget({ limit = 5 }: LowStockWidgetProps) {
                         <AlertTriangle className="h-4 w-4 text-red-500" />
                       )}
                       {product.stock > 0 &&
-                        product.stock <= product.min_stock && (
+                        product.stock <= product.minStock && (
                           <TrendingUp className="h-4 w-4 text-orange-500" />
                         )}
                     </div>

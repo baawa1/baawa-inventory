@@ -64,8 +64,8 @@ interface ProductFilters {
 const SORT_OPTIONS: SortOption[] = [
   { value: "name-asc", label: "Name (A-Z)" },
   { value: "name-desc", label: "Name (Z-A)" },
-  { value: "created_at-desc", label: "Newest First" },
-  { value: "created_at-asc", label: "Oldest First" },
+  { value: "createdAt-desc", label: "Newest First" },
+  { value: "createdAt-asc", label: "Oldest First" },
   { value: "stock-asc", label: "Stock (Low to High)" },
   { value: "stock-desc", label: "Stock (High to Low)" },
   { value: "price-asc", label: "Price (Low to High)" },
@@ -87,7 +87,7 @@ export function ProductList({ user }: ProductListProps) {
     status: "",
     supplier: "",
     lowStock: false,
-    sortBy: "created_at",
+    sortBy: "createdAt",
     sortOrder: "desc",
   });
 
@@ -182,7 +182,7 @@ export function ProductList({ user }: ProductListProps) {
       status: "",
       supplier: "",
       lowStock: false,
-      sortBy: "created_at",
+      sortBy: "createdAt",
       sortOrder: "desc",
     });
     setPagination((prev) => ({ ...prev, page: 1 }));
@@ -260,7 +260,7 @@ export function ProductList({ user }: ProductListProps) {
         text: "Out of stock",
         color: "text-red-500",
       };
-    } else if (product.stock <= product.min_stock) {
+    } else if (product.stock <= product.minStock) {
       return {
         icon: <IconAlertTriangle className="h-4 w-4 text-yellow-500" />,
         text: "Low stock",
@@ -327,7 +327,7 @@ export function ProductList({ user }: ProductListProps) {
           <div className="flex items-center gap-2">
             {stockStatus.icon}
             <span className={stockStatus.color}>{product.stock}</span>
-            <span className="text-gray-400">/ {product.min_stock} min</span>
+            <span className="text-gray-400">/ {product.minStock} min</span>
           </div>
         );
       case "price":
@@ -356,15 +356,15 @@ export function ProductList({ user }: ProductListProps) {
         return (
           <span className="font-mono text-sm">{product.barcode || "-"}</span>
         );
-      case "min_stock":
-        return product.min_stock;
-      case "max_stock":
-        return product.max_stock || "-";
+      case "minStock":
+        return product.minStock;
+      case "maxStock":
+        return product.maxStock || "-";
       case "unit":
         return product.unit;
-      case "created_at":
+      case "createdAt":
         return new Date(product.createdAt).toLocaleDateString();
-      case "updated_at":
+      case "updatedAt":
         return new Date(product.updatedAt).toLocaleDateString();
       default:
         return "-";
@@ -459,7 +459,7 @@ export function ProductList({ user }: ProductListProps) {
       description="Manage your product inventory and stock levels"
       actions={
         canManageProducts ? (
-          <>
+          <div className="flex flex-row items-center gap-2">
             <Button
               asChild
               variant="outline"
@@ -489,7 +489,7 @@ export function ProductList({ user }: ProductListProps) {
                 Add Product
               </Link>
             </Button>
-          </>
+          </div>
         ) : undefined
       }
       // Filters

@@ -22,9 +22,9 @@ export interface Product {
   cost: number;
   price: number;
   stock: number;
-  min_stock: number;
-  max_stock: number | null;
-  supplier_id: number;
+  minStock: number;
+  maxStock: number | null;
+  supplierId: number;
   status: "active" | "inactive" | "discontinued";
   images: Array<{ url: string; isPrimary: boolean }> | null;
 }

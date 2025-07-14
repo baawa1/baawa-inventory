@@ -17,15 +17,15 @@ interface LowStockProduct {
   name: string;
   sku: string;
   stock: number;
-  min_stock: number;
+  minStock: number;
   cost: number;
   price: number;
   status: string;
   category: { id: number; name: string } | null;
   brand: { id: number; name: string } | null;
   supplier: { id: number; name: string } | null;
-  created_at: string;
-  updated_at: string;
+  createdAt: string;
+  updatedAt: string;
 }
 
 interface LowStockMetrics {
@@ -163,7 +163,7 @@ export function LowStockAlerts() {
       case "product":
         return (
           <div className="flex items-center gap-2">
-            {getStockStatusIcon(product.stock, product.min_stock)}
+            {getStockStatusIcon(product.stock, product.minStock)}
             <div>
               <div className="font-medium">{product.name}</div>
               <div className="text-sm text-gray-500">SKU: {product.sku}</div>
@@ -178,11 +178,11 @@ export function LowStockAlerts() {
         return (
           <div className="flex items-center gap-2">
             <span className="font-medium">{product.stock}</span>
-            <span className="text-gray-400">/ {product.min_stock} min</span>
+            <span className="text-gray-400">/ {product.minStock} min</span>
           </div>
         );
       case "status":
-        return getStockStatusBadge(product.stock, product.min_stock);
+        return getStockStatusBadge(product.stock, product.minStock);
       case "cost":
         return formatCurrency(product.cost);
       case "price":

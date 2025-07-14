@@ -57,13 +57,13 @@ export const PRODUCT_COLUMNS: TableColumn[] = [
   { key: "barcode", label: "Barcode", sortable: true, defaultVisible: false },
   { key: "cost", label: "Cost Price", sortable: true, defaultVisible: false },
   {
-    key: "min_stock",
+    key: "minStock",
     label: "Min Stock",
     sortable: true,
     defaultVisible: false,
   },
   {
-    key: "max_stock",
+    key: "maxStock",
     label: "Max Stock",
     sortable: true,
     defaultVisible: false,
@@ -87,13 +87,13 @@ export const PRODUCT_COLUMNS: TableColumn[] = [
   },
   { key: "tags", label: "Tags", sortable: false, defaultVisible: false },
   {
-    key: "created_at",
+    key: "createdAt",
     label: "Created Date",
     sortable: true,
     defaultVisible: false,
   },
   {
-    key: "updated_at",
+    key: "updatedAt",
     label: "Updated Date",
     sortable: true,
     defaultVisible: false,
