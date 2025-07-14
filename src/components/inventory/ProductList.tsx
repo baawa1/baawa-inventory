@@ -52,8 +52,8 @@ interface ProductListProps {
 
 interface ProductFilters {
   search: string;
-  category: string;
-  brand: string;
+  categoryId: string;
+  brandId: string;
   status: string;
   supplier: string;
   lowStock: boolean;
@@ -82,8 +82,8 @@ export function ProductList({ user }: ProductListProps) {
   const [visibleColumns, setVisibleColumns] = useState<string[]>([]);
   const [filters, setFilters] = useState<ProductFilters>({
     search: "",
-    category: "",
-    brand: "",
+    categoryId: "",
+    brandId: "",
     status: "",
     supplier: "",
     lowStock: false,
@@ -108,8 +108,8 @@ export function ProductList({ user }: ProductListProps) {
   const productsQuery = useProducts(
     {
       search: debouncedSearchTerm,
-      category: filters.category,
-      brand: filters.brand,
+      categoryId: filters.categoryId,
+      brandId: filters.brandId,
       status: filters.status,
       supplier: filters.supplier,
       lowStock: filters.lowStock,
@@ -136,18 +136,21 @@ export function ProductList({ user }: ProductListProps) {
   // Filter configurations
   const filterConfigs: FilterConfig[] = [
     {
-      key: "category",
+      key: "categoryId",
       label: "Categories",
       type: "select",
-      options: categories.map((cat) => ({ value: cat.name, label: cat.name })),
+      options: categories.map((cat) => ({
+        value: String(cat.id),
+        label: cat.name,
+      })),
       placeholder: "All Categories",
     },
     {
-      key: "brand",
+      key: "brandId",
       label: "Brands",
       type: "select",
       options: brands.map((brand) => ({
-        value: brand.name,
+        value: String(brand.id),
         label: brand.name,
       })),
       placeholder: "All Brands",
@@ -177,8 +180,8 @@ export function ProductList({ user }: ProductListProps) {
   const handleResetFilters = () => {
     setFilters({
       search: "",
-      category: "",
-      brand: "",
+      categoryId: "",
+      brandId: "",
       status: "",
       supplier: "",
       lowStock: false,
