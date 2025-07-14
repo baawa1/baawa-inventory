@@ -161,7 +161,11 @@ export function ProductList({ user }: ProductListProps) {
   ];
 
   const handleFilterChange = (key: string, value: any) => {
-    setFilters((prev) => ({ ...prev, [key]: value }));
+    setFilters((prev) => {
+      const filterKey = key as keyof ProductFilters;
+      if (prev[filterKey] === value) return prev; // Prevent unnecessary updates
+      return { ...prev, [filterKey]: value };
+    });
     setPagination((prev) => ({ ...prev, page: 1 }));
   };
 

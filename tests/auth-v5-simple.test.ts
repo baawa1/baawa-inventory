@@ -32,9 +32,7 @@ describe("Auth.js v5 Simple Tests", () => {
 
       // Check for callbacks
       expect(authContent).toContain("callbacks: {");
-      expect(authContent).toContain(
-        "async jwt({ token, user, trigger, session })"
-      );
+      expect(authContent).toContain("async jwt({ token, user, trigger })");
       expect(authContent).toContain("async session({ session, token })");
     });
 

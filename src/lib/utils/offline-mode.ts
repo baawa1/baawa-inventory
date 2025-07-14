@@ -26,7 +26,8 @@ export interface OfflineQueueStats {
 }
 
 class OfflineModeManager {
-  private isOnline: boolean = navigator.onLine;
+  private isOnline: boolean =
+    typeof navigator !== "undefined" ? navigator.onLine : true;
   private listeners: Set<(status: NetworkStatus) => void> = new Set();
   private syncInterval: NodeJS.Timeout | null = null;
   private lastOnlineTime?: Date;
@@ -34,7 +35,10 @@ class OfflineModeManager {
   private isSlowConnection: boolean = false;
 
   constructor() {
-    this.init();
+    // Only initialize in browser environment
+    if (typeof window !== "undefined") {
+      this.init();
+    }
   }
 
   private init() {
@@ -87,7 +91,7 @@ class OfflineModeManager {
 
         // Consider slow if takes more than 3 seconds or fails
         this.isSlowConnection = duration > 3000 || !response.ok;
-      } catch (error) {
+      } catch (_error) {
         this.isSlowConnection = true;
       }
     };
@@ -438,7 +442,8 @@ class OfflineModeManager {
 export const offlineModeManager = new OfflineModeManager();
 
 // Utility functions
-export const isOnline = (): boolean => navigator.onLine;
+export const isOnline = (): boolean =>
+  typeof navigator !== "undefined" ? navigator.onLine : true;
 
 export const waitForOnline = (): Promise<void> => {
   return new Promise((resolve) => {

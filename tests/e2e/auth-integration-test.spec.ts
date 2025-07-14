@@ -1,30 +1,34 @@
 import { test, expect } from "@playwright/test";
-import { emailUtils } from "./email-test-utils";
+
+// Use a single test user for all tests to save email tokens
+const TEST_USER = {
+  email: "baawapays+test-auth-integration@gmail.com",
+  firstName: "Integration",
+  lastName: "Test",
+  password: "SecurePass123!@#",
+};
+
+const ADMIN_USER = {
+  email: "baawapays+test-admin-integration@gmail.com",
+  firstName: "Admin",
+  lastName: "User",
+  password: "SecurePass123!@#",
+};
 
 test.describe("Authentication Integration Tests", () => {
-  let testUserEmail: string;
-  let adminEmail: string;
-
-  test.beforeAll(async () => {
-    // Generate unique test emails
-    testUserEmail = emailUtils.generateTestEmail("integration");
-    adminEmail = emailUtils.generateTestEmail("admin");
-  });
-
   test.describe("Complete User Registration and Approval Flow", () => {
     test("should register a new user and verify email", async ({ page }) => {
       // Step 1: Register new user
       await page.goto("/register");
 
-      const firstName = "Integration";
-      const lastName = "Test";
-      const password = "SecurePass123!@#";
-
-      await page.fill('[data-testid="firstName-input"]', firstName);
-      await page.fill('[data-testid="lastName-input"]', lastName);
-      await page.fill('[data-testid="email-input"]', testUserEmail);
-      await page.fill('[data-testid="password-input"]', password);
-      await page.fill('[data-testid="confirmPassword-input"]', password);
+      await page.fill('[data-testid="firstName-input"]', TEST_USER.firstName);
+      await page.fill('[data-testid="lastName-input"]', TEST_USER.lastName);
+      await page.fill('[data-testid="email-input"]', TEST_USER.email);
+      await page.fill('[data-testid="password-input"]', TEST_USER.password);
+      await page.fill(
+        '[data-testid="confirmPassword-input"]',
+        TEST_USER.password
+      );
 
       await page.click('[data-testid="register-button"]');
 
@@ -42,7 +46,7 @@ test.describe("Authentication Integration Tests", () => {
       // Step 2: Verify email (simulate email verification)
       // In a real scenario, this would come from the email link
       await page.goto(
-        `/verify-email?token=test-verification-token&email=${encodeURIComponent(testUserEmail)}`
+        `/verify-email?token=test-verification-token&email=${encodeURIComponent(TEST_USER.email)}`
       );
 
       // Should redirect to pending approval
@@ -73,15 +77,14 @@ test.describe("Authentication Integration Tests", () => {
       // Create admin user
       await page.goto("/register");
 
-      const firstName = "Admin";
-      const lastName = "User";
-      const password = "SecurePass123!@#";
-
-      await page.fill('[data-testid="firstName-input"]', firstName);
-      await page.fill('[data-testid="lastName-input"]', lastName);
-      await page.fill('[data-testid="email-input"]', adminEmail);
-      await page.fill('[data-testid="password-input"]', password);
-      await page.fill('[data-testid="confirmPassword-input"]', password);
+      await page.fill('[data-testid="firstName-input"]', ADMIN_USER.firstName);
+      await page.fill('[data-testid="lastName-input"]', ADMIN_USER.lastName);
+      await page.fill('[data-testid="email-input"]', ADMIN_USER.email);
+      await page.fill('[data-testid="password-input"]', ADMIN_USER.password);
+      await page.fill(
+        '[data-testid="confirmPassword-input"]',
+        ADMIN_USER.password
+      );
 
       await page.click('[data-testid="register-button"]');
 
@@ -92,7 +95,7 @@ test.describe("Authentication Integration Tests", () => {
     test("should verify admin email and set admin role", async ({ page }) => {
       // Verify admin email
       await page.goto(
-        `/verify-email?token=test-admin-verification-token&email=${encodeURIComponent(adminEmail)}`
+        `/verify-email?token=test-admin-verification-token&email=${encodeURIComponent(ADMIN_USER.email)}`
       );
 
       // Should redirect to pending approval initially
@@ -111,8 +114,8 @@ test.describe("Authentication Integration Tests", () => {
       // Login with the test user
       await page.goto("/login");
 
-      await page.fill('[data-testid="email-input"]', testUserEmail);
-      await page.fill('[data-testid="password-input"]', "SecurePass123!@#");
+      await page.fill('[data-testid="email-input"]', TEST_USER.email);
+      await page.fill('[data-testid="password-input"]', TEST_USER.password);
 
       await page.click('[data-testid="login-button"]');
 
@@ -124,8 +127,8 @@ test.describe("Authentication Integration Tests", () => {
     test("should maintain session across page refreshes", async ({ page }) => {
       // Login first
       await page.goto("/login");
-      await page.fill('[data-testid="email-input"]', testUserEmail);
-      await page.fill('[data-testid="password-input"]', "SecurePass123!@#");
+      await page.fill('[data-testid="email-input"]', TEST_USER.email);
+      await page.fill('[data-testid="password-input"]', TEST_USER.password);
       await page.click('[data-testid="login-button"]');
 
       // Should be on pending approval
@@ -143,8 +146,8 @@ test.describe("Authentication Integration Tests", () => {
     test("should logout properly", async ({ page }) => {
       // Login first
       await page.goto("/login");
-      await page.fill('[data-testid="email-input"]', testUserEmail);
-      await page.fill('[data-testid="password-input"]', "SecurePass123!@#");
+      await page.fill('[data-testid="email-input"]', TEST_USER.email);
+      await page.fill('[data-testid="password-input"]', TEST_USER.password);
       await page.click('[data-testid="login-button"]');
 
       // Should be on pending approval
@@ -186,8 +189,8 @@ test.describe("Authentication Integration Tests", () => {
     }) => {
       // Login first
       await page.goto("/login");
-      await page.fill('[data-testid="email-input"]', testUserEmail);
-      await page.fill('[data-testid="password-input"]', "SecurePass123!@#");
+      await page.fill('[data-testid="email-input"]', TEST_USER.email);
+      await page.fill('[data-testid="password-input"]', TEST_USER.password);
       await page.click('[data-testid="login-button"]');
 
       // Should be on pending approval

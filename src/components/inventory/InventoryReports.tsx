@@ -131,7 +131,10 @@ export function InventoryReports() {
   };
 
   const handleFilterChange = (key: keyof ReportFilters, value: any) => {
-    setFilters((prev) => ({ ...prev, [key]: value }));
+    setFilters((prev) => {
+      if (prev[key] === value) return prev; // Prevent unnecessary updates
+      return { ...prev, [key]: value };
+    });
   };
 
   const clearFilters = () => {

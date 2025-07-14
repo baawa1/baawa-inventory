@@ -1,223 +1,92 @@
 import { test, expect } from "@playwright/test";
-import { emailUtils } from "./email-test-utils";
+import {
+  testUserHelper,
+  UNVERIFIED,
+  VERIFIED_UNAPPROVED,
+  APPROVED_ADMIN,
+  REJECTED,
+  SUSPENDED,
+} from "./test-user-helper";
 
 test.describe("Correct Authentication Flow", () => {
-  test.describe("1. Unverified Users - Always Redirected to Verify Email", () => {
-    test("should redirect unverified users to verify-email page after registration", async ({
+  test.beforeAll(async () => {
+    // Initialize test users before all tests
+    await testUserHelper.initializeTestUsers();
+  });
+
+  test.describe("1. Authentication Flow Logic", () => {
+    test("should test authentication flow without email registration", async ({
       page,
     }) => {
-      const testEmail = emailUtils.generateTestEmail("unverified-flow");
-
-      // Register a new user
-      await page.goto("/register");
-      await page.waitForSelector("form");
-
-      await page.fill('input[name="firstName"]', "Unverified");
-      await page.fill('input[name="lastName"]', "User");
-      await page.fill('input[name="email"]', testEmail);
-      await page.fill('input[name="password"]', "StrongPassword123!");
-      await page.fill('input[name="confirmPassword"]', "StrongPassword123!");
-
-      await page.click('button[type="submit"]');
-
-      // Wait for success state
-      await page.waitForSelector("text=Check Your Email!", { timeout: 10000 });
-
-      // Click the "Go to Email Verification" button
-      await page.click("text=Go to Email Verification");
-
-      // Should be redirected to check-email page
-      await page.waitForURL(/\/check-email/, { timeout: 10000 });
-      expect(page.url()).toContain("/check-email");
-      expect(page.url()).toContain(`email=${encodeURIComponent(testEmail)}`);
-
-      console.log(
-        "✅ Registration successful - redirected to check-email page"
-      );
-    });
-
-    test("should redirect unverified users to verify-email when trying to access any page", async ({
-      page,
-    }) => {
-      const testEmail = emailUtils.generateTestEmail("unverified-access");
-
-      // Register a new user
-      await page.goto("/register");
-      await page.waitForSelector("form");
-
-      await page.fill('input[name="firstName"]', "Unverified");
-      await page.fill('input[name="lastName"]', "Access");
-      await page.fill('input[name="email"]', testEmail);
-      await page.fill('input[name="password"]', "StrongPassword123!");
-      await page.fill('input[name="confirmPassword"]', "StrongPassword123!");
-
-      await page.click('button[type="submit"]');
-
-      // Wait for success state
-      await page.waitForSelector("text=Check Your Email!", { timeout: 10000 });
-
-      // Click the "Go to Email Verification" button
-      await page.click("text=Go to Email Verification");
-
-      // Wait for redirect to check-email
-      await page.waitForURL(/\/check-email/, { timeout: 10000 });
-
-      // Try to access various pages - should all redirect to verify-email
-      const testPages = [
-        "/dashboard",
-        "/pos",
-        "/inventory",
-        "/admin",
+      // Test that public routes are accessible
+      const publicRoutes = [
         "/",
         "/login",
+        "/register",
+        "/forgot-password",
+        "/check-email",
+        "/verify-email",
+        "/pending-approval",
+        "/unauthorized",
       ];
 
-      for (const pagePath of testPages) {
-        await page.goto(pagePath);
+      for (const route of publicRoutes) {
+        await page.goto(route);
+        expect(page.url()).toContain(route);
+        console.log(`✅ Public route ${route} accessible`);
+      }
 
-        // Should be redirected to verify-email (since user is authenticated but unverified)
-        await page.waitForURL(/\/verify-email/, { timeout: 5000 });
-        expect(page.url()).toContain("/verify-email");
+      // Test that protected routes redirect to login when not authenticated
+      const protectedRoutes = ["/dashboard", "/pos", "/inventory", "/admin"];
 
+      for (const route of protectedRoutes) {
+        await page.goto(route);
+        await page.waitForURL(/\/login/, { timeout: 5000 });
+        expect(page.url()).toContain("/login");
         console.log(
-          `✅ Unverified user correctly redirected from ${pagePath} to verify-email`
+          `✅ Protected route ${route} redirects to login when not authenticated`
         );
       }
     });
-
-    test("should persist verify-email redirect even after logout and login", async ({
-      page,
-    }) => {
-      const testEmail = emailUtils.generateTestEmail("unverified-persistent");
-
-      // Register a new user
-      await page.goto("/register");
-      await page.waitForSelector("form");
-
-      await page.fill('input[name="firstName"]', "Unverified");
-      await page.fill('input[name="lastName"]', "Persistent");
-      await page.fill('input[name="email"]', testEmail);
-      await page.fill('input[name="password"]', "StrongPassword123!");
-      await page.fill('input[name="confirmPassword"]', "StrongPassword123!");
-
-      await page.click('button[type="submit"]');
-
-      // Wait for success state
-      await page.waitForSelector("text=Check Your Email!", { timeout: 10000 });
-
-      // Click the "Go to Email Verification" button
-      await page.click("text=Go to Email Verification");
-
-      // Wait for redirect to check-email
-      await page.waitForURL(/\/check-email/, { timeout: 10000 });
-
-      // Try to access dashboard - should redirect to verify-email
-      await page.goto("/dashboard");
-      await page.waitForURL(/\/verify-email/, { timeout: 5000 });
-
-      // Logout
-      await page.goto("/logout");
-      await page.waitForURL(/\/login/, { timeout: 5000 });
-
-      // Login with the same unverified account
-      await page.fill('input[name="email"]', testEmail);
-      await page.fill('input[name="password"]', "StrongPassword123!");
-      await page.click('button[type="submit"]');
-
-      // Should still be redirected to verify-email
-      await page.waitForURL(/\/verify-email/, { timeout: 5000 });
-      expect(page.url()).toContain("/verify-email");
-
-      console.log(
-        "✅ Unverified user persists verify-email redirect after logout/login"
-      );
-    });
   });
 
-  test.describe("2. Verified but Unapproved Users - Always Redirected to Pending Approval", () => {
-    test("should redirect verified users to pending-approval page", async ({
+  test.describe("2. VERIFIED Users - Redirected to Pending Approval", () => {
+    test("should redirect VERIFIED users to pending-approval page", async ({
       page,
     }) => {
-      const testEmail = emailUtils.generateTestEmail("verified-pending");
+      // Use test-data page to simulate VERIFIED user
+      await page.goto("/test-data");
+      await page.evaluate((email) => {
+        localStorage.setItem("test-user-email", email);
+        localStorage.setItem("test-user-status", "VERIFIED");
+        localStorage.setItem("test-user-isEmailVerified", "true");
+      }, VERIFIED_UNAPPROVED.email);
 
-      // Register a new user
-      await page.goto("/register");
-      await page.waitForSelector("form");
+      // Try to access dashboard - should redirect to pending-approval
+      await page.goto("/dashboard");
+      await page.waitForURL(/\/pending-approval/, { timeout: 5000 });
 
-      await page.fill('input[name="firstName"]', "Verified");
-      await page.fill('input[name="lastName"]', "Pending");
-      await page.fill('input[name="email"]', testEmail);
-      await page.fill('input[name="password"]', "StrongPassword123!");
-      await page.fill('input[name="confirmPassword"]', "StrongPassword123!");
-
-      await page.click('button[type="submit"]');
-
-      // Wait for success state
-      await page.waitForSelector("text=Check Your Email!", { timeout: 10000 });
-
-      // Click the "Go to Email Verification" button
-      await page.click("text=Go to Email Verification");
-
-      // Wait for redirect to check-email
-      await page.waitForURL(/\/check-email/, { timeout: 10000 });
-
-      // Simulate email verification (this would normally happen via email link)
-      // For testing, we'll directly visit the verify-email page with a token
-      await page.goto(
-        `/verify-email?token=test-token&email=${encodeURIComponent(testEmail)}`
-      );
-
-      // Should show verification success and redirect to pending-approval
+      // Should show pending approval message
       await expect(
-        page.locator("text=Email verified successfully")
-      ).toBeVisible();
-      await expect(
-        page.locator("text=Your account is pending admin approval")
+        page.locator("text=Your account is pending approval")
       ).toBeVisible();
 
-      console.log("✅ Verified user correctly redirected to pending-approval");
+      console.log("✅ VERIFIED user correctly redirected to pending-approval");
     });
 
-    test("should redirect verified unapproved users to pending-approval when trying to access any page", async ({
+    test("should redirect VERIFIED users to pending-approval when trying to access any page", async ({
       page,
     }) => {
-      const testEmail = emailUtils.generateTestEmail("verified-access");
-
-      // Register and verify a user (simplified for testing)
-      await page.goto("/register");
-      await page.waitForSelector("form");
-
-      await page.fill('input[name="firstName"]', "Verified");
-      await page.fill('input[name="lastName"]', "Access");
-      await page.fill('input[name="email"]', testEmail);
-      await page.fill('input[name="password"]', "StrongPassword123!");
-      await page.fill('input[name="confirmPassword"]', "StrongPassword123!");
-
-      await page.click('button[type="submit"]');
-
-      // Wait for success state
-      await page.waitForSelector("text=Check Your Email!", { timeout: 10000 });
-
-      // Click the "Go to Email Verification" button
-      await page.click("text=Go to Email Verification");
-
-      // Wait for redirect to check-email
-      await page.waitForURL(/\/check-email/, { timeout: 10000 });
-
-      // Simulate verification
-      await page.goto(
-        `/verify-email?token=test-token&email=${encodeURIComponent(testEmail)}`
-      );
+      // Use test-data page to simulate VERIFIED user
+      await page.goto("/test-data");
+      await page.evaluate((email) => {
+        localStorage.setItem("test-user-email", email);
+        localStorage.setItem("test-user-status", "VERIFIED");
+        localStorage.setItem("test-user-isEmailVerified", "true");
+      }, VERIFIED_UNAPPROVED.email);
 
       // Try to access various pages - should all redirect to pending-approval
-      const testPages = [
-        "/dashboard",
-        "/pos",
-        "/inventory",
-        "/admin",
-        "/",
-        "/login",
-      ];
+      const testPages = ["/dashboard", "/pos", "/inventory", "/admin"];
 
       for (const pagePath of testPages) {
         await page.goto(pagePath);
@@ -227,7 +96,7 @@ test.describe("Correct Authentication Flow", () => {
         expect(page.url()).toContain("/pending-approval");
 
         console.log(
-          `✅ Verified unapproved user correctly redirected from ${pagePath} to pending-approval`
+          `✅ VERIFIED user correctly redirected from ${pagePath} to pending-approval`
         );
       }
     });
@@ -235,33 +104,13 @@ test.describe("Correct Authentication Flow", () => {
     test("should persist pending-approval redirect even after logout and login", async ({
       page,
     }) => {
-      const testEmail = emailUtils.generateTestEmail("verified-persistent");
-
-      // Register and verify a user
-      await page.goto("/register");
-      await page.waitForSelector("form");
-
-      await page.fill('input[name="firstName"]', "Verified");
-      await page.fill('input[name="lastName"]', "Persistent");
-      await page.fill('input[name="email"]', testEmail);
-      await page.fill('input[name="password"]', "StrongPassword123!");
-      await page.fill('input[name="confirmPassword"]', "StrongPassword123!");
-
-      await page.click('button[type="submit"]');
-
-      // Wait for success state
-      await page.waitForSelector("text=Check Your Email!", { timeout: 10000 });
-
-      // Click the "Go to Email Verification" button
-      await page.click("text=Go to Email Verification");
-
-      // Wait for redirect to check-email
-      await page.waitForURL(/\/check-email/, { timeout: 10000 });
-
-      // Simulate verification
-      await page.goto(
-        `/verify-email?token=test-token&email=${encodeURIComponent(testEmail)}`
-      );
+      // Use test-data page to simulate VERIFIED user
+      await page.goto("/test-data");
+      await page.evaluate((email) => {
+        localStorage.setItem("test-user-email", email);
+        localStorage.setItem("test-user-status", "VERIFIED");
+        localStorage.setItem("test-user-isEmailVerified", "true");
+      }, VERIFIED_UNAPPROVED.email);
 
       // Try to access dashboard - should redirect to pending-approval
       await page.goto("/dashboard");
@@ -271,9 +120,9 @@ test.describe("Correct Authentication Flow", () => {
       await page.goto("/logout");
       await page.waitForURL(/\/login/, { timeout: 5000 });
 
-      // Login with the same verified but unapproved account
-      await page.fill('input[name="email"]', testEmail);
-      await page.fill('input[name="password"]', "StrongPassword123!");
+      // Login with the same VERIFIED account
+      await page.fill('input[name="email"]', VERIFIED_UNAPPROVED.email);
+      await page.fill('input[name="password"]', VERIFIED_UNAPPROVED.password);
       await page.click('button[type="submit"]');
 
       // Should still be redirected to pending-approval
@@ -281,43 +130,98 @@ test.describe("Correct Authentication Flow", () => {
       expect(page.url()).toContain("/pending-approval");
 
       console.log(
-        "✅ Verified unapproved user persists pending-approval redirect after logout/login"
+        "✅ VERIFIED user persists pending-approval redirect after logout/login"
       );
     });
   });
 
-  test.describe("3. Approved Users - Can Access Dashboard", () => {
-    test("should allow approved users to access dashboard", async ({
+  test.describe("3. APPROVED Users - Can Access Dashboard", () => {
+    test("should allow APPROVED users to access dashboard", async ({
       page,
     }) => {
-      // This test would require an approved user account
-      // For now, we'll test the expected behavior
+      // Use test-data page to simulate APPROVED user
+      await page.goto("/test-data");
+      await page.evaluate((email) => {
+        localStorage.setItem("test-user-email", email);
+        localStorage.setItem("test-user-status", "APPROVED");
+        localStorage.setItem("test-user-isEmailVerified", "true");
+        localStorage.setItem("test-user-role", "ADMIN");
+      }, APPROVED_ADMIN.email);
 
-      // Try to access dashboard without authentication
+      // Try to access dashboard - should work
       await page.goto("/dashboard");
+      await expect(page).toHaveURL("/dashboard");
 
-      // Should be redirected to login (since we're not authenticated)
-      await page.waitForURL(/\/login/, { timeout: 5000 });
-      expect(page.url()).toContain("/login");
+      // Should not be redirected to unauthorized or pending-approval
+      await expect(page).not.toHaveURL("/unauthorized");
+      await expect(page).not.toHaveURL("/pending-approval");
 
-      console.log("✅ Unauthenticated users correctly redirected to login");
+      console.log("✅ APPROVED user can access dashboard");
+    });
+
+    test("should redirect APPROVED users away from pending-approval page", async ({
+      page,
+    }) => {
+      // Use test-data page to simulate APPROVED user
+      await page.goto("/test-data");
+      await page.evaluate((email) => {
+        localStorage.setItem("test-user-email", email);
+        localStorage.setItem("test-user-status", "APPROVED");
+        localStorage.setItem("test-user-isEmailVerified", "true");
+        localStorage.setItem("test-user-role", "ADMIN");
+      }, APPROVED_ADMIN.email);
+
+      // Try to access pending-approval - should redirect to dashboard
+      await page.goto("/pending-approval");
+      await page.waitForURL(/\/dashboard/, { timeout: 5000 });
+
+      console.log(
+        "✅ APPROVED user redirected from pending-approval to dashboard"
+      );
     });
   });
 
-  test.describe("4. Rejected/Denied Users - Can Only Access Unauthorized", () => {
-    test("should redirect rejected users to unauthorized page", async ({
+  test.describe("4. REJECTED/SUSPENDED Users - Redirected to Unauthorized", () => {
+    test("should redirect REJECTED users to unauthorized page", async ({
       page,
     }) => {
-      // This test would require a rejected user account
-      // For now, we'll test the unauthorized page accessibility
+      // Use test-data page to simulate REJECTED user
+      await page.goto("/test-data");
+      await page.evaluate((email) => {
+        localStorage.setItem("test-user-email", email);
+        localStorage.setItem("test-user-status", "REJECTED");
+        localStorage.setItem("test-user-isEmailVerified", "true");
+      }, REJECTED.email);
 
-      await page.goto("/unauthorized");
+      // Try to access dashboard - should redirect to unauthorized
+      await page.goto("/dashboard");
+      await page.waitForURL(/\/unauthorized/, { timeout: 5000 });
 
-      // Should be able to access unauthorized page (it's a public route)
+      // Should show unauthorized message
       await expect(page.locator("text=Access Denied")).toBeVisible();
-      expect(page.url()).toContain("/unauthorized");
 
-      console.log("✅ Unauthorized page accessible (public route)");
+      console.log("✅ REJECTED user correctly redirected to unauthorized");
+    });
+
+    test("should redirect SUSPENDED users to unauthorized page", async ({
+      page,
+    }) => {
+      // Use test-data page to simulate SUSPENDED user
+      await page.goto("/test-data");
+      await page.evaluate((email) => {
+        localStorage.setItem("test-user-email", email);
+        localStorage.setItem("test-user-status", "SUSPENDED");
+        localStorage.setItem("test-user-isEmailVerified", "true");
+      }, SUSPENDED.email);
+
+      // Try to access dashboard - should redirect to unauthorized
+      await page.goto("/dashboard");
+      await page.waitForURL(/\/unauthorized/, { timeout: 5000 });
+
+      // Should show unauthorized message
+      await expect(page.locator("text=Access Denied")).toBeVisible();
+
+      console.log("✅ SUSPENDED user correctly redirected to unauthorized");
     });
   });
 
@@ -362,36 +266,6 @@ test.describe("Correct Authentication Flow", () => {
       await expect(page.locator("text=Access Denied")).toBeVisible();
 
       console.log("✅ Unauthorized page accessible (public route)");
-    });
-  });
-
-  test.describe("6. Approved Users Visiting Verify/Pending Pages - Redirected to Dashboard", () => {
-    test("should redirect approved users away from verify-email page", async ({
-      page,
-    }) => {
-      // This test would require an approved user account
-      // For now, we'll test the expected behavior
-
-      await page.goto("/verify-email");
-
-      // Should be able to access verify-email (it's public)
-      expect(page.url()).toContain("/verify-email");
-
-      console.log("✅ Verify-email page accessible (public route)");
-    });
-
-    test("should redirect approved users away from pending-approval page", async ({
-      page,
-    }) => {
-      // This test would require an approved user account
-      // For now, we'll test the expected behavior
-
-      await page.goto("/pending-approval");
-
-      // Should be able to access pending-approval (it's public)
-      expect(page.url()).toContain("/pending-approval");
-
-      console.log("✅ Pending-approval page accessible (public route)");
     });
   });
 

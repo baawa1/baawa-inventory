@@ -1,24 +1,35 @@
 import { test, expect } from "@playwright/test";
-import { emailUtils } from "./email-test-utils";
+
+// Use single test users for all tests to save email tokens
+const ADMIN_USER = {
+  email: "baawapays+test-admin-dashboard@gmail.com",
+  firstName: "Admin",
+  lastName: "User",
+  password: "SecurePass123!@#",
+};
+
+const MANAGER_USER = {
+  email: "baawapays+test-manager-dashboard@gmail.com",
+  firstName: "Manager",
+  lastName: "User",
+  password: "SecurePass123!@#",
+};
+
+const STAFF_USER = {
+  email: "baawapays+test-staff-dashboard@gmail.com",
+  firstName: "Staff",
+  lastName: "User",
+  password: "SecurePass123!@#",
+};
+
+const UNAPPROVED_USER = {
+  email: "baawapays+test-unapproved-dashboard@gmail.com",
+  firstName: "Unapproved",
+  lastName: "User",
+  password: "SecurePass123!@#",
+};
 
 test.describe("Dashboard Access Control - Role-Based Access", () => {
-  let adminEmail: string;
-  let managerEmail: string;
-  let staffEmail: string;
-  let unapprovedEmail: string;
-
-  test.beforeEach(async ({ page }) => {
-    // Generate unique test emails
-    adminEmail = emailUtils.generateTestEmail("admin");
-    managerEmail = emailUtils.generateTestEmail("manager");
-    staffEmail = emailUtils.generateTestEmail("staff");
-    unapprovedEmail = emailUtils.generateTestEmail("unapproved");
-
-    // Clean up any existing test accounts
-    await page.goto("/test-data");
-    await page.waitForLoadState("networkidle");
-  });
-
   test.describe("Admin Access Control", () => {
     test.beforeEach(async ({ page }) => {
       // Set up admin session
@@ -27,7 +38,7 @@ test.describe("Dashboard Access Control - Role-Based Access", () => {
         localStorage.setItem("test-user-email", email);
         localStorage.setItem("test-user-status", "APPROVED");
         localStorage.setItem("test-user-role", "ADMIN");
-      }, adminEmail);
+      }, ADMIN_USER.email);
     });
 
     test("should allow admin to access all dashboard sections", async ({
@@ -100,7 +111,7 @@ test.describe("Dashboard Access Control - Role-Based Access", () => {
         localStorage.setItem("test-user-email", email);
         localStorage.setItem("test-user-status", "APPROVED");
         localStorage.setItem("test-user-role", "MANAGER");
-      }, managerEmail);
+      }, MANAGER_USER.email);
     });
 
     test("should allow manager to access appropriate dashboard sections", async ({
@@ -171,7 +182,7 @@ test.describe("Dashboard Access Control - Role-Based Access", () => {
         localStorage.setItem("test-user-email", email);
         localStorage.setItem("test-user-status", "APPROVED");
         localStorage.setItem("test-user-role", "STAFF");
-      }, staffEmail);
+      }, STAFF_USER.email);
     });
 
     test("should allow staff to access basic dashboard sections", async ({
@@ -255,7 +266,7 @@ test.describe("Dashboard Access Control - Role-Based Access", () => {
         localStorage.setItem("test-user-email", email);
         localStorage.setItem("test-user-status", "VERIFIED");
         localStorage.setItem("test-user-role", "STAFF");
-      }, unapprovedEmail);
+      }, UNAPPROVED_USER.email);
     });
 
     test("should block unapproved user from all dashboard sections", async ({
@@ -298,7 +309,7 @@ test.describe("Dashboard Access Control - Role-Based Access", () => {
         localStorage.setItem("test-user-email", email);
         localStorage.setItem("test-user-status", "APPROVED");
         localStorage.setItem("test-user-role", "ADMIN");
-      }, adminEmail);
+      }, ADMIN_USER.email);
 
       await page.goto("/dashboard");
 
@@ -319,7 +330,7 @@ test.describe("Dashboard Access Control - Role-Based Access", () => {
         localStorage.setItem("test-user-email", email);
         localStorage.setItem("test-user-status", "APPROVED");
         localStorage.setItem("test-user-role", "MANAGER");
-      }, managerEmail);
+      }, MANAGER_USER.email);
 
       await page.goto("/dashboard");
 
@@ -342,7 +353,7 @@ test.describe("Dashboard Access Control - Role-Based Access", () => {
         localStorage.setItem("test-user-email", email);
         localStorage.setItem("test-user-status", "APPROVED");
         localStorage.setItem("test-user-role", "STAFF");
-      }, staffEmail);
+      }, STAFF_USER.email);
 
       await page.goto("/dashboard");
 
@@ -367,7 +378,7 @@ test.describe("Dashboard Access Control - Role-Based Access", () => {
         localStorage.setItem("test-user-email", email);
         localStorage.setItem("test-user-status", "APPROVED");
         localStorage.setItem("test-user-role", "STAFF");
-      }, staffEmail);
+      }, STAFF_USER.email);
 
       // Access allowed route
       await page.goto("/dashboard");
@@ -390,7 +401,7 @@ test.describe("Dashboard Access Control - Role-Based Access", () => {
         localStorage.setItem("test-user-status", "APPROVED");
         localStorage.setItem("test-user-role", "ADMIN");
         localStorage.setItem("test-session-expired", "true");
-      }, adminEmail);
+      }, ADMIN_USER.email);
 
       // Try to access protected route
       await page.goto("/dashboard");
@@ -406,7 +417,7 @@ test.describe("Dashboard Access Control - Role-Based Access", () => {
         localStorage.setItem("test-user-email", email);
         localStorage.setItem("test-user-status", "APPROVED");
         localStorage.setItem("test-user-role", "INVALID_ROLE");
-      }, adminEmail);
+      }, ADMIN_USER.email);
 
       // Should redirect to unauthorized
       await page.goto("/dashboard");
@@ -420,7 +431,7 @@ test.describe("Dashboard Access Control - Role-Based Access", () => {
         localStorage.setItem("test-user-email", email);
         localStorage.setItem("test-user-status", "APPROVED");
         localStorage.removeItem("test-user-role");
-      }, adminEmail);
+      }, ADMIN_USER.email);
 
       // Should redirect to login
       await page.goto("/dashboard");
@@ -434,7 +445,7 @@ test.describe("Dashboard Access Control - Role-Based Access", () => {
         localStorage.setItem("test-user-email", email);
         localStorage.setItem("test-user-status", "REJECTED");
         localStorage.setItem("test-user-role", "ADMIN");
-      }, adminEmail);
+      }, ADMIN_USER.email);
 
       // Should redirect to unauthorized
       await page.goto("/dashboard");
@@ -448,7 +459,7 @@ test.describe("Dashboard Access Control - Role-Based Access", () => {
         localStorage.setItem("test-user-email", email);
         localStorage.setItem("test-user-status", "SUSPENDED");
         localStorage.setItem("test-user-role", "ADMIN");
-      }, adminEmail);
+      }, ADMIN_USER.email);
 
       // Should redirect to unauthorized
       await page.goto("/dashboard");

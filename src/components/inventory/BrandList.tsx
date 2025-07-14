@@ -118,7 +118,10 @@ export default function BrandList() {
 
   // Handle filter changes
   const handleFilterChange = (key: string, value: any) => {
-    setFilters((prev) => ({ ...prev, [key]: value }));
+    setFilters((prev) => {
+      if (prev[key as keyof typeof prev] === value) return prev; // Prevent unnecessary updates
+      return { ...prev, [key]: value };
+    });
     setPagination((prev) => ({ ...prev, page: 1 })); // Reset to first page
   };
 

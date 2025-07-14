@@ -39,8 +39,8 @@ import { toast } from "sonner";
 
 interface User {
   id: string;
-  email: string;
-  name: string;
+  email?: string | null;
+  name?: string | null;
   role: string;
   status: string;
   isEmailVerified: boolean;
@@ -166,7 +166,11 @@ export function ProductList({ user }: ProductListProps) {
   ];
 
   const handleFilterChange = (key: string, value: any) => {
-    setFilters((prev) => ({ ...prev, [key]: value }));
+    setFilters((prev) => {
+      const filterKey = key as keyof ProductFilters;
+      if (prev[filterKey] === value) return prev; // Prevent unnecessary updates
+      return { ...prev, [filterKey]: value };
+    });
     setPagination((prev) => ({ ...prev, page: 1 }));
   };
 

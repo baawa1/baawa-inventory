@@ -12,7 +12,7 @@ import {
 import { InventoryPageLayout } from "@/components/inventory/InventoryPageLayout";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
-import { CATEGORY_COLUMNS } from "@/components/inventory/ColumnCustomizer";
+
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -41,8 +41,8 @@ import type { ColumnConfig, FilterConfig } from "@/types/inventory";
 
 interface User {
   id: string;
-  email: string;
-  name: string;
+  email?: string | null;
+  name?: string | null;
   role: string;
   status: string;
   isEmailVerified: boolean;
@@ -127,7 +127,10 @@ export default function CategoryList({ user }: CategoryListProps) {
 
   // Handle filter changes
   const handleFilterChange = (key: string, value: any) => {
-    setFilters((prev) => ({ ...prev, [key]: value }));
+    setFilters((prev) => {
+      if (prev[key as keyof typeof prev] === value) return prev; // Prevent unnecessary updates
+      return { ...prev, [key]: value };
+    });
     setPagination((prev) => ({ ...prev, page: 1 }));
   };
 
@@ -289,7 +292,6 @@ export default function CategoryList({ user }: CategoryListProps) {
         visibleColumns={visibleColumns}
         onColumnsChange={setVisibleColumns}
         columnCustomizerKey="categories-visible-columns"
-        columnCustomizerColumns={CATEGORY_COLUMNS}
         data={categories}
         renderCell={renderCell}
         renderActions={renderActions}
