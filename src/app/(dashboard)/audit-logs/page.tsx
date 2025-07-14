@@ -73,10 +73,10 @@ export default function AuditLogsPage() {
   ];
   const filterValues = { user, action, from, to };
   const onFilterChange = (key: string, value: string) => {
-    if (key === "user") setUser(value);
-    if (key === "action") setAction(value);
-    if (key === "from") setFrom(value);
-    if (key === "to") setTo(value);
+    if (key === "user" && user !== value) setUser(value);
+    if (key === "action" && action !== value) setAction(value);
+    if (key === "from" && from !== value) setFrom(value);
+    if (key === "to" && to !== value) setTo(value);
     setPage(1);
   };
   const onResetFilters = () => {

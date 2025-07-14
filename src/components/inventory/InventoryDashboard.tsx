@@ -8,8 +8,8 @@ import { LowStockWidget } from "@/components/inventory/LowStockWidget";
 
 interface User {
   id: string;
-  email: string;
-  name: string;
+  email?: string | null;
+  name?: string | null;
   role: string;
   status: string;
   isEmailVerified: boolean;
@@ -25,30 +25,19 @@ export function InventoryDashboard({ user }: InventoryDashboardProps) {
       <div className="@container/main flex flex-1 flex-col gap-2">
         <div className="flex flex-col gap-4 py-4 md:gap-6 md:py-6">
           {/* Header Section */}
-          <div className="px-4 lg:px-6">
-            <div className="flex items-center justify-between">
-              <div>
-                <h1 className="text-3xl font-bold text-gray-900 dark:text-gray-100">
-                  Inventory Management
-                </h1>
-                <p className="mt-2 text-sm text-gray-600 dark:text-gray-400">
-                  Manage products, suppliers, and stock levels
-                </p>
-              </div>
-              <QuickActions userRole={user.role} />
-            </div>
-          </div>
+
+          <QuickActions userRole={user.role} />
 
           {/* Metrics Cards */}
           <InventoryMetrics />
 
           {/* Charts Section */}
-          <div className="px-4 lg:px-6">
+          <div>
             <InventoryCharts />
           </div>
 
           {/* Low Stock Widget and Recent Activity */}
-          <div className="px-4 lg:px-6">
+          <div>
             <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
               <LowStockWidget />
               <RecentActivity />

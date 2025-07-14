@@ -40,8 +40,8 @@ interface StockHistoryItem {
 interface StockHistoryListProps {
   user: {
     id: string;
-    name: string;
-    email: string;
+    name?: string | null;
+    email?: string | null;
     role: string;
   };
 }
@@ -138,6 +138,7 @@ export function StockHistoryList({ user: _user }: StockHistoryListProps) {
 
   const handleFilterChange = (key: string, value: any) => {
     if (key === "supplier") {
+      if (supplierFilter === value) return; // Prevent unnecessary updates
       setSupplierFilter(value);
     }
     setPagination((prev) => ({ ...prev, page: 1 }));

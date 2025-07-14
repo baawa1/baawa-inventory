@@ -1,22 +1,21 @@
 import { test, expect } from "@playwright/test";
-import { emailUtils } from "./email-test-utils";
+
+// Use single test users for all tests to save email tokens
+const VERIFIED_UNAPPROVED_USER = {
+  email: "baawapays+test-verified-unapproved@gmail.com",
+  firstName: "Verified",
+  lastName: "Unapproved",
+  password: "TestPassword123!",
+};
+
+const ADMIN_USER = {
+  email: "baawapays+test-admin-approver@gmail.com",
+  firstName: "Admin",
+  lastName: "Approver",
+  password: "TestPassword123!",
+};
 
 test.describe("Verified but Unapproved Users - Access Control", () => {
-  let verifiedUnapprovedEmail: string;
-  let adminEmail: string;
-
-  test.beforeEach(async ({ page }) => {
-    // Generate unique test emails
-    verifiedUnapprovedEmail = emailUtils.generateTestEmail(
-      "verified-unapproved"
-    );
-    adminEmail = emailUtils.generateTestEmail("admin-approver");
-
-    // Clean up any existing test accounts
-    await page.goto("/test-data");
-    await page.waitForLoadState("networkidle");
-  });
-
   test.describe("User Registration and Email Verification Flow", () => {
     test("should register user and verify email but remain unapproved", async ({
       page,
@@ -24,11 +23,23 @@ test.describe("Verified but Unapproved Users - Access Control", () => {
       // Register new user
       await page.goto("/register");
 
-      await page.fill('input[name="firstName"]', "Verified");
-      await page.fill('input[name="lastName"]', "Unapproved");
-      await page.fill('input[name="email"]', verifiedUnapprovedEmail);
-      await page.fill('input[name="password"]', "TestPassword123!");
-      await page.fill('input[name="confirmPassword"]', "TestPassword123!");
+      await page.fill(
+        'input[name="firstName"]',
+        VERIFIED_UNAPPROVED_USER.firstName
+      );
+      await page.fill(
+        'input[name="lastName"]',
+        VERIFIED_UNAPPROVED_USER.lastName
+      );
+      await page.fill('input[name="email"]', VERIFIED_UNAPPROVED_USER.email);
+      await page.fill(
+        'input[name="password"]',
+        VERIFIED_UNAPPROVED_USER.password
+      );
+      await page.fill(
+        'input[name="confirmPassword"]',
+        VERIFIED_UNAPPROVED_USER.password
+      );
 
       await page.click('button[type="submit"]');
 
@@ -38,7 +49,7 @@ test.describe("Verified but Unapproved Users - Access Control", () => {
 
       // Verify email (simulate email verification)
       await page.goto(
-        `/verify-email?token=test-token&email=${encodeURIComponent(verifiedUnapprovedEmail)}`
+        `/verify-email?token=test-token&email=${encodeURIComponent(VERIFIED_UNAPPROVED_USER.email)}`
       );
 
       // Should show verification success but pending approval
@@ -58,7 +69,7 @@ test.describe("Verified but Unapproved Users - Access Control", () => {
       await page.evaluate((email) => {
         localStorage.setItem("test-user-email", email);
         localStorage.setItem("test-user-status", "VERIFIED");
-      }, verifiedUnapprovedEmail);
+      }, VERIFIED_UNAPPROVED_USER.email);
 
       // Try to access protected routes
       const protectedRoutes = ["/dashboard", "/pos", "/inventory", "/admin"];
@@ -81,7 +92,7 @@ test.describe("Verified but Unapproved Users - Access Control", () => {
         localStorage.setItem("test-user-email", email);
         localStorage.setItem("test-user-status", "VERIFIED");
         localStorage.setItem("test-user-role", "STAFF");
-      }, verifiedUnapprovedEmail);
+      }, VERIFIED_UNAPPROVED_USER.email);
     });
 
     test("should block access to dashboard", async ({ page }) => {
@@ -157,7 +168,7 @@ test.describe("Verified but Unapproved Users - Access Control", () => {
       await page.evaluate((email) => {
         localStorage.setItem("test-user-email", email);
         localStorage.setItem("test-user-status", "VERIFIED");
-      }, verifiedUnapprovedEmail);
+      }, VERIFIED_UNAPPROVED_USER.email);
     });
 
     test("should allow access to public routes", async ({ page }) => {
@@ -194,7 +205,7 @@ test.describe("Verified but Unapproved Users - Access Control", () => {
       await page.evaluate((email) => {
         localStorage.setItem("test-user-email", email);
         localStorage.setItem("test-user-status", "VERIFIED");
-      }, verifiedUnapprovedEmail);
+      }, VERIFIED_UNAPPROVED_USER.email);
     });
 
     test("should display correct status message for verified users", async ({
@@ -222,7 +233,7 @@ test.describe("Verified but Unapproved Users - Access Control", () => {
 
       // Should show user email
       await expect(
-        page.locator(`text=${verifiedUnapprovedEmail}`)
+        page.locator(`text=${VERIFIED_UNAPPROVED_USER.email}`)
       ).toBeVisible();
 
       // Should show logout option
@@ -246,7 +257,7 @@ test.describe("Verified but Unapproved Users - Access Control", () => {
       await page.evaluate((email) => {
         localStorage.setItem("test-user-email", email);
         localStorage.setItem("test-user-status", "VERIFIED");
-      }, verifiedUnapprovedEmail);
+      }, VERIFIED_UNAPPROVED_USER.email);
 
       // Try to access protected route
       await page.goto("/dashboard");
@@ -268,7 +279,7 @@ test.describe("Verified but Unapproved Users - Access Control", () => {
         localStorage.setItem("test-user-email", email);
         localStorage.setItem("test-user-status", "VERIFIED");
         localStorage.setItem("test-session-expired", "true");
-      }, verifiedUnapprovedEmail);
+      }, VERIFIED_UNAPPROVED_USER.email);
 
       // Try to access protected route
       await page.goto("/dashboard");
@@ -284,7 +295,7 @@ test.describe("Verified but Unapproved Users - Access Control", () => {
         localStorage.setItem("test-user-email", email);
         localStorage.setItem("test-user-status", "APPROVED");
         localStorage.setItem("test-user-role", "ADMIN");
-      }, adminEmail);
+      }, ADMIN_USER.email);
 
       // Go to admin panel
       await page.goto("/admin");
@@ -295,7 +306,7 @@ test.describe("Verified but Unapproved Users - Access Control", () => {
 
       // Should see the verified unapproved user in the list
       await expect(
-        page.locator(`text=${verifiedUnapprovedEmail}`)
+        page.locator(`text=${VERIFIED_UNAPPROVED_USER.email}`)
       ).toBeVisible();
 
       // Should see approve/reject buttons
@@ -310,7 +321,7 @@ test.describe("Verified but Unapproved Users - Access Control", () => {
         localStorage.setItem("test-user-email", email);
         localStorage.setItem("test-user-status", "APPROVED");
         localStorage.setItem("test-user-role", "STAFF");
-      }, verifiedUnapprovedEmail);
+      }, VERIFIED_UNAPPROVED_USER.email);
 
       // Now should be able to access protected routes
       await page.goto("/dashboard");
@@ -330,7 +341,7 @@ test.describe("Verified but Unapproved Users - Access Control", () => {
       await page.evaluate((email) => {
         localStorage.setItem("test-user-email", email);
         localStorage.setItem("test-user-status", "INVALID_STATUS");
-      }, verifiedUnapprovedEmail);
+      }, VERIFIED_UNAPPROVED_USER.email);
 
       // Should redirect to unauthorized
       await page.goto("/dashboard");
@@ -343,7 +354,7 @@ test.describe("Verified but Unapproved Users - Access Control", () => {
       await page.evaluate((email) => {
         localStorage.setItem("test-user-email", email);
         localStorage.removeItem("test-user-status");
-      }, verifiedUnapprovedEmail);
+      }, VERIFIED_UNAPPROVED_USER.email);
 
       // Should redirect to login
       await page.goto("/dashboard");
@@ -356,7 +367,7 @@ test.describe("Verified but Unapproved Users - Access Control", () => {
       await page.evaluate((email) => {
         localStorage.setItem("test-user-email", email);
         localStorage.setItem("test-user-status", "REJECTED");
-      }, verifiedUnapprovedEmail);
+      }, VERIFIED_UNAPPROVED_USER.email);
 
       // Should redirect to unauthorized
       await page.goto("/dashboard");
@@ -369,7 +380,7 @@ test.describe("Verified but Unapproved Users - Access Control", () => {
       await page.evaluate((email) => {
         localStorage.setItem("test-user-email", email);
         localStorage.setItem("test-user-status", "SUSPENDED");
-      }, verifiedUnapprovedEmail);
+      }, VERIFIED_UNAPPROVED_USER.email);
 
       // Should redirect to unauthorized
       await page.goto("/dashboard");

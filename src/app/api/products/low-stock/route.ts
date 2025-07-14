@@ -1,10 +1,10 @@
 import { NextResponse } from "next/server";
-import { withAuth, AuthenticatedRequest } from "@/lib/api-auth-middleware";
+import { withAuth, AuthenticatedRequest } from "@/lib/api-middleware";
 import { prisma } from "@/lib/db";
 
 // GET /api/products/low-stock - Get products with low stock
 export const GET = withAuth(
-  async (request: AuthenticatedRequest): Promise<Response> => {
+  async (request: AuthenticatedRequest): Promise<NextResponse> => {
     try {
       const { searchParams } = new URL(request.url);
       const threshold = parseInt(searchParams.get("threshold") || "10");
@@ -55,6 +55,5 @@ export const GET = withAuth(
         { status: 500 }
       );
     }
-  },
-  { requireActiveStatus: true }
+  }
 );

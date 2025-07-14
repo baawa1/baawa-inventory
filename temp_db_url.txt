@@ -1,0 +1,1 @@
+DATABASE_URL="postgresql://postgres.bhwywfigcyotkxbujivm:Qatar112211..12@aws-0-eu-west-2.pooler.supabase.com:5432/postgres?pool_mode=session"

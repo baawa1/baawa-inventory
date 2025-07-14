@@ -43,7 +43,7 @@ import {
   IconClipboard,
   IconAlertTriangle,
 } from "@tabler/icons-react";
-import { STOCK_RECONCILIATION_COLUMNS } from "@/components/inventory/ColumnCustomizer";
+
 import type { ColumnConfig, FilterConfig } from "@/types/inventory";
 
 interface User {
@@ -399,7 +399,7 @@ export function StockReconciliationList({
 
   // Render actions
   const renderActions = (reconciliation: StockReconciliation) => {
-    const isOwner = reconciliation.createdBy.id === userId;
+    const isOwner = reconciliation.createdBy.id === userId.toString();
     const canEdit = reconciliation.status === "DRAFT" && (isOwner || isAdmin);
     const canSubmit = reconciliation.status === "DRAFT" && (isOwner || isAdmin);
     const canApprove = reconciliation.status === "PENDING" && isAdmin;
@@ -516,7 +516,6 @@ export function StockReconciliationList({
         visibleColumns={visibleColumns}
         onColumnsChange={setVisibleColumns}
         columnCustomizerKey="stock-reconciliations-visible-columns"
-        columnCustomizerColumns={STOCK_RECONCILIATION_COLUMNS}
         data={reconciliations}
         renderCell={renderCell}
         renderActions={renderActions}

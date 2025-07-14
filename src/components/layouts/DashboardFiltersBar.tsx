@@ -66,10 +66,13 @@ export function DashboardFiltersBar({
         return (
           <Select
             key={filter.key}
-            value={value || "all"}
-            onValueChange={(val: string) =>
-              onFilterChange(filter.key, val === "all" ? "" : val)
-            }
+            value={value === "" ? "all" : value}
+            onValueChange={(val: string) => {
+              const newValue = val === "all" ? "" : val;
+              if (newValue !== value) {
+                onFilterChange(filter.key, newValue);
+              }
+            }}
           >
             <SelectTrigger>
               <SelectValue placeholder={filter.placeholder || filter.label} />
