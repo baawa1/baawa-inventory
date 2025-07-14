@@ -2,6 +2,7 @@ import { auth } from "../../../auth";
 import { redirect } from "next/navigation";
 import { AppSidebar } from "@/components/app-sidebar";
 import { SidebarProvider } from "@/components/ui/sidebar";
+import { SiteHeader } from "@/components/site-header";
 
 export default async function DashboardLayout({
   children,
@@ -48,6 +49,7 @@ export default async function DashboardLayout({
       <div className="min-h-screen flex w-full">
         <AppSidebar />
         <main className="flex-1 flex flex-col">
+          <SiteHeader />
           <div className="flex-1 space-y-4 p-4 pt-6">{children}</div>
         </main>
       </div>
