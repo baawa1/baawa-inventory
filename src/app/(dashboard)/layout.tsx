@@ -10,7 +10,6 @@ export default async function DashboardLayout({
 }) {
   const session = await auth();
 
-  console.log("🔄 Session in layout:", session);
   // Check if user is authenticated
   if (!session?.user) {
     redirect("/login");
@@ -41,7 +40,6 @@ export default async function DashboardLayout({
 
   // At this point, user should be APPROVED
   if (session.user.status !== "APPROVED") {
-    console.log("🚨 LAYOUT REDIRECTING - User status is:", session.user.status);
     redirect("/unauthorized");
   }
 
