@@ -45,6 +45,46 @@ export const createProductSchema = z.object({
     .max(500, "Notes must be 500 characters or less")
     .optional()
     .nullable(),
+  // New fields
+  unit: z.string().max(20, "Unit must be 20 characters or less").optional(),
+  weight: z.number().positive("Weight must be positive").optional().nullable(),
+  dimensions: z
+    .string()
+    .max(100, "Dimensions must be 100 characters or less")
+    .optional()
+    .nullable(),
+  color: z
+    .string()
+    .max(50, "Color must be 50 characters or less")
+    .optional()
+    .nullable(),
+  size: z
+    .string()
+    .max(50, "Size must be 50 characters or less")
+    .optional()
+    .nullable(),
+  material: z
+    .string()
+    .max(100, "Material must be 100 characters or less")
+    .optional()
+    .nullable(),
+  tags: z.array(z.string()).optional(),
+  salePrice: priceSchema.optional().nullable(),
+  saleStartDate: z.date().optional().nullable(),
+  saleEndDate: z.date().optional().nullable(),
+  metaTitle: z
+    .string()
+    .max(255, "Meta title must be 255 characters or less")
+    .optional()
+    .nullable(),
+  metaDescription: z
+    .string()
+    .max(500, "Meta description must be 500 characters or less")
+    .optional()
+    .nullable(),
+  seoKeywords: z.array(z.string()).optional(),
+  isFeatured: z.boolean().optional(),
+  sortOrder: z.number().int().optional().nullable(),
 });
 
 // Product update schema (all fields optional except validation rules)

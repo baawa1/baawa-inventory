@@ -19,6 +19,7 @@ export interface SupplierFilters {
   status: string;
   sortBy: string;
   sortOrder: "asc" | "desc";
+  isActive?: boolean;
 }
 
 export interface SupplierPagination {
