@@ -21,6 +21,7 @@ import {
   IconRefresh,
   IconEdit,
   IconPlus,
+  IconRuler,
 } from "@tabler/icons-react";
 import { toast } from "sonner";
 import { formatCurrency, formatDate } from "@/lib/utils";
@@ -181,6 +182,7 @@ export const ProductDetailModal: React.FC<ProductDetailModalProps> = ({
                     width={192}
                     height={192}
                     className="rounded-lg object-cover w-48 h-48"
+                    style={{ height: "auto" }}
                   />
                 ) : (
                   <IconPackage className="h-16 w-16 text-muted-foreground" />
@@ -190,7 +192,7 @@ export const ProductDetailModal: React.FC<ProductDetailModalProps> = ({
                 <div className="flex flex-col flex-wrap h-48 gap-2">
                   {images.map((img, idx) => (
                     <button
-                      key={img}
+                      key={`${img}-${idx}`}
                       onClick={() => setCurrentImage(idx)}
                       className={`w-12 h-12 rounded border ${idx === currentImage ? "border-primary" : "border-muted"} focus:outline-none`}
                       type="button"
@@ -201,6 +203,7 @@ export const ProductDetailModal: React.FC<ProductDetailModalProps> = ({
                         width={48}
                         height={48}
                         className="object-cover rounded w-12 h-12"
+                        style={{ height: "auto" }}
                       />
                     </button>
                   ))}
@@ -209,24 +212,26 @@ export const ProductDetailModal: React.FC<ProductDetailModalProps> = ({
             </div>
 
             {/* Description with Show More */}
-            <div>
-              <label className="text-sm font-medium text-muted-foreground">
-                Description
-              </label>
-              <p className="text-sm whitespace-pre-line">
-                {displayedDescription}
-              </p>
-              {isLongDescription && (
-                <Button
-                  variant="link"
-                  size="sm"
-                  onClick={() => setShowFullDescription((v) => !v)}
-                  className="p-0 h-auto"
-                >
-                  {showFullDescription ? "Show Less" : "Show More"}
-                </Button>
-              )}
-            </div>
+            {displayedDescription && (
+              <div>
+                <label className="text-sm font-medium text-muted-foreground">
+                  Description
+                </label>
+                <p className="text-sm whitespace-pre-line">
+                  {displayedDescription}
+                </p>
+                {isLongDescription && (
+                  <Button
+                    variant="link"
+                    size="sm"
+                    onClick={() => setShowFullDescription((v) => !v)}
+                    className="p-0 h-auto"
+                  >
+                    {showFullDescription ? "Show Less" : "Show More"}
+                  </Button>
+                )}
+              </div>
+            )}
 
             {/* Info Sections */}
             <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
@@ -251,6 +256,14 @@ export const ProductDetailModal: React.FC<ProductDetailModalProps> = ({
                     </label>
                     <p className="text-sm font-mono">{headerSKU}</p>
                   </div>
+                  {product.barcode && (
+                    <div>
+                      <label className="text-sm font-medium text-muted-foreground">
+                        Barcode
+                      </label>
+                      <p className="text-sm font-mono">{product.barcode}</p>
+                    </div>
+                  )}
                   <div>
                     <label className="text-sm font-medium text-muted-foreground">
                       Category
@@ -263,18 +276,20 @@ export const ProductDetailModal: React.FC<ProductDetailModalProps> = ({
                     </label>
                     <p className="text-sm">{headerBrand || "N/A"}</p>
                   </div>
-                  <div>
-                    <label className="text-sm font-medium text-muted-foreground">
-                      Supplier
-                    </label>
-                    <p className="text-sm">{product.supplier?.name || "N/A"}</p>
-                  </div>
-                  <div>
+                  {product.supplier && (
+                    <div>
+                      <label className="text-sm font-medium text-muted-foreground">
+                        Supplier
+                      </label>
+                      <p className="text-sm">{product.supplier?.name}</p>
+                    </div>
+                  )}
+                  {/* <div>
                     <label className="text-sm font-medium text-muted-foreground">
                       Unit
                     </label>
                     <p className="text-sm">{product.unit || "N/A"}</p>
-                  </div>
+                  </div> */}
                 </CardContent>
               </Card>
 
@@ -303,6 +318,32 @@ export const ProductDetailModal: React.FC<ProductDetailModalProps> = ({
                       {formatCurrency(product.price || 0)}
                     </p>
                   </div>
+                  {product.salePrice && (
+                    <div>
+                      <label className="text-sm font-medium text-muted-foreground">
+                        Sale Price
+                      </label>
+                      <p className="text-sm text-green-600 font-semibold">
+                        {formatCurrency(product.salePrice)}
+                      </p>
+                    </div>
+                  )}
+                  {product.saleStartDate && product.saleEndDate && (
+                    <div>
+                      <label className="text-sm font-medium text-muted-foreground">
+                        Sale Period
+                      </label>
+                      <p className="text-sm">
+                        {formatDate(product.saleStartDate, {
+                          includeTime: false,
+                        })}{" "}
+                        -{" "}
+                        {formatDate(product.saleEndDate, {
+                          includeTime: false,
+                        })}
+                      </p>
+                    </div>
+                  )}
                 </CardContent>
               </Card>
 
@@ -327,14 +368,93 @@ export const ProductDetailModal: React.FC<ProductDetailModalProps> = ({
                     </label>
                     <p className="text-sm">{product.minStock || 0}</p>
                   </div>
-                  <div>
-                    <label className="text-sm font-medium text-muted-foreground">
-                      Maximum Stock Level
-                    </label>
-                    <p className="text-sm">{product.maxStock || 0}</p>
-                  </div>
+                  {product.maxStock && (
+                    <div>
+                      <label className="text-sm font-medium text-muted-foreground">
+                        Maximum Stock Level
+                      </label>
+                      <p className="text-sm">{product.maxStock}</p>
+                    </div>
+                  )}
                 </CardContent>
               </Card>
+
+              {/* Product Specifications Card */}
+              {(product.weight ||
+                product.dimensions ||
+                product.color ||
+                product.size ||
+                product.material ||
+                (product.tags && product.tags.length > 0)) && (
+                <Card>
+                  <CardHeader>
+                    <CardTitle className="flex items-center gap-2">
+                      <IconRuler className="h-5 w-5" />
+                      Product Specifications
+                    </CardTitle>
+                  </CardHeader>
+                  <CardContent className="space-y-2">
+                    {product.weight && (
+                      <div>
+                        <label className="text-sm font-medium text-muted-foreground">
+                          Weight
+                        </label>
+                        <p className="text-sm">{product.weight} kg</p>
+                      </div>
+                    )}
+                    {product.dimensions && (
+                      <div>
+                        <label className="text-sm font-medium text-muted-foreground">
+                          Dimensions
+                        </label>
+                        <p className="text-sm">{product.dimensions}</p>
+                      </div>
+                    )}
+                    {product.color && (
+                      <div>
+                        <label className="text-sm font-medium text-muted-foreground">
+                          Color
+                        </label>
+                        <p className="text-sm">{product.color}</p>
+                      </div>
+                    )}
+                    {product.size && (
+                      <div>
+                        <label className="text-sm font-medium text-muted-foreground">
+                          Size
+                        </label>
+                        <p className="text-sm">{product.size}</p>
+                      </div>
+                    )}
+                    {product.material && (
+                      <div>
+                        <label className="text-sm font-medium text-muted-foreground">
+                          Material
+                        </label>
+                        <p className="text-sm">{product.material}</p>
+                      </div>
+                    )}
+                    {product.tags && product.tags.length > 0 && (
+                      <div>
+                        <label className="text-sm font-medium text-muted-foreground">
+                          Tags
+                        </label>
+                        <div className="flex flex-wrap gap-1 mt-1">
+                          {product.tags.map((tag, index) => (
+                            <Badge
+                              key={index}
+                              variant="outline"
+                              className="text-xs"
+                            >
+                              {tag}
+                            </Badge>
+                          ))}
+                        </div>
+                      </div>
+                    )}
+                  </CardContent>
+                </Card>
+              )}
 
               {/* Additional Info Card */}
               <Card>
@@ -365,19 +485,26 @@ export const ProductDetailModal: React.FC<ProductDetailModalProps> = ({
                         : "N/A"}
                     </p>
                   </div>
-                  <div>
-                    <label className="text-sm font-medium text-muted-foreground">
-                      Status
-                    </label>
-                    <br />
-                    <Badge
-                      variant={
-                        product.status === "active" ? "default" : "secondary"
-                      }
-                    >
-                      {product.status === "active" ? "Active" : "Inactive"}
-                    </Badge>
-                  </div>
+                  {product.isFeatured && (
+                    <div>
+                      <label className="text-sm font-medium text-muted-foreground">
+                        Featured
+                      </label>
+                      <br />
+                      <Badge variant="default" className="bg-yellow-500">
+                        Featured Product
+                      </Badge>
+                    </div>
+                  )}
+                  {product.hasVariants && (
+                    <div>
+                      <label className="text-sm font-medium text-muted-foreground">
+                        Variants
+                      </label>
+                      <br />
+                      <Badge variant="outline">Has Variants</Badge>
+                    </div>
+                  )}
                 </CardContent>
               </Card>
             </div>

@@ -22,7 +22,28 @@ export interface Product {
   minStock: number;
   maxStock?: number;
   unit: string;
+  weight?: number;
+  dimensions?: string;
+  color?: string;
+  size?: string;
+  material?: string;
+  hasVariants: boolean;
+  isArchived: boolean;
+  tags: string[];
+  metaTitle?: string;
+  metaDescription?: string;
+  seoKeywords: string[];
   status: "active" | "inactive";
+  allowReviews: boolean;
+  isFeatured: boolean;
+  metaContent?: string;
+  metaExcerpt?: string;
+  saleEndDate?: string;
+  salePrice?: number;
+  saleStartDate?: string;
+  sortOrder?: number;
+  variantAttributes?: any;
+  variantValues?: any;
   supplier?: {
     id: number;
     name: string;

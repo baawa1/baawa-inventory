@@ -137,7 +137,7 @@ const config: NextAuthConfig = {
   session: {
     strategy: "jwt" as const,
     maxAge: 24 * 60 * 60, // 24 hours
-    updateAge: 5 * 60, // Update session every 5 minutes instead of every request
+    updateAge: process.env.NODE_ENV === "development" ? 15 * 60 : 5 * 60, // 15 minutes in dev, 5 minutes in prod
   },
   callbacks: {
     async jwt({ token, user, trigger }) {
@@ -165,7 +165,10 @@ const config: NextAuthConfig = {
       const shouldFetchFreshData =
         trigger === "update" ||
         !token.dataFetchedAt ||
-        Date.now() - (token.dataFetchedAt as number) > 5 * 60 * 1000; // 5 minutes
+        Date.now() - (token.dataFetchedAt as number) >
+          (process.env.NODE_ENV === "development"
+            ? 15 * 60 * 1000
+            : 5 * 60 * 1000); // 15 minutes in dev, 5 minutes in prod
 
       // Check if we're in Edge Runtime (middleware) - if so, skip database calls
       const isEdgeRuntime =
@@ -237,14 +240,19 @@ const config: NextAuthConfig = {
 
         // Only log session updates in development and when there are significant changes
         if (process.env.NODE_ENV === "development" && token.dataFetchedAt) {
-          console.log("🔄 Session updated with fresh data:", {
-            name: session.user.name,
-            role: session.user.role,
-            status: session.user.status,
-            dataFetchedAt: new Date(
-              token.dataFetchedAt as number
-            ).toISOString(),
-          });
+          // Only log if this is a fresh database fetch, not just a session update
+          const isFreshFetch =
+            Date.now() - (token.dataFetchedAt as number) < 10000; // Within 10 seconds
+          if (isFreshFetch) {
+            console.log("🔄 Session updated with fresh data:", {
+              name: session.user.name,
+              role: session.user.role,
+              status: session.user.status,
+              dataFetchedAt: new Date(
+                token.dataFetchedAt as number
+              ).toISOString(),
+            });
+          }
         }
       }
       return session;
@@ -306,7 +314,7 @@ const config: NextAuthConfig = {
     maxAge: 24 * 60 * 60, // 24 hours
   },
   // Enhanced debug logging in development
-  debug: process.env.NODE_ENV === "development", // Only in development
+  debug: false, // Disabled to reduce console noise in development
   // Trust host for deployment
   trustHost: true,
 };
