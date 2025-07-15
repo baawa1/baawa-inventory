@@ -35,6 +35,7 @@ import {
   AlertDialogTitle,
   AlertDialogTrigger,
 } from "@/components/ui/alert-dialog";
+import Image from "next/image";
 
 interface ProductImage {
   id: string;
@@ -65,6 +66,13 @@ export function ProductImageManager({
   const fileInputRef = useRef<HTMLInputElement>(null);
   const queryClient = useQueryClient();
 
+  const ensureUniqueImages = (images: ProductImage[]): ProductImage[] => {
+    return images.filter(
+      (image, index, self) =>
+        index === self.findIndex((img) => img.id === image.id)
+    );
+  };
+
   // Fetch product images
   const { data: imageData } = useQuery({
     queryKey: ["product-images", productId],
@@ -75,7 +83,41 @@ export function ProductImageManager({
     },
   });
 
-  const images: ProductImage[] = imageData?.images || [];
+  const rawImages = imageData?.images || [];
+
+  // Validate and transform the data to match ProductImage interface
+  const validatedImages: ProductImage[] = Array.isArray(rawImages)
+    ? rawImages.map((img, idx) => {
+        if (typeof img === "string") {
+          // Legacy: just a URL string
+          return {
+            id: `legacy-${idx}`,
+            url: img,
+            filename: img.split("/").pop() || `image-${idx}`,
+            size: 0,
+            mimeType: "image/jpeg",
+            alt: "",
+            isPrimary: idx === 0,
+            uploadedAt: new Date().toISOString(),
+          };
+        }
+        // New format: object
+        return {
+          id: String(img.id),
+          url: String(img.url),
+          filename: String(img.filename),
+          size: Number(img.size) || 0,
+          mimeType: String(img.mimeType || "image/jpeg"),
+          alt: img.alt ? String(img.alt) : undefined,
+          isPrimary: Boolean(img.isPrimary),
+          uploadedAt: String(img.uploadedAt || new Date().toISOString()),
+        };
+      })
+    : [];
+
+  const images: ProductImage[] = ensureUniqueImages(validatedImages).filter(
+    (img) => img.url && img.url.trim() !== ""
+  );
 
   // Update images mutation
   const updateImagesMutation = useMutation({
@@ -143,9 +185,26 @@ export function ProductImageManager({
     uploadImages(validFiles);
   };
 
+  const generateUniqueId = (
+    filename: string,
+    existingIds: string[]
+  ): string => {
+    const baseId = `img_${Date.now()}_${Math.random().toString(36).substr(2, 9)}_${filename.replace(/[^a-zA-Z0-9]/g, "")}`;
+    let uniqueId = baseId;
+    let counter = 1;
+
+    while (existingIds.includes(uniqueId)) {
+      uniqueId = `${baseId}_${counter}`;
+      counter++;
+    }
+
+    return uniqueId;
+  };
+
   const uploadImages = async (files: File[]) => {
     setUploading(true);
     const newImages: ProductImage[] = [];
+    const existingIds = images.map((img) => img.id);
 
     try {
       for (const file of files) {
@@ -158,7 +217,10 @@ export function ProductImageManager({
         });
 
         const imageData: ProductImage = {
-          id: `img_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`,
+          id: generateUniqueId(file.name, [
+            ...existingIds,
+            ...newImages.map((img) => img.id),
+          ]),
           url: dataUrl,
           filename: file.name,
           size: file.size,
@@ -172,8 +234,10 @@ export function ProductImageManager({
       }
 
       const updatedImages = [...images, ...newImages];
-      updateImagesMutation.mutate(updatedImages);
-      onImagesChange?.(updatedImages);
+      // Ensure no duplicates in the final array
+      const uniqueUpdatedImages = ensureUniqueImages(updatedImages);
+      updateImagesMutation.mutate(uniqueUpdatedImages);
+      onImagesChange?.(uniqueUpdatedImages);
     } catch (_error) {
       toast.error("Failed to upload images");
     } finally {
@@ -202,8 +266,10 @@ export function ProductImageManager({
       ...img,
       isPrimary: img.id === imageId,
     }));
-    updateImagesMutation.mutate(updatedImages);
-    onImagesChange?.(updatedImages);
+    // Ensure no duplicates
+    const uniqueUpdatedImages = ensureUniqueImages(updatedImages);
+    updateImagesMutation.mutate(uniqueUpdatedImages);
+    onImagesChange?.(uniqueUpdatedImages);
   };
 
   const deleteImage = (imageId: string) => {
@@ -215,12 +281,19 @@ export function ProductImageManager({
       ...img,
       alt: img.id === imageId ? alt : img.alt,
     }));
-    updateImagesMutation.mutate(updatedImages);
-    onImagesChange?.(updatedImages);
+    // Ensure no duplicates
+    const uniqueUpdatedImages = ensureUniqueImages(updatedImages);
+    updateImagesMutation.mutate(uniqueUpdatedImages);
+    onImagesChange?.(uniqueUpdatedImages);
     setEditingImage(null);
   };
 
   const formatFileSize = (bytes: number) => {
+    // Handle invalid or missing size values
+    if (!bytes || isNaN(bytes) || bytes < 0) {
+      return "Unknown size";
+    }
+
     if (bytes === 0) return "0 B";
     const k = 1024;
     const sizes = ["B", "KB", "MB", "GB"];
@@ -291,141 +364,165 @@ export function ProductImageManager({
                 Images ({images.length})
               </h3>
               <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-                {images.map((image) => (
-                  <div key={image.id} className="relative group">
-                    <Card className="overflow-hidden">
-                      <div className="aspect-square relative">
-                        <img
-                          src={image.url}
-                          alt={image.alt || image.filename}
-                          className="w-full h-full object-cover"
-                        />
+                {images.map((image, idx) => {
+                  return (
+                    <div key={image.id} className="relative group">
+                      <Card className="overflow-hidden pt-0">
+                        <div className="aspect-square relative">
+                          {image.url ? (
+                            <Image
+                              src={image.url}
+                              alt={
+                                image.alt || image.filename || "Product image"
+                              }
+                              fill
+                              className="w-full h-full object-cover"
+                              unoptimized
+                              priority={idx === 0}
+                              onError={() => {
+                                console.error(
+                                  "Image failed to load:",
+                                  image.url
+                                );
+                                // Optionally hide or show fallback
+                              }}
+                            />
+                          ) : (
+                            <div className="w-full h-full bg-gray-200 flex items-center justify-center">
+                              <p className="text-gray-500 text-sm">No image</p>
+                            </div>
+                          )}
 
-                        {/* Primary Badge */}
-                        {image.isPrimary && (
-                          <Badge className="absolute top-2 left-2 bg-yellow-500 text-white">
-                            <Star className="h-3 w-3 mr-1" />
-                            Primary
-                          </Badge>
-                        )}
+                          {/* Primary Badge */}
+                          {image.isPrimary && (
+                            <Badge className="absolute top-2 left-2 bg-yellow-500 text-white">
+                              <Star className="h-3 w-3 mr-1" />
+                              Primary
+                            </Badge>
+                          )}
 
-                        {/* Action Buttons */}
-                        <div className="absolute top-2 right-2 flex gap-1 opacity-0 group-hover:opacity-100 transition-opacity">
-                          <Dialog>
-                            <DialogTrigger asChild>
-                              <Button
-                                size="sm"
-                                variant="secondary"
-                                className="h-8 w-8 p-0"
-                              >
-                                <Eye className="h-4 w-4" />
-                              </Button>
-                            </DialogTrigger>
-                            <DialogContent className="max-w-3xl">
-                              <DialogHeader>
-                                <DialogTitle>Image Preview</DialogTitle>
-                              </DialogHeader>
-                              <div className="space-y-4">
-                                <img
-                                  src={image.url}
-                                  alt={image.alt || image.filename}
-                                  className="w-full h-auto max-h-96 object-contain rounded-lg"
-                                />
-                                <div className="text-sm text-gray-600">
-                                  <p>
-                                    <strong>Filename:</strong> {image.filename}
-                                  </p>
-                                  <p>
-                                    <strong>Size:</strong>{" "}
-                                    {formatFileSize(image.size)}
-                                  </p>
-                                  <p>
-                                    <strong>Type:</strong> {image.mimeType}
-                                  </p>
-                                  <p>
-                                    <strong>Alt Text:</strong>{" "}
-                                    {image.alt || "Not set"}
-                                  </p>
-                                </div>
-                              </div>
-                            </DialogContent>
-                          </Dialog>
-
-                          <Button
-                            size="sm"
-                            variant="secondary"
-                            className="h-8 w-8 p-0"
-                            onClick={() => {
-                              setEditingImage(image);
-                              setImageAlt(image.alt || "");
-                            }}
-                          >
-                            <Edit className="h-4 w-4" />
-                          </Button>
-
-                          <AlertDialog>
-                            <AlertDialogTrigger asChild>
-                              <Button
-                                size="sm"
-                                variant="destructive"
-                                className="h-8 w-8 p-0"
-                              >
-                                <Trash2 className="h-4 w-4" />
-                              </Button>
-                            </AlertDialogTrigger>
-                            <AlertDialogContent>
-                              <AlertDialogHeader>
-                                <AlertDialogTitle>
-                                  Delete Image
-                                </AlertDialogTitle>
-                                <AlertDialogDescription>
-                                  Are you sure you want to delete this image?
-                                  This action cannot be undone.
-                                </AlertDialogDescription>
-                              </AlertDialogHeader>
-                              <AlertDialogFooter>
-                                <AlertDialogCancel>Cancel</AlertDialogCancel>
-                                <AlertDialogAction
-                                  onClick={() => deleteImage(image.id)}
-                                  className="bg-red-600 hover:bg-red-700"
+                          {/* Action Buttons */}
+                          <div className="absolute top-2 right-2 flex gap-1 opacity-0 group-hover:opacity-100 transition-opacity">
+                            <Dialog>
+                              <DialogTrigger asChild>
+                                <Button
+                                  size="sm"
+                                  variant="secondary"
+                                  className="h-8 w-8 p-0"
                                 >
-                                  Delete
-                                </AlertDialogAction>
-                              </AlertDialogFooter>
-                            </AlertDialogContent>
-                          </AlertDialog>
-                        </div>
-                      </div>
+                                  <Eye className="h-4 w-4" />
+                                </Button>
+                              </DialogTrigger>
+                              <DialogContent className="max-w-3xl">
+                                <DialogHeader>
+                                  <DialogTitle>Image Preview</DialogTitle>
+                                </DialogHeader>
+                                <div className="space-y-4">
+                                  <Image
+                                    src={image.url}
+                                    alt={image.alt || image.filename}
+                                    width={600}
+                                    height={400}
+                                    className="w-full h-auto max-h-96 object-contain rounded-lg"
+                                    unoptimized
+                                  />
+                                  <div className="text-sm text-gray-600">
+                                    <p>
+                                      <strong>Filename:</strong>{" "}
+                                      {image.filename}
+                                    </p>
+                                    <p>
+                                      <strong>Size:</strong>{" "}
+                                      {formatFileSize(image.size)}
+                                    </p>
+                                    <p>
+                                      <strong>Type:</strong> {image.mimeType}
+                                    </p>
+                                    <p>
+                                      <strong>Alt Text:</strong>{" "}
+                                      {image.alt || "Not set"}
+                                    </p>
+                                  </div>
+                                </div>
+                              </DialogContent>
+                            </Dialog>
 
-                      <CardContent className="p-3">
-                        <div className="flex items-center justify-between">
-                          <div className="flex-1 min-w-0">
-                            <p className="text-sm font-medium truncate">
-                              {image.filename}
-                            </p>
-                            <p className="text-xs text-gray-500">
-                              {formatFileSize(image.size)}
-                            </p>
+                            <Button
+                              size="sm"
+                              variant="secondary"
+                              className="h-8 w-8 p-0"
+                              onClick={() => {
+                                setEditingImage(image);
+                                setImageAlt(image.alt || "");
+                              }}
+                            >
+                              <Edit className="h-4 w-4" />
+                            </Button>
+
+                            <AlertDialog>
+                              <AlertDialogTrigger asChild>
+                                <Button
+                                  size="sm"
+                                  variant="destructive"
+                                  className="h-8 w-8 p-0"
+                                >
+                                  <Trash2 className="h-4 w-4" />
+                                </Button>
+                              </AlertDialogTrigger>
+                              <AlertDialogContent>
+                                <AlertDialogHeader>
+                                  <AlertDialogTitle>
+                                    Delete Image
+                                  </AlertDialogTitle>
+                                  <AlertDialogDescription>
+                                    Are you sure you want to delete this image?
+                                    This action cannot be undone.
+                                  </AlertDialogDescription>
+                                </AlertDialogHeader>
+                                <AlertDialogFooter>
+                                  <AlertDialogCancel>Cancel</AlertDialogCancel>
+                                  <AlertDialogAction
+                                    onClick={() => deleteImage(image.id)}
+                                    className="bg-red-600 hover:bg-red-700"
+                                  >
+                                    Delete
+                                  </AlertDialogAction>
+                                </AlertDialogFooter>
+                              </AlertDialogContent>
+                            </AlertDialog>
                           </div>
-
-                          <Button
-                            size="sm"
-                            variant={image.isPrimary ? "default" : "outline"}
-                            className="ml-2"
-                            onClick={() => setPrimaryImage(image.id)}
-                            disabled={image.isPrimary}
-                          >
-                            {image.isPrimary ? (
-                              <Star className="h-4 w-4" />
-                            ) : (
-                              <StarOff className="h-4 w-4" />
-                            )}
-                          </Button>
                         </div>
-                      </CardContent>
-                    </Card>
-                  </div>
-                ))}
+
+                        <CardContent className="p-3">
+                          <div className="flex items-center justify-between">
+                            <div className="flex-1 min-w-0">
+                              <p className="text-sm font-medium truncate">
+                                {image.filename || "Unknown file"}
+                              </p>
+                              <p className="text-xs text-gray-500">
+                                {formatFileSize(image.size)}
+                              </p>
+                            </div>
+
+                            <Button
+                              size="sm"
+                              variant={image.isPrimary ? "default" : "outline"}
+                              className="ml-2"
+                              onClick={() => setPrimaryImage(image.id)}
+                              disabled={image.isPrimary}
+                            >
+                              {image.isPrimary ? (
+                                <Star className="h-4 w-4" />
+                              ) : (
+                                <StarOff className="h-4 w-4" />
+                              )}
+                            </Button>
+                          </div>
+                        </CardContent>
+                      </Card>
+                    </div>
+                  );
+                })}
               </div>
             </div>
           )}
@@ -442,10 +539,13 @@ export function ProductImageManager({
                 </DialogHeader>
                 <div className="space-y-4">
                   <div>
-                    <img
+                    <Image
                       src={editingImage.url}
                       alt={editingImage.alt || editingImage.filename}
+                      width={600}
+                      height={400}
                       className="w-full h-32 object-cover rounded-lg"
+                      unoptimized
                     />
                   </div>
                   <div>
