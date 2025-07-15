@@ -5,7 +5,6 @@ import { updateProductSchema } from "@/lib/validations/product";
 import { UpdateProductFormData } from "./types";
 import { useProduct, useCategories, useBrands } from "@/hooks/api/products";
 import { useSuppliers } from "@/hooks/api/suppliers";
-import type { z } from "zod";
 
 export function useEditProductData(productId: number) {
   const form = useForm<UpdateProductFormData>({
@@ -25,6 +24,22 @@ export function useEditProductData(productId: number) {
       maximumStock: undefined,
       status: "active",
       notes: "",
+      // New fields
+      unit: "piece",
+      weight: undefined,
+      dimensions: "",
+      color: "",
+      size: "",
+      material: "",
+      tags: [],
+      salePrice: undefined,
+      saleStartDate: undefined,
+      saleEndDate: undefined,
+      metaTitle: "",
+      metaDescription: "",
+      seoKeywords: [],
+      isFeatured: false,
+      sortOrder: undefined,
     },
   });
 
@@ -32,7 +47,7 @@ export function useEditProductData(productId: number) {
   const product = useProduct(productId);
   const categories = useCategories({ isActive: true });
   const brands = useBrands({ isActive: true });
-  const suppliers = useSuppliers({ status: "active" });
+  const suppliers = useSuppliers({ isActive: true });
 
   // Combine loading states
   const loading =
@@ -60,10 +75,30 @@ export function useEditProductData(productId: number) {
         purchasePrice: Number(productData.cost),
         sellingPrice: Number(productData.price),
         currentStock: productData.stock,
-        minimumStock: productData.min_stock,
-        maximumStock: productData.max_stock || undefined,
+        minimumStock: productData.minStock,
+        maximumStock: productData.maxStock || undefined,
         status: productData.status,
         notes: "",
+        // New fields
+        unit: productData.unit || "piece",
+        weight: productData.weight || undefined,
+        dimensions: productData.dimensions || "",
+        color: productData.color || "",
+        size: productData.size || "",
+        material: productData.material || "",
+        tags: productData.tags || [],
+        salePrice: productData.salePrice || undefined,
+        saleStartDate: productData.saleStartDate
+          ? new Date(productData.saleStartDate)
+          : undefined,
+        saleEndDate: productData.saleEndDate
+          ? new Date(productData.saleEndDate)
+          : undefined,
+        metaTitle: productData.metaTitle || "",
+        metaDescription: productData.metaDescription || "",
+        seoKeywords: productData.seoKeywords || [],
+        isFeatured: productData.isFeatured || false,
+        sortOrder: productData.sortOrder || undefined,
       });
     }
   }, [product.data, form]);

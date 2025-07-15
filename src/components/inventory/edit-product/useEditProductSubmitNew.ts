@@ -3,6 +3,7 @@ import { UseFormReturn } from "react-hook-form";
 import { UpdateProductFormData } from "./types";
 import { toast } from "sonner";
 import { useRouter } from "next/navigation";
+import { useQueryClient } from "@tanstack/react-query";
 
 export function useEditProductSubmit(
   productId: number,
@@ -11,6 +12,7 @@ export function useEditProductSubmit(
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [submitError, setSubmitError] = useState<string | null>(null);
   const router = useRouter();
+  const queryClient = useQueryClient();
 
   const onSubmit = async (data: UpdateProductFormData) => {
     setIsSubmitting(true);
@@ -32,7 +34,24 @@ export function useEditProductSubmit(
         minimumStock: data.minimumStock || undefined,
         maximumStock: data.maximumStock || null,
         status: data.status,
-        notes: data.notes || null,
+        // New fields
+        unit: data.unit || "piece",
+        weight: data.weight || null,
+        dimensions: data.dimensions || null,
+        color: data.color || null,
+        size: data.size || null,
+        material: data.material || null,
+        tags: data.tags || [],
+        salePrice: data.salePrice || null,
+        saleStartDate: data.saleStartDate
+          ? data.saleStartDate.toISOString()
+          : null,
+        saleEndDate: data.saleEndDate ? data.saleEndDate.toISOString() : null,
+        metaTitle: data.metaTitle || null,
+        metaDescription: data.metaDescription || null,
+        seoKeywords: data.seoKeywords || [],
+        isFeatured: data.isFeatured || false,
+        sortOrder: data.sortOrder || null,
       };
 
       const response = await fetch(`/api/products/${productId}`, {
@@ -45,10 +64,27 @@ export function useEditProductSubmit(
 
       if (!response.ok) {
         const errorData = await response.json();
-        throw new Error(errorData.message || "Failed to update product");
+        const errorMessage =
+          errorData.message || errorData.error || "Failed to update product";
+
+        // Handle validation errors
+        if (errorData.details && Array.isArray(errorData.details)) {
+          const validationErrors = errorData.details
+            .map((detail: any) => detail.message)
+            .join(", ");
+          throw new Error(`Validation errors: ${validationErrors}`);
+        }
+
+        throw new Error(errorMessage);
       }
 
       toast.success("Product updated successfully");
+
+      // Invalidate and refetch related queries
+      queryClient.invalidateQueries({ queryKey: ["products"] });
+      queryClient.invalidateQueries({ queryKey: ["product", productId] });
+      queryClient.invalidateQueries({ queryKey: ["inventory-metrics"] });
+
       router.push("/inventory/products");
     } catch (error) {
       const errorMessage =
