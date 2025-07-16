@@ -301,16 +301,15 @@ export async function POST(request: NextRequest) {
         },
       });
 
-      // Create audit log - using raw query to match schema field names
+      // Create audit log using Prisma
       try {
-        await tx.$executeRaw`
-          INSERT INTO audit_logs (action, table_name, record_id, user_id, new_values, created_at)
-          VALUES (
-            'STOCK_ADDITION',
-            'PRODUCT',
-            ${validatedData.productId},
-            ${userId},
-            ${JSON.stringify({
+        await tx.auditLog.create({
+          data: {
+            action: "STOCK_ADDITION",
+            table_name: "PRODUCT",
+            record_id: validatedData.productId,
+            user_id: userId,
+            new_values: {
               productName: product.name,
               quantityAdded: validatedData.quantity,
               costPerUnit: validatedData.costPerUnit,
@@ -320,10 +319,9 @@ export async function POST(request: NextRequest) {
               newAverageCost: newAverageCost,
               totalCost,
               referenceNo: validatedData.referenceNo,
-            })}::jsonb,
-            NOW()
-          )
-        `;
+            },
+          },
+        });
       } catch (auditError) {
         console.warn("Failed to create audit log:", auditError);
         // Don't fail the entire transaction for audit log issues

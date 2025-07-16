@@ -116,7 +116,7 @@ export function ProductImageManager({
       .replace(/[^a-zA-Z0-9\s]/g, "")
       .replace(/\s+/g, "-")
       .toLowerCase()
-      .substring(0, 50); // Limit length
+      .substring(0, 60); // Limit length
 
     // Clean brand name
     const brandName = product.brand?.name
