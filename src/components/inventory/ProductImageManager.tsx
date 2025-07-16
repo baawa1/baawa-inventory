@@ -48,6 +48,20 @@ interface ProductImage {
   uploadedAt: string;
 }
 
+interface ProductData {
+  id: number;
+  name: string;
+  sku: string;
+  brand?: {
+    id: number;
+    name: string;
+  };
+  category?: {
+    id: number;
+    name: string;
+  };
+}
+
 interface ProductImageManagerProps {
   productId: number;
   productName: string;
@@ -66,11 +80,84 @@ export function ProductImageManager({
   const fileInputRef = useRef<HTMLInputElement>(null);
   const queryClient = useQueryClient();
 
+  // Fetch complete product data including brand and category
+  const { data: productData } = useQuery({
+    queryKey: ["product", productId],
+    queryFn: async () => {
+      const response = await fetch(`/api/products/${productId}`);
+      if (!response.ok) throw new Error("Failed to fetch product data");
+      return response.json();
+    },
+  });
+
+  const product: ProductData = productData?.data || {
+    id: productId,
+    name: _productName,
+    sku: "",
+    brand: undefined,
+    category: undefined,
+  };
+
   const ensureUniqueImages = (images: ProductImage[]): ProductImage[] => {
     return images.filter(
       (image, index, self) =>
         index === self.findIndex((img) => img.id === image.id)
     );
+  };
+
+  // Generate meaningful filename based on product information
+  const generateMeaningfulFilename = (
+    originalFilename: string,
+    index: number,
+    product: ProductData
+  ): string => {
+    // Clean product name: remove special chars, convert to lowercase, replace spaces with hyphens
+    const cleanName = product.name
+      .replace(/[^a-zA-Z0-9\s]/g, "")
+      .replace(/\s+/g, "-")
+      .toLowerCase()
+      .substring(0, 50); // Limit length
+
+    // Clean brand name
+    const brandName = product.brand?.name
+      ? product.brand.name
+          .replace(/[^a-zA-Z0-9\s]/g, "")
+          .replace(/\s+/g, "-")
+          .toLowerCase()
+          .substring(0, 30)
+      : "no-brand";
+
+    // Clean category name
+    const categoryName = product.category?.name
+      ? product.category.name
+          .replace(/[^a-zA-Z0-9\s]/g, "")
+          .replace(/\s+/g, "-")
+          .toLowerCase()
+          .substring(0, 30)
+      : "uncategorized";
+
+    // Get file extension from original filename
+    const extension = originalFilename.split(".").pop()?.toLowerCase() || "jpg";
+
+    // Generate increment (01, 02, 03, etc.)
+    const increment = String(index + 1).padStart(2, "0");
+
+    // Combine all parts
+    return `${cleanName}_${brandName}_${categoryName}_${increment}.${extension}`;
+  };
+
+  // Generate meaningful alt text based on product information
+  const generateAltText = (product: ProductData, index: number): string => {
+    const brandText = product.brand?.name ? ` ${product.brand.name}` : "";
+    const categoryText = product.category?.name
+      ? ` ${product.category.name}`
+      : "";
+
+    if (index === 0) {
+      return `${product.name}${brandText}${categoryText}`;
+    } else {
+      return `${product.name}${brandText}${categoryText} - Image ${index + 1}`;
+    }
   };
 
   // Fetch product images
@@ -96,7 +183,7 @@ export function ProductImageManager({
             filename: img.split("/").pop() || `image-${idx}`,
             size: 0,
             mimeType: "image/jpeg",
-            alt: "",
+            alt: generateAltText(product, idx),
             isPrimary: idx === 0,
             uploadedAt: new Date().toISOString(),
           };
@@ -108,7 +195,7 @@ export function ProductImageManager({
           filename: String(img.filename),
           size: Number(img.size) || 0,
           mimeType: String(img.mimeType || "image/jpeg"),
-          alt: img.alt ? String(img.alt) : undefined,
+          alt: img.alt ? String(img.alt) : generateAltText(product, idx),
           isPrimary: Boolean(img.isPrimary),
           uploadedAt: String(img.uploadedAt || new Date().toISOString()),
         };
@@ -207,25 +294,51 @@ export function ProductImageManager({
     const existingIds = images.map((img) => img.id);
 
     try {
-      for (const file of files) {
-        // In a real app, you would upload to a cloud service like Cloudinary, AWS S3, etc.
-        // For now, we'll simulate the upload and create data URLs
-        const dataUrl = await new Promise<string>((resolve) => {
-          const reader = new FileReader();
-          reader.onload = (e) => resolve(e.target?.result as string);
-          reader.readAsDataURL(file);
+      for (let i = 0; i < files.length; i++) {
+        const file = files[i];
+        const imageIndex = images.length + i;
+
+        // Generate meaningful filename
+        const meaningfulFilename = generateMeaningfulFilename(
+          file.name,
+          imageIndex,
+          product
+        );
+
+        // Create a new File object with the meaningful filename
+        const renamedFile = new File([file], meaningfulFilename, {
+          type: file.type,
+          lastModified: file.lastModified,
         });
 
+        // Upload file using the new storage system
+        const formData = new FormData();
+        formData.append("file", renamedFile);
+        formData.append("folder", "products");
+        formData.append("quality", "85");
+
+        const response = await fetch("/api/upload", {
+          method: "POST",
+          body: formData,
+        });
+
+        if (!response.ok) {
+          const error = await response.json();
+          throw new Error(error.error || "Upload failed");
+        }
+
+        const uploadResult = await response.json();
+
         const imageData: ProductImage = {
-          id: generateUniqueId(file.name, [
+          id: generateUniqueId(meaningfulFilename, [
             ...existingIds,
             ...newImages.map((img) => img.id),
           ]),
-          url: dataUrl,
-          filename: file.name,
-          size: file.size,
-          mimeType: file.type,
-          alt: file.name.split(".")[0],
+          url: uploadResult.url,
+          filename: meaningfulFilename,
+          size: uploadResult.size,
+          mimeType: uploadResult.mimeType,
+          alt: generateAltText(product, imageIndex),
           isPrimary: images.length === 0 && newImages.length === 0, // First image is primary
           uploadedAt: new Date().toISOString(),
         };
@@ -238,8 +351,11 @@ export function ProductImageManager({
       const uniqueUpdatedImages = ensureUniqueImages(updatedImages);
       updateImagesMutation.mutate(uniqueUpdatedImages);
       onImagesChange?.(uniqueUpdatedImages);
-    } catch (_error) {
-      toast.error("Failed to upload images");
+    } catch (error) {
+      console.error("Upload error:", error);
+      toast.error(
+        error instanceof Error ? error.message : "Failed to upload images"
+      );
     } finally {
       setUploading(false);
     }
@@ -363,7 +479,7 @@ export function ProductImageManager({
               <h3 className="text-lg font-medium mb-4">
                 Images ({images.length})
               </h3>
-              <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+              <div className="grid grid-cols-[repeat(auto-fit,minmax(15rem,1fr))] gap-4">
                 {images.map((image, idx) => {
                   return (
                     <div key={image.id} className="relative group">
@@ -376,8 +492,7 @@ export function ProductImageManager({
                                 image.alt || image.filename || "Product image"
                               }
                               fill
-                              className="w-full h-full object-cover"
-                              unoptimized
+                              className="w-full aspect-square object-cover"
                               priority={idx === 0}
                               onError={() => {
                                 console.error(
@@ -424,7 +539,6 @@ export function ProductImageManager({
                                     width={600}
                                     height={400}
                                     className="w-full h-auto max-h-96 object-contain rounded-lg"
-                                    unoptimized
                                   />
                                   <div className="text-sm text-gray-600">
                                     <p>
@@ -542,10 +656,9 @@ export function ProductImageManager({
                     <Image
                       src={editingImage.url}
                       alt={editingImage.alt || editingImage.filename}
-                      width={600}
-                      height={400}
-                      className="w-full h-32 object-cover rounded-lg"
-                      unoptimized
+                      width={300}
+                      height={300}
+                      className="w-full h-auto object-cover rounded-lg"
                     />
                   </div>
                   <div>
