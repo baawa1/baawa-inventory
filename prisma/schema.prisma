@@ -158,7 +158,7 @@ model Product {
   sortOrder            Int?                      @map("sort_order")
   variantAttributes    Json?                     @map("variant_attributes")
   variantValues        Json?                     @map("variant_values")
-  images               String[]
+  images               Json?                     // Array of image objects with url and alt text
   ai_content           AIContent[]
   product_variants     ProductVariant[]
   brand                Brand?                    @relation(fields: [brandId], references: [id], onUpdate: NoAction)
@@ -190,7 +190,7 @@ model ProductVariant {
   created_at           DateTime?           @default(now()) @db.Timestamptz(6)
   current_stock        Int                 @default(0)
   dimensions           Json?
-  images               String[]
+  images               Json?               // Array of image objects with url and alt text
   is_active            Boolean             @default(true)
   material             String?             @db.VarChar(100)
   max_stock_level      Int?

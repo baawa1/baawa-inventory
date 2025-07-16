@@ -49,7 +49,16 @@ export interface Product {
     name: string;
   };
   image?: string;
-  images?: string[];
+  images?: Array<{
+    id: string;
+    url: string;
+    filename: string;
+    size: number;
+    mimeType: string;
+    alt?: string;
+    isPrimary: boolean;
+    uploadedAt: string;
+  }>;
   createdAt: string;
   updatedAt: string;
 }

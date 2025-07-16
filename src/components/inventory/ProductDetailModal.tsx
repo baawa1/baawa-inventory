@@ -66,13 +66,20 @@ export const ProductDetailModal: React.FC<ProductDetailModalProps> = ({
     }
   };
 
-  // Helper for images array
-  const images: string[] =
-    product?.images && product.images.length > 0
-      ? product.images
-      : product?.image
-        ? [product.image]
-        : [];
+  // Helper for images array - handle both legacy string array and new image object array
+  const getImageUrls = (): string[] => {
+    if (product?.images && product.images.length > 0) {
+      // Check if it's the new format (array of objects)
+      if (typeof product.images[0] === "object" && "url" in product.images[0]) {
+        return (product.images as any[]).map((img: any) => img.url);
+      }
+      // Legacy format (array of strings)
+      return product.images as unknown as string[];
+    }
+    return product?.image ? [product.image] : [];
+  };
+
+  const images = getImageUrls();
 
   // Truncate description
   const DESCRIPTION_LIMIT = 200;

@@ -280,11 +280,19 @@ export function ProductList({ user }: ProductListProps) {
   const renderCell = (product: APIProduct, columnKey: string) => {
     switch (columnKey) {
       case "image":
-        const getFirstImage = (product: APIProduct) => {
+        const getFirstImage = (product: APIProduct): string => {
           if (Array.isArray(product.images) && product.images.length > 0) {
-            return product.images[0];
+            // Check if it's the new format (array of objects)
+            if (
+              typeof product.images[0] === "object" &&
+              "url" in product.images[0]
+            ) {
+              return (product.images[0] as any).url;
+            }
+            // Legacy format (array of strings)
+            return product.images[0] as string;
           }
-          return product.image;
+          return product.image || "";
         };
         const firstImage = getFirstImage(product);
         const isValidUrl = (url: string) => {
