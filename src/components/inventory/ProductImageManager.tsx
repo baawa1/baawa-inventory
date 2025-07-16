@@ -38,10 +38,8 @@ import {
 import Image from "next/image";
 
 interface ProductImage {
-  id: string;
   url: string;
   filename: string;
-  size: number;
   mimeType: string;
   alt?: string;
   isPrimary: boolean;
@@ -101,7 +99,7 @@ export function ProductImageManager({
   const ensureUniqueImages = (images: ProductImage[]): ProductImage[] => {
     return images.filter(
       (image, index, self) =>
-        index === self.findIndex((img) => img.id === image.id)
+        index === self.findIndex((img) => img.url === image.url)
     );
   };
 
@@ -178,10 +176,8 @@ export function ProductImageManager({
         if (typeof img === "string") {
           // Legacy: just a URL string
           return {
-            id: `legacy-${idx}`,
             url: img,
             filename: img.split("/").pop() || `image-${idx}`,
-            size: 0,
             mimeType: "image/jpeg",
             alt: generateAltText(product, idx),
             isPrimary: idx === 0,
@@ -190,10 +186,10 @@ export function ProductImageManager({
         }
         // New format: object
         return {
-          id: String(img.id),
           url: String(img.url),
-          filename: String(img.filename),
-          size: Number(img.size) || 0,
+          filename: String(
+            img.filename || img.url.split("/").pop() || `image-${idx}`
+          ),
           mimeType: String(img.mimeType || "image/jpeg"),
           alt: img.alt ? String(img.alt) : generateAltText(product, idx),
           isPrimary: Boolean(img.isPrimary),
@@ -202,11 +198,18 @@ export function ProductImageManager({
       })
     : [];
 
-  const images: ProductImage[] = ensureUniqueImages(validatedImages).filter(
-    (img) => img.url && img.url.trim() !== ""
-  );
+  const images: ProductImage[] = ensureUniqueImages(validatedImages)
+    .filter((img) => img.url && img.url.trim() !== "")
+    .sort((a, b) => {
+      // Primary images first, then by upload date (newest first)
+      if (a.isPrimary && !b.isPrimary) return -1;
+      if (!a.isPrimary && b.isPrimary) return 1;
+      return (
+        new Date(b.uploadedAt).getTime() - new Date(a.uploadedAt).getTime()
+      );
+    });
 
-  // Update images mutation
+  // Update images mutation with optimistic updates
   const updateImagesMutation = useMutation({
     mutationFn: async (updatedImages: ProductImage[]) => {
       const response = await fetch(`/api/products/${productId}/images`, {
@@ -217,22 +220,49 @@ export function ProductImageManager({
       if (!response.ok) throw new Error("Failed to update images");
       return response.json();
     },
+    onMutate: async (updatedImages: ProductImage[]) => {
+      // Cancel any outgoing refetches
+      await queryClient.cancelQueries({
+        queryKey: ["product-images", productId],
+      });
+
+      // Snapshot the previous value
+      const previousImages = queryClient.getQueryData([
+        "product-images",
+        productId,
+      ]);
+
+      // Optimistically update to the new value
+      queryClient.setQueryData(["product-images", productId], {
+        images: updatedImages,
+      });
+
+      // Return a context object with the snapshotted value
+      return { previousImages };
+    },
     onSuccess: () => {
       queryClient.invalidateQueries({
         queryKey: ["product-images", productId],
       });
       toast.success("Images updated successfully");
     },
-    onError: () => {
+    onError: (err, updatedImages, context) => {
+      // If the mutation fails, use the context returned from onMutate to roll back
+      if (context?.previousImages) {
+        queryClient.setQueryData(
+          ["product-images", productId],
+          context.previousImages
+        );
+      }
       toast.error("Failed to update images");
     },
   });
 
-  // Delete image mutation
+  // Delete image mutation with optimistic updates
   const deleteImageMutation = useMutation({
-    mutationFn: async (imageId: string) => {
+    mutationFn: async (imageUrl: string) => {
       const response = await fetch(
-        `/api/products/${productId}/images?imageId=${imageId}`,
+        `/api/products/${productId}/images?imageUrl=${encodeURIComponent(imageUrl)}`,
         {
           method: "DELETE",
         }
@@ -240,13 +270,54 @@ export function ProductImageManager({
       if (!response.ok) throw new Error("Failed to delete image");
       return response.json();
     },
+    onMutate: async (imageUrl: string) => {
+      // Cancel any outgoing refetches
+      await queryClient.cancelQueries({
+        queryKey: ["product-images", productId],
+      });
+
+      // Snapshot the previous value
+      const previousImages = queryClient.getQueryData([
+        "product-images",
+        productId,
+      ]);
+
+      // Optimistically remove the image
+      const currentImages = (previousImages as any)?.images || [];
+      const updatedImages = currentImages.filter(
+        (img: any) => img.url !== imageUrl
+      );
+
+      // If we deleted the primary image and there are other images, make the first one primary
+      const deletedImage = currentImages.find(
+        (img: any) => img.url === imageUrl
+      );
+      if (deletedImage?.isPrimary && updatedImages.length > 0) {
+        updatedImages[0].isPrimary = true;
+      }
+
+      // Optimistically update to the new value
+      queryClient.setQueryData(["product-images", productId], {
+        images: updatedImages,
+      });
+
+      // Return a context object with the snapshotted value
+      return { previousImages };
+    },
     onSuccess: () => {
       queryClient.invalidateQueries({
         queryKey: ["product-images", productId],
       });
       toast.success("Image deleted successfully");
     },
-    onError: () => {
+    onError: (err, imageUrl, context) => {
+      // If the mutation fails, use the context returned from onMutate to roll back
+      if (context?.previousImages) {
+        queryClient.setQueryData(
+          ["product-images", productId],
+          context.previousImages
+        );
+      }
       toast.error("Failed to delete image");
     },
   });
@@ -272,26 +343,9 @@ export function ProductImageManager({
     uploadImages(validFiles);
   };
 
-  const generateUniqueId = (
-    filename: string,
-    existingIds: string[]
-  ): string => {
-    const baseId = `img_${Date.now()}_${Math.random().toString(36).substr(2, 9)}_${filename.replace(/[^a-zA-Z0-9]/g, "")}`;
-    let uniqueId = baseId;
-    let counter = 1;
-
-    while (existingIds.includes(uniqueId)) {
-      uniqueId = `${baseId}_${counter}`;
-      counter++;
-    }
-
-    return uniqueId;
-  };
-
   const uploadImages = async (files: File[]) => {
     setUploading(true);
     const newImages: ProductImage[] = [];
-    const existingIds = images.map((img) => img.id);
 
     try {
       for (let i = 0; i < files.length; i++) {
@@ -330,13 +384,8 @@ export function ProductImageManager({
         const uploadResult = await response.json();
 
         const imageData: ProductImage = {
-          id: generateUniqueId(meaningfulFilename, [
-            ...existingIds,
-            ...newImages.map((img) => img.id),
-          ]),
           url: uploadResult.url,
           filename: meaningfulFilename,
-          size: uploadResult.size,
           mimeType: uploadResult.mimeType,
           alt: generateAltText(product, imageIndex),
           isPrimary: images.length === 0 && newImages.length === 0, // First image is primary
@@ -377,44 +426,51 @@ export function ProductImageManager({
     handleFileSelect(e.dataTransfer.files);
   };
 
-  const setPrimaryImage = (imageId: string) => {
-    const updatedImages = images.map((img) => ({
+  const setPrimaryImage = (imageUrl: string) => {
+    // Set only one image as primary and move it to the front immediately
+    let updatedImages = images.map((img) => ({
       ...img,
-      isPrimary: img.id === imageId,
+      isPrimary: img.url === imageUrl,
     }));
-    // Ensure no duplicates
+
+    // Move the primary image to the front for immediate visual feedback
+    const primaryIndex = updatedImages.findIndex((img) => img.url === imageUrl);
+    if (primaryIndex > 0) {
+      const [primaryImage] = updatedImages.splice(primaryIndex, 1);
+      updatedImages = [primaryImage, ...updatedImages];
+    }
+
+    // Ensure no duplicates and validate only one primary image
     const uniqueUpdatedImages = ensureUniqueImages(updatedImages);
+
+    // Double-check that only one image is primary
+    const primaryImages = uniqueUpdatedImages.filter((img) => img.isPrimary);
+    if (primaryImages.length > 1) {
+      // If somehow multiple primary images exist, keep only the selected one
+      uniqueUpdatedImages.forEach((img) => {
+        img.isPrimary = img.url === imageUrl;
+      });
+    }
+
+    // Update immediately for better UX
     updateImagesMutation.mutate(uniqueUpdatedImages);
     onImagesChange?.(uniqueUpdatedImages);
   };
 
-  const deleteImage = (imageId: string) => {
-    deleteImageMutation.mutate(imageId);
+  const deleteImage = (imageUrl: string) => {
+    deleteImageMutation.mutate(imageUrl);
   };
 
-  const updateImageAlt = (imageId: string, alt: string) => {
+  const updateImageAlt = (imageUrl: string, alt: string) => {
     const updatedImages = images.map((img) => ({
       ...img,
-      alt: img.id === imageId ? alt : img.alt,
+      alt: img.url === imageUrl ? alt : img.alt,
     }));
     // Ensure no duplicates
     const uniqueUpdatedImages = ensureUniqueImages(updatedImages);
     updateImagesMutation.mutate(uniqueUpdatedImages);
     onImagesChange?.(uniqueUpdatedImages);
     setEditingImage(null);
-  };
-
-  const formatFileSize = (bytes: number) => {
-    // Handle invalid or missing size values
-    if (!bytes || isNaN(bytes) || bytes < 0) {
-      return "Unknown size";
-    }
-
-    if (bytes === 0) return "0 B";
-    const k = 1024;
-    const sizes = ["B", "KB", "MB", "GB"];
-    const i = Math.floor(Math.log(bytes) / Math.log(k));
-    return parseFloat((bytes / Math.pow(k, i)).toFixed(2)) + " " + sizes[i];
   };
 
   return (
@@ -480,9 +536,9 @@ export function ProductImageManager({
                 Images ({images.length})
               </h3>
               <div className="grid grid-cols-[repeat(auto-fit,minmax(15rem,1fr))] gap-4">
-                {images.map((image, idx) => {
+                {images.map((image) => {
                   return (
-                    <div key={image.id} className="relative group">
+                    <div key={image.url} className="relative group">
                       <Card className="overflow-hidden pt-0">
                         <div className="aspect-square relative">
                           {image.url ? (
@@ -492,8 +548,9 @@ export function ProductImageManager({
                                 image.alt || image.filename || "Product image"
                               }
                               fill
+                              sizes="(max-width: 768px) 100vw, (max-width: 1200px) 50vw, 33vw"
                               className="w-full aspect-square object-cover"
-                              priority={idx === 0}
+                              priority={false}
                               onError={() => {
                                 console.error(
                                   "Image failed to load:",
@@ -538,16 +595,13 @@ export function ProductImageManager({
                                     alt={image.alt || image.filename}
                                     width={600}
                                     height={400}
+                                    sizes="(max-width: 768px) 100vw, (max-width: 1200px) 80vw, 600px"
                                     className="w-full h-auto max-h-96 object-contain rounded-lg"
                                   />
                                   <div className="text-sm text-gray-600">
                                     <p>
                                       <strong>Filename:</strong>{" "}
                                       {image.filename}
-                                    </p>
-                                    <p>
-                                      <strong>Size:</strong>{" "}
-                                      {formatFileSize(image.size)}
                                     </p>
                                     <p>
                                       <strong>Type:</strong> {image.mimeType}
@@ -596,7 +650,7 @@ export function ProductImageManager({
                                 <AlertDialogFooter>
                                   <AlertDialogCancel>Cancel</AlertDialogCancel>
                                   <AlertDialogAction
-                                    onClick={() => deleteImage(image.id)}
+                                    onClick={() => deleteImage(image.url)}
                                     className="bg-red-600 hover:bg-red-700"
                                   >
                                     Delete
@@ -614,7 +668,7 @@ export function ProductImageManager({
                                 {image.filename || "Unknown file"}
                               </p>
                               <p className="text-xs text-gray-500">
-                                {formatFileSize(image.size)}
+                                {image.alt || "No alt text"}
                               </p>
                             </div>
 
@@ -622,10 +676,15 @@ export function ProductImageManager({
                               size="sm"
                               variant={image.isPrimary ? "default" : "outline"}
                               className="ml-2"
-                              onClick={() => setPrimaryImage(image.id)}
-                              disabled={image.isPrimary}
+                              onClick={() => setPrimaryImage(image.url)}
+                              disabled={
+                                image.isPrimary ||
+                                updateImagesMutation.isPending
+                              }
                             >
-                              {image.isPrimary ? (
+                              {updateImagesMutation.isPending ? (
+                                <div className="h-4 w-4 animate-spin rounded-full border-2 border-current border-t-transparent" />
+                              ) : image.isPrimary ? (
                                 <Star className="h-4 w-4" />
                               ) : (
                                 <StarOff className="h-4 w-4" />
@@ -658,6 +717,7 @@ export function ProductImageManager({
                       alt={editingImage.alt || editingImage.filename}
                       width={300}
                       height={300}
+                      sizes="(max-width: 768px) 100vw, 300px"
                       className="w-full h-auto object-cover rounded-lg"
                     />
                   </div>
@@ -673,7 +733,7 @@ export function ProductImageManager({
                   </div>
                   <div className="flex gap-2">
                     <Button
-                      onClick={() => updateImageAlt(editingImage.id, imageAlt)}
+                      onClick={() => updateImageAlt(editingImage.url, imageAlt)}
                       disabled={updateImagesMutation.isPending}
                     >
                       Save Changes

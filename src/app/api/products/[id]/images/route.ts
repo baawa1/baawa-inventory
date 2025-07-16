@@ -3,16 +3,17 @@ import { NextRequest, NextResponse } from "next/server";
 import { prisma } from "@/lib/db";
 import { z } from "zod";
 
-// Schema for image data
+// Schema for image data - handle both formats
 const imageSchema = z.object({
-  id: z.string(),
+  id: z.string().optional(),
   url: z.string().url(),
-  filename: z.string(),
-  size: z.number(),
-  mimeType: z.string(),
+  filename: z.string().optional(),
+  size: z.number().optional(),
+  mimeType: z.string().optional(),
   alt: z.string().optional(),
-  isPrimary: z.boolean().default(false),
-  uploadedAt: z.string().datetime(),
+  altText: z.string().optional(), // Support both alt and altText
+  isPrimary: z.boolean().optional(),
+  uploadedAt: z.string().datetime().optional(),
 });
 
 const updateImagesSchema = z.object({
@@ -69,8 +70,19 @@ export async function GET(
           uploadedAt: new Date().toISOString(),
         }));
       } else {
-        // New format: image object array
-        images = product.images as any[];
+        // New format: image object array - handle different property names
+        const imageObjects = product.images as any[];
+        images = imageObjects.map((img, index) => ({
+          id: img.id || `restored-${index}`,
+          url: img.url,
+          filename:
+            img.filename || img.url.split("/").pop() || `image-${index}`,
+          size: img.size || 0,
+          mimeType: img.mimeType || "image/jpeg",
+          alt: img.alt || img.altText || "",
+          isPrimary: img.isPrimary !== undefined ? img.isPrimary : index === 0, // First image is primary by default
+          uploadedAt: img.uploadedAt || new Date().toISOString(),
+        }));
       }
     }
 
@@ -190,16 +202,11 @@ export async function PUT(
       images[0].isPrimary = true;
     }
 
-    // Store the full image objects with alt text
-    const imageObjects = images.map((img) => ({
-      id: img.id,
+    // Store the full image objects with alt text and isPrimary - normalize to current format
+    const imageObjects = images.map((img, index) => ({
       url: img.url,
-      filename: img.filename,
-      size: img.size,
-      mimeType: img.mimeType,
-      alt: img.alt || "",
-      isPrimary: img.isPrimary,
-      uploadedAt: img.uploadedAt,
+      altText: img.alt || img.altText || "",
+      isPrimary: img.isPrimary !== undefined ? img.isPrimary : index === 0, // Only set default if isPrimary is not explicitly set
     }));
 
     // Update the product with image objects
@@ -212,7 +219,7 @@ export async function PUT(
     const updatedProduct = await prisma.product.update({
       where: { id: productId },
       data: {
-        images: imageObjects.length > 0 ? imageObjects : undefined,
+        images: imageObjects.length > 0 ? (imageObjects as any) : undefined,
       },
       select: { id: true, name: true, images: true },
     });
@@ -268,7 +275,18 @@ export async function DELETE(
       );
     }
 
-    // Get current images for cleanup
+    // Get the imageUrl from query parameters
+    const { searchParams } = new URL(request.url);
+    const imageUrl = searchParams.get("imageUrl");
+
+    if (!imageUrl) {
+      return NextResponse.json(
+        { error: "Image URL is required" },
+        { status: 400 }
+      );
+    }
+
+    // Get current images
     const currentProduct = await prisma.product.findUnique({
       where: { id: productId },
       select: { images: true },
@@ -281,57 +299,86 @@ export async function DELETE(
       );
     }
 
-    // Extract URLs for cleanup (handle both legacy and new formats)
-    let imageUrls: string[] = [];
+    // Handle both legacy and new formats
+    let currentImages: any[] = [];
     if (
       Array.isArray(currentProduct.images) &&
       typeof currentProduct.images[0] === "string"
     ) {
-      // Legacy format
-      imageUrls = currentProduct.images as string[];
+      // Legacy format: convert to new format for processing
+      currentImages = (currentProduct.images as string[]).map((url, index) => ({
+        url,
+        filename: url.split("/").pop() || `image-${index}`,
+        mimeType: "image/jpeg",
+        alt: "",
+        isPrimary: index === 0,
+        uploadedAt: new Date().toISOString(),
+      }));
     } else {
-      // New format: extract URLs from image objects
-      imageUrls = (currentProduct.images as any[]).map((img: any) => img.url);
+      // New format
+      currentImages = currentProduct.images as any[];
     }
 
-    // Clean up files from storage
-    for (const imageUrl of imageUrls) {
-      if (imageUrl && imageUrl.includes("supabase.co")) {
-        try {
-          // Extract storage path from Supabase URL
-          const urlParts = imageUrl.split("/");
-          const storagePath = urlParts.slice(-2).join("/"); // Get folder/filename
+    // Find the image to delete by URL
+    const imageToDelete = currentImages.find((img) => img.url === imageUrl);
+    if (!imageToDelete) {
+      return NextResponse.json({ error: "Image not found" }, { status: 404 });
+    }
 
-          const deleteResponse = await fetch(
-            `${request.nextUrl.origin}/api/upload?publicId=${encodeURIComponent(storagePath)}`,
-            {
-              method: "DELETE",
-              headers: {
-                Authorization: `Bearer ${session.user.id}`,
-              },
-            }
-          );
+    // Remove the image from the array
+    const updatedImages = currentImages.filter((img) => img.url !== imageUrl);
 
-          if (!deleteResponse.ok) {
-            console.warn("Failed to delete file from storage:", imageUrl);
+    // If we deleted the primary image and there are other images, make the first one primary
+    if (imageToDelete.isPrimary && updatedImages.length > 0) {
+      updatedImages[0].isPrimary = true;
+    }
+
+    // Clean up the deleted file from storage
+    if (imageToDelete.url && imageToDelete.url.includes("supabase.co")) {
+      try {
+        // Extract storage path from Supabase URL
+        const urlParts = imageToDelete.url.split("/");
+        const storagePath = urlParts.slice(-2).join("/"); // Get folder/filename
+
+        const deleteResponse = await fetch(
+          `${request.nextUrl.origin}/api/upload?publicId=${encodeURIComponent(storagePath)}`,
+          {
+            method: "DELETE",
+            headers: {
+              Authorization: `Bearer ${session.user.id}`,
+            },
           }
-        } catch (error) {
-          console.warn("Error deleting file from storage:", error);
+        );
+
+        if (!deleteResponse.ok) {
+          console.warn(
+            "Failed to delete file from storage:",
+            imageToDelete.url
+          );
         }
+      } catch (error) {
+        console.warn("Error deleting file from storage:", error);
       }
     }
 
-    // Remove all images from the product
+    // Convert back to the format stored in the database
+    const imageObjects = updatedImages.map((img) => ({
+      url: img.url,
+      altText: img.alt || img.altText || "",
+      isPrimary: img.isPrimary,
+    }));
+
+    // Update the product with the remaining images
     const updatedProduct = await prisma.product.update({
       where: { id: productId },
       data: {
-        images: undefined,
+        images: imageObjects.length > 0 ? (imageObjects as any) : undefined,
       },
       select: { id: true, name: true, images: true },
     });
 
     return NextResponse.json({
-      message: "All product images deleted successfully",
+      message: "Image deleted successfully",
       product: {
         id: updatedProduct.id,
         name: updatedProduct.name,
@@ -339,9 +386,9 @@ export async function DELETE(
       },
     });
   } catch (error) {
-    console.error("Error deleting product images:", error);
+    console.error("Error deleting image:", error);
     return NextResponse.json(
-      { error: "Failed to delete product images" },
+      { error: "Failed to delete image" },
       { status: 500 }
     );
   }
