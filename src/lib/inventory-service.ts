@@ -621,9 +621,7 @@ export class InventoryService {
       supplierId: data.supplierId,
       status: data.status,
       // Handle images field if needed
-      images: data.imageUrl
-        ? [{ url: data.imageUrl, isPrimary: true }]
-        : undefined,
+      images: data.imageUrl ? [data.imageUrl] : undefined,
     };
 
     // Filter out undefined values

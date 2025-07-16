@@ -15,13 +15,13 @@ import { Badge } from "@/components/ui/badge";
 import {
   IconPackage,
   IconTag,
-  IconCurrencyDollar,
   IconFileText,
   IconX,
   IconRefresh,
   IconEdit,
   IconPlus,
   IconRuler,
+  IconCurrencyNaira,
 } from "@tabler/icons-react";
 import { toast } from "sonner";
 import { formatCurrency, formatDate } from "@/lib/utils";
@@ -297,7 +297,7 @@ export const ProductDetailModal: React.FC<ProductDetailModalProps> = ({
               <Card>
                 <CardHeader>
                   <CardTitle className="flex items-center gap-2">
-                    <IconCurrencyDollar className="h-5 w-5" />
+                    <IconCurrencyNaira className="h-5 w-5" />
                     Pricing Information
                   </CardTitle>
                 </CardHeader>
