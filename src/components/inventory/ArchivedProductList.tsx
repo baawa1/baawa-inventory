@@ -1,30 +1,24 @@
 "use client";
 
+import React, { useState, useMemo, useCallback } from "react";
+import Link from "next/link";
+import { toast } from "sonner";
+import { useDebounce } from "@/hooks/useDebounce";
 import {
-  Card,
-  CardContent,
-  CardDescription,
-  CardHeader,
-  CardTitle,
-} from "@/components/ui/card";
+  useArchivedProducts,
+  useUnarchiveProduct,
+  type Product as APIProduct,
+} from "@/hooks/api/products";
+import { InventoryPageLayout } from "@/components/inventory/InventoryPageLayout";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
-import { Input } from "@/components/ui/input";
+
 import {
-  Select,
-  SelectContent,
-  SelectItem,
-  SelectTrigger,
-  SelectValue,
-} from "@/components/ui/select";
-import {
-  Table,
-  TableBody,
-  TableCell,
-  TableHead,
-  TableHeader,
-  TableRow,
-} from "@/components/ui/table";
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuTrigger,
+} from "@/components/ui/dropdown-menu";
 import {
   AlertDialog,
   AlertDialogAction,
@@ -34,445 +28,395 @@ import {
   AlertDialogFooter,
   AlertDialogHeader,
   AlertDialogTitle,
-  AlertDialogTrigger,
 } from "@/components/ui/alert-dialog";
 import {
-  DropdownMenu,
-  DropdownMenuContent,
-  DropdownMenuItem,
-  DropdownMenuTrigger,
-} from "@/components/ui/dropdown-menu";
-import { toast } from "sonner";
-import { useState, useEffect } from "react";
-import { useDebounce } from "@/hooks/useDebounce";
-import {
-  IconArchive,
-  IconArchiveOff,
-  IconSearch,
-  IconFilter,
   IconDots,
   IconEye,
-  IconX,
-  IconRefresh,
+  IconArchiveOff,
+  IconArchive,
+  IconAlertTriangle,
 } from "@tabler/icons-react";
+import type { FilterConfig } from "@/types/inventory";
+import type { DashboardTableColumn } from "@/components/layouts/DashboardColumnCustomizer";
 
-interface ArchivedProduct {
-  id: number;
-  name: string;
-  sku: string;
+interface User {
+  id: string;
+  email?: string | null;
+  name?: string | null;
+  role: string;
   status: string;
-  stock: number;
-  price: number;
-  cost: number;
-  is_archived: boolean;
-  archived_at: string;
-  created_at: string;
-  updated_at: string;
-  category: { id: number; name: string } | null;
-  brand: { id: number; name: string } | null;
-  supplier: { id: number; name: string } | null;
-}
-
-interface ArchivedProductsResponse {
-  data: ArchivedProduct[];
-  pagination: {
-    page: number;
-    limit: number;
-    total: number;
-    totalPages: number;
-    hasMore: boolean;
-  };
+  isEmailVerified: boolean;
 }
 
 interface ArchivedProductListProps {
-  user: {
-    id: string;
-    role: string;
-  };
+  user: User;
 }
 
 export function ArchivedProductList({ user }: ArchivedProductListProps) {
-  const [products, setProducts] = useState<ArchivedProduct[]>([]);
-  const [loading, setLoading] = useState(true);
-  const [error, setError] = useState<string | null>(null);
+  const [unarchiveDialogOpen, setUnarchiveDialogOpen] = useState(false);
+  const [productToUnarchive, setProductToUnarchive] =
+    useState<APIProduct | null>(null);
+
   const [pagination, setPagination] = useState({
     page: 1,
     limit: 10,
-    total: 0,
     totalPages: 1,
-    hasMore: false,
+    totalItems: 0,
+  });
+  const [visibleColumns, setVisibleColumns] = useState<string[]>([]);
+
+  // Clean up any "actions" column from localStorage and state
+  React.useEffect(() => {
+    // Remove "actions" from visibleColumns if it exists
+    if (visibleColumns.includes("actions")) {
+      setVisibleColumns((prev) => prev.filter((col) => col !== "actions"));
+    }
+
+    // Clean up localStorage if it contains "actions"
+    const storageKey = "archived-products-visible-columns";
+    const storedColumns = localStorage.getItem(storageKey);
+    if (storedColumns) {
+      try {
+        const parsed = JSON.parse(storedColumns);
+        if (Array.isArray(parsed) && parsed.includes("actions")) {
+          const cleaned = parsed.filter((col: string) => col !== "actions");
+          localStorage.setItem(storageKey, JSON.stringify(cleaned));
+        }
+      } catch (_error) {
+        // If parsing fails, remove the item
+        localStorage.removeItem(storageKey);
+      }
+    }
+  }, [visibleColumns]);
+
+  // Filters
+  const [filters, setFilters] = useState({
+    search: "",
+    categoryId: "",
+    brandId: "",
   });
 
-  // Filter states
-  const [searchTerm, setSearchTerm] = useState("");
-  const [categoryFilter, setCategoryFilter] = useState("");
-  const [brandFilter, setBrandFilter] = useState("");
-  const [sortBy, setSortBy] = useState("archived_at");
-  const [sortOrder, setSortOrder] = useState("desc");
+  // Debounce search term to avoid excessive API calls
+  const debouncedSearchTerm = useDebounce(filters.search, 500);
 
-  // Debounced search
-  const debouncedSearchTerm = useDebounce(searchTerm, 300);
+  // Show search loading when user is typing but search hasn't been triggered yet
+  const isSearching = filters.search !== debouncedSearchTerm;
 
+  // TanStack Query hooks for data fetching
+  const archivedProductsQuery = useArchivedProducts(
+    {
+      search: debouncedSearchTerm,
+      categoryId: filters.categoryId,
+      brandId: filters.brandId,
+      sortBy: "archivedAt",
+      sortOrder: "desc",
+    },
+    {
+      page: pagination.page,
+      limit: pagination.limit,
+    }
+  );
+
+  const unarchiveProductMutation = useUnarchiveProduct();
+
+  // Extract data from queries
+  const products = archivedProductsQuery.data?.data || [];
+  const loading = archivedProductsQuery.isLoading;
+  const total = archivedProductsQuery.data?.pagination?.total || 0;
+  const apiPagination = archivedProductsQuery.data?.pagination;
+
+  // Update pagination state from API response
+  const currentPagination = {
+    page: apiPagination?.page || pagination.page,
+    limit: apiPagination?.limit || pagination.limit,
+    totalPages:
+      apiPagination?.totalPages || Math.ceil(total / pagination.limit),
+    totalItems: total,
+  };
+
+  // Permission checks
   const canManageProducts = ["ADMIN", "MANAGER"].includes(user.role);
 
-  // Fetch archived products
-  const fetchArchivedProducts = async () => {
-    try {
-      setLoading(true);
-      const params = new URLSearchParams({
-        page: pagination.page.toString(),
-        limit: pagination.limit.toString(),
-        sortBy,
-        sortOrder,
-      });
+  // Filter configurations - memoized to prevent unnecessary re-renders
+  const filterConfigs: FilterConfig[] = useMemo(
+    () => [
+      {
+        key: "categoryId",
+        label: "Category",
+        type: "select",
+        options: [], // TODO: Add category options
+        placeholder: "All Categories",
+      },
+      {
+        key: "brandId",
+        label: "Brand",
+        type: "select",
+        options: [], // TODO: Add brand options
+        placeholder: "All Brands",
+      },
+    ],
+    []
+  );
 
-      if (debouncedSearchTerm) params.append("search", debouncedSearchTerm);
-      if (categoryFilter) params.append("category", categoryFilter);
-      if (brandFilter) params.append("brand", brandFilter);
-
-      const response = await fetch(`/api/products/archived?${params}`);
-      if (!response.ok) {
-        throw new Error("Failed to fetch archived products");
-      }
-
-      const data: ArchivedProductsResponse = await response.json();
-      setProducts(data.data);
-      setPagination(data.pagination);
-      setError(null);
-    } catch (err) {
-      setError(
-        err instanceof Error ? err.message : "Failed to fetch archived products"
-      );
-      console.error("Error fetching archived products:", err);
-    } finally {
-      setLoading(false);
-    }
-  };
-
-  // Unarchive product
-  const handleUnarchive = async (productId: number, productName: string) => {
-    try {
-      const response = await fetch(`/api/products/${productId}/archive`, {
-        method: "PATCH",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({
-          archived: false,
-          reason: `Unarchived by ${user.role}`,
-        }),
-      });
-
-      if (!response.ok) {
-        throw new Error("Failed to unarchive product");
-      }
-
-      toast.success(`Product "${productName}" has been unarchived`);
-      fetchArchivedProducts(); // Refresh the list
-    } catch (err) {
-      const message =
-        err instanceof Error ? err.message : "Failed to unarchive product";
-      toast.error(message);
-      console.error("Error unarchiving product:", err);
-    }
-  };
-
-  // Clear filters
-  const clearFilters = () => {
-    setSearchTerm("");
-    setCategoryFilter("");
-    setBrandFilter("");
-    setSortBy("archived_at");
-    setSortOrder("desc");
-  };
-
-  // Effect to fetch products when filters change
-  useEffect(() => {
-    fetchArchivedProducts();
-  }, [
-    debouncedSearchTerm,
-    categoryFilter,
-    brandFilter,
-    pagination.page,
-    pagination.limit,
-    sortBy,
-    sortOrder,
-  ]);
-
-  // Effect to reset page when filters change
-  useEffect(() => {
+  // Handle filter changes
+  const handleFilterChange = useCallback((key: string, value: any) => {
+    setFilters((prev) => {
+      if (prev[key as keyof typeof prev] === value) return prev; // Prevent unnecessary updates
+      return { ...prev, [key]: value };
+    });
     setPagination((prev) => ({ ...prev, page: 1 }));
-  }, [debouncedSearchTerm, categoryFilter, brandFilter]);
+  }, []);
 
-  const formatDate = (dateString: string) => {
-    return new Date(dateString).toLocaleDateString();
-  };
+  // Clear all filters
+  const handleResetFilters = useCallback(() => {
+    setFilters({
+      search: "",
+      categoryId: "",
+      brandId: "",
+    });
+    setPagination((prev) => ({ ...prev, page: 1 }));
+  }, []);
+
+  const handlePageChange = useCallback((newPage: number) => {
+    setPagination((prev) => ({ ...prev, page: newPage }));
+  }, []);
+
+  const handlePageSizeChange = useCallback((newSize: number) => {
+    setPagination((prev) => ({ ...prev, limit: newSize, page: 1 }));
+  }, []);
+
+  // Handle unarchive product
+  const handleUnarchiveProduct = useCallback(async () => {
+    if (!productToUnarchive) return;
+
+    try {
+      await unarchiveProductMutation.mutateAsync(productToUnarchive.id);
+      toast.success("Product unarchived successfully");
+    } catch (error) {
+      console.error("Error unarchiving product:", error);
+      toast.error(
+        error instanceof Error ? error.message : "Failed to unarchive product"
+      );
+    } finally {
+      setUnarchiveDialogOpen(false);
+      setProductToUnarchive(null);
+    }
+  }, [productToUnarchive, unarchiveProductMutation]);
+
+  // Get status badge
+  const getStatusBadge = useCallback((status: string) => {
+    switch (status) {
+      case "active":
+        return <Badge variant="default">Active</Badge>;
+      case "inactive":
+        return <Badge variant="secondary">Inactive</Badge>;
+      default:
+        return <Badge variant="outline">{status}</Badge>;
+    }
+  }, []);
+
+  // Column configuration - only showing actual product fields
+  const columns: DashboardTableColumn[] = useMemo(
+    () => [
+      {
+        key: "name",
+        label: "Name",
+        sortable: true,
+        defaultVisible: true,
+        required: true,
+      },
+      { key: "sku", label: "SKU", defaultVisible: true },
+      { key: "category", label: "Category", defaultVisible: true },
+      { key: "brand", label: "Brand", defaultVisible: true },
+      { key: "stock", label: "Stock", defaultVisible: true },
+      { key: "price", label: "Price", defaultVisible: true },
+      { key: "status", label: "Status", defaultVisible: true },
+      { key: "archivedAt", label: "Archived", defaultVisible: true },
+    ],
+    []
+  );
+
+  // Add actions column if user has permissions
+  const columnsWithActions = useMemo(() => {
+    return columns;
+  }, [columns]);
+
+  // Ensure visibleColumns has default values if empty and filter out actions column
+  const effectiveVisibleColumns = useMemo(() => {
+    let columnsToShow = visibleColumns;
+
+    if (visibleColumns.length === 0) {
+      columnsToShow = columns
+        .filter((col) => col.defaultVisible)
+        .map((col) => col.key);
+    }
+
+    // Filter out any "actions" column since it's handled automatically by the table
+    return columnsToShow.filter((col) => col !== "actions");
+  }, [visibleColumns, columns]);
+
+  // Render cell function
+  const renderCell = useCallback(
+    (product: APIProduct, columnKey: string) => {
+      switch (columnKey) {
+        case "name":
+          return <span className="font-medium">{product.name}</span>;
+        case "sku":
+          return <span className="font-mono text-sm">{product.sku}</span>;
+        case "category":
+          return (
+            product.category?.name || (
+              <span className="text-gray-400 italic">No category</span>
+            )
+          );
+        case "brand":
+          return (
+            product.brand?.name || (
+              <span className="text-gray-400 italic">No brand</span>
+            )
+          );
+        case "stock":
+          return (
+            <span
+              className={
+                product.stock <= product.minStock
+                  ? "text-red-600 font-medium"
+                  : ""
+              }
+            >
+              {product.stock}
+            </span>
+          );
+        case "price":
+          return new Intl.NumberFormat("en-NG", {
+            style: "currency",
+            currency: "NGN",
+          }).format(product.price);
+        case "status":
+          return getStatusBadge(product.status);
+        case "archivedAt":
+          return product.updatedAt ? (
+            <span className="text-sm">
+              {new Date(product.updatedAt).toLocaleDateString()}
+            </span>
+          ) : (
+            <span className="text-gray-400 italic">-</span>
+          );
+        default:
+          return null;
+      }
+    },
+    [getStatusBadge]
+  );
+
+  // Render actions
+  const renderActions = useCallback(
+    (product: APIProduct) => {
+      if (!canManageProducts) return null;
+
+      return (
+        <DropdownMenu>
+          <DropdownMenuTrigger asChild>
+            <Button variant="ghost" className="h-8 w-8 p-0">
+              <span className="sr-only">Open menu</span>
+              <IconDots className="h-4 w-4" />
+            </Button>
+          </DropdownMenuTrigger>
+          <DropdownMenuContent align="end">
+            <DropdownMenuItem asChild>
+              <Link href={`/inventory/products/${product.id}`}>
+                <IconEye className="mr-2 h-4 w-4" />
+                View
+              </Link>
+            </DropdownMenuItem>
+            <DropdownMenuItem
+              className="text-green-600"
+              onClick={() => {
+                setProductToUnarchive(product);
+                setUnarchiveDialogOpen(true);
+              }}
+            >
+              <IconArchiveOff className="mr-2 h-4 w-4" />
+              Unarchive
+            </DropdownMenuItem>
+          </DropdownMenuContent>
+        </DropdownMenu>
+      );
+    },
+    [canManageProducts]
+  );
 
   return (
-    <div className="space-y-6">
-      {/* Header */}
-      <div className="flex items-center justify-between">
-        <div>
-          <h1 className="text-3xl font-bold tracking-tight">
-            Archived Products
-          </h1>
-          <p className="text-muted-foreground">
-            Manage and restore archived products
-          </p>
-        </div>
-        <Button
-          variant="outline"
-          onClick={fetchArchivedProducts}
-          disabled={loading}
-        >
-          <IconRefresh className="h-4 w-4 mr-2" />
-          Refresh
-        </Button>
-      </div>
+    <>
+      <InventoryPageLayout
+        // Header
+        title="Archived Products"
+        description="View and manage archived products in your inventory"
+        // Filters
+        searchPlaceholder="Search archived products..."
+        searchValue={filters.search}
+        onSearchChange={(value) => handleFilterChange("search", value)}
+        isSearching={isSearching}
+        filters={filterConfigs}
+        filterValues={filters}
+        onFilterChange={handleFilterChange}
+        onResetFilters={handleResetFilters}
+        // Table
+        tableTitle="Archived Products"
+        totalCount={total}
+        currentCount={products.length}
+        columns={columnsWithActions}
+        visibleColumns={effectiveVisibleColumns}
+        onColumnsChange={setVisibleColumns}
+        columnCustomizerKey="archived-products-visible-columns"
+        data={products}
+        renderCell={renderCell}
+        renderActions={renderActions}
+        // Pagination
+        pagination={currentPagination}
+        onPageChange={handlePageChange}
+        onPageSizeChange={handlePageSizeChange}
+        // Loading states
+        isLoading={loading}
+        isRefetching={archivedProductsQuery.isFetching && !loading}
+        error={archivedProductsQuery.error?.message}
+        // Empty state
+        emptyStateIcon={<IconArchive className="h-12 w-12 text-gray-400" />}
+        emptyStateMessage={
+          debouncedSearchTerm || filters.categoryId || filters.brandId
+            ? "No archived products found matching your filters."
+            : "No archived products found."
+        }
+      />
 
-      {/* Filters */}
-      <Card>
-        <CardHeader>
-          <CardTitle className="flex items-center gap-2">
-            <IconFilter className="h-5 w-5" />
-            Filters
-          </CardTitle>
-        </CardHeader>
-        <CardContent>
-          <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
-            {/* Search */}
-            <div className="relative">
-              <IconSearch className="absolute left-3 top-3 h-4 w-4 text-muted-foreground" />
-              <Input
-                placeholder="Search products..."
-                value={searchTerm}
-                onChange={(e) => setSearchTerm(e.target.value)}
-                className="pl-10"
-              />
-            </div>
-
-            {/* Category Filter */}
-            <Select value={categoryFilter} onValueChange={setCategoryFilter}>
-              <SelectTrigger>
-                <SelectValue placeholder="All Categories" />
-              </SelectTrigger>
-              <SelectContent>
-                <SelectItem value="">All Categories</SelectItem>
-                {/* Categories would be fetched from API */}
-              </SelectContent>
-            </Select>
-
-            {/* Brand Filter */}
-            <Select value={brandFilter} onValueChange={setBrandFilter}>
-              <SelectTrigger>
-                <SelectValue placeholder="All Brands" />
-              </SelectTrigger>
-              <SelectContent>
-                <SelectItem value="">All Brands</SelectItem>
-                {/* Brands would be fetched from API */}
-              </SelectContent>
-            </Select>
-
-            {/* Clear Filters */}
-            <Button variant="outline" onClick={clearFilters}>
-              <IconX className="h-4 w-4 mr-2" />
-              Clear Filters
-            </Button>
-          </div>
-        </CardContent>
-      </Card>
-
-      {/* Products Table */}
-      <Card>
-        <CardHeader>
-          <CardTitle>Archived Products</CardTitle>
-          <CardDescription>
-            {pagination.total} archived products found
-          </CardDescription>
-        </CardHeader>
-        <CardContent>
-          {loading ? (
-            <div className="flex justify-center py-8">
-              <div>Loading archived products...</div>
-            </div>
-          ) : error ? (
-            <div className="text-center py-8">
-              <div className="text-destructive mb-2">{error}</div>
-              <Button onClick={fetchArchivedProducts} variant="outline">
-                Try Again
-              </Button>
-            </div>
-          ) : products.length === 0 ? (
-            <div className="text-center py-8">
-              <IconArchive className="h-12 w-12 text-muted-foreground mx-auto mb-4" />
-              <h3 className="text-lg font-semibold mb-2">
-                No archived products
-              </h3>
-              <p className="text-muted-foreground">
-                No products have been archived yet.
-              </p>
-            </div>
-          ) : (
-            <div className="space-y-4">
-              <Table>
-                <TableHeader>
-                  <TableRow>
-                    <TableHead>Product</TableHead>
-                    <TableHead>Category</TableHead>
-                    <TableHead>Brand</TableHead>
-                    <TableHead>Stock</TableHead>
-                    <TableHead>Price</TableHead>
-                    <TableHead>Archived Date</TableHead>
-                    <TableHead>Actions</TableHead>
-                  </TableRow>
-                </TableHeader>
-                <TableBody>
-                  {products.map((product) => (
-                    <TableRow key={product.id}>
-                      <TableCell>
-                        <div>
-                          <div className="font-medium">{product.name}</div>
-                          <div className="text-sm text-muted-foreground">
-                            SKU: {product.sku}
-                          </div>
-                        </div>
-                      </TableCell>
-                      <TableCell>
-                        {product.category ? (
-                          <Badge variant="outline">
-                            {product.category.name}
-                          </Badge>
-                        ) : (
-                          <span className="text-muted-foreground">
-                            No Category
-                          </span>
-                        )}
-                      </TableCell>
-                      <TableCell>
-                        {product.brand ? (
-                          <Badge variant="outline">{product.brand.name}</Badge>
-                        ) : (
-                          <span className="text-muted-foreground">
-                            No Brand
-                          </span>
-                        )}
-                      </TableCell>
-                      <TableCell>
-                        <Badge
-                          variant={
-                            product.stock > 0 ? "default" : "destructive"
-                          }
-                        >
-                          {product.stock} units
-                        </Badge>
-                      </TableCell>
-                      <TableCell>₦{product.price.toLocaleString()}</TableCell>
-                      <TableCell>{formatDate(product.archived_at)}</TableCell>
-                      <TableCell>
-                        <DropdownMenu>
-                          <DropdownMenuTrigger asChild>
-                            <Button variant="ghost" className="h-8 w-8 p-0">
-                              <IconDots className="h-4 w-4" />
-                            </Button>
-                          </DropdownMenuTrigger>
-                          <DropdownMenuContent align="end">
-                            <DropdownMenuItem>
-                              <IconEye className="h-4 w-4 mr-2" />
-                              View Details
-                            </DropdownMenuItem>
-                            {canManageProducts && (
-                              <AlertDialog>
-                                <AlertDialogTrigger asChild>
-                                  <DropdownMenuItem
-                                    onSelect={(e) => e.preventDefault()}
-                                  >
-                                    <IconArchiveOff className="h-4 w-4 mr-2" />
-                                    Unarchive Product
-                                  </DropdownMenuItem>
-                                </AlertDialogTrigger>
-                                <AlertDialogContent>
-                                  <AlertDialogHeader>
-                                    <AlertDialogTitle>
-                                      Unarchive Product
-                                    </AlertDialogTitle>
-                                    <AlertDialogDescription>
-                                      Are you sure you want to unarchive "
-                                      {product.name}"? This will make the
-                                      product active and available again.
-                                    </AlertDialogDescription>
-                                  </AlertDialogHeader>
-                                  <AlertDialogFooter>
-                                    <AlertDialogCancel>
-                                      Cancel
-                                    </AlertDialogCancel>
-                                    <AlertDialogAction
-                                      onClick={() =>
-                                        handleUnarchive(
-                                          product.id,
-                                          product.name
-                                        )
-                                      }
-                                    >
-                                      Unarchive
-                                    </AlertDialogAction>
-                                  </AlertDialogFooter>
-                                </AlertDialogContent>
-                              </AlertDialog>
-                            )}
-                          </DropdownMenuContent>
-                        </DropdownMenu>
-                      </TableCell>
-                    </TableRow>
-                  ))}
-                </TableBody>
-              </Table>
-
-              {/* Pagination */}
-              {pagination.totalPages > 1 && (
-                <div className="flex items-center justify-between">
-                  <div className="text-sm text-muted-foreground">
-                    Showing {(pagination.page - 1) * pagination.limit + 1} to{" "}
-                    {Math.min(
-                      pagination.page * pagination.limit,
-                      pagination.total
-                    )}{" "}
-                    of {pagination.total} products
-                  </div>
-                  <div className="flex items-center space-x-2">
-                    <Button
-                      variant="outline"
-                      size="sm"
-                      onClick={() =>
-                        setPagination((prev) => ({
-                          ...prev,
-                          page: prev.page - 1,
-                        }))
-                      }
-                      disabled={pagination.page <= 1}
-                    >
-                      Previous
-                    </Button>
-                    <span className="text-sm">
-                      Page {pagination.page} of {pagination.totalPages}
-                    </span>
-                    <Button
-                      variant="outline"
-                      size="sm"
-                      onClick={() =>
-                        setPagination((prev) => ({
-                          ...prev,
-                          page: prev.page + 1,
-                        }))
-                      }
-                      disabled={pagination.page >= pagination.totalPages}
-                    >
-                      Next
-                    </Button>
-                  </div>
-                </div>
-              )}
-            </div>
-          )}
-        </CardContent>
-      </Card>
-    </div>
+      {/* Unarchive Confirmation Dialog */}
+      <AlertDialog
+        open={unarchiveDialogOpen}
+        onOpenChange={setUnarchiveDialogOpen}
+      >
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle className="flex items-center gap-2">
+              <IconAlertTriangle className="h-5 w-5 text-yellow-500" />
+              Unarchive Product
+            </AlertDialogTitle>
+            <AlertDialogDescription>
+              Are you sure you want to unarchive the product "
+              {productToUnarchive?.name}"? This will restore it to your active
+              inventory.
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel>Cancel</AlertDialogCancel>
+            <AlertDialogAction
+              onClick={handleUnarchiveProduct}
+              className="bg-green-600 hover:bg-green-700"
+            >
+              Unarchive
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
+    </>
   );
 }

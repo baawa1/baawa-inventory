@@ -32,9 +32,11 @@ export function DashboardColumnCustomizer({
   localStorageKey,
 }: DashboardColumnCustomizerProps) {
   const [visibleColumns, setVisibleColumns] = useState<string[]>([]);
+  const [isClient, setIsClient] = useState(false);
 
   // Initialize visible columns from localStorage or defaults
   useEffect(() => {
+    setIsClient(true);
     const savedColumns = localStorage.getItem(localStorageKey);
     if (savedColumns) {
       try {
@@ -119,7 +121,7 @@ export function DashboardColumnCustomizer({
           <IconColumns className="h-4 w-4" />
           Customize Columns
           <span className="ml-1 text-xs text-muted-foreground">
-            ({visibleCount}/{totalCount})
+            {isClient ? `(${visibleCount}/${totalCount})` : "(0/0)"}
           </span>
         </Button>
       </DropdownMenuTrigger>

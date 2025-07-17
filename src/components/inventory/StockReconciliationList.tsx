@@ -44,12 +44,13 @@ import {
   IconAlertTriangle,
 } from "@tabler/icons-react";
 
-import type { ColumnConfig, FilterConfig } from "@/types/inventory";
+import type { FilterConfig } from "@/types/inventory";
+import type { DashboardTableColumn } from "@/components/layouts/DashboardColumnCustomizer";
 
 interface User {
   id: string;
-  email: string;
-  name: string;
+  email?: string | null;
+  name?: string | null;
   role: string;
   status: string;
   isEmailVerified: boolean;
@@ -82,26 +83,12 @@ interface StockReconciliation {
   }[];
 }
 
-interface UserProps {
-  id: string;
-  name: string;
-  email: string;
-  role: string;
-  status: string;
-  isEmailVerified: boolean;
-  image?: string;
-}
-
 interface StockReconciliationListProps {
-  userRole: string;
-  userId: number;
-  user: UserProps;
+  user: User;
 }
 
 export function StockReconciliationList({
-  userRole,
-  userId,
-  user: _user,
+  user,
 }: StockReconciliationListProps) {
   const [deleteDialogOpen, setDeleteDialogOpen] = useState(false);
   const [reconciliationToDelete, setReconciliationToDelete] =
@@ -159,7 +146,7 @@ export function StockReconciliationList({
   // Show search loading when user is typing but search hasn't been triggered yet
   const isSearching = filters.search !== debouncedSearchTerm;
 
-  const isAdmin = userRole === "ADMIN";
+  const isAdmin = user.role === "ADMIN";
 
   // TanStack Query hooks for data fetching
   const stockFilters: StockReconciliationFilters = {
@@ -194,8 +181,7 @@ export function StockReconciliationList({
   }, [apiPagination]);
 
   // Permission checks
-  const canManageReconciliations = ["ADMIN", "MANAGER"].includes(userRole);
-  const canApproveReconciliations = userRole === "ADMIN";
+  const canManageReconciliations = ["ADMIN", "MANAGER"].includes(user.role);
 
   // Filter configurations - memoized to prevent unnecessary re-renders
   const filterConfigs: FilterConfig[] = useMemo(
@@ -325,20 +311,47 @@ export function StockReconciliationList({
     );
   };
 
-  // Column configuration for reconciliation data
-  const columns: ColumnConfig[] = [
-    { key: "title", label: "Reconciliation Title", sortable: true },
-    { key: "status", label: "Status" },
-    { key: "itemCount", label: "Items Count" },
-    { key: "totalDiscrepancy", label: "Total Discrepancy" },
-    { key: "createdBy", label: "Created By" },
-    { key: "createdAt", label: "Created Date" },
-  ];
+  // Column configuration - only showing actual reconciliation fields
+  const columns: DashboardTableColumn[] = useMemo(
+    () => [
+      {
+        key: "title",
+        label: "Title",
+        sortable: true,
+        defaultVisible: true,
+        required: true,
+      },
+      { key: "status", label: "Status", defaultVisible: true },
+      { key: "itemCount", label: "Items", defaultVisible: true },
+      {
+        key: "totalDiscrepancy",
+        label: "Total Discrepancy",
+        defaultVisible: true,
+      },
+      { key: "createdBy", label: "Created By", defaultVisible: true },
+      { key: "createdAt", label: "Created", defaultVisible: true },
+    ],
+    []
+  );
 
   // Add actions column if user has permissions
-  if (canManageReconciliations || canApproveReconciliations) {
-    columns.push({ key: "actions", label: "Actions" });
-  }
+  const columnsWithActions = useMemo(() => {
+    return columns;
+  }, [columns]);
+
+  // Ensure visibleColumns has default values if empty and filter out actions column
+  const effectiveVisibleColumns = useMemo(() => {
+    let columnsToShow = visibleColumns;
+
+    if (visibleColumns.length === 0) {
+      columnsToShow = columns
+        .filter((col) => col.defaultVisible)
+        .map((col) => col.key);
+    }
+
+    // Filter out any "actions" column since it's handled automatically by the table
+    return columnsToShow.filter((col) => col !== "actions");
+  }, [visibleColumns, columns]);
 
   // Render cell function
   const renderCell = (
@@ -406,7 +419,7 @@ export function StockReconciliationList({
 
   // Render actions
   const renderActions = (reconciliation: StockReconciliation) => {
-    const isOwner = reconciliation.createdBy.id === userId.toString();
+    const isOwner = reconciliation.createdBy.id === user.id;
     const canEdit = reconciliation.status === "DRAFT" && (isOwner || isAdmin);
     const canSubmit = reconciliation.status === "DRAFT" && (isOwner || isAdmin);
     const canApprove = reconciliation.status === "PENDING" && isAdmin;
@@ -516,11 +529,10 @@ export function StockReconciliationList({
         onResetFilters={handleResetFilters}
         // Table
         tableTitle="Stock Reconciliations"
-        totalCount={reconciliations.length}
+        totalCount={pagination.totalItems}
         currentCount={reconciliations.length}
-        showingText={`Showing ${reconciliations.length} reconciliations`}
-        columns={columns}
-        visibleColumns={visibleColumns}
+        columns={columnsWithActions}
+        visibleColumns={effectiveVisibleColumns}
         onColumnsChange={setVisibleColumns}
         columnCustomizerKey="stock-reconciliations-visible-columns"
         data={reconciliations}

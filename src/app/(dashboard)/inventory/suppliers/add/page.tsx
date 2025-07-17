@@ -1,6 +1,7 @@
 import { auth } from "../../../../../../auth";
 import { redirect } from "next/navigation";
-import { getRolePermissions, UserRole } from "@/lib/auth-rbac";
+import { hasPermission } from "@/lib/auth-rbac";
+import { UserRole } from "@/types/user";
 import AddSupplierForm from "@/components/inventory/AddSupplierForm";
 
 export const metadata = {
@@ -15,9 +16,8 @@ export default async function AddSupplierPage() {
     redirect("/login");
   }
 
-  // Check if user has permission to manage suppliers
-  const permissions = getRolePermissions(session.user.role as UserRole);
-  if (!permissions.canManageSuppliers) {
+  // Check if user has permission to manage suppliers (inventory:write includes supplier management)
+  if (!hasPermission(session.user.role as UserRole, "inventory:write")) {
     redirect("/unauthorized");
   }
 

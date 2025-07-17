@@ -1,6 +1,3 @@
-"use client";
-
-import { useSession } from "next-auth/react";
 import type { UserRole } from "@/types/user";
 
 // Role permissions mapping
@@ -40,14 +37,14 @@ const rolePermissions: Record<UserRole, string[]> = {
 };
 
 /**
- * Get permissions for a specific role
+ * Get permissions for a specific role (Server-side safe)
  */
 export function getRolePermissions(role: UserRole): string[] {
   return rolePermissions[role] || [];
 }
 
 /**
- * Check if a role has a specific permission
+ * Check if a role has a specific permission (Server-side safe)
  */
 export function hasPermission(role: UserRole, permission: string): boolean {
   const permissions = getRolePermissions(role);
@@ -55,7 +52,7 @@ export function hasPermission(role: UserRole, permission: string): boolean {
 }
 
 /**
- * Check if a role has any of the specified permissions
+ * Check if a role has any of the specified permissions (Server-side safe)
  */
 export function hasAnyPermission(
   role: UserRole,
@@ -65,7 +62,7 @@ export function hasAnyPermission(
 }
 
 /**
- * Check if a role has all of the specified permissions
+ * Check if a role has all of the specified permissions (Server-side safe)
  */
 export function hasAllPermissions(
   role: UserRole,
@@ -75,34 +72,15 @@ export function hasAllPermissions(
 }
 
 /**
- * Get all available permissions
+ * Get all available permissions (Server-side safe)
  */
 export function getAllPermissions(): string[] {
   return Object.values(rolePermissions).flat();
 }
 
 /**
- * Get all available roles
+ * Get all available roles (Server-side safe)
  */
 export function getAvailableRoles(): UserRole[] {
   return Object.keys(rolePermissions) as UserRole[];
 }
-
-/**
- * Custom hook for role-based access control using Auth.js v5
- */
-export const useAuth = () => {
-  const { data: session, status } = useSession();
-
-  const user = session?.user;
-  const role = user?.role as UserRole;
-  const permissions = role ? getRolePermissions(role) : null;
-
-  return {
-    user,
-    role,
-    permissions,
-    isLoading: status === "loading",
-    isAuthenticated: status === "authenticated" && !!session,
-  };
-};

@@ -180,6 +180,48 @@ const fetchCategories = async (
   return data.data || data.categories || data;
 };
 
+const fetchArchivedProducts = async (
+  filters: Partial<ProductFilters>,
+  pagination: Partial<ProductPagination>
+): Promise<ProductListResponse> => {
+  const searchParams = new URLSearchParams({
+    page: pagination.page?.toString() || "1",
+    limit: pagination.limit?.toString() || "10",
+    sortBy: filters.sortBy || "updatedAt",
+    sortOrder: filters.sortOrder || "desc",
+  });
+
+  if (filters.search) searchParams.set("search", filters.search);
+  if (filters.categoryId) searchParams.set("category", filters.categoryId);
+  if (filters.brandId) searchParams.set("brand", filters.brandId);
+
+  const response = await fetch(
+    `/api/products/archived?${searchParams.toString()}`
+  );
+  if (!response.ok) {
+    throw new Error(
+      `Failed to fetch archived products: ${response.status} ${response.statusText}`
+    );
+  }
+  return response.json();
+};
+
+const unarchiveProduct = async (id: number): Promise<void> => {
+  const response = await fetch(`/api/products/${id}/archive`, {
+    method: "PATCH",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({
+      archived: false,
+      reason: "Unarchived by user",
+    }),
+  });
+  if (!response.ok) {
+    throw new Error(
+      `Failed to unarchive product: ${response.status} ${response.statusText}`
+    );
+  }
+};
+
 // Query Hooks
 export function useProducts(
   filters: Partial<ProductFilters> = {},
@@ -223,6 +265,18 @@ export function useCategories(
     queryFn: () => fetchCategories(filters),
     staleTime: 5 * 60 * 1000, // 5 minutes
     gcTime: 10 * 60 * 1000, // 10 minutes
+  });
+}
+
+export function useArchivedProducts(
+  filters: Partial<ProductFilters> = {},
+  pagination: Partial<ProductPagination> = {}
+) {
+  return useQuery({
+    queryKey: queryKeys.products.archived({ filters, pagination }),
+    queryFn: () => fetchArchivedProducts(filters, pagination),
+    staleTime: 2 * 60 * 1000, // 2 minutes
+    gcTime: 5 * 60 * 1000, // 5 minutes
   });
 }
 
@@ -305,6 +359,25 @@ export function useDeleteProduct() {
     },
     onSuccess: () => {
       // Invalidate products list
+      queryClient.invalidateQueries({ queryKey: queryKeys.products.lists() });
+      queryClient.invalidateQueries({
+        queryKey: queryKeys.inventory.metrics(),
+      });
+    },
+  });
+}
+
+export function useUnarchiveProduct() {
+  const queryClient = useQueryClient();
+
+  return useMutation({
+    mutationFn: unarchiveProduct,
+    onSuccess: () => {
+      // Invalidate archived products list
+      queryClient.invalidateQueries({
+        queryKey: queryKeys.products.archived(),
+      });
+      // Also invalidate regular products list in case unarchived products should appear there
       queryClient.invalidateQueries({ queryKey: queryKeys.products.lists() });
       queryClient.invalidateQueries({
         queryKey: queryKeys.inventory.metrics(),
