@@ -1,6 +1,7 @@
 import { auth } from "../../../../../../auth";
 import { redirect } from "next/navigation";
-import { getRolePermissions, UserRole } from "@/lib/auth-rbac";
+import { hasPermission } from "@/lib/auth-rbac";
+import { UserRole } from "@/types/user";
 import SupplierDetailView from "@/components/inventory/SupplierDetailView";
 
 export const metadata = {
@@ -9,9 +10,7 @@ export const metadata = {
 };
 
 interface SupplierDetailPageProps {
-  params: Promise<{
-    id: string;
-  }>;
+  params: Promise<{ id: string }>;
 }
 
 export default async function SupplierDetailPage({
@@ -23,9 +22,8 @@ export default async function SupplierDetailPage({
     redirect("/login");
   }
 
-  // Check if user has permission to view suppliers
-  const permissions = getRolePermissions(session.user.role as UserRole);
-  if (!permissions.canManageSuppliers) {
+  // Check if user has permission to view suppliers (inventory:read includes supplier viewing)
+  if (!hasPermission(session.user.role as UserRole, "inventory:read")) {
     redirect("/unauthorized");
   }
 

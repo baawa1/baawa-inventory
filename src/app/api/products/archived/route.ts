@@ -10,7 +10,7 @@ const archivedProductsQuerySchema = z.object({
   brand: z.string().optional(),
   page: z.coerce.number().int().positive().default(1),
   limit: z.coerce.number().int().positive().max(100).default(10),
-  sortBy: z.enum(["name", "archived_at", "created_at"]).default("archived_at"),
+  sortBy: z.enum(["name", "updatedAt", "createdAt"]).default("updatedAt"),
   sortOrder: z.enum(["asc", "desc"]).default("desc"),
 });
 
@@ -35,7 +35,7 @@ export async function GET(request: NextRequest) {
       brand: searchParams.get("brand") || undefined,
       page: searchParams.get("page") || "1",
       limit: searchParams.get("limit") || "10",
-      sortBy: searchParams.get("sortBy") || "archived_at",
+      sortBy: searchParams.get("sortBy") || "updatedAt",
       sortOrder: searchParams.get("sortOrder") || "desc",
     };
 
@@ -47,7 +47,7 @@ export async function GET(request: NextRequest) {
       brand,
       page = 1,
       limit = 10,
-      sortBy = "archived_at",
+      sortBy = "updatedAt",
       sortOrder = "desc",
     } = validatedData;
     const offset = (page - 1) * limit;
@@ -83,7 +83,7 @@ export async function GET(request: NextRequest) {
           supplier: { select: { id: true, name: true } },
         },
         orderBy: {
-          [sortBy === "archived_at" ? "updatedAt" : sortBy]: sortOrder,
+          [sortBy]: sortOrder,
         },
         skip: offset,
         take: limit,

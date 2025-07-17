@@ -460,7 +460,6 @@ export function ProductList({ user }: ProductListProps) {
       tableTitle="Products"
       totalCount={pagination.totalItems}
       currentCount={products.length}
-      showingText={`Showing ${products.length} of ${pagination.totalItems} products`}
       columns={PRODUCT_COLUMNS}
       visibleColumns={visibleColumns}
       onColumnsChange={setVisibleColumns}

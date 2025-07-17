@@ -1,4 +1,4 @@
-import { NextRequest, NextResponse } from "next/server";
+import { NextResponse } from "next/server";
 import { prisma } from "@/lib/db";
 import { withPOSAuth, AuthenticatedRequest } from "@/lib/api-auth-middleware";
 import { PRODUCT_STATUS, ERROR_MESSAGES, API_LIMITS } from "@/lib/constants";
@@ -15,9 +15,10 @@ async function handleGetProducts(request: AuthenticatedRequest) {
     // Build where clause
     const whereClause: any = {
       status: PRODUCT_STATUS.ACTIVE,
-      stock: {
-        gt: 0, // Only show products with stock
-      },
+      // Show all active products, including those with 0 stock
+      // stock: {
+      //   gt: 0, // Only show products with stock
+      // },
     };
 
     if (category) {
@@ -80,6 +81,7 @@ async function handleGetProducts(request: AuthenticatedRequest) {
       category: product.category?.name || "Uncategorized",
       brand: product.brand?.name || "No Brand",
       description: product.description,
+      images: product.images,
     }));
 
     // Return products directly if no pagination requested

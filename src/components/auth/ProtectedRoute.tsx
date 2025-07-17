@@ -1,7 +1,8 @@
 "use client";
 
 import React from "react";
-import { useAuth, UserRole, RolePermissions } from "@/lib/auth-rbac";
+import { useAuth } from "@/lib/auth-rbac-client";
+import { UserRole } from "@/types/user";
 import {
   Card,
   CardContent,
@@ -15,7 +16,7 @@ import Link from "next/link";
 interface ProtectedRouteProps {
   children: React.ReactNode;
   requiredRole?: UserRole | UserRole[];
-  requiredPermission?: keyof RolePermissions;
+  requiredPermission?: string;
   fallback?: React.ReactNode;
 }
 
@@ -76,7 +77,7 @@ export function ProtectedRoute({
 
   // Check permission-based access
   if (requiredPermission) {
-    if (!permissions || !permissions[requiredPermission]) {
+    if (!permissions || !permissions.includes(requiredPermission)) {
       return fallback || <UnauthorizedFallback />;
     }
   }
@@ -113,7 +114,7 @@ function UnauthorizedFallback() {
 export function withRoleProtection<P extends object>(
   WrappedComponent: React.ComponentType<P>,
   requiredRole?: UserRole | UserRole[],
-  requiredPermission?: keyof RolePermissions
+  requiredPermission?: string
 ) {
   return function ProtectedComponent(props: P) {
     return (
@@ -131,7 +132,7 @@ export function withRoleProtection<P extends object>(
 interface ConditionalRenderProps {
   children: React.ReactNode;
   requiredRole?: UserRole | UserRole[];
-  requiredPermission?: keyof RolePermissions;
+  requiredPermission?: string;
   fallback?: React.ReactNode;
 }
 
@@ -165,7 +166,7 @@ export function ConditionalRender({
 
   // Check permission-based access
   if (requiredPermission) {
-    if (!permissions || !permissions[requiredPermission]) {
+    if (!permissions || !permissions.includes(requiredPermission)) {
       return <>{fallback}</>;
     }
   }

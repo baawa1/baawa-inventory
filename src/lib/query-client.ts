@@ -50,6 +50,8 @@ export const queryKeys = {
       [...queryKeys.products.lists(), filters] as const,
     details: () => [...queryKeys.products.all, "detail"] as const,
     detail: (id: number) => [...queryKeys.products.details(), id] as const,
+    archived: (filters?: Record<string, any>) =>
+      [...queryKeys.products.all, "archived", filters || {}] as const,
   },
 
   // Suppliers

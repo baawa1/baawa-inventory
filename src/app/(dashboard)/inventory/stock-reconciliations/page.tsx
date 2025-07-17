@@ -11,16 +11,31 @@ export const metadata = {
 export default async function StockReconciliationsPage() {
   const session = await auth();
 
+  if (!session?.user) {
+    redirect("/login");
+  }
+
+  if (session.user.status !== "APPROVED") {
+    redirect("/pending-approval");
+  }
+
   // Check role permissions - only managers and above can access stock reconciliations
-  if (!session?.user || !["ADMIN", "MANAGER"].includes(session.user.role)) {
+  if (!["ADMIN", "MANAGER"].includes(session.user.role)) {
     redirect("/unauthorized");
   }
 
   return (
-    <StockReconciliationList
-      userRole={session.user.role}
-      userId={parseInt(session.user.id, 10)}
-      user={session.user}
-    />
+    <div className="space-y-6">
+      <div>
+        <h1 className="text-3xl font-bold tracking-tight">
+          Stock Reconciliations
+        </h1>
+        <p className="text-muted-foreground">
+          Manage stock reconciliations and inventory adjustments with approval
+          workflow
+        </p>
+      </div>
+      <StockReconciliationList user={session.user} />
+    </div>
   );
 }

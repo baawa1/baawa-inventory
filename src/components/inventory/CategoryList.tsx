@@ -9,7 +9,6 @@ import {
   useDeleteCategory,
   type Category as APICategory,
 } from "@/hooks/api/categories";
-import { queryKeys } from "@/lib/query-client";
 import { InventoryPageLayout } from "@/components/inventory/InventoryPageLayout";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
@@ -66,7 +65,34 @@ export default function CategoryList({ user }: CategoryListProps) {
     totalPages: 1,
     totalItems: 0,
   });
-  const [visibleColumns, setVisibleColumns] = useState<string[]>([]);
+
+  // Column configuration - only showing actual category fields
+  const columns: DashboardTableColumn[] = useMemo(
+    () => [
+      {
+        key: "name",
+        label: "Name",
+        sortable: true,
+        defaultVisible: true,
+        required: true,
+      },
+      { key: "description", label: "Description", defaultVisible: true },
+      { key: "isActive", label: "Status", defaultVisible: true },
+      { key: "createdAt", label: "Created", defaultVisible: true },
+      { key: "updatedAt", label: "Updated", defaultVisible: false },
+    ],
+    []
+  );
+
+  // Initialize visibleColumns with default values to prevent hydration mismatch
+  const defaultVisibleColumns = useMemo(
+    () => columns.filter((col) => col.defaultVisible).map((col) => col.key),
+    [columns]
+  );
+
+  const [visibleColumns, setVisibleColumns] = useState<string[]>(
+    defaultVisibleColumns
+  );
 
   // Clean up any "actions" column from localStorage and state
   React.useEffect(() => {
@@ -113,22 +139,6 @@ export default function CategoryList({ user }: CategoryListProps) {
     page: pagination.page,
     limit: pagination.limit,
   });
-
-  // Debug logging for cache invalidation
-  console.log("CategoryList render - data:", categoriesQuery.data?.data);
-  console.log("CategoryList render - isLoading:", categoriesQuery.isLoading);
-  console.log("CategoryList render - isFetching:", categoriesQuery.isFetching);
-  console.log(
-    "CategoryList render - queryKey:",
-    queryKeys.categories.list({
-      search: debouncedSearchTerm,
-      status: filters.isActive,
-      sortBy: "name",
-      sortOrder: "asc",
-      page: pagination.page,
-      limit: pagination.limit,
-    })
-  );
 
   const deleteCategoryMutation = useDeleteCategory();
 
@@ -220,23 +230,6 @@ export default function CategoryList({ user }: CategoryListProps) {
       return <Badge variant="secondary">Inactive</Badge>;
     }
   }, []);
-
-  // Column configuration - only showing actual category fields
-  const columns: DashboardTableColumn[] = useMemo(
-    () => [
-      {
-        key: "name",
-        label: "Name",
-        sortable: true,
-        defaultVisible: true,
-        required: true,
-      },
-      { key: "description", label: "Description", defaultVisible: true },
-      { key: "isActive", label: "Status", defaultVisible: true },
-      { key: "createdAt", label: "Created", defaultVisible: true },
-    ],
-    []
-  );
 
   // Add actions column if user has permissions
   const columnsWithActions = useMemo(() => {

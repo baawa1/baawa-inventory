@@ -3,9 +3,9 @@
  * Handles offline caching, background sync, and PWA functionality
  */
 
-const CACHE_NAME = "baawa-pos-v1";
-const OFFLINE_CACHE = "baawa-pos-offline-v1";
-const DYNAMIC_CACHE = "baawa-pos-dynamic-v1";
+const CACHE_NAME = "baawa-pos-v2";
+const OFFLINE_CACHE = "baawa-pos-offline-v2";
+const DYNAMIC_CACHE = "baawa-pos-dynamic-v2";
 
 // Files to cache immediately - only include files that actually exist
 const STATIC_ASSETS = [
@@ -91,6 +91,15 @@ self.addEventListener("fetch", (event) => {
 
   // Skip non-GET requests and chrome-extension requests
   if (request.method !== "GET" || url.protocol === "chrome-extension:") {
+    return;
+  }
+
+  // Skip external domains (like placeholder images) - let browser handle them
+  if (
+    url.hostname !== "localhost" &&
+    url.hostname !== "127.0.0.1" &&
+    !url.hostname.includes("localhost")
+  ) {
     return;
   }
 

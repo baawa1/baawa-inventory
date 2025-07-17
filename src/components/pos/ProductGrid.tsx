@@ -6,6 +6,7 @@ import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Skeleton } from "@/components/ui/skeleton";
 import { Input } from "@/components/ui/input";
+import { ScrollArea } from "@/components/ui/scroll-area";
 import {
   Select,
   SelectContent,
@@ -34,6 +35,7 @@ interface Product {
   category: string;
   brand: string;
   description?: string;
+  images?: any[]; // Array of image objects or strings
 }
 
 interface ProductGridProps {
@@ -172,6 +174,32 @@ export function ProductGrid({
   const hasActiveFilters =
     searchTerm || selectedCategory !== "all" || selectedBrand !== "all";
 
+  // Helper function to get the first/primary image from product images
+  const getProductImage = (product: Product): string | null => {
+    if (
+      !product.images ||
+      !Array.isArray(product.images) ||
+      product.images.length === 0
+    ) {
+      return null;
+    }
+
+    // Handle new format: array of objects with url property
+    if (typeof product.images[0] === "object" && product.images[0] !== null) {
+      const imageObj = product.images[0] as any;
+      if (imageObj.url) {
+        return imageObj.url;
+      }
+    }
+
+    // Handle legacy format: array of strings
+    if (typeof product.images[0] === "string") {
+      return product.images[0] as string;
+    }
+
+    return null;
+  };
+
   if (error) {
     return (
       <div className="text-center py-8">
@@ -190,7 +218,7 @@ export function ProductGrid({
   return (
     <div className="h-full flex flex-col">
       {/* Search and Filter Controls */}
-      <div className="space-y-4 mb-4 flex-shrink-0">
+      <div className="space-y-4 mb-4 flex-shrink-0 bg-background">
         {/* Search Bar */}
         <div className="flex gap-2">
           <div className="relative flex-1">
@@ -303,8 +331,8 @@ export function ProductGrid({
       )}
 
       {/* Product Grid - Scrollable */}
-      <div className="flex-1 overflow-y-auto">
-        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4 pb-4">
+      <ScrollArea className="flex-1 rounded-md border">
+        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4 pb-4 pr-4 p-4">
           {isLoading ? (
             Array.from({ length: 8 }).map((_, i) => (
               <Card key={i} className="overflow-hidden">
@@ -333,20 +361,55 @@ export function ProductGrid({
               >
                 <CardContent className="p-0">
                   {/* Product Image Background */}
-                  <div
-                    className="relative h-32 bg-gradient-to-br from-gray-100 to-gray-200 flex items-center justify-center"
-                    style={{
-                      backgroundImage: `url(https://via.placeholder.com/300x200/e5e7eb/6b7280?text=${encodeURIComponent(product.name.substring(0, 20))})`,
-                      backgroundSize: "cover",
-                      backgroundPosition: "center",
-                    }}
-                  >
+                  <div className="relative h-32 bg-gradient-to-br from-gray-100 to-gray-200 flex items-center justify-center overflow-hidden">
+                    {getProductImage(product) ? (
+                      <img
+                        src={getProductImage(product)!}
+                        alt={product.name}
+                        className="w-full h-full object-cover"
+                        onError={(e) => {
+                          // Fallback to gradient background if image fails to load
+                          e.currentTarget.style.display = "none";
+                          e.currentTarget.nextElementSibling!.classList.remove(
+                            "hidden"
+                          );
+                        }}
+                      />
+                    ) : null}
+                    <div
+                      className={`absolute inset-0 bg-gradient-to-br from-gray-100 to-gray-200 flex items-center justify-center ${getProductImage(product) ? "hidden" : ""}`}
+                    >
+                      <div className="text-2xl mb-1">
+                        {product.category?.toLowerCase().includes("phone")
+                          ? "📱"
+                          : product.category?.toLowerCase().includes("watch")
+                            ? "⌚"
+                            : product.category?.toLowerCase().includes("laptop")
+                              ? "💻"
+                              : product.category
+                                    ?.toLowerCase()
+                                    .includes("headphone")
+                                ? "🎧"
+                                : product.category
+                                      ?.toLowerCase()
+                                      .includes("cable")
+                                  ? "🔌"
+                                  : product.category
+                                        ?.toLowerCase()
+                                        .includes("charger")
+                                    ? "🔋"
+                                    : "📦"}
+                      </div>
+                    </div>
                     <div className="absolute inset-0 bg-black/20" />
                     <div className="relative z-10 text-white text-center p-2">
-                      <div className="text-2xl mb-1">📦</div>
                       {product.stock <= 0 && (
                         <Badge variant="destructive">Out of Stock</Badge>
                       )}
+                      <div className="text-xs font-medium mt-1 opacity-90">
+                        {product.name.substring(0, 25)}
+                        {product.name.length > 25 ? "..." : ""}
+                      </div>
                     </div>
                     <div className="absolute top-2 right-2">
                       <Badge variant="secondary" className="text-xs">
@@ -398,7 +461,7 @@ export function ProductGrid({
             ))
           )}
         </div>
-      </div>
+      </ScrollArea>
     </div>
   );
 }

@@ -1,7 +1,7 @@
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { queryKeys } from "@/lib/query-client";
 
-// Types for Brands
+// Types
 export interface Brand {
   id: number;
   name: string;
@@ -13,47 +13,106 @@ export interface Brand {
 }
 
 export interface BrandFilters {
-  search?: string;
-  isActive?: boolean;
-  sortBy?: string;
-  sortOrder?: "asc" | "desc";
-  page?: number;
-  limit?: number;
+  search: string;
+  status: string;
+  sortBy: string;
+  sortOrder: "asc" | "desc";
+  page: number;
+  limit: number;
 }
 
-export interface BrandListResponse {
-  success: boolean;
+export interface BrandPagination {
+  page: number;
+  limit: number;
+  totalPages: number;
+  totalBrands: number;
+}
+
+export interface BrandResponse {
   data: Brand[];
-  pagination: {
-    total: number;
-    totalPages: number;
-    page: number;
-    limit: number;
-  };
+  pagination: BrandPagination;
+}
+
+export interface CreateBrandData {
+  name: string;
+  description?: string;
+  website?: string;
+}
+
+export interface UpdateBrandData extends Partial<CreateBrandData> {
+  isActive?: boolean;
 }
 
 // API Functions
 const fetchBrands = async (
-  filters: BrandFilters = {}
-): Promise<BrandListResponse> => {
-  const params = new URLSearchParams({
+  filters: Partial<BrandFilters> = {}
+): Promise<BrandResponse> => {
+  const searchParams = new URLSearchParams({
     page: String(filters.page || 1),
     limit: String(filters.limit || 10),
     sortBy: filters.sortBy || "name",
     sortOrder: filters.sortOrder || "asc",
   });
 
-  if (filters.search) params.set("search", filters.search);
-  if (filters.isActive !== undefined)
-    params.set("isActive", filters.isActive.toString());
+  if (filters.search) searchParams.set("search", filters.search);
+  if (filters.status) searchParams.set("isActive", filters.status);
 
-  const response = await fetch(`/api/brands?${params.toString()}`);
+  const response = await fetch(`/api/brands?${searchParams.toString()}`);
 
   if (!response.ok) {
     throw new Error(`Failed to fetch brands: ${response.statusText}`);
   }
 
-  return response.json();
+  const data = await response.json();
+  return {
+    data: data.data || [],
+    pagination: {
+      page: data.pagination?.page || 1,
+      limit: data.pagination?.limit || 10,
+      totalPages: data.pagination?.totalPages || 1,
+      totalBrands: data.pagination?.total || 0,
+    },
+  };
+};
+
+const createBrand = async (data: CreateBrandData): Promise<Brand> => {
+  const response = await fetch("/api/brands", {
+    method: "POST",
+    headers: {
+      "Content-Type": "application/json",
+    },
+    body: JSON.stringify(data),
+  });
+
+  if (!response.ok) {
+    throw new Error(`Failed to create brand: ${response.statusText}`);
+  }
+
+  const result = await response.json();
+  return result.data;
+};
+
+const updateBrand = async ({
+  id,
+  data,
+}: {
+  id: number;
+  data: UpdateBrandData;
+}): Promise<Brand> => {
+  const response = await fetch(`/api/brands/${id}`, {
+    method: "PUT",
+    headers: {
+      "Content-Type": "application/json",
+    },
+    body: JSON.stringify(data),
+  });
+
+  if (!response.ok) {
+    throw new Error(`Failed to update brand: ${response.statusText}`);
+  }
+
+  const result = await response.json();
+  return result.data;
 };
 
 const deleteBrand = async (id: number): Promise<void> => {
@@ -66,114 +125,97 @@ const deleteBrand = async (id: number): Promise<void> => {
   }
 };
 
-const createBrand = async (
-  brandData: Omit<Brand, "id" | "createdAt" | "updatedAt">
-): Promise<Brand> => {
-  const response = await fetch("/api/brands", {
-    method: "POST",
-    headers: {
-      "Content-Type": "application/json",
-    },
-    body: JSON.stringify(brandData),
-  });
-
-  if (!response.ok) {
-    throw new Error(`Failed to create brand: ${response.statusText}`);
-  }
-
-  return response.json();
-};
-
-const updateBrand = async ({
-  id,
-  ...brandData
-}: Partial<Brand> & { id: number }): Promise<Brand> => {
-  const response = await fetch(`/api/brands/${id}`, {
-    method: "PUT",
-    headers: {
-      "Content-Type": "application/json",
-    },
-    body: JSON.stringify(brandData),
-  });
-
-  if (!response.ok) {
-    throw new Error(`Failed to update brand: ${response.statusText}`);
-  }
-
-  return response.json();
-};
-
 // Query Hooks
-export function useBrands(filters: BrandFilters = {}) {
+export const useBrands = (filters: Partial<BrandFilters> = {}) => {
   return useQuery({
     queryKey: queryKeys.brands.list(filters),
     queryFn: () => fetchBrands(filters),
-    staleTime: 2 * 60 * 1000, // 2 minutes
-    gcTime: 5 * 60 * 1000, // 5 minutes
-    select: (data) => data, // Can transform data here if needed
+    staleTime: 5 * 60 * 1000, // 5 minutes
   });
-}
+};
 
-export function useBrandById(id: number) {
+export const useBrand = (id: number) => {
   return useQuery({
     queryKey: queryKeys.brands.detail(id),
-    queryFn: () => fetch(`/api/brands/${id}`).then((res) => res.json()),
+    queryFn: async () => {
+      const response = await fetch(`/api/brands/${id}`);
+      if (!response.ok) {
+        throw new Error(`Failed to fetch brand: ${response.statusText}`);
+      }
+      const result = await response.json();
+      return result.data;
+    },
     enabled: !!id,
-    staleTime: 5 * 60 * 1000,
   });
-}
+};
+
+// Alias for backward compatibility
+export const useBrandById = useBrand;
 
 // Mutation Hooks
-export function useCreateBrand() {
+export const useCreateBrand = () => {
   const queryClient = useQueryClient();
 
   return useMutation({
     mutationFn: createBrand,
     onSuccess: () => {
-      // Invalidate and refetch brands list
-      queryClient.invalidateQueries({ queryKey: queryKeys.brands.all });
+      // Invalidate all brand-related queries
+      queryClient.invalidateQueries({
+        queryKey: queryKeys.brands.all,
+        exact: false,
+      });
+      // Also invalidate specific list queries
+      queryClient.invalidateQueries({
+        queryKey: queryKeys.brands.lists(),
+        exact: false,
+      });
     },
   });
-}
+};
 
-export function useUpdateBrand() {
+export const useUpdateBrand = () => {
   const queryClient = useQueryClient();
 
   return useMutation({
     mutationFn: updateBrand,
     onSuccess: (data) => {
-      // Update the specific brand in cache
+      console.log("Updating brand, invalidating cache for:", data);
+      // Invalidate all brand-related queries
+      queryClient.invalidateQueries({
+        queryKey: queryKeys.brands.all,
+        exact: false,
+      });
+      // Also invalidate specific list queries
+      queryClient.invalidateQueries({
+        queryKey: queryKeys.brands.lists(),
+        exact: false,
+      });
+      // Update individual brand detail
       queryClient.setQueryData(queryKeys.brands.detail(data.id), data);
-      // Invalidate lists to ensure consistency
-      queryClient.invalidateQueries({ queryKey: queryKeys.brands.lists() });
+      console.log("Cache invalidation completed");
     },
   });
-}
+};
 
-export function useDeleteBrand() {
+export const useDeleteBrand = () => {
   const queryClient = useQueryClient();
 
   return useMutation({
     mutationFn: deleteBrand,
     onSuccess: () => {
-      // Invalidate all brand queries
-      queryClient.invalidateQueries({ queryKey: queryKeys.brands.all });
+      // Invalidate all brand-related queries
+      queryClient.invalidateQueries({
+        queryKey: queryKeys.brands.all,
+        exact: false,
+      });
+      // Also invalidate specific list queries
+      queryClient.invalidateQueries({
+        queryKey: queryKeys.brands.lists(),
+        exact: false,
+      });
     },
   });
-}
-
-// Utility function for optimistic updates
-export function useOptimisticBrandUpdate() {
-  const queryClient = useQueryClient();
-
-  return (brandId: number, updatedData: Partial<Brand>) => {
-    queryClient.setQueryData(
-      queryKeys.brands.detail(brandId),
-      (oldData: Brand | undefined) =>
-        oldData ? { ...oldData, ...updatedData } : undefined
-    );
-  };
-}
+};
 
 // Utility Hooks
 export const useBrandOptions = () => {
