@@ -5,13 +5,29 @@ import { useSession } from "next-auth/react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Separator } from "@/components/ui/separator";
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+  AlertDialogTrigger,
+} from "@/components/ui/alert-dialog";
 import { ProductGrid } from "./ProductGrid";
 import { ShoppingCart } from "./ShoppingCart";
 import { PaymentInterface } from "./PaymentInterface";
 import { ReceiptGenerator } from "./ReceiptGenerator";
 import { OfflineStatusIndicator } from "./OfflineStatusIndicator";
 import { POSErrorBoundary } from "./POSErrorBoundary";
-import { IconShoppingCart, IconCash, IconReceipt } from "@tabler/icons-react";
+import {
+  IconShoppingCart,
+  IconCash,
+  IconReceipt,
+  IconTrash,
+} from "@tabler/icons-react";
 import { useOffline } from "@/hooks/useOffline";
 import { toast } from "sonner";
 
@@ -103,6 +119,7 @@ export function POSInterface() {
     setCart([]);
     setDiscount(0);
     setCustomerInfo({ name: "", phone: "", email: "" });
+    toast.success("Shopping cart cleared");
   };
 
   // Handle successful payment
@@ -166,16 +183,53 @@ export function POSInterface() {
 
   return (
     <POSErrorBoundary componentName="POSInterface">
-      <div data-testid="pos-interface" className="h-screen overflow-hidden">
-        {/* Offline Status Indicator */}
-        <div className="flex justify-between items-center p-4 border-b">
+      <div
+        data-testid="pos-interface"
+        className="h-[calc(100vh-8rem)] flex flex-col"
+      >
+        {/* Header with Clear All Button */}
+        <div className="flex justify-between items-center p-4 border-b flex-shrink-0">
           <h1 className="text-2xl font-bold">Point of Sale</h1>
-          <OfflineStatusIndicator />
+          <div className="flex items-center gap-4">
+            {cart.length > 0 && currentStep === "search" && (
+              <AlertDialog>
+                <AlertDialogTrigger asChild>
+                  <Button
+                    variant="outline"
+                    size="sm"
+                    className="flex items-center gap-2"
+                  >
+                    <IconTrash className="h-4 w-4" />
+                    Clear All
+                  </Button>
+                </AlertDialogTrigger>
+                <AlertDialogContent>
+                  <AlertDialogHeader>
+                    <AlertDialogTitle>Clear Shopping Cart</AlertDialogTitle>
+                    <AlertDialogDescription>
+                      Are you sure you want to clear all items from your
+                      shopping cart? This action cannot be undone.
+                    </AlertDialogDescription>
+                  </AlertDialogHeader>
+                  <AlertDialogFooter>
+                    <AlertDialogCancel>Cancel</AlertDialogCancel>
+                    <AlertDialogAction
+                      onClick={clearCart}
+                      className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
+                    >
+                      Clear All
+                    </AlertDialogAction>
+                  </AlertDialogFooter>
+                </AlertDialogContent>
+              </AlertDialog>
+            )}
+            <OfflineStatusIndicator />
+          </div>
         </div>
 
-        <div className="grid grid-cols-1 lg:grid-cols-3 gap-6 h-full p-6">
+        <div className="grid grid-cols-1 lg:grid-cols-3 gap-6 flex-1 p-6 min-h-0">
           {/* Left Column - Product Search and Grid */}
-          <div className="lg:col-span-2 h-full">
+          <div className="lg:col-span-2 flex flex-col min-h-0">
             <POSErrorBoundary componentName="ProductGrid">
               <ProductGrid
                 onProductSelect={addToCart}
@@ -185,7 +239,7 @@ export function POSInterface() {
           </div>
 
           {/* Right Column - Cart and Actions */}
-          <div className="space-y-6 h-full overflow-y-auto">
+          <div className="space-y-6 overflow-y-auto h-full">
             {/* Shopping Cart */}
             <Card>
               <CardHeader>

@@ -318,7 +318,6 @@ export function StockHistoryList({ user: _user }: StockHistoryListProps) {
       tableTitle="Stock History"
       totalCount={stockHistory?.data?.length || 0}
       currentCount={stockHistory?.data?.length || 0}
-      showingText={`Showing ${stockHistory?.data?.length || 0} stock additions`}
       columns={columns}
       visibleColumns={columns.map((col) => col.key)}
       onColumnsChange={undefined}

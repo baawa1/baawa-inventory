@@ -364,7 +364,6 @@ export default function BrandList({ user }: BrandListProps) {
         tableTitle="Brands"
         totalCount={total}
         currentCount={brands.length}
-        showingText={`Showing ${brands.length} of ${total} brands`}
         columns={columnsWithActions}
         visibleColumns={effectiveVisibleColumns}
         onColumnsChange={setVisibleColumns}

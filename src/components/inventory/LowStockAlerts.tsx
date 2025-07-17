@@ -350,7 +350,6 @@ export function LowStockAlerts() {
       tableTitle="Low Stock Products"
       totalCount={filteredProducts.length}
       currentCount={filteredProducts.length}
-      showingText={`Showing ${filteredProducts.length} low stock products`}
       columns={columns}
       visibleColumns={columns.map((col) => col.key)}
       onColumnsChange={undefined}
