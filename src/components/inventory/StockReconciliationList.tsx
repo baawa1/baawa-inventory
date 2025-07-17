@@ -1,6 +1,6 @@
 "use client";
 
-import React, { useState } from "react";
+import React, { useState, useMemo } from "react";
 import Link from "next/link";
 import { toast } from "sonner";
 import { useDebounce } from "@/hooks/useDebounce";
@@ -167,6 +167,8 @@ export function StockReconciliationList({
     status: filters.status !== "all" ? filters.status : undefined,
     sortBy: "createdAt",
     sortOrder: "desc",
+    page: pagination.page,
+    limit: pagination.limit,
   };
 
   const reconciliationsQuery = useStockReconciliations(stockFilters);
@@ -178,36 +180,41 @@ export function StockReconciliationList({
   // Extract data from queries
   const reconciliations = reconciliationsQuery.data?.reconciliations || [];
   const loading = reconciliationsQuery.isLoading;
+  const apiPagination = reconciliationsQuery.data?.pagination;
 
   // Update pagination when data changes
   React.useEffect(() => {
-    const totalItems = reconciliations.length;
-    setPagination((prev) => ({
-      ...prev,
-      totalItems,
-      totalPages: Math.ceil(totalItems / prev.limit),
-    }));
-  }, [reconciliations.length]);
+    if (apiPagination) {
+      setPagination((prev) => ({
+        ...prev,
+        totalItems: apiPagination.total,
+        totalPages: apiPagination.totalPages,
+      }));
+    }
+  }, [apiPagination]);
 
   // Permission checks
   const canManageReconciliations = ["ADMIN", "MANAGER"].includes(userRole);
   const canApproveReconciliations = userRole === "ADMIN";
 
-  // Filter configurations
-  const filterConfigs: FilterConfig[] = [
-    {
-      key: "status",
-      label: "Status",
-      type: "select",
-      options: [
-        { value: "DRAFT", label: "Draft" },
-        { value: "PENDING", label: "Pending" },
-        { value: "APPROVED", label: "Approved" },
-        { value: "REJECTED", label: "Rejected" },
-      ],
-      placeholder: "All Status",
-    },
-  ];
+  // Filter configurations - memoized to prevent unnecessary re-renders
+  const filterConfigs: FilterConfig[] = useMemo(
+    () => [
+      {
+        key: "status",
+        label: "Status",
+        type: "select",
+        options: [
+          { value: "DRAFT", label: "Draft" },
+          { value: "PENDING", label: "Pending" },
+          { value: "APPROVED", label: "Approved" },
+          { value: "REJECTED", label: "Rejected" },
+        ],
+        placeholder: "All Status",
+      },
+    ],
+    []
+  );
 
   // Handle filter changes
   const handleFilterChange = (key: string, value: any) => {

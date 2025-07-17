@@ -1,6 +1,6 @@
 "use client";
 
-import React, { useState, useEffect } from "react";
+import React, { useState, useEffect, useMemo } from "react";
 import { useQuery } from "@tanstack/react-query";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
@@ -246,21 +246,24 @@ export function StockHistoryList({ user: _user }: StockHistoryListProps) {
     { key: "added_by", label: "Added By", sortable: true },
   ];
 
-  const filterConfigs: FilterConfig[] = [
-    {
-      key: "supplier",
-      label: "Suppliers",
-      type: "select",
-      options: [
-        { value: "all", label: "All Suppliers" },
-        ...(suppliers?.data?.map((supplier: any) => ({
-          value: supplier.id,
-          label: supplier.name,
-        })) || []),
-      ],
-      placeholder: "All Suppliers",
-    },
-  ];
+  const filterConfigs: FilterConfig[] = useMemo(
+    () => [
+      {
+        key: "supplier",
+        label: "Suppliers",
+        type: "select",
+        options: [
+          { value: "all", label: "All Suppliers" },
+          ...(suppliers?.data?.map((supplier: any) => ({
+            value: supplier.id,
+            label: supplier.name,
+          })) || []),
+        ],
+        placeholder: "All Suppliers",
+      },
+    ],
+    [suppliers?.data]
+  );
 
   const sortOptions: SortOption[] = [
     { value: "createdAt-desc", label: "Newest First" },

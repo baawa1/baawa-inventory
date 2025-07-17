@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useEffect } from "react";
+import { useState, useEffect, useMemo, useCallback } from "react";
 import { useSession } from "next-auth/react";
 import { useRouter } from "next/navigation";
 import Link from "next/link";
@@ -56,17 +56,20 @@ export default function BrandList() {
   // Show search loading when user is typing but search hasn't been triggered yet
   const isSearching = filters.search !== debouncedSearchTerm;
 
-  // Build query filters
-  const queryFilters = {
-    offset: (pagination.page - 1) * pagination.limit,
-    limit: pagination.limit,
-    sortBy: "name",
-    sortOrder: "asc" as const,
-    ...(debouncedSearchTerm && { search: debouncedSearchTerm }),
-    ...(filters.isActive !== "" && {
-      isActive: filters.isActive === "true",
+  // Build query filters - memoized to prevent unnecessary re-renders
+  const queryFilters = useMemo(
+    () => ({
+      page: pagination.page,
+      limit: pagination.limit,
+      sortBy: "name",
+      sortOrder: "asc" as const,
+      ...(debouncedSearchTerm && { search: debouncedSearchTerm }),
+      ...(filters.isActive !== "" && {
+        isActive: filters.isActive === "true",
+      }),
     }),
-  };
+    [pagination.page, pagination.limit, debouncedSearchTerm, filters.isActive]
+  );
 
   // Fetch brands with TanStack Query (only when authenticated)
   const {
@@ -88,7 +91,7 @@ export default function BrandList() {
     if (brandsData?.pagination) {
       setPagination((prev) => ({
         ...prev,
-        totalPages: brandsData.pagination.pages,
+        totalPages: brandsData.pagination.totalPages,
         totalItems: brandsData.pagination.total,
       }));
     }
@@ -102,65 +105,71 @@ export default function BrandList() {
     { key: "status", label: "Status" },
   ];
 
-  // Filter configurations
-  const filterConfigs: FilterConfig[] = [
-    {
-      key: "isActive",
-      label: "Status",
-      type: "select",
-      options: [
-        { value: "true", label: "Active" },
-        { value: "false", label: "Inactive" },
-      ],
-      placeholder: "Filter by status",
-    },
-  ];
+  // Filter configurations - memoized to prevent unnecessary re-renders
+  const filterConfigs: FilterConfig[] = useMemo(
+    () => [
+      {
+        key: "isActive",
+        label: "Status",
+        type: "select",
+        options: [
+          { value: "true", label: "Active" },
+          { value: "false", label: "Inactive" },
+        ],
+        placeholder: "Filter by status",
+      },
+    ],
+    []
+  );
 
   // Handle filter changes
-  const handleFilterChange = (key: string, value: any) => {
+  const handleFilterChange = useCallback((key: string, value: any) => {
     setFilters((prev) => {
       if (prev[key as keyof typeof prev] === value) return prev; // Prevent unnecessary updates
       return { ...prev, [key]: value };
     });
     setPagination((prev) => ({ ...prev, page: 1 })); // Reset to first page
-  };
+  }, []);
 
   // Handle search change
-  const handleSearchChange = (value: string) => {
+  const handleSearchChange = useCallback((value: string) => {
     setFilters((prev) => ({ ...prev, search: value }));
     setPagination((prev) => ({ ...prev, page: 1 })); // Reset to first page
-  };
+  }, []);
 
   // Clear all filters
-  const handleResetFilters = () => {
+  const handleResetFilters = useCallback(() => {
     setFilters({
       search: "",
       isActive: "",
     });
     setPagination((prev) => ({ ...prev, page: 1 }));
-  };
+  }, []);
 
   // Handle pagination
-  const handlePageChange = (newPage: number) => {
+  const handlePageChange = useCallback((newPage: number) => {
     setPagination((prev) => ({ ...prev, page: newPage }));
-  };
+  }, []);
 
-  const handlePageSizeChange = (newLimit: number) => {
+  const handlePageSizeChange = useCallback((newLimit: number) => {
     setPagination((prev) => ({ ...prev, limit: newLimit, page: 1 }));
-  };
+  }, []);
 
-  const handleDelete = async (id: number) => {
-    try {
-      await deleteBrandMutation.mutateAsync(id);
-      toast.success("Brand deleted successfully");
-    } catch (err) {
-      console.error("Error deleting brand:", err);
-      toast.error("Failed to delete brand");
-    }
-  };
+  const handleDelete = useCallback(
+    async (id: number) => {
+      try {
+        await deleteBrandMutation.mutateAsync(id);
+        toast.success("Brand deleted successfully");
+      } catch (err) {
+        console.error("Error deleting brand:", err);
+        toast.error("Failed to delete brand");
+      }
+    },
+    [deleteBrandMutation]
+  );
 
   // Render cell content
-  const renderCell = (brand: any, columnKey: string) => {
+  const renderCell = useCallback((brand: any, columnKey: string) => {
     switch (columnKey) {
       case "name":
         return <div className="font-medium">{brand.name}</div>;
@@ -177,42 +186,45 @@ export default function BrandList() {
       default:
         return null;
     }
-  };
+  }, []);
 
   // Render action buttons
-  const renderActions = (brand: any) => {
-    return (
-      <div className="flex items-center justify-end gap-2">
-        <Link href={`/inventory/brands/${brand.id}/edit`}>
-          <Button variant="ghost" size="sm">
-            <Edit className="h-4 w-4" />
-          </Button>
-        </Link>
-        <AlertDialog>
-          <AlertDialogTrigger asChild>
+  const renderActions = useCallback(
+    (brand: any) => {
+      return (
+        <div className="flex items-center justify-end gap-2">
+          <Link href={`/inventory/brands/${brand.id}/edit`}>
             <Button variant="ghost" size="sm">
-              <Trash2 className="h-4 w-4" />
+              <Edit className="h-4 w-4" />
             </Button>
-          </AlertDialogTrigger>
-          <AlertDialogContent>
-            <AlertDialogHeader>
-              <AlertDialogTitle>Delete Brand</AlertDialogTitle>
-              <AlertDialogDescription>
-                Are you sure you want to delete "{brand.name}"? This action
-                cannot be undone.
-              </AlertDialogDescription>
-            </AlertDialogHeader>
-            <AlertDialogFooter>
-              <AlertDialogCancel>Cancel</AlertDialogCancel>
-              <AlertDialogAction onClick={() => handleDelete(brand.id)}>
-                Delete
-              </AlertDialogAction>
-            </AlertDialogFooter>
-          </AlertDialogContent>
-        </AlertDialog>
-      </div>
-    );
-  };
+          </Link>
+          <AlertDialog>
+            <AlertDialogTrigger asChild>
+              <Button variant="ghost" size="sm">
+                <Trash2 className="h-4 w-4" />
+              </Button>
+            </AlertDialogTrigger>
+            <AlertDialogContent>
+              <AlertDialogHeader>
+                <AlertDialogTitle>Delete Brand</AlertDialogTitle>
+                <AlertDialogDescription>
+                  Are you sure you want to delete "{brand.name}"? This action
+                  cannot be undone.
+                </AlertDialogDescription>
+              </AlertDialogHeader>
+              <AlertDialogFooter>
+                <AlertDialogCancel>Cancel</AlertDialogCancel>
+                <AlertDialogAction onClick={() => handleDelete(brand.id)}>
+                  Delete
+                </AlertDialogAction>
+              </AlertDialogFooter>
+            </AlertDialogContent>
+          </AlertDialog>
+        </div>
+      );
+    },
+    [handleDelete]
+  );
 
   // Redirect if not authenticated
   if (status === "unauthenticated") {

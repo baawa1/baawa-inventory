@@ -16,6 +16,8 @@ export interface CategoryFilters {
   status: string;
   sortBy: string;
   sortOrder: "asc" | "desc";
+  page: number;
+  limit: number;
 }
 
 export interface CategoryPagination {
@@ -44,8 +46,8 @@ const fetchCategories = async (
   filters: Partial<CategoryFilters> = {}
 ): Promise<CategoryResponse> => {
   const searchParams = new URLSearchParams({
-    page: "1",
-    limit: "10",
+    page: String(filters.page || 1),
+    limit: String(filters.limit || 10),
     sortBy: filters.sortBy || "name",
     sortOrder: filters.sortOrder || "asc",
   });
@@ -152,7 +154,16 @@ export const useCreateCategory = () => {
   return useMutation({
     mutationFn: createCategory,
     onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: queryKeys.categories.all });
+      // Invalidate all category-related queries
+      queryClient.invalidateQueries({
+        queryKey: queryKeys.categories.all,
+        exact: false,
+      });
+      // Also invalidate specific list queries
+      queryClient.invalidateQueries({
+        queryKey: queryKeys.categories.lists(),
+        exact: false,
+      });
     },
   });
 };
@@ -163,8 +174,20 @@ export const useUpdateCategory = () => {
   return useMutation({
     mutationFn: updateCategory,
     onSuccess: (data) => {
-      queryClient.invalidateQueries({ queryKey: queryKeys.categories.all });
+      console.log("Updating category, invalidating cache for:", data);
+      // Invalidate all category-related queries
+      queryClient.invalidateQueries({
+        queryKey: queryKeys.categories.all,
+        exact: false,
+      });
+      // Also invalidate specific list queries
+      queryClient.invalidateQueries({
+        queryKey: queryKeys.categories.lists(),
+        exact: false,
+      });
+      // Update individual category detail
       queryClient.setQueryData(queryKeys.categories.detail(data.id), data);
+      console.log("Cache invalidation completed");
     },
   });
 };
@@ -175,7 +198,16 @@ export const useDeleteCategory = () => {
   return useMutation({
     mutationFn: deleteCategory,
     onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: queryKeys.categories.all });
+      // Invalidate all category-related queries
+      queryClient.invalidateQueries({
+        queryKey: queryKeys.categories.all,
+        exact: false,
+      });
+      // Also invalidate specific list queries
+      queryClient.invalidateQueries({
+        queryKey: queryKeys.categories.lists(),
+        exact: false,
+      });
     },
   });
 };

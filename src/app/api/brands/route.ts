@@ -31,14 +31,18 @@ export async function GET(request: NextRequest) {
     }
 
     const { searchParams } = new URL(request.url);
-    const activeOnly = searchParams.get("active") === "true";
+    const isActive = searchParams.get("isActive");
     const search = searchParams.get("search") || "";
+    const page = parseInt(searchParams.get("page") || "1");
+    const limit = parseInt(searchParams.get("limit") || "10");
+    const sortBy = searchParams.get("sortBy") || "name";
+    const sortOrder = searchParams.get("sortOrder") || "asc";
 
     // Build where clause
     const where: any = {};
 
-    if (activeOnly) {
-      where.isActive = true;
+    if (isActive !== null && isActive !== "") {
+      where.isActive = isActive === "true";
     }
 
     if (search) {
@@ -47,6 +51,17 @@ export async function GET(request: NextRequest) {
         { description: { contains: search, mode: "insensitive" } },
       ];
     }
+
+    // Get total count for pagination
+    const totalCount = await prisma.brand.count({ where });
+
+    // Calculate pagination
+    const totalPages = Math.ceil(totalCount / limit);
+    const skip = (page - 1) * limit;
+
+    // Build orderBy clause
+    const orderBy: any = {};
+    orderBy[sortBy] = sortOrder;
 
     const brands = await prisma.brand.findMany({
       where,
@@ -64,9 +79,9 @@ export async function GET(request: NextRequest) {
           },
         },
       },
-      orderBy: {
-        name: "asc",
-      },
+      orderBy,
+      skip,
+      take: limit,
     });
 
     // Transform the response
@@ -83,7 +98,12 @@ export async function GET(request: NextRequest) {
 
     return NextResponse.json({
       data: transformedBrands,
-      count: brands.length,
+      pagination: {
+        page: page,
+        limit: limit,
+        totalPages: totalPages,
+        total: totalCount,
+      },
     });
   } catch (error) {
     console.error("Error fetching brands:", error);

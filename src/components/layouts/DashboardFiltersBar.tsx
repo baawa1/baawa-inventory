@@ -1,4 +1,4 @@
-import React from "react";
+import React, { useCallback } from "react";
 import {
   DashboardCard,
   CardHeader,
@@ -59,60 +59,58 @@ export function DashboardFiltersBar({
   currentSort = "",
   onSortChange = () => {},
 }: DashboardFiltersBarProps) {
-  const renderFilterControl = (filter: FilterConfig) => {
-    const value = filterValues[filter.key] || "";
-    switch (filter.type) {
-      case "select":
-        return (
-          <Select
-            key={filter.key}
-            value={value === "" ? "all" : value}
-            onValueChange={(val: string) => {
-              const newValue = val === "all" ? "" : val;
-              if (newValue !== value) {
+  const renderFilterControl = useCallback(
+    (filter: FilterConfig) => {
+      const value = filterValues[filter.key] || "";
+      switch (filter.type) {
+        case "select":
+          return (
+            <Select
+              value={value === "" ? "all" : value}
+              onValueChange={(val: string) => {
+                const newValue = val === "all" ? "" : val;
                 onFilterChange(filter.key, newValue);
+              }}
+            >
+              <SelectTrigger>
+                <SelectValue placeholder={filter.placeholder || filter.label} />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="all">All {filter.label}</SelectItem>
+                {filter.options?.map((option) => (
+                  <SelectItem key={option.value} value={option.value}>
+                    {option.label}
+                  </SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
+          );
+        case "boolean":
+          return (
+            <Button
+              variant={value ? "default" : "outline"}
+              size="sm"
+              onClick={() => onFilterChange(filter.key, !value)}
+            >
+              {filter.label}
+            </Button>
+          );
+        case "text":
+          return (
+            <Input
+              placeholder={filter.placeholder || filter.label}
+              value={value}
+              onChange={(e: React.ChangeEvent<HTMLInputElement>) =>
+                onFilterChange(filter.key, e.target.value)
               }
-            }}
-          >
-            <SelectTrigger>
-              <SelectValue placeholder={filter.placeholder || filter.label} />
-            </SelectTrigger>
-            <SelectContent>
-              <SelectItem value="all">All {filter.label}</SelectItem>
-              {filter.options?.map((option) => (
-                <SelectItem key={option.value} value={option.value}>
-                  {option.label}
-                </SelectItem>
-              ))}
-            </SelectContent>
-          </Select>
-        );
-      case "boolean":
-        return (
-          <Button
-            key={filter.key}
-            variant={value ? "default" : "outline"}
-            size="sm"
-            onClick={() => onFilterChange(filter.key, !value)}
-          >
-            {filter.label}
-          </Button>
-        );
-      case "text":
-        return (
-          <Input
-            key={filter.key}
-            placeholder={filter.placeholder || filter.label}
-            value={value}
-            onChange={(e: React.ChangeEvent<HTMLInputElement>) =>
-              onFilterChange(filter.key, e.target.value)
-            }
-          />
-        );
-      default:
-        return null;
-    }
-  };
+            />
+          );
+        default:
+          return null;
+      }
+    },
+    [filterValues, onFilterChange]
+  );
 
   return (
     <DashboardCard className="mb-6">
@@ -140,7 +138,9 @@ export function DashboardFiltersBar({
               </div>
             )}
           </div>
-          {filters.map(renderFilterControl)}
+          {filters.map((filter) => (
+            <div key={filter.key}>{renderFilterControl(filter)}</div>
+          ))}
           <Button
             variant="outline"
             size="sm"
