@@ -3,7 +3,9 @@ import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { updateProductSchema } from "@/lib/validations/product";
 import { UpdateProductFormData } from "./types";
-import { useProduct, useCategories, useBrands } from "@/hooks/api/products";
+import { useProduct } from "@/hooks/api/products";
+import { useCategories } from "@/hooks/api/categories";
+import { useBrands } from "@/hooks/api/brands";
 import { useSuppliers } from "@/hooks/api/suppliers";
 
 export function useEditProductData(productId: number) {
@@ -45,9 +47,9 @@ export function useEditProductData(productId: number) {
 
   // TanStack Query hooks for parallel data fetching
   const product = useProduct(productId);
-  const categories = useCategories({ isActive: true });
-  const brands = useBrands({ isActive: true });
-  const suppliers = useSuppliers({ isActive: true });
+  const categories = useCategories({ status: "true" });
+  const brands = useBrands({ status: "true" });
+  const suppliers = useSuppliers({ status: "true" });
 
   // Combine loading states
   const loading =
@@ -106,8 +108,10 @@ export function useEditProductData(productId: number) {
   return {
     form,
     product: product.data,
-    categories: Array.isArray(categories.data) ? categories.data : [],
-    brands: Array.isArray(brands.data) ? brands.data : [],
+    categories: Array.isArray(categories.data?.data)
+      ? categories.data.data
+      : [],
+    brands: Array.isArray(brands.data?.data) ? brands.data.data : [],
     suppliers: Array.isArray(suppliers.data?.data) ? suppliers.data.data : [],
     loading,
     loadingCategories,

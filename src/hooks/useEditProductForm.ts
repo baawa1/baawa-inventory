@@ -2,7 +2,9 @@ import { useEffect } from "react";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { updateProductSchema } from "@/lib/validations/product";
-import { useProduct, useCategories, useBrands } from "@/hooks/api/products";
+import { useProduct } from "@/hooks/api/products";
+import { useCategories } from "@/hooks/api/categories";
+import { useBrands } from "@/hooks/api/brands";
 import { useSuppliers } from "@/hooks/api/suppliers";
 import type { z } from "zod";
 
@@ -47,9 +49,9 @@ export function useEditProductForm(
 
   // TanStack Query hooks for parallel data fetching
   const product = useProduct(productId);
-  const categories = useCategories({ isActive: true });
-  const brands = useBrands({ isActive: true });
-  const suppliers = useSuppliers({ status: "active" });
+  const categories = useCategories({ status: "true" });
+  const brands = useBrands({ status: "true" });
+  const suppliers = useSuppliers({ status: "true" });
 
   // Combine loading states
   const isLoading =
@@ -81,8 +83,8 @@ export function useEditProductForm(
         purchasePrice: Number(productData.cost),
         sellingPrice: Number(productData.price),
         currentStock: productData.stock,
-        minimumStock: productData.min_stock,
-        maximumStock: productData.max_stock || undefined,
+        minimumStock: productData.minStock,
+        maximumStock: productData.maxStock || undefined,
         status: productData.status,
         notes: "",
       });
@@ -92,8 +94,8 @@ export function useEditProductForm(
   return {
     form,
     product: product.data,
-    categories: categories.data || [],
-    brands: brands.data || [],
+    categories: categories.data?.data || [],
+    brands: brands.data?.data || [],
     suppliers: suppliers.data?.data || [],
     isLoading,
     error,
