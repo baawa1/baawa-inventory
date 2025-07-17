@@ -251,7 +251,7 @@ export function ProductSearchBar({
 
       {/* Search Results */}
       {searchMode === "text" && products.length > 0 && (
-        <div className="space-y-2 max-h-96 overflow-y-auto">
+        <div className="space-y-2 overflow-y-auto max-h-[60vh]">
           {products.map((product) => (
             <Card
               key={product.id}

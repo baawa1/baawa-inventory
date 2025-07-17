@@ -5,7 +5,6 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Card, CardContent } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
-import { Separator } from "@/components/ui/separator";
 import {
   IconMinus,
   IconPlus,
@@ -13,7 +12,6 @@ import {
   IconShoppingCartOff,
   IconPackage,
   IconTag,
-  IconCurrency,
 } from "@tabler/icons-react";
 
 export interface CartItem {
@@ -59,9 +57,9 @@ export function ShoppingCart({
   );
 
   return (
-    <div className="space-y-4">
-      {/* Cart Header */}
-      <div className="flex items-center justify-between">
+    <div className="h-full flex flex-col">
+      {/* Cart Header - Fixed */}
+      <div className="flex items-center justify-between flex-shrink-0 mb-4">
         <div className="text-sm text-muted-foreground">
           {totalItems} item{totalItems !== 1 ? "s" : ""} • ₦
           {totalValue.toLocaleString()}
@@ -77,8 +75,8 @@ export function ShoppingCart({
         </Button>
       </div>
 
-      {/* Cart Items */}
-      <div className="space-y-3 max-h-96 overflow-y-auto">
+      {/* Cart Items - Scrollable */}
+      <div className="flex-1 min-h-0 overflow-y-auto max-h-[30rem] space-y-3 pr-2">
         {items.map((item) => (
           <Card key={item.id} className="border-l-4 border-l-primary">
             <CardContent className="p-4">
@@ -188,8 +186,8 @@ export function ShoppingCart({
         ))}
       </div>
 
-      {/* Cart Summary */}
-      <div className="space-y-2 pt-4 border-t">
+      {/* Cart Summary - Fixed at bottom */}
+      <div className="space-y-2 pt-4 border-t mt-auto flex-shrink-0">
         <div className="flex justify-between text-sm">
           <span>Total Items:</span>
           <span>{totalItems}</span>
