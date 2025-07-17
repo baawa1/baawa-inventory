@@ -15,7 +15,7 @@ export default async function POSHistoryPage() {
     redirect("/login");
   }
 
-  if (session.user.status !== "ACTIVE") {
+  if (session.user.status !== "APPROVED") {
     redirect("/pending-approval");
   }
 
