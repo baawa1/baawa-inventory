@@ -212,16 +212,10 @@ export async function POST(request: NextRequest) {
     // Execute all operations in a transaction
     const result = await prisma.$transaction(async (tx) => {
       // Check if product exists
-      console.log(
-        "Checking if product exists for ID:",
-        validatedData.productId
-      );
       const product = await tx.product.findUnique({
         where: { id: validatedData.productId },
         select: { id: true, name: true, stock: true, cost: true },
       });
-
-      console.log("Found product:", product);
 
       if (!product) {
         throw new Error("Product not found");
@@ -246,24 +240,26 @@ export async function POST(request: NextRequest) {
       // Calculate total cost
       const totalCost = validatedData.quantity * validatedData.costPerUnit;
 
+      const stockAdditionData = {
+        productId: validatedData.productId,
+        supplierId:
+          validatedData.supplierId && validatedData.supplierId > 0
+            ? validatedData.supplierId
+            : undefined,
+        createdById: userId,
+        quantity: validatedData.quantity,
+        costPerUnit: validatedData.costPerUnit,
+        totalCost: totalCost,
+        purchaseDate: validatedData.purchaseDate
+          ? new Date(validatedData.purchaseDate)
+          : new Date(),
+        notes: validatedData.notes || undefined,
+        referenceNo: validatedData.referenceNo || undefined,
+      };
+
       // Create stock addition record
       const stockAddition = await tx.stockAddition.create({
-        data: {
-          productId: validatedData.productId,
-          supplierId:
-            validatedData.supplierId && validatedData.supplierId > 0
-              ? validatedData.supplierId
-              : undefined,
-          createdById: userId,
-          quantity: validatedData.quantity,
-          costPerUnit: validatedData.costPerUnit,
-          totalCost: totalCost,
-          purchaseDate: validatedData.purchaseDate
-            ? new Date(validatedData.purchaseDate)
-            : new Date(),
-          notes: validatedData.notes || undefined,
-          referenceNo: validatedData.referenceNo || undefined,
-        },
+        data: stockAdditionData,
         include: {
           product: {
             select: {
@@ -298,6 +294,11 @@ export async function POST(request: NextRequest) {
         data: {
           stock: newStock,
           cost: newAverageCost,
+          // Update the product's supplier to match the stock addition supplier
+          supplierId:
+            validatedData.supplierId && validatedData.supplierId > 0
+              ? validatedData.supplierId
+              : undefined,
         },
       });
 

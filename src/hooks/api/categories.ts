@@ -47,7 +47,7 @@ const fetchCategories = async (
 ): Promise<CategoryResponse> => {
   const searchParams = new URLSearchParams({
     page: String(filters.page || 1),
-    limit: String(filters.limit || 10),
+    limit: String(filters.limit || 50),
     sortBy: filters.sortBy || "name",
     sortOrder: filters.sortOrder || "asc",
   });
@@ -66,7 +66,7 @@ const fetchCategories = async (
     data: data.data || [],
     pagination: {
       page: data.pagination?.page || 1,
-      limit: data.pagination?.limit || 10,
+      limit: data.pagination?.limit || 50,
       totalPages: data.pagination?.totalPages || 1,
       totalCategories: data.pagination?.total || 0,
     },
@@ -217,7 +217,7 @@ export const useCategoryOptions = () => {
   return useQuery({
     queryKey: [...queryKeys.categories.all, "options"] as const,
     queryFn: async () => {
-      const response = await fetch("/api/categories?isActive=true");
+      const response = await fetch("/api/categories?isActive=true&limit=1000");
       if (!response.ok) {
         throw new Error(
           `Failed to fetch category options: ${response.statusText}`

@@ -52,7 +52,7 @@ export function UserManagement() {
         };
 
         await updateUserMutation.mutateAsync({
-          id: editingUser.id,
+          id: parseInt(editingUser.id),
           ...updateData,
         });
 

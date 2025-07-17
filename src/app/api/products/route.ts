@@ -3,22 +3,11 @@ import { auth } from "../../../../auth";
 import { prisma } from "@/lib/db";
 import { z } from "zod";
 
-// Simple validation schema based on actual Product model
-const ProductCreateSchema = z.object({
-  name: z.string().min(1).max(255),
-  description: z.string().optional(),
-  sku: z.string().min(1).max(100),
-  barcode: z.string().max(100).optional(),
-  cost: z.number().positive(),
-  price: z.number().positive(),
-  stock: z.number().int().min(0).default(0),
-  minStock: z.number().int().min(0).default(0),
-  maxStock: z.number().int().positive().optional(),
-  unit: z.string().max(20).default("piece"),
-  supplierId: z.number().int().positive().optional(),
-  categoryId: z.number().int().positive().optional(),
-  brandId: z.number().int().positive().optional(),
-});
+// Import the form validation schema
+import { createProductSchema } from "@/lib/validations/product";
+
+// Use the same validation schema as the form
+const ProductCreateSchema = createProductSchema;
 
 // GET /api/products - List products with filtering
 export async function GET(request: NextRequest) {
@@ -238,9 +227,11 @@ export async function POST(request: NextRequest) {
     }
 
     const body = await request.json();
+    console.log("Received product data:", body);
 
     // Validate input data
     const validatedData = ProductCreateSchema.parse(body);
+    console.log("Validated product data:", validatedData);
 
     // Check if SKU already exists
     const existingSKU = await prisma.product.findUnique({
@@ -307,9 +298,42 @@ export async function POST(request: NextRequest) {
       }
     }
 
+    // Transform validated data to match Prisma schema
+    const productData = {
+      name: validatedData.name,
+      description: validatedData.description,
+      sku: validatedData.sku,
+      barcode: validatedData.barcode,
+      cost: validatedData.purchasePrice,
+      price: validatedData.sellingPrice,
+      stock: validatedData.currentStock,
+      minStock: validatedData.minimumStock,
+      maxStock: validatedData.maximumStock,
+      unit: validatedData.unit || "piece",
+      supplierId: validatedData.supplierId,
+      categoryId: validatedData.categoryId,
+      brandId: validatedData.brandId,
+      status: validatedData.status,
+      // Handle additional fields that might be present
+      weight: validatedData.weight,
+      dimensions: validatedData.dimensions,
+      color: validatedData.color,
+      size: validatedData.size,
+      material: validatedData.material,
+      tags: validatedData.tags,
+      salePrice: validatedData.salePrice,
+      saleStartDate: validatedData.saleStartDate,
+      saleEndDate: validatedData.saleEndDate,
+      metaTitle: validatedData.metaTitle,
+      metaDescription: validatedData.metaDescription,
+      seoKeywords: validatedData.seoKeywords,
+      isFeatured: validatedData.isFeatured,
+      sortOrder: validatedData.sortOrder,
+    };
+
     // Create the product
     const product = await prisma.product.create({
-      data: validatedData,
+      data: productData,
       include: {
         category: {
           select: {

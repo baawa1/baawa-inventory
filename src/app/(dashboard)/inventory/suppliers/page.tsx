@@ -21,5 +21,5 @@ export default async function SuppliersPage() {
     redirect("/unauthorized");
   }
 
-  return <SupplierList />;
+  return <SupplierList user={session.user} />;
 }

@@ -1,6 +1,6 @@
 import { auth } from "../../../../../auth";
 import { redirect } from "next/navigation";
-import { StockReconciliationList } from "@/components/inventory/StockReconciliationList";
+import StockReconciliationList from "@/components/inventory/StockReconciliationList";
 
 export const metadata = {
   title: "Stock Reconciliations - BaaWA Inventory POS",

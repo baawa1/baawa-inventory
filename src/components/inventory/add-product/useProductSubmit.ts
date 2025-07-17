@@ -27,6 +27,8 @@ export function useProductSubmit(
         maximumStock: data.maximumStock || null,
       };
 
+      console.log("Submitting product data:", cleanedData);
+
       const response = await fetch("/api/products", {
         method: "POST",
         headers: {

@@ -93,7 +93,6 @@ export function CategoryBrandSection({
                     </SelectTrigger>
                   </FormControl>
                   <SelectContent>
-                    <SelectItem value="none">No brand</SelectItem>
                     {brands.map((brand) => (
                       <SelectItem key={brand.id} value={brand.id.toString()}>
                         {brand.name}

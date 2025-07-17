@@ -125,7 +125,7 @@ export function UserTable({
               <Button
                 variant="destructive"
                 size="sm"
-                onClick={() => onDeleteUserAction(user.id)}
+                onClick={() => onDeleteUserAction(parseInt(user.id))}
               >
                 Delete
               </Button>
