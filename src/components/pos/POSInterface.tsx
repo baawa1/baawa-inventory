@@ -18,7 +18,7 @@ import {
 } from "@/components/ui/alert-dialog";
 import { ProductGrid } from "./ProductGrid";
 import { ShoppingCart } from "./ShoppingCart";
-import { PaymentInterface } from "./PaymentInterface";
+import { SlidingPaymentInterface } from "./SlidingPaymentInterface";
 import { ReceiptGenerator } from "./ReceiptGenerator";
 import { OfflineStatusIndicator } from "./OfflineStatusIndicator";
 import { POSErrorBoundary } from "./POSErrorBoundary";
@@ -238,109 +238,108 @@ export function POSInterface() {
             </POSErrorBoundary>
           </div>
 
-          {/* Right Column - Cart and Actions */}
-          <div className="space-y-6 overflow-y-auto h-full">
-            {/* Shopping Cart */}
-            <Card>
-              <CardHeader>
-                <CardTitle className="flex items-center justify-between">
-                  <span className="flex items-center gap-2">
-                    <IconShoppingCart className="h-5 w-5" />
-                    Shopping Cart
-                  </span>
-                  <span className="text-sm font-normal text-muted-foreground">
-                    {cart.length} items
-                  </span>
-                </CardTitle>
-              </CardHeader>
-              <CardContent>
-                <POSErrorBoundary componentName="ShoppingCart">
-                  <ShoppingCart
-                    items={cart}
-                    onUpdateQuantity={updateQuantity}
-                    onRemoveItem={removeFromCart}
-                    onClearCart={clearCart}
-                    disabled={currentStep !== "search"}
-                  />
-                </POSErrorBoundary>
-              </CardContent>
-            </Card>
+          {/* Right Column - Cart and Actions - Fixed Height */}
+          <div className="flex flex-col h-full max-h-full">
+            {currentStep === "payment" ? (
+              /* Payment Interface - Slides in over cart */
+              <POSErrorBoundary componentName="SlidingPaymentInterface">
+                <SlidingPaymentInterface
+                  items={cart}
+                  subtotal={subtotal}
+                  discount={discount}
+                  total={total}
+                  customerInfo={customerInfo}
+                  staffName={session.user.name || "Staff"}
+                  onPaymentSuccess={handlePaymentSuccess}
+                  onCancel={() => setCurrentStep("search")}
+                  onDiscountChange={setDiscount}
+                  onCustomerInfoChange={setCustomerInfo}
+                />
+              </POSErrorBoundary>
+            ) : (
+              /* Normal Cart View */
+              <>
+                {/* Shopping Cart - Fixed height with scrollable content */}
+                <Card className="flex-1 min-h-0 flex flex-col">
+                  <CardHeader className="flex-shrink-0">
+                    <CardTitle className="flex items-center justify-between">
+                      <span className="flex items-center gap-2">
+                        <IconShoppingCart className="h-5 w-5" />
+                        Shopping Cart
+                      </span>
+                      <span className="text-sm font-normal text-muted-foreground">
+                        {cart.length} items
+                      </span>
+                    </CardTitle>
+                  </CardHeader>
+                  <CardContent className="flex-1 min-h-0 flex flex-col max-h">
+                    <POSErrorBoundary componentName="ShoppingCart">
+                      <ShoppingCart
+                        items={cart}
+                        onUpdateQuantity={updateQuantity}
+                        onRemoveItem={removeFromCart}
+                        onClearCart={clearCart}
+                        disabled={currentStep !== "search"}
+                      />
+                    </POSErrorBoundary>
+                  </CardContent>
+                </Card>
 
-            {/* Order Summary */}
-            <Card>
-              <CardHeader>
-                <CardTitle>Order Summary</CardTitle>
-              </CardHeader>
-              <CardContent>
-                <div className="space-y-2">
-                  <div className="flex justify-between">
-                    <span>Subtotal</span>
-                    <span>₦{subtotal.toLocaleString()}</span>
-                  </div>
-                  <div className="flex justify-between">
-                    <span>Discount</span>
-                    <span>-₦{discount.toLocaleString()}</span>
-                  </div>
-                  <Separator />
-                  <div className="flex justify-between font-bold text-lg">
-                    <span>Total</span>
-                    <span>₦{total.toLocaleString()}</span>
+                {/* Order Summary and Actions - Fixed at bottom */}
+                <div className="flex flex-col gap-3 mt-6 flex-shrink-0">
+                  {/* Order Summary */}
+                  <Card>
+                    <CardHeader>
+                      <CardTitle>Order Summary</CardTitle>
+                    </CardHeader>
+                    <CardContent>
+                      <div className="space-y-2">
+                        <div className="flex justify-between">
+                          <span>Subtotal</span>
+                          <span>₦{subtotal.toLocaleString()}</span>
+                        </div>
+                        <div className="flex justify-between">
+                          <span>Discount</span>
+                          <span>-₦{discount.toLocaleString()}</span>
+                        </div>
+                        <Separator />
+                        <div className="flex justify-between font-bold text-lg">
+                          <span>Total</span>
+                          <span>₦{total.toLocaleString()}</span>
+                        </div>
+                      </div>
+                    </CardContent>
+                  </Card>
+
+                  {/* Action Buttons */}
+                  <div className="space-y-3">
+                    {currentStep === "search" && (
+                      <Button
+                        className="w-full"
+                        size="lg"
+                        onClick={() => setCurrentStep("payment")}
+                        disabled={cart.length === 0}
+                      >
+                        <IconCash className="h-5 w-5 mr-2" />
+                        Proceed to Payment
+                      </Button>
+                    )}
+
+                    {currentStep === "receipt" && (
+                      <Button
+                        className="w-full"
+                        size="lg"
+                        onClick={startNewSale}
+                      >
+                        <IconReceipt className="h-5 w-5 mr-2" />
+                        Start New Sale
+                      </Button>
+                    )}
                   </div>
                 </div>
-              </CardContent>
-            </Card>
-
-            {/* Action Buttons */}
-            <div className="space-y-3">
-              {currentStep === "search" && (
-                <Button
-                  className="w-full"
-                  size="lg"
-                  onClick={() => setCurrentStep("payment")}
-                  disabled={cart.length === 0}
-                >
-                  <IconCash className="h-5 w-5 mr-2" />
-                  Proceed to Payment
-                </Button>
-              )}
-
-              {currentStep === "payment" && (
-                <Button
-                  variant="outline"
-                  className="w-full"
-                  onClick={() => setCurrentStep("search")}
-                >
-                  Back to Shopping
-                </Button>
-              )}
-
-              {currentStep === "receipt" && (
-                <Button className="w-full" size="lg" onClick={startNewSale}>
-                  <IconReceipt className="h-5 w-5 mr-2" />
-                  Start New Sale
-                </Button>
-              )}
-            </div>
+              </>
+            )}
           </div>
-
-          {/* Payment Modal */}
-          {currentStep === "payment" && (
-            <POSErrorBoundary componentName="PaymentInterface">
-              <PaymentInterface
-                items={cart}
-                subtotal={subtotal}
-                discount={discount}
-                total={total}
-                customerInfo={customerInfo}
-                staffName={session.user.name || "Staff"}
-                onPaymentSuccess={handlePaymentSuccess}
-                onCancel={() => setCurrentStep("search")}
-                onDiscountChange={setDiscount}
-                onCustomerInfoChange={setCustomerInfo}
-              />
-            </POSErrorBoundary>
-          )}
-
           {/* Receipt Display */}
           {currentStep === "receipt" && completedSale && (
             <POSErrorBoundary componentName="ReceiptGenerator">
