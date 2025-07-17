@@ -1,6 +1,6 @@
 "use client";
 
-import React, { useState, useEffect } from "react";
+import React, { useState, useEffect, useMemo } from "react";
 import { useSession } from "next-auth/react";
 import Link from "next/link";
 import { useDebounce } from "@/hooks/useDebounce";
@@ -12,7 +12,7 @@ import {
 import { InventoryPageLayout } from "./InventoryPageLayout";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
-import { SUPPLIER_COLUMNS } from "@/components/inventory/ColumnCustomizer";
+
 import {
   AlertDialog,
   AlertDialogAction,
@@ -86,6 +86,8 @@ export default function SupplierList() {
     status: filters.isActive,
     sortBy: "name",
     sortOrder: "asc",
+    page: pagination.page,
+    limit: pagination.limit,
   });
 
   const deleteSupplierMutation = useDeleteSupplier();
@@ -123,19 +125,22 @@ export default function SupplierList() {
     { key: "status", label: "Status" },
   ];
 
-  // Filter configurations
-  const filterConfigs: FilterConfig[] = [
-    {
-      key: "isActive",
-      label: "Status",
-      type: "select",
-      options: [
-        { value: "true", label: "Active" },
-        { value: "false", label: "Inactive" },
-      ],
-      placeholder: "Filter by status",
-    },
-  ];
+  // Filter configurations - memoized to prevent unnecessary re-renders
+  const filterConfigs: FilterConfig[] = useMemo(
+    () => [
+      {
+        key: "isActive",
+        label: "Status",
+        type: "select",
+        options: [
+          { value: "true", label: "Active" },
+          { value: "false", label: "Inactive" },
+        ],
+        placeholder: "Filter by status",
+      },
+    ],
+    []
+  );
 
   // Handle filter changes
   const handleFilterChange = (key: string, value: any) => {

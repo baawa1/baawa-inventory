@@ -20,6 +20,8 @@ export interface SupplierFilters {
   sortBy: string;
   sortOrder: "asc" | "desc";
   isActive?: boolean;
+  page?: number;
+  limit?: number;
 }
 
 export interface SupplierPagination {
@@ -51,8 +53,8 @@ const fetchSuppliers = async (
   filters: Partial<SupplierFilters> = {}
 ): Promise<SupplierResponse> => {
   const searchParams = new URLSearchParams({
-    page: "1",
-    limit: "10",
+    page: String(filters.page || 1),
+    limit: String(filters.limit || 10),
     sortBy: filters.sortBy || "name",
     sortOrder: filters.sortOrder || "asc",
   });

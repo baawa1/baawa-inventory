@@ -17,8 +17,8 @@ export interface BrandFilters {
   isActive?: boolean;
   sortBy?: string;
   sortOrder?: "asc" | "desc";
+  page?: number;
   limit?: number;
-  offset?: number;
 }
 
 export interface BrandListResponse {
@@ -26,8 +26,8 @@ export interface BrandListResponse {
   data: Brand[];
   pagination: {
     total: number;
-    pages: number;
-    current: number;
+    totalPages: number;
+    page: number;
     limit: number;
   };
 }
@@ -36,14 +36,13 @@ export interface BrandListResponse {
 const fetchBrands = async (
   filters: BrandFilters = {}
 ): Promise<BrandListResponse> => {
-  const params = new URLSearchParams();
+  const params = new URLSearchParams({
+    page: String(filters.page || 1),
+    limit: String(filters.limit || 10),
+    sortBy: filters.sortBy || "name",
+    sortOrder: filters.sortOrder || "asc",
+  });
 
-  if (filters.offset !== undefined)
-    params.set("offset", filters.offset.toString());
-  if (filters.limit !== undefined)
-    params.set("limit", filters.limit.toString());
-  if (filters.sortBy) params.set("sortBy", filters.sortBy);
-  if (filters.sortOrder) params.set("sortOrder", filters.sortOrder);
   if (filters.search) params.set("search", filters.search);
   if (filters.isActive !== undefined)
     params.set("isActive", filters.isActive.toString());

@@ -21,6 +21,7 @@ import { PageHeader } from "@/components/ui/page-header";
 import { FormLoading } from "@/components/ui/form-loading";
 import { updateCategorySchema } from "@/lib/validations/category";
 import { toast } from "sonner";
+import { useUpdateCategory } from "@/hooks/api/categories";
 
 interface Category {
   id: number;
@@ -43,7 +44,7 @@ type UpdateCategoryFormData = {
 
 export default function EditCategoryForm({ category }: EditCategoryFormProps) {
   const router = useRouter();
-  const [isSubmitting, setIsSubmitting] = useState(false);
+  const updateCategoryMutation = useUpdateCategory();
   const [error, setError] = useState<string | null>(null);
   const [validationErrors, setValidationErrors] = useState<
     Record<string, string>
@@ -81,37 +82,31 @@ export default function EditCategoryForm({ category }: EditCategoryFormProps) {
       return;
     }
 
-    try {
-      setIsSubmitting(true);
-      setError(null);
+    setError(null);
 
-      const response = await fetch(`/api/categories/${category.id}`, {
-        method: "PUT",
-        headers: {
-          "Content-Type": "application/json",
+    updateCategoryMutation.mutate(
+      { id: category.id, data: formData },
+      {
+        onSuccess: (updatedCategory) => {
+          console.log("Category updated successfully:", updatedCategory);
+          toast.success("Category updated successfully!");
+          router.push("/inventory/categories");
         },
-        body: JSON.stringify(formData),
-      });
-
-      if (!response.ok) {
-        const errorData = await response.json();
-        throw new Error(errorData.error || "Failed to update category");
+        onError: (error) => {
+          console.error("Error updating category:", error);
+          const errorMessage =
+            error instanceof Error
+              ? error.message
+              : "Failed to update category";
+          setError(errorMessage);
+          toast.error(errorMessage);
+        },
+        onSettled: () => {
+          // Force refetch after mutation completes
+          console.log("Mutation settled, forcing refetch");
+        },
       }
-
-      const _result = await response.json();
-
-      toast.success("Category updated successfully!");
-      router.push("/inventory/categories");
-      router.refresh();
-    } catch (error) {
-      console.error("Error updating category:", error);
-      const errorMessage =
-        error instanceof Error ? error.message : "Failed to update category";
-      setError(errorMessage);
-      toast.error(errorMessage);
-    } finally {
-      setIsSubmitting(false);
-    }
+    );
   };
 
   const handleCancel = () => {
@@ -131,7 +126,7 @@ export default function EditCategoryForm({ category }: EditCategoryFormProps) {
   };
 
   // Show loading state
-  if (isSubmitting) {
+  if (updateCategoryMutation.isPending) {
     return (
       <FormLoading
         title="Edit Category"
@@ -190,7 +185,7 @@ export default function EditCategoryForm({ category }: EditCategoryFormProps) {
                 value={formData.name}
                 onChange={(e) => updateFormData("name", e.target.value)}
                 className={validationErrors.name ? "border-red-500" : ""}
-                disabled={isSubmitting}
+                disabled={updateCategoryMutation.isPending}
               />
               {validationErrors.name && (
                 <p className="text-sm text-red-500">{validationErrors.name}</p>
@@ -210,7 +205,7 @@ export default function EditCategoryForm({ category }: EditCategoryFormProps) {
                 className="min-h-[80px]"
                 value={formData.description}
                 onChange={(e) => updateFormData("description", e.target.value)}
-                disabled={isSubmitting}
+                disabled={updateCategoryMutation.isPending}
               />
               {validationErrors.description && (
                 <p className="text-sm text-red-500">
@@ -240,7 +235,7 @@ export default function EditCategoryForm({ category }: EditCategoryFormProps) {
                 onCheckedChange={(checked) =>
                   updateFormData("isActive", checked)
                 }
-                disabled={isSubmitting}
+                disabled={updateCategoryMutation.isPending}
               />
             </div>
 
@@ -248,18 +243,22 @@ export default function EditCategoryForm({ category }: EditCategoryFormProps) {
             <div className="flex items-center gap-4 pt-4">
               <Button
                 type="submit"
-                disabled={isSubmitting}
+                disabled={updateCategoryMutation.isPending}
                 className="flex items-center gap-2"
               >
-                {isSubmitting && <Loader2 className="h-4 w-4 animate-spin" />}
-                {isSubmitting ? "Updating..." : "Update Category"}
+                {updateCategoryMutation.isPending && (
+                  <Loader2 className="h-4 w-4 animate-spin" />
+                )}
+                {updateCategoryMutation.isPending
+                  ? "Updating..."
+                  : "Update Category"}
               </Button>
 
               <Button
                 type="button"
                 variant="outline"
                 onClick={handleCancel}
-                disabled={isSubmitting}
+                disabled={updateCategoryMutation.isPending}
               >
                 Cancel
               </Button>

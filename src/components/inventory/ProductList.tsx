@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useEffect } from "react";
+import { useState, useEffect, useMemo } from "react";
 import Image from "next/image";
 import Link from "next/link";
 import { useDebounce } from "@/hooks/useDebounce";
@@ -133,40 +133,43 @@ export function ProductList({ user }: ProductListProps) {
   const canManageProducts = ["ADMIN", "MANAGER"].includes(user.role);
   const canEditProducts = ["ADMIN", "MANAGER", "STAFF"].includes(user.role);
 
-  // Filter configurations
-  const filterConfigs: FilterConfig[] = [
-    {
-      key: "categoryId",
-      label: "Categories",
-      type: "select",
-      options: categories.map((cat) => ({
-        value: String(cat.id),
-        label: cat.name,
-      })),
-      placeholder: "All Categories",
-    },
-    {
-      key: "brandId",
-      label: "Brands",
-      type: "select",
-      options: brands.map((brand) => ({
-        value: String(brand.id),
-        label: brand.name,
-      })),
-      placeholder: "All Brands",
-    },
-    {
-      key: "status",
-      label: "Status",
-      type: "select",
-      options: [
-        { value: "active", label: "Active" },
-        { value: "inactive", label: "Inactive" },
-        { value: "discontinued", label: "Discontinued" },
-      ],
-      placeholder: "All Status",
-    },
-  ];
+  // Filter configurations - memoized to prevent unnecessary re-renders
+  const filterConfigs: FilterConfig[] = useMemo(
+    () => [
+      {
+        key: "categoryId",
+        label: "Categories",
+        type: "select",
+        options: categories.map((cat) => ({
+          value: String(cat.id),
+          label: cat.name,
+        })),
+        placeholder: "All Categories",
+      },
+      {
+        key: "brandId",
+        label: "Brands",
+        type: "select",
+        options: brands.map((brand) => ({
+          value: String(brand.id),
+          label: brand.name,
+        })),
+        placeholder: "All Brands",
+      },
+      {
+        key: "status",
+        label: "Status",
+        type: "select",
+        options: [
+          { value: "active", label: "Active" },
+          { value: "inactive", label: "Inactive" },
+          { value: "discontinued", label: "Discontinued" },
+        ],
+        placeholder: "All Status",
+      },
+    ],
+    [categories, brands]
+  );
 
   const handleFilterChange = (key: string, value: any) => {
     setFilters((prev) => {
