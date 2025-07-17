@@ -1,79 +1,95 @@
 /**
- * Structured logging utility for consistent logging across the application
+ * Structured Logger Utility
+ * Provides consistent logging across the application with proper levels and context
  */
-
-export enum LogLevel {
-  ERROR = "error",
-  WARN = "warn",
-  INFO = "info",
-  DEBUG = "debug",
-}
 
 interface LogContext {
   [key: string]: any;
 }
 
-class Logger {
+interface Logger {
+  error(message: string, context?: LogContext): void;
+  warn(message: string, context?: LogContext): void;
+  info(message: string, context?: LogContext): void;
+  debug(message: string, context?: LogContext): void;
+  auth(message: string, context?: LogContext): void;
+  session(message: string, context?: LogContext): void;
+  security(message: string, context?: LogContext): void;
+  upload(message: string, context?: LogContext): void;
+}
+
+class StructuredLogger implements Logger {
   private isDevelopment = process.env.NODE_ENV === "development";
-  private isProduction = process.env.NODE_ENV === "production";
 
   private formatMessage(
-    level: LogLevel,
+    level: string,
     message: string,
     context?: LogContext
   ): string {
     const timestamp = new Date().toISOString();
-    const contextStr = context ? ` ${JSON.stringify(context)}` : "";
-    return `[${timestamp}] ${level.toUpperCase()}: ${message}${contextStr}`;
+    const contextStr = context ? ` | ${JSON.stringify(context)}` : "";
+    return `[${timestamp}] [${level.toUpperCase()}] ${message}${contextStr}`;
   }
 
-  private shouldLog(level: LogLevel): boolean {
-    if (this.isDevelopment) return true;
-    if (this.isProduction && level !== LogLevel.DEBUG) return true;
-    return false;
+  private log(level: string, message: string, context?: LogContext): void {
+    const formattedMessage = this.formatMessage(level, message, context);
+
+    // In development, use console for better debugging
+    if (this.isDevelopment) {
+      switch (level) {
+        case "error":
+          console.error(formattedMessage);
+          break;
+        case "warn":
+          console.warn(formattedMessage);
+          break;
+        case "debug":
+          console.debug(formattedMessage);
+          break;
+        default:
+          console.log(formattedMessage);
+      }
+    } else {
+      // In production, you might want to send to a logging service
+      // For now, we'll use console but with structured format
+      console.log(formattedMessage);
+    }
   }
 
   error(message: string, context?: LogContext): void {
-    if (this.shouldLog(LogLevel.ERROR)) {
-      console.error(this.formatMessage(LogLevel.ERROR, message, context));
-    }
+    this.log("error", message, context);
   }
 
   warn(message: string, context?: LogContext): void {
-    if (this.shouldLog(LogLevel.WARN)) {
-      console.warn(this.formatMessage(LogLevel.WARN, message, context));
-    }
+    this.log("warn", message, context);
   }
 
   info(message: string, context?: LogContext): void {
-    if (this.shouldLog(LogLevel.INFO)) {
-      console.info(this.formatMessage(LogLevel.INFO, message, context));
-    }
+    this.log("info", message, context);
   }
 
   debug(message: string, context?: LogContext): void {
-    if (this.shouldLog(LogLevel.DEBUG)) {
-      console.debug(this.formatMessage(LogLevel.DEBUG, message, context));
+    if (this.isDevelopment) {
+      this.log("debug", message, context);
     }
   }
 
-  // Special method for authentication events
   auth(message: string, context?: LogContext): void {
-    const authContext = { ...context, category: "authentication" };
-    this.info(message, authContext);
+    this.log("auth", message, context);
   }
 
-  // Special method for session events
   session(message: string, context?: LogContext): void {
-    const sessionContext = { ...context, category: "session" };
-    this.info(message, sessionContext);
+    this.log("session", message, context);
   }
 
-  // Special method for security events
   security(message: string, context?: LogContext): void {
-    const securityContext = { ...context, category: "security" };
-    this.warn(message, securityContext);
+    this.log("security", message, context);
+  }
+
+  upload(message: string, context?: LogContext): void {
+    this.log("upload", message, context);
   }
 }
 
-export const logger = new Logger();
+// Export singleton instance
+export const logger = new StructuredLogger();

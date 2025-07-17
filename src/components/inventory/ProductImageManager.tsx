@@ -36,15 +36,13 @@ import {
   AlertDialogTrigger,
 } from "@/components/ui/alert-dialog";
 import Image from "next/image";
-
-interface ProductImage {
-  url: string;
-  filename: string;
-  mimeType: string;
-  alt?: string;
-  isPrimary: boolean;
-  uploadedAt: string;
-}
+import { ProductImage } from "@/types/product-images";
+import {
+  generateMeaningfulFilename,
+  generateAltText,
+  ensureUniqueImages,
+  sortImages,
+} from "@/lib/utils/image-utils";
 
 interface ProductData {
   id: number;
@@ -96,66 +94,48 @@ export function ProductImageManager({
     category: undefined,
   };
 
-  const ensureUniqueImages = (images: ProductImage[]): ProductImage[] => {
-    return images.filter(
-      (image, index, self) =>
-        index === self.findIndex((img) => img.url === image.url)
-    );
-  };
+  // Use utility functions for image processing
+  const processImages = (rawImages: any[]): ProductImage[] => {
+    const validatedImages = rawImages.map((img, idx) => {
+      if (typeof img === "string") {
+        // Legacy: just a URL string
+        return {
+          url: img,
+          filename: img.split("/").pop() || `image-${idx}`,
+          mimeType: "image/jpeg",
+          alt: generateAltText(
+            product.name,
+            product.brand?.name,
+            product.category?.name,
+            idx
+          ),
+          isPrimary: idx === 0,
+          uploadedAt: new Date().toISOString(),
+          size: 0,
+        };
+      }
+      // New format: object
+      return {
+        url: String(img.url),
+        filename: String(
+          img.filename || img.url.split("/").pop() || `image-${idx}`
+        ),
+        mimeType: String(img.mimeType || "image/jpeg"),
+        alt: img.alt
+          ? String(img.alt)
+          : generateAltText(
+              product.name,
+              product.brand?.name,
+              product.category?.name,
+              idx
+            ),
+        isPrimary: Boolean(img.isPrimary),
+        uploadedAt: String(img.uploadedAt || new Date().toISOString()),
+        size: Number(img.size || 0),
+      };
+    });
 
-  // Generate meaningful filename based on product information
-  const generateMeaningfulFilename = (
-    originalFilename: string,
-    index: number,
-    product: ProductData
-  ): string => {
-    // Clean product name: remove special chars, convert to lowercase, replace spaces with hyphens
-    const cleanName = product.name
-      .replace(/[^a-zA-Z0-9\s]/g, "")
-      .replace(/\s+/g, "-")
-      .toLowerCase()
-      .substring(0, 60); // Limit length
-
-    // Clean brand name
-    const brandName = product.brand?.name
-      ? product.brand.name
-          .replace(/[^a-zA-Z0-9\s]/g, "")
-          .replace(/\s+/g, "-")
-          .toLowerCase()
-          .substring(0, 30)
-      : "no-brand";
-
-    // Clean category name
-    const categoryName = product.category?.name
-      ? product.category.name
-          .replace(/[^a-zA-Z0-9\s]/g, "")
-          .replace(/\s+/g, "-")
-          .toLowerCase()
-          .substring(0, 30)
-      : "uncategorized";
-
-    // Get file extension from original filename
-    const extension = originalFilename.split(".").pop()?.toLowerCase() || "jpg";
-
-    // Generate increment (01, 02, 03, etc.)
-    const increment = String(index + 1).padStart(2, "0");
-
-    // Combine all parts
-    return `${cleanName}_${brandName}_${categoryName}_${increment}.${extension}`;
-  };
-
-  // Generate meaningful alt text based on product information
-  const generateAltText = (product: ProductData, index: number): string => {
-    const brandText = product.brand?.name ? ` ${product.brand.name}` : "";
-    const categoryText = product.category?.name
-      ? ` ${product.category.name}`
-      : "";
-
-    if (index === 0) {
-      return `${product.name}${brandText}${categoryText}`;
-    } else {
-      return `${product.name}${brandText}${categoryText} - Image ${index + 1}`;
-    }
+    return sortImages(ensureUniqueImages(validatedImages));
   };
 
   // Fetch product images
@@ -170,44 +150,10 @@ export function ProductImageManager({
 
   const rawImages = imageData?.images || [];
 
-  // Validate and transform the data to match ProductImage interface
-  const validatedImages: ProductImage[] = Array.isArray(rawImages)
-    ? rawImages.map((img, idx) => {
-        if (typeof img === "string") {
-          // Legacy: just a URL string
-          return {
-            url: img,
-            filename: img.split("/").pop() || `image-${idx}`,
-            mimeType: "image/jpeg",
-            alt: generateAltText(product, idx),
-            isPrimary: idx === 0,
-            uploadedAt: new Date().toISOString(),
-          };
-        }
-        // New format: object
-        return {
-          url: String(img.url),
-          filename: String(
-            img.filename || img.url.split("/").pop() || `image-${idx}`
-          ),
-          mimeType: String(img.mimeType || "image/jpeg"),
-          alt: img.alt ? String(img.alt) : generateAltText(product, idx),
-          isPrimary: Boolean(img.isPrimary),
-          uploadedAt: String(img.uploadedAt || new Date().toISOString()),
-        };
-      })
-    : [];
-
-  const images: ProductImage[] = ensureUniqueImages(validatedImages)
-    .filter((img) => img.url && img.url.trim() !== "")
-    .sort((a, b) => {
-      // Primary images first, then by upload date (newest first)
-      if (a.isPrimary && !b.isPrimary) return -1;
-      if (!a.isPrimary && b.isPrimary) return 1;
-      return (
-        new Date(b.uploadedAt).getTime() - new Date(a.uploadedAt).getTime()
-      );
-    });
+  // Use utility function to process images
+  const images: ProductImage[] = processImages(rawImages).filter(
+    (img) => img.url && img.url.trim() !== ""
+  );
 
   // Update images mutation with optimistic updates
   const updateImagesMutation = useMutation({
@@ -356,7 +302,9 @@ export function ProductImageManager({
         const meaningfulFilename = generateMeaningfulFilename(
           file.name,
           imageIndex,
-          product
+          product.name,
+          product.brand?.name,
+          product.category?.name
         );
 
         // Create a new File object with the meaningful filename
@@ -386,8 +334,14 @@ export function ProductImageManager({
         const imageData: ProductImage = {
           url: uploadResult.url,
           filename: meaningfulFilename,
+          size: uploadResult.size || file.size, // Use upload result size or fallback to file size
           mimeType: uploadResult.mimeType,
-          alt: generateAltText(product, imageIndex),
+          alt: generateAltText(
+            product.name,
+            product.brand?.name,
+            product.category?.name,
+            imageIndex
+          ),
           isPrimary: images.length === 0 && newImages.length === 0, // First image is primary
           uploadedAt: new Date().toISOString(),
         };
@@ -538,8 +492,11 @@ export function ProductImageManager({
               <div className="grid grid-cols-[repeat(auto-fit,minmax(15rem,1fr))] gap-4">
                 {images.map((image) => {
                   return (
-                    <div key={image.url} className="relative group">
-                      <Card className="overflow-hidden pt-0">
+                    <div
+                      key={image.url}
+                      className="relative group justify-self-stretch"
+                    >
+                      <Card className="overflow-hidden pt-0 h-full">
                         <div className="aspect-square relative">
                           {image.url ? (
                             <Image

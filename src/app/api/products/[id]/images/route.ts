@@ -1,56 +1,59 @@
 import { auth } from "../../../../../../auth";
-import { NextRequest, NextResponse } from "next/server";
+import { NextRequest } from "next/server";
 import { prisma } from "@/lib/db";
+import { logger } from "@/lib/logger";
+import { createSecureResponse } from "@/lib/security-headers";
+import { withRateLimit, RATE_LIMIT_CONFIGS } from "@/lib/rate-limiting";
 import { z } from "zod";
+import {
+  updateImagesSchema,
+  ProductImage,
+  IMAGE_CONSTANTS,
+} from "@/types/product-images";
+import {
+  convertLegacyImages,
+  convertToStorageFormat,
+  convertFromStorageFormat,
+  extractStoragePath,
+  validateImageCount,
+  ensureUniqueImages,
+  sortImages,
+} from "@/lib/utils/image-utils";
 
-// Schema for image data - handle both formats
-const imageSchema = z.object({
-  id: z.string().optional(),
-  url: z.string().url(),
-  filename: z.string().optional(),
-  size: z.number().optional(),
-  mimeType: z.string().optional(),
-  alt: z.string().optional(),
-  altText: z.string().optional(), // Support both alt and altText
-  isPrimary: z.boolean().optional(),
-  uploadedAt: z.string().datetime().optional(),
-});
-
-const updateImagesSchema = z.object({
-  images: z.array(imageSchema),
-});
-
-export async function GET(
+export const GET = withRateLimit(RATE_LIMIT_CONFIGS.API)(async (
   request: NextRequest,
   { params }: { params: Promise<{ id: string }> }
-) {
+) => {
   try {
     const session = await auth();
     if (!session?.user) {
-      return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+      return createSecureResponse({ error: "Unauthorized" }, 401);
     }
 
     // Allow all authenticated users to view images
     const { id } = await params;
     const productId = parseInt(id);
     if (isNaN(productId)) {
-      return NextResponse.json(
-        { error: "Invalid product ID" },
-        { status: 400 }
-      );
+      return createSecureResponse({ error: "Invalid product ID" }, 400);
     }
 
     const product = await prisma.product.findUnique({
       where: { id: productId },
-      select: { id: true, name: true, images: true },
+      select: {
+        id: true,
+        name: true,
+        images: true,
+        brand: { select: { name: true } },
+        category: { select: { name: true } },
+      },
     });
 
     if (!product) {
-      return NextResponse.json({ error: "Product not found" }, { status: 404 });
+      return createSecureResponse({ error: "Product not found" }, 404);
     }
 
     // Handle both legacy string array and new image object array
-    let images: any[] = [];
+    let images: ProductImage[] = [];
 
     if (product.images) {
       if (
@@ -58,77 +61,79 @@ export async function GET(
         typeof product.images[0] === "string"
       ) {
         // Legacy format: string array
-        const imageUrls = product.images as string[];
-        images = imageUrls.map((url, index) => ({
-          id: `legacy-${index}`,
-          url: url,
-          filename: url.split("/").pop() || `image-${index}`,
-          size: 0,
-          mimeType: "image/jpeg",
-          alt: "",
-          isPrimary: index === 0,
-          uploadedAt: new Date().toISOString(),
-        }));
+        images = convertLegacyImages(product.images as string[]);
       } else {
-        // New format: image object array - handle different property names
-        const imageObjects = product.images as any[];
-        images = imageObjects.map((img, index) => ({
-          id: img.id || `restored-${index}`,
-          url: img.url,
-          filename:
-            img.filename || img.url.split("/").pop() || `image-${index}`,
-          size: img.size || 0,
-          mimeType: img.mimeType || "image/jpeg",
-          alt: img.alt || img.altText || "",
-          isPrimary: img.isPrimary !== undefined ? img.isPrimary : index === 0, // First image is primary by default
-          uploadedAt: img.uploadedAt || new Date().toISOString(),
-        }));
+        // New format: image object array
+        images = convertFromStorageFormat(
+          product.images as any[],
+          product.name,
+          product.brand?.name,
+          product.category?.name
+        );
       }
     }
 
-    return NextResponse.json({
+    // Sort images and ensure uniqueness
+    const sortedImages = sortImages(ensureUniqueImages(images));
+
+    logger.info("Product images fetched successfully", {
+      productId: product.id,
+      imageCount: sortedImages.length,
+      userId: session.user.id,
+    });
+
+    return createSecureResponse({
       productId: product.id,
       productName: product.name,
-      images,
+      images: sortedImages,
     });
   } catch (error) {
-    console.error("Error fetching product images:", error);
-    return NextResponse.json(
+    const session = await auth();
+    logger.error("Error fetching product images", {
+      error: error instanceof Error ? error.message : "Unknown error",
+      productId: await params.then((p) => p.id),
+      userId: session?.user?.id,
+    });
+    return createSecureResponse(
       { error: "Failed to fetch product images" },
-      { status: 500 }
+      500
     );
   }
-}
+});
 
-export async function PUT(
+export const PUT = withRateLimit(RATE_LIMIT_CONFIGS.UPLOAD)(async (
   request: NextRequest,
   { params }: { params: Promise<{ id: string }> }
-) {
+) => {
   try {
     const session = await auth();
     if (!session?.user) {
-      return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+      return createSecureResponse({ error: "Unauthorized" }, 401);
     }
 
     // Check permissions
     if (!["ADMIN", "MANAGER"].includes(session.user.role)) {
-      return NextResponse.json(
-        { error: "Insufficient permissions" },
-        { status: 403 }
-      );
+      return createSecureResponse({ error: "Insufficient permissions" }, 403);
     }
 
     const { id } = await params;
     const productId = parseInt(id);
     if (isNaN(productId)) {
-      return NextResponse.json(
-        { error: "Invalid product ID" },
-        { status: 400 }
-      );
+      return createSecureResponse({ error: "Invalid product ID" }, 400);
     }
 
     const body = await request.json();
     const { images } = updateImagesSchema.parse(body);
+
+    // Validate image count
+    if (!validateImageCount(images.length)) {
+      return createSecureResponse(
+        {
+          error: `Maximum ${IMAGE_CONSTANTS.MAX_FILES_PER_PRODUCT} images allowed per product`,
+        },
+        400
+      );
+    }
 
     // Get current images to identify files that need cleanup
     const currentProduct = await prisma.product.findUnique({
@@ -160,12 +165,9 @@ export async function PUT(
 
     // Clean up removed files from storage
     for (const removedImageUrl of removedImageUrls) {
-      if (removedImageUrl && removedImageUrl.includes("supabase.co")) {
+      const storagePath = extractStoragePath(removedImageUrl);
+      if (storagePath) {
         try {
-          // Extract storage path from Supabase URL
-          const urlParts = removedImageUrl.split("/");
-          const storagePath = urlParts.slice(-2).join("/"); // Get folder/filename
-
           const deleteResponse = await fetch(
             `${request.nextUrl.origin}/api/upload?publicId=${encodeURIComponent(storagePath)}`,
             {
@@ -177,13 +179,18 @@ export async function PUT(
           );
 
           if (!deleteResponse.ok) {
-            console.warn(
-              "Failed to delete removed file from storage:",
-              removedImageUrl
-            );
+            logger.warn("Failed to delete removed file from storage", {
+              removedImageUrl,
+              status: deleteResponse.status,
+              userId: session.user.id,
+            });
           }
         } catch (error) {
-          console.warn("Error deleting removed file from storage:", error);
+          logger.warn("Error deleting removed file from storage", {
+            error: error instanceof Error ? error.message : "Unknown error",
+            removedImageUrl,
+            userId: session.user.id,
+          });
         }
       }
     }
@@ -191,9 +198,9 @@ export async function PUT(
     // Ensure only one image is marked as primary
     const primaryImages = images.filter((img) => img.isPrimary);
     if (primaryImages.length > 1) {
-      return NextResponse.json(
+      return createSecureResponse(
         { error: "Only one image can be marked as primary" },
-        { status: 400 }
+        400
       );
     }
 
@@ -202,18 +209,13 @@ export async function PUT(
       images[0].isPrimary = true;
     }
 
-    // Store the full image objects with alt text and isPrimary - normalize to current format
-    const imageObjects = images.map((img, index) => ({
-      url: img.url,
-      altText: img.alt || img.altText || "",
-      isPrimary: img.isPrimary !== undefined ? img.isPrimary : index === 0, // Only set default if isPrimary is not explicitly set
-    }));
+    // Convert to storage format
+    const imageObjects = convertToStorageFormat(images);
 
-    // Update the product with image objects
-    console.log("Updating product images:", {
+    logger.info("Updating product images", {
       productId,
       imageCount: images.length,
-      imageObjects: imageObjects,
+      userId: session.user.id,
     });
 
     const updatedProduct = await prisma.product.update({
@@ -224,7 +226,7 @@ export async function PUT(
       select: { id: true, name: true, images: true },
     });
 
-    return NextResponse.json({
+    return createSecureResponse({
       message: "Product images updated successfully",
       product: {
         id: updatedProduct.id,
@@ -234,45 +236,44 @@ export async function PUT(
     });
   } catch (error) {
     if (error instanceof z.ZodError) {
-      return NextResponse.json(
+      return createSecureResponse(
         { error: "Invalid image data", details: error.errors },
-        { status: 400 }
+        400
       );
     }
 
-    console.error("Error updating product images:", error);
-    return NextResponse.json(
+    const session = await auth();
+    logger.error("Error updating product images", {
+      error: error instanceof Error ? error.message : "Unknown error",
+      productId: await params.then((p) => p.id),
+      userId: session?.user?.id,
+    });
+    return createSecureResponse(
       { error: "Failed to update product images" },
-      { status: 500 }
+      500
     );
   }
-}
+});
 
-export async function DELETE(
+export const DELETE = withRateLimit(RATE_LIMIT_CONFIGS.UPLOAD)(async (
   request: NextRequest,
   { params }: { params: Promise<{ id: string }> }
-) {
+) => {
   try {
     const session = await auth();
     if (!session?.user) {
-      return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+      return createSecureResponse({ error: "Unauthorized" }, 401);
     }
 
     // Check permissions
     if (!["ADMIN", "MANAGER"].includes(session.user.role)) {
-      return NextResponse.json(
-        { error: "Insufficient permissions" },
-        { status: 403 }
-      );
+      return createSecureResponse({ error: "Insufficient permissions" }, 403);
     }
 
     const { id } = await params;
     const productId = parseInt(id);
     if (isNaN(productId)) {
-      return NextResponse.json(
-        { error: "Invalid product ID" },
-        { status: 400 }
-      );
+      return createSecureResponse({ error: "Invalid product ID" }, 400);
     }
 
     // Get the imageUrl from query parameters
@@ -280,10 +281,7 @@ export async function DELETE(
     const imageUrl = searchParams.get("imageUrl");
 
     if (!imageUrl) {
-      return NextResponse.json(
-        { error: "Image URL is required" },
-        { status: 400 }
-      );
+      return createSecureResponse({ error: "Image URL is required" }, 400);
     }
 
     // Get current images
@@ -293,9 +291,9 @@ export async function DELETE(
     });
 
     if (!currentProduct?.images) {
-      return NextResponse.json(
+      return createSecureResponse(
         { error: "No images found for this product" },
-        { status: 404 }
+        404
       );
     }
 
@@ -322,7 +320,7 @@ export async function DELETE(
     // Find the image to delete by URL
     const imageToDelete = currentImages.find((img) => img.url === imageUrl);
     if (!imageToDelete) {
-      return NextResponse.json({ error: "Image not found" }, { status: 404 });
+      return createSecureResponse({ error: "Image not found" }, 404);
     }
 
     // Remove the image from the array
@@ -334,12 +332,9 @@ export async function DELETE(
     }
 
     // Clean up the deleted file from storage
-    if (imageToDelete.url && imageToDelete.url.includes("supabase.co")) {
+    const storagePath = extractStoragePath(imageToDelete.url);
+    if (storagePath) {
       try {
-        // Extract storage path from Supabase URL
-        const urlParts = imageToDelete.url.split("/");
-        const storagePath = urlParts.slice(-2).join("/"); // Get folder/filename
-
         const deleteResponse = await fetch(
           `${request.nextUrl.origin}/api/upload?publicId=${encodeURIComponent(storagePath)}`,
           {
@@ -351,22 +346,29 @@ export async function DELETE(
         );
 
         if (!deleteResponse.ok) {
-          console.warn(
-            "Failed to delete file from storage:",
-            imageToDelete.url
-          );
+          logger.warn("Failed to delete file from storage", {
+            imageUrl: imageToDelete.url,
+            status: deleteResponse.status,
+            userId: session.user.id,
+          });
         }
       } catch (error) {
-        console.warn("Error deleting file from storage:", error);
+        logger.warn("Error deleting file from storage", {
+          error: error instanceof Error ? error.message : "Unknown error",
+          imageUrl: imageToDelete.url,
+          userId: session.user.id,
+        });
       }
     }
 
     // Convert back to the format stored in the database
-    const imageObjects = updatedImages.map((img) => ({
-      url: img.url,
-      altText: img.alt || img.altText || "",
-      isPrimary: img.isPrimary,
-    }));
+    const imageObjects = convertToStorageFormat(updatedImages);
+
+    logger.info("Image deleted successfully", {
+      productId,
+      imageUrl,
+      userId: session.user.id,
+    });
 
     // Update the product with the remaining images
     const updatedProduct = await prisma.product.update({
@@ -377,7 +379,7 @@ export async function DELETE(
       select: { id: true, name: true, images: true },
     });
 
-    return NextResponse.json({
+    return createSecureResponse({
       message: "Image deleted successfully",
       product: {
         id: updatedProduct.id,
@@ -386,10 +388,12 @@ export async function DELETE(
       },
     });
   } catch (error) {
-    console.error("Error deleting image:", error);
-    return NextResponse.json(
-      { error: "Failed to delete image" },
-      { status: 500 }
-    );
+    const session = await auth();
+    logger.error("Error deleting image", {
+      error: error instanceof Error ? error.message : "Unknown error",
+      productId: await params.then((p) => p.id),
+      userId: session?.user?.id,
+    });
+    return createSecureResponse({ error: "Failed to delete image" }, 500);
   }
-}
+});

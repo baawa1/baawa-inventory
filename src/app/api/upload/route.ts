@@ -1,29 +1,55 @@
 import { auth } from "../../../../auth";
-import { NextRequest, NextResponse } from "next/server";
+import { NextRequest } from "next/server";
 import { supabaseStorageServer } from "@/lib/upload/supabase-storage";
+import { logger } from "@/lib/logger";
+import { createSecureResponse } from "@/lib/security-headers";
+import { withRateLimit, RATE_LIMIT_CONFIGS } from "@/lib/rate-limiting";
+import { IMAGE_CONSTANTS } from "@/types/product-images";
+import { isAllowedFileType, isFileSizeValid } from "@/lib/utils/image-utils";
 
-export async function POST(request: NextRequest) {
+export const POST = withRateLimit(RATE_LIMIT_CONFIGS.UPLOAD)(async (
+  request: NextRequest
+) => {
   try {
     const session = await auth();
     if (!session?.user) {
-      return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+      return createSecureResponse({ error: "Unauthorized" }, 401);
     }
 
     // Check permissions - only ADMIN and MANAGER can upload
     if (!["ADMIN", "MANAGER"].includes(session.user.role)) {
-      return NextResponse.json(
-        { error: "Insufficient permissions" },
-        { status: 403 }
-      );
+      return createSecureResponse({ error: "Insufficient permissions" }, 403);
     }
 
     const formData = await request.formData();
     const file = formData.get("file") as File;
     const folder = (formData.get("folder") as string) || "products";
-    const quality = parseInt(formData.get("quality") as string) || 85;
+    const quality =
+      parseInt(formData.get("quality") as string) ||
+      IMAGE_CONSTANTS.DEFAULT_QUALITY;
 
     if (!file) {
-      return NextResponse.json({ error: "No file provided" }, { status: 400 });
+      return createSecureResponse({ error: "No file provided" }, 400);
+    }
+
+    // Validate file type
+    if (!isAllowedFileType(file.type)) {
+      return createSecureResponse(
+        {
+          error: `File type ${file.type} is not allowed. Allowed types: ${IMAGE_CONSTANTS.ALLOWED_TYPES.join(", ")}`,
+        },
+        400
+      );
+    }
+
+    // Validate file size
+    if (!isFileSizeValid(file.size)) {
+      return createSecureResponse(
+        {
+          error: `File size ${file.size} exceeds maximum allowed size ${IMAGE_CONSTANTS.MAX_FILE_SIZE}`,
+        },
+        400
+      );
     }
 
     // Ensure bucket exists
@@ -33,11 +59,19 @@ export async function POST(request: NextRequest) {
     const uploadResult = await supabaseStorageServer.uploadFile(file, {
       folder,
       quality,
-      allowedTypes: ["image/jpeg", "image/png", "image/webp"],
-      maxSize: 5 * 1024 * 1024, // 5MB
+      allowedTypes: [...IMAGE_CONSTANTS.ALLOWED_TYPES],
+      maxSize: IMAGE_CONSTANTS.MAX_FILE_SIZE,
     });
 
-    return NextResponse.json({
+    logger.upload("File uploaded successfully", {
+      filename: uploadResult.filename,
+      size: uploadResult.size,
+      mimeType: uploadResult.mimeType,
+      folder,
+      userId: session.user.id,
+    });
+
+    return createSecureResponse({
       url: uploadResult.url,
       filename: uploadResult.filename,
       size: uploadResult.size,
@@ -47,15 +81,18 @@ export async function POST(request: NextRequest) {
       message: "File uploaded successfully",
     });
   } catch (error) {
-    console.error("Upload error:", error);
-    return NextResponse.json(
+    logger.error("Upload error", {
+      error: error instanceof Error ? error.message : "Unknown error",
+      userId: session?.user?.id,
+    });
+    return createSecureResponse(
       {
         error: error instanceof Error ? error.message : "Failed to upload file",
       },
-      { status: 500 }
+      500
     );
   }
-}
+});
 
 export async function DELETE(request: NextRequest) {
   try {
