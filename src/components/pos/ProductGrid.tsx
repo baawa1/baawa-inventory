@@ -216,7 +216,7 @@ export function ProductGrid({
   }
 
   return (
-    <div className="h-full flex flex-col">
+    <div className="h-full flex flex-col min-h-0">
       {/* Search and Filter Controls */}
       <div className="space-y-4 mb-4 flex-shrink-0 bg-background">
         {/* Search Bar */}
@@ -331,7 +331,7 @@ export function ProductGrid({
       )}
 
       {/* Product Grid - Scrollable */}
-      <ScrollArea className="flex-1 rounded-md border">
+      <ScrollArea className="flex-1 rounded-md border min-h-0 h-full">
         <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4 pb-4 pr-4 p-4">
           {isLoading ? (
             Array.from({ length: 8 }).map((_, i) => (

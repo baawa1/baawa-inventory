@@ -108,7 +108,7 @@ export function ArchivedProductList({ user }: ArchivedProductListProps) {
       search: debouncedSearchTerm,
       categoryId: filters.categoryId,
       brandId: filters.brandId,
-      sortBy: "archivedAt",
+      sortBy: "updatedAt",
       sortOrder: "desc",
     },
     {
@@ -231,7 +231,7 @@ export function ArchivedProductList({ user }: ArchivedProductListProps) {
       { key: "stock", label: "Stock", defaultVisible: true },
       { key: "price", label: "Price", defaultVisible: true },
       { key: "status", label: "Status", defaultVisible: true },
-      { key: "archivedAt", label: "Archived", defaultVisible: true },
+      { key: "updatedAt", label: "Archived", defaultVisible: true },
     ],
     []
   );
@@ -294,7 +294,7 @@ export function ArchivedProductList({ user }: ArchivedProductListProps) {
           }).format(product.price);
         case "status":
           return getStatusBadge(product.status);
-        case "archivedAt":
+        case "updatedAt":
           return product.updatedAt ? (
             <span className="text-sm">
               {new Date(product.updatedAt).toLocaleDateString()}

@@ -352,7 +352,6 @@ export default function CategoryList({ user }: CategoryListProps) {
         tableTitle="Categories"
         totalCount={total}
         currentCount={categories.length}
-        showingText={`Showing ${categories.length} of ${total} categories`}
         columns={columnsWithActions}
         visibleColumns={effectiveVisibleColumns}
         onColumnsChange={setVisibleColumns}
