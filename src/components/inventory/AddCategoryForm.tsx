@@ -48,11 +48,12 @@ export default function AddCategoryForm() {
       createCategorySchema.parse(data);
       setValidationErrors({});
       return true;
-    } catch (error: any) {
+    } catch (error: unknown) {
       const errors: Record<string, string> = {};
-      if (error.errors) {
-        error.errors.forEach((err: any) => {
-          if (err.path) {
+      if (error && typeof error === 'object' && 'errors' in error) {
+        const zodError = error as { errors: Array<{ path: string[], message: string }> };
+        zodError.errors.forEach((err) => {
+          if (err.path && err.path.length > 0) {
             errors[err.path[0]] = err.message;
           }
         });
@@ -98,7 +99,7 @@ export default function AddCategoryForm() {
     router.push("/inventory/categories");
   };
 
-  const updateFormData = (field: keyof CreateCategoryFormData, value: any) => {
+  const updateFormData = (field: keyof CreateCategoryFormData, value: string | boolean) => {
     setFormData((prev) => ({ ...prev, [field]: value }));
     // Clear validation error for this field
     if (validationErrors[field]) {

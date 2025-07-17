@@ -1,6 +1,6 @@
 "use client";
 
-import React, { useState, useMemo } from "react";
+import React, { useState, useMemo, useCallback } from "react";
 import Link from "next/link";
 import { toast } from "sonner";
 import { useDebounce } from "@/hooks/useDebounce";
@@ -11,10 +11,13 @@ import {
   useRejectStockReconciliation,
   useDeleteStockReconciliation,
   type StockReconciliationFilters,
+  type StockReconciliation as APIStockReconciliation,
 } from "@/hooks/api/stock-management";
 import { InventoryPageLayout } from "@/components/inventory/InventoryPageLayout";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
+import { Label } from "@/components/ui/label";
+import { Textarea } from "@/components/ui/textarea";
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -43,7 +46,6 @@ import {
   IconClipboard,
   IconAlertTriangle,
 } from "@tabler/icons-react";
-
 import type { FilterConfig } from "@/types/inventory";
 import type { DashboardTableColumn } from "@/components/layouts/DashboardColumnCustomizer";
 
@@ -56,43 +58,20 @@ interface User {
   isEmailVerified: boolean;
 }
 
-interface StockReconciliation {
-  id: number;
-  title: string;
-  description?: string;
-  status: "DRAFT" | "PENDING" | "APPROVED" | "REJECTED";
-  notes?: string;
-  createdAt: string;
-  updatedAt: string;
-  submittedAt?: string;
-  approvedAt?: string;
-  createdBy: User;
-  approvedBy?: User;
-  items: {
-    id: number;
-    systemCount: number;
-    physicalCount: number;
-    discrepancy: number;
-    discrepancyReason?: string;
-    estimatedImpact?: number;
-    product: {
-      id: number;
-      name: string;
-      sku: string;
-    };
-  }[];
-}
-
 interface StockReconciliationListProps {
   user: User;
 }
 
-export function StockReconciliationList({
+export default function StockReconciliationList({
   user,
 }: StockReconciliationListProps) {
   const [deleteDialogOpen, setDeleteDialogOpen] = useState(false);
   const [reconciliationToDelete, setReconciliationToDelete] =
-    useState<StockReconciliation | null>(null);
+    useState<APIStockReconciliation | null>(null);
+  const [rejectDialogOpen, setRejectDialogOpen] = useState(false);
+  const [reconciliationToReject, setReconciliationToReject] =
+    useState<APIStockReconciliation | null>(null);
+  const [rejectReason, setRejectReason] = useState("");
 
   const [pagination, setPagination] = useState({
     page: 1,
@@ -100,44 +79,66 @@ export function StockReconciliationList({
     totalPages: 1,
     totalItems: 0,
   });
-  const [visibleColumns, setVisibleColumns] = useState<string[]>([
-    "title",
-    "status",
-    "itemCount",
-    "totalDiscrepancy",
-    "createdBy",
-    "createdAt",
-  ]);
 
-  // Clear old localStorage to ensure fresh start with correct columns
+  // Column configuration - only showing actual reconciliation fields
+  const columns: DashboardTableColumn[] = useMemo(
+    () => [
+      {
+        key: "title",
+        label: "Title",
+        sortable: true,
+        defaultVisible: true,
+        required: true,
+      },
+      { key: "status", label: "Status", defaultVisible: true },
+      { key: "itemCount", label: "Items", defaultVisible: true },
+      {
+        key: "totalDiscrepancy",
+        label: "Total Discrepancy",
+        defaultVisible: true,
+      },
+      { key: "createdBy", label: "Created By", defaultVisible: true },
+      { key: "createdAt", label: "Created", defaultVisible: true },
+      { key: "updatedAt", label: "Updated", defaultVisible: false },
+    ],
+    []
+  );
+
+  // Initialize visibleColumns with default values to prevent hydration mismatch
+  const defaultVisibleColumns = useMemo(
+    () => columns.filter((col) => col.defaultVisible).map((col) => col.key),
+    [columns]
+  );
+
+  const [visibleColumns, setVisibleColumns] = useState<string[]>(
+    defaultVisibleColumns
+  );
+
+  // Clean up any "actions" column from localStorage and state - run once on mount
   React.useEffect(() => {
-    const hasOldData = localStorage.getItem(
-      "stock-reconciliations-visible-columns"
-    );
-    if (hasOldData) {
+    // Clean up localStorage if it contains "actions"
+    const storageKey = "stock-reconciliations-visible-columns";
+    const storedColumns = localStorage.getItem(storageKey);
+    if (storedColumns) {
       try {
-        const parsed = JSON.parse(hasOldData);
-        // Check if it contains product columns (which shouldn't be there)
-        if (
-          parsed.includes("name") ||
-          parsed.includes("sku") ||
-          parsed.includes("image")
-        ) {
-          // Clear the old data
-          localStorage.removeItem("stock-reconciliations-visible-columns");
+        const parsed = JSON.parse(storedColumns);
+        if (Array.isArray(parsed) && parsed.includes("actions")) {
+          const cleaned = parsed.filter((col: string) => col !== "actions");
+          localStorage.setItem(storageKey, JSON.stringify(cleaned));
+          // Also update the visible columns state
+          setVisibleColumns((prev) => prev.filter((col) => col !== "actions"));
         }
-      } catch (_e) {
-        // If parsing fails, clear the data
-        localStorage.removeItem("stock-reconciliations-visible-columns");
+      } catch (_error) {
+        // If parsing fails, remove the item
+        localStorage.removeItem(storageKey);
       }
     }
-  }, []);
+  }, []); // Empty dependency array - run once on mount
 
   // Filters
   const [filters, setFilters] = useState({
     search: "",
     status: "",
-    createdBy: "",
   });
 
   // Debounce search term to avoid excessive API calls
@@ -146,12 +147,10 @@ export function StockReconciliationList({
   // Show search loading when user is typing but search hasn't been triggered yet
   const isSearching = filters.search !== debouncedSearchTerm;
 
-  const isAdmin = user.role === "ADMIN";
-
   // TanStack Query hooks for data fetching
   const stockFilters: StockReconciliationFilters = {
     search: debouncedSearchTerm,
-    status: filters.status !== "all" ? filters.status : undefined,
+    status: filters.status !== "" ? filters.status : undefined,
     sortBy: "createdAt",
     sortOrder: "desc",
     page: pagination.page,
@@ -167,18 +166,17 @@ export function StockReconciliationList({
   // Extract data from queries
   const reconciliations = reconciliationsQuery.data?.reconciliations || [];
   const loading = reconciliationsQuery.isLoading;
+  const total = reconciliationsQuery.data?.pagination?.total || 0;
   const apiPagination = reconciliationsQuery.data?.pagination;
 
-  // Update pagination when data changes
-  React.useEffect(() => {
-    if (apiPagination) {
-      setPagination((prev) => ({
-        ...prev,
-        totalItems: apiPagination.total,
-        totalPages: apiPagination.totalPages,
-      }));
-    }
-  }, [apiPagination]);
+  // Update pagination state from API response
+  const currentPagination = {
+    page: apiPagination?.page || pagination.page,
+    limit: apiPagination?.limit || pagination.limit,
+    totalPages:
+      apiPagination?.totalPages || Math.ceil(total / pagination.limit),
+    totalItems: total,
+  };
 
   // Permission checks
   const canManageReconciliations = ["ADMIN", "MANAGER"].includes(user.role);
@@ -203,67 +201,98 @@ export function StockReconciliationList({
   );
 
   // Handle filter changes
-  const handleFilterChange = (key: string, value: any) => {
-    setFilters((prev) => ({ ...prev, [key]: value }));
+  const handleFilterChange = useCallback((key: string, value: string) => {
+    setFilters((prev) => {
+      if (prev[key as keyof typeof prev] === value) return prev; // Prevent unnecessary updates
+      return { ...prev, [key]: value };
+    });
     setPagination((prev) => ({ ...prev, page: 1 }));
-  };
+  }, []);
 
   // Clear all filters
-  const handleResetFilters = () => {
+  const handleResetFilters = useCallback(() => {
     setFilters({
       search: "",
       status: "",
-      createdBy: "",
     });
     setPagination((prev) => ({ ...prev, page: 1 }));
-  };
+  }, []);
 
-  const handlePageChange = (newPage: number) => {
+  const handlePageChange = useCallback((newPage: number) => {
     setPagination((prev) => ({ ...prev, page: newPage }));
-  };
+  }, []);
 
-  const handlePageSizeChange = (newSize: number) => {
+  const handlePageSizeChange = useCallback((newSize: number) => {
     setPagination((prev) => ({ ...prev, limit: newSize, page: 1 }));
-  };
+  }, []);
 
   // Handle submit for approval
-  const handleSubmitForApproval = async (reconciliationId: number) => {
-    try {
-      await submitReconciliation.mutateAsync(reconciliationId);
-      toast.success("Reconciliation submitted for approval");
-    } catch (error) {
-      console.error("Error submitting reconciliation:", error);
-      toast.error("Failed to submit reconciliation");
-    }
-  };
+  const handleSubmitForApproval = useCallback(
+    async (reconciliationId: number) => {
+      try {
+        await submitReconciliation.mutateAsync(reconciliationId);
+        toast.success("Reconciliation submitted for approval");
+      } catch (error) {
+        console.error("Error submitting reconciliation:", error);
+        toast.error(
+          error instanceof Error
+            ? error.message
+            : "Failed to submit reconciliation"
+        );
+      }
+    },
+    [submitReconciliation]
+  );
 
   // Handle approve
-  const handleApprove = async (reconciliationId: number) => {
-    try {
-      await approveReconciliation.mutateAsync({ id: reconciliationId });
-      toast.success("Reconciliation approved successfully");
-    } catch (error) {
-      console.error("Error approving reconciliation:", error);
-      toast.error("Failed to approve reconciliation");
-    }
-  };
+  const handleApprove = useCallback(
+    async (reconciliationId: number) => {
+      try {
+        await approveReconciliation.mutateAsync({ id: reconciliationId });
+        toast.success("Reconciliation approved successfully");
+      } catch (error) {
+        console.error("Error approving reconciliation:", error);
+        toast.error(
+          error instanceof Error
+            ? error.message
+            : "Failed to approve reconciliation"
+        );
+      }
+    },
+    [approveReconciliation]
+  );
 
   // Handle reject
-  const handleReject = async (reconciliationId: number) => {
-    const reason = prompt("Please provide a reason for rejection:");
-    if (!reason) return;
+  const handleReject = useCallback((reconciliation: APIStockReconciliation) => {
+    setReconciliationToReject(reconciliation);
+    setRejectDialogOpen(true);
+  }, []);
+
+  // Handle reject confirmation
+  const handleRejectConfirm = useCallback(async () => {
+    if (!reconciliationToReject || !rejectReason.trim()) return;
 
     try {
-      await rejectReconciliation.mutateAsync({ id: reconciliationId, reason });
+      await rejectReconciliation.mutateAsync({
+        id: reconciliationToReject.id,
+        reason: rejectReason.trim(),
+      });
       toast.success("Reconciliation rejected");
+      setRejectDialogOpen(false);
+      setReconciliationToReject(null);
+      setRejectReason("");
     } catch (error) {
       console.error("Error rejecting reconciliation:", error);
-      toast.error("Failed to reject reconciliation");
+      toast.error(
+        error instanceof Error
+          ? error.message
+          : "Failed to reject reconciliation"
+      );
     }
-  };
+  }, [reconciliationToReject, rejectReason, rejectReconciliation]);
 
-  // Handle delete
-  const handleDelete = async () => {
+  // Handle delete reconciliation
+  const handleDeleteReconciliation = useCallback(async () => {
     if (!reconciliationToDelete) return;
 
     try {
@@ -271,16 +300,21 @@ export function StockReconciliationList({
         reconciliationToDelete.id.toString()
       );
       toast.success("Reconciliation deleted successfully");
-      setDeleteDialogOpen(false);
-      setReconciliationToDelete(null);
     } catch (error) {
       console.error("Error deleting reconciliation:", error);
-      toast.error("Failed to delete reconciliation");
+      toast.error(
+        error instanceof Error
+          ? error.message
+          : "Failed to delete reconciliation"
+      );
+    } finally {
+      setDeleteDialogOpen(false);
+      setReconciliationToDelete(null);
     }
-  };
+  }, [reconciliationToDelete, deleteReconciliation]);
 
   // Get status badge
-  const getStatusBadge = (status: string) => {
+  const getStatusBadge = useCallback((status: string) => {
     switch (status) {
       case "DRAFT":
         return <Badge variant="secondary">Draft</Badge>;
@@ -301,36 +335,16 @@ export function StockReconciliationList({
       default:
         return <Badge variant="outline">{status}</Badge>;
     }
-  };
+  }, []);
 
   // Calculate total discrepancy
-  const calculateTotalDiscrepancy = (reconciliation: StockReconciliation) => {
-    return reconciliation.items.reduce(
-      (total, item) => total + Math.abs(item.discrepancy),
-      0
-    );
-  };
-
-  // Column configuration - only showing actual reconciliation fields
-  const columns: DashboardTableColumn[] = useMemo(
-    () => [
-      {
-        key: "title",
-        label: "Title",
-        sortable: true,
-        defaultVisible: true,
-        required: true,
-      },
-      { key: "status", label: "Status", defaultVisible: true },
-      { key: "itemCount", label: "Items", defaultVisible: true },
-      {
-        key: "totalDiscrepancy",
-        label: "Total Discrepancy",
-        defaultVisible: true,
-      },
-      { key: "createdBy", label: "Created By", defaultVisible: true },
-      { key: "createdAt", label: "Created", defaultVisible: true },
-    ],
+  const calculateTotalDiscrepancy = useCallback(
+    (reconciliation: APIStockReconciliation) => {
+      return reconciliation.items.reduce(
+        (total, item) => total + Math.abs(item.discrepancy),
+        0
+      );
+    },
     []
   );
 
@@ -354,150 +368,161 @@ export function StockReconciliationList({
   }, [visibleColumns, columns]);
 
   // Render cell function
-  const renderCell = (
-    reconciliation: StockReconciliation,
-    columnKey: string
-  ) => {
-    switch (columnKey) {
-      case "title":
-        return (
-          <div>
-            <div className="font-medium">{reconciliation.title}</div>
-            {reconciliation.description && (
-              <div className="text-sm text-gray-500 truncate max-w-xs">
-                {reconciliation.description}
-              </div>
-            )}
-          </div>
-        );
-      case "status":
-        return getStatusBadge(reconciliation.status);
-      case "itemCount":
-        return (
-          <div>
-            <span className="font-mono">{reconciliation.items.length}</span>
-          </div>
-        );
-      case "totalDiscrepancy":
-        const totalDiscrepancy = calculateTotalDiscrepancy(reconciliation);
-        return (
-          <div>
-            <span
-              className={`font-mono ${totalDiscrepancy > 0 ? "text-red-600" : "text-green-600"}`}
-            >
-              {totalDiscrepancy}
-            </span>
-          </div>
-        );
-      case "createdBy":
-        return (
-          <div className="text-sm">
-            <div>{`${reconciliation.createdBy.name}`}</div>
-            <div className="text-gray-500">
-              {reconciliation.createdBy.email}
+  const renderCell = useCallback(
+    (reconciliation: APIStockReconciliation, columnKey: string) => {
+      switch (columnKey) {
+        case "title":
+          return (
+            <div>
+              <div className="font-medium">{reconciliation.title}</div>
+              {reconciliation.description && (
+                <div className="text-sm text-gray-500 truncate max-w-xs">
+                  {reconciliation.description}
+                </div>
+              )}
             </div>
-          </div>
-        );
-      case "createdAt":
-        return (
-          <div className="text-sm">
-            {new Date(reconciliation.createdAt).toLocaleDateString()}
-          </div>
-        );
-      case "updatedAt":
-        return (
-          <div className="text-sm">
-            {reconciliation.updatedAt
-              ? new Date(reconciliation.updatedAt).toLocaleDateString()
-              : "-"}
-          </div>
-        );
-      default:
-        return null;
-    }
-  };
+          );
+        case "status":
+          return getStatusBadge(reconciliation.status);
+        case "itemCount":
+          return (
+            <div>
+              <span className="font-mono">{reconciliation.items.length}</span>
+            </div>
+          );
+        case "totalDiscrepancy":
+          const totalDiscrepancy = calculateTotalDiscrepancy(reconciliation);
+          return (
+            <div>
+              <span
+                className={`font-mono ${totalDiscrepancy > 0 ? "text-red-600" : "text-green-600"}`}
+              >
+                {totalDiscrepancy}
+              </span>
+            </div>
+          );
+        case "createdBy":
+          return (
+            <div className="text-sm">
+              <div>{`${reconciliation.createdBy.firstName} ${reconciliation.createdBy.lastName}`}</div>
+              <div className="text-gray-500">
+                {reconciliation.createdBy.email}
+              </div>
+            </div>
+          );
+        case "createdAt":
+          return new Date(reconciliation.createdAt).toLocaleDateString();
+        case "updatedAt":
+          return reconciliation.updatedAt ? (
+            <span className="text-sm">
+              {new Date(reconciliation.updatedAt).toLocaleDateString()}
+            </span>
+          ) : (
+            <span className="text-gray-400 italic">-</span>
+          );
+        default:
+          return null;
+      }
+    },
+    [getStatusBadge, calculateTotalDiscrepancy]
+  );
 
   // Render actions
-  const renderActions = (reconciliation: StockReconciliation) => {
-    const isOwner = reconciliation.createdBy.id === user.id;
-    const canEdit = reconciliation.status === "DRAFT" && (isOwner || isAdmin);
-    const canSubmit = reconciliation.status === "DRAFT" && (isOwner || isAdmin);
-    const canApprove = reconciliation.status === "PENDING" && isAdmin;
-    const canDelete = reconciliation.status === "DRAFT" && (isOwner || isAdmin);
+  const renderActions = useCallback(
+    (reconciliation: APIStockReconciliation) => {
+      if (!canManageReconciliations) return null;
 
-    return (
-      <DropdownMenu>
-        <DropdownMenuTrigger asChild>
-          <Button variant="ghost" className="h-8 w-8 p-0">
-            <span className="sr-only">Open menu</span>
-            <IconDots className="h-4 w-4" />
-          </Button>
-        </DropdownMenuTrigger>
-        <DropdownMenuContent align="end">
-          <DropdownMenuItem asChild>
-            <Link
-              href={`/inventory/stock-reconciliations/${reconciliation.id}`}
-            >
-              <IconEye className="mr-2 h-4 w-4" />
-              View Details
-            </Link>
-          </DropdownMenuItem>
+      const isOwner = reconciliation.createdBy.id.toString() === user.id;
+      const isAdmin = user.role === "ADMIN";
+      const canEdit = reconciliation.status === "DRAFT" && (isOwner || isAdmin);
+      const canSubmit =
+        reconciliation.status === "DRAFT" && (isOwner || isAdmin);
+      const canApprove = reconciliation.status === "PENDING" && isAdmin;
+      const canDelete =
+        reconciliation.status === "DRAFT" && (isOwner || isAdmin);
 
-          {canEdit && (
+      return (
+        <DropdownMenu>
+          <DropdownMenuTrigger asChild>
+            <Button variant="ghost" className="h-8 w-8 p-0">
+              <span className="sr-only">Open menu</span>
+              <IconDots className="h-4 w-4" />
+            </Button>
+          </DropdownMenuTrigger>
+          <DropdownMenuContent align="end">
             <DropdownMenuItem asChild>
               <Link
-                href={`/inventory/stock-reconciliations/${reconciliation.id}/edit`}
+                href={`/inventory/stock-reconciliations/${reconciliation.id}`}
               >
-                <IconEdit className="mr-2 h-4 w-4" />
-                Edit
+                <IconEye className="mr-2 h-4 w-4" />
+                View Details
               </Link>
             </DropdownMenuItem>
-          )}
 
-          {canSubmit && (
-            <DropdownMenuItem
-              onClick={() => handleSubmitForApproval(reconciliation.id)}
-            >
-              <IconSend className="mr-2 h-4 w-4" />
-              Submit for Approval
-            </DropdownMenuItem>
-          )}
-
-          {canApprove && (
-            <>
-              <DropdownMenuItem
-                className="text-green-600"
-                onClick={() => handleApprove(reconciliation.id)}
-              >
-                <IconCheck className="mr-2 h-4 w-4" />
-                Approve
+            {canEdit && (
+              <DropdownMenuItem asChild>
+                <Link
+                  href={`/inventory/stock-reconciliations/${reconciliation.id}/edit`}
+                >
+                  <IconEdit className="mr-2 h-4 w-4" />
+                  Edit
+                </Link>
               </DropdownMenuItem>
+            )}
+
+            {canSubmit && (
+              <DropdownMenuItem
+                onClick={() => handleSubmitForApproval(reconciliation.id)}
+              >
+                <IconSend className="mr-2 h-4 w-4" />
+                Submit for Approval
+              </DropdownMenuItem>
+            )}
+
+            {canApprove && (
+              <>
+                <DropdownMenuItem
+                  className="text-green-600"
+                  onClick={() => handleApprove(reconciliation.id)}
+                >
+                  <IconCheck className="mr-2 h-4 w-4" />
+                  Approve
+                </DropdownMenuItem>
+                <DropdownMenuItem
+                  className="text-red-600"
+                  onClick={() => handleReject(reconciliation)}
+                >
+                  <IconX className="mr-2 h-4 w-4" />
+                  Reject
+                </DropdownMenuItem>
+              </>
+            )}
+
+            {canDelete && (
               <DropdownMenuItem
                 className="text-red-600"
-                onClick={() => handleReject(reconciliation.id)}
+                onClick={() => {
+                  setReconciliationToDelete(reconciliation);
+                  setDeleteDialogOpen(true);
+                }}
               >
-                <IconX className="mr-2 h-4 w-4" />
-                Reject
+                <IconTrash className="mr-2 h-4 w-4" />
+                Delete
               </DropdownMenuItem>
-            </>
-          )}
-
-          {canDelete && (
-            <DropdownMenuItem
-              className="text-red-600"
-              onClick={() => {
-                setReconciliationToDelete(reconciliation);
-                setDeleteDialogOpen(true);
-              }}
-            >
-              <IconTrash className="mr-2 h-4 w-4" />
-              Delete
-            </DropdownMenuItem>
-          )}
-        </DropdownMenuContent>
-      </DropdownMenu>
-    );
-  };
+            )}
+          </DropdownMenuContent>
+        </DropdownMenu>
+      );
+    },
+    [
+      canManageReconciliations,
+      user.id,
+      user.role,
+      handleSubmitForApproval,
+      handleApprove,
+      handleReject,
+    ]
+  );
 
   return (
     <>
@@ -529,7 +554,7 @@ export function StockReconciliationList({
         onResetFilters={handleResetFilters}
         // Table
         tableTitle="Stock Reconciliations"
-        totalCount={pagination.totalItems}
+        totalCount={total}
         currentCount={reconciliations.length}
         columns={columnsWithActions}
         visibleColumns={effectiveVisibleColumns}
@@ -539,7 +564,7 @@ export function StockReconciliationList({
         renderCell={renderCell}
         renderActions={renderActions}
         // Pagination
-        pagination={pagination}
+        pagination={currentPagination}
         onPageChange={handlePageChange}
         onPageSizeChange={handlePageSizeChange}
         // Loading states
@@ -581,10 +606,57 @@ export function StockReconciliationList({
           <AlertDialogFooter>
             <AlertDialogCancel>Cancel</AlertDialogCancel>
             <AlertDialogAction
-              onClick={handleDelete}
+              onClick={handleDeleteReconciliation}
               className="bg-red-600 hover:bg-red-700"
             >
               Delete
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
+
+      {/* Reject Confirmation Dialog */}
+      <AlertDialog open={rejectDialogOpen} onOpenChange={setRejectDialogOpen}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle className="flex items-center gap-2">
+              <IconX className="h-5 w-5 text-red-500" />
+              Reject Stock Reconciliation
+            </AlertDialogTitle>
+            <AlertDialogDescription>
+              Are you sure you want to reject the reconciliation "
+              {reconciliationToReject?.title}"? Please provide a reason for
+              rejection.
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <div className="space-y-4 py-4">
+            <div className="space-y-2">
+              <Label htmlFor="reject-reason">Reason for Rejection</Label>
+              <Textarea
+                id="reject-reason"
+                placeholder="Please provide a detailed reason for rejecting this reconciliation..."
+                value={rejectReason}
+                onChange={(e) => setRejectReason(e.target.value)}
+                className="min-h-[100px]"
+              />
+            </div>
+          </div>
+          <AlertDialogFooter>
+            <AlertDialogCancel
+              onClick={() => {
+                setRejectDialogOpen(false);
+                setReconciliationToReject(null);
+                setRejectReason("");
+              }}
+            >
+              Cancel
+            </AlertDialogCancel>
+            <AlertDialogAction
+              onClick={handleRejectConfirm}
+              disabled={!rejectReason.trim()}
+              className="bg-red-600 hover:bg-red-700"
+            >
+              Reject
             </AlertDialogAction>
           </AlertDialogFooter>
         </AlertDialogContent>

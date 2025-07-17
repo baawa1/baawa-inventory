@@ -49,7 +49,7 @@ const fetchBrands = async (
 ): Promise<BrandResponse> => {
   const searchParams = new URLSearchParams({
     page: String(filters.page || 1),
-    limit: String(filters.limit || 10),
+    limit: String(filters.limit || 50),
     sortBy: filters.sortBy || "name",
     sortOrder: filters.sortOrder || "asc",
   });
@@ -68,7 +68,7 @@ const fetchBrands = async (
     data: data.data || [],
     pagination: {
       page: data.pagination?.page || 1,
-      limit: data.pagination?.limit || 10,
+      limit: data.pagination?.limit || 50,
       totalPages: data.pagination?.totalPages || 1,
       totalBrands: data.pagination?.total || 0,
     },
@@ -222,7 +222,7 @@ export const useBrandOptions = () => {
   return useQuery({
     queryKey: [...queryKeys.brands.all, "options"] as const,
     queryFn: async () => {
-      const response = await fetch("/api/brands?isActive=true");
+      const response = await fetch("/api/brands?isActive=true&limit=1000");
       if (!response.ok) {
         throw new Error(
           `Failed to fetch brand options: ${response.statusText}`

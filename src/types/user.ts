@@ -26,6 +26,7 @@ export interface AppUser extends AuthUser {
   firstName: string;
   lastName: string;
   isActive: boolean;
+  userStatus: UserStatus | string;
   createdAt: string | Date;
   updatedAt?: string | Date;
   lastLogin?: string | Date;

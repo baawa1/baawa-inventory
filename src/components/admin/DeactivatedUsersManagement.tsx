@@ -19,11 +19,8 @@ import {
   TableRow,
 } from "@/components/ui/table";
 import { Badge } from "@/components/ui/badge";
-import {
-  useDeactivatedUsers,
-  useReactivateUser,
-  type APIUser,
-} from "@/hooks/api/users";
+import { useDeactivatedUsers, useReactivateUser } from "@/hooks/api/users";
+import type { AppUser as APIUser } from "@/types/user";
 import { toast } from "sonner";
 import { useAdminGuard } from "@/hooks/useAdminGuard";
 
@@ -32,7 +29,7 @@ type User = APIUser;
 
 export function DeactivatedUsersManagement() {
   const { isAdmin, isLoading: isAuthLoading } = useAdminGuard();
-  const [activatingUser, setActivatingUser] = useState<number | null>(null);
+  const [activatingUser, setActivatingUser] = useState<string | null>(null);
 
   // TanStack Query hooks
   const { data: users = [], isLoading, error } = useDeactivatedUsers();
@@ -44,7 +41,7 @@ export function DeactivatedUsersManagement() {
       setActivatingUser(user.id);
 
       await reactivateUserMutation.mutateAsync({
-        id: user.id,
+        id: parseInt(user.id),
         firstName: user.firstName,
         lastName: user.lastName,
         email: user.email,

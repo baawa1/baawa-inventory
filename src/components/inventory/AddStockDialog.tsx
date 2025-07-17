@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useEffect } from "react";
+import { useEffect } from "react";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { z } from "zod";
@@ -43,6 +43,7 @@ import { Badge } from "@/components/ui/badge";
 import { CalendarIcon } from "lucide-react";
 import { cn, formatCurrency } from "@/lib/utils";
 import { useSupplierOptions } from "@/hooks/api/suppliers";
+import { useAddStock } from "@/hooks/api/stock-mutations";
 
 const addStockSchema = z.object({
   quantity: z.number().int().positive("Quantity must be a positive integer"),
@@ -76,8 +77,6 @@ export function AddStockDialog({
   product,
   onSuccess,
 }: AddStockDialogProps) {
-  const [isLoading, setIsLoading] = useState(false);
-
   // Use TanStack Query for suppliers data
   const { data: supplierOptions = [], isLoading: loadingSuppliers } =
     useSupplierOptions();
@@ -103,13 +102,16 @@ export function AddStockDialog({
     },
   });
 
+  // TanStack Query mutation
+  const addStockMutation = useAddStock();
+
   // Reset form when dialog opens or product changes
   useEffect(() => {
     if (isOpen && product) {
       form.reset({
         quantity: 1,
         costPerUnit: product.cost || 0,
-        supplierId: undefined,
+        supplierId: form.getValues("supplierId"),
         purchaseDate: new Date(),
         notes: "",
         referenceNo: "",
@@ -117,32 +119,24 @@ export function AddStockDialog({
     }
   }, [isOpen, product, form]);
 
-  const onSubmit = async (data: AddStockFormData) => {
+  const onSubmit = (data: AddStockFormData) => {
     if (!product) return;
 
-    setIsLoading(true);
-    try {
-      const response = await fetch("/api/stock-additions", {
-        method: "POST",
-        headers: {
-          "Content-Type": "application/json",
-        },
-        body: JSON.stringify({
-          productId: product.id,
-          quantity: data.quantity,
-          costPerUnit: data.costPerUnit,
-          supplierId: data.supplierId || undefined,
-          purchaseDate: data.purchaseDate
-            ? format(data.purchaseDate, "yyyy-MM-dd")
-            : undefined,
-          notes: data.notes || undefined,
-          referenceNo: data.referenceNo || undefined,
-        }),
-      });
+    const stockData = {
+      productId: product.id,
+      quantity: data.quantity,
+      costPerUnit: data.costPerUnit,
+      supplierId:
+        data.supplierId && data.supplierId > 0 ? data.supplierId : undefined,
+      purchaseDate: data.purchaseDate
+        ? format(data.purchaseDate, "yyyy-MM-dd")
+        : undefined,
+      notes: data.notes || undefined,
+      referenceNo: data.referenceNo || undefined,
+    };
 
-      const result = await response.json();
-
-      if (response.ok) {
+    addStockMutation.mutate(stockData, {
+      onSuccess: (result) => {
         toast.success(result.message || "Stock added successfully");
         form.reset({
           quantity: 1,
@@ -154,19 +148,11 @@ export function AddStockDialog({
         });
         onSuccess?.();
         onClose();
-      } else {
-        console.error("API Error:", result);
-        const errorMessage = result.details
-          ? `${result.error}: ${result.details}`
-          : result.error || "Failed to add stock";
-        toast.error(errorMessage);
-      }
-    } catch (error) {
-      console.error("Error adding stock:", error);
-      toast.error("Failed to add stock");
-    } finally {
-      setIsLoading(false);
-    }
+      },
+      onError: (error: Error) => {
+        toast.error(error.message || "Failed to add stock");
+      },
+    });
   };
 
   const totalCost = form.watch("quantity") * form.watch("costPerUnit");
@@ -256,9 +242,11 @@ export function AddStockDialog({
                   <FormLabel>Supplier (Optional)</FormLabel>
                   <Select
                     onValueChange={(value) =>
-                      field.onChange(value ? parseInt(value) : undefined)
+                      field.onChange(
+                        value && value !== "0" ? parseInt(value) : undefined
+                      )
                     }
-                    value={field.value?.toString() || ""}
+                    value={field.value?.toString() || "0"}
                     disabled={loadingSuppliers}
                   >
                     <FormControl>
@@ -267,6 +255,7 @@ export function AddStockDialog({
                       </SelectTrigger>
                     </FormControl>
                     <SelectContent>
+                      <SelectItem value="0">No supplier</SelectItem>
                       {suppliers.map(
                         (supplier: {
                           id: number;
@@ -321,7 +310,6 @@ export function AddStockDialog({
                         disabled={(date) =>
                           date > new Date() || date < new Date("1900-01-01")
                         }
-                        initialFocus
                       />
                     </PopoverContent>
                   </Popover>
@@ -386,8 +374,8 @@ export function AddStockDialog({
               <Button type="button" variant="outline" onClick={onClose}>
                 Cancel
               </Button>
-              <Button type="submit" disabled={isLoading}>
-                {isLoading ? "Adding..." : "Add Stock"}
+              <Button type="submit" disabled={addStockMutation.isPending}>
+                {addStockMutation.isPending ? "Adding..." : "Add Stock"}
               </Button>
             </DialogFooter>
           </form>

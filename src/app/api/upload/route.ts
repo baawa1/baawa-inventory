@@ -1,5 +1,5 @@
 import { auth } from "../../../../auth";
-import { NextRequest } from "next/server";
+import { NextRequest, NextResponse } from "next/server";
 import { supabaseStorageServer } from "@/lib/upload/supabase-storage";
 import { logger } from "@/lib/logger";
 import { createSecureResponse } from "@/lib/security-headers";
@@ -10,8 +10,9 @@ import { isAllowedFileType, isFileSizeValid } from "@/lib/utils/image-utils";
 export const POST = withRateLimit(RATE_LIMIT_CONFIGS.UPLOAD)(async (
   request: NextRequest
 ) => {
+  let session;
   try {
-    const session = await auth();
+    session = await auth();
     if (!session?.user) {
       return createSecureResponse({ error: "Unauthorized" }, 401);
     }
@@ -83,7 +84,7 @@ export const POST = withRateLimit(RATE_LIMIT_CONFIGS.UPLOAD)(async (
   } catch (error) {
     logger.error("Upload error", {
       error: error instanceof Error ? error.message : "Unknown error",
-      userId: session?.user?.id,
+      userId: session?.user?.id || "unknown",
     });
     return createSecureResponse(
       {

@@ -46,13 +46,11 @@ import {
   RefreshCw,
 } from "lucide-react";
 
-import {
-  usePendingUsers,
-  useApproveUser,
-  type APIUser,
-} from "@/hooks/api/users";
+import { usePendingUsers, useApproveUser } from "@/hooks/api/users";
+import type { AppUser as APIUser } from "@/types/user";
 import { toast } from "sonner";
 import { useAdminGuard } from "@/hooks/useAdminGuard";
+import type { UserStatus } from "@/types/user";
 
 const statusConfig = {
   PENDING: {
@@ -104,7 +102,7 @@ export function PendingUsersManagement() {
   const handleApproveUser = async (user: APIUser) => {
     try {
       await approveUserMutation.mutateAsync({
-        userId: user.id,
+        userId: parseInt(user.id),
         action: "approve",
       });
 
@@ -121,7 +119,7 @@ export function PendingUsersManagement() {
   const handleRejectUser = async (user: APIUser, reason?: string) => {
     try {
       await approveUserMutation.mutateAsync({
-        userId: user.id,
+        userId: parseInt(user.id),
         action: "reject",
         rejectionReason: reason || "Application rejected by administrator",
       });
@@ -247,7 +245,8 @@ export function PendingUsersManagement() {
               </TableHeader>
               <TableBody>
                 {filteredUsers.map((user) => {
-                  const StatusIcon = statusConfig[user.userStatus].icon;
+                  const StatusIcon =
+                    statusConfig[user.userStatus as UserStatus].icon;
                   return (
                     <TableRow key={user.id}>
                       <TableCell>
@@ -264,10 +263,12 @@ export function PendingUsersManagement() {
                       <TableCell>
                         <Badge
                           variant="outline"
-                          className={statusConfig[user.userStatus].color}
+                          className={
+                            statusConfig[user.userStatus as UserStatus].color
+                          }
                         >
                           <StatusIcon className="h-3 w-3 mr-1" />
-                          {statusConfig[user.userStatus].label}
+                          {statusConfig[user.userStatus as UserStatus].label}
                         </Badge>
                       </TableCell>
                       <TableCell>
@@ -282,7 +283,11 @@ export function PendingUsersManagement() {
                       <TableCell>
                         <div className="flex items-center gap-2 text-sm text-gray-600">
                           <Calendar className="h-4 w-4" />
-                          {formatDate(user.createdAt)}
+                          {formatDate(
+                            typeof user.createdAt === "string"
+                              ? user.createdAt
+                              : user.createdAt?.toString()
+                          )}
                         </div>
                       </TableCell>
                       <TableCell>
@@ -372,9 +377,11 @@ export function PendingUsersManagement() {
                   </label>
                   <Badge
                     variant="outline"
-                    className={statusConfig[selectedUser.userStatus].color}
+                    className={
+                      statusConfig[selectedUser.userStatus as UserStatus].color
+                    }
                   >
-                    {statusConfig[selectedUser.userStatus].label}
+                    {statusConfig[selectedUser.userStatus as UserStatus].label}
                   </Badge>
                 </div>
                 <div>
@@ -382,7 +389,11 @@ export function PendingUsersManagement() {
                     Registration Date
                   </label>
                   <p className="text-sm">
-                    {formatDate(selectedUser.createdAt)}
+                    {formatDate(
+                      typeof selectedUser.createdAt === "string"
+                        ? selectedUser.createdAt
+                        : selectedUser.createdAt?.toString()
+                    )}
                   </p>
                 </div>
                 <div>

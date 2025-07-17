@@ -3,16 +3,18 @@
 import React, { useState, useMemo, useCallback } from "react";
 import Link from "next/link";
 import { toast } from "sonner";
+
+// Hooks
 import { useDebounce } from "@/hooks/useDebounce";
 import {
   useCategories,
   useDeleteCategory,
   type Category as APICategory,
 } from "@/hooks/api/categories";
-import { InventoryPageLayout } from "@/components/inventory/InventoryPageLayout";
+
+// UI Components
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
-
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -29,6 +31,12 @@ import {
   AlertDialogHeader,
   AlertDialogTitle,
 } from "@/components/ui/alert-dialog";
+
+// Custom Components
+import { ErrorBoundary } from "@/components/common/ErrorBoundary";
+import { InventoryPageLayout } from "@/components/inventory/InventoryPageLayout";
+
+// Icons
 import {
   IconPlus,
   IconDots,
@@ -37,6 +45,9 @@ import {
   IconTag,
   IconAlertTriangle,
 } from "@tabler/icons-react";
+
+// Utils and Types
+import { ErrorHandlers } from "@/lib/utils/error-handling";
 import type { FilterConfig } from "@/types/inventory";
 import type { DashboardTableColumn } from "@/components/layouts/DashboardColumnCustomizer";
 
@@ -94,13 +105,8 @@ export default function CategoryList({ user }: CategoryListProps) {
     defaultVisibleColumns
   );
 
-  // Clean up any "actions" column from localStorage and state
+  // Clean up any "actions" column from localStorage and state - run once on mount
   React.useEffect(() => {
-    // Remove "actions" from visibleColumns if it exists
-    if (visibleColumns.includes("actions")) {
-      setVisibleColumns((prev) => prev.filter((col) => col !== "actions"));
-    }
-
     // Clean up localStorage if it contains "actions"
     const storageKey = "categories-visible-columns";
     const storedColumns = localStorage.getItem(storageKey);
@@ -110,13 +116,15 @@ export default function CategoryList({ user }: CategoryListProps) {
         if (Array.isArray(parsed) && parsed.includes("actions")) {
           const cleaned = parsed.filter((col: string) => col !== "actions");
           localStorage.setItem(storageKey, JSON.stringify(cleaned));
+          // Also update the visible columns state
+          setVisibleColumns((prev) => prev.filter((col) => col !== "actions"));
         }
       } catch (_error) {
         // If parsing fails, remove the item
         localStorage.removeItem(storageKey);
       }
     }
-  }, [visibleColumns]);
+  }, []); // Empty dependency array - run once on mount
 
   // Filters
   const [filters, setFilters] = useState({
@@ -179,7 +187,7 @@ export default function CategoryList({ user }: CategoryListProps) {
   );
 
   // Handle filter changes
-  const handleFilterChange = useCallback((key: string, value: any) => {
+  const handleFilterChange = useCallback((key: string, value: string) => {
     setFilters((prev) => {
       if (prev[key as keyof typeof prev] === value) return prev; // Prevent unnecessary updates
       return { ...prev, [key]: value };
@@ -210,12 +218,9 @@ export default function CategoryList({ user }: CategoryListProps) {
 
     try {
       await deleteCategoryMutation.mutateAsync(categoryToDelete.id);
-      toast.success("Category deleted successfully");
+      ErrorHandlers.success("Category deleted successfully");
     } catch (error) {
-      console.error("Error deleting category:", error);
-      toast.error(
-        error instanceof Error ? error.message : "Failed to delete category"
-      );
+      ErrorHandlers.api(error, "Failed to delete category");
     } finally {
       setDeleteDialogOpen(false);
       setCategoryToDelete(null);
@@ -321,7 +326,7 @@ export default function CategoryList({ user }: CategoryListProps) {
   );
 
   return (
-    <>
+    <ErrorBoundary>
       <InventoryPageLayout
         // Header
         title="Categories"
@@ -411,6 +416,6 @@ export default function CategoryList({ user }: CategoryListProps) {
           </AlertDialogFooter>
         </AlertDialogContent>
       </AlertDialog>
-    </>
+    </ErrorBoundary>
   );
 }

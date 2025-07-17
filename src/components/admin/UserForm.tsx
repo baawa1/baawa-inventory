@@ -43,6 +43,18 @@ export function UserForm({
   const isEditing = !!user;
   const schema = isEditing ? editUserFormSchema : createUserFormSchema;
 
+  const validStatuses = [
+    "PENDING",
+    "VERIFIED",
+    "APPROVED",
+    "REJECTED",
+    "SUSPENDED",
+  ] as const;
+  const safeUserStatus =
+    user && validStatuses.includes(user.userStatus as any)
+      ? (user.userStatus as (typeof validStatuses)[number])
+      : "PENDING";
+
   const form = useForm<UserFormData | EditUserFormData>({
     resolver: zodResolver(schema),
     defaultValues: isEditing
@@ -51,7 +63,7 @@ export function UserForm({
           lastName: user.lastName,
           email: user.email,
           role: user.role,
-          userStatus: user.userStatus,
+          userStatus: safeUserStatus,
         }
       : {
           firstName: "",

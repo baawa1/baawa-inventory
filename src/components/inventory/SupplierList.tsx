@@ -1,18 +1,24 @@
 "use client";
 
-import React, { useState, useEffect, useMemo } from "react";
-import { useSession } from "next-auth/react";
+import React, { useState, useMemo, useCallback } from "react";
 import Link from "next/link";
+import { toast } from "sonner";
 import { useDebounce } from "@/hooks/useDebounce";
 import {
   useSuppliers,
   useDeleteSupplier,
   useUpdateSupplier,
+  type Supplier as APISupplier,
 } from "@/hooks/api/suppliers";
-import { InventoryPageLayout } from "./InventoryPageLayout";
+import { InventoryPageLayout } from "@/components/inventory/InventoryPageLayout";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
-
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuTrigger,
+} from "@/components/ui/dropdown-menu";
 import {
   AlertDialog,
   AlertDialogAction,
@@ -22,10 +28,10 @@ import {
   AlertDialogFooter,
   AlertDialogHeader,
   AlertDialogTitle,
-  AlertDialogTrigger,
 } from "@/components/ui/alert-dialog";
 import {
   IconPlus,
+  IconDots,
   IconEdit,
   IconEye,
   IconPhone,
@@ -33,46 +39,97 @@ import {
   IconTruck,
   IconX,
   IconRefresh,
+  IconAlertTriangle,
 } from "@tabler/icons-react";
-import { toast } from "sonner";
-import SupplierDetailModal from "./SupplierDetailModal";
-import { EditSupplierModal } from "./EditSupplierModal";
-import { Supplier } from "./supplier/types";
-import { FilterConfig, ColumnConfig, PaginationState } from "@/types/inventory";
+import type { FilterConfig } from "@/types/inventory";
+import type { DashboardTableColumn } from "@/components/layouts/DashboardColumnCustomizer";
 
-export default function SupplierList() {
-  const { data: session, status } = useSession();
+interface User {
+  id: string;
+  email?: string | null;
+  name?: string | null;
+  role: string;
+  status: string;
+  isEmailVerified: boolean;
+}
 
-  // Filters state
-  const [filters, setFilters] = useState({
-    search: "",
-    isActive: "",
-  });
+interface SupplierListProps {
+  user: User;
+}
 
-  // Pagination state
-  const [pagination, setPagination] = useState<PaginationState>({
+export default function SupplierList({ user }: SupplierListProps) {
+  const [deleteDialogOpen, setDeleteDialogOpen] = useState(false);
+  const [supplierToDelete, setSupplierToDelete] = useState<APISupplier | null>(
+    null
+  );
+  const [reactivateDialogOpen, setReactivateDialogOpen] = useState(false);
+  const [supplierToReactivate, setSupplierToReactivate] =
+    useState<APISupplier | null>(null);
+
+  const [pagination, setPagination] = useState({
     page: 1,
     limit: 10,
     totalPages: 1,
     totalItems: 0,
   });
 
-  // Modal states
-  const [detailModalOpen, setDetailModalOpen] = useState(false);
-  const [editModalOpen, setEditModalOpen] = useState(false);
-  const [selectedSupplierId, setSelectedSupplierId] = useState<number | null>(
-    null
+  // Column configuration - only showing actual supplier fields
+  const columns: DashboardTableColumn[] = useMemo(
+    () => [
+      {
+        key: "name",
+        label: "Name",
+        sortable: true,
+        defaultVisible: true,
+        required: true,
+      },
+      { key: "contactPerson", label: "Contact Person", defaultVisible: true },
+      { key: "email", label: "Email", defaultVisible: true },
+      { key: "phone", label: "Phone", defaultVisible: true },
+      { key: "address", label: "Address", defaultVisible: true },
+      { key: "isActive", label: "Status", defaultVisible: true },
+      { key: "createdAt", label: "Created", defaultVisible: true },
+      { key: "updatedAt", label: "Updated", defaultVisible: false },
+    ],
+    []
   );
 
-  // Column configuration
-  const [visibleColumns, setVisibleColumns] = useState([
-    "name",
-    "contactPerson",
-    "email",
-    "phone",
-    "address",
-    "status",
-  ]);
+  // Initialize visibleColumns with default values to prevent hydration mismatch
+  const defaultVisibleColumns = useMemo(
+    () => columns.filter((col) => col.defaultVisible).map((col) => col.key),
+    [columns]
+  );
+
+  const [visibleColumns, setVisibleColumns] = useState<string[]>(
+    defaultVisibleColumns
+  );
+
+  // Clean up any "actions" column from localStorage and state - run once on mount
+  React.useEffect(() => {
+    // Clean up localStorage if it contains "actions"
+    const storageKey = "suppliers-visible-columns";
+    const storedColumns = localStorage.getItem(storageKey);
+    if (storedColumns) {
+      try {
+        const parsed = JSON.parse(storedColumns);
+        if (Array.isArray(parsed) && parsed.includes("actions")) {
+          const cleaned = parsed.filter((col: string) => col !== "actions");
+          localStorage.setItem(storageKey, JSON.stringify(cleaned));
+          // Also update the visible columns state
+          setVisibleColumns((prev) => prev.filter((col) => col !== "actions"));
+        }
+      } catch (_error) {
+        // If parsing fails, remove the item
+        localStorage.removeItem(storageKey);
+      }
+    }
+  }, []); // Empty dependency array - run once on mount
+
+  // Filters
+  const [filters, setFilters] = useState({
+    search: "",
+    isActive: "",
+  });
 
   // Debounce search term to avoid excessive API calls
   const debouncedSearchTerm = useDebounce(filters.search, 500);
@@ -96,34 +153,21 @@ export default function SupplierList() {
   // Extract data from queries
   const suppliers = suppliersQuery.data?.data || [];
   const loading = suppliersQuery.isLoading;
-  const error = suppliersQuery.error?.message || null;
+  const total = suppliersQuery.data?.pagination?.totalSuppliers || 0;
+  const apiPagination = suppliersQuery.data?.pagination;
 
-  // Update pagination when data changes
-  useEffect(() => {
-    if (suppliersQuery.data?.pagination) {
-      setPagination((prev) => ({
-        ...prev,
-        totalPages: suppliersQuery.data.pagination.totalPages,
-        totalItems: suppliersQuery.data.pagination.totalSuppliers,
-      }));
-    }
-  }, [suppliersQuery.data]);
+  // Update pagination state from API response
+  const currentPagination = {
+    page: apiPagination?.page || pagination.page,
+    limit: apiPagination?.limit || pagination.limit,
+    totalPages:
+      apiPagination?.totalPages || Math.ceil(total / pagination.limit),
+    totalItems: total,
+  };
 
   // Permission checks
-  const user = session?.user;
-  const canManageSuppliers =
-    user && ["ADMIN", "MANAGER"].includes(user.role || "");
-  const canDeactivateSuppliers = user && user.role === "ADMIN";
-
-  // Column definitions - only showing actual supplier fields
-  const columns: ColumnConfig[] = [
-    { key: "name", label: "Name", sortable: true },
-    { key: "contactPerson", label: "Contact Person" },
-    { key: "email", label: "Email" },
-    { key: "phone", label: "Phone" },
-    { key: "address", label: "Address" },
-    { key: "status", label: "Status" },
-  ];
+  const canManageSuppliers = ["ADMIN", "MANAGER"].includes(user.role);
+  const canDeleteSuppliers = user.role === "ADMIN";
 
   // Filter configurations - memoized to prevent unnecessary re-renders
   const filterConfigs: FilterConfig[] = useMemo(
@@ -136,272 +180,218 @@ export default function SupplierList() {
           { value: "true", label: "Active" },
           { value: "false", label: "Inactive" },
         ],
-        placeholder: "Filter by status",
+        placeholder: "All Status",
       },
     ],
     []
   );
 
   // Handle filter changes
-  const handleFilterChange = (key: string, value: any) => {
+  const handleFilterChange = useCallback((key: string, value: string) => {
     setFilters((prev) => {
       if (prev[key as keyof typeof prev] === value) return prev; // Prevent unnecessary updates
       return { ...prev, [key]: value };
     });
-    setPagination((prev) => ({ ...prev, page: 1 })); // Reset to first page
-  };
-
-  // Handle search change
-  const handleSearchChange = (value: string) => {
-    setFilters((prev) => ({ ...prev, search: value }));
-    setPagination((prev) => ({ ...prev, page: 1 })); // Reset to first page
-  };
+    setPagination((prev) => ({ ...prev, page: 1 }));
+  }, []);
 
   // Clear all filters
-  const handleResetFilters = () => {
+  const handleResetFilters = useCallback(() => {
     setFilters({
       search: "",
       isActive: "",
     });
     setPagination((prev) => ({ ...prev, page: 1 }));
-  };
+  }, []);
 
-  // Handle pagination
-  const handlePageChange = (newPage: number) => {
+  const handlePageChange = useCallback((newPage: number) => {
     setPagination((prev) => ({ ...prev, page: newPage }));
-  };
+  }, []);
 
-  const handlePageSizeChange = (newLimit: number) => {
-    setPagination((prev) => ({ ...prev, limit: newLimit, page: 1 }));
-  };
+  const handlePageSizeChange = useCallback((newSize: number) => {
+    setPagination((prev) => ({ ...prev, limit: newSize, page: 1 }));
+  }, []);
 
-  // Modal handlers
-  const handleViewSupplier = (supplierId: string) => {
-    setSelectedSupplierId(parseInt(supplierId));
-    setDetailModalOpen(true);
-  };
+  // Handle deactivate supplier
+  const handleDeactivateSupplier = useCallback(async () => {
+    if (!supplierToDelete) return;
 
-  const handleEditSupplier = (supplierId: string | number) => {
-    setSelectedSupplierId(
-      typeof supplierId === "string" ? parseInt(supplierId) : supplierId
-    );
-    setEditModalOpen(true);
-  };
-
-  const handleCloseDetailModal = () => {
-    setDetailModalOpen(false);
-    setSelectedSupplierId(null);
-  };
-
-  const handleCloseEditModal = () => {
-    setEditModalOpen(false);
-    setSelectedSupplierId(null);
-  };
-
-  const handleSupplierUpdated = () => {
-    // Refresh the suppliers data from server
-    suppliersQuery.refetch();
-    handleCloseEditModal();
-  };
-
-  // Handle delete with TanStack Query mutation
-  const handleDeactivate = async (supplierId: number) => {
     try {
-      await deleteSupplierMutation.mutateAsync(supplierId);
-      toast.success("Supplier deleted successfully");
-    } catch (err) {
-      console.error("Error deleting supplier:", err);
-      toast.error("Failed to delete supplier");
+      await deleteSupplierMutation.mutateAsync(supplierToDelete.id);
+      toast.success("Supplier deactivated successfully");
+    } catch (error) {
+      console.error("Error deactivating supplier:", error);
+      toast.error(
+        error instanceof Error ? error.message : "Failed to deactivate supplier"
+      );
+    } finally {
+      setDeleteDialogOpen(false);
+      setSupplierToDelete(null);
     }
-  };
+  }, [supplierToDelete, deleteSupplierMutation]);
 
-  // Handle reactivate with TanStack Query mutation
-  const handleReactivate = async (supplierId: number) => {
+  // Handle reactivate supplier
+  const handleReactivateSupplier = useCallback(async () => {
+    if (!supplierToReactivate) return;
+
     try {
       await updateSupplierMutation.mutateAsync({
-        id: supplierId,
+        id: supplierToReactivate.id,
         data: { isActive: true },
       });
       toast.success("Supplier reactivated successfully");
-    } catch (err) {
-      console.error("Error reactivating supplier:", err);
-      toast.error("Failed to reactivate supplier");
+    } catch (error) {
+      console.error("Error reactivating supplier:", error);
+      toast.error(
+        error instanceof Error ? error.message : "Failed to reactivate supplier"
+      );
+    } finally {
+      setReactivateDialogOpen(false);
+      setSupplierToReactivate(null);
     }
-  };
+  }, [supplierToReactivate, updateSupplierMutation]);
 
-  // Render cell content
-  const renderCell = (supplier: Supplier, columnKey: string) => {
-    switch (columnKey) {
-      case "name":
-        return <div className="font-medium">{supplier.name}</div>;
-      case "contactPerson":
-        return (
-          supplier.contactPerson || (
-            <span className="text-gray-400 italic">No contact</span>
-          )
-        );
-      case "email":
-        return supplier.email ? (
-          <div className="flex items-center text-sm">
-            <IconMail className="h-3 w-3 mr-1" />
-            {supplier.email}
-          </div>
-        ) : (
-          <span className="text-gray-400 italic">No email</span>
-        );
-      case "phone":
-        return supplier.phone ? (
-          <div className="flex items-center text-sm">
-            <IconPhone className="h-3 w-3 mr-1" />
-            {supplier.phone}
-          </div>
-        ) : (
-          <span className="text-gray-400 italic">No phone</span>
-        );
-      case "address":
-        return supplier.address ? (
-          <div className="max-w-xs truncate" title={supplier.address}>
-            {supplier.address}
-          </div>
-        ) : (
-          <span className="text-gray-400 italic">No address</span>
-        );
-      case "status":
-        return (
-          <Badge variant={supplier.isActive ? "default" : "secondary"}>
-            {supplier.isActive ? "Active" : "Inactive"}
-          </Badge>
-        );
-      case "createdAt":
-        return supplier.createdAt ? (
-          <span className="text-sm">
-            {new Date(supplier.createdAt).toLocaleDateString()}
-          </span>
-        ) : (
-          <span className="text-gray-400 italic">-</span>
-        );
-      case "updatedAt":
-        return supplier.updatedAt ? (
-          <span className="text-sm">
-            {new Date(supplier.updatedAt).toLocaleDateString()}
-          </span>
-        ) : (
-          <span className="text-gray-400 italic">-</span>
-        );
-      default:
-        return null;
+  // Get status badge
+  const getStatusBadge = useCallback((isActive: boolean) => {
+    if (isActive) {
+      return <Badge variant="default">Active</Badge>;
+    } else {
+      return <Badge variant="secondary">Inactive</Badge>;
     }
-  };
+  }, []);
 
-  // Render action buttons
-  const renderActions = (supplier: Supplier) => {
-    return (
-      <div className="flex items-center justify-end gap-2">
-        <Button
-          variant="ghost"
-          size="sm"
-          onClick={() => handleViewSupplier(supplier.id.toString())}
-        >
-          <IconEye className="h-4 w-4" />
-        </Button>
-        {canManageSuppliers && (
-          <Button
-            variant="ghost"
-            size="sm"
-            onClick={() => handleEditSupplier(supplier.id.toString())}
-          >
-            <IconEdit className="h-4 w-4" />
-          </Button>
-        )}
-        {canDeactivateSuppliers && supplier.isActive && (
-          <AlertDialog>
-            <AlertDialogTrigger asChild>
-              <Button variant="ghost" size="sm">
-                <IconX className="h-4 w-4" />
-              </Button>
-            </AlertDialogTrigger>
-            <AlertDialogContent>
-              <AlertDialogHeader>
-                <AlertDialogTitle>Deactivate Supplier</AlertDialogTitle>
-                <AlertDialogDescription>
-                  Are you sure you want to deactivate "{supplier.name}"? This
-                  will mark the supplier as inactive and they won't appear in
-                  active supplier lists, but their data will be preserved for
-                  historical records.
-                </AlertDialogDescription>
-              </AlertDialogHeader>
-              <AlertDialogFooter>
-                <AlertDialogCancel>Cancel</AlertDialogCancel>
-                <AlertDialogAction
-                  onClick={() => handleDeactivate(supplier.id)}
-                >
-                  Deactivate
-                </AlertDialogAction>
-              </AlertDialogFooter>
-            </AlertDialogContent>
-          </AlertDialog>
-        )}
-        {canDeactivateSuppliers && !supplier.isActive && (
-          <AlertDialog>
-            <AlertDialogTrigger asChild>
-              <Button variant="ghost" size="sm">
-                <IconRefresh className="h-4 w-4" />
-              </Button>
-            </AlertDialogTrigger>
-            <AlertDialogContent>
-              <AlertDialogHeader>
-                <AlertDialogTitle>Reactivate Supplier</AlertDialogTitle>
-                <AlertDialogDescription>
-                  Are you sure you want to reactivate "{supplier.name}"? This
-                  will mark the supplier as active and they will appear in
-                  active supplier lists again.
-                </AlertDialogDescription>
-              </AlertDialogHeader>
-              <AlertDialogFooter>
-                <AlertDialogCancel>Cancel</AlertDialogCancel>
-                <AlertDialogAction
-                  onClick={() => handleReactivate(supplier.id)}
-                >
-                  Reactivate
-                </AlertDialogAction>
-              </AlertDialogFooter>
-            </AlertDialogContent>
-          </AlertDialog>
-        )}
-      </div>
-    );
-  };
+  // Add actions column if user has permissions
+  const columnsWithActions = useMemo(() => {
+    return columns;
+  }, [columns]);
 
-  // Handle loading and authentication states
-  if (status === "loading") {
-    return (
-      <div className="flex flex-1 flex-col">
-        <div className="@container/main flex flex-1 flex-col gap-2">
-          <div className="flex flex-col gap-4 py-4 md:gap-6 md:py-6">
-            <div className="flex items-center justify-center py-8">
-              <div className="text-sm text-gray-500">Loading...</div>
+  // Ensure visibleColumns has default values if empty and filter out actions column
+  const effectiveVisibleColumns = useMemo(() => {
+    let columnsToShow = visibleColumns;
+
+    if (visibleColumns.length === 0) {
+      columnsToShow = columns
+        .filter((col) => col.defaultVisible)
+        .map((col) => col.key);
+    }
+
+    // Filter out any "actions" column since it's handled automatically by the table
+    return columnsToShow.filter((col) => col !== "actions");
+  }, [visibleColumns, columns]);
+
+  // Render cell function
+  const renderCell = useCallback(
+    (supplier: APISupplier, columnKey: string) => {
+      switch (columnKey) {
+        case "name":
+          return <span className="font-medium">{supplier.name}</span>;
+        case "contactPerson":
+          return (
+            supplier.contactPerson || (
+              <span className="text-gray-400 italic">No contact</span>
+            )
+          );
+        case "email":
+          return supplier.email ? (
+            <div className="flex items-center text-sm">
+              <IconMail className="h-3 w-3 mr-1" />
+              {supplier.email}
             </div>
-          </div>
-        </div>
-      </div>
-    );
-  }
-
-  if (status === "unauthenticated") {
-    return (
-      <div className="flex flex-1 flex-col">
-        <div className="@container/main flex flex-1 flex-col gap-2">
-          <div className="flex flex-col gap-4 py-4 md:gap-6 md:py-6">
-            <div className="flex items-center justify-center py-8">
-              <div className="text-sm text-gray-500">
-                Please log in to access suppliers.
-              </div>
+          ) : (
+            <span className="text-gray-400 italic">No email</span>
+          );
+        case "phone":
+          return supplier.phone ? (
+            <div className="flex items-center text-sm">
+              <IconPhone className="h-3 w-3 mr-1" />
+              {supplier.phone}
             </div>
-          </div>
-        </div>
-      </div>
-    );
-  }
+          ) : (
+            <span className="text-gray-400 italic">No phone</span>
+          );
+        case "address":
+          return supplier.address ? (
+            <div className="max-w-xs truncate" title={supplier.address}>
+              {supplier.address}
+            </div>
+          ) : (
+            <span className="text-gray-400 italic">No address</span>
+          );
+        case "isActive":
+          return getStatusBadge(supplier.isActive);
+        case "createdAt":
+          return new Date(supplier.createdAt).toLocaleDateString();
+        case "updatedAt":
+          return supplier.updatedAt ? (
+            <span className="text-sm">
+              {new Date(supplier.updatedAt).toLocaleDateString()}
+            </span>
+          ) : (
+            <span className="text-gray-400 italic">-</span>
+          );
+        default:
+          return null;
+      }
+    },
+    [getStatusBadge]
+  );
+
+  // Render actions
+  const renderActions = useCallback(
+    (supplier: APISupplier) => {
+      if (!canManageSuppliers) return null;
+
+      return (
+        <DropdownMenu>
+          <DropdownMenuTrigger asChild>
+            <Button variant="ghost" className="h-8 w-8 p-0">
+              <span className="sr-only">Open menu</span>
+              <IconDots className="h-4 w-4" />
+            </Button>
+          </DropdownMenuTrigger>
+          <DropdownMenuContent align="end">
+            <DropdownMenuItem asChild>
+              <Link href={`/inventory/suppliers/${supplier.id}`}>
+                <IconEye className="mr-2 h-4 w-4" />
+                View Details
+              </Link>
+            </DropdownMenuItem>
+            <DropdownMenuItem asChild>
+              <Link href={`/inventory/suppliers/${supplier.id}/edit`}>
+                <IconEdit className="mr-2 h-4 w-4" />
+                Edit
+              </Link>
+            </DropdownMenuItem>
+            {canDeleteSuppliers && supplier.isActive && (
+              <DropdownMenuItem
+                className="text-red-600"
+                onClick={() => {
+                  setSupplierToDelete(supplier);
+                  setDeleteDialogOpen(true);
+                }}
+              >
+                <IconX className="mr-2 h-4 w-4" />
+                Deactivate
+              </DropdownMenuItem>
+            )}
+            {canDeleteSuppliers && !supplier.isActive && (
+              <DropdownMenuItem
+                className="text-green-600"
+                onClick={() => {
+                  setSupplierToReactivate(supplier);
+                  setReactivateDialogOpen(true);
+                }}
+              >
+                <IconRefresh className="mr-2 h-4 w-4" />
+                Reactivate
+              </DropdownMenuItem>
+            )}
+          </DropdownMenuContent>
+        </DropdownMenu>
+      );
+    },
+    [canManageSuppliers, canDeleteSuppliers]
+  );
 
   return (
     <>
@@ -411,18 +401,21 @@ export default function SupplierList() {
         description="Manage your suppliers and vendor relationships"
         actions={
           canManageSuppliers ? (
-            <Link href="/inventory/suppliers/add">
-              <Button>
-                <IconPlus className="h-4 w-4 mr-2" />
+            <Button asChild>
+              <Link
+                href="/inventory/suppliers/add"
+                className="flex items-center gap-2"
+              >
+                <IconPlus className="h-4 w-4" />
                 Add Supplier
-              </Button>
-            </Link>
+              </Link>
+            </Button>
           ) : undefined
         }
         // Filters
         searchPlaceholder="Search suppliers..."
         searchValue={filters.search}
-        onSearchChange={handleSearchChange}
+        onSearchChange={(value) => handleFilterChange("search", value)}
         isSearching={isSearching}
         filters={filterConfigs}
         filterValues={filters}
@@ -430,66 +423,97 @@ export default function SupplierList() {
         onResetFilters={handleResetFilters}
         // Table
         tableTitle="Suppliers"
-        totalCount={pagination.totalItems}
+        totalCount={total}
         currentCount={suppliers.length}
-        columns={columns}
-        visibleColumns={visibleColumns}
+        columns={columnsWithActions}
+        visibleColumns={effectiveVisibleColumns}
         onColumnsChange={setVisibleColumns}
-        columnCustomizerKey="suppliers-columns"
+        columnCustomizerKey="suppliers-visible-columns"
         data={suppliers}
         renderCell={renderCell}
         renderActions={renderActions}
         // Pagination
-        pagination={pagination}
+        pagination={currentPagination}
         onPageChange={handlePageChange}
         onPageSizeChange={handlePageSizeChange}
         // Loading states
         isLoading={loading}
-        isRefetching={suppliersQuery.isRefetching}
-        error={error || undefined}
-        onRetry={() => suppliersQuery.refetch()}
+        isRefetching={suppliersQuery.isFetching && !loading}
+        error={suppliersQuery.error?.message}
         // Empty state
-        emptyStateIcon={
-          <IconTruck className="h-12 w-12 text-gray-400 mx-auto mb-4" />
-        }
+        emptyStateIcon={<IconTruck className="h-12 w-12 text-gray-400" />}
         emptyStateMessage={
-          filters.search || filters.isActive
-            ? "No suppliers found matching your criteria."
+          debouncedSearchTerm || filters.isActive
+            ? "No suppliers found matching your filters."
             : "No suppliers found. Add your first supplier to get started."
         }
         emptyStateAction={
-          !filters.search && !filters.isActive && canManageSuppliers ? (
-            <Link href="/inventory/suppliers/add">
-              <Button>
+          canManageSuppliers ? (
+            <Button asChild>
+              <Link href="/inventory/suppliers/add">
                 <IconPlus className="h-4 w-4 mr-2" />
-                Add First Supplier
-              </Button>
-            </Link>
+                Add Supplier
+              </Link>
+            </Button>
           ) : undefined
         }
       />
 
-      {/* Modals */}
-      <SupplierDetailModal
-        supplierId={selectedSupplierId}
-        isOpen={detailModalOpen}
-        onClose={handleCloseDetailModal}
-        canEdit={canManageSuppliers}
-        canDeactivate={canDeactivateSuppliers}
-        onEdit={handleEditSupplier}
-        onDeactivate={handleDeactivate}
-        onReactivate={handleReactivate}
-      />
-      <EditSupplierModal
-        supplier={
-          selectedSupplierId
-            ? suppliers.find((s) => s.id === selectedSupplierId) || null
-            : null
-        }
-        isOpen={editModalOpen}
-        onClose={handleCloseEditModal}
-        onSave={handleSupplierUpdated}
-      />
+      {/* Deactivate Confirmation Dialog */}
+      <AlertDialog open={deleteDialogOpen} onOpenChange={setDeleteDialogOpen}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle className="flex items-center gap-2">
+              <IconAlertTriangle className="h-5 w-5 text-red-500" />
+              Deactivate Supplier
+            </AlertDialogTitle>
+            <AlertDialogDescription>
+              Are you sure you want to deactivate "{supplierToDelete?.name}"?
+              This will mark the supplier as inactive and they won't appear in
+              active supplier lists, but their data will be preserved for
+              historical records.
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel>Cancel</AlertDialogCancel>
+            <AlertDialogAction
+              onClick={handleDeactivateSupplier}
+              className="bg-red-600 hover:bg-red-700"
+            >
+              Deactivate
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
+
+      {/* Reactivate Confirmation Dialog */}
+      <AlertDialog
+        open={reactivateDialogOpen}
+        onOpenChange={setReactivateDialogOpen}
+      >
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle className="flex items-center gap-2">
+              <IconRefresh className="h-5 w-5 text-green-500" />
+              Reactivate Supplier
+            </AlertDialogTitle>
+            <AlertDialogDescription>
+              Are you sure you want to reactivate "{supplierToReactivate?.name}
+              "? This will mark the supplier as active and they will appear in
+              active supplier lists again.
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel>Cancel</AlertDialogCancel>
+            <AlertDialogAction
+              onClick={handleReactivateSupplier}
+              className="bg-green-600 hover:bg-green-700"
+            >
+              Reactivate
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
     </>
   );
 }
