@@ -19,6 +19,7 @@ import { Loader2 } from "lucide-react";
 import { ImagePreview } from "@/components/ui/image-preview";
 import { IconTag, IconBrandX } from "@tabler/icons-react";
 import { UpdateProductFormData, Category, Brand, Supplier } from "./types";
+import { formatCategoryHierarchy } from "@/lib/utils/category";
 
 interface CategoryBrandSupplierSectionProps {
   form: UseFormReturn<UpdateProductFormData>;
@@ -95,7 +96,7 @@ export function CategoryBrandSupplierSection({
                                 <IconTag className="h-3 w-3 text-gray-400" />
                               </div>
                             )}
-                            <span>{category.name}</span>
+                            <span>{formatCategoryHierarchy(category)}</span>
                           </div>
                         </SelectItem>
                       ))}

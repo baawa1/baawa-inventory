@@ -16,6 +16,7 @@ import {
 import { Badge } from "@/components/ui/badge";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Switch } from "@/components/ui/switch";
+import { Skeleton } from "@/components/ui/skeleton";
 import {
   Download,
   Filter,
@@ -24,7 +25,6 @@ import {
   BarChart3,
   AlertTriangle,
   Package,
-  Loader2,
   TrendingUp,
   DollarSign,
   ShoppingCart,
@@ -50,6 +50,46 @@ interface ReportData {
     totalPages: number;
     total: number;
   };
+}
+
+// Summary Card Skeleton Component
+function SummaryCardSkeleton() {
+  return (
+    <Card>
+      <CardHeader className="pb-2">
+        <div className="flex items-center gap-2">
+          <Skeleton className="h-4 w-4 rounded" />
+          <Skeleton className="h-4 w-24 rounded" />
+        </div>
+      </CardHeader>
+      <CardContent>
+        <Skeleton className="h-8 w-20 rounded" />
+      </CardContent>
+    </Card>
+  );
+}
+
+// Summary Card Component
+function SummaryCard({ card, isLoading }: { card: any; isLoading: boolean }) {
+  const IconComponent = card.icon;
+
+  if (isLoading) {
+    return <SummaryCardSkeleton />;
+  }
+
+  return (
+    <Card>
+      <CardHeader className="pb-2">
+        <CardTitle className="text-sm font-medium flex items-center gap-2">
+          <IconComponent className="h-4 w-4" />
+          {card.title}
+        </CardTitle>
+      </CardHeader>
+      <CardContent>
+        <div className="text-2xl font-bold">{card.value}</div>
+      </CardContent>
+    </Card>
+  );
 }
 
 export function InventoryReports() {
@@ -204,10 +244,19 @@ export function InventoryReports() {
       return { tableData: [], tableColumns: [], summaryCards: [] };
     }
 
+    // Helper function to get products array from different data structures
+    const getProductsArray = (data: any) => {
+      if (Array.isArray(data)) return data;
+      if (data.products && Array.isArray(data.products)) return data.products;
+      return [];
+    };
+
+    const products = getProductsArray(reportData.data);
+
     switch (reportType) {
       case "current_stock":
         return {
-          tableData: reportData.data.products || reportData.data || [],
+          tableData: products,
           tableColumns: [
             {
               key: "name",
@@ -256,14 +305,14 @@ export function InventoryReports() {
           summaryCards: [
             {
               title: "Total Products",
-              value: reportData.data.length || 0,
+              value: products.length,
               icon: Package,
               color: "blue",
             },
             {
               title: "Total Stock Value",
               value: formatCurrency(
-                (reportData.data.products || reportData.data).reduce(
+                products.reduce(
                   (sum: number, item: any) => sum + (item.stockValue || 0),
                   0
                 )
@@ -273,9 +322,7 @@ export function InventoryReports() {
             },
             {
               title: "Low Stock Items",
-              value: (reportData.data.products || reportData.data).filter(
-                (item: any) => item.isLowStock
-              ).length,
+              value: products.filter((item: any) => item.isLowStock).length,
               icon: AlertTriangle,
               color: "red",
             },
@@ -284,7 +331,7 @@ export function InventoryReports() {
 
       case "stock_value":
         return {
-          tableData: reportData.data.products || [],
+          tableData: products,
           tableColumns: [
             {
               key: "name",
@@ -333,14 +380,16 @@ export function InventoryReports() {
           summaryCards: [
             {
               title: "Total Products",
-              value: reportData.data.summary?.totalProducts || 0,
+              value:
+                (reportData.data as any).summary?.totalProducts ||
+                products.length,
               icon: Package,
               color: "blue",
             },
             {
               title: "Stock Value",
               value: formatCurrency(
-                reportData.data.summary?.totalStockValue || 0
+                (reportData.data as any).summary?.totalStockValue || 0
               ),
               icon: DollarSign,
               color: "green",
@@ -348,7 +397,7 @@ export function InventoryReports() {
             {
               title: "Selling Value",
               value: formatCurrency(
-                reportData.data.summary?.totalSellingValue || 0
+                (reportData.data as any).summary?.totalSellingValue || 0
               ),
               icon: ShoppingCart,
               color: "purple",
@@ -356,7 +405,7 @@ export function InventoryReports() {
             {
               title: "Potential Profit",
               value: formatCurrency(
-                reportData.data.summary?.potentialProfit || 0
+                (reportData.data as any).summary?.potentialProfit || 0
               ),
               icon: TrendingUp,
               color: "orange",
@@ -366,7 +415,7 @@ export function InventoryReports() {
 
       case "low_stock":
         return {
-          tableData: reportData.data || [],
+          tableData: products,
           tableColumns: [
             {
               key: "name",
@@ -415,28 +464,53 @@ export function InventoryReports() {
           summaryCards: [
             {
               title: "Low Stock Items",
-              value: reportData.data.length || 0,
+              value: products.length,
               icon: AlertTriangle,
               color: "red",
             },
             {
               title: "Out of Stock",
-              value: reportData.data.filter(
-                (item: any) => item.currentStock <= 0
-              ).length,
+              value: products.filter((item: any) => item.currentStock <= 0)
+                .length,
               icon: Package,
               color: "orange",
             },
             {
               title: "Total Reorder Value",
               value: formatCurrency(
-                reportData.data.reduce(
+                products.reduce(
                   (sum: number, item: any) => sum + (item.reorderValue || 0),
                   0
                 )
               ),
               icon: DollarSign,
               color: "blue",
+            },
+          ],
+        };
+
+      case "product_summary":
+        return {
+          tableData: [], // Product summary doesn't have a table, it has tabs
+          tableColumns: [],
+          summaryCards: [
+            {
+              title: "Total Products",
+              value: (reportData.data as any).totalProducts || 0,
+              icon: Package,
+              color: "blue",
+            },
+            {
+              title: "Categories",
+              value: (reportData.data as any).byCategory?.length || 0,
+              icon: ShoppingCart,
+              color: "green",
+            },
+            {
+              title: "Brands",
+              value: (reportData.data as any).byBrand?.length || 0,
+              icon: TrendingUp,
+              color: "purple",
             },
           ],
         };
@@ -699,36 +773,19 @@ export function InventoryReports() {
       )}
 
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4">
-        {summaryCards.map((card, index) => {
-          const IconComponent = card.icon;
-          const colorClasses = {
-            blue: "bg-blue-50 text-blue-900",
-            green: "bg-green-50 text-green-900",
-            red: "bg-red-50 text-red-900",
-            purple: "bg-purple-50 text-purple-900",
-            orange: "bg-orange-50 text-orange-900",
-          };
-
-          return (
-            <Card key={index}>
-              <CardHeader className="pb-2">
-                <CardTitle className="text-sm font-medium flex items-center gap-2">
-                  <IconComponent className="h-4 w-4" />
-                  {card.title}
-                </CardTitle>
-              </CardHeader>
-              <CardContent>
-                <div className="text-2xl font-bold">
-                  {isLoading ? (
-                    <Loader2 className="h-6 w-6 animate-spin" />
-                  ) : (
-                    card.value
-                  )}
-                </div>
-              </CardContent>
-            </Card>
-          );
-        })}
+        {isLoading && !reportData
+          ? // Show skeleton loaders when loading for the first time
+            Array.from({ length: 4 }).map((_, index) => (
+              <SummaryCardSkeleton key={index} />
+            ))
+          : // Show actual cards with loading state
+            summaryCards.map((card, index) => (
+              <SummaryCard
+                key={index}
+                card={card}
+                isLoading={isLoading || isRefetching}
+              />
+            ))}
       </div>
 
       <Tabs value={reportType} onValueChange={setReportType}>
@@ -758,24 +815,33 @@ export function InventoryReports() {
         </TabsList>
 
         <TabsContent value={reportType} className="mt-6">
-          <DashboardTable
-            tableTitle={`${reportType.replace(/_/g, " ").replace(/\b\w/g, (l) => l.toUpperCase())} Report`}
-            totalCount={currentPagination.totalItems}
-            currentCount={tableData.length}
-            columns={tableColumns}
-            visibleColumns={defaultVisibleColumns}
-            data={tableData}
-            renderCell={renderCell}
-            pagination={currentPagination}
-            onPageChange={handlePageChange}
-            onPageSizeChange={handlePageSizeChange}
-            isLoading={isLoading}
-            isRefetching={isRefetching}
-            emptyStateMessage="No data available for this report"
-            emptyStateIcon={
+          {reportType === "product_summary" ? (
+            <div className="text-center py-8">
               <FileText className="h-12 w-12 text-gray-400 mx-auto mb-4" />
-            }
-          />
+              <p className="text-gray-500">
+                Product summary data is displayed in the cards above
+              </p>
+            </div>
+          ) : (
+            <DashboardTable
+              tableTitle={`${reportType.replace(/_/g, " ").replace(/\b\w/g, (l) => l.toUpperCase())} Report`}
+              totalCount={currentPagination.totalItems}
+              currentCount={tableData.length}
+              columns={tableColumns}
+              visibleColumns={defaultVisibleColumns}
+              data={tableData}
+              renderCell={renderCell}
+              pagination={currentPagination}
+              onPageChange={handlePageChange}
+              onPageSizeChange={handlePageSizeChange}
+              isLoading={isLoading}
+              isRefetching={isRefetching}
+              emptyStateMessage="No data available for this report"
+              emptyStateIcon={
+                <FileText className="h-12 w-12 text-gray-400 mx-auto mb-4" />
+              }
+            />
+          )}
         </TabsContent>
       </Tabs>
     </div>

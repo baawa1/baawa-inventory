@@ -1,0 +1,143 @@
+{
+  "name": "inventory-pos-tests",
+  "version": "1.0.0",
+  "description": "Comprehensive test suite for inventory POS system",
+  "scripts": {
+    "test": "npm run test:all",
+    "test:all": "npm run test:products && npm run test:brands && npm run test:categories",
+    "test:products": "jest --config=products/jest.config.js",
+    "test:brands": "jest --config=brands/jest.config.js",
+    "test:categories": "jest --config=categories/jest.config.js",
+    "test:products:unit": "jest --config=products/jest.config.js --testPathPattern=unit",
+    "test:products:integration": "jest --config=products/jest.config.js --testPathPattern=integration",
+    "test:products:components": "jest --config=products/jest.config.js --testPathPattern=components",
+    "test:products:e2e": "playwright test products/e2e/",
+    "test:brands:unit": "jest --config=brands/jest.config.js --testPathPattern=unit",
+    "test:brands:integration": "jest --config=brands/jest.config.js --testPathPattern=integration",
+    "test:brands:components": "jest --config=brands/jest.config.js --testPathPattern=components",
+    "test:brands:e2e": "playwright test brands/e2e/",
+    "test:categories:unit": "jest --config=categories/jest.config.js --testPathPattern=unit",
+    "test:categories:integration": "jest --config=categories/jest.config.js --testPathPattern=integration",
+    "test:categories:components": "jest --config=categories/jest.config.js --testPathPattern=components",
+    "test:categories:e2e": "playwright test categories/e2e/",
+    "test:coverage": "npm run test:coverage:products && npm run test:coverage:brands && npm run test:coverage:categories",
+    "test:coverage:products": "jest --config=products/jest.config.js --coverage",
+    "test:coverage:brands": "jest --config=brands/jest.config.js --coverage",
+    "test:coverage:categories": "jest --config=categories/jest.config.js --coverage",
+    "test:watch": "jest --watch --config=products/jest.config.js",
+    "test:watch:brands": "jest --watch --config=brands/jest.config.js",
+    "test:watch:categories": "jest --watch --config=categories/jest.config.js",
+    "test:debug": "jest --config=products/jest.config.js --verbose --no-coverage",
+    "test:debug:brands": "jest --config=brands/jest.config.js --verbose --no-coverage",
+    "test:debug:categories": "jest --config=categories/jest.config.js --verbose --no-coverage",
+    "test:db:setup": "node scripts/setup-test-db.js",
+    "test:db:cleanup": "node scripts/cleanup-test-db.js",
+    "test:db:reset": "npm run test:db:cleanup && npm run test:db:setup",
+    "test:parallel": "npm run test:products & npm run test:brands & npm run test:categories & wait",
+    "test:parallel:coverage": "npm run test:coverage:products & npm run test:coverage:brands & npm run test:coverage:categories & wait",
+    "test:ci": "npm run test:db:setup && npm run test:all && npm run test:db:cleanup",
+    "test:ci:parallel": "npm run test:db:setup && npm run test:parallel && npm run test:db:cleanup",
+    "test:report": "npm run test:coverage && node scripts/generate-test-report.js",
+    "test:lint": "eslint tests/**/*.{ts,tsx}",
+    "test:lint:fix": "eslint tests/**/*.{ts,tsx} --fix",
+    "test:type-check": "tsc --noEmit --project tests/tsconfig.json"
+  },
+  "devDependencies": {
+    "@testing-library/jest-dom": "^6.1.4",
+    "@testing-library/react": "^14.0.0",
+    "@testing-library/user-event": "^14.5.1",
+    "@types/jest": "^29.5.5",
+    "@types/node": "^20.6.0",
+    "@types/react": "^18.2.21",
+    "@types/react-dom": "^18.2.7",
+    "@typescript-eslint/eslint-plugin": "^6.7.0",
+    "@typescript-eslint/parser": "^6.7.0",
+    "eslint": "^8.49.0",
+    "eslint-plugin-jest": "^27.4.2",
+    "eslint-plugin-react": "^7.33.2",
+    "eslint-plugin-react-hooks": "^4.6.0",
+    "faker": "^6.6.6",
+    "jest": "^29.6.4",
+    "jest-environment-jsdom": "^29.6.4",
+    "playwright": "^1.38.1",
+    "ts-jest": "^29.1.1",
+    "typescript": "^5.2.2"
+  },
+  "dependencies": {
+    "@tanstack/react-query": "^5.8.4",
+    "react": "^18.2.0",
+    "react-dom": "^18.2.0",
+    "zod": "^3.22.4"
+  },
+  "jest": {
+    "preset": "ts-jest",
+    "testEnvironment": "jsdom",
+    "setupFilesAfterEnv": [
+      "<rootDir>/setup-env.ts"
+    ],
+    "moduleNameMapping": {
+      "^@/(.*)$": "<rootDir>/../src/$1"
+    },
+    "collectCoverageFrom": [
+      "../src/**/*.{ts,tsx}",
+      "!../src/**/*.d.ts"
+    ],
+    "coverageDirectory": "<rootDir>/coverage",
+    "coverageReporters": [
+      "text",
+      "lcov",
+      "html"
+    ],
+    "testMatch": [
+      "<rootDir>/**/*.test.ts",
+      "<rootDir>/**/*.test.tsx"
+    ],
+    "testPathIgnorePatterns": [
+      "<rootDir>/node_modules/",
+      "<rootDir>/coverage/"
+    ]
+  },
+  "eslintConfig": {
+    "extends": [
+      "@typescript-eslint/recommended",
+      "plugin:jest/recommended",
+      "plugin:react/recommended",
+      "plugin:react-hooks/recommended"
+    ],
+    "parser": "@typescript-eslint/parser",
+    "plugins": [
+      "@typescript-eslint",
+      "jest",
+      "react",
+      "react-hooks"
+    ],
+    "rules": {
+      "@typescript-eslint/no-unused-vars": "error",
+      "@typescript-eslint/explicit-function-return-type": "off",
+      "@typescript-eslint/explicit-module-boundary-types": "off",
+      "jest/expect-expect": "error",
+      "jest/no-disabled-tests": "warn",
+      "jest/no-focused-tests": "error",
+      "jest/no-identical-title": "error",
+      "jest/prefer-to-have-length": "warn",
+      "jest/valid-expect": "error",
+      "react/react-in-jsx-scope": "off"
+    },
+    "env": {
+      "jest": true,
+      "browser": true,
+      "es2021": true
+    }
+  },
+  "keywords": [
+    "testing",
+    "jest",
+    "playwright",
+    "react",
+    "typescript",
+    "inventory",
+    "pos"
+  ],
+  "author": "Inventory POS Team",
+  "license": "MIT"
+}

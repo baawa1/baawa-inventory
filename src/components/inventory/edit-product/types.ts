@@ -34,6 +34,15 @@ export interface Category {
   id: number;
   name: string;
   image?: string | null;
+  parent?: {
+    id: number;
+    name: string;
+  } | null;
+  isActive: boolean;
+  productCount: number;
+  subcategoryCount: number;
+  createdAt: string;
+  updatedAt: string;
 }
 
 export interface Brand {

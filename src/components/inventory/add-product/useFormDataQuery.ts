@@ -1,7 +1,7 @@
 "use client";
 
 import { useState } from "react";
-import { useCategoryOptions } from "@/hooks/api/categories";
+import { useCategoriesWithHierarchy } from "@/hooks/api/categories";
 import { useBrandOptions } from "@/hooks/api/brands";
 import { useSupplierOptions } from "@/hooks/api/suppliers";
 
@@ -11,10 +11,10 @@ export function useFormDataQuery() {
 
   // Use TanStack Query hooks for options data
   const {
-    data: categoryOptions = [],
+    data: categoriesData,
     isLoading: categoriesLoading,
     error: categoriesError,
-  } = useCategoryOptions();
+  } = useCategoriesWithHierarchy();
 
   const {
     data: brandOptions = [],
@@ -28,13 +28,8 @@ export function useFormDataQuery() {
     error: suppliersError,
   } = useSupplierOptions();
 
-  // Convert options to full objects for compatibility with existing form sections
-  const categories = categoryOptions.map(
-    (option: { value: string; label: string }) => ({
-      id: parseInt(option.value),
-      name: option.label,
-    })
-  );
+  // Convert categories data to full objects for compatibility with existing form sections
+  const categories = categoriesData?.data || [];
 
   const brands = brandOptions.map(
     (option: { value: string; label: string }) => ({
@@ -61,7 +56,10 @@ export function useFormDataQuery() {
     categories,
     brands,
     suppliers,
-    categoryOptions,
+    categoryOptions: categories.map((cat) => ({
+      value: cat.id.toString(),
+      label: cat.name,
+    })),
     brandOptions,
     supplierOptions,
     setIsSubmitting,

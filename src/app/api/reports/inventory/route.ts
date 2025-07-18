@@ -19,6 +19,8 @@ export async function GET(request: NextRequest) {
     const { searchParams } = new URL(request.url);
     const reportType = searchParams.get("type") || "current_stock";
     const format_type = searchParams.get("format") || "json";
+    const page = parseInt(searchParams.get("page") || "1");
+    const limit = parseInt(searchParams.get("limit") || "10");
     const category = searchParams.get("category");
     const brand = searchParams.get("brand");
     const supplier = searchParams.get("supplier");
@@ -37,6 +39,8 @@ export async function GET(request: NextRequest) {
           supplier,
           lowStockOnly,
           includeArchived,
+          page,
+          limit,
         });
         reportTitle = "Current Stock Report";
         filename = `current-stock-${format(new Date(), "yyyy-MM-dd")}`;
@@ -48,6 +52,8 @@ export async function GET(request: NextRequest) {
           brand,
           supplier,
           includeArchived,
+          page,
+          limit,
         });
         reportTitle = "Stock Value Report";
         filename = `stock-value-${format(new Date(), "yyyy-MM-dd")}`;
@@ -58,6 +64,8 @@ export async function GET(request: NextRequest) {
           category,
           brand,
           supplier,
+          page,
+          limit,
         });
         reportTitle = "Low Stock Report";
         filename = `low-stock-${format(new Date(), "yyyy-MM-dd")}`;
@@ -69,6 +77,8 @@ export async function GET(request: NextRequest) {
           brand,
           supplier,
           includeArchived,
+          page,
+          limit,
         });
         reportTitle = "Product Summary Report";
         filename = `product-summary-${format(new Date(), "yyyy-MM-dd")}`;
@@ -87,6 +97,14 @@ export async function GET(request: NextRequest) {
         title: reportTitle,
         generatedAt: new Date().toISOString(),
         data: reportData,
+        pagination: reportData.pagination || {
+          page: page,
+          limit: limit,
+          total: 0,
+          totalPages: 1,
+          hasNextPage: false,
+          hasPreviousPage: false,
+        },
       });
     }
 
@@ -117,6 +135,8 @@ async function getCurrentStockReport(filters: {
   supplier?: string | null;
   lowStockOnly?: boolean;
   includeArchived?: boolean;
+  page?: number;
+  limit?: number;
 }) {
   const where: any = {};
 
@@ -136,7 +156,12 @@ async function getCurrentStockReport(filters: {
     where.supplierId = parseInt(filters.supplier);
   }
 
-  const products = await prisma.product.findMany({
+  // Calculate pagination
+  const skip = (filters.page || 1) - 1;
+  const take = filters.limit || 10;
+
+  // First get all products for filtering (if lowStockOnly is true)
+  const allProducts = await prisma.product.findMany({
     where,
     include: {
       category: { select: { name: true } },
@@ -147,30 +172,44 @@ async function getCurrentStockReport(filters: {
   });
 
   // Filter low stock products after fetching if needed
-  let filteredProducts = products;
+  let filteredProducts = allProducts;
   if (filters.lowStockOnly) {
-    filteredProducts = products.filter(
+    filteredProducts = allProducts.filter(
       (product) => product.stock <= product.minStock
     );
   }
 
-  return filteredProducts.map((product) => ({
-    id: product.id,
-    name: product.name,
-    sku: product.sku,
-    category: product.category?.name || "Uncategorized",
-    brand: product.brand?.name || "No Brand",
-    supplier: product.supplier?.name || "No Supplier",
-    currentStock: product.stock,
-    minStock: product.minStock,
-    maxStock: product.maxStock,
-    costPrice: Number(product.cost),
-    sellingPrice: Number(product.price),
-    stockValue: product.stock * Number(product.cost),
-    isLowStock: product.stock <= product.minStock,
-    isArchived: product.isArchived,
-    lastUpdated: product.updatedAt,
-  }));
+  // Apply pagination to filtered results
+  const paginatedProducts = filteredProducts.slice(
+    skip * take,
+    (skip + 1) * take
+  );
+
+  return {
+    products: paginatedProducts.map((product) => ({
+      id: product.id,
+      name: product.name,
+      sku: product.sku,
+      category: product.category?.name || "Uncategorized",
+      brand: product.brand?.name || "No Brand",
+      supplier: product.supplier?.name || "No Supplier",
+      currentStock: product.stock,
+      minStock: product.minStock,
+      maxStock: product.maxStock,
+      costPrice: Number(product.cost),
+      sellingPrice: Number(product.price),
+      stockValue: product.stock * Number(product.cost),
+      isLowStock: product.stock <= product.minStock,
+      isArchived: product.isArchived,
+      lastUpdated: product.updatedAt,
+    })),
+    pagination: {
+      page: filters.page || 1,
+      limit: filters.limit || 10,
+      total: filteredProducts.length,
+      totalPages: Math.ceil(filteredProducts.length / (filters.limit || 10)),
+    },
+  };
 }
 
 async function getStockValueReport(filters: {
@@ -178,6 +217,8 @@ async function getStockValueReport(filters: {
   brand?: string | null;
   supplier?: string | null;
   includeArchived?: boolean;
+  page?: number;
+  limit?: number;
 }) {
   const where: any = {};
 
@@ -197,15 +238,24 @@ async function getStockValueReport(filters: {
     where.supplierId = parseInt(filters.supplier);
   }
 
-  const products = await prisma.product.findMany({
-    where,
-    include: {
-      category: { select: { name: true } },
-      brand: { select: { name: true } },
-      supplier: { select: { name: true } },
-    },
-    orderBy: { name: "asc" },
-  });
+  // Calculate pagination
+  const skip = (filters.page || 1) - 1;
+  const take = filters.limit || 10;
+
+  const [products, totalCount] = await Promise.all([
+    prisma.product.findMany({
+      where,
+      include: {
+        category: { select: { name: true } },
+        brand: { select: { name: true } },
+        supplier: { select: { name: true } },
+      },
+      orderBy: { name: "asc" },
+      skip: skip * take,
+      take,
+    }),
+    prisma.product.count({ where }),
+  ]);
 
   const totalValue = products.reduce(
     (sum, product) => sum + product.stock * Number(product.cost),
@@ -217,9 +267,14 @@ async function getStockValueReport(filters: {
     0
   );
 
+  // Calculate pagination metadata
+  const totalPages = Math.ceil(totalCount / take);
+  const hasNextPage = (filters.page || 1) < totalPages;
+  const hasPreviousPage = (filters.page || 1) > 1;
+
   return {
     summary: {
-      totalProducts: products.length,
+      totalProducts: totalCount,
       totalStockValue: totalValue,
       totalSellingValue: totalSellingValue,
       potentialProfit: totalSellingValue - totalValue,
@@ -245,6 +300,14 @@ async function getStockValueReport(filters: {
             100
           : 0,
     })),
+    pagination: {
+      page: filters.page || 1,
+      limit: filters.limit || 10,
+      total: totalCount,
+      totalPages,
+      hasNextPage,
+      hasPreviousPage,
+    },
   };
 }
 
@@ -252,6 +315,8 @@ async function getLowStockReport(filters: {
   category?: string | null;
   brand?: string | null;
   supplier?: string | null;
+  page?: number;
+  limit?: number;
 }) {
   const where: any = {
     isArchived: false,
@@ -269,7 +334,12 @@ async function getLowStockReport(filters: {
     where.supplierId = parseInt(filters.supplier);
   }
 
-  const products = await prisma.product.findMany({
+  // Calculate pagination
+  const skip = (filters.page || 1) - 1;
+  const take = filters.limit || 10;
+
+  // First get all products to filter for low stock
+  const allProducts = await prisma.product.findMany({
     where,
     include: {
       category: { select: { name: true } },
@@ -280,32 +350,55 @@ async function getLowStockReport(filters: {
   });
 
   // Filter for low stock after fetching
-  const lowStockProducts = products.filter(
+  const lowStockProducts = allProducts.filter(
     (product) => product.stock <= product.minStock
   );
 
-  return lowStockProducts.map((product) => ({
-    id: product.id,
-    name: product.name,
-    sku: product.sku,
-    category: product.category?.name || "Uncategorized",
-    brand: product.brand?.name || "No Brand",
-    supplier: product.supplier?.name || "No Supplier",
-    currentStock: product.stock,
-    minStock: product.minStock,
-    maxStock: product.maxStock,
-    reorderQuantity: Math.max(
-      0,
-      (product.maxStock || product.minStock * 2) - product.stock
-    ),
-    stockShortage: Math.max(0, product.minStock - product.stock),
-    costPrice: Number(product.cost),
-    reorderValue:
-      Math.max(0, (product.maxStock || product.minStock * 2) - product.stock) *
-      Number(product.cost),
-    daysOutOfStock: product.stock <= 0 ? "Out of Stock" : "Low Stock",
-    lastUpdated: product.updatedAt,
-  }));
+  // Apply pagination to filtered results
+  const paginatedProducts = lowStockProducts.slice(
+    skip * take,
+    (skip + 1) * take
+  );
+
+  // Calculate pagination metadata
+  const totalPages = Math.ceil(lowStockProducts.length / take);
+  const hasNextPage = (filters.page || 1) < totalPages;
+  const hasPreviousPage = (filters.page || 1) > 1;
+
+  return {
+    products: paginatedProducts.map((product) => ({
+      id: product.id,
+      name: product.name,
+      sku: product.sku,
+      category: product.category?.name || "Uncategorized",
+      brand: product.brand?.name || "No Brand",
+      supplier: product.supplier?.name || "No Supplier",
+      currentStock: product.stock,
+      minStock: product.minStock,
+      maxStock: product.maxStock,
+      reorderQuantity: Math.max(
+        0,
+        (product.maxStock || product.minStock * 2) - product.stock
+      ),
+      stockShortage: Math.max(0, product.minStock - product.stock),
+      costPrice: Number(product.cost),
+      reorderValue:
+        Math.max(
+          0,
+          (product.maxStock || product.minStock * 2) - product.stock
+        ) * Number(product.cost),
+      daysOutOfStock: product.stock <= 0 ? "Out of Stock" : "Low Stock",
+      lastUpdated: product.updatedAt,
+    })),
+    pagination: {
+      page: filters.page || 1,
+      limit: filters.limit || 10,
+      total: lowStockProducts.length,
+      totalPages,
+      hasNextPage,
+      hasPreviousPage,
+    },
+  };
 }
 
 async function getProductSummaryReport(filters: {
@@ -313,6 +406,8 @@ async function getProductSummaryReport(filters: {
   brand?: string | null;
   supplier?: string | null;
   includeArchived?: boolean;
+  page?: number;
+  limit?: number;
 }) {
   const where: any = {};
 
@@ -370,6 +465,11 @@ async function getProductSummaryReport(filters: {
     select: { id: true, name: true },
   });
 
+  // Calculate pagination metadata
+  const totalPages = Math.ceil(products / (filters.limit || 10));
+  const hasNextPage = (filters.page || 1) < totalPages;
+  const hasPreviousPage = (filters.page || 1) > 1;
+
   return {
     totalProducts: products,
     byCategory: categoryStats.map((stat) => ({
@@ -390,6 +490,14 @@ async function getProductSummaryReport(filters: {
       productCount: stat._count.id,
       totalStock: stat._sum.stock || 0,
     })),
+    pagination: {
+      page: filters.page || 1,
+      limit: filters.limit || 10,
+      total: products,
+      totalPages,
+      hasNextPage,
+      hasPreviousPage,
+    },
   };
 }
 
