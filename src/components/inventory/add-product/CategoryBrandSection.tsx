@@ -19,6 +19,7 @@ import {
 import { ImagePreview } from "@/components/ui/image-preview";
 import { IconTag, IconBrandX } from "@tabler/icons-react";
 import type { CreateProductData, Category, Brand, Supplier } from "./types";
+import { formatCategoryHierarchy } from "@/lib/utils/category";
 
 interface CategoryBrandSectionProps {
   form: UseFormReturn<CreateProductData>;
@@ -77,7 +78,7 @@ export function CategoryBrandSection({
                               <IconTag className="h-3 w-3 text-gray-400" />
                             </div>
                           )}
-                          <span>{category.name}</span>
+                          <span>{formatCategoryHierarchy(category)}</span>
                         </div>
                       </SelectItem>
                     ))}

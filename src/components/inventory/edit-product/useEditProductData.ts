@@ -4,7 +4,7 @@ import { zodResolver } from "@hookform/resolvers/zod";
 import { updateProductSchema } from "@/lib/validations/product";
 import { UpdateProductFormData } from "./types";
 import { useProduct } from "@/hooks/api/products";
-import { useCategories } from "@/hooks/api/categories";
+import { useCategoriesWithHierarchy } from "@/hooks/api/categories";
 import { useBrands } from "@/hooks/api/brands";
 import { useSuppliers } from "@/hooks/api/suppliers";
 
@@ -47,7 +47,7 @@ export function useEditProductData(productId: number) {
 
   // TanStack Query hooks for parallel data fetching
   const product = useProduct(productId);
-  const categories = useCategories({ status: "true" });
+  const categories = useCategoriesWithHierarchy();
   const brands = useBrands({ status: "true" });
   const suppliers = useSuppliers({ status: "true" });
 

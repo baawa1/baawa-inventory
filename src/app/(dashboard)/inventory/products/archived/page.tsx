@@ -26,15 +26,5 @@ export default async function ArchivedProductsPage() {
     redirect("/unauthorized");
   }
 
-  return (
-    <div className="space-y-6">
-      <div>
-        <h1 className="text-3xl font-bold tracking-tight">Archived Products</h1>
-        <p className="text-muted-foreground">
-          View and manage archived products in your inventory
-        </p>
-      </div>
-      <ArchivedProductList user={session.user} />
-    </div>
-  );
+  return <ArchivedProductList user={session.user} />;
 }

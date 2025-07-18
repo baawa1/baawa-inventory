@@ -9,7 +9,7 @@ import { toast } from "sonner";
 import { useDebounce } from "@/hooks/useDebounce";
 import { useProducts, type Product as APIProduct } from "@/hooks/api/products";
 import { useBrands } from "@/hooks/api/brands";
-import { useCategories } from "@/hooks/api/categories";
+import { useCategoriesWithHierarchy } from "@/hooks/api/categories";
 
 // UI Components
 import { Button } from "@/components/ui/button";
@@ -46,6 +46,7 @@ import {
 
 // Utils and Types
 import { formatCurrency } from "@/lib/utils";
+import { formatCategoryHierarchy } from "@/lib/utils/category";
 import { ErrorHandlers } from "@/lib/utils/error-handling";
 import { FilterConfig, SortOption, PaginationState } from "@/types/inventory";
 
@@ -135,7 +136,7 @@ export function ProductList({ user }: ProductListProps) {
   );
 
   const brandsQuery = useBrands({ status: "true" });
-  const categoriesQuery = useCategories({ status: "true" });
+  const categoriesQuery = useCategoriesWithHierarchy();
 
   // Extract data from queries
   const products = productsQuery.data?.data || [];
@@ -150,7 +151,7 @@ export function ProductList({ user }: ProductListProps) {
     () =>
       categories.map((cat) => ({
         value: String(cat.id),
-        label: cat.name,
+        label: formatCategoryHierarchy(cat),
       })),
     [categories]
   );
@@ -365,7 +366,13 @@ export function ProductList({ user }: ProductListProps) {
       case "sku":
         return <span className="font-mono text-sm">{product.sku}</span>;
       case "category":
-        return product.category?.name || "-";
+        // Find the category with hierarchy information
+        const categoryWithHierarchy = categories.find(
+          (cat) => cat.id === product.category?.id
+        );
+        return categoryWithHierarchy
+          ? formatCategoryHierarchy(categoryWithHierarchy)
+          : product.category?.name || "-";
       case "brand":
         return product.brand?.name || "-";
       case "stock":

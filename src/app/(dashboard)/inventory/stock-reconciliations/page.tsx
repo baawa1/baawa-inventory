@@ -24,18 +24,5 @@ export default async function StockReconciliationsPage() {
     redirect("/unauthorized");
   }
 
-  return (
-    <div className="space-y-6">
-      <div>
-        <h1 className="text-3xl font-bold tracking-tight">
-          Stock Reconciliations
-        </h1>
-        <p className="text-muted-foreground">
-          Manage stock reconciliations and inventory adjustments with approval
-          workflow
-        </p>
-      </div>
-      <StockReconciliationList user={session.user} />
-    </div>
-  );
+  return <StockReconciliationList user={session.user} />;
 }

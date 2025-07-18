@@ -184,6 +184,15 @@ export const useSubcategories = (parentId: number) => {
   });
 };
 
+// Get all categories with hierarchy for product forms
+export const useCategoriesWithHierarchy = () => {
+  return useQuery({
+    queryKey: queryKeys.categories.list({ includeChildren: true }),
+    queryFn: () => fetchCategories({ includeChildren: true }),
+    staleTime: 5 * 60 * 1000, // 5 minutes
+  });
+};
+
 // Mutation Hooks
 export const useCreateCategory = () => {
   const queryClient = useQueryClient();
