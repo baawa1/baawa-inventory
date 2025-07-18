@@ -116,6 +116,7 @@ function ResetPasswordFormContent({ className }: ResetPasswordFormProps) {
         body: JSON.stringify({
           token,
           password: data.password,
+          confirmPassword: data.confirmPassword,
         }),
       });
 

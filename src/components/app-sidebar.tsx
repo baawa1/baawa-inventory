@@ -3,7 +3,6 @@
 import * as React from "react";
 import { useSession } from "next-auth/react";
 import {
-  IconChartBar,
   IconDashboard,
   IconHelp,
   IconInnerShadowTop,
@@ -14,6 +13,7 @@ import {
 
 import { NavMain } from "@/components/nav-main";
 import { NavInventory } from "@/components/nav-inventory";
+import { NavPOS } from "@/components/nav-pos";
 import { NavSecondary } from "@/components/nav-secondary";
 import { NavUser } from "@/components/nav-user";
 import {
@@ -31,21 +31,6 @@ const navMain = [
     title: "Dashboard",
     url: "/dashboard",
     icon: IconDashboard,
-  },
-  {
-    title: "POS System",
-    url: "/pos",
-    icon: IconShoppingCart,
-  },
-  {
-    title: "Reports",
-    url: "/reports",
-    icon: IconChartBar,
-  },
-  {
-    title: "Settings",
-    url: "/settings",
-    icon: IconSettings,
   },
 ];
 
@@ -107,6 +92,7 @@ export function AppSidebar({ ...props }: React.ComponentProps<typeof Sidebar>) {
       </SidebarHeader>
       <SidebarContent>
         <NavMain items={navMain} />
+        <NavPOS />
         <NavInventory />
         <NavSecondary items={navSecondary} className="mt-auto" />
       </SidebarContent>
