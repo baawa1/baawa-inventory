@@ -7,8 +7,9 @@ export const GET = withAuth(
   async (request: AuthenticatedRequest): Promise<NextResponse> => {
     try {
       const { searchParams } = new URL(request.url);
-      const limit = parseInt(searchParams.get("limit") || "50");
+      const limit = parseInt(searchParams.get("limit") || "10");
       const offset = parseInt(searchParams.get("offset") || "0");
+      const search = searchParams.get("search") || "";
 
       // Get all products first, then filter for low stock
       const allProducts = await prisma.product.findMany({
@@ -24,9 +25,21 @@ export const GET = withAuth(
       });
 
       // Filter for low stock products
-      const allLowStockProducts = allProducts.filter(
+      let allLowStockProducts = allProducts.filter(
         (product) => product.stock === 0 || product.stock <= product.minStock
       );
+
+      // Apply search filter if provided
+      if (search) {
+        const searchLower = search.toLowerCase();
+        allLowStockProducts = allLowStockProducts.filter(
+          (product) =>
+            product.name.toLowerCase().includes(searchLower) ||
+            product.sku.toLowerCase().includes(searchLower) ||
+            product.category?.name.toLowerCase().includes(searchLower) ||
+            product.brand?.name.toLowerCase().includes(searchLower)
+        );
+      }
 
       // Calculate metrics
       const totalValue = allLowStockProducts.reduce(
