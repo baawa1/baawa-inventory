@@ -377,7 +377,7 @@ export default function BrandList({ user }: BrandListProps) {
         isRefetching={brandsQuery.isFetching && !loading}
         error={brandsQuery.error?.message}
         // Empty state
-        emptyStateIcon={<IconBrandX className="h-12 w-12 text-gray-400" />}
+        emptyStateIcon={<IconBrandX className="size-12 text-gray-400" />}
         emptyStateMessage={
           debouncedSearchTerm || filters.isActive
             ? "No brands found matching your filters."

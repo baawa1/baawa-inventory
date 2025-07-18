@@ -13,8 +13,8 @@ export const categorySchema = z.object({
     .optional(),
   image: z
     .string()
-    .max(500, "Image URL must be less than 500 characters")
-    .optional(),
+    .min(1, "Category image is required")
+    .max(500, "Image URL must be less than 500 characters"),
   isActive: z.boolean().optional().default(true),
 });
 
@@ -31,8 +31,8 @@ export const createCategorySchema = z.object({
     .optional(),
   image: z
     .string()
-    .max(500, "Image URL must be less than 500 characters")
-    .optional(),
+    .min(1, "Category image is required")
+    .max(500, "Image URL must be less than 500 characters"),
   isActive: z.boolean().default(true),
 });
 

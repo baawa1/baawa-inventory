@@ -7,6 +7,7 @@ import { z } from "zod";
 const CategoryCreateSchema = z.object({
   name: z.string().min(1).max(100),
   description: z.string().optional(),
+  image: z.string().min(1, "Category image is required").max(500),
   isActive: z.boolean().default(true),
   parentId: z.number().optional(),
 });
@@ -87,6 +88,7 @@ export async function GET(request: NextRequest) {
         id: true,
         name: true,
         description: true,
+        image: true,
         isActive: true,
         createdAt: true,
         updatedAt: true,
@@ -131,6 +133,7 @@ export async function GET(request: NextRequest) {
       id: category.id,
       name: category.name,
       description: category.description,
+      image: category.image,
       isActive: category.isActive,
       parentId: category.parentId,
       parent: category.parent,
@@ -236,6 +239,7 @@ export async function POST(request: NextRequest) {
         id: true,
         name: true,
         description: true,
+        image: true,
         isActive: true,
         parentId: true,
         parent: {

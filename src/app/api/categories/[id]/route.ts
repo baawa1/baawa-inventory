@@ -6,6 +6,7 @@ import { z } from "zod";
 const CategoryUpdateSchema = z.object({
   name: z.string().min(1).max(100).optional(),
   description: z.string().optional(),
+  image: z.string().max(500).optional(),
   isActive: z.boolean().optional(),
   parentId: z.number().optional(),
 });
@@ -48,6 +49,7 @@ export async function GET(
         id: true,
         name: true,
         description: true,
+        image: true,
         isActive: true,
         createdAt: true,
         updatedAt: true,
@@ -92,6 +94,7 @@ export async function GET(
         id: category.id,
         name: category.name,
         description: category.description,
+        image: category.image,
         isActive: category.isActive,
         parentId: category.parentId,
         parent: category.parent,

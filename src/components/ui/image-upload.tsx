@@ -40,6 +40,7 @@ export function ImageUpload({
     if (!files || files.length === 0) return;
 
     const file = files[0];
+    console.log("File selected:", file.name, file.type, file.size);
 
     // Validate file type
     if (!UPLOAD_LIMITS.ALLOWED_IMAGE_TYPES.includes(file.type as any)) {
@@ -62,6 +63,7 @@ export function ImageUpload({
 
   const uploadFile = async (file: File) => {
     setUploading(true);
+    console.log("Starting upload for file:", file.name);
 
     try {
       const formData = new FormData();
@@ -69,19 +71,28 @@ export function ImageUpload({
       formData.append("folder", folder);
       formData.append("quality", "85");
 
+      console.log("Uploading to folder:", folder);
       const response = await fetch("/api/upload", {
         method: "POST",
         body: formData,
       });
 
+      console.log("Upload response status:", response.status);
       if (!response.ok) {
         const error = await response.json();
+        console.error("Upload response error:", error);
         throw new Error(error.error || "Upload failed");
       }
 
       const result = await response.json();
+      console.log("Upload successful, result:", result);
       onChange(result.url);
       toast.success("Image uploaded successfully!");
+
+      // Reset the file input to allow the same file to be selected again
+      if (fileInputRef.current) {
+        fileInputRef.current.value = "";
+      }
     } catch (error) {
       console.error("Upload error:", error);
       const errorMessage =
@@ -122,25 +133,6 @@ export function ImageUpload({
           <div className="flex items-center gap-4">
             <ImagePreview src={value} alt={alt} size="lg" className="border" />
             <div className="flex flex-col gap-2">
-              <Button
-                type="button"
-                variant="outline"
-                size="sm"
-                onClick={() => fileInputRef.current?.click()}
-                disabled={disabled || uploading}
-              >
-                {uploading ? (
-                  <>
-                    <Loader2 className="h-4 w-4 mr-2 animate-spin" />
-                    Uploading...
-                  </>
-                ) : (
-                  <>
-                    <Upload className="h-4 w-4 mr-2" />
-                    Replace
-                  </>
-                )}
-              </Button>
               <Button
                 type="button"
                 variant="outline"

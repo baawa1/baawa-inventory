@@ -23,6 +23,7 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
+import { ImageUpload } from "@/components/ui/image-upload";
 
 // Icons
 import { IconArrowLeft, IconFolder } from "@tabler/icons-react";
@@ -30,6 +31,7 @@ import { IconArrowLeft, IconFolder } from "@tabler/icons-react";
 interface CreateCategoryFormData {
   name: string;
   description: string;
+  image: string | null;
   isActive: boolean;
   parentId: number | null;
 }
@@ -37,6 +39,7 @@ interface CreateCategoryFormData {
 interface ValidationErrors {
   name?: string;
   description?: string;
+  image?: string;
   parentId?: string;
   isActive?: string;
 }
@@ -49,6 +52,7 @@ export default function AddCategoryForm() {
   const [formData, setFormData] = useState<CreateCategoryFormData>({
     name: "",
     description: "",
+    image: null,
     isActive: true,
     parentId: parentIdFromUrl ? parseInt(parentIdFromUrl) : null,
   });
@@ -69,6 +73,10 @@ export default function AddCategoryForm() {
       errors.name = "Category name is required";
     } else if (data.name.length > 100) {
       errors.name = "Category name must be 100 characters or less";
+    }
+
+    if (!data.image) {
+      errors.image = "Category image is required";
     }
 
     if (data.description && data.description.length > 500) {
@@ -92,6 +100,7 @@ export default function AddCategoryForm() {
       {
         name: formData.name.trim(),
         description: formData.description.trim() || undefined,
+        image: formData.image!,
         isActive: formData.isActive,
         parentId: formData.parentId || undefined,
       },
@@ -245,6 +254,30 @@ export default function AddCategoryForm() {
               {validationErrors.description}
             </p>
           )}
+        </div>
+
+        {/* Category Image */}
+        <div className="space-y-2">
+          <Label htmlFor="image">
+            Category Image <span className="text-destructive">*</span>
+          </Label>
+          <ImageUpload
+            value={formData.image}
+            onChange={(url) => updateFormData("image", url)}
+            onError={(error) => {
+              console.error("Image upload error:", error);
+            }}
+            placeholder="Upload a category image (required)"
+            disabled={createCategoryMutation.isPending}
+            folder="categories"
+            alt="Category image"
+          />
+          {validationErrors.image && (
+            <p className="text-sm text-destructive">{validationErrors.image}</p>
+          )}
+          <p className="text-xs text-muted-foreground">
+            A category image is required to help identify and organize products.
+          </p>
         </div>
 
         {/* Active Status */}
