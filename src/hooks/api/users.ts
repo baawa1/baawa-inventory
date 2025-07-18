@@ -51,7 +51,7 @@ const fetchUsers = async (filters: UserFilters = {}): Promise<AppUser[]> => {
   }
 
   const data = await response.json();
-  return data.users || data; // Handle both pagination and direct array responses
+  return data.data || data.users || data; // Handle pagination response format
 };
 
 const createUser = async (userData: CreateUserData): Promise<AppUser> => {

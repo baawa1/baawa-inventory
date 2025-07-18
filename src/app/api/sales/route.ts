@@ -6,7 +6,9 @@ import { withAuth, AuthenticatedRequest } from "@/lib/api-middleware";
 // GET /api/sales - List sales transactions with optional filtering and pagination
 export const GET = withAuth(async function (request: AuthenticatedRequest) {
   try {
+    console.log("Sales API called with user:", request.user);
     const { searchParams } = new URL(request.url);
+    console.log("Search params:", Object.fromEntries(searchParams));
 
     // Convert search params to proper types for validation
     const queryParams = {
@@ -27,7 +29,9 @@ export const GET = withAuth(async function (request: AuthenticatedRequest) {
     };
 
     // Validate query parameters
+    console.log("Validating query params:", queryParams);
     const validatedQuery = saleQuerySchema.parse(queryParams);
+    console.log("Query validation successful:", validatedQuery);
     const {
       page,
       limit,
@@ -176,8 +180,15 @@ export const GET = withAuth(async function (request: AuthenticatedRequest) {
     });
   } catch (error) {
     console.error("Error in GET /api/sales:", error);
+    console.error(
+      "Error stack:",
+      error instanceof Error ? error.stack : "No stack trace"
+    );
     return NextResponse.json(
-      { error: "Internal server error" },
+      {
+        error: "Internal server error",
+        details: error instanceof Error ? error.message : "Unknown error",
+      },
       { status: 500 }
     );
   }
