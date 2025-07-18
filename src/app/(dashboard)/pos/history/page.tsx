@@ -1,12 +1,11 @@
-/**
- * Transaction History Page
- * Main page for viewing and managing transaction history in the POS system
- */
-
-import React from "react";
-import { redirect } from "next/navigation";
 import { auth } from "../../../../../auth";
-import { TransactionHistory } from "@/components/pos/TransactionHistory";
+import { redirect } from "next/navigation";
+import { TransactionList } from "@/components/inventory/TransactionList";
+
+export const metadata = {
+  title: "Transaction History - BaaWA Inventory POS",
+  description: "View and manage all sales transactions and payment history",
+};
 
 export default async function POSHistoryPage() {
   const session = await auth();
@@ -19,5 +18,5 @@ export default async function POSHistoryPage() {
     redirect("/pending-approval");
   }
 
-  return <TransactionHistory />;
+  return <TransactionList user={session.user} />;
 }

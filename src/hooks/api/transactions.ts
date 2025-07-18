@@ -68,6 +68,13 @@ export interface TransactionStats {
   totalItems: number;
   totalDiscount: number;
   netSales: number;
+  salesChange: number;
+  transactionsChange: number;
+  itemsChange: number;
+  averageOrderValueChange: number;
+  overallTotalSales: number;
+  overallTotalTransactions: number;
+  overallTotalItems: number;
 }
 
 // API Functions
