@@ -7,45 +7,75 @@ export const GET = withAuth(
   async (request: AuthenticatedRequest): Promise<NextResponse> => {
     try {
       const { searchParams } = new URL(request.url);
-      const threshold = parseInt(searchParams.get("threshold") || "10");
       const limit = parseInt(searchParams.get("limit") || "50");
-      const page = parseInt(searchParams.get("page") || "1");
+      const offset = parseInt(searchParams.get("offset") || "0");
 
-      const offset = (page - 1) * limit;
-
-      // Get products where stock is below the threshold
-      const products = await prisma.product.findMany({
+      // Get all products first, then filter for low stock
+      const allProducts = await prisma.product.findMany({
         where: {
-          AND: [{ isArchived: false }, { stock: { lte: threshold } }],
+          isArchived: false,
         },
         include: {
-          category: { select: { name: true } },
-          brand: { select: { name: true } },
-          supplier: { select: { name: true } },
+          category: { select: { id: true, name: true } },
+          brand: { select: { id: true, name: true } },
+          supplier: { select: { id: true, name: true } },
         },
         orderBy: [{ stock: "asc" }, { name: "asc" }],
-        take: limit,
-        skip: offset,
       });
 
-      // Get total count for pagination
-      const totalCount = await prisma.product.count({
-        where: {
-          AND: [{ isArchived: false }, { stock: { lte: threshold } }],
-        },
-      });
+      // Filter for low stock products
+      const allLowStockProducts = allProducts.filter(
+        (product) => product.stock === 0 || product.stock <= product.minStock
+      );
+
+      // Calculate metrics
+      const totalValue = allLowStockProducts.reduce(
+        (sum, product) => sum + Number(product.stock) * Number(product.cost),
+        0
+      );
+
+      const criticalStock = allLowStockProducts.filter(
+        (product) =>
+          product.stock === 0 || product.stock <= product.minStock * 0.5
+      ).length;
+
+      const lowStock = allLowStockProducts.filter(
+        (product) => product.stock > 0 && product.stock <= product.minStock
+      ).length;
+
+      // Get paginated products
+      const products = allLowStockProducts.slice(offset, offset + limit);
+
+      // Transform products to match expected format
+      const transformedProducts = products.map((product) => ({
+        id: product.id,
+        name: product.name,
+        sku: product.sku,
+        stock: product.stock,
+        minStock: product.minStock,
+        cost: Number(product.cost),
+        price: Number(product.price),
+        status: product.status,
+        category: product.category,
+        brand: product.brand,
+        supplier: product.supplier,
+        createdAt: product.createdAt?.toISOString() || new Date().toISOString(),
+        updatedAt: product.updatedAt?.toISOString() || new Date().toISOString(),
+      }));
 
       return NextResponse.json({
-        data: products,
+        products: transformedProducts,
         pagination: {
-          page,
+          total: allLowStockProducts.length,
           limit,
-          total: totalCount,
-          totalPages: Math.ceil(totalCount / limit),
+          offset,
+          hasMore: offset + limit < allLowStockProducts.length,
         },
-        meta: {
-          threshold,
-          count: products.length,
+        metrics: {
+          totalValue,
+          criticalStock,
+          lowStock,
+          totalProducts: allLowStockProducts.length,
         },
       });
     } catch (error) {
