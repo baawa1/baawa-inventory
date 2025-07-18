@@ -21,7 +21,7 @@ import { Loader2 } from "lucide-react";
 export interface FilterConfig {
   key: string;
   label: string;
-  type: "select" | "boolean" | "text";
+  type: "select" | "boolean" | "text" | "date";
   options?: Array<{ label: string; value: string }>;
   placeholder?: string;
 }
@@ -98,6 +98,17 @@ export function DashboardFiltersBar({
         case "text":
           return (
             <Input
+              placeholder={filter.placeholder || filter.label}
+              value={value}
+              onChange={(e: React.ChangeEvent<HTMLInputElement>) =>
+                onFilterChange(filter.key, e.target.value)
+              }
+            />
+          );
+        case "date":
+          return (
+            <Input
+              type="date"
               placeholder={filter.placeholder || filter.label}
               value={value}
               onChange={(e: React.ChangeEvent<HTMLInputElement>) =>

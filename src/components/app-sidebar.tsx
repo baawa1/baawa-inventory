@@ -8,6 +8,8 @@ import {
   IconInnerShadowTop,
   IconSettings,
   IconUsers,
+  IconShoppingCart,
+  IconChartBar,
 } from "@tabler/icons-react";
 
 import { NavMain } from "@/components/nav-main";
@@ -30,6 +32,16 @@ const navMain = [
     title: "Dashboard",
     url: "/dashboard",
     icon: IconDashboard,
+  },
+  {
+    title: "POS System",
+    url: "/pos",
+    icon: IconShoppingCart,
+  },
+  {
+    title: "Reports",
+    url: "/reports",
+    icon: IconChartBar,
   },
 ];
 
