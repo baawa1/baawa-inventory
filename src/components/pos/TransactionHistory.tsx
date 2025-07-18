@@ -649,9 +649,9 @@ export function TransactionHistory() {
               <TableBody>
                 {filteredTransactions.map((transaction) => {
                   const PaymentIcon =
-                    paymentMethodIcons[transaction.paymentMethod];
+                    paymentMethodIcons[transaction.paymentMethod] || IconCash;
                   const StatusIcon =
-                    statusIcons[transaction.status || "synced"];
+                    statusIcons[transaction.status || "synced"] || IconCheck;
 
                   return (
                     <TableRow key={transaction.id}>
@@ -668,7 +668,8 @@ export function TransactionHistory() {
                         <div className="flex items-center gap-2">
                           <PaymentIcon className="h-4 w-4" />
                           <span className="text-sm">
-                            {paymentMethodLabels[transaction.paymentMethod]}
+                            {paymentMethodLabels[transaction.paymentMethod] ||
+                              "Unknown"}
                           </span>
                         </div>
                       </TableCell>

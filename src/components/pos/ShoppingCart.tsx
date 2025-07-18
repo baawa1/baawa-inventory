@@ -76,7 +76,7 @@ export function ShoppingCart({
       </div>
 
       {/* Cart Items - Scrollable */}
-      <div className="flex-1 min-h-0 overflow-y-auto max-h-[30rem] space-y-3 pr-2">
+      <div className="flex-1 min-h-0 overflow-y-auto max-h-80 space-y-3 pr-2 pt-2 pb-2">
         {items.map((item) => (
           <Card key={item.id} className="border-l-4 border-l-primary">
             <CardContent className="p-4">
