@@ -34,6 +34,7 @@ import {
 
 // Custom Components
 import { InventoryPageLayout } from "@/components/inventory/InventoryPageLayout";
+import { ImagePreview } from "@/components/ui/image-preview";
 
 // Icons
 import {
@@ -44,6 +45,7 @@ import {
   IconTag,
   IconAlertTriangle,
   IconFolder,
+  IconEye,
 } from "@tabler/icons-react";
 
 // Types
@@ -79,6 +81,12 @@ export default function CategoryList({ user }: CategoryListProps) {
   // Column configuration
   const columns: DashboardTableColumn[] = useMemo(
     () => [
+      {
+        key: "image",
+        label: "Image",
+        defaultVisible: true,
+        required: true,
+      },
       {
         key: "name",
         label: "Name",
@@ -139,8 +147,50 @@ export default function CategoryList({ user }: CategoryListProps) {
 
   const deleteCategoryMutation = useDeleteCategory();
 
-  // Extract data from queries
-  const categories = categoriesQuery.data?.data || [];
+  // Extract data from queries and sort hierarchically
+  const rawCategories = categoriesQuery.data?.data || [];
+
+  // Sort categories hierarchically: parent categories first, then subcategories
+  const categories = useMemo(() => {
+    if (!rawCategories.length) return [];
+
+    // Separate parent and child categories
+    const parentCategories = rawCategories.filter((cat) => !cat.parentId);
+    const childCategories = rawCategories.filter((cat) => cat.parentId);
+
+    // Sort parent categories by name
+    const sortedParents = parentCategories.sort((a, b) =>
+      a.name.localeCompare(b.name)
+    );
+
+    // Group child categories by parent and sort each group
+    const groupedChildren = childCategories.reduce(
+      (acc, child) => {
+        const parentId = child.parentId!;
+        if (!acc[parentId]) acc[parentId] = [];
+        acc[parentId].push(child);
+        return acc;
+      },
+      {} as Record<number, typeof childCategories>
+    );
+
+    // Sort children within each group
+    Object.values(groupedChildren).forEach((group) => {
+      group.sort((a, b) => a.name.localeCompare(b.name));
+    });
+
+    // Combine: parents first, then their children
+    const result: typeof rawCategories = [];
+
+    sortedParents.forEach((parent) => {
+      result.push(parent);
+      const children = groupedChildren[parent.id] || [];
+      result.push(...children);
+    });
+
+    return result;
+  }, [rawCategories]);
+
   const loading = categoriesQuery.isLoading;
   const total = categoriesQuery.data?.pagination?.totalCategories || 0;
   const apiPagination = categoriesQuery.data?.pagination;
@@ -277,6 +327,19 @@ export default function CategoryList({ user }: CategoryListProps) {
   const renderCell = useCallback(
     (category: APICategory, columnKey: string) => {
       switch (columnKey) {
+        case "image":
+          return category.image ? (
+            <ImagePreview
+              src={category.image}
+              alt={category.name}
+              size="md"
+              className="rounded-md"
+            />
+          ) : (
+            <div className="size-12 bg-gray-100 rounded-md flex items-center justify-center">
+              <IconTag className="h-4 w-4 text-gray-400" />
+            </div>
+          );
         case "name":
           return getCategoryDisplayName(category);
         case "description":
@@ -341,6 +404,12 @@ export default function CategoryList({ user }: CategoryListProps) {
             </Button>
           </DropdownMenuTrigger>
           <DropdownMenuContent align="end">
+            <DropdownMenuItem asChild>
+              <Link href={`/inventory/categories/${category.id}`}>
+                <IconEye className="mr-2 h-4 w-4" />
+                View
+              </Link>
+            </DropdownMenuItem>
             <DropdownMenuItem asChild>
               <Link href={`/inventory/categories/${category.id}/edit`}>
                 <IconEdit className="mr-2 h-4 w-4" />

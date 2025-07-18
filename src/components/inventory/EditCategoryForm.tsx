@@ -20,7 +20,7 @@ import { Alert, AlertDescription } from "@/components/ui/alert";
 import { PageHeader } from "@/components/ui/page-header";
 import { FormLoading } from "@/components/ui/form-loading";
 import { ImageUpload } from "@/components/ui/image-upload";
-import { updateCategorySchema } from "@/lib/validations/category";
+
 import { toast } from "sonner";
 import { useUpdateCategory } from "@/hooks/api/categories";
 
@@ -61,22 +61,25 @@ export default function EditCategoryForm({ category }: EditCategoryFormProps) {
   });
 
   const validateForm = (data: UpdateCategoryFormData) => {
-    try {
-      updateCategorySchema.parse({ ...data, id: category.id });
-      setValidationErrors({});
-      return true;
-    } catch (error: any) {
-      const errors: Record<string, string> = {};
-      if (error.errors) {
-        error.errors.forEach((err: any) => {
-          if (err.path && err.path[0] !== "id") {
-            errors[err.path[0]] = err.message;
-          }
-        });
-      }
-      setValidationErrors(errors);
-      return false;
+    const errors: Record<string, string> = {};
+
+    // Custom validation for required fields
+    if (!data.name.trim()) {
+      errors.name = "Category name is required";
+    } else if (data.name.length > 100) {
+      errors.name = "Category name must be 100 characters or less";
     }
+
+    if (!data.image) {
+      errors.image = "Category image is required";
+    }
+
+    if (data.description && data.description.length > 500) {
+      errors.description = "Description must be 500 characters or less";
+    }
+
+    setValidationErrors(errors);
+    return Object.keys(errors).length === 0;
   };
 
   const onSubmit = async (e: React.FormEvent) => {
@@ -223,21 +226,32 @@ export default function EditCategoryForm({ category }: EditCategoryFormProps) {
             </div>
 
             {/* Image Upload */}
-            <ImageUpload
-              value={formData.image}
-              onChange={(url) => updateFormData("image", url || "")}
-              onError={(error) => {
-                setValidationErrors((prev) => ({ ...prev, image: error }));
-              }}
-              label="Category Image"
-              placeholder="Upload a category image"
-              disabled={updateCategoryMutation.isPending}
-              folder="categories"
-              alt="Category image"
-            />
-            {validationErrors.image && (
-              <p className="text-sm text-red-500">{validationErrors.image}</p>
-            )}
+            <div className="space-y-2">
+              <Label htmlFor="image" className="flex items-center gap-2">
+                Category Image
+                <Badge variant="destructive" className="text-xs">
+                  Required
+                </Badge>
+              </Label>
+              <ImageUpload
+                value={formData.image}
+                onChange={(url) => updateFormData("image", url || "")}
+                onError={(error) => {
+                  setValidationErrors((prev) => ({ ...prev, image: error }));
+                }}
+                placeholder="Upload a category image (required)"
+                disabled={updateCategoryMutation.isPending}
+                folder="categories"
+                alt="Category image"
+              />
+              {validationErrors.image && (
+                <p className="text-sm text-red-500">{validationErrors.image}</p>
+              )}
+              <p className="text-sm text-gray-600 dark:text-gray-400">
+                A category image is required to help identify and organize
+                products.
+              </p>
+            </div>
 
             {/* Active Status */}
             <div className="flex items-center justify-between rounded-lg border p-4">

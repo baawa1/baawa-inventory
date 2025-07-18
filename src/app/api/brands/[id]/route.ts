@@ -28,7 +28,7 @@ export async function GET(
 
     return NextResponse.json({
       success: true,
-      brand,
+      data: brand,
     });
   } catch (error) {
     console.error("Get brand API error:", error);
@@ -105,7 +105,7 @@ export async function PUT(
 
     return NextResponse.json({
       success: true,
-      brand,
+      data: brand,
     });
   } catch (error) {
     console.error("Update brand API error:", error);
