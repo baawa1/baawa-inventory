@@ -53,40 +53,40 @@ export const GET = withAuth(async function (request: AuthenticatedRequest) {
     // Apply filters
     if (search) {
       where.OR = [
-        { transactionCode: { contains: search, mode: "insensitive" } },
-        { customerName: { contains: search, mode: "insensitive" } },
+        { transaction_number: { contains: search, mode: "insensitive" } },
+        { customer_name: { contains: search, mode: "insensitive" } },
         { notes: { contains: search, mode: "insensitive" } },
       ];
     }
 
     if (paymentStatus) {
-      where.paymentStatus = paymentStatus;
+      where.payment_status = paymentStatus;
     }
 
     if (paymentMethod) {
-      where.paymentMethod = paymentMethod;
+      where.payment_method = paymentMethod;
     }
 
     if (userId) {
-      where.cashierId = userId;
+      where.user_id = userId;
     }
 
     if (fromDate || toDate) {
-      where.createdAt = {};
-      if (fromDate) where.createdAt.gte = new Date(fromDate);
-      if (toDate) where.createdAt.lte = new Date(toDate);
+      where.created_at = {};
+      if (fromDate) where.created_at.gte = new Date(fromDate);
+      if (toDate) where.created_at.lte = new Date(toDate);
     }
 
     // Build orderBy clause
     const orderBy: any = {};
     if (sortBy === "createdAt") {
-      orderBy.createdAt = sortOrder;
+      orderBy.created_at = sortOrder;
     } else if (sortBy === "total") {
-      orderBy.total = sortOrder;
-    } else if (sortBy === "transactionCode") {
-      orderBy.transactionCode = sortOrder;
+      orderBy.total_amount = sortOrder;
+    } else if (sortBy === "transactionNumber") {
+      orderBy.transaction_number = sortOrder;
     } else {
-      orderBy.createdAt = sortOrder; // default fallback
+      orderBy.created_at = sortOrder; // default fallback
     }
 
     // Execute queries in parallel for better performance with optimized includes
@@ -100,6 +100,11 @@ export const GET = withAuth(async function (request: AuthenticatedRequest) {
           id: true,
           transaction_number: true,
           customer_name: true,
+          customer_phone: true,
+          customer_email: true,
+          subtotal: true,
+          discount_amount: true,
+          tax_amount: true,
           total_amount: true,
           payment_status: true,
           payment_method: true,
@@ -114,6 +119,8 @@ export const GET = withAuth(async function (request: AuthenticatedRequest) {
               id: true,
               quantity: true,
               unit_price: true,
+              total_price: true,
+              discount_amount: true,
               products: {
                 select: { id: true, name: true, sku: true },
               },
@@ -124,8 +131,40 @@ export const GET = withAuth(async function (request: AuthenticatedRequest) {
       prisma.salesTransaction.count({ where }),
     ]);
 
+    // Transform data to match frontend expectations
+    const transformedTransactions = salesTransactions.map(
+      (transaction: any) => ({
+        id: transaction.id,
+        transactionNumber: transaction.transaction_number,
+        customerName: transaction.customer_name,
+        customerPhone: transaction.customer_phone,
+        customerEmail: transaction.customer_email,
+        subtotal: Number(transaction.subtotal),
+        discount: Number(transaction.discount_amount),
+        total: Number(transaction.total_amount),
+        paymentStatus: transaction.payment_status,
+        paymentMethod: transaction.payment_method,
+        notes: transaction.notes,
+        createdAt: transaction.created_at,
+        updatedAt: transaction.updated_at,
+        timestamp: transaction.created_at,
+        staffName:
+          `${transaction.users.firstName} ${transaction.users.lastName}`.trim(),
+        staffId: transaction.users.id,
+        items: transaction.sales_items.map((item: any) => ({
+          id: item.id,
+          productId: item.products?.id,
+          name: item.products?.name || "Unknown Product",
+          sku: item.products?.sku || "",
+          price: Number(item.unit_price),
+          quantity: item.quantity,
+          total: Number(item.total_price || item.unit_price * item.quantity),
+        })),
+      })
+    );
+
     return NextResponse.json({
-      data: salesTransactions,
+      data: transformedTransactions,
       pagination: {
         page,
         limit: safeLimit,
