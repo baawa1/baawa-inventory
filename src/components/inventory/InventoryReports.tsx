@@ -1,7 +1,8 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useMemo, useCallback } from "react";
 import { useQuery } from "@tanstack/react-query";
+import { useSearchParams } from "next/navigation";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Label } from "@/components/ui/label";
@@ -24,8 +25,12 @@ import {
   AlertTriangle,
   Package,
   Loader2,
+  TrendingUp,
+  DollarSign,
+  ShoppingCart,
 } from "lucide-react";
 import { toast } from "sonner";
+import { DashboardTable } from "@/components/layouts/DashboardTable";
 
 interface ReportFilters {
   category?: string;
@@ -39,12 +44,38 @@ interface ReportData {
   title: string;
   generatedAt: string;
   data: any;
+  pagination?: {
+    page: number;
+    limit: number;
+    totalPages: number;
+    total: number;
+  };
 }
 
 export function InventoryReports() {
-  const [reportType, setReportType] = useState<string>("current_stock");
+  const searchParams = useSearchParams();
+  const urlReportType = searchParams.get("type");
+
+  const [reportType, setReportType] = useState<string>(() => {
+    // Set initial state based on URL parameter
+    if (
+      urlReportType &&
+      ["current_stock", "stock_value", "low_stock", "product_summary"].includes(
+        urlReportType
+      )
+    ) {
+      return urlReportType;
+    }
+    return "current_stock";
+  });
   const [filters, setFilters] = useState<ReportFilters>({});
   const [showFilters, setShowFilters] = useState(false);
+  const [pagination, setPagination] = useState({
+    page: 1,
+    limit: 10,
+    totalPages: 1,
+    totalItems: 0,
+  });
 
   // Fetch categories, brands, and suppliers for filters
   const { data: categories } = useQuery({
@@ -79,12 +110,21 @@ export function InventoryReports() {
     data: reportData,
     isLoading,
     refetch,
+    isRefetching,
   } = useQuery({
-    queryKey: ["inventory-report", reportType, filters],
+    queryKey: [
+      "inventory-report",
+      reportType,
+      filters,
+      pagination.page,
+      pagination.limit,
+    ],
     queryFn: async (): Promise<ReportData> => {
       const params = new URLSearchParams({
         type: reportType,
         format: "json",
+        page: pagination.page.toString(),
+        limit: pagination.limit.toString(),
         ...(filters.category && { category: filters.category }),
         ...(filters.brand && { brand: filters.brand }),
         ...(filters.supplier && { supplier: filters.supplier }),
@@ -135,26 +175,373 @@ export function InventoryReports() {
       if (prev[key] === value) return prev; // Prevent unnecessary updates
       return { ...prev, [key]: value };
     });
+    setPagination((prev) => ({ ...prev, page: 1 }));
   };
 
   const clearFilters = () => {
     setFilters({});
+    setPagination((prev) => ({ ...prev, page: 1 }));
   };
 
-  const getReportIcon = (type: string) => {
-    switch (type) {
+  const handlePageChange = useCallback((newPage: number) => {
+    setPagination((prev) => ({ ...prev, page: newPage }));
+  }, []);
+
+  const handlePageSizeChange = useCallback((newSize: number) => {
+    setPagination((prev) => ({ ...prev, limit: newSize, page: 1 }));
+  }, []);
+
+  const formatCurrency = (amount: number) => {
+    return new Intl.NumberFormat("en-NG", {
+      style: "currency",
+      currency: "NGN",
+    }).format(amount);
+  };
+
+  // Get table data and columns based on report type
+  const { tableData, tableColumns, summaryCards } = useMemo(() => {
+    if (!reportData?.data) {
+      return { tableData: [], tableColumns: [], summaryCards: [] };
+    }
+
+    switch (reportType) {
       case "current_stock":
-        return <Package className="h-4 w-4" />;
+        return {
+          tableData: reportData.data.products || reportData.data || [],
+          tableColumns: [
+            {
+              key: "name",
+              label: "Product",
+              sortable: true,
+              defaultVisible: true,
+              required: true,
+            },
+            {
+              key: "sku",
+              label: "SKU",
+              sortable: true,
+              defaultVisible: true,
+            },
+            {
+              key: "category",
+              label: "Category",
+              sortable: true,
+              defaultVisible: true,
+            },
+            {
+              key: "currentStock",
+              label: "Stock",
+              sortable: true,
+              defaultVisible: true,
+            },
+            {
+              key: "minStock",
+              label: "Min Stock",
+              sortable: true,
+              defaultVisible: true,
+            },
+            {
+              key: "stockValue",
+              label: "Value",
+              sortable: true,
+              defaultVisible: true,
+            },
+            {
+              key: "status",
+              label: "Status",
+              sortable: false,
+              defaultVisible: true,
+            },
+          ],
+          summaryCards: [
+            {
+              title: "Total Products",
+              value: reportData.data.length || 0,
+              icon: Package,
+              color: "blue",
+            },
+            {
+              title: "Total Stock Value",
+              value: formatCurrency(
+                (reportData.data.products || reportData.data).reduce(
+                  (sum: number, item: any) => sum + (item.stockValue || 0),
+                  0
+                )
+              ),
+              icon: DollarSign,
+              color: "green",
+            },
+            {
+              title: "Low Stock Items",
+              value: (reportData.data.products || reportData.data).filter(
+                (item: any) => item.isLowStock
+              ).length,
+              icon: AlertTriangle,
+              color: "red",
+            },
+          ],
+        };
+
       case "stock_value":
-        return <BarChart3 className="h-4 w-4" />;
+        return {
+          tableData: reportData.data.products || [],
+          tableColumns: [
+            {
+              key: "name",
+              label: "Product",
+              sortable: true,
+              defaultVisible: true,
+              required: true,
+            },
+            {
+              key: "sku",
+              label: "SKU",
+              sortable: true,
+              defaultVisible: true,
+            },
+            {
+              key: "currentStock",
+              label: "Stock",
+              sortable: true,
+              defaultVisible: true,
+            },
+            {
+              key: "costPrice",
+              label: "Cost Price",
+              sortable: true,
+              defaultVisible: true,
+            },
+            {
+              key: "sellingPrice",
+              label: "Selling Price",
+              sortable: true,
+              defaultVisible: true,
+            },
+            {
+              key: "stockValue",
+              label: "Stock Value",
+              sortable: true,
+              defaultVisible: true,
+            },
+            {
+              key: "profitMargin",
+              label: "Profit Margin",
+              sortable: true,
+              defaultVisible: true,
+            },
+          ],
+          summaryCards: [
+            {
+              title: "Total Products",
+              value: reportData.data.summary?.totalProducts || 0,
+              icon: Package,
+              color: "blue",
+            },
+            {
+              title: "Stock Value",
+              value: formatCurrency(
+                reportData.data.summary?.totalStockValue || 0
+              ),
+              icon: DollarSign,
+              color: "green",
+            },
+            {
+              title: "Selling Value",
+              value: formatCurrency(
+                reportData.data.summary?.totalSellingValue || 0
+              ),
+              icon: ShoppingCart,
+              color: "purple",
+            },
+            {
+              title: "Potential Profit",
+              value: formatCurrency(
+                reportData.data.summary?.potentialProfit || 0
+              ),
+              icon: TrendingUp,
+              color: "orange",
+            },
+          ],
+        };
+
       case "low_stock":
-        return <AlertTriangle className="h-4 w-4" />;
-      case "product_summary":
-        return <FileText className="h-4 w-4" />;
+        return {
+          tableData: reportData.data || [],
+          tableColumns: [
+            {
+              key: "name",
+              label: "Product",
+              sortable: true,
+              defaultVisible: true,
+              required: true,
+            },
+            {
+              key: "sku",
+              label: "SKU",
+              sortable: true,
+              defaultVisible: true,
+            },
+            {
+              key: "currentStock",
+              label: "Current Stock",
+              sortable: true,
+              defaultVisible: true,
+            },
+            {
+              key: "minStock",
+              label: "Min Stock",
+              sortable: true,
+              defaultVisible: true,
+            },
+            {
+              key: "reorderQuantity",
+              label: "Reorder Qty",
+              sortable: true,
+              defaultVisible: true,
+            },
+            {
+              key: "reorderValue",
+              label: "Reorder Value",
+              sortable: true,
+              defaultVisible: true,
+            },
+            {
+              key: "status",
+              label: "Status",
+              sortable: false,
+              defaultVisible: true,
+            },
+          ],
+          summaryCards: [
+            {
+              title: "Low Stock Items",
+              value: reportData.data.length || 0,
+              icon: AlertTriangle,
+              color: "red",
+            },
+            {
+              title: "Out of Stock",
+              value: reportData.data.filter(
+                (item: any) => item.currentStock <= 0
+              ).length,
+              icon: Package,
+              color: "orange",
+            },
+            {
+              title: "Total Reorder Value",
+              value: formatCurrency(
+                reportData.data.reduce(
+                  (sum: number, item: any) => sum + (item.reorderValue || 0),
+                  0
+                )
+              ),
+              icon: DollarSign,
+              color: "blue",
+            },
+          ],
+        };
+
       default:
-        return <FileText className="h-4 w-4" />;
+        return { tableData: [], tableColumns: [], summaryCards: [] };
+    }
+  }, [reportData, reportType]);
+
+  // Update pagination from API response
+  const currentPagination = {
+    page: reportData?.pagination?.page || pagination.page,
+    limit: reportData?.pagination?.limit || pagination.limit,
+    totalPages: reportData?.pagination?.totalPages || pagination.totalPages,
+    totalItems: reportData?.pagination?.total || tableData.length,
+  };
+
+  const renderCell = (item: any, columnKey: string) => {
+    switch (columnKey) {
+      case "name":
+        return (
+          <div className="flex items-center gap-3">
+            <div className="flex-1">
+              <div className="font-medium">{item.name}</div>
+              {item.description && (
+                <div className="text-sm text-muted-foreground truncate max-w-[200px]">
+                  {item.description}
+                </div>
+              )}
+            </div>
+          </div>
+        );
+      case "sku":
+        return <span className="font-mono text-sm">{item.sku}</span>;
+      case "category":
+        return <span>{item.category}</span>;
+      case "currentStock":
+        return <span className="text-right">{item.currentStock}</span>;
+      case "minStock":
+        return <span className="text-right">{item.minStock}</span>;
+      case "stockValue":
+        return (
+          <span className="text-right font-medium">
+            {formatCurrency(item.stockValue)}
+          </span>
+        );
+      case "costPrice":
+        return (
+          <span className="text-right">{formatCurrency(item.costPrice)}</span>
+        );
+      case "sellingPrice":
+        return (
+          <span className="text-right font-medium">
+            {formatCurrency(item.sellingPrice)}
+          </span>
+        );
+      case "profitMargin":
+        return (
+          <span className="text-right">
+            <Badge variant={item.profitMargin > 0 ? "default" : "secondary"}>
+              {item.profitMargin.toFixed(2)}%
+            </Badge>
+          </span>
+        );
+      case "reorderQuantity":
+        return <span className="text-right">{item.reorderQuantity}</span>;
+      case "reorderValue":
+        return (
+          <span className="text-right font-medium">
+            {formatCurrency(item.reorderValue)}
+          </span>
+        );
+      case "status":
+        if (reportType === "current_stock") {
+          return (
+            <div className="text-center">
+              {item.isLowStock ? (
+                <Badge variant="destructive">Low Stock</Badge>
+              ) : (
+                <Badge variant="default">In Stock</Badge>
+              )}
+            </div>
+          );
+        } else if (reportType === "low_stock") {
+          return (
+            <div className="text-center">
+              <Badge
+                variant={item.currentStock <= 0 ? "destructive" : "secondary"}
+              >
+                {item.currentStock <= 0 ? "Out of Stock" : "Low Stock"}
+              </Badge>
+            </div>
+          );
+        }
+        return null;
+      default:
+        return <span>{item[columnKey]}</span>;
     }
   };
+
+  const defaultVisibleColumns = useMemo(
+    () =>
+      tableColumns.filter((col) => col.defaultVisible).map((col) => col.key),
+    [tableColumns]
+  );
 
   return (
     <div className="space-y-6">
@@ -182,6 +569,15 @@ export function InventoryReports() {
           >
             <RefreshCw className="h-4 w-4 mr-2" />
             Refresh
+          </Button>
+          <Button
+            variant="outline"
+            size="sm"
+            onClick={handleDownloadCSV}
+            disabled={isLoading}
+          >
+            <Download className="h-4 w-4 mr-2" />
+            Download CSV
           </Button>
         </div>
       </div>
@@ -267,28 +663,33 @@ export function InventoryReports() {
 
               <div className="flex items-center space-x-2">
                 <Switch
-                  id="low-stock-only"
+                  id="lowStockOnly"
                   checked={filters.lowStockOnly || false}
                   onCheckedChange={(checked) =>
                     handleFilterChange("lowStockOnly", checked)
                   }
                 />
-                <Label htmlFor="low-stock-only">Low stock only</Label>
+                <Label htmlFor="lowStockOnly">Low Stock Only</Label>
               </div>
 
               <div className="flex items-center space-x-2">
                 <Switch
-                  id="include-archived"
+                  id="includeArchived"
                   checked={filters.includeArchived || false}
                   onCheckedChange={(checked) =>
                     handleFilterChange("includeArchived", checked)
                   }
                 />
-                <Label htmlFor="include-archived">Include archived</Label>
+                <Label htmlFor="includeArchived">Include Archived</Label>
               </div>
 
-              <div className="flex items-center gap-2">
-                <Button variant="outline" size="sm" onClick={clearFilters}>
+              <div>
+                <Button
+                  variant="outline"
+                  size="sm"
+                  onClick={clearFilters}
+                  className="w-full"
+                >
                   Clear Filters
                 </Button>
               </div>
@@ -297,503 +698,86 @@ export function InventoryReports() {
         </Card>
       )}
 
-      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
-        {[
-          {
-            id: "current_stock",
-            label: "Current Stock",
-            description: "Complete inventory status",
-          },
-          {
-            id: "stock_value",
-            label: "Stock Value",
-            description: "Inventory valuation report",
-          },
-          {
-            id: "low_stock",
-            label: "Low Stock",
-            description: "Items needing restock",
-          },
-          {
-            id: "product_summary",
-            label: "Product Summary",
-            description: "Product distribution analysis",
-          },
-        ].map((report) => (
-          <Card
-            key={report.id}
-            className={`cursor-pointer transition-colors ${
-              reportType === report.id
-                ? "border-primary"
-                : "hover:border-border"
-            }`}
-            onClick={() => setReportType(report.id)}
+      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4">
+        {summaryCards.map((card, index) => {
+          const IconComponent = card.icon;
+          const colorClasses = {
+            blue: "bg-blue-50 text-blue-900",
+            green: "bg-green-50 text-green-900",
+            red: "bg-red-50 text-red-900",
+            purple: "bg-purple-50 text-purple-900",
+            orange: "bg-orange-50 text-orange-900",
+          };
+
+          return (
+            <Card key={index}>
+              <CardHeader className="pb-2">
+                <CardTitle className="text-sm font-medium flex items-center gap-2">
+                  <IconComponent className="h-4 w-4" />
+                  {card.title}
+                </CardTitle>
+              </CardHeader>
+              <CardContent>
+                <div className="text-2xl font-bold">
+                  {isLoading ? (
+                    <Loader2 className="h-6 w-6 animate-spin" />
+                  ) : (
+                    card.value
+                  )}
+                </div>
+              </CardContent>
+            </Card>
+          );
+        })}
+      </div>
+
+      <Tabs value={reportType} onValueChange={setReportType}>
+        <TabsList className="grid w-full grid-cols-4">
+          <TabsTrigger
+            value="current_stock"
+            className="flex items-center gap-2"
           >
-            <CardContent className="p-4">
-              <div className="flex items-center gap-2 mb-2">
-                {getReportIcon(report.id)}
-                <h3 className="font-semibold">{report.label}</h3>
-              </div>
-              <p className="text-sm text-muted-foreground">
-                {report.description}
-              </p>
-            </CardContent>
-          </Card>
-        ))}
-      </div>
+            <Package className="h-4 w-4" />
+            Current Stock
+          </TabsTrigger>
+          <TabsTrigger value="stock_value" className="flex items-center gap-2">
+            <BarChart3 className="h-4 w-4" />
+            Stock Value
+          </TabsTrigger>
+          <TabsTrigger value="low_stock" className="flex items-center gap-2">
+            <AlertTriangle className="h-4 w-4" />
+            Low Stock
+          </TabsTrigger>
+          <TabsTrigger
+            value="product_summary"
+            className="flex items-center gap-2"
+          >
+            <FileText className="h-4 w-4" />
+            Summary
+          </TabsTrigger>
+        </TabsList>
 
-      <Card>
-        <CardHeader>
-          <div className="flex items-center justify-between">
-            <CardTitle className="flex items-center gap-2">
-              {getReportIcon(reportType)}
-              {reportData?.title || "Generate Report"}
-            </CardTitle>
-            <div className="flex items-center gap-2">
-              <Button
-                variant="outline"
-                size="sm"
-                onClick={handleDownloadCSV}
-                disabled={isLoading || !reportData}
-              >
-                <Download className="h-4 w-4 mr-2" />
-                Download CSV
-              </Button>
-            </div>
-          </div>
-          {reportData && (
-            <p className="text-sm text-muted-foreground">
-              Generated on {new Date(reportData.generatedAt).toLocaleString()}
-            </p>
-          )}
-        </CardHeader>
-        <CardContent>
-          {isLoading ? (
-            <div className="flex items-center justify-center py-8">
-              <Loader2 className="h-8 w-8 animate-spin" />
-            </div>
-          ) : reportData ? (
-            <ReportDisplay reportType={reportType} data={reportData.data} />
-          ) : (
-            <div className="text-center py-8">
-              <p className="text-muted-foreground">
-                Select a report type to generate
-              </p>
-            </div>
-          )}
-        </CardContent>
-      </Card>
-    </div>
-  );
-}
-
-function ReportDisplay({
-  reportType,
-  data,
-}: {
-  reportType: string;
-  data: any;
-}) {
-  const formatCurrency = (amount: number) => {
-    return new Intl.NumberFormat("en-NG", {
-      style: "currency",
-      currency: "NGN",
-    }).format(amount);
-  };
-
-  if (reportType === "current_stock") {
-    return (
-      <div className="space-y-4">
-        <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-          <div className="bg-blue-50 p-4 rounded-lg">
-            <h4 className="font-semibold text-blue-900">Total Products</h4>
-            <p className="text-2xl font-bold text-blue-600">{data.length}</p>
-          </div>
-          <div className="bg-green-50 p-4 rounded-lg">
-            <h4 className="font-semibold text-green-900">Total Stock Value</h4>
-            <p className="text-2xl font-bold text-green-600">
-              {formatCurrency(
-                data.reduce(
-                  (sum: number, item: any) => sum + item.stockValue,
-                  0
-                )
-              )}
-            </p>
-          </div>
-          <div className="bg-red-50 p-4 rounded-lg">
-            <h4 className="font-semibold text-red-900">Low Stock Items</h4>
-            <p className="text-2xl font-bold text-red-600">
-              {data.filter((item: any) => item.isLowStock).length}
-            </p>
-          </div>
-        </div>
-
-        <div className="overflow-x-auto">
-          <table className="w-full border-collapse border border-gray-300">
-            <thead>
-              <tr className="bg-gray-50">
-                <th className="border border-gray-300 p-2 text-left">
-                  Product
-                </th>
-                <th className="border border-gray-300 p-2 text-left">SKU</th>
-                <th className="border border-gray-300 p-2 text-left">
-                  Category
-                </th>
-                <th className="border border-gray-300 p-2 text-right">Stock</th>
-                <th className="border border-gray-300 p-2 text-right">
-                  Min Stock
-                </th>
-                <th className="border border-gray-300 p-2 text-right">Value</th>
-                <th className="border border-gray-300 p-2 text-center">
-                  Status
-                </th>
-              </tr>
-            </thead>
-            <tbody>
-              {data.map((item: any) => (
-                <tr key={item.id} className="hover:bg-gray-50">
-                  <td className="border border-gray-300 p-2">{item.name}</td>
-                  <td className="border border-gray-300 p-2">{item.sku}</td>
-                  <td className="border border-gray-300 p-2">
-                    {item.category}
-                  </td>
-                  <td className="border border-gray-300 p-2 text-right">
-                    {item.currentStock}
-                  </td>
-                  <td className="border border-gray-300 p-2 text-right">
-                    {item.minStock}
-                  </td>
-                  <td className="border border-gray-300 p-2 text-right">
-                    {formatCurrency(item.stockValue)}
-                  </td>
-                  <td className="border border-gray-300 p-2 text-center">
-                    {item.isLowStock ? (
-                      <Badge variant="destructive">Low Stock</Badge>
-                    ) : (
-                      <Badge variant="default">In Stock</Badge>
-                    )}
-                  </td>
-                </tr>
-              ))}
-            </tbody>
-          </table>
-        </div>
-      </div>
-    );
-  }
-
-  if (reportType === "stock_value") {
-    return (
-      <div className="space-y-4">
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
-          <div className="bg-blue-50 p-4 rounded-lg">
-            <h4 className="font-semibold text-blue-900">Total Products</h4>
-            <p className="text-2xl font-bold text-blue-600">
-              {data.summary.totalProducts}
-            </p>
-          </div>
-          <div className="bg-green-50 p-4 rounded-lg">
-            <h4 className="font-semibold text-green-900">Stock Value</h4>
-            <p className="text-2xl font-bold text-green-600">
-              {formatCurrency(data.summary.totalStockValue)}
-            </p>
-          </div>
-          <div className="bg-purple-50 p-4 rounded-lg">
-            <h4 className="font-semibold text-purple-900">Selling Value</h4>
-            <p className="text-2xl font-bold text-purple-600">
-              {formatCurrency(data.summary.totalSellingValue)}
-            </p>
-          </div>
-          <div className="bg-orange-50 p-4 rounded-lg">
-            <h4 className="font-semibold text-orange-900">Potential Profit</h4>
-            <p className="text-2xl font-bold text-orange-600">
-              {formatCurrency(data.summary.potentialProfit)}
-            </p>
-          </div>
-        </div>
-
-        <div className="overflow-x-auto">
-          <table className="w-full border-collapse border border-gray-300">
-            <thead>
-              <tr className="bg-gray-50">
-                <th className="border border-gray-300 p-2 text-left">
-                  Product
-                </th>
-                <th className="border border-gray-300 p-2 text-left">SKU</th>
-                <th className="border border-gray-300 p-2 text-right">Stock</th>
-                <th className="border border-gray-300 p-2 text-right">
-                  Cost Price
-                </th>
-                <th className="border border-gray-300 p-2 text-right">
-                  Selling Price
-                </th>
-                <th className="border border-gray-300 p-2 text-right">
-                  Stock Value
-                </th>
-                <th className="border border-gray-300 p-2 text-right">
-                  Profit Margin
-                </th>
-              </tr>
-            </thead>
-            <tbody>
-              {data.products.map((item: any) => (
-                <tr key={item.id} className="hover:bg-gray-50">
-                  <td className="border border-gray-300 p-2">{item.name}</td>
-                  <td className="border border-gray-300 p-2">{item.sku}</td>
-                  <td className="border border-gray-300 p-2 text-right">
-                    {item.currentStock}
-                  </td>
-                  <td className="border border-gray-300 p-2 text-right">
-                    {formatCurrency(item.costPrice)}
-                  </td>
-                  <td className="border border-gray-300 p-2 text-right">
-                    {formatCurrency(item.sellingPrice)}
-                  </td>
-                  <td className="border border-gray-300 p-2 text-right">
-                    {formatCurrency(item.stockValue)}
-                  </td>
-                  <td className="border border-gray-300 p-2 text-right">
-                    {item.profitMargin.toFixed(2)}%
-                  </td>
-                </tr>
-              ))}
-            </tbody>
-          </table>
-        </div>
-      </div>
-    );
-  }
-
-  if (reportType === "low_stock") {
-    return (
-      <div className="space-y-4">
-        <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-          <div className="bg-red-50 p-4 rounded-lg">
-            <h4 className="font-semibold text-red-900">Low Stock Items</h4>
-            <p className="text-2xl font-bold text-red-600">{data.length}</p>
-          </div>
-          <div className="bg-orange-50 p-4 rounded-lg">
-            <h4 className="font-semibold text-orange-900">Out of Stock</h4>
-            <p className="text-2xl font-bold text-orange-600">
-              {data.filter((item: any) => item.currentStock <= 0).length}
-            </p>
-          </div>
-          <div className="bg-blue-50 p-4 rounded-lg">
-            <h4 className="font-semibold text-blue-900">Total Reorder Value</h4>
-            <p className="text-2xl font-bold text-blue-600">
-              {formatCurrency(
-                data.reduce(
-                  (sum: number, item: any) => sum + item.reorderValue,
-                  0
-                )
-              )}
-            </p>
-          </div>
-        </div>
-
-        <div className="overflow-x-auto">
-          <table className="w-full border-collapse border border-gray-300">
-            <thead>
-              <tr className="bg-gray-50">
-                <th className="border border-gray-300 p-2 text-left">
-                  Product
-                </th>
-                <th className="border border-gray-300 p-2 text-left">SKU</th>
-                <th className="border border-gray-300 p-2 text-right">
-                  Current Stock
-                </th>
-                <th className="border border-gray-300 p-2 text-right">
-                  Min Stock
-                </th>
-                <th className="border border-gray-300 p-2 text-right">
-                  Reorder Qty
-                </th>
-                <th className="border border-gray-300 p-2 text-right">
-                  Reorder Value
-                </th>
-                <th className="border border-gray-300 p-2 text-center">
-                  Status
-                </th>
-              </tr>
-            </thead>
-            <tbody>
-              {data.map((item: any) => (
-                <tr key={item.id} className="hover:bg-gray-50">
-                  <td className="border border-gray-300 p-2">{item.name}</td>
-                  <td className="border border-gray-300 p-2">{item.sku}</td>
-                  <td className="border border-gray-300 p-2 text-right">
-                    {item.currentStock}
-                  </td>
-                  <td className="border border-gray-300 p-2 text-right">
-                    {item.minStock}
-                  </td>
-                  <td className="border border-gray-300 p-2 text-right">
-                    {item.reorderQuantity}
-                  </td>
-                  <td className="border border-gray-300 p-2 text-right">
-                    {formatCurrency(item.reorderValue)}
-                  </td>
-                  <td className="border border-gray-300 p-2 text-center">
-                    <Badge
-                      variant={
-                        item.currentStock <= 0 ? "destructive" : "secondary"
-                      }
-                    >
-                      {item.daysOutOfStock}
-                    </Badge>
-                  </td>
-                </tr>
-              ))}
-            </tbody>
-          </table>
-        </div>
-      </div>
-    );
-  }
-
-  if (reportType === "product_summary") {
-    return (
-      <div className="space-y-6">
-        <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-          <div className="bg-blue-50 p-4 rounded-lg">
-            <h4 className="font-semibold text-blue-900">Total Products</h4>
-            <p className="text-2xl font-bold text-blue-600">
-              {data.totalProducts}
-            </p>
-          </div>
-          <div className="bg-green-50 p-4 rounded-lg">
-            <h4 className="font-semibold text-green-900">Categories</h4>
-            <p className="text-2xl font-bold text-green-600">
-              {data.byCategory.length}
-            </p>
-          </div>
-          <div className="bg-purple-50 p-4 rounded-lg">
-            <h4 className="font-semibold text-purple-900">Brands</h4>
-            <p className="text-2xl font-bold text-purple-600">
-              {data.byBrand.length}
-            </p>
-          </div>
-        </div>
-
-        <Tabs defaultValue="categories" className="w-full">
-          <TabsList className="grid w-full grid-cols-3">
-            <TabsTrigger value="categories">By Category</TabsTrigger>
-            <TabsTrigger value="brands">By Brand</TabsTrigger>
-            <TabsTrigger value="suppliers">By Supplier</TabsTrigger>
-          </TabsList>
-
-          <TabsContent value="categories">
-            <div className="overflow-x-auto">
-              <table className="w-full border-collapse border border-gray-300">
-                <thead>
-                  <tr className="bg-gray-50">
-                    <th className="border border-gray-300 p-2 text-left">
-                      Category
-                    </th>
-                    <th className="border border-gray-300 p-2 text-right">
-                      Product Count
-                    </th>
-                    <th className="border border-gray-300 p-2 text-right">
-                      Total Stock
-                    </th>
-                  </tr>
-                </thead>
-                <tbody>
-                  {data.byCategory.map((item: any, index: number) => (
-                    <tr key={index} className="hover:bg-gray-50">
-                      <td className="border border-gray-300 p-2">
-                        {item.category}
-                      </td>
-                      <td className="border border-gray-300 p-2 text-right">
-                        {item.productCount}
-                      </td>
-                      <td className="border border-gray-300 p-2 text-right">
-                        {item.totalStock}
-                      </td>
-                    </tr>
-                  ))}
-                </tbody>
-              </table>
-            </div>
-          </TabsContent>
-
-          <TabsContent value="brands">
-            <div className="overflow-x-auto">
-              <table className="w-full border-collapse border border-gray-300">
-                <thead>
-                  <tr className="bg-gray-50">
-                    <th className="border border-gray-300 p-2 text-left">
-                      Brand
-                    </th>
-                    <th className="border border-gray-300 p-2 text-right">
-                      Product Count
-                    </th>
-                    <th className="border border-gray-300 p-2 text-right">
-                      Total Stock
-                    </th>
-                  </tr>
-                </thead>
-                <tbody>
-                  {data.byBrand.map((item: any, index: number) => (
-                    <tr key={index} className="hover:bg-gray-50">
-                      <td className="border border-gray-300 p-2">
-                        {item.brand}
-                      </td>
-                      <td className="border border-gray-300 p-2 text-right">
-                        {item.productCount}
-                      </td>
-                      <td className="border border-gray-300 p-2 text-right">
-                        {item.totalStock}
-                      </td>
-                    </tr>
-                  ))}
-                </tbody>
-              </table>
-            </div>
-          </TabsContent>
-
-          <TabsContent value="suppliers">
-            <div className="overflow-x-auto">
-              <table className="w-full border-collapse border border-gray-300">
-                <thead>
-                  <tr className="bg-gray-50">
-                    <th className="border border-gray-300 p-2 text-left">
-                      Supplier
-                    </th>
-                    <th className="border border-gray-300 p-2 text-right">
-                      Product Count
-                    </th>
-                    <th className="border border-gray-300 p-2 text-right">
-                      Total Stock
-                    </th>
-                  </tr>
-                </thead>
-                <tbody>
-                  {data.bySupplier.map((item: any, index: number) => (
-                    <tr key={index} className="hover:bg-gray-50">
-                      <td className="border border-gray-300 p-2">
-                        {item.supplier}
-                      </td>
-                      <td className="border border-gray-300 p-2 text-right">
-                        {item.productCount}
-                      </td>
-                      <td className="border border-gray-300 p-2 text-right">
-                        {item.totalStock}
-                      </td>
-                    </tr>
-                  ))}
-                </tbody>
-              </table>
-            </div>
-          </TabsContent>
-        </Tabs>
-      </div>
-    );
-  }
-
-  return (
-    <div className="text-center py-8">
-      <p className="text-muted-foreground">Report type not supported</p>
+        <TabsContent value={reportType} className="mt-6">
+          <DashboardTable
+            tableTitle={`${reportType.replace(/_/g, " ").replace(/\b\w/g, (l) => l.toUpperCase())} Report`}
+            totalCount={currentPagination.totalItems}
+            currentCount={tableData.length}
+            columns={tableColumns}
+            visibleColumns={defaultVisibleColumns}
+            data={tableData}
+            renderCell={renderCell}
+            pagination={currentPagination}
+            onPageChange={handlePageChange}
+            onPageSizeChange={handlePageSizeChange}
+            isLoading={isLoading}
+            isRefetching={isRefetching}
+            emptyStateMessage="No data available for this report"
+            emptyStateIcon={
+              <FileText className="h-12 w-12 text-gray-400 mx-auto mb-4" />
+            }
+          />
+        </TabsContent>
+      </Tabs>
     </div>
   );
 }
