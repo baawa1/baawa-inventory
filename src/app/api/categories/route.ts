@@ -59,6 +59,8 @@ export async function GET(request: NextRequest) {
     if (parentId !== null && parentId !== "") {
       if (parentId === "null" || parentId === "0") {
         where.parentId = null; // Top-level categories only
+      } else if (parentId === "subcategories") {
+        where.parentId = { not: null }; // Subcategories only (has parent)
       } else {
         where.parentId = parseInt(parentId);
       }

@@ -23,7 +23,7 @@ export interface Category {
 export interface CategoryFilters {
   search?: string;
   status?: string;
-  parentId?: number | null;
+  parentId?: number | null | string;
   includeChildren?: boolean;
   page: number;
   limit: number;
