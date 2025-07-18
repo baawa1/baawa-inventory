@@ -1,6 +1,6 @@
 import { redirect } from "next/navigation";
 import { auth } from "../../../auth";
-import { ComprehensiveDashboard } from "@/components/dashboard/ComprehensiveDashboard";
+import { SimpleDashboard } from "@/components/dashboard/SimpleDashboard";
 
 export default async function DashboardPage() {
   const session = await auth();
@@ -11,7 +11,7 @@ export default async function DashboardPage() {
 
   return (
     <div data-testid="dashboard-content" className="space-y-6">
-      <ComprehensiveDashboard user={session.user} />
+      <SimpleDashboard user={session.user} />
     </div>
   );
 }
