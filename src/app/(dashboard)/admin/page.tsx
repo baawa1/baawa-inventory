@@ -1,5 +1,5 @@
 import { redirect } from "next/navigation";
-import { auth } from "../../../auth";
+import { auth } from "../../../../auth";
 import { AdminDashboard } from "@/components/admin/AdminDashboard";
 
 export const metadata = {
@@ -19,5 +19,9 @@ export default async function AdminPage() {
     redirect("/unauthorized");
   }
 
-  return <AdminDashboard />;
+  return (
+    <div data-testid="admin-content" className="space-y-6">
+      <AdminDashboard />
+    </div>
+  );
 }

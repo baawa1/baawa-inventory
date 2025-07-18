@@ -120,6 +120,18 @@ export const queryKeys = {
     deactivated: () => [...queryKeys.users.all, "deactivated"] as const,
   },
 
+  // Transactions
+  transactions: {
+    all: ["transactions"] as const,
+    lists: () => [...queryKeys.transactions.all, "list"] as const,
+    list: (filters: Record<string, any>) =>
+      [...queryKeys.transactions.lists(), filters] as const,
+    details: () => [...queryKeys.transactions.all, "detail"] as const,
+    detail: (id: number) => [...queryKeys.transactions.details(), id] as const,
+    stats: (filters?: Record<string, any>) =>
+      [...queryKeys.transactions.all, "stats", filters || {}] as const,
+  },
+
   // Session
   session: {
     all: ["session"] as const,
