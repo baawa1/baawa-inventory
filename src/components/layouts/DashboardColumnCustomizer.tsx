@@ -41,28 +41,39 @@ export function DashboardColumnCustomizer({
     if (savedColumns) {
       try {
         const parsed = JSON.parse(savedColumns);
-        // Ensure required columns are always included
+        // Ensure required columns are always included and first
         const requiredColumns = columns
           .filter((col) => col.required)
           .map((col) => col.key);
-        const mergedColumns = [...new Set([...requiredColumns, ...parsed])];
+        const otherColumns = parsed.filter(
+          (col: string) => !requiredColumns.includes(col)
+        );
+        const mergedColumns = [...requiredColumns, ...otherColumns];
         setVisibleColumns(mergedColumns);
         onColumnsChange(mergedColumns);
       } catch {
         // Fallback to defaults if parsing fails
-        const defaultColumns = columns
-          .filter((col) => col.defaultVisible)
+        const requiredColumns = columns
+          .filter((col) => col.required)
           .map((col) => col.key);
-        setVisibleColumns(defaultColumns);
-        onColumnsChange(defaultColumns);
+        const defaultColumns = columns
+          .filter((col) => col.defaultVisible && !col.required)
+          .map((col) => col.key);
+        const mergedColumns = [...requiredColumns, ...defaultColumns];
+        setVisibleColumns(mergedColumns);
+        onColumnsChange(mergedColumns);
       }
     } else {
       // Use default visible columns
-      const defaultColumns = columns
-        .filter((col) => col.defaultVisible)
+      const requiredColumns = columns
+        .filter((col) => col.required)
         .map((col) => col.key);
-      setVisibleColumns(defaultColumns);
-      onColumnsChange(defaultColumns);
+      const defaultColumns = columns
+        .filter((col) => col.defaultVisible && !col.required)
+        .map((col) => col.key);
+      const mergedColumns = [...requiredColumns, ...defaultColumns];
+      setVisibleColumns(mergedColumns);
+      onColumnsChange(mergedColumns);
     }
   }, [localStorageKey, onColumnsChange, columns]);
 
@@ -85,13 +96,17 @@ export function DashboardColumnCustomizer({
   };
 
   const resetToDefaults = () => {
-    const defaultColumns = columns
-      .filter((col) => col.defaultVisible)
+    const requiredColumns = columns
+      .filter((col) => col.required)
       .map((col) => col.key);
+    const defaultColumns = columns
+      .filter((col) => col.defaultVisible && !col.required)
+      .map((col) => col.key);
+    const mergedColumns = [...requiredColumns, ...defaultColumns];
 
-    setVisibleColumns(defaultColumns);
-    onColumnsChange(defaultColumns);
-    localStorage.setItem(localStorageKey, JSON.stringify(defaultColumns));
+    setVisibleColumns(mergedColumns);
+    onColumnsChange(mergedColumns);
+    localStorage.setItem(localStorageKey, JSON.stringify(mergedColumns));
   };
 
   const showAllColumns = () => {

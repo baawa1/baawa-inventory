@@ -8,6 +8,7 @@ const CategoryCreateSchema = z.object({
   name: z.string().min(1).max(100),
   description: z.string().optional(),
   isActive: z.boolean().default(true),
+  parentId: z.number().optional(),
 });
 
 // Validation schema for category update (for future use)
@@ -15,6 +16,7 @@ const _CategoryUpdateSchema = z.object({
   name: z.string().min(1).max(100).optional(),
   description: z.string().optional(),
   isActive: z.boolean().optional(),
+  parentId: z.number().optional(),
 });
 
 // GET /api/categories - List all categories
@@ -43,12 +45,22 @@ export async function GET(request: NextRequest) {
     const limit = parseInt(searchParams.get("limit") || "10");
     const sortBy = searchParams.get("sortBy") || "name";
     const sortOrder = searchParams.get("sortOrder") || "asc";
+    const parentId = searchParams.get("parentId");
+    const includeChildren = searchParams.get("includeChildren") === "true";
 
     // Build where clause
     const where: any = {};
 
     if (isActive !== null && isActive !== "") {
       where.isActive = isActive === "true";
+    }
+
+    if (parentId !== null && parentId !== "") {
+      if (parentId === "null" || parentId === "0") {
+        where.parentId = null; // Top-level categories only
+      } else {
+        where.parentId = parseInt(parentId);
+      }
     }
 
     if (search) {
@@ -78,9 +90,34 @@ export async function GET(request: NextRequest) {
         isActive: true,
         createdAt: true,
         updatedAt: true,
+        parentId: true,
+        parent: includeChildren
+          ? {
+              select: {
+                id: true,
+                name: true,
+              },
+            }
+          : false,
+        children: includeChildren
+          ? {
+              select: {
+                id: true,
+                name: true,
+                isActive: true,
+                _count: {
+                  select: {
+                    products: true,
+                  },
+                },
+              },
+              where: { isActive: true },
+            }
+          : false,
         _count: {
           select: {
             products: true,
+            children: true,
           },
         },
       },
@@ -95,7 +132,11 @@ export async function GET(request: NextRequest) {
       name: category.name,
       description: category.description,
       isActive: category.isActive,
+      parentId: category.parentId,
+      parent: category.parent,
+      children: category.children,
       productCount: category._count.products,
+      subcategoryCount: category._count.children,
       createdAt: category.createdAt.toISOString(),
       updatedAt: category.updatedAt.toISOString(),
     }));
@@ -148,19 +189,42 @@ export async function POST(request: NextRequest) {
     const body = await request.json();
     const validatedData = CategoryCreateSchema.parse(body);
 
-    // Check if category name already exists
+    // If parentId is provided, verify the parent category exists
+    if (validatedData.parentId) {
+      const parentCategory = await prisma.category.findUnique({
+        where: { id: validatedData.parentId },
+      });
+
+      if (!parentCategory) {
+        return NextResponse.json(
+          { error: "Parent category not found" },
+          { status: 400 }
+        );
+      }
+
+      // Check if parent category is active
+      if (!parentCategory.isActive) {
+        return NextResponse.json(
+          { error: "Cannot create subcategory under inactive parent category" },
+          { status: 400 }
+        );
+      }
+    }
+
+    // Check if category name already exists under the same parent
     const existingCategory = await prisma.category.findFirst({
       where: {
         name: {
           equals: validatedData.name,
           mode: "insensitive",
         },
+        parentId: validatedData.parentId || null,
       },
     });
 
     if (existingCategory) {
       return NextResponse.json(
-        { error: "Category with this name already exists" },
+        { error: "Category with this name already exists at this level" },
         { status: 400 }
       );
     }
@@ -173,8 +237,21 @@ export async function POST(request: NextRequest) {
         name: true,
         description: true,
         isActive: true,
+        parentId: true,
+        parent: {
+          select: {
+            id: true,
+            name: true,
+          },
+        },
         createdAt: true,
         updatedAt: true,
+        _count: {
+          select: {
+            products: true,
+            children: true,
+          },
+        },
       },
     });
 
@@ -186,7 +263,10 @@ export async function POST(request: NextRequest) {
           name: category.name,
           description: category.description,
           isActive: category.isActive,
-          productCount: 0,
+          parentId: category.parentId,
+          parent: category.parent,
+          productCount: category._count.products,
+          subcategoryCount: category._count.children,
           createdAt: category.createdAt.toISOString(),
           updatedAt: category.updatedAt.toISOString(),
         },

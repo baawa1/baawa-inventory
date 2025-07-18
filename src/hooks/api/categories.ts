@@ -7,17 +7,27 @@ export interface Category {
   name: string;
   description?: string;
   isActive: boolean;
+  parentId?: number;
+  parent?: {
+    id: number;
+    name: string;
+  };
+  children?: Category[];
+  productCount: number;
+  subcategoryCount: number;
   createdAt: string;
   updatedAt: string;
 }
 
 export interface CategoryFilters {
-  search: string;
-  status: string;
-  sortBy: string;
-  sortOrder: "asc" | "desc";
+  search?: string;
+  status?: string;
+  parentId?: number | null;
+  includeChildren?: boolean;
   page: number;
   limit: number;
+  sortBy: string;
+  sortOrder: "asc" | "desc";
 }
 
 export interface CategoryPagination {
@@ -35,6 +45,8 @@ export interface CategoryResponse {
 export interface CreateCategoryData {
   name: string;
   description?: string;
+  isActive?: boolean;
+  parentId?: number;
 }
 
 export interface UpdateCategoryData extends Partial<CreateCategoryData> {
@@ -54,6 +66,9 @@ const fetchCategories = async (
 
   if (filters.search) searchParams.set("search", filters.search);
   if (filters.status) searchParams.set("isActive", filters.status);
+  if (filters.parentId !== undefined)
+    searchParams.set("parentId", String(filters.parentId));
+  if (filters.includeChildren) searchParams.set("includeChildren", "true");
 
   const response = await fetch(`/api/categories?${searchParams.toString()}`);
 
@@ -144,6 +159,26 @@ export const useCategory = (id: number) => {
       return result.data;
     },
     enabled: !!id,
+    staleTime: 5 * 60 * 1000, // 5 minutes
+  });
+};
+
+// Get top-level categories only
+export const useTopLevelCategories = () => {
+  return useQuery({
+    queryKey: queryKeys.categories.list({ parentId: null }),
+    queryFn: () => fetchCategories({ parentId: null }),
+    staleTime: 5 * 60 * 1000, // 5 minutes
+  });
+};
+
+// Get subcategories for a specific parent
+export const useSubcategories = (parentId: number) => {
+  return useQuery({
+    queryKey: queryKeys.categories.list({ parentId }),
+    queryFn: () => fetchCategories({ parentId }),
+    enabled: !!parentId,
+    staleTime: 5 * 60 * 1000, // 5 minutes
   });
 };
 
@@ -153,10 +188,10 @@ export const useCreateCategory = () => {
 
   return useMutation({
     mutationFn: createCategory,
-    onSuccess: () => {
+    onSuccess: (data) => {
       // Invalidate all category-related queries
       queryClient.invalidateQueries({
-        queryKey: queryKeys.categories.all,
+        queryKey: queryKeys.categories.lists(),
         exact: false,
       });
       // Also invalidate specific list queries
@@ -164,6 +199,9 @@ export const useCreateCategory = () => {
         queryKey: queryKeys.categories.lists(),
         exact: false,
       });
+      // Update individual category detail
+      queryClient.setQueryData(queryKeys.categories.detail(data.id), data);
+      console.log("Cache invalidation completed");
     },
   });
 };
@@ -174,10 +212,9 @@ export const useUpdateCategory = () => {
   return useMutation({
     mutationFn: updateCategory,
     onSuccess: (data) => {
-      console.log("Updating category, invalidating cache for:", data);
       // Invalidate all category-related queries
       queryClient.invalidateQueries({
-        queryKey: queryKeys.categories.all,
+        queryKey: queryKeys.categories.lists(),
         exact: false,
       });
       // Also invalidate specific list queries
@@ -200,7 +237,7 @@ export const useDeleteCategory = () => {
     onSuccess: () => {
       // Invalidate all category-related queries
       queryClient.invalidateQueries({
-        queryKey: queryKeys.categories.all,
+        queryKey: queryKeys.categories.lists(),
         exact: false,
       });
       // Also invalidate specific list queries
@@ -208,6 +245,7 @@ export const useDeleteCategory = () => {
         queryKey: queryKeys.categories.lists(),
         exact: false,
       });
+      console.log("Cache invalidation completed");
     },
   });
 };

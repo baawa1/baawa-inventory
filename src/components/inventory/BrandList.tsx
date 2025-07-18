@@ -12,6 +12,7 @@ import {
 import { InventoryPageLayout } from "@/components/inventory/InventoryPageLayout";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
+import { ImagePreview } from "@/components/ui/image-preview";
 
 import {
   DropdownMenu,
@@ -68,6 +69,13 @@ export default function BrandList({ user }: BrandListProps) {
   const columns: DashboardTableColumn[] = useMemo(
     () => [
       {
+        key: "image",
+        label: "Image",
+        sortable: false,
+        defaultVisible: true,
+        required: true,
+      },
+      {
         key: "name",
         label: "Name",
         sortable: true,
@@ -92,30 +100,6 @@ export default function BrandList({ user }: BrandListProps) {
   const [visibleColumns, setVisibleColumns] = useState<string[]>(
     defaultVisibleColumns
   );
-
-  // Clean up any "actions" column from localStorage and state
-  React.useEffect(() => {
-    // Remove "actions" from visibleColumns if it exists
-    if (visibleColumns.includes("actions")) {
-      setVisibleColumns((prev) => prev.filter((col) => col !== "actions"));
-    }
-
-    // Clean up localStorage if it contains "actions"
-    const storageKey = "brands-visible-columns";
-    const storedColumns = localStorage.getItem(storageKey);
-    if (storedColumns) {
-      try {
-        const parsed = JSON.parse(storedColumns);
-        if (Array.isArray(parsed) && parsed.includes("actions")) {
-          const cleaned = parsed.filter((col: string) => col !== "actions");
-          localStorage.setItem(storageKey, JSON.stringify(cleaned));
-        }
-      } catch (_error) {
-        // If parsing fails, remove the item
-        localStorage.removeItem(storageKey);
-      }
-    }
-  }, [visibleColumns]);
 
   // Filters
   const [filters, setFilters] = useState({
@@ -253,6 +237,19 @@ export default function BrandList({ user }: BrandListProps) {
   const renderCell = useCallback(
     (brand: APIBrand, columnKey: string) => {
       switch (columnKey) {
+        case "image":
+          return brand.image ? (
+            <ImagePreview
+              src={brand.image}
+              alt={`${brand.name} image`}
+              size="md"
+              className="rounded-md"
+            />
+          ) : (
+            <div className="w-10 h-10 bg-gray-100 rounded-md flex items-center justify-center">
+              <IconBrandX className="h-4 w-4 text-gray-400" />
+            </div>
+          );
         case "name":
           return <span className="font-medium">{brand.name}</span>;
         case "description":

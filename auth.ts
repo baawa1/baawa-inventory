@@ -278,25 +278,57 @@ const config: NextAuthConfig = {
         const userId = parseInt(message.token.sub);
         const userEmail = message.token.email as string;
 
-        // Update last logout timestamp
-        await prisma.user.update({
-          where: { id: userId },
-          data: { lastLogout: new Date() },
-        });
+        try {
+          // Check if user exists before updating
+          const user = await prisma.user.findUnique({
+            where: { id: userId },
+            select: { id: true },
+          });
 
-        // Log logout event
-        await AuditLogger.logLogout(userId, userEmail || "unknown");
+          if (user) {
+            // Update last logout timestamp
+            await prisma.user.update({
+              where: { id: userId },
+              data: { lastLogout: new Date() },
+            });
+
+            // Log logout event
+            await AuditLogger.logLogout(userId, userEmail || "unknown");
+          } else {
+            console.warn(
+              `User with ID ${userId} not found during signOut event`
+            );
+          }
+        } catch (error) {
+          console.error("Error during signOut event:", error);
+        }
       }
     },
     async session(message) {
       if ("token" in message && message.token?.sub) {
         const userId = parseInt(message.token.sub);
 
-        // Update last activity timestamp
-        await prisma.user.update({
-          where: { id: userId },
-          data: { lastActivity: new Date() },
-        });
+        try {
+          // Check if user exists before updating
+          const user = await prisma.user.findUnique({
+            where: { id: userId },
+            select: { id: true },
+          });
+
+          if (user) {
+            // Update last activity timestamp
+            await prisma.user.update({
+              where: { id: userId },
+              data: { lastActivity: new Date() },
+            });
+          } else {
+            console.warn(
+              `User with ID ${userId} not found during session event`
+            );
+          }
+        } catch (error) {
+          console.error("Error during session event:", error);
+        }
       }
     },
   },

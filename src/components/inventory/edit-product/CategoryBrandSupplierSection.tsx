@@ -16,6 +16,8 @@ import {
   SelectValue,
 } from "@/components/ui/select";
 import { Loader2 } from "lucide-react";
+import { ImagePreview } from "@/components/ui/image-preview";
+import { IconTag, IconBrandX } from "@tabler/icons-react";
 import { UpdateProductFormData, Category, Brand, Supplier } from "./types";
 
 interface CategoryBrandSupplierSectionProps {
@@ -80,7 +82,21 @@ export function CategoryBrandSupplierSection({
                           key={category.id}
                           value={category.id.toString()}
                         >
-                          {category.name}
+                          <div className="flex items-center gap-2">
+                            {category.image ? (
+                              <ImagePreview
+                                src={category.image}
+                                alt={category.name}
+                                size="sm"
+                                className="rounded"
+                              />
+                            ) : (
+                              <div className="w-6 h-6 bg-gray-100 rounded flex items-center justify-center">
+                                <IconTag className="h-3 w-3 text-gray-400" />
+                              </div>
+                            )}
+                            <span>{category.name}</span>
+                          </div>
                         </SelectItem>
                       ))}
                   </SelectContent>
@@ -123,7 +139,21 @@ export function CategoryBrandSupplierSection({
                     {Array.isArray(brands) &&
                       brands.map((brand) => (
                         <SelectItem key={brand.id} value={brand.id.toString()}>
-                          {brand.name}
+                          <div className="flex items-center gap-2">
+                            {brand.image ? (
+                              <ImagePreview
+                                src={brand.image}
+                                alt={brand.name}
+                                size="sm"
+                                className="rounded"
+                              />
+                            ) : (
+                              <div className="w-6 h-6 bg-gray-100 rounded flex items-center justify-center">
+                                <IconBrandX className="h-3 w-3 text-gray-400" />
+                              </div>
+                            )}
+                            <span>{brand.name}</span>
+                          </div>
                         </SelectItem>
                       ))}
                   </SelectContent>

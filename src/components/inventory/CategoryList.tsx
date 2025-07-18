@@ -33,7 +33,6 @@ import {
 } from "@/components/ui/alert-dialog";
 
 // Custom Components
-import { ErrorBoundary } from "@/components/common/ErrorBoundary";
 import { InventoryPageLayout } from "@/components/inventory/InventoryPageLayout";
 
 // Icons
@@ -44,10 +43,10 @@ import {
   IconTrash,
   IconTag,
   IconAlertTriangle,
+  IconFolder,
 } from "@tabler/icons-react";
 
-// Utils and Types
-import { ErrorHandlers } from "@/lib/utils/error-handling";
+// Types
 import type { FilterConfig } from "@/types/inventory";
 import type { DashboardTableColumn } from "@/components/layouts/DashboardColumnCustomizer";
 
@@ -77,7 +76,7 @@ export default function CategoryList({ user }: CategoryListProps) {
     totalItems: 0,
   });
 
-  // Column configuration - only showing actual category fields
+  // Column configuration
   const columns: DashboardTableColumn[] = useMemo(
     () => [
       {
@@ -88,6 +87,9 @@ export default function CategoryList({ user }: CategoryListProps) {
         required: true,
       },
       { key: "description", label: "Description", defaultVisible: true },
+      { key: "parent", label: "Parent Category", defaultVisible: true },
+      { key: "products", label: "Products", defaultVisible: true },
+      { key: "subcategories", label: "Subcategories", defaultVisible: true },
       { key: "isActive", label: "Status", defaultVisible: true },
       { key: "createdAt", label: "Created", defaultVisible: true },
       { key: "updatedAt", label: "Updated", defaultVisible: false },
@@ -105,31 +107,11 @@ export default function CategoryList({ user }: CategoryListProps) {
     defaultVisibleColumns
   );
 
-  // Clean up any "actions" column from localStorage and state - run once on mount
-  React.useEffect(() => {
-    // Clean up localStorage if it contains "actions"
-    const storageKey = "categories-visible-columns";
-    const storedColumns = localStorage.getItem(storageKey);
-    if (storedColumns) {
-      try {
-        const parsed = JSON.parse(storedColumns);
-        if (Array.isArray(parsed) && parsed.includes("actions")) {
-          const cleaned = parsed.filter((col: string) => col !== "actions");
-          localStorage.setItem(storageKey, JSON.stringify(cleaned));
-          // Also update the visible columns state
-          setVisibleColumns((prev) => prev.filter((col) => col !== "actions"));
-        }
-      } catch (_error) {
-        // If parsing fails, remove the item
-        localStorage.removeItem(storageKey);
-      }
-    }
-  }, []); // Empty dependency array - run once on mount
-
   // Filters
   const [filters, setFilters] = useState({
     search: "",
     isActive: "",
+    parentId: "all",
   });
 
   // Debounce search term to avoid excessive API calls
@@ -142,6 +124,13 @@ export default function CategoryList({ user }: CategoryListProps) {
   const categoriesQuery = useCategories({
     search: debouncedSearchTerm,
     status: filters.isActive,
+    parentId:
+      filters.parentId === "all"
+        ? undefined
+        : filters.parentId === "null"
+          ? null
+          : parseInt(filters.parentId),
+    includeChildren: true,
     sortBy: "name",
     sortOrder: "asc",
     page: pagination.page,
@@ -182,12 +171,23 @@ export default function CategoryList({ user }: CategoryListProps) {
         ],
         placeholder: "All Status",
       },
+      {
+        key: "parentId",
+        label: "Category Level",
+        type: "select",
+        options: [
+          { value: "all", label: "All Categories" },
+          { value: "null", label: "Top Level Only" },
+          { value: "subcategories", label: "Subcategories Only" },
+        ],
+        placeholder: "All Levels",
+      },
     ],
     []
   );
 
   // Handle filter changes
-  const handleFilterChange = useCallback((key: string, value: string) => {
+  const handleFilterChange = useCallback((key: string, value: any) => {
     setFilters((prev) => {
       if (prev[key as keyof typeof prev] === value) return prev; // Prevent unnecessary updates
       return { ...prev, [key]: value };
@@ -200,6 +200,7 @@ export default function CategoryList({ user }: CategoryListProps) {
     setFilters({
       search: "",
       isActive: "",
+      parentId: "all",
     });
     setPagination((prev) => ({ ...prev, page: 1 }));
   }, []);
@@ -218,9 +219,12 @@ export default function CategoryList({ user }: CategoryListProps) {
 
     try {
       await deleteCategoryMutation.mutateAsync(categoryToDelete.id);
-      ErrorHandlers.success("Category deleted successfully");
+      toast.success("Category deleted successfully");
     } catch (error) {
-      ErrorHandlers.api(error, "Failed to delete category");
+      console.error("Error deleting category:", error);
+      toast.error(
+        error instanceof Error ? error.message : "Failed to delete category"
+      );
     } finally {
       setDeleteDialogOpen(false);
       setCategoryToDelete(null);
@@ -234,6 +238,20 @@ export default function CategoryList({ user }: CategoryListProps) {
     } else {
       return <Badge variant="secondary">Inactive</Badge>;
     }
+  }, []);
+
+  // Get category display name with hierarchy
+  const getCategoryDisplayName = useCallback((category: APICategory) => {
+    if (category.parent) {
+      return (
+        <div className="flex items-center space-x-1">
+          <span className="text-muted-foreground">{category.parent.name}</span>
+          <span className="text-muted-foreground">{">>"}</span>
+          <span className="font-medium">{category.name}</span>
+        </div>
+      );
+    }
+    return <span className="font-medium">{category.name}</span>;
   }, []);
 
   // Add actions column if user has permissions
@@ -260,12 +278,35 @@ export default function CategoryList({ user }: CategoryListProps) {
     (category: APICategory, columnKey: string) => {
       switch (columnKey) {
         case "name":
-          return <span className="font-medium">{category.name}</span>;
+          return getCategoryDisplayName(category);
         case "description":
           return (
             category.description || (
               <span className="text-gray-400 italic">No description</span>
             )
+          );
+        case "parent":
+          return category.parent ? (
+            <div className="flex items-center space-x-2">
+              <IconFolder className="h-4 w-4 text-muted-foreground" />
+              <span>{category.parent.name}</span>
+            </div>
+          ) : (
+            <span className="text-gray-400 italic">Top Level</span>
+          );
+        case "products":
+          return (
+            <Badge variant="outline" className="text-xs">
+              {category.productCount || 0}
+            </Badge>
+          );
+        case "subcategories":
+          return category.subcategoryCount > 0 ? (
+            <Badge variant="secondary" className="text-xs">
+              {category.subcategoryCount}
+            </Badge>
+          ) : (
+            <span className="text-gray-400 italic">-</span>
           );
         case "isActive":
           return getStatusBadge(category.isActive);
@@ -283,7 +324,7 @@ export default function CategoryList({ user }: CategoryListProps) {
           return null;
       }
     },
-    [getStatusBadge]
+    [getStatusBadge, getCategoryDisplayName]
   );
 
   // Render actions
@@ -306,6 +347,16 @@ export default function CategoryList({ user }: CategoryListProps) {
                 Edit
               </Link>
             </DropdownMenuItem>
+            {!category.parentId && (
+              <DropdownMenuItem asChild>
+                <Link
+                  href={`/inventory/categories/add?parentId=${category.id}`}
+                >
+                  <IconPlus className="mr-2 h-4 w-4" />
+                  Add Subcategory
+                </Link>
+              </DropdownMenuItem>
+            )}
             {canDeleteCategories && (
               <DropdownMenuItem
                 className="text-red-600"
@@ -326,7 +377,7 @@ export default function CategoryList({ user }: CategoryListProps) {
   );
 
   return (
-    <ErrorBoundary>
+    <>
       <InventoryPageLayout
         // Header
         title="Categories"
@@ -375,7 +426,7 @@ export default function CategoryList({ user }: CategoryListProps) {
         // Empty state
         emptyStateIcon={<IconTag className="h-12 w-12 text-gray-400" />}
         emptyStateMessage={
-          debouncedSearchTerm || filters.isActive
+          debouncedSearchTerm || filters.isActive || filters.parentId !== "all"
             ? "No categories found matching your filters."
             : "No categories found. Get started by creating your first category."
         }
@@ -401,8 +452,19 @@ export default function CategoryList({ user }: CategoryListProps) {
             </AlertDialogTitle>
             <AlertDialogDescription>
               Are you sure you want to delete the category "
-              {categoryToDelete?.name}"? This action cannot be undone. Make sure
-              no products are using this category.
+              {categoryToDelete?.name}"? This action cannot be undone.
+              {categoryToDelete && categoryToDelete.productCount > 0 && (
+                <div className="mt-2 text-destructive">
+                  This category has {categoryToDelete.productCount} associated
+                  products.
+                </div>
+              )}
+              {categoryToDelete && categoryToDelete.subcategoryCount > 0 && (
+                <div className="mt-2 text-destructive">
+                  This category has {categoryToDelete.subcategoryCount}{" "}
+                  subcategories.
+                </div>
+              )}
             </AlertDialogDescription>
           </AlertDialogHeader>
           <AlertDialogFooter>
@@ -416,6 +478,6 @@ export default function CategoryList({ user }: CategoryListProps) {
           </AlertDialogFooter>
         </AlertDialogContent>
       </AlertDialog>
-    </ErrorBoundary>
+    </>
   );
 }

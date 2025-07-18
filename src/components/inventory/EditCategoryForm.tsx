@@ -19,6 +19,7 @@ import { ArrowLeft, Loader2 } from "lucide-react";
 import { Alert, AlertDescription } from "@/components/ui/alert";
 import { PageHeader } from "@/components/ui/page-header";
 import { FormLoading } from "@/components/ui/form-loading";
+import { ImageUpload } from "@/components/ui/image-upload";
 import { updateCategorySchema } from "@/lib/validations/category";
 import { toast } from "sonner";
 import { useUpdateCategory } from "@/hooks/api/categories";
@@ -27,6 +28,7 @@ interface Category {
   id: number;
   name: string;
   description: string | null;
+  image: string | null;
   isActive: boolean;
   createdAt: string;
   updatedAt: string;
@@ -39,6 +41,7 @@ interface EditCategoryFormProps {
 type UpdateCategoryFormData = {
   name: string;
   description: string;
+  image: string;
   isActive: boolean;
 };
 
@@ -53,6 +56,7 @@ export default function EditCategoryForm({ category }: EditCategoryFormProps) {
   const [formData, setFormData] = useState<UpdateCategoryFormData>({
     name: category.name,
     description: category.description || "",
+    image: category.image || "",
     isActive: category.isActive,
   });
 
@@ -217,6 +221,23 @@ export default function EditCategoryForm({ category }: EditCategoryFormProps) {
                 category.
               </p>
             </div>
+
+            {/* Image Upload */}
+            <ImageUpload
+              value={formData.image}
+              onChange={(url) => updateFormData("image", url || "")}
+              onError={(error) => {
+                setValidationErrors((prev) => ({ ...prev, image: error }));
+              }}
+              label="Category Image"
+              placeholder="Upload a category image"
+              disabled={updateCategoryMutation.isPending}
+              folder="categories"
+              alt="Category image"
+            />
+            {validationErrors.image && (
+              <p className="text-sm text-red-500">{validationErrors.image}</p>
+            )}
 
             {/* Active Status */}
             <div className="flex items-center justify-between rounded-lg border p-4">
