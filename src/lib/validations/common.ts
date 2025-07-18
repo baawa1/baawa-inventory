@@ -6,7 +6,7 @@ export const idSchema = z.number().int().positive();
 export const paginationSchema = z.object({
   page: z.coerce.number().int().min(1).default(1),
   limit: z.coerce.number().int().min(1).max(100).default(10),
-  sortBy: z.string().optional().default("created_at"),
+  sortBy: z.string().optional().default("createdAt"),
   sortOrder: z.enum(["asc", "desc"]).default("desc"),
 });
 
