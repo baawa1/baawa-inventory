@@ -25,7 +25,7 @@ import {
   IconCalendar,
   IconRefresh,
   IconAlertTriangle,
-  IconBarChart,
+  IconChartBar,
   IconPieChart,
   IconDatabase,
 } from "@tabler/icons-react";
@@ -155,7 +155,7 @@ export function ComprehensiveDashboard({ user }: ComprehensiveDashboardProps) {
             Inventory
           </TabsTrigger>
           <TabsTrigger value="analytics" className="flex items-center gap-2">
-            <IconBarChart className="h-4 w-4" />
+            <IconChartBar className="h-4 w-4" />
             Analytics
           </TabsTrigger>
           <TabsTrigger value="system" className="flex items-center gap-2">

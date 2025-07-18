@@ -24,19 +24,13 @@ export function withAuth<T extends any[]>(
 ) {
   return async (request: NextRequest, ...args: T): Promise<NextResponse> => {
     try {
+      console.log("withAuth middleware called for:", request.nextUrl.pathname);
       // Get session from Auth.js
       const session = await auth();
+      console.log("Session:", session ? "Found" : "Not found");
 
       if (!session?.user) {
-        await AuditLogger.logAuthEvent(
-          {
-            action: "LOGIN_FAILED",
-            success: false,
-            errorMessage: "No session found",
-          },
-          request
-        );
-
+        console.log("No session found in withAuth middleware");
         return NextResponse.json(
           { error: "Authentication required" },
           { status: 401 }
@@ -45,16 +39,7 @@ export function withAuth<T extends any[]>(
 
       // Validate user session data
       if (!session.user.id || !session.user.email || !session.user.role) {
-        await AuditLogger.logAuthEvent(
-          {
-            action: "LOGIN_FAILED",
-            userEmail: session.user.email || undefined,
-            success: false,
-            errorMessage: "Invalid session data",
-          },
-          request
-        );
-
+        console.log("Invalid session data:", session.user);
         return NextResponse.json(
           { error: "Invalid session data" },
           { status: 401 }
@@ -63,17 +48,7 @@ export function withAuth<T extends any[]>(
 
       // Check if user is active and approved
       if (!session.user.isEmailVerified) {
-        await AuditLogger.logAuthEvent(
-          {
-            action: "LOGIN_FAILED",
-            userId: parseInt(session.user.id),
-            userEmail: session.user.email,
-            success: false,
-            errorMessage: "Email not verified",
-          },
-          request
-        );
-
+        console.log("Email not verified for user:", session.user.email);
         return NextResponse.json(
           { error: "Email verification required" },
           { status: 403 }
@@ -81,17 +56,12 @@ export function withAuth<T extends any[]>(
       }
 
       if (session.user.status !== "APPROVED") {
-        await AuditLogger.logAuthEvent(
-          {
-            action: "LOGIN_FAILED",
-            userId: parseInt(session.user.id),
-            userEmail: session.user.email,
-            success: false,
-            errorMessage: `User status: ${session.user.status}`,
-          },
-          request
+        console.log(
+          "Account not approved for user:",
+          session.user.email,
+          "Status:",
+          session.user.status
         );
-
         return NextResponse.json(
           { error: "Account not approved" },
           { status: 403 }
@@ -112,15 +82,9 @@ export function withAuth<T extends any[]>(
       return await handler(authenticatedRequest, ...args);
     } catch (error) {
       console.error("Auth middleware error:", error);
-
-      await AuditLogger.logAuthEvent(
-        {
-          action: "LOGIN_FAILED",
-          success: false,
-          errorMessage:
-            error instanceof Error ? error.message : "Unknown error",
-        },
-        request
+      console.error(
+        "Error stack:",
+        error instanceof Error ? error.stack : "No stack"
       );
 
       return NextResponse.json(
