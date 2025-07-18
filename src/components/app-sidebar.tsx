@@ -1,19 +1,17 @@
 "use client";
 
 import * as React from "react";
+import { useSession } from "next-auth/react";
 import {
   IconChartBar,
   IconDashboard,
-  IconDatabase,
   IconHelp,
   IconInnerShadowTop,
-  IconReport,
   IconSettings,
   IconUsers,
   IconShoppingCart,
 } from "@tabler/icons-react";
 
-import { NavDocuments } from "@/components/nav-documents";
 import { NavMain } from "@/components/nav-main";
 import { NavInventory } from "@/components/nav-inventory";
 import { NavSecondary } from "@/components/nav-secondary";
@@ -28,71 +26,68 @@ import {
   SidebarMenuItem,
 } from "@/components/ui/sidebar";
 
-const data = {
-  user: {
-    name: "BaaWA Admin",
-    email: "admin@baawa.com",
-    avatar: "",
+const navMain = [
+  {
+    title: "Dashboard",
+    url: "/dashboard",
+    icon: IconDashboard,
   },
-  navMain: [
-    {
-      title: "Dashboard",
-      url: "/dashboard",
-      icon: IconDashboard,
-    },
-    {
-      title: "POS System",
-      url: "/pos",
-      icon: IconShoppingCart,
-    },
-    {
-      title: "Reports",
-      url: "/reports",
-      icon: IconChartBar,
-    },
-    {
-      title: "Settings",
-      url: "/settings",
-      icon: IconSettings,
-    },
-  ],
-  navSecondary: [
-    {
-      title: "Settings",
-      url: "/settings",
-      icon: IconSettings,
-    },
-    {
-      title: "Get Help",
-      url: "#",
-      icon: IconHelp,
-    },
-    {
-      title: "Admin Panel",
-      url: "/admin",
-      icon: IconUsers,
-    },
-  ],
-  documents: [
-    {
-      name: "Inventory Reports",
-      url: "/reports/inventory",
-      icon: IconReport,
-    },
-    {
-      name: "Sales Reports",
-      url: "/reports/sales",
-      icon: IconChartBar,
-    },
-    {
-      name: "Stock Reports",
-      url: "/reports/stock",
-      icon: IconDatabase,
-    },
-  ],
-};
+  {
+    title: "POS System",
+    url: "/pos",
+    icon: IconShoppingCart,
+  },
+  {
+    title: "Reports",
+    url: "/reports",
+    icon: IconChartBar,
+  },
+  {
+    title: "Settings",
+    url: "/settings",
+    icon: IconSettings,
+  },
+];
+
+const navSecondary = [
+  {
+    title: "Settings",
+    url: "/settings",
+    icon: IconSettings,
+  },
+  {
+    title: "Get Help",
+    url: "#",
+    icon: IconHelp,
+  },
+  {
+    title: "Admin Panel",
+    url: "/admin",
+    icon: IconUsers,
+  },
+];
 
 export function AppSidebar({ ...props }: React.ComponentProps<typeof Sidebar>) {
+  const { data: session } = useSession();
+
+  // Create dynamic user data from session
+  const userData = React.useMemo(() => {
+    if (session?.user) {
+      return {
+        name: session.user.name || session.user.email || "User",
+        email: session.user.email || "",
+        avatar: session.user.image || "",
+      };
+    }
+
+    // Fallback data while loading or if no session
+    return {
+      name: "Loading...",
+      email: "",
+      avatar: "",
+    };
+  }, [session]);
+
   return (
     <Sidebar collapsible="offcanvas" {...props}>
       <SidebarHeader>
@@ -111,13 +106,12 @@ export function AppSidebar({ ...props }: React.ComponentProps<typeof Sidebar>) {
         </SidebarMenu>
       </SidebarHeader>
       <SidebarContent>
-        <NavMain items={data.navMain} />
+        <NavMain items={navMain} />
         <NavInventory />
-        <NavDocuments items={data.documents} />
-        <NavSecondary items={data.navSecondary} className="mt-auto" />
+        <NavSecondary items={navSecondary} className="mt-auto" />
       </SidebarContent>
       <SidebarFooter>
-        <NavUser user={data.user} />
+        <NavUser user={userData} />
       </SidebarFooter>
     </Sidebar>
   );

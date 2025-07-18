@@ -227,7 +227,7 @@ export function POSInterface() {
           </div>
         </div>
 
-        <div className="grid grid-cols-1 lg:grid-cols-3 gap-6 flex-1 p-6 min-h-0">
+        <div className="grid grid-cols-1 lg:grid-cols-3 gap-6 flex-1 pt-6 pb-6 min-h-0">
           {/* Left Column - Product Search and Grid */}
           <div className="lg:col-span-2 flex flex-col min-h-0">
             <POSErrorBoundary componentName="ProductGrid">
