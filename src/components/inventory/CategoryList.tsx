@@ -119,7 +119,7 @@ export default function CategoryList({ user }: CategoryListProps) {
   const [filters, setFilters] = useState({
     search: "",
     isActive: "",
-    parentId: "all",
+    parentId: "",
   });
 
   // Debounce search term to avoid excessive API calls
@@ -133,11 +133,13 @@ export default function CategoryList({ user }: CategoryListProps) {
     search: debouncedSearchTerm,
     status: filters.isActive,
     parentId:
-      filters.parentId === "all"
+      filters.parentId === "all" || filters.parentId === ""
         ? undefined
         : filters.parentId === "null"
           ? null
-          : parseInt(filters.parentId),
+          : filters.parentId === "subcategories"
+            ? "subcategories"
+            : parseInt(filters.parentId),
     includeChildren: true,
     sortBy: "name",
     sortOrder: "asc",
@@ -147,49 +149,8 @@ export default function CategoryList({ user }: CategoryListProps) {
 
   const deleteCategoryMutation = useDeleteCategory();
 
-  // Extract data from queries and sort hierarchically
-  const rawCategories = categoriesQuery.data?.data || [];
-
-  // Sort categories hierarchically: parent categories first, then subcategories
-  const categories = useMemo(() => {
-    if (!rawCategories.length) return [];
-
-    // Separate parent and child categories
-    const parentCategories = rawCategories.filter((cat) => !cat.parentId);
-    const childCategories = rawCategories.filter((cat) => cat.parentId);
-
-    // Sort parent categories by name
-    const sortedParents = parentCategories.sort((a, b) =>
-      a.name.localeCompare(b.name)
-    );
-
-    // Group child categories by parent and sort each group
-    const groupedChildren = childCategories.reduce(
-      (acc, child) => {
-        const parentId = child.parentId!;
-        if (!acc[parentId]) acc[parentId] = [];
-        acc[parentId].push(child);
-        return acc;
-      },
-      {} as Record<number, typeof childCategories>
-    );
-
-    // Sort children within each group
-    Object.values(groupedChildren).forEach((group) => {
-      group.sort((a, b) => a.name.localeCompare(b.name));
-    });
-
-    // Combine: parents first, then their children
-    const result: typeof rawCategories = [];
-
-    sortedParents.forEach((parent) => {
-      result.push(parent);
-      const children = groupedChildren[parent.id] || [];
-      result.push(...children);
-    });
-
-    return result;
-  }, [rawCategories]);
+  // Extract data from queries
+  const categories = categoriesQuery.data?.data || [];
 
   const loading = categoriesQuery.isLoading;
   const total = categoriesQuery.data?.pagination?.totalCategories || 0;
@@ -226,7 +187,6 @@ export default function CategoryList({ user }: CategoryListProps) {
         label: "Category Level",
         type: "select",
         options: [
-          { value: "all", label: "All Categories" },
           { value: "null", label: "Top Level Only" },
           { value: "subcategories", label: "Subcategories Only" },
         ],
@@ -250,7 +210,7 @@ export default function CategoryList({ user }: CategoryListProps) {
     setFilters({
       search: "",
       isActive: "",
-      parentId: "all",
+      parentId: "",
     });
     setPagination((prev) => ({ ...prev, page: 1 }));
   }, []);
