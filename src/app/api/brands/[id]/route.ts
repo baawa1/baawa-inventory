@@ -90,6 +90,8 @@ export async function PUT(
     if (validatedData.name !== undefined) updateData.name = validatedData.name;
     if (validatedData.description !== undefined)
       updateData.description = validatedData.description;
+    if (validatedData.image !== undefined)
+      updateData.image = validatedData.image;
     if (validatedData.website !== undefined)
       updateData.website = validatedData.website;
     if (validatedData.is_active !== undefined)

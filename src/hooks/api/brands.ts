@@ -6,6 +6,7 @@ export interface Brand {
   id: number;
   name: string;
   description?: string;
+  image?: string;
   website?: string;
   isActive: boolean;
   createdAt: string;
@@ -36,6 +37,7 @@ export interface BrandResponse {
 export interface CreateBrandData {
   name: string;
   description?: string;
+  image?: string;
   website?: string;
 }
 

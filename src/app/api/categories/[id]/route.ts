@@ -7,6 +7,7 @@ const CategoryUpdateSchema = z.object({
   name: z.string().min(1).max(100).optional(),
   description: z.string().optional(),
   isActive: z.boolean().optional(),
+  parentId: z.number().optional(),
 });
 
 // GET /api/categories/[id] - Get category by ID
@@ -50,9 +51,30 @@ export async function GET(
         isActive: true,
         createdAt: true,
         updatedAt: true,
+        parentId: true,
+        parent: {
+          select: {
+            id: true,
+            name: true,
+          },
+        },
+        children: {
+          select: {
+            id: true,
+            name: true,
+            isActive: true,
+            _count: {
+              select: {
+                products: true,
+              },
+            },
+          },
+          where: { isActive: true },
+        },
         _count: {
           select: {
             products: true,
+            children: true,
           },
         },
       },
@@ -71,7 +93,11 @@ export async function GET(
         name: category.name,
         description: category.description,
         isActive: category.isActive,
+        parentId: category.parentId,
+        parent: category.parent,
+        children: category.children,
         productCount: category._count.products,
+        subcategoryCount: category._count.children,
         createdAt: category.createdAt.toISOString(),
         updatedAt: category.updatedAt.toISOString(),
       },
@@ -132,7 +158,54 @@ export async function PUT(
       );
     }
 
-    // Check if name already exists (if name is being updated)
+    // If parentId is being updated, validate it
+    if (validatedData.parentId !== undefined) {
+      // Prevent circular references
+      if (validatedData.parentId === categoryId) {
+        return NextResponse.json(
+          { error: "Category cannot be its own parent" },
+          { status: 400 }
+        );
+      }
+
+      // If setting a parent, verify it exists and is active
+      if (validatedData.parentId !== null) {
+        const parentCategory = await prisma.category.findUnique({
+          where: { id: validatedData.parentId },
+        });
+
+        if (!parentCategory) {
+          return NextResponse.json(
+            { error: "Parent category not found" },
+            { status: 400 }
+          );
+        }
+
+        if (!parentCategory.isActive) {
+          return NextResponse.json(
+            { error: "Cannot set parent to inactive category" },
+            { status: 400 }
+          );
+        }
+
+        // Check for circular references in the hierarchy
+        let currentParent = parentCategory;
+        while (currentParent.parentId) {
+          if (currentParent.parentId === categoryId) {
+            return NextResponse.json(
+              { error: "Circular reference detected in category hierarchy" },
+              { status: 400 }
+            );
+          }
+          currentParent = await prisma.category.findUnique({
+            where: { id: currentParent.parentId },
+          });
+          if (!currentParent) break;
+        }
+      }
+    }
+
+    // Check if name already exists under the same parent (if name is being updated)
     if (validatedData.name && validatedData.name !== existingCategory.name) {
       const duplicateCategory = await prisma.category.findFirst({
         where: {
@@ -140,6 +213,10 @@ export async function PUT(
             equals: validatedData.name,
             mode: "insensitive",
           },
+          parentId:
+            validatedData.parentId !== undefined
+              ? validatedData.parentId
+              : existingCategory.parentId,
           id: {
             not: categoryId,
           },
@@ -148,7 +225,7 @@ export async function PUT(
 
       if (duplicateCategory) {
         return NextResponse.json(
-          { error: "Category with this name already exists" },
+          { error: "Category with this name already exists at this level" },
           { status: 400 }
         );
       }
@@ -165,9 +242,30 @@ export async function PUT(
         isActive: true,
         createdAt: true,
         updatedAt: true,
+        parentId: true,
+        parent: {
+          select: {
+            id: true,
+            name: true,
+          },
+        },
+        children: {
+          select: {
+            id: true,
+            name: true,
+            isActive: true,
+            _count: {
+              select: {
+                products: true,
+              },
+            },
+          },
+          where: { isActive: true },
+        },
         _count: {
           select: {
             products: true,
+            children: true,
           },
         },
       },
@@ -180,7 +278,11 @@ export async function PUT(
         name: updatedCategory.name,
         description: updatedCategory.description,
         isActive: updatedCategory.isActive,
+        parentId: updatedCategory.parentId,
+        parent: updatedCategory.parent,
+        children: updatedCategory.children,
         productCount: updatedCategory._count.products,
+        subcategoryCount: updatedCategory._count.children,
         createdAt: updatedCategory.createdAt.toISOString(),
         updatedAt: updatedCategory.updatedAt.toISOString(),
       },
@@ -251,6 +353,7 @@ export async function DELETE(
         _count: {
           select: {
             products: true,
+            children: true,
           },
         },
       },
@@ -269,6 +372,17 @@ export async function DELETE(
         {
           error: "Cannot delete category with associated products",
           details: `This category has ${existingCategory._count.products} associated products`,
+        },
+        { status: 400 }
+      );
+    }
+
+    // Check if category has subcategories
+    if (existingCategory._count.children > 0) {
+      return NextResponse.json(
+        {
+          error: "Cannot delete category with subcategories",
+          details: `This category has ${existingCategory._count.children} subcategories`,
         },
         { status: 400 }
       );

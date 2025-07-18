@@ -22,6 +22,7 @@ import {
 import { ArrowLeft, Loader2 } from "lucide-react";
 import { PageHeader } from "@/components/ui/page-header";
 import { FormLoading } from "@/components/ui/form-loading";
+import { ImageUpload } from "@/components/ui/image-upload";
 import { toast } from "sonner";
 import { useCreateBrand } from "@/hooks/api/brands";
 
@@ -40,6 +41,7 @@ export default function AddBrandForm() {
     defaultValues: {
       name: "",
       description: null,
+      image: null,
       website: null,
       isActive: true,
     },
@@ -52,6 +54,7 @@ export default function AddBrandForm() {
     const brandData = {
       name: data.name,
       description: data.description || undefined,
+      image: data.image || undefined,
       website: data.website || undefined,
       isActive: data.isActive,
     };
@@ -142,6 +145,23 @@ export default function AddBrandForm() {
                 </p>
               )}
             </div>
+
+            <ImageUpload
+              value={watch("image")}
+              onChange={(url) => setValue("image", url)}
+              onError={(error) => {
+                // Handle error in form validation
+                console.error("Image upload error:", error);
+              }}
+              label="Brand Image"
+              placeholder="Upload a brand image"
+              disabled={createBrandMutation.isPending}
+              folder="brands"
+              alt="Brand image"
+            />
+            {errors.image && (
+              <p className="text-sm text-destructive">{errors.image.message}</p>
+            )}
 
             <div className="space-y-2">
               <Label htmlFor="website">Website URL</Label>

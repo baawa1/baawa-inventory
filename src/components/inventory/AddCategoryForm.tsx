@@ -1,66 +1,82 @@
 "use client";
 
-import { useState } from "react";
-import { useRouter } from "next/navigation";
-import { Button } from "@/components/ui/button";
+import React, { useState } from "react";
+import { useRouter, useSearchParams } from "next/navigation";
+import { toast } from "sonner";
+
+// Hooks
 import {
-  Card,
-  CardContent,
-  CardDescription,
-  CardHeader,
-  CardTitle,
-} from "@/components/ui/card";
+  useCreateCategory,
+  useTopLevelCategories,
+} from "@/hooks/api/categories";
+
+// UI Components
+import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
 import { Switch } from "@/components/ui/switch";
-import { Badge } from "@/components/ui/badge";
-import { ArrowLeft, Loader2 } from "lucide-react";
-import { Alert, AlertDescription } from "@/components/ui/alert";
-import { PageHeader } from "@/components/ui/page-header";
-import { FormLoading } from "@/components/ui/form-loading";
-import { createCategorySchema } from "@/lib/validations/category";
-import { toast } from "sonner";
-import { useCreateCategory } from "@/hooks/api/categories";
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
 
-type CreateCategoryFormData = {
+// Icons
+import { IconArrowLeft, IconFolder } from "@tabler/icons-react";
+
+interface CreateCategoryFormData {
   name: string;
   description: string;
   isActive: boolean;
-};
+  parentId: number | null;
+}
+
+interface ValidationErrors {
+  name?: string;
+  description?: string;
+  parentId?: string;
+  isActive?: string;
+}
 
 export default function AddCategoryForm() {
   const router = useRouter();
-  const createCategoryMutation = useCreateCategory();
-  const [submitError, setSubmitError] = useState<string | null>(null);
-  const [validationErrors, setValidationErrors] = useState<
-    Record<string, string>
-  >({});
+  const searchParams = useSearchParams();
+  const parentIdFromUrl = searchParams.get("parentId");
 
   const [formData, setFormData] = useState<CreateCategoryFormData>({
     name: "",
     description: "",
     isActive: true,
+    parentId: parentIdFromUrl ? parseInt(parentIdFromUrl) : null,
   });
 
-  const validateForm = (data: CreateCategoryFormData) => {
-    try {
-      createCategorySchema.parse(data);
-      setValidationErrors({});
-      return true;
-    } catch (error: unknown) {
-      const errors: Record<string, string> = {};
-      if (error && typeof error === 'object' && 'errors' in error) {
-        const zodError = error as { errors: Array<{ path: string[], message: string }> };
-        zodError.errors.forEach((err) => {
-          if (err.path && err.path.length > 0) {
-            errors[err.path[0]] = err.message;
-          }
-        });
-      }
-      setValidationErrors(errors);
-      return false;
+  const [validationErrors, setValidationErrors] = useState<ValidationErrors>(
+    {}
+  );
+  const [error, setError] = useState<string | null>(null);
+
+  const createCategoryMutation = useCreateCategory();
+  const { data: parentCategoriesData } = useTopLevelCategories();
+
+  // Validation function
+  const validateForm = (data: CreateCategoryFormData): boolean => {
+    const errors: ValidationErrors = {};
+
+    if (!data.name.trim()) {
+      errors.name = "Category name is required";
+    } else if (data.name.length > 100) {
+      errors.name = "Category name must be 100 characters or less";
     }
+
+    if (data.description && data.description.length > 500) {
+      errors.description = "Description must be 500 characters or less";
+    }
+
+    setValidationErrors(errors);
+    return Object.keys(errors).length === 0;
   };
 
   const onSubmit = async (e: React.FormEvent) => {
@@ -70,36 +86,39 @@ export default function AddCategoryForm() {
       return;
     }
 
-    setSubmitError(null);
+    setError(null);
 
-    // Transform form data to match Category interface
-    const categoryData = {
-      name: formData.name,
-      description: formData.description || undefined,
-      isActive: formData.isActive,
-    };
-
-    createCategoryMutation.mutate(categoryData, {
-      onSuccess: () => {
-        toast.success("Category created successfully!");
-        router.push("/inventory/categories");
-        router.refresh();
+    createCategoryMutation.mutate(
+      {
+        name: formData.name.trim(),
+        description: formData.description.trim() || undefined,
+        isActive: formData.isActive,
+        parentId: formData.parentId || undefined,
       },
-      onError: (error) => {
-        console.error("Error creating category:", error);
-        const errorMessage =
-          error instanceof Error ? error.message : "Failed to create category";
-        setSubmitError(errorMessage);
-        toast.error(errorMessage);
-      },
-    });
+      {
+        onSuccess: (createdCategory) => {
+          console.log("Category created successfully:", createdCategory);
+          toast.success("Category created successfully!");
+          router.push("/inventory/categories");
+        },
+        onError: (error) => {
+          console.error("Error creating category:", error);
+          const errorMessage =
+            error instanceof Error
+              ? error.message
+              : "Failed to create category";
+          setError(errorMessage);
+          toast.error(errorMessage);
+        },
+      }
+    );
   };
 
   const handleCancel = () => {
     router.push("/inventory/categories");
   };
 
-  const updateFormData = (field: keyof CreateCategoryFormData, value: string | boolean) => {
+  const updateFormData = (field: keyof CreateCategoryFormData, value: any) => {
     setFormData((prev) => ({ ...prev, [field]: value }));
     // Clear validation error for this field
     if (validationErrors[field]) {
@@ -114,13 +133,14 @@ export default function AddCategoryForm() {
   // Show loading state
   if (createCategoryMutation.isPending) {
     return (
-      <FormLoading
-        title="Add Category"
-        description="Create a new product category to organize your inventory"
-        backLabel="Back to Categories"
-        onBack={handleCancel}
-        backUrl="/inventory/categories"
-      />
+      <div className="max-w-4xl mx-auto p-6">
+        <div className="flex items-center justify-center h-64">
+          <div className="text-center">
+            <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary mx-auto mb-4"></div>
+            <p className="text-muted-foreground">Creating category...</p>
+          </div>
+        </div>
+      </div>
     );
   }
 
@@ -130,128 +150,137 @@ export default function AddCategoryForm() {
         <Button
           variant="ghost"
           onClick={handleCancel}
-          className="mb-4 px-4 lg:px-6"
+          className="mb-4 flex items-center gap-2"
         >
-          <ArrowLeft className="mr-2 h-4 w-4" />
+          <IconArrowLeft className="h-4 w-4" />
           Back to Categories
         </Button>
-        <PageHeader
-          title="Add Category"
-          description="Create a new product category to organize your inventory"
-        />
+        <h1 className="text-2xl font-bold tracking-tight">Add Category</h1>
+        <p className="text-muted-foreground">
+          Create a new product category to organize your inventory
+        </p>
       </div>
 
-      <Card>
-        <CardHeader>
-          <CardTitle>Category Information</CardTitle>
-          <CardDescription>
-            Enter the details for the new category. Required fields are marked
-            with an asterisk (*).
-          </CardDescription>
-        </CardHeader>
-        <CardContent className="space-y-6">
-          <form onSubmit={onSubmit} className="space-y-6">
-            {submitError && (
-              <Alert variant="destructive">
-                <AlertDescription>{submitError}</AlertDescription>
-              </Alert>
+      <form onSubmit={onSubmit} className="space-y-6">
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+          {/* Category Name */}
+          <div className="space-y-2">
+            <Label htmlFor="name">
+              Category Name <span className="text-destructive">*</span>
+            </Label>
+            <Input
+              id="name"
+              type="text"
+              placeholder="Enter category name"
+              value={formData.name}
+              onChange={(e) => updateFormData("name", e.target.value)}
+              className={validationErrors.name ? "border-destructive" : ""}
+            />
+            {validationErrors.name && (
+              <p className="text-sm text-destructive">
+                {validationErrors.name}
+              </p>
             )}
+          </div>
 
-            {/* Category Name */}
-            <div className="space-y-2">
-              <Label htmlFor="name" className="flex items-center gap-2">
-                Category Name
-                <Badge variant="destructive" className="text-xs">
-                  Required
-                </Badge>
-              </Label>
-              <Input
-                id="name"
-                placeholder="e.g., Electronics, Clothing, Books"
-                value={formData.name}
-                onChange={(e) => updateFormData("name", e.target.value)}
-                className={validationErrors.name ? "border-red-500" : ""}
-                disabled={createCategoryMutation.isPending}
-              />
-              {validationErrors.name && (
-                <p className="text-sm text-red-500">{validationErrors.name}</p>
-              )}
-              <p className="text-sm text-gray-600 dark:text-gray-400">
-                Enter a unique name for this category. This will be used to
-                organize products.
+          {/* Parent Category */}
+          <div className="space-y-2">
+            <Label htmlFor="parentId">Parent Category</Label>
+            <Select
+              value={formData.parentId?.toString() || ""}
+              onValueChange={(value) =>
+                updateFormData("parentId", value ? parseInt(value) : null)
+              }
+            >
+              <SelectTrigger>
+                <SelectValue placeholder="Select parent category (optional)" />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="">
+                  <div className="flex items-center space-x-2">
+                    <IconFolder className="h-4 w-4" />
+                    <span>No parent (Top-level category)</span>
+                  </div>
+                </SelectItem>
+                {parentCategoriesData?.data?.map((category) => (
+                  <SelectItem key={category.id} value={category.id.toString()}>
+                    <div className="flex items-center space-x-2">
+                      <IconFolder className="h-4 w-4" />
+                      <span>{category.name}</span>
+                      {category.subcategoryCount > 0 && (
+                        <span className="text-xs text-muted-foreground">
+                          ({category.subcategoryCount} subcategories)
+                        </span>
+                      )}
+                    </div>
+                  </SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
+            {validationErrors.parentId && (
+              <p className="text-sm text-destructive">
+                {validationErrors.parentId}
               </p>
-            </div>
+            )}
+            <p className="text-xs text-muted-foreground">
+              Leave empty to create a top-level category, or select a parent to
+              create a subcategory
+            </p>
+          </div>
+        </div>
 
-            {/* Description */}
-            <div className="space-y-2">
-              <Label htmlFor="description">Description</Label>
-              <Textarea
-                id="description"
-                placeholder="Brief description of this category (optional)"
-                className="min-h-[80px]"
-                value={formData.description}
-                onChange={(e) => updateFormData("description", e.target.value)}
-                disabled={createCategoryMutation.isPending}
-              />
-              {validationErrors.description && (
-                <p className="text-sm text-red-500">
-                  {validationErrors.description}
-                </p>
-              )}
-              <p className="text-sm text-gray-600 dark:text-gray-400">
-                Optional description to help identify the purpose of this
-                category.
-              </p>
-            </div>
+        {/* Description */}
+        <div className="space-y-2">
+          <Label htmlFor="description">Description</Label>
+          <Textarea
+            id="description"
+            placeholder="Enter category description (optional)"
+            value={formData.description}
+            onChange={(e) => updateFormData("description", e.target.value)}
+            rows={3}
+            className={validationErrors.description ? "border-destructive" : ""}
+          />
+          {validationErrors.description && (
+            <p className="text-sm text-destructive">
+              {validationErrors.description}
+            </p>
+          )}
+        </div>
 
-            {/* Active Status */}
-            <div className="flex items-center justify-between rounded-lg border p-4">
-              <div className="space-y-0.5">
-                <Label htmlFor="isActive" className="text-base">
-                  Active Status
-                </Label>
-                <p className="text-sm text-gray-600 dark:text-gray-400">
-                  Active categories will be available for product assignment.
-                  Inactive categories will be hidden from selection.
-                </p>
-              </div>
-              <Switch
-                id="isActive"
-                checked={formData.isActive}
-                onCheckedChange={(checked) =>
-                  updateFormData("isActive", checked)
-                }
-                disabled={createCategoryMutation.isPending}
-              />
-            </div>
+        {/* Active Status */}
+        <div className="flex items-center space-x-2">
+          <Switch
+            id="isActive"
+            checked={formData.isActive}
+            onCheckedChange={(checked) => updateFormData("isActive", checked)}
+          />
+          <Label htmlFor="isActive">Active</Label>
+        </div>
 
-            {/* Form Actions */}
-            <div className="flex items-center gap-4 pt-4">
-              <Button
-                type="submit"
-                disabled={createCategoryMutation.isPending}
-                className="flex items-center gap-2"
-              >
-                {createCategoryMutation.isPending && (
-                  <Loader2 className="h-4 w-4 animate-spin" />
-                )}
-                {createCategoryMutation.isPending
-                  ? "Creating..."
-                  : "Create Category"}
-              </Button>
+        {/* Error Display */}
+        {error && (
+          <div className="p-4 border border-destructive bg-destructive/10 rounded-md">
+            <p className="text-sm text-destructive">{error}</p>
+          </div>
+        )}
 
-              <Button
-                type="button"
-                variant="outline"
-                onClick={handleCancel}
-                disabled={createCategoryMutation.isPending}
-              >
-                Cancel
-              </Button>
-            </div>
-          </form>
-        </CardContent>
-      </Card>
+        {/* Form Actions */}
+        <div className="flex items-center gap-4 pt-6">
+          <Button type="submit" disabled={createCategoryMutation.isPending}>
+            {createCategoryMutation.isPending
+              ? "Creating..."
+              : "Create Category"}
+          </Button>
+          <Button
+            type="button"
+            variant="outline"
+            onClick={handleCancel}
+            disabled={createCategoryMutation.isPending}
+          >
+            Cancel
+          </Button>
+        </div>
+      </form>
     </div>
   );
 }
