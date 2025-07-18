@@ -8,7 +8,6 @@ import {
   IconInnerShadowTop,
   IconSettings,
   IconUsers,
-  IconShoppingCart,
 } from "@tabler/icons-react";
 
 import { NavMain } from "@/components/nav-main";
