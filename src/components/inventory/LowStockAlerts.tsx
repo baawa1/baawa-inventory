@@ -46,8 +46,21 @@ interface LowStockResponse {
   metrics: LowStockMetrics;
 }
 
-const fetchLowStockProducts = async (): Promise<LowStockResponse> => {
-  const response = await fetch("/api/products/low-stock");
+const fetchLowStockProducts = async (
+  offset: number = 0,
+  limit: number = 10,
+  search: string = ""
+): Promise<LowStockResponse> => {
+  const params = new URLSearchParams({
+    offset: offset.toString(),
+    limit: limit.toString(),
+  });
+
+  if (search) {
+    params.append("search", search);
+  }
+
+  const response = await fetch(`/api/products/low-stock?${params}`);
   if (!response.ok) {
     throw new Error("Failed to fetch low stock products");
   }
@@ -94,8 +107,18 @@ export function LowStockAlerts() {
     refetch,
     isRefetching,
   } = useQuery({
-    queryKey: ["low-stock-products"],
-    queryFn: fetchLowStockProducts,
+    queryKey: [
+      "low-stock-products",
+      pagination.page,
+      pagination.limit,
+      searchTerm,
+    ],
+    queryFn: () =>
+      fetchLowStockProducts(
+        (pagination.page - 1) * pagination.limit,
+        pagination.limit,
+        searchTerm
+      ),
     refetchOnWindowFocus: false,
     staleTime: 5 * 60 * 1000, // 5 minutes
   });
@@ -108,13 +131,21 @@ export function LowStockAlerts() {
     totalProducts: 0,
   };
 
-  const filteredProducts = products.filter(
-    (product) =>
-      product.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
-      product.sku.toLowerCase().includes(searchTerm.toLowerCase()) ||
-      product.category?.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
-      product.brand?.name.toLowerCase().includes(searchTerm.toLowerCase())
-  );
+  // Update pagination when response changes
+  useEffect(() => {
+    if (response?.pagination) {
+      setPagination((prev) => ({
+        ...prev,
+        totalPages: Math.ceil(response.pagination.total / prev.limit),
+        totalItems: response.pagination.total,
+      }));
+    }
+  }, [response?.pagination]);
+
+  // Reset to page 1 when search term changes
+  useEffect(() => {
+    setPagination((prev) => ({ ...prev, page: 1 }));
+  }, [searchTerm]);
 
   const handleRefresh = async () => {
     try {
@@ -207,15 +238,6 @@ export function LowStockAlerts() {
     { key: "supplier", label: "Supplier", sortable: true },
     { key: "product_status", label: "Status", sortable: false },
   ];
-
-  // Update pagination when products change
-  useEffect(() => {
-    setPagination((prev) => ({
-      ...prev,
-      totalPages: Math.ceil(filteredProducts.length / prev.limit),
-      totalItems: filteredProducts.length,
-    }));
-  }, [filteredProducts.length]);
 
   if (error) {
     return (
@@ -348,13 +370,13 @@ export function LowStockAlerts() {
       }
       // Table
       tableTitle="Low Stock Products"
-      totalCount={filteredProducts.length}
-      currentCount={filteredProducts.length}
+      totalCount={pagination.totalItems}
+      currentCount={products.length}
       columns={columns}
       visibleColumns={columns.map((col) => col.key)}
       onColumnsChange={undefined}
       columnCustomizerKey={undefined}
-      data={filteredProducts}
+      data={products}
       renderCell={renderCell}
       renderActions={undefined}
       // Pagination
