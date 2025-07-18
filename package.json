@@ -30,7 +30,9 @@
     "test:e2e:report": "playwright show-report",
     "test:e2e:install": "playwright install",
     "test:e2e:codegen": "playwright codegen",
-    "cleanup:deprecated": "bash src/scripts/cleanup-deprecated-components.sh"
+    "cleanup:deprecated": "bash src/scripts/cleanup-deprecated-components.sh",
+    "seed:test-data": "node scripts/generate-complete-test-data.js",
+    "seed:test-data:reset": "node scripts/generate-complete-test-data.js --reset"
   },
   "dependencies": {
     "@dnd-kit/core": "^6.3.1",
