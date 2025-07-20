@@ -1,6 +1,6 @@
-import { NextResponse } from "next/server";
 import { withAuth, AuthenticatedRequest } from "@/lib/api-middleware";
 import { handleApiError } from "@/lib/api-error-handler";
+import { createApiResponse } from "@/lib/api-response";
 import { prisma } from "@/lib/db";
 import { PAYMENT_STATUS } from "@/lib/constants";
 
@@ -215,12 +215,14 @@ export const GET = withAuth(async (request: AuthenticatedRequest) => {
       })),
     };
 
-    return NextResponse.json({
-      success: true,
-      data: overview,
-      period,
-      periodStart: periodStart.toISOString(),
-    });
+    return createApiResponse.success(
+      {
+        ...overview,
+        period,
+        periodStart: periodStart.toISOString(),
+      },
+      "POS analytics overview retrieved successfully"
+    );
   } catch (error) {
     return handleApiError(error);
   }

@@ -1,10 +1,10 @@
-import { NextResponse } from "next/server";
 import {
   withAuth,
   withPermission,
   AuthenticatedRequest,
 } from "@/lib/api-middleware";
 import { handleApiError } from "@/lib/api-error-handler";
+import { createApiResponse } from "@/lib/api-response";
 import { prisma } from "@/lib/db";
 import { USER_ROLES } from "@/lib/auth/roles";
 import {

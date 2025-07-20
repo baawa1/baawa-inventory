@@ -1,10 +1,10 @@
-import { NextResponse } from "next/server";
 import {
   withAuth,
   withPermission,
   AuthenticatedRequest,
 } from "@/lib/api-middleware";
 import { handleApiError } from "@/lib/api-error-handler";
+import { createApiResponse } from "@/lib/api-response";
 import { prisma } from "@/lib/db";
 import { z } from "zod";
 import { USER_ROLES } from "@/lib/auth/roles";
@@ -106,15 +106,16 @@ export const GET = withAuth(async (request: AuthenticatedRequest) => {
 
     const totalPages = Math.ceil(totalCount / limit);
 
-    return NextResponse.json({
-      data: transformedCategories,
-      pagination: {
+    return createApiResponse.successWithPagination(
+      transformedCategories,
+      {
         page: page,
         limit: limit,
         totalPages: totalPages,
         total: totalCount,
       },
-    });
+      `Retrieved ${transformedCategories.length} categories`
+    );
   } catch (error) {
     return handleApiError(error);
   }
@@ -135,10 +136,7 @@ export const POST = withPermission(
         });
 
         if (!parentExists) {
-          return NextResponse.json(
-            { error: "Parent category not found" },
-            { status: 404 }
-          );
+          return createApiResponse.notFound("Parent category");
         }
       }
 
@@ -153,9 +151,8 @@ export const POST = withPermission(
       });
 
       if (existingCategory) {
-        return NextResponse.json(
-          { error: "Category with this name already exists" },
-          { status: 409 }
+        return createApiResponse.conflict(
+          "Category with this name already exists"
         );
       }
 
@@ -197,12 +194,10 @@ export const POST = withPermission(
         updatedAt: newCategory.updatedAt,
       };
 
-      return NextResponse.json(
-        {
-          message: "Category created successfully",
-          data: transformedCategory,
-        },
-        { status: 201 }
+      return createApiResponse.success(
+        transformedCategory,
+        "Category created successfully",
+        201
       );
     } catch (error) {
       return handleApiError(error);
