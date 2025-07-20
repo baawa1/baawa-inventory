@@ -1,0 +1,10 @@
+{
+  "type": "usb",
+  "interface": "USB001",
+  "options": {
+    "width": 32,
+    "characterSet": "SLOVENIA",
+    "removeSpecialCharacters": false,
+    "lineCharacter": "-"
+  }
+}

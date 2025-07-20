@@ -6,10 +6,10 @@ import Link from "next/link";
 import {
   IconShoppingCart,
   IconHistory,
-  IconReceipt,
-  IconCash,
+  IconUsers,
   IconChartBar,
-  IconSettings,
+  IconStar,
+  IconTicket,
 } from "@tabler/icons-react";
 
 import {
@@ -48,106 +48,69 @@ const posNavItems = [
     title: "Transaction History",
     url: "/pos/history",
     icon: IconHistory,
-    items: [
-      {
-        title: "All Transactions",
-        url: "/pos/history",
-      },
-      {
-        title: "Today's Sales",
-        url: "/pos/history?period=today",
-      },
-      {
-        title: "This Week",
-        url: "/pos/history?period=week",
-      },
-      {
-        title: "This Month",
-        url: "/pos/history?period=month",
-      },
-    ],
+    items: [],
   },
   {
-    title: "Receipts",
-    url: "/pos/receipts",
-    icon: IconReceipt,
-    items: [
-      {
-        title: "Print Receipts",
-        url: "/pos/receipts",
-      },
-      {
-        title: "Email Receipts",
-        url: "/pos/receipts?mode=email",
-      },
-      {
-        title: "Receipt Templates",
-        url: "/pos/receipts/templates",
-      },
-    ],
-  },
-  {
-    title: "Payments",
-    url: "/pos/payments",
-    icon: IconCash,
-    items: [
-      {
-        title: "Payment Methods",
-        url: "/pos/payments",
-      },
-      {
-        title: "Cash Management",
-        url: "/pos/payments/cash",
-      },
-      {
-        title: "Refunds",
-        url: "/pos/payments/refunds",
-      },
-    ],
-  },
-  {
-    title: "Reports",
-    url: "/pos/reports",
+    title: "Analytics",
+    url: "/pos/analytics",
     icon: IconChartBar,
     items: [
       {
-        title: "Sales Reports",
-        url: "/pos/reports",
+        title: "Sales Overview",
+        url: "/pos/analytics",
       },
       {
-        title: "Daily Summary",
-        url: "/pos/reports?type=daily",
+        title: "Product Performance",
+        url: "/pos/analytics/products",
       },
       {
-        title: "Payment Analysis",
-        url: "/pos/reports?type=payments",
-      },
-      {
-        title: "Staff Performance",
-        url: "/pos/reports?type=staff",
+        title: "Category Performance",
+        url: "/pos/analytics/categories",
       },
     ],
   },
   {
-    title: "Settings",
-    url: "/pos/settings",
-    icon: IconSettings,
+    title: "Customers",
+    url: "/pos/customers",
+    icon: IconUsers,
     items: [
       {
-        title: "POS Configuration",
-        url: "/pos/settings",
+        title: "Customer Leaderboard",
+        url: "/pos/customers",
       },
       {
-        title: "Receipt Settings",
-        url: "/pos/settings/receipts",
+        title: "Customer History",
+        url: "/pos/customers/all",
+      },
+    ],
+  },
+  {
+    title: "Reviews",
+    url: "/pos/reviews",
+    icon: IconStar,
+    items: [
+      {
+        title: "All Reviews",
+        url: "/pos/reviews",
       },
       {
-        title: "Payment Settings",
-        url: "/pos/settings/payments",
+        title: "Pending Reviews",
+        url: "/pos/reviews?status=pending",
+      },
+    ],
+  },
+  {
+    title: "Coupons",
+    url: "/pos/coupons",
+    icon: IconTicket,
+    items: [
+      {
+        title: "All Coupons",
+        url: "/pos/coupons",
       },
       {
-        title: "Barcode Settings",
-        url: "/pos/settings/barcode",
+        title: "Create Coupon",
+        url: "/pos/coupons/create",
       },
     ],
   },
@@ -155,6 +118,20 @@ const posNavItems = [
 
 function CollapsibleNavItem({ item }: { item: (typeof posNavItems)[0] }) {
   const [isOpen, setIsOpen] = React.useState(false);
+
+  // If no items, render as simple link
+  if (!item.items || item.items.length === 0) {
+    return (
+      <SidebarMenuItem>
+        <SidebarMenuButton asChild tooltip={item.title}>
+          <Link href={item.url}>
+            <item.icon />
+            <span>{item.title}</span>
+          </Link>
+        </SidebarMenuButton>
+      </SidebarMenuItem>
+    );
+  }
 
   return (
     <SidebarMenuItem>
