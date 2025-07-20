@@ -54,6 +54,7 @@ import { toast } from "sonner";
 import { offlineStorage } from "@/lib/utils/offline-storage";
 import { useOffline } from "@/hooks/useOffline";
 import { usePOSErrorHandler } from "./POSErrorBoundary";
+import { formatCurrency } from "@/lib/utils";
 
 interface TransactionItem {
   id: number;
@@ -414,13 +415,13 @@ export function TransactionHistory() {
                       {item.sku}
                     </TableCell>
                     <TableCell className="text-right">
-                      ₦{item.price.toLocaleString()}
+                      {formatCurrency(item.price)}
                     </TableCell>
                     <TableCell className="text-right">
                       {item.quantity}
                     </TableCell>
                     <TableCell className="text-right">
-                      ₦{item.total.toLocaleString()}
+                      {formatCurrency(item.total)}
                     </TableCell>
                   </TableRow>
                 ))}
@@ -434,22 +435,24 @@ export function TransactionHistory() {
             <h3 className="font-medium mb-3">Payment Summary</h3>
             <div className="space-y-2">
               <div className="flex justify-between">
-                <span>Subtotal</span>
-                <span>₦{transaction.subtotal.toLocaleString()}</span>
+                <span>Subtotal:</span>
+                <span>{formatCurrency(transaction.subtotal)}</span>
               </div>
-              <div className="flex justify-between">
-                <span>Discount</span>
-                <span>-₦{transaction.discount.toLocaleString()}</span>
-              </div>
-              <Separator />
+              {transaction.discount > 0 && (
+                <div className="flex justify-between">
+                  <span>Discount:</span>
+                  <span>-{formatCurrency(transaction.discount)}</span>
+                </div>
+              )}
               <div className="flex justify-between font-bold text-lg">
-                <span>Total</span>
-                <span>₦{transaction.total.toLocaleString()}</span>
+                <span>Total:</span>
+                <span>{formatCurrency(transaction.total)}</span>
               </div>
               <div className="flex items-center gap-2 pt-2">
                 <PaymentIcon className="h-4 w-4" />
                 <span className="text-sm text-muted-foreground">
-                  Paid via {paymentMethodLabels[transaction.paymentMethod]}
+                  Paid via{" "}
+                  {paymentMethodLabels[transaction.paymentMethod] || "Unknown"}
                 </span>
               </div>
             </div>
@@ -674,7 +677,7 @@ export function TransactionHistory() {
                         </div>
                       </TableCell>
                       <TableCell className="text-right font-medium">
-                        ₦{transaction.total.toLocaleString()}
+                        {formatCurrency(transaction.total)}
                       </TableCell>
                       <TableCell>
                         <div className="flex items-center gap-2">

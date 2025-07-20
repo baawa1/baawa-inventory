@@ -30,6 +30,7 @@ import {
 } from "@tabler/icons-react";
 import { useOffline } from "@/hooks/useOffline";
 import { toast } from "sonner";
+import { formatCurrency } from "@/lib/utils";
 
 export interface CartItem {
   id: number;
@@ -295,17 +296,17 @@ export function POSInterface() {
                     <CardContent>
                       <div className="space-y-2">
                         <div className="flex justify-between">
-                          <span>Subtotal</span>
-                          <span>₦{subtotal.toLocaleString()}</span>
+                          <span>Subtotal:</span>
+                          <span>{formatCurrency(subtotal)}</span>
                         </div>
-                        <div className="flex justify-between">
-                          <span>Discount</span>
-                          <span>-₦{discount.toLocaleString()}</span>
+                        <div className="flex justify-between text-red-600">
+                          <span>Discount:</span>
+                          <span>-{formatCurrency(discount)}</span>
                         </div>
                         <Separator />
                         <div className="flex justify-between font-bold text-lg">
-                          <span>Total</span>
-                          <span>₦{total.toLocaleString()}</span>
+                          <span>Total:</span>
+                          <span>{formatCurrency(total)}</span>
                         </div>
                       </div>
                     </CardContent>

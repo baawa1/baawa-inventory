@@ -1,6 +1,6 @@
 "use client";
 
-import React, { useRef } from "react";
+import React, { useRef, useState } from "react";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
 import { Separator } from "@/components/ui/separator";
@@ -25,8 +25,11 @@ import {
   IconCreditCard,
   IconBuilding,
   IconWallet,
+  IconSettings,
 } from "@tabler/icons-react";
 import { toast } from "sonner";
+import { PrinterConfig } from "./PrinterConfig";
+import { formatCurrency } from "@/lib/utils";
 
 export interface CartItem {
   id: number;
@@ -74,6 +77,17 @@ const PAYMENT_METHOD_LABELS = {
 
 export function ReceiptGenerator({ sale, onClose }: ReceiptGeneratorProps) {
   const receiptRef = useRef<HTMLDivElement>(null);
+  const [showPrinterConfig, setShowPrinterConfig] = useState(false);
+  const [printerConfig, setPrinterConfig] = useState({
+    type: "usb",
+    interface: "USB001",
+    options: {
+      width: 32,
+      characterSet: "SLOVENIA",
+      removeSpecialCharacters: false,
+      lineCharacter: "-",
+    },
+  });
 
   const PaymentIcon =
     PAYMENT_METHOD_ICONS[
@@ -153,8 +167,8 @@ export function ReceiptGenerator({ sale, onClose }: ReceiptGeneratorProps) {
                   <div class="item-name">${item.name}</div>
                   <div class="item-details">SKU: ${item.sku} | ${item.category || "N/A"}</div>
                   <div class="total-line">
-                    <span>${item.quantity} × ₦${item.price.toLocaleString()}</span>
-                    <span>₦${(item.price * item.quantity).toLocaleString()}</span>
+                    <span>${item.quantity} × ${formatCurrency(item.price)}</span>
+                    <span>${formatCurrency(item.price * item.quantity)}</span>
                   </div>
                 </div>
               `
@@ -165,15 +179,15 @@ export function ReceiptGenerator({ sale, onClose }: ReceiptGeneratorProps) {
             <div class="totals">
               <div class="total-line">
                 <span>Subtotal:</span>
-                <span>₦${sale.subtotal.toLocaleString()}</span>
+                <span>${formatCurrency(sale.subtotal)}</span>
               </div>
               <div class="total-line">
                 <span>Discount:</span>
-                <span>-₦${sale.discount.toLocaleString()}</span>
+                <span>-${formatCurrency(sale.discount)}</span>
               </div>
               <div class="total-line grand-total">
                 <span>TOTAL:</span>
-                <span>₦${sale.total.toLocaleString()}</span>
+                <span>${formatCurrency(sale.total)}</span>
               </div>
             </div>
             
@@ -201,6 +215,48 @@ export function ReceiptGenerator({ sale, onClose }: ReceiptGeneratorProps) {
       // For now, we'll use the print functionality
       handlePrint();
       toast.success("Receipt ready for download/print");
+    }
+  };
+
+  // Thermal printer receipt
+  const handleThermalPrint = async () => {
+    try {
+      const response = await fetch("/api/pos/print-receipt", {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify({
+          saleId: sale.id,
+          timestamp: sale.timestamp.toISOString(),
+          staffName: sale.staffName,
+          customerName: sale.customerName,
+          customerPhone: sale.customerPhone,
+          items: sale.items.map((item) => ({
+            name: item.name,
+            sku: item.sku,
+            quantity: item.quantity,
+            price: item.price,
+            total: item.price * item.quantity,
+            category: item.category,
+          })),
+          subtotal: sale.subtotal,
+          discount: sale.discount,
+          total: sale.total,
+          paymentMethod: sale.paymentMethod,
+          printerConfig,
+        }),
+      });
+
+      if (response.ok) {
+        toast.success("Receipt printed on thermal printer!");
+      } else {
+        const error = await response.json();
+        toast.error(error.error || "Failed to print receipt");
+      }
+    } catch (error) {
+      console.error("Error printing receipt:", error);
+      toast.error("Failed to print receipt");
     }
   };
 
@@ -323,10 +379,10 @@ export function ReceiptGenerator({ sale, onClose }: ReceiptGeneratorProps) {
                         </div>
                         <div className="text-right">
                           <div className="font-medium">
-                            ₦{(item.price * item.quantity).toLocaleString()}
+                            {formatCurrency(item.price * item.quantity)}
                           </div>
                           <div className="text-sm text-muted-foreground">
-                            {item.quantity} × ₦{item.price.toLocaleString()}
+                            {item.quantity} × {formatCurrency(item.price)}
                           </div>
                         </div>
                       </div>
@@ -338,17 +394,17 @@ export function ReceiptGenerator({ sale, onClose }: ReceiptGeneratorProps) {
               {/* Totals */}
               <div className="space-y-2">
                 <div className="flex justify-between">
-                  <span>Subtotal:</span>
-                  <span>₦{sale.subtotal.toLocaleString()}</span>
+                  <span>Subtotal</span>
+                  <span>{formatCurrency(sale.subtotal)}</span>
                 </div>
                 <div className="flex justify-between text-red-600">
-                  <span>Discount:</span>
-                  <span>-₦{sale.discount.toLocaleString()}</span>
+                  <span>Discount</span>
+                  <span>-{formatCurrency(sale.discount)}</span>
                 </div>
                 <Separator />
                 <div className="flex justify-between font-bold text-lg">
-                  <span>TOTAL:</span>
-                  <span>₦{sale.total.toLocaleString()}</span>
+                  <span>Total</span>
+                  <span>{formatCurrency(sale.total)}</span>
                 </div>
               </div>
 
@@ -367,6 +423,11 @@ export function ReceiptGenerator({ sale, onClose }: ReceiptGeneratorProps) {
               Print Receipt
             </Button>
 
+            <Button onClick={handleThermalPrint} variant="outline">
+              <IconPrinter className="h-4 w-4 mr-2" />
+              Thermal Print
+            </Button>
+
             <Button onClick={handleDownload} variant="outline">
               <IconDownload className="h-4 w-4 mr-2" />
               Download
@@ -379,11 +440,37 @@ export function ReceiptGenerator({ sale, onClose }: ReceiptGeneratorProps) {
               </Button>
             )}
 
+            <Button
+              onClick={() => setShowPrinterConfig(true)}
+              variant="outline"
+            >
+              <IconSettings className="h-4 w-4 mr-2" />
+              Printer Config
+            </Button>
+
             <Button onClick={onClose}>
               <IconReceipt className="h-4 w-4 mr-2" />
               Start New Sale
             </Button>
           </div>
+
+          {/* Printer Configuration Dialog */}
+          {showPrinterConfig && (
+            <Dialog
+              open={showPrinterConfig}
+              onOpenChange={setShowPrinterConfig}
+            >
+              <DialogContent className="max-w-2xl">
+                <DialogHeader>
+                  <DialogTitle>Xprinter XP 58 Configuration</DialogTitle>
+                  <DialogDescription>
+                    Configure your thermal printer connection settings.
+                  </DialogDescription>
+                </DialogHeader>
+                <PrinterConfig onConfigChange={setPrinterConfig} />
+              </DialogContent>
+            </Dialog>
+          )}
         </div>
       </DialogContent>
     </Dialog>

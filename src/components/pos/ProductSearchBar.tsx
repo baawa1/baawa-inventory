@@ -18,6 +18,7 @@ import {
   IconCamera,
 } from "@tabler/icons-react";
 import { toast } from "sonner";
+import { formatCurrency } from "@/lib/utils";
 
 interface Product {
   id: number;
@@ -289,8 +290,8 @@ export function ProductSearchBar({
 
                     <div className="flex items-center gap-2">
                       <span className="flex items-center gap-1 font-semibold text-lg">
-                        <IconCurrency className="h-4 w-4" />₦
-                        {product.price.toLocaleString()}
+                        <IconCurrency className="h-4 w-4" />
+                        {formatCurrency(product.price)}
                       </span>
                     </div>
                   </div>
