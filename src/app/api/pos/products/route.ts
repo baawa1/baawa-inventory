@@ -1,6 +1,6 @@
-import { NextResponse } from "next/server";
 import { prisma } from "@/lib/db";
 import { withPOSAuth, AuthenticatedRequest } from "@/lib/api-auth-middleware";
+import { createApiResponse } from "@/lib/api-response";
 import { PRODUCT_STATUS, ERROR_MESSAGES, API_LIMITS } from "@/lib/constants";
 
 async function handleGetProducts(request: AuthenticatedRequest) {
@@ -86,26 +86,27 @@ async function handleGetProducts(request: AuthenticatedRequest) {
 
     // Return products directly if no pagination requested
     if (limit === 0) {
-      return NextResponse.json(formattedProducts);
+      return createApiResponse.success(
+        formattedProducts,
+        "Products retrieved successfully"
+      );
     }
 
-    return NextResponse.json({
-      products: formattedProducts,
-      pagination: {
+    return createApiResponse.successWithPagination(
+      formattedProducts,
+      {
         page,
         limit,
-        totalCount,
+        total: totalCount,
         totalPages: Math.ceil(totalCount / limit),
         hasNextPage: page < Math.ceil(totalCount / limit),
         hasPreviousPage: page > 1,
       },
-    });
+      "Products retrieved successfully"
+    );
   } catch (error) {
     console.error("Error fetching products:", error);
-    return NextResponse.json(
-      { error: ERROR_MESSAGES.INTERNAL_ERROR },
-      { status: 500 }
-    );
+    return createApiResponse.internalError(ERROR_MESSAGES.INTERNAL_ERROR);
   }
 }
 
