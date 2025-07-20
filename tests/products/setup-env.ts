@@ -4,6 +4,11 @@ process.env.DATABASE_URL = "postgresql://test:test@localhost:5432/test_db";
 process.env.NEXTAUTH_SECRET = "test-secret";
 process.env.NEXTAUTH_URL = "http://localhost:3000";
 
+// Mock Web APIs for NextRequest
+global.Request = class MockRequest {} as any;
+global.Response = class MockResponse {} as any;
+global.Headers = class MockHeaders {} as any;
+
 // Mock global fetch
 global.fetch = jest.fn();
 
@@ -108,12 +113,47 @@ jest.mock("@tanstack/react-query", () => ({
 
 // Mock custom hooks
 jest.mock("@/hooks/api/categories", () => ({
+  useCategories: jest.fn(() => ({
+    data: [],
+    isLoading: false,
+    error: null,
+  })),
+  useCategory: jest.fn(() => ({
+    data: null,
+    isLoading: false,
+    error: null,
+  })),
+  useTopLevelCategories: jest.fn(() => ({
+    data: [],
+    isLoading: false,
+    error: null,
+  })),
+  useSubcategories: jest.fn(() => ({
+    data: [],
+    isLoading: false,
+    error: null,
+  })),
   useCategoriesWithHierarchy: jest.fn(() => ({
     data: [],
     isLoading: false,
     error: null,
   })),
-  useCategories: jest.fn(() => ({
+  useCreateCategory: jest.fn(() => ({
+    mutate: jest.fn(),
+    isLoading: false,
+    error: null,
+  })),
+  useUpdateCategory: jest.fn(() => ({
+    mutate: jest.fn(),
+    isLoading: false,
+    error: null,
+  })),
+  useDeleteCategory: jest.fn(() => ({
+    mutate: jest.fn(),
+    isLoading: false,
+    error: null,
+  })),
+  useCategoryOptions: jest.fn(() => ({
     data: [],
     isLoading: false,
     error: null,
@@ -167,6 +207,77 @@ jest.mock("@/hooks/api/products", () => ({
 jest.mock("@/hooks/api/useWebhookSync", () => ({
   useSyncEntity: jest.fn(() => ({
     mutate: jest.fn(),
+    isLoading: false,
+    error: null,
+  })),
+}));
+
+jest.mock("@/hooks/api/brands", () => ({
+  useBrands: jest.fn(() => ({
+    data: [],
+    isLoading: false,
+    error: null,
+  })),
+  useBrand: jest.fn(() => ({
+    data: null,
+    isLoading: false,
+    error: null,
+  })),
+  useBrandById: jest.fn(() => ({
+    data: null,
+    isLoading: false,
+    error: null,
+  })),
+  useCreateBrand: jest.fn(() => ({
+    mutate: jest.fn(),
+    isLoading: false,
+    error: null,
+  })),
+  useUpdateBrand: jest.fn(() => ({
+    mutate: jest.fn(),
+    isLoading: false,
+    error: null,
+  })),
+  useDeleteBrand: jest.fn(() => ({
+    mutate: jest.fn(),
+    isLoading: false,
+    error: null,
+  })),
+  useBrandOptions: jest.fn(() => ({
+    data: [],
+    isLoading: false,
+    error: null,
+  })),
+}));
+
+jest.mock("@/hooks/api/suppliers", () => ({
+  useSuppliers: jest.fn(() => ({
+    data: [],
+    isLoading: false,
+    error: null,
+  })),
+  useSupplier: jest.fn(() => ({
+    data: null,
+    isLoading: false,
+    error: null,
+  })),
+  useCreateSupplier: jest.fn(() => ({
+    mutate: jest.fn(),
+    isLoading: false,
+    error: null,
+  })),
+  useUpdateSupplier: jest.fn(() => ({
+    mutate: jest.fn(),
+    isLoading: false,
+    error: null,
+  })),
+  useDeleteSupplier: jest.fn(() => ({
+    mutate: jest.fn(),
+    isLoading: false,
+    error: null,
+  })),
+  useSupplierOptions: jest.fn(() => ({
+    data: [],
     isLoading: false,
     error: null,
   })),

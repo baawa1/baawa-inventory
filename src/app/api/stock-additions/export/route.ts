@@ -1,15 +1,10 @@
-import { auth } from "../../../../../auth";
-import { NextRequest, NextResponse } from "next/server";
+import { NextResponse } from "next/server";
+import { withAuth, AuthenticatedRequest } from "@/lib/api-middleware";
 import { prisma } from "@/lib/db";
 import { format } from "date-fns";
 
-export async function GET(_request: NextRequest) {
+export const GET = withAuth(async (_request: AuthenticatedRequest) => {
   try {
-    const session = await auth();
-    if (!session?.user) {
-      return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
-    }
-
     // Get all stock additions for export
     const stockAdditions = await prisma.stockAddition.findMany({
       include: {
@@ -94,7 +89,9 @@ export async function GET(_request: NextRequest) {
       .map((row) => row.join(","))
       .join("\n");
 
+    // Return CSV response
     return new NextResponse(csvContent, {
+      status: 200,
       headers: {
         "Content-Type": "text/csv",
         "Content-Disposition": `attachment; filename="stock-history-${format(new Date(), "yyyy-MM-dd")}.csv"`,
@@ -107,4 +104,4 @@ export async function GET(_request: NextRequest) {
       { status: 500 }
     );
   }
-}
+});

@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from "next/server";
 import { auth } from "../../../../../auth";
 import { prisma } from "@/lib/db";
 import { z } from "zod";
+import { USER_ROLES, hasRole } from "@/lib/auth/roles";
 
 // Schema for report query parameters
 const reportQuerySchema = z.object({
@@ -42,7 +43,13 @@ export async function GET(request: NextRequest) {
     }
 
     // Check permissions
-    if (!["ADMIN", "MANAGER", "STAFF"].includes(session.user.role as string)) {
+    if (
+      !hasRole(session.user.role, [
+        USER_ROLES.ADMIN,
+        USER_ROLES.MANAGER,
+        USER_ROLES.STAFF,
+      ])
+    ) {
       return NextResponse.json(
         { error: "Insufficient permissions" },
         { status: 403 }

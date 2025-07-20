@@ -2,6 +2,9 @@
 
 import { useState } from "react";
 import { useRouter } from "next/navigation";
+import { useForm } from "react-hook-form";
+import { zodResolver } from "@hookform/resolvers/zod";
+import { z } from "zod";
 import { Button } from "@/components/ui/button";
 import {
   Card,
@@ -11,10 +14,17 @@ import {
   CardTitle,
 } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
-import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
 import { Switch } from "@/components/ui/switch";
 import { Badge } from "@/components/ui/badge";
+import {
+  Form,
+  FormControl,
+  FormField,
+  FormItem,
+  FormLabel,
+  FormMessage,
+} from "@/components/ui/form";
 import { ArrowLeft, Loader2 } from "lucide-react";
 import { Alert, AlertDescription } from "@/components/ui/alert";
 import { PageHeader } from "@/components/ui/page-header";
@@ -38,61 +48,43 @@ interface EditCategoryFormProps {
   category: Category;
 }
 
-type UpdateCategoryFormData = {
-  name: string;
-  description: string;
-  image: string;
-  isActive: boolean;
-};
+const updateCategorySchema = z.object({
+  name: z
+    .string()
+    .min(1, "Category name is required")
+    .max(100, "Category name must be 100 characters or less")
+    .trim(),
+  description: z
+    .string()
+    .max(500, "Description must be 500 characters or less")
+    .optional()
+    .or(z.literal("")),
+  image: z.string().min(1, "Category image is required"),
+  isActive: z.boolean(),
+});
+
+type UpdateCategoryFormData = z.infer<typeof updateCategorySchema>;
 
 export default function EditCategoryForm({ category }: EditCategoryFormProps) {
   const router = useRouter();
   const updateCategoryMutation = useUpdateCategory();
   const [error, setError] = useState<string | null>(null);
-  const [validationErrors, setValidationErrors] = useState<
-    Record<string, string>
-  >({});
 
-  const [formData, setFormData] = useState<UpdateCategoryFormData>({
-    name: category.name,
-    description: category.description || "",
-    image: category.image || "",
-    isActive: category.isActive,
+  const form = useForm<UpdateCategoryFormData>({
+    resolver: zodResolver(updateCategorySchema),
+    defaultValues: {
+      name: category.name,
+      description: category.description || "",
+      image: category.image || "",
+      isActive: category.isActive,
+    },
   });
 
-  const validateForm = (data: UpdateCategoryFormData) => {
-    const errors: Record<string, string> = {};
-
-    // Custom validation for required fields
-    if (!data.name.trim()) {
-      errors.name = "Category name is required";
-    } else if (data.name.length > 100) {
-      errors.name = "Category name must be 100 characters or less";
-    }
-
-    if (!data.image) {
-      errors.image = "Category image is required";
-    }
-
-    if (data.description && data.description.length > 500) {
-      errors.description = "Description must be 500 characters or less";
-    }
-
-    setValidationErrors(errors);
-    return Object.keys(errors).length === 0;
-  };
-
-  const onSubmit = async (e: React.FormEvent) => {
-    e.preventDefault();
-
-    if (!validateForm(formData)) {
-      return;
-    }
-
+  const onSubmit = async (data: UpdateCategoryFormData) => {
     setError(null);
 
     updateCategoryMutation.mutate(
-      { id: category.id, data: formData },
+      { id: category.id, data },
       {
         onSuccess: (updatedCategory) => {
           console.log("Category updated successfully:", updatedCategory);
@@ -118,18 +110,6 @@ export default function EditCategoryForm({ category }: EditCategoryFormProps) {
 
   const handleCancel = () => {
     router.push("/inventory/categories");
-  };
-
-  const updateFormData = (field: keyof UpdateCategoryFormData, value: any) => {
-    setFormData((prev) => ({ ...prev, [field]: value }));
-    // Clear validation error for this field
-    if (validationErrors[field]) {
-      setValidationErrors((prev) => {
-        const newErrors = { ...prev };
-        delete newErrors[field];
-        return newErrors;
-      });
-    }
   };
 
   // Show loading state
@@ -171,134 +151,148 @@ export default function EditCategoryForm({ category }: EditCategoryFormProps) {
           </CardDescription>
         </CardHeader>
         <CardContent className="space-y-6">
-          <form onSubmit={onSubmit} className="space-y-6">
-            {error && (
-              <Alert variant="destructive">
-                <AlertDescription>{error}</AlertDescription>
-              </Alert>
-            )}
-
-            {/* Category Name */}
-            <div className="space-y-2">
-              <Label htmlFor="name" className="flex items-center gap-2">
-                Category Name
-                <Badge variant="destructive" className="text-xs">
-                  Required
-                </Badge>
-              </Label>
-              <Input
-                id="name"
-                placeholder="e.g., Electronics, Clothing, Books"
-                value={formData.name}
-                onChange={(e) => updateFormData("name", e.target.value)}
-                className={validationErrors.name ? "border-red-500" : ""}
-                disabled={updateCategoryMutation.isPending}
-              />
-              {validationErrors.name && (
-                <p className="text-sm text-red-500">{validationErrors.name}</p>
+          <Form {...form}>
+            <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-6">
+              {error && (
+                <Alert variant="destructive">
+                  <AlertDescription>{error}</AlertDescription>
+                </Alert>
               )}
-              <p className="text-sm text-gray-600 dark:text-gray-400">
-                Enter a unique name for this category. This will be used to
-                organize products.
-              </p>
-            </div>
 
-            {/* Description */}
-            <div className="space-y-2">
-              <Label htmlFor="description">Description</Label>
-              <Textarea
-                id="description"
-                placeholder="Brief description of this category (optional)"
-                className="min-h-[80px]"
-                value={formData.description}
-                onChange={(e) => updateFormData("description", e.target.value)}
-                disabled={updateCategoryMutation.isPending}
-              />
-              {validationErrors.description && (
-                <p className="text-sm text-red-500">
-                  {validationErrors.description}
-                </p>
-              )}
-              <p className="text-sm text-gray-600 dark:text-gray-400">
-                Optional description to help identify the purpose of this
-                category.
-              </p>
-            </div>
-
-            {/* Image Upload */}
-            <div className="space-y-2">
-              <Label htmlFor="image" className="flex items-center gap-2">
-                Category Image
-                <Badge variant="destructive" className="text-xs">
-                  Required
-                </Badge>
-              </Label>
-              <ImageUpload
-                value={formData.image}
-                onChange={(url) => updateFormData("image", url || "")}
-                onError={(error) => {
-                  setValidationErrors((prev) => ({ ...prev, image: error }));
-                }}
-                placeholder="Upload a category image (required)"
-                disabled={updateCategoryMutation.isPending}
-                folder="categories"
-                alt="Category image"
-              />
-              {validationErrors.image && (
-                <p className="text-sm text-red-500">{validationErrors.image}</p>
-              )}
-              <p className="text-sm text-gray-600 dark:text-gray-400">
-                A category image is required to help identify and organize
-                products.
-              </p>
-            </div>
-
-            {/* Active Status */}
-            <div className="flex items-center justify-between rounded-lg border p-4">
-              <div className="space-y-0.5">
-                <Label htmlFor="isActive" className="text-base">
-                  Active Status
-                </Label>
-                <p className="text-sm text-gray-600 dark:text-gray-400">
-                  Active categories will be available for product assignment.
-                  Inactive categories will be hidden from selection.
-                </p>
-              </div>
-              <Switch
-                id="isActive"
-                checked={formData.isActive}
-                onCheckedChange={(checked) =>
-                  updateFormData("isActive", checked)
-                }
-                disabled={updateCategoryMutation.isPending}
-              />
-            </div>
-
-            {/* Form Actions */}
-            <div className="flex items-center gap-4 pt-4">
-              <Button
-                type="submit"
-                disabled={updateCategoryMutation.isPending}
-                className="flex items-center gap-2"
-              >
-                {updateCategoryMutation.isPending && (
-                  <Loader2 className="h-4 w-4 animate-spin" />
+              {/* Category Name */}
+              <FormField
+                control={form.control}
+                name="name"
+                render={({ field }) => (
+                  <FormItem>
+                    <FormLabel className="flex items-center gap-2">
+                      Category Name
+                      <Badge variant="destructive" className="text-xs">
+                        Required
+                      </Badge>
+                    </FormLabel>
+                    <FormControl>
+                      <Input
+                        placeholder="e.g., Electronics, Clothing, Books"
+                        {...field}
+                        className={
+                          form.formState.errors.name ? "border-red-500" : ""
+                        }
+                      />
+                    </FormControl>
+                    <FormMessage />
+                    <p className="text-sm text-gray-600 dark:text-gray-400">
+                      Enter a unique name for this category. This will be used
+                      to organize products.
+                    </p>
+                  </FormItem>
                 )}
-                {updateCategoryMutation.isPending
-                  ? "Updating..."
-                  : "Update Category"}
-              </Button>
+              />
 
-              <Button
-                type="button"
-                variant="outline"
-                onClick={handleCancel}
-                disabled={updateCategoryMutation.isPending}
-              >
-                Cancel
-              </Button>
-            </div>
-          </form>
+              {/* Description */}
+              <FormField
+                control={form.control}
+                name="description"
+                render={({ field }) => (
+                  <FormItem>
+                    <FormLabel>Description</FormLabel>
+                    <FormControl>
+                      <Textarea
+                        placeholder="Brief description of this category (optional)"
+                        className="min-h-[80px]"
+                        {...field}
+                      />
+                    </FormControl>
+                    <FormMessage />
+                    <p className="text-sm text-gray-600 dark:text-gray-400">
+                      Optional description to help identify the purpose of this
+                      category.
+                    </p>
+                  </FormItem>
+                )}
+              />
+
+              {/* Image Upload */}
+              <FormField
+                control={form.control}
+                name="image"
+                render={({ field }) => (
+                  <FormItem>
+                    <FormLabel className="flex items-center gap-2">
+                      Category Image
+                      <Badge variant="destructive" className="text-xs">
+                        Required
+                      </Badge>
+                    </FormLabel>
+                    <FormControl>
+                      <ImageUpload
+                        value={field.value}
+                        onChange={(url) => field.onChange(url || "")}
+                        onError={(error) => {
+                          form.setError("image", { message: error });
+                        }}
+                        placeholder="Upload a category image (required)"
+                        folder="categories"
+                        alt="Category image"
+                      />
+                    </FormControl>
+                    <FormMessage />
+                    <p className="text-sm text-gray-600 dark:text-gray-400">
+                      A category image is required to help identify and organize
+                      products.
+                    </p>
+                  </FormItem>
+                )}
+              />
+
+              {/* Active Status */}
+              <FormField
+                control={form.control}
+                name="isActive"
+                render={({ field }) => (
+                  <FormItem className="flex items-center justify-between rounded-lg border p-4">
+                    <div className="space-y-0.5">
+                      <FormLabel className="text-base">Active Status</FormLabel>
+                      <p className="text-sm text-gray-600 dark:text-gray-400">
+                        Active categories will be available for product
+                        assignment. Inactive categories will be hidden from
+                        selection.
+                      </p>
+                    </div>
+                    <Switch
+                      checked={field.value}
+                      onCheckedChange={field.onChange}
+                    />
+                  </FormItem>
+                )}
+              />
+
+              {/* Form Actions */}
+              <div className="flex items-center gap-4 pt-4">
+                <Button
+                  type="submit"
+                  disabled={updateCategoryMutation.isPending}
+                  className="flex items-center gap-2"
+                >
+                  {updateCategoryMutation.isPending && (
+                    <Loader2 className="h-4 w-4 animate-spin" />
+                  )}
+                  {updateCategoryMutation.isPending
+                    ? "Updating..."
+                    : "Update Category"}
+                </Button>
+
+                <Button
+                  type="button"
+                  variant="outline"
+                  onClick={handleCancel}
+                  disabled={updateCategoryMutation.isPending}
+                >
+                  Cancel
+                </Button>
+              </div>
+            </form>
+          </Form>
         </CardContent>
       </Card>
     </div>

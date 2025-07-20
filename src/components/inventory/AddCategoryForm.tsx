@@ -2,6 +2,9 @@
 
 import React, { useState } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
+import { useForm } from "react-hook-form";
+import { zodResolver } from "@hookform/resolvers/zod";
+import { z } from "zod";
 import { toast } from "sonner";
 
 // Hooks
@@ -13,7 +16,6 @@ import {
 // UI Components
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
-import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
 import { Switch } from "@/components/ui/switch";
 import {
@@ -23,6 +25,14 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
+import {
+  Form,
+  FormControl,
+  FormField,
+  FormItem,
+  FormLabel,
+  FormMessage,
+} from "@/components/ui/form";
 import {
   Card,
   CardContent,
@@ -38,81 +48,55 @@ import { FormLoading } from "@/components/ui/form-loading";
 import { ArrowLeft, Loader2 } from "lucide-react";
 import { IconFolder } from "@tabler/icons-react";
 
-interface CreateCategoryFormData {
-  name: string;
-  description: string;
-  image: string | null;
-  isActive: boolean;
-  parentId: number | null;
-}
+const createCategorySchema = z.object({
+  name: z
+    .string()
+    .min(1, "Category name is required")
+    .max(100, "Category name must be 100 characters or less")
+    .trim(),
+  description: z
+    .string()
+    .max(500, "Description must be 500 characters or less")
+    .optional()
+    .or(z.literal("")),
+  image: z.string().min(1, "Category image is required"),
+  isActive: z.boolean(),
+  parentId: z.number().nullable(),
+});
 
-interface ValidationErrors {
-  name?: string;
-  description?: string;
-  image?: string;
-  parentId?: string;
-  isActive?: string;
-}
+type CreateCategoryFormData = z.infer<typeof createCategorySchema>;
 
 export default function AddCategoryForm() {
   const router = useRouter();
   const searchParams = useSearchParams();
   const parentIdFromUrl = searchParams.get("parentId");
 
-  const [formData, setFormData] = useState<CreateCategoryFormData>({
-    name: "",
-    description: "",
-    image: null,
-    isActive: true,
-    parentId: parentIdFromUrl ? parseInt(parentIdFromUrl) : null,
-  });
-
-  const [validationErrors, setValidationErrors] = useState<ValidationErrors>(
-    {}
-  );
   const [error, setError] = useState<string | null>(null);
 
   const createCategoryMutation = useCreateCategory();
   const { data: parentCategoriesData } = useTopLevelCategories();
 
-  // Validation function
-  const validateForm = (data: CreateCategoryFormData): boolean => {
-    const errors: ValidationErrors = {};
+  const form = useForm<CreateCategoryFormData>({
+    resolver: zodResolver(createCategorySchema),
+    defaultValues: {
+      name: "",
+      description: "",
+      image: "",
+      isActive: true,
+      parentId: parentIdFromUrl ? parseInt(parentIdFromUrl) : null,
+    },
+  });
 
-    if (!data.name.trim()) {
-      errors.name = "Category name is required";
-    } else if (data.name.length > 100) {
-      errors.name = "Category name must be 100 characters or less";
-    }
-
-    if (!data.image) {
-      errors.image = "Category image is required";
-    }
-
-    if (data.description && data.description.length > 500) {
-      errors.description = "Description must be 500 characters or less";
-    }
-
-    setValidationErrors(errors);
-    return Object.keys(errors).length === 0;
-  };
-
-  const onSubmit = async (e: React.FormEvent) => {
-    e.preventDefault();
-
-    if (!validateForm(formData)) {
-      return;
-    }
-
+  const onSubmit = async (data: CreateCategoryFormData) => {
     setError(null);
 
     createCategoryMutation.mutate(
       {
-        name: formData.name.trim(),
-        description: formData.description.trim() || undefined,
-        image: formData.image!,
-        isActive: formData.isActive,
-        parentId: formData.parentId || undefined,
+        name: data.name,
+        description: data.description || undefined,
+        image: data.image,
+        isActive: data.isActive,
+        parentId: data.parentId || undefined,
       },
       {
         onSuccess: (createdCategory) => {
@@ -135,18 +119,6 @@ export default function AddCategoryForm() {
 
   const handleCancel = () => {
     router.push("/inventory/categories");
-  };
-
-  const updateFormData = (field: keyof CreateCategoryFormData, value: any) => {
-    setFormData((prev) => ({ ...prev, [field]: value }));
-    // Clear validation error for this field
-    if (validationErrors[field]) {
-      setValidationErrors((prev) => {
-        const newErrors = { ...prev };
-        delete newErrors[field];
-        return newErrors;
-      });
-    }
   };
 
   // Show loading state
@@ -188,171 +160,197 @@ export default function AddCategoryForm() {
           </CardDescription>
         </CardHeader>
         <CardContent className="space-y-6">
-          <form onSubmit={onSubmit} className="space-y-6">
-            <div className="space-y-2">
-              <Label htmlFor="name">
-                Category Name <span className="text-destructive">*</span>
-              </Label>
-              <Input
-                id="name"
-                type="text"
-                placeholder="Enter category name"
-                value={formData.name}
-                onChange={(e) => updateFormData("name", e.target.value)}
-                className={validationErrors.name ? "border-destructive" : ""}
-                disabled={createCategoryMutation.isPending}
-              />
-              {validationErrors.name && (
-                <p className="text-sm text-destructive">
-                  {validationErrors.name}
-                </p>
-              )}
-            </div>
-
-            <div className="space-y-2">
-              <Label htmlFor="parentId">Parent Category</Label>
-              <Select
-                value={formData.parentId?.toString() || "none"}
-                onValueChange={(value) =>
-                  updateFormData(
-                    "parentId",
-                    value === "none" ? null : parseInt(value)
-                  )
-                }
-                disabled={createCategoryMutation.isPending}
-              >
-                <SelectTrigger>
-                  <SelectValue placeholder="Select parent category (optional)" />
-                </SelectTrigger>
-                <SelectContent>
-                  <SelectItem value="none">
-                    <div className="flex items-center space-x-2">
-                      <IconFolder className="h-4 w-4" />
-                      <span>No parent (Top-level category)</span>
-                    </div>
-                  </SelectItem>
-                  {parentCategoriesData?.data?.map((category) => (
-                    <SelectItem
-                      key={category.id}
-                      value={category.id.toString()}
-                    >
-                      <div className="flex items-center space-x-2">
-                        <IconFolder className="h-4 w-4" />
-                        <span>{category.name}</span>
-                        {category.subcategoryCount > 0 && (
-                          <span className="text-xs text-muted-foreground">
-                            ({category.subcategoryCount} subcategories)
-                          </span>
-                        )}
-                      </div>
-                    </SelectItem>
-                  ))}
-                </SelectContent>
-              </Select>
-              {validationErrors.parentId && (
-                <p className="text-sm text-destructive">
-                  {validationErrors.parentId}
-                </p>
-              )}
-              <p className="text-xs text-muted-foreground">
-                Leave empty to create a top-level category, or select a parent
-                to create a subcategory
-              </p>
-            </div>
-
-            <div className="space-y-2">
-              <Label htmlFor="description">Description</Label>
-              <Textarea
-                id="description"
-                placeholder="Enter category description (optional)"
-                value={formData.description}
-                onChange={(e) => updateFormData("description", e.target.value)}
-                rows={3}
-                className={
-                  validationErrors.description ? "border-destructive" : ""
-                }
-                disabled={createCategoryMutation.isPending}
-              />
-              {validationErrors.description && (
-                <p className="text-sm text-destructive">
-                  {validationErrors.description}
-                </p>
-              )}
-            </div>
-
-            <ImageUpload
-              value={formData.image}
-              onChange={(url) => updateFormData("image", url)}
-              onError={(error) => {
-                console.error("Image upload error:", error);
-              }}
-              label="Category Image"
-              placeholder="Upload a category image"
-              disabled={createCategoryMutation.isPending}
-              folder="categories"
-              alt="Category image"
-            />
-            {validationErrors.image && (
-              <p className="text-sm text-destructive">
-                {validationErrors.image}
-              </p>
-            )}
-
-            <div className="flex items-center justify-between rounded-lg border p-4">
-              <div className="space-y-0.5">
-                <Label htmlFor="isActive" className="text-base">
-                  Active Status
-                </Label>
-                <p className="text-sm text-gray-600 dark:text-gray-400">
-                  Active categories will be available for product assignment.
-                </p>
-              </div>
-              <Switch
-                id="isActive"
-                checked={formData.isActive}
-                onCheckedChange={(checked) =>
-                  updateFormData("isActive", checked)
-                }
-                disabled={createCategoryMutation.isPending}
-              />
-            </div>
-            {validationErrors.isActive && (
-              <p className="text-sm text-destructive">
-                {validationErrors.isActive}
-              </p>
-            )}
-
-            {/* Error Display */}
-            {error && (
-              <div className="p-4 border border-destructive bg-destructive/10 rounded-md">
-                <p className="text-sm text-destructive">{error}</p>
-              </div>
-            )}
-
-            <div className="flex items-center gap-4 pt-4">
-              <Button
-                type="submit"
-                disabled={createCategoryMutation.isPending}
-                className="flex items-center gap-2"
-              >
-                {createCategoryMutation.isPending && (
-                  <Loader2 className="h-4 w-4 animate-spin" />
+          <Form {...form}>
+            <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-6">
+              <FormField
+                control={form.control}
+                name="name"
+                render={({ field }) => (
+                  <FormItem>
+                    <FormLabel>
+                      Category Name <span className="text-destructive">*</span>
+                    </FormLabel>
+                    <FormControl>
+                      <Input
+                        {...field}
+                        onChange={field.onChange}
+                        onBlur={field.onBlur}
+                        value={field.value}
+                        placeholder="Enter category name"
+                        className={
+                          form.formState.errors.name ? "border-destructive" : ""
+                        }
+                        disabled={createCategoryMutation.isPending}
+                      />
+                    </FormControl>
+                    <FormMessage />
+                  </FormItem>
                 )}
-                {createCategoryMutation.isPending
-                  ? "Creating..."
-                  : "Create Category"}
-              </Button>
+              />
 
-              <Button
-                type="button"
-                variant="outline"
-                onClick={handleCancel}
-                disabled={createCategoryMutation.isPending}
-              >
-                Cancel
-              </Button>
-            </div>
-          </form>
+              <FormField
+                control={form.control}
+                name="parentId"
+                render={({ field }) => (
+                  <FormItem>
+                    <FormLabel>Parent Category</FormLabel>
+                    <Select
+                      onValueChange={(value) =>
+                        field.onChange(
+                          value === "none" ? null : parseInt(value)
+                        )
+                      }
+                      defaultValue={field.value?.toString() || "none"}
+                      disabled={createCategoryMutation.isPending}
+                    >
+                      <FormControl>
+                        <SelectTrigger>
+                          <SelectValue placeholder="Select parent category (optional)" />
+                        </SelectTrigger>
+                      </FormControl>
+                      <SelectContent>
+                        <SelectItem value="none">
+                          <div className="flex items-center space-x-2">
+                            <IconFolder className="h-4 w-4" />
+                            <span>No parent (Top-level category)</span>
+                          </div>
+                        </SelectItem>
+                        {parentCategoriesData?.data?.map((category) => (
+                          <SelectItem
+                            key={category.id}
+                            value={category.id.toString()}
+                          >
+                            <div className="flex items-center space-x-2">
+                              <IconFolder className="h-4 w-4" />
+                              <span>{category.name}</span>
+                              {category.subcategoryCount > 0 && (
+                                <span className="text-xs text-muted-foreground">
+                                  ({category.subcategoryCount} subcategories)
+                                </span>
+                              )}
+                            </div>
+                          </SelectItem>
+                        ))}
+                      </SelectContent>
+                    </Select>
+                    <FormMessage />
+                    <p className="text-xs text-muted-foreground">
+                      Leave empty to create a top-level category, or select a
+                      parent to create a subcategory
+                    </p>
+                  </FormItem>
+                )}
+              />
+
+              <FormField
+                control={form.control}
+                name="description"
+                render={({ field }) => (
+                  <FormItem>
+                    <FormLabel>Description</FormLabel>
+                    <FormControl>
+                      <Textarea
+                        {...field}
+                        onChange={field.onChange}
+                        onBlur={field.onBlur}
+                        value={field.value}
+                        placeholder="Enter category description (optional)"
+                        rows={3}
+                        className={
+                          form.formState.errors.description
+                            ? "border-destructive"
+                            : ""
+                        }
+                        disabled={createCategoryMutation.isPending}
+                      />
+                    </FormControl>
+                    <FormMessage />
+                  </FormItem>
+                )}
+              />
+
+              <FormField
+                control={form.control}
+                name="image"
+                render={({ field }) => (
+                  <FormItem>
+                    <FormLabel>Category Image</FormLabel>
+                    <FormControl>
+                      <ImageUpload
+                        {...field}
+                        onChange={field.onChange}
+                        onError={(error) => {
+                          console.error("Image upload error:", error);
+                        }}
+                        label="Category Image"
+                        placeholder="Upload a category image"
+                        disabled={createCategoryMutation.isPending}
+                        folder="categories"
+                        alt="Category image"
+                      />
+                    </FormControl>
+                    <FormMessage />
+                  </FormItem>
+                )}
+              />
+
+              <FormField
+                control={form.control}
+                name="isActive"
+                render={({ field }) => (
+                  <FormItem className="flex items-center justify-between rounded-lg border p-4">
+                    <div className="space-y-0.5">
+                      <FormLabel htmlFor="isActive" className="text-base">
+                        Active Status
+                      </FormLabel>
+                      <p className="text-sm text-gray-600 dark:text-gray-400">
+                        Active categories will be available for product
+                        assignment.
+                      </p>
+                    </div>
+                    <Switch
+                      id="isActive"
+                      checked={field.value}
+                      onCheckedChange={field.onChange}
+                      onBlur={field.onBlur}
+                      disabled={createCategoryMutation.isPending}
+                    />
+                  </FormItem>
+                )}
+              />
+
+              {/* Error Display */}
+              {error && (
+                <div className="p-4 border border-destructive bg-destructive/10 rounded-md">
+                  <p className="text-sm text-destructive">{error}</p>
+                </div>
+              )}
+
+              <div className="flex items-center gap-4 pt-4">
+                <Button
+                  type="submit"
+                  disabled={createCategoryMutation.isPending}
+                  className="flex items-center gap-2"
+                >
+                  {createCategoryMutation.isPending && (
+                    <Loader2 className="h-4 w-4 animate-spin" />
+                  )}
+                  {createCategoryMutation.isPending
+                    ? "Creating..."
+                    : "Create Category"}
+                </Button>
+
+                <Button
+                  type="button"
+                  variant="outline"
+                  onClick={handleCancel}
+                  disabled={createCategoryMutation.isPending}
+                >
+                  Cancel
+                </Button>
+              </div>
+            </form>
+          </Form>
         </CardContent>
       </Card>
     </div>
