@@ -32,14 +32,20 @@ export async function GET(request: NextRequest) {
     const page = parseInt(searchParams.get("page") || "1");
     const limit = parseInt(searchParams.get("limit") || "10");
     const search = searchParams.get("search") || "";
-    const categoryId = searchParams.get("categoryId");
-    const brandId = searchParams.get("brandId");
+    const categoryId =
+      searchParams.get("categoryId") || searchParams.get("category");
+    const brandId = searchParams.get("brandId") || searchParams.get("brand");
     const supplierId = searchParams.get("supplierId");
     const lowStock = searchParams.get("lowStock") === "true";
     const status = searchParams.get("status") || "active";
     const sortBy = searchParams.get("sortBy") || "name";
     const sortOrder = searchParams.get("sortOrder") || "asc";
     const includeSync = searchParams.get("includeSync") === "true";
+
+    // Webflow sync filters
+    const syncStatus = searchParams.get("syncStatus");
+    const autoSync = searchParams.get("autoSync");
+    const showInWebflow = searchParams.get("showInWebflow");
 
     // Build where clause
     const where: any = {
@@ -82,6 +88,40 @@ export async function GET(request: NextRequest) {
       where.id = {
         in: lowStockProducts.map((p) => p.id),
       };
+    }
+
+    // Webflow sync filtering
+    if (includeSync && (syncStatus || autoSync || showInWebflow)) {
+      // Build webflow sync filter conditions
+      const webflowSyncConditions: any = {};
+
+      if (syncStatus) {
+        if (syncStatus === "never") {
+          // Products that have no webflow sync record
+          webflowSyncConditions.none = {};
+        } else {
+          // Products with specific sync status
+          webflowSyncConditions.some = {
+            sync_status: syncStatus,
+          };
+        }
+      }
+
+      if (autoSync !== undefined && autoSync !== "") {
+        if (!webflowSyncConditions.some) {
+          webflowSyncConditions.some = {};
+        }
+        webflowSyncConditions.some.auto_sync = autoSync === "true";
+      }
+
+      if (showInWebflow !== undefined && showInWebflow !== "") {
+        if (!webflowSyncConditions.some) {
+          webflowSyncConditions.some = {};
+        }
+        webflowSyncConditions.some.is_published = showInWebflow === "true";
+      }
+
+      where.webflow_sync = webflowSyncConditions;
     }
 
     // Build orderBy clause
