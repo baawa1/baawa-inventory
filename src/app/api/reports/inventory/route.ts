@@ -1,246 +1,169 @@
-import { NextRequest, NextResponse } from "next/server";
-import { auth } from "../../../../../auth";
+import { NextResponse } from "next/server";
+import { withPermission, AuthenticatedRequest } from "@/lib/api-middleware";
+import { handleApiError } from "@/lib/api-error-handler";
 import { prisma } from "@/lib/db";
 import { format } from "date-fns";
-import { hasPermission } from "@/lib/auth/roles";
+import { USER_ROLES } from "@/lib/auth/roles";
 
-export async function GET(request: NextRequest) {
-  try {
-    const session = await auth();
-    if (!session?.user) {
-      return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
-    }
+export const GET = withPermission(
+  [USER_ROLES.ADMIN, USER_ROLES.MANAGER],
+  async (request: AuthenticatedRequest) => {
+    try {
+      const { searchParams } = new URL(request.url);
+      const reportType = searchParams.get("type") || "current_stock";
+      const format_type = searchParams.get("format") || "json";
+      const page = parseInt(searchParams.get("page") || "1");
+      const limit = parseInt(searchParams.get("limit") || "10");
+      const category = searchParams.get("category");
+      const brand = searchParams.get("brand");
+      const supplier = searchParams.get("supplier");
+      const lowStockOnly = searchParams.get("lowStockOnly") === "true";
+      const includeArchived = searchParams.get("includeArchived") === "true";
 
-    // Check role permissions
-    if (!hasPermission(session.user.role, "REPORTS_READ")) {
-      return NextResponse.json({ error: "Forbidden" }, { status: 403 });
-    }
+      let reportData;
+      let reportTitle;
+      let filename;
 
-    const { searchParams } = new URL(request.url);
-    const reportType = searchParams.get("type") || "current_stock";
-    const format_type = searchParams.get("format") || "json";
-    const page = parseInt(searchParams.get("page") || "1");
-    const limit = parseInt(searchParams.get("limit") || "10");
-    const category = searchParams.get("category");
-    const brand = searchParams.get("brand");
-    const supplier = searchParams.get("supplier");
-    const lowStockOnly = searchParams.get("lowStockOnly") === "true";
-    const includeArchived = searchParams.get("includeArchived") === "true";
+      switch (reportType) {
+        case "current_stock":
+          reportData = await getCurrentStockReport({
+            category,
+            brand,
+            supplier,
+            lowStockOnly,
+            includeArchived,
+            page,
+            limit,
+          });
+          reportTitle = "Current Stock Report";
+          filename = `current-stock-${format(new Date(), "yyyy-MM-dd")}`;
+          break;
 
-    let reportData;
-    let reportTitle;
-    let filename;
+        case "stock_value":
+          reportData = await getStockValueReport({
+            category,
+            brand,
+            supplier,
+            includeArchived,
+            page,
+            limit,
+          });
+          reportTitle = "Stock Value Report";
+          filename = `stock-value-${format(new Date(), "yyyy-MM-dd")}`;
+          break;
 
-    switch (reportType) {
-      case "current_stock":
-        reportData = await getCurrentStockReport({
-          category,
-          brand,
-          supplier,
-          lowStockOnly,
-          includeArchived,
-          page,
-          limit,
+        case "low_stock":
+          reportData = await getLowStockReport({
+            category,
+            brand,
+            supplier,
+            page,
+            limit,
+          });
+          reportTitle = "Low Stock Report";
+          filename = `low-stock-${format(new Date(), "yyyy-MM-dd")}`;
+          break;
+
+        case "stock_movement":
+          const fromDate = searchParams.get("fromDate");
+          const toDate = searchParams.get("toDate");
+          reportData = await getStockMovementReport({
+            category,
+            brand,
+            supplier,
+            fromDate,
+            toDate,
+            page,
+            limit,
+          });
+          reportTitle = "Stock Movement Report";
+          filename = `stock-movement-${format(new Date(), "yyyy-MM-dd")}`;
+          break;
+
+        case "reorder":
+          reportData = await getReorderReport({
+            category,
+            brand,
+            supplier,
+            page,
+            limit,
+          });
+          reportTitle = "Reorder Report";
+          filename = `reorder-${format(new Date(), "yyyy-MM-dd")}`;
+          break;
+
+        default:
+          return NextResponse.json(
+            { error: "Invalid report type" },
+            { status: 400 }
+          );
+      }
+
+      // Handle different response formats
+      if (format_type === "csv") {
+        const csv = generateCSV(reportData.data, reportType);
+        return new NextResponse(csv, {
+          headers: {
+            "Content-Type": "text/csv",
+            "Content-Disposition": `attachment; filename="${filename}.csv"`,
+          },
         });
-        reportTitle = "Current Stock Report";
-        filename = `current-stock-${format(new Date(), "yyyy-MM-dd")}`;
-        break;
-
-      case "stock_value":
-        reportData = await getStockValueReport({
-          category,
-          brand,
-          supplier,
-          includeArchived,
-          page,
-          limit,
-        });
-        reportTitle = "Stock Value Report";
-        filename = `stock-value-${format(new Date(), "yyyy-MM-dd")}`;
-        break;
-
-      case "low_stock":
-        reportData = await getLowStockReport({
-          category,
-          brand,
-          supplier,
-          page,
-          limit,
-        });
-        reportTitle = "Low Stock Report";
-        filename = `low-stock-${format(new Date(), "yyyy-MM-dd")}`;
-        break;
-
-      case "product_summary":
-        reportData = await getProductSummaryReport({
-          category,
-          brand,
-          supplier,
-          includeArchived,
-          page,
-          limit,
-        });
-        reportTitle = "Product Summary Report";
-        filename = `product-summary-${format(new Date(), "yyyy-MM-dd")}`;
-        break;
-
-      default:
+      } else if (format_type === "pdf") {
+        // PDF generation would go here - for now return JSON
         return NextResponse.json(
-          { error: "Invalid report type" },
-          { status: 400 }
+          {
+            error: "PDF format not yet implemented",
+          },
+          { status: 501 }
         );
-    }
+      }
 
-    // Return JSON format
-    if (format_type === "json") {
+      // Default JSON response
       return NextResponse.json({
-        title: reportTitle,
+        success: true,
+        reportType,
+        reportTitle,
         generatedAt: new Date().toISOString(),
-        data: reportData,
-        pagination: reportData.pagination || {
-          page: page,
-          limit: limit,
-          total: 0,
-          totalPages: 1,
-          hasNextPage: false,
-          hasPreviousPage: false,
-        },
+        data: reportData.data,
+        summary: reportData.summary,
+        pagination: reportData.pagination,
       });
+    } catch (error) {
+      return handleApiError(error);
     }
-
-    // Return CSV format
-    if (format_type === "csv") {
-      const csvContent = generateCSV(reportData, reportType);
-      return new NextResponse(csvContent, {
-        headers: {
-          "Content-Type": "text/csv",
-          "Content-Disposition": `attachment; filename="${filename}.csv"`,
-        },
-      });
-    }
-
-    return NextResponse.json({ error: "Invalid format type" }, { status: 400 });
-  } catch (error) {
-    console.error("Error generating inventory report:", error);
-    return NextResponse.json(
-      { error: "Failed to generate report" },
-      { status: 500 }
-    );
   }
-}
+);
 
-async function getCurrentStockReport(filters: {
-  category?: string | null;
-  brand?: string | null;
-  supplier?: string | null;
-  lowStockOnly?: boolean;
-  includeArchived?: boolean;
-  page?: number;
-  limit?: number;
-}) {
-  const where: any = {};
+// Helper function to get current stock report
+async function getCurrentStockReport(filters: any) {
+  const {
+    category,
+    brand,
+    supplier,
+    lowStockOnly,
+    includeArchived,
+    page,
+    limit,
+  } = filters;
 
-  if (!filters.includeArchived) {
-    where.isArchived = false;
-  }
-
-  if (filters.category) {
-    where.categoryId = parseInt(filters.category);
-  }
-
-  if (filters.brand) {
-    where.brandId = parseInt(filters.brand);
-  }
-
-  if (filters.supplier) {
-    where.supplierId = parseInt(filters.supplier);
-  }
-
-  // Calculate pagination
-  const skip = (filters.page || 1) - 1;
-  const take = filters.limit || 10;
-
-  // First get all products for filtering (if lowStockOnly is true)
-  const allProducts = await prisma.product.findMany({
-    where,
-    include: {
-      category: { select: { name: true } },
-      brand: { select: { name: true } },
-      supplier: { select: { name: true } },
-    },
-    orderBy: { name: "asc" },
-  });
-
-  // Filter low stock products after fetching if needed
-  let filteredProducts = allProducts;
-  if (filters.lowStockOnly) {
-    filteredProducts = allProducts.filter(
-      (product) => product.stock <= product.minStock
-    );
-  }
-
-  // Apply pagination to filtered results
-  const paginatedProducts = filteredProducts.slice(
-    skip * take,
-    (skip + 1) * take
-  );
-
-  return {
-    products: paginatedProducts.map((product) => ({
-      id: product.id,
-      name: product.name,
-      sku: product.sku,
-      category: product.category?.name || "Uncategorized",
-      brand: product.brand?.name || "No Brand",
-      supplier: product.supplier?.name || "No Supplier",
-      currentStock: product.stock,
-      minStock: product.minStock,
-      maxStock: product.maxStock,
-      costPrice: Number(product.cost),
-      sellingPrice: Number(product.price),
-      stockValue: product.stock * Number(product.cost),
-      isLowStock: product.stock <= product.minStock,
-      isArchived: product.isArchived,
-      lastUpdated: product.updatedAt,
-    })),
-    pagination: {
-      page: filters.page || 1,
-      limit: filters.limit || 10,
-      total: filteredProducts.length,
-      totalPages: Math.ceil(filteredProducts.length / (filters.limit || 10)),
-    },
+  const where: any = {
+    isArchived: includeArchived ? undefined : false,
   };
-}
 
-async function getStockValueReport(filters: {
-  category?: string | null;
-  brand?: string | null;
-  supplier?: string | null;
-  includeArchived?: boolean;
-  page?: number;
-  limit?: number;
-}) {
-  const where: any = {};
-
-  if (!filters.includeArchived) {
-    where.isArchived = false;
+  if (category) {
+    where.category = { name: { contains: category, mode: "insensitive" } };
+  }
+  if (brand) {
+    where.brand = { name: { contains: brand, mode: "insensitive" } };
+  }
+  if (supplier) {
+    where.supplier = { name: { contains: supplier, mode: "insensitive" } };
+  }
+  if (lowStockOnly) {
+    where.stock = { lte: prisma.product.fields.minStock };
   }
 
-  if (filters.category) {
-    where.categoryId = parseInt(filters.category);
-  }
-
-  if (filters.brand) {
-    where.brandId = parseInt(filters.brand);
-  }
-
-  if (filters.supplier) {
-    where.supplierId = parseInt(filters.supplier);
-  }
-
-  // Calculate pagination
-  const skip = (filters.page || 1) - 1;
-  const take = filters.limit || 10;
+  const offset = (page - 1) * limit;
 
   const [products, totalCount] = await Promise.all([
     prisma.product.findMany({
@@ -251,366 +174,377 @@ async function getStockValueReport(filters: {
         supplier: { select: { name: true } },
       },
       orderBy: { name: "asc" },
-      skip: skip * take,
-      take,
+      skip: offset,
+      take: limit,
     }),
     prisma.product.count({ where }),
   ]);
 
-  const totalValue = products.reduce(
-    (sum, product) => sum + product.stock * Number(product.cost),
-    0
-  );
-
-  const totalSellingValue = products.reduce(
-    (sum, product) => sum + product.stock * Number(product.price),
-    0
-  );
-
-  // Calculate pagination metadata
-  const totalPages = Math.ceil(totalCount / take);
-  const hasNextPage = (filters.page || 1) < totalPages;
-  const hasPreviousPage = (filters.page || 1) > 1;
+  const summary = {
+    totalProducts: totalCount,
+    totalValue: products.reduce((sum, p) => sum + p.stock * Number(p.price), 0),
+    lowStockItems: products.filter((p) => p.stock <= p.minStock).length,
+    outOfStockItems: products.filter((p) => p.stock === 0).length,
+  };
 
   return {
-    summary: {
-      totalProducts: totalCount,
-      totalStockValue: totalValue,
-      totalSellingValue: totalSellingValue,
-      potentialProfit: totalSellingValue - totalValue,
-    },
-    products: products.map((product) => ({
-      id: product.id,
-      name: product.name,
-      sku: product.sku,
-      category: product.category?.name || "Uncategorized",
-      brand: product.brand?.name || "No Brand",
-      supplier: product.supplier?.name || "No Supplier",
-      currentStock: product.stock,
-      costPrice: Number(product.cost),
-      sellingPrice: Number(product.price),
-      stockValue: product.stock * Number(product.cost),
-      sellingValue: product.stock * Number(product.price),
-      potentialProfit:
-        product.stock * (Number(product.price) - Number(product.cost)),
-      profitMargin:
-        Number(product.price) > 0
-          ? ((Number(product.price) - Number(product.cost)) /
-              Number(product.price)) *
-            100
-          : 0,
+    data: products.map((p) => ({
+      id: p.id,
+      name: p.name,
+      sku: p.sku,
+      category: p.category?.name || "Uncategorized",
+      brand: p.brand?.name || "No Brand",
+      supplier: p.supplier?.name || "No Supplier",
+      currentStock: p.stock,
+      minStock: p.minStock,
+      price: p.price,
+      cost: p.cost,
+      value: p.stock * Number(p.price),
+      status:
+        p.stock <= p.minStock
+          ? p.stock === 0
+            ? "Out of Stock"
+            : "Low Stock"
+          : "In Stock",
     })),
+    summary,
     pagination: {
-      page: filters.page || 1,
-      limit: filters.limit || 10,
+      page,
+      limit,
       total: totalCount,
-      totalPages,
-      hasNextPage,
-      hasPreviousPage,
+      totalPages: Math.ceil(totalCount / limit),
     },
   };
 }
 
-async function getLowStockReport(filters: {
-  category?: string | null;
-  brand?: string | null;
-  supplier?: string | null;
-  page?: number;
-  limit?: number;
-}) {
+// Helper function to get stock value report
+async function getStockValueReport(filters: any) {
+  const { category, brand, supplier, includeArchived, page, limit } = filters;
+
+  const where: any = {
+    isArchived: includeArchived ? undefined : false,
+  };
+
+  if (category) {
+    where.category = { name: { contains: category, mode: "insensitive" } };
+  }
+  if (brand) {
+    where.brand = { name: { contains: brand, mode: "insensitive" } };
+  }
+  if (supplier) {
+    where.supplier = { name: { contains: supplier, mode: "insensitive" } };
+  }
+
+  const offset = (page - 1) * limit;
+
+  const [products, totalCount] = await Promise.all([
+    prisma.product.findMany({
+      where,
+      include: {
+        category: { select: { name: true } },
+        brand: { select: { name: true } },
+        supplier: { select: { name: true } },
+      },
+      orderBy: { name: "asc" },
+      skip: offset,
+      take: limit,
+    }),
+    prisma.product.count({ where }),
+  ]);
+
+  const summary = {
+    totalProducts: totalCount,
+    totalStockValue: products.reduce(
+      (sum, p) => sum + p.stock * Number(p.price),
+      0
+    ),
+    totalCostValue: products.reduce(
+      (sum, p) => sum + p.stock * Number(p.cost),
+      0
+    ),
+    totalProfit: products.reduce(
+      (sum, p) => sum + p.stock * (Number(p.price) - Number(p.cost)),
+      0
+    ),
+  };
+
+  return {
+    data: products.map((p) => ({
+      id: p.id,
+      name: p.name,
+      sku: p.sku,
+      category: p.category?.name || "Uncategorized",
+      brand: p.brand?.name || "No Brand",
+      currentStock: p.stock,
+      price: p.price,
+      cost: p.cost,
+      stockValue: p.stock * Number(p.price),
+      costValue: p.stock * Number(p.cost),
+      profitValue: p.stock * (Number(p.price) - Number(p.cost)),
+    })),
+    summary,
+    pagination: {
+      page,
+      limit,
+      total: totalCount,
+      totalPages: Math.ceil(totalCount / limit),
+    },
+  };
+}
+
+// Helper function to get low stock report
+async function getLowStockReport(filters: any) {
+  const { category, brand, supplier, page, limit } = filters;
+
   const where: any = {
     isArchived: false,
+    stock: { lte: prisma.product.fields.minStock },
   };
 
-  if (filters.category) {
-    where.categoryId = parseInt(filters.category);
+  if (category) {
+    where.category = { name: { contains: category, mode: "insensitive" } };
+  }
+  if (brand) {
+    where.brand = { name: { contains: brand, mode: "insensitive" } };
+  }
+  if (supplier) {
+    where.supplier = { name: { contains: supplier, mode: "insensitive" } };
   }
 
-  if (filters.brand) {
-    where.brandId = parseInt(filters.brand);
-  }
+  const offset = (page - 1) * limit;
 
-  if (filters.supplier) {
-    where.supplierId = parseInt(filters.supplier);
-  }
+  const [products, totalCount] = await Promise.all([
+    prisma.product.findMany({
+      where,
+      include: {
+        category: { select: { name: true } },
+        brand: { select: { name: true } },
+        supplier: { select: { name: true } },
+      },
+      orderBy: { stock: "asc" },
+      skip: offset,
+      take: limit,
+    }),
+    prisma.product.count({ where }),
+  ]);
 
-  // Calculate pagination
-  const skip = (filters.page || 1) - 1;
-  const take = filters.limit || 10;
-
-  // First get all products to filter for low stock
-  const allProducts = await prisma.product.findMany({
-    where,
-    include: {
-      category: { select: { name: true } },
-      brand: { select: { name: true } },
-      supplier: { select: { name: true } },
-    },
-    orderBy: { stock: "asc" },
-  });
-
-  // Filter for low stock after fetching
-  const lowStockProducts = allProducts.filter(
-    (product) => product.stock <= product.minStock
-  );
-
-  // Apply pagination to filtered results
-  const paginatedProducts = lowStockProducts.slice(
-    skip * take,
-    (skip + 1) * take
-  );
-
-  // Calculate pagination metadata
-  const totalPages = Math.ceil(lowStockProducts.length / take);
-  const hasNextPage = (filters.page || 1) < totalPages;
-  const hasPreviousPage = (filters.page || 1) > 1;
+  const summary = {
+    totalLowStockItems: totalCount,
+    outOfStockItems: products.filter((p) => p.stock === 0).length,
+    criticallyLowItems: products.filter(
+      (p) => p.stock > 0 && p.stock <= p.minStock * 0.5
+    ).length,
+  };
 
   return {
-    products: paginatedProducts.map((product) => ({
-      id: product.id,
-      name: product.name,
-      sku: product.sku,
-      category: product.category?.name || "Uncategorized",
-      brand: product.brand?.name || "No Brand",
-      supplier: product.supplier?.name || "No Supplier",
-      currentStock: product.stock,
-      minStock: product.minStock,
-      maxStock: product.maxStock,
-      reorderQuantity: Math.max(
-        0,
-        (product.maxStock || product.minStock * 2) - product.stock
-      ),
-      stockShortage: Math.max(0, product.minStock - product.stock),
-      costPrice: Number(product.cost),
-      reorderValue:
-        Math.max(
-          0,
-          (product.maxStock || product.minStock * 2) - product.stock
-        ) * Number(product.cost),
-      daysOutOfStock: product.stock <= 0 ? "Out of Stock" : "Low Stock",
-      lastUpdated: product.updatedAt,
+    data: products.map((p) => ({
+      id: p.id,
+      name: p.name,
+      sku: p.sku,
+      category: p.category?.name || "Uncategorized",
+      brand: p.brand?.name || "No Brand",
+      supplier: p.supplier?.name || "No Supplier",
+      currentStock: p.stock,
+      minStock: p.minStock,
+      shortage: p.minStock - p.stock,
+      urgency:
+        p.stock === 0
+          ? "Critical"
+          : p.stock <= p.minStock * 0.5
+            ? "High"
+            : "Medium",
     })),
+    summary,
     pagination: {
-      page: filters.page || 1,
-      limit: filters.limit || 10,
-      total: lowStockProducts.length,
-      totalPages,
-      hasNextPage,
-      hasPreviousPage,
+      page,
+      limit,
+      total: totalCount,
+      totalPages: Math.ceil(totalCount / limit),
     },
   };
 }
 
-async function getProductSummaryReport(filters: {
-  category?: string | null;
-  brand?: string | null;
-  supplier?: string | null;
-  includeArchived?: boolean;
-  page?: number;
-  limit?: number;
-}) {
+// Helper function to get stock movement report
+async function getStockMovementReport(filters: any) {
+  const { category, brand, supplier, fromDate, toDate, page, limit } = filters;
+
   const where: any = {};
 
-  if (!filters.includeArchived) {
-    where.isArchived = false;
+  if (fromDate || toDate) {
+    where.createdAt = {};
+    if (fromDate) where.createdAt.gte = new Date(fromDate);
+    if (toDate) where.createdAt.lte = new Date(toDate);
   }
 
-  if (filters.category) {
-    where.categoryId = parseInt(filters.category);
+  if (category || brand || supplier) {
+    where.product = {};
+    if (category) {
+      where.product.category = {
+        name: { contains: category, mode: "insensitive" },
+      };
+    }
+    if (brand) {
+      where.product.brand = { name: { contains: brand, mode: "insensitive" } };
+    }
+    if (supplier) {
+      where.product.supplier = {
+        name: { contains: supplier, mode: "insensitive" },
+      };
+    }
   }
 
-  if (filters.brand) {
-    where.brandId = parseInt(filters.brand);
-  }
+  const offset = (page - 1) * limit;
 
-  if (filters.supplier) {
-    where.supplierId = parseInt(filters.supplier);
-  }
+  const [stockAdditions, totalCount] = await Promise.all([
+    prisma.stockAddition.findMany({
+      where,
+      include: {
+        product: {
+          include: {
+            category: { select: { name: true } },
+            brand: { select: { name: true } },
+            supplier: { select: { name: true } },
+          },
+        },
+        createdBy: { select: { firstName: true, lastName: true } },
+      },
+      orderBy: { createdAt: "desc" },
+      skip: offset,
+      take: limit,
+    }),
+    prisma.stockAddition.count({ where }),
+  ]);
 
-  const [products, categoryStats, brandStats, supplierStats] =
-    await Promise.all([
-      prisma.product.count({ where }),
-      prisma.product.groupBy({
-        by: ["categoryId"],
-        where,
-        _count: { id: true },
-        _sum: { stock: true },
-      }),
-      prisma.product.groupBy({
-        by: ["brandId"],
-        where,
-        _count: { id: true },
-        _sum: { stock: true },
-      }),
-      prisma.product.groupBy({
-        by: ["supplierId"],
-        where,
-        _count: { id: true },
-        _sum: { stock: true },
-      }),
-    ]);
-
-  // Get category names
-  const categories = await prisma.category.findMany({
-    select: { id: true, name: true },
-  });
-
-  // Get brand names
-  const brands = await prisma.brand.findMany({
-    select: { id: true, name: true },
-  });
-
-  // Get supplier names
-  const suppliers = await prisma.supplier.findMany({
-    select: { id: true, name: true },
-  });
-
-  // Calculate pagination metadata
-  const totalPages = Math.ceil(products / (filters.limit || 10));
-  const hasNextPage = (filters.page || 1) < totalPages;
-  const hasPreviousPage = (filters.page || 1) > 1;
+  const summary = {
+    totalMovements: totalCount,
+    totalQuantityAdded: stockAdditions.reduce(
+      (sum, sa) => sum + sa.quantity,
+      0
+    ),
+    totalValueAdded: stockAdditions.reduce(
+      (sum, sa) => sum + Number(sa.totalCost),
+      0
+    ),
+  };
 
   return {
-    totalProducts: products,
-    byCategory: categoryStats.map((stat) => ({
-      category:
-        categories.find((c) => c.id === stat.categoryId)?.name ||
-        "Uncategorized",
-      productCount: stat._count.id,
-      totalStock: stat._sum.stock || 0,
+    data: stockAdditions.map((sa) => ({
+      id: sa.id,
+      date: sa.createdAt,
+      productName: sa.product.name,
+      sku: sa.product.sku,
+      category: sa.product.category?.name || "Uncategorized",
+      brand: sa.product.brand?.name || "No Brand",
+      supplier: sa.product.supplier?.name || "No Supplier",
+      movementType: "Addition",
+      quantity: sa.quantity,
+      unitCost: sa.costPerUnit,
+      totalCost: sa.totalCost,
+      createdBy: `${sa.createdBy.firstName} ${sa.createdBy.lastName}`,
     })),
-    byBrand: brandStats.map((stat) => ({
-      brand: brands.find((b) => b.id === stat.brandId)?.name || "No Brand",
-      productCount: stat._count.id,
-      totalStock: stat._sum.stock || 0,
-    })),
-    bySupplier: supplierStats.map((stat) => ({
-      supplier:
-        suppliers.find((s) => s.id === stat.supplierId)?.name || "No Supplier",
-      productCount: stat._count.id,
-      totalStock: stat._sum.stock || 0,
-    })),
+    summary,
     pagination: {
-      page: filters.page || 1,
-      limit: filters.limit || 10,
-      total: products,
-      totalPages,
-      hasNextPage,
-      hasPreviousPage,
+      page,
+      limit,
+      total: totalCount,
+      totalPages: Math.ceil(totalCount / limit),
     },
   };
 }
 
-function generateCSV(data: any, reportType: string): string {
-  if (reportType === "current_stock") {
-    const headers = [
-      "Product Name",
-      "SKU",
-      "Category",
-      "Brand",
-      "Supplier",
-      "Current Stock",
-      "Min Stock",
-      "Max Stock",
-      "Cost Price (₦)",
-      "Selling Price (₦)",
-      "Stock Value (₦)",
-      "Low Stock",
-      "Archived",
-      "Last Updated",
-    ];
+// Helper function to get reorder report
+async function getReorderReport(filters: any) {
+  const { category, brand, supplier, page, limit } = filters;
 
-    const rows = data.map((item: any) => [
-      `"${item.name.replace(/"/g, '""')}"`,
-      item.sku,
-      item.category,
-      item.brand,
-      item.supplier,
-      item.currentStock,
-      item.minStock,
-      item.maxStock,
-      item.costPrice,
-      item.sellingPrice,
-      item.stockValue,
-      item.isLowStock ? "Yes" : "No",
-      item.isArchived ? "Yes" : "No",
-      format(new Date(item.lastUpdated), "yyyy-MM-dd HH:mm:ss"),
-    ]);
+  const where: any = {
+    isArchived: false,
+    stock: { lte: prisma.product.fields.minStock },
+  };
 
-    return [headers, ...rows].map((row) => row.join(",")).join("\n");
+  if (category) {
+    where.category = { name: { contains: category, mode: "insensitive" } };
+  }
+  if (brand) {
+    where.brand = { name: { contains: brand, mode: "insensitive" } };
+  }
+  if (supplier) {
+    where.supplier = { name: { contains: supplier, mode: "insensitive" } };
   }
 
-  if (reportType === "stock_value") {
-    const headers = [
-      "Product Name",
-      "SKU",
-      "Category",
-      "Brand",
-      "Supplier",
-      "Current Stock",
-      "Cost Price (₦)",
-      "Selling Price (₦)",
-      "Stock Value (₦)",
-      "Selling Value (₦)",
-      "Potential Profit (₦)",
-      "Profit Margin (%)",
-    ];
+  const offset = (page - 1) * limit;
 
-    const rows = data.products.map((item: any) => [
-      `"${item.name.replace(/"/g, '""')}"`,
-      item.sku,
-      item.category,
-      item.brand,
-      item.supplier,
-      item.currentStock,
-      item.costPrice,
-      item.sellingPrice,
-      item.stockValue,
-      item.sellingValue,
-      item.potentialProfit,
-      item.profitMargin.toFixed(2),
-    ]);
+  const [products, totalCount] = await Promise.all([
+    prisma.product.findMany({
+      where,
+      include: {
+        category: { select: { name: true } },
+        brand: { select: { name: true } },
+        supplier: { select: { name: true } },
+      },
+      orderBy: { stock: "asc" },
+      skip: offset,
+      take: limit,
+    }),
+    prisma.product.count({ where }),
+  ]);
 
-    return [headers, ...rows].map((row) => row.join(",")).join("\n");
+  const summary = {
+    totalReorderItems: totalCount,
+    totalReorderValue: products.reduce(
+      (sum, p) => sum + p.minStock * 2 * Number(p.cost),
+      0
+    ),
+  };
+
+  return {
+    data: products.map((p) => ({
+      id: p.id,
+      name: p.name,
+      sku: p.sku,
+      category: p.category?.name || "Uncategorized",
+      brand: p.brand?.name || "No Brand",
+      supplier: p.supplier?.name || "No Supplier",
+      currentStock: p.stock,
+      minStock: p.minStock,
+      recommendedOrder: p.minStock * 2, // Simple reorder logic
+      unitCost: p.cost,
+      orderValue: p.minStock * 2 * Number(p.cost),
+    })),
+    summary,
+    pagination: {
+      page,
+      limit,
+      total: totalCount,
+      totalPages: Math.ceil(totalCount / limit),
+    },
+  };
+}
+
+// Helper function to generate CSV
+function generateCSV(data: any[], _reportType: string): string {
+  if (!data || data.length === 0) {
+    return "No data available";
   }
 
-  if (reportType === "low_stock") {
-    const headers = [
-      "Product Name",
-      "SKU",
-      "Category",
-      "Brand",
-      "Supplier",
-      "Current Stock",
-      "Min Stock",
-      "Max Stock",
-      "Reorder Quantity",
-      "Stock Shortage",
-      "Cost Price (₦)",
-      "Reorder Value (₦)",
-      "Status",
-      "Last Updated",
-    ];
+  const headers = Object.keys(data[0]);
+  const csvRows = [
+    headers.join(","),
+    ...data.map((row) =>
+      headers
+        .map((header) => {
+          const value = row[header];
+          // Escape quotes and wrap in quotes if contains comma
+          if (
+            typeof value === "string" &&
+            (value.includes(",") || value.includes('"'))
+          ) {
+            return `"${value.replace(/"/g, '""')}"`;
+          }
+          return value;
+        })
+        .join(",")
+    ),
+  ];
 
-    const rows = data.map((item: any) => [
-      `"${item.name.replace(/"/g, '""')}"`,
-      item.sku,
-      item.category,
-      item.brand,
-      item.supplier,
-      item.currentStock,
-      item.minStock,
-      item.maxStock,
-      item.reorderQuantity,
-      item.stockShortage,
-      item.costPrice,
-      item.reorderValue,
-      item.daysOutOfStock,
-      format(new Date(item.lastUpdated), "yyyy-MM-dd HH:mm:ss"),
-    ]);
-
-    return [headers, ...rows].map((row) => row.join(",")).join("\n");
-  }
-
-  return "Invalid report type";
+  return csvRows.join("\n");
 }
