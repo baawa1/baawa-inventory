@@ -2,6 +2,7 @@
 
 import { useEffect, useRef } from "react";
 import { useRouter } from "next/navigation";
+import { INTERVALS } from "@/lib/constants";
 
 // Dynamic import to avoid webpack issues
 let useSession: any = null;
@@ -37,7 +38,7 @@ export function SessionMonitor() {
       try {
         // Prevent multiple simultaneous checks
         const now = Date.now();
-        if (now - lastCheckRef.current < 60000) return; // Minimum 1 minute between checks
+        if (now - lastCheckRef.current < INTERVALS.SESSION_CHECK_MIN) return; // Minimum 1 minute between checks
         lastCheckRef.current = now;
 
         const response = await fetch("/api/auth/refresh-session", {
@@ -74,7 +75,7 @@ export function SessionMonitor() {
       } catch (error) {
         console.error("Error checking session updates:", error);
       }
-    }, 120000); // Check every 2 minutes instead of 30 seconds
+    }, INTERVALS.SESSION_MONITOR); // Check every 2 minutes instead of 30 seconds
 
     return () => clearInterval(interval);
   }, [sessionData, router]);

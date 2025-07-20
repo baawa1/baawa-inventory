@@ -1,5 +1,6 @@
-import { NextRequest, NextResponse } from "next/server";
-import { auth } from "../../../../../../auth";
+import { NextResponse } from "next/server";
+import { withAuth, AuthenticatedRequest } from "@/lib/api-middleware";
+import { handleApiError } from "@/lib/api-error-handler";
 import { prisma } from "@/lib/db";
 import { PAYMENT_STATUS } from "@/lib/constants";
 
@@ -35,19 +36,8 @@ function getPeriodFilter(period: string): Date {
   }
 }
 
-export async function GET(request: NextRequest) {
+export const GET = withAuth(async (request: AuthenticatedRequest) => {
   try {
-    const session = await auth();
-
-    if (!session?.user) {
-      return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
-    }
-
-    // Check if user has permission to view analytics
-    if (!["ADMIN", "MANAGER", "STAFF"].includes(session.user.role)) {
-      return NextResponse.json({ error: "Forbidden" }, { status: 403 });
-    }
-
     const { searchParams } = new URL(request.url);
     const period = searchParams.get("period") || "30d";
     const search = searchParams.get("search") || "";
@@ -98,62 +88,72 @@ export async function GET(request: NextRequest) {
           },
         },
       },
+      take: 100, // Limit for performance
     });
 
-    // Transform the data into performance metrics
+    // Transform to performance data
     const productPerformance: ProductPerformance[] = products.map((product) => {
-      // Calculate totals
-      const totalSold = product.sales_items.reduce(
+      const salesItems = product.sales_items || [];
+      const totalSold = salesItems.reduce(
         (sum, item) => sum + item.quantity,
         0
       );
-      const revenue = product.sales_items.reduce(
+      const revenue = salesItems.reduce(
+        (sum, item) => sum + Number(item.total_price),
+        0
+      );
+      const averageOrderValue = totalSold > 0 ? revenue / totalSold : 0;
+
+      // Find last sold date
+      const lastSold =
+        salesItems.length > 0
+          ? salesItems
+              .map((item) => item.sales_transactions?.created_at)
+              .filter(Boolean)
+              .sort(
+                (a, b) => new Date(b!).getTime() - new Date(a!).getTime()
+              )[0]
+          : null;
+
+      // Calculate trend (simplified - compare current period with previous period)
+      const halfPeriodStart = new Date(
+        periodStart.getTime() + (Date.now() - periodStart.getTime()) / 2
+      );
+
+      const recentSales = salesItems.filter(
+        (item) =>
+          item.sales_transactions?.created_at &&
+          new Date(item.sales_transactions.created_at) >= halfPeriodStart
+      );
+
+      const olderSales = salesItems.filter(
+        (item) =>
+          item.sales_transactions?.created_at &&
+          new Date(item.sales_transactions.created_at) < halfPeriodStart
+      );
+
+      const recentRevenue = recentSales.reduce(
+        (sum, item) => sum + Number(item.total_price),
+        0
+      );
+      const olderRevenue = olderSales.reduce(
         (sum, item) => sum + Number(item.total_price),
         0
       );
 
-      // Find last sale date
-      const lastSaleDates = product.sales_items
-        .map((item) => item.sales_transactions?.created_at)
-        .filter(Boolean)
-        .sort((a, b) => b!.getTime() - a!.getTime());
-
-      const lastSold = lastSaleDates.length > 0 ? lastSaleDates[0] : null;
-
-      // Calculate trend (simplified - comparing to previous period)
-      const previousPeriodStart = new Date(
-        periodStart.getTime() - (Date.now() - periodStart.getTime())
-      );
-      let previousRevenue = 0;
-
-      product.sales_items.forEach((item) => {
-        const saleDate = item.sales_transactions?.created_at;
-        if (
-          saleDate &&
-          saleDate >= previousPeriodStart &&
-          saleDate < periodStart
-        ) {
-          previousRevenue += Number(item.total_price);
-        }
-      });
-
       let trending: "up" | "down" | "stable" = "stable";
       let trendPercentage = 0;
 
-      if (previousRevenue > 0) {
-        const change = ((revenue - previousRevenue) / previousRevenue) * 100;
-        trendPercentage = Math.abs(Math.round(change));
-        if (change > 10) trending = "up";
-        else if (change < -10) trending = "down";
-      } else if (revenue > 0) {
+      if (olderRevenue > 0) {
+        const change = ((recentRevenue - olderRevenue) / olderRevenue) * 100;
+        trendPercentage = Math.abs(change);
+
+        if (change > 5) trending = "up";
+        else if (change < -5) trending = "down";
+      } else if (recentRevenue > 0) {
         trending = "up";
         trendPercentage = 100;
       }
-
-      const averageOrderValue =
-        product.sales_items.length > 0
-          ? revenue / product.sales_items.length
-          : 0;
 
       return {
         id: product.id,
@@ -167,19 +167,21 @@ export async function GET(request: NextRequest) {
         averageOrderValue,
         lastSold: lastSold?.toISOString() || null,
         trending,
-        trendPercentage,
+        trendPercentage: Math.round(trendPercentage),
       };
     });
 
-    // Sort based on the requested sort parameter
+    // Sort by the requested criteria
     productPerformance.sort((a, b) => {
       switch (sortBy) {
-        case "totalSold":
-          return b.totalSold - a.totalSold;
         case "revenue":
           return b.revenue - a.revenue;
+        case "quantity":
+          return b.totalSold - a.totalSold;
         case "name":
           return a.name.localeCompare(b.name);
+        case "stock":
+          return b.currentStock - a.currentStock;
         case "lastSold":
           if (!a.lastSold && !b.lastSold) return 0;
           if (!a.lastSold) return 1;
@@ -192,12 +194,33 @@ export async function GET(request: NextRequest) {
       }
     });
 
-    return NextResponse.json(productPerformance);
-  } catch (error) {
-    console.error("Error fetching product analytics:", error);
-    return NextResponse.json(
-      { error: "Failed to fetch product analytics" },
-      { status: 500 }
+    // Calculate summary statistics
+    const totalProducts = productPerformance.length;
+    const totalRevenue = productPerformance.reduce(
+      (sum, p) => sum + p.revenue,
+      0
     );
+    const totalSold = productPerformance.reduce(
+      (sum, p) => sum + p.totalSold,
+      0
+    );
+    const averageRevenue = totalProducts > 0 ? totalRevenue / totalProducts : 0;
+
+    return NextResponse.json({
+      success: true,
+      data: {
+        products: productPerformance,
+        summary: {
+          totalProducts,
+          totalRevenue,
+          totalSold,
+          averageRevenue,
+        },
+        period,
+        periodStart: periodStart.toISOString(),
+      },
+    });
+  } catch (error) {
+    return handleApiError(error);
   }
-}
+});

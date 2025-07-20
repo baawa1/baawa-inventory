@@ -12,6 +12,7 @@ import {
   OfflineQueueStats,
 } from "@/lib/utils/offline-mode";
 import { offlineStorage } from "@/lib/utils/offline-storage";
+import { INTERVALS } from "@/lib/constants";
 
 export interface UseOfflineReturn {
   // Network status
@@ -95,7 +96,7 @@ export function useOffline(): UseOfflineReturn {
       if (mounted) {
         updateQueueStats();
       }
-    }, 30000); // Every 30 seconds
+    }, INTERVALS.STATS_UPDATE); // Every 30 seconds
 
     return () => {
       mounted = false;
@@ -270,7 +271,7 @@ export function useOfflineStats() {
     refreshStats();
 
     // Refresh stats every minute
-    const interval = setInterval(refreshStats, 60000);
+    const interval = setInterval(refreshStats, INTERVALS.STATS_REFRESH);
     return () => clearInterval(interval);
   }, [refreshStats]);
 

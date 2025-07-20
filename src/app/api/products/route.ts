@@ -1,10 +1,10 @@
-import { NextResponse } from "next/server";
 import {
   withAuth,
   withPermission,
   AuthenticatedRequest,
 } from "@/lib/api-middleware";
 import { handleApiError } from "@/lib/api-error-handler";
+import { createApiResponse } from "@/lib/api-response";
 import { prisma } from "@/lib/db";
 
 import { PRODUCT_STATUS } from "@/lib/constants";
@@ -180,10 +180,9 @@ export const GET = withAuth(async (request: AuthenticatedRequest) => {
       ...(includeSync && { content_sync: product.content_sync }),
     }));
 
-    return NextResponse.json({
-      success: true,
-      data: transformedProducts,
-      pagination: {
+    return createApiResponse.successWithPagination(
+      transformedProducts,
+      {
         page,
         limit,
         total: totalCount,
@@ -191,7 +190,8 @@ export const GET = withAuth(async (request: AuthenticatedRequest) => {
         hasNextPage: page < Math.ceil(totalCount / limit),
         hasPreviousPage: page > 1,
       },
-    });
+      `Retrieved ${transformedProducts.length} products`
+    );
   } catch (error) {
     return handleApiError(error);
   }
@@ -215,9 +215,8 @@ export const POST = withPermission(
       });
 
       if (existingSKU) {
-        return NextResponse.json(
-          { error: "Product with this SKU already exists" },
-          { status: 400 }
+        return createApiResponse.conflict(
+          "Product with this SKU already exists"
         );
       }
 
@@ -228,9 +227,8 @@ export const POST = withPermission(
         });
 
         if (existingBarcode) {
-          return NextResponse.json(
-            { error: "Product with this barcode already exists" },
-            { status: 400 }
+          return createApiResponse.conflict(
+            "Product with this barcode already exists"
           );
         }
       }
@@ -242,10 +240,7 @@ export const POST = withPermission(
         });
 
         if (!category) {
-          return NextResponse.json(
-            { error: "Category not found" },
-            { status: 404 }
-          );
+          return createApiResponse.notFound("Category");
         }
       }
 
@@ -256,10 +251,7 @@ export const POST = withPermission(
         });
 
         if (!brand) {
-          return NextResponse.json(
-            { error: "Brand not found" },
-            { status: 404 }
-          );
+          return createApiResponse.notFound("Brand");
         }
       }
 
@@ -270,10 +262,7 @@ export const POST = withPermission(
         });
 
         if (!supplier) {
-          return NextResponse.json(
-            { error: "Supplier not found" },
-            { status: 404 }
-          );
+          return createApiResponse.notFound("Supplier");
         }
       }
 
@@ -327,13 +316,10 @@ export const POST = withPermission(
 
       console.log("✅ Product created successfully:", newProduct);
 
-      return NextResponse.json(
-        {
-          success: true,
-          message: "Product created successfully",
-          data: newProduct,
-        },
-        { status: 201 }
+      return createApiResponse.success(
+        newProduct,
+        "Product created successfully",
+        201
       );
     } catch (error) {
       return handleApiError(error);

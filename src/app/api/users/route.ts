@@ -1,8 +1,8 @@
-import { NextResponse } from "next/server";
 import { prisma } from "@/lib/db";
 import bcrypt from "bcryptjs";
 import { createUserSchema, userQuerySchema } from "@/lib/validations";
 import { withPermission, AuthenticatedRequest } from "@/lib/api-middleware";
+import { createApiResponse } from "@/lib/api-response";
 import { USER_ROLES } from "@/lib/auth/roles";
 
 // GET /api/users - List users with optional filtering and pagination
@@ -20,12 +20,9 @@ export const GET = withPermission(
       const validation = userQuerySchema.safeParse(queryParams);
 
       if (!validation.success) {
-        return NextResponse.json(
-          {
-            error: "Invalid query parameters",
-            details: validation.error.issues,
-          },
-          { status: 400 }
+        return createApiResponse.validationError(
+          "Invalid query parameters",
+          validation.error.issues
         );
       }
 
@@ -126,9 +123,9 @@ export const GET = withPermission(
       }));
 
       // Return paginated response with metadata
-      return NextResponse.json({
-        data: transformedUsers,
-        pagination: {
+      return createApiResponse.successWithPagination(
+        transformedUsers,
+        {
           page,
           limit: safeLimit,
           total: totalCount,
@@ -136,13 +133,11 @@ export const GET = withPermission(
           hasNext: skip + safeLimit < totalCount,
           hasPrev: page > 1,
         },
-      });
+        `Retrieved ${transformedUsers.length} users`
+      );
     } catch (error) {
       console.error("Error in GET /api/users:", error);
-      return NextResponse.json(
-        { error: "Internal server error" },
-        { status: 500 }
-      );
+      return createApiResponse.internalError("Internal server error");
     }
   }
 );
@@ -158,9 +153,9 @@ export const POST = withPermission(
       // Validate request body
       const validation = createUserSchema.safeParse(body);
       if (!validation.success) {
-        return NextResponse.json(
-          { error: "Invalid user data", details: validation.error.issues },
-          { status: 400 }
+        return createApiResponse.validationError(
+          "Invalid user data",
+          validation.error.issues
         );
       }
 
@@ -173,9 +168,8 @@ export const POST = withPermission(
       });
 
       if (existingUser) {
-        return NextResponse.json(
-          { error: "User with this email already exists" },
-          { status: 409 }
+        return createApiResponse.conflict(
+          "User with this email already exists"
         );
       }
 
@@ -220,13 +214,14 @@ export const POST = withPermission(
         lastLogin: user.lastLogin,
       };
 
-      return NextResponse.json(transformedUser, { status: 201 });
+      return createApiResponse.success(
+        transformedUser,
+        "User created successfully",
+        201
+      );
     } catch (error) {
       console.error("Error in POST /api/users:", error);
-      return NextResponse.json(
-        { error: "Internal server error" },
-        { status: 500 }
-      );
+      return createApiResponse.internalError("Internal server error");
     }
   }
 );
