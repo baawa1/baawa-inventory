@@ -1,9 +1,13 @@
-import { NextRequest, NextResponse } from "next/server";
-import { auth } from "../../../../auth";
+import { NextResponse } from "next/server";
+import {
+  withAuth,
+  withPermission,
+  AuthenticatedRequest,
+} from "@/lib/api-middleware";
+import { handleApiError } from "@/lib/api-error-handler";
 import { prisma } from "@/lib/db";
 import { z } from "zod";
-import { USER_STATUS } from "@/lib/constants";
-import { USER_ROLES, hasRole } from "@/lib/auth/roles";
+import { USER_ROLES } from "@/lib/auth/roles";
 
 // Validation schema for brand creation
 const BrandCreateSchema = z.object({
@@ -15,24 +19,8 @@ const BrandCreateSchema = z.object({
 });
 
 // GET /api/brands - List all brands
-export async function GET(request: NextRequest) {
+export const GET = withAuth(async (request: AuthenticatedRequest) => {
   try {
-    const session = await auth();
-
-    if (!session?.user) {
-      return NextResponse.json(
-        { error: "Authentication required" },
-        { status: 401 }
-      );
-    }
-
-    if (session.user.status !== USER_STATUS.APPROVED) {
-      return NextResponse.json(
-        { error: "Account not approved" },
-        { status: 403 }
-      );
-    }
-
     const { searchParams } = new URL(request.url);
     const isActive = searchParams.get("isActive");
     const search = searchParams.get("search") || "";
@@ -55,40 +43,32 @@ export async function GET(request: NextRequest) {
       ];
     }
 
-    // Get total count for pagination
-    const totalCount = await prisma.brand.count({ where });
-
     // Calculate pagination
-    const totalPages = Math.ceil(totalCount / limit);
     const skip = (page - 1) * limit;
 
-    // Build orderBy clause
+    // Build order by clause
     const orderBy: any = {};
     orderBy[sortBy] = sortOrder;
 
-    const brands = await prisma.brand.findMany({
-      where,
-      select: {
-        id: true,
-        name: true,
-        description: true,
-        image: true,
-        website: true,
-        isActive: true,
-        createdAt: true,
-        updatedAt: true,
-        _count: {
-          select: {
-            products: true,
+    // Get brands with pagination
+    const [brands, totalCount] = await Promise.all([
+      prisma.brand.findMany({
+        where,
+        include: {
+          _count: {
+            select: {
+              products: true,
+            },
           },
         },
-      },
-      orderBy,
-      skip,
-      take: limit,
-    });
+        orderBy,
+        skip,
+        take: limit,
+      }),
+      prisma.brand.count({ where }),
+    ]);
 
-    // Transform the response
+    // Transform brands to include product count
     const transformedBrands = brands.map((brand) => ({
       id: brand.id,
       name: brand.name,
@@ -97,9 +77,11 @@ export async function GET(request: NextRequest) {
       website: brand.website,
       isActive: brand.isActive,
       productCount: brand._count.products,
-      createdAt: brand.createdAt?.toISOString(),
-      updatedAt: brand.updatedAt?.toISOString(),
+      createdAt: brand.createdAt,
+      updatedAt: brand.updatedAt,
     }));
+
+    const totalPages = Math.ceil(totalCount / limit);
 
     return NextResponse.json({
       data: transformedBrands,
@@ -111,108 +93,75 @@ export async function GET(request: NextRequest) {
       },
     });
   } catch (error) {
-    console.error("Error fetching brands:", error);
-    return NextResponse.json(
-      { error: "Failed to fetch brands" },
-      { status: 500 }
-    );
+    return handleApiError(error);
   }
-}
+});
 
 // POST /api/brands - Create new brand
-export async function POST(request: NextRequest) {
-  try {
-    const session = await auth();
+export const POST = withPermission(
+  [USER_ROLES.ADMIN, USER_ROLES.MANAGER],
+  async (request: AuthenticatedRequest) => {
+    try {
+      const body = await request.json();
+      const validatedData = BrandCreateSchema.parse(body);
 
-    if (!session?.user) {
-      return NextResponse.json(
-        { error: "Authentication required" },
-        { status: 401 }
-      );
-    }
-
-    if (session.user.status !== USER_STATUS.APPROVED) {
-      return NextResponse.json(
-        { error: "Account not approved" },
-        { status: 403 }
-      );
-    }
-
-    // Check permissions - only admins and managers can create brands
-    if (!hasRole(session.user.role, [USER_ROLES.ADMIN, USER_ROLES.MANAGER])) {
-      return NextResponse.json(
-        { error: "Insufficient permissions" },
-        { status: 403 }
-      );
-    }
-
-    const body = await request.json();
-    const validatedData = BrandCreateSchema.parse(body);
-
-    // Check if brand name already exists
-    const existingBrand = await prisma.brand.findFirst({
-      where: {
-        name: {
-          equals: validatedData.name,
-          mode: "insensitive",
+      // Check if brand name already exists
+      const existingBrand = await prisma.brand.findFirst({
+        where: {
+          name: {
+            equals: validatedData.name,
+            mode: "insensitive",
+          },
         },
-      },
-    });
+      });
 
-    if (existingBrand) {
-      return NextResponse.json(
-        { error: "Brand with this name already exists" },
-        { status: 400 }
-      );
-    }
+      if (existingBrand) {
+        return NextResponse.json(
+          { error: "Brand with this name already exists" },
+          { status: 409 }
+        );
+      }
 
-    // Create the brand
-    const brand = await prisma.brand.create({
-      data: validatedData,
-      select: {
-        id: true,
-        name: true,
-        description: true,
-        image: true,
-        website: true,
-        isActive: true,
-        createdAt: true,
-        updatedAt: true,
-      },
-    });
-
-    return NextResponse.json(
-      {
-        message: "Brand created successfully",
+      // Create the brand
+      const newBrand = await prisma.brand.create({
         data: {
-          id: brand.id,
-          name: brand.name,
-          description: brand.description,
-          image: brand.image,
-          website: brand.website,
-          isActive: brand.isActive,
-          productCount: 0,
-          createdAt: brand.createdAt?.toISOString(),
-          updatedAt: brand.updatedAt?.toISOString(),
+          name: validatedData.name,
+          description: validatedData.description,
+          image: validatedData.image,
+          website: validatedData.website,
+          isActive: validatedData.isActive,
         },
-      },
-      { status: 201 }
-    );
-  } catch (error) {
-    if (error instanceof z.ZodError) {
+        include: {
+          _count: {
+            select: {
+              products: true,
+            },
+          },
+        },
+      });
+
+      // Transform the response to include product count
+      const transformedBrand = {
+        id: newBrand.id,
+        name: newBrand.name,
+        description: newBrand.description,
+        image: newBrand.image,
+        website: newBrand.website,
+        isActive: newBrand.isActive,
+        productCount: newBrand._count.products,
+        createdAt: newBrand.createdAt,
+        updatedAt: newBrand.updatedAt,
+      };
+
       return NextResponse.json(
         {
-          error: "Validation failed",
-          details: error.errors,
+          message: "Brand created successfully",
+          data: transformedBrand,
         },
-        { status: 400 }
+        { status: 201 }
       );
+    } catch (error) {
+      return handleApiError(error);
     }
-
-    console.error("Error creating brand:", error);
-    return NextResponse.json(
-      { error: "Failed to create brand" },
-      { status: 500 }
-    );
   }
-}
+);
