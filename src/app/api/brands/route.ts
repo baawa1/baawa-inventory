@@ -8,6 +8,7 @@ import { handleApiError } from "@/lib/api-error-handler";
 import { prisma } from "@/lib/db";
 import { z } from "zod";
 import { USER_ROLES } from "@/lib/auth/roles";
+import { Prisma } from "@prisma/client";
 
 // Validation schema for brand creation
 const BrandCreateSchema = z.object({
@@ -30,7 +31,7 @@ export const GET = withAuth(async (request: AuthenticatedRequest) => {
     const sortOrder = searchParams.get("sortOrder") || "asc";
 
     // Build where clause
-    const where: any = {};
+    const where: Prisma.BrandWhereInput = {};
 
     if (isActive !== null && isActive !== "") {
       where.isActive = isActive === "true";
@@ -47,8 +48,18 @@ export const GET = withAuth(async (request: AuthenticatedRequest) => {
     const skip = (page - 1) * limit;
 
     // Build order by clause
-    const orderBy: any = {};
-    orderBy[sortBy] = sortOrder;
+    const orderBy: Prisma.BrandOrderByWithRelationInput = {};
+    if (
+      sortBy === "name" ||
+      sortBy === "description" ||
+      sortBy === "isActive" ||
+      sortBy === "createdAt" ||
+      sortBy === "updatedAt"
+    ) {
+      orderBy[sortBy] = sortOrder as Prisma.SortOrder;
+    } else {
+      orderBy.name = "asc"; // Default fallback
+    }
 
     // Get brands with pagination
     const [brands, totalCount] = await Promise.all([
