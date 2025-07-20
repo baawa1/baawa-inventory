@@ -1,46 +1,41 @@
-import { auth } from "../../../../../auth";
-import { NextRequest, NextResponse } from "next/server";
-export async function GET(_request: NextRequest) {
+import { NextResponse } from "next/server";
+import { withAuth, AuthenticatedRequest } from "@/lib/api-middleware";
+import { USER_STATUS } from "@/lib/constants";
+import { USER_ROLES } from "@/lib/auth/roles";
+
+export const GET = withAuth(async (_request: AuthenticatedRequest) => {
   try {
-    const session = await auth();
-
-    if (!session?.user) {
-      return NextResponse.json(
-        {
-          authenticated: false,
-          message: "No session found",
-        },
-        { status: 401 }
-      );
-    }
-
     // Return detailed session information for debugging
     return NextResponse.json({
       authenticated: true,
       user: {
-        id: session.user.id,
-        email: session.user.email,
-        name: session.user.name,
-        role: session.user.role,
-        status: session.user.status,
-        isEmailVerified: session.user.isEmailVerified,
+        id: _request.user.id,
+        email: _request.user.email,
+        name: _request.user.name,
+        role: _request.user.role,
+        status: _request.user.status,
+        isEmailVerified: _request.user.isEmailVerified,
       },
       middlewareChecks: {
-        isApproved: session.user.status === "APPROVED",
-        hasValidRole: ["ADMIN", "MANAGER", "STAFF"].includes(session.user.role),
-        canAccessPOS:
-          session.user.status === "APPROVED" &&
-          ["ADMIN", "MANAGER", "STAFF"].includes(session.user.role),
+        isApproved: _request.user.status === USER_STATUS.APPROVED,
+        hasValidRole: [
+          USER_ROLES.ADMIN,
+          USER_ROLES.MANAGER,
+          USER_ROLES.STAFF,
+        ].includes(_request.user.role),
+        canAccessDashboard:
+          _request.user.status === USER_STATUS.APPROVED &&
+          [USER_ROLES.ADMIN, USER_ROLES.MANAGER, USER_ROLES.STAFF].includes(
+            _request.user.role
+          ),
       },
+      timestamp: new Date().toISOString(),
     });
   } catch (error) {
-    console.error("Session debug error:", error);
+    console.error("Error in debug session:", error);
     return NextResponse.json(
-      {
-        error: "Failed to check session",
-        details: error instanceof Error ? error.message : "Unknown error",
-      },
+      { error: "Failed to get session debug info" },
       { status: 500 }
     );
   }
-}
+});

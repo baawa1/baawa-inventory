@@ -1,5 +1,5 @@
-import { NextRequest, NextResponse } from "next/server";
-import { auth } from "../../../../../auth";
+import { NextResponse } from "next/server";
+import { withAuth, AuthenticatedRequest } from "@/lib/api-middleware";
 import { prisma } from "@/lib/db";
 import { z } from "zod";
 
@@ -15,17 +15,8 @@ const archivedProductsQuerySchema = z.object({
 });
 
 // GET /api/products/archived - Get archived products
-export async function GET(request: NextRequest) {
+export const GET = withAuth(async (request: AuthenticatedRequest) => {
   try {
-    const session = await auth();
-
-    if (!session?.user) {
-      return NextResponse.json(
-        { error: "Authentication required" },
-        { status: 401 }
-      );
-    }
-
     const { searchParams } = new URL(request.url);
 
     // Parse and validate query parameters
@@ -50,18 +41,17 @@ export async function GET(request: NextRequest) {
       sortBy = "updatedAt",
       sortOrder = "desc",
     } = validatedData;
-    const offset = (page - 1) * limit;
 
-    // Build where clause for Prisma
+    // Build where clause
     const where: any = {
       isArchived: true,
     };
 
-    // Apply filters
     if (search) {
       where.OR = [
         { name: { contains: search, mode: "insensitive" } },
         { sku: { contains: search, mode: "insensitive" } },
+        { description: { contains: search, mode: "insensitive" } },
       ];
     }
 
@@ -73,19 +63,33 @@ export async function GET(request: NextRequest) {
       where.brandId = parseInt(brand);
     }
 
-    // Get products and count in parallel
+    // Calculate pagination
+    const skip = (page - 1) * limit;
+
+    // Build order by clause
+    const orderBy: any = {};
+    orderBy[sortBy] = sortOrder;
+
+    // Execute queries in parallel
     const [products, totalCount] = await Promise.all([
       prisma.product.findMany({
         where,
         include: {
-          category: { select: { id: true, name: true } },
-          brand: { select: { id: true, name: true } },
-          supplier: { select: { id: true, name: true } },
+          category: {
+            select: {
+              id: true,
+              name: true,
+            },
+          },
+          brand: {
+            select: {
+              id: true,
+              name: true,
+            },
+          },
         },
-        orderBy: {
-          [sortBy]: sortOrder,
-        },
-        skip: offset,
+        orderBy,
+        skip,
         take: limit,
       }),
       prisma.product.count({ where }),
@@ -93,23 +97,33 @@ export async function GET(request: NextRequest) {
 
     // Calculate pagination info
     const totalPages = Math.ceil(totalCount / limit);
-    const hasMore = page < totalPages;
+    const hasNextPage = page < totalPages;
+    const hasPreviousPage = page > 1;
 
     return NextResponse.json({
-      data: products,
+      products,
       pagination: {
-        page,
-        limit,
-        total: totalCount,
+        currentPage: page,
         totalPages,
-        hasMore,
+        totalCount,
+        hasNextPage,
+        hasPreviousPage,
+        limit,
       },
     });
   } catch (error) {
-    console.error("Error in GET /api/products/archived:", error);
+    console.error("Error fetching archived products:", error);
+
+    if (error instanceof z.ZodError) {
+      return NextResponse.json(
+        { error: "Invalid query parameters", details: error.errors },
+        { status: 400 }
+      );
+    }
+
     return NextResponse.json(
       { error: "Internal server error" },
       { status: 500 }
     );
   }
-}
+});
