@@ -1,6 +1,7 @@
 import { redirect } from "next/navigation";
 import { auth } from "../../../../../auth";
-import { ProductList } from "@/components/inventory/ProductList";
+import ProductList from "@/components/inventory/ProductList";
+import { USER_ROLES, hasRole } from "@/lib/auth/roles";
 
 export const metadata = {
   title: "Products - BaaWA Inventory POS",
@@ -16,7 +17,13 @@ export default async function ProductsPage() {
   }
 
   // Check role permissions - only staff and above can access inventory
-  if (!["ADMIN", "MANAGER", "STAFF"].includes(session.user.role)) {
+  if (
+    !hasRole(session.user.role, [
+      USER_ROLES.ADMIN,
+      USER_ROLES.MANAGER,
+      USER_ROLES.STAFF,
+    ])
+  ) {
     redirect("/unauthorized");
   }
 

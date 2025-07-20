@@ -1,6 +1,7 @@
 import { redirect } from "next/navigation";
 import { auth } from "../../../../auth";
 import { AdminDashboard } from "@/components/admin/AdminDashboard";
+import { USER_ROLES } from "@/lib/auth/roles";
 
 export const metadata = {
   title: "User Management - BaaWA Inventory",
@@ -15,7 +16,7 @@ export default async function AdminPage() {
   }
 
   // Check if user has admin access
-  if (session.user.role !== "ADMIN") {
+  if (session.user.role !== USER_ROLES.ADMIN) {
     redirect("/unauthorized");
   }
 

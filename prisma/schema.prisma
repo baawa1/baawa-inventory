@@ -156,7 +156,7 @@ model Product {
   supplierId           Int?                      @map("supplier_id")
   categoryId           Int?                      @map("category_id")
   brandId              Int?                      @map("brand_id")
-  status               String                    @default("active") @db.VarChar(20)
+  status               ProductStatus             @default(ACTIVE)
   allowReviews         Boolean                   @default(true) @map("allow_reviews")
   isFeatured           Boolean                   @default(false) @map("is_featured")
   metaContent          String?                   @map("meta_content")
@@ -231,8 +231,8 @@ model SalesTransaction {
   customer_name      String?     @db.VarChar(255)
   customer_phone     String?     @db.VarChar(20)
   discount_amount    Decimal     @default(0) @db.Decimal(10, 2)
-  payment_method     String      @db.VarChar(50)
-  payment_status     String      @default("pending") @db.VarChar(20)
+  payment_method     PaymentMethod
+  payment_status     PaymentStatus @default(PENDING)
   tax_amount         Decimal     @default(0) @db.Decimal(10, 2)
   total_amount       Decimal     @db.Decimal(10, 2)
   transaction_number String      @unique @db.VarChar(50)
@@ -304,7 +304,7 @@ model StockReconciliation {
   approvedAt   DateTime?                    @map("approved_at") @db.Timestamptz(6)
   createdById  Int                          @map("created_by")
   approvedById Int?                         @map("approved_by")
-  status       stock_reconciliation_status? @default(DRAFT)
+  status       StockReconciliationStatus? @default(DRAFT)
   items        StockReconciliationItem[]
   approvedBy   User?                        @relation("ReconciliationApprover", fields: [approvedById], references: [id], onUpdate: NoAction)
   createdBy    User                         @relation("ReconciliationCreator", fields: [createdById], references: [id], onUpdate: NoAction)
@@ -339,7 +339,7 @@ model StockAdjustment {
   quantity                                   Int
   reason                                     String
   notes                                      String?
-  adjustment_type                            String          @db.VarChar(50)
+  adjustment_type                            StockAdjustmentType
   approved_at                                DateTime?       @db.Timestamptz(6)
   approved_by                                Int?
   created_at                                 DateTime?       @default(now()) @db.Timestamptz(6)
@@ -382,7 +382,7 @@ model PurchaseOrder {
   total_amount           Decimal             @db.Decimal(10, 2)
   updated_at             DateTime?           @default(now()) @db.Timestamptz(6)
   user_id                Int
-  status                 String              @default("draft") @db.VarChar(20)
+  status                 PurchaseOrderStatus @default(PENDING)
   purchase_order_items   PurchaseOrderItem[]
   suppliers              Supplier            @relation(fields: [supplier_id], references: [id], onDelete: NoAction, onUpdate: NoAction)
   users                  User                @relation(fields: [user_id], references: [id], onDelete: NoAction, onUpdate: NoAction)
@@ -443,7 +443,7 @@ model AIContent {
   approved_at       DateTime? @db.Timestamptz(6)
   approved_by       Int?
   confidence_score  Decimal?  @db.Decimal(3, 2)
-  content_type      String    @db.VarChar(50)
+  content_type      AIContentType
   created_at        DateTime? @default(now()) @db.Timestamptz(6)
   generated_content String
   is_approved       Boolean?  @default(false)
@@ -525,9 +525,78 @@ enum UserStatus {
   SUSPENDED
 }
 
-enum stock_reconciliation_status {
+enum ProductStatus {
+  ACTIVE
+  INACTIVE
+  OUT_OF_STOCK
+  DISCONTINUED
+}
+
+enum PaymentMethod {
+  CASH
+  BANK_TRANSFER
+  POS_MACHINE
+  CREDIT_CARD
+  MOBILE_MONEY
+}
+
+enum PaymentStatus {
+  PENDING
+  PAID
+  REFUNDED
+  CANCELLED
+}
+
+enum DiscountType {
+  AMOUNT
+  PERCENTAGE
+}
+
+enum StockReconciliationStatus {
   DRAFT
   PENDING
   APPROVED
   REJECTED
+}
+
+enum StockAdjustmentType {
+  INCREASE
+  DECREASE
+  RECOUNT
+  DAMAGE
+  TRANSFER
+  RETURN
+}
+
+enum PurchaseOrderStatus {
+  PENDING
+  ORDERED
+  PARTIAL_RECEIVED
+  RECEIVED
+  CANCELLED
+}
+
+enum AIContentType {
+  DESCRIPTION
+  SEO_TITLE
+  SEO_DESCRIPTION
+  SOCIAL_MEDIA_POST
+  PRODUCT_FEATURES
+  MARKETING_COPY
+}
+
+enum ContentStatus {
+  DRAFT
+  PENDING_APPROVAL
+  APPROVED
+  PUBLISHED
+  REJECTED
+}
+
+enum WebflowSyncStatus {
+  PENDING
+  SYNCING
+  SUCCESS
+  FAILED
+  RETRY
 }

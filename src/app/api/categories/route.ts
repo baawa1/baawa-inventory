@@ -2,6 +2,8 @@ import { NextRequest, NextResponse } from "next/server";
 import { auth } from "../../../../auth";
 import { prisma } from "@/lib/db";
 import { z } from "zod";
+import { USER_STATUS } from "@/lib/constants";
+import { USER_ROLES, hasRole } from "@/lib/auth/roles";
 
 // Validation schema for category creation
 const CategoryCreateSchema = z.object({
@@ -32,7 +34,7 @@ export async function GET(request: NextRequest) {
       );
     }
 
-    if (session.user.status !== "APPROVED") {
+    if (session.user.status !== USER_STATUS.APPROVED) {
       return NextResponse.json(
         { error: "Account not approved" },
         { status: 403 }
@@ -176,7 +178,7 @@ export async function POST(request: NextRequest) {
       );
     }
 
-    if (session.user.status !== "APPROVED") {
+    if (session.user.status !== USER_STATUS.APPROVED) {
       return NextResponse.json(
         { error: "Account not approved" },
         { status: 403 }
@@ -184,7 +186,7 @@ export async function POST(request: NextRequest) {
     }
 
     // Check permissions - only admins and managers can create categories
-    if (!["ADMIN", "MANAGER"].includes(session.user.role as string)) {
+    if (!hasRole(session.user.role, [USER_ROLES.ADMIN, USER_ROLES.MANAGER])) {
       return NextResponse.json(
         { error: "Insufficient permissions" },
         { status: 403 }

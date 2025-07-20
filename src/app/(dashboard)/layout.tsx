@@ -3,6 +3,7 @@ import { redirect } from "next/navigation";
 import { AppSidebar } from "@/components/app-sidebar";
 import { SidebarProvider } from "@/components/ui/sidebar";
 import { SiteHeader } from "@/components/site-header";
+import { USER_STATUS } from "@/lib/constants";
 
 export default async function DashboardLayout({
   children,
@@ -17,7 +18,7 @@ export default async function DashboardLayout({
   }
 
   // Check if user account is active - match middleware logic
-  if (session.user.status === "PENDING") {
+  if (session.user.status === USER_STATUS.PENDING) {
     // PENDING users need email verification first
     if (!session.user.isEmailVerified) {
       redirect("/check-email");
@@ -27,20 +28,20 @@ export default async function DashboardLayout({
     }
   }
 
-  if (session.user.status === "VERIFIED") {
+  if (session.user.status === USER_STATUS.VERIFIED) {
     // Email verified but not yet approved by admin
     redirect("/pending-approval");
   }
 
   if (
-    session.user.status === "REJECTED" ||
-    session.user.status === "SUSPENDED"
+    session.user.status === USER_STATUS.REJECTED ||
+    session.user.status === USER_STATUS.SUSPENDED
   ) {
     redirect("/unauthorized");
   }
 
   // At this point, user should be APPROVED
-  if (session.user.status !== "APPROVED") {
+  if (session.user.status !== USER_STATUS.APPROVED) {
     redirect("/unauthorized");
   }
 
