@@ -210,14 +210,10 @@ export function SimpleDashboard({ user }: SimpleDashboardProps) {
 
       {/* Main Dashboard Tabs */}
       <Tabs defaultValue="overview" className="space-y-6">
-        <TabsList className="grid w-full grid-cols-5">
+        <TabsList className="grid w-full grid-cols-4">
           <TabsTrigger value="overview" className="flex items-center gap-2">
             <IconChartLine className="h-4 w-4" />
             Overview
-          </TabsTrigger>
-          <TabsTrigger value="analytics" className="flex items-center gap-2">
-            <IconChartBar className="h-4 w-4" />
-            Analytics
           </TabsTrigger>
           <TabsTrigger value="sales" className="flex items-center gap-2">
             <IconShoppingCart className="h-4 w-4" />
@@ -233,72 +229,9 @@ export function SimpleDashboard({ user }: SimpleDashboardProps) {
           </TabsTrigger>
         </TabsList>
 
-        {/* Analytics Tab */}
-        <TabsContent value="analytics" className="space-y-6">
-          <AnalyticsDashboard user={user} />
-        </TabsContent>
-
         {/* Overview Tab */}
         <TabsContent value="overview" className="space-y-6">
-          <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-            <Card>
-              <CardHeader>
-                <CardTitle className="flex items-center gap-2">
-                  <IconChartLine className="h-5 w-5" />
-                  Sales Overview
-                </CardTitle>
-              </CardHeader>
-              <CardContent>
-                <div className="space-y-4">
-                  <div className="flex justify-between items-center">
-                    <span className="text-sm font-medium">
-                      Today&apos;s Sales
-                    </span>
-                    <span className="text-lg font-bold text-green-600">
-                      {formatCurrency(125000)}
-                    </span>
-                  </div>
-                  <div className="flex justify-between items-center">
-                    <span className="text-sm font-medium">Orders Today</span>
-                    <span className="text-lg font-bold">24</span>
-                  </div>
-                  <div className="flex justify-between items-center">
-                    <span className="text-sm font-medium">Monthly Target</span>
-                    <span className="text-lg font-bold text-blue-600">
-                      {formatCurrency(2000000)}
-                    </span>
-                  </div>
-                </div>
-              </CardContent>
-            </Card>
-
-            <Card>
-              <CardHeader>
-                <CardTitle className="flex items-center gap-2">
-                  <IconAlertTriangle className="h-5 w-5 text-yellow-600" />
-                  Alerts & Notifications
-                </CardTitle>
-              </CardHeader>
-              <CardContent>
-                <div className="space-y-3">
-                  <div className="flex justify-between items-center p-3 bg-red-50 rounded-lg">
-                    <span className="text-sm font-medium">Out of Stock</span>
-                    <Badge variant="destructive">5 items</Badge>
-                  </div>
-                  <div className="flex justify-between items-center p-3 bg-yellow-50 rounded-lg">
-                    <span className="text-sm font-medium">Low Stock</span>
-                    <Badge className="bg-yellow-100 text-yellow-800">
-                      12 items
-                    </Badge>
-                  </div>
-                  <div className="flex justify-between items-center p-3 bg-blue-50 rounded-lg">
-                    <span className="text-sm font-medium">Pending Users</span>
-                    <Badge variant="secondary">3 users</Badge>
-                  </div>
-                </div>
-              </CardContent>
-            </Card>
-          </div>
+          <AnalyticsDashboard _user={user} />
         </TabsContent>
 
         {/* Sales Tab */}

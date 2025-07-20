@@ -40,12 +40,7 @@ export type ContentStatus =
   | "PUBLISHED"
   | "REJECTED";
 
-export type WebflowSyncStatus =
-  | "PENDING"
-  | "SYNCING"
-  | "SUCCESS"
-  | "FAILED"
-  | "RETRY";
+export type ContentSyncStatus = "pending" | "synced" | "failed";
 
 // Product types
 export interface Product {
@@ -126,7 +121,7 @@ export interface SalesTransactionData {
   receiptNumber?: string;
   isRefund: boolean;
   refundReason?: string;
-  syncedToWebflow: boolean;
+  syncedToContent: boolean;
   syncedAt?: Date;
   cashierId: string;
   createdAt: Date;
@@ -235,8 +230,8 @@ export interface AIContentRequest {
   prompt?: string;
 }
 
-// Webflow Sync types
-export interface WebflowSyncData {
+// Content Sync types
+export interface ContentSyncData {
   productId: string;
   name: string;
   description?: string;

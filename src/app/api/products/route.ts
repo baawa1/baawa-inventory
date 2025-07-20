@@ -42,11 +42,6 @@ export async function GET(request: NextRequest) {
     const sortOrder = searchParams.get("sortOrder") || "asc";
     const includeSync = searchParams.get("includeSync") === "true";
 
-    // Webflow sync filters
-    const syncStatus = searchParams.get("syncStatus");
-    const autoSync = searchParams.get("autoSync");
-    const showInWebflow = searchParams.get("showInWebflow");
-
     // Build where clause
     const where: any = {
       isArchived: false,
@@ -90,40 +85,6 @@ export async function GET(request: NextRequest) {
       };
     }
 
-    // Webflow sync filtering
-    if (includeSync && (syncStatus || autoSync || showInWebflow)) {
-      // Build webflow sync filter conditions
-      const webflowSyncConditions: any = {};
-
-      if (syncStatus) {
-        if (syncStatus === "never") {
-          // Products that have no webflow sync record
-          webflowSyncConditions.none = {};
-        } else {
-          // Products with specific sync status
-          webflowSyncConditions.some = {
-            sync_status: syncStatus,
-          };
-        }
-      }
-
-      if (autoSync !== undefined && autoSync !== "") {
-        if (!webflowSyncConditions.some) {
-          webflowSyncConditions.some = {};
-        }
-        webflowSyncConditions.some.auto_sync = autoSync === "true";
-      }
-
-      if (showInWebflow !== undefined && showInWebflow !== "") {
-        if (!webflowSyncConditions.some) {
-          webflowSyncConditions.some = {};
-        }
-        webflowSyncConditions.some.is_published = showInWebflow === "true";
-      }
-
-      where.webflow_sync = webflowSyncConditions;
-    }
-
     // Build orderBy clause
     const orderBy: any = {};
     if (sortBy === "stock") {
@@ -164,18 +125,15 @@ export async function GET(request: NextRequest) {
       },
     };
 
-    // Conditionally include webflow sync data
+    // Conditionally include content sync data
     if (includeSync) {
-      include.webflow_sync = {
+      include.content_sync = {
         select: {
           id: true,
-          webflow_item_id: true,
           sync_status: true,
           last_sync_at: true,
           sync_errors: true,
-          is_published: true,
-          auto_sync: true,
-          webflow_url: true,
+          webhook_url: true,
           created_at: true,
           updated_at: true,
         },
@@ -245,10 +203,9 @@ export async function GET(request: NextRequest) {
         brand: product.brand,
         supplier: product.supplier,
         images: product.images || [],
-        // Webflow sync data (conditionally included)
+        // Content sync data (conditionally included)
         ...(includeSync && {
-          webflowSync: product.webflow_sync?.[0] || null,
-          showInWebflow: product.webflow_sync?.[0]?.is_published || false,
+          contentSync: product.content_sync?.[0] || null,
         }),
         // Calculated fields
         stockStatus: product.stock <= product.minStock ? "low" : "normal",
@@ -271,18 +228,16 @@ export async function GET(request: NextRequest) {
     let syncSummary = null;
     if (includeSync) {
       const syncedProducts = transformedProducts.filter(
-        (p: any) => p.webflowSync?.sync_status === "synced"
+        (p: any) => p.contentSync?.sync_status === "synced"
       ).length;
       const pendingProducts = transformedProducts.filter(
-        (p: any) => p.webflowSync?.sync_status === "pending"
+        (p: any) => p.contentSync?.sync_status === "pending"
       ).length;
       const failedProducts = transformedProducts.filter(
-        (p: any) =>
-          p.webflowSync?.sync_status === "failed" ||
-          p.webflowSync?.sync_status === "error"
+        (p: any) => p.contentSync?.sync_status === "failed"
       ).length;
       const notSyncedProducts = transformedProducts.filter(
-        (p: any) => !p.webflowSync
+        (p: any) => !p.contentSync
       ).length;
 
       syncSummary = {

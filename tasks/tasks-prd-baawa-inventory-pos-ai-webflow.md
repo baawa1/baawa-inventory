@@ -490,28 +490,10 @@ Date: 22 June 2025
   - [ ] 4.12 Write extensive tests for POS functionality including offline scenarios
 
 - [ ] 5.0 AI Content Generation Integration
-  - [ ] 5.1 Set up OpenAI API integration and configure environment variables
-  - [ ] 5.2 Build content generation interface with product input fields
-  - [ ] 5.3 Implement AI prompt engineering for different content types (descriptions, SEO, social media)
-  - [ ] 5.4 Create content preview and editing interface
-  - [ ] 5.5 Build approval workflow for AI-generated content
-  - [ ] 5.6 Implement tone selection and SEO keyword targeting
-  - [ ] 5.7 Add batch content generation for multiple products
-  - [ ] 5.8 Create content versioning and history tracking
-  - [ ] 5.9 Implement error handling and retry logic for API failures
-  - [ ] 5.10 Write tests for AI integration and content generation workflows
+  - [ ] 5.1 Api Sync and N8N will handle the rest
 
 - [ ] 6.0 Webflow CMS Integration
-  - [ ] 6.1 Set up Webflow API integration and authentication
-  - [ ] 6.2 Map inventory system fields to Webflow CMS collection fields
-  - [ ] 6.3 Build manual product sync interface with status feedback
-  - [ ] 6.4 Implement batch sync functionality for multiple products
-  - [ ] 6.5 Create sync status tracking and error reporting
-  - [ ] 6.6 Build image upload and management for Webflow assets
-  - [ ] 6.7 Implement stock status synchronization (in stock/out of stock)
-  - [ ] 6.8 Add sync history and audit trail
-  - [ ] 6.9 Create webhook handlers for Webflow updates (if needed)
-  - [ ] 6.10 Write comprehensive tests for Webflow integration
+  - [ ] 6.1 API sync and N8N will ahndle the rest.
 
 - [x] 7.0 Reporting & Analytics Dashboard
   - [x] 7.1 Build sales reporting interface with date range filtering

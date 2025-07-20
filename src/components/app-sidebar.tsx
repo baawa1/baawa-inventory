@@ -38,6 +38,7 @@ const navMain = [
     url: "/pos",
     icon: IconShoppingCart,
   },
+
   {
     title: "Reports",
     url: "/reports",

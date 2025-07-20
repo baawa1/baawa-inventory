@@ -15,7 +15,6 @@ import {
   IconAlertTriangle,
   IconX,
   IconCpu,
-  IconDeviceHdd,
   IconWifi,
   IconClock,
 } from "@tabler/icons-react";
@@ -186,19 +185,6 @@ export function SystemHealth() {
     if (metric.value >= metric.threshold.critical) return "critical";
     if (metric.value >= metric.threshold.warning) return "warning";
     return "healthy";
-  };
-
-  const getProgressColor = (status: string) => {
-    switch (status) {
-      case "healthy":
-        return "bg-green-500";
-      case "warning":
-        return "bg-yellow-500";
-      case "critical":
-        return "bg-red-500";
-      default:
-        return "bg-gray-500";
-    }
   };
 
   const getEventIcon = (type: string) => {

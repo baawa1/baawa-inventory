@@ -31,8 +31,6 @@ export function PWAManager() {
     useState<BeforeInstallPromptEvent | null>(null);
   const [showInstallPrompt, setShowInstallPrompt] = useState(false);
   const [isInstalled, setIsInstalled] = useState(false);
-  const [swRegistration, setSwRegistration] =
-    useState<ServiceWorkerRegistration | null>(null);
 
   useEffect(() => {
     // Check if already installed
@@ -85,8 +83,6 @@ export function PWAManager() {
       const registration = await navigator.serviceWorker.register("/sw.js", {
         scope: "/",
       });
-
-      setSwRegistration(registration);
 
       registration.addEventListener("updatefound", () => {
         const newWorker = registration.installing;

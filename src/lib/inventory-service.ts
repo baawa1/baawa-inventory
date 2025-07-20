@@ -38,7 +38,7 @@ export class InventoryService {
       productId,
       quantity,
       userId,
-      reason = "Stock Addition",
+      reason: _reason = "Stock Addition",
       notes,
       referenceNo,
       supplierId,

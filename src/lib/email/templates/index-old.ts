@@ -1,4 +1,4 @@
-import { EmailTemplate, EmailTemplateType, EmailTemplateData } from "../types";
+import { EmailTemplate, EmailTemplateType } from "../types";
 import {
   welcomeTemplate,
   emailVerificationTemplate,
@@ -131,7 +131,7 @@ export async function getEmailTemplate(
  * Additional template functions for less common email types
  */
 
-function getUserRejectedTemplate(data: {
+function _getUserRejectedTemplate(data: {
   firstName: string;
   reason?: string;
 }): EmailTemplate {
@@ -241,7 +241,7 @@ function getAccountLockedTemplate(data: {
   };
 }
 
-function getRoleChangedTemplate(data: {
+function _getRoleChangedTemplate(data: {
   firstName: string;
   oldRole: string;
   newRole: string;
@@ -275,7 +275,7 @@ function getRoleChangedTemplate(data: {
   };
 }
 
-function getUserSuspendedTemplate(data: {
+function _getUserSuspendedTemplate(data: {
   firstName: string;
   adminName: string;
   reason: string;
@@ -302,7 +302,7 @@ function getUserSuspendedTemplate(data: {
   };
 }
 
-function getUserReactivatedTemplate(data: {
+function _getUserReactivatedTemplate(data: {
   firstName: string;
   adminName: string;
 }): EmailTemplate {

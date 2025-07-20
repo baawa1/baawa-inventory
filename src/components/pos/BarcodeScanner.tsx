@@ -19,7 +19,6 @@ export function BarcodeScanner({
   isOpen,
 }: BarcodeScannerProps) {
   const scannerRef = useRef<Html5QrcodeScanner | null>(null);
-  const [isScanning, setIsScanning] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
   useEffect(() => {
@@ -70,7 +69,6 @@ export function BarcodeScanner({
 
     try {
       scanner.render(onScanSuccess, onScanError);
-      setIsScanning(true);
       setError(null);
     } catch (err) {
       console.error("Failed to start scanner:", err);
@@ -92,7 +90,6 @@ export function BarcodeScanner({
       }
       scannerRef.current = null;
     }
-    setIsScanning(false);
     setError(null);
   };
 

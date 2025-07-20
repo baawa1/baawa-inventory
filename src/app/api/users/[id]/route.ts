@@ -12,7 +12,7 @@ interface RouteParams {
 export async function GET(request: NextRequest, { params }: RouteParams) {
   const handler = withPermission(
     ["ADMIN"],
-    async (authRequest: AuthenticatedRequest) => {
+    async (_authRequest: AuthenticatedRequest) => {
       try {
         const { id } = await params;
 
@@ -251,7 +251,7 @@ export async function PUT(request: NextRequest, { params }: RouteParams) {
 export async function DELETE(request: NextRequest, { params }: RouteParams) {
   const handler = withPermission(
     ["ADMIN"],
-    async (authRequest: AuthenticatedRequest) => {
+    async (_authRequest: AuthenticatedRequest) => {
       try {
         const { id } = await params;
 
