@@ -1,173 +1,192 @@
-import { auth } from "../../../../../auth";
-import { NextRequest, NextResponse } from "next/server";
+import { NextResponse } from "next/server";
+import {
+  withAuth,
+  withPermission,
+  AuthenticatedRequest,
+} from "@/lib/api-middleware";
+import { handleApiError } from "@/lib/api-error-handler";
 import { prisma } from "@/lib/db";
+import { USER_ROLES } from "@/lib/auth/roles";
 import { brandIdSchema, updateBrandSchema } from "@/lib/validations/brand";
 
 // GET /api/brands/[id] - Get a specific brand
-export async function GET(
-  request: NextRequest,
-  { params }: { params: Promise<{ id: string }> }
-) {
-  try {
-    const session = await auth();
-    if (!session?.user) {
-      return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+export const GET = withAuth(
+  async (
+    request: AuthenticatedRequest,
+    { params }: { params: Promise<{ id: string }> }
+  ) => {
+    try {
+      // Await params first, then validate brand ID
+      const resolvedParams = await params;
+      const { id } = brandIdSchema.parse(resolvedParams);
+
+      const brand = await prisma.brand.findUnique({
+        where: { id },
+        include: {
+          _count: {
+            select: {
+              products: true,
+            },
+          },
+        },
+      });
+
+      if (!brand) {
+        return NextResponse.json({ error: "Brand not found" }, { status: 404 });
+      }
+
+      // Transform response to include product count
+      const transformedBrand = {
+        id: brand.id,
+        name: brand.name,
+        description: brand.description,
+        image: brand.image,
+        website: brand.website,
+        isActive: brand.isActive,
+        productCount: brand._count.products,
+        createdAt: brand.createdAt,
+        updatedAt: brand.updatedAt,
+      };
+
+      return NextResponse.json({
+        success: true,
+        data: transformedBrand,
+      });
+    } catch (error) {
+      return handleApiError(error);
     }
-
-    // Await params first, then validate brand ID
-    const resolvedParams = await params;
-    const { id } = brandIdSchema.parse(resolvedParams);
-
-    const brand = await prisma.brand.findUnique({
-      where: { id },
-    });
-
-    if (!brand) {
-      return NextResponse.json({ error: "Brand not found" }, { status: 404 });
-    }
-
-    return NextResponse.json({
-      success: true,
-      data: brand,
-    });
-  } catch (error) {
-    console.error("Get brand API error:", error);
-    return NextResponse.json(
-      { error: "Internal server error" },
-      { status: 500 }
-    );
   }
-}
+);
 
 // PUT /api/brands/[id] - Update a specific brand
-export async function PUT(
-  request: NextRequest,
-  { params }: { params: Promise<{ id: string }> }
-) {
-  try {
-    const session = await auth();
-    if (!session?.user) {
-      return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
-    }
+export const PUT = withPermission(
+  [USER_ROLES.ADMIN, USER_ROLES.MANAGER],
+  async (
+    request: AuthenticatedRequest,
+    { params }: { params: Promise<{ id: string }> }
+  ) => {
+    try {
+      // Await params first, then validate brand ID
+      const resolvedParams = await params;
+      const { id } = brandIdSchema.parse(resolvedParams);
 
-    // Await params first, then validate brand ID
-    const resolvedParams = await params;
-    const { id } = brandIdSchema.parse(resolvedParams);
+      const body = await request.json();
+      const validatedData = updateBrandSchema.parse(body);
 
-    const body = await request.json();
-    const validatedData = updateBrandSchema.parse({ ...body, id });
+      // Check if brand exists
+      const existingBrand = await prisma.brand.findUnique({
+        where: { id },
+        select: { id: true, name: true },
+      });
 
-    // Check if brand exists
-    const existingBrand = await prisma.brand.findUnique({
-      where: { id },
-      select: { id: true },
-    });
+      if (!existingBrand) {
+        return NextResponse.json({ error: "Brand not found" }, { status: 404 });
+      }
 
-    if (!existingBrand) {
-      return NextResponse.json({ error: "Brand not found" }, { status: 404 });
-    }
+      // Check if the new name conflicts with existing brands (excluding current brand)
+      if (validatedData.name && validatedData.name !== existingBrand.name) {
+        const nameConflict = await prisma.brand.findFirst({
+          where: {
+            name: {
+              equals: validatedData.name,
+              mode: "insensitive",
+            },
+            id: { not: id },
+          },
+        });
 
-    // Check if name is already taken by another brand
-    if (validatedData.name) {
-      const nameCheck = await prisma.brand.findFirst({
-        where: {
-          name: validatedData.name,
-          id: { not: id },
+        if (nameConflict) {
+          return NextResponse.json(
+            { error: "Brand with this name already exists" },
+            { status: 409 }
+          );
+        }
+      }
+
+      // Update the brand
+      const updatedBrand = await prisma.brand.update({
+        where: { id },
+        data: validatedData,
+        include: {
+          _count: {
+            select: {
+              products: true,
+            },
+          },
         },
+      });
+
+      // Transform response to include product count
+      const transformedBrand = {
+        id: updatedBrand.id,
+        name: updatedBrand.name,
+        description: updatedBrand.description,
+        image: updatedBrand.image,
+        website: updatedBrand.website,
+        isActive: updatedBrand.isActive,
+        productCount: updatedBrand._count.products,
+        createdAt: updatedBrand.createdAt,
+        updatedAt: updatedBrand.updatedAt,
+      };
+
+      return NextResponse.json({
+        success: true,
+        message: "Brand updated successfully",
+        data: transformedBrand,
+      });
+    } catch (error) {
+      return handleApiError(error);
+    }
+  }
+);
+
+// DELETE /api/brands/[id] - Delete a specific brand
+export const DELETE = withPermission(
+  [USER_ROLES.ADMIN, USER_ROLES.MANAGER],
+  async (
+    request: AuthenticatedRequest,
+    { params }: { params: Promise<{ id: string }> }
+  ) => {
+    try {
+      // Await params first, then validate brand ID
+      const resolvedParams = await params;
+      const { id } = brandIdSchema.parse(resolvedParams);
+
+      // Check if brand exists
+      const existingBrand = await prisma.brand.findUnique({
+        where: { id },
+        select: { id: true, name: true },
+      });
+
+      if (!existingBrand) {
+        return NextResponse.json({ error: "Brand not found" }, { status: 404 });
+      }
+
+      // Check if brand is being used by products
+      const products = await prisma.product.findFirst({
+        where: { brandId: id },
         select: { id: true },
       });
 
-      if (nameCheck) {
+      if (products) {
         return NextResponse.json(
-          { error: "Brand name already exists" },
+          { error: "Cannot delete brand that is being used by products" },
           { status: 400 }
         );
       }
+
+      // Delete the brand
+      await prisma.brand.delete({
+        where: { id },
+      });
+
+      return NextResponse.json({
+        success: true,
+        message: "Brand deleted successfully",
+        data: { id, name: existingBrand.name },
+      });
+    } catch (error) {
+      return handleApiError(error);
     }
-
-    // Prepare update data - remove id and handle field mapping
-    const updateData: any = {};
-    if (validatedData.name !== undefined) updateData.name = validatedData.name;
-    if (validatedData.description !== undefined)
-      updateData.description = validatedData.description;
-    if (validatedData.image !== undefined)
-      updateData.image = validatedData.image;
-    if (validatedData.website !== undefined)
-      updateData.website = validatedData.website;
-    if (validatedData.is_active !== undefined)
-      updateData.isActive = validatedData.is_active;
-
-    // Update the brand
-    const brand = await prisma.brand.update({
-      where: { id },
-      data: updateData,
-    });
-
-    return NextResponse.json({
-      success: true,
-      data: brand,
-    });
-  } catch (error) {
-    console.error("Update brand API error:", error);
-    return NextResponse.json(
-      { error: "Internal server error" },
-      { status: 500 }
-    );
   }
-}
-
-// DELETE /api/brands/[id] - Delete a specific brand
-export async function DELETE(
-  request: NextRequest,
-  { params }: { params: Promise<{ id: string }> }
-) {
-  try {
-    const session = await auth();
-    if (!session?.user) {
-      return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
-    }
-
-    // Await params first, then validate brand ID
-    const resolvedParams = await params;
-    const { id } = brandIdSchema.parse(resolvedParams);
-
-    // Check if brand exists
-    const existingBrand = await prisma.brand.findUnique({
-      where: { id },
-      select: { id: true },
-    });
-
-    if (!existingBrand) {
-      return NextResponse.json({ error: "Brand not found" }, { status: 404 });
-    }
-
-    // Check if brand is being used by products
-    const products = await prisma.product.findFirst({
-      where: { brandId: id },
-      select: { id: true },
-    });
-
-    if (products) {
-      return NextResponse.json(
-        { error: "Cannot delete brand that is being used by products" },
-        { status: 400 }
-      );
-    }
-
-    // Delete the brand
-    await prisma.brand.delete({
-      where: { id },
-    });
-
-    return NextResponse.json({
-      success: true,
-      message: "Brand deleted successfully",
-    });
-  } catch (error) {
-    console.error("Delete brand API error:", error);
-    return NextResponse.json(
-      { error: "Internal server error" },
-      { status: 500 }
-    );
-  }
-}
+);
