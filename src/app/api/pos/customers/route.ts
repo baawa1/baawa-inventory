@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from "next/server";
 import { auth } from "../../../../../auth";
 import { prisma } from "@/lib/db";
 import { PAYMENT_STATUS } from "@/lib/constants";
+import { USER_ROLES, hasRole } from "@/lib/auth/roles";
 import { CustomerAggregation, TransformedCustomer } from "@/types/pos";
 
 export async function GET(_request: NextRequest) {
@@ -13,7 +14,13 @@ export async function GET(_request: NextRequest) {
     }
 
     // Check if user has permission to view customer data
-    if (!["ADMIN", "MANAGER", "STAFF"].includes(session.user.role)) {
+    if (
+      !hasRole(session.user.role, [
+        USER_ROLES.ADMIN,
+        USER_ROLES.MANAGER,
+        USER_ROLES.STAFF,
+      ])
+    ) {
       return NextResponse.json({ error: "Forbidden" }, { status: 403 });
     }
 

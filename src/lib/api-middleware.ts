@@ -1,7 +1,8 @@
 import { NextRequest, NextResponse } from "next/server";
 import { auth } from "../../auth";
-import { hasRole } from "./auth/roles";
+import { hasRole, USER_ROLES } from "./auth/roles";
 import { AuditLogger } from "./utils/audit-logger";
+import { USER_STATUS } from "./constants";
 import type { UserRole } from "@/types/user";
 
 // Enhanced authenticated request interface
@@ -55,7 +56,7 @@ export function withAuth<T extends any[]>(
         );
       }
 
-      if (session.user.status !== "APPROVED") {
+      if (session.user.status !== USER_STATUS.APPROVED) {
         console.log(
           "Account not approved for user:",
           session.user.email,
@@ -162,7 +163,7 @@ export function withPermission<T extends any[]>(
 export function withAdminPermission<T extends any[]>(
   handler: (request: AuthenticatedRequest, ...args: T) => Promise<NextResponse>
 ) {
-  return withPermission(["ADMIN"], handler);
+  return withPermission([USER_ROLES.ADMIN], handler);
 }
 
 /**
@@ -171,7 +172,7 @@ export function withAdminPermission<T extends any[]>(
 export function withManagerPermission<T extends any[]>(
   handler: (request: AuthenticatedRequest, ...args: T) => Promise<NextResponse>
 ) {
-  return withPermission(["ADMIN", "MANAGER"], handler);
+  return withPermission([USER_ROLES.ADMIN, USER_ROLES.MANAGER], handler);
 }
 
 /**
@@ -180,5 +181,8 @@ export function withManagerPermission<T extends any[]>(
 export function withUserPermission<T extends any[]>(
   handler: (request: AuthenticatedRequest, ...args: T) => Promise<NextResponse>
 ) {
-  return withPermission(["ADMIN", "MANAGER", "STAFF"], handler);
+  return withPermission(
+    [USER_ROLES.ADMIN, USER_ROLES.MANAGER, USER_ROLES.STAFF],
+    handler
+  );
 }

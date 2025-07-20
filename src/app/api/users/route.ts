@@ -3,11 +3,12 @@ import { prisma } from "@/lib/db";
 import bcrypt from "bcryptjs";
 import { createUserSchema, userQuerySchema } from "@/lib/validations";
 import { withPermission, AuthenticatedRequest } from "@/lib/api-middleware";
+import { USER_ROLES } from "@/lib/auth/roles";
 
 // GET /api/users - List users with optional filtering and pagination
 // Requires permission to manage users (ADMIN only)
 export const GET = withPermission(
-  ["ADMIN"],
+  [USER_ROLES.ADMIN],
   async function (request: AuthenticatedRequest) {
     try {
       const { searchParams } = new URL(request.url);
@@ -149,7 +150,7 @@ export const GET = withPermission(
 // POST /api/users - Create a new user
 // Requires permission to manage users (ADMIN only)
 export const POST = withPermission(
-  ["ADMIN"],
+  [USER_ROLES.ADMIN],
   async function (request: AuthenticatedRequest) {
     try {
       const body = await request.json();

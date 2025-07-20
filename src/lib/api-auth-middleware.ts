@@ -7,6 +7,7 @@ import { NextRequest, NextResponse } from "next/server";
 import { auth } from "../../auth";
 import { hasPermission } from "./auth/roles";
 import { AuditLogger } from "./utils/audit-logger";
+import { USER_STATUS } from "./constants";
 import type { UserRole, UserStatus } from "@/types/user";
 
 export interface AuthenticatedRequest extends NextRequest {
@@ -85,7 +86,7 @@ export function withPOSAuth<T extends any[]>(
       }
 
       // Check if user is approved
-      if (session.user.status !== "APPROVED") {
+      if (session.user.status !== USER_STATUS.APPROVED) {
         await AuditLogger.logAuthEvent(
           {
             action: "LOGIN_FAILED",
