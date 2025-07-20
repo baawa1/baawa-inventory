@@ -39,6 +39,7 @@ export async function GET(request: NextRequest) {
     const status = searchParams.get("status") || "active";
     const sortBy = searchParams.get("sortBy") || "name";
     const sortOrder = searchParams.get("sortOrder") || "asc";
+    const includeSync = searchParams.get("includeSync") === "true";
 
     // Build where clause
     const where: any = {
@@ -100,76 +101,160 @@ export async function GET(request: NextRequest) {
     // Calculate pagination
     const skip = (page - 1) * limit;
 
-    // Execute query with relations
-    const [products, total] = await Promise.all([
-      prisma.product.findMany({
-        where,
-        include: {
-          category: {
-            select: {
-              id: true,
-              name: true,
-            },
-          },
-          brand: {
-            select: {
-              id: true,
-              name: true,
-            },
-          },
-          supplier: {
-            select: {
-              id: true,
-              name: true,
-              email: true,
-            },
-          },
+    // Build include clause
+    const include: any = {
+      category: {
+        select: {
+          id: true,
+          name: true,
         },
-        orderBy,
-        skip,
-        take: limit,
-      }),
-      prisma.product.count({ where }),
-    ]);
+      },
+      brand: {
+        select: {
+          id: true,
+          name: true,
+        },
+      },
+      supplier: {
+        select: {
+          id: true,
+          name: true,
+          email: true,
+        },
+      },
+    };
+
+    // Conditionally include webflow sync data
+    if (includeSync) {
+      include.webflow_sync = {
+        select: {
+          id: true,
+          webflow_item_id: true,
+          sync_status: true,
+          last_sync_at: true,
+          sync_errors: true,
+          is_published: true,
+          auto_sync: true,
+          webflow_url: true,
+          created_at: true,
+          updated_at: true,
+        },
+      };
+    }
+
+    // Execute query with relations
+    console.log("🔍 Executing query with:", {
+      where,
+      include,
+      orderBy,
+      skip,
+      limit,
+    });
+
+    let products, total;
+    try {
+      [products, total] = await Promise.all([
+        prisma.product.findMany({
+          where,
+          include,
+          orderBy,
+          skip,
+          take: limit,
+        }),
+        prisma.product.count({ where }),
+      ]);
+      console.log("✅ Query successful, found products:", products.length);
+    } catch (dbError: any) {
+      console.error("❌ Database query error:", dbError);
+      console.error("❌ Error details:", {
+        message: dbError.message,
+        code: dbError.code,
+        meta: dbError.meta,
+      });
+      throw dbError;
+    }
 
     // Transform products for response
-    const transformedProducts = products.map((product) => ({
-      id: product.id,
-      name: product.name,
-      description: product.description,
-      sku: product.sku,
-      barcode: product.barcode,
-      cost: Number(product.cost),
-      price: Number(product.price),
-      stock: product.stock,
-      minStock: product.minStock,
-      maxStock: product.maxStock,
-      unit: product.unit,
-      status: product.status,
-      isArchived: product.isArchived,
-      createdAt: product.createdAt?.toISOString(),
-      updatedAt: product.updatedAt?.toISOString(),
-      category: product.category,
-      brand: product.brand,
-      supplier: product.supplier,
-      images: product.images || [], // <-- Add this line
-      // Calculated fields
-      stockStatus: product.stock <= product.minStock ? "low" : "normal",
-      profitMargin: Number(product.price) - Number(product.cost),
-      profitMarginPercent:
-        Number(product.cost) > 0
-          ? ((Number(product.price) - Number(product.cost)) /
-              Number(product.cost)) *
-            100
-          : 0,
-    }));
+    console.log("🔧 Transforming products, includeSync:", includeSync);
+    const transformedProducts = products.map((product, index) => {
+      if (index === 0) {
+        console.log("📦 First product sample:", {
+          id: product.id,
+          name: product.name,
+          webflow_sync: product.webflow_sync,
+          hasWebflowSync: !!product.webflow_sync,
+        });
+      }
+      return {
+        id: product.id,
+        name: product.name,
+        description: product.description,
+        sku: product.sku,
+        barcode: product.barcode,
+        cost: Number(product.cost),
+        price: Number(product.price),
+        stock: product.stock,
+        minStock: product.minStock,
+        maxStock: product.maxStock,
+        unit: product.unit,
+        status: product.status,
+        isArchived: product.isArchived,
+        createdAt: product.createdAt?.toISOString(),
+        updatedAt: product.updatedAt?.toISOString(),
+        category: product.category,
+        brand: product.brand,
+        supplier: product.supplier,
+        images: product.images || [],
+        // Webflow sync data (conditionally included)
+        ...(includeSync && {
+          webflowSync: product.webflow_sync?.[0] || null,
+          showInWebflow: product.webflow_sync?.[0]?.is_published || false,
+        }),
+        // Calculated fields
+        stockStatus: product.stock <= product.minStock ? "low" : "normal",
+        profitMargin: Number(product.price) - Number(product.cost),
+        profitMarginPercent:
+          Number(product.cost) > 0
+            ? ((Number(product.price) - Number(product.cost)) /
+                Number(product.cost)) *
+              100
+            : 0,
+      };
+    });
 
     // Calculate pagination metadata
     const totalPages = Math.ceil(total / limit);
     const hasNextPage = page < totalPages;
     const hasPreviousPage = page > 1;
 
-    return NextResponse.json({
+    // Calculate sync summary if requested
+    let syncSummary = null;
+    if (includeSync) {
+      const syncedProducts = transformedProducts.filter(
+        (p: any) => p.webflowSync?.sync_status === "synced"
+      ).length;
+      const pendingProducts = transformedProducts.filter(
+        (p: any) => p.webflowSync?.sync_status === "pending"
+      ).length;
+      const failedProducts = transformedProducts.filter(
+        (p: any) =>
+          p.webflowSync?.sync_status === "failed" ||
+          p.webflowSync?.sync_status === "error"
+      ).length;
+      const notSyncedProducts = transformedProducts.filter(
+        (p: any) => !p.webflowSync
+      ).length;
+
+      syncSummary = {
+        totalProducts: transformedProducts.length,
+        syncedProducts,
+        pendingProducts,
+        failedProducts,
+        notSyncedProducts,
+      };
+    }
+
+    const response: any = {
       data: transformedProducts,
       pagination: {
         page,
@@ -189,7 +274,14 @@ export async function GET(request: NextRequest) {
         sortBy,
         sortOrder,
       },
-    });
+    };
+
+    // Add sync summary if requested
+    if (syncSummary) {
+      response.summary = syncSummary;
+    }
+
+    return NextResponse.json(response);
   } catch (error) {
     console.error("Error fetching products:", error);
     return NextResponse.json(
