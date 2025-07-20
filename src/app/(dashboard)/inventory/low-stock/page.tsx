@@ -1,6 +1,6 @@
 import { auth } from "../../../../../auth";
 import { redirect } from "next/navigation";
-import { canViewLowStock } from "@/lib/roles";
+import { canViewLowStock } from "@/lib/auth/roles";
 import { LowStockAlerts } from "@/components/inventory/LowStockAlerts";
 
 export const metadata = {

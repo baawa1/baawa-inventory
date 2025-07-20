@@ -9,6 +9,9 @@ import {
   ERROR_MESSAGES,
   SUCCESS_MESSAGES,
   VALIDATION_RULES,
+  PRODUCT_STATUS,
+  PAYMENT_STATUS,
+  STOCK_ADJUSTMENT_STATUS,
 } from "@/lib/constants";
 
 // Validation schema for creating a sale
@@ -80,7 +83,7 @@ async function handleCreateSale(request: AuthenticatedRequest) {
       const products = await tx.product.findMany({
         where: {
           id: { in: productIds },
-          status: "active",
+          status: PRODUCT_STATUS.ACTIVE,
         },
       });
 
@@ -110,7 +113,7 @@ async function handleCreateSale(request: AuthenticatedRequest) {
           discount_amount: discount,
           total_amount: total,
           payment_method: paymentMethod,
-          payment_status: "completed",
+          payment_status: PAYMENT_STATUS.COMPLETED,
           customer_name: customerName || null,
           customer_phone: customerPhone || null,
           customer_email: customerEmail || null,
@@ -153,7 +156,7 @@ async function handleCreateSale(request: AuthenticatedRequest) {
             old_quantity: updatedProduct.stock + item.quantity,
             new_quantity: updatedProduct.stock,
             reason: `Sale transaction #${sale.transaction_number}`,
-            status: "APPROVED",
+            status: STOCK_ADJUSTMENT_STATUS.APPROVED,
           },
         });
       }

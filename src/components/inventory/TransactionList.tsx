@@ -1,11 +1,9 @@
 "use client";
 
 import React, { useState, useMemo, useCallback } from "react";
-import { DashboardTableLayout } from "@/components/layouts/DashboardTableLayout";
-import { DashboardTableColumn } from "@/components/layouts/DashboardColumnCustomizer";
-import { FilterConfig } from "@/types/inventory";
-import { Badge } from "@/components/ui/badge";
+import { useQuery } from "@tanstack/react-query";
 import { Button } from "@/components/ui/button";
+import { Badge } from "@/components/ui/badge";
 import {
   Dialog,
   DialogContent,
@@ -13,28 +11,32 @@ import {
   DialogTitle,
   DialogTrigger,
 } from "@/components/ui/dialog";
+import { Separator } from "@/components/ui/separator";
 import {
   IconEye,
-  IconReceipt,
+  IconDownload,
+  IconRefresh,
   IconCash,
   IconCreditCard,
   IconBuildingBank,
   IconDeviceMobile,
-  IconCalendar,
-  IconUser,
+  IconClock,
+  IconCheck,
+  IconX,
+  IconAlertTriangle,
+  IconReceipt,
 } from "@tabler/icons-react";
 import { format } from "date-fns";
+import { toast } from "sonner";
+import { formatCurrency } from "@/lib/utils";
 import { useDebounce } from "@/hooks/useDebounce";
+import { InventoryPageLayout } from "@/components/inventory/InventoryPageLayout";
+import type { DashboardTableColumn } from "@/components/layouts/DashboardColumnCustomizer";
+import type { FilterConfig } from "@/components/layouts/DashboardFiltersBar";
 import {
-  useTransactions,
-  getPaymentMethodLabel,
-  getPaymentStatusLabel,
-  getPaymentStatusColor,
-  type Transaction,
-  type TransactionPagination,
-} from "@/hooks/api/transactions";
-import { PAYMENT_METHODS, TRANSACTION_STATUS, CURRENCY } from "@/lib/constants";
-import { TransactionDataOverview } from "./TransactionDataOverview";
+  ReceiptPrinter,
+  type ReceiptData,
+} from "@/components/pos/ReceiptPrinter";
 
 interface User {
   id: string;
@@ -45,81 +47,110 @@ interface User {
   isEmailVerified: boolean;
 }
 
+interface TransactionItem {
+  id: number;
+  productId: number;
+  name: string;
+  sku: string;
+  price: number;
+  quantity: number;
+  total: number;
+}
+
+interface Transaction {
+  id: number;
+  transactionNumber: string;
+  staffId: number;
+  staffName: string;
+  customerId?: number;
+  customerName?: string;
+  customerEmail: string | null;
+  items: TransactionItem[];
+  subtotal: number;
+  discount: number;
+  total: number;
+  paymentMethod: string;
+  paymentStatus: string;
+  createdAt: string;
+  updatedAt: string;
+}
+
 interface TransactionListProps {
   user: User;
 }
 
-interface TransactionFilters {
-  search: string;
-  paymentMethod: string;
-  paymentStatus: string;
-  dateFrom: string;
-  dateTo: string;
-  staffId: string;
-  sortBy: string;
-  sortOrder: "asc" | "desc";
-}
+export function TransactionList({ user: _ }: TransactionListProps) {
+  const [selectedTransaction, setSelectedTransaction] =
+    useState<Transaction | null>(null);
 
-const SORT_OPTIONS = [
-  { value: "createdAt-desc", label: "Newest First" },
-  { value: "createdAt-asc", label: "Oldest First" },
-  { value: "total-desc", label: "Total (High to Low)" },
-  { value: "total-asc", label: "Total (Low to High)" },
-  { value: "transactionNumber-asc", label: "Transaction # (A-Z)" },
-  { value: "transactionNumber-desc", label: "Transaction # (Z-A)" },
-];
-
-export function TransactionList({ user }: TransactionListProps) {
-  const [pagination, setPagination] = useState<TransactionPagination>({
+  // Pagination state
+  const [pagination, setPagination] = useState({
     page: 1,
     limit: 10,
     totalPages: 1,
     totalItems: 0,
   });
-  const [visibleColumns, setVisibleColumns] = useState<string[]>([]);
-  const [filters, setFilters] = useState<TransactionFilters>({
+
+  // Filters state
+  const [filters, setFilters] = useState({
     search: "",
-    paymentMethod: "",
-    paymentStatus: "",
-    dateFrom: "",
-    dateTo: "",
-    staffId: "",
-    sortBy: "createdAt",
-    sortOrder: "desc",
+    status: "",
+    payment: "",
+    date: "",
   });
 
-  // Dialog states
-  const [transactionDetailModalOpen, setTransactionDetailModalOpen] =
-    useState(false);
-  const [selectedTransactionForDetail, setSelectedTransactionForDetail] =
-    useState<Transaction | null>(null);
-
   // Debounce search term
-  const debouncedSearchTerm = useDebounce(filters.search, 300);
+  const debouncedSearchTerm = useDebounce(filters.search, 500);
   const isSearching = filters.search !== debouncedSearchTerm;
 
-  // TanStack Query hooks
-  const transactionsQuery = useTransactions(
-    {
-      search: debouncedSearchTerm,
-      paymentMethod: filters.paymentMethod,
-      paymentStatus: filters.paymentStatus,
-      dateFrom: filters.dateFrom,
-      dateTo: filters.dateTo,
-      staffId: filters.staffId,
-      sortBy: filters.sortBy,
-      sortOrder: filters.sortOrder,
+  const {
+    data: transactionData,
+    isLoading,
+    error,
+    refetch,
+  } = useQuery({
+    queryKey: [
+      "transactions",
+      debouncedSearchTerm,
+      filters.status,
+      filters.payment,
+      filters.date,
+      pagination.page,
+      pagination.limit,
+    ],
+    queryFn: async () => {
+      const params = new URLSearchParams();
+      if (debouncedSearchTerm) params.append("search", debouncedSearchTerm);
+      if (filters.status && filters.status !== "all")
+        params.append("status", filters.status);
+      if (filters.payment && filters.payment !== "all")
+        params.append("payment", filters.payment);
+      if (filters.date && filters.date !== "all")
+        params.append("date", filters.date);
+      params.append("page", String(pagination.page));
+      params.append("limit", String(pagination.limit));
+
+      const response = await fetch(`/api/pos/transactions?${params}`);
+      if (!response.ok) throw new Error("Failed to fetch transactions");
+      return response.json();
     },
-    {
-      page: pagination.page,
-      limit: pagination.limit,
-    }
-  );
+  });
 
-  // Extract data from queries
-  const transactions = transactionsQuery.data?.data || [];
+  // Extract transactions array from API response
+  const transactions = transactionData?.transactions || [];
+  const apiPagination = transactionData?.pagination;
 
-  const canViewTransactions = ["ADMIN", "MANAGER", "STAFF"].includes(user.role);
+  // Update pagination state from API response
+  const currentPagination = {
+    page: apiPagination?.page || pagination.page,
+    limit: apiPagination?.limit || pagination.limit,
+    totalPages: apiPagination?.totalPages || pagination.totalPages,
+    totalItems: apiPagination?.total || 0,
+  };
+
+  if (error) {
+    toast.error("Failed to load transactions");
+  }
 
   // Column configuration
   const columns: DashboardTableColumn[] = useMemo(
@@ -127,105 +158,204 @@ export function TransactionList({ user }: TransactionListProps) {
       {
         key: "transactionNumber",
         label: "Transaction #",
+        defaultVisible: true,
+        required: true,
+      },
+      {
+        key: "date",
+        label: "Date & Time",
         sortable: true,
         defaultVisible: true,
         required: true,
       },
       {
-        key: "total",
-        label: "Total",
-        sortable: true,
-        defaultVisible: true,
-        required: true,
-      },
-      {
-        key: "paymentMethod",
-        label: "Payment Method",
-        sortable: true,
-        defaultVisible: true,
-      },
-      {
-        key: "paymentStatus",
-        label: "Status",
-        sortable: true,
-        defaultVisible: true,
-      },
-      {
-        key: "customerName",
-        label: "Customer",
-        sortable: true,
-        defaultVisible: true,
-      },
-      {
-        key: "staffName",
+        key: "staff",
         label: "Staff",
-        sortable: true,
+        defaultVisible: true,
+      },
+      {
+        key: "customer",
+        label: "Customer",
         defaultVisible: true,
       },
       {
         key: "items",
         label: "Items",
-        sortable: false,
         defaultVisible: true,
       },
       {
-        key: "createdAt",
-        label: "Date",
-        sortable: true,
+        key: "payment",
+        label: "Payment",
+        defaultVisible: true,
+      },
+      {
+        key: "total",
+        label: "Total",
+        defaultVisible: true,
+        required: true,
+      },
+      {
+        key: "status",
+        label: "Status",
         defaultVisible: true,
       },
     ],
     []
   );
 
-  // Initialize visibleColumns with default values
+  // Initialize visible columns
   const defaultVisibleColumns = useMemo(
     () => columns.filter((col) => col.defaultVisible).map((col) => col.key),
     [columns]
+  );
+
+  const [visibleColumns, setVisibleColumns] = useState<string[]>(
+    defaultVisibleColumns
   );
 
   // Filter configurations
   const filterConfigs: FilterConfig[] = useMemo(
     () => [
       {
-        key: "paymentMethod",
-        label: "Payment Method",
-        type: "select",
-        options: [
-          { value: PAYMENT_METHODS.CASH, label: "Cash" },
-          { value: PAYMENT_METHODS.POS, label: "POS Machine" },
-          { value: PAYMENT_METHODS.BANK_TRANSFER, label: "Bank Transfer" },
-          { value: PAYMENT_METHODS.MOBILE_MONEY, label: "Mobile Money" },
-        ],
-        placeholder: "All Payment Methods",
-      },
-      {
-        key: "paymentStatus",
+        key: "status",
         label: "Status",
         type: "select",
         options: [
-          { value: TRANSACTION_STATUS.PENDING, label: "Pending" },
-          { value: TRANSACTION_STATUS.COMPLETED, label: "Completed" },
-          { value: TRANSACTION_STATUS.CANCELLED, label: "Cancelled" },
-          { value: TRANSACTION_STATUS.REFUNDED, label: "Refunded" },
+          { value: "completed", label: "Completed" },
+          { value: "pending", label: "Pending" },
+          { value: "cancelled", label: "Cancelled" },
         ],
         placeholder: "All Status",
       },
       {
-        key: "dateFrom",
-        label: "From Date",
-        type: "date",
-        placeholder: "Start date",
+        key: "payment",
+        label: "Payment Method",
+        type: "select",
+        options: [
+          { value: "cash", label: "Cash" },
+          { value: "card", label: "Card" },
+          { value: "transfer", label: "Bank Transfer" },
+          { value: "mobile", label: "Mobile Money" },
+        ],
+        placeholder: "All Payments",
       },
       {
-        key: "dateTo",
-        label: "To Date",
-        type: "date",
-        placeholder: "End date",
+        key: "date",
+        label: "Date Range",
+        type: "select",
+        options: [
+          { value: "today", label: "Today" },
+          { value: "yesterday", label: "Yesterday" },
+          { value: "week", label: "This Week" },
+          { value: "month", label: "This Month" },
+        ],
+        placeholder: "All Dates",
       },
     ],
     []
   );
+
+  // Handle filter changes
+  const handleFilterChange = useCallback((key: string, value: any) => {
+    setFilters((prev) => {
+      if (prev[key as keyof typeof prev] === value) return prev;
+      return { ...prev, [key]: value };
+    });
+    setPagination((prev) => ({ ...prev, page: 1 }));
+  }, []);
+
+  // Clear all filters
+  const handleResetFilters = useCallback(() => {
+    setFilters({
+      search: "",
+      status: "",
+      payment: "",
+      date: "",
+    });
+    setPagination((prev) => ({ ...prev, page: 1 }));
+  }, []);
+
+  const handlePageChange = useCallback((newPage: number) => {
+    setPagination((prev) => ({ ...prev, page: newPage }));
+  }, []);
+
+  const handlePageSizeChange = useCallback((newSize: number) => {
+    setPagination((prev) => ({ ...prev, limit: newSize, page: 1 }));
+  }, []);
+
+  // Convert transaction to receipt data format
+  const convertToReceiptData = (transaction: Transaction): ReceiptData => {
+    return {
+      id: transaction.transactionNumber,
+      transactionNumber: transaction.transactionNumber,
+      items: transaction.items.map((item) => ({
+        id: item.productId,
+        name: item.name,
+        sku: item.sku,
+        price: item.price,
+        quantity: item.quantity,
+        category: "N/A",
+      })),
+      subtotal: transaction.subtotal,
+      discount: transaction.discount,
+      total: transaction.total,
+      paymentMethod: transaction.paymentMethod,
+      customerName: transaction.customerName || "Walk-in Customer",
+      customerEmail: transaction.customerEmail || undefined,
+      staffName: transaction.staffName,
+      timestamp: new Date(transaction.createdAt),
+    };
+  };
+
+  // Get status badge
+  const getStatusBadge = useCallback((status: string) => {
+    switch (status.toLowerCase()) {
+      case "completed":
+        return (
+          <Badge className="bg-green-100 text-green-800">
+            <IconCheck className="w-3 h-3 mr-1" />
+            Completed
+          </Badge>
+        );
+      case "pending":
+        return (
+          <Badge className="bg-yellow-100 text-yellow-800">
+            <IconClock className="w-3 h-3 mr-1" />
+            Pending
+          </Badge>
+        );
+      case "cancelled":
+        return (
+          <Badge className="bg-red-100 text-red-800">
+            <IconX className="w-3 h-3 mr-1" />
+            Cancelled
+          </Badge>
+        );
+      default:
+        return (
+          <Badge variant="outline">
+            <IconAlertTriangle className="w-3 h-3 mr-1" />
+            {status}
+          </Badge>
+        );
+    }
+  }, []);
+
+  // Get payment method icon
+  const getPaymentIcon = useCallback((method: string) => {
+    switch (method.toLowerCase()) {
+      case "cash":
+        return <IconCash className="w-4 h-4 text-green-600" />;
+      case "card":
+        return <IconCreditCard className="w-4 h-4 text-blue-600" />;
+      case "transfer":
+        return <IconBuildingBank className="w-4 h-4 text-purple-600" />;
+      case "mobile":
+        return <IconDeviceMobile className="w-4 h-4 text-orange-600" />;
+      default:
+        return <IconCash className="w-4 h-4 text-gray-600" />;
+    }
+  }, []);
 
   // Render cell function
   const renderCell = useCallback(
@@ -233,178 +363,109 @@ export function TransactionList({ user }: TransactionListProps) {
       switch (columnKey) {
         case "transactionNumber":
           return (
-            <span className="font-mono font-medium text-sm">
-              {transaction.transactionNumber}
-            </span>
+            <span className="font-mono">{transaction.transactionNumber}</span>
+          );
+        case "date":
+          return (
+            <div>
+              <div className="font-medium">
+                {format(new Date(transaction.createdAt), "MMM dd, yyyy")}
+              </div>
+              <div className="text-sm text-muted-foreground">
+                {format(new Date(transaction.createdAt), "HH:mm")}
+              </div>
+            </div>
+          );
+        case "staff":
+          return <span>{transaction.staffName}</span>;
+        case "customer":
+          return <span>{transaction.customerName || "Walk-in Customer"}</span>;
+        case "items":
+          return (
+            <Badge variant="outline" className="text-xs">
+              {transaction.items.length} items
+            </Badge>
+          );
+        case "payment":
+          return (
+            <div className="flex items-center gap-2">
+              {getPaymentIcon(transaction.paymentMethod)}
+              <span className="capitalize">{transaction.paymentMethod}</span>
+            </div>
           );
         case "total":
           return (
             <span className="font-semibold">
-              {CURRENCY.SYMBOL}
-              {Number(transaction.total).toLocaleString()}
+              {formatCurrency(transaction.total)}
             </span>
           );
-        case "paymentMethod":
-          return (
-            <div className="flex items-center gap-2">
-              {getPaymentMethodIcon(transaction.paymentMethod)}
-              <span>{getPaymentMethodLabel(transaction.paymentMethod)}</span>
-            </div>
-          );
-        case "paymentStatus":
-          return (
-            <Badge className={getPaymentStatusColor(transaction.paymentStatus)}>
-              {getPaymentStatusLabel(transaction.paymentStatus)}
-            </Badge>
-          );
-        case "customerName":
-          return (
-            <div>
-              {transaction.customerName ? (
-                <div>
-                  <div className="font-medium">{transaction.customerName}</div>
-                  {transaction.customerPhone && (
-                    <div className="text-sm text-muted-foreground">
-                      {transaction.customerPhone}
-                    </div>
-                  )}
-                </div>
-              ) : (
-                <span className="text-muted-foreground italic">
-                  Walk-in customer
-                </span>
-              )}
-            </div>
-          );
-        case "staffName":
-          return (
-            <div className="flex items-center gap-2">
-              <IconUser className="h-4 w-4 text-muted-foreground" />
-              <span>{transaction.staffName}</span>
-            </div>
-          );
-        case "items":
-          return (
-            <span className="text-sm">
-              {transaction.items.length} item
-              {transaction.items.length !== 1 ? "s" : ""}
-            </span>
-          );
-        case "createdAt":
-          return (
-            <div className="flex items-center gap-2">
-              <IconCalendar className="h-4 w-4 text-muted-foreground" />
-              <span className="text-sm">
-                {format(new Date(transaction.createdAt), "MMM dd, yyyy HH:mm")}
-              </span>
-            </div>
-          );
+        case "status":
+          return getStatusBadge(transaction.paymentStatus);
         default:
           return null;
       }
     },
-    []
+    [getStatusBadge, getPaymentIcon]
   );
 
-  // Render actions
+  // Render actions function
   const renderActions = useCallback(
-    (transaction: Transaction) => (
-      <div className="flex items-center gap-2">
-        <Dialog
-          open={
-            transactionDetailModalOpen &&
-            selectedTransactionForDetail?.id === transaction.id
-          }
-          onOpenChange={(open) => {
-            setTransactionDetailModalOpen(open);
-            if (!open) setSelectedTransactionForDetail(null);
-          }}
-        >
-          <DialogTrigger asChild>
-            <Button
-              variant="ghost"
-              size="sm"
-              onClick={() => setSelectedTransactionForDetail(transaction)}
-            >
-              <IconEye className="h-4 w-4" />
-            </Button>
-          </DialogTrigger>
-          <DialogContent className="max-w-2xl">
-            <DialogHeader>
-              <DialogTitle>Transaction Details</DialogTitle>
-            </DialogHeader>
-            {selectedTransactionForDetail && (
-              <TransactionDetailContent
-                transaction={selectedTransactionForDetail}
-              />
-            )}
-          </DialogContent>
-        </Dialog>
-      </div>
-    ),
-    [transactionDetailModalOpen, selectedTransactionForDetail]
+    (transaction: Transaction) => {
+      return (
+        <div className="flex items-center gap-2">
+          {/* View Details Button */}
+          <Dialog>
+            <DialogTrigger asChild>
+              <Button
+                variant="ghost"
+                size="sm"
+                onClick={() => setSelectedTransaction(transaction)}
+              >
+                <IconEye className="h-4 w-4" />
+              </Button>
+            </DialogTrigger>
+            <DialogContent className="max-w-4xl max-h-[80vh] overflow-y-auto">
+              <DialogHeader>
+                <DialogTitle>
+                  Transaction Details - {transaction.transactionNumber}
+                </DialogTitle>
+              </DialogHeader>
+              {selectedTransaction && (
+                <TransactionDetailsContent
+                  transaction={selectedTransaction}
+                  receiptData={convertToReceiptData(selectedTransaction)}
+                />
+              )}
+            </DialogContent>
+          </Dialog>
+
+          {/* Print Receipt Button */}
+          <ReceiptPrinter
+            receiptData={convertToReceiptData(transaction)}
+            size="sm"
+            variant="ghost"
+            showEmailOption={!!transaction.customerEmail}
+          />
+        </div>
+      );
+    },
+    [selectedTransaction, convertToReceiptData]
   );
-
-  // Handle filter changes
-  const handleFilterChange = useCallback((key: string, value: any) => {
-    setFilters((prev) => ({ ...prev, [key]: value }));
-    setPagination((prev) => ({ ...prev, page: 1 }));
-  }, []);
-
-  // Handle sort changes
-  const handleSortChange = useCallback((value: string) => {
-    const [sortBy, sortOrder] = value.split("-");
-    setFilters((prev) => ({
-      ...prev,
-      sortBy,
-      sortOrder: sortOrder as "asc" | "desc",
-    }));
-  }, []);
-
-  // Handle pagination changes
-  const handlePageChange = useCallback((page: number) => {
-    setPagination((prev) => ({ ...prev, page }));
-  }, []);
-
-  const handlePageSizeChange = useCallback((size: number) => {
-    setPagination((prev) => ({ ...prev, limit: size, page: 1 }));
-  }, []);
-
-  // Reset filters
-  const handleResetFilters = useCallback(() => {
-    setFilters({
-      search: "",
-      paymentMethod: "",
-      paymentStatus: "",
-      dateFrom: "",
-      dateTo: "",
-      staffId: "",
-      sortBy: "createdAt",
-      sortOrder: "desc",
-    });
-    setPagination((prev) => ({ ...prev, page: 1 }));
-  }, []);
-
-  if (!canViewTransactions) {
-    return (
-      <div className="flex items-center justify-center h-64">
-        <p className="text-muted-foreground">
-          You don't have permission to view transactions.
-        </p>
-      </div>
-    );
-  }
 
   return (
     <>
-      <TransactionDataOverview
-        dateFrom={filters.dateFrom}
-        dateTo={filters.dateTo}
-      />
-      <DashboardTableLayout
-        title="Transaction History"
-        description="View and manage all sales transactions"
-        searchPlaceholder="Search transactions, customers, or transaction numbers..."
+      <InventoryPageLayout
+        // Header
+        title="Transactions"
+        description="View and manage all POS transactions"
+        actions={
+          <Button onClick={() => refetch()} variant="outline" size="sm">
+            <IconRefresh className="h-4 w-4 mr-2" />
+            Refresh
+          </Button>
+        }
+        // Filters
+        searchPlaceholder="Search transactions..."
         searchValue={filters.search}
         onSearchChange={(value) => handleFilterChange("search", value)}
         isSearching={isSearching}
@@ -412,64 +473,52 @@ export function TransactionList({ user }: TransactionListProps) {
         filterValues={filters}
         onFilterChange={handleFilterChange}
         onResetFilters={handleResetFilters}
-        sortOptions={SORT_OPTIONS}
-        currentSort={`${filters.sortBy}-${filters.sortOrder}`}
-        onSortChange={handleSortChange}
+        // Table
+        tableTitle="Transactions"
+        totalCount={currentPagination.totalItems}
+        currentCount={transactions.length}
         columns={columns}
-        visibleColumns={
-          visibleColumns.length > 0 ? visibleColumns : defaultVisibleColumns
-        }
+        visibleColumns={visibleColumns}
         onColumnsChange={setVisibleColumns}
-        columnCustomizerKey="transaction-columns"
+        columnCustomizerKey="transactions-visible-columns"
         data={transactions}
         renderCell={renderCell}
         renderActions={renderActions}
-        pagination={{
-          page: pagination.page,
-          limit: pagination.limit,
-          totalPages: transactionsQuery.data?.pagination?.totalPages || 1,
-          totalItems: transactionsQuery.data?.pagination?.total || 0,
-        }}
+        // Pagination
+        pagination={currentPagination}
         onPageChange={handlePageChange}
         onPageSizeChange={handlePageSizeChange}
-        isLoading={transactionsQuery.isLoading}
-        isRefetching={transactionsQuery.isRefetching}
-        error={transactionsQuery.error?.message}
-        onRetry={() => transactionsQuery.refetch()}
-        emptyStateIcon={<IconReceipt className="h-8 w-8" />}
-        emptyStateMessage="No transactions found"
-        tableTitle="Transaction Results"
-        totalCount={transactionsQuery.data?.pagination?.total || 0}
-        currentCount={transactions.length}
+        // Loading states
+        isLoading={isLoading}
+        isRefetching={transactionData && isLoading}
+        error={error?.message}
+        onRetry={() => refetch()}
+        // Empty state
+        emptyStateIcon={<IconReceipt className="h-12 w-12 text-gray-400" />}
+        emptyStateMessage={
+          debouncedSearchTerm ||
+          filters.status ||
+          filters.payment ||
+          filters.date
+            ? "No transactions found matching your filters."
+            : "No transactions found."
+        }
       />
     </>
   );
 }
 
-// Helper function to get payment method icon
-function getPaymentMethodIcon(method: string) {
-  switch (method) {
-    case PAYMENT_METHODS.CASH:
-      return <IconCash className="h-4 w-4" />;
-    case PAYMENT_METHODS.POS:
-      return <IconCreditCard className="h-4 w-4" />;
-    case PAYMENT_METHODS.BANK_TRANSFER:
-      return <IconBuildingBank className="h-4 w-4" />;
-    case PAYMENT_METHODS.MOBILE_MONEY:
-      return <IconDeviceMobile className="h-4 w-4" />;
-    default:
-      return <IconCash className="h-4 w-4" />;
-  }
-}
-
-// Transaction detail component
-function TransactionDetailContent({
+// Transaction Details Component
+function TransactionDetailsContent({
   transaction,
+  receiptData,
 }: {
   transaction: Transaction;
+  receiptData: ReceiptData;
 }) {
   return (
-    <div className="space-y-4">
+    <div className="space-y-6">
+      {/* Transaction Info */}
       <div className="grid grid-cols-2 gap-4">
         <div>
           <label className="text-sm font-medium text-muted-foreground">
@@ -481,52 +530,32 @@ function TransactionDetailContent({
           <label className="text-sm font-medium text-muted-foreground">
             Date
           </label>
-          <p>{format(new Date(transaction.createdAt), "MMM dd, yyyy HH:mm")}</p>
+          <p>{format(new Date(transaction.createdAt), "PPP p")}</p>
         </div>
         <div>
           <label className="text-sm font-medium text-muted-foreground">
-            Payment Method
+            Staff
           </label>
-          <p>{getPaymentMethodLabel(transaction.paymentMethod)}</p>
+          <p>{transaction.staffName}</p>
         </div>
-        <div>
-          <label className="text-sm font-medium text-muted-foreground">
-            Status
-          </label>
-          <Badge className={getPaymentStatusColor(transaction.paymentStatus)}>
-            {getPaymentStatusLabel(transaction.paymentStatus)}
-          </Badge>
-        </div>
-      </div>
-
-      {transaction.customerName && (
         <div>
           <label className="text-sm font-medium text-muted-foreground">
             Customer
           </label>
-          <p>{transaction.customerName}</p>
-          {transaction.customerPhone && (
-            <p className="text-sm text-muted-foreground">
-              {transaction.customerPhone}
-            </p>
-          )}
-          {transaction.customerEmail && (
-            <p className="text-sm text-muted-foreground">
-              {transaction.customerEmail}
-            </p>
-          )}
+          <p>{transaction.customerName || "Walk-in Customer"}</p>
         </div>
-      )}
+      </div>
 
+      <Separator />
+
+      {/* Items */}
       <div>
-        <label className="text-sm font-medium text-muted-foreground">
-          Items
-        </label>
-        <div className="mt-2 space-y-2">
-          {transaction.items.map((item) => (
+        <h4 className="text-sm font-medium mb-3">Items</h4>
+        <div className="space-y-2">
+          {transaction.items.map((item, index) => (
             <div
-              key={item.id}
-              className="flex justify-between items-center p-2 bg-gray-50 rounded"
+              key={index}
+              className="flex justify-between items-center p-3 bg-gray-50 rounded-lg"
             >
               <div>
                 <p className="font-medium">{item.name}</p>
@@ -534,12 +563,10 @@ function TransactionDetailContent({
               </div>
               <div className="text-right">
                 <p className="font-medium">
-                  {CURRENCY.SYMBOL}
-                  {item.price.toLocaleString()} × {item.quantity}
+                  {item.quantity} × {formatCurrency(item.price)}
                 </p>
-                <p className="text-sm text-muted-foreground">
-                  {CURRENCY.SYMBOL}
-                  {item.total.toLocaleString()}
+                <p className="text-sm font-semibold">
+                  {formatCurrency(item.total)}
                 </p>
               </div>
             </div>
@@ -547,40 +574,57 @@ function TransactionDetailContent({
         </div>
       </div>
 
-      <div className="border-t pt-4">
+      <Separator />
+
+      {/* Totals */}
+      <div className="space-y-2">
         <div className="flex justify-between">
           <span>Subtotal:</span>
-          <span>
-            {CURRENCY.SYMBOL}
-            {Number(transaction.subtotal).toLocaleString()}
-          </span>
+          <span>{formatCurrency(transaction.subtotal)}</span>
         </div>
         {transaction.discount > 0 && (
-          <div className="flex justify-between">
+          <div className="flex justify-between text-green-600">
             <span>Discount:</span>
-            <span>
-              -{CURRENCY.SYMBOL}
-              {Number(transaction.discount).toLocaleString()}
-            </span>
+            <span>-{formatCurrency(transaction.discount)}</span>
           </div>
         )}
-        <div className="flex justify-between font-bold text-lg">
+        {/* Tax information not available in current API response */}
+        <Separator />
+        <div className="flex justify-between text-lg font-semibold">
           <span>Total:</span>
-          <span>
-            {CURRENCY.SYMBOL}
-            {Number(transaction.total).toLocaleString()}
-          </span>
+          <span>{formatCurrency(transaction.total)}</span>
         </div>
       </div>
 
-      {transaction.notes && (
+      <Separator />
+
+      {/* Payment Info */}
+      <div className="grid grid-cols-2 gap-4">
         <div>
           <label className="text-sm font-medium text-muted-foreground">
-            Notes
+            Payment Method
           </label>
-          <p className="text-sm">{transaction.notes}</p>
+          <p className="capitalize">{transaction.paymentMethod}</p>
         </div>
-      )}
+        <div>
+          <label className="text-sm font-medium text-muted-foreground">
+            Status
+          </label>
+          <p className="capitalize">{transaction.paymentStatus}</p>
+        </div>
+      </div>
+
+      {/* Action Buttons */}
+      <div className="flex gap-2 pt-4">
+        <ReceiptPrinter
+          receiptData={receiptData}
+          showEmailOption={!!transaction.customerEmail}
+        />
+        <Button variant="outline">
+          <IconDownload className="h-4 w-4 mr-2" />
+          Download Receipt
+        </Button>
+      </div>
     </div>
   );
 }

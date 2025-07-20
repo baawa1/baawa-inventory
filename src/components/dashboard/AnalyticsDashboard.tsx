@@ -45,6 +45,7 @@ import {
 import { formatCurrency } from "@/lib/utils";
 import { useTransactionStats } from "@/hooks/api/transactions";
 import { useActiveUsers } from "@/hooks/api/users";
+import { CHART_COLORS } from "@/lib/constants/ui";
 
 interface AnalyticsDashboardProps {
   _user: any;
@@ -96,7 +97,7 @@ const topProducts = [
   { id: 3, name: "Apple Watch Series 9", itemsSold: 1, netSales: 85000 },
 ];
 
-const categoryColors = ["#8884d8", "#82ca9d", "#ffc658", "#ff7300", "#0088fe"];
+const categoryColors = CHART_COLORS;
 
 export function AnalyticsDashboard({ _user }: AnalyticsDashboardProps) {
   const [dateRange, setDateRange] = useState("month");

@@ -1,6 +1,10 @@
 /**
  * API endpoint for fetching transaction history
  * Supports filtering and pagination for transaction management
+ *
+ * NOTE: This file uses snake_case field names because the SalesTransaction
+ * model in Prisma schema doesn't follow the workspace rule of using camelCase
+ * with @map directives. This should be fixed in a future schema migration.
  */
 
 import { NextResponse } from "next/server";
@@ -12,6 +16,11 @@ import {
   API_LIMITS,
   ERROR_MESSAGES,
 } from "@/lib/constants";
+import {
+  createPaginatedResponse,
+  createValidationErrorResponse,
+  createInternalErrorResponse,
+} from "@/lib/api-response";
 
 const querySchema = z.object({
   page: z.string().optional().default("1"),
@@ -139,29 +148,26 @@ async function handleGetTransactions(request: AuthenticatedRequest) {
       updatedAt: sale.updated_at,
     }));
 
-    return NextResponse.json({
-      transactions: transformedTransactions,
-      pagination: {
+    return createPaginatedResponse(
+      transformedTransactions,
+      {
         page: pageNum,
         limit: limitNum,
         total: totalCount,
-        pages: Math.ceil(totalCount / limitNum),
       },
-    });
+      `Retrieved ${transformedTransactions.length} of ${totalCount} transactions`
+    );
   } catch (error) {
     console.error("Error fetching transactions:", error);
 
     if (error instanceof z.ZodError) {
-      return NextResponse.json(
-        { error: ERROR_MESSAGES.VALIDATION_ERROR, details: error.errors },
-        { status: 400 }
+      return createValidationErrorResponse(
+        error.errors,
+        ERROR_MESSAGES.VALIDATION_ERROR
       );
     }
 
-    return NextResponse.json(
-      { error: ERROR_MESSAGES.INTERNAL_ERROR },
-      { status: 500 }
-    );
+    return createInternalErrorResponse(ERROR_MESSAGES.INTERNAL_ERROR);
   }
 }
 

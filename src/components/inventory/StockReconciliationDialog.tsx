@@ -55,6 +55,7 @@ import {
   useSubmitStockReconciliation,
 } from "@/hooks/api/stock-management";
 import { DISCREPANCY_REASONS } from "@/lib/constants/stock-reconciliation";
+import { getDiscrepancyBadgeConfig } from "@/lib/utils/badge-helpers";
 
 const reconciliationItemSchema = z.object({
   productId: z.number().int().positive(),
@@ -420,18 +421,15 @@ export function StockReconciliationDialog({
                                 />
                               </TableCell>
                               <TableCell>
-                                <Badge
-                                  variant={
-                                    discrepancy === 0
-                                      ? "secondary"
-                                      : discrepancy > 0
-                                        ? "default"
-                                        : "destructive"
-                                  }
-                                >
-                                  {discrepancy > 0 ? "+" : ""}
-                                  {discrepancy}
-                                </Badge>
+                                {(() => {
+                                  const badgeConfig =
+                                    getDiscrepancyBadgeConfig(discrepancy);
+                                  return (
+                                    <Badge variant={badgeConfig.variant}>
+                                      {badgeConfig.label}
+                                    </Badge>
+                                  );
+                                })()}
                               </TableCell>
                               <TableCell>
                                 <FormField

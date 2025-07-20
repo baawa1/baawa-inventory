@@ -106,6 +106,72 @@ jest.mock("@tanstack/react-query", () => ({
   })),
 }));
 
+// Mock custom hooks
+jest.mock("@/hooks/api/categories", () => ({
+  useCategoriesWithHierarchy: jest.fn(() => ({
+    data: [],
+    isLoading: false,
+    error: null,
+  })),
+  useCategories: jest.fn(() => ({
+    data: [],
+    isLoading: false,
+    error: null,
+  })),
+}));
+
+jest.mock("@/hooks/api/brands", () => ({
+  useBrands: jest.fn(() => ({
+    data: [],
+    isLoading: false,
+    error: null,
+  })),
+}));
+
+jest.mock("@/hooks/api/suppliers", () => ({
+  useSuppliers: jest.fn(() => ({
+    data: [],
+    isLoading: false,
+    error: null,
+  })),
+}));
+
+jest.mock("@/hooks/api/products", () => ({
+  useProducts: jest.fn(() => ({
+    data: [],
+    isLoading: false,
+    error: null,
+  })),
+  useProduct: jest.fn(() => ({
+    data: null,
+    isLoading: false,
+    error: null,
+  })),
+  useCreateProduct: jest.fn(() => ({
+    mutate: jest.fn(),
+    isLoading: false,
+    error: null,
+  })),
+  useUpdateProduct: jest.fn(() => ({
+    mutate: jest.fn(),
+    isLoading: false,
+    error: null,
+  })),
+  useDeleteProduct: jest.fn(() => ({
+    mutate: jest.fn(),
+    isLoading: false,
+    error: null,
+  })),
+}));
+
+jest.mock("@/hooks/api/useWebhookSync", () => ({
+  useSyncEntity: jest.fn(() => ({
+    mutate: jest.fn(),
+    isLoading: false,
+    error: null,
+  })),
+}));
+
 // Mock file upload
 global.File = class MockFile {
   name: string;

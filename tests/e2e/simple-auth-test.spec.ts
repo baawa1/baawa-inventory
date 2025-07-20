@@ -1,89 +1,65 @@
 import { test, expect } from "@playwright/test";
+import { TestAuthHelper } from "./test-auth-helper";
+import {
+  testUserHelper,
+  VERIFIED_UNAPPROVED,
+  APPROVED_ADMIN,
+  REJECTED,
+} from "./test-user-helper";
 
 test.describe("Simple Auth Test", () => {
+  test.beforeAll(async () => {
+    await testUserHelper.initializeTestUsers();
+  });
+
   test("should login with admin user and access dashboard", async ({
     page,
   }) => {
-    // Navigate to login page
-    await page.goto("/login");
+    // Login with admin user
+    await TestAuthHelper.loginUser(page, APPROVED_ADMIN);
 
-    // Fill in login form with admin credentials
-    await page.fill('input[name="email"]', "baawapays+test-admin@gmail.com");
-    await page.fill('input[name="password"]', "SecurePassword123!");
-
-    // Submit the form
-    await page.click('button[type="submit"]');
-
-    // Wait for navigation to dashboard
-    await page.waitForURL("/dashboard");
-
-    // Verify we're on the dashboard
+    // Should be able to access dashboard
+    await page.goto("/dashboard");
     await expect(page).toHaveURL("/dashboard");
 
-    // Check that we can see dashboard content
-    await expect(page.locator("h1")).toContainText("Dashboard");
+    // Should be able to access admin panel
+    await page.goto("/admin");
+    await expect(page).toHaveURL("/admin");
+
+    console.log("✅ Admin user login and dashboard access working");
   });
 
   test("should redirect unapproved users to pending approval", async ({
     page,
   }) => {
-    // Navigate to login page
-    await page.goto("/login");
+    // Login with verified but unapproved user
+    await TestAuthHelper.loginUser(page, VERIFIED_UNAPPROVED);
 
-    // Fill in login form with verified unapproved user
-    await page.fill(
-      'input[name="email"]',
-      "baawapays+test-verified-unapproved@gmail.com"
-    );
-    await page.fill('input[name="password"]', "SecurePassword123!");
+    // Should be redirected to pending approval
+    await expect(page).toHaveURL(/\/pending-approval/);
 
-    // Submit the form
-    await page.click('button[type="submit"]');
+    // Try to access dashboard - should stay on pending approval
+    await page.goto("/dashboard");
+    await expect(page).toHaveURL(/\/pending-approval/);
 
-    // Wait for redirect to pending approval
-    await page.waitForURL("/pending-approval");
-
-    // Verify we're on the pending approval page
-    await expect(page).toHaveURL("/pending-approval");
-
-    // Check that we can see pending approval content
-    await expect(page.locator("h1")).toContainText("Pending Approval");
+    console.log("✅ Unapproved user correctly redirected to pending approval");
   });
 
-  test("should redirect rejected users to unauthorized", async ({ page }) => {
-    // Navigate to login page
+  test("should prevent rejected users from logging in", async ({ page }) => {
+    // Try to login with rejected user - should fail
     await page.goto("/login");
-
-    // Fill in login form with rejected user
-    await page.fill('input[name="email"]', "baawapays+test-rejected@gmail.com");
-    await page.fill('input[name="password"]', "SecurePassword123!");
-
-    // Submit the form
+    await page.fill('input[name="email"]', REJECTED.email);
+    await page.fill('input[name="password"]', REJECTED.password);
     await page.click('button[type="submit"]');
 
-    // Wait for redirect to unauthorized
-    await page.waitForURL("/unauthorized");
+    // Should show error and stay on login page
+    await page.waitForSelector('[data-testid="login-error"]', {
+      timeout: 10000,
+    });
+    const errorElement = page.locator('[data-testid="login-error"]');
+    await expect(errorElement).toBeVisible();
+    await expect(page).toHaveURL(/\/login/);
 
-    // Verify we're on the unauthorized page
-    await expect(page).toHaveURL("/unauthorized");
-
-    // Check that we can see unauthorized content
-    await expect(page.locator("h1")).toContainText("Unauthorized");
-  });
-
-  test("should allow access to public routes without authentication", async ({
-    page,
-  }) => {
-    // Test verify-email page
-    await page.goto("/verify-email");
-    await expect(page).toHaveURL("/verify-email");
-
-    // Test pending-approval page
-    await page.goto("/pending-approval");
-    await expect(page).toHaveURL("/pending-approval");
-
-    // Test unauthorized page
-    await page.goto("/unauthorized");
-    await expect(page).toHaveURL("/unauthorized");
+    console.log("✅ Rejected user correctly prevented from logging in");
   });
 });

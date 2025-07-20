@@ -30,7 +30,7 @@ import {
   ShoppingCart,
 } from "lucide-react";
 import { toast } from "sonner";
-import { DashboardTable } from "@/components/layouts/DashboardTable";
+import { DashboardTableLayout } from "@/components/layouts/DashboardTableLayout";
 
 interface ReportFilters {
   category?: string;
@@ -823,12 +823,23 @@ export function InventoryReports() {
               </p>
             </div>
           ) : (
-            <DashboardTable
+            <DashboardTableLayout
+              title={`${reportType.replace(/_/g, " ").replace(/\b\w/g, (l) => l.toUpperCase())} Report`}
+              description="View detailed inventory report data"
+              searchPlaceholder={`Search ${reportType.replace(/_/g, " ").toLowerCase()}...`}
+              searchValue=""
+              onSearchChange={() => {}}
+              filters={[]}
+              filterValues={{}}
+              onFilterChange={() => {}}
+              onResetFilters={() => {}}
               tableTitle={`${reportType.replace(/_/g, " ").replace(/\b\w/g, (l) => l.toUpperCase())} Report`}
               totalCount={currentPagination.totalItems}
               currentCount={tableData.length}
               columns={tableColumns}
               visibleColumns={defaultVisibleColumns}
+              onColumnsChange={() => {}}
+              columnCustomizerKey={`inventory-reports-${reportType}`}
               data={tableData}
               renderCell={renderCell}
               pagination={currentPagination}

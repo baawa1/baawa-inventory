@@ -3,6 +3,11 @@ import { prisma } from "@/lib/db";
 import { z } from "zod";
 import { withPOSAuth, AuthenticatedRequest } from "@/lib/api-auth-middleware";
 import { PRODUCT_STATUS, API_LIMITS, ERROR_MESSAGES } from "@/lib/constants";
+import {
+  createSuccessResponse,
+  createValidationErrorResponse,
+  createInternalErrorResponse,
+} from "@/lib/api-response";
 
 // Validation schema for search parameters
 const searchParamsSchema = z.object({
@@ -98,7 +103,7 @@ async function handleSearchProducts(request: AuthenticatedRequest) {
       take: limitNum,
     });
 
-    // Format response
+    // Format response data
     const formattedProducts = products.map((product) => ({
       id: product.id,
       name: product.name,
@@ -112,24 +117,25 @@ async function handleSearchProducts(request: AuthenticatedRequest) {
       description: product.description,
     }));
 
-    return NextResponse.json({
-      products: formattedProducts,
-      total: formattedProducts.length,
-    });
+    return createSuccessResponse(
+      {
+        products: formattedProducts,
+        total: formattedProducts.length,
+        searchTerm: search,
+      },
+      `Found ${formattedProducts.length} products matching "${search}"`
+    );
   } catch (error) {
     console.error("Error searching products for POS:", error);
 
     if (error instanceof z.ZodError) {
-      return NextResponse.json(
-        { error: ERROR_MESSAGES.VALIDATION_ERROR, details: error.errors },
-        { status: 400 }
+      return createValidationErrorResponse(
+        error.errors,
+        ERROR_MESSAGES.VALIDATION_ERROR
       );
     }
 
-    return NextResponse.json(
-      { error: ERROR_MESSAGES.INTERNAL_ERROR },
-      { status: 500 }
-    );
+    return createInternalErrorResponse(ERROR_MESSAGES.INTERNAL_ERROR);
   }
 }
 

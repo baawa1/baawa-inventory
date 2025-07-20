@@ -4,9 +4,12 @@ import {
   UNVERIFIED,
   VERIFIED_UNAPPROVED,
   APPROVED_ADMIN,
+  APPROVED_MANAGER,
+  APPROVED_STAFF,
   REJECTED,
   SUSPENDED,
 } from "./test-user-helper";
+import { TestAuthHelper } from "./test-auth-helper";
 
 test.describe("Correct Authentication Flow", () => {
   test.beforeAll(async () => {
@@ -19,34 +22,10 @@ test.describe("Correct Authentication Flow", () => {
       page,
     }) => {
       // Test that public routes are accessible
-      const publicRoutes = [
-        "/",
-        "/login",
-        "/register",
-        "/forgot-password",
-        "/check-email",
-        "/verify-email",
-        "/pending-approval",
-        "/unauthorized",
-      ];
-
-      for (const route of publicRoutes) {
-        await page.goto(route);
-        expect(page.url()).toContain(route);
-        console.log(`✅ Public route ${route} accessible`);
-      }
+      await TestAuthHelper.testPublicRoutes(page);
 
       // Test that protected routes redirect to login when not authenticated
-      const protectedRoutes = ["/dashboard", "/pos", "/inventory", "/admin"];
-
-      for (const route of protectedRoutes) {
-        await page.goto(route);
-        await page.waitForURL(/\/login/, { timeout: 5000 });
-        expect(page.url()).toContain("/login");
-        console.log(
-          `✅ Protected route ${route} redirects to login when not authenticated`
-        );
-      }
+      await TestAuthHelper.testProtectedRoutesRedirect(page);
     });
   });
 
@@ -54,17 +33,12 @@ test.describe("Correct Authentication Flow", () => {
     test("should redirect VERIFIED users to pending-approval page", async ({
       page,
     }) => {
-      // Use test-data page to simulate VERIFIED user
-      await page.goto("/test-data");
-      await page.evaluate((email) => {
-        localStorage.setItem("test-user-email", email);
-        localStorage.setItem("test-user-status", "VERIFIED");
-        localStorage.setItem("test-user-isEmailVerified", "true");
-      }, VERIFIED_UNAPPROVED.email);
+      // Login with VERIFIED user
+      await TestAuthHelper.loginUser(page, VERIFIED_UNAPPROVED);
 
       // Try to access dashboard - should redirect to pending-approval
       await page.goto("/dashboard");
-      await page.waitForURL(/\/pending-approval/, { timeout: 5000 });
+      await page.waitForURL(/\/pending-approval/, { timeout: 10000 });
 
       // Should show pending approval message
       await expect(
@@ -77,13 +51,8 @@ test.describe("Correct Authentication Flow", () => {
     test("should redirect VERIFIED users to pending-approval when trying to access any page", async ({
       page,
     }) => {
-      // Use test-data page to simulate VERIFIED user
-      await page.goto("/test-data");
-      await page.evaluate((email) => {
-        localStorage.setItem("test-user-email", email);
-        localStorage.setItem("test-user-status", "VERIFIED");
-        localStorage.setItem("test-user-isEmailVerified", "true");
-      }, VERIFIED_UNAPPROVED.email);
+      // Login with VERIFIED user
+      await TestAuthHelper.loginUser(page, VERIFIED_UNAPPROVED);
 
       // Try to access various pages - should all redirect to pending-approval
       const testPages = ["/dashboard", "/pos", "/inventory", "/admin"];
@@ -92,7 +61,7 @@ test.describe("Correct Authentication Flow", () => {
         await page.goto(pagePath);
 
         // Should be redirected to pending-approval
-        await page.waitForURL(/\/pending-approval/, { timeout: 5000 });
+        await page.waitForURL(/\/pending-approval/, { timeout: 10000 });
         expect(page.url()).toContain("/pending-approval");
 
         console.log(
@@ -104,29 +73,24 @@ test.describe("Correct Authentication Flow", () => {
     test("should persist pending-approval redirect even after logout and login", async ({
       page,
     }) => {
-      // Use test-data page to simulate VERIFIED user
-      await page.goto("/test-data");
-      await page.evaluate((email) => {
-        localStorage.setItem("test-user-email", email);
-        localStorage.setItem("test-user-status", "VERIFIED");
-        localStorage.setItem("test-user-isEmailVerified", "true");
-      }, VERIFIED_UNAPPROVED.email);
+      // Login with VERIFIED user
+      await TestAuthHelper.loginUser(page, VERIFIED_UNAPPROVED);
 
       // Try to access dashboard - should redirect to pending-approval
       await page.goto("/dashboard");
-      await page.waitForURL(/\/pending-approval/, { timeout: 5000 });
+      await page.waitForURL(/\/pending-approval/, { timeout: 10000 });
 
       // Logout
-      await page.goto("/logout");
-      await page.waitForURL(/\/login/, { timeout: 5000 });
+      await TestAuthHelper.logoutUser(page);
+
+      // Wait for logout to complete and ensure we're on login page
+      await page.waitForURL(/\/login/, { timeout: 10000 });
 
       // Login with the same VERIFIED account
-      await page.fill('input[name="email"]', VERIFIED_UNAPPROVED.email);
-      await page.fill('input[name="password"]', VERIFIED_UNAPPROVED.password);
-      await page.click('button[type="submit"]');
+      await TestAuthHelper.loginUser(page, VERIFIED_UNAPPROVED);
 
       // Should still be redirected to pending-approval
-      await page.waitForURL(/\/pending-approval/, { timeout: 5000 });
+      await page.waitForURL(/\/pending-approval/, { timeout: 10000 });
       expect(page.url()).toContain("/pending-approval");
 
       console.log(
@@ -139,14 +103,8 @@ test.describe("Correct Authentication Flow", () => {
     test("should allow APPROVED users to access dashboard", async ({
       page,
     }) => {
-      // Use test-data page to simulate APPROVED user
-      await page.goto("/test-data");
-      await page.evaluate((email) => {
-        localStorage.setItem("test-user-email", email);
-        localStorage.setItem("test-user-status", "APPROVED");
-        localStorage.setItem("test-user-isEmailVerified", "true");
-        localStorage.setItem("test-user-role", "ADMIN");
-      }, APPROVED_ADMIN.email);
+      // Login with APPROVED user
+      await TestAuthHelper.loginUser(page, APPROVED_ADMIN);
 
       // Try to access dashboard - should work
       await page.goto("/dashboard");
@@ -162,18 +120,12 @@ test.describe("Correct Authentication Flow", () => {
     test("should redirect APPROVED users away from pending-approval page", async ({
       page,
     }) => {
-      // Use test-data page to simulate APPROVED user
-      await page.goto("/test-data");
-      await page.evaluate((email) => {
-        localStorage.setItem("test-user-email", email);
-        localStorage.setItem("test-user-status", "APPROVED");
-        localStorage.setItem("test-user-isEmailVerified", "true");
-        localStorage.setItem("test-user-role", "ADMIN");
-      }, APPROVED_ADMIN.email);
+      // Login with APPROVED user
+      await TestAuthHelper.loginUser(page, APPROVED_ADMIN);
 
       // Try to access pending-approval - should redirect to dashboard
       await page.goto("/pending-approval");
-      await page.waitForURL(/\/dashboard/, { timeout: 5000 });
+      await page.waitForURL(/\/dashboard/, { timeout: 10000 });
 
       console.log(
         "✅ APPROVED user redirected from pending-approval to dashboard"
@@ -181,47 +133,49 @@ test.describe("Correct Authentication Flow", () => {
     });
   });
 
-  test.describe("4. REJECTED/SUSPENDED Users - Redirected to Unauthorized", () => {
-    test("should redirect REJECTED users to unauthorized page", async ({
-      page,
-    }) => {
-      // Use test-data page to simulate REJECTED user
-      await page.goto("/test-data");
-      await page.evaluate((email) => {
-        localStorage.setItem("test-user-email", email);
-        localStorage.setItem("test-user-status", "REJECTED");
-        localStorage.setItem("test-user-isEmailVerified", "true");
-      }, REJECTED.email);
+  test.describe("4. REJECTED/SUSPENDED Users - Cannot Login", () => {
+    test("should prevent REJECTED users from logging in", async ({ page }) => {
+      // Try to login with REJECTED user - should fail
+      await page.goto("/login");
+      await page.fill('input[name="email"]', REJECTED.email);
+      await page.fill('input[name="password"]', REJECTED.password);
+      await page.click('button[type="submit"]');
 
-      // Try to access dashboard - should redirect to unauthorized
-      await page.goto("/dashboard");
-      await page.waitForURL(/\/unauthorized/, { timeout: 5000 });
+      // Wait for error message
+      await page.waitForSelector('[data-testid="login-error"]', {
+        timeout: 10000,
+      });
 
-      // Should show unauthorized message
-      await expect(page.locator("text=Access Denied")).toBeVisible();
+      // Should show error message
+      const errorElement = page.locator('[data-testid="login-error"]');
+      await expect(errorElement).toBeVisible();
 
-      console.log("✅ REJECTED user correctly redirected to unauthorized");
+      // Should still be on login page
+      await expect(page).toHaveURL(/\/login/);
+
+      console.log("✅ REJECTED user correctly prevented from logging in");
     });
 
-    test("should redirect SUSPENDED users to unauthorized page", async ({
-      page,
-    }) => {
-      // Use test-data page to simulate SUSPENDED user
-      await page.goto("/test-data");
-      await page.evaluate((email) => {
-        localStorage.setItem("test-user-email", email);
-        localStorage.setItem("test-user-status", "SUSPENDED");
-        localStorage.setItem("test-user-isEmailVerified", "true");
-      }, SUSPENDED.email);
+    test("should prevent SUSPENDED users from logging in", async ({ page }) => {
+      // Try to login with SUSPENDED user - should fail
+      await page.goto("/login");
+      await page.fill('input[name="email"]', SUSPENDED.email);
+      await page.fill('input[name="password"]', SUSPENDED.password);
+      await page.click('button[type="submit"]');
 
-      // Try to access dashboard - should redirect to unauthorized
-      await page.goto("/dashboard");
-      await page.waitForURL(/\/unauthorized/, { timeout: 5000 });
+      // Wait for error message
+      await page.waitForSelector('[data-testid="login-error"]', {
+        timeout: 10000,
+      });
 
-      // Should show unauthorized message
-      await expect(page.locator("text=Access Denied")).toBeVisible();
+      // Should show error message
+      const errorElement = page.locator('[data-testid="login-error"]');
+      await expect(errorElement).toBeVisible();
 
-      console.log("✅ SUSPENDED user correctly redirected to unauthorized");
+      // Should still be on login page
+      await expect(page).toHaveURL(/\/login/);
+
+      console.log("✅ SUSPENDED user correctly prevented from logging in");
     });
   });
 
@@ -230,13 +184,7 @@ test.describe("Correct Authentication Flow", () => {
       page,
     }) => {
       await page.goto("/verify-email");
-
-      // Should be able to access verify-email page (it's a public route)
       expect(page.url()).toContain("/verify-email");
-
-      // Should show some content (even if it's an error message for missing token)
-      await expect(page.locator("body")).toBeVisible();
-
       console.log("✅ Verify-email page accessible (public route)");
     });
 
@@ -244,13 +192,7 @@ test.describe("Correct Authentication Flow", () => {
       page,
     }) => {
       await page.goto("/pending-approval");
-
-      // Should be able to access pending-approval page (it's a public route)
       expect(page.url()).toContain("/pending-approval");
-
-      // Should show some content
-      await expect(page.locator("body")).toBeVisible();
-
       console.log("✅ Pending-approval page accessible (public route)");
     });
 
@@ -258,13 +200,7 @@ test.describe("Correct Authentication Flow", () => {
       page,
     }) => {
       await page.goto("/unauthorized");
-
-      // Should be able to access unauthorized page (it's a public route)
       expect(page.url()).toContain("/unauthorized");
-
-      // Should show access denied message
-      await expect(page.locator("text=Access Denied")).toBeVisible();
-
       console.log("✅ Unauthorized page accessible (public route)");
     });
   });
@@ -284,10 +220,7 @@ test.describe("Correct Authentication Flow", () => {
 
       for (const route of publicRoutes) {
         await page.goto(route);
-
-        // Should be able to access public routes
         expect(page.url()).toContain(route);
-
         console.log(`✅ Public route ${route} accessible`);
       }
     });

@@ -15,7 +15,7 @@ export default async function AdminPage() {
   }
 
   // Check if user has admin access
-  if (session.user.role !== "ADMIN" && session.user.role !== "SUPER_ADMIN") {
+  if (session.user.role !== "ADMIN") {
     redirect("/unauthorized");
   }
 

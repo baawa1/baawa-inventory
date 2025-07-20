@@ -1,43 +1,45 @@
 import { NextRequest, NextResponse } from "next/server";
 import { auth } from "../../../../../../auth";
 import { prisma } from "@/lib/db";
+import { PAYMENT_STATUS } from "@/lib/constants";
 
 interface SalesOverview {
   totalSales: number;
   totalOrders: number;
   totalCustomers: number;
   averageOrderValue: number;
-  topSellingProducts: {
+  topSellingProducts: Array<{
     id: number;
     name: string;
     totalSold: number;
     revenue: number;
-  }[];
-  salesByPeriod: {
-    period: string;
+  }>;
+  salesByPeriod: Array<{
+    date: string;
     sales: number;
     orders: number;
-  }[];
-  recentTransactions: {
+  }>;
+  recentTransactions: Array<{
     id: number;
     transactionNumber: string;
     customerName: string | null;
     totalAmount: number;
     createdAt: string;
-  }[];
+  }>;
 }
 
+// Helper function to get date filter based on period
 function getPeriodFilter(period: string): Date {
   const now = new Date();
   switch (period) {
-    case "1d":
-      return new Date(now.getTime() - 24 * 60 * 60 * 1000);
     case "7d":
       return new Date(now.getTime() - 7 * 24 * 60 * 60 * 1000);
     case "30d":
       return new Date(now.getTime() - 30 * 24 * 60 * 60 * 1000);
     case "90d":
       return new Date(now.getTime() - 90 * 24 * 60 * 60 * 1000);
+    case "1y":
+      return new Date(now.getTime() - 365 * 24 * 60 * 60 * 1000);
     default:
       return new Date(now.getTime() - 7 * 24 * 60 * 60 * 1000);
   }
@@ -66,7 +68,7 @@ export async function GET(request: NextRequest) {
         created_at: {
           gte: periodStart,
         },
-        payment_status: "paid",
+        payment_status: PAYMENT_STATUS.PAID,
       },
       _sum: {
         total_amount: true,
@@ -86,7 +88,7 @@ export async function GET(request: NextRequest) {
         created_at: {
           gte: periodStart,
         },
-        payment_status: "paid",
+        payment_status: PAYMENT_STATUS.PAID,
         customer_email: {
           not: null,
         },
@@ -104,7 +106,7 @@ export async function GET(request: NextRequest) {
           created_at: {
             gte: periodStart,
           },
-          payment_status: "paid",
+          payment_status: PAYMENT_STATUS.PAID,
         },
         product_id: {
           not: null,
@@ -151,7 +153,7 @@ export async function GET(request: NextRequest) {
     // Get recent transactions
     const recentTransactions = await prisma.salesTransaction.findMany({
       where: {
-        payment_status: "paid",
+        payment_status: PAYMENT_STATUS.PAID,
       },
       select: {
         id: true,

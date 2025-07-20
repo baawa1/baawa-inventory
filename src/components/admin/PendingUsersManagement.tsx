@@ -171,22 +171,151 @@ export function PendingUsersManagement() {
 
   return (
     <div className="space-y-6">
+      {/* Header */}
+      <div className="flex flex-col sm:flex-row gap-4 items-start sm:items-center justify-between">
+        <div>
+          <h2 className="text-2xl font-bold tracking-tight">
+            Pending User Approvals
+          </h2>
+          <p className="text-muted-foreground">
+            Review and approve users waiting for account activation
+          </p>
+        </div>
+        <Button onClick={() => refetch()} variant="outline" size="sm">
+          <RefreshCw className="h-4 w-4 mr-2" />
+          Refresh
+        </Button>
+      </div>
+
+      {/* Pending Users Metrics - Beautiful Gradient Cards */}
+      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
+        {/* Total Pending Card */}
+        <Card className="relative overflow-hidden border-0 bg-gradient-to-br from-orange-50 to-orange-100 dark:from-orange-950 dark:to-orange-900 hover:shadow-lg transition-all duration-300 group">
+          <div className="absolute top-0 right-0 w-20 h-20 bg-orange-200/50 dark:bg-orange-800/50 rounded-full -translate-y-10 translate-x-10"></div>
+          <CardHeader className="pb-3">
+            <CardTitle className="text-sm font-medium text-orange-700 dark:text-orange-300 flex items-center gap-3">
+              <div className="p-2 bg-orange-100 dark:bg-orange-800 rounded-lg group-hover:scale-110 transition-transform duration-300">
+                <Clock className="h-5 w-5 text-orange-600 dark:text-orange-400" />
+              </div>
+              Total Pending
+            </CardTitle>
+          </CardHeader>
+          <CardContent>
+            <div className="flex items-end gap-3">
+              <div className="text-3xl font-bold text-orange-600 dark:text-orange-400">
+                {pendingUsers.length}
+              </div>
+              <div className="text-xs text-orange-600/70 dark:text-orange-400/70 mb-1">
+                awaiting review
+              </div>
+            </div>
+            {pendingUsers.length > 0 && (
+              <div className="flex items-center gap-2 mt-3">
+                <div className="w-2 h-2 bg-orange-500 rounded-full animate-pulse"></div>
+                <span className="text-xs text-orange-600/80 dark:text-orange-400/80">
+                  Requires attention
+                </span>
+              </div>
+            )}
+          </CardContent>
+        </Card>
+
+        {/* Pending Verification Card */}
+        <Card className="relative overflow-hidden border-0 bg-gradient-to-br from-yellow-50 to-yellow-100 dark:from-yellow-950 dark:to-yellow-900 hover:shadow-lg transition-all duration-300 group">
+          <div className="absolute top-0 right-0 w-20 h-20 bg-yellow-200/50 dark:bg-yellow-800/50 rounded-full -translate-y-10 translate-x-10"></div>
+          <CardHeader className="pb-3">
+            <CardTitle className="text-sm font-medium text-yellow-700 dark:text-yellow-300 flex items-center gap-3">
+              <div className="p-2 bg-yellow-100 dark:bg-yellow-800 rounded-lg group-hover:scale-110 transition-transform duration-300">
+                <Clock className="h-5 w-5 text-yellow-600 dark:text-yellow-400" />
+              </div>
+              Pending Verification
+            </CardTitle>
+          </CardHeader>
+          <CardContent>
+            <div className="flex items-end gap-3">
+              <div className="text-3xl font-bold text-yellow-600 dark:text-yellow-400">
+                {pendingUsers.filter((u) => u.userStatus === "PENDING").length}
+              </div>
+              <div className="text-xs text-yellow-600/70 dark:text-yellow-400/70 mb-1">
+                need verification
+              </div>
+            </div>
+            <div className="text-xs text-yellow-600/70 dark:text-yellow-400/70 mt-3">
+              Email verification required
+            </div>
+          </CardContent>
+        </Card>
+
+        {/* Awaiting Approval Card */}
+        <Card className="relative overflow-hidden border-0 bg-gradient-to-br from-blue-50 to-blue-100 dark:from-blue-950 dark:to-blue-900 hover:shadow-lg transition-all duration-300 group">
+          <div className="absolute top-0 right-0 w-20 h-20 bg-blue-200/50 dark:bg-blue-800/50 rounded-full -translate-y-10 translate-x-10"></div>
+          <CardHeader className="pb-3">
+            <CardTitle className="text-sm font-medium text-blue-700 dark:text-blue-300 flex items-center gap-3">
+              <div className="p-2 bg-blue-100 dark:bg-blue-800 rounded-lg group-hover:scale-110 transition-transform duration-300">
+                <CheckCircle className="h-5 w-5 text-blue-600 dark:text-blue-400" />
+              </div>
+              Awaiting Approval
+            </CardTitle>
+          </CardHeader>
+          <CardContent>
+            <div className="flex items-end gap-3">
+              <div className="text-3xl font-bold text-blue-600 dark:text-blue-400">
+                {pendingUsers.filter((u) => u.userStatus === "VERIFIED").length}
+              </div>
+              <div className="text-xs text-blue-600/70 dark:text-blue-400/70 mb-1">
+                ready for approval
+              </div>
+            </div>
+            <div className="w-full bg-blue-200 dark:bg-blue-800 rounded-full h-2 mt-3">
+              <div
+                className="bg-blue-600 dark:bg-blue-400 h-2 rounded-full transition-all duration-500"
+                style={{
+                  width: `${Math.min((pendingUsers.filter((u) => u.userStatus === "VERIFIED").length / Math.max(pendingUsers.length, 1)) * 100, 100)}%`,
+                }}
+              ></div>
+            </div>
+          </CardContent>
+        </Card>
+
+        {/* Rejected Users Card */}
+        <Card className="relative overflow-hidden border-0 bg-gradient-to-br from-red-50 to-red-100 dark:from-red-950 dark:to-red-900 hover:shadow-lg transition-all duration-300 group">
+          <div className="absolute top-0 right-0 w-20 h-20 bg-red-200/50 dark:bg-red-800/50 rounded-full -translate-y-10 translate-x-10"></div>
+          <CardHeader className="pb-3">
+            <CardTitle className="text-sm font-medium text-red-700 dark:text-red-300 flex items-center gap-3">
+              <div className="p-2 bg-red-100 dark:bg-red-800 rounded-lg group-hover:scale-110 transition-transform duration-300">
+                <XCircle className="h-5 w-5 text-red-600 dark:text-red-400" />
+              </div>
+              Rejected Users
+            </CardTitle>
+          </CardHeader>
+          <CardContent>
+            <div className="flex items-end gap-3">
+              <div className="text-3xl font-bold text-red-600 dark:text-red-400">
+                {pendingUsers.filter((u) => u.userStatus === "REJECTED").length}
+              </div>
+              <div className="text-xs text-red-600/70 dark:text-red-400/70 mb-1">
+                applications rejected
+              </div>
+            </div>
+            <div className="text-xs text-red-600/70 dark:text-red-400/70 mt-3">
+              Review rejection reasons
+            </div>
+          </CardContent>
+        </Card>
+      </div>
+
       <Card>
         <CardHeader>
           <div className="flex items-center justify-between">
             <div>
               <CardTitle className="flex items-center gap-2">
                 <User className="h-5 w-5" />
-                Pending User Approvals
+                User Approval Queue
               </CardTitle>
               <CardDescription>
                 Review and approve users waiting for account activation
               </CardDescription>
             </div>
-            <Button onClick={() => refetch()} variant="outline" size="sm">
-              <RefreshCw className="h-4 w-4 mr-2" />
-              Refresh
-            </Button>
           </div>
         </CardHeader>
         <CardContent>
