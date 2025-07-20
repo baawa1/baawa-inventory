@@ -24,6 +24,7 @@ import {
 } from "@tabler/icons-react";
 import { toast } from "sonner";
 import { usePOSErrorHandler } from "./POSErrorBoundary";
+import { formatCurrency } from "@/lib/utils";
 
 export interface CartItem {
   id: number;
@@ -471,11 +472,11 @@ function OrderSummaryStep({ items, subtotal, discount, total }: any) {
             <div className="flex-1">
               <p className="font-medium">{item.name}</p>
               <p className="text-sm text-muted-foreground">
-                {item.quantity} × ₦{item.price.toLocaleString()}
+                {item.quantity} × {formatCurrency(item.price)}
               </p>
             </div>
             <div className="font-medium">
-              ₦{(item.price * item.quantity).toLocaleString()}
+              {formatCurrency(item.price * item.quantity)}
             </div>
           </div>
         ))}
@@ -484,16 +485,16 @@ function OrderSummaryStep({ items, subtotal, discount, total }: any) {
       <div className="space-y-2">
         <div className="flex justify-between">
           <span>Subtotal</span>
-          <span>₦{subtotal.toLocaleString()}</span>
+          <span>{formatCurrency(subtotal)}</span>
         </div>
         <div className="flex justify-between text-red-600">
           <span>Discount</span>
-          <span>-₦{discount.toLocaleString()}</span>
+          <span>-{formatCurrency(discount)}</span>
         </div>
         <Separator />
         <div className="flex justify-between font-bold text-lg">
           <span>Total</span>
-          <span>₦{total.toLocaleString()}</span>
+          <span>{formatCurrency(total)}</span>
         </div>
       </div>
     </div>
@@ -550,7 +551,7 @@ function DiscountStep({
         </div>
 
         <div className="text-sm text-muted-foreground">
-          Current discount: ₦{discount.toLocaleString()}
+          Current discount: {formatCurrency(discount)}
         </div>
       </div>
     </div>
@@ -587,7 +588,7 @@ function PaymentMethodStep({
         </Button>
         {isSplitPayment && (
           <span className="text-sm text-muted-foreground">
-            Total: ₦{(total - discount).toLocaleString()}
+            Total: {formatCurrency(total - discount)}
           </span>
         )}
       </div>
@@ -637,7 +638,7 @@ function PaymentMethodStep({
             <div className="flex justify-between items-center p-3 bg-muted rounded">
               <span className="font-medium">Change Due:</span>
               <span className="font-bold text-lg">
-                ₦{change.toLocaleString()}
+                {formatCurrency(change)}
               </span>
             </div>
           )}
@@ -648,7 +649,7 @@ function PaymentMethodStep({
                 Remaining Balance:
               </span>
               <span className="font-bold text-lg text-amber-800">
-                ₦{(total - discount - amountPaid).toLocaleString()}
+                ₦{formatCurrency(total - discount - amountPaid)}
               </span>
               <div className="text-xs text-amber-700 mt-1">
                 This will be recorded as a debt for the customer
@@ -853,21 +854,21 @@ function ReviewStep({
                   <span>
                     {item.name} × {item.quantity}
                   </span>
-                  <span>₦{(item.price * item.quantity).toLocaleString()}</span>
+                  <span>{formatCurrency(item.price * item.quantity)}</span>
                 </div>
               ))}
               <Separator />
               <div className="flex justify-between">
                 <span>Subtotal</span>
-                <span>₦{subtotal.toLocaleString()}</span>
+                <span>{formatCurrency(subtotal)}</span>
               </div>
               <div className="flex justify-between text-red-600">
                 <span>Discount</span>
-                <span>-₦{discount.toLocaleString()}</span>
+                <span>-{formatCurrency(discount)}</span>
               </div>
               <div className="flex justify-between font-bold">
                 <span>Total</span>
-                <span>₦{total.toLocaleString()}</span>
+                <span>{formatCurrency(total)}</span>
               </div>
             </div>
           </CardContent>
@@ -899,7 +900,7 @@ function ReviewStep({
                         </span>
                       </div>
                       <span className="font-medium">
-                        ₦{payment.amount.toLocaleString()}
+                        ₦{formatCurrency(payment.amount)}
                       </span>
                     </div>
                   )
@@ -934,8 +935,8 @@ function ReviewStep({
                 </div>
                 {paymentMethod === "cash" && (
                   <div className="mt-2 text-sm text-muted-foreground">
-                    Amount Paid: ₦{amountPaid.toLocaleString()} | Change: ₦
-                    {change.toLocaleString()}
+                    Amount Paid: {formatCurrency(amountPaid)} | Change: ₦
+                    {formatCurrency(change)}
                   </div>
                 )}
               </>
@@ -1020,7 +1021,7 @@ function SplitPaymentInterface({
       <div className="flex justify-between items-center">
         <span className="text-sm font-medium">Split Payments</span>
         <span className="text-sm text-muted-foreground">
-          Total: ₦{total.toLocaleString()}
+          Total: {formatCurrency(total)}
         </span>
       </div>
 
@@ -1094,19 +1095,19 @@ function SplitPaymentInterface({
           <div className="space-y-2">
             <div className="flex justify-between">
               <span>Total Paid:</span>
-              <span className="font-medium">₦{totalPaid.toLocaleString()}</span>
+              <span className="font-medium">{formatCurrency(totalPaid)}</span>
             </div>
             <div className="flex justify-between">
               <span>Remaining:</span>
               <span
                 className={`font-medium ${remaining > 0 ? "text-amber-600" : "text-green-600"}`}
               >
-                ₦{remaining.toLocaleString()}
+                ₦{formatCurrency(remaining)}
               </span>
             </div>
             {remaining < 0 && (
               <div className="text-sm text-red-600">
-                Overpayment: ₦{Math.abs(remaining).toLocaleString()}
+                Overpayment: ₦{formatCurrency(Math.abs(remaining))}
               </div>
             )}
           </div>

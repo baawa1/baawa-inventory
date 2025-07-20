@@ -13,6 +13,7 @@ import {
   IconPackage,
   IconTag,
 } from "@tabler/icons-react";
+import { formatCurrency } from "@/lib/utils";
 
 export interface CartItem {
   id: number;
@@ -61,8 +62,8 @@ export function ShoppingCart({
       {/* Cart Header - Fixed */}
       <div className="flex items-center justify-between flex-shrink-0 mb-4">
         <div className="text-sm text-muted-foreground">
-          {totalItems} item{totalItems !== 1 ? "s" : ""} • ₦
-          {totalValue.toLocaleString()}
+          {totalItems} item{totalItems !== 1 ? "s" : ""} •{" "}
+          {formatCurrency(totalValue)}
         </div>
         <Button
           variant="outline"
@@ -156,10 +157,10 @@ export function ShoppingCart({
 
                   <div className="text-right">
                     <div className="text-sm text-muted-foreground">
-                      ₦{item.price.toLocaleString()} each
+                      {formatCurrency(item.price)} each
                     </div>
                     <div className="font-semibold">
-                      ₦{(item.price * item.quantity).toLocaleString()}
+                      {formatCurrency(item.price * item.quantity)}
                     </div>
                   </div>
                 </div>
@@ -194,7 +195,7 @@ export function ShoppingCart({
         </div>
         <div className="flex justify-between font-semibold text-lg">
           <span>Subtotal:</span>
-          <span>₦{totalValue.toLocaleString()}</span>
+          <span>{formatCurrency(totalValue)}</span>
         </div>
       </div>
     </div>

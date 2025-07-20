@@ -29,6 +29,7 @@ import {
 } from "@tabler/icons-react";
 import { toast } from "sonner";
 import { usePOSErrorHandler } from "./POSErrorBoundary";
+import { formatCurrency } from "@/lib/utils";
 
 export interface CartItem {
   id: number;
@@ -226,11 +227,11 @@ export function PaymentInterface({
                       <div className="flex-1">
                         <p className="font-medium">{item.name}</p>
                         <p className="text-sm text-muted-foreground">
-                          {item.quantity} × ₦{item.price.toLocaleString()}
+                          {item.quantity} × {formatCurrency(item.price)}
                         </p>
                       </div>
                       <div className="font-medium">
-                        ₦{(item.price * item.quantity).toLocaleString()}
+                        {formatCurrency(item.price * item.quantity)}
                       </div>
                     </div>
                   ))}
@@ -241,16 +242,16 @@ export function PaymentInterface({
                 <div className="space-y-2">
                   <div className="flex justify-between">
                     <span>Subtotal</span>
-                    <span>₦{subtotal.toLocaleString()}</span>
+                    <span>{formatCurrency(subtotal)}</span>
                   </div>
                   <div className="flex justify-between text-red-600">
                     <span>Discount</span>
-                    <span>-₦{discount.toLocaleString()}</span>
+                    <span>-{formatCurrency(discount)}</span>
                   </div>
                   <Separator />
                   <div className="flex justify-between font-bold text-lg">
                     <span>Total</span>
-                    <span>₦{total.toLocaleString()}</span>
+                    <span>{formatCurrency(total)}</span>
                   </div>
                 </div>
               </CardContent>
@@ -304,7 +305,7 @@ export function PaymentInterface({
                 </div>
 
                 <div className="text-sm text-muted-foreground">
-                  Current discount: ₦{discount.toLocaleString()}
+                  Current discount: {formatCurrency(discount)}
                 </div>
               </CardContent>
             </Card>
@@ -364,7 +365,7 @@ export function PaymentInterface({
                   <div className="flex justify-between items-center p-3 bg-muted rounded">
                     <span className="font-medium">Change Due:</span>
                     <span className="font-bold text-lg">
-                      ₦{change.toLocaleString()}
+                      ₦{formatCurrency(change)}
                     </span>
                   </div>
                 </CardContent>

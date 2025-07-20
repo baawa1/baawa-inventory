@@ -24,6 +24,7 @@ import {
 import { useQuery } from "@tanstack/react-query";
 import { toast } from "sonner";
 import { usePOSErrorHandler } from "./POSErrorBoundary";
+import { formatCurrency } from "@/lib/utils";
 
 interface Product {
   id: number;
@@ -430,7 +431,7 @@ export function ProductGrid({
 
                     <div className="flex items-center justify-between">
                       <span className="font-bold text-lg text-primary">
-                        ₦{product.price.toLocaleString()}
+                        {formatCurrency(product.price)}
                       </span>
                       <Button
                         size="sm"
