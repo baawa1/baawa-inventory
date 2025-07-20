@@ -1,9 +1,14 @@
-import { NextRequest, NextResponse } from "next/server";
-import { auth } from "../../../../auth";
+import { NextResponse } from "next/server";
+import {
+  withAuth,
+  withPermission,
+  AuthenticatedRequest,
+} from "@/lib/api-middleware";
+import { handleApiError } from "@/lib/api-error-handler";
 import { prisma } from "@/lib/db";
-import { z } from "zod";
-import { USER_STATUS, PRODUCT_STATUS } from "@/lib/constants";
-import { USER_ROLES, hasRole } from "@/lib/auth/roles";
+
+import { PRODUCT_STATUS } from "@/lib/constants";
+import { USER_ROLES } from "@/lib/auth/roles";
 
 // Import the form validation schema
 import { createProductSchema } from "@/lib/validations/product";
@@ -12,24 +17,8 @@ import { createProductSchema } from "@/lib/validations/product";
 const ProductCreateSchema = createProductSchema;
 
 // GET /api/products - List products with filtering
-export async function GET(request: NextRequest) {
+export const GET = withAuth(async (request: AuthenticatedRequest) => {
   try {
-    const session = await auth();
-
-    if (!session?.user) {
-      return NextResponse.json(
-        { error: "Authentication required" },
-        { status: 401 }
-      );
-    }
-
-    if (session.user.status !== USER_STATUS.APPROVED) {
-      return NextResponse.json(
-        { error: "Account not approved" },
-        { status: 403 }
-      );
-    }
-
     const { searchParams } = new URL(request.url);
     const page = parseInt(searchParams.get("page") || "1");
     const limit = parseInt(searchParams.get("limit") || "10");
@@ -49,11 +38,13 @@ export async function GET(request: NextRequest) {
       isArchived: false,
     };
 
+    // Apply filters
     if (search) {
       where.OR = [
         { name: { contains: search, mode: "insensitive" } },
         { sku: { contains: search, mode: "insensitive" } },
         { barcode: { contains: search, mode: "insensitive" } },
+        { description: { contains: search, mode: "insensitive" } },
       ];
     }
 
@@ -69,34 +60,30 @@ export async function GET(request: NextRequest) {
       where.supplierId = parseInt(supplierId);
     }
 
-    if (status && status !== "all") {
-      where.status = status;
-    }
-
     if (lowStock) {
-      // For low stock, we need to find products where stock <= minStock
-      // This requires a raw query since Prisma doesn't support column comparisons
-      const lowStockProducts = (await prisma.$queryRaw`
-        SELECT id FROM products 
-        WHERE stock <= min_stock 
-        AND is_archived = false
-      `) as Array<{ id: number }>;
-
-      where.id = {
-        in: lowStockProducts.map((p) => p.id),
-      };
+      where.stock = { lte: prisma.product.fields.minStock };
     }
 
-    // Build orderBy clause
+    if (status && status !== "all") {
+      if (status === PRODUCT_STATUS.ACTIVE) {
+        where.isActive = true;
+      } else if (status === PRODUCT_STATUS.INACTIVE) {
+        where.isActive = false;
+      }
+    }
+
+    // Build order by clause
     const orderBy: any = {};
-    if (sortBy === "stock") {
+    if (sortBy === "price" || sortBy === "cost") {
+      orderBy[sortBy] = sortOrder;
+    } else if (sortBy === "stock") {
       orderBy.stock = sortOrder;
-    } else if (sortBy === "price") {
-      orderBy.price = sortOrder;
-    } else if (sortBy === "created" || sortBy === "created_at") {
+    } else if (sortBy === "category") {
+      orderBy.category = { name: sortOrder };
+    } else if (sortBy === "brand") {
+      orderBy.brand = { name: sortOrder };
+    } else if (sortBy === "createdAt") {
       orderBy.createdAt = sortOrder;
-    } else if (sortBy === "updated" || sortBy === "updated_at") {
-      orderBy.updatedAt = sortOrder;
     } else {
       orderBy[sortBy] = sortOrder;
     }
@@ -148,347 +135,208 @@ export async function GET(request: NextRequest) {
       include,
       orderBy,
       skip,
-      limit,
+      take: limit,
     });
 
-    let products, total;
-    try {
-      [products, total] = await Promise.all([
-        prisma.product.findMany({
-          where,
-          include,
-          orderBy,
-          skip,
-          take: limit,
-        }),
-        prisma.product.count({ where }),
-      ]);
-      console.log("✅ Query successful, found products:", products.length);
-    } catch (dbError: any) {
-      console.error("❌ Database query error:", dbError);
-      console.error("❌ Error details:", {
-        message: dbError.message,
-        code: dbError.code,
-        meta: dbError.meta,
-      });
-      throw dbError;
-    }
+    const [products, totalCount] = await Promise.all([
+      prisma.product.findMany({
+        where,
+        include,
+        orderBy,
+        skip,
+        take: limit,
+      }),
+      prisma.product.count({ where }),
+    ]);
 
-    // Transform products for response
-    console.log("🔧 Transforming products, includeSync:", includeSync);
-    const transformedProducts = products.map((product, index) => {
-      if (index === 0) {
-        console.log("📦 First product sample:", {
-          id: product.id,
-          name: product.name,
-          webflow_sync: product.webflow_sync,
-          hasWebflowSync: !!product.webflow_sync,
-        });
-      }
-      return {
-        id: product.id,
-        name: product.name,
-        description: product.description,
-        sku: product.sku,
-        barcode: product.barcode,
-        cost: Number(product.cost),
-        price: Number(product.price),
-        stock: product.stock,
-        minStock: product.minStock,
-        maxStock: product.maxStock,
-        unit: product.unit,
-        status: product.status,
-        isArchived: product.isArchived,
-        createdAt: product.createdAt?.toISOString(),
-        updatedAt: product.updatedAt?.toISOString(),
-        category: product.category,
-        brand: product.brand,
-        supplier: product.supplier,
-        images: product.images || [],
-        // Content sync data (conditionally included)
-        ...(includeSync && {
-          contentSync: product.content_sync?.[0] || null,
-        }),
-        // Calculated fields
-        stockStatus: product.stock <= product.minStock ? "low" : "normal",
-        profitMargin: Number(product.price) - Number(product.cost),
-        profitMarginPercent:
-          Number(product.cost) > 0
-            ? ((Number(product.price) - Number(product.cost)) /
-                Number(product.cost)) *
-              100
-            : 0,
-      };
-    });
+    console.log(
+      `✅ Found ${products.length} products out of ${totalCount} total`
+    );
 
-    // Calculate pagination metadata
-    const totalPages = Math.ceil(total / limit);
-    const hasNextPage = page < totalPages;
-    const hasPreviousPage = page > 1;
+    // Transform response
+    const transformedProducts = products.map((product) => ({
+      id: product.id,
+      name: product.name,
+      sku: product.sku,
+      barcode: product.barcode,
+      description: product.description,
+      price: product.price,
+      cost: product.cost,
+      stock: product.stock,
+      minStock: product.minStock,
+      maxStock: product.maxStock,
+      isActive: product.isActive,
+      isArchived: product.isArchived,
+      images: product.images,
+      tags: product.tags,
+      category: product.category,
+      brand: product.brand,
+      supplier: product.supplier,
+      categoryId: product.categoryId,
+      brandId: product.brandId,
+      supplierId: product.supplierId,
+      createdAt: product.createdAt,
+      updatedAt: product.updatedAt,
+      ...(includeSync && { content_sync: product.content_sync }),
+    }));
 
-    // Calculate sync summary if requested
-    let syncSummary = null;
-    if (includeSync) {
-      const syncedProducts = transformedProducts.filter(
-        (p: any) => p.contentSync?.sync_status === "synced"
-      ).length;
-      const pendingProducts = transformedProducts.filter(
-        (p: any) => p.contentSync?.sync_status === "pending"
-      ).length;
-      const failedProducts = transformedProducts.filter(
-        (p: any) => p.contentSync?.sync_status === "failed"
-      ).length;
-      const notSyncedProducts = transformedProducts.filter(
-        (p: any) => !p.contentSync
-      ).length;
-
-      syncSummary = {
-        totalProducts: transformedProducts.length,
-        syncedProducts,
-        pendingProducts,
-        failedProducts,
-        notSyncedProducts,
-      };
-    }
-
-    const response: any = {
+    return NextResponse.json({
+      success: true,
       data: transformedProducts,
       pagination: {
         page,
         limit,
-        total,
-        totalPages,
-        hasNextPage,
-        hasPreviousPage,
+        total: totalCount,
+        totalPages: Math.ceil(totalCount / limit),
+        hasNextPage: page < Math.ceil(totalCount / limit),
+        hasPreviousPage: page > 1,
       },
-      filters: {
-        search,
-        categoryId,
-        brandId,
-        supplierId,
-        lowStock,
-        status,
-        sortBy,
-        sortOrder,
-      },
-    };
-
-    // Add sync summary if requested
-    if (syncSummary) {
-      response.summary = syncSummary;
-    }
-
-    return NextResponse.json(response);
+    });
   } catch (error) {
-    console.error("Error fetching products:", error);
-    return NextResponse.json(
-      { error: "Failed to fetch products" },
-      { status: 500 }
-    );
+    return handleApiError(error);
   }
-}
+});
 
 // POST /api/products - Create new product
-export async function POST(request: NextRequest) {
-  try {
-    const session = await auth();
+export const POST = withPermission(
+  [USER_ROLES.ADMIN, USER_ROLES.MANAGER],
+  async (request: AuthenticatedRequest) => {
+    try {
+      const body = await request.json();
+      console.log("Received product data:", body);
 
-    if (!session?.user) {
-      return NextResponse.json(
-        { error: "Authentication required" },
-        { status: 401 }
-      );
-    }
+      // Validate input data
+      const validatedData = ProductCreateSchema.parse(body);
+      console.log("Validated product data:", validatedData);
 
-    if (session.user.status !== USER_STATUS.APPROVED) {
-      return NextResponse.json(
-        { error: "Account not approved" },
-        { status: 403 }
-      );
-    }
-
-    // Check permissions
-    if (!hasRole(session.user.role, [USER_ROLES.ADMIN, USER_ROLES.MANAGER])) {
-      return NextResponse.json(
-        { error: "Insufficient permissions" },
-        { status: 403 }
-      );
-    }
-
-    const body = await request.json();
-    console.log("Received product data:", body);
-
-    // Validate input data
-    const validatedData = ProductCreateSchema.parse(body);
-    console.log("Validated product data:", validatedData);
-
-    // Check if SKU already exists
-    const existingSKU = await prisma.product.findUnique({
-      where: { sku: validatedData.sku },
-    });
-
-    if (existingSKU) {
-      return NextResponse.json(
-        { error: "Product with this SKU already exists" },
-        { status: 400 }
-      );
-    }
-
-    // Check if barcode already exists (if provided)
-    if (validatedData.barcode) {
-      const existingBarcode = await prisma.product.findFirst({
-        where: { barcode: validatedData.barcode },
+      // Check if SKU already exists
+      const existingSKU = await prisma.product.findUnique({
+        where: { sku: validatedData.sku },
       });
 
-      if (existingBarcode) {
+      if (existingSKU) {
         return NextResponse.json(
-          { error: "Product with this barcode already exists" },
+          { error: "Product with this SKU already exists" },
           { status: 400 }
         );
       }
-    }
 
-    // Verify category exists (if provided)
-    if (validatedData.categoryId) {
-      const category = await prisma.category.findUnique({
-        where: { id: validatedData.categoryId },
-      });
+      // Check if barcode already exists (if provided)
+      if (validatedData.barcode) {
+        const existingBarcode = await prisma.product.findFirst({
+          where: { barcode: validatedData.barcode },
+        });
 
-      if (!category) {
-        return NextResponse.json(
-          { error: "Category not found" },
-          { status: 404 }
-        );
+        if (existingBarcode) {
+          return NextResponse.json(
+            { error: "Product with this barcode already exists" },
+            { status: 400 }
+          );
+        }
       }
-    }
 
-    // Verify brand exists (if provided)
-    if (validatedData.brandId) {
-      const brand = await prisma.brand.findUnique({
-        where: { id: validatedData.brandId },
-      });
+      // Verify category exists
+      if (validatedData.categoryId) {
+        const category = await prisma.category.findUnique({
+          where: { id: validatedData.categoryId },
+        });
 
-      if (!brand) {
-        return NextResponse.json({ error: "Brand not found" }, { status: 404 });
+        if (!category) {
+          return NextResponse.json(
+            { error: "Category not found" },
+            { status: 404 }
+          );
+        }
       }
-    }
 
-    // Verify supplier exists (if provided)
-    if (validatedData.supplierId) {
-      const supplier = await prisma.supplier.findUnique({
-        where: { id: validatedData.supplierId },
-      });
+      // Verify brand exists
+      if (validatedData.brandId) {
+        const brand = await prisma.brand.findUnique({
+          where: { id: validatedData.brandId },
+        });
 
-      if (!supplier) {
-        return NextResponse.json(
-          { error: "Supplier not found" },
-          { status: 404 }
-        );
+        if (!brand) {
+          return NextResponse.json(
+            { error: "Brand not found" },
+            { status: 404 }
+          );
+        }
       }
-    }
 
-    // Transform validated data to match Prisma schema
-    const productData = {
-      name: validatedData.name,
-      description: validatedData.description,
-      sku: validatedData.sku,
-      barcode: validatedData.barcode,
-      cost: validatedData.purchasePrice,
-      price: validatedData.sellingPrice,
-      stock: validatedData.currentStock,
-      minStock: validatedData.minimumStock,
-      maxStock: validatedData.maximumStock,
-      unit: validatedData.unit || "piece",
-      supplierId: validatedData.supplierId,
-      categoryId: validatedData.categoryId,
-      brandId: validatedData.brandId,
-      status: validatedData.status,
-      // Handle additional fields that might be present
-      weight: validatedData.weight,
-      dimensions: validatedData.dimensions,
-      color: validatedData.color,
-      size: validatedData.size,
-      material: validatedData.material,
-      tags: validatedData.tags,
-      salePrice: validatedData.salePrice,
-      saleStartDate: validatedData.saleStartDate,
-      saleEndDate: validatedData.saleEndDate,
-      metaTitle: validatedData.metaTitle,
-      metaDescription: validatedData.metaDescription,
-      seoKeywords: validatedData.seoKeywords,
-      isFeatured: validatedData.isFeatured,
-      sortOrder: validatedData.sortOrder,
-    };
+      // Verify supplier exists
+      if (validatedData.supplierId) {
+        const supplier = await prisma.supplier.findUnique({
+          where: { id: validatedData.supplierId },
+        });
 
-    // Create the product
-    const product = await prisma.product.create({
-      data: productData,
-      include: {
-        category: {
-          select: {
-            id: true,
-            name: true,
+        if (!supplier) {
+          return NextResponse.json(
+            { error: "Supplier not found" },
+            { status: 404 }
+          );
+        }
+      }
+
+      // Create the product
+      const newProduct = await prisma.product.create({
+        data: {
+          name: validatedData.name,
+          sku: validatedData.sku,
+          barcode: validatedData.barcode,
+          description: validatedData.description,
+          price: validatedData.sellingPrice,
+          cost: validatedData.purchasePrice,
+          stock: validatedData.currentStock || 0,
+          minStock: validatedData.minimumStock || 0,
+          maxStock: validatedData.maximumStock || 1000,
+          unit: validatedData.unit || "piece",
+          status: validatedData.status,
+          weight: validatedData.weight,
+          dimensions: validatedData.dimensions,
+          color: validatedData.color,
+          size: validatedData.size,
+          material: validatedData.material,
+          tags: validatedData.tags || [],
+          images: validatedData.imageUrl ? [validatedData.imageUrl] : [],
+          categoryId: validatedData.categoryId,
+          brandId: validatedData.brandId,
+          supplierId: validatedData.supplierId,
+        },
+        include: {
+          category: {
+            select: {
+              id: true,
+              name: true,
+            },
+          },
+          brand: {
+            select: {
+              id: true,
+              name: true,
+            },
+          },
+          supplier: {
+            select: {
+              id: true,
+              name: true,
+              email: true,
+            },
           },
         },
-        brand: {
-          select: {
-            id: true,
-            name: true,
-          },
-        },
-        supplier: {
-          select: {
-            id: true,
-            name: true,
-            email: true,
-          },
-        },
-      },
-    });
+      });
 
-    // Transform response
-    const transformedProduct = {
-      id: product.id,
-      name: product.name,
-      description: product.description,
-      sku: product.sku,
-      barcode: product.barcode,
-      cost: Number(product.cost),
-      price: Number(product.price),
-      stock: product.stock,
-      minStock: product.minStock,
-      maxStock: product.maxStock,
-      unit: product.unit,
-      status: product.status,
-      createdAt: product.createdAt?.toISOString(),
-      updatedAt: product.updatedAt?.toISOString(),
-      category: product.category,
-      brand: product.brand,
-      supplier: product.supplier,
-    };
+      console.log("✅ Product created successfully:", newProduct);
 
-    return NextResponse.json(
-      {
-        message: "Product created successfully",
-        data: transformedProduct,
-      },
-      { status: 201 }
-    );
-  } catch (error) {
-    if (error instanceof z.ZodError) {
       return NextResponse.json(
         {
-          error: "Validation failed",
-          details: error.errors,
+          success: true,
+          message: "Product created successfully",
+          data: newProduct,
         },
-        { status: 400 }
+        { status: 201 }
       );
+    } catch (error) {
+      return handleApiError(error);
     }
-
-    console.error("Error creating product:", error);
-    return NextResponse.json(
-      { error: "Failed to create product" },
-      { status: 500 }
-    );
   }
-}
+);
