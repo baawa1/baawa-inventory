@@ -2,18 +2,7 @@ import { NextRequest, NextResponse } from "next/server";
 import { auth } from "../../../../../auth";
 import { prisma } from "@/lib/db";
 import { PAYMENT_STATUS } from "@/lib/constants";
-
-interface CustomerData {
-  id: string;
-  name: string;
-  email: string;
-  phone: string | null;
-  totalSpent: number;
-  totalOrders: number;
-  lastPurchase: string;
-  averageOrderValue: number;
-  rank: number;
-}
+import { CustomerAggregation, TransformedCustomer } from "@/types/pos";
 
 export async function GET(_request: NextRequest) {
   try {
@@ -49,9 +38,9 @@ export async function GET(_request: NextRequest) {
     });
 
     // Transform the data into the format expected by the frontend
-    const customerData: CustomerData[] = customers
-      .filter((customer: any) => customer.customer_email) // Ensure we have email
-      .map((customer: any, index: number) => {
+    const customerData: TransformedCustomer[] = customers
+      .filter((customer: CustomerAggregation) => customer.customer_email) // Ensure we have email
+      .map((customer: CustomerAggregation, index: number) => {
         const totalSpent = customer._sum.total_amount || 0;
         const totalOrders = customer._count.id;
         const averageOrderValue =
@@ -70,8 +59,11 @@ export async function GET(_request: NextRequest) {
           rank: index + 1, // Will be recalculated after sorting
         };
       })
-      .sort((a: CustomerData, b: CustomerData) => b.totalSpent - a.totalSpent) // Sort by total spent descending
-      .map((customer: CustomerData, index: number) => ({
+      .sort(
+        (a: TransformedCustomer, b: TransformedCustomer) =>
+          b.totalSpent - a.totalSpent
+      ) // Sort by total spent descending
+      .map((customer: TransformedCustomer, index: number) => ({
         ...customer,
         rank: index + 1,
       }));
