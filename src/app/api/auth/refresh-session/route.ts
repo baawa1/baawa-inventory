@@ -1,5 +1,6 @@
 import { NextResponse } from "next/server";
 import { withAuth, AuthenticatedRequest } from "@/lib/api-middleware";
+import { handleApiError } from "@/lib/api-error-handler";
 import { prisma } from "@/lib/db";
 
 // Simple in-memory cache for user data (in production, use Redis)
@@ -41,10 +42,6 @@ export const POST = withAuth(async (_request: AuthenticatedRequest) => {
 
     return NextResponse.json({ user });
   } catch (error) {
-    console.error("Error refreshing session:", error);
-    return NextResponse.json(
-      { error: "Failed to refresh session" },
-      { status: 500 }
-    );
+    return handleApiError(error);
   }
 });
