@@ -1,7 +1,10 @@
-import { auth } from "../../../../auth";
-import { NextRequest } from "next/server";
+import {
+  withAuth,
+  withPermission,
+  AuthenticatedRequest,
+} from "@/lib/api-middleware";
 import { prisma } from "@/lib/db";
-import { hasPermission } from "@/lib/auth/roles";
+import { USER_ROLES } from "@/lib/auth/roles";
 import {
   createSupplierSchema,
   supplierQuerySchema,
@@ -9,18 +12,8 @@ import {
 import { handleApiError, createApiResponse } from "@/lib/api-error-handler";
 
 // GET /api/suppliers - List suppliers with optional filtering and pagination
-export async function GET(request: NextRequest) {
+export const GET = withAuth(async (request: AuthenticatedRequest) => {
   try {
-    const session = await auth();
-    if (!session?.user) {
-      return handleApiError(new Error("Unauthorized"), 401);
-    }
-
-    // Check permissions
-    if (!hasPermission(session.user.role, "INVENTORY_READ")) {
-      return handleApiError(new Error("Insufficient permissions"), 403);
-    }
-
     const { searchParams } = new URL(request.url);
 
     // Convert search params to proper types for validation
@@ -49,8 +42,9 @@ export async function GET(request: NextRequest) {
     if (search) {
       where.OR = [
         { name: { contains: search, mode: "insensitive" } },
-        { contactPerson: { contains: search, mode: "insensitive" } },
         { email: { contains: search, mode: "insensitive" } },
+        { phone: { contains: search, mode: "insensitive" } },
+        { contactPerson: { contains: search, mode: "insensitive" } },
       ];
     }
 
@@ -58,25 +52,19 @@ export async function GET(request: NextRequest) {
       where.isActive = isActive;
     }
 
-    // Build orderBy clause
+    // Build orderBy clause - handle nested fields
     const orderBy: any = {};
-    if (sortBy === "createdAt") {
-      orderBy.createdAt = sortOrder;
-    } else if (sortBy === "updatedAt") {
-      orderBy.updatedAt = sortOrder;
-    } else if (sortBy === "name") {
-      orderBy.name = sortOrder;
+    if (sortBy === "productCount") {
+      // Handle special case for product count sorting
+      orderBy.products = { _count: sortOrder };
     } else {
-      orderBy.createdAt = sortOrder; // default fallback
+      orderBy[sortBy] = sortOrder;
     }
 
-    // Execute queries in parallel for better performance
-    const [suppliersData, totalCount] = await Promise.all([
+    // Get suppliers and total count in parallel
+    const [suppliers, totalCount] = await Promise.all([
       prisma.supplier.findMany({
         where,
-        orderBy,
-        skip: offset,
-        take: limit,
         include: {
           _count: {
             select: {
@@ -84,12 +72,15 @@ export async function GET(request: NextRequest) {
             },
           },
         },
+        orderBy,
+        skip: offset,
+        take: limit,
       }),
       prisma.supplier.count({ where }),
     ]);
 
-    // Transform the data to match the component interface
-    const suppliers = suppliersData.map((supplier) => ({
+    // Transform response to include product count
+    const transformedSuppliers = suppliers.map((supplier) => ({
       id: supplier.id,
       name: supplier.name,
       contactPerson: supplier.contactPerson,
@@ -107,7 +98,7 @@ export async function GET(request: NextRequest) {
 
     return createApiResponse({
       success: true,
-      data: suppliers,
+      data: transformedSuppliers,
       pagination: {
         total: totalCount,
         page,
@@ -119,60 +110,68 @@ export async function GET(request: NextRequest) {
   } catch (error) {
     return handleApiError(error);
   }
-}
+});
 
 // POST /api/suppliers - Create a new supplier
-export async function POST(request: NextRequest) {
-  try {
-    const session = await auth();
-    if (!session?.user) {
-      return handleApiError(new Error("Unauthorized"), 401);
-    }
+export const POST = withPermission(
+  [USER_ROLES.ADMIN, USER_ROLES.MANAGER],
+  async (request: AuthenticatedRequest) => {
+    try {
+      const body = await request.json();
+      const validatedData = createSupplierSchema.parse(body);
 
-    // Check permissions
-    if (!hasPermission(session.user.role, "INVENTORY_WRITE")) {
-      return handleApiError(new Error("Insufficient permissions"), 403);
-    }
+      // Check if supplier with same name already exists
+      const existingSupplier = await prisma.supplier.findFirst({
+        where: { name: validatedData.name },
+        select: { id: true },
+      });
 
-    const body = await request.json();
-    const validatedData = createSupplierSchema.parse(body);
+      if (existingSupplier) {
+        return handleApiError(
+          new Error("Supplier with this name already exists"),
+          409
+        );
+      }
 
-    // Check if supplier with same name already exists
-    const existingSupplier = await prisma.supplier.findFirst({
-      where: { name: validatedData.name },
-      select: { id: true },
-    });
+      // Create the supplier
+      const newSupplier = await prisma.supplier.create({
+        data: validatedData,
+        include: {
+          _count: {
+            select: {
+              products: true,
+            },
+          },
+        },
+      });
 
-    if (existingSupplier) {
-      return handleApiError(
-        new Error("Supplier with this name already exists"),
-        409
+      // Transform response
+      const transformedSupplier = {
+        id: newSupplier.id,
+        name: newSupplier.name,
+        contactPerson: newSupplier.contactPerson,
+        email: newSupplier.email,
+        phone: newSupplier.phone,
+        address: newSupplier.address,
+        isActive: newSupplier.isActive,
+        createdAt: newSupplier.createdAt,
+        updatedAt: newSupplier.updatedAt,
+        _count: {
+          products: newSupplier._count.products,
+          purchaseOrders: 0,
+        },
+      };
+
+      return createApiResponse(
+        {
+          success: true,
+          message: "Supplier created successfully",
+          data: transformedSupplier,
+        },
+        201
       );
+    } catch (error) {
+      return handleApiError(error);
     }
-
-    // Create the supplier with Prisma
-    const supplier = await prisma.supplier.create({
-      data: {
-        name: validatedData.name,
-        contactPerson: validatedData.contactPerson,
-        email: validatedData.email,
-        phone: validatedData.phone,
-        address: validatedData.address,
-        city: validatedData.city,
-        state: validatedData.state,
-        country: validatedData.country,
-        postalCode: validatedData.postalCode,
-        website: validatedData.website,
-        taxNumber: validatedData.taxNumber,
-        paymentTerms: validatedData.paymentTerms,
-        creditLimit: validatedData.creditLimit,
-        isActive: validatedData.isActive,
-        notes: validatedData.notes,
-      },
-    });
-
-    return createApiResponse({ data: supplier }, 201);
-  } catch (error) {
-    return handleApiError(error);
   }
-}
+);
