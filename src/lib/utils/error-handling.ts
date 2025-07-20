@@ -4,15 +4,20 @@ export interface ApiError {
   message: string;
   status?: number;
   code?: string;
-  details?: any;
+  details?: unknown;
 }
 
 export class AppError extends Error {
   public readonly status: number;
   public readonly code: string;
-  public readonly details?: any;
+  public readonly details?: unknown;
 
-  constructor(message: string, status: number = 500, code: string = "INTERNAL_ERROR", details?: any) {
+  constructor(
+    message: string,
+    status: number = 500,
+    code: string = "INTERNAL_ERROR",
+    details?: unknown
+  ) {
     super(message);
     this.name = "AppError";
     this.status = status;
@@ -28,19 +33,19 @@ export const getErrorMessage = (error: unknown): string => {
   if (error instanceof AppError) {
     return error.message;
   }
-  
+
   if (error instanceof Error) {
     return error.message;
   }
-  
+
   if (typeof error === "string") {
     return error;
   }
-  
+
   if (error && typeof error === "object" && "message" in error) {
     return String(error.message);
   }
-  
+
   return "An unexpected error occurred";
 };
 
@@ -50,7 +55,7 @@ export const getErrorMessage = (error: unknown): string => {
 export const handleApiError = (error: unknown, context?: string): void => {
   const message = getErrorMessage(error);
   const contextMessage = context ? `${context}: ${message}` : message;
-  
+
   console.error(`API Error${context ? ` (${context})` : ""}:`, error);
   toast.error(contextMessage);
 };
@@ -89,7 +94,7 @@ export const showError = (message: string): void => {
 export const handleFormError = (error: unknown, fieldName?: string): void => {
   const message = getErrorMessage(error);
   const contextMessage = fieldName ? `${fieldName}: ${message}` : message;
-  
+
   console.error(`Form Error${fieldName ? ` (${fieldName})` : ""}:`, error);
   toast.error(contextMessage);
 };
@@ -151,9 +156,12 @@ export const withErrorHandling = async <T>(
 /**
  * Error boundary error handler
  */
-export const handleErrorBoundaryError = (error: Error, errorInfo: React.ErrorInfo): void => {
+export const handleErrorBoundaryError = (
+  error: Error,
+  errorInfo: React.ErrorInfo
+): void => {
   console.error("Error Boundary caught an error:", error, errorInfo);
-  
+
   // In production, you might want to send this to an error reporting service
   if (process.env.NODE_ENV === "production") {
     // Example: Sentry.captureException(error, { extra: errorInfo });

@@ -5,7 +5,7 @@
 
 import { NextResponse } from "next/server";
 
-export interface ApiSuccessResponse<T = any> {
+export interface ApiSuccessResponse<T = unknown> {
   success: true;
   data: T;
   message?: string;
@@ -24,11 +24,11 @@ export interface ApiSuccessResponse<T = any> {
 export interface ApiErrorResponse {
   success: false;
   error: string;
-  details?: any;
+  details?: unknown;
   code?: string;
 }
 
-export type ApiResponse<T = any> = ApiSuccessResponse<T> | ApiErrorResponse;
+export type ApiResponse<T = unknown> = ApiSuccessResponse<T> | ApiErrorResponse;
 
 /**
  * Create standardized API responses
@@ -87,7 +87,7 @@ export const createApiResponse = {
   error: (
     error: string,
     status: number = 500,
-    details?: any,
+    details?: unknown,
     code?: string
   ): NextResponse => {
     return NextResponse.json(
@@ -105,8 +105,9 @@ export const createApiResponse = {
    * Validation error response
    */
   validationError: (
-    message: string = "Validation failed",
-    details?: any
+    message: string,
+    details?: unknown,
+    status: number = 400
   ): NextResponse => {
     return NextResponse.json(
       {
@@ -115,14 +116,17 @@ export const createApiResponse = {
         details,
         code: "VALIDATION_ERROR",
       } as ApiErrorResponse,
-      { status: 400 }
+      { status }
     );
   },
 
   /**
    * Not found error response
    */
-  notFound: (resource: string = "Resource", details?: any): NextResponse => {
+  notFound: (
+    resource: string = "Resource",
+    details?: unknown
+  ): NextResponse => {
     return NextResponse.json(
       {
         success: false,
@@ -138,8 +142,8 @@ export const createApiResponse = {
    * Unauthorized error response
    */
   unauthorized: (
-    message: string = "Authentication required",
-    details?: any
+    message: string = "Unauthorized",
+    details?: unknown
   ): NextResponse => {
     return NextResponse.json(
       {
@@ -156,8 +160,8 @@ export const createApiResponse = {
    * Forbidden error response
    */
   forbidden: (
-    message: string = "Insufficient permissions",
-    details?: any
+    message: string = "Forbidden",
+    details?: unknown
   ): NextResponse => {
     return NextResponse.json(
       {
@@ -173,10 +177,7 @@ export const createApiResponse = {
   /**
    * Conflict error response
    */
-  conflict: (
-    message: string = "Resource already exists",
-    details?: any
-  ): NextResponse => {
+  conflict: (message: string = "Conflict", details?: unknown): NextResponse => {
     return NextResponse.json(
       {
         success: false,
@@ -193,7 +194,7 @@ export const createApiResponse = {
    */
   internalError: (
     message: string = "Internal server error",
-    details?: any
+    details?: unknown
   ): NextResponse => {
     return NextResponse.json(
       {
@@ -208,85 +209,25 @@ export const createApiResponse = {
 };
 
 /**
- * Helper function to transform database objects to camelCase
- * Ensures consistent field naming in API responses
+ * Transform database response to ensure consistent field naming
+ * Converts snake_case to camelCase for frontend consumption
  */
-export const transformDatabaseResponse = <T extends Record<string, any>>(
+export const transformDatabaseResponse = <T extends Record<string, unknown>>(
   data: T
 ): T => {
-  if (!data || typeof data !== "object") return data;
-
-  const transformed = {} as T;
+  const transformed: Record<string, unknown> = {};
 
   for (const [key, value] of Object.entries(data)) {
-    // Convert snake_case to camelCase for known database fields
     const transformedKey = transformFieldName(key);
-
-    if (Array.isArray(value)) {
-      transformed[transformedKey as keyof T] = value.map((item) =>
-        typeof item === "object" && item !== null
-          ? transformDatabaseResponse(item)
-          : item
-      ) as T[keyof T];
-    } else if (
-      value &&
-      typeof value === "object" &&
-      value.constructor === Object
-    ) {
-      transformed[transformedKey as keyof T] = transformDatabaseResponse(value);
-    } else {
-      transformed[transformedKey as keyof T] = value;
-    }
+    transformed[transformedKey] = value;
   }
 
-  return transformed;
+  return transformed as T;
 };
 
 /**
- * Transform common database field names to camelCase
+ * Transform field name from snake_case to camelCase
  */
 const transformFieldName = (fieldName: string): string => {
-  const fieldMap: Record<string, string> = {
-    // User fields
-    user_status: "userStatus",
-    email_verified: "emailVerified",
-    email_verified_at: "emailVerifiedAt",
-    first_name: "firstName",
-    last_name: "lastName",
-    created_at: "createdAt",
-    updated_at: "updatedAt",
-    last_login: "lastLogin",
-    last_logout: "lastLogout",
-
-    // Transaction fields
-    transaction_number: "transactionNumber",
-    customer_name: "customerName",
-    customer_email: "customerEmail",
-    customer_phone: "customerPhone",
-    payment_method: "paymentMethod",
-    payment_status: "paymentStatus",
-    total_amount: "totalAmount",
-    discount_amount: "discountAmount",
-    tax_amount: "taxAmount",
-
-    // Product fields
-    min_stock: "minStock",
-    max_stock: "maxStock",
-    category_id: "categoryId",
-    brand_id: "brandId",
-    supplier_id: "supplierId",
-
-    // Stock fields
-    system_count: "systemCount",
-    physical_count: "physicalCount",
-    discrepancy_reason: "discrepancyReason",
-
-    // Purchase order fields
-    order_number: "orderNumber",
-    order_date: "orderDate",
-
-    // Add more mappings as needed
-  };
-
-  return fieldMap[fieldName] || fieldName;
+  return fieldName.replace(/_([a-z])/g, (_, letter) => letter.toUpperCase());
 };

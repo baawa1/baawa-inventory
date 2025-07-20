@@ -10,6 +10,7 @@ import {
   supplierQuerySchema,
 } from "@/lib/validations/supplier";
 import { handleApiError, createApiResponse } from "@/lib/api-error-handler";
+import { Prisma } from "@prisma/client";
 
 // GET /api/suppliers - List suppliers with optional filtering and pagination
 export const GET = withAuth(async (request: AuthenticatedRequest) => {
@@ -36,7 +37,7 @@ export const GET = withAuth(async (request: AuthenticatedRequest) => {
     const offset = (page - 1) * limit;
 
     // Build where clause for Prisma
-    const where: any = {};
+    const where: Prisma.SupplierWhereInput = {};
 
     // Apply filters
     if (search) {
@@ -53,12 +54,13 @@ export const GET = withAuth(async (request: AuthenticatedRequest) => {
     }
 
     // Build orderBy clause - handle nested fields
-    const orderBy: any = {};
+    const orderBy: Prisma.SupplierOrderByWithRelationInput = {};
     if (sortBy === "productCount") {
       // Handle special case for product count sorting
       orderBy.products = { _count: sortOrder };
     } else {
-      orderBy[sortBy] = sortOrder;
+      orderBy[sortBy as keyof Prisma.SupplierOrderByWithRelationInput] =
+        sortOrder;
     }
 
     // Get suppliers and total count in parallel

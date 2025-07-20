@@ -8,13 +8,14 @@ import { createApiResponse } from "@/lib/api-response";
 import { prisma } from "@/lib/db";
 import { z } from "zod";
 import { USER_ROLES } from "@/lib/auth/roles";
+import { Prisma } from "@prisma/client";
 
 // Validation schema for category creation
 const CategoryCreateSchema = z.object({
   name: z.string().min(1).max(100),
   description: z.string().optional(),
-  image: z.string().min(1, "Category image is required").max(500),
-  isActive: z.boolean().default(true),
+  image: z.string().max(500).optional(),
+  isActive: z.boolean().optional(),
   parentId: z.number().optional(),
 });
 
@@ -38,7 +39,7 @@ export const GET = withAuth(async (request: AuthenticatedRequest) => {
     const sortOrder = searchParams.get("sortOrder") || "asc";
 
     // Build where clause
-    const where: any = {};
+    const where: Prisma.CategoryWhereInput = {};
 
     if (isActive !== null) {
       where.isActive = isActive === "true";
@@ -55,8 +56,9 @@ export const GET = withAuth(async (request: AuthenticatedRequest) => {
     const skip = (page - 1) * limit;
 
     // Build order by clause
-    const orderBy: any = {};
-    orderBy[sortBy] = sortOrder;
+    const orderBy: Prisma.CategoryOrderByWithRelationInput = {};
+    orderBy[sortBy as keyof Prisma.CategoryOrderByWithRelationInput] =
+      sortOrder;
 
     // Get categories with pagination
     const [categories, totalCount] = await Promise.all([

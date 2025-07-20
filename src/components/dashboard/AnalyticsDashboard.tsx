@@ -31,7 +31,13 @@ import {
 } from "recharts";
 
 interface AnalyticsDashboardProps {
-  _user: any;
+  _user: {
+    id: string;
+    email: string;
+    role: string;
+    firstName?: string;
+    lastName?: string;
+  };
 }
 
 export function AnalyticsDashboard({ _user }: AnalyticsDashboardProps) {
@@ -242,7 +248,10 @@ export function AnalyticsDashboard({ _user }: AnalyticsDashboardProps) {
                 <XAxis dataKey="date" />
                 <YAxis />
                 <Tooltip
-                  formatter={(value: any) => [formatCurrency(value), "Sales"]}
+                  formatter={(value: unknown) => [
+                    formatCurrency(Number(value)),
+                    "Sales",
+                  ]}
                 />
                 <Line
                   type="monotone"

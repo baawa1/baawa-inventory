@@ -4,6 +4,7 @@ import { createUserSchema, userQuerySchema } from "@/lib/validations";
 import { withPermission, AuthenticatedRequest } from "@/lib/api-middleware";
 import { createApiResponse } from "@/lib/api-response";
 import { USER_ROLES } from "@/lib/auth/roles";
+import { Prisma } from "@prisma/client";
 
 // GET /api/users - List users with optional filtering and pagination
 // Requires permission to manage users (ADMIN only)
@@ -45,7 +46,7 @@ export const GET = withPermission(
       const skip = (page - 1) * safeLimit;
 
       // Build where clause for filtering
-      const where: any = {};
+      const where: Prisma.UserWhereInput = {};
 
       // Apply search filter across multiple fields
       if (search) {
@@ -72,11 +73,12 @@ export const GET = withPermission(
       }
 
       // Build orderBy clause
-      const orderBy: any = {};
+      const orderBy: Prisma.UserOrderByWithRelationInput = {};
       if (sortBy === "createdAt") {
         orderBy.createdAt = sortOrder;
       } else {
-        orderBy[sortBy] = sortOrder;
+        orderBy[sortBy as keyof Prisma.UserOrderByWithRelationInput] =
+          sortOrder;
       }
 
       // Fetch users with Prisma - exclude password from response
@@ -137,7 +139,7 @@ export const GET = withPermission(
       );
     } catch (error) {
       console.error("Error in GET /api/users:", error);
-      return createApiResponse.internalError("Internal server error");
+      return createApiResponse.internalError("Failed to retrieve users");
     }
   }
 );
