@@ -169,12 +169,48 @@ export const WEBFLOW_SYNC_STATUS = {
 export type WebflowSyncStatus =
   (typeof WEBFLOW_SYNC_STATUS)[keyof typeof WEBFLOW_SYNC_STATUS];
 
-// API Response Limits
+// API Limits and Pagination
 export const API_LIMITS = {
-  DEFAULT_PAGE_SIZE: 20,
   MAX_PAGE_SIZE: 100,
-  PRODUCT_SEARCH_LIMIT: 50,
+  DEFAULT_PAGE_SIZE: 10,
+  PRODUCT_SEARCH_LIMIT: 20,
   TRANSACTION_HISTORY_LIMIT: 50,
+  LOW_STOCK_DISPLAY_LIMIT: 10,
+  TOP_CUSTOMERS_LIMIT: 5,
+  TOP_CATEGORIES_LIMIT: 5,
+  TOP_PRODUCTS_LIMIT: 5,
+  SALES_CHART_DAYS: 30,
+} as const;
+
+// Stock Thresholds
+export const STOCK_THRESHOLDS = {
+  CRITICAL_STOCK: 0,
+  LOW_STOCK_DEFAULT: 10,
+  MIN_STOCK_DEFAULT: 5,
+  MAX_STOCK_DEFAULT: 1000,
+} as const;
+
+// Date Range Options
+export const DATE_RANGES = {
+  WEEK: "week",
+  MONTH: "month",
+  YEAR: "year",
+} as const;
+
+// Chart Configuration
+export const CHART_CONFIG = {
+  COLORS: [
+    "#3b82f6", // blue
+    "#10b981", // green
+    "#f59e0b", // amber
+    "#ef4444", // red
+    "#8b5cf6", // violet
+    "#06b6d4", // cyan
+    "#84cc16", // lime
+    "#f97316", // orange
+  ],
+  HEIGHT: 300,
+  STROKE_WIDTH: 2,
 } as const;
 
 // Transaction Prefixes
