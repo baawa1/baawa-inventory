@@ -1,5 +1,6 @@
 import { NextResponse } from "next/server";
 import { withPermission, AuthenticatedRequest } from "@/lib/api-middleware";
+import { handleApiError } from "@/lib/api-error-handler";
 import { USER_ROLES } from "@/lib/auth/roles";
 import { prisma } from "@/lib/db";
 import { z } from "zod";
@@ -69,19 +70,7 @@ export const POST = withPermission(
         })),
       });
     } catch (error) {
-      console.error("Error in bulk archive operation:", error);
-
-      if (error instanceof z.ZodError) {
-        return NextResponse.json(
-          { error: "Invalid request data", details: error.errors },
-          { status: 400 }
-        );
-      }
-
-      return NextResponse.json(
-        { error: "Internal server error" },
-        { status: 500 }
-      );
+      return handleApiError(error);
     }
   }
 );

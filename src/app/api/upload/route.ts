@@ -1,5 +1,7 @@
 import { auth } from "../../../../auth";
 import { NextRequest, NextResponse } from "next/server";
+import { withPermission, AuthenticatedRequest } from "@/lib/api-middleware";
+import { USER_ROLES } from "@/lib/auth/roles";
 import { supabaseStorageServer } from "@/lib/upload/supabase-storage";
 import { logger } from "@/lib/logger";
 import { createSecureResponse } from "@/lib/security-headers";
@@ -95,20 +97,10 @@ export const POST = withRateLimit(RATE_LIMIT_CONFIGS.UPLOAD)(async (
   }
 });
 
-export async function DELETE(request: NextRequest) {
-  try {
-    const session = await auth();
-    if (!session?.user) {
-      return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
-    }
-
-    // Check permissions
-    if (!["ADMIN", "MANAGER"].includes(session.user.role)) {
-      return NextResponse.json(
-        { error: "Insufficient permissions" },
-        { status: 403 }
-      );
-    }
+export const DELETE = withPermission(
+  [USER_ROLES.ADMIN, USER_ROLES.MANAGER],
+  async (request: AuthenticatedRequest) => {
+    try {
 
     const { searchParams } = new URL(request.url);
     const storagePath = searchParams.get("publicId");
@@ -135,4 +127,4 @@ export async function DELETE(request: NextRequest) {
       { status: 500 }
     );
   }
-}
+);

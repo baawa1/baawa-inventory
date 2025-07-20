@@ -1,5 +1,6 @@
 import { NextResponse } from "next/server";
 import { withAuth, AuthenticatedRequest } from "@/lib/api-middleware";
+import { handleApiError } from "@/lib/api-error-handler";
 import { USER_STATUS } from "@/lib/constants";
 import { USER_ROLES } from "@/lib/auth/roles";
 
@@ -32,10 +33,6 @@ export const GET = withAuth(async (_request: AuthenticatedRequest) => {
       timestamp: new Date().toISOString(),
     });
   } catch (error) {
-    console.error("Error in debug session:", error);
-    return NextResponse.json(
-      { error: "Failed to get session debug info" },
-      { status: 500 }
-    );
+    return handleApiError(error);
   }
 });
