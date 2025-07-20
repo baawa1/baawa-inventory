@@ -1,7 +1,7 @@
-import { NextResponse } from "next/server";
 import { prisma } from "@/lib/db";
 import { z } from "zod";
 import { withPOSAuth, AuthenticatedRequest } from "@/lib/api-auth-middleware";
+import { createApiResponse } from "@/lib/api-response";
 import {
   PAYMENT_METHODS,
   ALL_PAYMENT_METHODS,
@@ -70,10 +70,7 @@ async function handleCreateSale(request: AuthenticatedRequest) {
       amountPaid &&
       amountPaid < total
     ) {
-      return NextResponse.json(
-        { error: "Insufficient payment amount" },
-        { status: 400 }
-      );
+      return createApiResponse.badRequest("Insufficient payment amount");
     }
 
     // Create sale transaction in database with proper stock validation

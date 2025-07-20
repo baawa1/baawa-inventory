@@ -1,6 +1,6 @@
-import { NextResponse } from "next/server";
 import { cookies } from "next/headers";
 import { sign } from "jsonwebtoken";
+import { createApiResponse } from "@/lib/api-response";
 
 export async function POST(request: Request) {
   try {
@@ -8,10 +8,7 @@ export async function POST(request: Request) {
 
     // Validate required fields
     if (!email || !role || !status) {
-      return NextResponse.json(
-        { error: "Missing required fields" },
-        { status: 400 }
-      );
+      return createApiResponse.validationError("Missing required fields");
     }
 
     // Create a test JWT token
@@ -38,17 +35,13 @@ export async function POST(request: Request) {
       maxAge: 24 * 60 * 60, // 24 hours
     });
 
-    return NextResponse.json({
-      success: true,
-      message: "Test user session created",
-      user: { email, role, status, isEmailVerified },
-    });
+    return createApiResponse.success(
+      { email, role, status, isEmailVerified },
+      "Test user session created"
+    );
   } catch (error) {
     console.error("Test auth error:", error);
-    return NextResponse.json(
-      { error: "Failed to create test session" },
-      { status: 500 }
-    );
+    return createApiResponse.internalError("Failed to create test session");
   }
 }
 
@@ -58,15 +51,9 @@ export async function DELETE() {
     const cookieStore = await cookies();
     cookieStore.delete("auth-token");
 
-    return NextResponse.json({
-      success: true,
-      message: "Test user session cleared",
-    });
+    return createApiResponse.success(null, "Test user session cleared");
   } catch (error) {
     console.error("Test auth clear error:", error);
-    return NextResponse.json(
-      { error: "Failed to clear test session" },
-      { status: 500 }
-    );
+    return createApiResponse.internalError("Failed to clear test session");
   }
 }
