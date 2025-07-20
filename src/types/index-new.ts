@@ -40,9 +40,9 @@ export interface FormState {
 }
 
 // Modal and UI state
-export interface ModalState {
+export interface ModalState<T = Record<string, unknown>> {
   isOpen: boolean;
-  data?: any;
+  data?: T;
 }
 
 // Toast notification types

@@ -57,7 +57,7 @@ interface SupplierListProps {
   user: User;
 }
 
-export default function SupplierList({ user }: SupplierListProps) {
+const SupplierList = ({ user }: SupplierListProps) => {
   const [deleteDialogOpen, setDeleteDialogOpen] = useState(false);
   const [supplierToDelete, setSupplierToDelete] = useState<APISupplier | null>(
     null
@@ -516,4 +516,7 @@ export default function SupplierList({ user }: SupplierListProps) {
       </AlertDialog>
     </>
   );
-}
+};
+
+// Memoize the component to prevent unnecessary re-renders
+export default React.memo(SupplierList);
