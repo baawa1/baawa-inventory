@@ -1,8 +1,8 @@
-import { NextRequest, NextResponse } from "next/server";
-import { auth } from "../../../../../../auth";
+import { NextResponse } from "next/server";
+import { withAuth, AuthenticatedRequest } from "@/lib/api-middleware";
+import { handleApiError } from "@/lib/api-error-handler";
 import { prisma } from "@/lib/db";
 import { PAYMENT_STATUS } from "@/lib/constants";
-import { USER_ROLES, hasRole } from "@/lib/auth/roles";
 
 interface SalesOverview {
   totalSales: number;
@@ -46,25 +46,8 @@ function getPeriodFilter(period: string): Date {
   }
 }
 
-export async function GET(request: NextRequest) {
+export const GET = withAuth(async (request: AuthenticatedRequest) => {
   try {
-    const session = await auth();
-
-    if (!session?.user) {
-      return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
-    }
-
-    // Check if user has permission to view analytics
-    if (
-      !hasRole(session.user.role, [
-        USER_ROLES.ADMIN,
-        USER_ROLES.MANAGER,
-        USER_ROLES.STAFF,
-      ])
-    ) {
-      return NextResponse.json({ error: "Forbidden" }, { status: 403 });
-    }
-
     const { searchParams } = new URL(request.url);
     const period = searchParams.get("period") || "7d";
     const periodStart = getPeriodFilter(period);
@@ -85,12 +68,8 @@ export async function GET(request: NextRequest) {
       },
     });
 
-    const totalSales = Number(salesAggregates._sum.total_amount || 0);
-    const totalOrders = salesAggregates._count.id;
-
     // Get unique customers count
-    const uniqueCustomers = await prisma.salesTransaction.groupBy({
-      by: ["customer_email"],
+    const uniqueCustomers = await prisma.salesTransaction.findMany({
       where: {
         created_at: {
           gte: periodStart,
@@ -100,10 +79,11 @@ export async function GET(request: NextRequest) {
           not: null,
         },
       },
+      select: {
+        customer_email: true,
+      },
+      distinct: ["customer_email"],
     });
-
-    const totalCustomers = uniqueCustomers.length;
-    const averageOrderValue = totalOrders > 0 ? totalSales / totalOrders : 0;
 
     // Get top selling products
     const topProducts = await prisma.salesItem.groupBy({
@@ -125,7 +105,7 @@ export async function GET(request: NextRequest) {
       },
       orderBy: {
         _sum: {
-          total_price: "desc",
+          quantity: "desc",
         },
       },
       take: 5,
@@ -133,7 +113,7 @@ export async function GET(request: NextRequest) {
 
     // Get product details for top products
     const productIds = topProducts
-      .map((p) => p.product_id)
+      .map((p: any) => p.product_id)
       .filter(Boolean) as number[];
     const products = await prisma.product.findMany({
       where: {
@@ -147,7 +127,8 @@ export async function GET(request: NextRequest) {
       },
     });
 
-    const topSellingProducts = topProducts.map((item) => {
+    // Format top selling products
+    const topSellingProducts = topProducts.map((item: any) => {
       const product = products.find((p) => p.id === item.product_id);
       return {
         id: item.product_id || 0,
@@ -156,6 +137,43 @@ export async function GET(request: NextRequest) {
         revenue: Number(item._sum.total_price || 0),
       };
     });
+
+    // Get sales by period (daily breakdown)
+    const salesByDay = await prisma.salesTransaction.groupBy({
+      by: ["created_at"],
+      where: {
+        created_at: {
+          gte: periodStart,
+        },
+        payment_status: PAYMENT_STATUS.PAID,
+      },
+      _sum: {
+        total_amount: true,
+      },
+      _count: {
+        id: true,
+      },
+    });
+
+    // Group by date and format
+    const salesByPeriod = salesByDay.reduce(
+      (acc: Record<string, any>, item) => {
+        const date = (item.created_at || new Date())
+          .toISOString()
+          .split("T")[0];
+        if (!acc[date]) {
+          acc[date] = {
+            date,
+            sales: 0,
+            orders: 0,
+          };
+        }
+        acc[date].sales += Number(item._sum.total_amount || 0);
+        acc[date].orders += item._count.id;
+        return acc;
+      },
+      {}
+    );
 
     // Get recent transactions
     const recentTransactions = await prisma.salesTransaction.findMany({
@@ -175,29 +193,35 @@ export async function GET(request: NextRequest) {
       take: 10,
     });
 
-    const salesOverview: SalesOverview = {
+    // Calculate metrics
+    const totalSales = Number(salesAggregates._sum.total_amount || 0);
+    const totalOrders = salesAggregates._count.id;
+    const totalCustomers = uniqueCustomers.length;
+    const averageOrderValue = totalOrders > 0 ? totalSales / totalOrders : 0;
+
+    const overview: SalesOverview = {
       totalSales,
       totalOrders,
       totalCustomers,
       averageOrderValue,
       topSellingProducts,
-      salesByPeriod: [], // Can be implemented later for charts
-      recentTransactions: recentTransactions.map((transaction) => ({
-        id: transaction.id,
-        transactionNumber: transaction.transaction_number,
-        customerName: transaction.customer_name,
-        totalAmount: Number(transaction.total_amount),
-        createdAt:
-          transaction.created_at?.toISOString() || new Date().toISOString(),
+      salesByPeriod: Object.values(salesByPeriod),
+      recentTransactions: recentTransactions.map((t) => ({
+        id: t.id,
+        transactionNumber: t.transaction_number,
+        customerName: t.customer_name,
+        totalAmount: Number(t.total_amount),
+        createdAt: (t.created_at || new Date()).toISOString(),
       })),
     };
 
-    return NextResponse.json(salesOverview);
+    return NextResponse.json({
+      success: true,
+      data: overview,
+      period,
+      periodStart: periodStart.toISOString(),
+    });
   } catch (error) {
-    console.error("Error fetching sales overview:", error);
-    return NextResponse.json(
-      { error: "Failed to fetch sales overview" },
-      { status: 500 }
-    );
+    return handleApiError(error);
   }
-}
+});
