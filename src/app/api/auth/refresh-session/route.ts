@@ -1,20 +1,14 @@
-import { NextRequest, NextResponse } from "next/server";
-import { auth } from "#root/auth";
+import { NextResponse } from "next/server";
+import { withAuth, AuthenticatedRequest } from "@/lib/api-middleware";
 import { prisma } from "@/lib/db";
 
 // Simple in-memory cache for user data (in production, use Redis)
 const userCache = new Map<string, { data: any; timestamp: number }>();
 const CACHE_DURATION = 2 * 60 * 1000; // 2 minutes
 
-export async function POST(_request: NextRequest) {
+export const POST = withAuth(async (_request: AuthenticatedRequest) => {
   try {
-    const session = await auth();
-
-    if (!session?.user?.id) {
-      return NextResponse.json({ error: "Not authenticated" }, { status: 401 });
-    }
-
-    const userId = session.user.id;
+    const userId = _request.user.id;
     const now = Date.now();
 
     // Check cache first
@@ -42,26 +36,15 @@ export async function POST(_request: NextRequest) {
       return NextResponse.json({ error: "User not found" }, { status: 404 });
     }
 
-    const userData = {
-      id: user.id.toString(),
-      email: user.email,
-      name: `${user.firstName} ${user.lastName}`,
-      role: user.role,
-      status: user.userStatus,
-      isEmailVerified: Boolean(user.emailVerified),
-      isActive: user.isActive,
-    };
+    // Update cache
+    userCache.set(userId, { data: user, timestamp: now });
 
-    // Cache the result
-    userCache.set(userId, { data: userData, timestamp: now });
-
-    // Return updated user data for session update
-    return NextResponse.json({ user: userData });
+    return NextResponse.json({ user });
   } catch (error) {
     console.error("Error refreshing session:", error);
     return NextResponse.json(
-      { error: "Internal server error" },
+      { error: "Failed to refresh session" },
       { status: 500 }
     );
   }
-}
+});

@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from "next/server";
-import { auth } from "../../../../../auth";
+import { withPermission, AuthenticatedRequest } from "@/lib/api-middleware";
+import { USER_ROLES } from "@/lib/auth/roles";
 import { prisma } from "@/lib/db";
 import { z } from "zod";
 
@@ -45,24 +46,10 @@ function generateBarcode(
 }
 
 // POST /api/products/barcodes - Generate barcodes for products
-export async function POST(request: NextRequest) {
-  try {
-    const session = await auth();
-
-    if (!session?.user) {
-      return NextResponse.json(
-        { error: "Authentication required" },
-        { status: 401 }
-      );
-    }
-
-    // Check permissions
-    if (!["ADMIN", "MANAGER"].includes(session.user.role as string)) {
-      return NextResponse.json(
-        { error: "Insufficient permissions" },
-        { status: 403 }
-      );
-    }
+export const POST = withPermission(
+  [USER_ROLES.ADMIN, USER_ROLES.MANAGER],
+  async (request: AuthenticatedRequest) => {
+    try {
 
     const body = await request.json();
     const { action } = body;
@@ -200,27 +187,13 @@ export async function POST(request: NextRequest) {
       { status: 500 }
     );
   }
-}
+);
 
 // GET /api/products/barcodes - Get barcode statistics
-export async function GET(_request: NextRequest) {
-  try {
-    const session = await auth();
-
-    if (!session?.user) {
-      return NextResponse.json(
-        { error: "Authentication required" },
-        { status: 401 }
-      );
-    }
-
-    // Check permissions
-    if (!["ADMIN", "MANAGER", "STAFF"].includes(session.user.role as string)) {
-      return NextResponse.json(
-        { error: "Insufficient permissions" },
-        { status: 403 }
-      );
-    }
+export const GET = withPermission(
+  [USER_ROLES.ADMIN, USER_ROLES.MANAGER, USER_ROLES.STAFF],
+  async (_request: AuthenticatedRequest) => {
+    try {
 
     // Get barcode statistics
     const totalProducts = await prisma.product.count({
@@ -269,4 +242,4 @@ export async function GET(_request: NextRequest) {
       { status: 500 }
     );
   }
-}
+);
