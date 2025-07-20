@@ -10,14 +10,62 @@ import type { z } from "zod";
 
 type UpdateProductData = z.infer<typeof updateProductSchema>;
 
+// Improved type definitions
+interface FormOption {
+  id: number;
+  name: string;
+}
+
 export interface UseEditProductFormResult {
   form: ReturnType<typeof useForm<UpdateProductData>>;
-  product: any;
-  categories: any[];
-  brands: any[];
-  suppliers: any[];
+  product: ProductFormData | undefined;
+  categories: FormOption[];
+  brands: FormOption[];
+  suppliers: FormOption[];
   isLoading: boolean;
   error: string | null;
+}
+
+// Align with the Product interface from the API hook
+interface ProductFormData {
+  id: number;
+  name: string;
+  description?: string;
+  sku: string;
+  barcode?: string;
+  category?: { id: number; name: string };
+  brand?: { id: number; name: string };
+  cost: number;
+  price: number;
+  stock: number;
+  minStock: number;
+  maxStock?: number;
+  unit: string;
+  weight?: number;
+  dimensions?: string;
+  color?: string;
+  size?: string;
+  material?: string;
+  hasVariants: boolean;
+  isArchived: boolean;
+  tags: string[];
+  metaTitle?: string;
+  metaDescription?: string;
+  seoKeywords: string[];
+  status: "active" | "inactive";
+  allowReviews: boolean;
+  isFeatured: boolean;
+  metaContent?: string;
+  metaExcerpt?: string;
+  saleEndDate?: string;
+  salePrice?: number;
+  saleStartDate?: string;
+  sortOrder?: number;
+  supplier?: { id: number; name: string };
+  image?: string;
+  images?: Array<{ url: string; isPrimary: boolean }>;
+  createdAt: string;
+  updatedAt: string;
 }
 
 /**

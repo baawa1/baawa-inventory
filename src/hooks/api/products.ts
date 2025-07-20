@@ -1,6 +1,22 @@
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { queryKeys } from "@/lib/query-client";
 
+// Improved type definitions
+interface ProductVariantAttributes {
+  [attributeName: string]: string | number | boolean;
+}
+
+interface ProductImage {
+  id: string;
+  url: string;
+  filename: string;
+  size: number;
+  mimeType: string;
+  alt?: string;
+  isPrimary: boolean;
+  uploadedAt: string;
+}
+
 // Types
 export interface Product {
   id: number;
@@ -42,23 +58,14 @@ export interface Product {
   salePrice?: number;
   saleStartDate?: string;
   sortOrder?: number;
-  variantAttributes?: any;
-  variantValues?: any;
+  variantAttributes?: ProductVariantAttributes;
+  variantValues?: ProductVariantAttributes;
   supplier?: {
     id: number;
     name: string;
   };
   image?: string;
-  images?: Array<{
-    id: string;
-    url: string;
-    filename: string;
-    size: number;
-    mimeType: string;
-    alt?: string;
-    isPrimary: boolean;
-    uploadedAt: string;
-  }>;
+  images?: ProductImage[];
   createdAt: string;
   updatedAt: string;
 }

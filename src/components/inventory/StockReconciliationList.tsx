@@ -62,9 +62,7 @@ interface StockReconciliationListProps {
   user: User;
 }
 
-export default function StockReconciliationList({
-  user,
-}: StockReconciliationListProps) {
+const StockReconciliationList = ({ user }: StockReconciliationListProps) => {
   const [deleteDialogOpen, setDeleteDialogOpen] = useState(false);
   const [reconciliationToDelete, setReconciliationToDelete] =
     useState<APIStockReconciliation | null>(null);
@@ -663,4 +661,6 @@ export default function StockReconciliationList({
       </AlertDialog>
     </>
   );
-}
+};
+
+export default React.memo(StockReconciliationList);

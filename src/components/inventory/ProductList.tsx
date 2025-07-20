@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useEffect, useMemo } from "react";
+import React, { useState, useEffect, useMemo } from "react";
 import Image from "next/image";
 import Link from "next/link";
 import { toast } from "sonner";
@@ -86,7 +86,7 @@ const SORT_OPTIONS: SortOption[] = [
   { value: "price-desc", label: "Price (High to Low)" },
 ];
 
-export function ProductList({ user }: ProductListProps) {
+const ProductList = ({ user }: ProductListProps) => {
   const [pagination, setPagination] = useState<PaginationState>({
     page: 1,
     limit: 10,
@@ -709,4 +709,7 @@ export function ProductList({ user }: ProductListProps) {
       />
     </ErrorBoundary>
   );
-}
+};
+
+// Memoize the component to prevent unnecessary re-renders
+export default React.memo(ProductList);

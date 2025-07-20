@@ -9,6 +9,11 @@ import {
 } from "@/components/ui/table";
 import { DashboardTableColumn } from "@/components/layouts/DashboardColumnCustomizer";
 
+// Improved type definitions for audit log values
+interface AuditLogValues {
+  [key: string]: string | number | boolean | null | undefined;
+}
+
 export type AuditLog = {
   id: number;
   created_at: string;
@@ -18,8 +23,8 @@ export type AuditLog = {
   record_id: number | null;
   ip_address?: string | null;
   user_agent?: string | null;
-  old_values?: any;
-  new_values?: any;
+  old_values?: AuditLogValues | null;
+  new_values?: AuditLogValues | null;
 };
 
 export const auditLogColumns: DashboardTableColumn[] = [

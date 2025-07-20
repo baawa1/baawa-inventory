@@ -160,21 +160,20 @@ export interface SupplierData {
 }
 
 // API Response types
-export interface ApiResponse<T = any> {
+export interface ApiResponse<T = Record<string, unknown>> {
   success: boolean;
   data?: T;
   message?: string;
   error?: string;
 }
 
-export interface PaginatedResponse<T> extends ApiResponse<T[]> {
-  pagination: {
+export interface PaginatedResponse<T = Record<string, unknown>>
+  extends ApiResponse<T[]> {
+  pagination?: {
     page: number;
     limit: number;
-    total: number;
     totalPages: number;
-    hasNext: boolean;
-    hasPrev: boolean;
+    total: number;
   };
 }
 
@@ -248,9 +247,9 @@ export interface FormErrors {
 }
 
 // Table column definitions
-export interface TableColumn<T = any> {
+export interface TableColumn<T = Record<string, unknown>> {
   key: keyof T;
   label: string;
   sortable?: boolean;
-  render?: (value: any, row: T) => React.ReactNode;
+  render?: (value: unknown, row: T) => React.ReactNode;
 }
