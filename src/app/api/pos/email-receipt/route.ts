@@ -1,4 +1,4 @@
-import { NextRequest, NextResponse } from "next/server";
+import { NextResponse } from "next/server";
 import { emailService } from "@/lib/email";
 import { z } from "zod";
 import { withPOSAuth, AuthenticatedRequest } from "@/lib/api-auth-middleware";

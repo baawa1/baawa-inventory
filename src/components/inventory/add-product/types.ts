@@ -6,11 +6,13 @@ export type CreateProductData = z.infer<typeof createProductSchema>;
 export interface Category {
   id: number;
   name: string;
-  image?: string | null;
-  parent?: {
-    id: number;
-    name: string;
-  } | null;
+  image?: string | undefined;
+  parent?:
+    | {
+        id: number;
+        name: string;
+      }
+    | undefined;
   isActive: boolean;
   productCount: number;
   subcategoryCount: number;

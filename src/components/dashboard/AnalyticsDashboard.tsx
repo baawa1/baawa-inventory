@@ -47,7 +47,7 @@ import { useTransactionStats } from "@/hooks/api/transactions";
 import { useActiveUsers } from "@/hooks/api/users";
 
 interface AnalyticsDashboardProps {
-  user: any;
+  _user: any;
 }
 
 // Sample data for charts and leaderboards
@@ -98,14 +98,14 @@ const topProducts = [
 
 const categoryColors = ["#8884d8", "#82ca9d", "#ffc658", "#ff7300", "#0088fe"];
 
-export function AnalyticsDashboard({ user }: AnalyticsDashboardProps) {
+export function AnalyticsDashboard({ _user }: AnalyticsDashboardProps) {
   const [dateRange, setDateRange] = useState("month");
   const [refreshKey, setRefreshKey] = useState(0);
 
   // Fetch real-time data
-  const { data: transactionStats, isLoading: isLoadingStats } =
+  const { data: transactionStats, isLoading: _isLoadingStats } =
     useTransactionStats();
-  const { data: activeUsers = [], isLoading: isLoadingUsers } =
+  const { data: _activeUsers = [], isLoading: _isLoadingUsers } =
     useActiveUsers();
 
   const refreshDashboard = () => {
@@ -185,17 +185,6 @@ export function AnalyticsDashboard({ user }: AnalyticsDashboardProps) {
       icon: <IconEye className="h-4 w-4" />,
     },
   ];
-
-  const getTrendColor = (trend: string) => {
-    switch (trend) {
-      case "up":
-        return "text-green-600";
-      case "down":
-        return "text-red-600";
-      default:
-        return "text-gray-600";
-    }
-  };
 
   const getTrendBadge = (change: number, trend: string) => {
     if (trend === "neutral" || change === 0) return null;
@@ -491,7 +480,7 @@ export function AnalyticsDashboard({ user }: AnalyticsDashboardProps) {
                     cy="50%"
                     labelLine={false}
                     label={({ name, percent }) =>
-                      `${name} ${(percent * 100).toFixed(0)}%`
+                      `${name} ${percent ? (percent * 100).toFixed(0) : "0"}%`
                     }
                     outerRadius={80}
                     fill="#8884d8"

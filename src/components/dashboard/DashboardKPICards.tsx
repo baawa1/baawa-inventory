@@ -6,11 +6,9 @@ import {
   IconTrendingUp,
   IconTrendingDown,
   IconUsers,
-  IconPackages,
   IconShoppingCart,
   IconCurrencyNaira,
   IconActivity,
-  IconAlertTriangle,
 } from "@tabler/icons-react";
 import { formatCurrency } from "@/lib/utils";
 import { Skeleton } from "@/components/ui/skeleton";
@@ -19,14 +17,14 @@ interface DashboardKPICardsProps {
   transactionStats?: any;
   activeUsersCount: number;
   isLoading: boolean;
-  dateRange: any;
+  _dateRange: any;
 }
 
 export function DashboardKPICards({
   transactionStats,
   activeUsersCount,
   isLoading,
-  dateRange,
+  _dateRange,
 }: DashboardKPICardsProps) {
   if (isLoading) {
     return (

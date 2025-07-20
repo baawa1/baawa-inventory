@@ -13,15 +13,10 @@ import {
   SelectValue,
 } from "@/components/ui/select";
 import {
-  IconTrendingUp,
-  IconTrendingDown,
-  IconUsers,
   IconPackages,
   IconShoppingCart,
   IconCurrencyNaira,
   IconChartLine,
-  IconActivity,
-  IconArrowRight,
   IconCalendar,
   IconRefresh,
   IconAlertTriangle,
@@ -133,7 +128,7 @@ export function ComprehensiveDashboard({ user }: ComprehensiveDashboardProps) {
         transactionStats={transactionStats}
         activeUsersCount={activeUsers.length}
         isLoading={isLoadingStats || isLoadingUsers}
-        dateRange={getDateRangeFilter()}
+        _dateRange={getDateRangeFilter()}
       />
 
       {/* Quick Actions */}

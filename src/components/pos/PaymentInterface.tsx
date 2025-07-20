@@ -5,16 +5,10 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import {
-  Select,
-  SelectContent,
-  SelectItem,
-  SelectTrigger,
-  SelectValue,
-} from "@/components/ui/select";
+
 import { Textarea } from "@/components/ui/textarea";
 import { Separator } from "@/components/ui/separator";
-import { Badge } from "@/components/ui/badge";
+
 import {
   Dialog,
   DialogContent,
@@ -30,8 +24,6 @@ import {
   IconPercentage,
   IconMinus,
   IconUser,
-  IconPhone,
-  IconMail,
   IconReceipt,
   IconLoader,
 } from "@tabler/icons-react";
@@ -112,16 +104,6 @@ export function PaymentInterface({
   const [amountPaid, setAmountPaid] = useState(total);
   const [notes, setNotes] = useState("");
   const [processing, setProcessing] = useState(false);
-
-  // Calculate discount
-  const calculateDiscount = () => {
-    if (discountType === "percentage") {
-      const calculatedDiscount = (subtotal * discountValue) / 100;
-      onDiscountChange(Math.min(calculatedDiscount, subtotal));
-    } else {
-      onDiscountChange(Math.min(discountValue, subtotal));
-    }
-  };
 
   // Handle discount change
   const handleDiscountChange = (value: number) => {

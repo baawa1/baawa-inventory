@@ -3,7 +3,7 @@
  * Supports filtering and pagination for transaction management
  */
 
-import { NextRequest, NextResponse } from "next/server";
+import { NextResponse } from "next/server";
 import { prisma } from "@/lib/db";
 import { z } from "zod";
 import { withPOSAuth, AuthenticatedRequest } from "@/lib/api-auth-middleware";

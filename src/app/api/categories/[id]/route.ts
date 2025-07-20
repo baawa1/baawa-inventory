@@ -193,17 +193,18 @@ export async function PUT(
 
         // Check for circular references in the hierarchy
         let currentParent = parentCategory;
-        while (currentParent.parentId) {
+        while (currentParent?.parentId) {
           if (currentParent.parentId === categoryId) {
             return NextResponse.json(
               { error: "Circular reference detected in category hierarchy" },
               { status: 400 }
             );
           }
-          currentParent = await prisma.category.findUnique({
+          const nextParent = await prisma.category.findUnique({
             where: { id: currentParent.parentId },
           });
-          if (!currentParent) break;
+          if (!nextParent) break;
+          currentParent = nextParent;
         }
       }
     }
