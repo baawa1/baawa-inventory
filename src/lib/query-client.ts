@@ -84,6 +84,13 @@ export const queryKeys = {
     detail: (id: number) => [...queryKeys.categories.details(), id] as const,
   },
 
+  // Analytics
+  analytics: {
+    all: ["analytics"] as const,
+    dashboard: (dateRange?: string) =>
+      [...queryKeys.analytics.all, "dashboard", dateRange || "month"] as const,
+  },
+
   // Inventory & Analytics
   inventory: {
     all: ["inventory"] as const,
