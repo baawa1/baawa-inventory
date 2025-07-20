@@ -1,6 +1,6 @@
-import { NextResponse } from "next/server";
 import { prisma } from "@/lib/db";
 import { withAuth, AuthenticatedRequest } from "@/lib/api-middleware";
+import { createApiResponse } from "@/lib/api-response";
 
 // GET /api/sales/stats - Get sales statistics
 export const GET = withAuth(async function (request: AuthenticatedRequest) {
@@ -197,12 +197,12 @@ export const GET = withAuth(async function (request: AuthenticatedRequest) {
         : currentPeriod.totalItems,
     };
 
-    return NextResponse.json({ data: stats });
+    return createApiResponse.success(
+      stats,
+      "Sales statistics retrieved successfully"
+    );
   } catch (error) {
     console.error("Error in GET /api/sales/stats:", error);
-    return NextResponse.json(
-      { error: "Internal server error" },
-      { status: 500 }
-    );
+    return createApiResponse.internalError("Internal server error");
   }
 });
