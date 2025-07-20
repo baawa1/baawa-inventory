@@ -1,6 +1,7 @@
 /**
  * Application Constants
  * Centralized constants to prevent magic strings and inconsistencies
+ * All constants must match the exact Prisma ENUM values
  */
 
 import { USER_ROLES } from "@/lib/auth/roles";
@@ -11,31 +12,38 @@ import {
   IconWallet,
 } from "@tabler/icons-react";
 
-// User Status Constants (must match database schema)
+// User Status Constants (must match Prisma UserStatus enum exactly)
 export const USER_STATUS = {
   PENDING: "PENDING",
-  APPROVED: "APPROVED",
-  ACTIVE: "APPROVED", // Alias for backwards compatibility
   VERIFIED: "VERIFIED",
+  APPROVED: "APPROVED",
   REJECTED: "REJECTED",
-  INACTIVE: "INACTIVE",
   SUSPENDED: "SUSPENDED",
 } as const;
 
 export type UserStatus = (typeof USER_STATUS)[keyof typeof USER_STATUS];
 
 // Valid user statuses for POS access
-export const POS_ALLOWED_STATUSES: UserStatus[] = [
-  USER_STATUS.APPROVED,
-  USER_STATUS.VERIFIED,
-];
+export const POS_ALLOWED_STATUSES: UserStatus[] = [USER_STATUS.APPROVED];
 
-// Payment Methods (must match database enum)
+// Product Status Constants (must match Prisma ProductStatus enum exactly)
+export const PRODUCT_STATUS = {
+  ACTIVE: "ACTIVE",
+  INACTIVE: "INACTIVE",
+  OUT_OF_STOCK: "OUT_OF_STOCK",
+  DISCONTINUED: "DISCONTINUED",
+} as const;
+
+export type ProductStatus =
+  (typeof PRODUCT_STATUS)[keyof typeof PRODUCT_STATUS];
+
+// Payment Methods (must match Prisma PaymentMethod enum exactly)
 export const PAYMENT_METHODS = {
-  CASH: "cash",
-  POS: "pos",
-  BANK_TRANSFER: "bank_transfer",
-  MOBILE_MONEY: "mobile_money",
+  CASH: "CASH",
+  BANK_TRANSFER: "BANK_TRANSFER",
+  POS_MACHINE: "POS_MACHINE",
+  CREDIT_CARD: "CREDIT_CARD",
+  MOBILE_MONEY: "MOBILE_MONEY",
 } as const;
 
 export type PaymentMethod =
@@ -47,11 +55,20 @@ export const ALL_PAYMENT_METHODS: PaymentMethod[] =
 // Payment Methods with UI data (for components)
 export const PAYMENT_METHODS_UI = [
   { value: PAYMENT_METHODS.CASH, label: "Cash", icon: IconCash },
-  { value: PAYMENT_METHODS.POS, label: "POS Machine", icon: IconCreditCard },
+  {
+    value: PAYMENT_METHODS.POS_MACHINE,
+    label: "POS Machine",
+    icon: IconCreditCard,
+  },
   {
     value: PAYMENT_METHODS.BANK_TRANSFER,
     label: "Bank Transfer",
     icon: IconBuilding,
+  },
+  {
+    value: PAYMENT_METHODS.CREDIT_CARD,
+    label: "Credit Card",
+    icon: IconCreditCard,
   },
   {
     value: PAYMENT_METHODS.MOBILE_MONEY,
@@ -60,59 +77,97 @@ export const PAYMENT_METHODS_UI = [
   },
 ] as const;
 
-// Payment Status Constants (must match database schema)
+// Payment Status Constants (must match Prisma PaymentStatus enum exactly)
 export const PAYMENT_STATUS = {
-  PENDING: "pending",
-  PAID: "paid",
-  COMPLETED: "completed",
-  FAILED: "failed",
-  REFUNDED: "refunded",
-  CANCELLED: "cancelled",
+  PENDING: "PENDING",
+  PAID: "PAID",
+  REFUNDED: "REFUNDED",
+  CANCELLED: "CANCELLED",
 } as const;
 
 export type PaymentStatus =
   (typeof PAYMENT_STATUS)[keyof typeof PAYMENT_STATUS];
 
-// Product Status Constants
-export const PRODUCT_STATUS = {
-  ACTIVE: "active",
-  INACTIVE: "inactive",
-  DISCONTINUED: "discontinued",
+// Discount Type Constants (must match Prisma DiscountType enum exactly)
+export const DISCOUNT_TYPE = {
+  AMOUNT: "AMOUNT",
+  PERCENTAGE: "PERCENTAGE",
 } as const;
 
-export type ProductStatus =
-  (typeof PRODUCT_STATUS)[keyof typeof PRODUCT_STATUS];
+export type DiscountType = (typeof DISCOUNT_TYPE)[keyof typeof DISCOUNT_TYPE];
 
-// Transaction Status Constants
-export const TRANSACTION_STATUS = {
-  PENDING: "pending",
-  COMPLETED: "completed",
-  CANCELLED: "cancelled",
-  REFUNDED: "refunded",
-} as const;
-
-export type TransactionStatus =
-  (typeof TRANSACTION_STATUS)[keyof typeof TRANSACTION_STATUS];
-
-// Stock Adjustment Types
-export const STOCK_ADJUSTMENT_TYPES = {
-  INCREASE: "INCREASE",
-  DECREASE: "DECREASE",
-  CORRECTION: "CORRECTION",
-} as const;
-
-export type StockAdjustmentType =
-  (typeof STOCK_ADJUSTMENT_TYPES)[keyof typeof STOCK_ADJUSTMENT_TYPES];
-
-// Stock Adjustment Status Constants
-export const STOCK_ADJUSTMENT_STATUS = {
+// Stock Reconciliation Status (must match Prisma StockReconciliationStatus enum exactly)
+export const STOCK_RECONCILIATION_STATUS = {
+  DRAFT: "DRAFT",
   PENDING: "PENDING",
   APPROVED: "APPROVED",
   REJECTED: "REJECTED",
 } as const;
 
-export type StockAdjustmentStatus =
-  (typeof STOCK_ADJUSTMENT_STATUS)[keyof typeof STOCK_ADJUSTMENT_STATUS];
+export type StockReconciliationStatus =
+  (typeof STOCK_RECONCILIATION_STATUS)[keyof typeof STOCK_RECONCILIATION_STATUS];
+
+// Stock Adjustment Types (must match Prisma StockAdjustmentType enum exactly)
+export const STOCK_ADJUSTMENT_TYPES = {
+  INCREASE: "INCREASE",
+  DECREASE: "DECREASE",
+  RECOUNT: "RECOUNT",
+  DAMAGE: "DAMAGE",
+  TRANSFER: "TRANSFER",
+  RETURN: "RETURN",
+} as const;
+
+export type StockAdjustmentType =
+  (typeof STOCK_ADJUSTMENT_TYPES)[keyof typeof STOCK_ADJUSTMENT_TYPES];
+
+// Purchase Order Status (must match Prisma PurchaseOrderStatus enum exactly)
+export const PURCHASE_ORDER_STATUS = {
+  PENDING: "PENDING",
+  ORDERED: "ORDERED",
+  PARTIAL_RECEIVED: "PARTIAL_RECEIVED",
+  RECEIVED: "RECEIVED",
+  CANCELLED: "CANCELLED",
+} as const;
+
+export type PurchaseOrderStatus =
+  (typeof PURCHASE_ORDER_STATUS)[keyof typeof PURCHASE_ORDER_STATUS];
+
+// AI Content Type (must match Prisma AIContentType enum exactly)
+export const AI_CONTENT_TYPE = {
+  DESCRIPTION: "DESCRIPTION",
+  SEO_TITLE: "SEO_TITLE",
+  SEO_DESCRIPTION: "SEO_DESCRIPTION",
+  SOCIAL_MEDIA_POST: "SOCIAL_MEDIA_POST",
+  PRODUCT_FEATURES: "PRODUCT_FEATURES",
+  MARKETING_COPY: "MARKETING_COPY",
+} as const;
+
+export type AIContentType =
+  (typeof AI_CONTENT_TYPE)[keyof typeof AI_CONTENT_TYPE];
+
+// Content Status (must match Prisma ContentStatus enum exactly)
+export const CONTENT_STATUS = {
+  DRAFT: "DRAFT",
+  PENDING_APPROVAL: "PENDING_APPROVAL",
+  APPROVED: "APPROVED",
+  PUBLISHED: "PUBLISHED",
+  REJECTED: "REJECTED",
+} as const;
+
+export type ContentStatus =
+  (typeof CONTENT_STATUS)[keyof typeof CONTENT_STATUS];
+
+// Webflow Sync Status (must match Prisma WebflowSyncStatus enum exactly)
+export const WEBFLOW_SYNC_STATUS = {
+  PENDING: "PENDING",
+  SYNCING: "SYNCING",
+  SUCCESS: "SUCCESS",
+  FAILED: "FAILED",
+  RETRY: "RETRY",
+} as const;
+
+export type WebflowSyncStatus =
+  (typeof WEBFLOW_SYNC_STATUS)[keyof typeof WEBFLOW_SYNC_STATUS];
 
 // API Response Limits
 export const API_LIMITS = {

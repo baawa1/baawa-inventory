@@ -7,7 +7,6 @@
  * with @map directives. This should be fixed in a future schema migration.
  */
 
-import { NextResponse } from "next/server";
 import { prisma } from "@/lib/db";
 import { z } from "zod";
 import { withPOSAuth, AuthenticatedRequest } from "@/lib/api-auth-middleware";
@@ -21,6 +20,11 @@ import {
   createValidationErrorResponse,
   createInternalErrorResponse,
 } from "@/lib/api-response";
+import {
+  TransactionWhereClause,
+  SalesTransactionWithIncludes,
+  TransformedTransaction,
+} from "@/types/pos";
 
 const querySchema = z.object({
   page: z.string().optional().default("1"),
@@ -49,8 +53,8 @@ async function handleGetTransactions(request: AuthenticatedRequest) {
     const limitNum = Math.min(parseInt(limit), API_LIMITS.MAX_PAGE_SIZE);
     const offset = (pageNum - 1) * limitNum;
 
-    // Build where clause
-    const where: any = {};
+    // Build where clause with proper typing
+    const where: TransactionWhereClause = {};
 
     if (search) {
       where.OR = [
@@ -120,33 +124,35 @@ async function handleGetTransactions(request: AuthenticatedRequest) {
       prisma.salesTransaction.count({ where }),
     ]);
 
-    // Transform data for frontend
-    const transformedTransactions = transactions.map((sale: any) => ({
-      id: sale.id,
-      transactionNumber: sale.transaction_number,
-      items: sale.sales_items.map((item: any) => ({
-        id: item.id,
-        productId: item.product_id,
-        name: item.products?.name || "Unknown Product",
-        sku: item.products?.sku || "",
-        price: item.unit_price,
-        quantity: item.quantity,
-        total: item.total_price,
-      })),
-      subtotal: sale.subtotal,
-      discount: sale.discount_amount,
-      total: sale.total_amount,
-      paymentMethod: sale.payment_method,
-      paymentStatus: sale.payment_status,
-      customerName: sale.customer_name,
-      customerPhone: sale.customer_phone,
-      customerEmail: sale.customer_email,
-      staffName: `${sale.users.firstName} ${sale.users.lastName}`.trim(),
-      staffId: sale.user_id,
-      timestamp: sale.created_at,
-      createdAt: sale.created_at,
-      updatedAt: sale.updated_at,
-    }));
+    // Transform data for frontend with proper typing
+    const transformedTransactions: TransformedTransaction[] = transactions.map(
+      (sale: SalesTransactionWithIncludes) => ({
+        id: sale.id,
+        transactionNumber: sale.transaction_number,
+        items: sale.sales_items.map((item) => ({
+          id: item.id,
+          productId: item.product_id || 0, // Handle null case
+          name: item.products?.name || "Unknown Product",
+          sku: item.products?.sku || "",
+          price: Number(item.unit_price), // Convert Decimal to number
+          quantity: item.quantity,
+          total: Number(item.total_price), // Convert Decimal to number
+        })),
+        subtotal: Number(sale.subtotal), // Convert Decimal to number
+        discount: Number(sale.discount_amount), // Convert Decimal to number
+        total: Number(sale.total_amount), // Convert Decimal to number
+        paymentMethod: sale.payment_method,
+        paymentStatus: sale.payment_status,
+        customerName: sale.customer_name,
+        customerPhone: sale.customer_phone,
+        customerEmail: sale.customer_email,
+        staffName: `${sale.users.firstName} ${sale.users.lastName}`.trim(),
+        staffId: sale.user_id,
+        timestamp: sale.created_at,
+        createdAt: sale.created_at,
+        updatedAt: sale.updated_at,
+      })
+    );
 
     return createPaginatedResponse(
       transformedTransactions,
