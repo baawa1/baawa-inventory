@@ -189,6 +189,17 @@ export const CACHE_DURATIONS = {
   PRODUCTS: 5 * 60 * 1000, // 5 minutes
   USER_SESSION: 60 * 1000, // 1 minute
   TRANSACTION_HISTORY: 2 * 60 * 1000, // 2 minutes
+  QUERY_STALE_TIME: 5 * 60 * 1000, // 5 minutes
+  QUERY_GC_TIME: 10 * 60 * 1000, // 10 minutes
+} as const;
+
+// Polling and Refresh Intervals (in milliseconds)
+export const INTERVALS = {
+  SESSION_MONITOR: 120000, // 2 minutes
+  SESSION_CHECK_MIN: 60000, // 1 minute
+  STATS_UPDATE: 30000, // 30 seconds
+  STATS_REFRESH: 60000, // 1 minute
+  OFFLINE_SYNC: 30000, // 30 seconds
 } as const;
 
 // Currency Settings
@@ -238,14 +249,15 @@ export const SESSION_SETTINGS = {
 // Validation Rules
 export const VALIDATION_RULES = {
   MIN_PASSWORD_LENGTH: 8,
-  MAX_NAME_LENGTH: 100,
+  MAX_NAME_LENGTH: 255,
   MAX_EMAIL_LENGTH: 255,
   MAX_PHONE_LENGTH: 20,
   MAX_DESCRIPTION_LENGTH: 1000,
   MIN_PRICE: 0.01,
-  MAX_PRICE: 999999.99,
+  MAX_PRICE: 1000000, // 1 million Naira
   MIN_QUANTITY: 1,
-  MAX_QUANTITY: 9999,
+  MAX_QUANTITY: 10000,
+  MIN_STOCK_THRESHOLD: 5,
 } as const;
 
 // Error Messages

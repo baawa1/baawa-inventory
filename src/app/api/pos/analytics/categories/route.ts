@@ -1,5 +1,6 @@
-import { NextRequest, NextResponse } from "next/server";
-import { auth } from "../../../../../../auth";
+import { NextResponse } from "next/server";
+import { withAuth, AuthenticatedRequest } from "@/lib/api-middleware";
+import { handleApiError } from "@/lib/api-error-handler";
 import { prisma } from "@/lib/db";
 import { PAYMENT_STATUS } from "@/lib/constants";
 
@@ -38,19 +39,8 @@ function getPeriodFilter(period: string): Date {
   }
 }
 
-export async function GET(request: NextRequest) {
+export const GET = withAuth(async (request: AuthenticatedRequest) => {
   try {
-    const session = await auth();
-
-    if (!session?.user) {
-      return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
-    }
-
-    // Check if user has permission to view analytics
-    if (!["ADMIN", "MANAGER", "STAFF"].includes(session.user.role)) {
-      return NextResponse.json({ error: "Forbidden" }, { status: 403 });
-    }
-
     const { searchParams } = new URL(request.url);
     const period = searchParams.get("period") || "30d";
     const periodStart = getPeriodFilter(period);
@@ -206,12 +196,13 @@ export async function GET(request: NextRequest) {
     // Sort by revenue descending
     categoryPerformance.sort((a, b) => b.revenue - a.revenue);
 
-    return NextResponse.json(categoryPerformance);
+    return NextResponse.json({
+      success: true,
+      data: categoryPerformance,
+      period,
+      periodStart: periodStart.toISOString(),
+    });
   } catch (error) {
-    console.error("Error fetching category analytics:", error);
-    return NextResponse.json(
-      { error: "Failed to fetch category analytics" },
-      { status: 500 }
-    );
+    return handleApiError(error);
   }
-}
+});

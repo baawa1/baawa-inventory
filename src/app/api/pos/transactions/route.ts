@@ -15,11 +15,7 @@ import {
   API_LIMITS,
   ERROR_MESSAGES,
 } from "@/lib/constants";
-import {
-  createPaginatedResponse,
-  createValidationErrorResponse,
-  createInternalErrorResponse,
-} from "@/lib/api-response";
+import { createApiResponse } from "@/lib/api-response";
 import {
   TransactionWhereClause,
   SalesTransactionWithIncludes,
@@ -154,12 +150,15 @@ async function handleGetTransactions(request: AuthenticatedRequest) {
       })
     );
 
-    return createPaginatedResponse(
+    return createApiResponse.successWithPagination(
       transformedTransactions,
       {
         page: pageNum,
         limit: limitNum,
         total: totalCount,
+        totalPages: Math.ceil(totalCount / limitNum),
+        hasNext: pageNum < Math.ceil(totalCount / limitNum),
+        hasPrev: pageNum > 1,
       },
       `Retrieved ${transformedTransactions.length} of ${totalCount} transactions`
     );
@@ -167,13 +166,13 @@ async function handleGetTransactions(request: AuthenticatedRequest) {
     console.error("Error fetching transactions:", error);
 
     if (error instanceof z.ZodError) {
-      return createValidationErrorResponse(
-        error.errors,
-        ERROR_MESSAGES.VALIDATION_ERROR
+      return createApiResponse.validationError(
+        ERROR_MESSAGES.VALIDATION_ERROR,
+        error.errors
       );
     }
 
-    return createInternalErrorResponse(ERROR_MESSAGES.INTERNAL_ERROR);
+    return createApiResponse.internalError(ERROR_MESSAGES.INTERNAL_ERROR);
   }
 }
 

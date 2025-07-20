@@ -1,7 +1,10 @@
-import { NextResponse } from "next/server";
 import { prisma } from "@/lib/db";
 import { createSaleSchema, saleQuerySchema } from "@/lib/validations/sale";
 import { withAuth, AuthenticatedRequest } from "@/lib/api-middleware";
+import {
+  createApiResponse,
+  transformDatabaseResponse,
+} from "@/lib/api-response";
 
 // GET /api/sales - List sales transactions with optional filtering and pagination
 export const GET = withAuth(async function (request: AuthenticatedRequest) {
@@ -135,41 +138,38 @@ export const GET = withAuth(async function (request: AuthenticatedRequest) {
       prisma.salesTransaction.count({ where }),
     ]);
 
-    // Transform data to match frontend expectations
+    // Transform data to match frontend expectations with proper field mapping
     const transformedTransactions = salesTransactions.map(
-      (transaction: any) => ({
-        id: transaction.id,
-        transactionNumber: transaction.transaction_number,
-        customerName: transaction.customer_name,
-        customerPhone: transaction.customer_phone,
-        customerEmail: transaction.customer_email,
-        subtotal: Number(transaction.subtotal),
-        discount: Number(transaction.discount_amount),
-        total: Number(transaction.total_amount),
-        paymentStatus: transaction.payment_status,
-        paymentMethod: transaction.payment_method,
-        notes: transaction.notes,
-        createdAt: transaction.created_at,
-        updatedAt: transaction.updated_at,
-        timestamp: transaction.created_at,
-        staffName:
-          `${transaction.users.firstName} ${transaction.users.lastName}`.trim(),
-        staffId: transaction.users.id,
-        items: transaction.sales_items.map((item: any) => ({
-          id: item.id,
-          productId: item.products?.id,
-          name: item.products?.name || "Unknown Product",
-          sku: item.products?.sku || "",
-          price: Number(item.unit_price),
-          quantity: item.quantity,
-          total: Number(item.total_price || item.unit_price * item.quantity),
-        })),
-      })
+      (transaction: any) => {
+        // Transform the base transaction
+        const baseTransaction = transformDatabaseResponse(transaction);
+
+        // Handle nested objects and computed fields
+        return {
+          ...baseTransaction,
+          discount: Number(transaction.discount_amount),
+          total: Number(transaction.total_amount),
+          subtotal: Number(transaction.subtotal),
+          staffName:
+            `${transaction.users.firstName} ${transaction.users.lastName}`.trim(),
+          staffId: transaction.users.id,
+          timestamp: transaction.created_at,
+          items: transaction.sales_items.map((item: any) => ({
+            id: item.id,
+            productId: item.products?.id,
+            name: item.products?.name || "Unknown Product",
+            sku: item.products?.sku || "",
+            price: Number(item.unit_price),
+            quantity: item.quantity,
+            total: Number(item.total_price || item.unit_price * item.quantity),
+          })),
+        };
+      }
     );
 
-    return NextResponse.json({
-      data: transformedTransactions,
-      pagination: {
+    return createApiResponse.successWithPagination(
+      transformedTransactions,
+      {
         page,
         limit: safeLimit,
         total: totalCount,
@@ -177,19 +177,17 @@ export const GET = withAuth(async function (request: AuthenticatedRequest) {
         hasNext: offset + safeLimit < totalCount,
         hasPrev: page > 1,
       },
-    });
+      `Retrieved ${transformedTransactions.length} sales transactions`
+    );
   } catch (error) {
     console.error("Error in GET /api/sales:", error);
     console.error(
       "Error stack:",
       error instanceof Error ? error.stack : "No stack trace"
     );
-    return NextResponse.json(
-      {
-        error: "Internal server error",
-        details: error instanceof Error ? error.message : "Unknown error",
-      },
-      { status: 500 }
+    return createApiResponse.internalError(
+      "Internal server error",
+      error instanceof Error ? error.message : "Unknown error"
     );
   }
 });
@@ -207,7 +205,7 @@ export const POST = withAuth(async function (request: AuthenticatedRequest) {
     });
 
     if (!user) {
-      return NextResponse.json({ error: "User not found" }, { status: 404 });
+      return createApiResponse.notFound("User");
     }
 
     // Generate transaction code
@@ -331,20 +329,18 @@ export const POST = withAuth(async function (request: AuthenticatedRequest) {
       },
     });
 
-    return NextResponse.json(
+    return createApiResponse.success(
       {
-        data: completeSalesTransaction,
+        salesTransaction: completeSalesTransaction,
         stockUpdates: result.stockUpdates,
       },
-      { status: 201 }
+      "Sales transaction created successfully",
+      201
     );
   } catch (error) {
     console.error("Error in POST /api/sales:", error);
-    return NextResponse.json(
-      {
-        error: error instanceof Error ? error.message : "Internal server error",
-      },
-      { status: 500 }
+    return createApiResponse.internalError(
+      error instanceof Error ? error.message : "Internal server error"
     );
   }
 });

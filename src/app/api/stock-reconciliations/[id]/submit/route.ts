@@ -1,124 +1,121 @@
-import { auth } from "../../../../../../auth";
-import { NextRequest, NextResponse } from "next/server";
+import { NextResponse } from "next/server";
+import { withAuth, AuthenticatedRequest } from "@/lib/api-middleware";
+import { handleApiError } from "@/lib/api-error-handler";
 import { prisma } from "@/lib/db";
 import { sendReconciliationNotification } from "@/lib/notifications/stock-reconciliation";
 
-export async function POST(
-  request: NextRequest,
-  { params }: { params: Promise<{ id: string }> }
-) {
-  try {
-    const session = await auth();
-    if (!session?.user) {
-      return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
-    }
+export const POST = withAuth(
+  async (
+    request: AuthenticatedRequest,
+    { params }: { params: Promise<{ id: string }> }
+  ) => {
+    try {
+      const { id } = await params;
+      const reconciliationId = parseInt(id);
 
-    const { id } = await params;
-    const reconciliationId = parseInt(id);
-    if (isNaN(reconciliationId)) {
-      return NextResponse.json(
-        { error: "Invalid reconciliation ID" },
-        { status: 400 }
-      );
-    }
+      if (isNaN(reconciliationId)) {
+        return NextResponse.json(
+          { error: "Invalid reconciliation ID" },
+          { status: 400 }
+        );
+      }
 
-    // Check if reconciliation exists and can be submitted
-    const reconciliation = await prisma.stockReconciliation.findUnique({
-      where: { id: reconciliationId },
-      select: {
-        id: true,
-        status: true,
-        createdById: true,
-        items: {
-          select: { id: true },
+      // Check if reconciliation exists and can be submitted
+      const reconciliation = await prisma.stockReconciliation.findUnique({
+        where: { id: reconciliationId },
+        select: {
+          id: true,
+          status: true,
+          createdById: true,
+          title: true,
+          items: {
+            select: { id: true },
+          },
         },
-      },
-    });
+      });
 
-    if (!reconciliation) {
-      return NextResponse.json(
-        { error: "Stock reconciliation not found" },
-        { status: 404 }
-      );
-    }
+      if (!reconciliation) {
+        return NextResponse.json(
+          { error: "Stock reconciliation not found" },
+          { status: 404 }
+        );
+      }
 
-    // Check permissions - only creator can submit
-    if (reconciliation.createdById !== parseInt(session.user.id)) {
-      return NextResponse.json({ error: "Forbidden" }, { status: 403 });
-    }
+      // Check permissions - only creator can submit
+      if (reconciliation.createdById !== parseInt(request.user.id)) {
+        return NextResponse.json({ error: "Forbidden" }, { status: 403 });
+      }
 
-    // Can only submit draft reconciliations
-    if (reconciliation.status !== "DRAFT") {
-      return NextResponse.json(
-        { error: "Only draft reconciliations can be submitted" },
-        { status: 400 }
-      );
-    }
+      // Can only submit draft reconciliations
+      if (reconciliation.status !== "DRAFT") {
+        return NextResponse.json(
+          { error: "Only draft reconciliations can be submitted" },
+          { status: 400 }
+        );
+      }
 
-    // Must have at least one item
-    if (reconciliation.items.length === 0) {
-      return NextResponse.json(
-        { error: "Cannot submit reconciliation without items" },
-        { status: 400 }
-      );
-    }
+      // Must have at least one item
+      if (reconciliation.items.length === 0) {
+        return NextResponse.json(
+          { error: "Cannot submit reconciliation without items" },
+          { status: 400 }
+        );
+      }
 
-    // Update status to pending and set submitted timestamp
-    const updatedReconciliation = await prisma.stockReconciliation.update({
-      where: { id: reconciliationId },
-      data: {
-        status: "PENDING",
-        submittedAt: new Date(),
-      },
-      include: {
-        items: {
-          include: {
-            product: {
-              select: {
-                id: true,
-                name: true,
-                sku: true,
-                stock: true,
+      // Update status to pending and set submitted timestamp
+      const updatedReconciliation = await prisma.stockReconciliation.update({
+        where: { id: reconciliationId },
+        data: {
+          status: "PENDING",
+          submittedAt: new Date(),
+        },
+        include: {
+          items: {
+            include: {
+              product: {
+                select: {
+                  id: true,
+                  name: true,
+                  sku: true,
+                  stock: true,
+                },
               },
             },
           },
-        },
-        createdBy: {
-          select: {
-            id: true,
-            firstName: true,
-            lastName: true,
-            email: true,
+          createdBy: {
+            select: {
+              id: true,
+              firstName: true,
+              lastName: true,
+              email: true,
+            },
           },
         },
-      },
-    });
-
-    // Send notification to admins about pending approval
-    try {
-      await sendReconciliationNotification({
-        type: "RECONCILIATION_SUBMITTED",
-        reconciliationId: updatedReconciliation.id,
-        reconciliationTitle: updatedReconciliation.title,
-        createdBy: updatedReconciliation.createdBy,
       });
-    } catch (notificationError) {
-      console.error(
-        "Failed to send reconciliation notification:",
-        notificationError
-      );
-      // Don't fail the whole operation if notification fails
-    }
 
-    return NextResponse.json({
-      reconciliation: updatedReconciliation,
-      message: "Stock reconciliation submitted for approval",
-    });
-  } catch (error) {
-    console.error("Error submitting stock reconciliation:", error);
-    return NextResponse.json(
-      { error: "Internal server error" },
-      { status: 500 }
-    );
+      // Send notification to admins about pending approval
+      try {
+        await sendReconciliationNotification({
+          type: "RECONCILIATION_SUBMITTED",
+          reconciliationId: updatedReconciliation.id,
+          reconciliationTitle: updatedReconciliation.title,
+          createdBy: updatedReconciliation.createdBy,
+        });
+      } catch (notificationError) {
+        console.error(
+          "Failed to send reconciliation notification:",
+          notificationError
+        );
+        // Don't fail the whole operation if notification fails
+      }
+
+      return NextResponse.json({
+        success: true,
+        message: "Stock reconciliation submitted for approval",
+        data: updatedReconciliation,
+      });
+    } catch (error) {
+      return handleApiError(error);
+    }
   }
-}
+);

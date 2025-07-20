@@ -5,178 +5,288 @@
 
 import { NextResponse } from "next/server";
 
-// Base response structure
-interface BaseAPIResponse {
-  success: boolean;
-  message?: string;
-  timestamp: string;
-}
-
-// Success response structure
-interface SuccessAPIResponse<T = any> extends BaseAPIResponse {
+export interface ApiSuccessResponse<T = any> {
   success: true;
   data: T;
-}
-
-// Error response structure
-interface ErrorAPIResponse extends BaseAPIResponse {
-  success: false;
-  error: string;
-  details?: any;
-}
-
-// Pagination metadata
-interface PaginationInfo {
-  page: number;
-  limit: number;
-  total: number;
-  pages: number;
-  hasNextPage: boolean;
-  hasPreviousPage: boolean;
-}
-
-// Paginated response structure
-interface PaginatedAPIResponse<T = any> extends SuccessAPIResponse<T[]> {
-  pagination: PaginationInfo;
-}
-
-// Union type for all responses
-export type APIResponse<T = any> = SuccessAPIResponse<T> | ErrorAPIResponse;
-export type PaginatedResponse<T = any> = PaginatedAPIResponse<T>;
-
-/**
- * Create a standardized success response
- */
-export function createSuccessResponse<T>(
-  data: T,
-  message?: string,
-  status: number = 200
-): NextResponse {
-  const response: SuccessAPIResponse<T> = {
-    success: true,
-    data,
-    message,
-    timestamp: new Date().toISOString(),
-  };
-
-  return NextResponse.json(response, { status });
-}
-
-/**
- * Create a standardized paginated response
- */
-export function createPaginatedResponse<T>(
-  items: T[],
-  pagination: {
+  message?: string;
+  pagination?: {
     page: number;
     limit: number;
     total: number;
+    totalPages: number;
+    hasNext?: boolean;
+    hasPrev?: boolean;
+    hasNextPage?: boolean;
+    hasPreviousPage?: boolean;
+  };
+}
+
+export interface ApiErrorResponse {
+  success: false;
+  error: string;
+  details?: any;
+  code?: string;
+}
+
+export type ApiResponse<T = any> = ApiSuccessResponse<T> | ApiErrorResponse;
+
+/**
+ * Create standardized API responses
+ */
+export const createApiResponse = {
+  /**
+   * Success response with data
+   */
+  success: <T>(
+    data: T,
+    message?: string,
+    status: number = 200
+  ): NextResponse => {
+    return NextResponse.json(
+      {
+        success: true,
+        data,
+        message,
+      } as ApiSuccessResponse<T>,
+      { status }
+    );
   },
-  message?: string,
-  status: number = 200
-): NextResponse {
-  const paginationInfo: PaginationInfo = {
-    page: pagination.page,
-    limit: pagination.limit,
-    total: pagination.total,
-    pages: Math.ceil(pagination.total / pagination.limit),
-    hasNextPage:
-      pagination.page < Math.ceil(pagination.total / pagination.limit),
-    hasPreviousPage: pagination.page > 1,
-  };
 
-  const response: PaginatedAPIResponse<T> = {
-    success: true,
-    data: items,
-    pagination: paginationInfo,
-    message,
-    timestamp: new Date().toISOString(),
-  };
+  /**
+   * Success response with pagination
+   */
+  successWithPagination: <T>(
+    data: T[],
+    pagination: {
+      page: number;
+      limit: number;
+      total: number;
+      totalPages: number;
+      hasNext?: boolean;
+      hasPrev?: boolean;
+      hasNextPage?: boolean;
+      hasPreviousPage?: boolean;
+    },
+    message?: string,
+    status: number = 200
+  ): NextResponse => {
+    return NextResponse.json(
+      {
+        success: true,
+        data,
+        message,
+        pagination,
+      } as ApiSuccessResponse<T[]>,
+      { status }
+    );
+  },
 
-  return NextResponse.json(response, { status });
-}
+  /**
+   * Error response
+   */
+  error: (
+    error: string,
+    status: number = 500,
+    details?: any,
+    code?: string
+  ): NextResponse => {
+    return NextResponse.json(
+      {
+        success: false,
+        error,
+        details,
+        code,
+      } as ApiErrorResponse,
+      { status }
+    );
+  },
+
+  /**
+   * Validation error response
+   */
+  validationError: (
+    message: string = "Validation failed",
+    details?: any
+  ): NextResponse => {
+    return NextResponse.json(
+      {
+        success: false,
+        error: message,
+        details,
+        code: "VALIDATION_ERROR",
+      } as ApiErrorResponse,
+      { status: 400 }
+    );
+  },
+
+  /**
+   * Not found error response
+   */
+  notFound: (resource: string = "Resource", details?: any): NextResponse => {
+    return NextResponse.json(
+      {
+        success: false,
+        error: `${resource} not found`,
+        details,
+        code: "NOT_FOUND",
+      } as ApiErrorResponse,
+      { status: 404 }
+    );
+  },
+
+  /**
+   * Unauthorized error response
+   */
+  unauthorized: (
+    message: string = "Authentication required",
+    details?: any
+  ): NextResponse => {
+    return NextResponse.json(
+      {
+        success: false,
+        error: message,
+        details,
+        code: "UNAUTHORIZED",
+      } as ApiErrorResponse,
+      { status: 401 }
+    );
+  },
+
+  /**
+   * Forbidden error response
+   */
+  forbidden: (
+    message: string = "Insufficient permissions",
+    details?: any
+  ): NextResponse => {
+    return NextResponse.json(
+      {
+        success: false,
+        error: message,
+        details,
+        code: "FORBIDDEN",
+      } as ApiErrorResponse,
+      { status: 403 }
+    );
+  },
+
+  /**
+   * Conflict error response
+   */
+  conflict: (
+    message: string = "Resource already exists",
+    details?: any
+  ): NextResponse => {
+    return NextResponse.json(
+      {
+        success: false,
+        error: message,
+        details,
+        code: "CONFLICT",
+      } as ApiErrorResponse,
+      { status: 409 }
+    );
+  },
+
+  /**
+   * Internal server error response
+   */
+  internalError: (
+    message: string = "Internal server error",
+    details?: any
+  ): NextResponse => {
+    return NextResponse.json(
+      {
+        success: false,
+        error: message,
+        details,
+        code: "INTERNAL_ERROR",
+      } as ApiErrorResponse,
+      { status: 500 }
+    );
+  },
+};
 
 /**
- * Create a standardized error response
+ * Helper function to transform database objects to camelCase
+ * Ensures consistent field naming in API responses
  */
-export function createErrorResponse(
-  error: string,
-  status: number = 400,
-  details?: any,
-  message?: string
-): NextResponse {
-  const response: ErrorAPIResponse = {
-    success: false,
-    error,
-    details,
-    message,
-    timestamp: new Date().toISOString(),
-  };
+export const transformDatabaseResponse = <T extends Record<string, any>>(
+  data: T
+): T => {
+  if (!data || typeof data !== "object") return data;
 
-  return NextResponse.json(response, { status });
-}
+  const transformed = {} as T;
 
-/**
- * Create validation error response
- */
-export function createValidationErrorResponse(
-  validationErrors: any[],
-  message: string = "Validation failed"
-): NextResponse {
-  return createErrorResponse(
-    "VALIDATION_ERROR",
-    400,
-    validationErrors,
-    message
-  );
-}
+  for (const [key, value] of Object.entries(data)) {
+    // Convert snake_case to camelCase for known database fields
+    const transformedKey = transformFieldName(key);
 
-/**
- * Create unauthorized error response
- */
-export function createUnauthorizedResponse(
-  message: string = "Authentication required"
-): NextResponse {
-  return createErrorResponse("UNAUTHORIZED", 401, undefined, message);
-}
-
-/**
- * Create forbidden error response
- */
-export function createForbiddenResponse(
-  message: string = "Insufficient permissions"
-): NextResponse {
-  return createErrorResponse("FORBIDDEN", 403, undefined, message);
-}
-
-/**
- * Create not found error response
- */
-export function createNotFoundResponse(
-  message: string = "Resource not found"
-): NextResponse {
-  return createErrorResponse("NOT_FOUND", 404, undefined, message);
-}
-
-/**
- * Create internal server error response
- */
-export function createInternalErrorResponse(
-  message: string = "Internal server error",
-  details?: any
-): NextResponse {
-  return createErrorResponse("INTERNAL_ERROR", 500, details, message);
-}
-
-/**
- * Handle API errors consistently
- */
-export function handleAPIError(error: any): NextResponse {
-  console.error("API Error:", error);
-
-  if (error instanceof Error) {
-    return createErrorResponse(error.message, 400);
+    if (Array.isArray(value)) {
+      transformed[transformedKey as keyof T] = value.map((item) =>
+        typeof item === "object" && item !== null
+          ? transformDatabaseResponse(item)
+          : item
+      ) as T[keyof T];
+    } else if (
+      value &&
+      typeof value === "object" &&
+      value.constructor === Object
+    ) {
+      transformed[transformedKey as keyof T] = transformDatabaseResponse(value);
+    } else {
+      transformed[transformedKey as keyof T] = value;
+    }
   }
 
-  return createInternalErrorResponse();
-}
+  return transformed;
+};
+
+/**
+ * Transform common database field names to camelCase
+ */
+const transformFieldName = (fieldName: string): string => {
+  const fieldMap: Record<string, string> = {
+    // User fields
+    user_status: "userStatus",
+    email_verified: "emailVerified",
+    email_verified_at: "emailVerifiedAt",
+    first_name: "firstName",
+    last_name: "lastName",
+    created_at: "createdAt",
+    updated_at: "updatedAt",
+    last_login: "lastLogin",
+    last_logout: "lastLogout",
+
+    // Transaction fields
+    transaction_number: "transactionNumber",
+    customer_name: "customerName",
+    customer_email: "customerEmail",
+    customer_phone: "customerPhone",
+    payment_method: "paymentMethod",
+    payment_status: "paymentStatus",
+    total_amount: "totalAmount",
+    discount_amount: "discountAmount",
+    tax_amount: "taxAmount",
+
+    // Product fields
+    min_stock: "minStock",
+    max_stock: "maxStock",
+    category_id: "categoryId",
+    brand_id: "brandId",
+    supplier_id: "supplierId",
+
+    // Stock fields
+    system_count: "systemCount",
+    physical_count: "physicalCount",
+    discrepancy_reason: "discrepancyReason",
+
+    // Purchase order fields
+    order_number: "orderNumber",
+    order_date: "orderDate",
+
+    // Add more mappings as needed
+  };
+
+  return fieldMap[fieldName] || fieldName;
+};

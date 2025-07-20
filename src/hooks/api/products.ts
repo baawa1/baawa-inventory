@@ -1,5 +1,6 @@
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { queryKeys } from "@/lib/query-client";
+import { CACHE_DURATIONS } from "@/lib/constants";
 
 // Improved type definitions
 interface ProductVariantAttributes {
@@ -237,8 +238,8 @@ export function useProducts(
   return useQuery({
     queryKey: queryKeys.products.list({ filters, pagination }),
     queryFn: () => fetchProducts(filters, pagination),
-    staleTime: 2 * 60 * 1000, // 2 minutes
-    gcTime: 5 * 60 * 1000, // 5 minutes
+    staleTime: CACHE_DURATIONS.TRANSACTION_HISTORY, // 2 minutes
+    gcTime: CACHE_DURATIONS.PRODUCTS, // 5 minutes
     placeholderData: (previousData) => previousData, // Keep previous data while loading new page
   });
 }
@@ -248,8 +249,8 @@ export function useProduct(id: number) {
     queryKey: queryKeys.products.detail(id),
     queryFn: () => fetchProductById(id),
     enabled: !!id,
-    staleTime: 5 * 60 * 1000, // 5 minutes
-    gcTime: 10 * 60 * 1000, // 10 minutes
+    staleTime: CACHE_DURATIONS.QUERY_STALE_TIME, // 5 minutes
+    gcTime: CACHE_DURATIONS.QUERY_GC_TIME, // 10 minutes
   });
 }
 
@@ -259,8 +260,8 @@ export function useBrands(
   return useQuery({
     queryKey: queryKeys.brands.list(filters),
     queryFn: () => fetchBrands(filters),
-    staleTime: 5 * 60 * 1000, // 5 minutes
-    gcTime: 10 * 60 * 1000, // 10 minutes
+    staleTime: CACHE_DURATIONS.QUERY_STALE_TIME, // 5 minutes
+    gcTime: CACHE_DURATIONS.QUERY_GC_TIME, // 10 minutes
   });
 }
 
@@ -270,8 +271,8 @@ export function useCategories(
   return useQuery({
     queryKey: queryKeys.categories.list(filters),
     queryFn: () => fetchCategories(filters),
-    staleTime: 5 * 60 * 1000, // 5 minutes
-    gcTime: 10 * 60 * 1000, // 10 minutes
+    staleTime: CACHE_DURATIONS.QUERY_STALE_TIME, // 5 minutes
+    gcTime: CACHE_DURATIONS.QUERY_GC_TIME, // 10 minutes
   });
 }
 
@@ -282,8 +283,8 @@ export function useArchivedProducts(
   return useQuery({
     queryKey: queryKeys.products.archived({ filters, pagination }),
     queryFn: () => fetchArchivedProducts(filters, pagination),
-    staleTime: 2 * 60 * 1000, // 2 minutes
-    gcTime: 5 * 60 * 1000, // 5 minutes
+    staleTime: CACHE_DURATIONS.TRANSACTION_HISTORY, // 2 minutes
+    gcTime: CACHE_DURATIONS.PRODUCTS, // 5 minutes
   });
 }
 
