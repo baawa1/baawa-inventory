@@ -1,18 +1,12 @@
-import { auth } from "../../../../../auth";
 import { NextResponse } from "next/server";
+import { withAuth, AuthenticatedRequest } from "@/lib/api-middleware";
 import { canViewLowStock } from "@/lib/auth/roles";
 import { prisma } from "@/lib/db";
 
-export async function GET() {
+export const GET = withAuth(async (request: AuthenticatedRequest) => {
   try {
-    const session = await auth();
-
-    if (!session?.user) {
-      return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
-    }
-
     // Check if user has required permissions
-    if (!canViewLowStock(session.user.role)) {
+    if (!canViewLowStock(request.user.role)) {
       return NextResponse.json({ error: "Forbidden" }, { status: 403 });
     }
 
@@ -37,4 +31,4 @@ export async function GET() {
       { status: 500 }
     );
   }
-}
+});

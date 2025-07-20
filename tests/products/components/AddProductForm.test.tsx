@@ -12,36 +12,7 @@ jest.mock("next/navigation", () => ({
   }),
 }));
 
-// Mock the API hooks
-jest.mock("@/hooks/api/categories", () => ({
-  useCategories: () => ({
-    data: [
-      { id: 1, name: "Electronics" },
-      { id: 2, name: "Clothing" },
-    ],
-    isLoading: false,
-  }),
-}));
-
-jest.mock("@/hooks/api/brands", () => ({
-  useBrands: () => ({
-    data: [
-      { id: 1, name: "Samsung" },
-      { id: 2, name: "Apple" },
-    ],
-    isLoading: false,
-  }),
-}));
-
-jest.mock("@/hooks/api/suppliers", () => ({
-  useSuppliers: () => ({
-    data: [
-      { id: 1, name: "Supplier A" },
-      { id: 2, name: "Supplier B" },
-    ],
-    isLoading: false,
-  }),
-}));
+// Individual test file mocks removed - using global setup mocks instead
 
 // Mock fetch
 global.fetch = jest.fn();
