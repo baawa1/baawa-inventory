@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import { auth } from "../../../../../auth";
 import { prisma } from "@/lib/db";
+import { PAYMENT_STATUS } from "@/lib/constants";
 
 interface CustomerData {
   id: string;
@@ -34,7 +35,7 @@ export async function GET(_request: NextRequest) {
         customer_email: {
           not: null,
         },
-        payment_status: "paid",
+        payment_status: PAYMENT_STATUS.PAID,
       },
       _sum: {
         total_amount: true,

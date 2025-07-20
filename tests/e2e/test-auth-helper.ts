@@ -1,69 +1,92 @@
-import { test, expect } from "@playwright/test";
+import { test, expect, Page } from "@playwright/test";
+import { TEST_USERS } from "./test-user-helper";
 
 export interface TestUser {
   email: string;
+  firstName: string;
+  lastName: string;
+  password: string;
   role: string;
-  status: string;
-  isEmailVerified?: boolean;
+  userStatus: string;
+  emailVerified: boolean;
+  isActive: boolean;
 }
 
 export class TestAuthHelper {
   /**
-   * Set up a test user session by creating a mock session
+   * Log in a test user using the actual login form
    */
-  static async setupTestUser(page: any, user: TestUser): Promise<void> {
-    // Create a mock session that the middleware can read
-    await page.addInitScript((userData: TestUser) => {
-      // Mock the session data that would normally come from the server
-      const mockSession = {
-        user: {
-          email: userData.email,
-          role: userData.role,
-          status: userData.status,
-          isEmailVerified: userData.isEmailVerified ?? true,
-        },
-        expires: new Date(Date.now() + 24 * 60 * 60 * 1000).toISOString(), // 24 hours from now
-      };
+  static async loginUser(page: Page, user: TestUser): Promise<void> {
+    // Navigate to login page
+    await page.goto("/login");
 
-      // Store in sessionStorage to simulate server-side session
-      sessionStorage.setItem("auth-session", JSON.stringify(mockSession));
+    // Fill in login form
+    await page.fill('input[name="email"]', user.email);
+    await page.fill('input[name="password"]', user.password);
 
-      // Also store in localStorage for backward compatibility
-      localStorage.setItem("test-user-email", userData.email);
-      localStorage.setItem("test-user-status", userData.status);
-      localStorage.setItem("test-user-role", userData.role);
-      if (userData.isEmailVerified !== undefined) {
-        localStorage.setItem(
-          "test-user-email-verified",
-          userData.isEmailVerified.toString()
-        );
+    // Submit the form by clicking the submit button (not form.submit())
+    await page.click('button[type="submit"]');
+
+    // Wait for the form submission to complete
+    await page.waitForLoadState("networkidle");
+
+    // Wait for either a redirect or an error message
+    try {
+      await Promise.race([
+        page.waitForURL(/\/dashboard/, { timeout: 15000 }),
+        page.waitForURL(/\/pending-approval/, { timeout: 15000 }),
+        page.waitForURL(/\/unauthorized/, { timeout: 15000 }),
+        page.waitForURL(/\/check-email/, { timeout: 15000 }),
+        page.waitForSelector('[data-testid="login-error"]', { timeout: 15000 }),
+      ]);
+    } catch (error) {
+      console.log("⏰ No redirect detected, checking current URL...");
+    }
+
+    // Check if login was successful
+    const currentUrl = page.url();
+    if (currentUrl.includes("/login")) {
+      // Check for error messages
+      const errorElement = page.locator('[data-testid="login-error"]');
+      if (await errorElement.isVisible()) {
+        const errorText = await errorElement.textContent();
+        throw new Error(`Login failed: ${errorText}`);
       }
-    }, user);
 
-    // Navigate to a page to trigger the script
-    await page.goto("/");
+      // If still on login page without error, the login might still be processing
+      console.log("⚠️ Still on login page, waiting a bit more...");
+      await page.waitForTimeout(2000);
+
+      const finalUrl = page.url();
+      if (finalUrl.includes("/login")) {
+        throw new Error("Login failed: Still on login page after waiting");
+      }
+    }
+
+    console.log(`✅ Login successful, redirected to: ${page.url()}`);
   }
 
   /**
-   * Clear test user session
+   * Log out the current user
    */
-  static async clearTestUser(page: any): Promise<void> {
-    await page.addInitScript(() => {
-      sessionStorage.removeItem("auth-session");
-      localStorage.removeItem("test-user-email");
-      localStorage.removeItem("test-user-status");
-      localStorage.removeItem("test-user-role");
-      localStorage.removeItem("test-user-email-verified");
-    });
+  static async logoutUser(page: Page): Promise<void> {
+    await page.goto("/logout");
 
-    await page.goto("/");
+    // Wait for the logout page to load
+    await page.waitForLoadState("networkidle");
+
+    // Click the confirm logout button
+    await page.click('button:has-text("Confirm Logout")');
+
+    // Wait for logout to complete and redirect to login
+    await page.waitForURL(/\/login/, { timeout: 15000 });
   }
 
   /**
    * Verify user is redirected to expected page based on status
    */
   static async verifyUserAccess(
-    page: any,
+    page: Page,
     user: TestUser,
     expectedRedirect?: string
   ): Promise<void> {
@@ -74,13 +97,19 @@ export class TestAuthHelper {
       await expect(page).toHaveURL(expectedRedirect);
     } else {
       // Determine expected redirect based on user status
-      if (!user.isEmailVerified) {
-        await expect(page).toHaveURL("/verify-email");
-      } else if (user.status === "PENDING" || user.status === "VERIFIED") {
+      if (!user.emailVerified) {
+        await expect(page).toHaveURL("/check-email");
+      } else if (
+        user.userStatus === "PENDING" ||
+        user.userStatus === "VERIFIED"
+      ) {
         await expect(page).toHaveURL("/pending-approval");
-      } else if (user.status === "REJECTED" || user.status === "SUSPENDED") {
+      } else if (
+        user.userStatus === "REJECTED" ||
+        user.userStatus === "SUSPENDED"
+      ) {
         await expect(page).toHaveURL("/unauthorized");
-      } else if (user.status === "APPROVED") {
+      } else if (user.userStatus === "APPROVED") {
         await expect(page).toHaveURL("/dashboard");
       }
     }
@@ -90,7 +119,7 @@ export class TestAuthHelper {
    * Test user access to specific routes
    */
   static async testRouteAccess(
-    page: any,
+    page: Page,
     user: TestUser,
     route: string,
     shouldAllow: boolean
@@ -101,67 +130,101 @@ export class TestAuthHelper {
       await expect(page).toHaveURL(route);
     } else {
       // Should be redirected based on user status
-      if (!user.isEmailVerified) {
-        await expect(page).toHaveURL("/verify-email");
-      } else if (user.status === "PENDING" || user.status === "VERIFIED") {
+      if (!user.emailVerified) {
+        await expect(page).toHaveURL("/check-email");
+      } else if (
+        user.userStatus === "PENDING" ||
+        user.userStatus === "VERIFIED"
+      ) {
         await expect(page).toHaveURL("/pending-approval");
-      } else if (user.status === "REJECTED" || user.status === "SUSPENDED") {
+      } else if (
+        user.userStatus === "REJECTED" ||
+        user.userStatus === "SUSPENDED"
+      ) {
         await expect(page).toHaveURL("/unauthorized");
       }
     }
   }
 
   /**
-   * Common test user configurations
+   * Test that a user can access the dashboard (for approved users)
    */
-  static readonly TEST_USERS = {
-    ADMIN_APPROVED: {
-      email: "admin@test.com",
-      role: "ADMIN",
-      status: "APPROVED",
-      isEmailVerified: true,
-    },
-    MANAGER_APPROVED: {
-      email: "manager@test.com",
-      role: "MANAGER",
-      status: "APPROVED",
-      isEmailVerified: true,
-    },
-    STAFF_APPROVED: {
-      email: "staff@test.com",
-      role: "STAFF",
-      status: "APPROVED",
-      isEmailVerified: true,
-    },
-    VERIFIED_UNAPPROVED: {
-      email: "verified@test.com",
-      role: "STAFF",
-      status: "VERIFIED",
-      isEmailVerified: true,
-    },
-    PENDING: {
-      email: "pending@test.com",
-      role: "STAFF",
-      status: "PENDING",
-      isEmailVerified: true,
-    },
-    UNVERIFIED: {
-      email: "unverified@test.com",
-      role: "STAFF",
-      status: "PENDING",
-      isEmailVerified: false,
-    },
-    REJECTED: {
-      email: "rejected@test.com",
-      role: "STAFF",
-      status: "REJECTED",
-      isEmailVerified: true,
-    },
-    SUSPENDED: {
-      email: "suspended@test.com",
-      role: "STAFF",
-      status: "SUSPENDED",
-      isEmailVerified: true,
-    },
-  };
+  static async testDashboardAccess(page: Page, user: TestUser): Promise<void> {
+    await page.goto("/dashboard");
+
+    if (user.userStatus === "APPROVED") {
+      await expect(page).toHaveURL("/dashboard");
+      await expect(page).not.toHaveURL("/unauthorized");
+      await expect(page).not.toHaveURL("/pending-approval");
+    } else {
+      // Should be redirected based on status
+      this.verifyUserAccess(page, user);
+    }
+  }
+
+  /**
+   * Test that a user is redirected from pending-approval page (for approved users)
+   */
+  static async testPendingApprovalRedirect(
+    page: Page,
+    user: TestUser
+  ): Promise<void> {
+    await page.goto("/pending-approval");
+
+    if (user.userStatus === "APPROVED") {
+      await expect(page).toHaveURL("/dashboard");
+    } else if (
+      user.userStatus === "PENDING" ||
+      user.userStatus === "VERIFIED"
+    ) {
+      await expect(page).toHaveURL("/pending-approval");
+    } else {
+      await expect(page).toHaveURL("/unauthorized");
+    }
+  }
+
+  /**
+   * Test that public routes are accessible without authentication
+   */
+  static async testPublicRoutes(page: Page): Promise<void> {
+    const publicRoutes = [
+      "/",
+      "/login",
+      "/register",
+      "/forgot-password",
+      "/check-email",
+      "/verify-email",
+      "/pending-approval",
+      "/unauthorized",
+    ];
+
+    for (const route of publicRoutes) {
+      await page.goto(route);
+      expect(page.url()).toContain(route);
+      console.log(`✅ Public route ${route} accessible`);
+    }
+  }
+
+  /**
+   * Test that protected routes redirect to login when not authenticated
+   */
+  static async testProtectedRoutesRedirect(page: Page): Promise<void> {
+    const protectedRoutes = ["/dashboard", "/pos", "/inventory", "/admin"];
+
+    for (const route of protectedRoutes) {
+      await page.goto(route);
+      await page.waitForURL(/\/login/, { timeout: 5000 });
+      expect(page.url()).toContain("/login");
+      console.log(
+        `✅ Protected route ${route} redirects to login when not authenticated`
+      );
+    }
+  }
+
+  /**
+   * Get test users from the test-user-helper
+   */
+  static getTestUsers() {
+    return TEST_USERS;
+  }
 }

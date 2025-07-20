@@ -46,7 +46,7 @@ interface StockHistoryListProps {
   };
 }
 
-export function StockHistoryList({ user: _user }: StockHistoryListProps) {
+export function StockHistoryList({ user: _ }: StockHistoryListProps) {
   const [searchTerm, setSearchTerm] = useState("");
   const [sortBy, setSortBy] = useState("createdAt");
   const [sortOrder, setSortOrder] = useState<"asc" | "desc">("desc");

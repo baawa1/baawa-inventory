@@ -4,7 +4,7 @@ import { auth } from "../../../../auth";
 import { prisma } from "@/lib/db";
 
 // Mock dependencies
-jest.mock("../../../../auth");
+jest.mock("@/auth");
 jest.mock("@/lib/db");
 jest.mock("@/lib/logger");
 jest.mock("@/lib/security-headers");

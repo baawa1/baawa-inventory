@@ -65,7 +65,7 @@ async function fetchSalesOverview(period: string): Promise<SalesOverview> {
   return response.json();
 }
 
-export function SalesAnalytics({ user: _user }: SalesAnalyticsProps) {
+export function SalesAnalytics({ user: _ }: SalesAnalyticsProps) {
   const [selectedPeriod, setSelectedPeriod] = useState("7d");
 
   const {

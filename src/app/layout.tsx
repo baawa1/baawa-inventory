@@ -4,7 +4,7 @@ import "./globals.css";
 
 import { QueryProvider } from "@/components/providers/QueryProvider";
 import { SessionProvider } from "@/components/providers/SessionProvider";
-import { SessionMonitor } from "@/components/providers/SessionMonitor";
+// import { SessionMonitor } from "@/components/providers/SessionMonitor";
 import { ThemeProvider } from "@/components/theme-provider";
 import { Toaster } from "@/components/ui/sonner";
 import { PWAManager } from "@/components/pwa/PWAManager";
@@ -95,7 +95,7 @@ export default function RootLayout({
         >
           <SessionProvider>
             <QueryProvider>
-              <SessionMonitor />
+              {/* <SessionMonitor /> */}
               {children}
               <PWAManager />
               <Toaster />

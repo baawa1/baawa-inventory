@@ -15,8 +15,6 @@ import {
   IconFileAnalytics,
   IconDownload,
   IconCalendar,
-  IconTrendingUp,
-  IconTrendingDown,
   IconUsers,
   IconCurrencyNaira,
   IconFileText,
@@ -122,28 +120,6 @@ export function BusinessReports() {
     // Implementation for report download
   };
 
-  const getTrendIcon = (trend: string) => {
-    switch (trend) {
-      case "up":
-        return <IconTrendingUp className="h-4 w-4 text-green-600" />;
-      case "down":
-        return <IconTrendingDown className="h-4 w-4 text-red-600" />;
-      default:
-        return <IconTrendingUp className="h-4 w-4 text-gray-600" />;
-    }
-  };
-
-  const getTrendColor = (trend: string) => {
-    switch (trend) {
-      case "up":
-        return "text-green-600";
-      case "down":
-        return "text-red-600";
-      default:
-        return "text-gray-600";
-    }
-  };
-
   const getStatusBadge = (status: string) => {
     switch (status) {
       case "ready":
@@ -212,39 +188,132 @@ export function BusinessReports() {
         </div>
       </div>
 
-      {/* Key Metrics */}
-      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
-        {metrics.map((metric, index) => (
-          <Card key={index}>
-            <CardContent className="p-6">
-              <div className="flex items-center justify-between">
-                <div className="space-y-1">
-                  <p className="text-sm font-medium text-muted-foreground">
-                    {metric.title}
-                  </p>
-                  <p className="text-2xl font-bold">{metric.value}</p>
-                </div>
-                <div className={`p-2 rounded-lg bg-muted/30 ${metric.color}`}>
-                  {metric.icon}
-                </div>
+      {/* Key Metrics - Beautiful Gradient Cards */}
+      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
+        {/* Total Revenue Card */}
+        <Card className="relative overflow-hidden border-0 bg-gradient-to-br from-green-50 to-green-100 dark:from-green-950 dark:to-green-900 hover:shadow-lg transition-all duration-300 group">
+          <div className="absolute top-0 right-0 w-20 h-20 bg-green-200/50 dark:bg-green-800/50 rounded-full -translate-y-10 translate-x-10"></div>
+          <CardHeader className="pb-3">
+            <CardTitle className="text-sm font-medium text-green-700 dark:text-green-300 flex items-center gap-3">
+              <div className="p-2 bg-green-100 dark:bg-green-800 rounded-lg group-hover:scale-110 transition-transform duration-300">
+                <IconCurrencyNaira className="h-5 w-5 text-green-600 dark:text-green-400" />
               </div>
-              <div className="flex items-center gap-1 mt-4">
-                {getTrendIcon(metric.trend)}
-                <span
-                  className={`text-sm font-medium ${getTrendColor(
-                    metric.trend
-                  )}`}
-                >
-                  {metric.change > 0 ? "+" : ""}
-                  {metric.change}%
-                </span>
-                <span className="text-sm text-muted-foreground">
-                  from last period
-                </span>
+              Total Revenue
+            </CardTitle>
+          </CardHeader>
+          <CardContent>
+            <div className="flex items-end gap-3">
+              <div className="text-3xl font-bold text-green-600 dark:text-green-400">
+                {metrics[0].value}
               </div>
-            </CardContent>
-          </Card>
-        ))}
+              <div className="text-xs text-green-600/70 dark:text-green-400/70 mb-1">
+                +{metrics[0].change}% growth
+              </div>
+            </div>
+            <div className="w-full bg-green-200 dark:bg-green-800 rounded-full h-2 mt-3">
+              <div
+                className="bg-green-600 dark:bg-green-400 h-2 rounded-full transition-all duration-500"
+                style={{
+                  width: `${Math.min(metrics[0].change, 100)}%`,
+                }}
+              ></div>
+            </div>
+          </CardContent>
+        </Card>
+
+        {/* Active Users Card */}
+        <Card className="relative overflow-hidden border-0 bg-gradient-to-br from-blue-50 to-blue-100 dark:from-blue-950 dark:to-blue-900 hover:shadow-lg transition-all duration-300 group">
+          <div className="absolute top-0 right-0 w-20 h-20 bg-blue-200/50 dark:bg-blue-800/50 rounded-full -translate-y-10 translate-x-10"></div>
+          <CardHeader className="pb-3">
+            <CardTitle className="text-sm font-medium text-blue-700 dark:text-blue-300 flex items-center gap-3">
+              <div className="p-2 bg-blue-100 dark:bg-blue-800 rounded-lg group-hover:scale-110 transition-transform duration-300">
+                <IconUsers className="h-5 w-5 text-blue-600 dark:text-blue-400" />
+              </div>
+              Active Users
+            </CardTitle>
+          </CardHeader>
+          <CardContent>
+            <div className="flex items-end gap-3">
+              <div className="text-3xl font-bold text-blue-600 dark:text-blue-400">
+                {metrics[1].value}
+              </div>
+              <div className="text-xs text-blue-600/70 dark:text-blue-400/70 mb-1">
+                +{metrics[1].change}% growth
+              </div>
+            </div>
+            <div className="w-full bg-blue-200 dark:bg-blue-800 rounded-full h-2 mt-3">
+              <div
+                className="bg-blue-600 dark:bg-blue-400 h-2 rounded-full transition-all duration-500"
+                style={{
+                  width: `${Math.min(metrics[1].change, 100)}%`,
+                }}
+              ></div>
+            </div>
+          </CardContent>
+        </Card>
+
+        {/* New Registrations Card */}
+        <Card className="relative overflow-hidden border-0 bg-gradient-to-br from-purple-50 to-purple-100 dark:from-purple-950 dark:to-purple-900 hover:shadow-lg transition-all duration-300 group">
+          <div className="absolute top-0 right-0 w-20 h-20 bg-purple-200/50 dark:bg-purple-800/50 rounded-full -translate-y-10 translate-x-10"></div>
+          <CardHeader className="pb-3">
+            <CardTitle className="text-sm font-medium text-purple-700 dark:text-purple-300 flex items-center gap-3">
+              <div className="p-2 bg-purple-100 dark:bg-purple-800 rounded-lg group-hover:scale-110 transition-transform duration-300">
+                <IconUsers className="h-5 w-5 text-purple-600 dark:text-purple-400" />
+              </div>
+              New Registrations
+            </CardTitle>
+          </CardHeader>
+          <CardContent>
+            <div className="flex items-end gap-3">
+              <div className="text-3xl font-bold text-purple-600 dark:text-purple-400">
+                {metrics[2].value}
+              </div>
+              <div className="text-xs text-purple-600/70 dark:text-purple-400/70 mb-1">
+                {metrics[2].change > 0 ? "+" : ""}
+                {metrics[2].change}% change
+              </div>
+            </div>
+            <div className="w-full bg-purple-200 dark:bg-purple-800 rounded-full h-2 mt-3">
+              <div
+                className="bg-purple-600 dark:bg-purple-400 h-2 rounded-full transition-all duration-500"
+                style={{
+                  width: `${Math.min(Math.abs(metrics[2].change), 100)}%`,
+                }}
+              ></div>
+            </div>
+          </CardContent>
+        </Card>
+
+        {/* System Health Card */}
+        <Card className="relative overflow-hidden border-0 bg-gradient-to-br from-orange-50 to-orange-100 dark:from-orange-950 dark:to-orange-900 hover:shadow-lg transition-all duration-300 group">
+          <div className="absolute top-0 right-0 w-20 h-20 bg-orange-200/50 dark:bg-orange-800/50 rounded-full -translate-y-10 translate-x-10"></div>
+          <CardHeader className="pb-3">
+            <CardTitle className="text-sm font-medium text-orange-700 dark:text-orange-300 flex items-center gap-3">
+              <div className="p-2 bg-orange-100 dark:bg-orange-800 rounded-lg group-hover:scale-110 transition-transform duration-300">
+                <IconDatabase className="h-5 w-5 text-orange-600 dark:text-orange-400" />
+              </div>
+              System Health
+            </CardTitle>
+          </CardHeader>
+          <CardContent>
+            <div className="flex items-end gap-3">
+              <div className="text-3xl font-bold text-orange-600 dark:text-orange-400">
+                {metrics[3].value}
+              </div>
+              <div className="text-xs text-orange-600/70 dark:text-orange-400/70 mb-1">
+                +{metrics[3].change}% improvement
+              </div>
+            </div>
+            <div className="w-full bg-orange-200 dark:bg-orange-800 rounded-full h-2 mt-3">
+              <div
+                className="bg-orange-600 dark:bg-orange-400 h-2 rounded-full transition-all duration-500"
+                style={{
+                  width: `${Math.min(metrics[3].change * 20, 100)}%`,
+                }}
+              ></div>
+            </div>
+          </CardContent>
+        </Card>
       </div>
 
       {/* Available Reports */}

@@ -245,52 +245,113 @@ export function SystemHealth() {
         </div>
       </div>
 
-      {/* System Overview */}
-      <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
-        <Card>
-          <CardContent className="p-4">
-            <div className="flex items-center gap-2">
-              <IconServer className="h-5 w-5 text-green-600" />
-              <div>
-                <p className="text-sm font-medium">System Status</p>
-                <p className="text-lg font-bold text-green-600">Healthy</p>
+      {/* System Overview - Beautiful Gradient Cards */}
+      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
+        {/* System Status Card */}
+        <Card className="relative overflow-hidden border-0 bg-gradient-to-br from-green-50 to-green-100 dark:from-green-950 dark:to-green-900 hover:shadow-lg transition-all duration-300 group">
+          <div className="absolute top-0 right-0 w-20 h-20 bg-green-200/50 dark:bg-green-800/50 rounded-full -translate-y-10 translate-x-10"></div>
+          <CardHeader className="pb-3">
+            <CardTitle className="text-sm font-medium text-green-700 dark:text-green-300 flex items-center gap-3">
+              <div className="p-2 bg-green-100 dark:bg-green-800 rounded-lg group-hover:scale-110 transition-transform duration-300">
+                <IconServer className="h-5 w-5 text-green-600 dark:text-green-400" />
               </div>
+              System Status
+            </CardTitle>
+          </CardHeader>
+          <CardContent>
+            <div className="flex items-center gap-3">
+              <div className="flex items-center gap-2">
+                <div className="w-3 h-3 bg-green-500 rounded-full animate-pulse"></div>
+                <span className="text-lg font-semibold text-green-600 dark:text-green-400">
+                  Healthy
+                </span>
+              </div>
+            </div>
+            <div className="text-xs text-green-600/70 dark:text-green-400/70 mt-3">
+              All systems operational
             </div>
           </CardContent>
         </Card>
 
-        <Card>
-          <CardContent className="p-4">
-            <div className="flex items-center gap-2">
-              <IconClock className="h-5 w-5 text-blue-600" />
-              <div>
-                <p className="text-sm font-medium">Uptime</p>
-                <p className="text-lg font-bold text-blue-600">99.9%</p>
+        {/* Uptime Card */}
+        <Card className="relative overflow-hidden border-0 bg-gradient-to-br from-blue-50 to-blue-100 dark:from-blue-950 dark:to-blue-900 hover:shadow-lg transition-all duration-300 group">
+          <div className="absolute top-0 right-0 w-20 h-20 bg-blue-200/50 dark:bg-blue-800/50 rounded-full -translate-y-10 translate-x-10"></div>
+          <CardHeader className="pb-3">
+            <CardTitle className="text-sm font-medium text-blue-700 dark:text-blue-300 flex items-center gap-3">
+              <div className="p-2 bg-blue-100 dark:bg-blue-800 rounded-lg group-hover:scale-110 transition-transform duration-300">
+                <IconClock className="h-5 w-5 text-blue-600 dark:text-blue-400" />
               </div>
+              Uptime
+            </CardTitle>
+          </CardHeader>
+          <CardContent>
+            <div className="flex items-end gap-3">
+              <div className="text-3xl font-bold text-blue-600 dark:text-blue-400">
+                99.9%
+              </div>
+              <div className="text-xs text-blue-600/70 dark:text-blue-400/70 mb-1">
+                last 30 days
+              </div>
+            </div>
+            <div className="w-full bg-blue-200 dark:bg-blue-800 rounded-full h-2 mt-3">
+              <div
+                className="bg-blue-600 dark:bg-blue-400 h-2 rounded-full transition-all duration-500"
+                style={{
+                  width: "99.9%",
+                }}
+              ></div>
             </div>
           </CardContent>
         </Card>
 
-        <Card>
-          <CardContent className="p-4">
-            <div className="flex items-center gap-2">
-              <IconShield className="h-5 w-5 text-purple-600" />
-              <div>
-                <p className="text-sm font-medium">Security</p>
-                <p className="text-lg font-bold text-purple-600">Secure</p>
+        {/* Security Card */}
+        <Card className="relative overflow-hidden border-0 bg-gradient-to-br from-purple-50 to-purple-100 dark:from-purple-950 dark:to-purple-900 hover:shadow-lg transition-all duration-300 group">
+          <div className="absolute top-0 right-0 w-20 h-20 bg-purple-200/50 dark:bg-purple-800/50 rounded-full -translate-y-10 translate-x-10"></div>
+          <CardHeader className="pb-3">
+            <CardTitle className="text-sm font-medium text-purple-700 dark:text-purple-300 flex items-center gap-3">
+              <div className="p-2 bg-purple-100 dark:bg-purple-800 rounded-lg group-hover:scale-110 transition-transform duration-300">
+                <IconShield className="h-5 w-5 text-purple-600 dark:text-purple-400" />
               </div>
+              Security
+            </CardTitle>
+          </CardHeader>
+          <CardContent>
+            <div className="flex items-center gap-3">
+              <div className="flex items-center gap-2">
+                <div className="w-3 h-3 bg-purple-500 rounded-full animate-pulse"></div>
+                <span className="text-lg font-semibold text-purple-600 dark:text-purple-400">
+                  Secure
+                </span>
+              </div>
+            </div>
+            <div className="text-xs text-purple-600/70 dark:text-purple-400/70 mt-3">
+              No security threats detected
             </div>
           </CardContent>
         </Card>
 
-        <Card>
-          <CardContent className="p-4">
-            <div className="flex items-center gap-2">
-              <IconWifi className="h-5 w-5 text-orange-600" />
-              <div>
-                <p className="text-sm font-medium">Connectivity</p>
-                <p className="text-lg font-bold text-orange-600">Stable</p>
+        {/* Connectivity Card */}
+        <Card className="relative overflow-hidden border-0 bg-gradient-to-br from-orange-50 to-orange-100 dark:from-orange-950 dark:to-orange-900 hover:shadow-lg transition-all duration-300 group">
+          <div className="absolute top-0 right-0 w-20 h-20 bg-orange-200/50 dark:bg-orange-800/50 rounded-full -translate-y-10 translate-x-10"></div>
+          <CardHeader className="pb-3">
+            <CardTitle className="text-sm font-medium text-orange-700 dark:text-orange-300 flex items-center gap-3">
+              <div className="p-2 bg-orange-100 dark:bg-orange-800 rounded-lg group-hover:scale-110 transition-transform duration-300">
+                <IconWifi className="h-5 w-5 text-orange-600 dark:text-orange-400" />
               </div>
+              Connectivity
+            </CardTitle>
+          </CardHeader>
+          <CardContent>
+            <div className="flex items-center gap-3">
+              <div className="flex items-center gap-2">
+                <div className="w-3 h-3 bg-orange-500 rounded-full animate-pulse"></div>
+                <span className="text-lg font-semibold text-orange-600 dark:text-orange-400">
+                  Stable
+                </span>
+              </div>
+            </div>
+            <div className="text-xs text-orange-600/70 dark:text-orange-400/70 mt-3">
+              Network performance optimal
             </div>
           </CardContent>
         </Card>

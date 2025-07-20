@@ -68,7 +68,7 @@ async function fetchCategoryPerformance(
   return response.json();
 }
 
-export function CategoryAnalytics({ user: _user }: CategoryAnalyticsProps) {
+export function CategoryAnalytics({ user: _ }: CategoryAnalyticsProps) {
   const [selectedPeriod, setSelectedPeriod] = useState("30d");
 
   const {

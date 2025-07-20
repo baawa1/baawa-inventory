@@ -18,9 +18,6 @@ import {
 } from "@/components/ui/dialog";
 import {
   IconCash,
-  IconCreditCard,
-  IconBuilding,
-  IconWallet,
   IconPercentage,
   IconMinus,
   IconUser,
@@ -30,6 +27,7 @@ import {
 import { toast } from "sonner";
 import { usePOSErrorHandler } from "./POSErrorBoundary";
 import { formatCurrency } from "@/lib/utils";
+import { PAYMENT_METHODS_UI } from "@/lib/constants/ui";
 
 export interface CartItem {
   id: number;
@@ -77,12 +75,7 @@ interface PaymentInterfaceProps {
   }) => void;
 }
 
-const PAYMENT_METHODS = [
-  { value: "cash", label: "Cash", icon: IconCash },
-  { value: "pos", label: "POS Machine", icon: IconCreditCard },
-  { value: "bank_transfer", label: "Bank Transfer", icon: IconBuilding },
-  { value: "mobile_money", label: "Mobile Money", icon: IconWallet },
-];
+const PAYMENT_METHODS = PAYMENT_METHODS_UI;
 
 export function PaymentInterface({
   items,

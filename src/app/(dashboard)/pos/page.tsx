@@ -1,6 +1,7 @@
 import { redirect } from "next/navigation";
 import { auth } from "../../../../auth";
 import { POSInterface } from "@/components/pos/POSInterface";
+import { ALL_ROLES } from "@/lib/auth/roles";
 
 export default async function POSPage() {
   const session = await auth();
@@ -10,7 +11,7 @@ export default async function POSPage() {
   }
 
   // Check role permissions - all authenticated users can access POS
-  if (!["ADMIN", "MANAGER", "STAFF"].includes(session.user.role)) {
+  if (!ALL_ROLES.includes(session.user.role as any)) {
     redirect("/unauthorized");
   }
 

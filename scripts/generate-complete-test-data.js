@@ -265,7 +265,13 @@ const states = [
   "Delta",
 ];
 
-const paymentMethods = ["Cash", "Card", "Transfer", "Mobile Money"];
+const paymentMethods = [
+  "CASH",
+  "BANK_TRANSFER",
+  "POS_MACHINE",
+  "CREDIT_CARD",
+  "MOBILE_MONEY",
+];
 const transactionTypes = ["sale", "refund", "exchange"];
 const paymentStatuses = ["pending", "completed", "failed", "refunded"];
 const orderStatuses = [
@@ -1125,42 +1131,38 @@ async function seedAIContent(users, products) {
   return aiContents;
 }
 
-async function seedWebflowSync(products) {
-  console.log("Seeding Webflow sync...");
+async function seedContentSync(products) {
+  console.log("Seeding Content sync...");
 
-  const webflowSyncs = [];
-  const syncStatuses = ["pending", "synced", "failed", "error"];
+  const contentSyncs = [];
+  const syncStatuses = ["pending", "synced", "failed"];
 
   for (let i = 0; i < 20; i++) {
     const product = randomElement(products);
     const syncStatus = randomElement(syncStatuses);
 
-    const webflowSync = await prisma.webflow_sync.create({
+    const contentSync = await prisma.contentSync.create({
       data: {
-        product_id: product.id,
-        webflow_item_id:
-          syncStatus === "synced"
-            ? `webflow_${randomNumber(10000, 99999)}`
-            : null,
+        entity_type: "product",
+        entity_id: product.id,
         sync_status: syncStatus,
         last_sync_at:
           syncStatus === "synced"
             ? new Date(Date.now() - randomNumber(1, 30) * 24 * 60 * 60 * 1000)
             : null,
         sync_errors: syncStatus === "failed" ? "Connection timeout" : null,
-        webflow_url:
+        retry_count: syncStatus === "failed" ? randomNumber(1, 3) : 0,
+        webhook_url:
           syncStatus === "synced"
-            ? `https://webflow.com/item/${randomNumber(10000, 99999)}`
+            ? `https://webhook.site/${randomNumber(10000, 99999)}`
             : null,
-        is_published: syncStatus === "synced" ? Math.random() > 0.3 : false,
-        auto_sync: Math.random() > 0.2,
       },
     });
-    webflowSyncs.push(webflowSync);
+    contentSyncs.push(contentSync);
   }
 
-  console.log(`Created ${webflowSyncs.length} Webflow sync records`);
-  return webflowSyncs;
+  console.log(`Created ${contentSyncs.length} Content sync records`);
+  return contentSyncs;
 }
 
 async function seedRateLimits() {
@@ -1246,7 +1248,7 @@ async function main() {
     );
     const auditLogs = await seedAuditLogs(users);
     const aiContents = await seedAIContent(users, products);
-    const webflowSyncs = await seedWebflowSync(products);
+    const _contentSyncs = await seedContentSync(products);
     const rateLimits = await seedRateLimits();
     const sessionBlacklists = await seedSessionBlacklist(users);
 

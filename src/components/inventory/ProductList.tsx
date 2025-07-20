@@ -12,6 +12,9 @@ import { useBrands } from "@/hooks/api/brands";
 import { useCategoriesWithHierarchy } from "@/hooks/api/categories";
 import { useSyncEntity, useSyncAllEntities } from "@/hooks/api/useWebhookSync";
 
+// Constants
+import { ALL_ROLES } from "@/lib/auth/roles";
+
 // UI Components
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
@@ -187,7 +190,7 @@ const ProductList = ({ user }: ProductListProps) => {
   const categories = categoriesQuery.data?.data || [];
 
   const canManageProducts = ["ADMIN", "MANAGER"].includes(user.role);
-  const canEditProducts = ["ADMIN", "MANAGER", "STAFF"].includes(user.role);
+  const canEditProducts = ALL_ROLES.includes(user.role as any);
 
   // Memoize category options to prevent unnecessary re-renders
   const categoryOptions = useMemo(

@@ -94,7 +94,7 @@ async function fetchCustomerPurchases(
   return response.json();
 }
 
-export function CustomerLeaderboard({ user: _user }: CustomerLeaderboardProps) {
+export function CustomerLeaderboard({ user: _ }: CustomerLeaderboardProps) {
   const [searchTerm, setSearchTerm] = useState("");
   const [sortBy, setSortBy] = useState<
     "totalSpent" | "totalOrders" | "lastPurchase"

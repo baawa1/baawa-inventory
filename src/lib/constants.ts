@@ -3,6 +3,14 @@
  * Centralized constants to prevent magic strings and inconsistencies
  */
 
+import { USER_ROLES } from "@/lib/auth/roles";
+import {
+  IconCash,
+  IconCreditCard,
+  IconBuilding,
+  IconWallet,
+} from "@tabler/icons-react";
+
 // User Status Constants (must match database schema)
 export const USER_STATUS = {
   PENDING: "PENDING",
@@ -36,6 +44,35 @@ export type PaymentMethod =
 export const ALL_PAYMENT_METHODS: PaymentMethod[] =
   Object.values(PAYMENT_METHODS);
 
+// Payment Methods with UI data (for components)
+export const PAYMENT_METHODS_UI = [
+  { value: PAYMENT_METHODS.CASH, label: "Cash", icon: IconCash },
+  { value: PAYMENT_METHODS.POS, label: "POS Machine", icon: IconCreditCard },
+  {
+    value: PAYMENT_METHODS.BANK_TRANSFER,
+    label: "Bank Transfer",
+    icon: IconBuilding,
+  },
+  {
+    value: PAYMENT_METHODS.MOBILE_MONEY,
+    label: "Mobile Money",
+    icon: IconWallet,
+  },
+] as const;
+
+// Payment Status Constants (must match database schema)
+export const PAYMENT_STATUS = {
+  PENDING: "pending",
+  PAID: "paid",
+  COMPLETED: "completed",
+  FAILED: "failed",
+  REFUNDED: "refunded",
+  CANCELLED: "cancelled",
+} as const;
+
+export type PaymentStatus =
+  (typeof PAYMENT_STATUS)[keyof typeof PAYMENT_STATUS];
+
 // Product Status Constants
 export const PRODUCT_STATUS = {
   ACTIVE: "active",
@@ -66,6 +103,16 @@ export const STOCK_ADJUSTMENT_TYPES = {
 
 export type StockAdjustmentType =
   (typeof STOCK_ADJUSTMENT_TYPES)[keyof typeof STOCK_ADJUSTMENT_TYPES];
+
+// Stock Adjustment Status Constants
+export const STOCK_ADJUSTMENT_STATUS = {
+  PENDING: "PENDING",
+  APPROVED: "APPROVED",
+  REJECTED: "REJECTED",
+} as const;
+
+export type StockAdjustmentStatus =
+  (typeof STOCK_ADJUSTMENT_STATUS)[keyof typeof STOCK_ADJUSTMENT_STATUS];
 
 // API Response Limits
 export const API_LIMITS = {
@@ -170,14 +217,7 @@ export const SUCCESS_MESSAGES = {
   DATA_SYNCED: "Data synchronized successfully",
 } as const;
 
-// User Role Constants (must match Prisma enum)
-export const USER_ROLES = {
-  ADMIN: "ADMIN",
-  MANAGER: "MANAGER",
-  STAFF: "STAFF",
-} as const;
-
-export type UserRole = (typeof USER_ROLES)[keyof typeof USER_ROLES];
+// Note: User Role Constants are defined in @/lib/auth/roles.ts
 
 // Default Values
 export const DEFAULTS = {

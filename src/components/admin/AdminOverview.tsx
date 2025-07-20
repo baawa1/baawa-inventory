@@ -4,7 +4,6 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import {
-  IconTrendingUp,
   IconUsers,
   IconPackages,
   IconShoppingCart,
@@ -12,8 +11,8 @@ import {
   IconChartLine,
   IconAlertTriangle,
   IconArrowRight,
-  IconCalendar,
   IconActivity,
+  IconDatabase,
 } from "@tabler/icons-react";
 import { useActiveUsers, usePendingUsers } from "@/hooks/api/users";
 import { formatCurrency } from "@/lib/utils";
@@ -134,85 +133,150 @@ export function AdminOverview() {
 
   return (
     <div className="space-y-6">
-      {/* Key Metrics Grid */}
-      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
-        {/* Total Users */}
-        <Card>
-          <CardHeader className="pb-2">
-            <CardTitle className="text-sm font-medium flex items-center justify-between">
-              <span className="flex items-center gap-2">
-                <IconUsers className="h-4 w-4" />
-                Total Users
-              </span>
-              <IconTrendingUp className="h-4 w-4 text-green-600" />
+      {/* Key Metrics Grid - Beautiful Gradient Cards */}
+      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
+        {/* Total Users Card */}
+        <Card className="relative overflow-hidden border-0 bg-gradient-to-br from-blue-50 to-blue-100 dark:from-blue-950 dark:to-blue-900 hover:shadow-lg transition-all duration-300 group">
+          <div className="absolute top-0 right-0 w-20 h-20 bg-blue-200/50 dark:bg-blue-800/50 rounded-full -translate-y-10 translate-x-10"></div>
+          <CardHeader className="pb-3">
+            <CardTitle className="text-sm font-medium text-blue-700 dark:text-blue-300 flex items-center gap-3">
+              <div className="p-2 bg-blue-100 dark:bg-blue-800 rounded-lg group-hover:scale-110 transition-transform duration-300">
+                <IconUsers className="h-5 w-5 text-blue-600 dark:text-blue-400" />
+              </div>
+              Total Users
             </CardTitle>
           </CardHeader>
           <CardContent>
-            <div className="text-2xl font-bold">{systemMetrics.totalUsers}</div>
-            <p className="text-xs text-muted-foreground">
-              +{systemMetrics.newUsersToday} new today
-            </p>
+            <div className="flex items-end gap-3">
+              <div className="text-3xl font-bold text-blue-600 dark:text-blue-400">
+                {systemMetrics.totalUsers}
+              </div>
+              <div className="text-xs text-blue-600/70 dark:text-blue-400/70 mb-1">
+                +{systemMetrics.newUsersToday} new today
+              </div>
+            </div>
+            <div className="w-full bg-blue-200 dark:bg-blue-800 rounded-full h-2 mt-3">
+              <div
+                className="bg-blue-600 dark:bg-blue-400 h-2 rounded-full transition-all duration-500"
+                style={{
+                  width: `${Math.min((systemMetrics.newUsersToday / 10) * 100, 100)}%`,
+                }}
+              ></div>
+            </div>
           </CardContent>
         </Card>
 
-        {/* Total Products */}
-        <Card>
-          <CardHeader className="pb-2">
-            <CardTitle className="text-sm font-medium flex items-center justify-between">
-              <span className="flex items-center gap-2">
-                <IconPackages className="h-4 w-4" />
-                Total Products
-              </span>
-              <IconTrendingUp className="h-4 w-4 text-green-600" />
+        {/* Total Products Card */}
+        <Card className="relative overflow-hidden border-0 bg-gradient-to-br from-green-50 to-green-100 dark:from-green-950 dark:to-green-900 hover:shadow-lg transition-all duration-300 group">
+          <div className="absolute top-0 right-0 w-20 h-20 bg-green-200/50 dark:bg-green-800/50 rounded-full -translate-y-10 translate-x-10"></div>
+          <CardHeader className="pb-3">
+            <CardTitle className="text-sm font-medium text-green-700 dark:text-green-300 flex items-center gap-3">
+              <div className="p-2 bg-green-100 dark:bg-green-800 rounded-lg group-hover:scale-110 transition-transform duration-300">
+                <IconPackages className="h-5 w-5 text-green-600 dark:text-green-400" />
+              </div>
+              Total Products
             </CardTitle>
           </CardHeader>
           <CardContent>
-            <div className="text-2xl font-bold">
-              {systemMetrics.totalProducts}
+            <div className="flex items-end gap-3">
+              <div className="text-3xl font-bold text-green-600 dark:text-green-400">
+                {systemMetrics.totalProducts}
+              </div>
+              <div className="text-xs text-green-600/70 dark:text-green-400/70 mb-1">
+                {systemMetrics.lowStockItems} low stock
+              </div>
             </div>
-            <p className="text-xs text-muted-foreground">
-              {systemMetrics.lowStockItems} low stock items
-            </p>
+            {systemMetrics.lowStockItems > 0 && (
+              <div className="flex items-center gap-2 mt-3">
+                <div className="w-2 h-2 bg-orange-500 rounded-full animate-pulse"></div>
+                <span className="text-xs text-green-600/80 dark:text-green-400/80">
+                  Requires attention
+                </span>
+              </div>
+            )}
           </CardContent>
         </Card>
 
-        {/* Total Sales */}
-        <Card>
-          <CardHeader className="pb-2">
-            <CardTitle className="text-sm font-medium flex items-center justify-between">
-              <span className="flex items-center gap-2">
-                <IconCurrencyNaira className="h-4 w-4" />
-                Monthly Sales
-              </span>
-              <IconTrendingUp className="h-4 w-4 text-green-600" />
+        {/* Monthly Sales Card */}
+        <Card className="relative overflow-hidden border-0 bg-gradient-to-br from-purple-50 to-purple-100 dark:from-purple-950 dark:to-purple-900 hover:shadow-lg transition-all duration-300 group">
+          <div className="absolute top-0 right-0 w-20 h-20 bg-purple-200/50 dark:bg-purple-800/50 rounded-full -translate-y-10 translate-x-10"></div>
+          <CardHeader className="pb-3">
+            <CardTitle className="text-sm font-medium text-purple-700 dark:text-purple-300 flex items-center gap-3">
+              <div className="p-2 bg-purple-100 dark:bg-purple-800 rounded-lg group-hover:scale-110 transition-transform duration-300">
+                <IconCurrencyNaira className="h-5 w-5 text-purple-600 dark:text-purple-400" />
+              </div>
+              Monthly Sales
             </CardTitle>
           </CardHeader>
           <CardContent>
-            <div className="text-2xl font-bold">
-              {formatCurrency(systemMetrics.totalSales)}
+            <div className="flex items-end gap-3">
+              <div className="text-3xl font-bold text-purple-600 dark:text-purple-400">
+                {formatCurrency(systemMetrics.totalSales)}
+              </div>
+              <div className="text-xs text-purple-600/70 dark:text-purple-400/70 mb-1">
+                +{systemMetrics.salesGrowth}% growth
+              </div>
             </div>
-            <p className="text-xs text-green-600">
-              +{systemMetrics.salesGrowth}% from last month
-            </p>
+            <div className="w-full bg-purple-200 dark:bg-purple-800 rounded-full h-2 mt-3">
+              <div
+                className="bg-purple-600 dark:bg-purple-400 h-2 rounded-full transition-all duration-500"
+                style={{
+                  width: `${Math.min(systemMetrics.salesGrowth, 100)}%`,
+                }}
+              ></div>
+            </div>
           </CardContent>
         </Card>
 
-        {/* System Uptime */}
-        <Card>
-          <CardHeader className="pb-2">
-            <CardTitle className="text-sm font-medium flex items-center justify-between">
-              <span className="flex items-center gap-2">
-                <IconActivity className="h-4 w-4" />
-                System Uptime
-              </span>
-              <div className="h-2 w-2 bg-green-500 rounded-full"></div>
+        {/* System Uptime Card */}
+        <Card className="relative overflow-hidden border-0 bg-gradient-to-br from-emerald-50 to-emerald-100 dark:from-emerald-950 dark:to-emerald-900 hover:shadow-lg transition-all duration-300 group">
+          <div className="absolute top-0 right-0 w-20 h-20 bg-emerald-200/50 dark:bg-emerald-800/50 rounded-full -translate-y-10 translate-x-10"></div>
+          <CardHeader className="pb-3">
+            <CardTitle className="text-sm font-medium text-emerald-700 dark:text-emerald-300 flex items-center gap-3">
+              <div className="p-2 bg-emerald-100 dark:bg-emerald-800 rounded-lg group-hover:scale-110 transition-transform duration-300">
+                <IconActivity className="h-5 w-5 text-emerald-600 dark:text-emerald-400" />
+              </div>
+              System Uptime
             </CardTitle>
           </CardHeader>
           <CardContent>
-            <div className="text-2xl font-bold">
-              {systemMetrics.systemUptime}
+            <div className="flex items-center gap-3">
+              <div className="flex items-center gap-2">
+                <div className="w-3 h-3 bg-emerald-500 rounded-full animate-pulse"></div>
+                <span className="text-lg font-semibold text-emerald-600 dark:text-emerald-400">
+                  {systemMetrics.systemUptime}
+                </span>
+              </div>
             </div>
-            <p className="text-xs text-muted-foreground">Last 30 days</p>
+            <div className="text-xs text-emerald-600/70 dark:text-emerald-400/70 mt-3">
+              Last 30 days
+            </div>
+            <div className="grid grid-cols-3 gap-2 mt-4">
+              <div className="text-center">
+                <div className="text-xs text-emerald-600/70 dark:text-emerald-400/70">
+                  API
+                </div>
+                <div className="w-full bg-emerald-200 dark:bg-emerald-800 rounded-full h-1 mt-1">
+                  <div className="bg-emerald-500 h-1 rounded-full w-full"></div>
+                </div>
+              </div>
+              <div className="text-center">
+                <div className="text-xs text-emerald-600/70 dark:text-emerald-400/70">
+                  DB
+                </div>
+                <div className="w-full bg-emerald-200 dark:bg-emerald-800 rounded-full h-1 mt-1">
+                  <div className="bg-emerald-500 h-1 rounded-full w-full"></div>
+                </div>
+              </div>
+              <div className="text-center">
+                <div className="text-xs text-emerald-600/70 dark:text-emerald-400/70">
+                  Cache
+                </div>
+                <div className="w-full bg-emerald-200 dark:bg-emerald-800 rounded-full h-1 mt-1">
+                  <div className="bg-emerald-500 h-1 rounded-full w-full"></div>
+                </div>
+              </div>
+            </div>
           </CardContent>
         </Card>
       </div>
@@ -252,18 +316,26 @@ export function AdminOverview() {
 
             <Button variant="outline" className="w-full justify-between">
               <span className="flex items-center gap-2">
-                <IconCalendar className="h-4 w-4" />
-                Generate Monthly Report
+                <IconShoppingCart className="h-4 w-4" />
+                View Recent Orders
               </span>
-              <IconArrowRight className="h-4 w-4" />
+              <div className="flex items-center gap-2">
+                <Badge variant="outline">{systemMetrics.activeOrders}</Badge>
+                <IconArrowRight className="h-4 w-4" />
+              </div>
             </Button>
 
             <Button variant="outline" className="w-full justify-between">
               <span className="flex items-center gap-2">
-                <IconActivity className="h-4 w-4" />
+                <IconDatabase className="h-4 w-4" />
                 System Health Check
               </span>
-              <IconArrowRight className="h-4 w-4" />
+              <div className="flex items-center gap-2">
+                <Badge variant="default" className="bg-green-600">
+                  Healthy
+                </Badge>
+                <IconArrowRight className="h-4 w-4" />
+              </div>
             </Button>
           </CardContent>
         </Card>
@@ -276,84 +348,31 @@ export function AdminOverview() {
               Recent Activity
             </CardTitle>
           </CardHeader>
-          <CardContent>
-            <div className="space-y-3">
-              {recentActivity.map((activity) => (
-                <div
-                  key={activity.id}
-                  className="flex items-center justify-between p-3 bg-muted/30 rounded-lg"
-                >
-                  <div className="flex items-center gap-3">
-                    {getActivityIcon(activity.type)}
-                    <div>
-                      <p className="text-sm font-medium">{activity.action}</p>
-                      <p className="text-xs text-muted-foreground">
-                        {activity.user}
-                      </p>
-                    </div>
-                  </div>
-                  <div className="flex items-center gap-2">
-                    {getActivityBadge(activity.type)}
-                    <span className="text-xs text-muted-foreground">
-                      {activity.time}
-                    </span>
-                  </div>
+          <CardContent className="space-y-4">
+            {recentActivity.map((activity) => (
+              <div
+                key={activity.id}
+                className="flex items-start gap-3 p-3 rounded-lg border border-border/50 hover:bg-muted/50 transition-colors"
+              >
+                <div className="p-2 rounded-lg bg-muted">
+                  {getActivityIcon(activity.type)}
                 </div>
-              ))}
-            </div>
-          </CardContent>
-        </Card>
-      </div>
-
-      {/* System Status Cards */}
-      <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-        <Card>
-          <CardHeader className="pb-2">
-            <CardTitle className="text-sm font-medium flex items-center gap-2">
-              <IconActivity className="h-4 w-4 text-green-600" />
-              Database Status
-            </CardTitle>
-          </CardHeader>
-          <CardContent>
-            <div className="flex items-center justify-between">
-              <span className="text-lg font-semibold text-green-600">
-                Healthy
-              </span>
-              <div className="h-2 w-2 bg-green-500 rounded-full animate-pulse"></div>
-            </div>
-            <p className="text-xs text-muted-foreground">
-              Last checked: 1 min ago
-            </p>
-          </CardContent>
-        </Card>
-
-        <Card>
-          <CardHeader className="pb-2">
-            <CardTitle className="text-sm font-medium flex items-center gap-2">
-              <IconShoppingCart className="h-4 w-4 text-blue-600" />
-              Active Orders
-            </CardTitle>
-          </CardHeader>
-          <CardContent>
-            <div className="text-lg font-semibold text-blue-600">
-              {systemMetrics.activeOrders}
-            </div>
-            <p className="text-xs text-muted-foreground">
-              Currently processing
-            </p>
-          </CardContent>
-        </Card>
-
-        <Card>
-          <CardHeader className="pb-2">
-            <CardTitle className="text-sm font-medium flex items-center gap-2">
-              <IconAlertTriangle className="h-4 w-4 text-yellow-600" />
-              System Alerts
-            </CardTitle>
-          </CardHeader>
-          <CardContent>
-            <div className="text-lg font-semibold text-yellow-600">2</div>
-            <p className="text-xs text-muted-foreground">Require attention</p>
+                <div className="flex-1 min-w-0">
+                  <div className="flex items-center justify-between gap-2">
+                    <p className="text-sm font-medium truncate">
+                      {activity.action}
+                    </p>
+                    {getActivityBadge(activity.type)}
+                  </div>
+                  <p className="text-xs text-muted-foreground truncate">
+                    {activity.user}
+                  </p>
+                  <p className="text-xs text-muted-foreground">
+                    {activity.time}
+                  </p>
+                </div>
+              </div>
+            ))}
           </CardContent>
         </Card>
       </div>

@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import { auth } from "../../../../../../../auth";
 import { prisma } from "@/lib/db";
+import { PAYMENT_STATUS } from "@/lib/constants";
 
 interface CustomerPurchase {
   id: number;
@@ -37,7 +38,7 @@ export async function GET(
     const transactions = await prisma.salesTransaction.findMany({
       where: {
         customer_email: customerEmail,
-        payment_status: "paid",
+        payment_status: PAYMENT_STATUS.PAID,
       },
       include: {
         sales_items: {

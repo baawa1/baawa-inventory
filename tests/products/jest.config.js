@@ -21,12 +21,12 @@ module.exports = {
       statements: 80,
     },
   },
-  moduleNameMapping: {
-    "^@/(.*)$": "<rootDir>/../../src/$1",
-    "^@/components/(.*)$": "<rootDir>/../../src/components/$1",
+  moduleNameMapper: {
     "^@/lib/(.*)$": "<rootDir>/../../src/lib/$1",
+    "^@/components/(.*)$": "<rootDir>/../../src/components/$1",
     "^@/hooks/(.*)$": "<rootDir>/../../src/hooks/$1",
     "^@/app/(.*)$": "<rootDir>/../../src/app/$1",
+    "^@/(.*)$": "<rootDir>/../../$1",
   },
   transform: {
     "^.+\\.(ts|tsx)$": [
@@ -42,15 +42,8 @@ module.exports = {
   },
   moduleFileExtensions: ["ts", "tsx", "js", "jsx", "json"],
   testPathIgnorePatterns: ["/node_modules/", "/dist/", "/.next/"],
-  globals: {
-    "ts-jest": {
-      tsconfig: {
-        jsx: "react-jsx",
-      },
-    },
-  },
   // Mock environment variables
-  setupFiles: ["<rootDir>/setup-env.ts"],
+  setupFilesAfterEnv: ["<rootDir>/setup-env.ts"],
   // Test timeout
   testTimeout: 10000,
   // Verbose output

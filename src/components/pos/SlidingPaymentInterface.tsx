@@ -1,6 +1,7 @@
 "use client";
 
 import React, { useState } from "react";
+import { z } from "zod";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -25,6 +26,30 @@ import {
 import { toast } from "sonner";
 import { usePOSErrorHandler } from "./POSErrorBoundary";
 import { formatCurrency } from "@/lib/utils";
+import { ALL_PAYMENT_METHODS, VALIDATION_RULES } from "@/lib/constants";
+
+// Validation schemas
+const discountSchema = z.object({
+  type: z.enum(["percentage", "fixed"]),
+  value: z.number().min(0).max(100),
+});
+
+const customerInfoSchema = z.object({
+  name: z.string().max(VALIDATION_RULES.MAX_NAME_LENGTH).optional(),
+  phone: z.string().max(VALIDATION_RULES.MAX_PHONE_LENGTH).optional(),
+  email: z
+    .string()
+    .email()
+    .max(VALIDATION_RULES.MAX_EMAIL_LENGTH)
+    .optional()
+    .or(z.literal("")),
+});
+
+const paymentSchema = z.object({
+  paymentMethod: z.enum(ALL_PAYMENT_METHODS as [string, ...string[]]),
+  amountPaid: z.number().positive().optional(),
+  notes: z.string().max(VALIDATION_RULES.MAX_DESCRIPTION_LENGTH).optional(),
+});
 
 export interface CartItem {
   id: number;
@@ -106,7 +131,7 @@ export function SlidingPaymentInterface({
     "percentage"
   );
   const [discountValue, setDiscountValue] = useState(0);
-  const [amountPaid, setAmountPaid] = useState(total - discount);
+  const [amountPaid, setAmountPaid] = useState(total);
   const [notes, setNotes] = useState("");
   const [processing, setProcessing] = useState(false);
   const [isSplitPayment, setIsSplitPayment] = useState(false);
@@ -117,9 +142,76 @@ export function SlidingPaymentInterface({
       method: string;
     }>
   >([]);
+  const [validationErrors, setValidationErrors] = useState<
+    Record<string, string>
+  >({});
 
-  // Handle discount change
+  // Validation helper functions
+  const validateDiscountInput = (
+    type: "percentage" | "fixed",
+    value: number
+  ) => {
+    try {
+      discountSchema.parse({ type, value });
+      setValidationErrors((prev) => ({ ...prev, discount: "" }));
+      return true;
+    } catch (error) {
+      if (error instanceof z.ZodError) {
+        setValidationErrors((prev) => ({
+          ...prev,
+          discount: error.errors[0]?.message || "Invalid discount value",
+        }));
+      }
+      return false;
+    }
+  };
+
+  const validateCustomerInfo = (info: typeof customerInfo) => {
+    try {
+      customerInfoSchema.parse(info);
+      setValidationErrors((prev) => ({ ...prev, customer: "" }));
+      return true;
+    } catch (error) {
+      if (error instanceof z.ZodError) {
+        setValidationErrors((prev) => ({
+          ...prev,
+          customer: error.errors[0]?.message || "Invalid customer information",
+        }));
+      }
+      return false;
+    }
+  };
+
+  const validatePaymentData = (
+    method: string,
+    amount?: number,
+    notes?: string
+  ) => {
+    try {
+      paymentSchema.parse({
+        paymentMethod: method,
+        amountPaid: amount,
+        notes: notes,
+      });
+      setValidationErrors((prev) => ({ ...prev, payment: "" }));
+      return true;
+    } catch (error) {
+      if (error instanceof z.ZodError) {
+        setValidationErrors((prev) => ({
+          ...prev,
+          payment: error.errors[0]?.message || "Invalid payment information",
+        }));
+      }
+      return false;
+    }
+  };
+
+  // Handle discount change with validation
   const handleDiscountChange = (value: number) => {
+    if (!validateDiscountInput(discountType, value)) {
+      return;
+    }
+
     setDiscountValue(value);
     if (discountType === "percentage") {
       const calculatedDiscount = (subtotal * value) / 100;
@@ -129,11 +221,43 @@ export function SlidingPaymentInterface({
     }
   };
 
+  // Handle customer info change with validation
+  const handleCustomerInfoChange = (field: string, value: string) => {
+    const newInfo = { ...customerInfo, [field]: value };
+    if (validateCustomerInfo(newInfo)) {
+      onCustomerInfoChange(newInfo);
+    }
+  };
+
+  // Handle discount type change
+  const handleDiscountTypeChange = (newType: "percentage" | "fixed") => {
+    setDiscountType(newType);
+
+    // Convert current discount value to the new type
+    if (newType === "percentage") {
+      // Convert from fixed amount to percentage
+      if (discount > 0 && subtotal > 0) {
+        const percentage = (discount / subtotal) * 100;
+        setDiscountValue(Math.round(percentage * 100) / 100); // Round to 2 decimal places
+      } else {
+        setDiscountValue(0);
+      }
+    } else {
+      // Convert from percentage to fixed amount
+      if (discountValue > 0 && subtotal > 0) {
+        const fixedAmount = (subtotal * discountValue) / 100;
+        setDiscountValue(Math.round(fixedAmount * 100) / 100); // Round to 2 decimal places
+      } else {
+        setDiscountValue(discount);
+      }
+    }
+  };
+
   // Process payment
   const handlePayment = async () => {
     if (isSplitPayment) {
       const totalPaid = splitPayments.reduce((sum, p) => sum + p.amount, 0);
-      if (totalPaid < total - discount) {
+      if (totalPaid < total) {
         toast.error("Insufficient payment amount");
         return;
       }
@@ -143,7 +267,7 @@ export function SlidingPaymentInterface({
         return;
       }
 
-      if (paymentMethod === "cash" && amountPaid < total - discount) {
+      if (paymentMethod === "cash" && amountPaid < total) {
         toast.error("Insufficient payment amount");
         return;
       }
@@ -263,7 +387,7 @@ export function SlidingPaymentInterface({
         return (
           <DiscountStep
             discountType={discountType}
-            setDiscountType={setDiscountType}
+            setDiscountType={handleDiscountTypeChange}
             discountValue={discountValue}
             handleDiscountChange={handleDiscountChange}
             discount={discount}
@@ -286,6 +410,7 @@ export function SlidingPaymentInterface({
             setIsSplitPayment={setIsSplitPayment}
             _splitPayments={splitPayments}
             _setSplitPayments={setSplitPayments}
+            subtotal={subtotal}
           />
         );
       case 3:
@@ -571,10 +696,37 @@ function PaymentMethodStep({
   setIsSplitPayment,
   _splitPayments,
   _setSplitPayments,
+  subtotal,
 }: any) {
   return (
     <div className="space-y-4">
       <h3 className="text-lg font-semibold">Payment Method</h3>
+
+      {/* Payment Summary */}
+      <Card>
+        <CardHeader>
+          <CardTitle className="text-sm">Payment Summary</CardTitle>
+        </CardHeader>
+        <CardContent>
+          <div className="space-y-2">
+            <div className="flex justify-between text-sm">
+              <span>Original Total:</span>
+              <span>{formatCurrency(total + discount)}</span>
+            </div>
+            {discount > 0 && (
+              <div className="flex justify-between text-sm text-red-600">
+                <span>Discount Applied:</span>
+                <span>-{formatCurrency(discount)}</span>
+              </div>
+            )}
+            <Separator />
+            <div className="flex justify-between font-bold">
+              <span>Amount to Pay:</span>
+              <span className="text-lg">{formatCurrency(total)}</span>
+            </div>
+          </div>
+        </CardContent>
+      </Card>
 
       {/* Payment Options */}
       <div className="flex items-center gap-2 mb-4">
@@ -588,7 +740,7 @@ function PaymentMethodStep({
         </Button>
         {isSplitPayment && (
           <span className="text-sm text-muted-foreground">
-            Total: {formatCurrency(total - discount)}
+            Total: {formatCurrency(total)}
           </span>
         )}
       </div>
@@ -615,8 +767,10 @@ function PaymentMethodStep({
         <SplitPaymentInterface
           splitPayments={_splitPayments}
           setSplitPayments={_setSplitPayments}
-          total={total - discount}
+          total={total}
           processing={processing}
+          subtotal={subtotal}
+          discount={discount}
         />
       )}
 
@@ -643,13 +797,13 @@ function PaymentMethodStep({
             </div>
           )}
 
-          {paymentMethod !== "cash" && amountPaid < total - discount && (
+          {paymentMethod !== "cash" && amountPaid < total && (
             <div className="flex justify-between items-center p-3 bg-amber-50 border border-amber-200 rounded">
               <span className="font-medium text-amber-800">
                 Remaining Balance:
               </span>
               <span className="font-bold text-lg text-amber-800">
-                ₦{formatCurrency(total - discount - amountPaid)}
+                ₦{formatCurrency(total - amountPaid)}
               </span>
               <div className="text-xs text-amber-700 mt-1">
                 This will be recorded as a debt for the customer
@@ -982,6 +1136,8 @@ function SplitPaymentInterface({
   setSplitPayments,
   total,
   processing,
+  subtotal: _subtotal,
+  discount: _discount,
 }: {
   splitPayments: Array<{ id: string; amount: number; method: string }>;
   setSplitPayments: (
@@ -989,6 +1145,8 @@ function SplitPaymentInterface({
   ) => void;
   total: number;
   processing: boolean;
+  subtotal?: number;
+  discount?: number;
 }) {
   const addPayment = () => {
     const newPayment = {
@@ -1018,6 +1176,34 @@ function SplitPaymentInterface({
 
   return (
     <div className="space-y-4">
+      {/* Payment Summary */}
+      {_subtotal && _discount !== undefined && (
+        <Card>
+          <CardHeader>
+            <CardTitle className="text-sm">Payment Summary</CardTitle>
+          </CardHeader>
+          <CardContent>
+            <div className="space-y-2">
+              <div className="flex justify-between text-sm">
+                <span>Original Total:</span>
+                <span>{formatCurrency(_subtotal)}</span>
+              </div>
+              {_discount > 0 && (
+                <div className="flex justify-between text-sm text-red-600">
+                  <span>Discount Applied:</span>
+                  <span>-{formatCurrency(_discount)}</span>
+                </div>
+              )}
+              <Separator />
+              <div className="flex justify-between font-bold">
+                <span>Amount to Pay:</span>
+                <span className="text-lg">{formatCurrency(total)}</span>
+              </div>
+            </div>
+          </CardContent>
+        </Card>
+      )}
+
       <div className="flex justify-between items-center">
         <span className="text-sm font-medium">Split Payments</span>
         <span className="text-sm text-muted-foreground">

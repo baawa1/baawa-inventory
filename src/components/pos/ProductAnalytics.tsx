@@ -83,7 +83,7 @@ async function fetchCategories(): Promise<{ id: number; name: string }[]> {
   return response.json();
 }
 
-export function ProductAnalytics({ user: _user }: ProductAnalyticsProps) {
+export function ProductAnalytics({ user: _ }: ProductAnalyticsProps) {
   const [selectedPeriod, setSelectedPeriod] = useState("30d");
   const [searchTerm, setSearchTerm] = useState("");
   const [selectedCategory, setSelectedCategory] = useState("all");

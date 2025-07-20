@@ -1,23 +1,27 @@
 import { NextRequest, NextResponse } from "next/server";
 import { auth } from "../../../../../../auth";
 import { prisma } from "@/lib/db";
+import { PAYMENT_STATUS } from "@/lib/constants";
 
 interface CategoryPerformance {
   id: number;
   name: string;
-  productCount: number;
   totalSold: number;
   revenue: number;
   averageOrderValue: number;
   marketShare: number;
   trending: "up" | "down" | "stable";
   trendPercentage: number;
-  topProduct: {
+  lastSaleDate: string | null;
+  productCount: number;
+  topProducts: Array<{
+    id: number;
     name: string;
     revenue: number;
-  } | null;
+  }>;
 }
 
+// Helper function to get date filter based on period
 function getPeriodFilter(period: string): Date {
   const now = new Date();
   switch (period) {
@@ -62,7 +66,7 @@ export async function GET(request: NextRequest) {
                   created_at: {
                     gte: periodStart,
                   },
-                  payment_status: "paid",
+                  payment_status: PAYMENT_STATUS.PAID,
                 },
               },
               include: {
@@ -91,111 +95,122 @@ export async function GET(request: NextRequest) {
       return total + categoryRevenue;
     }, 0);
 
-    // Transform the data into performance metrics
-    const categoryPerformance: CategoryPerformance[] = categories
-      .map((category) => {
-        const productCount = category.products.length;
+    // Calculate performance metrics for each category
+    const categoryPerformance: CategoryPerformance[] = categories.map(
+      (category) => {
+        const categoryRevenue = category.products.reduce(
+          (catTotal, product) => {
+            return (
+              catTotal +
+              product.sales_items.reduce((prodTotal, item) => {
+                return prodTotal + Number(item.total_price);
+              }, 0)
+            );
+          },
+          0
+        );
 
-        // Calculate totals for this category
-        let totalSold = 0;
-        let revenue = 0;
-        let totalTransactions = 0;
-        const productRevenues: {
-          productId: number;
-          name: string;
-          revenue: number;
-        }[] = [];
+        const totalSold = category.products.reduce((catTotal, product) => {
+          return (
+            catTotal +
+            product.sales_items.reduce((prodTotal, item) => {
+              return prodTotal + item.quantity;
+            }, 0)
+          );
+        }, 0);
 
-        category.products.forEach((product) => {
-          let productRevenue = 0;
-          let productSold = 0;
-
-          product.sales_items.forEach((item) => {
-            productSold += item.quantity;
-            productRevenue += Number(item.total_price);
-            totalTransactions += 1;
-          });
-
-          totalSold += productSold;
-          revenue += productRevenue;
-
-          if (productRevenue > 0) {
-            productRevenues.push({
-              productId: product.id,
-              name: product.name,
-              revenue: productRevenue,
-            });
-          }
+        // Get top 3 products by revenue
+        const productRevenues = category.products.map((product) => {
+          const productRevenue = product.sales_items.reduce((total, item) => {
+            return total + Number(item.total_price);
+          }, 0);
+          return {
+            id: product.id,
+            name: product.name,
+            revenue: productRevenue,
+          };
         });
 
-        // Find top product by revenue
-        const topProduct =
-          productRevenues.length > 0
-            ? productRevenues.sort((a, b) => b.revenue - a.revenue)[0]
+        const topProducts = productRevenues
+          .sort((a, b) => b.revenue - a.revenue)
+          .slice(0, 3);
+
+        // Calculate market share
+        const marketShare =
+          totalRevenue > 0 ? (categoryRevenue / totalRevenue) * 100 : 0;
+
+        // Get last sale date
+        const allSaleDates = category.products.flatMap((product) =>
+          product.sales_items
+            .map((item) => item.sales_transactions?.created_at)
+            .filter(Boolean)
+        );
+        const lastSaleDate =
+          allSaleDates.length > 0
+            ? new Date(Math.max(...allSaleDates.map((date) => date!.getTime())))
             : null;
 
-        const averageOrderValue =
-          totalTransactions > 0 ? revenue / totalTransactions : 0;
-        const marketShare =
-          totalRevenue > 0 ? (revenue / totalRevenue) * 100 : 0;
-
-        // Calculate trend (simplified - comparing to previous period)
+        // Calculate trend (for simplicity, just using a random trend for now)
+        // In a real implementation, you'd compare to previous period
         const previousPeriodStart = new Date(
           periodStart.getTime() - (Date.now() - periodStart.getTime())
         );
-        let previousRevenue = 0;
-
-        category.products.forEach((product) => {
-          product.sales_items.forEach((item) => {
-            const saleDate = item.sales_transactions?.created_at;
-            if (
-              saleDate &&
-              saleDate >= previousPeriodStart &&
-              saleDate < periodStart
-            ) {
-              previousRevenue += Number(item.total_price);
-            }
-          });
-        });
+        const previousRevenue = category.products.reduce(
+          (catTotal, product) => {
+            return (
+              catTotal +
+              product.sales_items
+                .filter(
+                  (item) =>
+                    item.sales_transactions?.created_at &&
+                    item.sales_transactions.created_at >= previousPeriodStart &&
+                    item.sales_transactions.created_at < periodStart
+                )
+                .reduce((prodTotal, item) => {
+                  return prodTotal + Number(item.total_price);
+                }, 0)
+            );
+          },
+          0
+        );
 
         let trending: "up" | "down" | "stable" = "stable";
         let trendPercentage = 0;
 
         if (previousRevenue > 0) {
-          const change = ((revenue - previousRevenue) / previousRevenue) * 100;
-          trendPercentage = Math.abs(Math.round(change));
-          if (change > 5) trending = "up";
-          else if (change < -5) trending = "down";
-        } else if (revenue > 0) {
-          trending = "up";
-          trendPercentage = 100;
+          trendPercentage =
+            ((categoryRevenue - previousRevenue) / previousRevenue) * 100;
+          if (trendPercentage > 5) trending = "up";
+          else if (trendPercentage < -5) trending = "down";
         }
+
+        const averageOrderValue =
+          totalSold > 0 ? categoryRevenue / totalSold : 0;
 
         return {
           id: category.id,
           name: category.name,
-          productCount,
           totalSold,
-          revenue,
+          revenue: categoryRevenue,
           averageOrderValue,
           marketShare,
           trending,
-          trendPercentage,
-          topProduct: topProduct
-            ? {
-                name: topProduct.name,
-                revenue: topProduct.revenue,
-              }
-            : null,
+          trendPercentage: Math.abs(trendPercentage),
+          lastSaleDate: lastSaleDate?.toISOString() || null,
+          productCount: category.products.length,
+          topProducts,
         };
-      })
-      .filter((category) => category.productCount > 0); // Only include categories with products
+      }
+    );
+
+    // Sort by revenue descending
+    categoryPerformance.sort((a, b) => b.revenue - a.revenue);
 
     return NextResponse.json(categoryPerformance);
   } catch (error) {
-    console.error("Error fetching category performance:", error);
+    console.error("Error fetching category analytics:", error);
     return NextResponse.json(
-      { error: "Failed to fetch category performance" },
+      { error: "Failed to fetch category analytics" },
       { status: 500 }
     );
   }

@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import { auth } from "../../../../../../auth";
 import { prisma } from "@/lib/db";
+import { PAYMENT_STATUS } from "@/lib/constants";
 
 interface ProductPerformance {
   id: number;
@@ -17,6 +18,7 @@ interface ProductPerformance {
   trendPercentage: number;
 }
 
+// Helper function to get date filter based on period
 function getPeriodFilter(period: string): Date {
   const now = new Date();
   switch (period) {
@@ -84,7 +86,7 @@ export async function GET(request: NextRequest) {
               created_at: {
                 gte: periodStart,
               },
-              payment_status: "paid",
+              payment_status: PAYMENT_STATUS.PAID,
             },
           },
           include: {
@@ -100,54 +102,58 @@ export async function GET(request: NextRequest) {
 
     // Transform the data into performance metrics
     const productPerformance: ProductPerformance[] = products.map((product) => {
-      const salesItems = product.sales_items;
-      const totalSold = salesItems.reduce(
+      // Calculate totals
+      const totalSold = product.sales_items.reduce(
         (sum, item) => sum + item.quantity,
         0
       );
-      const revenue = salesItems.reduce(
+      const revenue = product.sales_items.reduce(
         (sum, item) => sum + Number(item.total_price),
         0
       );
-      const averageOrderValue =
-        salesItems.length > 0 ? revenue / salesItems.length : 0;
 
-      // Get the most recent sale date
-      const saleDates = salesItems
+      // Find last sale date
+      const lastSaleDates = product.sales_items
         .map((item) => item.sales_transactions?.created_at)
         .filter(Boolean)
-        .sort((a, b) => new Date(b!).getTime() - new Date(a!).getTime());
+        .sort((a, b) => b!.getTime() - a!.getTime());
 
-      const lastSold =
-        saleDates.length > 0 ? saleDates[0]!.toISOString() : null;
+      const lastSold = lastSaleDates.length > 0 ? lastSaleDates[0] : null;
 
       // Calculate trend (simplified - comparing to previous period)
       const previousPeriodStart = new Date(
         periodStart.getTime() - (Date.now() - periodStart.getTime())
       );
-      const previousSalesItems = product.sales_items.filter((item) => {
+      let previousRevenue = 0;
+
+      product.sales_items.forEach((item) => {
         const saleDate = item.sales_transactions?.created_at;
-        return (
-          saleDate && saleDate >= previousPeriodStart && saleDate < periodStart
-        );
+        if (
+          saleDate &&
+          saleDate >= previousPeriodStart &&
+          saleDate < periodStart
+        ) {
+          previousRevenue += Number(item.total_price);
+        }
       });
 
-      const previousRevenue = previousSalesItems.reduce(
-        (sum, item) => sum + Number(item.total_price),
-        0
-      );
       let trending: "up" | "down" | "stable" = "stable";
       let trendPercentage = 0;
 
       if (previousRevenue > 0) {
         const change = ((revenue - previousRevenue) / previousRevenue) * 100;
         trendPercentage = Math.abs(Math.round(change));
-        if (change > 5) trending = "up";
-        else if (change < -5) trending = "down";
+        if (change > 10) trending = "up";
+        else if (change < -10) trending = "down";
       } else if (revenue > 0) {
         trending = "up";
         trendPercentage = 100;
       }
+
+      const averageOrderValue =
+        product.sales_items.length > 0
+          ? revenue / product.sales_items.length
+          : 0;
 
       return {
         id: product.id,
@@ -159,23 +165,28 @@ export async function GET(request: NextRequest) {
         totalSold,
         revenue,
         averageOrderValue,
-        lastSold,
+        lastSold: lastSold?.toISOString() || null,
         trending,
         trendPercentage,
       };
     });
 
-    // Sort the results
+    // Sort based on the requested sort parameter
     productPerformance.sort((a, b) => {
       switch (sortBy) {
-        case "revenue":
-          return b.revenue - a.revenue;
         case "totalSold":
           return b.totalSold - a.totalSold;
-        case "averageOrderValue":
-          return b.averageOrderValue - a.averageOrderValue;
+        case "revenue":
+          return b.revenue - a.revenue;
         case "name":
           return a.name.localeCompare(b.name);
+        case "lastSold":
+          if (!a.lastSold && !b.lastSold) return 0;
+          if (!a.lastSold) return 1;
+          if (!b.lastSold) return -1;
+          return (
+            new Date(b.lastSold).getTime() - new Date(a.lastSold).getTime()
+          );
         default:
           return b.revenue - a.revenue;
       }
@@ -183,9 +194,9 @@ export async function GET(request: NextRequest) {
 
     return NextResponse.json(productPerformance);
   } catch (error) {
-    console.error("Error fetching product performance:", error);
+    console.error("Error fetching product analytics:", error);
     return NextResponse.json(
-      { error: "Failed to fetch product performance" },
+      { error: "Failed to fetch product analytics" },
       { status: 500 }
     );
   }

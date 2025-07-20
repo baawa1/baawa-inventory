@@ -26,6 +26,7 @@ import {
   IconTarget,
 } from "@tabler/icons-react";
 import { formatCurrency } from "@/lib/utils";
+import { CHART_COLORS } from "@/lib/constants/ui";
 
 const chartConfig = {
   value: {
@@ -51,7 +52,7 @@ const monthlyTargets = [
   { month: "Jun", target: 2000000, actual: 2150000 },
 ];
 
-const COLORS = ["#0088FE", "#00C49F", "#FFBB28", "#FF8042"];
+const COLORS = CHART_COLORS;
 
 export function PerformanceMetrics() {
   const totalSales = salesByCategory.reduce((sum, cat) => sum + cat.amount, 0);

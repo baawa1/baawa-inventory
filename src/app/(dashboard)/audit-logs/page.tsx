@@ -4,6 +4,7 @@ import { auditLogColumns, AuditLog } from "@/components/admin/AuditLogTable";
 import { PageTitle } from "@/components/ui/page-title";
 import { DashboardTableLayout } from "@/components/layouts/DashboardTableLayout";
 import { FilterConfig } from "@/components/layouts/DashboardFiltersBar";
+import { useAuditLogs } from "@/hooks/api/audit-logs";
 
 export default function AuditLogsPage() {
   const searchParams =
@@ -12,10 +13,7 @@ export default function AuditLogsPage() {
       : null;
   const initialUserId = searchParams?.get("userId") || "";
 
-  const [logs, setLogs] = React.useState<AuditLog[]>([]);
-  const [loading, setLoading] = React.useState(true);
   const [page, setPage] = React.useState(1);
-  const [totalPages, setTotalPages] = React.useState(1);
   const [user, setUser] = React.useState(initialUserId);
   const [action, setAction] = React.useState("");
   const [from, setFrom] = React.useState("");
@@ -25,24 +23,27 @@ export default function AuditLogsPage() {
     auditLogColumns.filter((c) => c.required).map((c) => c.key)
   );
 
-  React.useEffect(() => {
-    setLoading(true);
-    const params = new URLSearchParams({
-      page: String(page),
-      limit: String(pageSize),
-      ...(user && { userId: user }),
-      ...(action && { action }),
-      ...(from && { from }),
-      ...(to && { to }),
-    });
-    fetch(`/api/admin/audit-logs?${params.toString()}`)
-      .then((res) => res.json())
-      .then((data) => {
-        setLogs(data.logs || []);
-        setTotalPages(data.totalPages || 1);
-      })
-      .finally(() => setLoading(false));
-  }, [page, pageSize, user, action, from, to]);
+  // Use TanStack Query hook instead of useEffect+fetch
+  const {
+    data,
+    isLoading: loading,
+    error,
+  } = useAuditLogs({
+    page,
+    limit: pageSize,
+    userId: user || undefined,
+    action: action || undefined,
+    from: from || undefined,
+    to: to || undefined,
+  });
+
+  const logs = data?.logs || [];
+  const totalPages = data?.totalPages || 1;
+
+  // Handle errors (TanStack Query will show error in console, but we can add user-friendly handling)
+  if (error) {
+    console.error("Error fetching audit logs:", error);
+  }
 
   // Filters config for DashboardFiltersBar
   const filters: FilterConfig[] = [
