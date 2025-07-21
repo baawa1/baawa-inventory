@@ -10,8 +10,8 @@ import { Check, X, AlertCircle } from "lucide-react";
 interface PasswordStrengthIndicatorProps {
   password: string;
   onValidationChange?: (
-    isValid: boolean,
-    result: PasswordStrengthResult
+    _isValid: boolean,
+    _result: PasswordStrengthResult
   ) => void;
   className?: string;
 }

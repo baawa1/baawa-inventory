@@ -16,9 +16,9 @@ import {
 
 interface UserDialogProps {
   isOpen: boolean;
-  onOpenChangeAction: (open: boolean) => void;
+  onOpenChangeAction: (_open: boolean) => void;
   user?: User | null;
-  onSubmitAction: (data: UserFormData | EditUserFormData) => Promise<void>;
+  onSubmitAction: (_data: UserFormData | EditUserFormData) => Promise<void>;
   isSubmitting: boolean;
 }
 

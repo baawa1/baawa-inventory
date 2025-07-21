@@ -18,12 +18,12 @@ export default function OfflinePage() {
           <div className="mx-auto mb-4 p-3 bg-gray-100 rounded-full w-16 h-16 flex items-center justify-center">
             <IconWifi className="h-8 w-8 text-gray-400" />
           </div>
-          <CardTitle className="text-xl">You're Offline</CardTitle>
+          <CardTitle className="text-xl">You&apos;re Offline</CardTitle>
         </CardHeader>
         <CardContent className="text-center space-y-4">
           <p className="text-muted-foreground">
-            It looks like you're not connected to the internet. Some features
-            may not be available.
+            It looks like you&apos;re not connected to the internet. Some
+            features may not be available.
           </p>
 
           <div className="space-y-3">
@@ -53,7 +53,7 @@ export default function OfflinePage() {
 
             <p className="mt-3">
               <strong>Note:</strong> Transactions will be saved locally and
-              synced when you're back online.
+              synced when you&apos;re back online.
             </p>
           </div>
         </CardContent>

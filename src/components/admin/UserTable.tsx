@@ -15,8 +15,8 @@ import Link from "next/link";
 
 interface UserTableProps {
   users: User[];
-  onEditUserAction: (user: User) => void;
-  onDeleteUserAction: (userId: number) => void;
+  onEditUserAction: (_user: User) => void;
+  onDeleteUserAction: (_userId: number) => void;
   isLoading?: boolean;
 }
 

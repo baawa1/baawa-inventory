@@ -1,13 +1,8 @@
-import { NextResponse } from "next/server";
 import { prisma } from "@/lib/db";
 import { z } from "zod";
 import { withPOSAuth, AuthenticatedRequest } from "@/lib/api-auth-middleware";
 import { PRODUCT_STATUS, API_LIMITS, ERROR_MESSAGES } from "@/lib/constants";
-import {
-  createSuccessResponse,
-  createValidationErrorResponse,
-  createInternalErrorResponse,
-} from "@/lib/api-response";
+import { createApiResponse } from "@/lib/api-response";
 
 // Validation schema for search parameters
 const searchParamsSchema = z.object({
@@ -117,7 +112,7 @@ async function handleSearchProducts(request: AuthenticatedRequest) {
       description: product.description,
     }));
 
-    return createSuccessResponse(
+    return createApiResponse.success(
       {
         products: formattedProducts,
         total: formattedProducts.length,
@@ -129,13 +124,13 @@ async function handleSearchProducts(request: AuthenticatedRequest) {
     console.error("Error searching products for POS:", error);
 
     if (error instanceof z.ZodError) {
-      return createValidationErrorResponse(
-        error.errors,
-        ERROR_MESSAGES.VALIDATION_ERROR
+      return createApiResponse.validationError(
+        ERROR_MESSAGES.VALIDATION_ERROR,
+        error.errors
       );
     }
 
-    return createInternalErrorResponse(ERROR_MESSAGES.INTERNAL_ERROR);
+    return createApiResponse.internalError(ERROR_MESSAGES.INTERNAL_ERROR);
   }
 }
 

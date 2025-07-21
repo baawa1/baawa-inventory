@@ -15,7 +15,7 @@ interface ErrorBoundaryState {
 interface ErrorBoundaryProps {
   children: React.ReactNode;
   fallback?: React.ComponentType<ErrorFallbackProps>;
-  onError?: (error: Error, errorInfo: React.ErrorInfo) => void;
+  onError?: (_error: Error, _errorInfo: React.ErrorInfo) => void;
 }
 
 interface ErrorFallbackProps {
@@ -23,7 +23,10 @@ interface ErrorFallbackProps {
   resetError: () => void;
 }
 
-const DefaultErrorFallback: React.FC<ErrorFallbackProps> = ({ error, resetError }) => {
+const DefaultErrorFallback: React.FC<ErrorFallbackProps> = ({
+  error,
+  resetError,
+}) => {
   return (
     <Card className="w-full max-w-2xl mx-auto mt-8">
       <CardHeader>
@@ -39,7 +42,7 @@ const DefaultErrorFallback: React.FC<ErrorFallbackProps> = ({ error, resetError 
             {error.message || "An unexpected error occurred"}
           </AlertDescription>
         </Alert>
-        
+
         {process.env.NODE_ENV === "development" && (
           <details className="text-sm">
             <summary className="cursor-pointer font-medium mb-2">
@@ -50,7 +53,7 @@ const DefaultErrorFallback: React.FC<ErrorFallbackProps> = ({ error, resetError 
             </pre>
           </details>
         )}
-        
+
         <div className="flex gap-2">
           <Button onClick={resetError} variant="outline">
             <IconRefresh className="h-4 w-4 mr-2" />
@@ -65,7 +68,10 @@ const DefaultErrorFallback: React.FC<ErrorFallbackProps> = ({ error, resetError 
   );
 };
 
-export class ErrorBoundary extends React.Component<ErrorBoundaryProps, ErrorBoundaryState> {
+export class ErrorBoundary extends React.Component<
+  ErrorBoundaryProps,
+  ErrorBoundaryState
+> {
   constructor(props: ErrorBoundaryProps) {
     super(props);
     this.state = {
@@ -110,7 +116,9 @@ export class ErrorBoundary extends React.Component<ErrorBoundaryProps, ErrorBoun
   render() {
     if (this.state.hasError && this.state.error) {
       const ErrorFallback = this.props.fallback || DefaultErrorFallback;
-      return <ErrorFallback error={this.state.error} resetError={this.resetError} />;
+      return (
+        <ErrorFallback error={this.state.error} resetError={this.resetError} />
+      );
     }
 
     return this.props.children;
@@ -120,7 +128,7 @@ export class ErrorBoundary extends React.Component<ErrorBoundaryProps, ErrorBoun
 // Hook for functional components to trigger error boundary
 export const useErrorHandler = () => {
   const [, setState] = React.useState();
-  
+
   return React.useCallback((error: Error) => {
     setState(() => {
       throw error;
