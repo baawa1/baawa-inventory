@@ -60,14 +60,14 @@ export default function PendingApprovalPage() {
   };
 
   const handleRefreshSession = async () => {
-    console.log("🔄 Refresh button clicked");
-    console.log("Current session before refresh:", session?.user);
+    // Debug logging removed for production
+    // Debug logging removed for production
 
     setIsRefreshing(true);
     try {
       // Simply call NextAuth's update() - it will now fetch fresh data from DB
       await update();
-      console.log("Session updated successfully");
+      // Debug logging removed for production
     } catch (error) {
       console.error("Error refreshing session:", error);
     } finally {

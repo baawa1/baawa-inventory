@@ -44,15 +44,7 @@ export async function GET(_req: NextRequest) {
     const userStatus = (token as any).status;
     const isEmailVerified = Boolean((token as any).isEmailVerified);
 
-    // Debug logging
-    console.log("🔍 Test Middleware Debug:", {
-      pathname,
-      userRole,
-      userStatus,
-      isEmailVerified,
-      hasToken: !!token,
-      token: token,
-    });
+    // Debug logging removed for production
 
     // Authentication Flow Logic:
     // 1. Unverified users → verify-email page

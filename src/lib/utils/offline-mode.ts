@@ -56,7 +56,7 @@ class OfflineModeManager {
   }
 
   private handleOnline() {
-    console.log("🟢 Network: Back online");
+    // Debug logging removed for production
     this.isOnline = true;
     this.lastOnlineTime = new Date();
     this.notifyListeners();
@@ -69,7 +69,7 @@ class OfflineModeManager {
   }
 
   private handleOffline() {
-    console.log("🔴 Network: Gone offline");
+    // Debug logging removed for production
     this.isOnline = false;
     this.lastOfflineTime = new Date();
     this.notifyListeners();
@@ -213,10 +213,7 @@ class OfflineModeManager {
 
     await offlineStorage.storeTransaction(transaction);
 
-    console.log(
-      "📥 Transaction queued for offline processing:",
-      transaction.id
-    );
+    // Debug logging removed for production
 
     // Try to sync immediately if online
     if (this.isOnline) {
@@ -236,7 +233,7 @@ class OfflineModeManager {
     failed: number;
   }> {
     if (!this.isOnline) {
-      console.log("⏸️ Skipping sync - offline");
+      // Debug logging removed for production
       return { success: 0, failed: 0 };
     }
 
@@ -244,9 +241,7 @@ class OfflineModeManager {
       await offlineStorage.init();
       const pendingTransactions = await offlineStorage.getPendingTransactions();
 
-      console.log(
-        `🔄 Syncing ${pendingTransactions.length} pending transactions`
-      );
+      // Debug logging removed for production
 
       let success = 0;
       let failed = 0;
@@ -261,7 +256,7 @@ class OfflineModeManager {
         }
       }
 
-      console.log(`✅ Sync complete: ${success} success, ${failed} failed`);
+      // Debug logging removed for production
       await offlineStorage.updateSyncStatus("lastSyncAttempt", new Date());
 
       return { success, failed };
@@ -320,7 +315,7 @@ class OfflineModeManager {
 
       // Mark as synced
       await offlineStorage.updateTransactionStatus(transactionId, "synced");
-      console.log(`✅ Transaction ${transactionId} synced successfully`);
+      // Debug logging removed for production
     } catch (error) {
       console.error(`❌ Failed to sync transaction ${transactionId}:`, error);
       await offlineStorage.updateTransactionStatus(
@@ -337,12 +332,12 @@ class OfflineModeManager {
    */
   async cacheProductsForOffline(): Promise<void> {
     if (!this.isOnline) {
-      console.log("⏸️ Cannot cache products - offline");
+      // Debug logging removed for production
       return;
     }
 
     try {
-      console.log("📥 Caching products for offline use...");
+      // Debug logging removed for production
 
       const response = await fetch("/api/pos/products?limit=0");
       if (!response.ok) {
@@ -367,7 +362,7 @@ class OfflineModeManager {
       await offlineStorage.cacheProducts(products);
       await offlineStorage.updateSyncStatus("lastProductSync", new Date());
 
-      console.log(`✅ Cached ${products.length} products for offline use`);
+      // Debug logging removed for production
     } catch (error) {
       console.error("Error caching products:", error);
       throw error;
@@ -410,7 +405,7 @@ class OfflineModeManager {
    * Force sync now (manual trigger)
    */
   async forceSyncNow(): Promise<{ success: number; failed: number }> {
-    console.log("🔄 Force sync triggered");
+    // Debug logging removed for production
     return this.syncPendingTransactions();
   }
 
@@ -428,9 +423,7 @@ class OfflineModeManager {
         await offlineStorage.updateTransactionStatus(transaction.id, "synced");
       }
 
-      console.log(
-        `🗑️ Cleared ${failedTransactions.length} failed transactions`
-      );
+      // Debug logging removed for production
     } catch (error) {
       console.error("Error clearing failed transactions:", error);
       throw error;

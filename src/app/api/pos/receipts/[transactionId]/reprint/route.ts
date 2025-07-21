@@ -33,7 +33,7 @@ export async function POST(
     // 4. Log the reprint action for audit purposes
 
     // For now, we'll simulate a successful reprint
-    console.log(`Reprinting receipt for transaction ID: ${transactionId}`);
+    // Debug logging removed for production
 
     return NextResponse.json({
       success: true,

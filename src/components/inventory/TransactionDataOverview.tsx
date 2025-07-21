@@ -17,7 +17,7 @@ import {
   IconChartBar,
 } from "@tabler/icons-react";
 import { useTransactionStats } from "@/hooks/api/transactions";
-import { CURRENCY } from "@/lib/constants";
+import { CURRENCY, PLACEHOLDER_VALUES } from "@/lib/constants";
 
 interface TransactionDataOverviewProps {
   dateFrom?: string;
@@ -113,21 +113,21 @@ export function TransactionDataOverview({
     },
     {
       label: "Discounted orders",
-      value: "0", // TODO: Add this to stats
+      value: PLACEHOLDER_VALUES.DISCOUNTED_ORDERS, // TODO: Add this to stats
       change: 0,
-      changeLabel: "0%",
+      changeLabel: PLACEHOLDER_VALUES.DISCOUNT_CHANGE,
     },
     {
       label: "Net discount amount",
       value: formatCurrency(stats.totalDiscount),
       change: 0, // TODO: Add discount change to stats
-      changeLabel: "0%",
+      changeLabel: PLACEHOLDER_VALUES.DISCOUNT_CHANGE,
     },
     {
       label: "Visitors",
-      value: "999", // TODO: Add visitor tracking
+      value: PLACEHOLDER_VALUES.VISITOR_COUNT, // TODO: Add visitor tracking
       change: 0,
-      changeLabel: "0%",
+      changeLabel: PLACEHOLDER_VALUES.VISITOR_CHANGE,
     },
     {
       label: "Gross sales",
@@ -137,9 +137,9 @@ export function TransactionDataOverview({
     },
     {
       label: "Views",
-      value: "1,333", // TODO: Add view tracking
+      value: PLACEHOLDER_VALUES.VIEW_COUNT, // TODO: Add view tracking
       change: 0,
-      changeLabel: "0%",
+      changeLabel: PLACEHOLDER_VALUES.VIEW_CHANGE,
     },
   ];
 

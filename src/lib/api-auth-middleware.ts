@@ -25,7 +25,7 @@ export interface AuthenticatedRequest extends NextRequest {
  * POS Authentication Middleware
  * Allows ADMIN, MANAGER, and STAFF roles to access POS functionality
  */
-export function withPOSAuth<T extends any[]>(
+export function withPOSAuth<T extends unknown[]>(
   handler: (request: AuthenticatedRequest, ...args: T) => Promise<NextResponse>
 ) {
   return async (request: NextRequest, ...args: T): Promise<NextResponse> => {

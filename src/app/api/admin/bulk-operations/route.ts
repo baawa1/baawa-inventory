@@ -27,7 +27,7 @@ export const POST = withPermission(
   async function (request: AuthenticatedRequest) {
     try {
       const body = await request.json();
-      console.log("POST /api/admin/bulk-operations - Received data:", body);
+      // Debug logging removed for production
 
       // Validate request body
       const validation = bulkOperationSchema.safeParse(body);
@@ -99,7 +99,7 @@ export const POST = withPermission(
           );
       }
 
-      console.log(`✅ Bulk operation ${operation} completed successfully`);
+      // Debug logging removed for production
 
       return NextResponse.json({
         success: true,

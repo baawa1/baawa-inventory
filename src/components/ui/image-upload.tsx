@@ -40,7 +40,7 @@ export function ImageUpload({
     if (!files || files.length === 0) return;
 
     const file = files[0];
-    console.log("File selected:", file.name, file.type, file.size);
+    // Debug logging removed for production
 
     // Validate file type
     if (!UPLOAD_LIMITS.ALLOWED_IMAGE_TYPES.includes(file.type as any)) {
@@ -63,7 +63,7 @@ export function ImageUpload({
 
   const uploadFile = async (file: File) => {
     setUploading(true);
-    console.log("Starting upload for file:", file.name);
+    // Debug logging removed for production
 
     try {
       const formData = new FormData();
@@ -71,13 +71,13 @@ export function ImageUpload({
       formData.append("folder", folder);
       formData.append("quality", "85");
 
-      console.log("Uploading to folder:", folder);
+      // Debug logging removed for production
       const response = await fetch("/api/upload", {
         method: "POST",
         body: formData,
       });
 
-      console.log("Upload response status:", response.status);
+      // Debug logging removed for production
       if (!response.ok) {
         const error = await response.json();
         console.error("Upload response error:", error);
@@ -85,7 +85,7 @@ export function ImageUpload({
       }
 
       const result = await response.json();
-      console.log("Upload successful, result:", result);
+      // Debug logging removed for production
       onChange(result.url);
       toast.success("Image uploaded successfully!");
 

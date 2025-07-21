@@ -20,18 +20,15 @@ export interface AuthenticatedRequest extends NextRequest {
 /**
  * Authentication middleware that integrates with Auth.js v5
  */
-export function withAuth<T extends any[]>(
+export function withAuth<T extends unknown[]>(
   handler: (request: AuthenticatedRequest, ...args: T) => Promise<NextResponse>
 ) {
   return async (request: NextRequest, ...args: T): Promise<NextResponse> => {
     try {
-      console.log("withAuth middleware called for:", request.nextUrl.pathname);
       // Get session from Auth.js
       const session = await auth();
-      console.log("Session:", session ? "Found" : "Not found");
 
       if (!session?.user) {
-        console.log("No session found in withAuth middleware");
         return NextResponse.json(
           { error: "Authentication required" },
           { status: 401 }
@@ -40,7 +37,6 @@ export function withAuth<T extends any[]>(
 
       // Validate user session data
       if (!session.user.id || !session.user.email || !session.user.role) {
-        console.log("Invalid session data:", session.user);
         return NextResponse.json(
           { error: "Invalid session data" },
           { status: 401 }
@@ -49,7 +45,6 @@ export function withAuth<T extends any[]>(
 
       // Check if user is active and approved
       if (!session.user.isEmailVerified) {
-        console.log("Email not verified for user:", session.user.email);
         return NextResponse.json(
           { error: "Email verification required" },
           { status: 403 }
@@ -57,12 +52,6 @@ export function withAuth<T extends any[]>(
       }
 
       if (session.user.status !== USER_STATUS.APPROVED) {
-        console.log(
-          "Account not approved for user:",
-          session.user.email,
-          "Status:",
-          session.user.status
-        );
         return NextResponse.json(
           { error: "Account not approved" },
           { status: 403 }
@@ -81,13 +70,7 @@ export function withAuth<T extends any[]>(
       };
 
       return await handler(authenticatedRequest, ...args);
-    } catch (error) {
-      console.error("Auth middleware error:", error);
-      console.error(
-        "Error stack:",
-        error instanceof Error ? error.stack : "No stack"
-      );
-
+    } catch (_error) {
       return NextResponse.json(
         { error: "Authentication failed" },
         { status: 500 }
@@ -99,7 +82,7 @@ export function withAuth<T extends any[]>(
 /**
  * Permission-based middleware that requires specific roles
  */
-export function withPermission<T extends any[]>(
+export function withPermission<T extends unknown[]>(
   allowedRoles: UserRole[],
   handler: (request: AuthenticatedRequest, ...args: T) => Promise<NextResponse>
 ) {
@@ -134,8 +117,6 @@ export function withPermission<T extends any[]>(
 
         return await handler(request, ...args);
       } catch (error) {
-        console.error("Permission middleware error:", error);
-
         await AuditLogger.logAuthEvent(
           {
             action: "LOGIN_FAILED",
@@ -160,7 +141,7 @@ export function withPermission<T extends any[]>(
 /**
  * Admin-only middleware
  */
-export function withAdminPermission<T extends any[]>(
+export function withAdminPermission<T extends unknown[]>(
   handler: (request: AuthenticatedRequest, ...args: T) => Promise<NextResponse>
 ) {
   return withPermission([USER_ROLES.ADMIN], handler);
@@ -169,7 +150,7 @@ export function withAdminPermission<T extends any[]>(
 /**
  * Manager+ middleware (Manager and Admin)
  */
-export function withManagerPermission<T extends any[]>(
+export function withManagerPermission<T extends unknown[]>(
   handler: (request: AuthenticatedRequest, ...args: T) => Promise<NextResponse>
 ) {
   return withPermission([USER_ROLES.ADMIN, USER_ROLES.MANAGER], handler);
@@ -178,7 +159,7 @@ export function withManagerPermission<T extends any[]>(
 /**
  * Any authenticated user middleware
  */
-export function withUserPermission<T extends any[]>(
+export function withUserPermission<T extends unknown[]>(
   handler: (request: AuthenticatedRequest, ...args: T) => Promise<NextResponse>
 ) {
   return withPermission(

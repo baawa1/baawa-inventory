@@ -1,242 +1,167 @@
 import { NextResponse } from "next/server";
-import { ZodError } from "zod";
 import { logger } from "./logger";
 
 export interface ApiError {
   message: string;
-  code?: string;
-  details?: any;
+  code: string;
+  details?: Record<string, any>;
+  timestamp: string;
 }
 
-export class ApiException extends Error {
-  public statusCode: number;
-  public code?: string;
-  public details?: any;
+export interface ValidationError {
+  field: string;
+  message: string;
+}
 
-  constructor(
+export class ApiErrorHandler {
+  /**
+   * Create a standardized error response
+   */
+  static createErrorResponse(
     message: string,
-    statusCode: number,
-    code?: string,
-    details?: any
-  ) {
-    super(message);
-    this.name = "ApiException";
-    this.statusCode = statusCode;
-    this.code = code;
-    this.details = details;
-  }
-}
+    statusCode: number = 500,
+    code: string = "INTERNAL_ERROR",
+    details?: Record<string, any>
+  ): NextResponse<ApiError> {
+    const error: ApiError = {
+      message,
+      code,
+      details,
+      timestamp: new Date().toISOString(),
+    };
 
-/**
- * Helper function to get error code based on status
- */
-function getErrorCode(statusCode: number): string {
-  switch (statusCode) {
-    case 400:
-      return "BAD_REQUEST";
-    case 401:
-      return "UNAUTHORIZED";
-    case 403:
-      return "FORBIDDEN";
-    case 404:
-      return "NOT_FOUND";
-    case 409:
-      return "CONFLICT";
-    case 500:
-      return "INTERNAL_ERROR";
-    default:
-      return "UNKNOWN_ERROR";
-  }
-}
-
-/**
- * Standardized error response handler for API routes
- */
-export function handleApiError(
-  error: unknown,
-  statusCode?: number
-): NextResponse {
-  // Handle validation errors (Zod)
-  if (error instanceof ZodError) {
-    return NextResponse.json(
-      {
-        error: "Validation failed",
-        code: "VALIDATION_ERROR",
-        details: error.errors.map((err) => ({
-          field: err.path.join("."),
-          message: err.message,
-          code: err.code,
-        })),
-      },
-      { status: 400 }
-    );
-  }
-
-  // Handle custom API exceptions
-  if (error instanceof ApiException) {
-    return NextResponse.json(
-      {
-        error: error.message,
-        code: error.code,
-        details: error.details,
-      },
-      { status: error.statusCode }
-    );
-  }
-
-  // Handle standard JavaScript errors with custom status code
-  if (error instanceof Error && statusCode) {
-    return NextResponse.json(
-      {
-        error: error.message,
-        code: getErrorCode(statusCode),
-      },
-      { status: statusCode }
-    );
-  }
-
-  // Handle Prisma errors
-  if (error && typeof error === "object" && "code" in error) {
-    const prismaError = error as any;
-
-    switch (prismaError.code) {
-      case "P2002":
-        return NextResponse.json(
-          {
-            error: "A record with this data already exists",
-            code: "DUPLICATE_RECORD",
-            details: prismaError.meta,
-          },
-          { status: 409 }
-        );
-      case "P2025":
-        return NextResponse.json(
-          {
-            error: "Record not found",
-            code: "NOT_FOUND",
-            details: prismaError.meta,
-          },
-          { status: 404 }
-        );
-      case "P2003":
-        return NextResponse.json(
-          {
-            error: "Foreign key constraint failed",
-            code: "CONSTRAINT_VIOLATION",
-            details: prismaError.meta,
-          },
-          { status: 400 }
-        );
-      default:
-        logger.error("Prisma error", {
-          error: prismaError.message || "Unknown Prisma error",
-          code: prismaError.code,
-        });
-        return NextResponse.json(
-          {
-            error: "Database operation failed",
-            code: "DATABASE_ERROR",
-          },
-          { status: 500 }
-        );
-    }
-  }
-
-  // Handle standard JavaScript errors
-  if (error instanceof Error) {
-    logger.error("API Error", {
-      error: error.message,
-      stack: error.stack,
+    // Log error for debugging (without sensitive details)
+    logger.error(`API Error [${statusCode}]: ${message}`, {
+      code,
+      statusCode,
+      hasDetails: !!details,
     });
 
-    // Don't expose internal error messages in production
-    const isDevelopment = process.env.NODE_ENV === "development";
-
-    return NextResponse.json(
-      {
-        error: isDevelopment ? error.message : "Internal server error",
-        code: "INTERNAL_ERROR",
-        ...(isDevelopment && { stack: error.stack }),
-      },
-      { status: 500 }
-    );
+    return NextResponse.json(error, { status: statusCode });
   }
 
-  // Handle unknown errors
-  logger.error("Unknown error", {
-    error: error instanceof Error ? error.message : String(error),
-  });
-  return NextResponse.json(
-    {
-      error: "An unexpected error occurred",
-      code: "UNKNOWN_ERROR",
-    },
-    { status: 500 }
-  );
+  /**
+   * Handle validation errors
+   */
+  static handleValidationError(
+    errors: ValidationError[],
+    message: string = "Validation failed"
+  ): NextResponse<ApiError> {
+    const details = errors.reduce(
+      (acc, error) => {
+        acc[error.field] = error.message;
+        return acc;
+      },
+      {} as Record<string, string>
+    );
+
+    return this.createErrorResponse(message, 400, "VALIDATION_ERROR", details);
+  }
+
+  /**
+   * Handle authentication errors
+   */
+  static handleAuthError(
+    message: string = "Authentication required"
+  ): NextResponse<ApiError> {
+    return this.createErrorResponse(message, 401, "AUTHENTICATION_ERROR");
+  }
+
+  /**
+   * Handle authorization errors
+   */
+  static handleForbiddenError(
+    message: string = "Insufficient permissions"
+  ): NextResponse<ApiError> {
+    return this.createErrorResponse(message, 403, "FORBIDDEN_ERROR");
+  }
+
+  /**
+   * Handle not found errors
+   */
+  static handleNotFoundError(
+    message: string = "Resource not found"
+  ): NextResponse<ApiError> {
+    return this.createErrorResponse(message, 404, "NOT_FOUND_ERROR");
+  }
+
+  /**
+   * Handle database errors
+   */
+  static handleDatabaseError(error: unknown): NextResponse<ApiError> {
+    const message = "Database operation failed";
+
+    // Log the actual error for debugging
+    logger.error("Database error", {
+      error: error instanceof Error ? error.message : "Unknown database error",
+      stack: error instanceof Error ? error.stack : undefined,
+    });
+
+    return this.createErrorResponse(message, 500, "DATABASE_ERROR");
+  }
+
+  /**
+   * Handle unexpected errors
+   */
+  static handleUnexpectedError(error: unknown): NextResponse<ApiError> {
+    const message = "An unexpected error occurred";
+
+    // Log the actual error for debugging
+    logger.error("Unexpected error", {
+      error: error instanceof Error ? error.message : "Unknown error",
+      stack: error instanceof Error ? error.stack : undefined,
+    });
+
+    return this.createErrorResponse(message, 500, "INTERNAL_ERROR");
+  }
+
+  /**
+   * Handle rate limiting errors
+   */
+  static handleRateLimitError(
+    message: string = "Too many requests"
+  ): NextResponse<ApiError> {
+    return this.createErrorResponse(message, 429, "RATE_LIMIT_ERROR");
+  }
+
+  /**
+   * Handle business logic errors
+   */
+  static handleBusinessError(
+    message: string,
+    code: string = "BUSINESS_ERROR",
+    details?: Record<string, any>
+  ): NextResponse<ApiError> {
+    return this.createErrorResponse(message, 400, code, details);
+  }
 }
 
-/**
- * Creates a standardized API response
- */
-export function createApiResponse(
-  data: any,
-  status: number = 200
-): NextResponse {
-  return NextResponse.json(data, { status });
-}
-
-/**
- * Creates a standardized success response
- */
-export function createSuccessResponse(
-  data: any,
-  message?: string,
-  status: number = 200
-): NextResponse {
-  return NextResponse.json(
-    {
-      success: true,
-      message,
-      data,
-    },
-    { status }
-  );
-}
-
-/**
- * Creates a paginated response
- */
-export function createPaginatedResponse(
-  data: any[],
-  pagination: {
-    page: number;
-    limit: number;
-    total: number;
-    totalPages: number;
-    hasNext: boolean;
-    hasPrev: boolean;
-  },
+// Convenience functions for common error types
+export const createValidationError = (
+  errors: ValidationError[],
   message?: string
-): NextResponse {
-  return NextResponse.json({
-    success: true,
-    message,
-    data,
-    pagination,
-  });
-}
+) => ApiErrorHandler.handleValidationError(errors, message);
 
-/**
- * Middleware wrapper for consistent error handling
- */
-export function withErrorHandling<
-  T extends (...args: any[]) => Promise<NextResponse>,
->(handler: T): T {
-  return (async (...args: any[]) => {
-    try {
-      return await handler(...args);
-    } catch (error) {
-      return handleApiError(error);
-    }
-  }) as T;
-}
+export const createAuthError = (message?: string) =>
+  ApiErrorHandler.handleAuthError(message);
+
+export const createForbiddenError = (message?: string) =>
+  ApiErrorHandler.handleForbiddenError(message);
+
+export const createNotFoundError = (message?: string) =>
+  ApiErrorHandler.handleNotFoundError(message);
+
+export const createDatabaseError = (error: unknown) =>
+  ApiErrorHandler.handleDatabaseError(error);
+
+export const createUnexpectedError = (error: unknown) =>
+  ApiErrorHandler.handleUnexpectedError(error);
+
+export const createRateLimitError = (message?: string) =>
+  ApiErrorHandler.handleRateLimitError(message);
+
+export const createBusinessError = (
+  message: string,
+  code?: string,
+  details?: Record<string, any>
+) => ApiErrorHandler.handleBusinessError(message, code, details);

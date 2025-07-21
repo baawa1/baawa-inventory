@@ -17,7 +17,7 @@ export const POST = withPermission(
     try {
       const body = await request.json();
 
-      console.log("POST /api/admin/suspend-user - Received data:", body);
+      // Debug logging removed for production
 
       // Validate request body
       const validation = suspendUserSchema.safeParse(body);
@@ -95,7 +95,7 @@ export const POST = withPermission(
       }
 
       const actionText = action === "suspend" ? "suspended" : "reactivated";
-      console.log(`✅ User ${userId} successfully ${actionText}`);
+      // Debug logging removed for production
 
       return NextResponse.json({
         success: true,

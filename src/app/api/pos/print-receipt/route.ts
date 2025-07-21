@@ -45,7 +45,7 @@ async function handlePrintReceipt(request: AuthenticatedRequest) {
   try {
     // Parse and validate request body
     const body = await request.json();
-    console.log("Print receipt request body:", JSON.stringify(body, null, 2));
+    // Debug logging removed for production
     const validatedData = printReceiptSchema.parse(body);
 
     const {

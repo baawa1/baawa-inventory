@@ -115,7 +115,7 @@ export const formUtils = {
 
         if (options?.successMessage) {
           // Toast notification would go here
-          console.log(options.successMessage);
+          // Debug logging removed for production
         }
 
         options?.onSuccess?.();

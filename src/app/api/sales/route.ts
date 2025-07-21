@@ -9,9 +9,9 @@ import {
 // GET /api/sales - List sales transactions with optional filtering and pagination
 export const GET = withAuth(async function (request: AuthenticatedRequest) {
   try {
-    console.log("Sales API called with user:", request.user);
+    // Debug logging removed for production
     const { searchParams } = new URL(request.url);
-    console.log("Search params:", Object.fromEntries(searchParams));
+    // Debug logging removed for production
 
     // Convert search params to proper types for validation
     const queryParams = {
@@ -32,9 +32,9 @@ export const GET = withAuth(async function (request: AuthenticatedRequest) {
     };
 
     // Validate query parameters
-    console.log("Validating query params:", queryParams);
+    // Debug logging removed for production
     const validatedQuery = saleQuerySchema.parse(queryParams);
-    console.log("Query validation successful:", validatedQuery);
+    // Debug logging removed for production
     const {
       page,
       limit,

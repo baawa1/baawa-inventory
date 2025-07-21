@@ -61,7 +61,7 @@ export async function notifyAdmins(
     }
 
     await sendNotification(adminEmails);
-    console.log(`Admin notification sent to ${adminEmails.length} recipients`);
+    // Debug logging removed for production
   } catch (error) {
     console.error("Error sending admin notification:", error);
     // Don't throw error to prevent breaking the main flow

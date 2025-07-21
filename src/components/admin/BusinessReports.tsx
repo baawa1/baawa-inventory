@@ -110,13 +110,13 @@ export function BusinessReports() {
     },
   ];
 
-  const generateReport = (reportId: number) => {
-    console.log("Generating report:", reportId);
+  const generateReport = (_reportId: number) => {
+    // Debug logging removed for production
     // Implementation for report generation
   };
 
-  const downloadReport = (reportId: number) => {
-    console.log("Downloading report:", reportId);
+  const downloadReport = (_reportId: number) => {
+    // Debug logging removed for production
     // Implementation for report download
   };
 

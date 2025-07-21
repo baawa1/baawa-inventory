@@ -45,7 +45,7 @@ export function PWAManager() {
 
     // Listen for install prompt
     const handleBeforeInstallPrompt = (e: BeforeInstallPromptEvent) => {
-      console.log("PWA install prompt triggered");
+      // Debug logging removed for production
       e.preventDefault();
       setDeferredPrompt(e);
 
@@ -59,7 +59,7 @@ export function PWAManager() {
 
     // Listen for app installed
     const handleAppInstalled = () => {
-      console.log("PWA installed");
+      // Debug logging removed for production
       setIsInstalled(true);
       setShowInstallPrompt(false);
       setDeferredPrompt(null);
@@ -108,12 +108,12 @@ export function PWAManager() {
       navigator.serviceWorker.addEventListener("message", (event) => {
         if (event.data.type === "SYNC_OFFLINE_TRANSACTIONS") {
           // Trigger offline transaction sync
-          console.log("Service worker requesting transaction sync");
+          // Debug logging removed for production
           // This would trigger the useOffline hook sync
         }
       });
 
-      console.log("Service Worker registered successfully");
+      // Debug logging removed for production
     } catch (error) {
       console.error("Service Worker registration failed:", error);
     }
@@ -127,9 +127,9 @@ export function PWAManager() {
       const { outcome } = await deferredPrompt.userChoice;
 
       if (outcome === "accepted") {
-        console.log("User accepted the install prompt");
+        // Debug logging removed for production
       } else {
-        console.log("User dismissed the install prompt");
+        // Debug logging removed for production
       }
 
       setDeferredPrompt(null);

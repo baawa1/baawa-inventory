@@ -99,8 +99,8 @@ export default function AddCategoryForm() {
         parentId: data.parentId || undefined,
       },
       {
-        onSuccess: (createdCategory) => {
-          console.log("Category created successfully:", createdCategory);
+        onSuccess: (_createdCategory) => {
+          // Debug logging removed for production
           toast.success("Category created successfully!");
           router.push("/inventory/categories");
         },

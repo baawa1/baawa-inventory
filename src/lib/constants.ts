@@ -331,3 +331,13 @@ export const DEFAULTS = {
   CURRENCY_CODE: CURRENCY.CODE,
   PAGE_SIZE: API_LIMITS.DEFAULT_PAGE_SIZE,
 } as const;
+
+// Placeholder Values for Development
+export const PLACEHOLDER_VALUES = {
+  VISITOR_COUNT: "999",
+  VIEW_COUNT: "1,333",
+  DISCOUNTED_ORDERS: "0",
+  DISCOUNT_CHANGE: "0%",
+  VISITOR_CHANGE: "0%",
+  VIEW_CHANGE: "0%",
+} as const;
