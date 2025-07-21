@@ -3,6 +3,7 @@
 import { useState, useEffect, useCallback } from "react";
 import { useRouter } from "next/navigation";
 import { useSession } from "next-auth/react";
+import { logger } from "@/lib/logger";
 
 interface UseUserStatusValidationOptions {
   redirectOnApproved?: boolean;
@@ -47,7 +48,9 @@ export function useUserStatusValidation(
       // Use Auth.js v5 update() to trigger a fresh session fetch
       await update();
     } catch (error) {
-      console.error("Error refreshing session:", error);
+      logger.error("Error refreshing session", {
+        error: error instanceof Error ? error.message : "Unknown error",
+      });
     } finally {
       setIsRefreshing(false);
     }

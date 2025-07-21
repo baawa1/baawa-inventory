@@ -4,8 +4,8 @@ import {
   AuthenticatedRequest,
 } from "@/lib/api-middleware";
 import { handleApiError } from "@/lib/api-error-handler";
-import { createApiResponse } from "@/lib/api-response";
 import { prisma } from "@/lib/db";
+import { createSecureResponse } from "@/lib/security-headers";
 
 import { PRODUCT_STATUS } from "@/lib/constants";
 import { USER_ROLES } from "@/lib/auth/roles";
@@ -149,10 +149,6 @@ export const GET = withAuth(async (request: AuthenticatedRequest) => {
       prisma.product.count({ where }),
     ]);
 
-    console.log(
-      `✅ Found ${products.length} products out of ${totalCount} total`
-    );
-
     // Transform response
     const transformedProducts = products.map((product) => ({
       id: product.id,
@@ -180,20 +176,32 @@ export const GET = withAuth(async (request: AuthenticatedRequest) => {
       ...(includeSync && { content_sync: product.content_sync }),
     }));
 
-    return createApiResponse.successWithPagination(
-      transformedProducts,
+    return createSecureResponse(
       {
-        page,
-        limit,
-        total: totalCount,
-        totalPages: Math.ceil(totalCount / limit),
-        hasNextPage: page < Math.ceil(totalCount / limit),
-        hasPreviousPage: page > 1,
+        success: true,
+        message: `Retrieved ${transformedProducts.length} products`,
+        data: transformedProducts,
+        pagination: {
+          page,
+          limit,
+          total: totalCount,
+          totalPages: Math.ceil(totalCount / limit),
+          hasNextPage: page < Math.ceil(totalCount / limit),
+          hasPreviousPage: page > 1,
+        },
       },
-      `Retrieved ${transformedProducts.length} products`
+      200
     );
   } catch (error) {
-    return handleApiError(error);
+    const errorResponse = handleApiError(error);
+    return createSecureResponse(
+      {
+        success: false,
+        message: errorResponse.statusText || "An error occurred",
+        code: "ERROR",
+      },
+      errorResponse.status
+    );
   }
 });
 
@@ -203,11 +211,9 @@ export const POST = withPermission(
   async (request: AuthenticatedRequest) => {
     try {
       const body = await request.json();
-      console.log("Received product data:", body);
 
       // Validate input data
       const validatedData = ProductCreateSchema.parse(body);
-      console.log("Validated product data:", validatedData);
 
       // Check if SKU already exists
       const existingSKU = await prisma.product.findUnique({
@@ -215,8 +221,13 @@ export const POST = withPermission(
       });
 
       if (existingSKU) {
-        return createApiResponse.conflict(
-          "Product with this SKU already exists"
+        return createSecureResponse(
+          {
+            success: false,
+            message: "Product with this SKU already exists",
+            code: "CONFLICT",
+          },
+          409
         );
       }
 
@@ -227,8 +238,13 @@ export const POST = withPermission(
         });
 
         if (existingBarcode) {
-          return createApiResponse.conflict(
-            "Product with this barcode already exists"
+          return createSecureResponse(
+            {
+              success: false,
+              message: "Product with this barcode already exists",
+              code: "CONFLICT",
+            },
+            409
           );
         }
       }
@@ -240,7 +256,14 @@ export const POST = withPermission(
         });
 
         if (!category) {
-          return createApiResponse.notFound("Category");
+          return createSecureResponse(
+            {
+              success: false,
+              message: "Category not found",
+              code: "NOT_FOUND",
+            },
+            404
+          );
         }
       }
 
@@ -251,7 +274,14 @@ export const POST = withPermission(
         });
 
         if (!brand) {
-          return createApiResponse.notFound("Brand");
+          return createSecureResponse(
+            {
+              success: false,
+              message: "Brand not found",
+              code: "NOT_FOUND",
+            },
+            404
+          );
         }
       }
 
@@ -262,7 +292,14 @@ export const POST = withPermission(
         });
 
         if (!supplier) {
-          return createApiResponse.notFound("Supplier");
+          return createSecureResponse(
+            {
+              success: false,
+              message: "Supplier not found",
+              code: "NOT_FOUND",
+            },
+            404
+          );
         }
       }
 
@@ -314,15 +351,24 @@ export const POST = withPermission(
         },
       });
 
-      console.log("✅ Product created successfully:", newProduct);
-
-      return createApiResponse.success(
-        newProduct,
-        "Product created successfully",
+      return createSecureResponse(
+        {
+          success: true,
+          message: "Product created successfully",
+          data: newProduct,
+        },
         201
       );
     } catch (error) {
-      return handleApiError(error);
+      const errorResponse = handleApiError(error);
+      return createSecureResponse(
+        {
+          success: false,
+          message: errorResponse.statusText || "An error occurred",
+          code: "ERROR",
+        },
+        errorResponse.status
+      );
     }
   }
 );

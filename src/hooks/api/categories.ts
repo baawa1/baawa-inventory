@@ -212,7 +212,6 @@ export const useCreateCategory = () => {
       });
       // Update individual category detail
       queryClient.setQueryData(queryKeys.categories.detail(data.id), data);
-      console.log("Cache invalidation completed");
     },
   });
 };
@@ -235,7 +234,6 @@ export const useUpdateCategory = () => {
       });
       // Update individual category detail
       queryClient.setQueryData(queryKeys.categories.detail(data.id), data);
-      console.log("Cache invalidation completed");
     },
   });
 };
@@ -256,7 +254,6 @@ export const useDeleteCategory = () => {
         queryKey: queryKeys.categories.lists(),
         exact: false,
       });
-      console.log("Cache invalidation completed");
     },
   });
 };

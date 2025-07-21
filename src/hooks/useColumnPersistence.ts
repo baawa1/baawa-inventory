@@ -1,4 +1,5 @@
 import { useState, useEffect, useCallback } from "react";
+import { logger } from "@/lib/logger";
 
 export interface ColumnConfig {
   key: string;
@@ -26,7 +27,9 @@ export function useColumnPersistence({
       .map((col) => col.key);
   }, [columns, excludeColumns]);
 
-  const [visibleColumns, setVisibleColumns] = useState<string[]>(getDefaultVisibleColumns());
+  const [visibleColumns, setVisibleColumns] = useState<string[]>(
+    getDefaultVisibleColumns()
+  );
 
   // Load persisted columns from localStorage on mount
   useEffect(() => {
@@ -38,11 +41,11 @@ export function useColumnPersistence({
           if (Array.isArray(parsed)) {
             // Filter out excluded columns and ensure all columns exist
             const validColumns = parsed.filter(
-              (col: string) => 
-                !excludeColumns.includes(col) && 
+              (col: string) =>
+                !excludeColumns.includes(col) &&
                 columns.some((column) => column.key === col)
             );
-            
+
             if (validColumns.length > 0) {
               setVisibleColumns(validColumns);
               return;
@@ -50,11 +53,13 @@ export function useColumnPersistence({
           }
         }
       } catch (error) {
-        console.warn(`Failed to load persisted columns for ${storageKey}:`, error);
+        logger.warn(`Failed to load persisted columns for ${storageKey}`, {
+          error: error instanceof Error ? error.message : "Unknown error",
+        });
         // Remove corrupted data
         localStorage.removeItem(storageKey);
       }
-      
+
       // Fallback to default columns
       setVisibleColumns(getDefaultVisibleColumns());
     };
@@ -68,21 +73,26 @@ export function useColumnPersistence({
       try {
         localStorage.setItem(storageKey, JSON.stringify(visibleColumns));
       } catch (error) {
-        console.warn(`Failed to save columns for ${storageKey}:`, error);
+        logger.warn(`Failed to save columns for ${storageKey}`, {
+          error: error instanceof Error ? error.message : "Unknown error",
+        });
       }
     }
   }, [visibleColumns, storageKey]);
 
   // Update visible columns with validation
-  const updateVisibleColumns = useCallback((newColumns: string[]) => {
-    const validColumns = newColumns.filter(
-      (col) => 
-        !excludeColumns.includes(col) && 
-        columns.some((column) => column.key === col)
-    );
-    
-    setVisibleColumns(validColumns);
-  }, [excludeColumns, columns]);
+  const updateVisibleColumns = useCallback(
+    (newColumns: string[]) => {
+      const validColumns = newColumns.filter(
+        (col) =>
+          !excludeColumns.includes(col) &&
+          columns.some((column) => column.key === col)
+      );
+
+      setVisibleColumns(validColumns);
+    },
+    [excludeColumns, columns]
+  );
 
   // Reset to default columns
   const resetToDefaults = useCallback(() => {
@@ -94,20 +104,19 @@ export function useColumnPersistence({
   // Clean up invalid columns (utility function)
   const cleanupInvalidColumns = useCallback(() => {
     const validColumns = visibleColumns.filter(
-      (col) => 
-        !excludeColumns.includes(col) && 
+      (col) =>
+        !excludeColumns.includes(col) &&
         columns.some((column) => column.key === col)
     );
-    
+
     if (validColumns.length !== visibleColumns.length) {
       setVisibleColumns(validColumns);
     }
   }, [visibleColumns, excludeColumns, columns]);
 
   // Get effective visible columns (with fallback)
-  const effectiveVisibleColumns = visibleColumns.length > 0 
-    ? visibleColumns 
-    : getDefaultVisibleColumns();
+  const effectiveVisibleColumns =
+    visibleColumns.length > 0 ? visibleColumns : getDefaultVisibleColumns();
 
   return {
     visibleColumns: effectiveVisibleColumns,
@@ -118,15 +127,22 @@ export function useColumnPersistence({
 }
 
 // Utility function to clean up localStorage for a specific key
-export const cleanupColumnStorage = (storageKey: string, excludeColumns: string[] = ["actions"]) => {
+export const cleanupColumnStorage = (
+  storageKey: string,
+  excludeColumns: string[] = ["actions"]
+) => {
   try {
     const stored = localStorage.getItem(storageKey);
     if (stored) {
       const parsed = JSON.parse(stored);
       if (Array.isArray(parsed)) {
-        const hasExcludedColumns = parsed.some((col: string) => excludeColumns.includes(col));
+        const hasExcludedColumns = parsed.some((col: string) =>
+          excludeColumns.includes(col)
+        );
         if (hasExcludedColumns) {
-          const cleaned = parsed.filter((col: string) => !excludeColumns.includes(col));
+          const cleaned = parsed.filter(
+            (col: string) => !excludeColumns.includes(col)
+          );
           if (cleaned.length > 0) {
             localStorage.setItem(storageKey, JSON.stringify(cleaned));
           } else {
@@ -136,7 +152,9 @@ export const cleanupColumnStorage = (storageKey: string, excludeColumns: string[
       }
     }
   } catch (error) {
-    console.warn(`Failed to cleanup column storage for ${storageKey}:`, error);
+    logger.warn(`Failed to cleanup column storage for ${storageKey}`, {
+      error: error instanceof Error ? error.message : "Unknown error",
+    });
     localStorage.removeItem(storageKey);
   }
 };

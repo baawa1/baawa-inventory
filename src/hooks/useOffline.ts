@@ -13,6 +13,7 @@ import {
 } from "@/lib/utils/offline-mode";
 import { offlineStorage } from "@/lib/utils/offline-storage";
 import { INTERVALS } from "@/lib/constants";
+import { logger } from "@/lib/logger";
 
 export interface UseOfflineReturn {
   // Network status
@@ -58,7 +59,9 @@ export function useOffline(): UseOfflineReturn {
       const stats = await offlineModeManager.getQueueStats();
       setQueueStats(stats);
     } catch (err) {
-      console.error("Error updating queue stats:", err);
+      logger.error("Error updating queue stats", {
+        error: err instanceof Error ? err.message : "Unknown error",
+      });
     }
   }, []);
 
@@ -73,7 +76,9 @@ export function useOffline(): UseOfflineReturn {
           await updateQueueStats();
         }
       } catch (err) {
-        console.error("Error initializing offline storage:", err);
+        logger.error("Error initializing offline storage", {
+          error: err instanceof Error ? err.message : "Unknown error",
+        });
         if (mounted) {
           setError("Failed to initialize offline storage");
         }
@@ -261,7 +266,9 @@ export function useOfflineStats() {
       const dbStats = await offlineStorage.getStats();
       setStats(dbStats);
     } catch (err) {
-      console.error("Error getting offline stats:", err);
+      logger.error("Error getting offline stats", {
+        error: err instanceof Error ? err.message : "Unknown error",
+      });
     } finally {
       setIsLoading(false);
     }

@@ -3,6 +3,7 @@
 import { useEffect, useRef } from "react";
 import { useRouter } from "next/navigation";
 import { INTERVALS } from "@/lib/constants";
+import { logger } from "@/lib/logger";
 
 // Dynamic import to avoid webpack issues
 let useSession: any = null;
@@ -14,7 +15,9 @@ const loadNextAuth = async () => {
       const nextAuth = await import("next-auth/react");
       useSession = nextAuth.useSession;
     } catch (error) {
-      console.error("Failed to load next-auth:", error);
+      logger.error("Failed to load next-auth", {
+        error: error instanceof Error ? error.message : "Unknown error",
+      });
     }
   }
 };
@@ -58,7 +61,7 @@ export function SessionMonitor() {
                 sessionData.data.user.isEmailVerified;
 
             if (hasChanges) {
-              console.log("Session data changed, updating...", {
+              logger.session("Session data changed, updating", {
                 oldRole: sessionData.data.user.role,
                 newRole: data.user.role,
                 oldStatus: sessionData.data.user.status,
@@ -73,7 +76,9 @@ export function SessionMonitor() {
           }
         }
       } catch (error) {
-        console.error("Error checking session updates:", error);
+        logger.error("Error checking session updates", {
+          error: error instanceof Error ? error.message : "Unknown error",
+        });
       }
     }, INTERVALS.SESSION_MONITOR); // Check every 2 minutes instead of 30 seconds
 

@@ -181,7 +181,6 @@ export const useUpdateBrand = () => {
   return useMutation({
     mutationFn: updateBrand,
     onSuccess: (data) => {
-      console.log("Updating brand, invalidating cache for:", data);
       // Invalidate all brand-related queries
       queryClient.invalidateQueries({
         queryKey: queryKeys.brands.all,
@@ -194,7 +193,6 @@ export const useUpdateBrand = () => {
       });
       // Update individual brand detail
       queryClient.setQueryData(queryKeys.brands.detail(data.id), data);
-      console.log("Cache invalidation completed");
     },
   });
 };
