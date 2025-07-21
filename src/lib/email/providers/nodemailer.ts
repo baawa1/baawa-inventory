@@ -1,5 +1,6 @@
 import * as nodemailer from "nodemailer";
 import { EmailProvider, EmailOptions } from "../types";
+import { logger } from "@/lib/logger";
 
 /**
  * Nodemailer Email Provider
@@ -59,8 +60,12 @@ export class NodemailerProvider implements EmailProvider {
 
       await this.transporter.sendMail(mailOptions);
     } catch (error) {
-      console.error("Nodemailer email error:", error);
-      throw new Error(`Failed to send email via SMTP: ${error}`);
+      logger.error("Nodemailer email sending failed", {
+        recipient: options.to,
+        subject: options.subject,
+        error: error instanceof Error ? error.message : String(error),
+      });
+      throw error;
     }
   }
 
@@ -77,7 +82,10 @@ export class NodemailerProvider implements EmailProvider {
       await this.transporter.verify();
       return true;
     } catch (error) {
-      console.error("Nodemailer config validation error:", error);
+      logger.error("Nodemailer configuration validation failed", {
+        config: this.transporter,
+        error: error instanceof Error ? error.message : String(error),
+      });
       return false;
     }
   }

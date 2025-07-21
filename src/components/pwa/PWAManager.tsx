@@ -10,6 +10,7 @@ import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
 import { IconDownload, IconX } from "@tabler/icons-react";
 import { toast } from "sonner";
+import { logger } from "@/lib/logger";
 
 interface BeforeInstallPromptEvent extends Event {
   readonly platforms: string[];
@@ -115,7 +116,9 @@ export function PWAManager() {
 
       // Debug logging removed for production
     } catch (error) {
-      console.error("Service Worker registration failed:", error);
+      logger.error("Service Worker registration failed", {
+        error: error instanceof Error ? error.message : String(error),
+      });
     }
   };
 
@@ -135,7 +138,9 @@ export function PWAManager() {
       setDeferredPrompt(null);
       setShowInstallPrompt(false);
     } catch (error) {
-      console.error("Error showing install prompt:", error);
+      logger.error("Failed to show install prompt", {
+        error: error instanceof Error ? error.message : String(error),
+      });
     }
   };
 

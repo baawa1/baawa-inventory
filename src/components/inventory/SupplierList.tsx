@@ -43,6 +43,7 @@ import {
 } from "@tabler/icons-react";
 import type { FilterConfig } from "@/types/inventory";
 import type { DashboardTableColumn } from "@/components/layouts/DashboardColumnCustomizer";
+import { logger } from "@/lib/logger";
 
 interface User {
   id: string;
@@ -220,10 +221,12 @@ const SupplierList = ({ user }: SupplierListProps) => {
       await deleteSupplierMutation.mutateAsync(supplierToDelete.id);
       toast.success("Supplier deactivated successfully");
     } catch (error) {
-      console.error("Error deactivating supplier:", error);
-      toast.error(
-        error instanceof Error ? error.message : "Failed to deactivate supplier"
-      );
+      logger.error("Failed to deactivate supplier", {
+        supplierId: supplierToDelete.id,
+        supplierName: supplierToDelete.name,
+        error: error instanceof Error ? error.message : String(error),
+      });
+      toast.error("Failed to deactivate supplier");
     } finally {
       setDeleteDialogOpen(false);
       setSupplierToDelete(null);
@@ -241,10 +244,12 @@ const SupplierList = ({ user }: SupplierListProps) => {
       });
       toast.success("Supplier reactivated successfully");
     } catch (error) {
-      console.error("Error reactivating supplier:", error);
-      toast.error(
-        error instanceof Error ? error.message : "Failed to reactivate supplier"
-      );
+      logger.error("Failed to reactivate supplier", {
+        supplierId: supplierToReactivate.id,
+        supplierName: supplierToReactivate.name,
+        error: error instanceof Error ? error.message : String(error),
+      });
+      toast.error("Failed to reactivate supplier");
     } finally {
       setReactivateDialogOpen(false);
       setSupplierToReactivate(null);

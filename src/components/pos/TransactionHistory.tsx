@@ -55,6 +55,7 @@ import { offlineStorage } from "@/lib/utils/offline-storage";
 import { useOffline } from "@/hooks/useOffline";
 import { usePOSErrorHandler } from "./POSErrorBoundary";
 import { formatCurrency } from "@/lib/utils";
+import { logger } from "@/lib/logger";
 
 interface TransactionItem {
   id: number;
@@ -158,12 +159,10 @@ export function TransactionHistory() {
             allTransactions.push(...onlineTransactions);
           }
         } catch (error) {
-          console.error("Failed to load online transactions:", error);
-          handleError(
-            error instanceof Error
-              ? error
-              : new Error("Failed to load online transactions")
-          );
+          logger.error("Failed to load online transactions", {
+            error: error instanceof Error ? error.message : String(error),
+          });
+          toast.error("Failed to load transactions");
         }
       }
 
@@ -178,12 +177,10 @@ export function TransactionHistory() {
         }));
         allTransactions.push(...mappedOfflineTransactions);
       } catch (error) {
-        console.error("Failed to load offline transactions:", error);
-        handleError(
-          error instanceof Error
-            ? error
-            : new Error("Failed to load offline transactions")
-        );
+        logger.error("Failed to load offline transactions", {
+          error: error instanceof Error ? error.message : String(error),
+        });
+        toast.error("Failed to load offline transactions");
       }
 
       // Sort by timestamp (newest first) and remove duplicates
@@ -196,13 +193,10 @@ export function TransactionHistory() {
 
       setTransactions(uniqueTransactions);
     } catch (error) {
-      console.error("Error loading transactions:", error);
+      logger.error("Failed to load transactions", {
+        error: error instanceof Error ? error.message : String(error),
+      });
       toast.error("Failed to load transaction history");
-      handleError(
-        error instanceof Error
-          ? error
-          : new Error("Failed to load transaction history")
-      );
     } finally {
       setLoading(false);
     }

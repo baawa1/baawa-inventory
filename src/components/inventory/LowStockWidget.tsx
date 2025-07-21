@@ -6,6 +6,8 @@ import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { AlertTriangle, Package, TrendingUp, ExternalLink } from "lucide-react";
 import { useRouter } from "next/navigation";
+import { logger } from "@/lib/logger";
+import { toast } from "sonner";
 
 interface LowStockProduct {
   id: number;
@@ -55,12 +57,10 @@ export function LowStockWidget({ limit = 5 }: LowStockWidgetProps) {
         totalValue: data.metrics?.totalValue || 0,
       });
     } catch (err) {
-      setError(
-        err instanceof Error
-          ? err.message
-          : "Failed to fetch low stock products"
-      );
-      console.error("Error fetching low stock products:", err);
+      logger.error("Failed to fetch low stock products", {
+        error: err instanceof Error ? err.message : String(err),
+      });
+      toast.error("Failed to load low stock data");
     } finally {
       setLoading(false);
     }

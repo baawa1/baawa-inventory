@@ -1,5 +1,6 @@
 import { NextResponse } from "next/server";
 import { ZodError } from "zod";
+import { logger } from "@/lib/logger";
 
 export interface ApiError {
   message: string;
@@ -127,7 +128,12 @@ export function handleApiError(
           { status: 400 }
         );
       default:
-        console.error("Prisma error:", prismaError);
+        logger.error("Prisma database error", {
+          code: prismaError.code,
+          meta: prismaError.meta,
+          target: prismaError.target,
+          message: prismaError.message,
+        });
         return NextResponse.json(
           {
             error: "Database operation failed",
@@ -140,7 +146,10 @@ export function handleApiError(
 
   // Handle standard JavaScript errors
   if (error instanceof Error) {
-    console.error("API Error:", error);
+    logger.error("API endpoint error", {
+      error: error.message,
+      stack: error.stack,
+    });
 
     // Don't expose internal error messages in production
     const isDevelopment = process.env.NODE_ENV === "development";
@@ -156,7 +165,10 @@ export function handleApiError(
   }
 
   // Handle unknown errors
-  console.error("Unknown error:", error);
+  logger.error("Unknown error occurred", {
+    error: error instanceof Error ? error.message : String(error),
+    stack: error instanceof Error ? error.stack : undefined,
+  });
   return NextResponse.json(
     {
       error: "An unexpected error occurred",

@@ -43,6 +43,7 @@ import {
   ensureUniqueImages,
   sortImages,
 } from "@/lib/utils/image-utils";
+import { logger } from "@/lib/logger";
 
 interface ProductData {
   id: number;
@@ -355,7 +356,10 @@ export function ProductImageManager({
       updateImagesMutation.mutate(uniqueUpdatedImages);
       onImagesChange?.(uniqueUpdatedImages);
     } catch (error) {
-      console.error("Upload error:", error);
+      logger.error("Product image upload failed", {
+        productId,
+        error: error instanceof Error ? error.message : String(error),
+      });
       toast.error(
         error instanceof Error ? error.message : "Failed to upload images"
       );
@@ -509,11 +513,10 @@ export function ProductImageManager({
                               className="w-full aspect-square object-cover"
                               priority={false}
                               onError={() => {
-                                console.error(
-                                  "Image failed to load:",
-                                  image.url
-                                );
-                                // Optionally hide or show fallback
+                                logger.error("Product image failed to load", {
+                                  productId,
+                                  imageUrl: image.url,
+                                });
                               }}
                             />
                           ) : (

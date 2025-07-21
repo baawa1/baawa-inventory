@@ -26,6 +26,7 @@ import { FormLoading } from "@/components/ui/form-loading";
 import { ImageUpload } from "@/components/ui/image-upload";
 import { toast } from "sonner";
 import { useBrandById, useUpdateBrand } from "@/hooks/api/brands";
+import { logger } from "@/lib/logger";
 
 interface EditBrandFormProps {
   brandId: number;
@@ -86,11 +87,12 @@ export default function EditBrandForm({ brandId }: EditBrandFormProps) {
       toast.success("Brand updated successfully!");
       router.push("/inventory/brands");
     } catch (error) {
-      console.error("Error updating brand:", error);
-      const errorMessage =
-        error instanceof Error ? error.message : "Failed to update brand";
-      setServerError(errorMessage);
-      toast.error(errorMessage);
+      logger.error("Failed to update brand", {
+        brandId: brand.id,
+        brandName: data.name,
+        error: error instanceof Error ? error.message : String(error),
+      });
+      toast.error("Failed to update brand");
     }
   };
 
@@ -186,9 +188,14 @@ export default function EditBrandForm({ brandId }: EditBrandFormProps) {
             <ImageUpload
               value={watch("image")}
               onChange={(url) => setValue("image", url)}
-              onError={(error) => {
+              onError={(error: unknown) => {
                 // Handle error in form validation
-                console.error("Image upload error:", error);
+                logger.error("Brand image upload failed", {
+                  brandId: brand.id,
+                  brandName: watch("name"),
+                  error: error instanceof Error ? error.message : String(error),
+                });
+                toast.error("Failed to upload image");
               }}
               label="Brand Image"
               placeholder="Upload a brand image"

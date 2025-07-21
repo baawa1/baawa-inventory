@@ -1,4 +1,5 @@
 import { NextResponse } from "next/server";
+import { logger } from "@/lib/logger";
 
 // Simple in-memory cache for API responses
 interface CacheEntry<T = any> {
@@ -212,8 +213,10 @@ export function withApiCache<
           options.ttlMs
         );
       } catch (error) {
-        // Failed to parse response, don't cache
-        console.warn("Failed to cache API response:", error);
+        logger.warn("Failed to cache API response", {
+          url,
+          error: error instanceof Error ? error.message : String(error),
+        });
       }
     }
 

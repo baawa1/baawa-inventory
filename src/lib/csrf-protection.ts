@@ -6,6 +6,7 @@
 import { NextRequest } from "next/server";
 import crypto from "crypto";
 import { auth } from "../../auth";
+import { logger } from "@/lib/logger";
 
 interface CSRFVerificationResult {
   valid: boolean;
@@ -95,7 +96,9 @@ export class CSRFProtection {
 
       return { valid: true };
     } catch (error) {
-      console.error("CSRF verification error:", error);
+      logger.security("CSRF token verification failed", {
+        error: error instanceof Error ? error.message : String(error),
+      });
       return {
         valid: false,
         error: "CSRF verification failed",

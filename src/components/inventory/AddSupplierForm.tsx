@@ -31,6 +31,7 @@ import { FormLoading } from "@/components/ui/form-loading";
 import { toast } from "sonner";
 import { nameSchema } from "@/lib/validations/common";
 import { useCreateSupplier } from "@/hooks/api/suppliers";
+import { logger } from "@/lib/logger";
 
 // Form validation schema - simplified for form handling
 const supplierFormSchema = z.object({
@@ -98,20 +99,27 @@ export default function AddSupplierForm() {
       notes: data.notes || undefined,
     };
 
-    createSupplierMutation.mutate(supplierData, {
-      onSuccess: () => {
-        toast.success("Supplier created successfully!");
-        router.push("/dashboard/inventory/suppliers");
-      },
-      onError: (error) => {
-        console.error("Error creating supplier:", error);
-        const errorMessage =
-          error instanceof Error
-            ? error.message
-            : "An unexpected error occurred";
-        toast.error(errorMessage);
-      },
-    });
+    try {
+      createSupplierMutation.mutate(supplierData, {
+        onSuccess: () => {
+          toast.success("Supplier created successfully!");
+          router.push("/dashboard/inventory/suppliers");
+        },
+        onError: (error) => {
+          logger.error("Failed to create supplier", {
+            supplierName: data.name,
+            error: error instanceof Error ? error.message : String(error),
+          });
+          toast.error("Failed to create supplier");
+        },
+      });
+    } catch (error) {
+      logger.error("Failed to create supplier", {
+        supplierName: data.name,
+        error: error instanceof Error ? error.message : String(error),
+      });
+      toast.error("Failed to create supplier");
+    }
   };
 
   // Show loading state

@@ -1,5 +1,6 @@
 import { Resend } from "resend";
 import { EmailProvider, EmailOptions } from "../types";
+import { logger } from "@/lib/logger";
 
 /**
  * Resend Email Provider
@@ -70,14 +71,12 @@ export class ResendProvider implements EmailProvider {
       // Return the email ID if available
       return result.data?.id;
     } catch (error) {
-      console.error("Resend email error:", error);
-
-      // Enhanced error handling for Resend specific errors
-      if (error && typeof error === "object" && "message" in error) {
-        throw new Error(`Failed to send email via Resend: ${error.message}`);
-      }
-
-      throw new Error(`Failed to send email via Resend: ${error}`);
+      logger.error("Resend email sending failed", {
+        recipient: options.to,
+        subject: options.subject,
+        error: error instanceof Error ? error.message : String(error),
+      });
+      throw error;
     }
   }
 
@@ -86,8 +85,11 @@ export class ResendProvider implements EmailProvider {
       const emailPromises = emails.map((email) => this.sendEmail(email));
       await Promise.all(emailPromises);
     } catch (error) {
-      console.error("Resend bulk email error:", error);
-      throw new Error(`Failed to send bulk emails via Resend: ${error}`);
+      logger.error("Resend bulk email sending failed", {
+        recipientCount: emails.length,
+        error: error instanceof Error ? error.message : String(error),
+      });
+      throw error;
     }
   }
 
@@ -98,7 +100,10 @@ export class ResendProvider implements EmailProvider {
       const result = await this.resend.domains.list();
       return !result.error;
     } catch (error) {
-      console.error("Resend config validation error:", error);
+      logger.error("Resend configuration validation failed", {
+        config: this.resend, // Assuming 'this.config' is not defined, using 'this.resend' for context
+        error: error instanceof Error ? error.message : String(error),
+      });
       return false;
     }
   }
@@ -121,13 +126,10 @@ export class ResendProvider implements EmailProvider {
         hasError: !!domains.error,
       };
     } catch (error) {
-      console.error("Failed to get Resend account info:", error);
-      return {
-        provider: "Resend",
-        fromEmail: this.fromEmail,
-        fromName: this.fromName,
-        error: error instanceof Error ? error.message : "Unknown error",
-      };
+      logger.error("Failed to get Resend account information", {
+        error: error instanceof Error ? error.message : String(error),
+      });
+      throw error;
     }
   }
 }

@@ -4,6 +4,7 @@ import { UseFormReturn } from "react-hook-form";
 import { useRouter } from "next/navigation";
 import { toast } from "sonner";
 import type { CreateProductData } from "./types";
+import { logger } from "@/lib/logger";
 
 export function useProductSubmit(
   form: UseFormReturn<CreateProductData>,
@@ -51,11 +52,12 @@ export function useProductSubmit(
       // Redirect to products list
       router.push("/inventory/products");
     } catch (error) {
-      console.error("Error creating product:", error);
-      const errorMessage =
-        error instanceof Error ? error.message : "An unexpected error occurred";
-      setSubmitError(errorMessage);
-      toast.error(errorMessage);
+      logger.error("Failed to create product", {
+        productName: data.name,
+        sku: data.sku,
+        error: error instanceof Error ? error.message : String(error),
+      });
+      throw error;
     } finally {
       setIsSubmitting(false);
     }
