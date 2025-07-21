@@ -4,7 +4,7 @@ import {
   withPermission,
   AuthenticatedRequest,
 } from "@/lib/api-middleware";
-import { handleApiError } from "@/lib/api-error-handler";
+import { handleApiError } from "@/lib/api-error-handler-new";
 import { prisma } from "@/lib/db";
 import { USER_ROLES } from "@/lib/auth/roles";
 import { z } from "zod";
@@ -75,7 +75,6 @@ export const GET = withAuth(
             select: {
               id: true,
               name: true,
-              slug: true,
             },
           },
           brand: {
@@ -206,7 +205,7 @@ export const PUT = withPermission(
 
       // Handle status mapping
       if (validatedData.status !== undefined) {
-        updateData.status = validatedData.status.toUpperCase();
+        updateData.status = validatedData.status.toLowerCase();
       }
 
       // Check for SKU conflicts if SKU is being updated
@@ -297,7 +296,6 @@ export const PUT = withPermission(
             select: {
               id: true,
               name: true,
-              slug: true,
             },
           },
           brand: {
