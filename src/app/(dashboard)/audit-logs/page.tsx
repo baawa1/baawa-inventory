@@ -5,6 +5,8 @@ import { PageTitle } from "@/components/ui/page-title";
 import { DashboardTableLayout } from "@/components/layouts/DashboardTableLayout";
 import { FilterConfig } from "@/components/layouts/DashboardFiltersBar";
 import { useAuditLogs } from "@/hooks/api/audit-logs";
+import { logger } from "@/lib/logger";
+import { toast } from "sonner";
 
 export default function AuditLogsPage() {
   const searchParams =
@@ -42,7 +44,10 @@ export default function AuditLogsPage() {
 
   // Handle errors (TanStack Query will show error in console, but we can add user-friendly handling)
   if (error) {
-    console.error("Error fetching audit logs:", error);
+    logger.error("Failed to fetch audit logs", {
+      error: error instanceof Error ? error.message : String(error),
+    });
+    toast.error("Failed to load audit logs");
   }
 
   // Filters config for DashboardFiltersBar

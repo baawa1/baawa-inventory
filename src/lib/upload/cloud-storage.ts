@@ -4,6 +4,8 @@
  * Currently implements a simple file upload that can be replaced with any cloud provider
  */
 
+import { logger } from "@/lib/logger";
+
 export interface UploadResult {
   url: string;
   filename: string;
@@ -89,7 +91,11 @@ export class CloudStorageService {
         publicId: result.publicId,
       };
     } catch (error) {
-      console.error("Upload error:", error);
+      logger.upload("Cloud storage upload failed", {
+        filename: file.name,
+        size: file.size,
+        error: error instanceof Error ? error.message : String(error),
+      });
       throw new Error(
         `Failed to upload file: ${error instanceof Error ? error.message : "Unknown error"}`
       );
@@ -167,7 +173,10 @@ export class CloudStorageService {
         throw new Error(error.message || "Delete failed");
       }
     } catch (error) {
-      console.error("Delete error:", error);
+      logger.upload("Cloud storage deletion failed", {
+        storagePath: publicId,
+        error: error instanceof Error ? error.message : String(error),
+      });
       throw new Error(
         `Failed to delete file: ${error instanceof Error ? error.message : "Unknown error"}`
       );

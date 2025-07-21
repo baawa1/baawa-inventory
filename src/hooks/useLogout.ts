@@ -3,6 +3,8 @@
 import { useState, useCallback } from "react";
 import { useRouter } from "next/navigation";
 import { signOut } from "next-auth/react";
+import { logger } from "@/lib/logger";
+import { toast } from "sonner";
 
 interface LogoutOptions {
   redirect?: boolean;
@@ -50,7 +52,10 @@ export function useLogout(): UseLogoutReturn {
           router.push(callbackUrl);
         }
       } catch (error) {
-        console.error("Logout error:", error);
+        logger.error("Logout failed", {
+          error: error instanceof Error ? error.message : String(error),
+        });
+        toast.error("Logout failed. Please try again.");
 
         // Handle the specific NextAuth ClientFetchError
         if (error && typeof error === "object" && "message" in error) {

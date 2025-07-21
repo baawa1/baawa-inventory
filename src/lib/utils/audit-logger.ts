@@ -1,6 +1,7 @@
 import { prisma } from "@/lib/db";
 import { NextRequest } from "next/server";
 import { ErrorSanitizer } from "./error-sanitizer";
+import { logger } from "@/lib/logger";
 
 export type AuditAction =
   | "LOGIN_SUCCESS"
@@ -433,7 +434,12 @@ export class AuditLogger {
         },
       });
     } catch (error) {
-      console.error("Failed to fetch audit events:", error);
+      logger.error("Failed to fetch audit events", {
+        userId,
+        action: "getRecentAuthEvents",
+        tableName: "auditLog",
+        error: error instanceof Error ? error.message : String(error),
+      });
       return [];
     }
   }
@@ -468,7 +474,10 @@ export class AuditLogger {
 
       return await prisma.auditLog.count({ where });
     } catch (error) {
-      console.error("Failed to count failed login attempts:", error);
+      logger.error("Failed to count failed login attempts", {
+        userId: "unknown", // No specific user for rate limiting
+        error: error instanceof Error ? error.message : String(error),
+      });
       return 0;
     }
   }

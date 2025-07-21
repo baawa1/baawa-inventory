@@ -1,4 +1,5 @@
 import { useState, useEffect } from "react";
+import { logger } from "@/lib/logger";
 
 // Common table column configurations
 export interface TableColumn<T = Record<string, unknown>> {
@@ -265,7 +266,11 @@ export const useColumnVisibility = (
         return parsed.filter((col: string) => defaultColumns.includes(col));
       }
     } catch (error) {
-      console.warn("Failed to parse stored column visibility:", error);
+      logger.warn("Failed to parse stored column visibility", {
+        storageKey,
+        error: error instanceof Error ? error.message : String(error),
+      });
+      return defaultColumns;
     }
 
     return defaultColumns;
@@ -282,7 +287,11 @@ export const useColumnVisibility = (
       try {
         localStorage.setItem(storageKey, JSON.stringify(updated));
       } catch (error) {
-        console.warn("Failed to save column visibility:", error);
+        logger.warn("Failed to save column visibility to localStorage", {
+          storageKey,
+          columns: visibleColumns,
+          error: error instanceof Error ? error.message : String(error),
+        });
       }
 
       return updated;
@@ -295,7 +304,11 @@ export const useColumnVisibility = (
     try {
       localStorage.setItem(storageKey, JSON.stringify(defaultColumns));
     } catch (error) {
-      console.warn("Failed to save column visibility:", error);
+      logger.warn("Failed to save column visibility to sessionStorage", {
+        storageKey,
+        columns: visibleColumns,
+        error: error instanceof Error ? error.message : String(error),
+      });
     }
   };
 

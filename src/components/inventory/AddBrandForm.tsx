@@ -25,6 +25,7 @@ import { FormLoading } from "@/components/ui/form-loading";
 import { ImageUpload } from "@/components/ui/image-upload";
 import { toast } from "sonner";
 import { useCreateBrand } from "@/hooks/api/brands";
+import { logger } from "@/lib/logger";
 
 export default function AddBrandForm() {
   const router = useRouter();
@@ -59,18 +60,27 @@ export default function AddBrandForm() {
       isActive: data.isActive,
     };
 
-    createBrandMutation.mutate(brandData, {
-      onSuccess: () => {
-        toast.success("Brand created successfully!");
-        router.push("/inventory/brands");
-      },
-      onError: (error) => {
-        console.error("Error creating brand:", error);
-        const errorMessage =
-          error instanceof Error ? error.message : "Failed to create brand";
-        toast.error(errorMessage);
-      },
-    });
+    try {
+      createBrandMutation.mutate(brandData, {
+        onSuccess: () => {
+          toast.success("Brand created successfully!");
+          router.push("/inventory/brands");
+        },
+        onError: (error) => {
+          logger.error("Failed to create brand", {
+            brandName: data.name,
+            error: error instanceof Error ? error.message : String(error),
+          });
+          toast.error("Failed to create brand");
+        },
+      });
+    } catch (error) {
+      logger.error("Failed to create brand", {
+        brandName: data.name,
+        error: error instanceof Error ? error.message : String(error),
+      });
+      toast.error("Failed to create brand");
+    }
   };
 
   // Show loading state
@@ -149,9 +159,13 @@ export default function AddBrandForm() {
             <ImageUpload
               value={watch("image")}
               onChange={(url) => setValue("image", url)}
-              onError={(error) => {
+              onError={(error: unknown) => {
                 // Handle error in form validation
-                console.error("Image upload error:", error);
+                logger.error("Brand image upload failed", {
+                  brandName: watch("name"),
+                  error: error instanceof Error ? error.message : String(error),
+                });
+                toast.error("Failed to upload image");
               }}
               label="Brand Image"
               placeholder="Upload a brand image"

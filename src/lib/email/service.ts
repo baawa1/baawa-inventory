@@ -17,6 +17,7 @@ import {
 } from "./types";
 import { EmailProviderFactory } from "./providers/factory";
 import { getEmailTemplate } from "./templates";
+import { logger } from "@/lib/logger";
 
 /**
  * Main Email Service
@@ -51,7 +52,11 @@ export class EmailService {
 
       await this.provider.sendEmail(emailOptions);
     } catch (error) {
-      console.error(`Failed to send ${templateType} email:`, error);
+      logger.error(`Failed to send ${templateType} email`, {
+        templateType,
+        recipient: to,
+        error: error instanceof Error ? error.message : String(error),
+      });
       throw error;
     }
   }
@@ -92,7 +97,11 @@ export class EmailService {
 
       await this.provider.sendBulkEmails(emails);
     } catch (error) {
-      console.error(`Failed to send bulk ${templateType} emails:`, error);
+      logger.error(`Failed to send bulk ${templateType} emails`, {
+        templateType,
+        recipientCount: recipients.length,
+        error: error instanceof Error ? error.message : String(error),
+      });
       throw error;
     }
   }
@@ -300,7 +309,11 @@ export const emailService = {
       await service.sendTemplatedEmail("receipt_email", data.to, receiptData);
       return true;
     } catch (error) {
-      console.error("Failed to send receipt email:", error);
+      logger.error("Failed to send receipt email", {
+        transactionId: data.saleId,
+        customerEmail: data.to,
+        error: error instanceof Error ? error.message : String(error),
+      });
       return false;
     }
   },

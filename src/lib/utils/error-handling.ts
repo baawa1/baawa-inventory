@@ -1,4 +1,5 @@
 import { toast } from "sonner";
+import { logger } from "@/lib/logger";
 
 export interface ApiError {
   message: string;
@@ -56,7 +57,9 @@ export const handleApiError = (error: unknown, context?: string): void => {
   const message = getErrorMessage(error);
   const contextMessage = context ? `${context}: ${message}` : message;
 
-  console.error(`API Error${context ? ` (${context})` : ""}:`, error);
+  logger.error(`API Error${context ? ` (${context})` : ""}`, {
+    error: error instanceof Error ? error.message : String(error),
+  });
   toast.error(contextMessage);
 };
 
@@ -95,7 +98,10 @@ export const handleFormError = (error: unknown, fieldName?: string): void => {
   const message = getErrorMessage(error);
   const contextMessage = fieldName ? `${fieldName}: ${message}` : message;
 
-  console.error(`Form Error${fieldName ? ` (${fieldName})` : ""}:`, error);
+  logger.error(`Form Error${fieldName ? ` (${fieldName})` : ""}`, {
+    fieldName,
+    error: error instanceof Error ? error.message : String(error),
+  });
   toast.error(contextMessage);
 };
 
@@ -103,7 +109,9 @@ export const handleFormError = (error: unknown, fieldName?: string): void => {
  * Handle network errors
  */
 export const handleNetworkError = (error: unknown): void => {
-  console.error("Network Error:", error);
+  logger.error("Network Error:", {
+    error: error instanceof Error ? error.message : String(error),
+  });
   toast.error("Network error. Please check your connection and try again.");
 };
 
@@ -111,7 +119,9 @@ export const handleNetworkError = (error: unknown): void => {
  * Handle authentication errors
  */
 export const handleAuthError = (error: unknown): void => {
-  console.error("Authentication Error:", error);
+  logger.error("Authentication Error:", {
+    error: error instanceof Error ? error.message : String(error),
+  });
   toast.error("Authentication failed. Please log in again.");
 };
 
@@ -119,7 +129,9 @@ export const handleAuthError = (error: unknown): void => {
  * Handle permission errors
  */
 export const handlePermissionError = (error: unknown): void => {
-  console.error("Permission Error:", error);
+  logger.error("Permission Error:", {
+    error: error instanceof Error ? error.message : String(error),
+  });
   toast.error("You don't have permission to perform this action.");
 };
 
@@ -148,7 +160,9 @@ export const withErrorHandling = async <T>(
   try {
     return await promise;
   } catch (error) {
-    handleApiError(error, context);
+    logger.error(`API request failed${context ? ` (${context})` : ""}`, {
+      error: error instanceof Error ? error.message : String(error),
+    });
     return null;
   }
 };
@@ -160,10 +174,9 @@ export const handleErrorBoundaryError = (
   error: Error,
   errorInfo: React.ErrorInfo
 ): void => {
-  console.error("Error Boundary caught an error:", error, errorInfo);
-
-  // In production, you might want to send this to an error reporting service
-  if (process.env.NODE_ENV === "production") {
-    // Example: Sentry.captureException(error, { extra: errorInfo });
-  }
+  logger.error("Error Boundary caught an error", {
+    error: error instanceof Error ? error.message : String(error),
+    errorInfo,
+    componentStack: errorInfo?.componentStack,
+  });
 };

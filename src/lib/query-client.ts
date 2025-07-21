@@ -1,4 +1,5 @@
 import { QueryClient } from "@tanstack/react-query";
+import { logger } from "@/lib/logger";
 
 export const queryClient = new QueryClient({
   defaultOptions: {
@@ -33,7 +34,9 @@ export const queryClient = new QueryClient({
     mutations: {
       retry: 1,
       onError: (error) => {
-        console.error("Mutation error:", error);
+        logger.error("TanStack Query mutation failed", {
+          error: error instanceof Error ? error.message : String(error),
+        });
         // TODO: Add global error handling/notifications here
       },
     },

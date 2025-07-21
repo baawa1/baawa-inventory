@@ -1,5 +1,6 @@
 import { prisma } from "@/lib/db";
 import { AuditLogger } from "./audit-logger";
+import { logger } from "@/lib/logger";
 
 export interface LockoutStatus {
   isLocked: boolean;
@@ -81,7 +82,10 @@ export class AccountLockout {
       // Lockout has expired
       return { isLocked: false, failedAttempts };
     } catch (error) {
-      console.error("Error checking lockout status:", error);
+      logger.error("Failed to check account lockout status", {
+        email: identifier,
+        error: error instanceof Error ? error.message : String(error),
+      });
       // Fail open for availability
       return { isLocked: false };
     }
@@ -117,7 +121,10 @@ export class AccountLockout {
 
       return lastAttempt?.created_at || null;
     } catch (error) {
-      console.error("Error getting last failed attempt:", error);
+      logger.error("Failed to get last failed login attempt", {
+        email: identifier,
+        error: error instanceof Error ? error.message : String(error),
+      });
       return null;
     }
   }
@@ -159,7 +166,10 @@ export class AccountLockout {
         details: { lockoutReset: true },
       });
     } catch (error) {
-      console.error("Error resetting failed attempts:", error);
+      logger.error("Failed to reset failed login attempts", {
+        email,
+        error: error instanceof Error ? error.message : String(error),
+      });
     }
   }
 

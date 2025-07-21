@@ -35,6 +35,7 @@ import {
 import { toast } from "sonner";
 import { useSession } from "next-auth/react";
 import { useSupplier, useDeleteSupplier } from "@/hooks/api/suppliers";
+import { logger } from "@/lib/logger";
 
 interface SupplierDetailViewProps {
   supplierId: number;
@@ -67,7 +68,11 @@ export default function SupplierDetailView({
       toast.success("Supplier deleted successfully");
       router.push("/inventory/suppliers");
     } catch (err) {
-      console.error("Error deleting supplier:", err);
+      logger.error("Failed to delete supplier", {
+        supplierId: supplier.id,
+        supplierName: supplier.name,
+        error: err instanceof Error ? err.message : String(err),
+      });
       toast.error("Failed to delete supplier");
     } finally {
       setDeleteDialogOpen(false);

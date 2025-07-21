@@ -1,4 +1,5 @@
 import { toast } from "sonner";
+import { logger } from "@/lib/logger";
 
 export interface PrinterConfig {
   type: "usb" | "network" | "serial";
@@ -58,9 +59,11 @@ export class XprinterXP58Service {
       toast.success("Receipt sent to printer");
       return true;
     } catch (error) {
-      console.error("Thermal printer error:", error);
-      toast.error("Failed to print receipt. Please check printer connection.");
-      return false;
+      logger.error("Thermal printer operation failed", {
+        operation: "print",
+        error: error instanceof Error ? error.message : String(error),
+      });
+      throw error;
     }
   }
 
@@ -170,8 +173,11 @@ export class XprinterXP58Service {
       // In production, this would check printer status
       return true;
     } catch (error) {
-      console.error("Printer connection test failed:", error);
-      return false;
+      logger.error("Printer connection test failed", {
+        printerConfig: this.config,
+        error: error instanceof Error ? error.message : String(error),
+      });
+      throw error;
     }
   }
 
@@ -192,8 +198,11 @@ export class XprinterXP58Service {
       // Debug logging removed for production
       return true;
     } catch (error) {
-      console.error("Test page print failed:", error);
-      return false;
+      logger.error("Test page print failed", {
+        printerConfig: this.config,
+        error: error instanceof Error ? error.message : String(error),
+      });
+      throw error;
     }
   }
 }

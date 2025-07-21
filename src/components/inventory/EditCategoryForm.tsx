@@ -33,6 +33,7 @@ import { ImageUpload } from "@/components/ui/image-upload";
 
 import { toast } from "sonner";
 import { useUpdateCategory } from "@/hooks/api/categories";
+import { logger } from "@/lib/logger";
 
 interface Category {
   id: number;
@@ -83,29 +84,42 @@ export default function EditCategoryForm({ category }: EditCategoryFormProps) {
   const onSubmit = async (data: UpdateCategoryFormData) => {
     setError(null);
 
-    updateCategoryMutation.mutate(
-      { id: category.id, data },
-      {
-        onSuccess: (_updatedCategory) => {
-          // Debug logging removed for production
-          toast.success("Category updated successfully!");
-          router.push("/inventory/categories");
-        },
-        onError: (error) => {
-          console.error("Error updating category:", error);
-          const errorMessage =
-            error instanceof Error
-              ? error.message
-              : "Failed to update category";
-          setError(errorMessage);
-          toast.error(errorMessage);
-        },
-        onSettled: () => {
-          // Force refetch after mutation completes
-          // Debug logging removed for production
-        },
-      }
-    );
+    try {
+      updateCategoryMutation.mutate(
+        { id: category.id, data },
+        {
+          onSuccess: (_updatedCategory) => {
+            // Debug logging removed for production
+            toast.success("Category updated successfully!");
+            router.push("/inventory/categories");
+          },
+          onError: (error) => {
+            logger.error("Failed to update category", {
+              categoryId: category.id,
+              categoryName: data.name,
+              error: error instanceof Error ? error.message : String(error),
+            });
+            const errorMessage =
+              error instanceof Error
+                ? error.message
+                : "Failed to update category";
+            setError(errorMessage);
+            toast.error(errorMessage);
+          },
+          onSettled: () => {
+            // Force refetch after mutation completes
+            // Debug logging removed for production
+          },
+        }
+      );
+    } catch (error) {
+      logger.error("Failed to update category", {
+        categoryId: category.id,
+        categoryName: data.name,
+        error: error instanceof Error ? error.message : String(error),
+      });
+      toast.error("Failed to update category");
+    }
   };
 
   const handleCancel = () => {

@@ -48,6 +48,7 @@ import {
 } from "@tabler/icons-react";
 import type { FilterConfig } from "@/types/inventory";
 import type { DashboardTableColumn } from "@/components/layouts/DashboardColumnCustomizer";
+import { logger } from "@/lib/logger";
 
 interface User {
   id: string;
@@ -231,12 +232,11 @@ const StockReconciliationList = ({ user }: StockReconciliationListProps) => {
         await submitReconciliation.mutateAsync(reconciliationId);
         toast.success("Reconciliation submitted for approval");
       } catch (error) {
-        console.error("Error submitting reconciliation:", error);
-        toast.error(
-          error instanceof Error
-            ? error.message
-            : "Failed to submit reconciliation"
-        );
+        logger.error("Failed to submit reconciliation", {
+          reconciliationId: reconciliationId,
+          error: error instanceof Error ? error.message : String(error),
+        });
+        toast.error("Failed to submit reconciliation");
       }
     },
     [submitReconciliation]
@@ -249,12 +249,11 @@ const StockReconciliationList = ({ user }: StockReconciliationListProps) => {
         await approveReconciliation.mutateAsync({ id: reconciliationId });
         toast.success("Reconciliation approved successfully");
       } catch (error) {
-        console.error("Error approving reconciliation:", error);
-        toast.error(
-          error instanceof Error
-            ? error.message
-            : "Failed to approve reconciliation"
-        );
+        logger.error("Failed to approve reconciliation", {
+          reconciliationId: reconciliationId,
+          error: error instanceof Error ? error.message : String(error),
+        });
+        toast.error("Failed to approve reconciliation");
       }
     },
     [approveReconciliation]
@@ -280,12 +279,11 @@ const StockReconciliationList = ({ user }: StockReconciliationListProps) => {
       setReconciliationToReject(null);
       setRejectReason("");
     } catch (error) {
-      console.error("Error rejecting reconciliation:", error);
-      toast.error(
-        error instanceof Error
-          ? error.message
-          : "Failed to reject reconciliation"
-      );
+      logger.error("Failed to reject reconciliation", {
+        reconciliationId: reconciliationToReject?.id,
+        error: error instanceof Error ? error.message : String(error),
+      });
+      toast.error("Failed to reject reconciliation");
     }
   }, [reconciliationToReject, rejectReason, rejectReconciliation]);
 
@@ -299,12 +297,11 @@ const StockReconciliationList = ({ user }: StockReconciliationListProps) => {
       );
       toast.success("Reconciliation deleted successfully");
     } catch (error) {
-      console.error("Error deleting reconciliation:", error);
-      toast.error(
-        error instanceof Error
-          ? error.message
-          : "Failed to delete reconciliation"
-      );
+      logger.error("Failed to delete reconciliation", {
+        reconciliationId: reconciliationToDelete?.id,
+        error: error instanceof Error ? error.message : String(error),
+      });
+      toast.error("Failed to delete reconciliation");
     } finally {
       setDeleteDialogOpen(false);
       setReconciliationToDelete(null);

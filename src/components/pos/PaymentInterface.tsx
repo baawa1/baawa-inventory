@@ -25,9 +25,9 @@ import {
   IconLoader,
 } from "@tabler/icons-react";
 import { toast } from "sonner";
-import { usePOSErrorHandler } from "./POSErrorBoundary";
 import { formatCurrency } from "@/lib/utils";
 import { PAYMENT_METHODS_UI } from "@/lib/constants/ui";
+import { logger } from "@/lib/logger";
 
 export interface CartItem {
   id: number;
@@ -89,7 +89,6 @@ export function PaymentInterface({
   onDiscountChange,
   onCustomerInfoChange,
 }: PaymentInterfaceProps) {
-  const { handleError } = usePOSErrorHandler();
   const [paymentMethod, setPaymentMethod] = useState("");
   const [discountType, setDiscountType] = useState<"percentage" | "fixed">(
     "percentage"
@@ -176,11 +175,12 @@ export function PaymentInterface({
       toast.success("Payment processed successfully!");
       onPaymentSuccess(sale);
     } catch (error) {
-      console.error("Payment error:", error);
-      const errorMessage =
-        error instanceof Error ? error.message : "Payment failed";
-      toast.error(errorMessage);
-      handleError(error instanceof Error ? error : new Error(errorMessage));
+      logger.error("Payment processing failed", {
+        paymentMethod,
+        amount: total,
+        error: error instanceof Error ? error.message : String(error),
+      });
+      toast.error("Payment failed. Please try again.");
     } finally {
       setProcessing(false);
     }

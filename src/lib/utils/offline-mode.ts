@@ -9,6 +9,7 @@ import {
   OfflineTransaction,
   OfflineProduct,
 } from "./offline-storage";
+import { logger } from "@/lib/logger";
 
 export interface NetworkStatus {
   isOnline: boolean;
@@ -114,7 +115,9 @@ class OfflineModeManager {
       try {
         listener(status);
       } catch (error) {
-        console.error("Error in offline status listener:", error);
+        logger.error("Offline status listener error", {
+          error: error instanceof Error ? error.message : String(error),
+        });
       }
     });
   }
@@ -251,7 +254,10 @@ class OfflineModeManager {
           await this.syncSingleTransaction(transaction.id);
           success++;
         } catch (error) {
-          console.error(`Failed to sync transaction ${transaction.id}:`, error);
+          logger.error("Failed to sync transaction", {
+            transactionId: transaction.id,
+            error: error instanceof Error ? error.message : String(error),
+          });
           failed++;
         }
       }
@@ -261,7 +267,9 @@ class OfflineModeManager {
 
       return { success, failed };
     } catch (error) {
-      console.error("Error during sync:", error);
+      logger.error("Error during sync", {
+        error: error instanceof Error ? error.message : String(error),
+      });
       return { success: 0, failed: 0 };
     }
   }
@@ -317,7 +325,10 @@ class OfflineModeManager {
       await offlineStorage.updateTransactionStatus(transactionId, "synced");
       // Debug logging removed for production
     } catch (error) {
-      console.error(`❌ Failed to sync transaction ${transactionId}:`, error);
+      logger.error("Failed to sync transaction", {
+        transactionId,
+        error: error instanceof Error ? error.message : String(error),
+      });
       await offlineStorage.updateTransactionStatus(
         transactionId,
         "failed",
@@ -364,8 +375,9 @@ class OfflineModeManager {
 
       // Debug logging removed for production
     } catch (error) {
-      console.error("Error caching products:", error);
-      throw error;
+      logger.error("Failed to cache products", {
+        error: error instanceof Error ? error.message : String(error),
+      });
     }
   }
 
@@ -393,7 +405,9 @@ class OfflineModeManager {
           : undefined,
       };
     } catch (error) {
-      console.error("Error getting queue stats:", error);
+      logger.error("Failed to get queue stats", {
+        error: error instanceof Error ? error.message : String(error),
+      });
       return {
         pendingTransactions: 0,
         failedTransactions: 0,
@@ -425,8 +439,9 @@ class OfflineModeManager {
 
       // Debug logging removed for production
     } catch (error) {
-      console.error("Error clearing failed transactions:", error);
-      throw error;
+      logger.error("Failed to clear failed transactions", {
+        error: error instanceof Error ? error.message : String(error),
+      });
     }
   }
 }

@@ -40,6 +40,7 @@ import {
 } from "@tabler/icons-react";
 import type { FilterConfig } from "@/types/inventory";
 import type { DashboardTableColumn } from "@/components/layouts/DashboardColumnCustomizer";
+import { logger } from "@/lib/logger";
 
 interface User {
   id: string;
@@ -195,10 +196,12 @@ export default function BrandList({ user }: BrandListProps) {
       await deleteBrandMutation.mutateAsync(brandToDelete.id);
       toast.success("Brand deleted successfully");
     } catch (error) {
-      console.error("Error deleting brand:", error);
-      toast.error(
-        error instanceof Error ? error.message : "Failed to delete brand"
-      );
+      logger.error("Failed to delete brand", {
+        brandId: brandToDelete?.id,
+        brandName: brandToDelete?.name,
+        error: error instanceof Error ? error.message : String(error),
+      });
+      toast.error("Failed to delete brand");
     } finally {
       setDeleteDialogOpen(false);
       setBrandToDelete(null);

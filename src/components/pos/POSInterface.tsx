@@ -31,6 +31,7 @@ import {
 import { useOffline } from "@/hooks/useOffline";
 import { toast } from "sonner";
 import { formatCurrency } from "@/lib/utils";
+import { logger } from "@/lib/logger";
 
 export interface CartItem {
   id: number;
@@ -161,8 +162,10 @@ export function POSInterface() {
 
         toast.success("Transaction saved offline. Will sync when online.");
       } catch (error) {
-        toast.error("Failed to save transaction offline");
-        console.error("Offline transaction error:", error);
+        logger.error("Offline transaction failed", {
+          error: error instanceof Error ? error.message : String(error),
+        });
+        toast.error("Transaction failed. Please try again.");
       }
     } else {
       // Online - normal flow

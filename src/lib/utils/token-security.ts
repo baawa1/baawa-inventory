@@ -1,5 +1,6 @@
 import crypto from "crypto";
 import bcrypt from "bcryptjs";
+import { logger } from "@/lib/logger";
 
 /**
  * Token security utilities for handling sensitive tokens
@@ -36,7 +37,10 @@ export class TokenSecurity {
     try {
       return await bcrypt.compare(rawToken, hashedToken);
     } catch (error) {
-      console.error("Token verification failed:", error);
+      logger.security("Token verification failed", {
+        tokenType: "reset",
+        error: error instanceof Error ? error.message : String(error),
+      });
       return false;
     }
   }
@@ -94,7 +98,10 @@ export class TokenSecurity {
     try {
       return await bcrypt.compare(rawToken, hashedToken);
     } catch (error) {
-      console.error("Email token verification failed:", error);
+      logger.security("Email token verification failed", {
+        tokenType: "email-verification",
+        error: error instanceof Error ? error.message : String(error),
+      });
       return false;
     }
   }

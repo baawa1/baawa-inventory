@@ -47,6 +47,7 @@ import { FormLoading } from "@/components/ui/form-loading";
 // Icons
 import { ArrowLeft, Loader2 } from "lucide-react";
 import { IconFolder } from "@tabler/icons-react";
+import { logger } from "@/lib/logger";
 
 const createCategorySchema = z.object({
   name: z
@@ -90,31 +91,42 @@ export default function AddCategoryForm() {
   const onSubmit = async (data: CreateCategoryFormData) => {
     setError(null);
 
-    createCategoryMutation.mutate(
-      {
-        name: data.name,
-        description: data.description || undefined,
-        image: data.image,
-        isActive: data.isActive,
-        parentId: data.parentId || undefined,
-      },
-      {
-        onSuccess: (_createdCategory) => {
-          // Debug logging removed for production
-          toast.success("Category created successfully!");
-          router.push("/inventory/categories");
+    try {
+      createCategoryMutation.mutate(
+        {
+          name: data.name,
+          description: data.description || undefined,
+          image: data.image,
+          isActive: data.isActive,
+          parentId: data.parentId || undefined,
         },
-        onError: (error) => {
-          console.error("Error creating category:", error);
-          const errorMessage =
-            error instanceof Error
-              ? error.message
-              : "Failed to create category";
-          setError(errorMessage);
-          toast.error(errorMessage);
-        },
-      }
-    );
+        {
+          onSuccess: (_createdCategory) => {
+            // Debug logging removed for production
+            toast.success("Category created successfully!");
+            router.push("/inventory/categories");
+          },
+          onError: (error) => {
+            logger.error("Failed to create category", {
+              categoryName: data.name,
+              error: error instanceof Error ? error.message : String(error),
+            });
+            const errorMessage =
+              error instanceof Error
+                ? error.message
+                : "Failed to create category";
+            setError(errorMessage);
+            toast.error(errorMessage);
+          },
+        }
+      );
+    } catch (error) {
+      logger.error("Failed to create category", {
+        categoryName: data.name,
+        error: error instanceof Error ? error.message : String(error),
+      });
+      toast.error("Failed to create category");
+    }
   };
 
   const handleCancel = () => {

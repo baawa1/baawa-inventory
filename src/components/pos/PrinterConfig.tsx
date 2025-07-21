@@ -14,6 +14,7 @@ import {
 } from "@/components/ui/select";
 import { toast } from "sonner";
 import { IconTestPipe, IconSettings } from "@tabler/icons-react";
+import { logger } from "@/lib/logger";
 
 interface PrinterConfigProps {
   onConfigChange: (config: any) => void;
@@ -68,8 +69,12 @@ export function PrinterConfig({ onConfigChange }: PrinterConfigProps) {
         toast.error(error.error || "Printer test failed");
       }
     } catch (error) {
-      console.error("Printer test error:", error);
-      toast.error("Failed to test printer connection");
+      logger.error("Printer test failed", {
+        config: config.type,
+        interface: config.interface,
+        error: error instanceof Error ? error.message : String(error),
+      });
+      toast.error("Printer test failed");
     } finally {
       setIsTesting(false);
     }

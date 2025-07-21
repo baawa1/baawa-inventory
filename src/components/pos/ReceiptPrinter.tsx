@@ -18,6 +18,7 @@ import {
 import { toast } from "sonner";
 import { PrinterConfig } from "./PrinterConfig";
 import { formatCurrency } from "@/lib/utils";
+import { logger } from "@/lib/logger";
 
 export interface ReceiptData {
   id: string;
@@ -237,10 +238,11 @@ export function ReceiptPrinter({
         printerConfig,
       };
 
-      console.log(
-        "Sending print request:",
-        JSON.stringify(requestData, null, 2)
-      );
+      logger.info("Receipt print request", {
+        transactionId: receiptData.id,
+        customerName: receiptData.customerName,
+        totalAmount: receiptData.total,
+      });
 
       const response = await fetch("/api/pos/print-receipt", {
         method: "POST",
@@ -254,11 +256,18 @@ export function ReceiptPrinter({
         toast.success("Receipt printed on thermal printer!");
       } else {
         const error = await response.json();
-        console.error("Receipt print error:", error);
+        logger.error("Receipt print error", {
+          transactionId: receiptData.id,
+          error: error.error || "Failed to print receipt",
+          details: error.details,
+        });
 
         // Show detailed validation errors for debugging
         if (error.details && Array.isArray(error.details)) {
-          console.error("Validation errors:", error.details);
+          logger.error("Receipt validation errors", {
+            transactionId: receiptData.id,
+            errors: error.details,
+          });
           toast.error(
             `Validation error: ${error.details.map((d: any) => d.message).join(", ")}`
           );
@@ -267,7 +276,10 @@ export function ReceiptPrinter({
         }
       }
     } catch (error) {
-      console.error("Error printing receipt:", error);
+      logger.error("Error printing receipt", {
+        transactionId: receiptData.id,
+        error: error instanceof Error ? error.message : String(error),
+      });
       toast.error("Failed to print receipt");
     } finally {
       setIsProcessing(false);
@@ -299,10 +311,20 @@ export function ReceiptPrinter({
       if (response.ok) {
         toast.success("Receipt sent successfully!");
       } else {
+        const error = await response.json();
+        logger.error("Receipt email sending failed", {
+          transactionId: receiptData.id,
+          customerEmail: receiptData.customerEmail,
+          error: error.error || "Failed to send receipt email",
+        });
         toast.error("Failed to send receipt");
       }
     } catch (error) {
-      console.error("Error sending receipt:", error);
+      logger.error("Error sending receipt", {
+        transactionId: receiptData.id,
+        customerEmail: receiptData.customerEmail,
+        error: error instanceof Error ? error.message : String(error),
+      });
       toast.error("Failed to send receipt");
     } finally {
       setIsProcessing(false);

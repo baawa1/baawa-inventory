@@ -1,5 +1,6 @@
 import { prisma } from "@/lib/db";
 import { createEmailService } from "@/lib/email";
+import { logger } from "@/lib/logger";
 
 export interface NotificationData {
   type:
@@ -37,8 +38,10 @@ export async function sendReconciliationNotification(data: NotificationData) {
         break;
     }
   } catch (error) {
-    console.error("Failed to send notification:", error);
-    // Don't throw here - notifications are non-critical
+    logger.error("Failed to send stock reconciliation notification", {
+      reconciliationId: data.reconciliationId,
+      error: error instanceof Error ? error.message : String(error),
+    });
   }
 }
 

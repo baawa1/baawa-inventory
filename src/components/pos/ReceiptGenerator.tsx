@@ -30,6 +30,7 @@ import {
 import { toast } from "sonner";
 import { PrinterConfig } from "./PrinterConfig";
 import { formatCurrency } from "@/lib/utils";
+import { logger } from "@/lib/logger";
 
 export interface CartItem {
   id: number;
@@ -255,7 +256,10 @@ export function ReceiptGenerator({ sale, onClose }: ReceiptGeneratorProps) {
         toast.error(error.error || "Failed to print receipt");
       }
     } catch (error) {
-      console.error("Error printing receipt:", error);
+      logger.error("Receipt printing failed", {
+        transactionId: sale.id,
+        error: error instanceof Error ? error.message : String(error),
+      });
       toast.error("Failed to print receipt");
     }
   };
@@ -286,8 +290,12 @@ export function ReceiptGenerator({ sale, onClose }: ReceiptGeneratorProps) {
         toast.error("Failed to send receipt");
       }
     } catch (error) {
-      console.error("Error sending receipt:", error);
-      toast.error("Failed to send receipt");
+      logger.error("Receipt email sending failed", {
+        transactionId: sale.id,
+        customerEmail: sale.customerEmail,
+        error: error instanceof Error ? error.message : String(error),
+      });
+      toast.error("Failed to send receipt email");
     }
   };
 

@@ -6,6 +6,7 @@ import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { IconCamera, IconCameraOff, IconX } from "@tabler/icons-react";
 import { toast } from "sonner";
+import { logger } from "@/lib/logger";
 
 interface BarcodeScannerProps {
   onScan: (result: string) => void;
@@ -64,14 +65,16 @@ export function BarcodeScanner({
 
     const onScanError = (error: string) => {
       // Don't log every scan error, just continue scanning
-      console.debug("Scan error:", error);
+      logger.debug("Scan error", { error });
     };
 
     try {
       scanner.render(onScanSuccess, onScanError);
       setError(null);
     } catch (err) {
-      console.error("Failed to start scanner:", err);
+      logger.error("Failed to start scanner", {
+        error: err instanceof Error ? err.message : String(err),
+      });
       setError(
         "Failed to start camera. Please ensure camera permissions are granted."
       );
@@ -86,7 +89,9 @@ export function BarcodeScanner({
       try {
         scannerRef.current.clear();
       } catch (err) {
-        console.error("Error clearing scanner:", err);
+        logger.error("Failed to clear barcode scanner", {
+          error: err instanceof Error ? err.message : String(err),
+        });
       }
       scannerRef.current = null;
     }

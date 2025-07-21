@@ -5,6 +5,7 @@
  */
 
 import { createClient } from "@supabase/supabase-js";
+import { logger } from "@/lib/logger";
 
 export interface UploadResult {
   url: string;
@@ -155,7 +156,11 @@ class SupabaseStorageService {
         publicId: data.path,
       };
     } catch (error) {
-      console.error("Supabase upload error:", error);
+      logger.upload("Supabase file upload failed", {
+        filename: file.name,
+        size: file.size,
+        error: error instanceof Error ? error.message : String(error),
+      });
       throw new Error(
         `Failed to upload file: ${error instanceof Error ? error.message : "Unknown error"}`
       );
@@ -231,7 +236,10 @@ class SupabaseStorageService {
         throw new Error(`Delete failed: ${error.message}`);
       }
     } catch (error) {
-      console.error("Supabase delete error:", error);
+      logger.upload("Supabase file deletion failed", {
+        storagePath,
+        error: error instanceof Error ? error.message : String(error),
+      });
       throw new Error(
         `Failed to delete file: ${error instanceof Error ? error.message : "Unknown error"}`
       );
@@ -292,7 +300,10 @@ class SupabaseStorageService {
         }
       }
     } catch (error) {
-      console.error("Bucket setup error:", error);
+      logger.upload("Supabase bucket setup failed", {
+        bucketName: this.bucketName,
+        error: error instanceof Error ? error.message : String(error),
+      });
       throw error;
     }
   }
