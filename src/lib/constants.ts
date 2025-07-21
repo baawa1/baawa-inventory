@@ -26,12 +26,12 @@ export type UserStatus = (typeof USER_STATUS)[keyof typeof USER_STATUS];
 // Valid user statuses for POS access
 export const POS_ALLOWED_STATUSES: UserStatus[] = [USER_STATUS.APPROVED];
 
-// Product Status Constants (must match Prisma ProductStatus enum exactly)
+// Product Status Constants (must match database field values exactly)
 export const PRODUCT_STATUS = {
-  ACTIVE: "ACTIVE",
-  INACTIVE: "INACTIVE",
-  OUT_OF_STOCK: "OUT_OF_STOCK",
-  DISCONTINUED: "DISCONTINUED",
+  ACTIVE: "active",
+  INACTIVE: "inactive",
+  OUT_OF_STOCK: "out_of_stock",
+  DISCONTINUED: "discontinued",
 } as const;
 
 export type ProductStatus =

@@ -60,15 +60,14 @@ export const GET = withAuth(async (request: AuthenticatedRequest) => {
       where.supplierId = parseInt(supplierId);
     }
 
-    if (lowStock) {
-      where.stock = { lte: prisma.product.fields.minStock };
-    }
+    // For low stock filtering, we'll handle this after the query
+    // since Prisma doesn't support field-to-field comparison in where clause
 
     if (status && status !== "all") {
       if (status === PRODUCT_STATUS.ACTIVE) {
-        where.isActive = true;
+        where.status = "active";
       } else if (status === PRODUCT_STATUS.INACTIVE) {
-        where.isActive = false;
+        where.status = "inactive";
       }
     }
 
@@ -130,18 +129,31 @@ export const GET = withAuth(async (request: AuthenticatedRequest) => {
     }
 
     // Execute query with relations
-    // Debug logging removed for production
-
-    const [products, totalCount] = await Promise.all([
+    const [allProducts, totalCount] = await Promise.all([
       prisma.product.findMany({
         where,
         include,
         orderBy,
-        skip,
-        take: limit,
+        ...(lowStock ? {} : { skip, take: limit }),
       }),
       prisma.product.count({ where }),
     ]);
+
+    // Filter for low stock if needed
+    let products = allProducts;
+    let filteredTotalCount = totalCount;
+
+    if (lowStock) {
+      products = allProducts.filter(
+        (product) => product.stock <= (product.minStock || 0)
+      );
+
+      filteredTotalCount = products.length;
+
+      // Apply pagination after filtering
+      const startIndex = (page - 1) * limit;
+      products = products.slice(startIndex, startIndex + limit);
+    }
 
     // Transform response
     const transformedProducts = products.map((product) => ({
@@ -155,7 +167,7 @@ export const GET = withAuth(async (request: AuthenticatedRequest) => {
       stock: product.stock,
       minStock: product.minStock,
       maxStock: product.maxStock,
-      isActive: product.isActive,
+      status: product.status,
       isArchived: product.isArchived,
       images: product.images,
       tags: product.tags,
@@ -178,9 +190,9 @@ export const GET = withAuth(async (request: AuthenticatedRequest) => {
         pagination: {
           page,
           limit,
-          total: totalCount,
-          totalPages: Math.ceil(totalCount / limit),
-          hasNextPage: page < Math.ceil(totalCount / limit),
+          total: filteredTotalCount,
+          totalPages: Math.ceil(filteredTotalCount / limit),
+          hasNextPage: page < Math.ceil(filteredTotalCount / limit),
           hasPreviousPage: page > 1,
         },
       },
