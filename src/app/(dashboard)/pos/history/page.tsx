@@ -1,7 +1,6 @@
 import { auth } from "../../../../../auth";
 import { redirect } from "next/navigation";
 import { TransactionList } from "@/components/inventory/TransactionList";
-import { DashboardPageLayout } from "@/components/layouts/DashboardPageLayout";
 
 export const metadata = {
   title: "Transaction History - BaaWA Inventory POS",

@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useEffect, useState, useCallback } from "react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Loader2, AlertTriangle } from "lucide-react";
 import { useLogout } from "@/hooks/useLogout";
@@ -18,15 +18,7 @@ export default function ImmediateLogoutPage() {
   const [error, setError] = useState<string | null>(null);
   const [hasAttempted, setHasAttempted] = useState(false);
 
-  useEffect(() => {
-    // Only trigger logout once and if not already logging out
-    if (!isLoggingOut && !hasAttempted) {
-      setHasAttempted(true);
-      handleLogout();
-    }
-  }, [isLoggingOut, hasAttempted]);
-
-  const handleLogout = async () => {
+  const handleLogout = useCallback(async () => {
     try {
       await logout();
     } catch (err) {
@@ -36,7 +28,15 @@ export default function ImmediateLogoutPage() {
       // Force logout even if there's an error
       forceLogout();
     }
-  };
+  }, [logout]);
+
+  useEffect(() => {
+    // Only trigger logout once and if not already logging out
+    if (!isLoggingOut && !hasAttempted) {
+      setHasAttempted(true);
+      handleLogout();
+    }
+  }, [isLoggingOut, hasAttempted, handleLogout]);
 
   const forceLogout = () => {
     // Clear everything and redirect

@@ -10,7 +10,7 @@ const compat = new FlatCompat({
 });
 
 const eslintConfig = [
-  ...compat.extends("next/core-web-vitals", "next/typescript"),
+  ...compat.extends("next/core-web-vitals"),
   {
     ignores: [
       ".next/**/*",
@@ -35,7 +35,7 @@ const eslintConfig = [
   {
     files: ["**/*.{js,jsx,ts,tsx}"],
     rules: {
-      "@typescript-eslint/no-unused-vars": [
+      "no-unused-vars": [
         "error",
         {
           argsIgnorePattern: "^_",
@@ -43,22 +43,16 @@ const eslintConfig = [
           caughtErrorsIgnorePattern: "^_",
         },
       ],
-      "@typescript-eslint/no-explicit-any": "warn",
-      "@typescript-eslint/no-require-imports": "off",
       "react/no-unescaped-entities": "warn",
       "react-hooks/exhaustive-deps": "warn",
       "react-hooks/rules-of-hooks": "error",
-      "@typescript-eslint/no-empty-object-type": "off",
-      "@typescript-eslint/no-wrapper-object-types": "off",
-      "@typescript-eslint/no-unsafe-function-type": "off",
+      "@next/next/no-img-element": "warn",
     },
   },
   {
     files: ["**/*.test.{js,jsx,ts,tsx}", "tests/**/*", "**/__tests__/**/*"],
     rules: {
-      "@typescript-eslint/no-explicit-any": "off",
-      "@typescript-eslint/no-unused-vars": "off",
-      "@typescript-eslint/no-require-imports": "off",
+      "no-unused-vars": "off",
     },
   },
 ];

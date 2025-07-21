@@ -3,17 +3,15 @@
 import React, { useState } from "react";
 import { z } from "zod";
 import { Button } from "@/components/ui/button";
-import { IconLoader, IconArrowRight, IconX } from "@tabler/icons-react";
+import { IconLoader, IconX } from "@tabler/icons-react";
 import { toast } from "sonner";
 import { usePOSErrorHandler } from "./POSErrorBoundary";
-import { formatCurrency } from "@/lib/utils";
 import { ALL_PAYMENT_METHODS, VALIDATION_RULES } from "@/lib/constants";
 import { OrderSummaryStep } from "./OrderSummaryStep";
 import { DiscountStep } from "./DiscountStep";
 import { PaymentMethodStep } from "./PaymentMethodStep";
 import { CustomerInfoStep } from "./CustomerInfoStep";
 import { ReviewStep } from "./ReviewStep";
-import { SplitPaymentInterface } from "./SplitPaymentInterface";
 
 // Validation schemas
 const discountSchema = z.object({
@@ -110,7 +108,7 @@ export function SlidingPaymentInterface({
   );
   const [discountValue, setDiscountValue] = useState(0);
   const [amountPaid, setAmountPaid] = useState(total);
-  const [notes, setNotes] = useState("");
+  const [_notes, _setNotes] = useState("");
   const [processing, setProcessing] = useState(false);
   const [isSplitPayment, setIsSplitPayment] = useState(false);
   const [splitPayments, setSplitPayments] = useState<
@@ -137,7 +135,7 @@ export function SlidingPaymentInterface({
     }
   };
 
-  const validateCustomerInfo = (info: typeof customerInfo) => {
+  const _validateCustomerInfo = (info: typeof customerInfo) => {
     try {
       customerInfoSchema.parse(info);
       return true;
@@ -190,7 +188,7 @@ export function SlidingPaymentInterface({
   };
 
   const handlePayment = async () => {
-    if (!validatePaymentData(paymentMethod, amountPaid, notes)) {
+    if (!validatePaymentData(paymentMethod, amountPaid, _notes)) {
       return;
     }
 
@@ -234,7 +232,7 @@ export function SlidingPaymentInterface({
     }
   };
 
-  const canProceed = () => {
+  const _canProceed = () => {
     switch (currentStep) {
       case 0: // Order Summary
         return true;

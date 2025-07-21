@@ -29,7 +29,7 @@ import {
 
 interface UserFormProps {
   user?: User | null;
-  onSubmitAction: (data: UserFormData | EditUserFormData) => Promise<void>;
+  onSubmitAction: (_data: UserFormData | EditUserFormData) => Promise<void>;
   onCancelAction: () => void;
   isSubmitting: boolean;
 }

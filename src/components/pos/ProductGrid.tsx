@@ -1,6 +1,6 @@
 "use client";
 
-import React, { useState, useMemo, useRef } from "react";
+import { useState, useEffect, useCallback, useRef, useMemo } from "react";
 import { Card, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
@@ -25,6 +25,7 @@ import { useQuery } from "@tanstack/react-query";
 import { toast } from "sonner";
 import { usePOSErrorHandler } from "./POSErrorBoundary";
 import { formatCurrency } from "@/lib/utils";
+import Image from "next/image";
 
 interface Product {
   id: number;
@@ -364,16 +365,24 @@ export function ProductGrid({
                   {/* Product Image Background */}
                   <div className="relative h-32 bg-gradient-to-br from-gray-100 to-gray-200 flex items-center justify-center overflow-hidden">
                     {getProductImage(product) ? (
-                      <img
+                      <Image
                         src={getProductImage(product)!}
                         alt={product.name}
-                        className="w-full h-full object-cover"
-                        onError={(e) => {
+                        fill
+                        className="object-cover"
+                        onError={() => {
                           // Fallback to gradient background if image fails to load
-                          e.currentTarget.style.display = "none";
-                          e.currentTarget.nextElementSibling!.classList.remove(
-                            "hidden"
-                          );
+                          const imgElement = document.querySelector(
+                            `[alt="${product.name}"]`
+                          ) as HTMLImageElement;
+                          if (imgElement) {
+                            imgElement.style.display = "none";
+                            const fallbackElement =
+                              imgElement.nextElementSibling as HTMLElement;
+                            if (fallbackElement) {
+                              fallbackElement.classList.remove("hidden");
+                            }
+                          }
                         }}
                       />
                     ) : null}

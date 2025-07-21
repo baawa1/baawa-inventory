@@ -5,7 +5,7 @@
 
 "use client";
 
-import React, { useState, useEffect } from "react";
+import React, { useState, useEffect, useCallback } from "react";
 import { useSession } from "next-auth/react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
@@ -127,6 +127,7 @@ export function TransactionHistory() {
   const { handleError } = usePOSErrorHandler();
   const [transactions, setTransactions] = useState<Transaction[]>([]);
   const [loading, setLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
   const [selectedTransaction, setSelectedTransaction] =
     useState<Transaction | null>(null);
   const [filters, setFilters] = useState<TransactionFilters>({
@@ -138,73 +139,29 @@ export function TransactionHistory() {
     staffName: "all",
   });
 
-  // Load transactions from both online API and offline storage
-  const loadTransactions = async () => {
+  const loadTransactions = useCallback(async () => {
     try {
       setLoading(true);
-      const allTransactions: Transaction[] = [];
+      setError(null);
 
-      // Load online transactions
-      if (isOnline) {
-        try {
-          const response = await fetch("/api/pos/transactions");
-          if (response.ok) {
-            const data = await response.json();
-            const onlineTransactions = data.transactions.map((t: any) => ({
-              ...t,
-              timestamp: new Date(t.timestamp || t.created_at),
-              status: "synced",
-              isOffline: false,
-            }));
-            allTransactions.push(...onlineTransactions);
-          }
-        } catch (error) {
-          logger.error("Failed to load online transactions", {
-            error: error instanceof Error ? error.message : String(error),
-          });
-          toast.error("Failed to load transactions");
-        }
+      const response = await fetch("/api/pos/transactions");
+      if (!response.ok) {
+        throw new Error("Failed to load transactions");
       }
 
-      // Load offline transactions
-      try {
-        await offlineStorage.init();
-        const offlineTransactions = await offlineStorage.getAllTransactions();
-        const mappedOfflineTransactions = offlineTransactions.map((t: any) => ({
-          ...t,
-          timestamp: new Date(t.timestamp),
-          isOffline: true,
-        }));
-        allTransactions.push(...mappedOfflineTransactions);
-      } catch (error) {
-        logger.error("Failed to load offline transactions", {
-          error: error instanceof Error ? error.message : String(error),
-        });
-        toast.error("Failed to load offline transactions");
-      }
-
-      // Sort by timestamp (newest first) and remove duplicates
-      const uniqueTransactions = allTransactions
-        .filter(
-          (transaction, index, self) =>
-            index === self.findIndex((t) => t.id === transaction.id)
-        )
-        .sort((a, b) => b.timestamp.getTime() - a.timestamp.getTime());
-
-      setTransactions(uniqueTransactions);
-    } catch (error) {
-      logger.error("Failed to load transactions", {
-        error: error instanceof Error ? error.message : String(error),
-      });
-      toast.error("Failed to load transaction history");
+      const data = await response.json();
+      setTransactions(data.transactions || []);
+    } catch (err) {
+      console.error("Failed to load transactions:", err);
+      setError("Failed to load transactions");
     } finally {
       setLoading(false);
     }
-  };
+  }, []);
 
   useEffect(() => {
     loadTransactions();
-  }, [isOnline]);
+  }, [loadTransactions]);
 
   // Filter transactions based on current filters
   const filteredTransactions = transactions.filter((transaction) => {

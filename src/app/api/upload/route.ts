@@ -101,30 +101,31 @@ export const DELETE = withPermission(
   [USER_ROLES.ADMIN, USER_ROLES.MANAGER],
   async (request: AuthenticatedRequest) => {
     try {
+      const { searchParams } = new URL(request.url);
+      const storagePath = searchParams.get("publicId");
 
-    const { searchParams } = new URL(request.url);
-    const storagePath = searchParams.get("publicId");
+      if (!storagePath) {
+        return NextResponse.json(
+          { error: "Storage path is required" },
+          { status: 400 }
+        );
+      }
 
-    if (!storagePath) {
+      // Delete from Supabase Storage
+      await supabaseStorageServer.deleteFile(storagePath);
+
+      return NextResponse.json({
+        message: "File deleted successfully",
+      });
+    } catch (error) {
+      console.error("Delete error:", error);
       return NextResponse.json(
-        { error: "Storage path is required" },
-        { status: 400 }
+        {
+          error:
+            error instanceof Error ? error.message : "Failed to delete file",
+        },
+        { status: 500 }
       );
     }
-
-    // Delete from Supabase Storage
-    await supabaseStorageServer.deleteFile(storagePath);
-
-    return NextResponse.json({
-      message: "File deleted successfully",
-    });
-  } catch (error) {
-    console.error("Delete error:", error);
-    return NextResponse.json(
-      {
-        error: error instanceof Error ? error.message : "Failed to delete file",
-      },
-      { status: 500 }
-    );
   }
 );
