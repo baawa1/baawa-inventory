@@ -1,6 +1,6 @@
 "use client";
 
-import React, { useState, useEffect } from "react";
+import React, { useState } from "react";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
@@ -19,25 +19,11 @@ import {
 } from "@tabler/icons-react";
 import { toast } from "sonner";
 import { formatCurrency } from "@/lib/utils";
-
-interface Product {
-  id: number;
-  name: string;
-  sku: string;
-  price: number;
-  stock: number;
-  category?: {
-    id: number;
-    name: string;
-  };
-  brand?: {
-    id: number;
-    name: string;
-  };
-  description?: string;
-  barcode?: string;
-  status: string;
-}
+import {
+  useProductSearch,
+  useBarcodeLookupMutation,
+  type POSProduct,
+} from "@/hooks/api/pos";
 
 interface ProductSearchBarProps {
   onProductSelect: (product: {
@@ -57,9 +43,6 @@ export function ProductSearchBar({
   disabled = false,
 }: ProductSearchBarProps) {
   const [searchTerm, setSearchTerm] = useState("");
-  const [products, setProducts] = useState<Product[]>([]);
-  const [loading, setLoading] = useState(false);
-  const [error, setError] = useState<string | null>(null);
   const [searchMode, setSearchMode] = useState<"text" | "barcode" | "camera">(
     "text"
   );
@@ -67,61 +50,25 @@ export function ProductSearchBar({
 
   const debouncedSearchTerm = useDebounce(searchTerm, 300);
 
-  // Search products
-  useEffect(() => {
-    const searchProducts = async () => {
-      if (!debouncedSearchTerm.trim()) {
-        setProducts([]);
-        return;
-      }
+  // TanStack Query hooks
+  const {
+    data: searchData,
+    isLoading: searchLoading,
+    error: searchError,
+  } = useProductSearch(debouncedSearchTerm, searchMode === "text");
 
-      setLoading(true);
-      setError(null);
+  const barcodeMutation = useBarcodeLookupMutation();
 
-      try {
-        const params = new URLSearchParams({
-          search: debouncedSearchTerm,
-          status: "active",
-          limit: "20",
-        });
-
-        const response = await fetch(`/api/pos/search-products?${params}`);
-
-        if (!response.ok) {
-          throw new Error("Failed to search products");
-        }
-
-        const data = await response.json();
-        setProducts(data.products || []);
-      } catch (err) {
-        console.error("Error searching products:", err);
-        setError("Failed to search products");
-        toast.error("Failed to search products");
-      } finally {
-        setLoading(false);
-      }
-    };
-
-    searchProducts();
-  }, [debouncedSearchTerm]);
+  const products = searchData?.products || [];
+  const loading = searchLoading || barcodeMutation.isPending;
+  const error = searchError ? "Failed to search products" : null;
 
   // Handle barcode scan (manual entry or camera)
   const handleBarcodeScan = async (barcode: string) => {
     if (!barcode.trim()) return;
 
-    setLoading(true);
-    setError(null);
-
     try {
-      const response = await fetch(
-        `/api/pos/barcode-lookup?barcode=${encodeURIComponent(barcode)}`
-      );
-
-      if (!response.ok) {
-        throw new Error("Product not found");
-      }
-
-      const product = await response.json();
+      const product = await barcodeMutation.mutateAsync(barcode);
 
       if (product.stock <= 0) {
         toast.error("Product is out of stock");
@@ -140,11 +87,8 @@ export function ProductSearchBar({
 
       toast.success(`Added ${product.name} to cart`);
       setSearchTerm("");
-    } catch (err) {
-      console.error("Error scanning barcode:", err);
+    } catch (_error) {
       toast.error("Product not found or barcode invalid");
-    } finally {
-      setLoading(false);
     }
   };
 
@@ -160,7 +104,7 @@ export function ProductSearchBar({
   };
 
   // Handle product selection
-  const handleProductSelect = (product: Product) => {
+  const handleProductSelect = (product: POSProduct) => {
     if (product.stock <= 0) {
       toast.error("Product is out of stock");
       return;
@@ -178,7 +122,6 @@ export function ProductSearchBar({
 
     toast.success(`Added ${product.name} to cart`);
     setSearchTerm("");
-    setProducts([]);
   };
 
   // Handle Enter key for barcode mode
