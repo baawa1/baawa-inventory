@@ -8,6 +8,7 @@ import { auth } from "../../auth";
 import { hasPermission } from "./auth/roles";
 import { AuditLogger } from "./utils/audit-logger";
 import { USER_STATUS } from "./constants";
+import { logger } from "./logger";
 import type { UserRole, UserStatus } from "@/types/user";
 
 export interface AuthenticatedRequest extends NextRequest {
@@ -116,7 +117,9 @@ export function withPOSAuth<T extends any[]>(
 
       return await handler(authenticatedRequest, ...args);
     } catch (error) {
-      console.error("POS Auth middleware error:", error);
+      logger.error("POS Auth middleware error", {
+        error: error instanceof Error ? error.message : "Unknown error",
+      });
 
       await AuditLogger.logAuthEvent(
         {

@@ -1,4 +1,5 @@
 import { useMutation, useQueryClient } from "@tanstack/react-query";
+import { logger } from "@/lib/logger";
 
 // Add Stock Mutation
 export function useAddStock() {
@@ -36,7 +37,9 @@ export function useAddStock() {
       queryClient.invalidateQueries({ queryKey: ["inventory"] });
     },
     onError: (error: Error) => {
-      console.error("Error adding stock:", error);
+      logger.error("Error adding stock", {
+        error: error.message,
+      });
     },
   });
 }
@@ -84,7 +87,9 @@ export function useUpdateStockAddition() {
       queryClient.invalidateQueries({ queryKey: ["inventory"] });
     },
     onError: (error: Error) => {
-      console.error("Error updating stock addition:", error);
+      logger.error("Error updating stock addition", {
+        error: error.message,
+      });
     },
   });
 }
@@ -117,7 +122,9 @@ export function useDeleteStockAddition() {
       queryClient.invalidateQueries({ queryKey: ["inventory"] });
     },
     onError: (error: Error) => {
-      console.error("Error deleting stock addition:", error);
+      logger.error("Error deleting stock addition", {
+        error: error.message,
+      });
     },
   });
 }

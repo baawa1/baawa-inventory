@@ -12,6 +12,7 @@ import {
 import { ErrorBoundary } from "@/components/ui/error-boundary";
 import { AlertTriangle, RefreshCw, Home } from "lucide-react";
 import { useRouter } from "next/navigation";
+import { logger } from "@/lib/logger";
 
 interface POSErrorFallbackProps {
   error: Error;
@@ -126,7 +127,11 @@ export function POSErrorBoundary({
   onError?: (error: Error) => void;
 }) {
   const handleError = (error: Error, errorInfo: React.ErrorInfo) => {
-    console.error(`POS Error in ${componentName}:`, error, errorInfo);
+    logger.error(`POS Error in ${componentName}`, {
+      error: error.message,
+      stack: error.stack,
+      componentStack: errorInfo.componentStack,
+    });
 
     // Log to external service in production
     if (process.env.NODE_ENV === "production") {
@@ -153,7 +158,10 @@ export function usePOSErrorHandler() {
   }, []);
 
   const handleError = React.useCallback((error: Error) => {
-    console.error("POS Async error:", error);
+    logger.error("POS Async error", {
+      error: error.message,
+      stack: error.stack,
+    });
     setError(error);
   }, []);
 
