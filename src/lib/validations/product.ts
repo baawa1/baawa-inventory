@@ -4,11 +4,11 @@ import {
   paginationSchema,
   searchSchema,
   productStatusSchema,
-  priceSchema,
   stockSchema,
   skuSchema,
   nameSchema,
 } from "./common";
+import { nairaPriceSchema, costPriceSchema, salePriceSchema } from "./price";
 
 // Product creation schema
 export const createProductSchema = z.object({
@@ -32,8 +32,8 @@ export const createProductSchema = z.object({
     .positive("Brand must be a valid ID")
     .optional()
     .nullable(),
-  purchasePrice: priceSchema,
-  sellingPrice: priceSchema,
+  purchasePrice: costPriceSchema,
+  sellingPrice: nairaPriceSchema,
   minimumStock: stockSchema,
   maximumStock: stockSchema.optional().nullable(),
   currentStock: stockSchema,
@@ -69,7 +69,7 @@ export const createProductSchema = z.object({
     .optional()
     .nullable(),
   tags: z.array(z.string()).optional(),
-  salePrice: priceSchema.optional().nullable(),
+  salePrice: salePriceSchema.optional().nullable(),
   saleStartDate: z.date().optional().nullable(),
   saleEndDate: z.date().optional().nullable(),
   metaTitle: z

@@ -3,7 +3,7 @@ import {
   withPermission,
   AuthenticatedRequest,
 } from "@/lib/api-middleware";
-import { handleApiError } from "@/lib/api-error-handler";
+import { createUnexpectedError } from "@/lib/api-error-handler";
 import { prisma } from "@/lib/db";
 import { createSecureResponse } from "@/lib/security-headers";
 
@@ -130,13 +130,7 @@ export const GET = withAuth(async (request: AuthenticatedRequest) => {
     }
 
     // Execute query with relations
-    console.log("🔍 Executing query with:", {
-      where,
-      include,
-      orderBy,
-      skip,
-      take: limit,
-    });
+    // Debug logging removed for production
 
     const [products, totalCount] = await Promise.all([
       prisma.product.findMany({
@@ -193,15 +187,7 @@ export const GET = withAuth(async (request: AuthenticatedRequest) => {
       200
     );
   } catch (error) {
-    const errorResponse = handleApiError(error);
-    return createSecureResponse(
-      {
-        success: false,
-        message: errorResponse.statusText || "An error occurred",
-        code: "ERROR",
-      },
-      errorResponse.status
-    );
+    return createUnexpectedError(error);
   }
 });
 
@@ -360,15 +346,7 @@ export const POST = withPermission(
         201
       );
     } catch (error) {
-      const errorResponse = handleApiError(error);
-      return createSecureResponse(
-        {
-          success: false,
-          message: errorResponse.statusText || "An error occurred",
-          code: "ERROR",
-        },
-        errorResponse.status
-      );
+      return createUnexpectedError(error);
     }
   }
 );

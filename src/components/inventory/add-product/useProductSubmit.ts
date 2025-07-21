@@ -27,7 +27,7 @@ export function useProductSubmit(
         maximumStock: data.maximumStock || null,
       };
 
-      console.log("Submitting product data:", cleanedData);
+      // Debug logging removed for production
 
       const response = await fetch("/api/products", {
         method: "POST",
@@ -42,8 +42,8 @@ export function useProductSubmit(
         throw new Error(errorData.message || "Failed to create product");
       }
 
-      const result = await response.json();
-      console.log("Product created successfully:", result);
+      const _result = await response.json();
+      // Debug logging removed for production
 
       // Show success notification
       toast.success("Product created successfully!");

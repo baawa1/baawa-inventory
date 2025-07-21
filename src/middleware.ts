@@ -47,37 +47,15 @@ export default auth((req: NextRequest & { auth: any }) => {
     token.user?.isEmailVerified || token.isEmailVerified
   );
 
-  // Debug logging in development
-  if (process.env.NODE_ENV === "development") {
-    console.log("🔍 Middleware Debug:", {
-      pathname,
-      userRole,
-      userStatus,
-      isEmailVerified,
-      hasToken: !!token,
-      tokenData: token
-        ? {
-            sub: token.sub,
-            email: token.email,
-            role: token.role,
-            status: token.status,
-            isEmailVerified: token.isEmailVerified,
-          }
-        : null,
-    });
-  }
+  // Debug logging removed for production
 
   // Helper function to safely redirect and prevent loops
-  const safeRedirect = (targetPath: string, reason: string) => {
+  const safeRedirect = (targetPath: string, _reason: string) => {
     if (pathname === targetPath) {
       // Already on target path, allow access to prevent redirect loops
       return NextResponse.next();
     }
-    if (process.env.NODE_ENV === "development") {
-      console.log(
-        `🔄 ${reason}: Redirecting from ${pathname} to ${targetPath}`
-      );
-    }
+    // Debug logging removed for production
     return NextResponse.redirect(new URL(targetPath, req.url));
   };
 
@@ -115,8 +93,6 @@ export default auth((req: NextRequest & { auth: any }) => {
 
   // At this point, user should be APPROVED
   if (userStatus !== "APPROVED") {
-    console.log("🚨 MIDDLEWARE REDIRECTING - User status is:", userStatus);
-    console.log("🚨 Full token data:", JSON.stringify(token, null, 2));
     return safeRedirect("/unauthorized", `Invalid user status: ${userStatus}`);
   }
 

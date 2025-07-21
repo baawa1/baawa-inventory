@@ -92,7 +92,7 @@ function VerifyEmailContent() {
       if (response.ok) {
         setVerificationStatus("success");
         setVerificationMessage(data.message);
-        console.log("✅ Email verification successful:", data);
+        // Debug logging removed for production
 
         // Set flag for pending approval page
         sessionStorage.setItem("emailJustVerified", "true");
@@ -100,9 +100,9 @@ function VerifyEmailContent() {
         // Refresh session if user is logged in
         if (session && data.shouldRefreshSession) {
           try {
-            console.log("🔄 Refreshing session after verification...");
+            // Debug logging removed for production
             await updateSession();
-            console.log("✅ Session refreshed successfully");
+            // Debug logging removed for production
           } catch (error) {
             console.error("❌ Error updating session:", error);
           }
@@ -112,7 +112,7 @@ function VerifyEmailContent() {
         setTimeout(() => {
           if (!isRedirecting) {
             setIsRedirecting(true);
-            console.log("🔄 Redirecting to pending approval...");
+            // Debug logging removed for production
             router.push("/pending-approval");
           }
         }, 2000);

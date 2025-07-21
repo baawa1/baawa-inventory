@@ -56,7 +56,7 @@ export function BarcodeScanner({
     scannerRef.current = scanner;
 
     const onScanSuccess = (decodedText: string) => {
-      console.log("Barcode scanned:", decodedText);
+      // Debug logging removed for production
       onScan(decodedText);
       toast.success("Barcode scanned successfully!");
       cleanup();

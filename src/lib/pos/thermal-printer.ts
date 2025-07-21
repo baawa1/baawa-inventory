@@ -45,7 +45,7 @@ export class XprinterXP58Service {
       // 2. Send to a local print service
       // 3. Use browser printing APIs
 
-      console.log("Printing receipt:", receiptData);
+      // Debug logging removed for production
 
       // Generate and log receipt content
       const _content = this.generateReceiptContent(receiptData);
@@ -128,7 +128,7 @@ export class XprinterXP58Service {
     lines.push("");
 
     const content = lines.join("\n");
-    console.log("Receipt content:\n", content);
+    // Debug logging removed for production
     return content;
   }
 
@@ -165,8 +165,8 @@ export class XprinterXP58Service {
   async testConnection(): Promise<boolean> {
     try {
       // For web compatibility, simulate connection test
-      console.log("Testing printer connection...");
-      console.log("Printer config:", this.config);
+      // Debug logging removed for production
+      // Debug logging removed for production
       // In production, this would check printer status
       return true;
     } catch (error) {
@@ -177,8 +177,8 @@ export class XprinterXP58Service {
 
   async printTestPage(): Promise<boolean> {
     try {
-      console.log("Printing test page...");
-      const testContent = [
+      // Debug logging removed for production
+      const _testContent = [
         "================================",
         "           TEST PAGE            ",
         "================================",
@@ -189,7 +189,7 @@ export class XprinterXP58Service {
         "================================",
       ].join("\n");
 
-      console.log("Test page content:\n", testContent);
+      // Debug logging removed for production
       return true;
     } catch (error) {
       console.error("Test page print failed:", error);

@@ -31,9 +31,10 @@ export const userStatusSchema = z.enum([
 ]);
 
 export const productStatusSchema = z.enum([
-  "active",
-  "inactive",
-  "discontinued",
+  "ACTIVE",
+  "INACTIVE",
+  "OUT_OF_STOCK",
+  "DISCONTINUED",
 ]);
 
 export const paymentMethodSchema = z.enum([
@@ -69,10 +70,10 @@ export const phoneSchema = z
     "Phone number must be in Nigerian format: +2347087367278 or 07039893476"
   );
 
-export const priceSchema = z
-  .number()
-  .positive("Price must be positive")
-  .multipleOf(0.01, "Price must have at most 2 decimal places");
+// Import price validation schemas
+import { nairaPriceSchema } from "./price";
+
+export const priceSchema = nairaPriceSchema;
 
 export const stockSchema = z
   .number()

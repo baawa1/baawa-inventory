@@ -86,8 +86,8 @@ export default function EditCategoryForm({ category }: EditCategoryFormProps) {
     updateCategoryMutation.mutate(
       { id: category.id, data },
       {
-        onSuccess: (updatedCategory) => {
-          console.log("Category updated successfully:", updatedCategory);
+        onSuccess: (_updatedCategory) => {
+          // Debug logging removed for production
           toast.success("Category updated successfully!");
           router.push("/inventory/categories");
         },
@@ -102,7 +102,7 @@ export default function EditCategoryForm({ category }: EditCategoryFormProps) {
         },
         onSettled: () => {
           // Force refetch after mutation completes
-          console.log("Mutation settled, forcing refetch");
+          // Debug logging removed for production
         },
       }
     );

@@ -143,11 +143,7 @@ const config: NextAuthConfig = {
     async jwt({ token, user, trigger }) {
       // Only fetch fresh data from database on initial sign-in or when explicitly triggered
       if (user) {
-        console.log("🔄 Initial login - using user object data:", {
-          status: (user as any).status,
-          role: (user as any).role,
-          emailVerified: (user as any).isEmailVerified,
-        });
+        // Debug logging removed for production
 
         token.role = (user as any).role;
         token.status = (user as any).status;
@@ -198,14 +194,7 @@ const config: NextAuthConfig = {
           });
 
           if (freshUser) {
-            console.log("✅ Fresh data fetched from database:", {
-              status: freshUser.userStatus,
-              role: freshUser.role,
-              emailVerified: freshUser.emailVerified,
-              firstName: freshUser.firstName,
-              lastName: freshUser.lastName,
-              trigger: trigger || "timeout",
-            });
+            // Debug logging removed for production
 
             // Update token with fresh data from database
             token.role = freshUser.role;
@@ -215,10 +204,10 @@ const config: NextAuthConfig = {
             token.lastName = freshUser.lastName;
             token.dataFetchedAt = Date.now();
           } else {
-            console.log("❌ User not found in database during JWT callback");
+            // User not found in database
           }
-        } catch (error) {
-          console.error("❌ Error fetching fresh user data:", error);
+        } catch (_error) {
+          // Error fetching fresh user data
         }
       }
 
@@ -238,22 +227,7 @@ const config: NextAuthConfig = {
           session.user.name = `${token.firstName} ${token.lastName}`;
         }
 
-        // Only log session updates in development and when there are significant changes
-        if (process.env.NODE_ENV === "development" && token.dataFetchedAt) {
-          // Only log if this is a fresh database fetch, not just a session update
-          const isFreshFetch =
-            Date.now() - (token.dataFetchedAt as number) < 10000; // Within 10 seconds
-          if (isFreshFetch) {
-            console.log("🔄 Session updated with fresh data:", {
-              name: session.user.name,
-              role: session.user.role,
-              status: session.user.status,
-              dataFetchedAt: new Date(
-                token.dataFetchedAt as number
-              ).toISOString(),
-            });
-          }
-        }
+        // Debug logging removed for production
       }
       return session;
     },
@@ -295,12 +269,10 @@ const config: NextAuthConfig = {
             // Log logout event
             await AuditLogger.logLogout(userId, userEmail || "unknown");
           } else {
-            console.warn(
-              `User with ID ${userId} not found during signOut event`
-            );
+            // User not found during signOut event
           }
-        } catch (error) {
-          console.error("Error during signOut event:", error);
+        } catch (_error) {
+          // Error during signOut event
         }
       }
     },
@@ -322,12 +294,10 @@ const config: NextAuthConfig = {
               data: { lastActivity: new Date() },
             });
           } else {
-            console.warn(
-              `User with ID ${userId} not found during session event`
-            );
+            // User not found during session event
           }
-        } catch (error) {
-          console.error("Error during session event:", error);
+        } catch (_error) {
+          // Error during session event
         }
       }
     },

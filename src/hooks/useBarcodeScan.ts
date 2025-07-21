@@ -21,7 +21,7 @@ export function useBarcodeScan({ onScan }: UseBarcodeScanProps) {
 
   const handleScan = useCallback(
     (result: string) => {
-      console.log("Barcode scanned:", result);
+      // Debug logging removed for production
       onScan(result);
       setIsScanning(false);
     },

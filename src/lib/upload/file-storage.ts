@@ -149,10 +149,10 @@ export class FileStorageService {
   /**
    * Delete a file from storage
    */
-  async deleteFile(storagePath: string): Promise<void> {
+  async deleteFile(_storagePath: string): Promise<void> {
     // In production, this would delete from cloud storage
     // For now, we just return success
-    console.log(`File deletion requested for: ${storagePath}`);
+    // Debug logging removed for production
   }
 
   /**

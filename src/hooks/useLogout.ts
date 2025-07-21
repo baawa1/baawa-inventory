@@ -54,7 +54,7 @@ export function useLogout(): UseLogoutReturn {
 
         // Handle the specific NextAuth ClientFetchError
         if (error && typeof error === "object" && "message" in error) {
-          console.log("Handling NextAuth error, forcing manual logout...");
+          // Debug logging removed for production
         }
 
         // Fallback: Force logout by clearing everything and redirecting

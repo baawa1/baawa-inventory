@@ -83,7 +83,7 @@ export async function PUT(request: NextRequest, { params }: RouteParams) {
         const { id } = await params;
         const body = await authRequest.json();
 
-        console.log("PUT /api/users/[id] - Received data:", { id, body });
+        // Debug logging removed for production
 
         // Validate ID
         const userId = parseInt(id);
@@ -168,7 +168,7 @@ export async function PUT(request: NextRequest, { params }: RouteParams) {
           updateData.password = await bcrypt.hash(body.password, 12);
         }
 
-        console.log("Updating user with data:", updateData);
+        // Debug logging removed for production
 
         // Update the user
         const user = await prisma.user.update({
@@ -227,7 +227,7 @@ export async function PUT(request: NextRequest, { params }: RouteParams) {
           lastLogin: user.lastLogin,
         };
 
-        console.log("Successfully updated user:", transformedUser);
+        // Debug logging removed for production
 
         return NextResponse.json({
           ...transformedUser,
