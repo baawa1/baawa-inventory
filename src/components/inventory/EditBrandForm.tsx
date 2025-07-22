@@ -245,7 +245,15 @@ export default function EditBrandForm({ brandId }: EditBrandFormProps) {
               </p>
             )}
 
-            <div className="flex items-center gap-4 pt-4">
+            <div className="flex justify-end space-x-4 pt-6 border-t">
+              <Button
+                type="button"
+                variant="outline"
+                onClick={() => router.push("/inventory/brands")}
+                disabled={updateBrandMutation.isPending}
+              >
+                Cancel
+              </Button>
               <Button
                 type="submit"
                 disabled={updateBrandMutation.isPending}
@@ -255,15 +263,6 @@ export default function EditBrandForm({ brandId }: EditBrandFormProps) {
                   <Loader2 className="h-4 w-4 animate-spin" />
                 )}
                 {updateBrandMutation.isPending ? "Updating..." : "Update Brand"}
-              </Button>
-
-              <Button
-                type="button"
-                variant="outline"
-                onClick={() => router.push("/inventory/brands")}
-                disabled={updateBrandMutation.isPending}
-              >
-                Cancel
               </Button>
             </div>
           </form>

@@ -282,7 +282,15 @@ export default function EditCategoryForm({ category }: EditCategoryFormProps) {
               />
 
               {/* Form Actions */}
-              <div className="flex items-center gap-4 pt-4">
+              <div className="flex justify-end space-x-4 pt-6 border-t">
+                <Button
+                  type="button"
+                  variant="outline"
+                  onClick={handleCancel}
+                  disabled={updateCategoryMutation.isPending}
+                >
+                  Cancel
+                </Button>
                 <Button
                   type="submit"
                   disabled={updateCategoryMutation.isPending}
@@ -294,15 +302,6 @@ export default function EditCategoryForm({ category }: EditCategoryFormProps) {
                   {updateCategoryMutation.isPending
                     ? "Updating..."
                     : "Update Category"}
-                </Button>
-
-                <Button
-                  type="button"
-                  variant="outline"
-                  onClick={handleCancel}
-                  disabled={updateCategoryMutation.isPending}
-                >
-                  Cancel
                 </Button>
               </div>
             </form>
