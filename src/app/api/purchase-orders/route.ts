@@ -64,14 +64,14 @@ export async function GET(request: NextRequest) {
     // Apply filters
     if (search) {
       where.OR = [
-        { orderNumber: { contains: search, mode: "insensitive" } },
+        { order_number: { contains: search, mode: "insensitive" } },
         { notes: { contains: search, mode: "insensitive" } },
         { suppliers: { name: { contains: search, mode: "insensitive" } } },
       ];
     }
 
     if (supplierId) {
-      where.supplierId = supplierId;
+      where.supplier_id = supplierId;
     }
 
     if (status) {
@@ -79,25 +79,25 @@ export async function GET(request: NextRequest) {
     }
 
     if (fromDate || toDate) {
-      where.orderDate = {};
-      if (fromDate) where.orderDate.gte = new Date(fromDate);
-      if (toDate) where.orderDate.lte = new Date(toDate);
+      where.order_date = {};
+      if (fromDate) where.order_date.gte = new Date(fromDate);
+      if (toDate) where.order_date.lte = new Date(toDate);
     }
 
     // Build orderBy clause
     const orderBy: any = {};
     if (sortBy === "orderDate") {
-      orderBy.orderDate = sortOrder;
+      orderBy.order_date = sortOrder;
     } else if (sortBy === "orderNumber") {
-      orderBy.orderNumber = sortOrder;
+      orderBy.order_number = sortOrder;
     } else if (sortBy === "totalAmount") {
-      orderBy.totalAmount = sortOrder;
+      orderBy.total_amount = sortOrder;
     } else if (sortBy === "status") {
       orderBy.status = sortOrder;
     } else if (sortBy === "createdAt") {
-      orderBy.createdAt = sortOrder;
+      orderBy.created_at = sortOrder;
     } else {
-      orderBy.orderDate = sortOrder; // default fallback
+      orderBy.order_date = sortOrder; // default fallback
     }
 
     // Execute queries in parallel for better performance
@@ -156,6 +156,8 @@ export async function GET(request: NextRequest) {
     const purchaseOrders = purchaseOrdersData.map((po) => ({
       id: po.id,
       orderNumber: po.order_number,
+      supplierId: po.supplier_id,
+      userId: po.user_id,
       orderDate: po.order_date,
       expectedDeliveryDate: po.expected_delivery_date,
       actualDeliveryDate: po.actual_delivery_date,
@@ -167,22 +169,16 @@ export async function GET(request: NextRequest) {
       notes: po.notes,
       createdAt: po.created_at,
       updatedAt: po.updated_at,
-      supplier: po.suppliers,
-      createdBy: po.users,
-      items: po.purchase_order_items,
-      _count: po._count,
+      suppliers: po.suppliers,
+      users: po.users,
+      purchaseOrderItems: po.purchase_order_items,
     }));
 
-    return createApiResponse({
-      success: true,
-      data: purchaseOrders,
-      pagination: {
-        total: totalCount,
-        page,
-        limit,
-        totalPages: Math.ceil(totalCount / limit),
-        offset,
-      },
+    return createApiResponse.successWithPagination(purchaseOrders, {
+      total: totalCount,
+      page,
+      limit,
+      totalPages: Math.ceil(totalCount / limit),
     });
   } catch (error) {
     return handleApiError(error);
@@ -367,14 +363,12 @@ export async function POST(request: NextRequest) {
       return { purchaseOrder, purchaseOrderItems };
     });
 
-    return createApiResponse(
+    return createApiResponse.success(
       {
-        success: true,
-        data: {
-          ...result.purchaseOrder,
-          items: result.purchaseOrderItems,
-        },
+        ...result.purchaseOrder,
+        items: result.purchaseOrderItems,
       },
+      "Purchase order created successfully",
       201
     );
   } catch (error) {
