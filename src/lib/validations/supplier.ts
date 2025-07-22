@@ -56,8 +56,16 @@ export const supplierFormSchema = z.object({
     .optional()
     .nullable(),
   creditLimit: z
-    .number()
-    .positive("Credit limit must be positive")
+    .union([
+      z.number().positive("Credit limit must be positive"),
+      z.string().transform((val) => {
+        const parsed = parseFloat(val);
+        if (isNaN(parsed) || parsed <= 0) {
+          throw new Error("Credit limit must be a positive number");
+        }
+        return parsed;
+      }),
+    ])
     .optional()
     .nullable(),
   isActive: z.boolean().optional(),

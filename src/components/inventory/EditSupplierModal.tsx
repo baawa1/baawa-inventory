@@ -29,6 +29,7 @@ export function EditSupplierModal({
   const form = useForm<SupplierFormData>({
     resolver: zodResolver(updateSupplierSchema),
     defaultValues: {
+      id: 0,
       name: "",
       contactPerson: "",
       email: "",
@@ -63,6 +64,7 @@ export function EditSupplierModal({
   useEffect(() => {
     if (supplier && isOpen) {
       form.reset({
+        id: supplier.id,
         name: supplier.name,
         contactPerson: supplier.contactPerson || "",
         email: supplier.email || "",

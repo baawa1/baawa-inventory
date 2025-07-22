@@ -55,7 +55,7 @@ export const GET = withAuth(
         postalCode: supplier.postalCode,
         taxId: supplier.taxNumber,
         paymentTerms: supplier.paymentTerms,
-        creditLimit: supplier.creditLimit,
+        creditLimit: supplier.creditLimit ? Number(supplier.creditLimit) : null,
         isActive: supplier.isActive,
         productCount: supplier._count.products,
         createdAt: supplier.createdAt,
@@ -162,7 +162,9 @@ export const PUT = withPermission(
         postalCode: updatedSupplier.postalCode,
         taxId: updatedSupplier.taxNumber,
         paymentTerms: updatedSupplier.paymentTerms,
-        creditLimit: updatedSupplier.creditLimit,
+        creditLimit: updatedSupplier.creditLimit
+          ? Number(updatedSupplier.creditLimit)
+          : null,
         isActive: updatedSupplier.isActive,
         productCount: updatedSupplier._count.products,
         createdAt: updatedSupplier.createdAt,
