@@ -1,9 +1,8 @@
 import { auth } from "../../../../../../auth";
 import { redirect } from "next/navigation";
-import Link from "next/link";
+import { notFound } from "next/navigation";
+import { prisma } from "@/lib/db";
 import { StockReconciliationDetail } from "@/components/inventory/StockReconciliationDetail";
-import { Button } from "@/components/ui/button";
-import { IconArrowLeft } from "@tabler/icons-react";
 
 export const metadata = {
   title: "Stock Reconciliation Details - BaaWA Inventory POS",
@@ -31,35 +30,80 @@ export default async function ReconciliationDetailPage({
   const reconciliationId = parseInt(resolvedParams.id);
 
   if (isNaN(reconciliationId)) {
-    redirect("/inventory/stock-reconciliations");
+    notFound();
   }
 
-  return (
-    <div className="space-y-6">
-      {/* Header */}
-      <div className="flex items-center gap-4">
-        <Button variant="outline" size="sm" asChild>
-          <Link href="/inventory/stock-reconciliations">
-            <IconArrowLeft className="w-4 h-4 mr-2" />
-            Back to Reconciliations
-          </Link>
-        </Button>
-        <div>
-          <h1 className="text-3xl font-bold tracking-tight">
-            Reconciliation Details
-          </h1>
-          <p className="text-muted-foreground">
-            View and manage this stock reconciliation
-          </p>
-        </div>
-      </div>
+  // Fetch reconciliation with related data
+  const reconciliation = await prisma.stockReconciliation.findUnique({
+    where: { id: reconciliationId },
+    include: {
+      createdBy: {
+        select: {
+          id: true,
+          firstName: true,
+          lastName: true,
+          email: true,
+          role: true,
+        },
+      },
+      approvedBy: {
+        select: {
+          id: true,
+          firstName: true,
+          lastName: true,
+          email: true,
+          role: true,
+        },
+      },
+      items: {
+        include: {
+          product: {
+            select: {
+              id: true,
+              name: true,
+              sku: true,
+              barcode: true,
+              price: true,
+            },
+          },
+        },
+      },
+    },
+  });
 
-      {/* Details Component */}
-      <StockReconciliationDetail
-        reconciliationId={reconciliationId}
-        userRole={session.user.role}
-        userId={parseInt(session.user.id)}
-      />
-    </div>
+  if (!reconciliation) {
+    notFound();
+  }
+
+  // Transform data for component
+  const transformedReconciliation = {
+    id: reconciliation.id,
+    title: reconciliation.title,
+    description: reconciliation.description,
+    status: reconciliation.status,
+    createdAt: reconciliation.created_at.toISOString(),
+    submittedAt: reconciliation.submitted_at?.toISOString(),
+    approvedAt: reconciliation.approved_at?.toISOString(),
+    notes: reconciliation.notes,
+    createdBy: reconciliation.createdBy,
+    approvedBy: reconciliation.approvedBy,
+    items: reconciliation.items.map((item) => ({
+      id: item.id,
+      productId: item.product_id,
+      systemCount: item.system_count,
+      physicalCount: item.physical_count,
+      discrepancy: item.discrepancy,
+      estimatedImpact: item.estimated_impact,
+      discrepancyReason: item.discrepancy_reason,
+      notes: item.notes,
+      product: item.product,
+    })),
+  };
+
+  return (
+    <StockReconciliationDetail
+      reconciliation={transformedReconciliation}
+      user={session.user}
+    />
   );
 }

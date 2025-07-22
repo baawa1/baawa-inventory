@@ -6,15 +6,8 @@ import { zodResolver } from "@hookform/resolvers/zod";
 import { useForm } from "react-hook-form";
 import { PageHeader } from "@/components/ui/page-header";
 import { Button } from "@/components/ui/button";
-import {
-  Card,
-  CardContent,
-  CardDescription,
-  CardHeader,
-  CardTitle,
-} from "@/components/ui/card";
 import { Form } from "@/components/ui/form";
-import { ArrowLeft, Loader2 } from "lucide-react";
+import { ArrowLeft } from "lucide-react";
 import { Alert, AlertDescription } from "@/components/ui/alert";
 import { createPurchaseOrderSchema } from "@/lib/validations/purchase-order";
 
@@ -40,11 +33,18 @@ export default function AddPurchaseOrderForm() {
   const { suppliers, products, loading, isSubmitting, submitError } =
     useFormDataQuery();
 
+  // Set default date on client side to avoid hydration mismatch
+  useEffect(() => {
+    if (!form.getValues("orderDate")) {
+      form.setValue("orderDate", new Date().toISOString());
+    }
+  }, [form]);
+
   // Form submission
   const { onSubmit } = usePurchaseOrderSubmit(
     form,
-    (value) => {}, // setIsSubmitting is handled in useFormDataQuery
-    (error) => {} // setSubmitError is handled in useFormDataQuery
+    (_value) => {}, // setIsSubmitting is handled in useFormDataQuery
+    (_error) => {} // setSubmitError is handled in useFormDataQuery
   );
 
   // Handle form submission
