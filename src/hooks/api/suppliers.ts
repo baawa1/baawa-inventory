@@ -90,7 +90,27 @@ const createSupplier = async (data: CreateSupplierData): Promise<Supplier> => {
   });
 
   if (!response.ok) {
-    throw new Error(`Failed to create supplier: ${response.statusText}`);
+    const errorData = await response.json().catch(() => ({}));
+
+    // Handle validation errors specifically
+    if (response.status === 400 && errorData.code === "VALIDATION_ERROR") {
+      const validationError = new Error("Validation failed");
+      (validationError as any).details = errorData.details;
+      (validationError as any).code = errorData.code;
+      throw validationError;
+    }
+
+    // Handle other specific errors
+    if (response.status === 409) {
+      throw new Error("A supplier with this name already exists");
+    }
+
+    // Handle generic errors
+    const errorMessage =
+      errorData.error ||
+      errorData.message ||
+      `Failed to create supplier: ${response.statusText}`;
+    throw new Error(errorMessage);
   }
 
   const result = await response.json();
