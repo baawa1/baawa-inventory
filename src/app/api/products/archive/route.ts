@@ -1,6 +1,6 @@
 import { NextResponse } from "next/server";
 import { withPermission, AuthenticatedRequest } from "@/lib/api-middleware";
-import { handleApiError } from "@/lib/api-error-handler";
+import { handleApiError } from "@/lib/api-error-handler-new";
 import { USER_ROLES } from "@/lib/auth/roles";
 import { prisma } from "@/lib/db";
 import { z } from "zod";

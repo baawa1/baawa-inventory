@@ -8,7 +8,8 @@ import {
   validatePurchaseOrderTotals,
   validatePurchaseOrderRules,
 } from "@/lib/validations/purchase-order";
-import { handleApiError, createApiResponse } from "@/lib/api-error-handler";
+import { handleApiError } from "@/lib/api-error-handler-new";
+import { createApiResponse } from "@/lib/api-response";
 
 // GET /api/purchase-orders - List purchase orders with optional filtering and pagination
 export async function GET(request: NextRequest) {
