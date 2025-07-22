@@ -2,7 +2,7 @@
 
 import React from "react";
 import { UseFormReturn } from "react-hook-form";
-import { supplierFormSchema } from "@/lib/validations/supplier";
+import { updateSupplierSchema } from "@/lib/validations/supplier";
 import { z } from "zod";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -20,7 +20,7 @@ import {
 } from "@/components/ui/form";
 import { IconLoader2, IconDeviceFloppy } from "@tabler/icons-react";
 
-type SupplierFormData = z.infer<typeof supplierFormSchema>;
+type SupplierFormData = z.infer<typeof updateSupplierSchema>;
 
 interface SupplierFormProps {
   form: UseFormReturn<SupplierFormData>;

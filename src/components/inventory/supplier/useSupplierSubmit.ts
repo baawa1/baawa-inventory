@@ -1,9 +1,9 @@
 import { UseFormReturn } from "react-hook-form";
-import { supplierFormSchema } from "@/lib/validations/supplier";
+import { updateSupplierSchema } from "@/lib/validations/supplier";
 import { z } from "zod";
 import { toast } from "sonner";
 
-type SupplierFormData = z.infer<typeof supplierFormSchema>;
+type SupplierFormData = z.infer<typeof updateSupplierSchema>;
 
 interface UseSupplierSubmitResult {
   onSubmit: (data: SupplierFormData) => Promise<void>;
