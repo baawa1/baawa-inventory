@@ -2,6 +2,7 @@
 
 import React, { useState, useMemo, useCallback } from "react";
 import Link from "next/link";
+import { useRouter } from "next/navigation";
 import { toast } from "sonner";
 import { useDebounce } from "@/hooks/useDebounce";
 import {
@@ -11,6 +12,7 @@ import {
   type Supplier as APISupplier,
 } from "@/hooks/api/suppliers";
 import { InventoryPageLayout } from "@/components/inventory/InventoryPageLayout";
+import SupplierDetailModal from "@/components/inventory/SupplierDetailModal";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import {
@@ -59,6 +61,7 @@ interface SupplierListProps {
 }
 
 const SupplierList = ({ user }: SupplierListProps) => {
+  const router = useRouter();
   const [deleteDialogOpen, setDeleteDialogOpen] = useState(false);
   const [supplierToDelete, setSupplierToDelete] = useState<APISupplier | null>(
     null
@@ -66,6 +69,12 @@ const SupplierList = ({ user }: SupplierListProps) => {
   const [reactivateDialogOpen, setReactivateDialogOpen] = useState(false);
   const [supplierToReactivate, setSupplierToReactivate] =
     useState<APISupplier | null>(null);
+
+  // Modal state
+  const [supplierDetailModalOpen, setSupplierDetailModalOpen] = useState(false);
+  const [selectedSupplierId, setSelectedSupplierId] = useState<number | null>(
+    null
+  );
 
   const [pagination, setPagination] = useState({
     page: 1,
@@ -213,28 +222,65 @@ const SupplierList = ({ user }: SupplierListProps) => {
     setPagination((prev) => ({ ...prev, limit: newSize, page: 1 }));
   }, []);
 
-  // Handle deactivate supplier
-  const handleDeactivateSupplier = useCallback(async () => {
-    if (!supplierToDelete) return;
+  // Modal handlers
+  const handleViewSupplier = useCallback((supplierId: number) => {
+    setSelectedSupplierId(supplierId);
+    setSupplierDetailModalOpen(true);
+  }, []);
 
-    try {
-      await deleteSupplierMutation.mutateAsync(supplierToDelete.id);
-      toast.success("Supplier deactivated successfully");
-    } catch (error) {
-      logger.error("Failed to deactivate supplier", {
-        supplierId: supplierToDelete.id,
-        supplierName: supplierToDelete.name,
-        error: error instanceof Error ? error.message : String(error),
-      });
-      toast.error("Failed to deactivate supplier");
-    } finally {
-      setDeleteDialogOpen(false);
-      setSupplierToDelete(null);
-    }
-  }, [supplierToDelete, deleteSupplierMutation]);
+  const handleCloseSupplierModal = useCallback(() => {
+    setSupplierDetailModalOpen(false);
+    setSelectedSupplierId(null);
+  }, []);
 
-  // Handle reactivate supplier
-  const handleReactivateSupplier = useCallback(async () => {
+  const handleEditSupplier = useCallback(
+    (supplierId: number) => {
+      // Navigate to edit page
+      router.push(`/inventory/suppliers/${supplierId}/edit`);
+    },
+    [router]
+  );
+
+  const handleDeactivateSupplier = useCallback(
+    async (supplierId: number) => {
+      try {
+        await updateSupplierMutation.mutateAsync({
+          id: supplierId,
+          data: { isActive: false },
+        });
+        toast.success("Supplier deactivated successfully");
+      } catch (error) {
+        logger.error("Failed to deactivate supplier", {
+          supplierId,
+          error: error instanceof Error ? error.message : String(error),
+        });
+        toast.error("Failed to deactivate supplier");
+      }
+    },
+    [updateSupplierMutation]
+  );
+
+  const handleReactivateSupplier = useCallback(
+    async (supplierId: number) => {
+      try {
+        await updateSupplierMutation.mutateAsync({
+          id: supplierId,
+          data: { isActive: true },
+        });
+        toast.success("Supplier reactivated successfully");
+      } catch (error) {
+        logger.error("Failed to reactivate supplier", {
+          supplierId,
+          error: error instanceof Error ? error.message : String(error),
+        });
+        toast.error("Failed to reactivate supplier");
+      }
+    },
+    [updateSupplierMutation]
+  );
+
+  // Handle reactivate supplier from dialog
+  const handleReactivateSupplierFromDialog = useCallback(async () => {
     if (!supplierToReactivate) return;
 
     try {
@@ -355,22 +401,18 @@ const SupplierList = ({ user }: SupplierListProps) => {
             </Button>
           </DropdownMenuTrigger>
           <DropdownMenuContent align="end">
-            <DropdownMenuItem asChild>
-              <Link href={`/inventory/suppliers/${supplier.id}`}>
-                <IconEye className="mr-2 h-4 w-4" />
-                View Details
-              </Link>
+            <DropdownMenuItem onSelect={() => handleViewSupplier(supplier.id)}>
+              <IconEye className="mr-2 h-4 w-4" />
+              View Details
             </DropdownMenuItem>
-            <DropdownMenuItem asChild>
-              <Link href={`/inventory/suppliers/${supplier.id}/edit`}>
-                <IconEdit className="mr-2 h-4 w-4" />
-                Edit
-              </Link>
+            <DropdownMenuItem onSelect={() => handleEditSupplier(supplier.id)}>
+              <IconEdit className="mr-2 h-4 w-4" />
+              Edit
             </DropdownMenuItem>
             {canDeleteSuppliers && supplier.isActive && (
               <DropdownMenuItem
                 className="text-red-600"
-                onClick={() => {
+                onSelect={() => {
                   setSupplierToDelete(supplier);
                   setDeleteDialogOpen(true);
                 }}
@@ -382,10 +424,7 @@ const SupplierList = ({ user }: SupplierListProps) => {
             {canDeleteSuppliers && !supplier.isActive && (
               <DropdownMenuItem
                 className="text-green-600"
-                onClick={() => {
-                  setSupplierToReactivate(supplier);
-                  setReactivateDialogOpen(true);
-                }}
+                onSelect={() => handleReactivateSupplier(supplier.id)}
               >
                 <IconRefresh className="mr-2 h-4 w-4" />
                 Reactivate
@@ -482,7 +521,27 @@ const SupplierList = ({ user }: SupplierListProps) => {
           <AlertDialogFooter>
             <AlertDialogCancel>Cancel</AlertDialogCancel>
             <AlertDialogAction
-              onClick={handleDeactivateSupplier}
+              onClick={async () => {
+                if (supplierToDelete) {
+                  try {
+                    await deleteSupplierMutation.mutateAsync(
+                      supplierToDelete.id
+                    );
+                    toast.success("Supplier deactivated successfully");
+                  } catch (error) {
+                    logger.error("Failed to deactivate supplier", {
+                      supplierId: supplierToDelete.id,
+                      supplierName: supplierToDelete.name,
+                      error:
+                        error instanceof Error ? error.message : String(error),
+                    });
+                    toast.error("Failed to deactivate supplier");
+                  } finally {
+                    setDeleteDialogOpen(false);
+                    setSupplierToDelete(null);
+                  }
+                }
+              }}
               className="bg-red-600 hover:bg-red-700"
             >
               Deactivate
@@ -511,7 +570,7 @@ const SupplierList = ({ user }: SupplierListProps) => {
           <AlertDialogFooter>
             <AlertDialogCancel>Cancel</AlertDialogCancel>
             <AlertDialogAction
-              onClick={handleReactivateSupplier}
+              onClick={handleReactivateSupplierFromDialog}
               className="bg-green-600 hover:bg-green-700"
             >
               Reactivate
@@ -519,6 +578,18 @@ const SupplierList = ({ user }: SupplierListProps) => {
           </AlertDialogFooter>
         </AlertDialogContent>
       </AlertDialog>
+
+      {/* Supplier Detail Modal */}
+      <SupplierDetailModal
+        supplierId={selectedSupplierId}
+        isOpen={supplierDetailModalOpen}
+        onClose={handleCloseSupplierModal}
+        onEdit={handleEditSupplier}
+        onDeactivate={handleDeactivateSupplier}
+        onReactivate={handleReactivateSupplier}
+        canEdit={canManageSuppliers}
+        canDeactivate={canDeleteSuppliers}
+      />
     </>
   );
 };

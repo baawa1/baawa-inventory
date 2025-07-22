@@ -75,12 +75,16 @@ export const createSupplierSchema = supplierFormSchema.extend({
 });
 
 // Supplier update schema (all fields optional except validation rules)
-export const updateSupplierSchema = supplierFormSchema.refine(
-  (data) => Object.keys(data).length > 0,
-  {
+export const updateSupplierSchema = supplierFormSchema
+  .extend({
+    id: idSchema,
+  })
+  .refine((data) => Object.keys(data).length > 0, {
     message: "At least one field must be provided for update",
-  }
-);
+  });
+
+// Type for update form data
+export type UpdateSupplierFormData = z.infer<typeof updateSupplierSchema>;
 
 // Supplier query parameters schema
 export const supplierQuerySchema = paginationSchema.merge(searchSchema).extend({
@@ -92,7 +96,13 @@ export const supplierQuerySchema = paginationSchema.merge(searchSchema).extend({
 
 // Supplier ID parameter schema
 export const supplierIdSchema = z.object({
-  id: idSchema,
+  id: z.string().transform((val) => {
+    const parsed = parseInt(val, 10);
+    if (isNaN(parsed) || parsed <= 0) {
+      throw new Error("Supplier ID must be a positive integer");
+    }
+    return parsed;
+  }),
 });
 
 // Supplier performance schema (for reporting)
