@@ -12,6 +12,9 @@ import {
   type Category as APICategory,
 } from "@/hooks/api/categories";
 
+// Custom Components
+import CategoryDetailPopup from "@/components/inventory/CategoryDetailPopup";
+
 // UI Components
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
@@ -68,6 +71,10 @@ interface CategoryListProps {
 export default function CategoryList({ user }: CategoryListProps) {
   const [deleteDialogOpen, setDeleteDialogOpen] = useState(false);
   const [categoryToDelete, setCategoryToDelete] = useState<APICategory | null>(
+    null
+  );
+  const [detailPopupOpen, setDetailPopupOpen] = useState(false);
+  const [selectedCategoryId, setSelectedCategoryId] = useState<number | null>(
     null
   );
 
@@ -364,11 +371,14 @@ export default function CategoryList({ user }: CategoryListProps) {
             </Button>
           </DropdownMenuTrigger>
           <DropdownMenuContent align="end">
-            <DropdownMenuItem asChild>
-              <Link href={`/inventory/categories/${category.id}`}>
-                <IconEye className="mr-2 h-4 w-4" />
-                View
-              </Link>
+            <DropdownMenuItem
+              onClick={() => {
+                setSelectedCategoryId(category.id);
+                setDetailPopupOpen(true);
+              }}
+            >
+              <IconEye className="mr-2 h-4 w-4" />
+              View
             </DropdownMenuItem>
             <DropdownMenuItem asChild>
               <Link href={`/inventory/categories/${category.id}/edit`}>
@@ -507,6 +517,17 @@ export default function CategoryList({ user }: CategoryListProps) {
           </AlertDialogFooter>
         </AlertDialogContent>
       </AlertDialog>
+
+      {/* Category Detail Popup */}
+      <CategoryDetailPopup
+        categoryId={selectedCategoryId}
+        user={user}
+        open={detailPopupOpen}
+        onOpenChange={setDetailPopupOpen}
+        onCategoryChange={(categoryId) => {
+          setSelectedCategoryId(categoryId);
+        }}
+      />
     </>
   );
 }

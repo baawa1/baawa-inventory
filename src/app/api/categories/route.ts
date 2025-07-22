@@ -91,6 +91,7 @@ export const GET = withAuth(async (request: AuthenticatedRequest) => {
           _count: {
             select: {
               products: true,
+              children: true,
             },
           },
         },
@@ -112,7 +113,7 @@ export const GET = withAuth(async (request: AuthenticatedRequest) => {
       parent: category.parent,
       children: category.children,
       productCount: category._count.products,
-      subcategoryCount: category.children?.length || 0,
+      subcategoryCount: category._count.children,
       createdAt: category.createdAt,
       updatedAt: category.updatedAt,
     }));
