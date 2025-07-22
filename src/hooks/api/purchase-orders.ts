@@ -26,8 +26,10 @@ export interface PurchaseOrder {
   };
   users?: {
     id: number;
-    name: string;
+    firstName: string;
+    lastName: string;
     email: string;
+    role: string;
   };
   purchaseOrderItems?: PurchaseOrderItem[];
 }
