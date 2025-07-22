@@ -163,7 +163,7 @@ const StockReconciliationList = ({ user }: StockReconciliationListProps) => {
   const deleteReconciliation = useDeleteStockReconciliation();
 
   // Extract data from queries
-  const reconciliations = reconciliationsQuery.data?.reconciliations || [];
+  const reconciliations = reconciliationsQuery.data?.data || [];
   const loading = reconciliationsQuery.isLoading;
   const total = reconciliationsQuery.data?.pagination?.total || 0;
   const apiPagination = reconciliationsQuery.data?.pagination;
