@@ -50,7 +50,7 @@ export interface Product {
   metaTitle?: string;
   metaDescription?: string;
   seoKeywords: string[];
-  status: "active" | "inactive";
+  status: "ACTIVE" | "INACTIVE" | "OUT_OF_STOCK" | "DISCONTINUED";
   allowReviews: boolean;
   isFeatured: boolean;
   metaContent?: string;

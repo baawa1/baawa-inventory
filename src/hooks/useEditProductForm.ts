@@ -52,7 +52,7 @@ interface ProductFormData {
   metaTitle?: string;
   metaDescription?: string;
   seoKeywords: string[];
-  status: "active" | "inactive";
+  status: "ACTIVE" | "INACTIVE" | "OUT_OF_STOCK" | "DISCONTINUED";
   allowReviews: boolean;
   isFeatured: boolean;
   metaContent?: string;
@@ -90,7 +90,7 @@ export function useEditProductForm(
       currentStock: 0,
       minimumStock: 0,
       maximumStock: undefined,
-      status: "active",
+      status: "ACTIVE",
       notes: "",
     },
   });

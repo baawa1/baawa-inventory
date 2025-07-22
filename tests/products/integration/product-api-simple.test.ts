@@ -102,7 +102,7 @@ describe("Product API Simple Tests", () => {
         sellingPrice: 15.99,
         minimumStock: 5,
         currentStock: 10,
-        status: "active",
+        status: "ACTIVE",
       };
 
       const createdProduct = { id: 1, ...productData };
@@ -164,7 +164,7 @@ describe("Product API Simple Tests", () => {
         sellingPrice: 15.99,
         minimumStock: 5,
         currentStock: 10,
-        status: "active",
+        status: "ACTIVE",
       };
 
       (global.fetch as jest.MockedFunction<typeof fetch>).mockResolvedValueOnce(
@@ -197,7 +197,7 @@ describe("Product API Simple Tests", () => {
         sellingPrice: 15.99,
         minimumStock: 5,
         currentStock: 10,
-        status: "active",
+        status: "ACTIVE",
       };
 
       (global.fetch as jest.MockedFunction<typeof fetch>).mockResolvedValueOnce(
@@ -233,7 +233,7 @@ describe("Product API Simple Tests", () => {
         price: 15.99,
         stock: 100,
         minStock: 10,
-        status: "active",
+        status: "ACTIVE",
         category: { id: 1, name: "Test Category" },
         brand: { id: 1, name: "Test Brand" },
         supplier: { id: 1, name: "Test Supplier", email: "supplier@test.com" },
@@ -373,7 +373,7 @@ describe("Product API Simple Tests", () => {
           minStock: 10,
           cost: 10.5,
           price: 15.99,
-          status: "active",
+          status: "ACTIVE",
           category: { id: 1, name: "Test Category" },
           brand: { id: 1, name: "Test Brand" },
           supplier: { id: 1, name: "Test Supplier" },

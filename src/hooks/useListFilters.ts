@@ -16,29 +16,35 @@ export function useListFilters<T extends ListFiltersState>({
 }: UseListFiltersOptions<T>) {
   const [filters, setFilters] = useState<T>(initialFilters);
 
-  const updateFilter = useCallback((key: keyof T, value: string | boolean) => {
-    setFilters((prev) => {
-      // Prevent unnecessary updates
-      if (prev[key] === value) return prev;
-      
-      const newFilters = { ...prev, [key]: value };
-      onFilterChange?.(newFilters);
-      return newFilters;
-    });
-  }, [onFilterChange]);
+  const updateFilter = useCallback(
+    (key: keyof T, value: string | boolean) => {
+      setFilters((prev) => {
+        // Prevent unnecessary updates
+        if (prev[key] === value) return prev;
+
+        const newFilters = { ...prev, [key]: value };
+        onFilterChange?.(newFilters);
+        return newFilters;
+      });
+    },
+    [onFilterChange]
+  );
 
   const resetFilters = useCallback(() => {
     setFilters(initialFilters);
     onFilterChange?.(initialFilters);
   }, [initialFilters, onFilterChange]);
 
-  const updateMultipleFilters = useCallback((updates: Partial<T>) => {
-    setFilters((prev) => {
-      const newFilters = { ...prev, ...updates };
-      onFilterChange?.(newFilters);
-      return newFilters;
-    });
-  }, [onFilterChange]);
+  const updateMultipleFilters = useCallback(
+    (updates: Partial<T>) => {
+      setFilters((prev) => {
+        const newFilters = { ...prev, ...updates };
+        onFilterChange?.(newFilters);
+        return newFilters;
+      });
+    },
+    [onFilterChange]
+  );
 
   return {
     filters,
@@ -66,7 +72,7 @@ export const createStatusFilterConfig = (
   key: string = "status",
   label: string = "Status",
   statusOptions: Array<{ value: string; label: string }> = [
-    { value: "active", label: "Active" },
-    { value: "inactive", label: "Inactive" },
+    { value: "ACTIVE", label: "Active" },
+    { value: "INACTIVE", label: "Inactive" },
   ]
 ) => createFilterConfig(key, label, statusOptions);

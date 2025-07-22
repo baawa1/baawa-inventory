@@ -131,9 +131,10 @@ export const tableUtils = {
 
     productStatus: (status: string) => {
       const statusMap = {
-        active: { text: "Active", variant: "success" as const },
-        inactive: { text: "Inactive", variant: "warning" as const },
-        discontinued: { text: "Discontinued", variant: "error" as const },
+        ACTIVE: { text: "Active", variant: "success" as const },
+        INACTIVE: { text: "Inactive", variant: "warning" as const },
+        OUT_OF_STOCK: { text: "Out of Stock", variant: "warning" as const },
+        DISCONTINUED: { text: "Discontinued", variant: "error" as const },
       };
       return (
         statusMap[status as keyof typeof statusMap] || {

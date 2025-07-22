@@ -170,14 +170,26 @@ export function LowStockAlerts() {
 
   const getStatusBadge = (status: LowStockProduct["status"]) => {
     switch (status) {
-      case "active":
+      case "ACTIVE":
         return (
           <Badge variant="default" className="bg-green-500">
             Active
           </Badge>
         );
-      case "inactive":
+      case "INACTIVE":
         return <Badge variant="secondary">Inactive</Badge>;
+      case "OUT_OF_STOCK":
+        return (
+          <Badge variant="secondary" className="bg-yellow-500">
+            Out of Stock
+          </Badge>
+        );
+      case "DISCONTINUED":
+        return (
+          <Badge variant="secondary" className="bg-gray-500">
+            Discontinued
+          </Badge>
+        );
       default:
         return <Badge variant="secondary">{status}</Badge>;
     }

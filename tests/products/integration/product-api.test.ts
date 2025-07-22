@@ -85,7 +85,7 @@ describe("Product API Integration Tests", () => {
         sellingPrice: 15.99,
         minimumStock: 5,
         currentStock: 10,
-        status: "active",
+        status: "ACTIVE",
       };
 
       const createdProduct = { id: 1, ...productData };

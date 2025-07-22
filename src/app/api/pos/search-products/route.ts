@@ -31,7 +31,11 @@ async function handleSearchProducts(request: AuthenticatedRequest) {
     const searchConditions = {
       AND: [
         {
-          status: status as "active" | "inactive" | "discontinued",
+          status: status as
+            | "ACTIVE"
+            | "INACTIVE"
+            | "OUT_OF_STOCK"
+            | "DISCONTINUED",
         },
         {
           OR: [

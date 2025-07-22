@@ -40,7 +40,7 @@ export interface ProductResponse {
   minStock: number;
   maxStock: number | null;
   unit: string;
-  status: "active" | "inactive" | "discontinued";
+  status: "ACTIVE" | "INACTIVE" | "OUT_OF_STOCK" | "DISCONTINUED";
   image: string | null;
   images: Array<{ id: number; url: string; alt?: string }> | string[];
   categoryId: number | null;
@@ -73,7 +73,7 @@ export interface CreateProductRequest {
   minStock: number;
   maxStock?: number;
   unit: string;
-  status: "active" | "inactive" | "discontinued";
+  status: "ACTIVE" | "INACTIVE" | "OUT_OF_STOCK" | "DISCONTINUED";
   imageUrl?: string;
   categoryId?: number;
   brandId?: number;
@@ -219,7 +219,8 @@ export interface CreateStockReconciliationRequest {
   notes?: string;
 }
 
-export interface UpdateStockReconciliationRequest extends Partial<CreateStockReconciliationRequest> {
+export interface UpdateStockReconciliationRequest
+  extends Partial<CreateStockReconciliationRequest> {
   id: number;
 }
 

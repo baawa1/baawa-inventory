@@ -15,7 +15,7 @@ describe("Product Validation Comprehensive Tests", () => {
       minimumStock: 10,
       maximumStock: 200,
       unit: "piece",
-      status: "active",
+      status: "ACTIVE",
       categoryId: 1,
       brandId: 1,
       supplierId: 1,
@@ -51,7 +51,7 @@ describe("Product Validation Comprehensive Tests", () => {
         sellingPrice: 15.99,
         currentStock: 100,
         minimumStock: 10,
-        status: "active",
+        status: "ACTIVE",
       };
 
       const result = createProductSchema.safeParse(minimalData);
@@ -354,7 +354,12 @@ describe("Product Validation Comprehensive Tests", () => {
       });
 
       it("should accept valid status values", () => {
-        const validStatuses = ["active", "inactive", "draft", "discontinued"];
+        const validStatuses = [
+          "ACTIVE",
+          "INACTIVE",
+          "OUT_OF_STOCK",
+          "DISCONTINUED",
+        ];
 
         validStatuses.forEach((status) => {
           const dataWithStatus = { ...validProductData, status };
@@ -807,7 +812,7 @@ describe("Product Validation Comprehensive Tests", () => {
           minimumStock: 0, // Zero stock
           maximumStock: null, // Null max stock
           unit: "a".repeat(20), // Maximum length unit
-          status: "active",
+          status: "ACTIVE",
           weight: 0.001, // Very small weight
           dimensions: "a".repeat(100), // Maximum length dimensions
           color: "a".repeat(50), // Maximum length color

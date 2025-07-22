@@ -68,7 +68,7 @@ export function useProductSearch(searchTerm: string, enabled: boolean = true) {
     queryFn: () =>
       searchProducts({
         search: searchTerm,
-        status: "active",
+        status: "ACTIVE",
         limit: 20,
       }),
     enabled: enabled && searchTerm.trim().length > 0,

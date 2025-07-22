@@ -39,7 +39,7 @@ export interface OfflineProduct {
   category: string;
   brand: string;
   description?: string;
-  status: "active" | "inactive";
+  status: "ACTIVE" | "INACTIVE" | "OUT_OF_STOCK" | "DISCONTINUED";
   lastUpdated: Date;
 }
 
@@ -251,12 +251,12 @@ class OfflineStorageManager {
   async searchCachedProducts(searchTerm: string): Promise<OfflineProduct[]> {
     const products = await this.getCachedProducts();
 
-    if (!searchTerm) return products.filter((p) => p.status === "active");
+    if (!searchTerm) return products.filter((p) => p.status === "ACTIVE");
 
     const term = searchTerm.toLowerCase();
     return products.filter(
       (product) =>
-        product.status === "active" &&
+        product.status === "ACTIVE" &&
         (product.name.toLowerCase().includes(term) ||
           product.sku.toLowerCase().includes(term) ||
           product.barcode?.toLowerCase().includes(term) ||

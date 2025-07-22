@@ -116,10 +116,10 @@ export const ProductDetailModal: React.FC<ProductDetailModalProps> = ({
               <div className="flex items-center gap-2 mt-2">
                 <Badge
                   variant={
-                    product?.status === "active" ? "default" : "secondary"
+                    product?.status === "ACTIVE" ? "default" : "secondary"
                   }
                 >
-                  {product?.status === "active" ? "Active" : "Inactive"}
+                  {product?.status === "ACTIVE" ? "Active" : "Inactive"}
                 </Badge>
                 <Badge
                   variant={

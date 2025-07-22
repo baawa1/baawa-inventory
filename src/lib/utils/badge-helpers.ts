@@ -60,8 +60,8 @@ export function getUserStatusBadgeConfig(status: string): BadgeConfig {
  * Get product status badge configuration
  */
 export function getProductStatusBadgeConfig(status: string): BadgeConfig {
-  const variant = status === "active" ? "default" : "secondary";
-  const label = status === "active" ? "Active" : "Inactive";
+  const variant = status === "ACTIVE" ? "default" : "secondary";
+  const label = status === "ACTIVE" ? "Active" : "Inactive";
 
   return { variant, label };
 }
