@@ -23,10 +23,10 @@ const baseBrandSchema = z.object({
     .optional()
     .nullable()
     .or(z.literal("")),
-  is_active: z.boolean().default(true),
+  isActive: z.boolean().optional().default(true),
 });
 
-// Client-side form schema (uses isActive instead of is_active)
+// Client-side form schema (uses isActive consistently with Prisma model)
 const clientBrandSchema = z.object({
   name: z
     .string()
@@ -85,7 +85,9 @@ export const brandQuerySchema = z.object({
     .optional(),
   limit: z.number().int().min(1).max(100).default(10),
   offset: z.number().int().min(0).default(0),
-  sortBy: z.enum(["name", "createdAt", "updatedAt"]).default("name"),
+  sortBy: z
+    .enum(["name", "createdAt", "updatedAt", "productCount"])
+    .default("name"),
   sortOrder: z.enum(["asc", "desc"]).default("asc"),
 });
 

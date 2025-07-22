@@ -57,7 +57,7 @@ export default function EditBrandForm({ brandId }: EditBrandFormProps) {
           description: brand.description,
           image: brand.image,
           website: brand.website,
-          isActive: brand.is_active,
+          isActive: brand.isActive,
         }
       : undefined,
   });
@@ -73,14 +73,14 @@ export default function EditBrandForm({ brandId }: EditBrandFormProps) {
         data.website = null;
       }
 
-      // Transform form data to API format (isActive -> is_active)
+      // Transform form data to API format
       const apiData = {
         id: data.id,
         name: data.name,
         description: data.description || undefined,
         image: data.image || undefined,
         website: data.website || undefined,
-        is_active: data.isActive,
+        isActive: data.isActive,
       };
 
       await updateBrandMutation.mutateAsync({ id: data.id, data: apiData });

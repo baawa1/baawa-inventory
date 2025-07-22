@@ -657,7 +657,7 @@ describe("Brand API - Comprehensive Integration Tests", () => {
       mockPrisma.brand.update.mockResolvedValue(updatedBrand);
 
       const updateData = {
-        is_active: false, // Using snake_case as per schema
+        isActive: false, // Using camelCase as per updated schema
       };
 
       const request = new NextRequest("http://localhost:3000/api/brands/1", {
