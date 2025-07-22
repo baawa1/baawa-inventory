@@ -70,10 +70,14 @@ export function withAuth<T extends unknown[]>(
       };
 
       return await handler(authenticatedRequest, ...args);
-    } catch (_error) {
+    } catch (error) {
+      // Log the actual error for debugging
+      console.error("Auth middleware error:", error);
+      
+      // Return 401 for auth-specific errors, not 500
       return NextResponse.json(
-        { error: "Authentication failed" },
-        { status: 500 }
+        { error: "Authentication required" },
+        { status: 401 }
       );
     }
   };
@@ -117,6 +121,8 @@ export function withPermission<T extends unknown[]>(
 
         return await handler(request, ...args);
       } catch (error) {
+        console.error("Permission middleware error:", error);
+        
         await AuditLogger.logAuthEvent(
           {
             action: "LOGIN_FAILED",
@@ -130,8 +136,8 @@ export function withPermission<T extends unknown[]>(
         );
 
         return NextResponse.json(
-          { error: "Permission check failed" },
-          { status: 500 }
+          { error: "Authorization failed" },
+          { status: 403 }
         );
       }
     }

@@ -3,7 +3,7 @@ import {
   withPermission,
   AuthenticatedRequest,
 } from "@/lib/api-middleware";
-import { handleApiError } from "@/lib/api-error-handler";
+import { handleApiError } from "@/lib/api-error-handler-new";
 import { createApiResponse } from "@/lib/api-response";
 import { prisma } from "@/lib/db";
 import { z } from "zod";
@@ -37,6 +37,7 @@ export const GET = withAuth(async (request: AuthenticatedRequest) => {
     const limit = parseInt(searchParams.get("limit") || "10");
     const sortBy = searchParams.get("sortBy") || "name";
     const sortOrder = searchParams.get("sortOrder") || "asc";
+    const includeChildren = searchParams.get("includeChildren") === "true";
 
     // Build where clause
     const where: Prisma.CategoryWhereInput = {};
@@ -57,8 +58,15 @@ export const GET = withAuth(async (request: AuthenticatedRequest) => {
 
     // Build order by clause
     const orderBy: Prisma.CategoryOrderByWithRelationInput = {};
-    orderBy[sortBy as keyof Prisma.CategoryOrderByWithRelationInput] =
-      sortOrder;
+    if (sortBy === "name") {
+      orderBy.name = sortOrder as "asc" | "desc";
+    } else if (sortBy === "createdAt") {
+      orderBy.createdAt = sortOrder as "asc" | "desc";
+    } else if (sortBy === "updatedAt") {
+      orderBy.updatedAt = sortOrder as "asc" | "desc";
+    } else {
+      orderBy.name = "asc";
+    }
 
     // Get categories with pagination
     const [categories, totalCount] = await Promise.all([
@@ -71,13 +79,15 @@ export const GET = withAuth(async (request: AuthenticatedRequest) => {
               name: true,
             },
           },
-          children: {
-            select: {
-              id: true,
-              name: true,
-              isActive: true,
-            },
-          },
+          children: includeChildren
+            ? {
+                select: {
+                  id: true,
+                  name: true,
+                  isActive: true,
+                },
+              }
+            : false,
           _count: {
             select: {
               products: true,
@@ -102,6 +112,7 @@ export const GET = withAuth(async (request: AuthenticatedRequest) => {
       parent: category.parent,
       children: category.children,
       productCount: category._count.products,
+      subcategoryCount: category.children?.length || 0,
       createdAt: category.createdAt,
       updatedAt: category.updatedAt,
     }));

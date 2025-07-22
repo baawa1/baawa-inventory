@@ -55,7 +55,7 @@ export function CategoryBrandSupplierSection({
                 <FormLabel>Category</FormLabel>
                 <Select
                   onValueChange={(value) =>
-                    field.onChange(value ? parseInt(value) : null)
+                    field.onChange(value ? parseInt(value) : undefined)
                   }
                   value={field.value?.toString() || ""}
                   disabled={loadingCategories}
@@ -84,7 +84,9 @@ export function CategoryBrandSupplierSection({
                           value={category.id.toString()}
                         >
                           <div className="flex items-center gap-2">
-                            {category.image ? (
+                            {category.image &&
+                            category.image.startsWith("http") &&
+                            !category.image.includes("unsplash.com") ? (
                               <ImagePreview
                                 src={category.image}
                                 alt={category.name}
@@ -115,7 +117,7 @@ export function CategoryBrandSupplierSection({
                 <FormLabel>Brand</FormLabel>
                 <Select
                   onValueChange={(value) =>
-                    field.onChange(value ? parseInt(value) : null)
+                    field.onChange(value ? parseInt(value) : undefined)
                   }
                   value={field.value?.toString() || ""}
                   disabled={loadingBrands}
@@ -141,7 +143,9 @@ export function CategoryBrandSupplierSection({
                       brands.map((brand) => (
                         <SelectItem key={brand.id} value={brand.id.toString()}>
                           <div className="flex items-center gap-2">
-                            {brand.image ? (
+                            {brand.image &&
+                            brand.image.startsWith("http") &&
+                            !brand.image.includes("unsplash.com") ? (
                               <ImagePreview
                                 src={brand.image}
                                 alt={brand.name}
@@ -172,7 +176,7 @@ export function CategoryBrandSupplierSection({
                 <FormLabel>Supplier</FormLabel>
                 <Select
                   onValueChange={(value) =>
-                    field.onChange(value ? parseInt(value) : null)
+                    field.onChange(value ? parseInt(value) : undefined)
                   }
                   value={field.value?.toString() || ""}
                   disabled={loadingSuppliers}

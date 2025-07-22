@@ -2,12 +2,15 @@
 > inventory-pos@0.1.0 dev
 > next dev
 
- ⚠ Port 3000 is in use, using available port 3003 instead.
+ ⚠ Port 3000 is in use, using available port 3001 instead.
    ▲ Next.js 15.3.4
-   - Local:        http://localhost:3003
-   - Network:      http://192.168.0.138:3003
+   - Local:        http://localhost:3001
+   - Network:      http://10.189.219.64:3001
    - Environments: .env.local, .env
 
  ✓ Starting...
- ✓ Ready in 2.1s
- ⚠ Your project has `@next/font` installed as a dependency, please use the built-in `next/font` instead. The `@next/font` package will be removed in Next.js 14. You can migrate by running `npx @next/codemod@latest built-in-next-font .`. Read more: https://nextjs.org/docs/messages/built-in-next-font
+ ✓ Ready in 1818ms
+ ✓ Compiled /api/products in 480ms (584 modules)
+ GET /api/products?page=1&limit=10&sortBy=createdAt&sortOrder=desc 401 in 637ms
+ ✓ Compiled in 60ms
+[?25h

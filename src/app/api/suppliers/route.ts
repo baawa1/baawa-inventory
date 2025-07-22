@@ -9,7 +9,7 @@ import {
   createSupplierSchema,
   supplierQuerySchema,
 } from "@/lib/validations/supplier";
-import { handleApiError, createApiResponse } from "@/lib/api-error-handler";
+import { handleApiError, createApiResponse } from "@/lib/api-error-handler-new";
 import { Prisma } from "@prisma/client";
 
 // GET /api/suppliers - List suppliers with optional filtering and pagination
