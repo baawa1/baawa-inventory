@@ -29,27 +29,48 @@ import { ArrowLeft, Loader2 } from "lucide-react";
 import { PageHeader } from "@/components/ui/page-header";
 import { FormLoading } from "@/components/ui/form-loading";
 import { toast } from "sonner";
-import { nameSchema } from "@/lib/validations/common";
+import { nameSchema, phoneSchema } from "@/lib/validations/common";
 import { useCreateSupplier } from "@/hooks/api/suppliers";
 import { logger } from "@/lib/logger";
 
-// Form validation schema - simplified for form handling
+// Form validation schema - using proper validation schemas
 const supplierFormSchema = z.object({
   name: nameSchema,
-  contactPerson: z.string().optional(),
+  contactPerson: z
+    .string()
+    .max(255, "Contact person must be 255 characters or less")
+    .optional(),
   email: z.string().email("Invalid email format").optional().or(z.literal("")),
-  phone: z.string().optional(),
-  address: z.string().optional(),
-  city: z.string().optional(),
-  state: z.string().optional(),
-  country: z.string().optional(),
-  postalCode: z.string().optional(),
+  phone: phoneSchema.optional().or(z.literal("")),
+  address: z
+    .string()
+    .max(500, "Address must be 500 characters or less")
+    .optional(),
+  city: z.string().max(100, "City must be 100 characters or less").optional(),
+  state: z.string().max(100, "State must be 100 characters or less").optional(),
+  country: z
+    .string()
+    .max(100, "Country must be 100 characters or less")
+    .optional(),
+  postalCode: z
+    .string()
+    .max(20, "Postal code must be 20 characters or less")
+    .optional(),
   website: z.string().url("Invalid URL format").optional().or(z.literal("")),
-  taxNumber: z.string().optional(),
-  paymentTerms: z.string().optional(),
+  taxNumber: z
+    .string()
+    .max(100, "Tax number must be 100 characters or less")
+    .optional(),
+  paymentTerms: z
+    .string()
+    .max(255, "Payment terms must be 255 characters or less")
+    .optional(),
   creditLimit: z.string().optional(),
   isActive: z.boolean(),
-  notes: z.string().optional(),
+  notes: z
+    .string()
+    .max(1000, "Notes must be 1000 characters or less")
+    .optional(),
 });
 
 type SupplierFormData = z.infer<typeof supplierFormSchema>;
@@ -80,6 +101,33 @@ export default function AddSupplierForm() {
   });
 
   const onSubmit = async (data: SupplierFormData) => {
+    // Validate credit limit if provided
+    if (data.creditLimit && data.creditLimit.trim()) {
+      const creditLimitValue = parseFloat(data.creditLimit);
+      if (isNaN(creditLimitValue) || creditLimitValue <= 0) {
+        form.setError("creditLimit", {
+          type: "manual",
+          message: "Credit limit must be a positive number",
+        });
+        toast.error("Please fix the validation errors below");
+        return;
+      }
+    }
+
+    // Validate phone number if provided
+    if (data.phone && data.phone.trim()) {
+      const phoneRegex = /^(\+234[7-9]\d{9}|0[7-9]\d{9})$/;
+      if (!phoneRegex.test(data.phone)) {
+        form.setError("phone", {
+          type: "manual",
+          message:
+            "Phone number must be in Nigerian format: +2347087367278 or 07039893476",
+        });
+        toast.error("Please fix the validation errors below");
+        return;
+      }
+    }
+
     // Transform form data to match API expectations
     const supplierData = {
       name: data.name,
@@ -103,14 +151,48 @@ export default function AddSupplierForm() {
       createSupplierMutation.mutate(supplierData, {
         onSuccess: () => {
           toast.success("Supplier created successfully!");
-          router.push("/dashboard/inventory/suppliers");
+          router.push("/inventory/suppliers");
         },
         onError: (error) => {
+          // Handle validation errors from backend
+          if (error instanceof Error) {
+            const errorMessage = error.message;
+
+            // Check if it's a validation error response
+            if (
+              errorMessage === "Validation failed" &&
+              (error as any).details
+            ) {
+              // Set form errors for each validation field
+              (error as any).details.forEach((detail: any) => {
+                if (detail.field && detail.message) {
+                  form.setError(detail.field as any, {
+                    type: "server",
+                    message: detail.message,
+                  });
+                }
+              });
+              toast.error("Please fix the validation errors below");
+              return;
+            }
+
+            // Show specific error message if available
+            if (errorMessage.includes("already exists")) {
+              toast.error("A supplier with this name already exists");
+            } else {
+              toast.error(
+                errorMessage ||
+                  "Failed to create supplier. Please check your input and try again."
+              );
+            }
+          } else {
+            toast.error("Failed to create supplier");
+          }
+
           logger.error("Failed to create supplier", {
             supplierName: data.name,
             error: error instanceof Error ? error.message : String(error),
           });
-          toast.error("Failed to create supplier");
         },
       });
     } catch (error) {
@@ -129,8 +211,8 @@ export default function AddSupplierForm() {
         title="Add Supplier"
         description="Create a new supplier to manage your inventory sources"
         backLabel="Back to Suppliers"
-        onBack={() => router.push("/dashboard/inventory/suppliers")}
-        backUrl="/dashboard/inventory/suppliers"
+        onBack={() => router.push("/inventory/suppliers")}
+        backUrl="/inventory/suppliers"
       />
     );
   }
@@ -140,7 +222,7 @@ export default function AddSupplierForm() {
       <div className="mb-6">
         <Button
           variant="ghost"
-          onClick={() => router.push("/dashboard/inventory/suppliers")}
+          onClick={() => router.push("/inventory/suppliers")}
           className="mb-4 px-4 lg:px-6"
         >
           <ArrowLeft className="mr-2 h-4 w-4" />
@@ -221,20 +303,59 @@ export default function AddSupplierForm() {
               <FormField
                 control={form.control}
                 name="phone"
-                render={({ field }) => (
-                  <FormItem>
-                    <FormLabel>Phone</FormLabel>
-                    <FormControl>
-                      <Input
-                        type="tel"
-                        placeholder="Enter phone number"
-                        {...field}
-                        disabled={createSupplierMutation.isPending}
-                      />
-                    </FormControl>
-                    <FormMessage />
-                  </FormItem>
-                )}
+                render={({ field }) => {
+                  const isValidPhone =
+                    !field.value ||
+                    /^(\+234[7-9]\d{9}|0[7-9]\d{9})$/.test(field.value);
+
+                  return (
+                    <FormItem>
+                      <FormLabel>Phone</FormLabel>
+                      <FormControl>
+                        <Input
+                          type="tel"
+                          placeholder="e.g., +2347087367278 or 07039893476"
+                          pattern="^(\+234[7-9]\d{9}|0[7-9]\d{9})$"
+                          maxLength={14}
+                          onKeyPress={(e) => {
+                            // Allow only numbers, +, and backspace
+                            const allowedChars = /[0-9+]/;
+                            if (
+                              !allowedChars.test(e.key) &&
+                              e.key !== "Backspace" &&
+                              e.key !== "Delete" &&
+                              e.key !== "Tab"
+                            ) {
+                              e.preventDefault();
+                            }
+                          }}
+                          value={field.value}
+                          onChange={(e) => {
+                            const value = e.target.value;
+                            // Only allow numbers, +, and basic phone characters
+                            const cleanedValue = value.replace(/[^0-9+]/g, "");
+                            field.onChange(cleanedValue);
+                          }}
+                          onBlur={field.onBlur}
+                          disabled={createSupplierMutation.isPending}
+                          className={
+                            !isValidPhone && field.value ? "border-red-500" : ""
+                          }
+                        />
+                      </FormControl>
+                      <FormDescription>
+                        Nigerian phone number format: +2347087367278 or
+                        07039893476
+                        {field.value && !isValidPhone && (
+                          <span className="text-red-500 block mt-1">
+                            Invalid phone number format
+                          </span>
+                        )}
+                      </FormDescription>
+                      <FormMessage />
+                    </FormItem>
+                  );
+                }}
               />
 
               <FormField
@@ -487,7 +608,15 @@ export default function AddSupplierForm() {
           </Card>
 
           {/* Form Actions */}
-          <div className="flex items-center gap-4 pt-4">
+          <div className="flex items-center justify-end gap-4 pt-4">
+            <Button
+              type="button"
+              variant="outline"
+              onClick={() => router.push("/inventory/suppliers")}
+              disabled={createSupplierMutation.isPending}
+            >
+              Cancel
+            </Button>
             <Button type="submit" disabled={createSupplierMutation.isPending}>
               {createSupplierMutation.isPending ? (
                 <>
@@ -497,14 +626,6 @@ export default function AddSupplierForm() {
               ) : (
                 "Create Supplier"
               )}
-            </Button>
-            <Button
-              type="button"
-              variant="outline"
-              onClick={() => router.push("/dashboard/inventory/suppliers")}
-              disabled={createSupplierMutation.isPending}
-            >
-              Cancel
             </Button>
           </div>
         </form>
