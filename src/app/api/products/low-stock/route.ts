@@ -1,5 +1,5 @@
+import { NextResponse } from "next/server";
 import { withAuth, AuthenticatedRequest } from "@/lib/api-middleware";
-import { createApiResponse } from "@/lib/api-response";
 import { prisma } from "@/lib/db";
 
 // GET /api/products/low-stock - Get products with low stock
@@ -75,28 +75,26 @@ export const GET = withAuth(async (request: AuthenticatedRequest) => {
       updatedAt: product.updatedAt?.toISOString() || new Date().toISOString(),
     }));
 
-    return createApiResponse.success(
-      {
-        products: transformedProducts,
-        pagination: {
-          total: allLowStockProducts.length,
-          limit,
-          offset,
-          hasMore: offset + limit < allLowStockProducts.length,
-        },
-        metrics: {
-          totalValue,
-          criticalStock,
-          lowStock,
-          totalProducts: allLowStockProducts.length,
-        },
+    return NextResponse.json({
+      products: transformedProducts,
+      pagination: {
+        total: allLowStockProducts.length,
+        limit,
+        offset,
+        hasMore: offset + limit < allLowStockProducts.length,
       },
-      "Low stock products retrieved successfully"
-    );
+      metrics: {
+        totalValue,
+        criticalStock,
+        lowStock,
+        totalProducts: allLowStockProducts.length,
+      },
+    });
   } catch (error) {
     console.error("Error fetching low stock products:", error);
-    return createApiResponse.internalError(
-      "Failed to fetch low stock products"
+    return NextResponse.json(
+      { error: "Failed to fetch low stock products" },
+      { status: 500 }
     );
   }
 });

@@ -129,30 +129,40 @@ export const GET = withAuth(async (request: AuthenticatedRequest) => {
     }
 
     // Execute query with relations
-    const [allProducts, totalCount] = await Promise.all([
-      prisma.product.findMany({
+    let products, totalCount;
+
+    if (lowStock) {
+      // For low stock, we need to fetch all products and filter in memory
+      // since Prisma doesn't support field-to-field comparison in where clause
+      const allProducts = await prisma.product.findMany({
         where,
         include,
         orderBy,
-        ...(lowStock ? {} : { skip, take: limit }),
-      }),
-      prisma.product.count({ where }),
-    ]);
+      });
 
-    // Filter for low stock if needed
-    let products = allProducts;
-    let filteredTotalCount = totalCount;
-
-    if (lowStock) {
-      products = allProducts.filter(
+      const lowStockProducts = allProducts.filter(
         (product) => product.stock <= (product.minStock || 0)
       );
 
-      filteredTotalCount = products.length;
+      totalCount = lowStockProducts.length;
 
       // Apply pagination after filtering
       const startIndex = (page - 1) * limit;
-      products = products.slice(startIndex, startIndex + limit);
+      products = lowStockProducts.slice(startIndex, startIndex + limit);
+    } else {
+      // Normal query with pagination
+      const [normalProducts, normalTotalCount] = await Promise.all([
+        prisma.product.findMany({
+          where,
+          include,
+          orderBy,
+          skip,
+          take: limit,
+        }),
+        prisma.product.count({ where }),
+      ]);
+      products = normalProducts;
+      totalCount = normalTotalCount;
     }
 
     // Transform response
@@ -190,9 +200,9 @@ export const GET = withAuth(async (request: AuthenticatedRequest) => {
         pagination: {
           page,
           limit,
-          total: filteredTotalCount,
-          totalPages: Math.ceil(filteredTotalCount / limit),
-          hasNextPage: page < Math.ceil(filteredTotalCount / limit),
+          total: totalCount,
+          totalPages: Math.ceil(totalCount / limit),
+          hasNextPage: page < Math.ceil(totalCount / limit),
           hasPreviousPage: page > 1,
         },
       },
