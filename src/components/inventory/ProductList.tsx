@@ -418,7 +418,7 @@ const ProductList = ({ user }: ProductListProps) => {
           <div>
             <div className="font-medium">{product.name}</div>
             {product.brand && (
-              <div className="text-sm text-gray-500">{product.brand.name}</div>
+              <div className="text-sm">{product.brand.name}</div>
             )}
           </div>
         );
@@ -450,11 +450,7 @@ const ProductList = ({ user }: ProductListProps) => {
           </div>
         );
       case "cost":
-        return (
-          <span className="text-sm text-gray-500">
-            {formatCurrency(product.cost)}
-          </span>
-        );
+        return <span className="text-sm">{formatCurrency(product.cost)}</span>;
       case "status":
         return getStatusBadge(product.status);
       case "supplier":

@@ -301,9 +301,7 @@ export default function PurchaseOrderList({ user }: PurchaseOrderListProps) {
         return getStatusBadge(purchaseOrder.status);
       case "createdAt":
         return (
-          <div className="text-gray-500">
-            {format(new Date(purchaseOrder.createdAt), "MMM dd, yyyy")}
-          </div>
+          <div>{format(new Date(purchaseOrder.createdAt), "MMM dd, yyyy")}</div>
         );
       default:
         return null;
@@ -318,7 +316,7 @@ export default function PurchaseOrderList({ user }: PurchaseOrderListProps) {
           <IconDots className="h-4 w-4" />
         </Button>
       </DropdownMenuTrigger>
-      <DropdownMenuContent align="end">
+      <DropdownMenuContent align="end" side="bottom" sideOffset={4}>
         <DropdownMenuItem asChild>
           <Link href={`/inventory/purchase-orders/${purchaseOrder.id}`}>
             <IconEye className="mr-2 h-4 w-4" />
@@ -334,20 +332,16 @@ export default function PurchaseOrderList({ user }: PurchaseOrderListProps) {
           </DropdownMenuItem>
         )}
         {canDeletePurchaseOrders && (
-          <>
-            <DropdownMenuTrigger asChild>
-              <DropdownMenuItem
-                className="text-red-600"
-                onClick={() => {
-                  setPurchaseOrderToDelete(purchaseOrder);
-                  setDeleteDialogOpen(true);
-                }}
-              >
-                <IconTrash className="mr-2 h-4 w-4" />
-                Delete
-              </DropdownMenuItem>
-            </DropdownMenuTrigger>
-          </>
+          <DropdownMenuItem
+            className="text-red-600"
+            onClick={() => {
+              setPurchaseOrderToDelete(purchaseOrder);
+              setDeleteDialogOpen(true);
+            }}
+          >
+            <IconTrash className="mr-2 h-4 w-4" />
+            Delete
+          </DropdownMenuItem>
         )}
       </DropdownMenuContent>
     </DropdownMenu>
