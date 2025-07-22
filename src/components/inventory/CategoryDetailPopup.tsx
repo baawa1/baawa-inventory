@@ -2,10 +2,9 @@
 
 import React from "react";
 import Link from "next/link";
-import { toast } from "sonner";
 
 // Hooks
-import { useCategory, useDeleteCategory } from "@/hooks/api/categories";
+import { useCategory } from "@/hooks/api/categories";
 
 // UI Components
 import { Button } from "@/components/ui/button";
@@ -19,16 +18,6 @@ import {
   DialogHeader,
   DialogTitle,
 } from "@/components/ui/dialog";
-import {
-  AlertDialog,
-  AlertDialogAction,
-  AlertDialogCancel,
-  AlertDialogContent,
-  AlertDialogDescription,
-  AlertDialogFooter,
-  AlertDialogHeader,
-  AlertDialogTitle,
-} from "@/components/ui/alert-dialog";
 
 // Icons
 import {
@@ -37,8 +26,6 @@ import {
   IconFolder,
   IconPackage,
   IconEye,
-  IconTrash,
-  IconAlertTriangle,
 } from "@tabler/icons-react";
 
 interface User {
@@ -54,6 +41,8 @@ interface CategoryDetailPopupProps {
   categoryId: number | null;
   user: User;
   open: boolean;
+  onOpenChange: (open: boolean) => void;
+  onCategoryChange?: (categoryId: number) => void;
 }
 
 export default function CategoryDetailPopup({
@@ -64,32 +53,9 @@ export default function CategoryDetailPopup({
   onCategoryChange,
 }: CategoryDetailPopupProps) {
   const { data: categoryData, isLoading, error } = useCategory(categoryId || 0);
-  const deleteCategoryMutation = useDeleteCategory();
 
   // Permission checks
   const canManageCategories = ["ADMIN", "MANAGER"].includes(user.role);
-  const canDeleteCategories = user.role === "ADMIN";
-
-  // Delete dialog state
-  const [deleteDialogOpen, setDeleteDialogOpen] = React.useState(false);
-
-  // Handle delete category
-  const handleDeleteCategory = async () => {
-    if (!categoryData) return;
-
-    try {
-      await deleteCategoryMutation.mutateAsync(categoryData.id);
-      toast.success("Category deleted successfully");
-      onOpenChange(false);
-    } catch (error) {
-      console.error("Error deleting category:", error);
-      toast.error(
-        error instanceof Error ? error.message : "Failed to delete category"
-      );
-    } finally {
-      setDeleteDialogOpen(false);
-    }
-  };
 
   if (!categoryId) {
     return null;
@@ -151,15 +117,6 @@ export default function CategoryDetailPopup({
                         Edit
                       </Link>
                     </Button>
-                    {canDeleteCategories && categoryData.productCount === 0 && (
-                      <Button
-                        variant="destructive"
-                        onClick={() => setDeleteDialogOpen(true)}
-                      >
-                        <IconTrash className="mr-2 h-4 w-4" />
-                        Delete
-                      </Button>
-                    )}
                   </div>
                 )}
               </div>
@@ -344,93 +301,12 @@ export default function CategoryDetailPopup({
                       </div>
                     </CardContent>
                   </Card>
-
-                  {/* Danger Zone */}
-                  {canDeleteCategories && categoryData.productCount === 0 && (
-                    <Card className="border-red-200">
-                      <CardHeader>
-                        <CardTitle className="text-red-600">
-                          Danger Zone
-                        </CardTitle>
-                      </CardHeader>
-                      <CardContent>
-                        <div className="space-y-3">
-                          <p className="text-sm text-muted-foreground">
-                            Once you delete a category, there is no going back.
-                            Please be certain.
-                          </p>
-                          <Button
-                            variant="destructive"
-                            className="w-full justify-start"
-                            onClick={() => setDeleteDialogOpen(true)}
-                          >
-                            <IconTrash className="mr-2 h-4 w-4" />
-                            Delete Category
-                          </Button>
-                        </div>
-                      </CardContent>
-                    </Card>
-                  )}
-
-                  {/* Cannot Delete Warning */}
-                  {canDeleteCategories && categoryData.productCount > 0 && (
-                    <Card className="border-orange-200">
-                      <CardHeader>
-                        <CardTitle className="text-orange-600">
-                          Cannot Delete
-                        </CardTitle>
-                      </CardHeader>
-                      <CardContent>
-                        <div className="space-y-3">
-                          <p className="text-sm text-muted-foreground">
-                            This category cannot be deleted because it has{" "}
-                            {categoryData.productCount} associated products.
-                          </p>
-                          <p className="text-sm text-muted-foreground">
-                            Remove all products from this category before
-                            deleting it.
-                          </p>
-                        </div>
-                      </CardContent>
-                    </Card>
-                  )}
                 </div>
               </div>
             </div>
           )}
         </DialogContent>
       </Dialog>
-
-      {/* Delete Confirmation Dialog */}
-      <AlertDialog open={deleteDialogOpen} onOpenChange={setDeleteDialogOpen}>
-        <AlertDialogContent>
-          <AlertDialogHeader>
-            <AlertDialogTitle className="flex items-center gap-2">
-              <IconAlertTriangle className="h-5 w-5 text-red-500" />
-              Delete Category
-            </AlertDialogTitle>
-            <AlertDialogDescription>
-              Are you sure you want to delete the category "{categoryData?.name}
-              "? This action cannot be undone.
-              {categoryData && categoryData.subcategoryCount > 0 && (
-                <div className="mt-2 text-destructive">
-                  This category has {categoryData.subcategoryCount}{" "}
-                  subcategories.
-                </div>
-              )}
-            </AlertDialogDescription>
-          </AlertDialogHeader>
-          <AlertDialogFooter>
-            <AlertDialogCancel>Cancel</AlertDialogCancel>
-            <AlertDialogAction
-              onClick={handleDeleteCategory}
-              className="bg-red-600 hover:bg-red-700"
-            >
-              Delete
-            </AlertDialogAction>
-          </AlertDialogFooter>
-        </AlertDialogContent>
-      </AlertDialog>
     </>
   );
 }
