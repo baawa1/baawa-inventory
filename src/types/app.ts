@@ -25,6 +25,35 @@ export type PurchaseOrderStatus =
   | "RECEIVED"
   | "CANCELLED";
 
+export interface PurchaseOrder {
+  id: number;
+  orderNumber: string;
+  supplierId: number;
+  userId: number;
+  orderDate: string;
+  expectedDeliveryDate?: string;
+  actualDeliveryDate?: string;
+  subtotal: string;
+  taxAmount: string;
+  shippingCost?: string;
+  totalAmount: string;
+  status: string;
+  notes?: string;
+  createdAt: string;
+  updatedAt: string;
+  suppliers?: {
+    id: number;
+    name: string;
+    email?: string;
+    phone?: string;
+  };
+  users?: {
+    id: number;
+    name: string;
+    email: string;
+  };
+}
+
 export type AIContentType =
   | "DESCRIPTION"
   | "SEO_TITLE"

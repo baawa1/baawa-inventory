@@ -39,7 +39,15 @@ export const updatePurchaseOrderSchema = z
     shippingCost: z.number().min(0).optional(),
     totalAmount: z.number().positive().optional(),
     status: z
-      .enum(["draft", "ordered", "partial_received", "received", "cancelled"])
+      .enum([
+        "draft",
+        "pending",
+        "approved",
+        "ordered",
+        "shipped",
+        "delivered",
+        "cancelled",
+      ])
       .optional(),
     notes: z.string().optional(),
   })
@@ -53,7 +61,15 @@ export const purchaseOrderQuerySchema = paginationSchema
   .extend({
     supplierId: z.coerce.number().int().positive().optional(),
     status: z
-      .enum(["draft", "ordered", "partial_received", "received", "cancelled"])
+      .enum([
+        "draft",
+        "pending",
+        "approved",
+        "ordered",
+        "shipped",
+        "delivered",
+        "cancelled",
+      ])
       .optional(),
     fromDate: z.string().datetime().optional(),
     toDate: z.string().datetime().optional(),
@@ -93,9 +109,11 @@ export const fulfillPurchaseOrderSchema = z.object({
 export const updatePurchaseOrderStatusSchema = z.object({
   status: z.enum([
     "draft",
+    "pending",
+    "approved",
     "ordered",
-    "partial_received",
-    "received",
+    "shipped",
+    "delivered",
     "cancelled",
   ]),
   notes: z.string().optional(),
@@ -117,9 +135,11 @@ export const bulkUpdatePurchaseOrderStatusSchema = z.object({
     .min(1, "At least one purchase order ID is required"),
   status: z.enum([
     "draft",
+    "pending",
+    "approved",
     "ordered",
-    "partial_received",
-    "received",
+    "shipped",
+    "delivered",
     "cancelled",
   ]),
   notes: z.string().optional(),

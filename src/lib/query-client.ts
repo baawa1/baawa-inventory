@@ -87,6 +87,17 @@ export const queryKeys = {
     detail: (id: number) => [...queryKeys.categories.details(), id] as const,
   },
 
+  // Purchase Orders
+  purchaseOrders: {
+    all: ["purchase-orders"] as const,
+    lists: () => [...queryKeys.purchaseOrders.all, "list"] as const,
+    list: (filters: Record<string, any>) =>
+      [...queryKeys.purchaseOrders.lists(), filters] as const,
+    details: () => [...queryKeys.purchaseOrders.all, "detail"] as const,
+    detail: (id: number) =>
+      [...queryKeys.purchaseOrders.details(), id] as const,
+  },
+
   // Analytics
   analytics: {
     all: ["analytics"] as const,
