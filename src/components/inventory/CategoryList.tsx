@@ -25,15 +25,13 @@ import {
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
 import {
-  AlertDialog,
-  AlertDialogAction,
-  AlertDialogCancel,
-  AlertDialogContent,
-  AlertDialogDescription,
-  AlertDialogFooter,
-  AlertDialogHeader,
-  AlertDialogTitle,
-} from "@/components/ui/alert-dialog";
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogFooter,
+  DialogHeader,
+  DialogTitle,
+} from "@/components/ui/dialog";
 
 // Custom Components
 import { InventoryPageLayout } from "@/components/inventory/InventoryPageLayout";
@@ -482,41 +480,65 @@ export default function CategoryList({ user }: CategoryListProps) {
       />
 
       {/* Delete Confirmation Dialog */}
-      <AlertDialog open={deleteDialogOpen} onOpenChange={setDeleteDialogOpen}>
-        <AlertDialogContent>
-          <AlertDialogHeader>
-            <AlertDialogTitle className="flex items-center gap-2">
+      <Dialog open={deleteDialogOpen} onOpenChange={setDeleteDialogOpen}>
+        <DialogContent>
+          <DialogHeader>
+            <DialogTitle className="flex items-center gap-2">
               <IconAlertTriangle className="h-5 w-5 text-red-500" />
               Delete Category
-            </AlertDialogTitle>
-            <AlertDialogDescription>
-              Are you sure you want to delete the category "
-              {categoryToDelete?.name}"? This action cannot be undone.
-              {categoryToDelete && categoryToDelete.productCount > 0 && (
-                <div className="mt-2 text-destructive">
-                  This category has {categoryToDelete.productCount} associated
-                  products.
+            </DialogTitle>
+            <DialogDescription>
+              {categoryToDelete &&
+                categoryToDelete.productCount === 0 &&
+                categoryToDelete.subcategoryCount === 0 &&
+                `Are you sure you want to delete the category "${categoryToDelete.name}"? This action cannot be undone.`}
+            </DialogDescription>
+
+            {categoryToDelete &&
+              (categoryToDelete.productCount > 0 ||
+                categoryToDelete.subcategoryCount > 0) && (
+                <div className="mt-2 text-destructive text-sm">
+                  This category has{" "}
+                  {categoryToDelete.productCount > 0 &&
+                    `${categoryToDelete.productCount} associated products`}
+                  {categoryToDelete.productCount > 0 &&
+                    categoryToDelete.subcategoryCount > 0 &&
+                    " and "}
+                  {categoryToDelete.subcategoryCount > 0 &&
+                    `${categoryToDelete.subcategoryCount} subcategories`}
+                  .
                 </div>
               )}
-              {categoryToDelete && categoryToDelete.subcategoryCount > 0 && (
-                <div className="mt-2 text-destructive">
-                  This category has {categoryToDelete.subcategoryCount}{" "}
-                  subcategories.
+            {categoryToDelete &&
+              (categoryToDelete.productCount > 0 ||
+                categoryToDelete.subcategoryCount > 0) && (
+                <div className="mt-2 text-destructive font-medium text-sm">
+                  This category cannot be deleted because it has associated
+                  products or subcategories.
                 </div>
               )}
-            </AlertDialogDescription>
-          </AlertDialogHeader>
-          <AlertDialogFooter>
-            <AlertDialogCancel>Cancel</AlertDialogCancel>
-            <AlertDialogAction
+          </DialogHeader>
+          <DialogFooter>
+            <Button
+              variant="outline"
+              onClick={() => setDeleteDialogOpen(false)}
+            >
+              Cancel
+            </Button>
+            <Button
               onClick={handleDeleteCategory}
-              className="bg-red-600 hover:bg-red-700"
+              variant="destructive"
+              disabled={
+                !!categoryToDelete &&
+                (categoryToDelete.productCount > 0 ||
+                  categoryToDelete.subcategoryCount > 0)
+              }
             >
               Delete
-            </AlertDialogAction>
-          </AlertDialogFooter>
-        </AlertDialogContent>
-      </AlertDialog>
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
 
       {/* Category Detail Popup */}
       <CategoryDetailPopup
