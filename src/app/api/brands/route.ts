@@ -6,18 +6,9 @@ import {
 import { handleApiError } from "@/lib/api-error-handler-new";
 import { createApiResponse } from "@/lib/api-response";
 import { prisma } from "@/lib/db";
-import { z } from "zod";
 import { USER_ROLES } from "@/lib/auth/roles";
 import { Prisma } from "@prisma/client";
-
-// Validation schema for brand creation
-const BrandCreateSchema = z.object({
-  name: z.string().min(1).max(100),
-  description: z.string().optional(),
-  website: z.string().url().optional(),
-  image: z.string().max(500).optional(),
-  isActive: z.boolean().optional(),
-});
+import { createBrandSchema } from "@/lib/validations/brand";
 
 // GET /api/brands - List all brands
 export const GET = withAuth(async (request: AuthenticatedRequest) => {
@@ -55,6 +46,9 @@ export const GET = withAuth(async (request: AuthenticatedRequest) => {
       orderBy.createdAt = sortOrder as "asc" | "desc";
     } else if (sortBy === "updatedAt") {
       orderBy.updatedAt = sortOrder as "asc" | "desc";
+    } else if (sortBy === "productCount") {
+      // For productCount, we'll sort after fetching since it's a computed field
+      orderBy.name = "asc"; // Default ordering, will be overridden
     } else {
       orderBy.name = "asc";
     }
@@ -78,7 +72,7 @@ export const GET = withAuth(async (request: AuthenticatedRequest) => {
     ]);
 
     // Transform brands to include product count
-    const transformedBrands = brands.map((brand) => ({
+    let transformedBrands = brands.map((brand) => ({
       id: brand.id,
       name: brand.name,
       description: brand.description,
@@ -89,6 +83,17 @@ export const GET = withAuth(async (request: AuthenticatedRequest) => {
       createdAt: brand.createdAt,
       updatedAt: brand.updatedAt,
     }));
+
+    // Sort by productCount if requested
+    if (sortBy === "productCount") {
+      transformedBrands.sort((a, b) => {
+        if (sortOrder === "asc") {
+          return a.productCount - b.productCount;
+        } else {
+          return b.productCount - a.productCount;
+        }
+      });
+    }
 
     const totalPages = Math.ceil(totalCount / limit);
 
@@ -113,7 +118,7 @@ export const POST = withPermission(
   async (request: AuthenticatedRequest) => {
     try {
       const body = await request.json();
-      const validatedData = BrandCreateSchema.parse(body);
+      const validatedData = createBrandSchema.parse(body);
 
       // Check if brand with the same name already exists (case-insensitive)
       const existingBrand = await prisma.brand.findFirst({

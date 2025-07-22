@@ -86,6 +86,12 @@ export default function BrandList({ user }: BrandListProps) {
       { key: "description", label: "Description", defaultVisible: true },
       { key: "website", label: "Website", defaultVisible: true },
       { key: "isActive", label: "Status", defaultVisible: true },
+      {
+        key: "productCount",
+        label: "Products",
+        defaultVisible: true,
+        sortable: true,
+      },
       { key: "createdAt", label: "Created", defaultVisible: true },
       { key: "updatedAt", label: "Updated", defaultVisible: false },
     ],
@@ -192,6 +198,16 @@ export default function BrandList({ user }: BrandListProps) {
   const handleDeleteBrand = useCallback(async () => {
     if (!brandToDelete) return;
 
+    // Additional safety check - prevent deletion if brand has products
+    if (brandToDelete.productCount > 0) {
+      toast.error(
+        `Cannot delete brand "${brandToDelete.name}" - it has ${brandToDelete.productCount} associated product${brandToDelete.productCount === 1 ? "" : "s"}`
+      );
+      setDeleteDialogOpen(false);
+      setBrandToDelete(null);
+      return;
+    }
+
     try {
       await deleteBrandMutation.mutateAsync(brandToDelete.id);
       toast.success("Brand deleted successfully");
@@ -276,6 +292,15 @@ export default function BrandList({ user }: BrandListProps) {
           );
         case "isActive":
           return getStatusBadge(brand.isActive);
+        case "productCount":
+          return (
+            <div className="flex items-center gap-2">
+              <Badge variant="outline">{brand.productCount || 0}</Badge>
+              {brand.productCount > 0 && (
+                <span className="text-xs text-gray-500">(cannot delete)</span>
+              )}
+            </div>
+          );
         case "createdAt":
           return new Date(brand.createdAt).toLocaleDateString();
         case "updatedAt":
@@ -298,6 +323,8 @@ export default function BrandList({ user }: BrandListProps) {
     (brand: APIBrand) => {
       if (!canManageBrands) return null;
 
+      const canDelete = brand.productCount === 0;
+
       return (
         <DropdownMenu>
           <DropdownMenuTrigger asChild>
@@ -315,14 +342,21 @@ export default function BrandList({ user }: BrandListProps) {
             </DropdownMenuItem>
             {canDeleteBrands && (
               <DropdownMenuItem
-                className="text-red-600"
+                className={
+                  canDelete
+                    ? "text-red-600"
+                    : "text-gray-400 cursor-not-allowed"
+                }
                 onClick={() => {
-                  setBrandToDelete(brand);
-                  setDeleteDialogOpen(true);
+                  if (canDelete) {
+                    setBrandToDelete(brand);
+                    setDeleteDialogOpen(true);
+                  }
                 }}
+                disabled={!canDelete}
               >
                 <IconTrash className="mr-2 h-4 w-4" />
-                Delete
+                Delete {!canDelete && `(${brand.productCount} products)`}
               </DropdownMenuItem>
             )}
           </DropdownMenuContent>
@@ -407,9 +441,19 @@ export default function BrandList({ user }: BrandListProps) {
               Delete Brand
             </AlertDialogTitle>
             <AlertDialogDescription>
-              Are you sure you want to delete the brand "{brandToDelete?.name}"?
-              This action cannot be undone. Make sure no products are using this
-              brand.
+              {brandToDelete?.productCount === 0 ? (
+                <>
+                  Are you sure you want to delete the brand "
+                  {brandToDelete?.name}"? This action cannot be undone.
+                </>
+              ) : (
+                <>
+                  Cannot delete the brand "{brandToDelete?.name}" because it has{" "}
+                  {brandToDelete?.productCount} associated product
+                  {brandToDelete?.productCount === 1 ? "" : "s"}. Please remove
+                  or reassign all products from this brand before deleting it.
+                </>
+              )}
             </AlertDialogDescription>
           </AlertDialogHeader>
           <AlertDialogFooter>
@@ -417,6 +461,7 @@ export default function BrandList({ user }: BrandListProps) {
             <AlertDialogAction
               onClick={handleDeleteBrand}
               className="bg-red-600 hover:bg-red-700"
+              disabled={brandToDelete?.productCount !== 0}
             >
               Delete
             </AlertDialogAction>
