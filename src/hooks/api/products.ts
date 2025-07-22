@@ -138,11 +138,7 @@ const fetchProducts = async (
       `Failed to fetch products: ${response.status} ${response.statusText}`
     );
   }
-  const data = await response.json();
-  return {
-    data: data.data || data.products || [],
-    pagination: data.pagination || {},
-  };
+  return response.json();
 };
 
 const fetchProductById = async (id: number): Promise<Product> => {
