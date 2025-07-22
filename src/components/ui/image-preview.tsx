@@ -21,6 +21,19 @@ const sizeClasses = {
   xl: "w-24 h-24",
 };
 
+// Helper function to validate image URL
+function isValidImageUrl(url: string): boolean {
+  if (!url) return false;
+
+  // Check if it's a valid URL
+  try {
+    const urlObj = new URL(url);
+    return urlObj.protocol === "http:" || urlObj.protocol === "https:";
+  } catch {
+    return false;
+  }
+}
+
 export function ImagePreview({
   src,
   alt = "Image",
@@ -31,7 +44,8 @@ export function ImagePreview({
 }: ImagePreviewProps) {
   const [imageError, setImageError] = useState(false);
 
-  if (!src || imageError) {
+  // Don't render image if URL is invalid or there's an error
+  if (!src || !isValidImageUrl(src) || imageError) {
     return (
       <div
         className={cn(
@@ -62,6 +76,7 @@ export function ImagePreview({
         className="object-cover"
         onError={() => setImageError(true)}
         sizes={`(max-width: 768px) 100vw, ${sizeClasses[size].split(" ")[1]}`}
+        unoptimized={src.includes("unsplash.com")} // Skip optimization for external images
       />
     </div>
   );

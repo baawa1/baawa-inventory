@@ -93,7 +93,12 @@ export function ProductSpecificationsSection({
                     placeholder="0.000"
                     onChange={(e) => {
                       const value = e.target.value;
-                      field.onChange(value ? parseFloat(value) : null);
+                      if (value === "") {
+                        field.onChange(null);
+                      } else {
+                        const numValue = parseFloat(value);
+                        field.onChange(isNaN(numValue) ? null : numValue);
+                      }
                     }}
                     value={field.value?.toString() || ""}
                   />

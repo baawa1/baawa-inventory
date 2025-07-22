@@ -36,7 +36,10 @@ export function useEditProductSubmit(
         status: data.status,
         // New fields
         unit: data.unit || "piece",
-        weight: data.weight || null,
+        weight:
+          data.weight !== undefined && data.weight !== null
+            ? Number(data.weight)
+            : null,
         dimensions: data.dimensions || null,
         color: data.color || null,
         size: data.size || null,
@@ -64,18 +67,7 @@ export function useEditProductSubmit(
 
       if (!response.ok) {
         const errorData = await response.json();
-        const errorMessage =
-          errorData.message || errorData.error || "Failed to update product";
-
-        // Handle validation errors
-        if (errorData.details && Array.isArray(errorData.details)) {
-          const validationErrors = errorData.details
-            .map((detail: any) => detail.message)
-            .join(", ");
-          throw new Error(`Validation errors: ${validationErrors}`);
-        }
-
-        throw new Error(errorMessage);
+        throw new Error(errorData.message || "Failed to update product");
       }
 
       toast.success("Product updated successfully");
@@ -88,7 +80,7 @@ export function useEditProductSubmit(
       router.push("/inventory/products");
     } catch (error) {
       const errorMessage =
-        error instanceof Error ? error.message : "Failed to update product";
+        error instanceof Error ? error.message : "An unexpected error occurred";
       setSubmitError(errorMessage);
       toast.error(errorMessage);
     } finally {

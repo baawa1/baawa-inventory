@@ -24,7 +24,7 @@ export function useEditProductData(productId: number) {
       currentStock: 0,
       minimumStock: 0,
       maximumStock: undefined,
-      status: "active",
+      status: "ACTIVE",
       notes: "",
       // New fields
       unit: "piece",
@@ -62,48 +62,76 @@ export function useEditProductData(productId: number) {
   const loadingBrands = brands.isLoading;
   const loadingSuppliers = suppliers.isLoading;
 
-  // Populate form when product data is loaded
+  // Populate form when all data is loaded
   useEffect(() => {
-    if (product.data) {
+    if (
+      product.data &&
+      !categories.isLoading &&
+      !brands.isLoading &&
+      !suppliers.isLoading &&
+      categories.data?.data &&
+      brands.data?.data &&
+      suppliers.data?.data
+    ) {
       const productData = product.data;
-      form.reset({
-        name: productData.name,
-        description: productData.description || "",
-        sku: productData.sku,
-        barcode: productData.barcode || "",
-        categoryId: productData.category?.id,
-        brandId: productData.brand?.id,
-        supplierId: productData.supplier?.id,
-        purchasePrice: Number(productData.cost),
-        sellingPrice: Number(productData.price),
-        currentStock: productData.stock,
-        minimumStock: productData.minStock,
-        maximumStock: productData.maxStock || undefined,
-        status: productData.status,
-        notes: "",
-        // New fields
-        unit: productData.unit || "piece",
-        weight: productData.weight || undefined,
-        dimensions: productData.dimensions || "",
-        color: productData.color || "",
-        size: productData.size || "",
-        material: productData.material || "",
-        tags: productData.tags || [],
-        salePrice: productData.salePrice || undefined,
-        saleStartDate: productData.saleStartDate
-          ? new Date(productData.saleStartDate)
-          : undefined,
-        saleEndDate: productData.saleEndDate
-          ? new Date(productData.saleEndDate)
-          : undefined,
-        metaTitle: productData.metaTitle || "",
-        metaDescription: productData.metaDescription || "",
-        seoKeywords: productData.seoKeywords || [],
-        isFeatured: productData.isFeatured || false,
-        sortOrder: productData.sortOrder || undefined,
-      });
+
+      // Use setTimeout to ensure the form reset happens after the current render cycle
+      setTimeout(() => {
+        form.reset({
+          name: productData.name,
+          description: productData.description || "",
+          sku: productData.sku,
+          barcode: productData.barcode || "",
+          categoryId: productData.category?.id || undefined,
+          brandId: productData.brand?.id || undefined,
+          supplierId: productData.supplier?.id || undefined,
+          purchasePrice: Number(productData.cost),
+          sellingPrice: Number(productData.price),
+          currentStock: productData.stock,
+          minimumStock: productData.minStock,
+          maximumStock: productData.maxStock || undefined,
+          status: productData.status?.toUpperCase() as
+            | "ACTIVE"
+            | "INACTIVE"
+            | "OUT_OF_STOCK"
+            | "DISCONTINUED",
+          notes: "",
+          // New fields
+          unit: productData.unit || "piece",
+          weight:
+            productData.weight !== null && productData.weight !== undefined
+              ? Number(productData.weight)
+              : undefined,
+          dimensions: productData.dimensions || "",
+          color: productData.color || "",
+          size: productData.size || "",
+          material: productData.material || "",
+          tags: productData.tags || [],
+          salePrice: productData.salePrice || undefined,
+          saleStartDate: productData.saleStartDate
+            ? new Date(productData.saleStartDate)
+            : undefined,
+          saleEndDate: productData.saleEndDate
+            ? new Date(productData.saleEndDate)
+            : undefined,
+          metaTitle: productData.metaTitle || "",
+          metaDescription: productData.metaDescription || "",
+          seoKeywords: productData.seoKeywords || [],
+          isFeatured: productData.isFeatured || false,
+          sortOrder: productData.sortOrder || undefined,
+        });
+      }, 0);
     }
-  }, [product.data, form]);
+  }, [
+    product.data,
+    categories.isLoading,
+    brands.isLoading,
+    suppliers.isLoading,
+    categories.data?.data,
+    brands.data?.data,
+    suppliers.data?.data,
+    form,
+  ]);
 
   return {
     form,

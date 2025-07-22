@@ -1,10 +1,10 @@
-import { NextResponse } from "next/server";
 import {
   withAuth,
   withPermission,
   AuthenticatedRequest,
 } from "@/lib/api-middleware";
-import { handleApiError } from "@/lib/api-error-handler";
+import { handleApiError } from "@/lib/api-error-handler-new";
+import { createApiResponse } from "@/lib/api-response";
 import { prisma } from "@/lib/db";
 import { z } from "zod";
 import { USER_ROLES } from "@/lib/auth/roles";
@@ -14,9 +14,9 @@ import { Prisma } from "@prisma/client";
 const BrandCreateSchema = z.object({
   name: z.string().min(1).max(100),
   description: z.string().optional(),
-  image: z.string().max(500).optional(),
   website: z.string().url().optional(),
-  isActive: z.boolean().default(true),
+  image: z.string().max(500).optional(),
+  isActive: z.boolean().optional(),
 });
 
 // GET /api/brands - List all brands
@@ -33,7 +33,7 @@ export const GET = withAuth(async (request: AuthenticatedRequest) => {
     // Build where clause
     const where: Prisma.BrandWhereInput = {};
 
-    if (isActive !== null && isActive !== "") {
+    if (isActive !== null) {
       where.isActive = isActive === "true";
     }
 
@@ -49,16 +49,14 @@ export const GET = withAuth(async (request: AuthenticatedRequest) => {
 
     // Build order by clause
     const orderBy: Prisma.BrandOrderByWithRelationInput = {};
-    if (
-      sortBy === "name" ||
-      sortBy === "description" ||
-      sortBy === "isActive" ||
-      sortBy === "createdAt" ||
-      sortBy === "updatedAt"
-    ) {
-      orderBy[sortBy] = sortOrder as Prisma.SortOrder;
+    if (sortBy === "name") {
+      orderBy.name = sortOrder as "asc" | "desc";
+    } else if (sortBy === "createdAt") {
+      orderBy.createdAt = sortOrder as "asc" | "desc";
+    } else if (sortBy === "updatedAt") {
+      orderBy.updatedAt = sortOrder as "asc" | "desc";
     } else {
-      orderBy.name = "asc"; // Default fallback
+      orderBy.name = "asc";
     }
 
     // Get brands with pagination
@@ -84,8 +82,8 @@ export const GET = withAuth(async (request: AuthenticatedRequest) => {
       id: brand.id,
       name: brand.name,
       description: brand.description,
-      image: brand.image,
       website: brand.website,
+      image: brand.image,
       isActive: brand.isActive,
       productCount: brand._count.products,
       createdAt: brand.createdAt,
@@ -94,15 +92,16 @@ export const GET = withAuth(async (request: AuthenticatedRequest) => {
 
     const totalPages = Math.ceil(totalCount / limit);
 
-    return NextResponse.json({
-      data: transformedBrands,
-      pagination: {
+    return createApiResponse.successWithPagination(
+      transformedBrands,
+      {
         page: page,
         limit: limit,
         totalPages: totalPages,
         total: totalCount,
       },
-    });
+      `Retrieved ${transformedBrands.length} brands`
+    );
   } catch (error) {
     return handleApiError(error);
   }
@@ -116,7 +115,7 @@ export const POST = withPermission(
       const body = await request.json();
       const validatedData = BrandCreateSchema.parse(body);
 
-      // Check if brand name already exists
+      // Check if brand with the same name already exists (case-insensitive)
       const existingBrand = await prisma.brand.findFirst({
         where: {
           name: {
@@ -127,9 +126,9 @@ export const POST = withPermission(
       });
 
       if (existingBrand) {
-        return NextResponse.json(
-          { error: "Brand with this name already exists" },
-          { status: 409 }
+        return createApiResponse.error(
+          "Brand with this name already exists",
+          409
         );
       }
 
@@ -138,9 +137,9 @@ export const POST = withPermission(
         data: {
           name: validatedData.name,
           description: validatedData.description,
-          image: validatedData.image,
           website: validatedData.website,
-          isActive: validatedData.isActive,
+          image: validatedData.image,
+          isActive: validatedData.isActive ?? true,
         },
         include: {
           _count: {
@@ -151,25 +150,23 @@ export const POST = withPermission(
         },
       });
 
-      // Transform the response to include product count
+      // Transform the response
       const transformedBrand = {
         id: newBrand.id,
         name: newBrand.name,
         description: newBrand.description,
-        image: newBrand.image,
         website: newBrand.website,
+        image: newBrand.image,
         isActive: newBrand.isActive,
         productCount: newBrand._count.products,
         createdAt: newBrand.createdAt,
         updatedAt: newBrand.updatedAt,
       };
 
-      return NextResponse.json(
-        {
-          message: "Brand created successfully",
-          data: transformedBrand,
-        },
-        { status: 201 }
+      return createApiResponse.success(
+        transformedBrand,
+        "Brand created successfully",
+        201
       );
     } catch (error) {
       return handleApiError(error);

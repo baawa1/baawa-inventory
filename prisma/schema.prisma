@@ -93,18 +93,18 @@ model Supplier {
 }
 
 model Category {
-  id          Int        @id @default(autoincrement())
-  name        String     @db.VarChar(100)
-  description String?
-  image       String?    @db.VarChar(500)
-  isActive    Boolean    @default(true) @map("is_active")
-  createdAt   DateTime   @default(now()) @map("created_at") @db.Timestamptz(6)
-  updatedAt   DateTime   @default(now()) @updatedAt @map("updated_at") @db.Timestamptz(6)
-  parentId    Int?       @map("parent_id")
-  parent      Category?  @relation("CategoryHierarchy", fields: [parentId], references: [id])
-  children    Category[] @relation("CategoryHierarchy")
-  products    Product[]
+  id           Int           @id @default(autoincrement())
+  name         String        @db.VarChar(100)
+  description  String?
+  isActive     Boolean       @default(true) @map("is_active")
+  createdAt    DateTime      @default(now()) @map("created_at") @db.Timestamptz(6)
+  updatedAt    DateTime      @default(now()) @updatedAt @map("updated_at") @db.Timestamptz(6)
+  parentId     Int?          @map("parent_id")
+  image        String?       @db.VarChar(500)
+  parent       Category?     @relation("CategoryHierarchy", fields: [parentId], references: [id])
+  children     Category[]    @relation("CategoryHierarchy")
   content_sync ContentSync[]
+  products     Product[]
 
   @@unique([name, parentId], name: "unique_category_name_per_parent")
   @@index([parentId], map: "idx_categories_parent_id")
@@ -112,16 +112,16 @@ model Category {
 }
 
 model Brand {
-  id          Int       @id @default(autoincrement())
-  name        String    @unique @db.VarChar(100)
-  description String?
-  website     String?   @db.VarChar(255)
-  image       String?   @db.VarChar(500)
-  isActive    Boolean?  @default(true) @map("is_active")
-  createdAt   DateTime? @default(now()) @map("created_at") @db.Timestamptz(6)
-  updatedAt   DateTime? @default(now()) @updatedAt @map("updated_at") @db.Timestamptz(6)
-  products    Product[]
+  id           Int           @id @default(autoincrement())
+  name         String        @unique @db.VarChar(100)
+  description  String?
+  website      String?       @db.VarChar(255)
+  isActive     Boolean?      @default(true) @map("is_active")
+  createdAt    DateTime?     @default(now()) @map("created_at") @db.Timestamptz(6)
+  updatedAt    DateTime?     @default(now()) @updatedAt @map("updated_at") @db.Timestamptz(6)
+  image        String?       @db.VarChar(500)
   content_sync ContentSync[]
+  products     Product[]
 
   @@index([isActive], map: "idx_brands_is_active")
   @@index([name], map: "idx_brands_name")
@@ -156,7 +156,7 @@ model Product {
   supplierId           Int?                      @map("supplier_id")
   categoryId           Int?                      @map("category_id")
   brandId              Int?                      @map("brand_id")
-  status               ProductStatus             @default(ACTIVE)
+  status               String                    @default("active") @db.VarChar(20)
   allowReviews         Boolean                   @default(true) @map("allow_reviews")
   isFeatured           Boolean                   @default(false) @map("is_featured")
   metaContent          String?                   @map("meta_content")
@@ -168,11 +168,11 @@ model Product {
   variantAttributes    Json?                     @map("variant_attributes")
   variantValues        Json?                     @map("variant_values")
   images               Json?
-  // Content sync fields
-  syncStatus           String?                   @default("pending") @map("sync_status") @db.VarChar(20)
   lastSyncAt           DateTime?                 @map("last_sync_at") @db.Timestamptz(6)
   syncErrors           String?                   @map("sync_errors")
+  syncStatus           String?                   @default("pending") @map("sync_status") @db.VarChar(20)
   ai_content           AIContent[]
+  content_sync         ContentSync[]
   product_variants     ProductVariant[]
   brand                Brand?                    @relation(fields: [brandId], references: [id], onUpdate: NoAction)
   category             Category?                 @relation(fields: [categoryId], references: [id], onUpdate: NoAction)
@@ -182,7 +182,6 @@ model Product {
   stockAdditions       StockAddition[]
   stock_adjustments    StockAdjustment[]
   reconciliationItems  StockReconciliationItem[]
-  content_sync         ContentSync[]
 
   @@index([sku], map: "idx_products_sku")
   @@index([status], map: "idx_products_status")
@@ -231,8 +230,8 @@ model SalesTransaction {
   customer_name      String?     @db.VarChar(255)
   customer_phone     String?     @db.VarChar(20)
   discount_amount    Decimal     @default(0) @db.Decimal(10, 2)
-  payment_method     PaymentMethod
-  payment_status     PaymentStatus @default(PENDING)
+  payment_method     String      @db.VarChar(50)
+  payment_status     String      @default("pending") @db.VarChar(20)
   tax_amount         Decimal     @default(0) @db.Decimal(10, 2)
   total_amount       Decimal     @db.Decimal(10, 2)
   transaction_number String      @unique @db.VarChar(50)
@@ -304,7 +303,7 @@ model StockReconciliation {
   approvedAt   DateTime?                    @map("approved_at") @db.Timestamptz(6)
   createdById  Int                          @map("created_by")
   approvedById Int?                         @map("approved_by")
-  status       StockReconciliationStatus? @default(DRAFT)
+  status       stock_reconciliation_status? @default(DRAFT)
   items        StockReconciliationItem[]
   approvedBy   User?                        @relation("ReconciliationApprover", fields: [approvedById], references: [id], onUpdate: NoAction)
   createdBy    User                         @relation("ReconciliationCreator", fields: [createdById], references: [id], onUpdate: NoAction)
@@ -339,7 +338,7 @@ model StockAdjustment {
   quantity                                   Int
   reason                                     String
   notes                                      String?
-  adjustment_type                            StockAdjustmentType
+  adjustment_type                            String          @db.VarChar(50)
   approved_at                                DateTime?       @db.Timestamptz(6)
   approved_by                                Int?
   created_at                                 DateTime?       @default(now()) @db.Timestamptz(6)
@@ -382,7 +381,7 @@ model PurchaseOrder {
   total_amount           Decimal             @db.Decimal(10, 2)
   updated_at             DateTime?           @default(now()) @db.Timestamptz(6)
   user_id                Int
-  status                 PurchaseOrderStatus @default(PENDING)
+  status                 String              @default("draft") @db.VarChar(20)
   purchase_order_items   PurchaseOrderItem[]
   suppliers              Supplier            @relation(fields: [supplier_id], references: [id], onDelete: NoAction, onUpdate: NoAction)
   users                  User                @relation(fields: [user_id], references: [id], onDelete: NoAction, onUpdate: NoAction)
@@ -443,7 +442,7 @@ model AIContent {
   approved_at       DateTime? @db.Timestamptz(6)
   approved_by       Int?
   confidence_score  Decimal?  @db.Decimal(3, 2)
-  content_type      AIContentType
+  content_type      String    @db.VarChar(50)
   created_at        DateTime? @default(now()) @db.Timestamptz(6)
   generated_content String
   is_approved       Boolean?  @default(false)
@@ -462,26 +461,24 @@ model AIContent {
 }
 
 model ContentSync {
-  id                Int       @id @default(autoincrement())
-  entity_type       String    @db.VarChar(20) // "product", "category", "brand"
-  entity_id         Int
-  sync_status       String    @default("pending") @db.VarChar(20) // "pending", "synced", "failed"
-  last_sync_at      DateTime? @db.Timestamptz(6)
-  sync_errors       String?
-  retry_count       Int       @default(0)
-  webhook_url       String?   @db.VarChar(500)
-  created_at        DateTime? @default(now()) @db.Timestamptz(6)
-  updated_at        DateTime? @default(now()) @db.Timestamptz(6)
-  
-  // Relations - only one will be populated based on entity_type
-  products          Product?  @relation(fields: [entity_id], references: [id], onDelete: Cascade, onUpdate: NoAction, map: "fk_content_sync_product")
-  categories        Category? @relation(fields: [entity_id], references: [id], onDelete: Cascade, onUpdate: NoAction, map: "fk_content_sync_category")
-  brands            Brand?    @relation(fields: [entity_id], references: [id], onDelete: Cascade, onUpdate: NoAction, map: "fk_content_sync_brand")
+  id           Int       @id @default(autoincrement())
+  entity_type  String    @db.VarChar(20)
+  entity_id    Int
+  sync_status  String    @default("pending") @db.VarChar(20)
+  last_sync_at DateTime? @db.Timestamptz(6)
+  sync_errors  String?
+  retry_count  Int       @default(0)
+  webhook_url  String?   @db.VarChar(500)
+  created_at   DateTime? @default(now()) @db.Timestamptz(6)
+  updated_at   DateTime? @default(now()) @db.Timestamptz(6)
+  brand        Brand?    @relation(fields: [entity_id], references: [id], onDelete: Cascade, onUpdate: NoAction, map: "fk_content_sync_brand")
+  category     Category? @relation(fields: [entity_id], references: [id], onDelete: Cascade, onUpdate: NoAction, map: "fk_content_sync_category")
+  product      Product?  @relation(fields: [entity_id], references: [id], onDelete: Cascade, onUpdate: NoAction, map: "fk_content_sync_product")
 
+  @@unique([entity_type, entity_id], name: "unique_entity_content_sync")
   @@index([entity_type], map: "idx_content_sync_entity_type")
   @@index([entity_id], map: "idx_content_sync_entity_id")
   @@index([sync_status], map: "idx_content_sync_sync_status")
-  @@unique([entity_type, entity_id], name: "unique_entity_content_sync")
   @@map("content_sync")
 }
 
@@ -525,78 +522,9 @@ enum UserStatus {
   SUSPENDED
 }
 
-enum ProductStatus {
-  ACTIVE
-  INACTIVE
-  OUT_OF_STOCK
-  DISCONTINUED
-}
-
-enum PaymentMethod {
-  CASH
-  BANK_TRANSFER
-  POS_MACHINE
-  CREDIT_CARD
-  MOBILE_MONEY
-}
-
-enum PaymentStatus {
-  PENDING
-  PAID
-  REFUNDED
-  CANCELLED
-}
-
-enum DiscountType {
-  AMOUNT
-  PERCENTAGE
-}
-
-enum StockReconciliationStatus {
+enum stock_reconciliation_status {
   DRAFT
   PENDING
   APPROVED
   REJECTED
-}
-
-enum StockAdjustmentType {
-  INCREASE
-  DECREASE
-  RECOUNT
-  DAMAGE
-  TRANSFER
-  RETURN
-}
-
-enum PurchaseOrderStatus {
-  PENDING
-  ORDERED
-  PARTIAL_RECEIVED
-  RECEIVED
-  CANCELLED
-}
-
-enum AIContentType {
-  DESCRIPTION
-  SEO_TITLE
-  SEO_DESCRIPTION
-  SOCIAL_MEDIA_POST
-  PRODUCT_FEATURES
-  MARKETING_COPY
-}
-
-enum ContentStatus {
-  DRAFT
-  PENDING_APPROVAL
-  APPROVED
-  PUBLISHED
-  REJECTED
-}
-
-enum WebflowSyncStatus {
-  PENDING
-  SYNCING
-  SUCCESS
-  FAILED
-  RETRY
 }
