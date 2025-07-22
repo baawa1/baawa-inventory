@@ -34,7 +34,7 @@ export interface FormState {
 export const defaultFormValues: CreatePurchaseOrderData = {
   supplierId: 0,
   orderNumber: "",
-  orderDate: new Date().toISOString(),
+  orderDate: "",
   expectedDeliveryDate: "",
   subtotal: 0,
   taxAmount: 0,

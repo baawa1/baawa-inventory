@@ -17,8 +17,8 @@ export const createPurchaseOrderSchema = z.object({
   orderDate: z.string().datetime(),
   expectedDeliveryDate: z.string().datetime().optional(),
   subtotal: z.number().positive(),
-  taxAmount: z.number().min(0).default(0),
-  shippingCost: z.number().min(0).default(0),
+  taxAmount: z.number().min(0),
+  shippingCost: z.number().min(0),
   totalAmount: z.number().positive(),
   notes: z.string().optional(),
   items: z
