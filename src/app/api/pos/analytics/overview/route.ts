@@ -1,5 +1,5 @@
 import { withAuth, AuthenticatedRequest } from "@/lib/api-middleware";
-import { handleApiError } from "@/lib/api-error-handler";
+import { handleApiError } from "@/lib/api-error-handler-new";
 import { createApiResponse } from "@/lib/api-response";
 import { prisma } from "@/lib/db";
 import { PAYMENT_STATUS } from "@/lib/constants";

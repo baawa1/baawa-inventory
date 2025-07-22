@@ -1,6 +1,6 @@
 import { NextResponse } from "next/server";
 import { withAuth, AuthenticatedRequest } from "@/lib/api-middleware";
-import { handleApiError } from "@/lib/api-error-handler";
+import { handleApiError } from "@/lib/api-error-handler-new";
 
 export const GET = withAuth(async (req: AuthenticatedRequest) => {
   try {

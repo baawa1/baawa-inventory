@@ -3,7 +3,7 @@ import {
   withPermission,
   AuthenticatedRequest,
 } from "@/lib/api-middleware";
-import { createUnexpectedError } from "@/lib/api-error-handler";
+import { handleApiError } from "@/lib/api-error-handler-new";
 import { prisma } from "@/lib/db";
 import { createSecureResponse } from "@/lib/security-headers";
 
@@ -199,7 +199,7 @@ export const GET = withAuth(async (request: AuthenticatedRequest) => {
       200
     );
   } catch (error) {
-    return createUnexpectedError(error);
+    return handleApiError(error);
   }
 });
 
@@ -358,7 +358,7 @@ export const POST = withPermission(
         201
       );
     } catch (error) {
-      return createUnexpectedError(error);
+      return handleApiError(error);
     }
   }
 );
