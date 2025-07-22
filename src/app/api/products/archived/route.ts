@@ -98,17 +98,13 @@ export const GET = withAuth(async (request: AuthenticatedRequest) => {
 
     // Calculate pagination info
     const totalPages = Math.ceil(totalCount / limit);
-    const hasNextPage = page < totalPages;
-    const hasPreviousPage = page > 1;
 
     return NextResponse.json({
-      products,
+      data: products,
       pagination: {
-        currentPage: page,
+        page,
         totalPages,
-        totalCount,
-        hasNextPage,
-        hasPreviousPage,
+        total: totalCount,
         limit,
       },
     });
