@@ -55,7 +55,7 @@ const mockProduct = {
   minStock: 10,
   maxStock: 200,
   unit: "piece",
-  status: "active",
+  status: "ACTIVE",
   isArchived: false,
   categoryId: 1,
   brandId: 1,

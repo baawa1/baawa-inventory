@@ -27,11 +27,13 @@ interface AdditionalInfoSectionProps {
 export function AdditionalInfoSection({ form }: AdditionalInfoSectionProps) {
   const getStatusColor = (status: string) => {
     switch (status) {
-      case "active":
+      case "ACTIVE":
         return "bg-green-100 text-green-800 border-green-200";
-      case "inactive":
+      case "INACTIVE":
         return "bg-red-100 text-red-800 border-red-200";
-      case "discontinued":
+      case "OUT_OF_STOCK":
+        return "bg-yellow-100 text-yellow-800 border-yellow-200";
+      case "DISCONTINUED":
         return "bg-gray-100 text-gray-800 border-gray-200";
       default:
         return "bg-gray-100 text-gray-800 border-gray-200";
@@ -61,31 +63,41 @@ export function AdditionalInfoSection({ form }: AdditionalInfoSectionProps) {
                     </SelectTrigger>
                   </FormControl>
                   <SelectContent>
-                    <SelectItem value="active">
+                    <SelectItem value="ACTIVE">
                       <div className="flex items-center gap-2">
                         <Badge
                           variant="outline"
-                          className={getStatusColor("active")}
+                          className={getStatusColor("ACTIVE")}
                         >
                           Active
                         </Badge>
                       </div>
                     </SelectItem>
-                    <SelectItem value="inactive">
+                    <SelectItem value="INACTIVE">
                       <div className="flex items-center gap-2">
                         <Badge
                           variant="outline"
-                          className={getStatusColor("inactive")}
+                          className={getStatusColor("INACTIVE")}
                         >
                           Inactive
                         </Badge>
                       </div>
                     </SelectItem>
-                    <SelectItem value="discontinued">
+                    <SelectItem value="OUT_OF_STOCK">
                       <div className="flex items-center gap-2">
                         <Badge
                           variant="outline"
-                          className={getStatusColor("discontinued")}
+                          className={getStatusColor("OUT_OF_STOCK")}
+                        >
+                          Out of Stock
+                        </Badge>
+                      </div>
+                    </SelectItem>
+                    <SelectItem value="DISCONTINUED">
+                      <div className="flex items-center gap-2">
+                        <Badge
+                          variant="outline"
+                          className={getStatusColor("DISCONTINUED")}
                         >
                           Discontinued
                         </Badge>
@@ -105,7 +117,7 @@ export function AdditionalInfoSection({ form }: AdditionalInfoSectionProps) {
                 variant="outline"
                 className={`ml-2 ${getStatusColor(form.watch("status"))}`}
               >
-                {form.watch("status") || "active"}
+                {form.watch("status") || "ACTIVE"}
               </Badge>
             </div>
           </div>

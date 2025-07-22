@@ -214,9 +214,10 @@ const ProductList = ({ user }: ProductListProps) => {
 
   // Static status options (no need to memoize)
   const statusOptions = [
-    { value: "active", label: "Active" },
-    { value: "inactive", label: "Inactive" },
-    { value: "discontinued", label: "Discontinued" },
+    { value: "ACTIVE", label: "Active" },
+    { value: "INACTIVE", label: "Inactive" },
+    { value: "OUT_OF_STOCK", label: "Out of Stock" },
+    { value: "DISCONTINUED", label: "Discontinued" },
   ];
 
   // Filter configurations - properly memoized to prevent unnecessary re-renders
@@ -319,14 +320,26 @@ const ProductList = ({ user }: ProductListProps) => {
 
   const getStatusBadge = (status: APIProduct["status"]) => {
     switch (status) {
-      case "active":
+      case "ACTIVE":
         return (
           <Badge variant="default" className="bg-green-500">
             Active
           </Badge>
         );
-      case "inactive":
+      case "INACTIVE":
         return <Badge variant="secondary">Inactive</Badge>;
+      case "OUT_OF_STOCK":
+        return (
+          <Badge variant="secondary" className="bg-yellow-500">
+            Out of Stock
+          </Badge>
+        );
+      case "DISCONTINUED":
+        return (
+          <Badge variant="secondary" className="bg-gray-500">
+            Discontinued
+          </Badge>
+        );
       default:
         return <Badge variant="secondary">{status}</Badge>;
     }

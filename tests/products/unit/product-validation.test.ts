@@ -20,7 +20,7 @@ describe("Product Validation Schemas", () => {
         maximumStock: 100,
         currentStock: 10,
         supplierId: 1,
-        status: "active",
+        status: "ACTIVE",
         unit: "piece",
         weight: 0.5,
         dimensions: "10x5x2",
@@ -63,7 +63,7 @@ describe("Product Validation Schemas", () => {
         sellingPrice: 15.99,
         minimumStock: 5,
         currentStock: 10,
-        status: "active",
+        status: "ACTIVE",
       };
 
       const result = createProductSchema.safeParse(invalidProduct);
@@ -84,7 +84,7 @@ describe("Product Validation Schemas", () => {
         sellingPrice: -15.99,
         minimumStock: 5,
         currentStock: 10,
-        status: "active",
+        status: "ACTIVE",
       };
 
       const result = createProductSchema.safeParse(invalidProduct);
@@ -107,7 +107,7 @@ describe("Product Validation Schemas", () => {
         sellingPrice: 15.99,
         minimumStock: -5,
         currentStock: -10,
-        status: "active",
+        status: "ACTIVE",
       };
 
       const result = createProductSchema.safeParse(invalidProduct);
@@ -136,7 +136,7 @@ describe("Product Validation Schemas", () => {
         maximumStock: null,
         currentStock: 10,
         supplierId: null,
-        status: "active",
+        status: "ACTIVE",
         imageUrl: null,
         notes: null,
         unit: "piece",
@@ -169,7 +169,7 @@ describe("Product Validation Schemas", () => {
         sellingPrice: 15.99,
         minimumStock: 5,
         currentStock: 10,
-        status: "active",
+        status: "ACTIVE",
         unit: "A".repeat(21), // Too long
         dimensions: "A".repeat(101), // Too long
         color: "A".repeat(51), // Too long
@@ -187,7 +187,12 @@ describe("Product Validation Schemas", () => {
     });
 
     it("should validate status enum values", () => {
-      const validStatuses = ["active", "inactive", "discontinued"];
+      const validStatuses = [
+        "ACTIVE",
+        "INACTIVE",
+        "OUT_OF_STOCK",
+        "DISCONTINUED",
+      ];
 
       validStatuses.forEach((status) => {
         const product = {
@@ -245,7 +250,7 @@ describe("Product Validation Schemas", () => {
         currentStock: 20,
         minimumStock: 10,
         maximumStock: 200,
-        status: "active",
+        status: "ACTIVE",
         isArchived: false,
         unit: "piece",
         weight: 1.0,

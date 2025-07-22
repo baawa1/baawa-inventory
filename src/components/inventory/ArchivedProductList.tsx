@@ -206,10 +206,22 @@ export function ArchivedProductList({ user }: ArchivedProductListProps) {
   // Get status badge
   const getStatusBadge = useCallback((status: string) => {
     switch (status) {
-      case "active":
+      case "ACTIVE":
         return <Badge variant="default">Active</Badge>;
-      case "inactive":
+      case "INACTIVE":
         return <Badge variant="secondary">Inactive</Badge>;
+      case "OUT_OF_STOCK":
+        return (
+          <Badge variant="secondary" className="bg-yellow-500">
+            Out of Stock
+          </Badge>
+        );
+      case "DISCONTINUED":
+        return (
+          <Badge variant="secondary" className="bg-gray-500">
+            Discontinued
+          </Badge>
+        );
       default:
         return <Badge variant="outline">{status}</Badge>;
     }

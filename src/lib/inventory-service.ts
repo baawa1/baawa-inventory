@@ -473,7 +473,7 @@ export class InventoryService {
     // Build the where clause for filtering
     const where: any = {
       isArchived: false,
-      status: "active",
+      status: "ACTIVE",
     };
 
     // Apply additional filters if provided
@@ -700,7 +700,7 @@ export class InventoryService {
         where: { id },
         data: {
           isArchived: true,
-          status: "inactive",
+          status: "INACTIVE",
         },
         select: {
           id: true,

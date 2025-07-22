@@ -38,7 +38,7 @@ describe("Product Submission Hooks", () => {
           sellingPrice: 15.99,
           minimumStock: 5,
           currentStock: 10,
-          status: "active",
+          status: "ACTIVE",
         })),
       };
 
@@ -65,7 +65,7 @@ describe("Product Submission Hooks", () => {
         sellingPrice: 15.99,
         minimumStock: 5,
         currentStock: 10,
-        status: "active",
+        status: "ACTIVE",
       });
 
       expect(mockSetIsSubmitting).toHaveBeenCalledWith(true);
@@ -82,7 +82,7 @@ describe("Product Submission Hooks", () => {
           sellingPrice: 15.99,
           minimumStock: 5,
           currentStock: 10,
-          status: "active",
+          status: "ACTIVE",
           description: null,
           barcode: null,
           imageUrl: null,
@@ -123,7 +123,7 @@ describe("Product Submission Hooks", () => {
         sellingPrice: 15.99,
         minimumStock: 5,
         currentStock: 10,
-        status: "active",
+        status: "ACTIVE",
       });
 
       expect(mockSetSubmitError).toHaveBeenCalledWith(
@@ -157,7 +157,7 @@ describe("Product Submission Hooks", () => {
         sellingPrice: 15.99,
         minimumStock: 5,
         currentStock: 10,
-        status: "active",
+        status: "ACTIVE",
       });
 
       expect(mockSetSubmitError).toHaveBeenCalledWith("Network error");
@@ -196,7 +196,7 @@ describe("Product Submission Hooks", () => {
         sellingPrice: 15.99,
         minimumStock: 5,
         currentStock: 10,
-        status: "active",
+        status: "ACTIVE",
         maximumStock: 0, // Should become null
       });
 
@@ -216,7 +216,7 @@ describe("Product Submission Hooks", () => {
           sellingPrice: 15.99,
           minimumStock: 5,
           currentStock: 10,
-          status: "active",
+          status: "ACTIVE",
           maximumStock: null,
         }),
       });
@@ -251,7 +251,7 @@ describe("Product Submission Hooks", () => {
           sellingPrice: 19.99,
           minimumStock: 5,
           currentStock: 15,
-          status: "active",
+          status: "ACTIVE",
         },
         {} as any
       );
@@ -276,7 +276,7 @@ describe("Product Submission Hooks", () => {
         sellingPrice: 19.99,
         minimumStock: 5,
         currentStock: 15,
-        status: "active",
+        status: "ACTIVE",
       });
       expect(mockSetIsSubmitting).toHaveBeenCalledWith(false);
       expect(mockOnSuccess).toHaveBeenCalled();
@@ -309,7 +309,7 @@ describe("Product Submission Hooks", () => {
           sellingPrice: 19.99,
           minimumStock: 5,
           currentStock: 15,
-          status: "active",
+          status: "ACTIVE",
         },
         {} as any
       );
@@ -343,7 +343,7 @@ describe("Product Submission Hooks", () => {
           sellingPrice: 19.99,
           minimumStock: 5,
           currentStock: 15,
-          status: "active",
+          status: "ACTIVE",
         },
         {} as any
       );
@@ -386,7 +386,7 @@ describe("Product Submission Hooks", () => {
           currentStock: undefined,
           minimumStock: undefined,
           maximumStock: undefined,
-          status: "active",
+          status: "ACTIVE",
           notes: undefined,
         },
         {} as any
@@ -406,7 +406,7 @@ describe("Product Submission Hooks", () => {
       expect(requestBody).toMatchObject({
         name: "Test Product",
         sku: "TEST-001",
-        status: "active",
+        status: "ACTIVE",
       });
     });
   });

@@ -65,9 +65,9 @@ export const GET = withAuth(async (request: AuthenticatedRequest) => {
 
     if (status && status !== "all") {
       if (status === PRODUCT_STATUS.ACTIVE) {
-        where.status = "active";
+        where.status = "ACTIVE";
       } else if (status === PRODUCT_STATUS.INACTIVE) {
-        where.status = "inactive";
+        where.status = "INACTIVE";
       }
     }
 
