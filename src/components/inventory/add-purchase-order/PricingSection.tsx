@@ -50,10 +50,13 @@ export function PricingSection({ form }: PricingSectionProps) {
                     step="0.01"
                     min="0"
                     placeholder="0.00"
-                    {...field}
+                    value={field.value?.toString() || ""}
                     onChange={(e) =>
                       field.onChange(parseFloat(e.target.value) || 0)
                     }
+                    onBlur={field.onBlur}
+                    name={field.name}
+                    ref={field.ref}
                   />
                 </FormControl>
                 <FormMessage />
@@ -73,10 +76,13 @@ export function PricingSection({ form }: PricingSectionProps) {
                     step="0.01"
                     min="0"
                     placeholder="0.00"
-                    {...field}
+                    value={field.value?.toString() || ""}
                     onChange={(e) =>
                       field.onChange(parseFloat(e.target.value) || 0)
                     }
+                    onBlur={field.onBlur}
+                    name={field.name}
+                    ref={field.ref}
                   />
                 </FormControl>
                 <FormMessage />
@@ -96,7 +102,11 @@ export function PricingSection({ form }: PricingSectionProps) {
                     step="0.01"
                     min="0"
                     placeholder="0.00"
-                    {...field}
+                    value={field.value?.toString() || ""}
+                    onChange={field.onChange}
+                    onBlur={field.onBlur}
+                    name={field.name}
+                    ref={field.ref}
                     readOnly
                     className="bg-gray-50 font-semibold"
                   />

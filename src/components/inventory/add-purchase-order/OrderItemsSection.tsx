@@ -66,11 +66,14 @@ export function OrderItemsSection({
     if (productId) {
       const product = products.find((p) => p.id === productId);
       if (product) {
-        form.setValue(`items.${index}.unitCost`, product.cost);
-        form.setValue(
-          `items.${index}.totalCost`,
-          product.cost * form.getValues(`items.${index}.quantityOrdered`)
+        const unitCost = Number(product.cost);
+        const quantity = Number(
+          form.getValues(`items.${index}.quantityOrdered`)
         );
+        const totalCost = unitCost * quantity;
+
+        form.setValue(`items.${index}.unitCost`, unitCost);
+        form.setValue(`items.${index}.totalCost`, totalCost);
         setSelectedProducts((prev) => new Set([...prev, productId]));
       }
     } else {
@@ -80,18 +83,20 @@ export function OrderItemsSection({
   };
 
   const handleQuantityChange = (index: number, quantity: number) => {
-    const unitCost = form.getValues(`items.${index}.unitCost`);
-    form.setValue(`items.${index}.totalCost`, unitCost * quantity);
+    const unitCost = Number(form.getValues(`items.${index}.unitCost`));
+    const totalCost = unitCost * quantity;
+    form.setValue(`items.${index}.totalCost`, totalCost);
   };
 
   const handleUnitCostChange = (index: number, unitCost: number) => {
-    const quantity = form.getValues(`items.${index}.quantityOrdered`);
-    form.setValue(`items.${index}.totalCost`, unitCost * quantity);
+    const quantity = Number(form.getValues(`items.${index}.quantityOrdered`));
+    const totalCost = unitCost * quantity;
+    form.setValue(`items.${index}.totalCost`, totalCost);
   };
 
   // Calculate totals
   const subtotal = fields.reduce((sum, _, index) => {
-    return sum + (form.getValues(`items.${index}.totalCost`) || 0);
+    return sum + (Number(form.getValues(`items.${index}.totalCost`)) || 0);
   }, 0);
 
   // Update form subtotal using useEffect to avoid setState during render
@@ -161,12 +166,18 @@ export function OrderItemsSection({
                         type="number"
                         min="1"
                         placeholder="1"
-                        {...field}
+                        value={
+                          field.value === 0 ? "" : field.value?.toString() || ""
+                        }
                         onChange={(e) => {
-                          const quantity = parseInt(e.target.value) || 0;
+                          const value = e.target.value;
+                          const quantity = value ? parseInt(value) : 0;
                           field.onChange(quantity);
                           handleQuantityChange(index, quantity);
                         }}
+                        onBlur={field.onBlur}
+                        name={field.name}
+                        ref={field.ref}
                       />
                     </FormControl>
                     <FormMessage />
@@ -186,12 +197,18 @@ export function OrderItemsSection({
                         step="0.01"
                         min="0"
                         placeholder="0.00"
-                        {...field}
+                        value={
+                          field.value === 0 ? "" : field.value?.toString() || ""
+                        }
                         onChange={(e) => {
-                          const unitCost = parseFloat(e.target.value) || 0;
+                          const value = e.target.value;
+                          const unitCost = value ? parseFloat(value) : 0;
                           field.onChange(unitCost);
                           handleUnitCostChange(index, unitCost);
                         }}
+                        onBlur={field.onBlur}
+                        name={field.name}
+                        ref={field.ref}
                       />
                     </FormControl>
                     <FormMessage />
@@ -211,7 +228,17 @@ export function OrderItemsSection({
                         step="0.01"
                         min="0"
                         placeholder="0.00"
-                        {...field}
+                        value={
+                          field.value === 0 ? "" : field.value?.toString() || ""
+                        }
+                        onChange={(e) => {
+                          const value = e.target.value;
+                          const totalCost = value ? parseFloat(value) : 0;
+                          field.onChange(totalCost);
+                        }}
+                        onBlur={field.onBlur}
+                        name={field.name}
+                        ref={field.ref}
                         readOnly
                         className="bg-gray-50"
                       />

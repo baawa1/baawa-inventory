@@ -18,9 +18,22 @@ export function usePurchaseOrderSubmit(
     setSubmitError(null);
 
     try {
-      // Convert empty strings to null for optional fields
+      // Ensure all numeric fields are properly typed
       const cleanedData = {
         ...data,
+        supplierId: Number(data.supplierId),
+        subtotal: Number(data.subtotal),
+        taxAmount: Number(data.taxAmount),
+        shippingCost: Number(data.shippingCost),
+        totalAmount: Number(data.totalAmount),
+        items: data.items.map((item) => ({
+          ...item,
+          productId: item.productId ? Number(item.productId) : undefined,
+          variantId: item.variantId ? Number(item.variantId) : undefined,
+          quantityOrdered: Number(item.quantityOrdered),
+          unitCost: Number(item.unitCost),
+          totalCost: Number(item.totalCost),
+        })),
         notes: data.notes?.trim() || null,
         expectedDeliveryDate: data.expectedDeliveryDate?.trim() || null,
       };
@@ -30,6 +43,7 @@ export function usePurchaseOrderSubmit(
         headers: {
           "Content-Type": "application/json",
         },
+        credentials: "include",
         body: JSON.stringify(cleanedData),
       });
 

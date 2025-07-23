@@ -20,6 +20,7 @@ import {
 import { Button } from "@/components/ui/button";
 import { CalendarIcon } from "lucide-react";
 import { cn } from "@/lib/utils";
+import { format } from "date-fns";
 import type { CreatePurchaseOrderData } from "./types";
 
 interface BasicInfoSectionProps {
@@ -65,7 +66,7 @@ export function BasicInfoSection({ form }: BasicInfoSectionProps) {
                         )}
                       >
                         {field.value ? (
-                          new Date(field.value).toLocaleDateString()
+                          format(new Date(field.value), "PPP")
                         ) : (
                           <span>Pick a date</span>
                         )}
@@ -110,7 +111,7 @@ export function BasicInfoSection({ form }: BasicInfoSectionProps) {
                       )}
                     >
                       {field.value ? (
-                        new Date(field.value).toLocaleDateString()
+                        format(new Date(field.value), "PPP")
                       ) : (
                         <span>Pick a date</span>
                       )}

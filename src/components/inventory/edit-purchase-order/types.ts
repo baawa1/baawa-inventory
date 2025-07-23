@@ -1,4 +1,6 @@
 import { z } from "zod";
+import { PURCHASE_ORDER_STATUS } from "@/lib/constants";
+import { updatePurchaseOrderSchema } from "@/lib/validations/purchase-order";
 
 // Purchase Order entity type
 export interface PurchaseOrder {
@@ -13,14 +15,7 @@ export interface PurchaseOrder {
   taxAmount: string;
   shippingCost?: string;
   totalAmount: string;
-  status:
-    | "draft"
-    | "pending"
-    | "approved"
-    | "ordered"
-    | "shipped"
-    | "delivered"
-    | "cancelled";
+  status: (typeof PURCHASE_ORDER_STATUS)[keyof typeof PURCHASE_ORDER_STATUS];
   notes?: string;
   createdAt: string;
   updatedAt: string;
@@ -37,24 +32,37 @@ export interface PurchaseOrder {
     email: string;
     role: string;
   };
+  purchaseOrderItems?: PurchaseOrderItem[];
 }
 
-// Validation schema for updating purchase order
-export const updatePurchaseOrderSchema = z.object({
-  status: z.enum([
-    "draft",
-    "pending",
-    "approved",
-    "ordered",
-    "shipped",
-    "delivered",
-    "cancelled",
-  ]),
-  notes: z.string().optional(),
-  expectedDeliveryDate: z.string().optional(),
-  actualDeliveryDate: z.string().optional(),
-});
+export interface PurchaseOrderItem {
+  id: number;
+  purchaseOrderId: number;
+  productId?: number;
+  variantId?: number;
+  quantityOrdered: number;
+  quantityReceived?: number;
+  unitCost: string;
+  totalCost: string;
+  products?: {
+    id: number;
+    name: string;
+    sku: string;
+  };
+  productVariants?: {
+    id: number;
+    name: string;
+    sku: string;
+  };
+}
 
+// Comprehensive form data type for editing all purchase order fields
 export type UpdatePurchaseOrderFormData = z.infer<
   typeof updatePurchaseOrderSchema
 >;
+
+// Form option type for dropdowns
+export interface FormOption {
+  value: string;
+  label: string;
+}

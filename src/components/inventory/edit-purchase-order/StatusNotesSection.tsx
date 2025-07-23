@@ -17,19 +17,20 @@ import {
 } from "@/components/ui/select";
 import { Textarea } from "@/components/ui/textarea";
 import { UpdatePurchaseOrderFormData } from "./types";
+import { PURCHASE_ORDER_STATUS } from "@/lib/constants";
 
 interface StatusNotesSectionProps {
   form: UseFormReturn<UpdatePurchaseOrderFormData>;
 }
 
 const PURCHASE_ORDER_STATUSES = [
-  { value: "draft", label: "Draft" },
-  { value: "pending", label: "Pending" },
-  { value: "approved", label: "Approved" },
-  { value: "ordered", label: "Ordered" },
-  { value: "shipped", label: "Shipped" },
-  { value: "delivered", label: "Delivered" },
-  { value: "cancelled", label: "Cancelled" },
+  { value: PURCHASE_ORDER_STATUS.DRAFT, label: "Draft" },
+  { value: PURCHASE_ORDER_STATUS.PENDING, label: "Pending" },
+  { value: PURCHASE_ORDER_STATUS.APPROVED, label: "Approved" },
+  { value: PURCHASE_ORDER_STATUS.ORDERED, label: "Ordered" },
+  { value: PURCHASE_ORDER_STATUS.PARTIAL_RECEIVED, label: "Partial Received" },
+  { value: PURCHASE_ORDER_STATUS.RECEIVED, label: "Received" },
+  { value: PURCHASE_ORDER_STATUS.CANCELLED, label: "Cancelled" },
 ];
 
 export function StatusNotesSection({ form }: StatusNotesSectionProps) {
