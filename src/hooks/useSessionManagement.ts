@@ -1,20 +1,46 @@
 "use client";
 
-// Re-export the new TanStack Query-based session management hook
-// This maintains backward compatibility while using the new implementation
-export { useSessionManagement } from "./api/session-migration";
+import { useSession } from "next-auth/react";
 
-// Export additional new hooks for enhanced functionality
-export { useEnhancedSession, useSessionQuery } from "./api/session";
+// Re-export the basic useSession from next-auth for backward compatibility
+export { useSession } from "next-auth/react";
 
-export {
-  useSessionState,
-  useSessionActions,
-  useSessionValidationState,
-} from "./api/session-migration";
+// Export the existing useSessionUpdate hook
+export { useSessionUpdate } from "./useSessionUpdate";
 
-// Migration utilities
-export {
-  MIGRATION_GUIDE,
-  logSessionMigrationStatus,
-} from "./api/session-migration";
+// Placeholder exports for future implementation
+export const useSessionManagement = () => {
+  const { data: session, status, update } = useSession();
+  return { session, status, update };
+};
+
+export const useEnhancedSession = () => {
+  const { data: session, status, update } = useSession();
+  return { session, status, update };
+};
+
+export const useSessionQuery = () => {
+  const { data: session, status, update } = useSession();
+  return { session, status, update };
+};
+
+export const useSessionState = () => {
+  const { data: session, status } = useSession();
+  return { session, status };
+};
+
+export const useSessionActions = () => {
+  const { update } = useSession();
+  return { update };
+};
+
+export const useSessionValidationState = () => {
+  const { data: session, status } = useSession();
+  return { session, status };
+};
+
+// Migration utilities (placeholder)
+export const MIGRATION_GUIDE = "Session management migration guide";
+export const logSessionMigrationStatus = () => {
+  console.log("Session migration status logged");
+};

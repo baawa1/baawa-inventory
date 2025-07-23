@@ -53,13 +53,20 @@ export const getErrorMessage = (error: unknown): string => {
 /**
  * Handles API errors with consistent toast messages
  */
-export const handleApiError = (error: unknown, context?: string): void => {
+export const handleApiError = (
+  error: unknown,
+  context?: string | unknown
+): void => {
   const message = getErrorMessage(error);
-  const contextMessage = context ? `${context}: ${message}` : message;
+  const contextMessage =
+    typeof context === "string" ? `${context}: ${message}` : message;
 
-  logger.error(`API Error${context ? ` (${context})` : ""}`, {
-    error: error instanceof Error ? error.message : String(error),
-  });
+  logger.error(
+    `API Error${typeof context === "string" ? ` (${context})` : ""}`,
+    {
+      error: error instanceof Error ? error.message : String(error),
+    }
+  );
   toast.error(contextMessage);
 };
 
@@ -144,6 +151,7 @@ export const ErrorHandlers = {
   network: handleNetworkError,
   auth: handleAuthError,
   permission: handlePermissionError,
+  mutation: handleApiError, // Add mutation handler for consistency
   success: showSuccess,
   warning: showWarning,
   info: showInfo,

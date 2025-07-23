@@ -27,6 +27,31 @@ afterAll(() => {
 
 // Global test utilities
 global.testUtils = {
+  createMockBrand: (overrides = {}) => ({
+    id: 1,
+    name: "Test Brand",
+    description: "A test brand",
+    image: "https://example.com/brand.jpg",
+    isActive: true,
+    createdAt: new Date("2024-01-01"),
+    updatedAt: new Date("2024-01-01"),
+    ...overrides,
+  }),
+
+  createMockBrandList: (count = 5) =>
+    Array.from({ length: count }, (_, i) => ({
+      id: i + 1,
+      name: `Brand ${i + 1}`,
+      description: `Description for brand ${i + 1}`,
+      image: `https://example.com/brand${i + 1}.jpg`,
+      isActive: true,
+      createdAt: new Date("2024-01-01"),
+      updatedAt: new Date("2024-01-01"),
+      _count: {
+        products: Math.floor(Math.random() * 10),
+      },
+    })),
+
   createMockCategory: (overrides = {}) => ({
     id: 1,
     name: "Test Category",
@@ -107,6 +132,8 @@ global.testUtils = {
 // Type declarations for global test utilities
 declare global {
   var testUtils: {
+    createMockBrand: (overrides?: any) => any;
+    createMockBrandList: (count?: number) => any[];
     createMockCategory: (overrides?: any) => any;
     createMockCategoryList: (count?: number) => any[];
     createMockCategoryHierarchy: () => any;
