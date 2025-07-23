@@ -19,7 +19,12 @@ export type AuditAction =
   | "SESSION_EXPIRED"
   | "SESSION_BLACKLISTED"
   | "SUSPICIOUS_ACTIVITY"
-  | "RATE_LIMIT_EXCEEDED";
+  | "RATE_LIMIT_EXCEEDED"
+  | "PURCHASE_ORDER_CREATED"
+  | "PURCHASE_ORDER_UPDATED"
+  | "PURCHASE_ORDER_STATUS_CHANGED"
+  | "PURCHASE_ORDER_DELETED"
+  | "PURCHASE_ORDER_RECEIVED";
 
 export interface AuditLogData {
   action: AuditAction;
@@ -480,5 +485,93 @@ export class AuditLogger {
       });
       return 0;
     }
+  }
+
+  /**
+   * Log purchase order creation
+   */
+  static async logPurchaseOrderCreated(
+    userId: number,
+    userEmail: string,
+    purchaseOrderId: number,
+    orderNumber: string,
+    supplierName: string,
+    totalAmount: number,
+    request?: NextRequest
+  ): Promise<void> {
+    await this.logAuthEvent(
+      {
+        action: "PURCHASE_ORDER_CREATED",
+        userId,
+        userEmail,
+        success: true,
+        details: {
+          purchaseOrderId,
+          orderNumber,
+          supplierName,
+          totalAmount,
+          timestamp: new Date().toISOString(),
+        },
+      },
+      request
+    );
+  }
+
+  /**
+   * Log purchase order status change
+   */
+  static async logPurchaseOrderStatusChanged(
+    userId: number,
+    userEmail: string,
+    purchaseOrderId: number,
+    orderNumber: string,
+    oldStatus: string,
+    newStatus: string,
+    request?: NextRequest
+  ): Promise<void> {
+    await this.logAuthEvent(
+      {
+        action: "PURCHASE_ORDER_STATUS_CHANGED",
+        userId,
+        userEmail,
+        success: true,
+        details: {
+          purchaseOrderId,
+          orderNumber,
+          oldStatus,
+          newStatus,
+          timestamp: new Date().toISOString(),
+        },
+      },
+      request
+    );
+  }
+
+  /**
+   * Log purchase order received
+   */
+  static async logPurchaseOrderReceived(
+    userId: number,
+    userEmail: string,
+    purchaseOrderId: number,
+    orderNumber: string,
+    receivedItems: number,
+    request?: NextRequest
+  ): Promise<void> {
+    await this.logAuthEvent(
+      {
+        action: "PURCHASE_ORDER_RECEIVED",
+        userId,
+        userEmail,
+        success: true,
+        details: {
+          purchaseOrderId,
+          orderNumber,
+          receivedItems,
+          timestamp: new Date().toISOString(),
+        },
+      },
+      request
+    );
   }
 }

@@ -54,7 +54,7 @@ export default async function PurchaseOrderPage({
           role: true,
         },
       },
-      purchase_order_items: {
+      purchaseOrderItems: {
         include: {
           products: {
             select: {
@@ -64,7 +64,7 @@ export default async function PurchaseOrderPage({
               barcode: true,
             },
           },
-          product_variants: {
+          productVariants: {
             select: {
               id: true,
               name: true,
@@ -83,33 +83,33 @@ export default async function PurchaseOrderPage({
   // Transform data for component
   const transformedPurchaseOrder = {
     id: purchaseOrder.id,
-    orderNumber: purchaseOrder.order_number,
-    supplierId: purchaseOrder.supplier_id,
-    userId: purchaseOrder.user_id,
-    orderDate: purchaseOrder.order_date.toISOString(),
-    expectedDeliveryDate: purchaseOrder.expected_delivery_date?.toISOString(),
-    actualDeliveryDate: purchaseOrder.actual_delivery_date?.toISOString(),
+    orderNumber: purchaseOrder.orderNumber,
+    supplierId: purchaseOrder.supplierId,
+    userId: purchaseOrder.userId,
+    orderDate: purchaseOrder.orderDate.toISOString(),
+    expectedDeliveryDate: purchaseOrder.expectedDeliveryDate?.toISOString(),
+    actualDeliveryDate: purchaseOrder.actualDeliveryDate?.toISOString(),
     subtotal: purchaseOrder.subtotal.toString(),
-    taxAmount: purchaseOrder.tax_amount.toString(),
-    shippingCost: purchaseOrder.shipping_cost?.toString(),
-    totalAmount: purchaseOrder.total_amount.toString(),
+    taxAmount: purchaseOrder.taxAmount.toString(),
+    shippingCost: purchaseOrder.shippingCost?.toString(),
+    totalAmount: purchaseOrder.totalAmount.toString(),
     status: purchaseOrder.status,
-    notes: purchaseOrder.notes,
-    createdAt: purchaseOrder.created_at?.toISOString() || "",
-    updatedAt: purchaseOrder.updated_at?.toISOString() || "",
+    notes: purchaseOrder.notes || undefined,
+    createdAt: purchaseOrder.createdAt?.toISOString() || "",
+    updatedAt: purchaseOrder.updatedAt?.toISOString() || "",
     suppliers: purchaseOrder.suppliers,
     users: purchaseOrder.users,
-    purchaseOrderItems: purchaseOrder.purchase_order_items.map((item) => ({
+    purchaseOrderItems: purchaseOrder.purchaseOrderItems.map((item) => ({
       id: item.id,
-      purchaseOrderId: item.purchase_order_id,
-      productId: item.product_id,
-      variantId: item.variant_id,
-      quantityOrdered: item.quantity_ordered,
-      quantityReceived: item.quantity_received,
-      unitCost: item.unit_cost.toString(),
-      totalCost: item.total_cost.toString(),
+      purchaseOrderId: item.purchaseOrderId,
+      productId: item.productId,
+      variantId: item.variantId,
+      quantityOrdered: item.quantityOrdered,
+      quantityReceived: item.quantityReceived,
+      unitCost: item.unitCost.toString(),
+      totalCost: item.totalCost.toString(),
       products: item.products,
-      productVariants: item.product_variants,
+      productVariants: item.productVariants,
     })),
   };
 

@@ -10,6 +10,8 @@ import {
 } from "@/lib/validations/purchase-order";
 import { handleApiError } from "@/lib/api-error-handler-new";
 import { createApiResponse } from "@/lib/api-response";
+import { PURCHASE_ORDER_STATUS } from "@/lib/constants";
+import { AuditLogger } from "@/lib/utils/audit-logger";
 
 // GET /api/purchase-orders - List purchase orders with optional filtering and pagination
 export async function GET(request: NextRequest) {
@@ -20,7 +22,7 @@ export async function GET(request: NextRequest) {
     }
 
     // Check permissions
-    if (!hasPermission(session.user.role, "INVENTORY_READ")) {
+    if (!hasPermission(session.user.role, "PURCHASE_ORDER_READ")) {
       return handleApiError(new Error("Insufficient permissions"), 403);
     }
 
@@ -64,14 +66,14 @@ export async function GET(request: NextRequest) {
     // Apply filters
     if (search) {
       where.OR = [
-        { order_number: { contains: search, mode: "insensitive" } },
+        { orderNumber: { contains: search, mode: "insensitive" } },
         { notes: { contains: search, mode: "insensitive" } },
         { suppliers: { name: { contains: search, mode: "insensitive" } } },
       ];
     }
 
     if (supplierId) {
-      where.supplier_id = supplierId;
+      where.supplierId = supplierId;
     }
 
     if (status) {
@@ -79,25 +81,25 @@ export async function GET(request: NextRequest) {
     }
 
     if (fromDate || toDate) {
-      where.order_date = {};
-      if (fromDate) where.order_date.gte = new Date(fromDate);
-      if (toDate) where.order_date.lte = new Date(toDate);
+      where.orderDate = {};
+      if (fromDate) where.orderDate.gte = new Date(fromDate);
+      if (toDate) where.orderDate.lte = new Date(toDate);
     }
 
     // Build orderBy clause
     const orderBy: any = {};
     if (sortBy === "orderDate") {
-      orderBy.order_date = sortOrder;
+      orderBy.orderDate = sortOrder;
     } else if (sortBy === "orderNumber") {
-      orderBy.order_number = sortOrder;
+      orderBy.orderNumber = sortOrder;
     } else if (sortBy === "totalAmount") {
-      orderBy.total_amount = sortOrder;
+      orderBy.totalAmount = sortOrder;
     } else if (sortBy === "status") {
       orderBy.status = sortOrder;
     } else if (sortBy === "createdAt") {
-      orderBy.created_at = sortOrder;
+      orderBy.createdAt = sortOrder;
     } else {
-      orderBy.order_date = sortOrder; // default fallback
+      orderBy.orderDate = sortOrder; // default fallback
     }
 
     // Execute queries in parallel for better performance
@@ -124,7 +126,7 @@ export async function GET(request: NextRequest) {
               email: true,
             },
           },
-          purchase_order_items: {
+          purchaseOrderItems: {
             include: {
               products: {
                 select: {
@@ -133,7 +135,7 @@ export async function GET(request: NextRequest) {
                   sku: true,
                 },
               },
-              product_variants: {
+              productVariants: {
                 select: {
                   id: true,
                   name: true,
@@ -144,7 +146,7 @@ export async function GET(request: NextRequest) {
           },
           _count: {
             select: {
-              purchase_order_items: true,
+              purchaseOrderItems: true,
             },
           },
         },
@@ -155,23 +157,24 @@ export async function GET(request: NextRequest) {
     // Transform the data to match the component interface
     const purchaseOrders = purchaseOrdersData.map((po) => ({
       id: po.id,
-      orderNumber: po.order_number,
-      supplierId: po.supplier_id,
-      userId: po.user_id,
-      orderDate: po.order_date,
-      expectedDeliveryDate: po.expected_delivery_date,
-      actualDeliveryDate: po.actual_delivery_date,
+      orderNumber: po.orderNumber,
+      supplierId: po.supplierId,
+      userId: po.userId,
+      orderDate: po.orderDate,
+      expectedDeliveryDate: po.expectedDeliveryDate,
+      actualDeliveryDate: po.actualDeliveryDate,
       subtotal: po.subtotal,
-      taxAmount: po.tax_amount,
-      shippingCost: po.shipping_cost,
-      totalAmount: po.total_amount,
+      taxAmount: po.taxAmount,
+      shippingCost: po.shippingCost,
+      totalAmount: po.totalAmount,
       status: po.status,
       notes: po.notes,
-      createdAt: po.created_at,
-      updatedAt: po.updated_at,
+      createdAt: po.createdAt,
+      updatedAt: po.updatedAt,
       suppliers: po.suppliers,
       users: po.users,
-      purchaseOrderItems: po.purchase_order_items,
+      purchaseOrderItems: po.purchaseOrderItems,
+      itemCount: po._count.purchaseOrderItems,
     }));
 
     return createApiResponse.successWithPagination(purchaseOrders, {
@@ -194,7 +197,7 @@ export async function POST(request: NextRequest) {
     }
 
     // Check permissions
-    if (!hasPermission(session.user.role, "INVENTORY_WRITE")) {
+    if (!hasPermission(session.user.role, "PURCHASE_ORDER_WRITE")) {
       return handleApiError(new Error("Insufficient permissions"), 403);
     }
 
@@ -293,19 +296,19 @@ export async function POST(request: NextRequest) {
       // Create the purchase order
       const purchaseOrder = await tx.purchaseOrder.create({
         data: {
-          order_number: validatedData.orderNumber,
-          order_date: new Date(validatedData.orderDate),
-          expected_delivery_date: validatedData.expectedDeliveryDate
+          orderNumber: validatedData.orderNumber,
+          orderDate: new Date(validatedData.orderDate),
+          expectedDeliveryDate: validatedData.expectedDeliveryDate
             ? new Date(validatedData.expectedDeliveryDate)
             : null,
           subtotal: validatedData.subtotal,
-          tax_amount: validatedData.taxAmount,
-          shipping_cost: validatedData.shippingCost,
-          total_amount: validatedData.totalAmount,
+          taxAmount: validatedData.taxAmount,
+          shippingCost: validatedData.shippingCost,
+          totalAmount: validatedData.totalAmount,
           notes: validatedData.notes,
-          status: "draft",
-          supplier_id: validatedData.supplierId,
-          user_id: parseInt(session.user.id),
+          status: PURCHASE_ORDER_STATUS.DRAFT,
+          supplierId: validatedData.supplierId,
+          userId: parseInt(session.user.id),
         },
         include: {
           suppliers: {
@@ -332,13 +335,13 @@ export async function POST(request: NextRequest) {
         validatedData.items.map((item) =>
           tx.purchaseOrderItem.create({
             data: {
-              purchase_order_id: purchaseOrder.id,
-              product_id: item.productId || null,
-              variant_id: item.variantId || null,
-              quantity_ordered: item.quantityOrdered,
-              quantity_received: 0,
-              unit_cost: item.unitCost,
-              total_cost: item.totalCost,
+              purchaseOrderId: purchaseOrder.id,
+              productId: item.productId || null,
+              variantId: item.variantId || null,
+              quantityOrdered: item.quantityOrdered,
+              quantityReceived: 0,
+              unitCost: item.unitCost,
+              totalCost: item.totalCost,
             },
             include: {
               products: {
@@ -348,7 +351,7 @@ export async function POST(request: NextRequest) {
                   sku: true,
                 },
               },
-              product_variants: {
+              productVariants: {
                 select: {
                   id: true,
                   name: true,
@@ -362,6 +365,17 @@ export async function POST(request: NextRequest) {
 
       return { purchaseOrder, purchaseOrderItems };
     });
+
+    // Log the purchase order creation
+    await AuditLogger.logPurchaseOrderCreated(
+      parseInt(session.user.id),
+      session.user.email!,
+      result.purchaseOrder.id,
+      result.purchaseOrder.orderNumber,
+      result.purchaseOrder.suppliers.name,
+      Number(result.purchaseOrder.totalAmount),
+      request
+    );
 
     return createApiResponse.success(
       {

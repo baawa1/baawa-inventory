@@ -162,16 +162,16 @@ function CollapsibleNavItem({ item }: { item: (typeof inventoryNavItems)[0] }) {
   const pathname = usePathname();
   const [isOpen, setIsOpen] = React.useState(false);
 
-  // Check if any sub-item is active
+  // Check if any sub-item is active - use exact matching to avoid conflicts
   const hasActiveChild = item.items?.some(
-    (subItem) =>
-      pathname === subItem.url || pathname.startsWith(subItem.url + "/")
+    (subItem) => pathname === subItem.url
   );
 
   // Check if the main item URL is active (only for items without sub-items)
-  const isMainActive =
-    !item.items?.length &&
-    (pathname === item.url || pathname.startsWith(item.url + "/"));
+  // For items with sub-items, only highlight if it's an exact match and no child is active
+  const isMainActive = !item.items?.length
+    ? pathname === item.url || pathname.startsWith(item.url + "/")
+    : pathname === item.url && !hasActiveChild;
 
   // Auto-open dropdown if any child is active
   React.useEffect(() => {
@@ -201,9 +201,7 @@ function CollapsibleNavItem({ item }: { item: (typeof inventoryNavItems)[0] }) {
           <CollapsibleContent>
             <SidebarMenuSub>
               {item.items?.map((subItem) => {
-                const isActive =
-                  pathname === subItem.url ||
-                  pathname.startsWith(subItem.url + "/");
+                const isActive = pathname === subItem.url;
                 return (
                   <SidebarMenuSubItem key={subItem.title}>
                     <SidebarMenuSubButton
