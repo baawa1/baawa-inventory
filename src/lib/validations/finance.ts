@@ -3,6 +3,7 @@ import {
   FINANCIAL_TYPES,
   FINANCIAL_STATUS,
   BUDGET_PERIOD_TYPES,
+  CURRENCY,
 } from "@/lib/constants";
 
 // Financial Category Schema
@@ -30,57 +31,125 @@ export const financialTransactionSchema = z.object({
 });
 
 // Create Transaction Schema (combines transaction + details)
-export const createTransactionSchema = z.object({
-  // Basic transaction info
-  type: z.enum([FINANCIAL_TYPES.EXPENSE, FINANCIAL_TYPES.INCOME]),
-  categoryId: z.number().min(1, "Category is required"),
-  amount: z.number().min(0.01, "Amount must be greater than 0"),
-  currency: z.string().default("NGN"),
-  description: z.string().optional(),
-  transactionDate: z.string().transform((val) => new Date(val)),
-  paymentMethod: z.string().optional(),
-  referenceNumber: z.string().optional(),
-  status: z
-    .enum(Object.values(FINANCIAL_STATUS) as [string, ...string[]])
-    .default(FINANCIAL_STATUS.COMPLETED),
-  
-  // Conditional details based on type
-  expenseDetails: z.object({
-    expenseType: z.string().min(1, "Expense type is required"),
-    vendorName: z.string().optional(),
-    vendorContact: z.string().optional(),
-    taxAmount: z.number().min(0).default(0),
-    taxRate: z.number().min(0).max(100).default(0),
-    receiptUrl: z.string().url().optional().or(z.literal("")),
-    notes: z.string().optional(),
-  }).optional(),
-  
-  incomeDetails: z.object({
-    incomeSource: z.string().min(1, "Income source is required"),
-    payerName: z.string().optional(),
-    payerContact: z.string().optional(),
-    taxWithheld: z.number().min(0).default(0),
-    taxRate: z.number().min(0).max(100).default(0),
-    receiptUrl: z.string().url().optional().or(z.literal("")),
-    notes: z.string().optional(),
-  }).optional(),
-}).refine((data) => {
-  // Ensure expense details are provided for expenses
-  if (data.type === FINANCIAL_TYPES.EXPENSE) {
-    return data.expenseDetails !== undefined;
-  }
-  // Ensure income details are provided for income
-  if (data.type === FINANCIAL_TYPES.INCOME) {
-    return data.incomeDetails !== undefined;
-  }
-  return true;
-}, {
-  message: "Details must be provided based on transaction type",
-  path: ["details"],
-});
+export const createTransactionSchema = z
+  .object({
+    // Basic transaction info
+    type: z.enum([FINANCIAL_TYPES.EXPENSE, FINANCIAL_TYPES.INCOME]),
+    categoryId: z.number().min(1, "Category is required"),
+    amount: z.number().min(0.01, "Amount must be greater than 0"),
+    currency: z.string().default("NGN"),
+    description: z.string().optional(),
+    transactionDate: z.string().transform((val) => new Date(val)),
+    paymentMethod: z.string().optional(),
+    referenceNumber: z.string().optional(),
+    status: z
+      .enum(Object.values(FINANCIAL_STATUS) as [string, ...string[]])
+      .default(FINANCIAL_STATUS.COMPLETED),
+
+    // Conditional details based on type
+    expenseDetails: z
+      .object({
+        expenseType: z.string().min(1, "Expense type is required"),
+        vendorName: z.string().optional(),
+        vendorContact: z.string().optional(),
+        taxAmount: z.number().min(0).default(0),
+        taxRate: z.number().min(0).max(100).default(0),
+        receiptUrl: z.string().url().optional().or(z.literal("")),
+        notes: z.string().optional(),
+      })
+      .optional(),
+
+    incomeDetails: z
+      .object({
+        incomeSource: z.string().min(1, "Income source is required"),
+        payerName: z.string().optional(),
+        payerContact: z.string().optional(),
+        taxWithheld: z.number().min(0).default(0),
+        taxRate: z.number().min(0).max(100).default(0),
+        receiptUrl: z.string().url().optional().or(z.literal("")),
+        notes: z.string().optional(),
+      })
+      .optional(),
+  })
+  .refine(
+    (data) => {
+      // Ensure expense details are provided for expenses
+      if (data.type === FINANCIAL_TYPES.EXPENSE) {
+        return data.expenseDetails !== undefined;
+      }
+      // Ensure income details are provided for income
+      if (data.type === FINANCIAL_TYPES.INCOME) {
+        return data.incomeDetails !== undefined;
+      }
+      return true;
+    },
+    {
+      message: "Details must be provided based on transaction type",
+      path: ["details"],
+    }
+  );
 
 // Update Transaction Schema
-export const updateTransactionSchema = createTransactionSchema.deepPartial();
+export const updateTransactionSchema = z
+  .object({
+    type: z
+      .enum(Object.values(FINANCIAL_TYPES) as [string, ...string[]])
+      .optional(),
+    categoryId: z.number().optional(),
+    amount: z.number().min(0.01, "Amount must be greater than 0").optional(),
+    currency: z.string().default(CURRENCY.CODE).optional(),
+    description: z.string().optional(),
+    transactionDate: z
+      .string()
+      .transform((val) => new Date(val))
+      .optional(),
+    status: z
+      .enum(Object.values(FINANCIAL_STATUS) as [string, ...string[]])
+      .optional(),
+    referenceNumber: z.string().optional(),
+    attachments: z.array(z.string()).optional(),
+
+    expenseDetails: z
+      .object({
+        expenseType: z.string().min(1, "Expense type is required").optional(),
+        vendorName: z.string().optional(),
+        vendorContact: z.string().optional(),
+        taxAmount: z.number().min(0).default(0).optional(),
+        taxRate: z.number().min(0).max(100).default(0).optional(),
+        receiptUrl: z.string().url().optional().or(z.literal("")).optional(),
+        notes: z.string().optional(),
+      })
+      .optional(),
+
+    incomeDetails: z
+      .object({
+        incomeSource: z.string().min(1, "Income source is required").optional(),
+        payerName: z.string().optional(),
+        payerContact: z.string().optional(),
+        taxWithheld: z.number().min(0).default(0).optional(),
+        taxRate: z.number().min(0).max(100).default(0).optional(),
+        receiptUrl: z.string().url().optional().or(z.literal("")).optional(),
+        notes: z.string().optional(),
+      })
+      .optional(),
+  })
+  .refine(
+    (data) => {
+      // Ensure expense details are provided for expenses
+      if (data.type === FINANCIAL_TYPES.EXPENSE) {
+        return data.expenseDetails !== undefined;
+      }
+      // Ensure income details are provided for income
+      if (data.type === FINANCIAL_TYPES.INCOME) {
+        return data.incomeDetails !== undefined;
+      }
+      return true;
+    },
+    {
+      message: "Details must be provided based on transaction type",
+      path: ["details"],
+    }
+  );
 
 // Expense Detail Schema
 export const expenseDetailSchema = z.object({
@@ -105,36 +174,42 @@ export const incomeDetailSchema = z.object({
 });
 
 // Budget Schema
-export const budgetSchema = z.object({
-  name: z.string().min(1, "Budget name is required"),
-  categoryId: z.number().optional(),
-  amount: z.number().min(0.01, "Amount must be greater than 0"),
-  periodType: z.enum(
-    Object.values(BUDGET_PERIOD_TYPES) as [string, ...string[]]
-  ),
-  startDate: z.string().transform((val) => new Date(val)),
-  endDate: z.string().transform((val) => new Date(val)),
-}).refine((data) => data.endDate > data.startDate, {
-  message: "End date must be after start date",
-  path: ["endDate"],
-});
+export const budgetSchema = z
+  .object({
+    name: z.string().min(1, "Budget name is required"),
+    categoryId: z.number().optional(),
+    amount: z.number().min(0.01, "Amount must be greater than 0"),
+    periodType: z.enum(
+      Object.values(BUDGET_PERIOD_TYPES) as [string, ...string[]]
+    ),
+    startDate: z.string().transform((val) => new Date(val)),
+    endDate: z.string().transform((val) => new Date(val)),
+  })
+  .refine((data) => data.endDate > data.startDate, {
+    message: "End date must be after start date",
+    path: ["endDate"],
+  });
 
 // Report Generation Schema
-export const reportGenerationSchema = z.object({
-  reportType: z.string().min(1, "Report type is required"),
-  periodStart: z.string().transform((val) => new Date(val)),
-  periodEnd: z.string().transform((val) => new Date(val)),
-}).refine((data) => data.periodEnd > data.periodStart, {
-  message: "End date must be after start date",
-  path: ["periodEnd"],
-});
+export const reportGenerationSchema = z
+  .object({
+    reportType: z.string().min(1, "Report type is required"),
+    periodStart: z.string().transform((val) => new Date(val)),
+    periodEnd: z.string().transform((val) => new Date(val)),
+  })
+  .refine((data) => data.periodEnd > data.periodStart, {
+    message: "End date must be after start date",
+    path: ["periodEnd"],
+  });
 
 // Transaction Filters Schema
 export const transactionFiltersSchema = z.object({
   search: z.string().optional(),
   type: z.enum([FINANCIAL_TYPES.EXPENSE, FINANCIAL_TYPES.INCOME]).optional(),
   categoryId: z.number().optional(),
-  status: z.enum(Object.values(FINANCIAL_STATUS) as [string, ...string[]]).optional(),
+  status: z
+    .enum(Object.values(FINANCIAL_STATUS) as [string, ...string[]])
+    .optional(),
   startDate: z.string().optional(),
   endDate: z.string().optional(),
   page: z.number().min(1).default(1),
@@ -145,7 +220,9 @@ export const transactionFiltersSchema = z.object({
 
 // Type exports for use in components
 export type FinancialCategoryInput = z.infer<typeof financialCategorySchema>;
-export type FinancialTransactionInput = z.infer<typeof financialTransactionSchema>;
+export type FinancialTransactionInput = z.infer<
+  typeof financialTransactionSchema
+>;
 export type CreateTransactionInput = z.infer<typeof createTransactionSchema>;
 export type UpdateTransactionInput = z.infer<typeof updateTransactionSchema>;
 export type ExpenseDetailInput = z.infer<typeof expenseDetailSchema>;

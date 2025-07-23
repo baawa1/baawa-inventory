@@ -63,7 +63,9 @@ export function useCreateFinancialCategory() {
   const queryClient = useQueryClient();
 
   return useMutation({
-    mutationFn: async (categoryData: any): Promise<{ category: FinancialCategory }> => {
+    mutationFn: async (
+      categoryData: any
+    ): Promise<{ category: FinancialCategory }> => {
       const response = await fetch("/api/finance/categories", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
@@ -89,7 +91,13 @@ export function useUpdateFinancialCategory() {
   const queryClient = useQueryClient();
 
   return useMutation({
-    mutationFn: async ({ id, data }: { id: number; data: any }): Promise<{ category: FinancialCategory }> => {
+    mutationFn: async ({
+      id,
+      data,
+    }: {
+      id: number;
+      data: any;
+    }): Promise<{ category: FinancialCategory }> => {
       const response = await fetch(`/api/finance/categories/${id}`, {
         method: "PUT",
         headers: { "Content-Type": "application/json" },
@@ -103,9 +111,11 @@ export function useUpdateFinancialCategory() {
 
       return response.json();
     },
-    onSuccess: (_, { id }) => {
+    onSuccess: (_, variables) => {
       queryClient.invalidateQueries({ queryKey: ["financial-categories"] });
-      queryClient.invalidateQueries({ queryKey: ["financial-category", id] });
+      queryClient.invalidateQueries({
+        queryKey: ["financial-category", variables.id],
+      });
       toast.success("Category updated successfully");
     },
     onError: ErrorHandlers.mutation,
@@ -149,12 +159,13 @@ export function useIncomeCategories() {
 export function useActiveCategoriesForSelect(type?: "INCOME" | "EXPENSE") {
   const filters = type ? { type, isActive: true } : { isActive: true };
   const { data, ...rest } = useFinancialCategories(filters);
-  
-  const options = data?.categories?.map(category => ({
-    value: category.id.toString(),
-    label: category.name,
-    type: category.type,
-  })) || [];
+
+  const options =
+    data?.categories?.map((category) => ({
+      value: category.id.toString(),
+      label: category.name,
+      type: category.type,
+    })) || [];
 
   return {
     ...rest,

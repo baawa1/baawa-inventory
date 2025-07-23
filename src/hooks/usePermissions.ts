@@ -205,13 +205,60 @@ const ROLE_PERMISSIONS: Record<UserRole, PermissionSet> = {
   },
 };
 
+// Default permission set for unauthenticated users
+const DEFAULT_PERMISSIONS: PermissionSet = {
+  // Product permissions
+  canViewProducts: false,
+  canCreateProducts: false,
+  canEditProducts: false,
+  canDeleteProducts: false,
+  canArchiveProducts: false,
+  canManageProductImages: false,
+
+  // Category permissions
+  canViewCategories: false,
+  canCreateCategories: false,
+  canEditCategories: false,
+  canDeleteCategories: false,
+
+  // Supplier permissions
+  canViewSuppliers: false,
+  canCreateSuppliers: false,
+  canEditSuppliers: false,
+  canDeleteSuppliers: false,
+  canDeactivateSuppliers: false,
+
+  // Stock permissions
+  canViewStock: false,
+  canAdjustStock: false,
+  canReconcileStock: false,
+  canApproveStockChanges: false,
+
+  // User management permissions
+  canViewUsers: false,
+  canCreateUsers: false,
+  canEditUsers: false,
+  canDeleteUsers: false,
+  canApproveUsers: false,
+  canManageUserRoles: false,
+
+  // Report permissions
+  canViewReports: false,
+  canExportReports: false,
+  canViewSalesReports: false,
+  canViewInventoryReports: false,
+
+  // System permissions
+  canAccessAdmin: false,
+  canManageSettings: false,
+  canViewAuditLogs: false,
+};
+
 export function usePermissions(user: User | null): PermissionSet {
   return useMemo(() => {
     if (!user || !user.role) {
       // Return no permissions for unauthenticated users
-      return Object.fromEntries(
-        Object.keys(ROLE_PERMISSIONS.STAFF).map((key) => [key, false])
-      ) as PermissionSet;
+      return DEFAULT_PERMISSIONS;
     }
 
     return ROLE_PERMISSIONS[user.role] || ROLE_PERMISSIONS.STAFF;

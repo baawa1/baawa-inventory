@@ -3,8 +3,15 @@
  * Handles cleanup of expired sessions and blacklist entries
  */
 
-import { SessionBlacklist } from "./session-blacklist";
 import { logger } from "./logger";
+
+// Placeholder for SessionBlacklist until the actual implementation is created
+class SessionBlacklist {
+  static async cleanupExpiredEntries(): Promise<void> {
+    // TODO: Implement actual session blacklist cleanup
+    logger.info("Session blacklist cleanup placeholder called");
+  }
+}
 
 export class SessionCleanupService {
   private static instance: SessionCleanupService;

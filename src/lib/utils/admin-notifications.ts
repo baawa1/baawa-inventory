@@ -52,10 +52,12 @@ export async function getAdminEmailsWithFallback(): Promise<string[]> {
  * Send notification to all active admins
  */
 export async function notifyAdmins(
-  sendNotification: (emails: string[]) => Promise<void>
+  sendNotification: (_emails: string[]) => Promise<void>
 ): Promise<void> {
+  let adminEmails: string[] = [];
+
   try {
-    const adminEmails = await getAdminEmailsWithFallback();
+    adminEmails = await getAdminEmailsWithFallback();
 
     if (adminEmails.length === 0) {
       logger.warn("No admin emails available for notification", {
