@@ -13,7 +13,43 @@ interface OrderSummarySectionProps {
 export function OrderSummarySection({
   purchaseOrder,
 }: OrderSummarySectionProps) {
-  const getStatusBadge = (status: string) => {
+  // Helper function to safely format dates
+  const formatDate = (dateString: string | undefined | null): string => {
+    if (!dateString) return "Not specified";
+
+    try {
+      const date = new Date(dateString);
+      if (isNaN(date.getTime())) {
+        return "Invalid date";
+      }
+      return format(date, "MMM dd, yyyy");
+    } catch (_error) {
+      return "Invalid date";
+    }
+  };
+
+  // Helper function to safely parse and format currency
+  const formatCurrencySafely = (
+    amount: string | number | undefined | null
+  ): string => {
+    if (amount === undefined || amount === null || amount === "") {
+      return formatCurrency(0);
+    }
+
+    const numAmount = typeof amount === "string" ? parseFloat(amount) : amount;
+    if (isNaN(numAmount)) {
+      return formatCurrency(0);
+    }
+
+    return formatCurrency(numAmount);
+  };
+
+  const getStatusBadge = (status: string | undefined | null) => {
+    // Handle undefined or null status
+    if (!status) {
+      return <Badge className="bg-gray-100 text-gray-800">Unknown</Badge>;
+    }
+
     const getStatusColor = (status: string) => {
       switch (status) {
         case "pending":
@@ -54,26 +90,22 @@ export function OrderSummarySection({
         <CardContent className="space-y-4">
           <div className="flex justify-between">
             <span>Subtotal:</span>
-            <span>{formatCurrency(parseFloat(purchaseOrder.subtotal))}</span>
+            <span>{formatCurrencySafely(purchaseOrder.subtotal)}</span>
           </div>
           <div className="flex justify-between">
             <span>Tax:</span>
-            <span>{formatCurrency(parseFloat(purchaseOrder.taxAmount))}</span>
+            <span>{formatCurrencySafely(purchaseOrder.taxAmount)}</span>
           </div>
           {purchaseOrder.shippingCost && (
             <div className="flex justify-between">
               <span>Shipping:</span>
-              <span>
-                {formatCurrency(parseFloat(purchaseOrder.shippingCost))}
-              </span>
+              <span>{formatCurrencySafely(purchaseOrder.shippingCost)}</span>
             </div>
           )}
           <div className="border-t pt-2">
             <div className="flex justify-between font-bold text-lg">
               <span>Total:</span>
-              <span>
-                {formatCurrency(parseFloat(purchaseOrder.totalAmount))}
-              </span>
+              <span>{formatCurrencySafely(purchaseOrder.totalAmount)}</span>
             </div>
           </div>
         </CardContent>
@@ -88,19 +120,25 @@ export function OrderSummarySection({
           </CardTitle>
         </CardHeader>
         <CardContent className="space-y-3">
-          <div>
-            <h4 className="font-medium">{purchaseOrder.suppliers?.name}</h4>
-            {purchaseOrder.suppliers?.email && (
-              <p className="text-sm text-muted-foreground">
-                Email: {purchaseOrder.suppliers.email}
-              </p>
-            )}
-            {purchaseOrder.suppliers?.phone && (
-              <p className="text-sm text-muted-foreground">
-                Phone: {purchaseOrder.suppliers.phone}
-              </p>
-            )}
-          </div>
+          {purchaseOrder.suppliers ? (
+            <div>
+              <h4 className="font-medium">{purchaseOrder.suppliers.name}</h4>
+              {purchaseOrder.suppliers.email && (
+                <p className="text-sm text-muted-foreground">
+                  Email: {purchaseOrder.suppliers.email}
+                </p>
+              )}
+              {purchaseOrder.suppliers.phone && (
+                <p className="text-sm text-muted-foreground">
+                  Phone: {purchaseOrder.suppliers.phone}
+                </p>
+              )}
+            </div>
+          ) : (
+            <p className="text-sm text-muted-foreground">
+              No supplier information available
+            </p>
+          )}
         </CardContent>
       </Card>
 
@@ -115,13 +153,11 @@ export function OrderSummarySection({
         <CardContent className="space-y-3">
           <div>
             <p className="text-sm text-muted-foreground">Order Number</p>
-            <p className="font-medium">#{purchaseOrder.orderNumber}</p>
+            <p className="font-medium">#{purchaseOrder.orderNumber || "N/A"}</p>
           </div>
           <div>
             <p className="text-sm text-muted-foreground">Order Date</p>
-            <p className="font-medium">
-              {format(new Date(purchaseOrder.orderDate), "MMM dd, yyyy")}
-            </p>
+            <p className="font-medium">{formatDate(purchaseOrder.orderDate)}</p>
           </div>
           <div>
             <p className="text-sm text-muted-foreground">Status</p>
@@ -130,7 +166,9 @@ export function OrderSummarySection({
           <div>
             <p className="text-sm text-muted-foreground">Created By</p>
             <p className="font-medium">
-              {purchaseOrder.users?.firstName} {purchaseOrder.users?.lastName}
+              {purchaseOrder.users
+                ? `${purchaseOrder.users.firstName} ${purchaseOrder.users.lastName}`
+                : "Unknown"}
             </p>
           </div>
         </CardContent>

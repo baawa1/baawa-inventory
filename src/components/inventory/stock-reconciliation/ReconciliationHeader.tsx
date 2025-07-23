@@ -8,7 +8,13 @@ import {
   CardHeader,
   CardTitle,
 } from "@/components/ui/card";
-import { IconUser, IconCalendar, IconFileText } from "@tabler/icons-react";
+import { Separator } from "@/components/ui/separator";
+import {
+  IconUser,
+  IconCalendar,
+  IconFileText,
+  IconNotes,
+} from "@tabler/icons-react";
 import { formatCurrency } from "@/lib/utils";
 import type { StockReconciliationItem } from "@/hooks/api/stock-management";
 
@@ -41,10 +47,26 @@ interface ReconciliationHeaderProps {
 }
 
 const statusConfig = {
-  DRAFT: { color: "secondary", label: "Draft" },
-  PENDING: { color: "warning", label: "Pending" },
-  APPROVED: { color: "success", label: "Approved" },
-  REJECTED: { color: "destructive", label: "Rejected" },
+  DRAFT: {
+    color: "secondary",
+    label: "Draft",
+    className: "bg-gray-100 text-gray-800 border-gray-200",
+  },
+  PENDING: {
+    color: "secondary",
+    label: "Pending",
+    className: "bg-yellow-100 text-yellow-800 border-yellow-200",
+  },
+  APPROVED: {
+    color: "default",
+    label: "Approved",
+    className: "bg-green-100 text-green-800 border-green-200",
+  },
+  REJECTED: {
+    color: "destructive",
+    label: "Rejected",
+    className: "bg-red-100 text-red-800 border-red-200",
+  },
 } as const;
 
 export function ReconciliationHeader({
@@ -67,10 +89,37 @@ export function ReconciliationHeader({
               </CardDescription>
             )}
           </div>
-          <Badge variant={statusInfo.color as any}>{statusInfo.label}</Badge>
+          <Badge className={statusInfo.className}>{statusInfo.label}</Badge>
         </div>
       </CardHeader>
-      <CardContent>
+      <CardContent className="space-y-6">
+        {/* Summary Stats */}
+        <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+          <div className="text-center p-4 bg-muted rounded-lg">
+            <div className="text-2xl font-bold">
+              {reconciliation.items.length}
+            </div>
+            <div className="text-sm text-muted-foreground">Items</div>
+          </div>
+          <div className="text-center p-4 bg-muted rounded-lg">
+            <div className="text-2xl font-bold">{totalDiscrepancy}</div>
+            <div className="text-sm text-muted-foreground">
+              Total Discrepancy
+            </div>
+          </div>
+          <div className="text-center p-4 bg-muted rounded-lg">
+            <div className="text-2xl font-bold">
+              {formatCurrency(totalImpact)}
+            </div>
+            <div className="text-sm text-muted-foreground">
+              Estimated Impact
+            </div>
+          </div>
+        </div>
+
+        <Separator />
+
+        {/* Reconciliation Information */}
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
           <div className="flex items-center gap-2">
             <IconUser className="h-4 w-4 text-muted-foreground" />
@@ -119,29 +168,21 @@ export function ReconciliationHeader({
           )}
         </div>
 
+        {/* Notes Section */}
         {reconciliation.notes && (
-          <div className="mt-4 p-3 bg-muted rounded-lg">
-            <p className="text-sm font-medium mb-1">Notes</p>
-            <p className="text-sm text-muted-foreground">
-              {reconciliation.notes}
-            </p>
-          </div>
+          <>
+            <Separator />
+            <div className="p-4 border rounded-lg bg-muted/50">
+              <div className="flex items-center gap-2 mb-2">
+                <IconNotes className="h-4 w-4 text-muted-foreground" />
+                <p className="text-sm font-medium">Notes</p>
+              </div>
+              <p className="text-sm text-muted-foreground whitespace-pre-wrap">
+                {reconciliation.notes}
+              </p>
+            </div>
+          </>
         )}
-
-        <div className="mt-4 grid grid-cols-1 md:grid-cols-3 gap-4">
-          <div className="text-center p-3 bg-muted rounded-lg">
-            <p className="text-2xl font-bold">{reconciliation.items.length}</p>
-            <p className="text-sm text-muted-foreground">Items</p>
-          </div>
-          <div className="text-center p-3 bg-muted rounded-lg">
-            <p className="text-2xl font-bold">{totalDiscrepancy}</p>
-            <p className="text-sm text-muted-foreground">Total Discrepancy</p>
-          </div>
-          <div className="text-center p-3 bg-muted rounded-lg">
-            <p className="text-2xl font-bold">{formatCurrency(totalImpact)}</p>
-            <p className="text-sm text-muted-foreground">Estimated Impact</p>
-          </div>
-        </div>
       </CardContent>
     </Card>
   );

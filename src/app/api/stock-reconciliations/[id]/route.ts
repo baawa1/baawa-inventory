@@ -73,7 +73,19 @@ export async function GET(
       return NextResponse.json({ error: "Forbidden" }, { status: 403 });
     }
 
-    return NextResponse.json({ reconciliation });
+    // Transform the response to ensure proper number types
+    const transformedReconciliation = {
+      ...reconciliation,
+      items: reconciliation.items.map((item) => ({
+        ...item,
+        estimatedImpact:
+          item.estimatedImpact !== null && item.estimatedImpact !== undefined
+            ? Number(item.estimatedImpact)
+            : null,
+      })),
+    };
+
+    return NextResponse.json({ reconciliation: transformedReconciliation });
   } catch (error) {
     console.error("Error fetching stock reconciliation:", error);
     return NextResponse.json(
@@ -154,6 +166,13 @@ export async function PUT(
         where: { reconciliationId },
       });
 
+      // Get products for cost calculation
+      const productIds = items?.map((item) => item.productId) || [];
+      const products = await tx.product.findMany({
+        where: { id: { in: productIds } },
+        select: { id: true, cost: true },
+      });
+
       // Update reconciliation and create new items
       return await tx.stockReconciliation.update({
         where: { id: reconciliationId },
@@ -161,14 +180,32 @@ export async function PUT(
           title,
           description,
           items: {
-            create: items?.map((item) => ({
-              productId: item.productId,
-              systemCount: item.systemCount,
-              physicalCount: item.physicalCount,
-              discrepancy: item.physicalCount - item.systemCount,
-              discrepancyReason: item.discrepancyReason,
-              estimatedImpact: item.estimatedImpact,
-            })),
+            create: items?.map((item) => {
+              const product = products.find((p) => p.id === item.productId);
+              const discrepancy = item.physicalCount - item.systemCount;
+
+              // Calculate estimated impact with proper null handling
+              let estimatedImpact = item.estimatedImpact;
+              if (estimatedImpact === null || estimatedImpact === undefined) {
+                const productCost = product ? Number(product.cost) || 0 : 0;
+                estimatedImpact = discrepancy * productCost;
+
+                // Ensure we don't store NaN
+                if (isNaN(estimatedImpact)) {
+                  estimatedImpact = 0;
+                }
+              }
+
+              return {
+                productId: item.productId,
+                systemCount: item.systemCount,
+                physicalCount: item.physicalCount,
+                discrepancy,
+                discrepancyReason: item.discrepancyReason,
+                estimatedImpact,
+                notes: item.notes,
+              };
+            }),
           },
         },
         include: {
@@ -196,7 +233,18 @@ export async function PUT(
       });
     });
 
-    return NextResponse.json({ reconciliation: updatedReconciliation });
+    return NextResponse.json({
+      reconciliation: {
+        ...updatedReconciliation,
+        items: updatedReconciliation.items.map((item) => ({
+          ...item,
+          estimatedImpact:
+            item.estimatedImpact !== null && item.estimatedImpact !== undefined
+              ? Number(item.estimatedImpact)
+              : null,
+        })),
+      },
+    });
   } catch (error) {
     console.error("Error updating stock reconciliation:", error);
     return NextResponse.json(

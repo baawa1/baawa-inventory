@@ -80,13 +80,28 @@ export function StockReconciliationDetail({
     0
   );
   const totalImpact = reconciliation.items.reduce(
-    (total: number, item: StockReconciliationItem) =>
-      total + (item.estimatedImpact || 0),
+    (total: number, item: StockReconciliationItem) => {
+      // Handle different types that might come from the database
+      let impact = 0;
+      if (item.estimatedImpact !== null && item.estimatedImpact !== undefined) {
+        // Convert to number if it's a string, or use as is if it's already a number
+        impact =
+          typeof item.estimatedImpact === "string"
+            ? parseFloat(item.estimatedImpact)
+            : Number(item.estimatedImpact);
+
+        // Check if the conversion resulted in a valid number
+        if (isNaN(impact)) {
+          impact = 0;
+        }
+      }
+      return total + impact;
+    },
     0
   );
 
   return (
-    <div className="space-y-6">
+    <>
       <ReconciliationHeader
         reconciliation={reconciliation}
         totalDiscrepancy={totalDiscrepancy}
@@ -96,19 +111,15 @@ export function StockReconciliationDetail({
       <ReconciliationItemsTable items={reconciliation.items} />
 
       {(canSubmit || canApprove) && (
-        <Card>
-          <CardContent className="p-6">
-            <ReconciliationActions
-              reconciliationId={reconciliationId}
-              _status={reconciliation.status}
-              _canEdit={canEdit}
-              canSubmit={canSubmit}
-              canApprove={canApprove}
-              onUpdate={onUpdate}
-            />
-          </CardContent>
-        </Card>
+        <ReconciliationActions
+          reconciliationId={reconciliationId}
+          _status={reconciliation.status}
+          _canEdit={canEdit}
+          canSubmit={canSubmit}
+          canApprove={canApprove}
+          onUpdate={onUpdate}
+        />
       )}
-    </div>
+    </>
   );
 }
