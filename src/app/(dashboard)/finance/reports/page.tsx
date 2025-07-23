@@ -19,5 +19,5 @@ export default async function ReportsPage() {
     redirect("/unauthorized");
   }
 
-  return <FinanceReports user={session.user} />;
+  return <FinanceReports user={session.user as any} />;
 }

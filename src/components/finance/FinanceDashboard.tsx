@@ -8,26 +8,23 @@ import {
   CardTitle,
 } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
-import { Badge } from "@/components/ui/badge";
 import {
   TrendingUp,
   TrendingDown,
   DollarSign,
   Receipt,
   Plus,
-  BarChart3,
-  PieChart,
 } from "lucide-react";
 import { useRouter } from "next/navigation";
 import { useFinanceSummary } from "@/hooks/api/useFinanceSummary";
 import { AppUser } from "@/types/user";
-import { format } from "date-fns";
+import { TransactionList } from "./TransactionList";
 
-interface FinanceDashboardProps {
+interface FinanceOverviewProps {
   user: AppUser;
 }
 
-export function FinanceDashboard({ user: _user }: FinanceDashboardProps) {
+export function FinanceOverview({ user: _user }: FinanceOverviewProps) {
   const router = useRouter();
   const { data: summary, error, isLoading } = useFinanceSummary();
 
@@ -85,22 +82,22 @@ export function FinanceDashboard({ user: _user }: FinanceDashboardProps) {
     <div className="container mx-auto py-6 space-y-6">
       <div className="flex items-center justify-between">
         <div>
-          <h1 className="text-2xl font-bold">Finance Dashboard</h1>
+          <h1 className="text-2xl font-bold">Finance Overview</h1>
           <p className="text-muted-foreground">
             Overview of your business finances
           </p>
         </div>
         <div className="flex gap-2">
-          <Button onClick={() => router.push("/finance/transactions/add")}>
+          <Button onClick={() => router.push("/finance/income/new")}>
             <Plus className="h-4 w-4 mr-2" />
-            Add Transaction
+            Add Income
           </Button>
           <Button
             variant="outline"
-            onClick={() => router.push("/finance/transactions")}
+            onClick={() => router.push("/finance/expenses/new")}
           >
             <Receipt className="h-4 w-4 mr-2" />
-            View All
+            Add Expense
           </Button>
         </div>
       </div>
@@ -221,108 +218,8 @@ export function FinanceDashboard({ user: _user }: FinanceDashboardProps) {
         </CardContent>
       </Card>
 
-      {/* Quick Actions */}
-      <Card>
-        <CardHeader>
-          <CardTitle>Quick Actions</CardTitle>
-          <CardDescription>Common finance management tasks</CardDescription>
-        </CardHeader>
-        <CardContent>
-          <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
-            <Button
-              variant="outline"
-              className="h-20 flex flex-col items-center justify-center gap-2"
-              onClick={() => router.push("/finance/transactions/add")}
-            >
-              <Plus className="h-6 w-6" />
-              <span className="text-sm">Add Transaction</span>
-            </Button>
-            <Button
-              variant="outline"
-              className="h-20 flex flex-col items-center justify-center gap-2"
-              onClick={() => router.push("/finance/transactions")}
-            >
-              <Receipt className="h-6 w-6" />
-              <span className="text-sm">View Transactions</span>
-            </Button>
-            <Button
-              variant="outline"
-              className="h-20 flex flex-col items-center justify-center gap-2"
-              onClick={() => router.push("/finance/reports")}
-            >
-              <BarChart3 className="h-6 w-6" />
-              <span className="text-sm">Reports</span>
-            </Button>
-            <Button
-              variant="outline"
-              className="h-20 flex flex-col items-center justify-center gap-2"
-              onClick={() => router.push("/finance/categories")}
-            >
-              <PieChart className="h-6 w-6" />
-              <span className="text-sm">Categories</span>
-            </Button>
-          </div>
-        </CardContent>
-      </Card>
-
-      {/* Recent Transactions */}
-      {summary?.recentTransactions && summary.recentTransactions.length > 0 && (
-        <Card>
-          <CardHeader>
-            <CardTitle>Recent Transactions</CardTitle>
-            <CardDescription>Latest financial transactions</CardDescription>
-          </CardHeader>
-          <CardContent>
-            <div className="space-y-4">
-              {summary.recentTransactions.slice(0, 5).map((transaction) => (
-                <div
-                  key={transaction.id}
-                  className="flex items-center justify-between p-4 border rounded-lg"
-                >
-                  <div className="flex items-center gap-4">
-                    <Badge
-                      variant={
-                        transaction.type === "INCOME" ? "default" : "secondary"
-                      }
-                    >
-                      {transaction.type}
-                    </Badge>
-                    <div>
-                      <p className="font-medium">{transaction.description}</p>
-                      <p className="text-sm text-muted-foreground">
-                        {transaction.categoryName} •{" "}
-                        {format(
-                          new Date(transaction.transactionDate),
-                          "MMM dd, yyyy"
-                        )}
-                      </p>
-                    </div>
-                  </div>
-                  <div className="text-right">
-                    <p
-                      className={`font-bold ${transaction.type === "INCOME" ? "text-green-600" : "text-red-600"}`}
-                    >
-                      {transaction.type === "INCOME" ? "+" : "-"}₦
-                      {transaction.amount.toLocaleString()}
-                    </p>
-                    <p className="text-sm text-muted-foreground">
-                      {transaction.transactionNumber}
-                    </p>
-                  </div>
-                </div>
-              ))}
-            </div>
-            <div className="mt-4 text-center">
-              <Button
-                variant="outline"
-                onClick={() => router.push("/finance/transactions")}
-              >
-                View All Transactions
-              </Button>
-            </div>
-          </CardContent>
-        </Card>
-      )}
+      {/* All Transactions Table */}
+      <TransactionList user={_user} />
     </div>
   );
 }

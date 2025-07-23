@@ -25,7 +25,6 @@ import {
 } from "@/components/ui/select";
 import { ArrowLeft } from "lucide-react";
 import { z } from "zod";
-import { useFinancialCategories } from "@/hooks/api/useFinancialCategories";
 import { useCreateTransaction } from "@/hooks/api/useFinancialTransactions";
 import { AppUser } from "@/types/user";
 
@@ -35,9 +34,8 @@ interface AddTransactionFormProps {
 
 const addTransactionSchema = z.object({
   type: z.enum(["INCOME", "EXPENSE"]),
-  categoryId: z.number().min(1, "Category is required"),
   amount: z.number().min(0.01, "Amount must be greater than 0"),
-  currency: z.string().default("NGN"),
+  currency: z.string().min(1, "Currency is required"),
   description: z.string().min(1, "Description is required"),
   transactionDate: z.string().min(1, "Transaction date is required"),
   paymentMethod: z.string().min(1, "Payment method is required"),
@@ -50,8 +48,6 @@ export function AddTransactionForm({ user: _user }: AddTransactionFormProps) {
   const router = useRouter();
   const [isSubmitting, setIsSubmitting] = useState(false);
 
-  const { data: categories = [], isLoading: categoriesLoading } =
-    useFinancialCategories();
   const createTransaction = useCreateTransaction();
 
   const {
@@ -83,7 +79,7 @@ export function AddTransactionForm({ user: _user }: AddTransactionFormProps) {
       });
 
       toast.success("Transaction created successfully");
-      router.push("/finance/transactions");
+      router.push("/finance");
     } catch (error) {
       console.error("Error creating transaction:", error);
       toast.error("Failed to create transaction");
@@ -162,37 +158,6 @@ export function AddTransactionForm({ user: _user }: AddTransactionFormProps) {
                 )}
               </div>
 
-              {/* Category */}
-              <div className="space-y-2">
-                <Label htmlFor="categoryId">Category *</Label>
-                <Select
-                  onValueChange={(value) =>
-                    setValue("categoryId", parseInt(value))
-                  }
-                >
-                  <SelectTrigger>
-                    <SelectValue placeholder="Select category" />
-                  </SelectTrigger>
-                  <SelectContent>
-                    {categories
-                      .filter((category) => category.type === transactionType)
-                      .map((category) => (
-                        <SelectItem
-                          key={category.id}
-                          value={category.id.toString()}
-                        >
-                          {category.name}
-                        </SelectItem>
-                      ))}
-                  </SelectContent>
-                </Select>
-                {errors.categoryId && (
-                  <p className="text-sm text-destructive">
-                    {errors.categoryId.message}
-                  </p>
-                )}
-              </div>
-
               {/* Amount */}
               <div className="space-y-2">
                 <Label htmlFor="amount">Amount *</Label>
@@ -212,7 +177,7 @@ export function AddTransactionForm({ user: _user }: AddTransactionFormProps) {
 
               {/* Currency */}
               <div className="space-y-2">
-                <Label htmlFor="currency">Currency *</Label>
+                <Label htmlFor="currency">Currency</Label>
                 <Select
                   onValueChange={(value) => setValue("currency", value)}
                   defaultValue="NGN"
@@ -235,27 +200,11 @@ export function AddTransactionForm({ user: _user }: AddTransactionFormProps) {
                 )}
               </div>
 
-              {/* Transaction Date */}
-              <div className="space-y-2">
-                <Label htmlFor="transactionDate">Transaction Date *</Label>
-                <Input
-                  id="transactionDate"
-                  type="date"
-                  {...register("transactionDate")}
-                />
-                {errors.transactionDate && (
-                  <p className="text-sm text-destructive">
-                    {errors.transactionDate.message}
-                  </p>
-                )}
-              </div>
-
               {/* Payment Method */}
               <div className="space-y-2">
                 <Label htmlFor="paymentMethod">Payment Method *</Label>
                 <Select
                   onValueChange={(value) => setValue("paymentMethod", value)}
-                  defaultValue="CASH"
                 >
                   <SelectTrigger>
                     <SelectValue placeholder="Select payment method" />
@@ -274,6 +223,36 @@ export function AddTransactionForm({ user: _user }: AddTransactionFormProps) {
                   </p>
                 )}
               </div>
+
+              {/* Transaction Date */}
+              <div className="space-y-2">
+                <Label htmlFor="transactionDate">Transaction Date *</Label>
+                <Input
+                  id="transactionDate"
+                  type="date"
+                  {...register("transactionDate")}
+                />
+                {errors.transactionDate && (
+                  <p className="text-sm text-destructive">
+                    {errors.transactionDate.message}
+                  </p>
+                )}
+              </div>
+
+              {/* Reference Number */}
+              <div className="space-y-2">
+                <Label htmlFor="referenceNumber">Reference Number</Label>
+                <Input
+                  id="referenceNumber"
+                  placeholder="Optional reference number"
+                  {...register("referenceNumber")}
+                />
+                {errors.referenceNumber && (
+                  <p className="text-sm text-destructive">
+                    {errors.referenceNumber.message}
+                  </p>
+                )}
+              </div>
             </div>
 
             {/* Description */}
@@ -281,7 +260,8 @@ export function AddTransactionForm({ user: _user }: AddTransactionFormProps) {
               <Label htmlFor="description">Description *</Label>
               <Textarea
                 id="description"
-                placeholder="Enter transaction description..."
+                placeholder="Enter transaction description"
+                rows={3}
                 {...register("description")}
               />
               {errors.description && (
@@ -291,37 +271,17 @@ export function AddTransactionForm({ user: _user }: AddTransactionFormProps) {
               )}
             </div>
 
-            {/* Reference Number */}
-            <div className="space-y-2">
-              <Label htmlFor="referenceNumber">Reference Number</Label>
-              <Input
-                id="referenceNumber"
-                placeholder="Optional reference number..."
-                {...register("referenceNumber")}
-              />
-              {errors.referenceNumber && (
-                <p className="text-sm text-destructive">
-                  {errors.referenceNumber.message}
-                </p>
-              )}
-            </div>
-
-            {/* Submit Buttons */}
-            <div className="flex gap-4 pt-4">
-              <Button
-                type="submit"
-                disabled={isSubmitting || categoriesLoading}
-                className="flex-1"
-              >
-                {isSubmitting ? "Creating..." : "Create Transaction"}
-              </Button>
+            {/* Submit Button */}
+            <div className="flex justify-end gap-4">
               <Button
                 type="button"
                 variant="outline"
                 onClick={() => router.back()}
-                disabled={isSubmitting}
               >
                 Cancel
+              </Button>
+              <Button type="submit" disabled={isSubmitting}>
+                {isSubmitting ? "Creating..." : "Create Transaction"}
               </Button>
             </div>
           </form>

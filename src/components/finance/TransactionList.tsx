@@ -14,7 +14,6 @@ import {
   useFinancialTransactions,
   useDeleteTransaction,
 } from "@/hooks/api/useFinancialTransactions";
-import { useFinancialCategories } from "@/hooks/api/useFinancialCategories";
 import { AppUser } from "@/types/user";
 import { TransactionDetailModal } from "./TransactionDetailModal";
 
@@ -27,7 +26,6 @@ export function TransactionList({ user: _user }: TransactionListProps) {
   const [filters, setFilters] = useState({
     search: "",
     type: "ALL",
-    categoryId: 0,
     status: "ALL",
     page: 1,
     limit: 10,
@@ -37,7 +35,6 @@ export function TransactionList({ user: _user }: TransactionListProps) {
 
   const { data: transactionsData, isLoading } =
     useFinancialTransactions(filters);
-  const { data: categories = [] } = useFinancialCategories();
   const deleteTransaction = useDeleteTransaction();
 
   const transactions = transactionsData?.transactions || [];
@@ -68,11 +65,6 @@ export function TransactionList({ user: _user }: TransactionListProps) {
     {
       key: "amount",
       label: "Amount",
-      sortable: true,
-    },
-    {
-      key: "category",
-      label: "Category",
       sortable: true,
     },
     {
@@ -120,8 +112,6 @@ export function TransactionList({ user: _user }: TransactionListProps) {
             {currency} {transaction.amount.toLocaleString()}
           </span>
         );
-      case "category":
-        return transaction.category?.name || "N/A";
       case "description":
         return (
           <span
@@ -191,7 +181,7 @@ export function TransactionList({ user: _user }: TransactionListProps) {
         title="Financial Transactions"
         description="Manage income and expense transactions"
         actions={
-          <Button onClick={() => router.push("/finance/transactions/add")}>
+          <Button onClick={() => router.push("/finance/income/new")}>
             <Plus className="h-4 w-4 mr-2" />
             Add Transaction
           </Button>
@@ -213,18 +203,6 @@ export function TransactionList({ user: _user }: TransactionListProps) {
             ],
           },
           {
-            key: "categoryId",
-            label: "Category",
-            type: "select",
-            options: [
-              { label: "All categories", value: "0" },
-              ...categories.map((category) => ({
-                label: category.name,
-                value: category.id.toString(),
-              })),
-            ],
-          },
-          {
             key: "status",
             label: "Status",
             type: "select",
@@ -240,15 +218,7 @@ export function TransactionList({ user: _user }: TransactionListProps) {
         ]}
         filterValues={filters}
         onFilterChange={(key, value) => {
-          if (key === "categoryId") {
-            setFilters({
-              ...filters,
-              categoryId: parseInt(value as string) || 0,
-              page: 1,
-            });
-          } else {
-            setFilters({ ...filters, [key]: value, page: 1 });
-          }
+          setFilters({ ...filters, [key]: value, page: 1 });
         }}
         columns={columns}
         visibleColumns={columns.map((col) => col.key)}

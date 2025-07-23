@@ -1,10 +1,10 @@
 import { redirect } from "next/navigation";
 import { auth } from "../../../../auth";
-import { FinanceDashboard } from "@/components/finance/FinanceDashboard";
+import { FinanceOverview } from "@/components/finance/FinanceDashboard";
 import { USER_ROLES, hasRole } from "@/lib/auth/roles";
 
 export const metadata = {
-  title: "Finance Manager - BaaWA Inventory POS",
+  title: "Finance Overview - BaaWA Inventory POS",
   description: "Manage business finances, track income and expenses",
 };
 
@@ -20,5 +20,5 @@ export default async function FinancePage() {
     redirect("/unauthorized");
   }
 
-  return <FinanceDashboard user={session.user} />;
+  return <FinanceOverview user={session.user as any} />;
 }

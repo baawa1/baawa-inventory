@@ -8,51 +8,48 @@ datasource db {
 }
 
 model User {
-  id                                                     Int                   @id @default(autoincrement())
-  firstName                                              String                @map("first_name") @db.VarChar(100)
-  lastName                                               String                @map("last_name") @db.VarChar(100)
-  email                                                  String                @unique @db.VarChar(255)
-  password                                               String?               @map("password_hash") @db.VarChar(255)
-  phone                                                  String?               @db.VarChar(20)
-  isActive                                               Boolean               @default(true) @map("is_active")
-  lastLogin                                              DateTime?             @map("last_login") @db.Timestamptz(6)
-  lastLogout                                             DateTime?             @map("last_logout") @db.Timestamptz(6)
-  lastActivity                                           DateTime?             @map("last_activity") @db.Timestamptz(6)
-  resetToken                                             String?               @map("reset_token") @db.VarChar(255)
-  resetTokenExpires                                      DateTime?             @map("reset_token_expires") @db.Timestamptz(6)
-  emailVerified                                          Boolean               @default(false) @map("email_verified")
-  emailVerifiedAt                                        DateTime?             @map("email_verified_at") @db.Timestamptz(6)
-  emailVerificationToken                                 String?               @map("email_verification_token") @db.VarChar(255)
-  emailVerificationExpires                               DateTime?             @map("email_verification_expires") @db.Timestamptz(6)
-  approvedBy                                             Int?                  @map("approved_by")
-  approvedAt                                             DateTime?             @map("approved_at") @db.Timestamptz(6)
-  rejectionReason                                        String?               @map("rejection_reason")
-  emailNotifications                                     Boolean?              @default(true) @map("email_notifications")
-  marketingEmails                                        Boolean?              @default(false) @map("marketing_emails")
-  createdAt                                              DateTime?             @default(now()) @map("created_at") @db.Timestamptz(6)
-  updatedAt                                              DateTime?             @default(now()) @updatedAt @map("updated_at") @db.Timestamptz(6)
+  id                                                     Int                    @id @default(autoincrement())
+  firstName                                              String                 @map("first_name") @db.VarChar(100)
+  lastName                                               String                 @map("last_name") @db.VarChar(100)
+  email                                                  String                 @unique @db.VarChar(255)
+  password                                               String?                @map("password_hash") @db.VarChar(255)
+  phone                                                  String?                @db.VarChar(20)
+  isActive                                               Boolean                @default(true) @map("is_active")
+  lastLogin                                              DateTime?              @map("last_login") @db.Timestamptz(6)
+  lastLogout                                             DateTime?              @map("last_logout") @db.Timestamptz(6)
+  lastActivity                                           DateTime?              @map("last_activity") @db.Timestamptz(6)
+  resetToken                                             String?                @map("reset_token") @db.VarChar(255)
+  resetTokenExpires                                      DateTime?              @map("reset_token_expires") @db.Timestamptz(6)
+  emailVerified                                          Boolean                @default(false) @map("email_verified")
+  emailVerifiedAt                                        DateTime?              @map("email_verified_at") @db.Timestamptz(6)
+  emailVerificationToken                                 String?                @map("email_verification_token") @db.VarChar(255)
+  emailVerificationExpires                               DateTime?              @map("email_verification_expires") @db.Timestamptz(6)
+  approvedBy                                             Int?                   @map("approved_by")
+  approvedAt                                             DateTime?              @map("approved_at") @db.Timestamptz(6)
+  rejectionReason                                        String?                @map("rejection_reason")
+  emailNotifications                                     Boolean?               @default(true) @map("email_notifications")
+  marketingEmails                                        Boolean?               @default(false) @map("marketing_emails")
+  createdAt                                              DateTime?              @default(now()) @map("created_at") @db.Timestamptz(6)
+  updatedAt                                              DateTime?              @default(now()) @updatedAt @map("updated_at") @db.Timestamptz(6)
   avatar_url                                             String?
   permissions                                            String[]
-  role                                                   UserRole              @default(STAFF)
-  userStatus                                             UserStatus            @default(PENDING) @map("user_status")
-  sessionNeedsRefresh                                    Boolean               @default(false) @map("session_needs_refresh")
-  sessionRefreshAt                                       DateTime?             @map("session_refresh_at") @db.Timestamptz(6)
+  role                                                   UserRole               @default(STAFF)
+  userStatus                                             UserStatus             @default(PENDING) @map("user_status")
+  sessionNeedsRefresh                                    Boolean                @default(false) @map("session_needs_refresh")
+  sessionRefreshAt                                       DateTime?              @map("session_refresh_at") @db.Timestamptz(6)
   ai_content                                             AIContent[]
   audit_logs                                             AuditLog[]
+  generatedReports                                       FinancialReport[]      @relation("ReportGenerator")
+  approvedTransactions                                   FinancialTransaction[] @relation("TransactionApprover")
+  createdTransactions                                    FinancialTransaction[] @relation("TransactionCreator")
   sales_transactions                                     SalesTransaction[]
-  stockAdditions                                         StockAddition[]       @relation("StockAdditionCreator")
-  stock_adjustments_stock_adjustments_user_idTousers     StockAdjustment[]     @relation("stock_adjustments_user_idTousers")
-  stock_adjustments_stock_adjustments_approved_byTousers StockAdjustment[]     @relation("stock_adjustments_approved_byTousers")
-  approvedReconciliations                                StockReconciliation[] @relation("ReconciliationApprover")
-  createdReconciliations                                 StockReconciliation[] @relation("ReconciliationCreator")
-  approver                                               User?                 @relation("UserApproval", fields: [approvedBy], references: [id], onDelete: NoAction, onUpdate: NoAction)
-  approvedUsers                                          User[]                @relation("UserApproval")
-  
-  // Finance Manager Relations
-  createdTransactions                                    FinancialTransaction[]@relation("TransactionCreator")
-  approvedTransactions                                   FinancialTransaction[]@relation("TransactionApprover")
-  createdBudgets                                         Budget[]              @relation("BudgetCreator")
-  generatedReports                                       FinancialReport[]     @relation("ReportGenerator")
+  stockAdditions                                         StockAddition[]        @relation("StockAdditionCreator")
+  stock_adjustments_stock_adjustments_user_idTousers     StockAdjustment[]      @relation("stock_adjustments_user_idTousers")
+  stock_adjustments_stock_adjustments_approved_byTousers StockAdjustment[]      @relation("stock_adjustments_approved_byTousers")
+  approvedReconciliations                                StockReconciliation[]  @relation("ReconciliationApprover")
+  createdReconciliations                                 StockReconciliation[]  @relation("ReconciliationCreator")
+  approver                                               User?                  @relation("UserApproval", fields: [approvedBy], references: [id], onDelete: NoAction, onUpdate: NoAction)
+  approvedUsers                                          User[]                 @relation("UserApproval")
 
   @@index([approvedBy], map: "idx_users_approved_by")
   @@index([email], map: "idx_users_email")
@@ -68,26 +65,26 @@ model User {
 
 /// This model contains an expression index which requires additional setup for migrations. Visit https://pris.ly/d/expression-indexes for more info.
 model Supplier {
-  id              Int             @id @default(autoincrement())
-  name            String          @db.VarChar(255)
-  contactPerson   String?         @map("contact_person") @db.VarChar(255)
-  email           String?         @db.VarChar(255)
-  phone           String?         @db.VarChar(20)
-  address         String?
-  city            String?         @db.VarChar(100)
-  state           String?         @db.VarChar(100)
-  postalCode      String?         @map("postal_code") @db.VarChar(20)
-  country         String?         @default("Canada") @db.VarChar(100)
-  website         String?         @db.VarChar(255)
-  taxNumber       String?         @map("tax_number") @db.VarChar(100)
-  paymentTerms    String?         @map("payment_terms") @db.VarChar(100)
-  creditLimit     Decimal?        @map("credit_limit") @db.Decimal(15, 2)
-  notes           String?
-  isActive        Boolean         @default(true) @map("is_active")
-  createdAt       DateTime?       @default(now()) @map("created_at") @db.Timestamptz(6)
-  updatedAt       DateTime?       @default(now()) @updatedAt @map("updated_at") @db.Timestamptz(6)
-  products        Product[]
-  stockAdditions  StockAddition[]
+  id             Int             @id @default(autoincrement())
+  name           String          @db.VarChar(255)
+  contactPerson  String?         @map("contact_person") @db.VarChar(255)
+  email          String?         @db.VarChar(255)
+  phone          String?         @db.VarChar(20)
+  address        String?
+  city           String?         @db.VarChar(100)
+  state          String?         @db.VarChar(100)
+  postalCode     String?         @map("postal_code") @db.VarChar(20)
+  country        String?         @default("Canada") @db.VarChar(100)
+  website        String?         @db.VarChar(255)
+  taxNumber      String?         @map("tax_number") @db.VarChar(100)
+  paymentTerms   String?         @map("payment_terms") @db.VarChar(100)
+  creditLimit    Decimal?        @map("credit_limit") @db.Decimal(15, 2)
+  notes          String?
+  isActive       Boolean         @default(true) @map("is_active")
+  createdAt      DateTime?       @default(now()) @map("created_at") @db.Timestamptz(6)
+  updatedAt      DateTime?       @default(now()) @updatedAt @map("updated_at") @db.Timestamptz(6)
+  products       Product[]
+  stockAdditions StockAddition[]
 
   @@index([isActive], map: "idx_suppliers_active")
   @@index([contactPerson], map: "idx_suppliers_contact")
@@ -195,27 +192,27 @@ model Product {
 }
 
 model ProductVariant {
-  id                 Int                 @id @default(autoincrement())
-  name               String              @db.VarChar(255)
-  sku                String              @unique @db.VarChar(100)
-  price              Decimal             @db.Decimal(10, 2)
-  cost               Decimal?            @db.Decimal(10, 2)
-  color              String?             @db.VarChar(100)
-  created_at         DateTime?           @default(now()) @db.Timestamptz(6)
-  current_stock      Int                 @default(0)
-  dimensions         Json?
-  is_active          Boolean             @default(true)
-  material           String?             @db.VarChar(100)
-  max_stock_level    Int?
-  min_stock_level    Int?                @default(0)
-  product_id         Int
-  size               String?             @db.VarChar(50)
-  updated_at         DateTime?           @default(now()) @db.Timestamptz(6)
-  weight             Decimal?            @db.Decimal(8, 3)
-  images             Json?
-  products           Product             @relation(fields: [product_id], references: [id], onDelete: Cascade, onUpdate: NoAction)
-  sales_items        SalesItem[]
-  stock_adjustments  StockAdjustment[]
+  id                Int               @id @default(autoincrement())
+  name              String            @db.VarChar(255)
+  sku               String            @unique @db.VarChar(100)
+  price             Decimal           @db.Decimal(10, 2)
+  cost              Decimal?          @db.Decimal(10, 2)
+  color             String?           @db.VarChar(100)
+  created_at        DateTime?         @default(now()) @db.Timestamptz(6)
+  current_stock     Int               @default(0)
+  dimensions        Json?
+  is_active         Boolean           @default(true)
+  material          String?           @db.VarChar(100)
+  max_stock_level   Int?
+  min_stock_level   Int?              @default(0)
+  product_id        Int
+  size              String?           @db.VarChar(50)
+  updated_at        DateTime?         @default(now()) @db.Timestamptz(6)
+  weight            Decimal?          @db.Decimal(8, 3)
+  images            Json?
+  products          Product           @relation(fields: [product_id], references: [id], onDelete: Cascade, onUpdate: NoAction)
+  sales_items       SalesItem[]
+  stock_adjustments StockAdjustment[]
 
   @@index([product_id], map: "idx_product_variants_product_id")
   @@index([sku], map: "idx_product_variants_sku")
@@ -367,8 +364,6 @@ model StockAdjustment {
   @@map("stock_adjustments")
 }
 
-
-
 model AuditLog {
   id         Int       @id @default(autoincrement())
   action     String    @db.VarChar(100)
@@ -423,9 +418,9 @@ model ContentSync {
   webhook_url  String?   @db.VarChar(500)
   created_at   DateTime? @default(now()) @db.Timestamptz(6)
   updated_at   DateTime? @default(now()) @db.Timestamptz(6)
-  brand        Brand?    @relation(fields: [entity_id], references: [id], onDelete: Cascade, onUpdate: NoAction, map: "fk_content_sync_brand")
-  category     Category? @relation(fields: [entity_id], references: [id], onDelete: Cascade, onUpdate: NoAction, map: "fk_content_sync_category")
-  product      Product?  @relation(fields: [entity_id], references: [id], onDelete: Cascade, onUpdate: NoAction, map: "fk_content_sync_product")
+  brand        Brand     @relation(fields: [entity_id], references: [id], onDelete: Cascade, onUpdate: NoAction, map: "fk_content_sync_brand")
+  category     Category  @relation(fields: [entity_id], references: [id], onDelete: Cascade, onUpdate: NoAction, map: "fk_content_sync_category")
+  product      Product   @relation(fields: [entity_id], references: [id], onDelete: Cascade, onUpdate: NoAction, map: "fk_content_sync_product")
 
   @@unique([entity_type, entity_id], name: "unique_entity_content_sync")
   @@index([entity_type], map: "idx_content_sync_entity_type")
@@ -460,6 +455,84 @@ model SessionBlacklist {
   @@map("session_blacklist")
 }
 
+model FinancialTransaction {
+  id                Int             @id @default(autoincrement())
+  transactionNumber String          @unique @map("transaction_number") @db.VarChar(50)
+  type              FinancialType
+  amount            Decimal         @db.Decimal(15, 2)
+  currency          String          @default("NGN") @db.VarChar(3)
+  description       String?
+  transactionDate   DateTime        @map("transaction_date") @db.Date
+  paymentMethod     String?         @map("payment_method") @db.VarChar(50)
+  referenceNumber   String?         @map("reference_number") @db.VarChar(100)
+  status            FinancialStatus @default(COMPLETED)
+  approvedBy        Int?            @map("approved_by")
+  approvedAt        DateTime?       @map("approved_at") @db.Timestamptz(6)
+  createdBy         Int             @map("created_by")
+  createdAt         DateTime        @default(now()) @map("created_at") @db.Timestamptz(6)
+  updatedAt         DateTime        @default(now()) @updatedAt @map("updated_at") @db.Timestamptz(6)
+  expenseDetails    ExpenseDetail?
+  approvedByUser    User?           @relation("TransactionApprover", fields: [approvedBy], references: [id])
+  createdByUser     User            @relation("TransactionCreator", fields: [createdBy], references: [id])
+  incomeDetails     IncomeDetail?
+
+  @@index([type], map: "idx_financial_transactions_type")
+  @@index([transactionDate], map: "idx_financial_transactions_date")
+  @@index([status], map: "idx_financial_transactions_status")
+  @@index([createdBy], map: "idx_financial_transactions_created_by")
+  @@map("financial_transactions")
+}
+
+model ExpenseDetail {
+  id            Int                  @id @default(autoincrement())
+  transactionId Int                  @unique @map("transaction_id")
+  expenseType   String               @map("expense_type") @db.VarChar(50)
+  vendorName    String?              @map("vendor_name") @db.VarChar(255)
+  vendorContact String?              @map("vendor_contact") @db.VarChar(255)
+  taxAmount     Decimal              @default(0) @map("tax_amount") @db.Decimal(10, 2)
+  taxRate       Decimal              @default(0) @map("tax_rate") @db.Decimal(5, 2)
+  receiptUrl    String?              @map("receipt_url") @db.VarChar(500)
+  notes         String?
+  createdAt     DateTime             @default(now()) @map("created_at") @db.Timestamptz(6)
+  transaction   FinancialTransaction @relation(fields: [transactionId], references: [id], onDelete: Cascade)
+
+  @@map("expense_details")
+}
+
+model IncomeDetail {
+  id            Int                  @id @default(autoincrement())
+  transactionId Int                  @unique @map("transaction_id")
+  incomeSource  String               @map("income_source") @db.VarChar(100)
+  payerName     String?              @map("payer_name") @db.VarChar(255)
+  payerContact  String?              @map("payer_contact") @db.VarChar(255)
+  taxWithheld   Decimal              @default(0) @map("tax_withheld") @db.Decimal(10, 2)
+  taxRate       Decimal              @default(0) @map("tax_rate") @db.Decimal(5, 2)
+  receiptUrl    String?              @map("receipt_url") @db.VarChar(500)
+  notes         String?
+  createdAt     DateTime             @default(now()) @map("created_at") @db.Timestamptz(6)
+  transaction   FinancialTransaction @relation(fields: [transactionId], references: [id], onDelete: Cascade)
+
+  @@map("income_details")
+}
+
+model FinancialReport {
+  id              Int      @id @default(autoincrement())
+  reportType      String   @map("report_type") @db.VarChar(50)
+  reportName      String   @map("report_name") @db.VarChar(255)
+  periodStart     DateTime @map("period_start") @db.Date
+  periodEnd       DateTime @map("period_end") @db.Date
+  reportData      Json     @map("report_data")
+  generatedBy     Int      @map("generated_by")
+  generatedAt     DateTime @default(now()) @map("generated_at") @db.Timestamptz(6)
+  fileUrl         String?  @map("file_url") @db.VarChar(500)
+  generatedByUser User     @relation("ReportGenerator", fields: [generatedBy], references: [id])
+
+  @@index([reportType], map: "idx_financial_reports_type")
+  @@index([periodStart], map: "idx_financial_reports_period_start")
+  @@index([generatedBy], map: "idx_financial_reports_generated_by")
+  @@map("financial_reports")
+}
+
 enum UserRole {
   ADMIN
   MANAGER
@@ -481,9 +554,6 @@ enum stock_reconciliation_status {
   REJECTED
 }
 
-
-
-// Finance Manager Enums
 enum FinancialType {
   EXPENSE
   INCOME
@@ -495,138 +565,4 @@ enum FinancialStatus {
   CANCELLED
   APPROVED
   REJECTED
-}
-
-enum BudgetPeriodType {
-  MONTHLY
-  QUARTERLY
-  YEARLY
-}
-
-// Finance Manager Models
-model FinancialCategory {
-  id          Int                @id @default(autoincrement())
-  name        String             @db.VarChar(100)
-  type        FinancialType
-  description String?
-  isActive    Boolean            @default(true) @map("is_active")
-  parentId    Int?               @map("parent_id")
-  createdAt   DateTime           @default(now()) @map("created_at") @db.Timestamptz(6)
-  updatedAt   DateTime           @default(now()) @updatedAt @map("updated_at") @db.Timestamptz(6)
-
-  parent      FinancialCategory? @relation("CategoryHierarchy", fields: [parentId], references: [id])
-  children    FinancialCategory[] @relation("CategoryHierarchy")
-  transactions FinancialTransaction[]
-  budgets     Budget[]
-
-  @@index([type], map: "idx_financial_categories_type")
-  @@index([isActive], map: "idx_financial_categories_active")
-  @@map("financial_categories")
-}
-
-model FinancialTransaction {
-  id                Int                    @id @default(autoincrement())
-  transactionNumber String                 @unique @map("transaction_number") @db.VarChar(50)
-  type              FinancialType
-  categoryId        Int                    @map("category_id")
-  amount            Decimal                @db.Decimal(15, 2)
-  currency          String                 @default("NGN") @db.VarChar(3)
-  description       String?
-  transactionDate   DateTime               @map("transaction_date") @db.Date
-  paymentMethod     String?                @map("payment_method") @db.VarChar(50)
-  referenceNumber   String?                @map("reference_number") @db.VarChar(100)
-  status            FinancialStatus        @default(COMPLETED)
-  approvedBy        Int?                   @map("approved_by")
-  approvedAt        DateTime?              @map("approved_at") @db.Timestamptz(6)
-  createdBy         Int                    @map("created_by")
-  createdAt         DateTime               @default(now()) @map("created_at") @db.Timestamptz(6)
-  updatedAt         DateTime               @default(now()) @updatedAt @map("updated_at") @db.Timestamptz(6)
-
-  category          FinancialCategory      @relation(fields: [categoryId], references: [id])
-  approvedByUser    User?                  @relation("TransactionApprover", fields: [approvedBy], references: [id])
-  createdByUser     User                   @relation("TransactionCreator", fields: [createdBy], references: [id])
-  expenseDetails    ExpenseDetail?
-  incomeDetails     IncomeDetail?
-
-  @@index([type], map: "idx_financial_transactions_type")
-  @@index([transactionDate], map: "idx_financial_transactions_date")
-  @@index([status], map: "idx_financial_transactions_status")
-  @@index([categoryId], map: "idx_financial_transactions_category")
-  @@index([createdBy], map: "idx_financial_transactions_created_by")
-  @@map("financial_transactions")
-}
-
-model ExpenseDetail {
-  id            Int                 @id @default(autoincrement())
-  transactionId Int                 @unique @map("transaction_id")
-  expenseType   String              @map("expense_type") @db.VarChar(50)
-  vendorName    String?             @map("vendor_name") @db.VarChar(255)
-  vendorContact String?             @map("vendor_contact") @db.VarChar(255)
-  taxAmount     Decimal             @default(0) @map("tax_amount") @db.Decimal(10, 2)
-  taxRate       Decimal             @default(0) @map("tax_rate") @db.Decimal(5, 2)
-  receiptUrl    String?             @map("receipt_url") @db.VarChar(500)
-  notes         String?
-  createdAt     DateTime            @default(now()) @map("created_at") @db.Timestamptz(6)
-
-  transaction   FinancialTransaction @relation(fields: [transactionId], references: [id], onDelete: Cascade)
-
-  @@map("expense_details")
-}
-
-model IncomeDetail {
-  id            Int                 @id @default(autoincrement())
-  transactionId Int                 @unique @map("transaction_id")
-  incomeSource  String              @map("income_source") @db.VarChar(100)
-  payerName     String?             @map("payer_name") @db.VarChar(255)
-  payerContact  String?             @map("payer_contact") @db.VarChar(255)
-  taxWithheld   Decimal             @default(0) @map("tax_withheld") @db.Decimal(10, 2)
-  taxRate       Decimal             @default(0) @map("tax_rate") @db.Decimal(5, 2)
-  receiptUrl    String?             @map("receipt_url") @db.VarChar(500)
-  notes         String?
-  createdAt     DateTime            @default(now()) @map("created_at") @db.Timestamptz(6)
-
-  transaction   FinancialTransaction @relation(fields: [transactionId], references: [id], onDelete: Cascade)
-
-  @@map("income_details")
-}
-
-model Budget {
-  id         Int                @id @default(autoincrement())
-  name       String             @db.VarChar(255)
-  categoryId Int?               @map("category_id")
-  amount     Decimal            @db.Decimal(15, 2)
-  periodType BudgetPeriodType   @map("period_type")
-  startDate  DateTime           @map("start_date") @db.Date
-  endDate    DateTime           @map("end_date") @db.Date
-  createdBy  Int                @map("created_by")
-  createdAt  DateTime           @default(now()) @map("created_at") @db.Timestamptz(6)
-  updatedAt  DateTime           @default(now()) @updatedAt @map("updated_at") @db.Timestamptz(6)
-
-  category   FinancialCategory? @relation(fields: [categoryId], references: [id])
-  createdByUser User            @relation("BudgetCreator", fields: [createdBy], references: [id])
-
-  @@index([categoryId], map: "idx_budgets_category")
-  @@index([periodType], map: "idx_budgets_period_type")
-  @@index([startDate], map: "idx_budgets_start_date")
-  @@index([createdBy], map: "idx_budgets_created_by")
-  @@map("budgets")
-}
-
-model FinancialReport {
-  id          Int       @id @default(autoincrement())
-  reportType  String    @map("report_type") @db.VarChar(50)
-  reportName  String    @map("report_name") @db.VarChar(255)
-  periodStart DateTime  @map("period_start") @db.Date
-  periodEnd   DateTime  @map("period_end") @db.Date
-  reportData  Json      @map("report_data")
-  generatedBy Int       @map("generated_by")
-  generatedAt DateTime  @default(now()) @map("generated_at") @db.Timestamptz(6)
-  fileUrl     String?   @map("file_url") @db.VarChar(500)
-
-  generatedByUser User  @relation("ReportGenerator", fields: [generatedBy], references: [id])
-
-  @@index([reportType], map: "idx_financial_reports_type")
-  @@index([periodStart], map: "idx_financial_reports_period_start")
-  @@index([generatedBy], map: "idx_financial_reports_generated_by")
-  @@map("financial_reports")
 }

@@ -4,7 +4,7 @@ import { USER_ROLES, hasRole } from "@/lib/auth/roles";
 
 export const metadata = {
   title: "Expense Management - BaaWA Inventory POS",
-  description: "Manage expense transactions and categories",
+  description: "Manage expense transactions",
 };
 
 export default async function ExpensesPage() {

@@ -8,11 +8,7 @@ import {
   IconCash,
   IconTrendingUp,
   IconTrendingDown,
-  IconReceipt,
-  IconReportMoney,
   IconChartBar,
-  IconFolder,
-  IconSettings,
 } from "@tabler/icons-react";
 
 import {
@@ -33,29 +29,10 @@ import {
 
 const financeNavItems = [
   {
-    title: "Dashboard",
+    title: "Overview",
     url: "/finance",
     icon: IconCash,
     items: [],
-  },
-  {
-    title: "Transactions",
-    url: "/finance/transactions",
-    icon: IconReceipt,
-    items: [
-      {
-        title: "All Transactions",
-        url: "/finance/transactions",
-      },
-      {
-        title: "Add Income",
-        url: "/finance/transactions/new?type=income",
-      },
-      {
-        title: "Add Expense",
-        url: "/finance/transactions/new?type=expense",
-      },
-    ],
   },
   {
     title: "Income",
@@ -109,42 +86,6 @@ const financeNavItems = [
         url: "/finance/reports/cash-flow",
       },
     ],
-  },
-  {
-    title: "Categories",
-    url: "/finance/categories",
-    icon: IconFolder,
-    items: [
-      {
-        title: "Manage Categories",
-        url: "/finance/categories",
-      },
-      {
-        title: "Add Category",
-        url: "/finance/categories/new",
-      },
-    ],
-  },
-  {
-    title: "Budgets",
-    url: "/finance/budgets",
-    icon: IconReportMoney,
-    items: [
-      {
-        title: "Budget Overview",
-        url: "/finance/budgets",
-      },
-      {
-        title: "Create Budget",
-        url: "/finance/budgets/new",
-      },
-    ],
-  },
-  {
-    title: "Settings",
-    url: "/finance/settings",
-    icon: IconSettings,
-    items: [],
   },
 ];
 

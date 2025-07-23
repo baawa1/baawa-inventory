@@ -8,15 +8,12 @@ import {
   CardTitle,
 } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
-import { Badge } from "@/components/ui/badge";
 import {
-  BarChart3,
-  PieChart,
   TrendingUp,
   TrendingDown,
-  Download,
-  Calendar,
   DollarSign,
+  Calendar,
+  Download,
 } from "lucide-react";
 import { useFinanceSummary } from "@/hooks/api/useFinanceSummary";
 import { AppUser } from "@/types/user";
@@ -146,7 +143,7 @@ export function FinanceReports({ user: _user }: FinanceReportsProps) {
         <Card>
           <CardHeader>
             <CardTitle className="flex items-center gap-2">
-              <BarChart3 className="h-5 w-5" />
+              <TrendingDown className="h-5 w-5" />
               Income vs Expenses
             </CardTitle>
             <CardDescription>Monthly comparison report</CardDescription>
@@ -158,26 +155,6 @@ export function FinanceReports({ user: _user }: FinanceReportsProps) {
             </p>
             <Button variant="outline" className="w-full">
               <Calendar className="h-4 w-4 mr-2" />
-              Generate Report
-            </Button>
-          </CardContent>
-        </Card>
-
-        <Card>
-          <CardHeader>
-            <CardTitle className="flex items-center gap-2">
-              <PieChart className="h-5 w-5" />
-              Category Breakdown
-            </CardTitle>
-            <CardDescription>Expense and income by category</CardDescription>
-          </CardHeader>
-          <CardContent>
-            <p className="text-sm text-muted-foreground mb-4">
-              Analyze spending and income patterns by category to optimize your
-              finances.
-            </p>
-            <Button variant="outline" className="w-full">
-              <PieChart className="h-4 w-4 mr-2" />
               Generate Report
             </Button>
           </CardContent>
@@ -220,26 +197,10 @@ export function FinanceReports({ user: _user }: FinanceReportsProps) {
             </Button>
           </CardContent>
         </Card>
+      </div>
 
-        <Card>
-          <CardHeader>
-            <CardTitle className="flex items-center gap-2">
-              <BarChart3 className="h-5 w-5" />
-              Budget Analysis
-            </CardTitle>
-            <CardDescription>Budget vs actual comparison</CardDescription>
-          </CardHeader>
-          <CardContent>
-            <p className="text-sm text-muted-foreground mb-4">
-              Compare actual spending against budgeted amounts.
-            </p>
-            <Button variant="outline" className="w-full">
-              <BarChart3 className="h-4 w-4 mr-2" />
-              Generate Report
-            </Button>
-          </CardContent>
-        </Card>
-
+      {/* Tax Report */}
+      <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
         <Card>
           <CardHeader>
             <CardTitle className="flex items-center gap-2">
@@ -259,83 +220,6 @@ export function FinanceReports({ user: _user }: FinanceReportsProps) {
           </CardContent>
         </Card>
       </div>
-
-      {/* Top Categories */}
-      {summary?.topCategories && (
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-          <Card>
-            <CardHeader>
-              <CardTitle>Top Income Categories</CardTitle>
-              <CardDescription>
-                Categories generating the most income
-              </CardDescription>
-            </CardHeader>
-            <CardContent>
-              <div className="space-y-4">
-                {summary.topCategories.income
-                  .slice(0, 5)
-                  .map((category, index) => (
-                    <div
-                      key={category.categoryId}
-                      className="flex items-center justify-between"
-                    >
-                      <div className="flex items-center gap-3">
-                        <Badge variant="outline">{index + 1}</Badge>
-                        <span className="font-medium">
-                          {category.categoryName}
-                        </span>
-                      </div>
-                      <div className="text-right">
-                        <div className="font-bold text-green-600">
-                          {formatCurrency(category.amount)}
-                        </div>
-                        <div className="text-sm text-muted-foreground">
-                          {category.percentage.toFixed(1)}%
-                        </div>
-                      </div>
-                    </div>
-                  ))}
-              </div>
-            </CardContent>
-          </Card>
-
-          <Card>
-            <CardHeader>
-              <CardTitle>Top Expense Categories</CardTitle>
-              <CardDescription>
-                Categories with highest expenses
-              </CardDescription>
-            </CardHeader>
-            <CardContent>
-              <div className="space-y-4">
-                {summary.topCategories.expenses
-                  .slice(0, 5)
-                  .map((category, index) => (
-                    <div
-                      key={category.categoryId}
-                      className="flex items-center justify-between"
-                    >
-                      <div className="flex items-center gap-3">
-                        <Badge variant="outline">{index + 1}</Badge>
-                        <span className="font-medium">
-                          {category.categoryName}
-                        </span>
-                      </div>
-                      <div className="text-right">
-                        <div className="font-bold text-red-600">
-                          {formatCurrency(category.amount)}
-                        </div>
-                        <div className="text-sm text-muted-foreground">
-                          {category.percentage.toFixed(1)}%
-                        </div>
-                      </div>
-                    </div>
-                  ))}
-              </div>
-            </CardContent>
-          </Card>
-        </div>
-      )}
     </div>
   );
 }
