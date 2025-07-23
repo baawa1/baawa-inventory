@@ -2,7 +2,6 @@
 
 import { Button } from "@/components/ui/button";
 import { useRouter } from "next/navigation";
-
 import { Form } from "@/components/ui/form";
 import { AlertCircle, ArrowLeft } from "lucide-react";
 import { Alert, AlertDescription } from "@/components/ui/alert";
@@ -46,7 +45,10 @@ export default function EditPurchaseOrderForm({
   const router = useRouter();
   const { form, purchaseOrder, loading } =
     useEditPurchaseOrderData(purchaseOrderId);
-  const { onSubmit } = useEditPurchaseOrderSubmit(purchaseOrderId, form);
+  const { onSubmit, isSubmitting, submitError } = useEditPurchaseOrderSubmit(
+    purchaseOrderId,
+    form
+  );
 
   if (loading) {
     return <LoadingSkeleton />;
@@ -82,6 +84,13 @@ export default function EditPurchaseOrderForm({
         />
       </div>
 
+      {submitError && (
+        <Alert variant="destructive" className="mb-6">
+          <AlertCircle className="h-4 w-4" />
+          <AlertDescription>{submitError}</AlertDescription>
+        </Alert>
+      )}
+
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
         {/* Edit Form */}
         <div className="lg:col-span-2 space-y-6">
@@ -96,10 +105,13 @@ export default function EditPurchaseOrderForm({
                   type="button"
                   variant="outline"
                   onClick={() => router.push("/inventory/purchase-orders")}
+                  disabled={isSubmitting}
                 >
                   Cancel
                 </Button>
-                <Button type="submit">Update Purchase Order</Button>
+                <Button type="submit" disabled={isSubmitting}>
+                  {isSubmitting ? "Updating..." : "Update Purchase Order"}
+                </Button>
               </div>
             </form>
           </Form>

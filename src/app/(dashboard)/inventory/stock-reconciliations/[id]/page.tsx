@@ -1,8 +1,9 @@
 import { auth } from "../../../../../../auth";
 import { redirect } from "next/navigation";
-import { notFound } from "next/navigation";
-import { prisma } from "@/lib/db";
+import Link from "next/link";
 import { StockReconciliationDetail } from "@/components/inventory/StockReconciliationDetail";
+import { Button } from "@/components/ui/button";
+import { IconArrowLeft } from "@tabler/icons-react";
 
 export const metadata = {
   title: "Stock Reconciliation Details - BaaWA Inventory POS",
@@ -30,80 +31,33 @@ export default async function ReconciliationDetailPage({
   const reconciliationId = parseInt(resolvedParams.id);
 
   if (isNaN(reconciliationId)) {
-    notFound();
+    redirect("/inventory/stock-reconciliations");
   }
-
-  // Fetch reconciliation with related data
-  const reconciliation = await prisma.stockReconciliation.findUnique({
-    where: { id: reconciliationId },
-    include: {
-      createdBy: {
-        select: {
-          id: true,
-          firstName: true,
-          lastName: true,
-          email: true,
-          role: true,
-        },
-      },
-      approvedBy: {
-        select: {
-          id: true,
-          firstName: true,
-          lastName: true,
-          email: true,
-          role: true,
-        },
-      },
-      items: {
-        include: {
-          product: {
-            select: {
-              id: true,
-              name: true,
-              sku: true,
-              barcode: true,
-              price: true,
-            },
-          },
-        },
-      },
-    },
-  });
-
-  if (!reconciliation) {
-    notFound();
-  }
-
-  // Transform data for component
-  const transformedReconciliation = {
-    id: reconciliation.id,
-    title: reconciliation.title,
-    description: reconciliation.description,
-    status: reconciliation.status,
-    createdAt: reconciliation.created_at.toISOString(),
-    submittedAt: reconciliation.submitted_at?.toISOString(),
-    approvedAt: reconciliation.approved_at?.toISOString(),
-    notes: reconciliation.notes,
-    createdBy: reconciliation.createdBy,
-    approvedBy: reconciliation.approvedBy,
-    items: reconciliation.items.map((item) => ({
-      id: item.id,
-      productId: item.product_id,
-      systemCount: item.system_count,
-      physicalCount: item.physical_count,
-      discrepancy: item.discrepancy,
-      estimatedImpact: item.estimated_impact,
-      discrepancyReason: item.discrepancy_reason,
-      notes: item.notes,
-      product: item.product,
-    })),
-  };
 
   return (
-    <StockReconciliationDetail
-      reconciliation={transformedReconciliation}
-      user={session.user}
-    />
+    <div className="max-w-4xl mx-auto p-6 space-y-6">
+      {/* Header */}
+      <div className="mb-6">
+        <Button variant="ghost" asChild className="mb-4 px-4 lg:px-6">
+          <Link href="/inventory/stock-reconciliations">
+            <IconArrowLeft className="mr-2 h-4 w-4" />
+            Back to Reconciliations
+          </Link>
+        </Button>
+        <div className="flex flex-col gap-2">
+          <h1 className="text-2xl font-bold">Reconciliation Details</h1>
+          <p className="text-muted-foreground">
+            View and manage this stock reconciliation
+          </p>
+        </div>
+      </div>
+
+      {/* Details Component */}
+      <StockReconciliationDetail
+        reconciliationId={reconciliationId}
+        userRole={session.user.role}
+        userId={parseInt(session.user.id)}
+      />
+    </div>
   );
 }

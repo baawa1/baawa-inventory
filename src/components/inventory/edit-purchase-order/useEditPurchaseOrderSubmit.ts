@@ -1,3 +1,4 @@
+import { useState } from "react";
 import { UseFormReturn } from "react-hook-form";
 import { UpdatePurchaseOrderFormData } from "./types";
 import { toast } from "sonner";
@@ -8,9 +9,14 @@ export function useEditPurchaseOrderSubmit(
   _form: UseFormReturn<UpdatePurchaseOrderFormData>
 ) {
   const router = useRouter();
+  const [isSubmitting, setIsSubmitting] = useState(false);
+  const [submitError, setSubmitError] = useState<string | null>(null);
 
   const onSubmit = async (data: UpdatePurchaseOrderFormData) => {
     try {
+      setIsSubmitting(true);
+      setSubmitError(null);
+
       // Prepare data for submission
       const submitData = {
         status: data.status,
@@ -37,10 +43,12 @@ export function useEditPurchaseOrderSubmit(
     } catch (error) {
       const errorMessage =
         error instanceof Error ? error.message : "An unexpected error occurred";
+      setSubmitError(errorMessage);
       toast.error(errorMessage);
-      throw error;
+    } finally {
+      setIsSubmitting(false);
     }
   };
 
-  return { onSubmit };
+  return { onSubmit, isSubmitting, submitError };
 }

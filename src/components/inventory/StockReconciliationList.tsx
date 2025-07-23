@@ -312,21 +312,29 @@ const StockReconciliationList = ({ user }: StockReconciliationListProps) => {
   const getStatusBadge = useCallback((status: string) => {
     switch (status) {
       case "DRAFT":
-        return <Badge variant="secondary">Draft</Badge>;
+        return (
+          <Badge className="bg-gray-100 text-gray-800 border-gray-200">
+            Draft
+          </Badge>
+        );
       case "PENDING":
         return (
-          <Badge variant="secondary" className="bg-yellow-100 text-yellow-800">
+          <Badge className="bg-yellow-100 text-yellow-800 border-yellow-200">
             Pending
           </Badge>
         );
       case "APPROVED":
         return (
-          <Badge variant="default" className="bg-green-100 text-green-800">
+          <Badge className="bg-green-100 text-green-800 border-green-200">
             Approved
           </Badge>
         );
       case "REJECTED":
-        return <Badge variant="destructive">Rejected</Badge>;
+        return (
+          <Badge className="bg-red-100 text-red-800 border-red-200">
+            Rejected
+          </Badge>
+        );
       default:
         return <Badge variant="outline">{status}</Badge>;
     }

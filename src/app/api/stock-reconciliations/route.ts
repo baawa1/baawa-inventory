@@ -96,7 +96,16 @@ export const GET = withAuth(async (request: AuthenticatedRequest) => {
 
     return NextResponse.json({
       success: true,
-      data: reconciliations,
+      data: reconciliations.map((reconciliation) => ({
+        ...reconciliation,
+        items: reconciliation.items.map((item) => ({
+          ...item,
+          estimatedImpact:
+            item.estimatedImpact !== null && item.estimatedImpact !== undefined
+              ? Number(item.estimatedImpact)
+              : null,
+        })),
+      })),
       pagination: {
         page,
         limit,
@@ -164,8 +173,18 @@ export const POST = withPermission(
         const itemsData = validatedData.items.map((item) => {
           const product = products.find((p) => p.id === item.productId)!;
           const discrepancy = item.physicalCount - item.systemCount;
-          const estimatedImpact =
-            item.estimatedImpact || discrepancy * Number(product.cost);
+
+          // Calculate estimated impact with proper null handling
+          let estimatedImpact = item.estimatedImpact;
+          if (estimatedImpact === null || estimatedImpact === undefined) {
+            const productCost = Number(product.cost) || 0;
+            estimatedImpact = discrepancy * productCost;
+
+            // Ensure we don't store NaN
+            if (isNaN(estimatedImpact)) {
+              estimatedImpact = 0;
+            }
+          }
 
           return {
             reconciliationId: newReconciliation.id,
@@ -217,7 +236,19 @@ export const POST = withPermission(
         {
           success: true,
           message: "Stock reconciliation created successfully",
-          data: completeReconciliation,
+          data: completeReconciliation
+            ? {
+                ...completeReconciliation,
+                items: completeReconciliation.items.map((item) => ({
+                  ...item,
+                  estimatedImpact:
+                    item.estimatedImpact !== null &&
+                    item.estimatedImpact !== undefined
+                      ? Number(item.estimatedImpact)
+                      : null,
+                })),
+              }
+            : null,
         },
         { status: 201 }
       );

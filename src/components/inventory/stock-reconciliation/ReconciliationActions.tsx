@@ -5,6 +5,13 @@ import { Button } from "@/components/ui/button";
 import { Textarea } from "@/components/ui/textarea";
 import { Label } from "@/components/ui/label";
 import {
+  Card,
+  CardContent,
+  CardDescription,
+  CardHeader,
+  CardTitle,
+} from "@/components/ui/card";
+import {
   Dialog,
   DialogContent,
   DialogDescription,
@@ -12,7 +19,12 @@ import {
   DialogHeader,
   DialogTitle,
 } from "@/components/ui/dialog";
-import { IconCheck, IconX, IconSend } from "@tabler/icons-react";
+import {
+  IconCheck,
+  IconX,
+  IconSend,
+  IconShieldCheck,
+} from "@tabler/icons-react";
 import { toast } from "sonner";
 import {
   useSubmitStockReconciliation,
@@ -97,41 +109,54 @@ export function ReconciliationActions({
     rejectMutation.isPending;
 
   return (
-    <div className="flex gap-2">
-      {canSubmit && (
-        <Button
-          onClick={handleSubmitForApproval}
-          disabled={actionLoading}
-          className="flex items-center gap-2"
-        >
-          <IconSend className="h-4 w-4" />
-          Submit for Approval
-        </Button>
-      )}
+    <Card>
+      <CardHeader>
+        <CardTitle className="flex items-center gap-2">
+          <IconShieldCheck className="h-5 w-5" />
+          Actions
+        </CardTitle>
+        <CardDescription>
+          Submit, approve, or reject this reconciliation
+        </CardDescription>
+      </CardHeader>
+      <CardContent>
+        <div className="flex gap-2">
+          {canSubmit && (
+            <Button
+              onClick={handleSubmitForApproval}
+              disabled={actionLoading}
+              className="flex items-center gap-2"
+            >
+              <IconSend className="h-4 w-4" />
+              Submit for Approval
+            </Button>
+          )}
 
-      {canApprove && (
-        <>
-          <Button
-            onClick={() => setShowApprovalDialog(true)}
-            disabled={actionLoading}
-            className="flex items-center gap-2"
-            variant="default"
-          >
-            <IconCheck className="h-4 w-4" />
-            Approve
-          </Button>
+          {canApprove && (
+            <>
+              <Button
+                onClick={() => setShowApprovalDialog(true)}
+                disabled={actionLoading}
+                className="flex items-center gap-2"
+                variant="default"
+              >
+                <IconCheck className="h-4 w-4" />
+                Approve
+              </Button>
 
-          <Button
-            onClick={() => setShowRejectionDialog(true)}
-            disabled={actionLoading}
-            className="flex items-center gap-2"
-            variant="destructive"
-          >
-            <IconX className="h-4 w-4" />
-            Reject
-          </Button>
-        </>
-      )}
+              <Button
+                onClick={() => setShowRejectionDialog(true)}
+                disabled={actionLoading}
+                className="flex items-center gap-2"
+                variant="destructive"
+              >
+                <IconX className="h-4 w-4" />
+                Reject
+              </Button>
+            </>
+          )}
+        </div>
+      </CardContent>
 
       {/* Approval Dialog */}
       <Dialog open={showApprovalDialog} onOpenChange={setShowApprovalDialog}>
@@ -210,6 +235,6 @@ export function ReconciliationActions({
           </DialogFooter>
         </DialogContent>
       </Dialog>
-    </div>
+    </Card>
   );
 }

@@ -41,8 +41,11 @@ export const POST = withAuth(
         );
       }
 
-      // Check permissions - only creator can submit
-      if (reconciliation.createdById !== parseInt(request.user.id)) {
+      // Check permissions - creator or admin can submit
+      if (
+        reconciliation.createdById !== parseInt(request.user.id) &&
+        request.user.role !== "ADMIN"
+      ) {
         return NextResponse.json({ error: "Forbidden" }, { status: 403 });
       }
 

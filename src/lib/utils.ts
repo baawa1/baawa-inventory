@@ -15,6 +15,11 @@ export function formatCurrency(
   amount: number,
   showDecimals: boolean = true
 ): string {
+  // Handle NaN, null, or undefined values
+  if (amount === null || amount === undefined || isNaN(amount)) {
+    return "₦0.00";
+  }
+
   const options: Intl.NumberFormatOptions = {
     style: "currency",
     currency: "NGN",
