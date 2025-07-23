@@ -4,7 +4,6 @@ import { toast } from "sonner";
 interface TransactionFilters {
   search?: string;
   type?: string;
-  categoryId?: number;
   status?: string;
   startDate?: string;
   endDate?: string;
@@ -18,7 +17,6 @@ export interface FinancialTransaction {
   id: number;
   transactionNumber: string;
   type: "INCOME" | "EXPENSE";
-  categoryId: number;
   amount: number;
   currency: string;
   description: string | null;
@@ -29,16 +27,10 @@ export interface FinancialTransaction {
   createdBy: number;
   createdAt: Date;
   updatedAt: Date;
-  category?: {
-    id: number;
-    name: string;
-    type: "INCOME" | "EXPENSE";
-  };
 }
 
 interface CreateTransactionData {
   type: "INCOME" | "EXPENSE";
-  categoryId: number;
   amount: number;
   currency: string;
   description: string;

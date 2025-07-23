@@ -21,10 +21,7 @@ export const GET = withAuth(async (_request: AuthenticatedRequest) => {
         expenses: 0,
         netIncome: 0,
       },
-      topCategories: {
-        income: [],
-        expenses: [],
-      },
+
       recentTransactions: [],
     };
 

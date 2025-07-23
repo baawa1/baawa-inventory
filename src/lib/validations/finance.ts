@@ -1,24 +1,9 @@
 import { z } from "zod";
-import {
-  FINANCIAL_TYPES,
-  FINANCIAL_STATUS,
-  BUDGET_PERIOD_TYPES,
-  CURRENCY,
-} from "@/lib/constants";
-
-// Financial Category Schema
-export const financialCategorySchema = z.object({
-  name: z.string().min(1, "Name is required").max(100, "Name too long"),
-  type: z.enum([FINANCIAL_TYPES.EXPENSE, FINANCIAL_TYPES.INCOME]),
-  description: z.string().optional(),
-  isActive: z.boolean().default(true),
-  parentId: z.number().optional(),
-});
+import { FINANCIAL_TYPES, FINANCIAL_STATUS, CURRENCY } from "@/lib/constants";
 
 // Financial Transaction Schema
 export const financialTransactionSchema = z.object({
   type: z.enum([FINANCIAL_TYPES.EXPENSE, FINANCIAL_TYPES.INCOME]),
-  categoryId: z.number().min(1, "Category is required"),
   amount: z.number().min(0.01, "Amount must be greater than 0"),
   currency: z.string().default("NGN"),
   description: z.string().optional(),
@@ -35,7 +20,6 @@ export const createTransactionSchema = z
   .object({
     // Basic transaction info
     type: z.enum([FINANCIAL_TYPES.EXPENSE, FINANCIAL_TYPES.INCOME]),
-    categoryId: z.number().min(1, "Category is required"),
     amount: z.number().min(0.01, "Amount must be greater than 0"),
     currency: z.string().default("NGN"),
     description: z.string().optional(),
@@ -95,7 +79,6 @@ export const updateTransactionSchema = z
     type: z
       .enum(Object.values(FINANCIAL_TYPES) as [string, ...string[]])
       .optional(),
-    categoryId: z.number().optional(),
     amount: z.number().min(0.01, "Amount must be greater than 0").optional(),
     currency: z.string().default(CURRENCY.CODE).optional(),
     description: z.string().optional(),
@@ -173,23 +156,6 @@ export const incomeDetailSchema = z.object({
   notes: z.string().optional(),
 });
 
-// Budget Schema
-export const budgetSchema = z
-  .object({
-    name: z.string().min(1, "Budget name is required"),
-    categoryId: z.number().optional(),
-    amount: z.number().min(0.01, "Amount must be greater than 0"),
-    periodType: z.enum(
-      Object.values(BUDGET_PERIOD_TYPES) as [string, ...string[]]
-    ),
-    startDate: z.string().transform((val) => new Date(val)),
-    endDate: z.string().transform((val) => new Date(val)),
-  })
-  .refine((data) => data.endDate > data.startDate, {
-    message: "End date must be after start date",
-    path: ["endDate"],
-  });
-
 // Report Generation Schema
 export const reportGenerationSchema = z
   .object({
@@ -211,7 +177,6 @@ export const transactionFiltersSchema = z.object({
       z.literal("ALL"),
     ])
     .optional(),
-  categoryId: z.number().optional(),
   status: z
     .union([
       z.enum(Object.values(FINANCIAL_STATUS) as [string, ...string[]]),
@@ -227,7 +192,6 @@ export const transactionFiltersSchema = z.object({
 });
 
 // Type exports for use in components
-export type FinancialCategoryInput = z.infer<typeof financialCategorySchema>;
 export type FinancialTransactionInput = z.infer<
   typeof financialTransactionSchema
 >;
@@ -235,6 +199,5 @@ export type CreateTransactionInput = z.infer<typeof createTransactionSchema>;
 export type UpdateTransactionInput = z.infer<typeof updateTransactionSchema>;
 export type ExpenseDetailInput = z.infer<typeof expenseDetailSchema>;
 export type IncomeDetailInput = z.infer<typeof incomeDetailSchema>;
-export type BudgetInput = z.infer<typeof budgetSchema>;
 export type ReportGenerationInput = z.infer<typeof reportGenerationSchema>;
 export type TransactionFilters = z.infer<typeof transactionFiltersSchema>;

@@ -21,20 +21,6 @@ export interface FinanceSummary {
     expenses: number;
     netIncome: number;
   };
-  topCategories: {
-    income: Array<{
-      categoryId: number;
-      categoryName: string;
-      amount: number;
-      percentage: number;
-    }>;
-    expenses: Array<{
-      categoryId: number;
-      categoryName: string;
-      amount: number;
-      percentage: number;
-    }>;
-  };
   recentTransactions: Array<{
     id: number;
     transactionNumber: string;
@@ -42,7 +28,6 @@ export interface FinanceSummary {
     amount: number;
     description: string;
     transactionDate: Date;
-    categoryName: string;
   }>;
 }
 
@@ -72,7 +57,6 @@ export const useFinanceSummary = (filters: FinanceSummaryFilters = {}) => {
           currentMonth: { income: 0, expenses: 0, netIncome: 0 },
           previousMonth: { income: 0, expenses: 0, netIncome: 0 },
           yearToDate: { income: 0, expenses: 0, netIncome: 0 },
-          topCategories: { income: [], expenses: [] },
           recentTransactions: [],
         };
       }
