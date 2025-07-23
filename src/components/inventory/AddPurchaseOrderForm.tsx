@@ -38,6 +38,20 @@ export default function AddPurchaseOrderForm() {
     if (!form.getValues("orderDate")) {
       form.setValue("orderDate", new Date().toISOString());
     }
+
+    // Ensure at least one item exists
+    const currentItems = form.getValues("items");
+    if (!currentItems || currentItems.length === 0) {
+      form.setValue("items", [
+        {
+          productId: undefined,
+          variantId: undefined,
+          quantityOrdered: 1,
+          unitCost: 0,
+          totalCost: 0,
+        },
+      ]);
+    }
   }, [form]);
 
   // Form submission

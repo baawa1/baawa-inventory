@@ -32,9 +32,9 @@ export interface FormState {
 
 // Default form values that match the schema
 export const defaultFormValues: CreatePurchaseOrderData = {
-  supplierId: 0,
+  supplierId: 0, // This will be set when user selects a supplier
   orderNumber: "",
-  orderDate: "",
+  orderDate: new Date().toISOString(), // Set current date as default
   expectedDeliveryDate: "",
   subtotal: 0,
   taxAmount: 0,

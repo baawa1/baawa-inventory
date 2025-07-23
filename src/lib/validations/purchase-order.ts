@@ -6,9 +6,9 @@ import { PURCHASE_ORDER_STATUS } from "@/lib/constants";
 export const purchaseOrderItemSchema = z.object({
   productId: z.number().int().positive().optional(),
   variantId: z.number().int().positive().optional(),
-  quantityOrdered: z.number().int().positive(),
-  unitCost: z.number().positive(),
-  totalCost: z.number().positive(),
+  quantityOrdered: z.coerce.number().int().positive(),
+  unitCost: z.coerce.number().positive(),
+  totalCost: z.coerce.number().positive(),
 });
 
 // Purchase order creation schema
@@ -17,10 +17,10 @@ export const createPurchaseOrderSchema = z.object({
   orderNumber: z.string().min(1).max(50),
   orderDate: z.string().datetime(),
   expectedDeliveryDate: z.string().datetime().optional(),
-  subtotal: z.number().positive(),
-  taxAmount: z.number().min(0),
-  shippingCost: z.number().min(0),
-  totalAmount: z.number().positive(),
+  subtotal: z.coerce.number().positive(),
+  taxAmount: z.coerce.number().min(0),
+  shippingCost: z.coerce.number().min(0),
+  totalAmount: z.coerce.number().positive(),
   notes: z.string().optional(),
   items: z
     .array(purchaseOrderItemSchema)
@@ -32,13 +32,13 @@ export const updatePurchaseOrderSchema = z
   .object({
     supplierId: idSchema.optional(),
     orderNumber: z.string().min(1).max(50).optional(),
-    orderDate: z.string().datetime().optional(),
-    expectedDeliveryDate: z.string().datetime().optional(),
-    actualDeliveryDate: z.string().datetime().optional(),
-    subtotal: z.number().positive().optional(),
-    taxAmount: z.number().min(0).optional(),
-    shippingCost: z.number().min(0).optional(),
-    totalAmount: z.number().positive().optional(),
+    orderDate: z.string().optional(),
+    expectedDeliveryDate: z.string().optional(),
+    actualDeliveryDate: z.string().optional(),
+    subtotal: z.coerce.number().positive().optional(),
+    taxAmount: z.coerce.number().min(0).optional(),
+    shippingCost: z.coerce.number().min(0).optional(),
+    totalAmount: z.coerce.number().positive().optional(),
     status: z
       .enum([
         PURCHASE_ORDER_STATUS.DRAFT,

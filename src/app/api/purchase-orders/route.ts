@@ -167,7 +167,7 @@ export async function GET(request: NextRequest) {
       taxAmount: po.taxAmount,
       shippingCost: po.shippingCost,
       totalAmount: po.totalAmount,
-      status: po.status,
+      status: po.status.toUpperCase(),
       notes: po.notes,
       createdAt: po.createdAt,
       updatedAt: po.updatedAt,
@@ -249,7 +249,7 @@ export async function POST(request: NextRequest) {
 
     // Check if order number already exists
     const existingOrder = await prisma.purchaseOrder.findUnique({
-      where: { order_number: validatedData.orderNumber },
+      where: { orderNumber: validatedData.orderNumber },
       select: { id: true },
     });
 

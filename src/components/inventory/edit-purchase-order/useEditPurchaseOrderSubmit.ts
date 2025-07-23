@@ -17,19 +17,32 @@ export function useEditPurchaseOrderSubmit(
       setIsSubmitting(true);
       setSubmitError(null);
 
-      // Prepare data for submission
-      const submitData = {
-        status: data.status,
-        notes: data.notes || null,
-        expectedDeliveryDate: data.expectedDeliveryDate || undefined,
-        actualDeliveryDate: data.actualDeliveryDate || undefined,
-      };
+      // Prepare data for submission - only include fields that have values
+      const submitData: any = {};
+
+      if (data.supplierId !== undefined)
+        submitData.supplierId = data.supplierId;
+      if (data.orderNumber) submitData.orderNumber = data.orderNumber;
+      if (data.orderDate) submitData.orderDate = data.orderDate;
+      if (data.expectedDeliveryDate)
+        submitData.expectedDeliveryDate = data.expectedDeliveryDate;
+      if (data.actualDeliveryDate)
+        submitData.actualDeliveryDate = data.actualDeliveryDate;
+      if (data.subtotal !== undefined) submitData.subtotal = data.subtotal;
+      if (data.taxAmount !== undefined) submitData.taxAmount = data.taxAmount;
+      if (data.shippingCost !== undefined)
+        submitData.shippingCost = data.shippingCost;
+      if (data.totalAmount !== undefined)
+        submitData.totalAmount = data.totalAmount;
+      if (data.status) submitData.status = data.status;
+      if (data.notes !== undefined) submitData.notes = data.notes;
 
       const response = await fetch(`/api/purchase-orders/${purchaseOrderId}`, {
         method: "PUT",
         headers: {
           "Content-Type": "application/json",
         },
+        credentials: "include",
         body: JSON.stringify(submitData),
       });
 

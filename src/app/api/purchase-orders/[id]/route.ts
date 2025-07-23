@@ -17,7 +17,7 @@ export async function GET(
     }
 
     // Check permissions
-    if (!hasPermission(session.user.role, "INVENTORY_READ")) {
+    if (!hasPermission(session.user.role, "PURCHASE_ORDER_READ")) {
       return handleApiError(new Error("Insufficient permissions"), 403);
     }
 
@@ -47,7 +47,7 @@ export async function GET(
             role: true,
           },
         },
-        purchase_order_items: {
+        purchaseOrderItems: {
           include: {
             products: {
               select: {
@@ -57,7 +57,7 @@ export async function GET(
                 barcode: true,
               },
             },
-            product_variants: {
+            productVariants: {
               select: {
                 id: true,
                 name: true,
@@ -76,33 +76,33 @@ export async function GET(
     // Transform the data to match the component interface
     const transformedPurchaseOrder = {
       id: purchaseOrder.id,
-      orderNumber: purchaseOrder.order_number,
-      supplierId: purchaseOrder.supplier_id,
-      userId: purchaseOrder.user_id,
-      orderDate: purchaseOrder.order_date.toISOString(),
-      expectedDeliveryDate: purchaseOrder.expected_delivery_date?.toISOString(),
-      actualDeliveryDate: purchaseOrder.actual_delivery_date?.toISOString(),
+      orderNumber: purchaseOrder.orderNumber,
+      supplierId: purchaseOrder.supplierId,
+      userId: purchaseOrder.userId,
+      orderDate: purchaseOrder.orderDate.toISOString(),
+      expectedDeliveryDate: purchaseOrder.expectedDeliveryDate?.toISOString(),
+      actualDeliveryDate: purchaseOrder.actualDeliveryDate?.toISOString(),
       subtotal: purchaseOrder.subtotal.toString(),
-      taxAmount: purchaseOrder.tax_amount.toString(),
-      shippingCost: purchaseOrder.shipping_cost?.toString(),
-      totalAmount: purchaseOrder.total_amount.toString(),
-      status: purchaseOrder.status,
+      taxAmount: purchaseOrder.taxAmount.toString(),
+      shippingCost: purchaseOrder.shippingCost?.toString(),
+      totalAmount: purchaseOrder.totalAmount.toString(),
+      status: purchaseOrder.status.toUpperCase(),
       notes: purchaseOrder.notes,
-      createdAt: purchaseOrder.created_at?.toISOString() || "",
-      updatedAt: purchaseOrder.updated_at?.toISOString() || "",
+      createdAt: purchaseOrder.createdAt?.toISOString() || "",
+      updatedAt: purchaseOrder.updatedAt?.toISOString() || "",
       suppliers: purchaseOrder.suppliers,
       users: purchaseOrder.users,
-      purchaseOrderItems: purchaseOrder.purchase_order_items.map((item) => ({
+      purchaseOrderItems: purchaseOrder.purchaseOrderItems.map((item) => ({
         id: item.id,
-        purchaseOrderId: item.purchase_order_id,
-        productId: item.product_id,
-        variantId: item.variant_id,
-        quantityOrdered: item.quantity_ordered,
-        quantityReceived: item.quantity_received,
-        unitCost: item.unit_cost.toString(),
-        totalCost: item.total_cost.toString(),
+        purchaseOrderId: item.purchaseOrderId,
+        productId: item.productId,
+        variantId: item.variantId,
+        quantityOrdered: item.quantityOrdered,
+        quantityReceived: item.quantityReceived,
+        unitCost: item.unitCost.toString(),
+        totalCost: item.totalCost.toString(),
         products: item.products,
-        productVariants: item.product_variants,
+        productVariants: item.productVariants,
       })),
     };
 
@@ -124,7 +124,7 @@ export async function PUT(
     }
 
     // Check permissions
-    if (!hasPermission(session.user.role, "INVENTORY_WRITE")) {
+    if (!hasPermission(session.user.role, "PURCHASE_ORDER_WRITE")) {
       return handleApiError(new Error("Insufficient permissions"), 403);
     }
 
@@ -145,20 +145,39 @@ export async function PUT(
       return handleApiError(new Error("Purchase order not found"), 404);
     }
 
+    // Prepare update data - only include fields that are provided
+    const updateData: any = {
+      updatedAt: new Date(),
+    };
+
+    if (body.supplierId !== undefined) updateData.supplierId = body.supplierId;
+    if (body.orderNumber !== undefined)
+      updateData.orderNumber = body.orderNumber;
+    if (body.orderDate !== undefined)
+      updateData.orderDate = new Date(body.orderDate);
+    if (body.expectedDeliveryDate !== undefined) {
+      updateData.expectedDeliveryDate = body.expectedDeliveryDate
+        ? new Date(body.expectedDeliveryDate)
+        : null;
+    }
+    if (body.actualDeliveryDate !== undefined) {
+      updateData.actualDeliveryDate = body.actualDeliveryDate
+        ? new Date(body.actualDeliveryDate)
+        : null;
+    }
+    if (body.subtotal !== undefined) updateData.subtotal = body.subtotal;
+    if (body.taxAmount !== undefined) updateData.taxAmount = body.taxAmount;
+    if (body.shippingCost !== undefined)
+      updateData.shippingCost = body.shippingCost;
+    if (body.totalAmount !== undefined)
+      updateData.totalAmount = body.totalAmount;
+    if (body.status !== undefined) updateData.status = body.status;
+    if (body.notes !== undefined) updateData.notes = body.notes;
+
     // Update the purchase order
     const updatedOrder = await prisma.purchaseOrder.update({
       where: { id },
-      data: {
-        status: body.status,
-        notes: body.notes,
-        expected_delivery_date: body.expectedDeliveryDate
-          ? new Date(body.expectedDeliveryDate)
-          : undefined,
-        actual_delivery_date: body.actualDeliveryDate
-          ? new Date(body.actualDeliveryDate)
-          : undefined,
-        updated_at: new Date(),
-      },
+      data: updateData,
       include: {
         suppliers: {
           select: {
@@ -177,28 +196,59 @@ export async function PUT(
             role: true,
           },
         },
+        purchaseOrderItems: {
+          include: {
+            products: {
+              select: {
+                id: true,
+                name: true,
+                sku: true,
+                barcode: true,
+              },
+            },
+            productVariants: {
+              select: {
+                id: true,
+                name: true,
+                sku: true,
+              },
+            },
+          },
+        },
       },
     });
 
     // Transform the response
     const transformedOrder = {
       id: updatedOrder.id,
-      orderNumber: updatedOrder.order_number,
-      supplierId: updatedOrder.supplier_id,
-      userId: updatedOrder.user_id,
-      orderDate: updatedOrder.order_date.toISOString(),
-      expectedDeliveryDate: updatedOrder.expected_delivery_date?.toISOString(),
-      actualDeliveryDate: updatedOrder.actual_delivery_date?.toISOString(),
+      orderNumber: updatedOrder.orderNumber,
+      supplierId: updatedOrder.supplierId,
+      userId: updatedOrder.userId,
+      orderDate: updatedOrder.orderDate.toISOString(),
+      expectedDeliveryDate: updatedOrder.expectedDeliveryDate?.toISOString(),
+      actualDeliveryDate: updatedOrder.actualDeliveryDate?.toISOString(),
       subtotal: updatedOrder.subtotal.toString(),
-      taxAmount: updatedOrder.tax_amount.toString(),
-      shippingCost: updatedOrder.shipping_cost?.toString(),
-      totalAmount: updatedOrder.total_amount.toString(),
+      taxAmount: updatedOrder.taxAmount.toString(),
+      shippingCost: updatedOrder.shippingCost?.toString(),
+      totalAmount: updatedOrder.totalAmount.toString(),
       status: updatedOrder.status,
       notes: updatedOrder.notes,
-      createdAt: updatedOrder.created_at?.toISOString() || "",
-      updatedAt: updatedOrder.updated_at?.toISOString() || "",
+      createdAt: updatedOrder.createdAt?.toISOString() || "",
+      updatedAt: updatedOrder.updatedAt?.toISOString() || "",
       suppliers: updatedOrder.suppliers,
       users: updatedOrder.users,
+      purchaseOrderItems: updatedOrder.purchaseOrderItems.map((item) => ({
+        id: item.id,
+        purchaseOrderId: item.purchaseOrderId,
+        productId: item.productId,
+        variantId: item.variantId,
+        quantityOrdered: item.quantityOrdered,
+        quantityReceived: item.quantityReceived,
+        unitCost: item.unitCost.toString(),
+        totalCost: item.totalCost.toString(),
+        products: item.products,
+        productVariants: item.productVariants,
+      })),
     };
 
     return createApiResponse.success(transformedOrder);

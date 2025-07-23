@@ -124,7 +124,10 @@ const fetchPurchaseOrders = async (
   if (filters.toDate) searchParams.set("toDate", filters.toDate);
 
   const response = await fetch(
-    `/api/purchase-orders?${searchParams.toString()}`
+    `/api/purchase-orders?${searchParams.toString()}`,
+    {
+      credentials: "include",
+    }
   );
 
   if (!response.ok) {
@@ -148,6 +151,7 @@ const createPurchaseOrder = async (
     headers: {
       "Content-Type": "application/json",
     },
+    credentials: "include",
     body: JSON.stringify(data),
   });
 
@@ -156,7 +160,8 @@ const createPurchaseOrder = async (
     throw new Error(errorData.message || "Failed to create purchase order");
   }
 
-  return response.json();
+  const result = await response.json();
+  return result.data;
 };
 
 const updatePurchaseOrder = async ({
@@ -171,6 +176,7 @@ const updatePurchaseOrder = async ({
     headers: {
       "Content-Type": "application/json",
     },
+    credentials: "include",
     body: JSON.stringify(data),
   });
 
@@ -179,12 +185,14 @@ const updatePurchaseOrder = async ({
     throw new Error(errorData.message || "Failed to update purchase order");
   }
 
-  return response.json();
+  const result = await response.json();
+  return result.data;
 };
 
 const deletePurchaseOrder = async (id: number): Promise<void> => {
   const response = await fetch(`/api/purchase-orders/${id}`, {
     method: "DELETE",
+    credentials: "include",
   });
 
   if (!response.ok) {
@@ -208,11 +216,15 @@ export const usePurchaseOrder = (id: number) => {
   return useQuery({
     queryKey: queryKeys.purchaseOrders.detail(id),
     queryFn: async () => {
-      const response = await fetch(`/api/purchase-orders/${id}`);
+      const response = await fetch(`/api/purchase-orders/${id}`, {
+        credentials: "include",
+      });
       if (!response.ok) {
         throw new Error("Failed to fetch purchase order");
       }
-      return response.json();
+      const result = await response.json();
+      // Extract data from the API response wrapper
+      return result.data;
     },
     enabled: !!id,
   });

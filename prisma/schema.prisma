@@ -129,59 +129,59 @@ model Brand {
 }
 
 model Product {
-  id                   Int                       @id @default(autoincrement())
-  name                 String                    @db.VarChar(255)
-  description          String?
-  sku                  String                    @unique @db.VarChar(100)
-  barcode              String?                   @db.VarChar(100)
-  cost                 Decimal                   @db.Decimal(10, 2)
-  price                Decimal                   @db.Decimal(10, 2)
-  stock                Int                       @default(0)
-  minStock             Int                       @default(0) @map("min_stock")
-  maxStock             Int?                      @map("max_stock")
-  unit                 String                    @default("piece") @db.VarChar(20)
-  weight               Decimal?                  @db.Decimal(8, 3)
-  dimensions           String?                   @db.VarChar(100)
-  color                String?                   @db.VarChar(50)
-  size                 String?                   @db.VarChar(50)
-  material             String?                   @db.VarChar(100)
-  hasVariants          Boolean                   @default(false) @map("has_variants")
-  isArchived           Boolean                   @default(false) @map("is_archived")
-  tags                 String[]
-  metaTitle            String?                   @map("meta_title") @db.VarChar(255)
-  metaDescription      String?                   @map("meta_description")
-  seoKeywords          String[]                  @map("seo_keywords")
-  createdAt            DateTime?                 @default(now()) @map("created_at") @db.Timestamptz(6)
-  updatedAt            DateTime?                 @default(now()) @updatedAt @map("updated_at") @db.Timestamptz(6)
-  supplierId           Int?                      @map("supplier_id")
-  categoryId           Int?                      @map("category_id")
-  brandId              Int?                      @map("brand_id")
-  status               String                    @default("active") @db.VarChar(20)
-  allowReviews         Boolean                   @default(true) @map("allow_reviews")
-  isFeatured           Boolean                   @default(false) @map("is_featured")
-  metaContent          String?                   @map("meta_content")
-  metaExcerpt          String?                   @map("meta_excerpt")
-  saleEndDate          DateTime?                 @map("sale_end_date") @db.Timestamptz(6)
-  salePrice            Decimal?                  @map("sale_price") @db.Decimal(10, 2)
-  saleStartDate        DateTime?                 @map("sale_start_date") @db.Timestamptz(6)
-  sortOrder            Int?                      @map("sort_order")
-  variantAttributes    Json?                     @map("variant_attributes")
-  variantValues        Json?                     @map("variant_values")
-  images               Json?
-  lastSyncAt           DateTime?                 @map("last_sync_at") @db.Timestamptz(6)
-  syncErrors           String?                   @map("sync_errors")
-  syncStatus           String?                   @default("pending") @map("sync_status") @db.VarChar(20)
-  ai_content           AIContent[]
-  content_sync         ContentSync[]
-  product_variants     ProductVariant[]
-  brand                Brand?                    @relation(fields: [brandId], references: [id], onUpdate: NoAction)
-  category             Category?                 @relation(fields: [categoryId], references: [id], onUpdate: NoAction)
-  supplier             Supplier?                 @relation(fields: [supplierId], references: [id], onUpdate: NoAction)
-  purchaseOrderItems   PurchaseOrderItem[]
-  sales_items          SalesItem[]
-  stockAdditions       StockAddition[]
-  stock_adjustments    StockAdjustment[]
-  reconciliationItems  StockReconciliationItem[]
+  id                  Int                       @id @default(autoincrement())
+  name                String                    @db.VarChar(255)
+  description         String?
+  sku                 String                    @unique @db.VarChar(100)
+  barcode             String?                   @db.VarChar(100)
+  cost                Decimal                   @db.Decimal(10, 2)
+  price               Decimal                   @db.Decimal(10, 2)
+  stock               Int                       @default(0)
+  minStock            Int                       @default(0) @map("min_stock")
+  maxStock            Int?                      @map("max_stock")
+  unit                String                    @default("piece") @db.VarChar(20)
+  weight              Decimal?                  @db.Decimal(8, 3)
+  dimensions          String?                   @db.VarChar(100)
+  color               String?                   @db.VarChar(50)
+  size                String?                   @db.VarChar(50)
+  material            String?                   @db.VarChar(100)
+  hasVariants         Boolean                   @default(false) @map("has_variants")
+  isArchived          Boolean                   @default(false) @map("is_archived")
+  tags                String[]
+  metaTitle           String?                   @map("meta_title") @db.VarChar(255)
+  metaDescription     String?                   @map("meta_description")
+  seoKeywords         String[]                  @map("seo_keywords")
+  createdAt           DateTime?                 @default(now()) @map("created_at") @db.Timestamptz(6)
+  updatedAt           DateTime?                 @default(now()) @updatedAt @map("updated_at") @db.Timestamptz(6)
+  supplierId          Int?                      @map("supplier_id")
+  categoryId          Int?                      @map("category_id")
+  brandId             Int?                      @map("brand_id")
+  status              String                    @default("active") @db.VarChar(20)
+  allowReviews        Boolean                   @default(true) @map("allow_reviews")
+  isFeatured          Boolean                   @default(false) @map("is_featured")
+  metaContent         String?                   @map("meta_content")
+  metaExcerpt         String?                   @map("meta_excerpt")
+  saleEndDate         DateTime?                 @map("sale_end_date") @db.Timestamptz(6)
+  salePrice           Decimal?                  @map("sale_price") @db.Decimal(10, 2)
+  saleStartDate       DateTime?                 @map("sale_start_date") @db.Timestamptz(6)
+  sortOrder           Int?                      @map("sort_order")
+  variantAttributes   Json?                     @map("variant_attributes")
+  variantValues       Json?                     @map("variant_values")
+  images              Json?
+  lastSyncAt          DateTime?                 @map("last_sync_at") @db.Timestamptz(6)
+  syncErrors          String?                   @map("sync_errors")
+  syncStatus          String?                   @default("pending") @map("sync_status") @db.VarChar(20)
+  ai_content          AIContent[]
+  content_sync        ContentSync[]
+  product_variants    ProductVariant[]
+  brand               Brand?                    @relation(fields: [brandId], references: [id], onUpdate: NoAction)
+  category            Category?                 @relation(fields: [categoryId], references: [id], onUpdate: NoAction)
+  supplier            Supplier?                 @relation(fields: [supplierId], references: [id], onUpdate: NoAction)
+  purchaseOrderItems  PurchaseOrderItem[]
+  sales_items         SalesItem[]
+  stockAdditions      StockAddition[]
+  stock_adjustments   StockAdjustment[]
+  reconciliationItems StockReconciliationItem[]
 
   @@index([sku], map: "idx_products_sku")
   @@index([status], map: "idx_products_status")
@@ -193,28 +193,28 @@ model Product {
 }
 
 model ProductVariant {
-  id                   Int                 @id @default(autoincrement())
-  name                 String              @db.VarChar(255)
-  sku                  String              @unique @db.VarChar(100)
-  price                Decimal             @db.Decimal(10, 2)
-  cost                 Decimal?            @db.Decimal(10, 2)
-  color                String?             @db.VarChar(100)
-  created_at           DateTime?           @default(now()) @db.Timestamptz(6)
-  current_stock        Int                 @default(0)
-  dimensions           Json?
-  is_active            Boolean             @default(true)
-  material             String?             @db.VarChar(100)
-  max_stock_level      Int?
-  min_stock_level      Int?                @default(0)
-  product_id           Int
-  size                 String?             @db.VarChar(50)
-  updated_at           DateTime?           @default(now()) @db.Timestamptz(6)
-  weight               Decimal?            @db.Decimal(8, 3)
-  images               Json?
-  products             Product             @relation(fields: [product_id], references: [id], onDelete: Cascade, onUpdate: NoAction)
-  purchaseOrderItems   PurchaseOrderItem[]
-  sales_items          SalesItem[]
-  stock_adjustments    StockAdjustment[]
+  id                 Int                 @id @default(autoincrement())
+  name               String              @db.VarChar(255)
+  sku                String              @unique @db.VarChar(100)
+  price              Decimal             @db.Decimal(10, 2)
+  cost               Decimal?            @db.Decimal(10, 2)
+  color              String?             @db.VarChar(100)
+  created_at         DateTime?           @default(now()) @db.Timestamptz(6)
+  current_stock      Int                 @default(0)
+  dimensions         Json?
+  is_active          Boolean             @default(true)
+  material           String?             @db.VarChar(100)
+  max_stock_level    Int?
+  min_stock_level    Int?                @default(0)
+  product_id         Int
+  size               String?             @db.VarChar(50)
+  updated_at         DateTime?           @default(now()) @db.Timestamptz(6)
+  weight             Decimal?            @db.Decimal(8, 3)
+  images             Json?
+  products           Product             @relation(fields: [product_id], references: [id], onDelete: Cascade, onUpdate: NoAction)
+  purchaseOrderItems PurchaseOrderItem[]
+  sales_items        SalesItem[]
+  stock_adjustments  StockAdjustment[]
 
   @@index([product_id], map: "idx_product_variants_product_id")
   @@index([sku], map: "idx_product_variants_sku")
@@ -367,24 +367,24 @@ model StockAdjustment {
 }
 
 model PurchaseOrder {
-  id                     Int                 @id @default(autoincrement())
-  notes                  String?
-  actualDeliveryDate     DateTime?           @map("actual_delivery_date") @db.Date
-  createdAt              DateTime?           @default(now()) @map("created_at") @db.Timestamptz(6)
-  expectedDeliveryDate   DateTime?           @map("expected_delivery_date") @db.Date
-  orderDate              DateTime            @map("order_date") @db.Date
-  orderNumber            String              @unique @map("order_number") @db.VarChar(50)
-  shippingCost           Decimal?            @default(0) @map("shipping_cost") @db.Decimal(10, 2)
-  subtotal               Decimal             @db.Decimal(10, 2)
-  supplierId             Int                 @map("supplier_id")
-  taxAmount              Decimal             @default(0) @map("tax_amount") @db.Decimal(10, 2)
-  totalAmount            Decimal             @map("total_amount") @db.Decimal(10, 2)
-  updatedAt              DateTime?           @default(now()) @map("updated_at") @db.Timestamptz(6)
-  userId                 Int                 @map("user_id")
-  status                 PurchaseOrderStatus @default(DRAFT)
-  purchaseOrderItems     PurchaseOrderItem[] @relation("PurchaseOrderItems")
-  suppliers              Supplier            @relation(fields: [supplierId], references: [id], onDelete: NoAction, onUpdate: NoAction)
-  users                  User                @relation(fields: [userId], references: [id], onDelete: NoAction, onUpdate: NoAction)
+  id                   Int                 @id @default(autoincrement())
+  notes                String?
+  actualDeliveryDate   DateTime?           @map("actual_delivery_date") @db.Date
+  createdAt            DateTime?           @default(now()) @map("created_at") @db.Timestamptz(6)
+  expectedDeliveryDate DateTime?           @map("expected_delivery_date") @db.Date
+  orderDate            DateTime            @map("order_date") @db.Date
+  orderNumber          String              @unique @map("order_number") @db.VarChar(50)
+  shippingCost         Decimal?            @default(0) @map("shipping_cost") @db.Decimal(10, 2)
+  subtotal             Decimal             @db.Decimal(10, 2)
+  supplierId           Int                 @map("supplier_id")
+  taxAmount            Decimal             @default(0) @map("tax_amount") @db.Decimal(10, 2)
+  totalAmount          Decimal             @map("total_amount") @db.Decimal(10, 2)
+  updatedAt            DateTime?           @default(now()) @map("updated_at") @db.Timestamptz(6)
+  userId               Int                 @map("user_id")
+  status               PurchaseOrderStatus @default(DRAFT)
+  purchaseOrderItems   PurchaseOrderItem[] @relation("PurchaseOrderItems")
+  suppliers            Supplier            @relation(fields: [supplierId], references: [id], onDelete: NoAction, onUpdate: NoAction)
+  users                User                @relation(fields: [userId], references: [id], onDelete: NoAction, onUpdate: NoAction)
 
   @@index([orderNumber], map: "idx_purchase_orders_number")
   @@index([orderDate], map: "idx_purchase_orders_order_date")
@@ -396,18 +396,18 @@ model PurchaseOrder {
 }
 
 model PurchaseOrderItem {
-  id                Int             @id @default(autoincrement())
-  createdAt         DateTime?       @default(now()) @map("created_at") @db.Timestamptz(6)
-  productId         Int?            @map("product_id")
-  purchaseOrderId   Int             @map("purchase_order_id")
-  quantityOrdered   Int             @map("quantity_ordered")
-  quantityReceived  Int?            @default(0) @map("quantity_received")
-  totalCost         Decimal         @map("total_cost") @db.Decimal(10, 2)
-  unitCost          Decimal         @map("unit_cost") @db.Decimal(10, 2)
-  variantId         Int?            @map("variant_id")
-  products          Product?        @relation(fields: [productId], references: [id], onUpdate: NoAction)
-  purchaseOrders    PurchaseOrder   @relation("PurchaseOrderItems", fields: [purchaseOrderId], references: [id], onDelete: Cascade, onUpdate: NoAction)
-  productVariants   ProductVariant? @relation(fields: [variantId], references: [id], onUpdate: NoAction)
+  id               Int             @id @default(autoincrement())
+  createdAt        DateTime?       @default(now()) @map("created_at") @db.Timestamptz(6)
+  productId        Int?            @map("product_id")
+  purchaseOrderId  Int             @map("purchase_order_id")
+  quantityOrdered  Int             @map("quantity_ordered")
+  quantityReceived Int?            @default(0) @map("quantity_received")
+  totalCost        Decimal         @map("total_cost") @db.Decimal(10, 2)
+  unitCost         Decimal         @map("unit_cost") @db.Decimal(10, 2)
+  variantId        Int?            @map("variant_id")
+  products         Product?        @relation(fields: [productId], references: [id], onUpdate: NoAction)
+  purchaseOrders   PurchaseOrder   @relation("PurchaseOrderItems", fields: [purchaseOrderId], references: [id], onDelete: Cascade, onUpdate: NoAction)
+  productVariants  ProductVariant? @relation(fields: [variantId], references: [id], onUpdate: NoAction)
 
   @@index([purchaseOrderId], map: "idx_purchase_order_items_order")
   @@index([productId], map: "idx_purchase_order_items_product")

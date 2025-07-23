@@ -18,6 +18,7 @@ import {
 import { Button } from "@/components/ui/button";
 import { CalendarIcon } from "lucide-react";
 import { cn, formatCurrency } from "@/lib/utils";
+import { format } from "date-fns";
 import { UpdateProductFormData } from "./types";
 
 interface PricingPromotionsSectionProps {
@@ -93,7 +94,7 @@ export function PricingPromotionsSection({
                         )}
                       >
                         {field.value ? (
-                          field.value.toLocaleDateString()
+                          format(field.value, "PPP")
                         ) : (
                           <span>Pick a date</span>
                         )}
@@ -135,7 +136,7 @@ export function PricingPromotionsSection({
                         )}
                       >
                         {field.value ? (
-                          field.value.toLocaleDateString()
+                          format(field.value, "PPP")
                         ) : (
                           <span>Pick a date</span>
                         )}
