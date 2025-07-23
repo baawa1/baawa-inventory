@@ -205,10 +205,18 @@ export const reportGenerationSchema = z
 // Transaction Filters Schema
 export const transactionFiltersSchema = z.object({
   search: z.string().optional(),
-  type: z.enum([FINANCIAL_TYPES.EXPENSE, FINANCIAL_TYPES.INCOME]).optional(),
+  type: z
+    .union([
+      z.enum([FINANCIAL_TYPES.EXPENSE, FINANCIAL_TYPES.INCOME]),
+      z.literal("ALL"),
+    ])
+    .optional(),
   categoryId: z.number().optional(),
   status: z
-    .enum(Object.values(FINANCIAL_STATUS) as [string, ...string[]])
+    .union([
+      z.enum(Object.values(FINANCIAL_STATUS) as [string, ...string[]]),
+      z.literal("ALL"),
+    ])
     .optional(),
   startDate: z.string().optional(),
   endDate: z.string().optional(),
