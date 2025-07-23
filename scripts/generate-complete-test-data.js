@@ -274,14 +274,7 @@ const paymentMethods = [
 ];
 const transactionTypes = ["sale", "refund", "exchange"];
 const paymentStatuses = ["pending", "completed", "failed", "refunded"];
-const orderStatuses = [
-  "draft",
-  "pending",
-  "approved",
-  "shipped",
-  "delivered",
-  "cancelled",
-];
+
 const adjustmentTypes = ["ADD", "REMOVE", "CORRECT", "DAMAGE", "THEFT"];
 const adjustmentStatuses = ["PENDING", "APPROVED", "REJECTED"];
 const reconciliationStatuses = ["DRAFT", "PENDING", "APPROVED", "REJECTED"];
@@ -301,7 +294,6 @@ const generateBarcode = () =>
   randomNumber(1000000000000, 9999999999999).toString();
 const generateTransactionNumber = () =>
   `TXN${Date.now()}${randomNumber(100, 999)}`;
-const generateOrderNumber = () => `PO${Date.now()}${randomNumber(100, 999)}`;
 
 const generatePhone = () => {
   const prefixes = ["080", "081", "070", "090", "091"];
@@ -647,7 +639,7 @@ async function seedProducts(categories, brands, suppliers) {
         metaDescription: `High-quality ${productName} with excellent features`,
         seoKeywords: [productName.toLowerCase(), "quality", "best", "premium"],
         status: "active",
-        allowReviews: true,
+
         isFeatured: Math.random() > 0.8, // 20% chance of being featured
         metaContent: `Detailed information about ${productName}`,
         metaExcerpt: `Premium ${productName} with advanced features`,
@@ -834,89 +826,6 @@ async function seedStockAdditions(users, products, suppliers) {
   return stockAdditions;
 }
 
-async function seedPurchaseOrders(users, suppliers) {
-  console.log("Seeding purchase orders...");
-
-  const purchaseOrders = [];
-  for (let i = 0; i < 30; i++) {
-    const user = randomElement(users);
-    const supplier = randomElement(suppliers);
-    const orderNumber = generateOrderNumber();
-    const subtotal = randomDecimal(50000, 500000);
-    const taxAmount = subtotal * 0.075;
-    const shippingCost = randomDecimal(1000, 10000);
-    const totalAmount = subtotal + taxAmount + shippingCost;
-
-    const purchaseOrder = await prisma.purchaseOrder.create({
-      data: {
-        order_number: orderNumber,
-        order_date: new Date(
-          Date.now() - randomNumber(1, 365) * 24 * 60 * 60 * 1000
-        ),
-        expected_delivery_date: new Date(
-          Date.now() + randomNumber(1, 30) * 24 * 60 * 60 * 1000
-        ),
-        actual_delivery_date:
-          Math.random() > 0.3
-            ? new Date(Date.now() - randomNumber(1, 60) * 24 * 60 * 60 * 1000)
-            : null,
-        subtotal: subtotal,
-        tax_amount: taxAmount,
-        shipping_cost: shippingCost,
-        total_amount: totalAmount,
-        status: randomElement(orderStatuses),
-        notes: Math.random() > 0.7 ? "Priority order - please expedite" : null,
-        supplier_id: supplier.id,
-        user_id: user.id,
-      },
-    });
-    purchaseOrders.push(purchaseOrder);
-  }
-
-  console.log(`Created ${purchaseOrders.length} purchase orders`);
-  return purchaseOrders;
-}
-
-async function seedPurchaseOrderItems(purchaseOrders, products, variants) {
-  console.log("Seeding purchase order items...");
-
-  const purchaseOrderItems = [];
-  for (const purchaseOrder of purchaseOrders) {
-    const itemCount = randomNumber(2, 8);
-    for (let i = 0; i < itemCount; i++) {
-      const useVariant = Math.random() > 0.7;
-      const product = randomElement(products);
-      const variant = useVariant
-        ? randomElement(variants.filter((v) => v.product_id === product.id))
-        : null;
-
-      const quantityOrdered = randomNumber(10, 200);
-      const quantityReceived =
-        Math.random() > 0.3 ? randomNumber(0, quantityOrdered) : 0;
-      const unitCost = variant
-        ? parseFloat(variant.cost)
-        : parseFloat(product.cost);
-      const totalCost = unitCost * quantityOrdered;
-
-      const purchaseOrderItem = await prisma.purchaseOrderItem.create({
-        data: {
-          quantity_ordered: quantityOrdered,
-          quantity_received: quantityReceived,
-          unit_cost: unitCost,
-          total_cost: totalCost,
-          purchase_order_id: purchaseOrder.id,
-          product_id: product.id,
-          variant_id: variant ? variant.id : null,
-        },
-      });
-      purchaseOrderItems.push(purchaseOrderItem);
-    }
-  }
-
-  console.log(`Created ${purchaseOrderItems.length} purchase order items`);
-  return purchaseOrderItems;
-}
-
 async function seedStockAdjustments(users, products, variants) {
   console.log("Seeding stock adjustments...");
 
@@ -1060,7 +969,7 @@ async function seedAuditLogs(users) {
     "users",
     "products",
     "sales_transactions",
-    "purchase_orders",
+
     "stock_adjustments",
   ];
 
@@ -1230,12 +1139,7 @@ async function main() {
     const transactions = await seedSalesTransactions(users, products, variants);
     const salesItems = await seedSalesItems(transactions, products, variants);
     const stockAdditions = await seedStockAdditions(users, products, suppliers);
-    const purchaseOrders = await seedPurchaseOrders(users, suppliers);
-    const purchaseOrderItems = await seedPurchaseOrderItems(
-      purchaseOrders,
-      products,
-      variants
-    );
+
     const stockAdjustments = await seedStockAdjustments(
       users,
       products,
@@ -1263,14 +1167,13 @@ async function main() {
     console.log(`- Sales Transactions: ${transactions.length}`);
     console.log(`- Sales Items: ${salesItems.length}`);
     console.log(`- Stock Additions: ${stockAdditions.length}`);
-    console.log(`- Purchase Orders: ${purchaseOrders.length}`);
-    console.log(`- Purchase Order Items: ${purchaseOrderItems.length}`);
+
     console.log(`- Stock Adjustments: ${stockAdjustments.length}`);
     console.log(`- Stock Reconciliations: ${reconciliations.length}`);
     console.log(`- Reconciliation Items: ${reconciliationItems.length}`);
     console.log(`- Audit Logs: ${auditLogs.length}`);
     console.log(`- AI Content: ${aiContents.length}`);
-    console.log(`- Webflow Sync: ${webflowSyncs.length}`);
+    console.log(`- Content Sync: ${_contentSyncs.length}`);
     console.log(`- Rate Limits: ${rateLimits.length}`);
     console.log(`- Session Blacklist: ${sessionBlacklists.length}`);
 

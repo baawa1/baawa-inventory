@@ -512,25 +512,4 @@ test.describe("Comprehensive Inventory & POS Workflow", () => {
       console.log("✅ Admin can access audit logs");
     });
   });
-
-  test.describe("12. Purchase Orders", () => {
-    test("should allow manager to manage purchase orders", async ({ page }) => {
-      // Login as manager
-      await page.goto("/test-data");
-      await page.evaluate((email) => {
-        localStorage.setItem("test-user-email", email);
-        localStorage.setItem("test-user-status", "APPROVED");
-        localStorage.setItem("test-user-role", "MANAGER");
-      }, APPROVED_MANAGER.email);
-
-      // Navigate to purchase orders
-      await page.goto("/inventory/purchase-orders");
-      await expect(page).toHaveURL("/inventory/purchase-orders");
-
-      // Should see purchase orders interface
-      await expect(page.locator("text=Purchase Orders")).toBeVisible();
-
-      console.log("✅ Manager can access purchase orders");
-    });
-  });
 });

@@ -51,7 +51,6 @@ interface _Supplier {
   updatedAt: string;
   _count?: {
     products: number;
-    purchaseOrders: number;
   };
 }
 
@@ -345,16 +344,6 @@ export default function SupplierDetailModal({
                       <p className="text-sm font-medium">Products</p>
                       <p className="text-sm text-muted-foreground">
                         {supplier._count?.products || 0} products
-                      </p>
-                    </div>
-                  </div>
-
-                  <div className="flex items-center gap-3">
-                    <IconClipboardList className="h-4 w-4 text-muted-foreground" />
-                    <div>
-                      <p className="text-sm font-medium">Purchase Orders</p>
-                      <p className="text-sm text-muted-foreground">
-                        {supplier._count?.purchaseOrders || 0} orders
                       </p>
                     </div>
                   </div>

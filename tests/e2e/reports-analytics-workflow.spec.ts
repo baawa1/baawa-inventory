@@ -299,49 +299,6 @@ test.describe("Reports & Analytics Workflow", () => {
     });
   });
 
-  test.describe("5. Purchase Order Reports", () => {
-    test("should allow manager to access purchase order reports", async ({
-      page,
-    }) => {
-      // Login as manager
-      await page.goto("/test-data");
-      await page.evaluate((email) => {
-        localStorage.setItem("test-user-email", email);
-        localStorage.setItem("test-user-status", "APPROVED");
-        localStorage.setItem("test-user-role", "MANAGER");
-      }, APPROVED_MANAGER.email);
-
-      // Navigate to purchase orders
-      await page.goto("/inventory/purchase-orders");
-      await expect(page).toHaveURL("/inventory/purchase-orders");
-
-      // Should see purchase orders interface
-      await expect(page.locator("text=Purchase Orders")).toBeVisible();
-      await expect(page.locator("text=Create Order")).toBeVisible();
-
-      console.log("✅ Manager can access purchase order reports");
-    });
-
-    test("should display purchase order metrics", async ({ page }) => {
-      // Login as manager
-      await page.goto("/test-data");
-      await page.evaluate((email) => {
-        localStorage.setItem("test-user-email", email);
-        localStorage.setItem("test-user-status", "APPROVED");
-        localStorage.setItem("test-user-role", "MANAGER");
-      }, APPROVED_MANAGER.email);
-
-      // Navigate to purchase orders
-      await page.goto("/inventory/purchase-orders");
-
-      // Should see purchase order metrics
-      await expect(page.locator("text=Total Orders")).toBeVisible();
-      await expect(page.locator("text=Pending Orders")).toBeVisible();
-
-      console.log("✅ Purchase order metrics displayed");
-    });
-  });
-
   test.describe("6. Data Export Functionality", () => {
     test("should allow export of inventory data", async ({ page }) => {
       // Login as manager

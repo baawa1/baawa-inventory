@@ -250,20 +250,6 @@ export const STOCK_ADJUSTMENT_STATUS = {
 export type StockAdjustmentStatus =
   (typeof STOCK_ADJUSTMENT_STATUS)[keyof typeof STOCK_ADJUSTMENT_STATUS];
 
-// Purchase Order Status (must match Prisma PurchaseOrderStatus enum exactly)
-export const PURCHASE_ORDER_STATUS = {
-  DRAFT: "DRAFT",
-  PENDING: "PENDING",
-  APPROVED: "APPROVED",
-  ORDERED: "ORDERED",
-  PARTIAL_RECEIVED: "PARTIAL_RECEIVED",
-  RECEIVED: "RECEIVED",
-  CANCELLED: "CANCELLED",
-} as const;
-
-export type PurchaseOrderStatus =
-  (typeof PURCHASE_ORDER_STATUS)[keyof typeof PURCHASE_ORDER_STATUS];
-
 // AI Content Type (must match Prisma AIContentType enum exactly)
 export const AI_CONTENT_TYPE = {
   DESCRIPTION: "DESCRIPTION",

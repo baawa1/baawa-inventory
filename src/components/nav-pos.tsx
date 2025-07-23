@@ -9,7 +9,6 @@ import {
   IconHistory,
   IconUsers,
   IconChartBar,
-  IconStar,
   IconTicket,
 } from "@tabler/icons-react";
 
@@ -85,21 +84,7 @@ const posNavItems = [
       },
     ],
   },
-  {
-    title: "Reviews",
-    url: "/pos/reviews",
-    icon: IconStar,
-    items: [
-      {
-        title: "All Reviews",
-        url: "/pos/reviews",
-      },
-      {
-        title: "Pending Reviews",
-        url: "/pos/reviews?status=pending",
-      },
-    ],
-  },
+
   {
     title: "Coupons",
     url: "/pos/coupons",

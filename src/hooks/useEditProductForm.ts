@@ -53,7 +53,7 @@ interface ProductFormData {
   metaDescription?: string;
   seoKeywords: string[];
   status: "ACTIVE" | "INACTIVE" | "OUT_OF_STOCK" | "DISCONTINUED";
-  allowReviews: boolean;
+
   isFeatured: boolean;
   metaContent?: string;
   metaExcerpt?: string;

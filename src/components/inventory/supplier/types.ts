@@ -27,7 +27,6 @@ export interface Supplier {
   updatedAt: string;
   _count?: {
     products: number;
-    purchaseOrders: number;
   };
 }
 
@@ -41,5 +40,5 @@ export interface EditSupplierModalProps {
   supplier: Supplier | null;
   isOpen: boolean;
   onClose: () => void;
-  onSave: (supplier: Supplier) => void;
+  onSave: (_supplier: Supplier) => void;
 }

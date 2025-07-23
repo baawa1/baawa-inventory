@@ -143,7 +143,6 @@ npm run test:e2e:report
 - ✅ Supplier management
 - ✅ Stock management and adjustments
 - ✅ Low stock alerts
-- ✅ Purchase order management
 
 ### **3. POS System**
 
@@ -161,7 +160,7 @@ npm run test:e2e:report
 - ✅ Inventory reports
 - ✅ Sales reports and transaction history
 - ✅ Supplier performance metrics
-- ✅ Purchase order reports
+
 - ✅ Data export functionality
 - ✅ Real-time updates
 - ✅ Custom report building

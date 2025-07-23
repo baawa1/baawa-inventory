@@ -11,7 +11,6 @@ import {
   IconAdjustments,
   IconBuildingStore,
   IconChartBar,
-  IconClipboard,
 } from "@tabler/icons-react";
 
 import {
@@ -99,21 +98,7 @@ const inventoryNavItems = [
       },
     ],
   },
-  {
-    title: "Purchase Orders",
-    url: "/inventory/purchase-orders",
-    icon: IconClipboard,
-    items: [
-      {
-        title: "All Purchase Orders",
-        url: "/inventory/purchase-orders",
-      },
-      {
-        title: "Add Purchase Order",
-        url: "/inventory/purchase-orders/add",
-      },
-    ],
-  },
+
   {
     title: "Stock Reconciliation",
     url: "/inventory/stock-reconciliations",

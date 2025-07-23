@@ -12,7 +12,7 @@ The `generate-complete-test-data.js` script creates realistic test data for:
 - **Brands** with descriptions
 - **Products** with variants, pricing, and inventory
 - **Sales Transactions** and **Sales Items**
-- **Purchase Orders** and **Purchase Order Items**
+
 - **Stock Additions**, **Adjustments**, and **Reconciliations**
 - **Audit Logs** for tracking changes
 - **AI Content** for product descriptions
@@ -61,27 +61,26 @@ After running the script, you can log in with:
 
 The script creates the following test data:
 
-| Table                 | Count | Description                                 |
-| --------------------- | ----- | ------------------------------------------- |
-| Users                 | 14    | 1 Admin, 3 Managers, 10 Staff               |
-| Suppliers             | 15    | Various suppliers with contact info         |
-| Categories            | 35    | 15 main + 20 subcategories                  |
-| Brands                | 30    | Popular electronics brands                  |
-| Products              | 50    | Various products with pricing               |
-| Product Variants      | ~15   | Variants for products with hasVariants=true |
-| Sales Transactions    | 100   | Completed sales with customers              |
-| Sales Items           | ~300  | Individual items in transactions            |
-| Stock Additions       | 50    | Inventory additions from suppliers          |
-| Purchase Orders       | 30    | Orders to suppliers                         |
-| Purchase Order Items  | ~150  | Items in purchase orders                    |
-| Stock Adjustments     | 40    | Inventory adjustments                       |
-| Stock Reconciliations | 20    | Monthly reconciliations                     |
-| Reconciliation Items  | ~400  | Individual items in reconciliations         |
-| Audit Logs            | 200   | System activity logs                        |
-| AI Content            | 30    | AI-generated product content                |
-| Webflow Sync          | 20    | E-commerce sync records                     |
-| Rate Limits           | 4     | API rate limiting records                   |
-| Session Blacklist     | 10    | Blacklisted sessions                        |
+| Table              | Count | Description                                 |
+| ------------------ | ----- | ------------------------------------------- |
+| Users              | 14    | 1 Admin, 3 Managers, 10 Staff               |
+| Suppliers          | 15    | Various suppliers with contact info         |
+| Categories         | 35    | 15 main + 20 subcategories                  |
+| Brands             | 30    | Popular electronics brands                  |
+| Products           | 50    | Various products with pricing               |
+| Product Variants   | ~15   | Variants for products with hasVariants=true |
+| Sales Transactions | 100   | Completed sales with customers              |
+| Sales Items        | ~300  | Individual items in transactions            |
+| Stock Additions    | 50    | Inventory additions from suppliers          |
+
+| Stock Adjustments | 40 | Inventory adjustments |
+| Stock Reconciliations | 20 | Monthly reconciliations |
+| Reconciliation Items | ~400 | Individual items in reconciliations |
+| Audit Logs | 200 | System activity logs |
+| AI Content | 30 | AI-generated product content |
+| Webflow Sync | 20 | E-commerce sync records |
+| Rate Limits | 4 | API rate limiting records |
+| Session Blacklist | 10 | Blacklisted sessions |
 
 ## Data Relationships
 
@@ -90,7 +89,7 @@ The script maintains proper relationships between tables:
 - Products are linked to Categories, Brands, and Suppliers
 - Sales Items reference Products and Product Variants
 - Stock operations are linked to Users and Products
-- Purchase Orders are linked to Suppliers and Users
+
 - All audit trails maintain proper user references
 
 ## Customization

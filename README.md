@@ -21,7 +21,7 @@ This is a modern, full-stack inventory management and POS system designed specif
 
 - Complete product catalog with variants
 - Stock level tracking and alerts
-- Purchase order management
+
 - Supplier relationship management
 - Stock adjustment tracking with audit trails
 - CSV import/export functionality
@@ -125,7 +125,6 @@ The system uses a comprehensive PostgreSQL database schema with the following ma
 
 ### **Advanced Features**
 
-- **Purchase Orders** - Procurement management
 - **AI Content** - Generated content tracking
 - **Webflow Sync** - Integration status tracking
 - **Audit Logs** - Complete activity monitoring
@@ -161,7 +160,6 @@ The system uses a comprehensive PostgreSQL database schema with the following ma
    ```
 
    Fill in your environment variables:
-
    - Supabase credentials
    - OpenAI API key
    - Webflow API token

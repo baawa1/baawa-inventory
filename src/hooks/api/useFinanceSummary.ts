@@ -1,65 +1,58 @@
 import { useQuery } from "@tanstack/react-query";
 
-export interface FinancialSummary {
-  period: {
-    type: string;
-    start: string;
-    end: string;
-  };
-  current: {
-    totalIncome: number;
-    totalExpense: number;
-    netAmount: number;
-    transactionCount: number;
-  };
-  previous: {
-    totalIncome: number;
-    totalExpense: number;
-    netAmount: number;
-    transactionCount: number;
-  };
-  changes: {
+interface FinanceSummaryFilters {
+  startDate?: string;
+  endDate?: string;
+}
+
+export interface FinanceSummary {
+  currentMonth: {
     income: number;
-    expense: number;
-    net: number;
+    expenses: number;
+    netIncome: number;
   };
-  categoryBreakdown: Array<{
-    name: string;
-    type: string;
-    amount: number;
-    count: number;
-  }>;
+  previousMonth: {
+    income: number;
+    expenses: number;
+    netIncome: number;
+  };
+  yearToDate: {
+    income: number;
+    expenses: number;
+    netIncome: number;
+  };
+  topCategories: {
+    income: Array<{
+      categoryId: number;
+      categoryName: string;
+      amount: number;
+      percentage: number;
+    }>;
+    expenses: Array<{
+      categoryId: number;
+      categoryName: string;
+      amount: number;
+      percentage: number;
+    }>;
+  };
   recentTransactions: Array<{
     id: number;
     transactionNumber: string;
-    type: string;
+    type: "INCOME" | "EXPENSE";
     amount: number;
-    description: string | null;
+    description: string;
     transactionDate: Date;
-    status: string;
-    category: {
-      name: string;
-    };
-    createdByUser: {
-      firstName: string;
-      lastName: string;
-    };
+    categoryName: string;
   }>;
-  pendingCount: number;
-  lastUpdated: string;
 }
 
-interface SummaryFilters {
-  period?: "month" | "quarter" | "year";
-  compareWith?: "previous" | "lastYear";
-}
-
-export function useFinanceSummary(filters: SummaryFilters = {}) {
+// Fetch finance summary
+export const useFinanceSummary = (filters: FinanceSummaryFilters = {}) => {
   const queryKey = ["finance-summary", filters];
 
   return useQuery({
     queryKey,
-    queryFn: async (): Promise<{ summary: FinancialSummary }> => {
+    queryFn: async (): Promise<FinanceSummary> => {
       const params = new URLSearchParams();
       Object.entries(filters).forEach(([key, value]) => {
         if (value !== undefined) {
@@ -69,24 +62,23 @@ export function useFinanceSummary(filters: SummaryFilters = {}) {
 
       const response = await fetch(`/api/finance/summary?${params}`);
       if (!response.ok) {
-        throw new Error("Failed to fetch financial summary");
+        throw new Error("Failed to fetch finance summary");
       }
-      return response.json();
+      const data = await response.json();
+
+      // Return default structure if data is not available
+      if (!data.data) {
+        return {
+          currentMonth: { income: 0, expenses: 0, netIncome: 0 },
+          previousMonth: { income: 0, expenses: 0, netIncome: 0 },
+          yearToDate: { income: 0, expenses: 0, netIncome: 0 },
+          topCategories: { income: [], expenses: [] },
+          recentTransactions: [],
+        };
+      }
+
+      return data.data;
     },
-    // Refetch every 5 minutes to keep data fresh
-    refetchInterval: 5 * 60 * 1000,
+    staleTime: 5 * 60 * 1000, // 5 minutes
   });
-}
-
-// Convenience hooks for specific periods
-export function useMonthlyFinanceSummary() {
-  return useFinanceSummary({ period: "month" });
-}
-
-export function useQuarterlyFinanceSummary() {
-  return useFinanceSummary({ period: "quarter" });
-}
-
-export function useYearlyFinanceSummary() {
-  return useFinanceSummary({ period: "year" });
-}
+};

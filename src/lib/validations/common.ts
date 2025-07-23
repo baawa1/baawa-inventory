@@ -52,14 +52,6 @@ export const paymentStatusSchema = z.enum([
   "CANCELLED",
 ]);
 
-export const purchaseOrderStatusSchema = z.enum([
-  "PENDING",
-  "ORDERED",
-  "PARTIAL_RECEIVED",
-  "RECEIVED",
-  "CANCELLED",
-]);
-
 // Common field validations
 export const emailSchema = z.string().email("Invalid email format");
 

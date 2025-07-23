@@ -201,7 +201,7 @@ async function importWooCommerceProducts(csvFilePath) {
                 : null,
             status: product.Published === "1" ? "active" : "inactive",
             isFeatured: product["Is featured?"] === "1",
-            allowReviews: product["Allow customer reviews?"] === "1",
+
             sortOrder: product.Position ? parseInt(product.Position) : null,
             images: imageUrls,
             tags: parseTags(product.Tags),
