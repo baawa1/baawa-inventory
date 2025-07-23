@@ -5,7 +5,7 @@ import { formatCurrency } from "@/lib/utils";
 import { PurchaseOrderStatusBadge } from "@/components/inventory/PurchaseOrderStatusBadge";
 import { format } from "date-fns";
 import { IconCurrency, IconBuilding, IconCalendar } from "@tabler/icons-react";
-import { PurchaseOrder } from "./types";
+import { PurchaseOrder } from "@/hooks/api/purchase-orders";
 
 interface OrderSummarySectionProps {
   purchaseOrder: PurchaseOrder;
