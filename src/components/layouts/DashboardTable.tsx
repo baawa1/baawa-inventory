@@ -38,7 +38,7 @@ import {
 import { IconPackages } from "@tabler/icons-react";
 import { Loader2 } from "lucide-react";
 
-interface DashboardTableProps {
+interface DashboardTableProps<T = Record<string, unknown>> {
   tableTitle?: string;
   totalCount?: number;
   currentCount?: number;
@@ -47,9 +47,9 @@ interface DashboardTableProps {
   visibleColumns: string[];
   onColumnsChange?: (columns: string[]) => void;
   columnCustomizerKey?: string;
-  data: any[];
-  renderCell: (item: any, columnKey: string) => React.ReactNode;
-  renderActions?: (item: any) => React.ReactNode;
+  data: T[];
+  renderCell: (item: T, columnKey: string) => React.ReactNode;
+  renderActions?: (item: T) => React.ReactNode;
   pagination: {
     page: number;
     limit: number;
@@ -67,7 +67,7 @@ interface DashboardTableProps {
   emptyStateAction?: React.ReactNode;
 }
 
-export function DashboardTable({
+export function DashboardTable<T = Record<string, unknown>>({
   tableTitle = "Table",
   totalCount = 0,
   currentCount = 0,
@@ -89,7 +89,7 @@ export function DashboardTable({
   emptyStateIcon,
   emptyStateMessage = "No items found",
   emptyStateAction,
-}: DashboardTableProps) {
+}: DashboardTableProps<T>) {
   return (
     <DashboardCard>
       <CardHeader>
@@ -160,7 +160,7 @@ export function DashboardTable({
                   <TableRow>
                     {visibleColumns.map((columnKey: string) => {
                       const column = columns.find(
-                        (col: any) => col.key === columnKey
+                        (col: DashboardTableColumn) => col.key === columnKey
                       );
                       return (
                         <TableHead key={columnKey}>
@@ -174,8 +174,8 @@ export function DashboardTable({
                   </TableRow>
                 </TableHeader>
                 <TableBody>
-                  {data.map((item: any, index: number) => (
-                    <TableRow key={item.id || index}>
+                  {data.map((item: T, index: number) => (
+                    <TableRow key={(item as any).id || index}>
                       {visibleColumns.map((columnKey: string) => (
                         <TableCell key={columnKey}>
                           {renderCell(item, columnKey)}

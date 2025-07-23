@@ -65,6 +65,16 @@ interface ProductImageManagerProps {
   onImagesChange?: (images: ProductImage[]) => void;
 }
 
+interface RawImage {
+  url: string;
+  filename?: string;
+  mimeType?: string;
+  alt?: string;
+  isPrimary?: boolean;
+  uploadedAt?: string;
+  size?: number;
+}
+
 export function ProductImageManager({
   productId,
   productName: _productName,
@@ -96,7 +106,7 @@ export function ProductImageManager({
   };
 
   // Use utility functions for image processing
-  const processImages = (rawImages: any[]): ProductImage[] => {
+  const processImages = (rawImages: (string | RawImage)[]): ProductImage[] => {
     const validatedImages = rawImages.map((img, idx) => {
       if (typeof img === "string") {
         // Legacy: just a URL string
@@ -230,14 +240,15 @@ export function ProductImageManager({
       ]);
 
       // Optimistically remove the image
-      const currentImages = (previousImages as any)?.images || [];
+      const currentImages =
+        (previousImages as { images: ProductImage[] })?.images || [];
       const updatedImages = currentImages.filter(
-        (img: any) => img.url !== imageUrl
+        (img: ProductImage) => img.url !== imageUrl
       );
 
       // If we deleted the primary image and there are other images, make the first one primary
       const deletedImage = currentImages.find(
-        (img: any) => img.url === imageUrl
+        (img: ProductImage) => img.url === imageUrl
       );
       if (deletedImage?.isPrimary && updatedImages.length > 0) {
         updatedImages[0].isPrimary = true;

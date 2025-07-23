@@ -48,6 +48,12 @@ model User {
   createdReconciliations                                 StockReconciliation[] @relation("ReconciliationCreator")
   approver                                               User?                 @relation("UserApproval", fields: [approvedBy], references: [id], onDelete: NoAction, onUpdate: NoAction)
   approvedUsers                                          User[]                @relation("UserApproval")
+  
+  // Finance Manager Relations
+  createdTransactions                                    FinancialTransaction[]@relation("TransactionCreator")
+  approvedTransactions                                   FinancialTransaction[]@relation("TransactionApprover")
+  createdBudgets                                         Budget[]              @relation("BudgetCreator")
+  generatedReports                                       FinancialReport[]     @relation("ReportGenerator")
 
   @@index([approvedBy], map: "idx_users_approved_by")
   @@index([email], map: "idx_users_email")
@@ -537,4 +543,152 @@ enum PurchaseOrderStatus {
   PARTIAL_RECEIVED
   RECEIVED
   CANCELLED
+}
+
+// Finance Manager Enums
+enum FinancialType {
+  EXPENSE
+  INCOME
+}
+
+enum FinancialStatus {
+  PENDING
+  COMPLETED
+  CANCELLED
+  APPROVED
+  REJECTED
+}
+
+enum BudgetPeriodType {
+  MONTHLY
+  QUARTERLY
+  YEARLY
+}
+
+// Finance Manager Models
+model FinancialCategory {
+  id          Int                @id @default(autoincrement())
+  name        String             @db.VarChar(100)
+  type        FinancialType
+  description String?
+  isActive    Boolean            @default(true) @map("is_active")
+  parentId    Int?               @map("parent_id")
+  createdAt   DateTime           @default(now()) @map("created_at") @db.Timestamptz(6)
+  updatedAt   DateTime           @default(now()) @updatedAt @map("updated_at") @db.Timestamptz(6)
+
+  parent      FinancialCategory? @relation("CategoryHierarchy", fields: [parentId], references: [id])
+  children    FinancialCategory[] @relation("CategoryHierarchy")
+  transactions FinancialTransaction[]
+  budgets     Budget[]
+
+  @@index([type], map: "idx_financial_categories_type")
+  @@index([isActive], map: "idx_financial_categories_active")
+  @@map("financial_categories")
+}
+
+model FinancialTransaction {
+  id                Int                    @id @default(autoincrement())
+  transactionNumber String                 @unique @map("transaction_number") @db.VarChar(50)
+  type              FinancialType
+  categoryId        Int                    @map("category_id")
+  amount            Decimal                @db.Decimal(15, 2)
+  currency          String                 @default("NGN") @db.VarChar(3)
+  description       String?
+  transactionDate   DateTime               @map("transaction_date") @db.Date
+  paymentMethod     String?                @map("payment_method") @db.VarChar(50)
+  referenceNumber   String?                @map("reference_number") @db.VarChar(100)
+  status            FinancialStatus        @default(COMPLETED)
+  approvedBy        Int?                   @map("approved_by")
+  approvedAt        DateTime?              @map("approved_at") @db.Timestamptz(6)
+  createdBy         Int                    @map("created_by")
+  createdAt         DateTime               @default(now()) @map("created_at") @db.Timestamptz(6)
+  updatedAt         DateTime               @default(now()) @updatedAt @map("updated_at") @db.Timestamptz(6)
+
+  category          FinancialCategory      @relation(fields: [categoryId], references: [id])
+  approvedByUser    User?                  @relation("TransactionApprover", fields: [approvedBy], references: [id])
+  createdByUser     User                   @relation("TransactionCreator", fields: [createdBy], references: [id])
+  expenseDetails    ExpenseDetail?
+  incomeDetails     IncomeDetail?
+
+  @@index([type], map: "idx_financial_transactions_type")
+  @@index([transactionDate], map: "idx_financial_transactions_date")
+  @@index([status], map: "idx_financial_transactions_status")
+  @@index([categoryId], map: "idx_financial_transactions_category")
+  @@index([createdBy], map: "idx_financial_transactions_created_by")
+  @@map("financial_transactions")
+}
+
+model ExpenseDetail {
+  id            Int                 @id @default(autoincrement())
+  transactionId Int                 @unique @map("transaction_id")
+  expenseType   String              @map("expense_type") @db.VarChar(50)
+  vendorName    String?             @map("vendor_name") @db.VarChar(255)
+  vendorContact String?             @map("vendor_contact") @db.VarChar(255)
+  taxAmount     Decimal             @default(0) @map("tax_amount") @db.Decimal(10, 2)
+  taxRate       Decimal             @default(0) @map("tax_rate") @db.Decimal(5, 2)
+  receiptUrl    String?             @map("receipt_url") @db.VarChar(500)
+  notes         String?
+  createdAt     DateTime            @default(now()) @map("created_at") @db.Timestamptz(6)
+
+  transaction   FinancialTransaction @relation(fields: [transactionId], references: [id], onDelete: Cascade)
+
+  @@map("expense_details")
+}
+
+model IncomeDetail {
+  id            Int                 @id @default(autoincrement())
+  transactionId Int                 @unique @map("transaction_id")
+  incomeSource  String              @map("income_source") @db.VarChar(100)
+  payerName     String?             @map("payer_name") @db.VarChar(255)
+  payerContact  String?             @map("payer_contact") @db.VarChar(255)
+  taxWithheld   Decimal             @default(0) @map("tax_withheld") @db.Decimal(10, 2)
+  taxRate       Decimal             @default(0) @map("tax_rate") @db.Decimal(5, 2)
+  receiptUrl    String?             @map("receipt_url") @db.VarChar(500)
+  notes         String?
+  createdAt     DateTime            @default(now()) @map("created_at") @db.Timestamptz(6)
+
+  transaction   FinancialTransaction @relation(fields: [transactionId], references: [id], onDelete: Cascade)
+
+  @@map("income_details")
+}
+
+model Budget {
+  id         Int                @id @default(autoincrement())
+  name       String             @db.VarChar(255)
+  categoryId Int?               @map("category_id")
+  amount     Decimal            @db.Decimal(15, 2)
+  periodType BudgetPeriodType   @map("period_type")
+  startDate  DateTime           @map("start_date") @db.Date
+  endDate    DateTime           @map("end_date") @db.Date
+  createdBy  Int                @map("created_by")
+  createdAt  DateTime           @default(now()) @map("created_at") @db.Timestamptz(6)
+  updatedAt  DateTime           @default(now()) @updatedAt @map("updated_at") @db.Timestamptz(6)
+
+  category   FinancialCategory? @relation(fields: [categoryId], references: [id])
+  createdByUser User            @relation("BudgetCreator", fields: [createdBy], references: [id])
+
+  @@index([categoryId], map: "idx_budgets_category")
+  @@index([periodType], map: "idx_budgets_period_type")
+  @@index([startDate], map: "idx_budgets_start_date")
+  @@index([createdBy], map: "idx_budgets_created_by")
+  @@map("budgets")
+}
+
+model FinancialReport {
+  id          Int       @id @default(autoincrement())
+  reportType  String    @map("report_type") @db.VarChar(50)
+  reportName  String    @map("report_name") @db.VarChar(255)
+  periodStart DateTime  @map("period_start") @db.Date
+  periodEnd   DateTime  @map("period_end") @db.Date
+  reportData  Json      @map("report_data")
+  generatedBy Int       @map("generated_by")
+  generatedAt DateTime  @default(now()) @map("generated_at") @db.Timestamptz(6)
+  fileUrl     String?   @map("file_url") @db.VarChar(500)
+
+  generatedByUser User  @relation("ReportGenerator", fields: [generatedBy], references: [id])
+
+  @@index([reportType], map: "idx_financial_reports_type")
+  @@index([periodStart], map: "idx_financial_reports_period_start")
+  @@index([generatedBy], map: "idx_financial_reports_generated_by")
+  @@map("financial_reports")
 }

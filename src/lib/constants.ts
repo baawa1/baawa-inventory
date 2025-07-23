@@ -49,6 +49,115 @@ export const PAYMENT_METHODS = {
 export type PaymentMethod =
   (typeof PAYMENT_METHODS)[keyof typeof PAYMENT_METHODS];
 
+// Financial Types (must match Prisma FinancialType enum exactly)
+export const FINANCIAL_TYPES = {
+  EXPENSE: "EXPENSE",
+  INCOME: "INCOME",
+} as const;
+
+export type FinancialType =
+  (typeof FINANCIAL_TYPES)[keyof typeof FINANCIAL_TYPES];
+
+// Financial Status (must match Prisma FinancialStatus enum exactly)
+export const FINANCIAL_STATUS = {
+  PENDING: "PENDING",
+  COMPLETED: "COMPLETED",
+  CANCELLED: "CANCELLED",
+  APPROVED: "APPROVED",
+  REJECTED: "REJECTED",
+} as const;
+
+export type FinancialStatus =
+  (typeof FINANCIAL_STATUS)[keyof typeof FINANCIAL_STATUS];
+
+// Budget Period Types (must match Prisma BudgetPeriodType enum exactly)
+export const BUDGET_PERIOD_TYPES = {
+  MONTHLY: "MONTHLY",
+  QUARTERLY: "QUARTERLY",
+  YEARLY: "YEARLY",
+} as const;
+
+export type BudgetPeriodType =
+  (typeof BUDGET_PERIOD_TYPES)[keyof typeof BUDGET_PERIOD_TYPES];
+
+// Default Financial Categories for seeding
+export const DEFAULT_FINANCIAL_CATEGORIES = {
+  EXPENSE: [
+    {
+      name: "Salary Payments",
+      type: "EXPENSE",
+      description: "Employee salary disbursements",
+    },
+    {
+      name: "Transport Fees",
+      type: "EXPENSE",
+      description: "Vehicle maintenance, fuel, delivery costs",
+    },
+    {
+      name: "Utility Bills",
+      type: "EXPENSE",
+      description: "Electricity, water, internet, phone bills",
+    },
+    {
+      name: "Service Charges",
+      type: "EXPENSE",
+      description: "Bank charges, insurance, legal fees",
+    },
+    {
+      name: "Rent & Lease",
+      type: "EXPENSE",
+      description: "Office/store rent, equipment leasing",
+    },
+    {
+      name: "Marketing & Advertising",
+      type: "EXPENSE",
+      description: "Digital ads, print materials, promotions",
+    },
+    {
+      name: "Office Supplies",
+      type: "EXPENSE",
+      description: "Stationery, equipment, maintenance",
+    },
+    {
+      name: "Miscellaneous",
+      type: "EXPENSE",
+      description: "Other business expenses",
+    },
+  ],
+  INCOME: [
+    {
+      name: "Sales Revenue",
+      type: "INCOME",
+      description: "Revenue from product sales",
+    },
+    {
+      name: "Personal Investment",
+      type: "INCOME",
+      description: "Owner's capital injections",
+    },
+    {
+      name: "Business Loans",
+      type: "INCOME",
+      description: "Bank loans, credit lines, financing",
+    },
+    {
+      name: "Investment Income",
+      type: "INCOME",
+      description: "Interest, dividends, returns",
+    },
+    {
+      name: "Other Income",
+      type: "INCOME",
+      description: "Commissions, rebates, refunds",
+    },
+    {
+      name: "Grants & Subsidies",
+      type: "INCOME",
+      description: "Government or private grants",
+    },
+  ],
+} as const;
+
 export const ALL_PAYMENT_METHODS: PaymentMethod[] =
   Object.values(PAYMENT_METHODS);
 
@@ -88,6 +197,17 @@ export const PAYMENT_STATUS = {
 export type PaymentStatus =
   (typeof PAYMENT_STATUS)[keyof typeof PAYMENT_STATUS];
 
+// Transaction Status Constants (must match Prisma TransactionStatus enum exactly)
+export const TRANSACTION_STATUS = {
+  PENDING: "PENDING",
+  COMPLETED: "COMPLETED",
+  CANCELLED: "CANCELLED",
+  REFUNDED: "REFUNDED",
+} as const;
+
+export type TransactionStatus =
+  (typeof TRANSACTION_STATUS)[keyof typeof TRANSACTION_STATUS];
+
 // Discount Type Constants (must match Prisma DiscountType enum exactly)
 export const DISCOUNT_TYPE = {
   AMOUNT: "AMOUNT",
@@ -119,6 +239,16 @@ export const STOCK_ADJUSTMENT_TYPES = {
 
 export type StockAdjustmentType =
   (typeof STOCK_ADJUSTMENT_TYPES)[keyof typeof STOCK_ADJUSTMENT_TYPES];
+
+// Stock Adjustment Status (must match Prisma StockAdjustmentStatus enum exactly)
+export const STOCK_ADJUSTMENT_STATUS = {
+  PENDING: "PENDING",
+  APPROVED: "APPROVED",
+  REJECTED: "REJECTED",
+} as const;
+
+export type StockAdjustmentStatus =
+  (typeof STOCK_ADJUSTMENT_STATUS)[keyof typeof STOCK_ADJUSTMENT_STATUS];
 
 // Purchase Order Status (must match Prisma PurchaseOrderStatus enum exactly)
 export const PURCHASE_ORDER_STATUS = {

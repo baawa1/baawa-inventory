@@ -58,24 +58,6 @@ export default function EditPurchaseOrderForm({
   const router = useRouter();
   const [submitError, setSubmitError] = useState<string | null>(null);
 
-  // Form setup
-  const form = useForm<UpdatePurchaseOrderFormData>({
-    resolver: zodResolver(updatePurchaseOrderSchema),
-    defaultValues: {
-      supplierId: undefined,
-      orderNumber: "",
-      orderDate: "",
-      expectedDeliveryDate: "",
-      actualDeliveryDate: "",
-      subtotal: 0,
-      taxAmount: 0,
-      shippingCost: 0,
-      totalAmount: 0,
-      status: undefined,
-      notes: "",
-    },
-  });
-
   // Data fetching
   const {
     data: purchaseOrder,
@@ -98,6 +80,24 @@ export default function EditPurchaseOrderForm({
       label: supplier.name,
     })) || [];
 
+  // Form setup with proper default values
+  const form = useForm<UpdatePurchaseOrderFormData>({
+    resolver: zodResolver(updatePurchaseOrderSchema),
+    defaultValues: {
+      supplierId: undefined,
+      orderNumber: "",
+      orderDate: "",
+      expectedDeliveryDate: "",
+      actualDeliveryDate: "",
+      subtotal: 0,
+      taxAmount: 0,
+      shippingCost: 0,
+      totalAmount: 0,
+      status: undefined,
+      notes: "",
+    },
+  });
+
   // Populate form when data is loaded
   React.useEffect(() => {
     if (purchaseOrder) {
@@ -107,7 +107,7 @@ export default function EditPurchaseOrderForm({
       console.log("Actual Delivery Date:", purchaseOrder.actualDeliveryDate);
 
       const formData = {
-        supplierId: purchaseOrder.supplierId,
+        supplierId: purchaseOrder.supplierId || undefined,
         orderNumber: purchaseOrder.orderNumber || "",
         orderDate: purchaseOrder.orderDate
           ? new Date(purchaseOrder.orderDate).toISOString().split("T")[0]
@@ -116,19 +116,19 @@ export default function EditPurchaseOrderForm({
           ? new Date(purchaseOrder.expectedDeliveryDate)
               .toISOString()
               .split("T")[0]
-          : "",
+          : undefined,
         actualDeliveryDate: purchaseOrder.actualDeliveryDate
           ? new Date(purchaseOrder.actualDeliveryDate)
               .toISOString()
               .split("T")[0]
-          : "",
+          : undefined,
         subtotal: parseFloat(purchaseOrder.subtotal) || 0,
         taxAmount: parseFloat(purchaseOrder.taxAmount) || 0,
         shippingCost: purchaseOrder.shippingCost
           ? parseFloat(purchaseOrder.shippingCost)
           : 0,
         totalAmount: parseFloat(purchaseOrder.totalAmount) || 0,
-        status: purchaseOrder.status,
+        status: purchaseOrder.status || undefined,
         notes: purchaseOrder.notes || "",
       };
 
@@ -155,7 +155,7 @@ export default function EditPurchaseOrderForm({
       setSubmitError(null);
 
       // Prepare data for submission - only include fields that have values
-      const submitData: any = {};
+      const submitData: Partial<UpdatePurchaseOrderFormData> = {};
 
       if (data.supplierId !== undefined)
         submitData.supplierId = data.supplierId;

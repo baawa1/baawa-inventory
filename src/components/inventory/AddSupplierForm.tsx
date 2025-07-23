@@ -33,6 +33,15 @@ import { nameSchema, phoneSchema } from "@/lib/validations/common";
 import { useCreateSupplier } from "@/hooks/api/suppliers";
 import { logger } from "@/lib/logger";
 
+interface ValidationError {
+  field: string;
+  message: string;
+}
+
+interface ValidationErrorResponse {
+  details: ValidationError[];
+}
+
 // Form validation schema - using proper validation schemas
 const supplierFormSchema = z.object({
   name: nameSchema,
@@ -161,17 +170,19 @@ export default function AddSupplierForm() {
             // Check if it's a validation error response
             if (
               errorMessage === "Validation failed" &&
-              (error as any).details
+              (error as unknown as ValidationErrorResponse).details
             ) {
               // Set form errors for each validation field
-              (error as any).details.forEach((detail: any) => {
-                if (detail.field && detail.message) {
-                  form.setError(detail.field as any, {
-                    type: "server",
-                    message: detail.message,
-                  });
+              (error as unknown as ValidationErrorResponse).details.forEach(
+                (detail: ValidationError) => {
+                  if (detail.field && detail.message) {
+                    form.setError(detail.field as keyof SupplierFormData, {
+                      type: "server",
+                      message: detail.message,
+                    });
+                  }
                 }
-              });
+              );
               toast.error("Please fix the validation errors below");
               return;
             }

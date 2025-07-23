@@ -53,6 +53,10 @@ interface ReceiptPrinterProps {
   variant?: "default" | "outline" | "ghost";
 }
 
+interface ValidationDetail {
+  message: string;
+}
+
 const PAYMENT_METHOD_LABELS = {
   cash: "Cash",
   pos: "POS Machine",
@@ -269,7 +273,7 @@ export function ReceiptPrinter({
             errors: error.details,
           });
           toast.error(
-            `Validation error: ${error.details.map((d: any) => d.message).join(", ")}`
+            `Validation error: ${error.details.map((d: ValidationDetail) => d.message).join(", ")}`
           );
         } else {
           toast.error(error.error || "Failed to print receipt");

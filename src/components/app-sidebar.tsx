@@ -3,18 +3,20 @@
 import * as React from "react";
 import { useSession } from "next-auth/react";
 import {
+  IconChartBar,
+  IconCash,
   IconDashboard,
   IconHelp,
   IconInnerShadowTop,
   IconSettings,
-  IconUsers,
   IconShoppingCart,
-  IconChartBar,
+  IconUsers,
 } from "@tabler/icons-react";
 
-import { NavMain } from "@/components/nav-main";
 import { NavInventory } from "@/components/nav-inventory";
+import { NavMain } from "@/components/nav-main";
 import { NavPOS } from "@/components/nav-pos";
+import { NavFinance } from "@/components/nav-finance";
 import { NavSecondary } from "@/components/nav-secondary";
 import { NavUser } from "@/components/nav-user";
 import {
@@ -38,7 +40,11 @@ const navMain = [
     url: "/pos",
     icon: IconShoppingCart,
   },
-
+  {
+    title: "Finance Manager",
+    url: "/finance",
+    icon: IconCash,
+  },
   {
     title: "Reports",
     url: "/reports",
@@ -106,6 +112,7 @@ export function AppSidebar({ ...props }: React.ComponentProps<typeof Sidebar>) {
         <NavMain items={navMain} />
         <NavPOS />
         <NavInventory />
+        <NavFinance />
         <NavSecondary items={navSecondary} className="mt-auto" />
       </SidebarContent>
       <SidebarFooter>

@@ -3,6 +3,7 @@ import { redirect } from "next/navigation";
 import { Suspense } from "react";
 import { InventoryDashboard } from "@/components/inventory/InventoryDashboard";
 import { DashboardPageLayout } from "@/components/layouts/DashboardPageLayout";
+import { USER_ROLES } from "@/lib/auth/roles";
 
 export default async function InventoryPage() {
   const session = await auth();
@@ -16,9 +17,11 @@ export default async function InventoryPage() {
   }
 
   // Check if user has inventory access permissions
-  const hasInventoryAccess = ["ADMIN", "MANAGER", "STAFF"].includes(
-    session.user.role as string
-  );
+  const hasInventoryAccess = [
+    USER_ROLES.ADMIN,
+    USER_ROLES.MANAGER,
+    USER_ROLES.STAFF,
+  ].includes(session.user.role as keyof typeof USER_ROLES);
 
   if (!hasInventoryAccess) {
     redirect("/unauthorized");

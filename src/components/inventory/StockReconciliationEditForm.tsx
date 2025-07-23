@@ -85,6 +85,18 @@ interface Product {
   cost: number;
 }
 
+interface ReconciliationItem {
+  product: {
+    id: number;
+    name: string;
+    sku: string;
+  };
+  systemCount: number;
+  physicalCount: number;
+  discrepancyReason?: string;
+  notes?: string;
+}
+
 interface StockReconciliationEditFormProps {
   reconciliationId: number;
 }
@@ -129,7 +141,7 @@ export function StockReconciliationEditForm({
       form.setValue("description", reconciliation.description || "");
       form.setValue("notes", reconciliation.notes || "");
 
-      const items = reconciliation.items.map((item: any) => ({
+      const items = reconciliation.items.map((item: ReconciliationItem) => ({
         productId: item.product.id,
         productName: item.product.name,
         productSku: item.product.sku,

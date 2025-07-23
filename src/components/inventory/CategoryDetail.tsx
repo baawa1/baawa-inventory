@@ -7,6 +7,7 @@ import { toast } from "sonner";
 
 // Hooks
 import { useCategory } from "@/hooks/api/categories";
+import { Category } from "@/hooks/api/categories";
 
 // UI Components
 import { Button } from "@/components/ui/button";
@@ -227,7 +228,7 @@ export default function CategoryDetail({
               </CardHeader>
               <CardContent>
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                  {category.children.map((child: any) => (
+                  {category.children.map((child: Category) => (
                     <div
                       key={child.id}
                       className="flex items-center justify-between p-3 border rounded-lg hover:bg-gray-50 transition-colors"
@@ -237,7 +238,7 @@ export default function CategoryDetail({
                         <div>
                           <p className="font-medium">{child.name}</p>
                           <p className="text-sm text-muted-foreground">
-                            {child._count?.products || 0} products
+                            {child.productCount || 0} products
                           </p>
                         </div>
                       </div>
