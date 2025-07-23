@@ -42,39 +42,49 @@ export function BasicOrderInfoSection({
   suppliers,
   loadingSuppliers,
 }: BasicOrderInfoSectionProps) {
+  const supplierValue = form.watch("supplierId");
+  const statusValue = form.watch("status");
+
+  console.log("BasicOrderInfoSection - Supplier Value:", supplierValue);
+  console.log("BasicOrderInfoSection - Status Value:", statusValue);
+  console.log("BasicOrderInfoSection - Suppliers:", suppliers);
+
   return (
     <div className="space-y-4">
       <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
         <FormField
           control={form.control}
           name="supplierId"
-          render={({ field }) => (
-            <FormItem>
-              <FormLabel className="flex items-center gap-2">
-                <IconBuilding className="h-4 w-4" />
-                Supplier *
-              </FormLabel>
-              <Select
-                onValueChange={(value) => field.onChange(parseInt(value))}
-                value={field.value?.toString() || ""}
-                disabled={loadingSuppliers}
-              >
-                <FormControl>
-                  <SelectTrigger>
-                    <SelectValue placeholder="Select supplier" />
-                  </SelectTrigger>
-                </FormControl>
-                <SelectContent>
-                  {suppliers.map((supplier) => (
-                    <SelectItem key={supplier.value} value={supplier.value}>
-                      {supplier.label}
-                    </SelectItem>
-                  ))}
-                </SelectContent>
-              </Select>
-              <FormMessage />
-            </FormItem>
-          )}
+          render={({ field }) => {
+            console.log("Supplier Field Value:", field.value);
+            return (
+              <FormItem>
+                <FormLabel className="flex items-center gap-2">
+                  <IconBuilding className="h-4 w-4" />
+                  Supplier *
+                </FormLabel>
+                <Select
+                  onValueChange={(value) => field.onChange(parseInt(value))}
+                  value={field.value?.toString() || ""}
+                  disabled={loadingSuppliers}
+                >
+                  <FormControl>
+                    <SelectTrigger>
+                      <SelectValue placeholder="Select supplier" />
+                    </SelectTrigger>
+                  </FormControl>
+                  <SelectContent>
+                    {suppliers.map((supplier) => (
+                      <SelectItem key={supplier.value} value={supplier.value}>
+                        {supplier.label}
+                      </SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+                <FormMessage />
+              </FormItem>
+            );
+          }}
         />
 
         <FormField
@@ -113,29 +123,34 @@ export function BasicOrderInfoSection({
         <FormField
           control={form.control}
           name="status"
-          render={({ field }) => (
-            <FormItem>
-              <FormLabel className="flex items-center gap-2">
-                <IconStatusChange className="h-4 w-4" />
-                Status *
-              </FormLabel>
-              <Select onValueChange={field.onChange} value={field.value}>
-                <FormControl>
-                  <SelectTrigger>
-                    <SelectValue placeholder="Select status" />
-                  </SelectTrigger>
-                </FormControl>
-                <SelectContent>
-                  {Object.entries(PURCHASE_ORDER_STATUS).map(([key, value]) => (
-                    <SelectItem key={value} value={value}>
-                      {key.replace(/_/g, " ")}
-                    </SelectItem>
-                  ))}
-                </SelectContent>
-              </Select>
-              <FormMessage />
-            </FormItem>
-          )}
+          render={({ field }) => {
+            console.log("Status Field Value:", field.value);
+            return (
+              <FormItem>
+                <FormLabel className="flex items-center gap-2">
+                  <IconStatusChange className="h-4 w-4" />
+                  Status *
+                </FormLabel>
+                <Select onValueChange={field.onChange} value={field.value}>
+                  <FormControl>
+                    <SelectTrigger>
+                      <SelectValue placeholder="Select status" />
+                    </SelectTrigger>
+                  </FormControl>
+                  <SelectContent>
+                    {Object.entries(PURCHASE_ORDER_STATUS).map(
+                      ([key, value]) => (
+                        <SelectItem key={value} value={value}>
+                          {key.replace(/_/g, " ")}
+                        </SelectItem>
+                      )
+                    )}
+                  </SelectContent>
+                </Select>
+                <FormMessage />
+              </FormItem>
+            );
+          }}
         />
       </div>
     </div>
