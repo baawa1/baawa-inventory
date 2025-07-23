@@ -1,6 +1,5 @@
 import React from "react";
 import { UseFormReturn } from "react-hook-form";
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import {
   FormControl,
   FormField,
@@ -16,8 +15,11 @@ import {
   SelectValue,
 } from "@/components/ui/select";
 import { Textarea } from "@/components/ui/textarea";
-import { UpdatePurchaseOrderFormData } from "./types";
+import { z } from "zod";
+import { updatePurchaseOrderSchema } from "@/lib/validations/purchase-order";
 import { PURCHASE_ORDER_STATUS } from "@/lib/constants";
+
+type UpdatePurchaseOrderFormData = z.infer<typeof updatePurchaseOrderSchema>;
 
 interface StatusNotesSectionProps {
   form: UseFormReturn<UpdatePurchaseOrderFormData>;
@@ -35,55 +37,50 @@ const PURCHASE_ORDER_STATUSES = [
 
 export function StatusNotesSection({ form }: StatusNotesSectionProps) {
   return (
-    <Card>
-      <CardHeader>
-        <CardTitle>Status & Notes</CardTitle>
-      </CardHeader>
-      <CardContent className="space-y-4">
-        <FormField
-          control={form.control}
-          name="status"
-          render={({ field }) => (
-            <FormItem>
-              <FormLabel>Status</FormLabel>
-              <Select onValueChange={field.onChange} value={field.value}>
-                <FormControl>
-                  <SelectTrigger>
-                    <SelectValue placeholder="Select status" />
-                  </SelectTrigger>
-                </FormControl>
-                <SelectContent>
-                  {PURCHASE_ORDER_STATUSES.map((status) => (
-                    <SelectItem key={status.value} value={status.value}>
-                      {status.label}
-                    </SelectItem>
-                  ))}
-                </SelectContent>
-              </Select>
-              <FormMessage />
-            </FormItem>
-          )}
-        />
-
-        <FormField
-          control={form.control}
-          name="notes"
-          render={({ field }) => (
-            <FormItem>
-              <FormLabel>Notes</FormLabel>
+    <div className="space-y-4">
+      <FormField
+        control={form.control}
+        name="status"
+        render={({ field }) => (
+          <FormItem>
+            <FormLabel>Status</FormLabel>
+            <Select onValueChange={field.onChange} value={field.value}>
               <FormControl>
-                <Textarea
-                  {...field}
-                  value={field.value || ""}
-                  placeholder="Add any additional notes..."
-                  rows={4}
-                />
+                <SelectTrigger>
+                  <SelectValue placeholder="Select status" />
+                </SelectTrigger>
               </FormControl>
-              <FormMessage />
-            </FormItem>
-          )}
-        />
-      </CardContent>
-    </Card>
+              <SelectContent>
+                {PURCHASE_ORDER_STATUSES.map((status) => (
+                  <SelectItem key={status.value} value={status.value}>
+                    {status.label}
+                  </SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
+            <FormMessage />
+          </FormItem>
+        )}
+      />
+
+      <FormField
+        control={form.control}
+        name="notes"
+        render={({ field }) => (
+          <FormItem>
+            <FormLabel>Notes</FormLabel>
+            <FormControl>
+              <Textarea
+                {...field}
+                value={field.value || ""}
+                placeholder="Add any additional notes..."
+                rows={4}
+              />
+            </FormControl>
+            <FormMessage />
+          </FormItem>
+        )}
+      />
+    </div>
   );
 }

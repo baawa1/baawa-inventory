@@ -1,7 +1,6 @@
 import { auth } from "../../../../../../auth";
 import { redirect } from "next/navigation";
 import { notFound } from "next/navigation";
-import { prisma } from "@/lib/db";
 import { PurchaseOrderDetail } from "@/components/inventory/PurchaseOrderDetail";
 
 export const metadata = {
@@ -10,7 +9,7 @@ export const metadata = {
 };
 
 interface PurchaseOrderPageProps {
-  params: { id: string };
+  params: Promise<{ id: string }>;
 }
 
 export default async function PurchaseOrderPage({
@@ -26,97 +25,30 @@ export default async function PurchaseOrderPage({
     redirect("/pending-approval");
   }
 
-  const id = parseInt(params.id);
-  if (isNaN(id)) {
+  const { id } = await params;
+  const purchaseOrderId = parseInt(id);
+  if (isNaN(purchaseOrderId)) {
     notFound();
   }
 
-  // Fetch purchase order with related data
-  const purchaseOrder = await prisma.purchaseOrder.findUnique({
-    where: { id },
-    include: {
-      suppliers: {
-        select: {
-          id: true,
-          name: true,
-          contactPerson: true,
-          email: true,
-          phone: true,
-          address: true,
-        },
+  // Fetch purchase order data from API
+  const response = await fetch(
+    `${process.env.NEXT_PUBLIC_APP_URL}/api/purchase-orders/${purchaseOrderId}`,
+    {
+      headers: {
+        Cookie: `authjs.session-token=${session.user.id}`,
       },
-      users: {
-        select: {
-          id: true,
-          firstName: true,
-          lastName: true,
-          email: true,
-          role: true,
-        },
-      },
-      purchaseOrderItems: {
-        include: {
-          products: {
-            select: {
-              id: true,
-              name: true,
-              sku: true,
-              barcode: true,
-            },
-          },
-          productVariants: {
-            select: {
-              id: true,
-              name: true,
-              sku: true,
-            },
-          },
-        },
-      },
-    },
-  });
+    }
+  );
 
-  if (!purchaseOrder) {
+  if (!response.ok) {
     notFound();
   }
 
-  // Transform data for component
-  const transformedPurchaseOrder = {
-    id: purchaseOrder.id,
-    orderNumber: purchaseOrder.orderNumber,
-    supplierId: purchaseOrder.supplierId,
-    userId: purchaseOrder.userId,
-    orderDate: purchaseOrder.orderDate.toISOString(),
-    expectedDeliveryDate: purchaseOrder.expectedDeliveryDate?.toISOString(),
-    actualDeliveryDate: purchaseOrder.actualDeliveryDate?.toISOString(),
-    subtotal: purchaseOrder.subtotal.toString(),
-    taxAmount: purchaseOrder.taxAmount.toString(),
-    shippingCost: purchaseOrder.shippingCost?.toString(),
-    totalAmount: purchaseOrder.totalAmount.toString(),
-    status: purchaseOrder.status,
-    notes: purchaseOrder.notes || undefined,
-    createdAt: purchaseOrder.createdAt?.toISOString() || "",
-    updatedAt: purchaseOrder.updatedAt?.toISOString() || "",
-    suppliers: purchaseOrder.suppliers,
-    users: purchaseOrder.users,
-    purchaseOrderItems: purchaseOrder.purchaseOrderItems.map((item) => ({
-      id: item.id,
-      purchaseOrderId: item.purchaseOrderId,
-      productId: item.productId,
-      variantId: item.variantId,
-      quantityOrdered: item.quantityOrdered,
-      quantityReceived: item.quantityReceived,
-      unitCost: item.unitCost.toString(),
-      totalCost: item.totalCost.toString(),
-      products: item.products,
-      productVariants: item.productVariants,
-    })),
-  };
+  const result = await response.json();
+  const purchaseOrder = result.data;
 
   return (
-    <PurchaseOrderDetail
-      purchaseOrder={transformedPurchaseOrder}
-      user={session.user}
-    />
+    <PurchaseOrderDetail purchaseOrder={purchaseOrder} user={session.user} />
   );
 }
