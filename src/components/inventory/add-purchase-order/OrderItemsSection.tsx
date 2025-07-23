@@ -10,17 +10,11 @@ import {
   FormLabel,
   FormMessage,
 } from "@/components/ui/form";
-import {
-  Select,
-  SelectContent,
-  SelectItem,
-  SelectTrigger,
-  SelectValue,
-} from "@/components/ui/select";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
-import { Loader2, Plus, Trash2 } from "lucide-react";
+import { Plus, Trash2 } from "lucide-react";
 import { formatCurrency } from "@/lib/utils";
+import { ProductCombobox } from "@/components/inventory/ProductCombobox";
 import type { CreatePurchaseOrderData, Product } from "./types";
 
 interface OrderItemsSectionProps {
@@ -126,51 +120,31 @@ export function OrderItemsSection({
               </Button>
             </div>
 
-            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
+            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-12 gap-4">
               <FormField
                 control={form.control}
                 name={`items.${index}.productId`}
                 render={({ field }) => (
-                  <FormItem>
+                  <FormItem className="lg:col-span-5">
                     <FormLabel>Product *</FormLabel>
-                    <Select
-                      onValueChange={(value) => {
-                        const productId = value ? parseInt(value) : undefined;
-                        field.onChange(productId);
-                        handleProductChange(index, productId);
-                      }}
-                      value={field.value?.toString() || ""}
-                      disabled={loading}
-                    >
-                      <FormControl>
-                        <SelectTrigger>
-                          <SelectValue placeholder="Select a product" />
-                        </SelectTrigger>
-                      </FormControl>
-                      <SelectContent>
-                        {loading ? (
-                          <div className="flex items-center justify-center p-4">
-                            <Loader2 className="h-4 w-4 animate-spin mr-2" />
-                            Loading products...
-                          </div>
-                        ) : (
-                          products
-                            .filter(
-                              (product) =>
-                                !selectedProducts.has(product.id) ||
-                                product.id === field.value
-                            )
-                            .map((product) => (
-                              <SelectItem
-                                key={product.id}
-                                value={product.id.toString()}
-                              >
-                                {product.name} ({product.sku})
-                              </SelectItem>
-                            ))
+                    <FormControl>
+                      <ProductCombobox
+                        products={products.filter(
+                          (product) =>
+                            !selectedProducts.has(product.id) ||
+                            product.id === field.value
                         )}
-                      </SelectContent>
-                    </Select>
+                        value={field.value?.toString() || ""}
+                        onValueChange={(value) => {
+                          const productId = value ? parseInt(value) : undefined;
+                          field.onChange(productId);
+                          handleProductChange(index, productId);
+                        }}
+                        placeholder="Select a product"
+                        emptyMessage="No products found"
+                        disabled={loading}
+                      />
+                    </FormControl>
                     <FormMessage />
                   </FormItem>
                 )}
@@ -180,7 +154,7 @@ export function OrderItemsSection({
                 control={form.control}
                 name={`items.${index}.quantityOrdered`}
                 render={({ field }) => (
-                  <FormItem>
+                  <FormItem className="lg:col-span-2">
                     <FormLabel>Quantity *</FormLabel>
                     <FormControl>
                       <Input
@@ -204,7 +178,7 @@ export function OrderItemsSection({
                 control={form.control}
                 name={`items.${index}.unitCost`}
                 render={({ field }) => (
-                  <FormItem>
+                  <FormItem className="lg:col-span-2">
                     <FormLabel>Unit Cost (₦) *</FormLabel>
                     <FormControl>
                       <Input
@@ -229,7 +203,7 @@ export function OrderItemsSection({
                 control={form.control}
                 name={`items.${index}.totalCost`}
                 render={({ field }) => (
-                  <FormItem>
+                  <FormItem className="lg:col-span-3">
                     <FormLabel>Total Cost (₦)</FormLabel>
                     <FormControl>
                       <Input

@@ -29,7 +29,7 @@ interface Product {
 interface ProductComboboxProps {
   products: Product[];
   value?: string;
-  onValueChange: (value: string) => void;
+  onValueChange: (_value: string) => void;
   placeholder?: string;
   emptyMessage?: string;
   disabled?: boolean;
@@ -58,29 +58,35 @@ export function ProductCombobox({
           variant="outline"
           role="combobox"
           aria-expanded={open}
-          className={cn("w-full justify-between", className)}
+          className={cn(
+            "w-full justify-between h-auto min-h-[40px] px-2 py-1.5 text-xs",
+            className
+          )}
           disabled={disabled}
         >
           {selectedProduct ? (
-            <div className="flex items-center gap-2 text-left">
-              <Package className="h-4 w-4 flex-shrink-0" />
-              <div className="flex-1 min-w-0">
-                <div className="font-medium truncate">
+            <div className="flex items-center gap-1.5 text-left flex-1 min-w-0">
+              <Package className="h-3 w-3 flex-shrink-0" />
+              <div className="flex-1 min-w-0 overflow-hidden">
+                <div className="font-medium truncate text-xs">
                   {selectedProduct.name}
                 </div>
                 <div className="text-xs text-muted-foreground truncate">
-                  SKU: {selectedProduct.sku} | Stock:{" "}
+                  {selectedProduct.sku} •{" "}
                   {selectedProduct.stock || selectedProduct.stock_quantity || 0}
                 </div>
               </div>
             </div>
           ) : (
-            <span className="text-muted-foreground">{placeholder}</span>
+            <span className="text-muted-foreground text-xs">{placeholder}</span>
           )}
-          <ChevronsUpDown className="ml-2 h-4 w-4 shrink-0 opacity-50" />
+          <ChevronsUpDown className="ml-1.5 h-3 w-3 shrink-0 opacity-50" />
         </Button>
       </PopoverTrigger>
-      <PopoverContent className="w-full p-0" align="start">
+      <PopoverContent
+        className="w-[var(--radix-popover-trigger-width)] p-0"
+        align="start"
+      >
         <Command>
           <CommandInput placeholder="Search products..." />
           <CommandList>
@@ -90,7 +96,7 @@ export function ProductCombobox({
                 <CommandItem
                   key={product.id}
                   value={`${product.name} ${product.sku}`}
-                  onSelect={() => {
+                  onSelect={(_value) => {
                     onValueChange(product.id.toString());
                     setOpen(false);
                   }}
@@ -108,8 +114,8 @@ export function ProductCombobox({
                   <div className="flex-1 min-w-0">
                     <div className="font-medium truncate">{product.name}</div>
                     <div className="text-xs text-muted-foreground truncate">
-                      SKU: {product.sku} | Stock:{" "}
-                      {product.stock || product.stock_quantity || 0}
+                      {product.sku} •{" "}
+                      {product.stock || product.stock_quantity || 0} in stock
                     </div>
                   </div>
                 </CommandItem>
