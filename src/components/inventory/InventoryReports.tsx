@@ -232,6 +232,9 @@ export function InventoryReports() {
   }, []);
 
   const formatCurrency = (amount: number) => {
+    if (isNaN(amount) || !isFinite(amount)) {
+      return "₦0.00";
+    }
     return new Intl.NumberFormat("en-NG", {
       style: "currency",
       currency: "NGN",
@@ -305,24 +308,29 @@ export function InventoryReports() {
           summaryCards: [
             {
               title: "Total Products",
-              value: products.length,
+              value:
+                (reportData.data as any).summary?.totalProducts ||
+                products.length,
               icon: Package,
               color: "blue",
             },
             {
               title: "Total Stock Value",
               value: formatCurrency(
-                products.reduce(
-                  (sum: number, item: any) => sum + (item.stockValue || 0),
-                  0
-                )
+                (reportData.data as any).summary?.totalValue ||
+                  products.reduce(
+                    (sum: number, item: any) => sum + (item.stockValue || 0),
+                    0
+                  )
               ),
               icon: DollarSign,
               color: "green",
             },
             {
               title: "Low Stock Items",
-              value: products.filter((item: any) => item.isLowStock).length,
+              value:
+                (reportData.data as any).summary?.lowStockItems ||
+                products.filter((item: any) => item.isLowStock || false).length,
               icon: AlertTriangle,
               color: "red",
             },
@@ -395,9 +403,9 @@ export function InventoryReports() {
               color: "green",
             },
             {
-              title: "Selling Value",
+              title: "Cost Value",
               value: formatCurrency(
-                (reportData.data as any).summary?.totalSellingValue || 0
+                (reportData.data as any).summary?.totalCostValue || 0
               ),
               icon: ShoppingCart,
               color: "purple",
@@ -405,7 +413,7 @@ export function InventoryReports() {
             {
               title: "Potential Profit",
               value: formatCurrency(
-                (reportData.data as any).summary?.potentialProfit || 0
+                (reportData.data as any).summary?.totalProfit || 0
               ),
               icon: TrendingUp,
               color: "orange",
@@ -464,24 +472,29 @@ export function InventoryReports() {
           summaryCards: [
             {
               title: "Low Stock Items",
-              value: products.length,
+              value:
+                (reportData.data as any).summary?.totalLowStockItems ||
+                products.length,
               icon: AlertTriangle,
               color: "red",
             },
             {
               title: "Out of Stock",
-              value: products.filter((item: any) => item.currentStock <= 0)
-                .length,
+              value:
+                (reportData.data as any).summary?.outOfStockItems ||
+                products.filter((item: any) => (item.currentStock || 0) <= 0)
+                  .length,
               icon: Package,
               color: "orange",
             },
             {
               title: "Total Reorder Value",
               value: formatCurrency(
-                products.reduce(
-                  (sum: number, item: any) => sum + (item.reorderValue || 0),
-                  0
-                )
+                (reportData.data as any).summary?.totalReorderValue ||
+                  products.reduce(
+                    (sum: number, item: any) => sum + (item.reorderValue || 0),
+                    0
+                  )
               ),
               icon: DollarSign,
               color: "blue",
@@ -548,46 +561,50 @@ export function InventoryReports() {
       case "category":
         return <span>{item.category}</span>;
       case "currentStock":
-        return <span className="text-right">{item.currentStock}</span>;
+        return <span className="text-right">{item.currentStock || 0}</span>;
       case "minStock":
-        return <span className="text-right">{item.minStock}</span>;
+        return <span className="text-right">{item.minStock || 0}</span>;
       case "stockValue":
         return (
           <span className="text-right font-medium">
-            {formatCurrency(item.stockValue)}
+            {formatCurrency(item.stockValue || 0)}
           </span>
         );
       case "costPrice":
         return (
-          <span className="text-right">{formatCurrency(item.costPrice)}</span>
+          <span className="text-right">
+            {formatCurrency(item.costPrice || 0)}
+          </span>
         );
       case "sellingPrice":
         return (
           <span className="text-right font-medium">
-            {formatCurrency(item.sellingPrice)}
+            {formatCurrency(item.sellingPrice || 0)}
           </span>
         );
       case "profitMargin":
         return (
           <span className="text-right">
-            <Badge variant={item.profitMargin > 0 ? "default" : "secondary"}>
-              {item.profitMargin.toFixed(2)}%
+            <Badge
+              variant={(item.profitMargin || 0) > 0 ? "default" : "secondary"}
+            >
+              {(item.profitMargin || 0).toFixed(2)}%
             </Badge>
           </span>
         );
       case "reorderQuantity":
-        return <span className="text-right">{item.reorderQuantity}</span>;
+        return <span className="text-right">{item.reorderQuantity || 0}</span>;
       case "reorderValue":
         return (
           <span className="text-right font-medium">
-            {formatCurrency(item.reorderValue)}
+            {formatCurrency(item.reorderValue || 0)}
           </span>
         );
       case "status":
         if (reportType === "current_stock") {
           return (
             <div className="text-center">
-              {item.isLowStock ? (
+              {item.isLowStock || false ? (
                 <Badge variant="destructive">Low Stock</Badge>
               ) : (
                 <Badge variant="default">In Stock</Badge>
@@ -598,9 +615,11 @@ export function InventoryReports() {
           return (
             <div className="text-center">
               <Badge
-                variant={item.currentStock <= 0 ? "destructive" : "secondary"}
+                variant={
+                  (item.currentStock || 0) <= 0 ? "destructive" : "secondary"
+                }
               >
-                {item.currentStock <= 0 ? "Out of Stock" : "Low Stock"}
+                {(item.currentStock || 0) <= 0 ? "Out of Stock" : "Low Stock"}
               </Badge>
             </div>
           );
