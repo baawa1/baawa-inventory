@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useMemo } from "react";
 import { useForm, useFieldArray } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { z } from "zod";
@@ -149,29 +149,30 @@ export function StockReconciliationDialog({
     return physicalCount - systemCount;
   };
 
-  const calculateTotalDiscrepancy = () => {
-    return fields.reduce((total, item) => {
-      const discrepancy = calculateDiscrepancy(
-        item.systemCount,
-        item.physicalCount
-      );
+  // Watch all form values to trigger recalculations
+  const watchedValues = form.watch("items");
+
+  const totalDiscrepancy = useMemo(() => {
+    return fields.reduce((total, item, index) => {
+      const systemCount = watchedValues?.[index]?.systemCount || 0;
+      const physicalCount = watchedValues?.[index]?.physicalCount || 0;
+      const discrepancy = calculateDiscrepancy(systemCount, physicalCount);
       return total + discrepancy;
     }, 0);
-  };
+  }, [fields, watchedValues]);
 
-  const calculateEstimatedImpact = () => {
-    return fields.reduce((total, item) => {
-      const discrepancy = calculateDiscrepancy(
-        item.systemCount,
-        item.physicalCount
-      );
+  const estimatedImpact = useMemo(() => {
+    return fields.reduce((total, item, index) => {
+      const systemCount = watchedValues?.[index]?.systemCount || 0;
+      const physicalCount = watchedValues?.[index]?.physicalCount || 0;
+      const discrepancy = calculateDiscrepancy(systemCount, physicalCount);
       const product = products.find((p: Product) => p.id === item.productId);
       if (product) {
         return total + discrepancy * product.cost;
       }
       return total;
     }, 0);
-  };
+  }, [fields, watchedValues, products]);
 
   const onSubmit = async (data: ReconciliationFormData, saveAsDraft = true) => {
     try {
@@ -205,7 +206,7 @@ export function StockReconciliationDialog({
 
       // If not saving as draft, submit for approval immediately
       if (!saveAsDraft) {
-        await submitMutation.mutateAsync(result.reconciliation.id);
+        await submitMutation.mutateAsync(result.data.id);
         toast.success("Stock reconciliation submitted for approval");
       } else {
         toast.success("Stock reconciliation saved as draft");
@@ -228,8 +229,6 @@ export function StockReconciliationDialog({
   };
 
   const isLoading = createMutation.isPending || submitMutation.isPending;
-  const totalDiscrepancy = calculateTotalDiscrepancy();
-  const estimatedImpact = calculateEstimatedImpact();
 
   return (
     <Dialog open={isOpen} onOpenChange={onClose}>

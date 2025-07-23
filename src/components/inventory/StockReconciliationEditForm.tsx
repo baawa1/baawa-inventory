@@ -104,7 +104,7 @@ export function StockReconciliationEditForm({
   const updateMutation = useUpdateStockReconciliation();
   const submitMutation = useSubmitStockReconciliation();
 
-  const reconciliation = reconciliationData?.reconciliation;
+  const reconciliation = reconciliationData?.data;
   const products = productsData?.data || [];
 
   const form = useForm<ReconciliationFormData>({

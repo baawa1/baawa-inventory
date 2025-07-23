@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useMemo } from "react";
 import { useForm, useFieldArray } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { z } from "zod";
@@ -143,29 +143,30 @@ export function StockReconciliationForm() {
     return physicalCount - systemCount;
   };
 
-  const calculateTotalDiscrepancy = () => {
-    return fields.reduce((total, item) => {
-      const discrepancy = calculateDiscrepancy(
-        item.systemCount,
-        item.physicalCount
-      );
+  // Watch all form values to trigger recalculations
+  const watchedValues = form.watch("items");
+
+  const totalDiscrepancy = useMemo(() => {
+    return fields.reduce((total, item, index) => {
+      const systemCount = watchedValues?.[index]?.systemCount || 0;
+      const physicalCount = watchedValues?.[index]?.physicalCount || 0;
+      const discrepancy = calculateDiscrepancy(systemCount, physicalCount);
       return total + discrepancy;
     }, 0);
-  };
+  }, [fields, watchedValues]);
 
-  const calculateEstimatedImpact = () => {
-    return fields.reduce((total, item) => {
-      const discrepancy = calculateDiscrepancy(
-        item.systemCount,
-        item.physicalCount
-      );
+  const estimatedImpact = useMemo(() => {
+    return fields.reduce((total, item, index) => {
+      const systemCount = watchedValues?.[index]?.systemCount || 0;
+      const physicalCount = watchedValues?.[index]?.physicalCount || 0;
+      const discrepancy = calculateDiscrepancy(systemCount, physicalCount);
       const product = products.find((p: Product) => p.id === item.productId);
       if (product) {
         return total + discrepancy * product.cost;
       }
       return total;
     }, 0);
-  };
+  }, [fields, watchedValues, products]);
 
   const onSubmit = async (data: ReconciliationFormData, saveAsDraft = true) => {
     try {
@@ -199,16 +200,14 @@ export function StockReconciliationForm() {
 
       // If not saving as draft, submit for approval immediately
       if (!saveAsDraft) {
-        await submitMutation.mutateAsync(result.reconciliation.id);
+        await submitMutation.mutateAsync(result.data.id);
         toast.success("Stock reconciliation submitted for approval");
       } else {
         toast.success("Stock reconciliation saved as draft");
       }
 
       // Navigate to the reconciliation detail page
-      router.push(
-        `/inventory/stock-reconciliations/${result.reconciliation.id}`
-      );
+      router.push(`/inventory/stock-reconciliations/${result.data.id}`);
     } catch (error) {
       console.error("Error creating reconciliation:", error);
       toast.error("Failed to create stock reconciliation");
@@ -575,14 +574,14 @@ export function StockReconciliationForm() {
                   <div>
                     <div className="text-sm font-medium">Total Discrepancy</div>
                     <div className="text-2xl font-bold">
-                      {calculateTotalDiscrepancy() > 0 ? "+" : ""}
-                      {calculateTotalDiscrepancy()}
+                      {totalDiscrepancy > 0 ? "+" : ""}
+                      {totalDiscrepancy}
                     </div>
                   </div>
                   <div>
                     <div className="text-sm font-medium">Estimated Impact</div>
                     <div className="text-2xl font-bold">
-                      {formatCurrency(calculateEstimatedImpact())}
+                      {formatCurrency(estimatedImpact)}
                     </div>
                   </div>
                 </div>
@@ -591,23 +590,14 @@ export function StockReconciliationForm() {
           )}
 
           {/* Form Actions */}
-          <div className="flex items-center gap-4 pt-4">
+          <div className="flex items-center justify-end gap-4 pt-4">
             <Button
               type="button"
-              onClick={form.handleSubmit((data) => onSubmit(data, false))}
+              variant="ghost"
+              onClick={() => router.push("/inventory/stock-reconciliations")}
               disabled={createMutation.isPending || submitMutation.isPending}
             >
-              {submitMutation.isPending ? (
-                <>
-                  <Loader2 className="h-4 w-4 mr-2 animate-spin" />
-                  Submitting...
-                </>
-              ) : (
-                <>
-                  <IconSend className="h-4 w-4 mr-2" />
-                  Submit for Approval
-                </>
-              )}
+              Cancel
             </Button>
             <Button
               type="button"
@@ -629,11 +619,20 @@ export function StockReconciliationForm() {
             </Button>
             <Button
               type="button"
-              variant="ghost"
-              onClick={() => router.push("/inventory/stock-reconciliations")}
+              onClick={form.handleSubmit((data) => onSubmit(data, false))}
               disabled={createMutation.isPending || submitMutation.isPending}
             >
-              Cancel
+              {submitMutation.isPending ? (
+                <>
+                  <Loader2 className="h-4 w-4 mr-2 animate-spin" />
+                  Submitting...
+                </>
+              ) : (
+                <>
+                  <IconSend className="h-4 w-4 mr-2" />
+                  Submit for Approval
+                </>
+              )}
             </Button>
           </div>
         </form>
