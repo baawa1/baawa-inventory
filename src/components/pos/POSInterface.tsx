@@ -248,13 +248,30 @@ export function POSInterface() {
               /* Payment Interface - Slides in over cart */
               <POSErrorBoundary componentName="SlidingPaymentInterface">
                 <SlidingPaymentInterface
-                  items={cart}
+                  items={cart.map((item) => ({
+                    ...item,
+                    id: String(item.id),
+                    total: item.price * item.quantity,
+                  }))}
                   subtotal={subtotal}
                   discount={discount}
                   total={total}
-                  customerInfo={customerInfo}
+                  customerInfo={{ ...customerInfo, address: "" }}
                   staffName={session.user.name || "Staff"}
-                  onPaymentSuccess={handlePaymentSuccess}
+                  onPaymentSuccess={(sale) => {
+                    // Convert SlidingPaymentInterface.Sale to POSInterface.Sale
+                    handlePaymentSuccess({
+                      ...sale,
+                      items: sale.items.map((item) => ({
+                        ...item,
+                        id: Number(item.id),
+                        sku: "",
+                        stock: 0,
+                        category: undefined,
+                        brand: undefined,
+                      })),
+                    });
+                  }}
                   onCancel={() => setCurrentStep("search")}
                   onDiscountChange={setDiscount}
                   onCustomerInfoChange={setCustomerInfo}

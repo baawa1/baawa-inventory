@@ -463,7 +463,9 @@ const SupplierList = ({ user }: SupplierListProps) => {
         isSearching={isSearching}
         filters={filterConfigs}
         filterValues={filters}
-        onFilterChange={handleFilterChange}
+        onFilterChange={(key: string, value: unknown) =>
+          handleFilterChange(key, value as string)
+        }
         onResetFilters={handleResetFilters}
         // Table
         tableTitle="Suppliers"

@@ -1,7 +1,7 @@
 import { auth } from "../../../../../../auth";
 import { redirect } from "next/navigation";
 import { DashboardPageLayout } from "@/components/layouts/DashboardPageLayout";
-import { ProductList } from "@/components/inventory/ProductList";
+import ProductList from "@/components/inventory/ProductList";
 import { Button } from "@/components/ui/button";
 import { IconPlus } from "@tabler/icons-react";
 import Link from "next/link";

@@ -67,7 +67,9 @@ export function DeliveryDatesSection({ form }: DeliveryDatesSectionProps) {
                     mode="single"
                     selected={field.value ? new Date(field.value) : undefined}
                     onSelect={(date) =>
-                      field.onChange(date ? date.toISOString() : null)
+                      field.onChange(
+                        date ? date.toISOString().split("T")[0] : undefined
+                      )
                     }
                     initialFocus
                   />
@@ -110,7 +112,9 @@ export function DeliveryDatesSection({ form }: DeliveryDatesSectionProps) {
                       mode="single"
                       selected={field.value ? new Date(field.value) : undefined}
                       onSelect={(date) =>
-                        field.onChange(date ? date.toISOString() : null)
+                        field.onChange(
+                          date ? date.toISOString().split("T")[0] : undefined
+                        )
                       }
                       initialFocus
                     />

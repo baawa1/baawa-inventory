@@ -553,7 +553,9 @@ const StockReconciliationList = ({ user }: StockReconciliationListProps) => {
         isSearching={isSearching}
         filters={filterConfigs}
         filterValues={filters}
-        onFilterChange={handleFilterChange}
+        onFilterChange={(key: string, value: unknown) =>
+          handleFilterChange(key, value as string)
+        }
         onResetFilters={handleResetFilters}
         // Table
         tableTitle="Stock Reconciliations"

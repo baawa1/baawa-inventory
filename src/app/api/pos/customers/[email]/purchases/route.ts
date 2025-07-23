@@ -18,10 +18,11 @@ interface CustomerPurchase {
 
 export async function GET(
   _request: NextRequest,
-  { params }: { params: { email: string } }
+  { params }: { params: Promise<{ email: string }> }
 ) {
   try {
     const session = await auth();
+    const { email } = await params;
 
     if (!session?.user) {
       return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
@@ -32,7 +33,7 @@ export async function GET(
       return NextResponse.json({ error: "Forbidden" }, { status: 403 });
     }
 
-    const customerEmail = decodeURIComponent(params.email);
+    const customerEmail = decodeURIComponent(email);
 
     // Fetch all transactions for this customer with their items
     const transactions = await prisma.salesTransaction.findMany({

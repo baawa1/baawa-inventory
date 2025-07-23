@@ -4,7 +4,7 @@ import { DashboardFiltersBar, FilterConfig } from "./DashboardFiltersBar";
 import { DashboardTable } from "./DashboardTable";
 import { DashboardTableColumn } from "./DashboardColumnCustomizer";
 
-interface DashboardTableLayoutProps {
+interface DashboardTableLayoutProps<T = Record<string, unknown>> {
   title: string;
   description?: string;
   actions?: React.ReactNode;
@@ -13,8 +13,8 @@ interface DashboardTableLayoutProps {
   onSearchChange?: (value: string) => void;
   isSearching?: boolean;
   filters?: FilterConfig[];
-  filterValues?: Record<string, any>;
-  onFilterChange?: (key: string, value: any) => void;
+  filterValues?: Record<string, unknown>;
+  onFilterChange?: (key: string, value: unknown) => void;
   onResetFilters?: () => void;
   quickFilters?: React.ReactNode;
   beforeFiltersContent?: React.ReactNode;
@@ -29,9 +29,9 @@ interface DashboardTableLayoutProps {
   visibleColumns: string[];
   onColumnsChange?: (columns: string[]) => void;
   columnCustomizerKey?: string;
-  data: any[];
-  renderCell: (item: any, columnKey: string) => React.ReactNode;
-  renderActions?: (item: any) => React.ReactNode;
+  data: T[];
+  renderCell: (item: T, columnKey: string) => React.ReactNode;
+  renderActions?: (item: T) => React.ReactNode;
   pagination: {
     page: number;
     limit: number;
@@ -50,7 +50,7 @@ interface DashboardTableLayoutProps {
   additionalContent?: React.ReactNode;
 }
 
-export function DashboardTableLayout({
+export function DashboardTableLayout<T = Record<string, unknown>>({
   title,
   description,
   actions,
@@ -89,7 +89,7 @@ export function DashboardTableLayout({
   emptyStateMessage = "No items found",
   emptyStateAction,
   additionalContent,
-}: DashboardTableLayoutProps) {
+}: DashboardTableLayoutProps<T>) {
   return (
     <DashboardPageLayout
       title={title}
@@ -114,7 +114,7 @@ export function DashboardTableLayout({
         currentSort={currentSort}
         onSortChange={onSortChange}
       />
-      <DashboardTable
+      <DashboardTable<T>
         tableTitle={tableTitle}
         totalCount={totalCount}
         currentCount={currentCount}

@@ -3,10 +3,11 @@ import { auth } from "../../../../../../../auth";
 
 export async function POST(
   _request: NextRequest,
-  { params }: { params: { transactionId: string } }
+  { params }: { params: Promise<{ transactionId: string }> }
 ) {
   try {
     const session = await auth();
+    const { transactionId: transactionIdParam } = await params;
 
     if (!session?.user) {
       return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
@@ -17,7 +18,7 @@ export async function POST(
       return NextResponse.json({ error: "Forbidden" }, { status: 403 });
     }
 
-    const transactionId = parseInt(params.transactionId);
+    const transactionId = parseInt(transactionIdParam);
 
     if (isNaN(transactionId)) {
       return NextResponse.json(

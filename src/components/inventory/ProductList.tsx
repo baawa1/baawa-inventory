@@ -634,8 +634,10 @@ const ProductList = ({ user }: ProductListProps) => {
         onSearchChange={(value) => handleFilterChange("search", value)}
         isSearching={isSearching}
         filters={filterConfigs}
-        filterValues={filters}
-        onFilterChange={handleFilterChange}
+        filterValues={filters as unknown as Record<string, unknown>}
+        onFilterChange={(key: string, value: unknown) =>
+          handleFilterChange(key, value as string | boolean)
+        }
         onResetFilters={handleResetFilters}
         quickFilters={
           <Button

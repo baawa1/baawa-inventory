@@ -1,10 +1,10 @@
 "use client";
 import * as React from "react";
-import { auditLogColumns, AuditLog } from "@/components/admin/AuditLogTable";
+import { auditLogColumns } from "@/components/admin/AuditLogTable";
 import { PageTitle } from "@/components/ui/page-title";
 import { DashboardTableLayout } from "@/components/layouts/DashboardTableLayout";
 import { FilterConfig } from "@/components/layouts/DashboardFiltersBar";
-import { useAuditLogs } from "@/hooks/api/audit-logs";
+import { useAuditLogs, type AuditLog } from "@/hooks/api/audit-logs";
 import { logger } from "@/lib/logger";
 import { toast } from "sonner";
 
@@ -78,11 +78,12 @@ export default function AuditLogsPage() {
     },
   ];
   const filterValues = { user, action, from, to };
-  const onFilterChange = (key: string, value: string) => {
-    if (key === "user" && user !== value) setUser(value);
-    if (key === "action" && action !== value) setAction(value);
-    if (key === "from" && from !== value) setFrom(value);
-    if (key === "to" && to !== value) setTo(value);
+  const onFilterChange = (key: string, value: unknown) => {
+    const stringValue = String(value);
+    if (key === "user" && user !== stringValue) setUser(stringValue);
+    if (key === "action" && action !== stringValue) setAction(stringValue);
+    if (key === "from" && from !== stringValue) setFrom(stringValue);
+    if (key === "to" && to !== stringValue) setTo(stringValue);
     setPage(1);
   };
   const onResetFilters = () => {

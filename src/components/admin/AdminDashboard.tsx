@@ -19,7 +19,7 @@ import {
 
 // Import admin components
 import { AdminOverview } from "./AdminOverview";
-import { UserManagement } from "./UserManagement";
+import UserManagement from "./UserManagement";
 import { PendingUsersManagement } from "./PendingUsersManagement";
 import { DeactivatedUsersManagement } from "./DeactivatedUsersManagement";
 import { BulkOperations } from "./BulkOperations";
