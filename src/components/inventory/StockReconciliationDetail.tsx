@@ -31,7 +31,7 @@ export function StockReconciliationDetail({
     error,
   } = useStockReconciliation(reconciliationId.toString());
 
-  const reconciliation = reconciliationData?.reconciliation;
+  const reconciliation = reconciliationData?.data;
 
   if (isLoading) {
     return (

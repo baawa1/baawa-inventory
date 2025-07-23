@@ -85,7 +85,11 @@ export async function GET(
       })),
     };
 
-    return NextResponse.json({ reconciliation: transformedReconciliation });
+    return NextResponse.json({
+      success: true,
+      message: "Stock reconciliation retrieved successfully",
+      data: transformedReconciliation,
+    });
   } catch (error) {
     console.error("Error fetching stock reconciliation:", error);
     return NextResponse.json(

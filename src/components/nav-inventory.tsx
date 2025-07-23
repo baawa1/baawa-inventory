@@ -3,6 +3,7 @@
 import * as React from "react";
 import { ChevronDown } from "lucide-react";
 import Link from "next/link";
+import { usePathname } from "next/navigation";
 import {
   IconPackages,
   IconTag,
@@ -10,6 +11,7 @@ import {
   IconAdjustments,
   IconBuildingStore,
   IconChartBar,
+  IconClipboard,
 } from "@tabler/icons-react";
 
 import {
@@ -95,9 +97,20 @@ const inventoryNavItems = [
         title: "Add Supplier",
         url: "/inventory/suppliers/add",
       },
+    ],
+  },
+  {
+    title: "Purchase Orders",
+    url: "/inventory/purchase-orders",
+    icon: IconClipboard,
+    items: [
       {
-        title: "Purchase Orders",
+        title: "All Purchase Orders",
         url: "/inventory/purchase-orders",
+      },
+      {
+        title: "Add Purchase Order",
+        url: "/inventory/purchase-orders/add",
       },
     ],
   },
@@ -146,13 +159,35 @@ const inventoryNavItems = [
 ];
 
 function CollapsibleNavItem({ item }: { item: (typeof inventoryNavItems)[0] }) {
+  const pathname = usePathname();
   const [isOpen, setIsOpen] = React.useState(false);
+
+  // Check if any sub-item is active
+  const hasActiveChild = item.items?.some(
+    (subItem) =>
+      pathname === subItem.url || pathname.startsWith(subItem.url + "/")
+  );
+
+  // Check if the main item URL is active (only for items without sub-items)
+  const isMainActive =
+    !item.items?.length &&
+    (pathname === item.url || pathname.startsWith(item.url + "/"));
+
+  // Auto-open dropdown if any child is active
+  React.useEffect(() => {
+    if (hasActiveChild) {
+      setIsOpen(true);
+    }
+  }, [hasActiveChild]);
 
   return (
     <SidebarMenuItem>
       <Collapsible open={isOpen} onOpenChange={setIsOpen}>
         <CollapsibleTrigger asChild>
-          <SidebarMenuButton tooltip={item.title}>
+          <SidebarMenuButton
+            tooltip={item.title}
+            className={isMainActive ? "bg-accent text-accent-foreground" : ""}
+          >
             <item.icon />
             <span>{item.title}</span>
             <ChevronDown
@@ -165,15 +200,25 @@ function CollapsibleNavItem({ item }: { item: (typeof inventoryNavItems)[0] }) {
         {item.items?.length ? (
           <CollapsibleContent>
             <SidebarMenuSub>
-              {item.items?.map((subItem) => (
-                <SidebarMenuSubItem key={subItem.title}>
-                  <SidebarMenuSubButton asChild>
-                    <Link href={subItem.url}>
-                      <span>{subItem.title}</span>
-                    </Link>
-                  </SidebarMenuSubButton>
-                </SidebarMenuSubItem>
-              ))}
+              {item.items?.map((subItem) => {
+                const isActive =
+                  pathname === subItem.url ||
+                  pathname.startsWith(subItem.url + "/");
+                return (
+                  <SidebarMenuSubItem key={subItem.title}>
+                    <SidebarMenuSubButton
+                      asChild
+                      className={
+                        isActive ? "bg-accent text-accent-foreground" : ""
+                      }
+                    >
+                      <Link href={subItem.url}>
+                        <span>{subItem.title}</span>
+                      </Link>
+                    </SidebarMenuSubButton>
+                  </SidebarMenuSubItem>
+                );
+              })}
             </SidebarMenuSub>
           </CollapsibleContent>
         ) : null}
