@@ -20,6 +20,9 @@ interface StatusNotesSectionProps {
 export function StatusNotesSection({ form }: StatusNotesSectionProps) {
   return (
     <div className="space-y-4">
+      <div className="mb-4">
+        <h3 className="text-lg font-semibold">Notes</h3>
+      </div>
       <FormField
         control={form.control}
         name="notes"

@@ -102,6 +102,9 @@ export default function EditPurchaseOrderForm({
   React.useEffect(() => {
     if (purchaseOrder) {
       console.log("Purchase Order Data:", purchaseOrder);
+      console.log("Supplier ID:", purchaseOrder.supplierId);
+      console.log("Status:", purchaseOrder.status);
+      console.log("Actual Delivery Date:", purchaseOrder.actualDeliveryDate);
 
       const formData = {
         supplierId: purchaseOrder.supplierId,
@@ -130,7 +133,19 @@ export default function EditPurchaseOrderForm({
       };
 
       console.log("Form Data:", formData);
+      console.log("Form Data Supplier ID:", formData.supplierId);
+      console.log("Form Data Status:", formData.status);
+      console.log(
+        "Form Data Actual Delivery Date:",
+        formData.actualDeliveryDate
+      );
+
       form.reset(formData);
+
+      // Log form values after reset
+      setTimeout(() => {
+        console.log("Form values after reset:", form.getValues());
+      }, 100);
     }
   }, [purchaseOrder, form]);
 
