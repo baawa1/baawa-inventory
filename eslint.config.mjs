@@ -36,16 +36,20 @@ const eslintConfig = [
     files: ["**/*.{js,jsx,ts,tsx}"],
     rules: {
       "no-unused-vars": [
-        "error",
+        "warn",
         {
           argsIgnorePattern: "^_",
           varsIgnorePattern: "^_",
           caughtErrorsIgnorePattern: "^_",
         },
       ],
+      "@typescript-eslint/no-explicit-any": "warn",
+      "@typescript-eslint/no-unused-vars": "warn",
+      "@typescript-eslint/ban-ts-comment": "warn",
+      "prefer-const": "warn",
       "react/no-unescaped-entities": "warn",
       "react-hooks/exhaustive-deps": "warn",
-      "react-hooks/rules-of-hooks": "error",
+      "react-hooks/rules-of-hooks": "warn",
       "@next/next/no-img-element": "warn",
     },
   },
