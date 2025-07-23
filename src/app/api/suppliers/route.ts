@@ -94,7 +94,6 @@ export const GET = withAuth(async (request: AuthenticatedRequest) => {
       updatedAt: supplier.updatedAt,
       _count: {
         products: supplier._count.products,
-        purchaseOrders: 0, // Will be 0 until purchaseOrders relation is added
       },
     }));
 
@@ -160,7 +159,6 @@ export const POST = withPermission(
         updatedAt: newSupplier.updatedAt,
         _count: {
           products: newSupplier._count.products,
-          purchaseOrders: 0,
         },
       };
 

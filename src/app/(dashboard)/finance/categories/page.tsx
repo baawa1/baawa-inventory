@@ -1,10 +1,11 @@
 import { redirect } from "next/navigation";
 import { auth } from "../../../../../auth";
+import { CategoryList } from "@/components/finance/CategoryList";
 import { USER_ROLES, hasRole } from "@/lib/auth/roles";
 
 export const metadata = {
   title: "Financial Categories - BaaWA Inventory POS",
-  description: "Manage financial categories",
+  description: "Manage income and expense categories",
 };
 
 export default async function CategoriesPage() {
@@ -18,12 +19,5 @@ export default async function CategoriesPage() {
     redirect("/unauthorized");
   }
 
-  return (
-    <div className="container mx-auto p-6">
-      <h1 className="text-2xl font-bold mb-4">Financial Categories</h1>
-      <p className="text-muted-foreground">
-        Category management features are currently under development.
-      </p>
-    </div>
-  );
+  return <CategoryList user={session.user} />;
 }

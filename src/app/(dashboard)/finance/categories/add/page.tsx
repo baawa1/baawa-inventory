@@ -1,14 +1,14 @@
 import { redirect } from "next/navigation";
-import { auth } from "../../../../../auth";
-import { FinanceReports } from "@/components/finance/FinanceReports";
+import { auth } from "../../../../../../auth";
+import { AddCategoryForm } from "@/components/finance/AddCategoryForm";
 import { USER_ROLES, hasRole } from "@/lib/auth/roles";
 
 export const metadata = {
-  title: "Finance Reports - BaaWA Inventory POS",
-  description: "Financial reports and analytics",
+  title: "Add Category - BaaWA Inventory POS",
+  description: "Create a new financial category",
 };
 
-export default async function ReportsPage() {
+export default async function AddCategoryPage() {
   const session = await auth();
 
   if (!session?.user) {
@@ -19,5 +19,5 @@ export default async function ReportsPage() {
     redirect("/unauthorized");
   }
 
-  return <FinanceReports user={session.user} />;
+  return <AddCategoryForm user={session.user} />;
 }

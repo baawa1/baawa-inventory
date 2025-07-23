@@ -18,44 +18,6 @@ export type PaymentStatus = "PENDING" | "PAID" | "REFUNDED" | "CANCELLED";
 
 export type DiscountType = "AMOUNT" | "PERCENTAGE";
 
-export type PurchaseOrderStatus =
-  | "DRAFT"
-  | "PENDING"
-  | "APPROVED"
-  | "ORDERED"
-  | "PARTIAL_RECEIVED"
-  | "RECEIVED"
-  | "CANCELLED";
-
-export interface PurchaseOrder {
-  id: number;
-  orderNumber: string;
-  supplierId: number;
-  userId: number;
-  orderDate: string;
-  expectedDeliveryDate?: string;
-  actualDeliveryDate?: string;
-  subtotal: string;
-  taxAmount: string;
-  shippingCost?: string;
-  totalAmount: string;
-  status: string;
-  notes?: string;
-  createdAt: string;
-  updatedAt: string;
-  suppliers?: {
-    id: number;
-    name: string;
-    email?: string;
-    phone?: string;
-  };
-  users?: {
-    id: number;
-    name: string;
-    email: string;
-  };
-}
-
 export type AIContentType =
   | "DESCRIPTION"
   | "SEO_TITLE"
@@ -282,5 +244,5 @@ export interface TableColumn<T = Record<string, unknown>> {
   key: keyof T;
   label: string;
   sortable?: boolean;
-  render?: (value: unknown, row: T) => React.ReactNode;
+  render?: (_value: unknown, _row: T) => React.ReactNode;
 }

@@ -1,14 +1,14 @@
 import { redirect } from "next/navigation";
-import { auth } from "../../../../../auth";
-import { TransactionList } from "@/components/finance/TransactionList";
+import { auth } from "../../../../../../auth";
+import { AddTransactionForm } from "@/components/finance/AddTransactionForm";
 import { USER_ROLES, hasRole } from "@/lib/auth/roles";
 
 export const metadata = {
-  title: "Financial Transactions - BaaWA Inventory POS",
-  description: "Manage income and expense transactions",
+  title: "Add Transaction - BaaWA Inventory POS",
+  description: "Create a new financial transaction",
 };
 
-export default async function TransactionsPage() {
+export default async function AddTransactionPage() {
   const session = await auth();
 
   if (!session?.user) {
@@ -25,5 +25,5 @@ export default async function TransactionsPage() {
     redirect("/unauthorized");
   }
 
-  return <TransactionList user={session.user} />;
+  return <AddTransactionForm user={session.user} />;
 }

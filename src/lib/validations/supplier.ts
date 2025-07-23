@@ -119,7 +119,6 @@ export const supplierPerformanceQuerySchema = z.object({
   fromDate: z.string().datetime().optional(),
   toDate: z.string().datetime().optional(),
   includeProducts: z.coerce.boolean().optional().default(false),
-  includePurchaseOrders: z.coerce.boolean().optional().default(false),
 });
 
 // Bulk supplier operations

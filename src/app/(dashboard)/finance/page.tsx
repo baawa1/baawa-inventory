@@ -1,6 +1,6 @@
 import { redirect } from "next/navigation";
 import { auth } from "../../../../auth";
-// import { FinanceDashboard } from "@/components/finance/FinanceDashboard";
+import { FinanceDashboard } from "@/components/finance/FinanceDashboard";
 import { USER_ROLES, hasRole } from "@/lib/auth/roles";
 
 export const metadata = {
@@ -20,13 +20,5 @@ export default async function FinancePage() {
     redirect("/unauthorized");
   }
 
-  // Temporarily disabled - finance features under development
-  return (
-    <div className="container mx-auto p-6">
-      <h1 className="text-2xl font-bold mb-4">Finance Manager</h1>
-      <p className="text-muted-foreground">
-        Finance management features are currently under development.
-      </p>
-    </div>
-  );
+  return <FinanceDashboard user={session.user} />;
 }

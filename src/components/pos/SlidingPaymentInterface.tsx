@@ -11,7 +11,6 @@ import { ALL_PAYMENT_METHODS, VALIDATION_RULES } from "@/lib/constants";
 // import { DiscountStep } from "./DiscountStep";
 // import { PaymentMethodStep } from "./PaymentMethodStep";
 // import { CustomerInfoStep } from "./CustomerInfoStep";
-// import { ReviewStep } from "./ReviewStep";
 
 // Validation schemas
 const discountSchema = z.object({
@@ -85,7 +84,6 @@ const STEPS = [
   { id: "discount", title: "Discount" },
   { id: "payment-method", title: "Payment Method" },
   { id: "customer-info", title: "Customer Info" },
-  { id: "review", title: "Review & Complete" },
 ];
 
 export function SlidingPaymentInterface({

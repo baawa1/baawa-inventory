@@ -39,7 +39,6 @@ model User {
   sessionRefreshAt                                       DateTime?             @map("session_refresh_at") @db.Timestamptz(6)
   ai_content                                             AIContent[]
   audit_logs                                             AuditLog[]
-  purchase_orders                                        PurchaseOrder[]
   sales_transactions                                     SalesTransaction[]
   stockAdditions                                         StockAddition[]       @relation("StockAdditionCreator")
   stock_adjustments_stock_adjustments_user_idTousers     StockAdjustment[]     @relation("stock_adjustments_user_idTousers")
@@ -88,7 +87,6 @@ model Supplier {
   createdAt       DateTime?       @default(now()) @map("created_at") @db.Timestamptz(6)
   updatedAt       DateTime?       @default(now()) @updatedAt @map("updated_at") @db.Timestamptz(6)
   products        Product[]
-  purchase_orders PurchaseOrder[]
   stockAdditions  StockAddition[]
 
   @@index([isActive], map: "idx_suppliers_active")
@@ -163,7 +161,6 @@ model Product {
   categoryId          Int?                      @map("category_id")
   brandId             Int?                      @map("brand_id")
   status              String                    @default("active") @db.VarChar(20)
-  allowReviews        Boolean                   @default(true) @map("allow_reviews")
   isFeatured          Boolean                   @default(false) @map("is_featured")
   metaContent         String?                   @map("meta_content")
   metaExcerpt         String?                   @map("meta_excerpt")
@@ -183,7 +180,6 @@ model Product {
   brand               Brand?                    @relation(fields: [brandId], references: [id], onUpdate: NoAction)
   category            Category?                 @relation(fields: [categoryId], references: [id], onUpdate: NoAction)
   supplier            Supplier?                 @relation(fields: [supplierId], references: [id], onUpdate: NoAction)
-  purchaseOrderItems  PurchaseOrderItem[]
   sales_items         SalesItem[]
   stockAdditions      StockAddition[]
   stock_adjustments   StockAdjustment[]
@@ -218,7 +214,6 @@ model ProductVariant {
   weight             Decimal?            @db.Decimal(8, 3)
   images             Json?
   products           Product             @relation(fields: [product_id], references: [id], onDelete: Cascade, onUpdate: NoAction)
-  purchaseOrderItems PurchaseOrderItem[]
   sales_items        SalesItem[]
   stock_adjustments  StockAdjustment[]
 
@@ -372,56 +367,7 @@ model StockAdjustment {
   @@map("stock_adjustments")
 }
 
-model PurchaseOrder {
-  id                   Int                 @id @default(autoincrement())
-  notes                String?
-  actualDeliveryDate   DateTime?           @map("actual_delivery_date") @db.Date
-  createdAt            DateTime?           @default(now()) @map("created_at") @db.Timestamptz(6)
-  expectedDeliveryDate DateTime?           @map("expected_delivery_date") @db.Date
-  orderDate            DateTime            @map("order_date") @db.Date
-  orderNumber          String              @unique @map("order_number") @db.VarChar(50)
-  shippingCost         Decimal?            @default(0) @map("shipping_cost") @db.Decimal(10, 2)
-  subtotal             Decimal             @db.Decimal(10, 2)
-  supplierId           Int                 @map("supplier_id")
-  taxAmount            Decimal             @default(0) @map("tax_amount") @db.Decimal(10, 2)
-  totalAmount          Decimal             @map("total_amount") @db.Decimal(10, 2)
-  updatedAt            DateTime?           @default(now()) @map("updated_at") @db.Timestamptz(6)
-  userId               Int                 @map("user_id")
-  status               PurchaseOrderStatus @default(DRAFT)
-  purchaseOrderItems   PurchaseOrderItem[] @relation("PurchaseOrderItems")
-  suppliers            Supplier            @relation(fields: [supplierId], references: [id], onDelete: NoAction, onUpdate: NoAction)
-  users                User                @relation(fields: [userId], references: [id], onDelete: NoAction, onUpdate: NoAction)
 
-  @@index([orderNumber], map: "idx_purchase_orders_number")
-  @@index([orderDate], map: "idx_purchase_orders_order_date")
-  @@index([status], map: "idx_purchase_orders_status")
-  @@index([supplierId], map: "idx_purchase_orders_supplier")
-  @@index([supplierId], map: "idx_purchase_orders_supplier_id")
-  @@index([userId], map: "idx_purchase_orders_user_id")
-  @@map("purchase_orders")
-}
-
-model PurchaseOrderItem {
-  id               Int             @id @default(autoincrement())
-  createdAt        DateTime?       @default(now()) @map("created_at") @db.Timestamptz(6)
-  productId        Int?            @map("product_id")
-  purchaseOrderId  Int             @map("purchase_order_id")
-  quantityOrdered  Int             @map("quantity_ordered")
-  quantityReceived Int?            @default(0) @map("quantity_received")
-  totalCost        Decimal         @map("total_cost") @db.Decimal(10, 2)
-  unitCost         Decimal         @map("unit_cost") @db.Decimal(10, 2)
-  variantId        Int?            @map("variant_id")
-  products         Product?        @relation(fields: [productId], references: [id], onUpdate: NoAction)
-  purchaseOrders   PurchaseOrder   @relation("PurchaseOrderItems", fields: [purchaseOrderId], references: [id], onDelete: Cascade, onUpdate: NoAction)
-  productVariants  ProductVariant? @relation(fields: [variantId], references: [id], onUpdate: NoAction)
-
-  @@index([purchaseOrderId], map: "idx_purchase_order_items_order")
-  @@index([productId], map: "idx_purchase_order_items_product")
-  @@index([productId], map: "idx_purchase_order_items_product_id")
-  @@index([purchaseOrderId], map: "idx_purchase_order_items_purchase_order_id")
-  @@index([variantId], map: "idx_purchase_order_items_variant_id")
-  @@map("purchase_order_items")
-}
 
 model AuditLog {
   id         Int       @id @default(autoincrement())
@@ -535,15 +481,7 @@ enum stock_reconciliation_status {
   REJECTED
 }
 
-enum PurchaseOrderStatus {
-  DRAFT
-  PENDING
-  APPROVED
-  ORDERED
-  PARTIAL_RECEIVED
-  RECEIVED
-  CANCELLED
-}
+
 
 // Finance Manager Enums
 enum FinancialType {
