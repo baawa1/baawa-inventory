@@ -2,6 +2,7 @@ import React from "react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { formatCurrency } from "@/lib/utils";
+import { PurchaseOrderStatusBadge } from "@/components/inventory/PurchaseOrderStatusBadge";
 import { format } from "date-fns";
 import { IconCurrency, IconBuilding, IconCalendar } from "@tabler/icons-react";
 import { PurchaseOrder } from "./types";
@@ -42,39 +43,6 @@ export function OrderSummarySection({
     }
 
     return formatCurrency(numAmount);
-  };
-
-  const getStatusBadge = (status: string | undefined | null) => {
-    // Handle undefined or null status
-    if (!status) {
-      return <Badge className="bg-gray-100 text-gray-800">Unknown</Badge>;
-    }
-
-    const getStatusColor = (status: string) => {
-      switch (status) {
-        case "pending":
-          return "bg-yellow-100 text-yellow-800";
-        case "approved":
-          return "bg-green-100 text-green-800";
-        case "ordered":
-          return "bg-blue-100 text-blue-800";
-        case "shipped":
-          return "bg-cyan-100 text-cyan-800";
-        case "delivered":
-          return "bg-emerald-100 text-emerald-800";
-        case "cancelled":
-          return "bg-red-100 text-red-800";
-        case "draft":
-        default:
-          return "bg-gray-100 text-gray-800";
-      }
-    };
-
-    return (
-      <Badge className={getStatusColor(status)}>
-        {status.charAt(0).toUpperCase() + status.slice(1)}
-      </Badge>
-    );
   };
 
   return (
@@ -161,7 +129,13 @@ export function OrderSummarySection({
           </div>
           <div>
             <p className="text-sm text-muted-foreground">Status</p>
-            <div className="mt-1">{getStatusBadge(purchaseOrder.status)}</div>
+            <div className="mt-1">
+              {purchaseOrder.status ? (
+                <PurchaseOrderStatusBadge status={purchaseOrder.status} />
+              ) : (
+                <Badge className="bg-gray-100 text-gray-800">Unknown</Badge>
+              )}
+            </div>
           </div>
           <div>
             <p className="text-sm text-muted-foreground">Created By</p>

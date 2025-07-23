@@ -11,13 +11,13 @@ import {
 } from "@/hooks/api/purchase-orders";
 import { InventoryPageLayout } from "@/components/inventory/InventoryPageLayout";
 import { Button } from "@/components/ui/button";
-import { Badge } from "@/components/ui/badge";
 import {
   DropdownMenu,
   DropdownMenuContent,
   DropdownMenuItem,
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
+import { PurchaseOrderStatusBadge } from "@/components/inventory/PurchaseOrderStatusBadge";
 import {
   AlertDialog,
   AlertDialogAction,
@@ -180,11 +180,16 @@ export default function PurchaseOrderList({ user }: PurchaseOrderListProps) {
         label: "Status",
         type: "select",
         options: [
-          { value: "all", label: "All Statuses" },
-          ...Object.entries(PURCHASE_ORDER_STATUS).map(([key, value]) => ({
-            value,
-            label: key.charAt(0).toUpperCase() + key.slice(1).toLowerCase(),
-          })),
+          { value: PURCHASE_ORDER_STATUS.DRAFT, label: "Draft" },
+          { value: PURCHASE_ORDER_STATUS.PENDING, label: "Pending" },
+          { value: PURCHASE_ORDER_STATUS.APPROVED, label: "Approved" },
+          { value: PURCHASE_ORDER_STATUS.ORDERED, label: "Ordered" },
+          {
+            value: PURCHASE_ORDER_STATUS.PARTIAL_RECEIVED,
+            label: "Partial Received",
+          },
+          { value: PURCHASE_ORDER_STATUS.RECEIVED, label: "Received" },
+          { value: PURCHASE_ORDER_STATUS.CANCELLED, label: "Cancelled" },
         ],
         placeholder: "All Statuses",
       },
@@ -236,34 +241,6 @@ export default function PurchaseOrderList({ user }: PurchaseOrderListProps) {
     }
   }, [purchaseOrderToDelete, deletePurchaseOrderMutation]);
 
-  const getStatusBadge = (status: string) => {
-    const getStatusColor = (status: string) => {
-      switch (status) {
-        case "pending":
-          return "bg-yellow-100 text-yellow-800";
-        case "approved":
-          return "bg-green-100 text-green-800";
-        case "ordered":
-          return "bg-blue-100 text-blue-800";
-        case "shipped":
-          return "bg-cyan-100 text-cyan-800";
-        case "delivered":
-          return "bg-emerald-100 text-emerald-800";
-        case "cancelled":
-          return "bg-red-100 text-red-800";
-        case "draft":
-        default:
-          return "bg-gray-100 text-gray-800";
-      }
-    };
-
-    return (
-      <Badge className={getStatusColor(status)}>
-        {status.charAt(0).toUpperCase() + status.slice(1)}
-      </Badge>
-    );
-  };
-
   const renderCell = (purchaseOrder: APIPurchaseOrder, columnKey: string) => {
     switch (columnKey) {
       case "orderNumber":
@@ -298,7 +275,7 @@ export default function PurchaseOrderList({ user }: PurchaseOrderListProps) {
           </div>
         );
       case "status":
-        return getStatusBadge(purchaseOrder.status);
+        return <PurchaseOrderStatusBadge status={purchaseOrder.status} />;
       case "createdAt":
         return (
           <div>{format(new Date(purchaseOrder.createdAt), "MMM dd, yyyy")}</div>

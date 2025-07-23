@@ -19,7 +19,9 @@ export type PaymentStatus = "PENDING" | "PAID" | "REFUNDED" | "CANCELLED";
 export type DiscountType = "AMOUNT" | "PERCENTAGE";
 
 export type PurchaseOrderStatus =
+  | "DRAFT"
   | "PENDING"
+  | "APPROVED"
   | "ORDERED"
   | "PARTIAL_RECEIVED"
   | "RECEIVED"

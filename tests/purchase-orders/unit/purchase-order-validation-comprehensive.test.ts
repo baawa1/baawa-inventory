@@ -697,21 +697,21 @@ describe("Purchase Order Validation - Comprehensive Tests", () => {
 
   describe("PURCHASE_ORDER_STATUS_TRANSITIONS", () => {
     it("should have correct transition rules", () => {
-      expect(PURCHASE_ORDER_STATUS_TRANSITIONS.draft).toEqual([
-        "ordered",
-        "cancelled",
+      expect(PURCHASE_ORDER_STATUS_TRANSITIONS.DRAFT).toEqual([
+        "ORDERED",
+        "CANCELLED",
       ]);
-      expect(PURCHASE_ORDER_STATUS_TRANSITIONS.ordered).toEqual([
-        "partial_received",
-        "received",
-        "cancelled",
+      expect(PURCHASE_ORDER_STATUS_TRANSITIONS.ORDERED).toEqual([
+        "PARTIAL_RECEIVED",
+        "RECEIVED",
+        "CANCELLED",
       ]);
-      expect(PURCHASE_ORDER_STATUS_TRANSITIONS.partial_received).toEqual([
-        "received",
-        "cancelled",
+      expect(PURCHASE_ORDER_STATUS_TRANSITIONS.PARTIAL_RECEIVED).toEqual([
+        "RECEIVED",
+        "CANCELLED",
       ]);
-      expect(PURCHASE_ORDER_STATUS_TRANSITIONS.received).toEqual([]);
-      expect(PURCHASE_ORDER_STATUS_TRANSITIONS.cancelled).toEqual([]);
+      expect(PURCHASE_ORDER_STATUS_TRANSITIONS.RECEIVED).toEqual([]);
+      expect(PURCHASE_ORDER_STATUS_TRANSITIONS.CANCELLED).toEqual([]);
     });
   });
 

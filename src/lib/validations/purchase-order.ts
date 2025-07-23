@@ -1,5 +1,6 @@
 import { z } from "zod";
 import { idSchema, paginationSchema, searchSchema } from "./common";
+import { PURCHASE_ORDER_STATUS } from "@/lib/constants";
 
 // Purchase order item schema
 export const purchaseOrderItemSchema = z.object({
@@ -40,13 +41,13 @@ export const updatePurchaseOrderSchema = z
     totalAmount: z.number().positive().optional(),
     status: z
       .enum([
-        "draft",
-        "pending",
-        "approved",
-        "ordered",
-        "shipped",
-        "delivered",
-        "cancelled",
+        PURCHASE_ORDER_STATUS.DRAFT,
+        PURCHASE_ORDER_STATUS.PENDING,
+        PURCHASE_ORDER_STATUS.APPROVED,
+        PURCHASE_ORDER_STATUS.ORDERED,
+        PURCHASE_ORDER_STATUS.PARTIAL_RECEIVED,
+        PURCHASE_ORDER_STATUS.RECEIVED,
+        PURCHASE_ORDER_STATUS.CANCELLED,
       ])
       .optional(),
     notes: z.string().optional(),
@@ -62,13 +63,13 @@ export const purchaseOrderQuerySchema = paginationSchema
     supplierId: z.coerce.number().int().positive().optional(),
     status: z
       .enum([
-        "draft",
-        "pending",
-        "approved",
-        "ordered",
-        "shipped",
-        "delivered",
-        "cancelled",
+        PURCHASE_ORDER_STATUS.DRAFT,
+        PURCHASE_ORDER_STATUS.PENDING,
+        PURCHASE_ORDER_STATUS.APPROVED,
+        PURCHASE_ORDER_STATUS.ORDERED,
+        PURCHASE_ORDER_STATUS.PARTIAL_RECEIVED,
+        PURCHASE_ORDER_STATUS.RECEIVED,
+        PURCHASE_ORDER_STATUS.CANCELLED,
       ])
       .optional(),
     fromDate: z.string().datetime().optional(),
@@ -108,13 +109,13 @@ export const fulfillPurchaseOrderSchema = z.object({
 // Purchase order status update schema
 export const updatePurchaseOrderStatusSchema = z.object({
   status: z.enum([
-    "draft",
-    "pending",
-    "approved",
-    "ordered",
-    "shipped",
-    "delivered",
-    "cancelled",
+    PURCHASE_ORDER_STATUS.DRAFT,
+    PURCHASE_ORDER_STATUS.PENDING,
+    PURCHASE_ORDER_STATUS.APPROVED,
+    PURCHASE_ORDER_STATUS.ORDERED,
+    PURCHASE_ORDER_STATUS.PARTIAL_RECEIVED,
+    PURCHASE_ORDER_STATUS.RECEIVED,
+    PURCHASE_ORDER_STATUS.CANCELLED,
   ]),
   notes: z.string().optional(),
 });
@@ -134,13 +135,13 @@ export const bulkUpdatePurchaseOrderStatusSchema = z.object({
     .array(idSchema)
     .min(1, "At least one purchase order ID is required"),
   status: z.enum([
-    "draft",
-    "pending",
-    "approved",
-    "ordered",
-    "shipped",
-    "delivered",
-    "cancelled",
+    PURCHASE_ORDER_STATUS.DRAFT,
+    PURCHASE_ORDER_STATUS.PENDING,
+    PURCHASE_ORDER_STATUS.APPROVED,
+    PURCHASE_ORDER_STATUS.ORDERED,
+    PURCHASE_ORDER_STATUS.PARTIAL_RECEIVED,
+    PURCHASE_ORDER_STATUS.RECEIVED,
+    PURCHASE_ORDER_STATUS.CANCELLED,
   ]),
   notes: z.string().optional(),
 });
@@ -180,11 +181,29 @@ export const validatePurchaseOrderTotals = (data: any) => {
 
 // Purchase order status transitions
 export const PURCHASE_ORDER_STATUS_TRANSITIONS = {
-  draft: ["ordered", "cancelled"],
-  ordered: ["partial_received", "received", "cancelled"],
-  partial_received: ["received", "cancelled"],
-  received: [], // Final state
-  cancelled: [], // Final state
+  [PURCHASE_ORDER_STATUS.DRAFT]: [
+    PURCHASE_ORDER_STATUS.ORDERED,
+    PURCHASE_ORDER_STATUS.CANCELLED,
+  ],
+  [PURCHASE_ORDER_STATUS.PENDING]: [
+    PURCHASE_ORDER_STATUS.APPROVED,
+    PURCHASE_ORDER_STATUS.CANCELLED,
+  ],
+  [PURCHASE_ORDER_STATUS.APPROVED]: [
+    PURCHASE_ORDER_STATUS.ORDERED,
+    PURCHASE_ORDER_STATUS.CANCELLED,
+  ],
+  [PURCHASE_ORDER_STATUS.ORDERED]: [
+    PURCHASE_ORDER_STATUS.PARTIAL_RECEIVED,
+    PURCHASE_ORDER_STATUS.RECEIVED,
+    PURCHASE_ORDER_STATUS.CANCELLED,
+  ],
+  [PURCHASE_ORDER_STATUS.PARTIAL_RECEIVED]: [
+    PURCHASE_ORDER_STATUS.RECEIVED,
+    PURCHASE_ORDER_STATUS.CANCELLED,
+  ],
+  [PURCHASE_ORDER_STATUS.RECEIVED]: [], // Final state
+  [PURCHASE_ORDER_STATUS.CANCELLED]: [], // Final state
 } as const;
 
 export const validateStatusTransition = (
