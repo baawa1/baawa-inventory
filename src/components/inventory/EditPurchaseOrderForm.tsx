@@ -63,16 +63,16 @@ export default function EditPurchaseOrderForm({
     resolver: zodResolver(updatePurchaseOrderSchema),
     defaultValues: {
       supplierId: undefined,
-      orderNumber: undefined,
-      orderDate: undefined,
-      expectedDeliveryDate: undefined,
-      actualDeliveryDate: undefined,
-      subtotal: undefined,
-      taxAmount: undefined,
-      shippingCost: undefined,
-      totalAmount: undefined,
+      orderNumber: "",
+      orderDate: "",
+      expectedDeliveryDate: "",
+      actualDeliveryDate: "",
+      subtotal: 0,
+      taxAmount: 0,
+      shippingCost: 0,
+      totalAmount: 0,
       status: undefined,
-      notes: undefined,
+      notes: "",
     },
   });
 
@@ -100,33 +100,36 @@ export default function EditPurchaseOrderForm({
 
   // Populate form when data is loaded
   React.useEffect(() => {
-    if (purchaseOrder && !form.formState.isDirty) {
+    if (purchaseOrder) {
+      console.log("Purchase Order Data:", purchaseOrder);
+
       const formData = {
         supplierId: purchaseOrder.supplierId,
-        orderNumber: purchaseOrder.orderNumber,
+        orderNumber: purchaseOrder.orderNumber || "",
         orderDate: purchaseOrder.orderDate
           ? new Date(purchaseOrder.orderDate).toISOString().split("T")[0]
-          : undefined,
+          : "",
         expectedDeliveryDate: purchaseOrder.expectedDeliveryDate
           ? new Date(purchaseOrder.expectedDeliveryDate)
               .toISOString()
               .split("T")[0]
-          : undefined,
+          : "",
         actualDeliveryDate: purchaseOrder.actualDeliveryDate
           ? new Date(purchaseOrder.actualDeliveryDate)
               .toISOString()
               .split("T")[0]
-          : undefined,
-        subtotal: parseFloat(purchaseOrder.subtotal) || undefined,
-        taxAmount: parseFloat(purchaseOrder.taxAmount) || undefined,
+          : "",
+        subtotal: parseFloat(purchaseOrder.subtotal) || 0,
+        taxAmount: parseFloat(purchaseOrder.taxAmount) || 0,
         shippingCost: purchaseOrder.shippingCost
           ? parseFloat(purchaseOrder.shippingCost)
-          : undefined,
-        totalAmount: parseFloat(purchaseOrder.totalAmount) || undefined,
-        status: purchaseOrder.status as any,
-        notes: purchaseOrder.notes || undefined,
+          : 0,
+        totalAmount: parseFloat(purchaseOrder.totalAmount) || 0,
+        status: purchaseOrder.status,
+        notes: purchaseOrder.notes || "",
       };
 
+      console.log("Form Data:", formData);
       form.reset(formData);
     }
   }, [purchaseOrder, form]);
