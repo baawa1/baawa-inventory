@@ -180,11 +180,27 @@ async function getCurrentStockReport(filters: any) {
     prisma.product.count({ where }),
   ]);
 
+  // Get all products for summary calculations (not paginated)
+  const allProducts = await prisma.product.findMany({
+    where,
+    select: {
+      stock: true,
+      minStock: true,
+      price: true,
+      cost: true,
+    },
+  });
+
   const summary = {
     totalProducts: totalCount,
-    totalValue: products.reduce((sum, p) => sum + p.stock * Number(p.price), 0),
-    lowStockItems: products.filter((p) => p.stock <= p.minStock).length,
-    outOfStockItems: products.filter((p) => p.stock === 0).length,
+    totalValue: allProducts.reduce(
+      (sum, p) => sum + (p.stock || 0) * Number(p.price || 0),
+      0
+    ),
+    lowStockItems: allProducts.filter(
+      (p) => (p.stock || 0) <= (p.minStock || 0)
+    ).length,
+    outOfStockItems: allProducts.filter((p) => (p.stock || 0) === 0).length,
   };
 
   return {
@@ -199,7 +215,7 @@ async function getCurrentStockReport(filters: any) {
       minStock: p.minStock,
       price: p.price,
       cost: p.cost,
-      value: p.stock * Number(p.price),
+      stockValue: (p.stock || 0) * Number(p.price || 0),
       status:
         p.stock <= p.minStock
           ? p.stock === 0
@@ -252,18 +268,29 @@ async function getStockValueReport(filters: any) {
     prisma.product.count({ where }),
   ]);
 
+  // Get all products for summary calculations (not paginated)
+  const allProducts = await prisma.product.findMany({
+    where,
+    select: {
+      stock: true,
+      price: true,
+      cost: true,
+    },
+  });
+
   const summary = {
     totalProducts: totalCount,
-    totalStockValue: products.reduce(
-      (sum, p) => sum + p.stock * Number(p.price),
+    totalStockValue: allProducts.reduce(
+      (sum, p) => sum + (p.stock || 0) * Number(p.price || 0),
       0
     ),
-    totalCostValue: products.reduce(
-      (sum, p) => sum + p.stock * Number(p.cost),
+    totalCostValue: allProducts.reduce(
+      (sum, p) => sum + (p.stock || 0) * Number(p.cost || 0),
       0
     ),
-    totalProfit: products.reduce(
-      (sum, p) => sum + p.stock * (Number(p.price) - Number(p.cost)),
+    totalProfit: allProducts.reduce(
+      (sum, p) =>
+        sum + (p.stock || 0) * (Number(p.price || 0) - Number(p.cost || 0)),
       0
     ),
   };
@@ -276,11 +303,18 @@ async function getStockValueReport(filters: any) {
       category: p.category?.name || "Uncategorized",
       brand: p.brand?.name || "No Brand",
       currentStock: p.stock,
-      price: p.price,
-      cost: p.cost,
-      stockValue: p.stock * Number(p.price),
-      costValue: p.stock * Number(p.cost),
-      profitValue: p.stock * (Number(p.price) - Number(p.cost)),
+      costPrice: p.cost,
+      sellingPrice: p.price,
+      stockValue: (p.stock || 0) * Number(p.price || 0),
+      costValue: (p.stock || 0) * Number(p.cost || 0),
+      profitValue:
+        (p.stock || 0) * (Number(p.price || 0) - Number(p.cost || 0)),
+      profitMargin:
+        Number(p.price || 0) > 0 && Number(p.cost || 0) > 0
+          ? ((Number(p.price || 0) - Number(p.cost || 0)) /
+              Number(p.price || 0)) *
+            100
+          : 0,
     })),
     summary,
     pagination: {
@@ -328,12 +362,26 @@ async function getLowStockReport(filters: any) {
     prisma.product.count({ where }),
   ]);
 
+  // Get all products for summary calculations (not paginated)
+  const allProducts = await prisma.product.findMany({
+    where,
+    select: {
+      stock: true,
+      minStock: true,
+      cost: true,
+    },
+  });
+
   const summary = {
     totalLowStockItems: totalCount,
-    outOfStockItems: products.filter((p) => p.stock === 0).length,
-    criticallyLowItems: products.filter(
-      (p) => p.stock > 0 && p.stock <= p.minStock * 0.5
+    outOfStockItems: allProducts.filter((p) => (p.stock || 0) === 0).length,
+    criticallyLowItems: allProducts.filter(
+      (p) => (p.stock || 0) > 0 && (p.stock || 0) <= (p.minStock || 0) * 0.5
     ).length,
+    totalReorderValue: allProducts.reduce(
+      (sum, p) => sum + (p.minStock || 0) * 2 * Number(p.cost || 0),
+      0
+    ),
   };
 
   return {
@@ -346,11 +394,13 @@ async function getLowStockReport(filters: any) {
       supplier: p.supplier?.name || "No Supplier",
       currentStock: p.stock,
       minStock: p.minStock,
-      shortage: p.minStock - p.stock,
+      shortage: (p.minStock || 0) - (p.stock || 0),
+      reorderQuantity: (p.minStock || 0) * 2, // Simple reorder logic
+      reorderValue: (p.minStock || 0) * 2 * Number(p.cost || 0),
       urgency:
-        p.stock === 0
+        (p.stock || 0) === 0
           ? "Critical"
-          : p.stock <= p.minStock * 0.5
+          : (p.stock || 0) <= (p.minStock || 0) * 0.5
             ? "High"
             : "Medium",
     })),
@@ -488,10 +538,19 @@ async function getReorderReport(filters: any) {
     prisma.product.count({ where }),
   ]);
 
+  // Get all products for summary calculations (not paginated)
+  const allProducts = await prisma.product.findMany({
+    where,
+    select: {
+      minStock: true,
+      cost: true,
+    },
+  });
+
   const summary = {
     totalReorderItems: totalCount,
-    totalReorderValue: products.reduce(
-      (sum, p) => sum + p.minStock * 2 * Number(p.cost),
+    totalReorderValue: allProducts.reduce(
+      (sum, p) => sum + (p.minStock || 0) * 2 * Number(p.cost || 0),
       0
     ),
   };
@@ -506,9 +565,9 @@ async function getReorderReport(filters: any) {
       supplier: p.supplier?.name || "No Supplier",
       currentStock: p.stock,
       minStock: p.minStock,
-      recommendedOrder: p.minStock * 2, // Simple reorder logic
+      recommendedOrder: (p.minStock || 0) * 2, // Simple reorder logic
       unitCost: p.cost,
-      orderValue: p.minStock * 2 * Number(p.cost),
+      orderValue: (p.minStock || 0) * 2 * Number(p.cost || 0),
     })),
     summary,
     pagination: {
