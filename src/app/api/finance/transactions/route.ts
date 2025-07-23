@@ -55,9 +55,9 @@ export const GET = withAuth(async (request: AuthenticatedRequest) => {
       ];
     }
 
-    if (type) where.type = type;
-    if (categoryId) where.categoryId = categoryId;
-    if (status) where.status = status;
+    if (type && type !== "ALL") where.type = type;
+    if (categoryId && categoryId !== 0) where.categoryId = categoryId;
+    if (status && status !== "ALL") where.status = status;
 
     if (startDate || endDate) {
       where.transactionDate = {};

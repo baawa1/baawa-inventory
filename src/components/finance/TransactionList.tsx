@@ -3,34 +3,11 @@
 import { useState } from "react";
 import { useRouter } from "next/navigation";
 import { Button } from "@/components/ui/button";
-import { Input } from "@/components/ui/input";
-import { Label } from "@/components/ui/label";
-import {
-  Select,
-  SelectContent,
-  SelectItem,
-  SelectTrigger,
-  SelectValue,
-} from "@/components/ui/select";
-import {
-  Card,
-  CardContent,
-  CardDescription,
-  CardHeader,
-  CardTitle,
-} from "@/components/ui/card";
+
 import { Badge } from "@/components/ui/badge";
-import { DataTable } from "@/components/data-table";
-import { ColumnDef } from "@tanstack/react-table";
-import {
-  Plus,
-  Search,
-  Filter,
-  Eye,
-  Edit,
-  Trash2,
-  Download,
-} from "lucide-react";
+import { DashboardTableLayout } from "@/components/layouts/DashboardTableLayout";
+import { DashboardTableColumn } from "@/components/layouts/DashboardColumnCustomizer";
+import { Plus, Eye, Edit, Trash2 } from "lucide-react";
 import { format } from "date-fns";
 import { toast } from "sonner";
 import {
@@ -49,9 +26,9 @@ export function TransactionList({ user: _user }: TransactionListProps) {
   const router = useRouter();
   const [filters, setFilters] = useState({
     search: "",
-    type: "",
+    type: "ALL",
     categoryId: 0,
-    status: "",
+    status: "ALL",
     page: 1,
     limit: 10,
   });
@@ -71,104 +48,107 @@ export function TransactionList({ user: _user }: TransactionListProps) {
       try {
         await deleteTransaction.mutateAsync(id);
         toast.success("Transaction deleted successfully");
-      } catch (error) {
+      } catch (_error) {
         toast.error("Failed to delete transaction");
       }
     }
   };
 
-  const columns: ColumnDef<any>[] = [
+  const columns: DashboardTableColumn[] = [
     {
-      accessorKey: "transactionNumber",
-      header: "Transaction #",
-      cell: ({ row }) => (
-        <span className="font-mono text-sm">
-          {row.getValue("transactionNumber")}
-        </span>
-      ),
+      key: "transactionNumber",
+      label: "Transaction #",
+      sortable: true,
     },
     {
-      accessorKey: "type",
-      header: "Type",
-      cell: ({ row }) => {
-        const type = row.getValue("type") as string;
-        return (
-          <Badge variant={type === "INCOME" ? "default" : "secondary"}>
-            {type}
-          </Badge>
-        );
-      },
+      key: "type",
+      label: "Type",
+      sortable: true,
     },
     {
-      accessorKey: "amount",
-      header: "Amount",
-      cell: ({ row }) => {
-        const amount = row.getValue("amount") as number;
-        const currency = row.original.currency || "NGN";
+      key: "amount",
+      label: "Amount",
+      sortable: true,
+    },
+    {
+      key: "category",
+      label: "Category",
+      sortable: true,
+    },
+    {
+      key: "description",
+      label: "Description",
+      sortable: false,
+    },
+    {
+      key: "transactionDate",
+      label: "Date",
+      sortable: true,
+    },
+    {
+      key: "status",
+      label: "Status",
+      sortable: true,
+    },
+    {
+      key: "actions",
+      label: "Actions",
+      sortable: false,
+    },
+  ];
+
+  const renderCell = (transaction: any, columnKey: string) => {
+    switch (columnKey) {
+      case "transactionNumber":
         return (
-          <span className="font-medium">
-            {currency} {amount.toLocaleString()}
+          <span className="font-mono text-sm">
+            {transaction.transactionNumber}
           </span>
         );
-      },
-    },
-    {
-      accessorKey: "category",
-      header: "Category",
-      cell: ({ row }) => {
-        const category = row.original.category;
-        return category?.name || "N/A";
-      },
-    },
-    {
-      accessorKey: "description",
-      header: "Description",
-      cell: ({ row }) => {
-        const description = row.getValue("description") as string;
-        return (
-          <span className="max-w-[200px] truncate" title={description}>
-            {description}
-          </span>
-        );
-      },
-    },
-    {
-      accessorKey: "transactionDate",
-      header: "Date",
-      cell: ({ row }) => {
-        const date = row.getValue("transactionDate") as string;
-        return format(new Date(date), "MMM dd, yyyy");
-      },
-    },
-    {
-      accessorKey: "status",
-      header: "Status",
-      cell: ({ row }) => {
-        const status = row.getValue("status") as string;
-        const statusColors = {
-          PENDING: "bg-yellow-100 text-yellow-800",
-          COMPLETED: "bg-green-100 text-green-800",
-          CANCELLED: "bg-red-100 text-red-800",
-          APPROVED: "bg-blue-100 text-blue-800",
-          REJECTED: "bg-gray-100 text-gray-800",
-        };
+      case "type":
         return (
           <Badge
-            className={
-              statusColors[status as keyof typeof statusColors] ||
-              "bg-gray-100 text-gray-800"
-            }
+            variant={transaction.type === "INCOME" ? "default" : "secondary"}
           >
-            {status}
+            {transaction.type}
           </Badge>
         );
-      },
-    },
-    {
-      id: "actions",
-      header: "Actions",
-      cell: ({ row }) => {
-        const transaction = row.original;
+      case "amount":
+        const currency = transaction.currency || "NGN";
+        return (
+          <span className="font-medium">
+            {currency} {transaction.amount.toLocaleString()}
+          </span>
+        );
+      case "category":
+        return transaction.category?.name || "N/A";
+      case "description":
+        return (
+          <span
+            className="max-w-[200px] truncate"
+            title={transaction.description}
+          >
+            {transaction.description}
+          </span>
+        );
+      case "transactionDate":
+        return format(new Date(transaction.transactionDate), "MMM dd, yyyy");
+      case "status":
+        return (
+          <Badge
+            variant={
+              transaction.status === "COMPLETED" ||
+              transaction.status === "APPROVED"
+                ? "default"
+                : transaction.status === "PENDING"
+                  ? "secondary"
+                  : "destructive"
+            }
+          >
+            {transaction.status}
+          </Badge>
+        );
+      case "actions":
         return (
           <div className="flex items-center gap-2">
             <Button
@@ -200,139 +180,94 @@ export function TransactionList({ user: _user }: TransactionListProps) {
             </Button>
           </div>
         );
-      },
-    },
-  ];
+      default:
+        return null;
+    }
+  };
 
   return (
-    <div className="container mx-auto py-6 space-y-6">
-      <div className="flex items-center justify-between">
-        <div>
-          <h1 className="text-2xl font-bold">Financial Transactions</h1>
-          <p className="text-muted-foreground">
-            Manage income and expense transactions
-          </p>
-        </div>
-        <Button onClick={() => router.push("/finance/transactions/add")}>
-          <Plus className="h-4 w-4 mr-2" />
-          Add Transaction
-        </Button>
-      </div>
-
-      {/* Filters */}
-      <Card>
-        <CardHeader>
-          <CardTitle className="flex items-center gap-2">
-            <Filter className="h-4 w-4" />
-            Filters
-          </CardTitle>
-        </CardHeader>
-        <CardContent>
-          <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
-            <div className="space-y-2">
-              <Label htmlFor="search">Search</Label>
-              <Input
-                id="search"
-                placeholder="Search transactions..."
-                value={filters.search}
-                onChange={(e) =>
-                  setFilters({ ...filters, search: e.target.value, page: 1 })
-                }
-              />
-            </div>
-            <div className="space-y-2">
-              <Label htmlFor="type">Type</Label>
-              <Select
-                value={filters.type}
-                onValueChange={(value) =>
-                  setFilters({ ...filters, type: value, page: 1 })
-                }
-              >
-                <SelectTrigger>
-                  <SelectValue placeholder="All types" />
-                </SelectTrigger>
-                <SelectContent>
-                  <SelectItem value="">All types</SelectItem>
-                  <SelectItem value="INCOME">Income</SelectItem>
-                  <SelectItem value="EXPENSE">Expense</SelectItem>
-                </SelectContent>
-              </Select>
-            </div>
-            <div className="space-y-2">
-              <Label htmlFor="category">Category</Label>
-              <Select
-                value={filters.categoryId.toString()}
-                onValueChange={(value) =>
-                  setFilters({
-                    ...filters,
-                    categoryId: parseInt(value) || 0,
-                    page: 1,
-                  })
-                }
-              >
-                <SelectTrigger>
-                  <SelectValue placeholder="All categories" />
-                </SelectTrigger>
-                <SelectContent>
-                  <SelectItem value="0">All categories</SelectItem>
-                  {categories.map((category) => (
-                    <SelectItem
-                      key={category.id}
-                      value={category.id.toString()}
-                    >
-                      {category.name}
-                    </SelectItem>
-                  ))}
-                </SelectContent>
-              </Select>
-            </div>
-            <div className="space-y-2">
-              <Label htmlFor="status">Status</Label>
-              <Select
-                value={filters.status}
-                onValueChange={(value) =>
-                  setFilters({ ...filters, status: value, page: 1 })
-                }
-              >
-                <SelectTrigger>
-                  <SelectValue placeholder="All statuses" />
-                </SelectTrigger>
-                <SelectContent>
-                  <SelectItem value="">All statuses</SelectItem>
-                  <SelectItem value="PENDING">Pending</SelectItem>
-                  <SelectItem value="COMPLETED">Completed</SelectItem>
-                  <SelectItem value="CANCELLED">Cancelled</SelectItem>
-                  <SelectItem value="APPROVED">Approved</SelectItem>
-                  <SelectItem value="REJECTED">Rejected</SelectItem>
-                </SelectContent>
-              </Select>
-            </div>
-          </div>
-        </CardContent>
-      </Card>
-
-      {/* Transactions Table */}
-      <Card>
-        <CardHeader>
-          <CardTitle>Transactions</CardTitle>
-          <CardDescription>
-            Showing {transactions.length} of {total} transactions
-          </CardDescription>
-        </CardHeader>
-        <CardContent>
-          <DataTable
-            columns={columns}
-            data={transactions}
-            isLoading={isLoading}
-            pagination={{
-              page: filters.page,
-              limit: filters.limit,
-              total,
-              onPageChange: (page) => setFilters({ ...filters, page }),
-            }}
-          />
-        </CardContent>
-      </Card>
+    <>
+      <DashboardTableLayout
+        title="Financial Transactions"
+        description="Manage income and expense transactions"
+        actions={
+          <Button onClick={() => router.push("/finance/transactions/add")}>
+            <Plus className="h-4 w-4 mr-2" />
+            Add Transaction
+          </Button>
+        }
+        searchPlaceholder="Search transactions..."
+        searchValue={filters.search}
+        onSearchChange={(value) =>
+          setFilters({ ...filters, search: value, page: 1 })
+        }
+        filters={[
+          {
+            key: "type",
+            label: "Type",
+            type: "select",
+            options: [
+              { label: "All types", value: "ALL" },
+              { label: "Income", value: "INCOME" },
+              { label: "Expense", value: "EXPENSE" },
+            ],
+          },
+          {
+            key: "categoryId",
+            label: "Category",
+            type: "select",
+            options: [
+              { label: "All categories", value: "0" },
+              ...categories.map((category) => ({
+                label: category.name,
+                value: category.id.toString(),
+              })),
+            ],
+          },
+          {
+            key: "status",
+            label: "Status",
+            type: "select",
+            options: [
+              { label: "All statuses", value: "ALL" },
+              { label: "Pending", value: "PENDING" },
+              { label: "Completed", value: "COMPLETED" },
+              { label: "Cancelled", value: "CANCELLED" },
+              { label: "Approved", value: "APPROVED" },
+              { label: "Rejected", value: "REJECTED" },
+            ],
+          },
+        ]}
+        filterValues={filters}
+        onFilterChange={(key, value) => {
+          if (key === "categoryId") {
+            setFilters({
+              ...filters,
+              categoryId: parseInt(value as string) || 0,
+              page: 1,
+            });
+          } else {
+            setFilters({ ...filters, [key]: value, page: 1 });
+          }
+        }}
+        columns={columns}
+        visibleColumns={columns.map((col) => col.key)}
+        data={transactions}
+        renderCell={renderCell}
+        pagination={{
+          page: filters.page,
+          limit: filters.limit,
+          totalPages: Math.ceil(total / filters.limit),
+          totalItems: total,
+        }}
+        onPageChange={(page) => setFilters({ ...filters, page })}
+        onPageSizeChange={(size) =>
+          setFilters({ ...filters, limit: size, page: 1 })
+        }
+        isLoading={isLoading}
+        totalCount={total}
+        currentCount={transactions.length}
+      />
 
       {/* Transaction Detail Modal */}
       {selectedTransaction && (
@@ -345,6 +280,6 @@ export function TransactionList({ user: _user }: TransactionListProps) {
           }}
         />
       )}
-    </div>
+    </>
   );
 }
