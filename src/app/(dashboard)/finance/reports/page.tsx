@@ -1,11 +1,11 @@
+import { auth } from "#root/auth";
+import { Metadata } from "next";
 import { redirect } from "next/navigation";
-import { auth } from "../../../../../auth";
-import { FinanceReports } from "@/components/finance/FinanceReports";
-import { USER_ROLES, hasRole } from "@/lib/auth/roles";
+import { ReportsList } from "@/components/finance/ReportsList";
 
-export const metadata = {
-  title: "Finance Reports - BaaWA Inventory POS",
-  description: "Financial reports and analytics",
+export const metadata: Metadata = {
+  title: "Financial Reports - BaaWA Inventory",
+  description: "View and generate financial reports",
 };
 
 export default async function ReportsPage() {
@@ -15,9 +15,11 @@ export default async function ReportsPage() {
     redirect("/login");
   }
 
-  if (!hasRole(session.user.role, [USER_ROLES.ADMIN, USER_ROLES.MANAGER])) {
+  // Check if user has finance access
+  const userRole = session.user.role;
+  if (!["ADMIN", "MANAGER"].includes(userRole)) {
     redirect("/unauthorized");
   }
 
-  return <FinanceReports user={session.user as any} />;
+  return <ReportsList user={session.user} />;
 }

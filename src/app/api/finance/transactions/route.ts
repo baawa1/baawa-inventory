@@ -48,7 +48,6 @@ export const GET = withAuth(async (request: AuthenticatedRequest) => {
       where.OR = [
         { transactionNumber: { contains: search, mode: "insensitive" } },
         { description: { contains: search, mode: "insensitive" } },
-        { referenceNumber: { contains: search, mode: "insensitive" } },
       ];
     }
 
@@ -141,14 +140,10 @@ export const POST = withAuth(async (request: AuthenticatedRequest) => {
         data: {
           transactionNumber,
           type: validatedData.type,
-
           amount: validatedData.amount,
-          currency: validatedData.currency,
           description: validatedData.description,
           transactionDate: validatedData.transactionDate,
           paymentMethod: validatedData.paymentMethod,
-          referenceNumber: validatedData.referenceNumber,
-          status: validatedData.status as any,
           createdBy: parseInt(request.user.id),
         },
         include: {
@@ -164,33 +159,23 @@ export const POST = withAuth(async (request: AuthenticatedRequest) => {
       });
 
       // Create expense details if provided
-      if (validatedData.expenseDetails) {
+      if (validatedData.type === "EXPENSE") {
         await tx.expenseDetail.create({
           data: {
             transactionId: transaction.id,
-            expenseType: validatedData.expenseDetails.expenseType,
-            vendorName: validatedData.expenseDetails.vendorName,
-            vendorContact: validatedData.expenseDetails.vendorContact,
-            taxAmount: validatedData.expenseDetails.taxAmount,
-            taxRate: validatedData.expenseDetails.taxRate,
-            receiptUrl: validatedData.expenseDetails.receiptUrl,
-            notes: validatedData.expenseDetails.notes,
+            expenseType: validatedData.expenseType || "",
+            vendorName: validatedData.vendorName,
           },
         });
       }
 
       // Create income details if provided
-      if (validatedData.incomeDetails) {
+      if (validatedData.type === "INCOME") {
         await tx.incomeDetail.create({
           data: {
             transactionId: transaction.id,
-            incomeSource: validatedData.incomeDetails.incomeSource,
-            payerName: validatedData.incomeDetails.payerName,
-            payerContact: validatedData.incomeDetails.payerContact,
-            taxWithheld: validatedData.incomeDetails.taxWithheld,
-            taxRate: validatedData.incomeDetails.taxRate,
-            receiptUrl: validatedData.incomeDetails.receiptUrl,
-            notes: validatedData.incomeDetails.notes,
+            incomeSource: validatedData.incomeSource || "",
+            payerName: validatedData.payerName,
           },
         });
       }

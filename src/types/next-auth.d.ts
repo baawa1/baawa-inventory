@@ -1,28 +1,47 @@
 import { DefaultSession, DefaultUser } from "next-auth";
 import { JWT, DefaultJWT } from "next-auth/jwt";
+import type { UserRole, UserStatus } from "@/types/user";
 
 declare module "next-auth" {
   interface Session {
     user: {
       id: string;
-      role: string;
-      status: string;
+      email: string;
+      name: string;
+      role: UserRole;
+      status: UserStatus;
       isEmailVerified: boolean;
-    } & DefaultSession["user"];
+      firstName: string;
+      lastName: string;
+      isActive: boolean;
+      userStatus: UserStatus;
+      createdAt: string | Date;
+      image?: string;
+    } & Omit<DefaultSession["user"], "name" | "email">;
   }
 
   interface User {
     id: string;
-    role: string;
-    status: string;
+    role: UserRole;
+    status: UserStatus;
     isEmailVerified: boolean;
+    firstName: string;
+    lastName: string;
+    isActive: boolean;
+    userStatus: UserStatus;
+    createdAt: string | Date;
   }
 }
 
 declare module "next-auth/jwt" {
   interface JWT {
-    role: string;
-    status: string;
+    role: UserRole;
+    status: UserStatus;
     isEmailVerified: boolean;
+    firstName: string;
+    lastName: string;
+    isActive: boolean;
+    userStatus: UserStatus;
+    createdAt: string | Date;
   }
 }

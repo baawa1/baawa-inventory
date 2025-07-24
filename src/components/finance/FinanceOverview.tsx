@@ -1,0 +1,347 @@
+"use client";
+
+import React from "react";
+import {
+  Card,
+  CardContent,
+  CardDescription,
+  CardHeader,
+  CardTitle,
+} from "@/components/ui/card";
+import { Button } from "@/components/ui/button";
+import { Badge } from "@/components/ui/badge";
+import { PageHeader } from "@/components/ui/page-header";
+import { useFinancialSummary } from "@/hooks/api/finance";
+import { formatCurrency } from "@/lib/utils";
+import {
+  TrendingUp,
+  TrendingDown,
+  DollarSign,
+  Receipt,
+  Plus,
+  ArrowUpRight,
+  ArrowDownRight,
+  Activity,
+} from "lucide-react";
+import Link from "next/link";
+import { AppUser } from "@/types/user";
+
+interface FinanceOverviewProps {
+  user: AppUser;
+}
+
+export function FinanceOverview({ user: _user }: FinanceOverviewProps) {
+  const { data: summary, isLoading, error } = useFinancialSummary();
+
+  if (isLoading) {
+    return (
+      <div className="max-w-7xl mx-auto p-6 space-y-6">
+        <PageHeader
+          title="Finance Overview"
+          description="Track your business finances and financial performance"
+        />
+        <div className="grid gap-6 md:grid-cols-2 lg:grid-cols-4">
+          {[...Array(4)].map((_, i) => (
+            <Card key={i}>
+              <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+                <CardTitle className="text-sm font-medium">
+                  Loading...
+                </CardTitle>
+                <div className="h-4 w-4 bg-gray-200 rounded animate-pulse" />
+              </CardHeader>
+              <CardContent>
+                <div className="text-2xl font-bold">--</div>
+                <p className="text-xs text-muted-foreground">Loading...</p>
+              </CardContent>
+            </Card>
+          ))}
+        </div>
+      </div>
+    );
+  }
+
+  if (error) {
+    return (
+      <div className="max-w-7xl mx-auto p-6 space-y-6">
+        <PageHeader
+          title="Finance Overview"
+          description="Track your business finances and financial performance"
+        />
+        <Card>
+          <CardContent className="p-6">
+            <div className="text-center">
+              <p className="text-destructive">Failed to load financial data</p>
+              <Button
+                variant="outline"
+                onClick={() => window.location.reload()}
+                className="mt-2"
+              >
+                Retry
+              </Button>
+            </div>
+          </CardContent>
+        </Card>
+      </div>
+    );
+  }
+
+  const {
+    totalIncome,
+    totalExpenses,
+    netIncome,
+    transactionCount,
+    pendingTransactions,
+    recentTransactions,
+  } = summary || {
+    totalIncome: 0,
+    totalExpenses: 0,
+    netIncome: 0,
+    transactionCount: 0,
+    pendingTransactions: 0,
+    recentTransactions: [],
+  };
+
+  const incomeChange = 0; // TODO: Calculate from previous period
+  const expenseChange = 0; // TODO: Calculate from previous period
+
+  return (
+    <div className="max-w-7xl mx-auto p-6 space-y-6">
+      <div className="flex items-center justify-between">
+        <PageHeader
+          title="Finance Overview"
+          description="Track your business finances and financial performance"
+        />
+        <div className="flex gap-2">
+          <Button asChild>
+            <Link href="/finance/income/new">
+              <Plus className="mr-2 h-4 w-4" />
+              Add Income
+            </Link>
+          </Button>
+          <Button asChild variant="outline">
+            <Link href="/finance/expenses/new">
+              <Plus className="mr-2 h-4 w-4" />
+              Add Expense
+            </Link>
+          </Button>
+        </div>
+      </div>
+
+      {/* Summary Cards */}
+      <div className="grid gap-6 md:grid-cols-2 lg:grid-cols-4">
+        <Card>
+          <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+            <CardTitle className="text-sm font-medium">Total Income</CardTitle>
+            <TrendingUp className="h-4 w-4 text-green-600" />
+          </CardHeader>
+          <CardContent>
+            <div className="text-2xl font-bold">
+              {formatCurrency(totalIncome)}
+            </div>
+            <div className="flex items-center text-xs text-muted-foreground">
+              <ArrowUpRight className="h-3 w-3 mr-1" />
+              {incomeChange > 0 ? "+" : ""}
+              {incomeChange}% from last month
+            </div>
+          </CardContent>
+        </Card>
+
+        <Card>
+          <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+            <CardTitle className="text-sm font-medium">
+              Total Expenses
+            </CardTitle>
+            <TrendingDown className="h-4 w-4 text-red-600" />
+          </CardHeader>
+          <CardContent>
+            <div className="text-2xl font-bold">
+              {formatCurrency(totalExpenses)}
+            </div>
+            <div className="flex items-center text-xs text-muted-foreground">
+              <ArrowDownRight className="h-3 w-3 mr-1" />
+              {expenseChange > 0 ? "+" : ""}
+              {expenseChange}% from last month
+            </div>
+          </CardContent>
+        </Card>
+
+        <Card>
+          <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+            <CardTitle className="text-sm font-medium">Net Income</CardTitle>
+            <DollarSign className="h-4 w-4 text-blue-600" />
+          </CardHeader>
+          <CardContent>
+            <div
+              className={`text-2xl font-bold ${netIncome >= 0 ? "text-green-600" : "text-red-600"}`}
+            >
+              {formatCurrency(netIncome)}
+            </div>
+            <p className="text-xs text-muted-foreground">
+              {netIncome >= 0 ? "Profit" : "Loss"}
+            </p>
+          </CardContent>
+        </Card>
+
+        <Card>
+          <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+            <CardTitle className="text-sm font-medium">
+              Pending Transactions
+            </CardTitle>
+            <Activity className="h-4 w-4 text-orange-600" />
+          </CardHeader>
+          <CardContent>
+            <div className="text-2xl font-bold">{pendingTransactions}</div>
+            <p className="text-xs text-muted-foreground">
+              {transactionCount} total transactions
+            </p>
+          </CardContent>
+        </Card>
+      </div>
+
+      {/* Recent Transactions */}
+      <Card>
+        <CardHeader>
+          <div className="flex items-center justify-between">
+            <div>
+              <CardTitle>Recent Transactions</CardTitle>
+              <CardDescription>
+                Latest financial transactions and activities
+              </CardDescription>
+            </div>
+            <Button asChild variant="outline">
+              <Link href="/finance/transactions">View All</Link>
+            </Button>
+          </div>
+        </CardHeader>
+        <CardContent>
+          {recentTransactions.length === 0 ? (
+            <div className="text-center py-8">
+              <Receipt className="h-12 w-12 text-muted-foreground mx-auto mb-4" />
+              <p className="text-muted-foreground">No recent transactions</p>
+              <Button asChild className="mt-4">
+                <Link href="/finance/income/new">
+                  <Plus className="mr-2 h-4 w-4" />
+                  Add First Transaction
+                </Link>
+              </Button>
+            </div>
+          ) : (
+            <div className="space-y-4">
+              {recentTransactions.slice(0, 5).map((transaction) => (
+                <div
+                  key={transaction.id}
+                  className="flex items-center justify-between p-4 border rounded-lg"
+                >
+                  <div className="flex items-center space-x-4">
+                    <div
+                      className={`p-2 rounded-full ${
+                        transaction.type === "INCOME"
+                          ? "bg-green-100 text-green-600"
+                          : "bg-red-100 text-red-600"
+                      }`}
+                    >
+                      {transaction.type === "INCOME" ? (
+                        <TrendingUp className="h-4 w-4" />
+                      ) : (
+                        <TrendingDown className="h-4 w-4" />
+                      )}
+                    </div>
+                    <div>
+                      <p className="font-medium">{transaction.description}</p>
+                      <p className="text-sm text-muted-foreground">
+                        {new Date(
+                          transaction.transactionDate
+                        ).toLocaleDateString()}
+                      </p>
+                    </div>
+                  </div>
+                  <div className="text-right">
+                    <p
+                      className={`font-medium ${
+                        transaction.type === "INCOME"
+                          ? "text-green-600"
+                          : "text-red-600"
+                      }`}
+                    >
+                      {transaction.type === "INCOME" ? "+" : "-"}
+                      {formatCurrency(transaction.amount)}
+                    </p>
+                    <Badge
+                      variant={
+                        transaction.status === "COMPLETED"
+                          ? "default"
+                          : "secondary"
+                      }
+                    >
+                      {transaction.status}
+                    </Badge>
+                  </div>
+                </div>
+              ))}
+            </div>
+          )}
+        </CardContent>
+      </Card>
+
+      {/* Quick Actions */}
+      <div className="grid gap-6 md:grid-cols-2 lg:grid-cols-3">
+        <Card>
+          <CardHeader>
+            <CardTitle className="text-lg">Income Management</CardTitle>
+            <CardDescription>
+              Track and manage your income sources
+            </CardDescription>
+          </CardHeader>
+          <CardContent className="space-y-2">
+            <Button asChild className="w-full">
+              <Link href="/finance/income">View All Income</Link>
+            </Button>
+            <Button asChild variant="outline" className="w-full">
+              <Link href="/finance/income/new">
+                <Plus className="mr-2 h-4 w-4" />
+                Add Income
+              </Link>
+            </Button>
+          </CardContent>
+        </Card>
+
+        <Card>
+          <CardHeader>
+            <CardTitle className="text-lg">Expense Management</CardTitle>
+            <CardDescription>Track and manage your expenses</CardDescription>
+          </CardHeader>
+          <CardContent className="space-y-2">
+            <Button asChild className="w-full">
+              <Link href="/finance/expenses">View All Expenses</Link>
+            </Button>
+            <Button asChild variant="outline" className="w-full">
+              <Link href="/finance/expenses/new">
+                <Plus className="mr-2 h-4 w-4" />
+                Add Expense
+              </Link>
+            </Button>
+          </CardContent>
+        </Card>
+
+        <Card>
+          <CardHeader>
+            <CardTitle className="text-lg">Reports & Analytics</CardTitle>
+            <CardDescription>
+              Generate financial reports and insights
+            </CardDescription>
+          </CardHeader>
+          <CardContent className="space-y-2">
+            <Button asChild className="w-full">
+              <Link href="/finance/reports">View Reports</Link>
+            </Button>
+            <Button asChild variant="outline" className="w-full">
+              <Link href="/finance/reports/financial-summary">
+                Financial Summary
+              </Link>
+            </Button>
+          </CardContent>
+        </Card>
+      </div>
+    </div>
+  );
+}
