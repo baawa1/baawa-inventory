@@ -125,6 +125,9 @@ const config: NextAuthConfig = {
             isEmailVerified: Boolean(user.emailVerified),
             firstName: user.firstName,
             lastName: user.lastName,
+            isActive: user.isActive,
+            userStatus: user.userStatus || "PENDING",
+            createdAt: user.createdAt || new Date(),
           };
         } catch (error) {
           console.error("Authentication error:", error);
@@ -150,6 +153,9 @@ const config: NextAuthConfig = {
         token.isEmailVerified = Boolean((user as any).isEmailVerified);
         token.firstName = (user as any).firstName;
         token.lastName = (user as any).lastName;
+        token.isActive = Boolean((user as any).isActive);
+        token.userStatus = (user as any).userStatus;
+        token.createdAt = (user as any).createdAt;
 
         // Add timestamp to track when data was last fetched
         token.dataFetchedAt = Date.now();
@@ -190,6 +196,7 @@ const config: NextAuthConfig = {
               userStatus: true,
               emailVerified: true,
               isActive: true,
+              createdAt: true,
             },
           });
 
@@ -202,6 +209,9 @@ const config: NextAuthConfig = {
             token.isEmailVerified = Boolean(freshUser.emailVerified);
             token.firstName = freshUser.firstName;
             token.lastName = freshUser.lastName;
+            token.isActive = freshUser.isActive;
+            token.userStatus = freshUser.userStatus || "PENDING";
+            token.createdAt = freshUser.createdAt || new Date();
             token.dataFetchedAt = Date.now();
           } else {
             // User not found in database
@@ -216,11 +226,14 @@ const config: NextAuthConfig = {
     async session({ session, token }) {
       if (token && session.user) {
         session.user.id = token.sub!;
-        session.user.role = token.role as string;
-        session.user.status = token.status as string;
+        session.user.role = token.role as any;
+        session.user.status = token.status as any;
         session.user.isEmailVerified = Boolean(token.isEmailVerified);
-        (session.user as any).firstName = token.firstName as string;
-        (session.user as any).lastName = token.lastName as string;
+        session.user.firstName = token.firstName as string;
+        session.user.lastName = token.lastName as string;
+        session.user.isActive = Boolean(token.isActive);
+        session.user.userStatus = token.userStatus as any;
+        session.user.createdAt = token.createdAt as string | Date;
 
         // Update the name field with fresh firstName and lastName
         if (token.firstName && token.lastName) {

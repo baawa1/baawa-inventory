@@ -460,11 +460,9 @@ model FinancialTransaction {
   transactionNumber String          @unique @map("transaction_number") @db.VarChar(50)
   type              FinancialType
   amount            Decimal         @db.Decimal(15, 2)
-  currency          String          @default("NGN") @db.VarChar(3)
   description       String?
   transactionDate   DateTime        @map("transaction_date") @db.Date
   paymentMethod     String?         @map("payment_method") @db.VarChar(50)
-  referenceNumber   String?         @map("reference_number") @db.VarChar(100)
   status            FinancialStatus @default(COMPLETED)
   approvedBy        Int?            @map("approved_by")
   approvedAt        DateTime?       @map("approved_at") @db.Timestamptz(6)
@@ -488,11 +486,6 @@ model ExpenseDetail {
   transactionId Int                  @unique @map("transaction_id")
   expenseType   String               @map("expense_type") @db.VarChar(50)
   vendorName    String?              @map("vendor_name") @db.VarChar(255)
-  vendorContact String?              @map("vendor_contact") @db.VarChar(255)
-  taxAmount     Decimal              @default(0) @map("tax_amount") @db.Decimal(10, 2)
-  taxRate       Decimal              @default(0) @map("tax_rate") @db.Decimal(5, 2)
-  receiptUrl    String?              @map("receipt_url") @db.VarChar(500)
-  notes         String?
   createdAt     DateTime             @default(now()) @map("created_at") @db.Timestamptz(6)
   transaction   FinancialTransaction @relation(fields: [transactionId], references: [id], onDelete: Cascade)
 
@@ -504,11 +497,6 @@ model IncomeDetail {
   transactionId Int                  @unique @map("transaction_id")
   incomeSource  String               @map("income_source") @db.VarChar(100)
   payerName     String?              @map("payer_name") @db.VarChar(255)
-  payerContact  String?              @map("payer_contact") @db.VarChar(255)
-  taxWithheld   Decimal              @default(0) @map("tax_withheld") @db.Decimal(10, 2)
-  taxRate       Decimal              @default(0) @map("tax_rate") @db.Decimal(5, 2)
-  receiptUrl    String?              @map("receipt_url") @db.VarChar(500)
-  notes         String?
   createdAt     DateTime             @default(now()) @map("created_at") @db.Timestamptz(6)
   transaction   FinancialTransaction @relation(fields: [transactionId], references: [id], onDelete: Cascade)
 

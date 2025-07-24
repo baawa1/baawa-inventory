@@ -1,10 +1,11 @@
+import { auth } from "#root/auth";
+import { Metadata } from "next";
 import { redirect } from "next/navigation";
-import { auth } from "../../../../../../auth";
-import { USER_ROLES, hasRole } from "@/lib/auth/roles";
+import { AddIncomeForm } from "@/components/finance/AddIncomeForm";
 
-export const metadata = {
-  title: "Add Income - BaaWA Inventory POS",
-  description: "Add new income transaction",
+export const metadata: Metadata = {
+  title: "Add Income - BaaWA Inventory",
+  description: "Add a new income transaction",
 };
 
 export default async function AddIncomePage() {
@@ -14,16 +15,11 @@ export default async function AddIncomePage() {
     redirect("/login");
   }
 
-  if (!hasRole(session.user.role, [USER_ROLES.ADMIN, USER_ROLES.MANAGER, USER_ROLES.STAFF])) {
+  // Check if user has finance access
+  const userRole = session.user.role;
+  if (!["ADMIN", "MANAGER"].includes(userRole)) {
     redirect("/unauthorized");
   }
 
-  return (
-    <div className="container mx-auto p-6">
-      <h1 className="text-2xl font-bold mb-4">Add Income</h1>
-      <p className="text-muted-foreground">
-        Add income form is currently under development.
-      </p>
-    </div>
-  );
+  return <AddIncomeForm user={session.user} />;
 }

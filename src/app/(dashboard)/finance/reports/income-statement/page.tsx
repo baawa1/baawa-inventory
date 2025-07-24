@@ -1,5 +1,5 @@
 import { redirect } from "next/navigation";
-import { auth } from "../../../../../../auth";
+import { auth } from "#root/auth";
 import { USER_ROLES, hasRole } from "@/lib/auth/roles";
 
 export const metadata = {

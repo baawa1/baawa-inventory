@@ -1,81 +1,54 @@
 const { PrismaClient } = require("@prisma/client");
-const bcrypt = require("bcryptjs");
 
 const prisma = new PrismaClient();
 
 async function checkDatabase() {
   try {
-    console.log("🔍 Checking database status...");
+    console.log("🔍 Checking database...");
 
-    // Check if there are any users
+    // Test connection
+    await prisma.$connect();
+    console.log("✅ Database connection successful");
+
+    // Check users table
     const userCount = await prisma.user.count();
-    console.log(`📊 Total users in database: ${userCount}`);
+    console.log(`👥 Users in database: ${userCount}`);
 
-    if (userCount === 0) {
-      console.log(
-        "⚠️  No users found in database. Creating test admin user..."
-      );
-
-      // Create a test admin user
-      const hashedPassword = await bcrypt.hash("admin123", 12);
-
-      const testUser = await prisma.user.create({
-        data: {
-          firstName: "Admin",
-          lastName: "User",
-          email: "admin@example.com",
-          password: hashedPassword,
-          role: "ADMIN",
-          userStatus: "APPROVED",
-          emailVerified: true,
-          emailVerifiedAt: new Date(),
-          isActive: true,
-        },
-      });
-
-      console.log("✅ Test admin user created:", {
-        id: testUser.id,
-        email: testUser.email,
-        role: testUser.role,
-        status: testUser.userStatus,
-      });
-
-      console.log("🔑 Login credentials:");
-      console.log("   Email: admin@example.com");
-      console.log("   Password: admin123");
-    } else {
-      // List existing users
+    if (userCount > 0) {
       const users = await prisma.user.findMany({
+        take: 5,
         select: {
           id: true,
-          email: true,
           firstName: true,
           lastName: true,
+          email: true,
           role: true,
-          userStatus: true,
-          isActive: true,
         },
       });
 
-      console.log("👥 Existing users:");
+      console.log("📋 Sample users:");
       users.forEach((user) => {
         console.log(
-          `   ${user.id}: ${user.email} (${user.role}, ${user.userStatus})`
+          `   - ${user.firstName} ${user.lastName} (${user.email}) - ${user.role}`
         );
       });
     }
 
-    // Check categories and brands
-    const categoryCount = await prisma.category.count();
-    const brandCount = await prisma.brand.count();
+    // Check financial transactions
+    const transactionCount = await prisma.financialTransaction.count();
+    console.log(`💰 Financial transactions: ${transactionCount}`);
 
-    console.log(`📁 Categories: ${categoryCount}`);
-    console.log(`🏷️  Brands: ${brandCount}`);
+    // Check other tables
+    const expenseCount = await prisma.expenseDetail.count();
+    const incomeCount = await prisma.incomeDetail.count();
+    console.log(`💸 Expense details: ${expenseCount}`);
+    console.log(`📈 Income details: ${incomeCount}`);
   } catch (error) {
-    console.error("❌ Error checking database:", error);
+    console.error("❌ Database check failed:", error);
   } finally {
     await prisma.$disconnect();
   }
 }
 
+// Run the script
 checkDatabase();

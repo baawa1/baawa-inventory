@@ -1,10 +1,11 @@
+import { auth } from "#root/auth";
+import { Metadata } from "next";
 import { redirect } from "next/navigation";
-import { auth } from "../../../../../auth";
-import { USER_ROLES, hasRole } from "@/lib/auth/roles";
+import { IncomeList } from "@/components/finance/IncomeList";
 
-export const metadata = {
-  title: "Income Management - BaaWA Inventory POS",
-  description: "Manage income transactions and sources",
+export const metadata: Metadata = {
+  title: "Income - BaaWA Inventory",
+  description: "View and manage all income transactions",
 };
 
 export default async function IncomePage() {
@@ -14,16 +15,11 @@ export default async function IncomePage() {
     redirect("/login");
   }
 
-  if (!hasRole(session.user.role, [USER_ROLES.ADMIN, USER_ROLES.MANAGER])) {
+  // Check if user has finance access
+  const userRole = session.user.role;
+  if (!["ADMIN", "MANAGER"].includes(userRole)) {
     redirect("/unauthorized");
   }
 
-  return (
-    <div className="container mx-auto p-6">
-      <h1 className="text-2xl font-bold mb-4">Income Management</h1>
-      <p className="text-muted-foreground">
-        Income management features are currently under development.
-      </p>
-    </div>
-  );
+  return <IncomeList user={session.user} />;
 }

@@ -1,11 +1,11 @@
+import { auth } from "#root/auth";
+import { Metadata } from "next";
 import { redirect } from "next/navigation";
-import { auth } from "../../../../auth";
-import { FinanceOverview } from "@/components/finance/FinanceDashboard";
-import { USER_ROLES, hasRole } from "@/lib/auth/roles";
+import { FinanceOverview } from "@/components/finance/FinanceOverview";
 
-export const metadata = {
-  title: "Finance Overview - BaaWA Inventory POS",
-  description: "Manage business finances, track income and expenses",
+export const metadata: Metadata = {
+  title: "Finance Overview - BaaWA Inventory",
+  description: "Financial overview and summary dashboard",
 };
 
 export default async function FinancePage() {
@@ -15,10 +15,11 @@ export default async function FinancePage() {
     redirect("/login");
   }
 
-  // Check role permissions - only admin and manager can access finance
-  if (!hasRole(session.user.role, [USER_ROLES.ADMIN, USER_ROLES.MANAGER])) {
+  // Check if user has finance access
+  const userRole = session.user.role;
+  if (!["ADMIN", "MANAGER"].includes(userRole)) {
     redirect("/unauthorized");
   }
 
-  return <FinanceOverview user={session.user as any} />;
+  return <FinanceOverview user={session.user} />;
 }
