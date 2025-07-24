@@ -1,399 +1,647 @@
 "use client";
 
-import React, { useState, useMemo } from "react";
-import { useDebounce } from "@/hooks/useDebounce";
-import { useFinancialTransactions } from "@/hooks/api/finance";
-import {
-  useDeleteTransaction,
-  useApproveTransaction,
-  useRejectTransaction,
-} from "@/hooks/api/finance";
-import { formatCurrency } from "@/lib/utils";
-import { AppUser } from "@/types/user";
-
-// UI Components
+import React, { useState, useMemo, useCallback } from "react";
+import { useQuery } from "@tanstack/react-query";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
-import { Input } from "@/components/ui/input";
 import {
-  Select,
-  SelectContent,
-  SelectItem,
-  SelectTrigger,
-  SelectValue,
-} from "@/components/ui/select";
+  Dialog,
+  DialogContent,
+  DialogHeader,
+  DialogTitle,
+  DialogTrigger,
+} from "@/components/ui/dialog";
+import { Separator } from "@/components/ui/separator";
 import {
-  DropdownMenu,
-  DropdownMenuContent,
-  DropdownMenuItem,
-  DropdownMenuLabel,
-  DropdownMenuSeparator,
-  DropdownMenuTrigger,
-} from "@/components/ui/dropdown-menu";
-import {
-  Card,
-  CardContent,
-  CardDescription,
-  CardHeader,
-  CardTitle,
-} from "@/components/ui/card";
-import {
-  Table,
-  TableBody,
-  TableCell,
-  TableHead,
-  TableHeader,
-  TableRow,
-} from "@/components/ui/table";
-import { PageHeader } from "@/components/ui/page-header";
-
-// Icons
-import {
-  Plus,
-  Search,
-  Filter,
-  MoreHorizontal,
-  Edit,
-  Trash,
-  Eye,
-  CheckCircle,
-  XCircle,
-  TrendingUp,
-} from "lucide-react";
+  IconEye,
+  IconRefresh,
+  IconTrendingUp,
+  IconPlus,
+  IconDots,
+  IconEdit,
+} from "@tabler/icons-react";
+import { format } from "date-fns";
+import { toast } from "sonner";
+import { formatCurrency } from "@/lib/utils";
+import { useDebounce } from "@/hooks/useDebounce";
+import { DashboardTableLayout } from "@/components/layouts/DashboardTableLayout";
+import type { DashboardTableColumn } from "@/components/layouts/DashboardColumnCustomizer";
+import type { FilterConfig } from "@/components/layouts/DashboardFiltersBar";
+import { AppUser } from "@/types/user";
 import Link from "next/link";
+
+interface FinancialTransaction {
+  id: number;
+  transactionNumber: string;
+  type: "INCOME" | "EXPENSE";
+  amount: number;
+  currency: string;
+  description: string | null;
+  transactionDate: Date;
+  paymentMethod: string | null;
+  referenceNumber: string | null;
+  status: "PENDING" | "COMPLETED" | "CANCELLED" | "APPROVED" | "REJECTED";
+  approvedBy: number | null;
+  approvedAt: Date | null;
+  createdBy: number;
+  createdAt: Date;
+  updatedAt: Date;
+  expenseDetails?: {
+    id: number;
+    expenseType: string;
+    vendorName: string | null;
+    vendorContact: string | null;
+    taxAmount: number;
+    taxRate: number;
+    receiptUrl: string | null;
+    notes: string | null;
+  };
+  incomeDetails?: {
+    id: number;
+    incomeSource: string;
+    payerName: string | null;
+    payerContact: string | null;
+    taxWithheld: number;
+    taxRate: number;
+    receiptUrl: string | null;
+    notes: string | null;
+  };
+  createdByUser: {
+    id: number;
+    firstName: string;
+    lastName: string;
+    email: string;
+  };
+  approvedByUser?: {
+    id: number;
+    firstName: string;
+    lastName: string;
+    email: string;
+  };
+}
 
 interface IncomeListProps {
   user: AppUser;
 }
 
-export function IncomeList({ user: _user }: IncomeListProps) {
-  const [searchTerm, setSearchTerm] = useState("");
-  const [statusFilter, setStatusFilter] = useState<string>("ALL");
-  const [page, setPage] = useState(1);
-  const [sortBy, setSortBy] = useState("transactionDate");
-  const [_sortOrder, _setSortOrder] = useState<"asc" | "desc">("desc");
+export function IncomeList({ user: _ }: IncomeListProps) {
+  const [selectedTransaction, setSelectedTransaction] =
+    useState<FinancialTransaction | null>(null);
 
-  const debouncedSearch = useDebounce(searchTerm, 500);
+  // Pagination state
+  const [pagination, setPagination] = useState({
+    page: 1,
+    limit: 10,
+    totalPages: 1,
+    totalItems: 0,
+  });
 
-  // Filters for income transactions only
-  const filters = useMemo(
-    () => ({
-      type: "INCOME" as const,
-      search: debouncedSearch || undefined,
-      status:
-        statusFilter === "ALL"
-          ? undefined
-          : (statusFilter as
-              | "PENDING"
-              | "COMPLETED"
-              | "CANCELLED"
-              | "APPROVED"
-              | "REJECTED"),
-      page,
-      limit: 10,
-      sortBy,
-      sortOrder: _sortOrder,
-    }),
-    [debouncedSearch, statusFilter, page, sortBy, _sortOrder]
-  );
+  // Filters state
+  const [filters, setFilters] = useState({
+    search: "",
+    status: "",
+    payment: "",
+    date: "",
+  });
 
-  const { data, isLoading, error } = useFinancialTransactions(filters);
-  const deleteTransaction = useDeleteTransaction();
-  const approveTransaction = useApproveTransaction();
-  const rejectTransaction = useRejectTransaction();
+  // Debounce search term
+  const debouncedSearchTerm = useDebounce(filters.search, 500);
+  const isSearching = filters.search !== debouncedSearchTerm;
 
-  const handleDelete = async (id: number) => {
-    if (confirm("Are you sure you want to delete this income transaction?")) {
-      try {
-        await deleteTransaction.mutateAsync(id);
-      } catch (error) {
-        console.error("Error deleting transaction:", error);
-      }
-    }
-  };
+  const {
+    data: transactionData,
+    isLoading,
+    error,
+    refetch,
+  } = useQuery({
+    queryKey: [
+      "financial-transactions",
+      {
+        type: "INCOME",
+        search: debouncedSearchTerm,
+        status: filters.status !== "all" ? filters.status : undefined,
+        paymentMethod: filters.payment !== "all" ? filters.payment : undefined,
+        page: pagination.page,
+        limit: pagination.limit,
+        sortBy: "transactionDate",
+        sortOrder: "desc",
+      },
+    ],
+    queryFn: async () => {
+      const params = new URLSearchParams();
+      params.append("type", "INCOME");
+      if (debouncedSearchTerm) params.append("search", debouncedSearchTerm);
+      if (filters.status && filters.status !== "all")
+        params.append("status", filters.status);
+      if (filters.payment && filters.payment !== "all")
+        params.append("paymentMethod", filters.payment);
+      params.append("page", String(pagination.page));
+      params.append("limit", String(pagination.limit));
+      params.append("sortBy", "transactionDate");
+      params.append("sortOrder", "desc");
 
-  const handleApprove = async (id: number) => {
-    try {
-      await approveTransaction.mutateAsync(id);
-    } catch (error) {
-      console.error("Error approving transaction:", error);
-    }
-  };
+      const response = await fetch(`/api/finance/transactions?${params}`);
+      if (!response.ok) throw new Error("Failed to fetch income transactions");
+      return response.json();
+    },
+  });
 
-  const handleReject = async (id: number) => {
-    const reason = prompt("Please provide a reason for rejection:");
-    if (reason) {
-      try {
-        await rejectTransaction.mutateAsync({ id, reason });
-      } catch (error) {
-        console.error("Error rejecting transaction:", error);
-      }
-    }
-  };
+  // Extract transactions array from API response
+  const transactions = transactionData?.data?.transactions || [];
+  const apiPagination = transactionData?.data?.pagination;
 
-  const getStatusBadge = (status: string) => {
-    const variants = {
-      PENDING: "secondary",
-      COMPLETED: "default",
-      CANCELLED: "destructive",
-      APPROVED: "default",
-      REJECTED: "destructive",
-    } as const;
-
-    return (
-      <Badge variant={variants[status as keyof typeof variants] || "secondary"}>
-        {status}
-      </Badge>
-    );
+  // Update pagination state from API response
+  const currentPagination = {
+    page: apiPagination?.page || pagination.page,
+    limit: apiPagination?.limit || pagination.limit,
+    totalPages: apiPagination?.totalPages || pagination.totalPages,
+    totalItems: apiPagination?.total || 0,
   };
 
   if (error) {
-    return (
-      <div className="max-w-7xl mx-auto p-6">
-        <Card>
-          <CardContent className="p-6">
-            <div className="text-center">
-              <p className="text-destructive">
-                Failed to load income transactions
-              </p>
-              <Button
-                variant="outline"
-                onClick={() => window.location.reload()}
-                className="mt-2"
-              >
-                Retry
-              </Button>
-            </div>
-          </CardContent>
-        </Card>
-      </div>
-    );
+    toast.error("Failed to load income transactions");
   }
 
-  const { transactions = [], total = 0 } = data || {};
-  const totalPages = Math.ceil(total / 10);
+  // Column configuration
+  const columns: DashboardTableColumn[] = useMemo(
+    () => [
+      {
+        key: "transactionNumber",
+        label: "Transaction #",
+        defaultVisible: true,
+        required: true,
+      },
+      {
+        key: "description",
+        label: "Description",
+        sortable: true,
+        defaultVisible: true,
+        required: true,
+      },
+      {
+        key: "incomeSource",
+        label: "Income Source",
+        defaultVisible: true,
+      },
+      {
+        key: "payerName",
+        label: "Payer",
+        defaultVisible: true,
+      },
+      {
+        key: "amount",
+        label: "Amount",
+        sortable: true,
+        defaultVisible: true,
+        required: true,
+      },
+      {
+        key: "transactionDate",
+        label: "Date",
+        sortable: true,
+        defaultVisible: true,
+        required: true,
+      },
+      {
+        key: "paymentMethod",
+        label: "Payment Method",
+        defaultVisible: true,
+      },
+      {
+        key: "status",
+        label: "Status",
+        defaultVisible: true,
+      },
+    ],
+    []
+  );
 
-  return (
-    <div className="max-w-7xl mx-auto p-6 space-y-6">
-      <div className="flex items-center justify-between">
-        <PageHeader
-          title="Income Transactions"
-          description="View and manage all income transactions"
-        />
-        <Button asChild>
-          <Link href="/finance/income/new">
-            <Plus className="mr-2 h-4 w-4" />
-            Add Income
-          </Link>
-        </Button>
-      </div>
+  // Initialize visible columns
+  const defaultVisibleColumns = useMemo(
+    () => columns.filter((col) => col.defaultVisible).map((col) => col.key),
+    [columns]
+  );
 
-      {/* Filters */}
-      <Card>
-        <CardHeader>
-          <CardTitle className="flex items-center gap-2">
-            <Filter className="h-5 w-5" />
-            Filters
-          </CardTitle>
-        </CardHeader>
-        <CardContent>
-          <div className="grid gap-4 md:grid-cols-3">
-            <div className="relative">
-              <Search className="absolute left-3 top-3 h-4 w-4 text-muted-foreground" />
-              <Input
-                placeholder="Search transactions..."
-                value={searchTerm}
-                onChange={(e) => setSearchTerm(e.target.value)}
-                className="pl-10"
-              />
-            </div>
-            <Select value={statusFilter} onValueChange={setStatusFilter}>
-              <SelectTrigger>
-                <SelectValue placeholder="Filter by status" />
-              </SelectTrigger>
-              <SelectContent>
-                <SelectItem value="ALL">All Status</SelectItem>
-                <SelectItem value="PENDING">Pending</SelectItem>
-                <SelectItem value="COMPLETED">Completed</SelectItem>
-                <SelectItem value="APPROVED">Approved</SelectItem>
-                <SelectItem value="REJECTED">Rejected</SelectItem>
-                <SelectItem value="CANCELLED">Cancelled</SelectItem>
-              </SelectContent>
-            </Select>
-            <Select value={sortBy} onValueChange={setSortBy}>
-              <SelectTrigger>
-                <SelectValue placeholder="Sort by" />
-              </SelectTrigger>
-              <SelectContent>
-                <SelectItem value="transactionDate">Date</SelectItem>
-                <SelectItem value="amount">Amount</SelectItem>
-                <SelectItem value="description">Description</SelectItem>
-                <SelectItem value="status">Status</SelectItem>
-              </SelectContent>
-            </Select>
-          </div>
-        </CardContent>
-      </Card>
+  const [visibleColumns, setVisibleColumns] = useState<string[]>(
+    defaultVisibleColumns
+  );
 
-      {/* Transactions Table */}
-      <Card>
-        <CardHeader>
-          <CardTitle>Income Transactions</CardTitle>
-          <CardDescription>
-            {total} income transaction{total !== 1 ? "s" : ""} found
-          </CardDescription>
-        </CardHeader>
-        <CardContent>
-          {isLoading ? (
-            <div className="flex items-center justify-center py-8">
-              <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary"></div>
-              <span className="ml-2">Loading transactions...</span>
-            </div>
-          ) : transactions.length === 0 ? (
-            <div className="text-center py-8">
-              <TrendingUp className="h-12 w-12 text-muted-foreground mx-auto mb-4" />
-              <p className="text-muted-foreground">
-                No income transactions found
-              </p>
-              <Button asChild className="mt-4">
-                <Link href="/finance/income/new">
-                  <Plus className="mr-2 h-4 w-4" />
-                  Add First Income
-                </Link>
-              </Button>
-            </div>
-          ) : (
-            <>
-              <Table>
-                <TableHeader>
-                  <TableRow>
-                    <TableHead>Transaction #</TableHead>
-                    <TableHead>Description</TableHead>
-                    <TableHead>Income Source</TableHead>
-                    <TableHead>Amount</TableHead>
-                    <TableHead>Date</TableHead>
-                    <TableHead>Status</TableHead>
-                    <TableHead>Actions</TableHead>
-                  </TableRow>
-                </TableHeader>
-                <TableBody>
-                  {transactions.map((transaction) => (
-                    <TableRow key={transaction.id}>
-                      <TableCell className="font-mono text-sm">
-                        {transaction.transactionNumber}
-                      </TableCell>
-                      <TableCell>
-                        <div>
-                          <p className="font-medium">
-                            {transaction.description}
-                          </p>
-                          {transaction.incomeDetails?.payerName && (
-                            <p className="text-sm text-muted-foreground">
-                              From: {transaction.incomeDetails.payerName}
-                            </p>
-                          )}
-                        </div>
-                      </TableCell>
-                      <TableCell>
-                        {transaction.incomeDetails?.incomeSource || "N/A"}
-                      </TableCell>
-                      <TableCell className="font-medium text-green-600">
-                        +{formatCurrency(transaction.amount)}
-                      </TableCell>
-                      <TableCell>
-                        {new Date(
-                          transaction.transactionDate
-                        ).toLocaleDateString()}
-                      </TableCell>
-                      <TableCell>
-                        {getStatusBadge(transaction.status)}
-                      </TableCell>
-                      <TableCell>
-                        <DropdownMenu>
-                          <DropdownMenuTrigger asChild>
-                            <Button variant="ghost" className="h-8 w-8 p-0">
-                              <MoreHorizontal className="h-4 w-4" />
-                            </Button>
-                          </DropdownMenuTrigger>
-                          <DropdownMenuContent align="end">
-                            <DropdownMenuLabel>Actions</DropdownMenuLabel>
-                            <DropdownMenuItem asChild>
-                              <Link href={`/finance/income/${transaction.id}`}>
-                                <Eye className="mr-2 h-4 w-4" />
-                                View Details
-                              </Link>
-                            </DropdownMenuItem>
-                            <DropdownMenuItem asChild>
-                              <Link
-                                href={`/finance/income/${transaction.id}/edit`}
-                              >
-                                <Edit className="mr-2 h-4 w-4" />
-                                Edit
-                              </Link>
-                            </DropdownMenuItem>
-                            <DropdownMenuSeparator />
-                            {transaction.status === "PENDING" && (
-                              <>
-                                <DropdownMenuItem
-                                  onClick={() => handleApprove(transaction.id)}
-                                >
-                                  <CheckCircle className="mr-2 h-4 w-4" />
-                                  Approve
-                                </DropdownMenuItem>
-                                <DropdownMenuItem
-                                  onClick={() => handleReject(transaction.id)}
-                                >
-                                  <XCircle className="mr-2 h-4 w-4" />
-                                  Reject
-                                </DropdownMenuItem>
-                              </>
-                            )}
-                            <DropdownMenuSeparator />
-                            <DropdownMenuItem
-                              onClick={() => handleDelete(transaction.id)}
-                              className="text-destructive"
-                            >
-                              <Trash className="mr-2 h-4 w-4" />
-                              Delete
-                            </DropdownMenuItem>
-                          </DropdownMenuContent>
-                        </DropdownMenu>
-                      </TableCell>
-                    </TableRow>
-                  ))}
-                </TableBody>
-              </Table>
+  // Filter configurations
+  const filterConfigs: FilterConfig[] = useMemo(
+    () => [
+      {
+        key: "status",
+        label: "Status",
+        type: "select",
+        options: [
+          { value: "all", label: "All Status" },
+          { value: "PENDING", label: "Pending" },
+          { value: "COMPLETED", label: "Completed" },
+          { value: "APPROVED", label: "Approved" },
+          { value: "REJECTED", label: "Rejected" },
+          { value: "CANCELLED", label: "Cancelled" },
+        ],
+        placeholder: "All Status",
+      },
+      {
+        key: "payment",
+        label: "Payment Method",
+        type: "select",
+        options: [
+          { value: "all", label: "All Methods" },
+          { value: "CASH", label: "Cash" },
+          { value: "BANK_TRANSFER", label: "Bank Transfer" },
+          { value: "POS", label: "POS" },
+          { value: "MOBILE_MONEY", label: "Mobile Money" },
+        ],
+        placeholder: "All Methods",
+      },
+      {
+        key: "date",
+        label: "Date Range",
+        type: "select",
+        options: [
+          { value: "all", label: "All Dates" },
+          { value: "today", label: "Today" },
+          { value: "yesterday", label: "Yesterday" },
+          { value: "week", label: "This Week" },
+          { value: "month", label: "This Month" },
+        ],
+        placeholder: "All Dates",
+      },
+    ],
+    []
+  );
 
-              {/* Pagination */}
-              {totalPages > 1 && (
-                <div className="flex items-center justify-between mt-4">
-                  <p className="text-sm text-muted-foreground">
-                    Page {page} of {totalPages}
-                  </p>
-                  <div className="flex gap-2">
-                    <Button
-                      variant="outline"
-                      size="sm"
-                      onClick={() => setPage(Math.max(1, page - 1))}
-                      disabled={page === 1}
-                    >
-                      Previous
-                    </Button>
-                    <Button
-                      variant="outline"
-                      size="sm"
-                      onClick={() => setPage(Math.min(totalPages, page + 1))}
-                      disabled={page === totalPages}
-                    >
-                      Next
-                    </Button>
-                  </div>
+  // Handle filter changes
+  const handleFilterChange = useCallback((key: string, value: any) => {
+    setFilters((prev) => {
+      if (prev[key as keyof typeof prev] === value) return prev;
+      return { ...prev, [key]: value };
+    });
+    setPagination((prev) => ({ ...prev, page: 1 }));
+  }, []);
+
+  // Clear all filters
+  const handleResetFilters = useCallback(() => {
+    setFilters({
+      search: "",
+      status: "",
+      payment: "",
+      date: "",
+    });
+    setPagination((prev) => ({ ...prev, page: 1 }));
+  }, []);
+
+  const handlePageChange = useCallback((newPage: number) => {
+    setPagination((prev) => ({ ...prev, page: newPage }));
+  }, []);
+
+  const handlePageSizeChange = useCallback((newSize: number) => {
+    setPagination((prev) => ({ ...prev, limit: newSize, page: 1 }));
+  }, []);
+
+  // Get status badge
+  const getStatusBadge = useCallback((status: string) => {
+    switch (status) {
+      case "COMPLETED":
+        return <Badge className="bg-green-100 text-green-700">Completed</Badge>;
+      case "PENDING":
+        return <Badge className="bg-yellow-100 text-yellow-700">Pending</Badge>;
+      case "APPROVED":
+        return <Badge className="bg-blue-100 text-blue-700">Approved</Badge>;
+      case "REJECTED":
+        return <Badge variant="destructive">Rejected</Badge>;
+      case "CANCELLED":
+        return <Badge variant="destructive">Cancelled</Badge>;
+      default:
+        return <Badge variant="secondary">{status}</Badge>;
+    }
+  }, []);
+
+  // Get payment method icon
+  const getPaymentIcon = useCallback((method: string) => {
+    switch (method?.toLowerCase()) {
+      case "cash":
+        return <span className="text-green-600">💵</span>;
+      case "bank_transfer":
+        return <span className="text-blue-600">🏦</span>;
+      case "pos":
+        return <span className="text-purple-600">💳</span>;
+      case "mobile_money":
+        return <span className="text-orange-600">📱</span>;
+      default:
+        return <span className="text-gray-600">💰</span>;
+    }
+  }, []);
+
+  // Render cell function
+  const renderCell = useCallback(
+    (transaction: FinancialTransaction, columnKey: string) => {
+      switch (columnKey) {
+        case "transactionNumber":
+          return (
+            <span className="font-mono text-sm">
+              {transaction.transactionNumber}
+            </span>
+          );
+        case "description":
+          return (
+            <div>
+              <div className="font-medium">{transaction.description}</div>
+              {transaction.incomeDetails?.payerName && (
+                <div className="text-sm text-muted-foreground">
+                  From: {transaction.incomeDetails.payerName}
                 </div>
               )}
-            </>
-          )}
-        </CardContent>
-      </Card>
+            </div>
+          );
+        case "incomeSource":
+          return (
+            <span className="capitalize">
+              {transaction.incomeDetails?.incomeSource || "N/A"}
+            </span>
+          );
+        case "payerName":
+          return <span>{transaction.incomeDetails?.payerName || "N/A"}</span>;
+        case "amount":
+          return (
+            <span className="font-semibold text-green-600">
+              +{formatCurrency(transaction.amount)}
+            </span>
+          );
+        case "transactionDate":
+          return (
+            <div>
+              <div className="font-medium">
+                {format(new Date(transaction.transactionDate), "MMM dd, yyyy")}
+              </div>
+              <div className="text-sm text-muted-foreground">
+                {format(new Date(transaction.transactionDate), "HH:mm")}
+              </div>
+            </div>
+          );
+        case "paymentMethod":
+          return (
+            <div className="flex items-center gap-2">
+              {getPaymentIcon(transaction.paymentMethod || "")}
+              <span className="capitalize">
+                {transaction.paymentMethod?.replace("_", " ") || "N/A"}
+              </span>
+            </div>
+          );
+        case "status":
+          return getStatusBadge(transaction.status);
+        default:
+          return null;
+      }
+    },
+    [getStatusBadge, getPaymentIcon]
+  );
+
+  // Render actions function
+  const renderActions = useCallback(
+    (transaction: FinancialTransaction) => {
+      return (
+        <div className="flex items-center gap-2">
+          {/* View Details Button */}
+          <Dialog>
+            <DialogTrigger asChild>
+              <Button
+                variant="ghost"
+                size="sm"
+                onClick={() => setSelectedTransaction(transaction)}
+              >
+                <IconEye className="h-4 w-4" />
+              </Button>
+            </DialogTrigger>
+            <DialogContent className="max-w-2xl max-h-[80vh] overflow-y-auto">
+              <DialogHeader>
+                <DialogTitle>
+                  Income Details - {transaction.transactionNumber}
+                </DialogTitle>
+              </DialogHeader>
+              {selectedTransaction && (
+                <TransactionDetailsContent transaction={selectedTransaction} />
+              )}
+            </DialogContent>
+          </Dialog>
+
+          {/* Edit Button */}
+          <Button asChild variant="ghost" size="sm">
+            <Link href={`/finance/income/${transaction.id}/edit`}>
+              <IconEdit className="h-4 w-4" />
+            </Link>
+          </Button>
+
+          {/* Actions Dropdown */}
+          <div className="relative">
+            <Button variant="ghost" size="sm">
+              <IconDots className="h-4 w-4" />
+            </Button>
+          </div>
+        </div>
+      );
+    },
+    [selectedTransaction]
+  );
+
+  return (
+    <>
+      <DashboardTableLayout
+        // Header
+        title="Income Transactions"
+        description="View and manage all income transactions"
+        actions={
+          <div className="flex gap-2">
+            <Button onClick={() => refetch()} variant="outline" size="sm">
+              <IconRefresh className="h-4 w-4 mr-2" />
+              Refresh
+            </Button>
+            <Button asChild>
+              <Link href="/finance/income/new">
+                <IconPlus className="h-4 w-4 mr-2" />
+                Add Income
+              </Link>
+            </Button>
+          </div>
+        }
+        // Filters
+        searchPlaceholder="Search income transactions..."
+        searchValue={filters.search}
+        onSearchChange={(value) => handleFilterChange("search", value)}
+        isSearching={isSearching}
+        filters={filterConfigs}
+        filterValues={filters}
+        onFilterChange={handleFilterChange}
+        onResetFilters={handleResetFilters}
+        // Table
+        tableTitle="Income Transactions"
+        totalCount={currentPagination.totalItems}
+        currentCount={transactions.length}
+        columns={columns}
+        visibleColumns={visibleColumns}
+        onColumnsChange={setVisibleColumns}
+        columnCustomizerKey="income-transactions-visible-columns"
+        data={transactions}
+        renderCell={renderCell}
+        renderActions={renderActions}
+        // Pagination
+        pagination={currentPagination}
+        onPageChange={handlePageChange}
+        onPageSizeChange={handlePageSizeChange}
+        // Loading states
+        isLoading={isLoading}
+        isRefetching={transactionData && isLoading}
+        error={error?.message}
+        onRetry={() => refetch()}
+        // Empty state
+        emptyStateIcon={<IconTrendingUp className="h-12 w-12 text-gray-400" />}
+        emptyStateMessage={
+          debouncedSearchTerm ||
+          filters.status ||
+          filters.payment ||
+          filters.date
+            ? "No income transactions found matching your filters."
+            : "No income transactions found."
+        }
+        emptyStateAction={
+          <Button asChild>
+            <Link href="/finance/income/new">
+              <IconPlus className="h-4 w-4 mr-2" />
+              Add First Income
+            </Link>
+          </Button>
+        }
+      />
+    </>
+  );
+}
+
+function TransactionDetailsContent({
+  transaction,
+}: {
+  transaction: FinancialTransaction;
+}) {
+  return (
+    <div className="space-y-4">
+      {/* Basic Info */}
+      <div className="grid grid-cols-2 gap-4">
+        <div>
+          <h4 className="text-sm font-medium mb-2">Transaction Details</h4>
+          <div className="space-y-2 text-sm">
+            <div className="flex justify-between">
+              <span className="text-muted-foreground">Transaction #:</span>
+              <span className="font-mono">{transaction.transactionNumber}</span>
+            </div>
+            <div className="flex justify-between">
+              <span className="text-muted-foreground">Amount:</span>
+              <span className="font-semibold text-green-600">
+                +{formatCurrency(transaction.amount)}
+              </span>
+            </div>
+            <div className="flex justify-between">
+              <span className="text-muted-foreground">Date:</span>
+              <span>
+                {format(new Date(transaction.transactionDate), "PPP")}
+              </span>
+            </div>
+            <div className="flex justify-between">
+              <span className="text-muted-foreground">Status:</span>
+              <span className="capitalize">
+                {transaction.status.toLowerCase()}
+              </span>
+            </div>
+          </div>
+        </div>
+        <div>
+          <h4 className="text-sm font-medium mb-2">Payment Info</h4>
+          <div className="space-y-2 text-sm">
+            <div className="flex justify-between">
+              <span className="text-muted-foreground">Method:</span>
+              <span className="capitalize">
+                {transaction.paymentMethod?.replace("_", " ") || "N/A"}
+              </span>
+            </div>
+            {transaction.referenceNumber && (
+              <div className="flex justify-between">
+                <span className="text-muted-foreground">Reference:</span>
+                <span className="font-mono">{transaction.referenceNumber}</span>
+              </div>
+            )}
+          </div>
+        </div>
+      </div>
+
+      <Separator />
+
+      {/* Income Details */}
+      {transaction.incomeDetails && (
+        <div>
+          <h4 className="text-sm font-medium mb-3">Income Details</h4>
+          <div className="space-y-2 text-sm">
+            <div className="flex justify-between">
+              <span className="text-muted-foreground">Income Source:</span>
+              <span className="capitalize">
+                {transaction.incomeDetails.incomeSource}
+              </span>
+            </div>
+            {transaction.incomeDetails.payerName && (
+              <div className="flex justify-between">
+                <span className="text-muted-foreground">Payer:</span>
+                <span>{transaction.incomeDetails.payerName}</span>
+              </div>
+            )}
+            {transaction.incomeDetails.payerContact && (
+              <div className="flex justify-between">
+                <span className="text-muted-foreground">Contact:</span>
+                <span>{transaction.incomeDetails.payerContact}</span>
+              </div>
+            )}
+            {transaction.incomeDetails.notes && (
+              <div className="flex justify-between">
+                <span className="text-muted-foreground">Notes:</span>
+                <span>{transaction.incomeDetails.notes}</span>
+              </div>
+            )}
+          </div>
+        </div>
+      )}
+
+      <Separator />
+
+      {/* Created By */}
+      <div>
+        <h4 className="text-sm font-medium mb-2">Created By</h4>
+        <div className="text-sm text-muted-foreground">
+          {transaction.createdByUser.firstName}{" "}
+          {transaction.createdByUser.lastName}
+          <br />
+          {transaction.createdByUser.email}
+        </div>
+      </div>
+
+      {/* Approved By */}
+      {transaction.approvedByUser && (
+        <>
+          <Separator />
+          <div>
+            <h4 className="text-sm font-medium mb-2">Approved By</h4>
+            <div className="text-sm text-muted-foreground">
+              {transaction.approvedByUser.firstName}{" "}
+              {transaction.approvedByUser.lastName}
+              <br />
+              {transaction.approvedByUser.email}
+              {transaction.approvedAt && (
+                <>
+                  <br />
+                  {format(new Date(transaction.approvedAt), "PPP")}
+                </>
+              )}
+            </div>
+          </div>
+        </>
+      )}
     </div>
   );
 }
