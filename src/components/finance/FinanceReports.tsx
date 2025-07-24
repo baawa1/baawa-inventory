@@ -1,7 +1,6 @@
 "use client";
 
-import React, { useState } from "react";
-import { useRouter } from "next/navigation";
+import { useState, useEffect } from "react";
 import {
   Card,
   CardContent,
@@ -10,8 +9,6 @@ import {
   CardTitle,
 } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
-import { Input } from "@/components/ui/input";
-import { Label } from "@/components/ui/label";
 import {
   Select,
   SelectContent,
@@ -19,380 +16,654 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
-import { PageHeader } from "@/components/ui/page-header";
+import { Input } from "@/components/ui/input";
+import { Label } from "@/components/ui/label";
+import { Badge } from "@/components/ui/badge";
 import {
-  ArrowLeft,
-  Download,
-  Calendar,
+  BarChart,
+  Bar,
+  XAxis,
+  YAxis,
+  CartesianGrid,
+  Tooltip,
+  ResponsiveContainer,
+  PieChart,
+  Pie,
+  Cell,
+} from "recharts";
+import {
   TrendingUp,
   TrendingDown,
   DollarSign,
   ShoppingCart,
   Package,
+  FileText,
+  Filter,
+  Download,
+  RefreshCw,
 } from "lucide-react";
 import { formatCurrency } from "@/lib/utils";
 
-interface FinanceReportsProps {
-  user: any;
+interface FinancialData {
+  totalIncome: number;
+  totalExpenses: number;
+  netIncome: number;
+  transactionCount: number;
+  recentTransactions: any[];
+  dataSources?: {
+    manualTransactions: number;
+    includeSales: boolean;
+    includePurchases: boolean;
+  };
 }
 
-export function FinanceReports({ user: _user }: FinanceReportsProps) {
-  const router = useRouter();
-  const [selectedReport, setSelectedReport] = useState("FINANCIAL_SUMMARY");
+interface IncomeData {
+  totalIncome: number;
+  incomeBreakdown: Array<{
+    source: string;
+    amount: number;
+    count: number;
+  }>;
+  transactionCount: number;
+}
+
+interface ExpenseData {
+  totalExpenses: number;
+  expenseBreakdown: Array<{
+    type: string;
+    amount: number;
+    count: number;
+  }>;
+  transactionCount: number;
+}
+
+interface CashFlowData {
+  operatingCashFlow: number;
+  investingCashFlow: number;
+  financingCashFlow: number;
+  netCashFlow: number;
+  period: {
+    startDate: string | null;
+    endDate: string | null;
+  };
+}
+
+const COLORS = [
+  "#0088FE",
+  "#00C49F",
+  "#FFBB28",
+  "#FF8042",
+  "#8884D8",
+  "#82CA9D",
+];
+
+export default function FinanceReports() {
+  const [reportType, setReportType] = useState("FINANCIAL_SUMMARY");
   const [startDate, setStartDate] = useState("");
   const [endDate, setEndDate] = useState("");
+  const [includeSales, setIncludeSales] = useState(true);
+  const [includePurchases, setIncludePurchases] = useState(true);
+  const [data, setData] = useState<
+    FinancialData | IncomeData | ExpenseData | CashFlowData | null
+  >(null);
+  const [loading, setLoading] = useState(false);
+  const [error, setError] = useState<string | null>(null);
 
-  const reportTypes = [
-    {
-      value: "FINANCIAL_SUMMARY",
-      label: "Financial Summary",
-      icon: DollarSign,
-    },
-    { value: "SALES_REPORT", label: "Sales Report", icon: ShoppingCart },
-    { value: "PURCHASE_REPORT", label: "Purchase Report", icon: Package },
-    { value: "INCOME_REPORT", label: "Income Report", icon: TrendingUp },
-    { value: "EXPENSE_REPORT", label: "Expense Report", icon: TrendingDown },
-    { value: "CASH_FLOW", label: "Cash Flow", icon: TrendingUp },
-  ];
+  const fetchData = async () => {
+    setLoading(true);
+    setError(null);
 
-  // Mock data - replace with actual API calls
-  const mockFinancialSummary = {
-    totalSales: 2500000,
-    totalPurchases: 1800000,
-    totalIncome: 2800000,
-    totalExpenses: 1200000,
-    netProfit: 1600000,
-    grossProfit: 700000,
-  };
+    try {
+      const params = new URLSearchParams({
+        type: reportType,
+        includeSales: includeSales.toString(),
+        includePurchases: includePurchases.toString(),
+      });
 
-  const mockSalesData = [
-    { month: "Jan", amount: 450000 },
-    { month: "Feb", amount: 520000 },
-    { month: "Mar", amount: 480000 },
-    { month: "Apr", amount: 550000 },
-    { month: "May", amount: 600000 },
-    { month: "Jun", amount: 580000 },
-  ];
+      if (startDate) params.append("startDate", startDate);
+      if (endDate) params.append("endDate", endDate);
 
-  const mockPurchaseData = [
-    { month: "Jan", amount: 320000 },
-    { month: "Feb", amount: 380000 },
-    { month: "Mar", amount: 350000 },
-    { month: "Apr", amount: 420000 },
-    { month: "May", amount: 450000 },
-    { month: "Jun", amount: 430000 },
-  ];
+      const response = await fetch(`/api/finance/reports?${params}`);
+      const result = await response.json();
 
-  const mockIncomeData = [
-    { source: "Sales Revenue", amount: 2500000 },
-    { source: "Loan", amount: 200000 },
-    { source: "Service Fees", amount: 80000 },
-    { source: "Other", amount: 20000 },
-  ];
+      if (!response.ok) {
+        throw new Error(result.message || "Failed to fetch data");
+      }
 
-  const mockExpenseData = [
-    { type: "Supplies", amount: 400000 },
-    { type: "Salaries", amount: 300000 },
-    { type: "Rent", amount: 200000 },
-    { type: "Utilities", amount: 150000 },
-    { type: "Marketing", amount: 100000 },
-    { type: "Other", amount: 50000 },
-  ];
-
-  const generateReport = () => {
-    // Implement report generation logic
-    console.log("Generating report:", { selectedReport, startDate, endDate });
-  };
-
-  const downloadReport = () => {
-    // Implement report download logic
-    console.log("Downloading report");
-  };
-
-  const renderFinancialSummary = () => (
-    <div className="grid gap-6 md:grid-cols-2 lg:grid-cols-3">
-      <Card>
-        <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-          <CardTitle className="text-sm font-medium">Total Sales</CardTitle>
-          <ShoppingCart className="h-4 w-4 text-muted-foreground" />
-        </CardHeader>
-        <CardContent>
-          <div className="text-2xl font-bold">
-            {formatCurrency(mockFinancialSummary.totalSales)}
-          </div>
-          <p className="text-xs text-muted-foreground">
-            +20.1% from last month
-          </p>
-        </CardContent>
-      </Card>
-
-      <Card>
-        <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-          <CardTitle className="text-sm font-medium">Total Purchases</CardTitle>
-          <Package className="h-4 w-4 text-muted-foreground" />
-        </CardHeader>
-        <CardContent>
-          <div className="text-2xl font-bold">
-            {formatCurrency(mockFinancialSummary.totalPurchases)}
-          </div>
-          <p className="text-xs text-muted-foreground">
-            +15.3% from last month
-          </p>
-        </CardContent>
-      </Card>
-
-      <Card>
-        <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-          <CardTitle className="text-sm font-medium">Total Income</CardTitle>
-          <TrendingUp className="h-4 w-4 text-muted-foreground" />
-        </CardHeader>
-        <CardContent>
-          <div className="text-2xl font-bold">
-            {formatCurrency(mockFinancialSummary.totalIncome)}
-          </div>
-          <p className="text-xs text-muted-foreground">
-            +18.2% from last month
-          </p>
-        </CardContent>
-      </Card>
-
-      <Card>
-        <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-          <CardTitle className="text-sm font-medium">Total Expenses</CardTitle>
-          <TrendingDown className="h-4 w-4 text-muted-foreground" />
-        </CardHeader>
-        <CardContent>
-          <div className="text-2xl font-bold">
-            {formatCurrency(mockFinancialSummary.totalExpenses)}
-          </div>
-          <p className="text-xs text-muted-foreground">+8.1% from last month</p>
-        </CardContent>
-      </Card>
-
-      <Card>
-        <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-          <CardTitle className="text-sm font-medium">Gross Profit</CardTitle>
-          <DollarSign className="h-4 w-4 text-muted-foreground" />
-        </CardHeader>
-        <CardContent>
-          <div className="text-2xl font-bold">
-            {formatCurrency(mockFinancialSummary.grossProfit)}
-          </div>
-          <p className="text-xs text-muted-foreground">
-            +25.4% from last month
-          </p>
-        </CardContent>
-      </Card>
-
-      <Card>
-        <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-          <CardTitle className="text-sm font-medium">Net Profit</CardTitle>
-          <DollarSign className="h-4 w-4 text-muted-foreground" />
-        </CardHeader>
-        <CardContent>
-          <div className="text-2xl font-bold">
-            {formatCurrency(mockFinancialSummary.netProfit)}
-          </div>
-          <p className="text-xs text-muted-foreground">
-            +22.7% from last month
-          </p>
-        </CardContent>
-      </Card>
-    </div>
-  );
-
-  const renderSalesReport = () => (
-    <div className="space-y-6">
-      <Card>
-        <CardHeader>
-          <CardTitle>Sales Trend</CardTitle>
-          <CardDescription>Monthly sales performance</CardDescription>
-        </CardHeader>
-        <CardContent>
-          <div className="space-y-4">
-            {mockSalesData.map((item, index) => (
-              <div key={index} className="flex items-center justify-between">
-                <span className="font-medium">{item.month}</span>
-                <span className="text-lg font-bold">
-                  {formatCurrency(item.amount)}
-                </span>
-              </div>
-            ))}
-          </div>
-        </CardContent>
-      </Card>
-    </div>
-  );
-
-  const renderPurchaseReport = () => (
-    <div className="space-y-6">
-      <Card>
-        <CardHeader>
-          <CardTitle>Purchase Trend</CardTitle>
-          <CardDescription>Monthly purchase performance</CardDescription>
-        </CardHeader>
-        <CardContent>
-          <div className="space-y-4">
-            {mockPurchaseData.map((item, index) => (
-              <div key={index} className="flex items-center justify-between">
-                <span className="font-medium">{item.month}</span>
-                <span className="text-lg font-bold">
-                  {formatCurrency(item.amount)}
-                </span>
-              </div>
-            ))}
-          </div>
-        </CardContent>
-      </Card>
-    </div>
-  );
-
-  const renderIncomeReport = () => (
-    <div className="space-y-6">
-      <Card>
-        <CardHeader>
-          <CardTitle>Income Breakdown</CardTitle>
-          <CardDescription>Income by source</CardDescription>
-        </CardHeader>
-        <CardContent>
-          <div className="space-y-4">
-            {mockIncomeData.map((item, index) => (
-              <div key={index} className="flex items-center justify-between">
-                <span className="font-medium">{item.source}</span>
-                <span className="text-lg font-bold">
-                  {formatCurrency(item.amount)}
-                </span>
-              </div>
-            ))}
-          </div>
-        </CardContent>
-      </Card>
-    </div>
-  );
-
-  const renderExpenseReport = () => (
-    <div className="space-y-6">
-      <Card>
-        <CardHeader>
-          <CardTitle>Expense Breakdown</CardTitle>
-          <CardDescription>Expenses by category</CardDescription>
-        </CardHeader>
-        <CardContent>
-          <div className="space-y-4">
-            {mockExpenseData.map((item, index) => (
-              <div key={index} className="flex items-center justify-between">
-                <span className="font-medium">{item.type}</span>
-                <span className="text-lg font-bold">
-                  {formatCurrency(item.amount)}
-                </span>
-              </div>
-            ))}
-          </div>
-        </CardContent>
-      </Card>
-    </div>
-  );
-
-  const renderCashFlow = () => (
-    <div className="space-y-6">
-      <Card>
-        <CardHeader>
-          <CardTitle>Cash Flow Statement</CardTitle>
-          <CardDescription>Cash flow overview</CardDescription>
-        </CardHeader>
-        <CardContent>
-          <div className="space-y-4">
-            <div className="flex items-center justify-between">
-              <span className="font-medium">Operating Cash Flow</span>
-              <span className="text-lg font-bold text-green-600">
-                +{formatCurrency(1600000)}
-              </span>
-            </div>
-            <div className="flex items-center justify-between">
-              <span className="font-medium">Investing Cash Flow</span>
-              <span className="text-lg font-bold text-red-600">
-                -{formatCurrency(300000)}
-              </span>
-            </div>
-            <div className="flex items-center justify-between">
-              <span className="font-medium">Financing Cash Flow</span>
-              <span className="text-lg font-bold text-green-600">
-                +{formatCurrency(200000)}
-              </span>
-            </div>
-            <div className="border-t pt-4">
-              <div className="flex items-center justify-between">
-                <span className="font-bold">Net Cash Flow</span>
-                <span className="text-xl font-bold text-green-600">
-                  +{formatCurrency(1500000)}
-                </span>
-              </div>
-            </div>
-          </div>
-        </CardContent>
-      </Card>
-    </div>
-  );
-
-  const renderReportContent = () => {
-    switch (selectedReport) {
-      case "FINANCIAL_SUMMARY":
-        return renderFinancialSummary();
-      case "SALES_REPORT":
-        return renderSalesReport();
-      case "PURCHASE_REPORT":
-        return renderPurchaseReport();
-      case "INCOME_REPORT":
-        return renderIncomeReport();
-      case "EXPENSE_REPORT":
-        return renderExpenseReport();
-      case "CASH_FLOW":
-        return renderCashFlow();
-      default:
-        return renderFinancialSummary();
+      setData(result.data);
+    } catch (err) {
+      setError(err instanceof Error ? err.message : "An error occurred");
+    } finally {
+      setLoading(false);
     }
   };
 
-  return (
-    <div className="max-w-7xl mx-auto p-6 space-y-6">
-      <div className="mb-6">
-        <Button
-          variant="ghost"
-          onClick={() => router.push("/finance")}
-          className="mb-4 px-4 lg:px-6"
-        >
-          <ArrowLeft className="mr-2 h-4 w-4" />
-          Back to Finance
-        </Button>
-        <PageHeader
-          title="Financial Reports"
-          description="Comprehensive financial reports and analytics"
-        />
+  useEffect(() => {
+    fetchData();
+  }, [reportType, startDate, endDate, includeSales, includePurchases]);
+
+  const handleExport = () => {
+    // TODO: Implement export functionality
+    console.log("Export functionality to be implemented");
+  };
+
+  const renderFinancialSummary = (data: FinancialData) => (
+    <div className="space-y-6">
+      {/* Summary Cards */}
+      <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+        <Card>
+          <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+            <CardTitle className="text-sm font-medium">Total Income</CardTitle>
+            <TrendingUp className="h-4 w-4 text-green-600" />
+          </CardHeader>
+          <CardContent>
+            <div className="text-2xl font-bold text-green-600">
+              {formatCurrency(data.totalIncome)}
+            </div>
+            <p className="text-xs text-muted-foreground">
+              {data.transactionCount} transactions
+            </p>
+          </CardContent>
+        </Card>
+
+        <Card>
+          <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+            <CardTitle className="text-sm font-medium">
+              Total Expenses
+            </CardTitle>
+            <TrendingDown className="h-4 w-4 text-red-600" />
+          </CardHeader>
+          <CardContent>
+            <div className="text-2xl font-bold text-red-600">
+              {formatCurrency(data.totalExpenses)}
+            </div>
+            <p className="text-xs text-muted-foreground">
+              {data.transactionCount} transactions
+            </p>
+          </CardContent>
+        </Card>
+
+        <Card>
+          <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+            <CardTitle className="text-sm font-medium">Net Income</CardTitle>
+            <DollarSign className="h-4 w-4 text-blue-600" />
+          </CardHeader>
+          <CardContent>
+            <div
+              className={`text-2xl font-bold ${data.netIncome >= 0 ? "text-green-600" : "text-red-600"}`}
+            >
+              {formatCurrency(data.netIncome)}
+            </div>
+            <p className="text-xs text-muted-foreground">
+              {data.netIncome >= 0 ? "Profit" : "Loss"}
+            </p>
+          </CardContent>
+        </Card>
       </div>
 
-      {/* Report Controls */}
+      {/* Data Sources Info */}
+      {data.dataSources && (
+        <Card>
+          <CardHeader>
+            <CardTitle className="text-lg">Data Sources</CardTitle>
+            <CardDescription>
+              Financial data includes the following sources:
+            </CardDescription>
+          </CardHeader>
+          <CardContent>
+            <div className="flex flex-wrap gap-2">
+              <Badge variant="outline" className="flex items-center gap-1">
+                <FileText className="h-3 w-3" />
+                Manual Transactions: {data.dataSources.manualTransactions}
+              </Badge>
+              {data.dataSources.includeSales && (
+                <Badge variant="outline" className="flex items-center gap-1">
+                  <ShoppingCart className="h-3 w-3" />
+                  POS Sales
+                </Badge>
+              )}
+              {data.dataSources.includePurchases && (
+                <Badge variant="outline" className="flex items-center gap-1">
+                  <Package className="h-3 w-3" />
+                  Inventory Purchases
+                </Badge>
+              )}
+            </div>
+          </CardContent>
+        </Card>
+      )}
+
+      {/* Recent Transactions */}
       <Card>
         <CardHeader>
-          <CardTitle>Generate Report</CardTitle>
-          <CardDescription>Select report type and date range</CardDescription>
+          <CardTitle>Recent Transactions</CardTitle>
+          <CardDescription>
+            Latest financial activities across all sources
+          </CardDescription>
         </CardHeader>
-        <CardContent className="space-y-4">
-          <div className="grid gap-4 md:grid-cols-3">
+        <CardContent>
+          <div className="space-y-3">
+            {data.recentTransactions?.map((transaction) => (
+              <div
+                key={transaction.id}
+                className="flex items-center justify-between p-3 border rounded-lg"
+              >
+                <div className="flex items-center space-x-3">
+                  <div
+                    className={`p-2 rounded-full ${
+                      transaction.type === "INCOME"
+                        ? "bg-green-100 text-green-600"
+                        : "bg-red-100 text-red-600"
+                    }`}
+                  >
+                    {transaction.type === "INCOME" ? (
+                      <TrendingUp className="h-4 w-4" />
+                    ) : (
+                      <TrendingDown className="h-4 w-4" />
+                    )}
+                  </div>
+                  <div>
+                    <p className="font-medium">{transaction.description}</p>
+                    <p className="text-sm text-muted-foreground">
+                      {transaction.transactionNumber} •{" "}
+                      {new Date(
+                        transaction.transactionDate
+                      ).toLocaleDateString()}
+                    </p>
+                    <div className="flex items-center gap-2 mt-1">
+                      <Badge variant="outline" className="text-xs">
+                        {transaction.source}
+                      </Badge>
+                      {transaction.incomeSource && (
+                        <Badge variant="secondary" className="text-xs">
+                          {transaction.incomeSource}
+                        </Badge>
+                      )}
+                      {transaction.expenseType && (
+                        <Badge variant="secondary" className="text-xs">
+                          {transaction.expenseType}
+                        </Badge>
+                      )}
+                    </div>
+                  </div>
+                </div>
+                <div className="text-right">
+                  <p
+                    className={`font-bold ${transaction.type === "INCOME" ? "text-green-600" : "text-red-600"}`}
+                  >
+                    {transaction.type === "INCOME" ? "+" : "-"}
+                    {formatCurrency(transaction.amount)}
+                  </p>
+                  <p className="text-sm text-muted-foreground">
+                    {transaction.paymentMethod}
+                  </p>
+                </div>
+              </div>
+            ))}
+          </div>
+        </CardContent>
+      </Card>
+    </div>
+  );
+
+  const renderIncomeReport = (data: IncomeData) => (
+    <div className="space-y-6">
+      {/* Income Summary */}
+      <Card>
+        <CardHeader>
+          <CardTitle>Income Summary</CardTitle>
+          <CardDescription>
+            Total income: {formatCurrency(data.totalIncome)} from{" "}
+            {data.transactionCount} transactions
+          </CardDescription>
+        </CardHeader>
+        <CardContent>
+          <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+            {/* Pie Chart */}
+            <div>
+              <h3 className="text-lg font-semibold mb-4">Income by Source</h3>
+              <ResponsiveContainer width="100%" height={300}>
+                <PieChart>
+                  <Pie
+                    data={data.incomeBreakdown}
+                    cx="50%"
+                    cy="50%"
+                    labelLine={false}
+                    label={({ source, percent }) =>
+                      `${source} ${((percent || 0) * 100).toFixed(0)}%`
+                    }
+                    outerRadius={80}
+                    fill="#8884d8"
+                    dataKey="amount"
+                  >
+                    {data.incomeBreakdown.map((entry, index) => (
+                      <Cell
+                        key={`cell-${index}`}
+                        fill={COLORS[index % COLORS.length]}
+                      />
+                    ))}
+                  </Pie>
+                  <Tooltip
+                    formatter={(value) => formatCurrency(Number(value))}
+                  />
+                </PieChart>
+              </ResponsiveContainer>
+            </div>
+
+            {/* Bar Chart */}
+            <div>
+              <h3 className="text-lg font-semibold mb-4">Income Breakdown</h3>
+              <ResponsiveContainer width="100%" height={300}>
+                <BarChart data={data.incomeBreakdown}>
+                  <CartesianGrid strokeDasharray="3 3" />
+                  <XAxis dataKey="source" />
+                  <YAxis />
+                  <Tooltip
+                    formatter={(value) => formatCurrency(Number(value))}
+                  />
+                  <Bar dataKey="amount" fill="#8884d8" />
+                </BarChart>
+              </ResponsiveContainer>
+            </div>
+          </div>
+        </CardContent>
+      </Card>
+
+      {/* Income Details */}
+      <Card>
+        <CardHeader>
+          <CardTitle>Income Details</CardTitle>
+        </CardHeader>
+        <CardContent>
+          <div className="space-y-3">
+            {data.incomeBreakdown.map((item) => (
+              <div
+                key={item.source}
+                className="flex items-center justify-between p-3 border rounded-lg"
+              >
+                <div>
+                  <p className="font-medium">{item.source}</p>
+                  <p className="text-sm text-muted-foreground">
+                    {item.count} transactions
+                  </p>
+                </div>
+                <div className="text-right">
+                  <p className="font-bold text-green-600">
+                    {formatCurrency(item.amount)}
+                  </p>
+                  <p className="text-sm text-muted-foreground">
+                    {((item.amount / data.totalIncome) * 100).toFixed(1)}% of
+                    total
+                  </p>
+                </div>
+              </div>
+            ))}
+          </div>
+        </CardContent>
+      </Card>
+    </div>
+  );
+
+  const renderExpenseReport = (data: ExpenseData) => (
+    <div className="space-y-6">
+      {/* Expense Summary */}
+      <Card>
+        <CardHeader>
+          <CardTitle>Expense Summary</CardTitle>
+          <CardDescription>
+            Total expenses: {formatCurrency(data.totalExpenses)} from{" "}
+            {data.transactionCount} transactions
+          </CardDescription>
+        </CardHeader>
+        <CardContent>
+          <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+            {/* Pie Chart */}
+            <div>
+              <h3 className="text-lg font-semibold mb-4">Expenses by Type</h3>
+              <ResponsiveContainer width="100%" height={300}>
+                <PieChart>
+                  <Pie
+                    data={data.expenseBreakdown}
+                    cx="50%"
+                    cy="50%"
+                    labelLine={false}
+                    label={({ type, percent }) =>
+                      `${type} ${((percent || 0) * 100).toFixed(0)}%`
+                    }
+                    outerRadius={80}
+                    fill="#8884d8"
+                    dataKey="amount"
+                  >
+                    {data.expenseBreakdown.map((entry, index) => (
+                      <Cell
+                        key={`cell-${index}`}
+                        fill={COLORS[index % COLORS.length]}
+                      />
+                    ))}
+                  </Pie>
+                  <Tooltip
+                    formatter={(value) => formatCurrency(Number(value))}
+                  />
+                </PieChart>
+              </ResponsiveContainer>
+            </div>
+
+            {/* Bar Chart */}
+            <div>
+              <h3 className="text-lg font-semibold mb-4">Expense Breakdown</h3>
+              <ResponsiveContainer width="100%" height={300}>
+                <BarChart data={data.expenseBreakdown}>
+                  <CartesianGrid strokeDasharray="3 3" />
+                  <XAxis dataKey="type" />
+                  <YAxis />
+                  <Tooltip
+                    formatter={(value) => formatCurrency(Number(value))}
+                  />
+                  <Bar dataKey="amount" fill="#ff6b6b" />
+                </BarChart>
+              </ResponsiveContainer>
+            </div>
+          </div>
+        </CardContent>
+      </Card>
+
+      {/* Expense Details */}
+      <Card>
+        <CardHeader>
+          <CardTitle>Expense Details</CardTitle>
+        </CardHeader>
+        <CardContent>
+          <div className="space-y-3">
+            {data.expenseBreakdown.map((item) => (
+              <div
+                key={item.type}
+                className="flex items-center justify-between p-3 border rounded-lg"
+              >
+                <div>
+                  <p className="font-medium">{item.type}</p>
+                  <p className="text-sm text-muted-foreground">
+                    {item.count} transactions
+                  </p>
+                </div>
+                <div className="text-right">
+                  <p className="font-bold text-red-600">
+                    {formatCurrency(item.amount)}
+                  </p>
+                  <p className="text-sm text-muted-foreground">
+                    {((item.amount / data.totalExpenses) * 100).toFixed(1)}% of
+                    total
+                  </p>
+                </div>
+              </div>
+            ))}
+          </div>
+        </CardContent>
+      </Card>
+    </div>
+  );
+
+  const renderCashFlowReport = (data: CashFlowData) => (
+    <div className="space-y-6">
+      {/* Cash Flow Summary */}
+      <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
+        <Card>
+          <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+            <CardTitle className="text-sm font-medium">
+              Operating Cash Flow
+            </CardTitle>
+            <TrendingUp className="h-4 w-4 text-green-600" />
+          </CardHeader>
+          <CardContent>
+            <div
+              className={`text-2xl font-bold ${data.operatingCashFlow >= 0 ? "text-green-600" : "text-red-600"}`}
+            >
+              {formatCurrency(data.operatingCashFlow)}
+            </div>
+            <p className="text-xs text-muted-foreground">From operations</p>
+          </CardContent>
+        </Card>
+
+        <Card>
+          <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+            <CardTitle className="text-sm font-medium">
+              Investing Cash Flow
+            </CardTitle>
+            <Package className="h-4 w-4 text-blue-600" />
+          </CardHeader>
+          <CardContent>
+            <div
+              className={`text-2xl font-bold ${data.investingCashFlow >= 0 ? "text-green-600" : "text-red-600"}`}
+            >
+              {formatCurrency(data.investingCashFlow)}
+            </div>
+            <p className="text-xs text-muted-foreground">From investments</p>
+          </CardContent>
+        </Card>
+
+        <Card>
+          <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+            <CardTitle className="text-sm font-medium">
+              Financing Cash Flow
+            </CardTitle>
+            <DollarSign className="h-4 w-4 text-purple-600" />
+          </CardHeader>
+          <CardContent>
+            <div
+              className={`text-2xl font-bold ${data.financingCashFlow >= 0 ? "text-green-600" : "text-red-600"}`}
+            >
+              {formatCurrency(data.financingCashFlow)}
+            </div>
+            <p className="text-xs text-muted-foreground">From financing</p>
+          </CardContent>
+        </Card>
+
+        <Card>
+          <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+            <CardTitle className="text-sm font-medium">Net Cash Flow</CardTitle>
+            <TrendingUp className="h-4 w-4 text-blue-600" />
+          </CardHeader>
+          <CardContent>
+            <div
+              className={`text-2xl font-bold ${data.netCashFlow >= 0 ? "text-green-600" : "text-red-600"}`}
+            >
+              {formatCurrency(data.netCashFlow)}
+            </div>
+            <p className="text-xs text-muted-foreground">Total change</p>
+          </CardContent>
+        </Card>
+      </div>
+
+      {/* Cash Flow Chart */}
+      <Card>
+        <CardHeader>
+          <CardTitle>Cash Flow Overview</CardTitle>
+          <CardDescription>Cash flow breakdown by category</CardDescription>
+        </CardHeader>
+        <CardContent>
+          <ResponsiveContainer width="100%" height={400}>
+            <BarChart
+              data={[
+                {
+                  category: "Operating",
+                  amount: data.operatingCashFlow,
+                  color: data.operatingCashFlow >= 0 ? "#10b981" : "#ef4444",
+                },
+                {
+                  category: "Investing",
+                  amount: data.investingCashFlow,
+                  color: data.investingCashFlow >= 0 ? "#10b981" : "#ef4444",
+                },
+                {
+                  category: "Financing",
+                  amount: data.financingCashFlow,
+                  color: data.financingCashFlow >= 0 ? "#10b981" : "#ef4444",
+                },
+                {
+                  category: "Net",
+                  amount: data.netCashFlow,
+                  color: data.netCashFlow >= 0 ? "#10b981" : "#ef4444",
+                },
+              ]}
+            >
+              <CartesianGrid strokeDasharray="3 3" />
+              <XAxis dataKey="category" />
+              <YAxis />
+              <Tooltip formatter={(value) => formatCurrency(Number(value))} />
+              <Bar dataKey="amount" fill="#8884d8" />
+            </BarChart>
+          </ResponsiveContainer>
+        </CardContent>
+      </Card>
+    </div>
+  );
+
+  return (
+    <div className="space-y-6">
+      <div className="flex items-center justify-between">
+        <div>
+          <h1 className="text-3xl font-bold">Financial Reports</h1>
+          <p className="text-muted-foreground">
+            Comprehensive financial analysis with integrated sales and purchase
+            data
+          </p>
+        </div>
+        <div className="flex items-center space-x-2">
+          <Button variant="outline" onClick={handleExport}>
+            <Download className="h-4 w-4 mr-2" />
+            Export
+          </Button>
+          <Button onClick={fetchData} disabled={loading}>
+            <RefreshCw
+              className={`h-4 w-4 mr-2 ${loading ? "animate-spin" : ""}`}
+            />
+            Refresh
+          </Button>
+        </div>
+      </div>
+
+      {/* Filters */}
+      <Card>
+        <CardHeader>
+          <CardTitle className="flex items-center gap-2">
+            <Filter className="h-5 w-5" />
+            Report Filters
+          </CardTitle>
+        </CardHeader>
+        <CardContent>
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
             <div className="space-y-2">
               <Label htmlFor="report-type">Report Type</Label>
-              <Select value={selectedReport} onValueChange={setSelectedReport}>
+              <Select value={reportType} onValueChange={setReportType}>
                 <SelectTrigger>
                   <SelectValue placeholder="Select report type" />
                 </SelectTrigger>
                 <SelectContent>
-                  {reportTypes.map((type) => (
-                    <SelectItem key={type.value} value={type.value}>
-                      <div className="flex items-center">
-                        <type.icon className="mr-2 h-4 w-4" />
-                        {type.label}
-                      </div>
-                    </SelectItem>
-                  ))}
+                  <SelectItem value="FINANCIAL_SUMMARY">
+                    Financial Summary
+                  </SelectItem>
+                  <SelectItem value="INCOME_REPORT">Income Report</SelectItem>
+                  <SelectItem value="EXPENSE_REPORT">Expense Report</SelectItem>
+                  <SelectItem value="CASH_FLOW">Cash Flow Report</SelectItem>
                 </SelectContent>
               </Select>
             </div>
@@ -416,23 +687,73 @@ export function FinanceReports({ user: _user }: FinanceReportsProps) {
                 onChange={(e) => setEndDate(e.target.value)}
               />
             </div>
-          </div>
 
-          <div className="flex space-x-4">
-            <Button onClick={generateReport}>
-              <Calendar className="mr-2 h-4 w-4" />
-              Generate Report
-            </Button>
-            <Button variant="outline" onClick={downloadReport}>
-              <Download className="mr-2 h-4 w-4" />
-              Download Report
-            </Button>
+            <div className="space-y-2">
+              <Label>Data Sources</Label>
+              <div className="flex flex-col space-y-2">
+                <div className="flex items-center space-x-2">
+                  <input
+                    type="checkbox"
+                    id="include-sales"
+                    checked={includeSales}
+                    onChange={(e) => setIncludeSales(e.target.checked)}
+                  />
+                  <Label htmlFor="include-sales" className="text-sm">
+                    Include Sales
+                  </Label>
+                </div>
+                <div className="flex items-center space-x-2">
+                  <input
+                    type="checkbox"
+                    id="include-purchases"
+                    checked={includePurchases}
+                    onChange={(e) => setIncludePurchases(e.target.checked)}
+                  />
+                  <Label htmlFor="include-purchases" className="text-sm">
+                    Include Purchases
+                  </Label>
+                </div>
+              </div>
+            </div>
           </div>
         </CardContent>
       </Card>
 
       {/* Report Content */}
-      <div className="space-y-6">{renderReportContent()}</div>
+      {loading && (
+        <Card>
+          <CardContent className="flex items-center justify-center py-12">
+            <div className="flex items-center space-x-2">
+              <RefreshCw className="h-6 w-6 animate-spin" />
+              <span>Loading report data...</span>
+            </div>
+          </CardContent>
+        </Card>
+      )}
+
+      {error && (
+        <Card>
+          <CardContent className="flex items-center justify-center py-12">
+            <div className="text-center">
+              <p className="text-red-600 mb-2">Error loading report</p>
+              <p className="text-sm text-muted-foreground">{error}</p>
+            </div>
+          </CardContent>
+        </Card>
+      )}
+
+      {data && !loading && (
+        <div>
+          {reportType === "FINANCIAL_SUMMARY" &&
+            renderFinancialSummary(data as FinancialData)}
+          {reportType === "INCOME_REPORT" &&
+            renderIncomeReport(data as IncomeData)}
+          {reportType === "EXPENSE_REPORT" &&
+            renderExpenseReport(data as ExpenseData)}
+          {reportType === "CASH_FLOW" &&
+            renderCashFlowReport(data as CashFlowData)}
+        </div>
+      )}
     </div>
   );
 }
