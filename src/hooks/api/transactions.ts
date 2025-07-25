@@ -212,8 +212,6 @@ export const getPaymentMethodLabel = (method: string): string => {
   switch (method) {
     case PAYMENT_METHODS.CASH:
       return "Cash";
-    case PAYMENT_METHODS.POS_MACHINE:
-      return "POS Machine";
     case PAYMENT_METHODS.BANK_TRANSFER:
       return "Bank Transfer";
     case PAYMENT_METHODS.MOBILE_MONEY:

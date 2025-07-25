@@ -49,12 +49,36 @@ type FormData = {
   amount: number;
   description: string;
   transactionDate: string;
-  paymentMethod: string;
+  paymentMethod:
+    | "CASH"
+    | "BANK_TRANSFER"
+    | "CARD"
+    | "MOBILE_MONEY"
+    | "CHECK"
+    | "OTHER";
   // Income specific fields
-  incomeSource?: string;
+  incomeSource?:
+    | "SALES"
+    | "LOAN"
+    | "SERVICES"
+    | "INVESTMENT"
+    | "RENTAL"
+    | "COMMISSION"
+    | "REFUND"
+    | "OTHER";
   payerName?: string;
   // Expense specific fields
-  expenseType?: string;
+  expenseType?:
+    | "SUPPLIES"
+    | "RENT"
+    | "UTILITIES"
+    | "SALARY"
+    | "MARKETING"
+    | "TRAVEL"
+    | "MAINTENANCE"
+    | "INSURANCE"
+    | "TAXES"
+    | "OTHER";
   vendorName?: string;
 };
 
@@ -80,10 +104,10 @@ export function EditTransactionForm({
       amount: 0,
       description: "",
       transactionDate: new Date().toISOString().split("T")[0],
-      paymentMethod: "",
-      incomeSource: "",
+      paymentMethod: "CASH",
+      incomeSource: "SALES",
       payerName: "",
-      expenseType: "",
+      expenseType: "SUPPLIES",
       vendorName: "",
     },
   });
@@ -99,12 +123,12 @@ export function EditTransactionForm({
         transactionDate: transaction.transactionDate
           .toISOString()
           .split("T")[0],
-        paymentMethod: transaction.paymentMethod || "",
+        paymentMethod: (transaction.paymentMethod as any) || "CASH",
         // Income specific fields
-        incomeSource: (transaction as any).incomeSource || "",
+        incomeSource: (transaction as any).incomeSource || "SALES",
         payerName: (transaction as any).payerName || "",
         // Expense specific fields
-        expenseType: (transaction as any).expenseType || "",
+        expenseType: (transaction as any).expenseType || "SUPPLIES",
         vendorName: (transaction as any).vendorName || "",
       });
     }
