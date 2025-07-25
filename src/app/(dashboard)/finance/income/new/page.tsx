@@ -1,7 +1,7 @@
 import { auth } from "#root/auth";
 import { Metadata } from "next";
 import { redirect } from "next/navigation";
-import { AddIncomeForm } from "@/components/finance/AddIncomeForm";
+import AddIncomeForm from "@/components/finance/AddIncomeForm";
 
 export const metadata: Metadata = {
   title: "Add Income - BaaWA Inventory",
