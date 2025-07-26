@@ -2,6 +2,7 @@ import { useQuery } from "@tanstack/react-query";
 
 interface IncomeData {
   id: number;
+  type: "INCOME" | "EXPENSE";
   amount: number;
   description: string | null;
   transactionDate: Date;

@@ -12,11 +12,12 @@ The `generate-complete-test-data.js` script creates realistic test data for:
 - **Brands** with descriptions
 - **Products** with variants, pricing, and inventory
 - **Sales Transactions** and **Sales Items**
-
 - **Stock Additions**, **Adjustments**, and **Reconciliations**
+- **Financial Transactions** (Income and Expenses)
+- **Financial Reports** with detailed analytics
 - **Audit Logs** for tracking changes
 - **AI Content** for product descriptions
-- **Webflow Sync** records
+- **Content Sync** records
 - **Rate Limits** and **Session Blacklist**
 
 ## Prerequisites
@@ -76,9 +77,11 @@ The script creates the following test data:
 | Stock Adjustments | 40 | Inventory adjustments |
 | Stock Reconciliations | 20 | Monthly reconciliations |
 | Reconciliation Items | ~400 | Individual items in reconciliations |
+| Financial Transactions | 55 | Income and expense transactions |
+| Financial Reports | 15 | Financial analysis reports |
 | Audit Logs | 200 | System activity logs |
 | AI Content | 30 | AI-generated product content |
-| Webflow Sync | 20 | E-commerce sync records |
+| Content Sync | 20 | E-commerce sync records |
 | Rate Limits | 4 | API rate limiting records |
 | Session Blacklist | 10 | Blacklisted sessions |
 
@@ -89,7 +92,8 @@ The script maintains proper relationships between tables:
 - Products are linked to Categories, Brands, and Suppliers
 - Sales Items reference Products and Product Variants
 - Stock operations are linked to Users and Products
-
+- Financial Transactions are linked to Users (creators and approvers)
+- Financial Reports are linked to Users (generators)
 - All audit trails maintain proper user references
 
 ## Customization

@@ -159,8 +159,10 @@ export function useTransaction(id: number) {
 }
 
 export function useTransactionStats(dateFrom?: string, dateTo?: string) {
+  const dateRange = dateFrom && dateTo ? `${dateFrom}-${dateTo}` : undefined;
+
   return useQuery({
-    queryKey: queryKeys.transactions.stats({ dateFrom, dateTo }),
+    queryKey: queryKeys.transactions.stats(dateRange),
     queryFn: () => fetchTransactionStats(dateFrom, dateTo),
     staleTime: 5 * 60 * 1000, // 5 minutes
   });
