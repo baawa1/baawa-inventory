@@ -7,7 +7,6 @@ import { usePathname } from "next/navigation";
 import {
   IconCash,
   IconTrendingUp,
-  IconTrendingDown,
   IconChartBar,
   IconReceipt,
   IconTarget,
@@ -46,38 +45,23 @@ const financeNavItems = [
         url: "/finance/transactions",
       },
       {
-        title: "Income Transactions",
+        title: "Income",
         url: "/finance/income",
       },
       {
-        title: "Expense Transactions",
+        title: "Expenses",
         url: "/finance/expenses",
       },
     ],
   },
   {
-    title: "Income",
-    url: "/finance/income",
+    title: "Add New",
+    url: "/finance/income/new",
     icon: IconTrendingUp,
     items: [
       {
-        title: "All Income",
-        url: "/finance/income",
-      },
-      {
         title: "Add Income",
         url: "/finance/income/new",
-      },
-    ],
-  },
-  {
-    title: "Expenses",
-    url: "/finance/expenses",
-    icon: IconTrendingDown,
-    items: [
-      {
-        title: "All Expenses",
-        url: "/finance/expenses",
       },
       {
         title: "Add Expense",
