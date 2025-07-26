@@ -67,7 +67,12 @@ export const useFinancialTransactions = (filters: TransactionFilters = {}) => {
         throw new Error("Failed to fetch financial transactions");
       }
       const data = await response.json();
-      return data.data || { transactions: [], total: 0, page: 1, limit: 10 };
+      return {
+        transactions: data.data || [],
+        total: data.pagination?.total || 0,
+        page: data.pagination?.page || 1,
+        limit: data.pagination?.limit || 10,
+      };
     },
     staleTime: 2 * 60 * 1000, // 2 minutes
   });

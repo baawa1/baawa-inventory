@@ -9,6 +9,8 @@ import {
   IconTrendingUp,
   IconTrendingDown,
   IconChartBar,
+  IconReceipt,
+  IconTarget,
 } from "@tabler/icons-react";
 
 import {
@@ -33,6 +35,25 @@ const financeNavItems = [
     url: "/finance",
     icon: IconCash,
     items: [],
+  },
+  {
+    title: "Transactions",
+    url: "/finance/transactions",
+    icon: IconReceipt,
+    items: [
+      {
+        title: "All Transactions",
+        url: "/finance/transactions",
+      },
+      {
+        title: "Income Transactions",
+        url: "/finance/income",
+      },
+      {
+        title: "Expense Transactions",
+        url: "/finance/expenses",
+      },
+    ],
   },
   {
     title: "Income",
@@ -84,6 +105,21 @@ const financeNavItems = [
       {
         title: "Cash Flow",
         url: "/finance/reports/cash-flow",
+      },
+    ],
+  },
+  {
+    title: "Budget Management",
+    url: "/finance/budget",
+    icon: IconTarget,
+    items: [
+      {
+        title: "Budget Overview",
+        url: "/finance/budget",
+      },
+      {
+        title: "Set Budget",
+        url: "/finance/budget/new",
       },
     ],
   },

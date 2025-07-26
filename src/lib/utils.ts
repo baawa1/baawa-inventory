@@ -1,5 +1,6 @@
 import { clsx, type ClassValue } from "clsx";
 import { twMerge } from "tailwind-merge";
+import { prisma } from "@/lib/db";
 
 export function cn(...inputs: ClassValue[]) {
   return twMerge(clsx(inputs));
@@ -97,4 +98,39 @@ export function formatRelativeTime(date: string | Date | number): string {
   } else {
     return formatDate(date, { includeTime: false });
   }
+}
+
+/**
+ * Generate a unique transaction number
+ * Format: FIN-YYYYMMDD-XXXX (e.g., FIN-20241201-0001)
+ */
+export async function generateTransactionNumber(): Promise<string> {
+  const today = new Date();
+  const dateString = today.toISOString().slice(0, 10).replace(/-/g, "");
+  const prefix = `FIN-${dateString}`;
+
+  // Get the count of transactions for today
+  const startOfDay = new Date(
+    today.getFullYear(),
+    today.getMonth(),
+    today.getDate()
+  );
+  const endOfDay = new Date(
+    today.getFullYear(),
+    today.getMonth(),
+    today.getDate() + 1
+  );
+
+  const count = await prisma.financialTransaction.count({
+    where: {
+      createdAt: {
+        gte: startOfDay,
+        lt: endOfDay,
+      },
+    },
+  });
+
+  // Format the sequence number with leading zeros
+  const sequence = (count + 1).toString().padStart(4, "0");
+  return `${prefix}-${sequence}`;
 }

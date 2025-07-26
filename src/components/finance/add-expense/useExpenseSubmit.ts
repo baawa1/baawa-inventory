@@ -4,17 +4,17 @@ import { UseFormReturn } from "react-hook-form";
 import { useRouter } from "next/navigation";
 import { toast } from "sonner";
 import { useCreateFinancialTransaction } from "@/hooks/api/finance";
-import type { CreateIncomeData } from "./types";
+import type { CreateExpenseData } from "./types";
 
-export function useIncomeSubmit(
-  form: UseFormReturn<CreateIncomeData>,
+export function useExpenseSubmit(
+  form: UseFormReturn<CreateExpenseData>,
   setIsSubmitting: (_value: boolean) => void,
   setSubmitError: (_error: string | null) => void
 ) {
   const router = useRouter();
   const createTransaction = useCreateFinancialTransaction();
 
-  const onSubmit = async (data: CreateIncomeData) => {
+  const onSubmit = async (data: CreateExpenseData) => {
     setIsSubmitting(true);
     setSubmitError(null);
 
@@ -24,25 +24,25 @@ export function useIncomeSubmit(
         ...data,
         amount: parseFloat(data.amount.toString()),
         description: data.description?.trim() || "",
-        ...(data.type === "INCOME" && {
-          payerName: data.payerName?.trim() || undefined,
+        ...(data.type === "EXPENSE" && {
+          vendorName: data.vendorName?.trim() || undefined,
         }),
       };
 
       const _result = await createTransaction.mutateAsync(cleanedData);
 
       // Show success notification
-      toast.success("Income transaction created successfully!");
+      toast.success("Expense transaction created successfully!");
 
-      // Redirect to income list
-      router.push("/finance/income");
+      // Redirect to expense list
+      router.push("/finance/expenses");
     } catch (error) {
-      console.error("Income form submission failed:", error);
+      console.error("Expense form submission failed:", error);
 
       setSubmitError(
         error instanceof Error
           ? error.message
-          : "Failed to create income transaction"
+          : "Failed to create expense transaction"
       );
     } finally {
       setIsSubmitting(false);

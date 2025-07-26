@@ -17,7 +17,6 @@ import {
   IconRefresh,
   IconTrendingUp,
   IconPlus,
-  IconDots,
   IconEdit,
 } from "@tabler/icons-react";
 import { format } from "date-fns";
@@ -29,17 +28,16 @@ import type { DashboardTableColumn } from "@/components/layouts/DashboardColumnC
 import type { FilterConfig } from "@/components/layouts/DashboardFiltersBar";
 import { AppUser } from "@/types/user";
 import Link from "next/link";
+import { canReadFinance, canWriteFinance } from "@/lib/auth/roles";
 
 interface FinancialTransaction {
   id: number;
   transactionNumber: string;
   type: "INCOME" | "EXPENSE";
   amount: number;
-  currency: string;
   description: string | null;
   transactionDate: Date;
   paymentMethod: string | null;
-  referenceNumber: string | null;
   status: "PENDING" | "COMPLETED" | "CANCELLED" | "APPROVED" | "REJECTED";
   approvedBy: number | null;
   approvedAt: Date | null;
@@ -50,21 +48,11 @@ interface FinancialTransaction {
     id: number;
     expenseType: string;
     vendorName: string | null;
-    vendorContact: string | null;
-    taxAmount: number;
-    taxRate: number;
-    receiptUrl: string | null;
-    notes: string | null;
   };
   incomeDetails?: {
     id: number;
     incomeSource: string;
     payerName: string | null;
-    payerContact: string | null;
-    taxWithheld: number;
-    taxRate: number;
-    receiptUrl: string | null;
-    notes: string | null;
   };
   createdByUser: {
     id: number;
@@ -84,7 +72,7 @@ interface IncomeListProps {
   user: AppUser;
 }
 
-export function IncomeList({ user: _ }: IncomeListProps) {
+export function IncomeList({ user }: IncomeListProps) {
   const [selectedTransaction, setSelectedTransaction] =
     useState<FinancialTransaction | null>(null);
 
@@ -147,8 +135,8 @@ export function IncomeList({ user: _ }: IncomeListProps) {
   });
 
   // Extract transactions array from API response
-  const transactions = transactionData?.data?.transactions || [];
-  const apiPagination = transactionData?.data?.pagination;
+  const transactions = transactionData?.data || [];
+  const apiPagination = transactionData?.pagination;
 
   // Update pagination state from API response
   const currentPagination = {
@@ -399,9 +387,15 @@ export function IncomeList({ user: _ }: IncomeListProps) {
     [getStatusBadge, getPaymentIcon]
   );
 
+  // Check permissions
+  const canRead = canReadFinance(user.role);
+  const canWrite = canWriteFinance(user.role);
+
   // Render actions function
   const renderActions = useCallback(
     (transaction: FinancialTransaction) => {
+      if (!canRead) return null;
+
       return (
         <div className="flex items-center gap-2">
           {/* View Details Button */}
@@ -428,22 +422,17 @@ export function IncomeList({ user: _ }: IncomeListProps) {
           </Dialog>
 
           {/* Edit Button */}
-          <Button asChild variant="ghost" size="sm">
-            <Link href={`/finance/income/${transaction.id}/edit`}>
-              <IconEdit className="h-4 w-4" />
-            </Link>
-          </Button>
-
-          {/* Actions Dropdown */}
-          <div className="relative">
-            <Button variant="ghost" size="sm">
-              <IconDots className="h-4 w-4" />
+          {canWrite && (
+            <Button asChild variant="ghost" size="sm">
+              <Link href={`/finance/income/${transaction.id}/edit`}>
+                <IconEdit className="h-4 w-4" />
+              </Link>
             </Button>
-          </div>
+          )}
         </div>
       );
     },
-    [selectedTransaction]
+    [selectedTransaction, canRead, canWrite]
   );
 
   return (
@@ -458,12 +447,14 @@ export function IncomeList({ user: _ }: IncomeListProps) {
               <IconRefresh className="h-4 w-4 mr-2" />
               Refresh
             </Button>
-            <Button asChild>
-              <Link href="/finance/income/new">
-                <IconPlus className="h-4 w-4 mr-2" />
-                Add Income
-              </Link>
-            </Button>
+            {canWrite && (
+              <Button asChild>
+                <Link href="/finance/income/new">
+                  <IconPlus className="h-4 w-4 mr-2" />
+                  Add Income
+                </Link>
+              </Button>
+            )}
           </div>
         }
         // Filters
@@ -563,12 +554,6 @@ function TransactionDetailsContent({
                 {transaction.paymentMethod?.replace("_", " ") || "N/A"}
               </span>
             </div>
-            {transaction.referenceNumber && (
-              <div className="flex justify-between">
-                <span className="text-muted-foreground">Reference:</span>
-                <span className="font-mono">{transaction.referenceNumber}</span>
-              </div>
-            )}
           </div>
         </div>
       </div>
@@ -590,18 +575,6 @@ function TransactionDetailsContent({
               <div className="flex justify-between">
                 <span className="text-muted-foreground">Payer:</span>
                 <span>{transaction.incomeDetails.payerName}</span>
-              </div>
-            )}
-            {transaction.incomeDetails.payerContact && (
-              <div className="flex justify-between">
-                <span className="text-muted-foreground">Contact:</span>
-                <span>{transaction.incomeDetails.payerContact}</span>
-              </div>
-            )}
-            {transaction.incomeDetails.notes && (
-              <div className="flex justify-between">
-                <span className="text-muted-foreground">Notes:</span>
-                <span>{transaction.incomeDetails.notes}</span>
               </div>
             )}
           </div>

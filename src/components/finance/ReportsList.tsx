@@ -1,7 +1,7 @@
 "use client";
 
 import React, { useState } from "react";
-import { useFinancialReports, useGenerateReport } from "@/hooks/api/finance";
+// TODO: Implement financial reports hooks
 import { AppUser } from "@/types/user";
 
 // UI Components
@@ -62,8 +62,14 @@ export function ReportsList({ user: _user }: ReportsListProps) {
   const [startDate, setStartDate] = useState("");
   const [endDate, setEndDate] = useState("");
 
-  const { data: reports, isLoading, error } = useFinancialReports();
-  const generateReport = useGenerateReport();
+  // TODO: Implement financial reports hooks
+  const reports: any[] = [];
+  const isLoading = false;
+  const error = null;
+  const generateReport = {
+    mutateAsync: async () => {},
+    isPending: false,
+  };
 
   const handleGenerateReport = async () => {
     if (!startDate || !endDate) {
@@ -72,12 +78,7 @@ export function ReportsList({ user: _user }: ReportsListProps) {
     }
 
     try {
-      await generateReport.mutateAsync({
-        reportType: reportType as any,
-        periodStart: startDate,
-        periodEnd: endDate,
-        includeDetails: true,
-      });
+      await generateReport.mutateAsync();
       setIsGenerateDialogOpen(false);
     } catch (error) {
       console.error("Error generating report:", error);

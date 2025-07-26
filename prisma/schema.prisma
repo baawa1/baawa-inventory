@@ -462,7 +462,7 @@ model FinancialTransaction {
   amount            Decimal         @db.Decimal(15, 2)
   description       String?
   transactionDate   DateTime        @map("transaction_date") @db.Date
-  paymentMethod     String?         @map("payment_method") @db.VarChar(50)
+  paymentMethod     PaymentMethod?
   status            FinancialStatus @default(COMPLETED)
   approvedBy        Int?            @map("approved_by")
   approvedAt        DateTime?       @map("approved_at") @db.Timestamptz(6)
@@ -484,7 +484,7 @@ model FinancialTransaction {
 model ExpenseDetail {
   id            Int                  @id @default(autoincrement())
   transactionId Int                  @unique @map("transaction_id")
-  expenseType   String               @map("expense_type") @db.VarChar(50)
+  expenseType   ExpenseType
   vendorName    String?              @map("vendor_name") @db.VarChar(255)
   createdAt     DateTime             @default(now()) @map("created_at") @db.Timestamptz(6)
   transaction   FinancialTransaction @relation(fields: [transactionId], references: [id], onDelete: Cascade)
@@ -495,7 +495,7 @@ model ExpenseDetail {
 model IncomeDetail {
   id            Int                  @id @default(autoincrement())
   transactionId Int                  @unique @map("transaction_id")
-  incomeSource  String               @map("income_source") @db.VarChar(100)
+  incomeSource  IncomeSource
   payerName     String?              @map("payer_name") @db.VarChar(255)
   createdAt     DateTime             @default(now()) @map("created_at") @db.Timestamptz(6)
   transaction   FinancialTransaction @relation(fields: [transactionId], references: [id], onDelete: Cascade)
@@ -553,4 +553,34 @@ enum FinancialStatus {
   CANCELLED
   APPROVED
   REJECTED
+}
+
+enum PaymentMethod {
+  CASH
+  BANK_TRANSFER
+  POS_MACHINE
+  CREDIT_CARD
+  MOBILE_MONEY
+}
+
+enum ExpenseType {
+  INVENTORY_PURCHASES
+  UTILITIES
+  RENT
+  SALARIES
+  MARKETING
+  OFFICE_SUPPLIES
+  TRAVEL
+  INSURANCE
+  MAINTENANCE
+  OTHER
+}
+
+enum IncomeSource {
+  SALES
+  SERVICES
+  INVESTMENTS
+  ROYALTIES
+  COMMISSIONS
+  OTHER
 }

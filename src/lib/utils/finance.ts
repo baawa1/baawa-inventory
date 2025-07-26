@@ -2,34 +2,37 @@ import { prisma } from "@/lib/db";
 
 /**
  * Generate a unique transaction number
- * Format: FIN-YYYYMMDD-XXXX
+ * Format: FIN-YYYYMMDD-XXXX (e.g., FIN-20241201-0001)
  */
 export async function generateTransactionNumber(): Promise<string> {
-  const date = new Date();
-  const year = date.getFullYear();
-  const month = String(date.getMonth() + 1).padStart(2, "0");
-  const day = String(date.getDate()).padStart(2, "0");
+  const today = new Date();
+  const dateString = today.toISOString().slice(0, 10).replace(/-/g, "");
+  const prefix = `FIN-${dateString}`;
 
-  const prefix = `FIN-${year}${month}${day}`;
+  // Get the count of transactions for today
+  const startOfDay = new Date(
+    today.getFullYear(),
+    today.getMonth(),
+    today.getDate()
+  );
+  const endOfDay = new Date(
+    today.getFullYear(),
+    today.getMonth(),
+    today.getDate() + 1
+  );
 
-  const lastTransaction = await prisma.financialTransaction.findFirst({
+  const count = await prisma.financialTransaction.count({
     where: {
-      transactionNumber: {
-        startsWith: prefix,
+      createdAt: {
+        gte: startOfDay,
+        lt: endOfDay,
       },
-    },
-    orderBy: {
-      transactionNumber: "desc",
     },
   });
 
-  let sequence = 1;
-  if (lastTransaction) {
-    const lastSequence = parseInt(lastTransaction.transactionNumber.slice(-4));
-    sequence = lastSequence + 1;
-  }
-
-  return `${prefix}-${String(sequence).padStart(4, "0")}`;
+  // Format the sequence number with leading zeros
+  const sequence = (count + 1).toString().padStart(4, "0");
+  return `${prefix}-${sequence}`;
 }
 
 /**
@@ -50,16 +53,21 @@ export function calculateTaxAmount(amount: number, taxRate: number): number {
 }
 
 /**
- * Format currency with Nigerian Naira
+ * Format currency amount for display
  */
 export function formatCurrency(
-  amount: number,
-  currency: string = "NGN"
+  amount: number | string | null | undefined
 ): string {
+  if (amount === null || amount === undefined) return "₦0.00";
+
+  const numAmount = typeof amount === "string" ? parseFloat(amount) : amount;
+  if (isNaN(numAmount)) return "₦0.00";
+
   return new Intl.NumberFormat("en-NG", {
     style: "currency",
-    currency: currency,
-  }).format(amount);
+    currency: "NGN",
+    minimumFractionDigits: 2,
+  }).format(numAmount);
 }
 
 /**
@@ -149,7 +157,7 @@ export function validateTransactionAmount(amount: number): boolean {
  */
 export function sanitizeFileUrl(url: string | null | undefined): string | null {
   if (!url || url.trim() === "") return null;
-  
+
   try {
     new URL(url);
     return url;
@@ -168,7 +176,7 @@ export function generateReportDataStructure(
   periodEnd: Date
 ) {
   const summary = getFinancialSummary(transactions);
-  
+
   return {
     reportType,
     period: {
@@ -176,7 +184,7 @@ export function generateReportDataStructure(
       end: periodEnd.toISOString(),
     },
     summary,
-    transactions: transactions.map(t => ({
+    transactions: transactions.map((t) => ({
       id: t.id,
       date: t.transactionDate,
       type: t.type,
@@ -214,4 +222,123 @@ export function getBudgetStatus(utilizationPercentage: number): {
   } else {
     return { status: "over-budget", color: "red" };
   }
+}
+
+/**
+ * Get status badge variant for financial transactions
+ */
+export function getStatusBadgeVariant(
+  status: string
+): "default" | "secondary" | "destructive" | "outline" {
+  switch (status) {
+    case "COMPLETED":
+    case "APPROVED":
+      return "default";
+    case "PENDING":
+      return "secondary";
+    case "REJECTED":
+    case "CANCELLED":
+      return "destructive";
+    default:
+      return "outline";
+  }
+}
+
+/**
+ * Get type badge variant for financial transactions
+ */
+export function getTypeBadgeVariant(
+  type: string
+): "default" | "secondary" | "destructive" | "outline" {
+  switch (type) {
+    case "INCOME":
+      return "default";
+    case "EXPENSE":
+      return "destructive";
+    default:
+      return "outline";
+  }
+}
+
+/**
+ * Export financial data to CSV format
+ */
+export function exportToCSV(data: any[], filename: string): void {
+  if (!data || data.length === 0) {
+    console.warn("No data to export");
+    return;
+  }
+
+  // Get headers from first object
+  const headers = Object.keys(data[0]);
+
+  // Create CSV content
+  const csvContent = [
+    headers.join(","),
+    ...data.map((row) =>
+      headers
+        .map((header) => {
+          const value = row[header];
+          // Handle values that need quotes (contain commas, quotes, or newlines)
+          if (
+            typeof value === "string" &&
+            (value.includes(",") || value.includes('"') || value.includes("\n"))
+          ) {
+            return `"${value.replace(/"/g, '""')}"`;
+          }
+          return value;
+        })
+        .join(",")
+    ),
+  ].join("\n");
+
+  // Create and download file
+  const blob = new Blob([csvContent], { type: "text/csv;charset=utf-8;" });
+  const link = document.createElement("a");
+  const url = URL.createObjectURL(blob);
+  link.setAttribute("href", url);
+  link.setAttribute("download", `${filename}.csv`);
+  link.style.visibility = "hidden";
+  document.body.appendChild(link);
+  link.click();
+  document.body.removeChild(link);
+}
+
+/**
+ * Export financial data to JSON format
+ */
+export function exportToJSON(data: any, filename: string): void {
+  const jsonContent = JSON.stringify(data, null, 2);
+  const blob = new Blob([jsonContent], {
+    type: "application/json;charset=utf-8;",
+  });
+  const link = document.createElement("a");
+  const url = URL.createObjectURL(blob);
+  link.setAttribute("href", url);
+  link.setAttribute("download", `${filename}.json`);
+  link.style.visibility = "hidden";
+  document.body.appendChild(link);
+  link.click();
+  document.body.removeChild(link);
+}
+
+/**
+ * Format date for export filenames
+ */
+export function formatDateForExport(date: Date = new Date()): string {
+  return date.toISOString().slice(0, 10).replace(/-/g, "");
+}
+
+/**
+ * Generate export filename with date
+ */
+export function generateExportFilename(
+  baseName: string,
+  reportType?: string
+): string {
+  const date = formatDateForExport();
+  const type = reportType
+    ? `-${reportType.toLowerCase().replace(/\s+/g, "-")}`
+    : "";
+  return `${baseName}${type}-${date}`;
 }

@@ -213,13 +213,10 @@ export function TransactionDetail({
               <div className="text-sm">{formatDate(transaction.updatedAt)}</div>
             </div>
 
-            {transaction.createdByUser && (
+            {transaction.createdByName && (
               <div className="space-y-2">
                 <div className="text-sm text-muted-foreground">Created By</div>
-                <div className="text-sm">
-                  {transaction.createdByUser.firstName}{" "}
-                  {transaction.createdByUser.lastName}
-                </div>
+                <div className="text-sm">{transaction.createdByName}</div>
               </div>
             )}
           </div>

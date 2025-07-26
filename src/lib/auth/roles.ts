@@ -66,6 +66,12 @@ export const ROLE_PERMISSIONS = {
   // Settings permissions
   SETTINGS_ACCESS: [USER_ROLES.ADMIN, USER_ROLES.MANAGER],
   SETTINGS_ADVANCED: [USER_ROLES.ADMIN],
+
+  // Finance permissions
+  FINANCE_READ: [USER_ROLES.ADMIN, USER_ROLES.MANAGER, USER_ROLES.STAFF],
+  FINANCE_WRITE: [USER_ROLES.ADMIN, USER_ROLES.MANAGER],
+  FINANCE_APPROVE: [USER_ROLES.ADMIN, USER_ROLES.MANAGER],
+  FINANCE_DELETE: [USER_ROLES.ADMIN],
 };
 
 /**
@@ -175,6 +181,42 @@ export const canViewLowStock = (
   userRole: string | undefined | null
 ): boolean => {
   return hasPermission(userRole, "INVENTORY_LOW_STOCK");
+};
+
+/**
+ * Check if a user can read finance data
+ */
+export const canReadFinance = (
+  userRole: string | undefined | null
+): boolean => {
+  return hasPermission(userRole, "FINANCE_READ");
+};
+
+/**
+ * Check if a user can write finance data
+ */
+export const canWriteFinance = (
+  userRole: string | undefined | null
+): boolean => {
+  return hasPermission(userRole, "FINANCE_WRITE");
+};
+
+/**
+ * Check if a user can approve finance transactions
+ */
+export const canApproveFinance = (
+  userRole: string | undefined | null
+): boolean => {
+  return hasPermission(userRole, "FINANCE_APPROVE");
+};
+
+/**
+ * Check if a user can delete finance transactions
+ */
+export const canDeleteFinance = (
+  userRole: string | undefined | null
+): boolean => {
+  return hasPermission(userRole, "FINANCE_DELETE");
 };
 
 /**

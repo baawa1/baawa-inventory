@@ -6,7 +6,7 @@ import { useForm } from "react-hook-form";
 import { toast } from "sonner";
 import {
   useFinancialTransaction,
-  useUpdateTransaction,
+  useUpdateFinancialTransaction,
 } from "@/hooks/api/finance";
 import { AppUser } from "@/types/user";
 import { Button } from "@/components/ui/button";
@@ -95,7 +95,7 @@ export function EditTransactionForm({
     isLoading,
     error,
   } = useFinancialTransaction(transactionId);
-  const updateTransaction = useUpdateTransaction();
+  const updateTransaction = useUpdateFinancialTransaction();
 
   const form = useForm<FormData>({
     defaultValues: {
@@ -120,7 +120,7 @@ export function EditTransactionForm({
         type: transaction.type,
         amount: transaction.amount,
         description: transaction.description || "",
-        transactionDate: transaction.transactionDate
+        transactionDate: new Date(transaction.transactionDate)
           .toISOString()
           .split("T")[0],
         paymentMethod: (transaction.paymentMethod as any) || "CASH",
@@ -139,7 +139,7 @@ export function EditTransactionForm({
     setSubmitError(null);
 
     try {
-      await updateTransaction.mutateAsync(data);
+      await updateTransaction.mutateAsync({ id: transactionId, data });
       toast.success("Transaction updated successfully");
       router.push(`/finance/transactions/${transactionId}`);
     } catch (error) {
