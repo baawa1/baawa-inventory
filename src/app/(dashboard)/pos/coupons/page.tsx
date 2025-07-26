@@ -1,11 +1,12 @@
-import { auth } from "../../../../../auth";
 import { redirect } from "next/navigation";
-import { CouponsManagement } from "@/components/pos/CouponsManagement";
+import { auth } from "../../../../../auth";
+import { CouponList } from "@/components/pos/CouponList";
 import { DashboardPageLayout } from "@/components/layouts/DashboardPageLayout";
+import { ALL_ROLES, UserRole } from "@/lib/auth/roles";
 
 export const metadata = {
-  title: "Coupons Management - BaaWA Inventory POS",
-  description: "Create and manage discount coupons and promotional codes",
+  title: "Coupons - BaaWA Inventory POS",
+  description: "Manage discount coupons and promotional codes",
 };
 
 export default async function CouponsPage() {
@@ -15,16 +16,21 @@ export default async function CouponsPage() {
     redirect("/login");
   }
 
+  // Check role permissions - all authenticated users can access coupons
+  if (!ALL_ROLES.includes(session.user.role as UserRole)) {
+    redirect("/unauthorized");
+  }
+
   if (session.user.status !== "APPROVED") {
     redirect("/pending-approval");
   }
 
   return (
     <DashboardPageLayout
-      title="Coupons Management"
-      description="Create and manage discount coupons and promotional codes"
+      title="Coupons"
+      description="Manage discount coupons and promotional codes"
     >
-      <CouponsManagement user={session.user} />
+      <CouponList user={session.user} />
     </DashboardPageLayout>
   );
 }

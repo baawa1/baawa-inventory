@@ -6,6 +6,7 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
+import { DateRangePicker } from "@/components/ui/date-range-picker";
 import {
   Table,
   TableBody,
@@ -32,6 +33,7 @@ import {
 } from "@tabler/icons-react";
 import { formatCurrency } from "@/lib/utils";
 import { toast } from "sonner";
+import { DateRange } from "react-day-picker";
 
 interface ProductPerformance {
   id: number;
@@ -56,17 +58,23 @@ interface ProductAnalyticsProps {
 }
 
 async function fetchProductPerformance(
-  period: string,
+  dateRange: DateRange | undefined,
   search: string,
   category: string,
   sortBy: string
 ): Promise<ProductPerformance[]> {
   const params = new URLSearchParams({
-    period,
     search,
     category,
     sortBy,
   });
+
+  if (dateRange?.from) {
+    params.append("fromDate", dateRange.from.toISOString().split("T")[0]);
+  }
+  if (dateRange?.to) {
+    params.append("toDate", dateRange.to.toISOString().split("T")[0]);
+  }
 
   const response = await fetch(`/api/pos/analytics/products?${params}`);
   if (!response.ok) {
@@ -84,7 +92,10 @@ async function fetchCategories(): Promise<{ id: number; name: string }[]> {
 }
 
 export function ProductAnalytics({ user: _ }: ProductAnalyticsProps) {
-  const [selectedPeriod, setSelectedPeriod] = useState("30d");
+  const [dateRange, setDateRange] = useState<DateRange | undefined>({
+    from: new Date(new Date().getTime() - 30 * 24 * 60 * 60 * 1000), // 30 days ago
+    to: new Date(), // Today
+  });
   const [searchTerm, setSearchTerm] = useState("");
   const [selectedCategory, setSelectedCategory] = useState("all");
   const [sortBy, setSortBy] = useState("revenue");
@@ -96,18 +107,15 @@ export function ProductAnalytics({ user: _ }: ProductAnalyticsProps) {
   } = useQuery({
     queryKey: [
       "product-performance",
-      selectedPeriod,
+      dateRange?.from,
+      dateRange?.to,
       searchTerm,
       selectedCategory,
       sortBy,
     ],
     queryFn: () =>
-      fetchProductPerformance(
-        selectedPeriod,
-        searchTerm,
-        selectedCategory,
-        sortBy
-      ),
+      fetchProductPerformance(dateRange, searchTerm, selectedCategory, sortBy),
+    enabled: !!dateRange?.from && !!dateRange?.to,
   });
 
   const { data: categories = [] } = useQuery({
@@ -118,13 +126,6 @@ export function ProductAnalytics({ user: _ }: ProductAnalyticsProps) {
   if (error) {
     toast.error("Failed to load product performance data");
   }
-
-  const periods = [
-    { value: "7d", label: "Last 7 Days" },
-    { value: "30d", label: "Last 30 Days" },
-    { value: "90d", label: "Last 90 Days" },
-    { value: "1y", label: "Last Year" },
-  ];
 
   const sortOptions = [
     { value: "revenue", label: "Revenue" },
@@ -253,18 +254,12 @@ export function ProductAnalytics({ user: _ }: ProductAnalyticsProps) {
               </SelectContent>
             </Select>
 
-            <Select value={selectedPeriod} onValueChange={setSelectedPeriod}>
-              <SelectTrigger>
-                <SelectValue placeholder="Select period" />
-              </SelectTrigger>
-              <SelectContent>
-                {periods.map((period) => (
-                  <SelectItem key={period.value} value={period.value}>
-                    {period.label}
-                  </SelectItem>
-                ))}
-              </SelectContent>
-            </Select>
+            <DateRangePicker
+              date={dateRange}
+              onDateChange={setDateRange}
+              placeholder="Select date range"
+              className="w-[300px]"
+            />
 
             <Select value={sortBy} onValueChange={setSortBy}>
               <SelectTrigger>

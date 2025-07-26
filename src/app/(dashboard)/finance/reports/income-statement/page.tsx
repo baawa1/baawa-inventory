@@ -1,6 +1,7 @@
 import { redirect } from "next/navigation";
 import { auth } from "#root/auth";
 import { USER_ROLES, hasRole } from "@/lib/auth/roles";
+import { IncomeStatementReport } from "@/components/finance/IncomeStatementReport";
 
 export const metadata = {
   title: "Income Statement - BaaWA Inventory POS",
@@ -18,12 +19,5 @@ export default async function IncomeStatementPage() {
     redirect("/unauthorized");
   }
 
-  return (
-    <div className="container mx-auto p-6">
-      <h1 className="text-2xl font-bold mb-4">Income Statement</h1>
-      <p className="text-muted-foreground">
-        Income statement report is currently under development.
-      </p>
-    </div>
-  );
+  return <IncomeStatementReport user={session.user} />;
 }

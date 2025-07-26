@@ -43,7 +43,20 @@ export const GET = withAuth(async (request: AuthenticatedRequest) => {
   try {
     const { searchParams } = new URL(request.url);
     const period = searchParams.get("period") || "30d";
-    const periodStart = getPeriodFilter(period);
+    const fromDate = searchParams.get("fromDate");
+    const toDate = searchParams.get("toDate");
+
+    // Use custom date range if provided, otherwise use period
+    let periodStart: Date;
+    let periodEnd: Date | undefined;
+
+    if (fromDate && toDate) {
+      periodStart = new Date(fromDate);
+      periodEnd = new Date(toDate + "T23:59:59"); // End of day
+    } else {
+      periodStart = getPeriodFilter(period);
+      periodEnd = new Date(); // Current date
+    }
 
     // Get all categories with their products and sales data
     const categories = await prisma.category.findMany({
@@ -55,6 +68,7 @@ export const GET = withAuth(async (request: AuthenticatedRequest) => {
                 sales_transactions: {
                   created_at: {
                     gte: periodStart,
+                    ...(periodEnd && { lte: periodEnd }),
                   },
                   payment_status: PAYMENT_STATUS.PAID,
                 },

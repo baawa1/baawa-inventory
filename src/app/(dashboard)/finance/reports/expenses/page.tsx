@@ -1,6 +1,7 @@
 import { redirect } from "next/navigation";
 import { auth } from "#root/auth";
 import { USER_ROLES, hasRole } from "@/lib/auth/roles";
+import { ExpenseReport } from "@/components/finance/ExpenseReport";
 
 export const metadata = {
   title: "Expense Report - BaaWA Inventory POS",
@@ -18,12 +19,5 @@ export default async function ExpenseReportPage() {
     redirect("/unauthorized");
   }
 
-  return (
-    <div className="container mx-auto p-6">
-      <h1 className="text-2xl font-bold mb-4">Expense Report</h1>
-      <p className="text-muted-foreground">
-        Expense report features are currently under development.
-      </p>
-    </div>
-  );
+  return <ExpenseReport user={session.user} />;
 }

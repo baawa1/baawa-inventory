@@ -1,22 +1,22 @@
 import { redirect } from "next/navigation";
 import { auth } from "../../../../../../auth";
-import { ProductPerformance } from "@/components/pos/ProductPerformance";
+import { SalesAnalytics } from "@/components/pos/SalesAnalytics";
 import { DashboardPageLayout } from "@/components/layouts/DashboardPageLayout";
 import { ALL_ROLES, UserRole } from "@/lib/auth/roles";
 
 export const metadata = {
-  title: "Product Performance - BaaWA Inventory POS",
-  description: "Analyze product performance and sales metrics",
+  title: "Sales Analytics - BaaWA Inventory POS",
+  description: "Analyze sales performance and business insights",
 };
 
-export default async function ProductPerformancePage() {
+export default async function SalesAnalyticsPage() {
   const session = await auth();
 
   if (!session?.user) {
     redirect("/login");
   }
 
-  // Check role permissions - all authenticated users can access product performance
+  // Check role permissions - all authenticated users can access sales analytics
   if (!ALL_ROLES.includes(session.user.role as UserRole)) {
     redirect("/unauthorized");
   }
@@ -27,10 +27,10 @@ export default async function ProductPerformancePage() {
 
   return (
     <DashboardPageLayout
-      title="Product Performance"
-      description="Analyze product performance and sales metrics"
+      title="Sales Analytics"
+      description="Analyze sales performance and business insights"
     >
-      <ProductPerformance user={session.user} />
+      <SalesAnalytics user={session.user} />
     </DashboardPageLayout>
   );
 }
