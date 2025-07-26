@@ -6,51 +6,197 @@ The finance module is now **production-ready** with comprehensive functionality 
 
 ## 🚀 **High Priority Improvements**
 
-### 1. **Budget Management System**
+### 1. **Enhanced Financial Analytics Dashboard**
 
-#### **Database Schema Additions**
+#### **Unified Analytics System**
 
-```prisma
-model Budget {
-  id          Int      @id @default(autoincrement())
-  category    ExpenseType
-  amount      Decimal  @db.Decimal(15, 2)
-  period      BudgetPeriod
-  startDate   DateTime @map("start_date") @db.Date
-  endDate     DateTime @map("end_date") @db.Date
-  description String?
-  createdBy   Int      @map("created_by")
-  createdAt   DateTime @default(now()) @map("created_at")
-  updatedAt   DateTime @default(now()) @updatedAt @map("updated_at")
+Merge the existing reporting and analytics into a single, powerful financial analytics dashboard with advanced filtering and visualization capabilities.
 
-  createdByUser User @relation("BudgetCreator", fields: [createdBy], references: [id])
+#### **Custom Date Range Implementation**
 
-  @@index([category], map: "idx_budgets_category")
-  @@index([startDate], map: "idx_budgets_start_date")
-  @@map("budgets")
+**Installation:**
+
+```bash
+npm install @radix-ui/react-icons
+```
+
+**Components to Add:**
+
+```tsx
+// src/components/ui/date-range-picker.tsx
+import * as React from "react";
+import { CalendarIcon } from "@radix-ui/react-icons";
+import { addDays, format } from "date-fns";
+import { DateRange } from "react-day-picker";
+import { cn } from "@/lib/utils";
+import { Button } from "@/components/ui/button";
+import { Calendar } from "@/components/ui/calendar";
+import {
+  Popover,
+  PopoverContent,
+  PopoverTrigger,
+} from "@/components/ui/popover";
+
+interface DateRangePickerProps {
+  date?: DateRange;
+  onDateChange?: (date: DateRange | undefined) => void;
+  className?: string;
 }
 
-enum BudgetPeriod {
-  MONTHLY
-  QUARTERLY
-  YEARLY
+export function DateRangePicker({
+  date,
+  onDateChange,
+  className,
+}: DateRangePickerProps) {
+  const [dateRange, setDateRange] = React.useState<DateRange | undefined>({
+    from: new Date(),
+    to: addDays(new Date(), 7),
+  });
+
+  const handleDateChange = (newDate: DateRange | undefined) => {
+    setDateRange(newDate);
+    onDateChange?.(newDate);
+  };
+
+  return (
+    <div className={cn("grid gap-2", className)}>
+      <Popover>
+        <PopoverTrigger asChild>
+          <Button
+            id="date"
+            variant={"outline"}
+            className={cn(
+              "w-[260px] justify-start text-left font-normal",
+              !dateRange && "text-muted-foreground"
+            )}
+          >
+            <CalendarIcon className="mr-2 h-4 w-4" />
+            {dateRange?.from ? (
+              dateRange.to ? (
+                <>
+                  {format(dateRange.from, "LLL dd, y")} -{" "}
+                  {format(dateRange.to, "LLL dd, y")}
+                </>
+              ) : (
+                format(dateRange.from, "LLL dd, y")
+              )
+            ) : (
+              <span>Pick a date range</span>
+            )}
+          </Button>
+        </PopoverTrigger>
+        <PopoverContent className="w-auto p-0" align="end">
+          <Calendar
+            initialFocus
+            mode="range"
+            defaultMonth={dateRange?.from}
+            selected={dateRange}
+            onSelect={handleDateChange}
+            numberOfMonths={2}
+          />
+        </PopoverContent>
+      </Popover>
+    </div>
+  );
 }
 ```
 
-#### **API Endpoints**
+```tsx
+// src/components/ui/date-input.tsx
+import * as React from "react";
+import { Input } from "@/components/ui/input";
+import { Button } from "@/components/ui/button";
+import { CalendarIcon } from "@radix-ui/react-icons";
+import { format } from "date-fns";
+import { DateRange } from "react-day-picker";
 
-- `GET /api/finance/budgets` - List budgets with filtering
-- `POST /api/finance/budgets` - Create new budget
-- `GET /api/finance/budgets/[id]` - Get specific budget
-- `PUT /api/finance/budgets/[id]` - Update budget
-- `DELETE /api/finance/budgets/[id]` - Delete budget
-- `GET /api/finance/budgets/utilization` - Get budget utilization
+interface DateInputProps {
+  dateRange: DateRange | undefined;
+  onDateRangeChange: (range: DateRange | undefined) => void;
+  placeholder?: string;
+}
 
-#### **Components**
+export function DateInput({
+  dateRange,
+  onDateRangeChange,
+  placeholder,
+}: DateInputProps) {
+  const [inputValue, setInputValue] = React.useState("");
 
-- `BudgetOverview` - Budget vs actual spending
-- `BudgetForm` - Create/edit budget
-- `BudgetAlerts` - Notifications for over-budget categories
+  const handleInputChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    setInputValue(e.target.value);
+    // Parse custom date range input (e.g., "Last 7 days", "Last 2 hours")
+    // Implementation for custom parsing logic
+  };
+
+  const handleApply = () => {
+    // Apply the parsed date range
+    // Implementation for applying custom date ranges
+  };
+
+  return (
+    <div className="flex gap-2">
+      <Input
+        placeholder={placeholder || "Enter custom range (e.g., 'Last 7 days')"}
+        value={inputValue}
+        onChange={handleInputChange}
+        className="w-[200px]"
+      />
+      <Button onClick={handleApply} size="sm">
+        Apply
+      </Button>
+    </div>
+  );
+}
+```
+
+#### **Enhanced Filtering System**
+
+**API Endpoints Enhancement:**
+
+```typescript
+// Enhanced transaction filtering
+interface TransactionFilters {
+  dateRange?: {
+    from: Date;
+    to: Date;
+  };
+  type?: "all" | "income" | "expense";
+  paymentMethod?: string;
+  staffId?: string;
+  search?: string;
+  customRange?: string; // For "Last 7 days", "Last 2 hours" etc.
+}
+
+// API route enhancement
+export const GET = withAuth(async (request: AuthenticatedRequest) => {
+  const { searchParams } = new URL(request.url);
+  const dateFrom = searchParams.get("dateFrom");
+  const dateTo = searchParams.get("dateTo");
+  const customRange = searchParams.get("customRange");
+
+  // Parse custom range
+  if (customRange) {
+    const parsedRange = parseCustomDateRange(customRange);
+    // Apply parsed range to dateFrom and dateTo
+  }
+
+  // Enhanced where clause
+  const where: any = {};
+  if (dateFrom || dateTo) {
+    where.created_at = {};
+    if (dateFrom) where.created_at.gte = new Date(dateFrom);
+    if (dateTo) where.created_at.lte = new Date(dateTo + "T23:59:59");
+  }
+});
+```
+
+#### **Components to Create/Update**
+
+- `FinancialAnalyticsDashboard` - Unified analytics dashboard
+- `EnhancedTransactionList` - Single transaction page with type filtering
+- `CustomDateRangeFilter` - Advanced date filtering component
+- `FinancialCharts` - Income vs expenses, trends, comparisons
 
 ### 2. **Financial Reconciliation**
 
@@ -108,9 +254,11 @@ enum TransactionType {
 - `TransactionMatching` - Match bank transactions with internal records
 - `ReconciliationReport` - Reconciliation status and reports
 
-### 3. **Advanced Reporting**
+## 🔧 **Medium Priority Improvements**
 
-#### **New Report Types**
+### 3. **Advanced Financial Reports**
+
+#### **Enhanced Report Types**
 
 - **Profit & Loss Statement**
   - Revenue breakdown by source
@@ -142,210 +290,66 @@ enum TransactionType {
 - `CashFlowForecast` - Cash flow projections
 - `FinancialRatios` - Ratio calculations and display
 
-## 🔧 **Medium Priority Improvements**
+### 4. **Transaction Management Enhancements**
 
-### 4. **Multi-Currency Support**
+#### **Single Transaction Interface**
 
-#### **Database Schema Additions**
-
-```prisma
-model Currency {
-  id           Int      @id @default(autoincrement())
-  code         String   @unique @db.VarChar(3)
-  name         String   @db.VarChar(50)
-  symbol       String   @db.VarChar(5)
-  exchangeRate Decimal  @map("exchange_rate") @db.Decimal(10, 6)
-  isDefault    Boolean  @default(false) @map("is_default")
-  isActive     Boolean  @default(true) @map("is_active")
-  updatedAt    DateTime @default(now()) @updatedAt @map("updated_at")
-
-  @@map("currencies")
-}
-
-// Update FinancialTransaction model
-model FinancialTransaction {
-  // ... existing fields ...
-  currencyId    Int      @default(1) @map("currency_id")
-  exchangeRate  Decimal? @map("exchange_rate") @db.Decimal(10, 6)
-  baseAmount    Decimal? @map("base_amount") @db.Decimal(15, 2)
-
-  currency      Currency @relation(fields: [currencyId], references: [id])
-
-  // ... rest of model ...
-}
-```
+Remove separate income and expense pages, implement unified transaction management with type filtering.
 
 #### **Features**
 
-- Currency selection in transaction forms
-- Automatic exchange rate updates
-- Multi-currency reporting
-- Currency conversion utilities
-
-### 5. **Financial Goals & KPIs**
-
-#### **Database Schema Additions**
-
-```prisma
-model FinancialGoal {
-  id          Int      @id @default(autoincrement())
-  name        String   @db.VarChar(255)
-  type        GoalType
-  target      Decimal  @db.Decimal(15, 2)
-  current     Decimal  @default(0) @db.Decimal(15, 2)
-  startDate   DateTime @map("start_date")
-  endDate     DateTime @map("end_date")
-  status      GoalStatus @default(ACTIVE)
-  createdBy   Int      @map("created_by")
-  createdAt   DateTime @default(now()) @map("created_at")
-
-  createdByUser User @relation("GoalCreator", fields: [createdBy], references: [id])
-
-  @@map("financial_goals")
-}
-
-enum GoalType {
-  REVENUE_TARGET
-  EXPENSE_REDUCTION
-  PROFIT_MARGIN
-  CASH_FLOW
-  SAVINGS_TARGET
-}
-
-enum GoalStatus {
-  ACTIVE
-  COMPLETED
-  CANCELLED
-  OVERDUE
-}
-```
-
-#### **Features**
-
-- Goal setting and tracking
-- Progress visualization
-- Automated notifications
-- Goal-based reporting
-
-### 6. **Invoice Management**
-
-#### **Database Schema Additions**
-
-```prisma
-model Invoice {
-  id              Int      @id @default(autoincrement())
-  invoiceNumber   String   @unique @map("invoice_number")
-  customerName    String   @map("customer_name")
-  customerEmail   String?  @map("customer_email")
-  customerPhone   String?  @map("customer_phone")
-  amount          Decimal  @db.Decimal(15, 2)
-  taxAmount       Decimal  @default(0) @map("tax_amount") @db.Decimal(15, 2)
-  totalAmount     Decimal  @map("total_amount") @db.Decimal(15, 2)
-  status          InvoiceStatus @default(DRAFT)
-  dueDate         DateTime @map("due_date")
-  issuedDate      DateTime @map("issued_date")
-  paidDate        DateTime? @map("paid_date")
-  paymentMethod   PaymentMethod?
-  notes           String?
-  createdBy       Int      @map("created_by")
-  createdAt       DateTime @default(now()) @map("created_at")
-
-  createdByUser   User     @relation("InvoiceCreator", fields: [createdBy], references: [id])
-  items           InvoiceItem[]
-
-  @@map("invoices")
-}
-
-model InvoiceItem {
-  id          Int      @id @default(autoincrement())
-  invoiceId   Int      @map("invoice_id")
-  description String
-  quantity    Int
-  unitPrice   Decimal  @map("unit_price") @db.Decimal(15, 2)
-  totalPrice  Decimal  @map("total_price") @db.Decimal(15, 2)
-
-  invoice     Invoice  @relation(fields: [invoiceId], references: [id], onDelete: Cascade)
-
-  @@map("invoice_items")
-}
-
-enum InvoiceStatus {
-  DRAFT
-  SENT
-  PAID
-  OVERDUE
-  CANCELLED
-}
-```
-
-#### **Features**
-
-- Invoice generation and management
-- Payment tracking
-- Invoice templates
-- Automated reminders
-
-## 📈 **Low Priority Improvements**
-
-### 7. **Financial Analytics**
-
-#### **Advanced Analytics Features**
-
-- **Trend Analysis**
-  - Revenue trends over time
-  - Expense pattern analysis
-  - Seasonal variations
-
-- **Predictive Analytics**
-  - Revenue forecasting
-  - Expense prediction
-  - Cash flow projections
-
-- **Benchmarking**
-  - Industry benchmarks
-  - Performance comparisons
-  - Best practice recommendations
+- Type filtering (All Type, Income, Expense)
+- Custom date range selection
+- Advanced search and filtering
+- Bulk operations (export, bulk actions)
+- Transaction details with receipt generation
 
 #### **Components**
 
-- `TrendAnalysis` - Trend visualization
+- `UnifiedTransactionList` - Single transaction page
+- `TransactionFilters` - Advanced filtering component
+- `TransactionDetails` - Detailed transaction view
+- `BulkTransactionActions` - Bulk operations
+
+## 📈 **Low Priority Improvements**
+
+### 5. **Advanced Analytics Features**
+
+#### **Predictive Analytics**
+
+- Revenue forecasting
+- Expense prediction
+- Cash flow projections
+
+#### **Benchmarking**
+
+- Industry benchmarks
+- Performance comparisons
+- Best practice recommendations
+
+#### **Components**
+
 - `PredictiveAnalytics` - Forecasting tools
 - `Benchmarking` - Performance comparisons
 
-### 8. **Integration Features**
-
-#### **Bank Integration**
-
-- **Open Banking APIs**
-  - Direct bank account access
-  - Real-time transaction sync
-  - Automated reconciliation
-
-- **Payment Gateway Integration**
-  - Stripe integration
-  - PayPal integration
-  - Local payment methods
-
-#### **Accounting Software Integration**
-
-- **QuickBooks Integration**
-  - Data synchronization
-  - Invoice sync
-  - Chart of accounts mapping
-
-- **Xero Integration**
-  - Real-time data sync
-  - Multi-currency support
-  - Automated journal entries
-
 ## 🛠 **Implementation Roadmap**
 
-### **Phase 1: Budget Management (2-3 weeks)**
+### **Phase 1: Enhanced Financial Analytics (2-3 weeks)**
 
-1. Database schema updates
-2. API endpoints development
-3. Budget management components
-4. Integration with existing finance module
+1. **Custom Date Range Implementation**
+   - Install and configure Shadcn date range picker
+   - Implement custom date parsing for "Last X days/hours"
+   - Update API endpoints for enhanced date filtering
+
+2. **Unified Analytics Dashboard**
+   - Merge existing reporting and analytics
+   - Create enhanced financial charts
+   - Implement advanced filtering system
+
+3. **Single Transaction Interface**
+   - Remove separate income/expense pages
+   - Implement type filtering (All Type, Income, Expense)
+   - Enhance transaction list with custom date ranges
 
 ### **Phase 2: Reconciliation (3-4 weeks)**
 
@@ -354,42 +358,22 @@ enum InvoiceStatus {
 3. Reconciliation reports
 4. Audit trail implementation
 
-### **Phase 3: Advanced Reporting (2-3 weeks)**
+### **Phase 3: Advanced Reports (2-3 weeks)**
 
 1. P&L statement generation
 2. Cash flow forecasting
 3. Financial ratio calculations
 4. Enhanced reporting UI
 
-### **Phase 4: Multi-Currency (2-3 weeks)**
-
-1. Currency management
-2. Exchange rate integration
-3. Multi-currency transactions
-4. Currency conversion utilities
-
-### **Phase 5: Goals & KPIs (2 weeks)**
-
-1. Goal setting interface
-2. Progress tracking
-3. Automated notifications
-4. Goal-based reporting
-
-### **Phase 6: Invoice Management (3-4 weeks)**
-
-1. Invoice generation
-2. Payment tracking
-3. Template system
-4. Automated reminders
-
 ## 📋 **Technical Requirements**
 
 ### **Dependencies**
 
-- **Exchange Rate API**: For multi-currency support
-- **PDF Generation**: For invoice and report generation
+- **@radix-ui/react-icons**: For date range picker icons
+- **date-fns**: For date manipulation and formatting
+- **react-day-picker**: For calendar component
+- **PDF Generation**: For report generation
 - **Email Service**: For automated notifications
-- **File Upload**: For bank statement uploads
 
 ### **Performance Considerations**
 
@@ -409,7 +393,7 @@ enum InvoiceStatus {
 
 ### **User Adoption**
 
-- 90% of users actively using budget management
+- 90% of users actively using enhanced analytics
 - 80% of transactions reconciled automatically
 - 70% of users generating monthly reports
 
@@ -422,28 +406,28 @@ enum InvoiceStatus {
 ### **Business Impact**
 
 - 20% reduction in manual reconciliation time
-- 15% improvement in budget adherence
 - 25% faster financial reporting
+- 30% improvement in data analysis efficiency
 
 ## 📚 **Documentation Requirements**
 
 ### **User Documentation**
 
-- Finance module user guide
-- Budget management tutorial
+- Enhanced finance module user guide
+- Custom date range usage tutorial
 - Reconciliation workflow guide
 - Report generation instructions
 
 ### **Technical Documentation**
 
-- API documentation
+- API documentation with date range examples
 - Database schema documentation
 - Integration guides
 - Deployment procedures
 
 ### **Training Materials**
 
-- Video tutorials
+- Video tutorials for new features
 - Interactive demos
 - Best practice guides
 - Troubleshooting guides
@@ -452,5 +436,5 @@ enum InvoiceStatus {
 
 **Status**: Ready for implementation planning and development
 **Priority**: High - Finance module is core business functionality
-**Estimated Timeline**: 12-16 weeks for complete implementation
+**Estimated Timeline**: 8-12 weeks for complete implementation
 **Resource Requirements**: 2-3 developers, 1 UI/UX designer, 1 QA tester

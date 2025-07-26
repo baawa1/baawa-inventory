@@ -1040,13 +1040,14 @@ async function seedAIContent(users, products) {
   return aiContents;
 }
 
-async function seedContentSync(products) {
+async function _seedContentSync(products, categories, brands) {
   console.log("Seeding Content sync...");
 
   const contentSyncs = [];
   const syncStatuses = ["pending", "synced", "failed"];
 
-  for (let i = 0; i < 20; i++) {
+  // Create content sync records for products
+  for (let i = 0; i < 10; i++) {
     const product = randomElement(products);
     const syncStatus = randomElement(syncStatuses);
 
@@ -1054,6 +1055,56 @@ async function seedContentSync(products) {
       data: {
         entity_type: "product",
         entity_id: product.id,
+        sync_status: syncStatus,
+        last_sync_at:
+          syncStatus === "synced"
+            ? new Date(Date.now() - randomNumber(1, 30) * 24 * 60 * 60 * 1000)
+            : null,
+        sync_errors: syncStatus === "failed" ? "Connection timeout" : null,
+        retry_count: syncStatus === "failed" ? randomNumber(1, 3) : 0,
+        webhook_url:
+          syncStatus === "synced"
+            ? `https://webhook.site/${randomNumber(10000, 99999)}`
+            : null,
+      },
+    });
+    contentSyncs.push(contentSync);
+  }
+
+  // Create content sync records for categories
+  for (let i = 0; i < 5; i++) {
+    const category = randomElement(categories);
+    const syncStatus = randomElement(syncStatuses);
+
+    const contentSync = await prisma.contentSync.create({
+      data: {
+        entity_type: "category",
+        entity_id: category.id,
+        sync_status: syncStatus,
+        last_sync_at:
+          syncStatus === "synced"
+            ? new Date(Date.now() - randomNumber(1, 30) * 24 * 60 * 60 * 1000)
+            : null,
+        sync_errors: syncStatus === "failed" ? "Connection timeout" : null,
+        retry_count: syncStatus === "failed" ? randomNumber(1, 3) : 0,
+        webhook_url:
+          syncStatus === "synced"
+            ? `https://webhook.site/${randomNumber(10000, 99999)}`
+            : null,
+      },
+    });
+    contentSyncs.push(contentSync);
+  }
+
+  // Create content sync records for brands
+  for (let i = 0; i < 5; i++) {
+    const brand = randomElement(brands);
+    const syncStatus = randomElement(syncStatuses);
+
+    const contentSync = await prisma.contentSync.create({
+      data: {
+        entity_type: "brand",
+        entity_id: brand.id,
         sync_status: syncStatus,
         last_sync_at:
           syncStatus === "synced"
@@ -1124,6 +1175,240 @@ async function seedSessionBlacklist(users) {
   return sessionBlacklists;
 }
 
+async function seedFinancialTransactions(users) {
+  console.log("Seeding financial transactions...");
+
+  const financialTransactions = [];
+  const paymentMethods = [
+    "CASH",
+    "BANK_TRANSFER",
+    "POS_MACHINE",
+    "CREDIT_CARD",
+    "MOBILE_MONEY",
+  ];
+  const expenseTypes = [
+    "INVENTORY_PURCHASES",
+    "UTILITIES",
+    "RENT",
+    "SALARIES",
+    "MARKETING",
+    "OFFICE_SUPPLIES",
+    "TRAVEL",
+    "INSURANCE",
+    "MAINTENANCE",
+    "OTHER",
+  ];
+  const incomeSources = [
+    "SALES",
+    "SERVICES",
+    "INVESTMENTS",
+    "ROYALTIES",
+    "COMMISSIONS",
+    "OTHER",
+  ];
+  const statuses = [
+    "PENDING",
+    "COMPLETED",
+    "CANCELLED",
+    "APPROVED",
+    "REJECTED",
+  ];
+
+  // Generate income transactions
+  for (let i = 0; i < 25; i++) {
+    const user = randomElement(users);
+    const isApproved = Math.random() > 0.3; // 70% approved
+    const approver = isApproved
+      ? randomElement(
+          users.filter((u) => u.role === "ADMIN" || u.role === "MANAGER")
+        )
+      : null;
+    const incomeSource = randomElement(incomeSources);
+    const paymentMethod = randomElement(paymentMethods);
+    const amount = randomDecimal(5000, 500000, 2);
+    const status = isApproved ? "COMPLETED" : randomElement(statuses);
+
+    const transaction = await prisma.financialTransaction.create({
+      data: {
+        transactionNumber: `FIN-${Date.now()}-${randomNumber(100, 999)}`,
+        type: "INCOME",
+        amount: amount,
+        description: `Income from ${incomeSource.toLowerCase()} - ${randomElement(
+          [
+            "Monthly revenue",
+            "Service payment",
+            "Investment return",
+            "Commission payment",
+            "Royalty payment",
+          ]
+        )}`,
+        transactionDate: new Date(
+          Date.now() - randomNumber(1, 90) * 24 * 60 * 60 * 1000
+        ),
+        paymentMethod: paymentMethod,
+        status: status,
+        approvedBy: approver?.id || null,
+        approvedAt: isApproved ? new Date() : null,
+        createdBy: user.id,
+      },
+    });
+
+    // Create income detail
+    await prisma.incomeDetail.create({
+      data: {
+        transactionId: transaction.id,
+        incomeSource: incomeSource,
+        payerName: randomElement([
+          "Various Customers",
+          "Service Clients",
+          "Investment Account",
+          "Partner Company",
+          "Royalty Holder",
+        ]),
+      },
+    });
+
+    financialTransactions.push(transaction);
+  }
+
+  // Generate expense transactions
+  for (let i = 0; i < 30; i++) {
+    const user = randomElement(users);
+    const isApproved = Math.random() > 0.2; // 80% approved
+    const approver = isApproved
+      ? randomElement(
+          users.filter((u) => u.role === "ADMIN" || u.role === "MANAGER")
+        )
+      : null;
+    const expenseType = randomElement(expenseTypes);
+    const paymentMethod = randomElement(paymentMethods);
+    const amount = randomDecimal(1000, 200000, 2);
+    const status = isApproved ? "COMPLETED" : randomElement(statuses);
+
+    const transaction = await prisma.financialTransaction.create({
+      data: {
+        transactionNumber: `FIN-${Date.now()}-${randomNumber(100, 999)}`,
+        type: "EXPENSE",
+        amount: amount,
+        description: `Expense for ${expenseType.toLowerCase().replace("_", " ")} - ${randomElement(
+          [
+            "Monthly payment",
+            "Service fee",
+            "Maintenance cost",
+            "Operational expense",
+            "Business cost",
+          ]
+        )}`,
+        transactionDate: new Date(
+          Date.now() - randomNumber(1, 90) * 24 * 60 * 60 * 1000
+        ),
+        paymentMethod: paymentMethod,
+        status: status,
+        approvedBy: approver?.id || null,
+        approvedAt: isApproved ? new Date() : null,
+        createdBy: user.id,
+      },
+    });
+
+    // Create expense detail
+    await prisma.expenseDetail.create({
+      data: {
+        transactionId: transaction.id,
+        expenseType: expenseType,
+        vendorName: randomElement([
+          "Property Management Ltd",
+          "Ikeja Electric",
+          "Staff Payroll",
+          "Marketing Agency",
+          "Office Supplies Co",
+          "Travel Agency",
+          "Insurance Company",
+          "Maintenance Services",
+        ]),
+      },
+    });
+
+    financialTransactions.push(transaction);
+  }
+
+  console.log(`Created ${financialTransactions.length} financial transactions`);
+  return financialTransactions;
+}
+
+async function seedFinancialReports(users) {
+  console.log("Seeding financial reports...");
+
+  const financialReports = [];
+  const reportTypes = ["MONTHLY", "QUARTERLY", "YEARLY", "CUSTOM"];
+  const reportNames = [
+    "Monthly Financial Summary",
+    "Quarterly Revenue Report",
+    "Annual Financial Statement",
+    "Expense Analysis Report",
+    "Income vs Expense Report",
+    "Cash Flow Statement",
+    "Profit & Loss Report",
+    "Budget vs Actual Report",
+  ];
+
+  for (let i = 0; i < 15; i++) {
+    const user = randomElement(
+      users.filter((u) => u.role === "ADMIN" || u.role === "MANAGER")
+    );
+    const reportType = randomElement(reportTypes);
+    const reportName = randomElement(reportNames);
+
+    // Generate report data
+    const reportData = {
+      totalIncome: randomDecimal(100000, 2000000, 2),
+      totalExpenses: randomDecimal(50000, 1500000, 2),
+      netProfit: randomDecimal(50000, 500000, 2),
+      transactionCount: randomNumber(50, 500),
+      averageTransactionValue: randomDecimal(5000, 50000, 2),
+      topExpenseCategories: [
+        {
+          category: "INVENTORY_PURCHASES",
+          amount: randomDecimal(20000, 300000, 2),
+        },
+        { category: "SALARIES", amount: randomDecimal(15000, 200000, 2) },
+        { category: "RENT", amount: randomDecimal(5000, 100000, 2) },
+      ],
+      topIncomeSources: [
+        { source: "SALES", amount: randomDecimal(50000, 800000, 2) },
+        { source: "SERVICES", amount: randomDecimal(10000, 200000, 2) },
+        { source: "COMMISSIONS", amount: randomDecimal(5000, 100000, 2) },
+      ],
+    };
+
+    const periodStart = new Date(
+      Date.now() - randomNumber(30, 365) * 24 * 60 * 60 * 1000
+    );
+    const periodEnd = new Date(
+      periodStart.getTime() + randomNumber(30, 90) * 24 * 60 * 60 * 1000
+    );
+
+    const report = await prisma.financialReport.create({
+      data: {
+        reportType: reportType,
+        reportName: reportName,
+        periodStart: periodStart,
+        periodEnd: periodEnd,
+        reportData: reportData,
+        generatedBy: user.id,
+        fileUrl:
+          Math.random() > 0.5
+            ? `https://reports.example.com/${reportType.toLowerCase()}-${Date.now()}.pdf`
+            : null,
+      },
+    });
+
+    financialReports.push(report);
+  }
+
+  console.log(`Created ${financialReports.length} financial reports`);
+  return financialReports;
+}
+
 // Main seeding function
 async function main() {
   try {
@@ -1152,9 +1437,11 @@ async function main() {
     );
     const auditLogs = await seedAuditLogs(users);
     const aiContents = await seedAIContent(users, products);
-    const _contentSyncs = await seedContentSync(products);
+    // const _contentSyncs = await seedContentSync(products, categories, brands);
     const rateLimits = await seedRateLimits();
     const sessionBlacklists = await seedSessionBlacklist(users);
+    const financialTransactions = await seedFinancialTransactions(users);
+    const financialReports = await seedFinancialReports(users);
 
     console.log("\n✅ Test data generation completed successfully!");
     console.log("\n📊 Summary:");
@@ -1173,9 +1460,11 @@ async function main() {
     console.log(`- Reconciliation Items: ${reconciliationItems.length}`);
     console.log(`- Audit Logs: ${auditLogs.length}`);
     console.log(`- AI Content: ${aiContents.length}`);
-    console.log(`- Content Sync: ${_contentSyncs.length}`);
+    // console.log(`- Content Sync: ${_contentSyncs.length}`);
     console.log(`- Rate Limits: ${rateLimits.length}`);
     console.log(`- Session Blacklist: ${sessionBlacklists.length}`);
+    console.log(`- Financial Transactions: ${financialTransactions.length}`);
+    console.log(`- Financial Reports: ${financialReports.length}`);
 
     console.log("\n🔑 Default admin credentials:");
     console.log("Email: admin@inventory.com");

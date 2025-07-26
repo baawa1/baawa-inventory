@@ -1,11 +1,10 @@
-import { auth } from "#root/auth";
-import { Metadata } from "next";
+import { auth } from "../../../../auth";
 import { redirect } from "next/navigation";
 import { FinanceOverview } from "@/components/finance/FinanceOverview";
 
-export const metadata: Metadata = {
-  title: "Finance Overview - BaaWA Inventory",
-  description: "Financial overview and summary dashboard",
+export const metadata = {
+  title: "Finance Overview - BaaWA Inventory POS",
+  description: "Simple finance overview and transaction management",
 };
 
 export default async function FinancePage() {
@@ -15,10 +14,8 @@ export default async function FinancePage() {
     redirect("/login");
   }
 
-  // Check if user has finance access
-  const userRole = session.user.role;
-  if (!["ADMIN", "MANAGER"].includes(userRole)) {
-    redirect("/unauthorized");
+  if (session.user.status !== "APPROVED") {
+    redirect("/pending-approval");
   }
 
   return <FinanceOverview user={session.user} />;

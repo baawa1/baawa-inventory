@@ -1,6 +1,7 @@
 "use client";
 
 import React, { useState } from "react";
+import Link from "next/link";
 // TODO: Implement financial reports hooks
 import { AppUser } from "@/types/user";
 
@@ -50,6 +51,7 @@ import {
   TrendingUp,
   TrendingDown,
   DollarSign,
+  Activity,
 } from "lucide-react";
 
 interface ReportsListProps {
@@ -277,6 +279,23 @@ export function ReportsList({ user: _user }: ReportsListProps) {
             <div className="text-2xl font-bold">Flow</div>
             <p className="text-xs text-muted-foreground">Cash flow analysis</p>
           </CardContent>
+        </Card>
+
+        <Card className="cursor-pointer hover:shadow-md transition-shadow">
+          <Link href="/finance/reports/analytics">
+            <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+              <CardTitle className="text-sm font-medium">
+                Analytics Dashboard
+              </CardTitle>
+              <Activity className="h-4 w-4 text-muted-foreground" />
+            </CardHeader>
+            <CardContent>
+              <div className="text-2xl font-bold">Analytics</div>
+              <p className="text-xs text-muted-foreground">
+                Comprehensive analytics
+              </p>
+            </CardContent>
+          </Link>
         </Card>
       </div>
 

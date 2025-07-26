@@ -6,10 +6,10 @@ import Link from "next/link";
 import { usePathname } from "next/navigation";
 import {
   IconCash,
-  IconTrendingUp,
   IconChartBar,
   IconReceipt,
-  IconTarget,
+  IconTrendingUp,
+  IconShoppingCart,
 } from "@tabler/icons-react";
 
 import {
@@ -30,10 +30,40 @@ import {
 
 const financeNavItems = [
   {
-    title: "Overview",
+    title: "Finance Overview",
     url: "/finance",
     icon: IconCash,
     items: [],
+  },
+  {
+    title: "Income Management",
+    url: "/finance/income",
+    icon: IconTrendingUp,
+    items: [
+      {
+        title: "View Income",
+        url: "/finance/income",
+      },
+      {
+        title: "Add Income",
+        url: "/finance/income/new",
+      },
+    ],
+  },
+  {
+    title: "Expense Management",
+    url: "/finance/expenses",
+    icon: IconShoppingCart,
+    items: [
+      {
+        title: "View Expenses",
+        url: "/finance/expenses",
+      },
+      {
+        title: "Add Expense",
+        url: "/finance/expenses/new",
+      },
+    ],
   },
   {
     title: "Transactions",
@@ -44,33 +74,10 @@ const financeNavItems = [
         title: "All Transactions",
         url: "/finance/transactions",
       },
-      {
-        title: "Income",
-        url: "/finance/income",
-      },
-      {
-        title: "Expenses",
-        url: "/finance/expenses",
-      },
     ],
   },
   {
-    title: "Add New",
-    url: "/finance/income/new",
-    icon: IconTrendingUp,
-    items: [
-      {
-        title: "Add Income",
-        url: "/finance/income/new",
-      },
-      {
-        title: "Add Expense",
-        url: "/finance/expenses/new",
-      },
-    ],
-  },
-  {
-    title: "Reports",
+    title: "Reports & Analytics",
     url: "/finance/reports",
     icon: IconChartBar,
     items: [
@@ -79,31 +86,16 @@ const financeNavItems = [
         url: "/finance/reports",
       },
       {
+        title: "Analytics Dashboard",
+        url: "/finance/reports/analytics",
+      },
+      {
         title: "Income Statement",
         url: "/finance/reports/income-statement",
       },
       {
-        title: "Expense Report",
-        url: "/finance/reports/expenses",
-      },
-      {
         title: "Cash Flow",
         url: "/finance/reports/cash-flow",
-      },
-    ],
-  },
-  {
-    title: "Budget Management",
-    url: "/finance/budget",
-    icon: IconTarget,
-    items: [
-      {
-        title: "Budget Overview",
-        url: "/finance/budget",
-      },
-      {
-        title: "Set Budget",
-        url: "/finance/budget/new",
       },
     ],
   },

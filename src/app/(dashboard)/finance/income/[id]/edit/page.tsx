@@ -9,9 +9,9 @@ export const metadata: Metadata = {
 };
 
 interface EditIncomePageProps {
-  params: {
+  params: Promise<{
     id: string;
-  };
+  }>;
 }
 
 export default async function EditIncomePage({ params }: EditIncomePageProps) {
