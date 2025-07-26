@@ -13,7 +13,7 @@ interface FormActionsProps {
 export function FormActions({
   isSubmitting,
   onCancelAction,
-  submitText = "Create Income Transaction",
+  submitText = "Create Expense Transaction",
   loadingText = "Creating...",
 }: FormActionsProps) {
   return (

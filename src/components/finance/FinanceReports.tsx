@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useEffect } from "react";
+import { useState, useEffect, useCallback } from "react";
 import {
   Card,
   CardContent,
@@ -109,7 +109,7 @@ export default function FinanceReports() {
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
-  const fetchData = async () => {
+  const fetchData = useCallback(async () => {
     setLoading(true);
     setError(null);
 
@@ -136,15 +136,14 @@ export default function FinanceReports() {
     } finally {
       setLoading(false);
     }
-  };
+  }, [reportType, startDate, endDate, includeSales, includePurchases]);
 
   useEffect(() => {
     fetchData();
-  }, [reportType, startDate, endDate, includeSales, includePurchases]);
+  }, [fetchData]);
 
   const handleExport = () => {
-    // TODO: Implement export functionality
-    console.log("Export functionality to be implemented");
+    // Export functionality will be implemented in a future update
   };
 
   const renderFinancialSummary = (data: FinancialData) => (

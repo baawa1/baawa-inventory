@@ -1,6 +1,7 @@
 import { withAuth, AuthenticatedRequest } from "@/lib/api-middleware";
 import { createApiResponse } from "@/lib/api-response";
 import { prisma } from "@/lib/db";
+import { INCOME_SOURCES, EXPENSE_TYPES } from "@/lib/constants/finance";
 
 // GET /api/finance/reports - Get financial reports with real data including sales and purchases
 export const GET = withAuth(async (request: AuthenticatedRequest) => {
@@ -353,8 +354,11 @@ async function getCashFlowReport(
   let financingCashFlow = transactions
     .filter(
       (t) =>
-        (t.type === "INCOME" && t.incomeDetails?.incomeSource === "LOAN") ||
-        (t.type === "EXPENSE" && t.expenseDetails?.expenseType === "SALARIES")
+        (t.type === "INCOME" &&
+          t.incomeDetails?.incomeSource ===
+            (INCOME_SOURCES.INVESTMENTS as any)) ||
+        (t.type === "EXPENSE" &&
+          t.expenseDetails?.expenseType === (EXPENSE_TYPES.SALARIES as any))
     )
     .reduce(
       (sum, t) =>

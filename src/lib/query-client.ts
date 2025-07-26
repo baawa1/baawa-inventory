@@ -138,8 +138,28 @@ export const queryKeys = {
       [...queryKeys.transactions.lists(), filters] as const,
     details: () => [...queryKeys.transactions.all, "detail"] as const,
     detail: (id: number) => [...queryKeys.transactions.details(), id] as const,
-    stats: (filters?: Record<string, any>) =>
-      [...queryKeys.transactions.all, "stats", filters || {}] as const,
+    stats: (dateRange?: string) =>
+      [...queryKeys.transactions.all, "stats", dateRange || "month"] as const,
+  },
+
+  // Finance
+  finance: {
+    all: ["finance"] as const,
+    summary: () => [...queryKeys.finance.all, "summary"] as const,
+    transactions: {
+      all: () => [...queryKeys.finance.all, "transactions"] as const,
+      list: (filters: Record<string, any>) =>
+        [...queryKeys.finance.transactions.all(), "list", filters] as const,
+      detail: (id: number) =>
+        [...queryKeys.finance.transactions.all(), "detail", id] as const,
+    },
+    reports: {
+      all: () => [...queryKeys.finance.all, "reports"] as const,
+      list: (filters: Record<string, any>) =>
+        [...queryKeys.finance.reports.all(), "list", filters] as const,
+      detail: (id: number) =>
+        [...queryKeys.finance.reports.all(), "detail", id] as const,
+    },
   },
 
   // Session

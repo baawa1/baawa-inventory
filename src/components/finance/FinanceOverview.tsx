@@ -11,7 +11,7 @@ import {
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { PageHeader } from "@/components/ui/page-header";
-import { useFinancialSummary } from "@/hooks/api/finance";
+
 import { formatCurrency } from "@/lib/utils";
 import {
   TrendingUp,
@@ -25,13 +25,33 @@ import {
 } from "lucide-react";
 import Link from "next/link";
 import { AppUser } from "@/types/user";
+import { useQuery } from "@tanstack/react-query";
+import { queryKeys } from "@/lib/query-client";
 
 interface FinanceOverviewProps {
   user: AppUser;
 }
 
+// API function to fetch financial summary
+const fetchFinancialSummary = async () => {
+  const response = await fetch("/api/finance/summary");
+  if (!response.ok) {
+    throw new Error("Failed to fetch financial summary");
+  }
+  return response.json();
+};
+
 export function FinanceOverview({ user: _user }: FinanceOverviewProps) {
-  const { data: summary, isLoading, error } = useFinancialSummary();
+  const {
+    data: summaryData,
+    isLoading,
+    error,
+    refetch,
+  } = useQuery({
+    queryKey: queryKeys.finance.summary(),
+    queryFn: fetchFinancialSummary,
+    staleTime: 5 * 60 * 1000, // 5 minutes
+  });
 
   if (isLoading) {
     return (
@@ -73,7 +93,7 @@ export function FinanceOverview({ user: _user }: FinanceOverviewProps) {
               <p className="text-destructive">Failed to load financial data</p>
               <Button
                 variant="outline"
-                onClick={() => window.location.reload()}
+                onClick={() => refetch()}
                 className="mt-2"
               >
                 Retry
@@ -85,24 +105,35 @@ export function FinanceOverview({ user: _user }: FinanceOverviewProps) {
     );
   }
 
-  const {
-    totalIncome,
-    totalExpenses,
-    netIncome,
-    transactionCount,
-    pendingTransactions,
-    recentTransactions,
-  } = summary || {
-    totalIncome: 0,
-    totalExpenses: 0,
+  const currentMonth = summaryData?.data?.currentMonth || {
+    income: 0,
+    expenses: 0,
     netIncome: 0,
     transactionCount: 0,
-    pendingTransactions: 0,
-    recentTransactions: [],
   };
 
-  const incomeChange = 0; // TODO: Calculate from previous period
-  const expenseChange = 0; // TODO: Calculate from previous period
+  const previousMonth = summaryData?.data?.previousMonth || {
+    income: 0,
+    expenses: 0,
+    netIncome: 0,
+    transactionCount: 0,
+  };
+
+  const recentTransactions = summaryData?.data?.recentTransactions || [];
+
+  // Calculate percentage changes
+  const incomeChange =
+    previousMonth.income > 0
+      ? ((currentMonth.income - previousMonth.income) / previousMonth.income) *
+        100
+      : 0;
+
+  const expenseChange =
+    previousMonth.expenses > 0
+      ? ((currentMonth.expenses - previousMonth.expenses) /
+          previousMonth.expenses) *
+        100
+      : 0;
 
   return (
     <div className="max-w-7xl mx-auto p-6 space-y-6">
@@ -136,12 +167,12 @@ export function FinanceOverview({ user: _user }: FinanceOverviewProps) {
           </CardHeader>
           <CardContent>
             <div className="text-2xl font-bold">
-              {formatCurrency(totalIncome)}
+              {formatCurrency(currentMonth.income)}
             </div>
             <div className="flex items-center text-xs text-muted-foreground">
               <ArrowUpRight className="h-3 w-3 mr-1" />
               {incomeChange > 0 ? "+" : ""}
-              {incomeChange}% from last month
+              {incomeChange.toFixed(1)}% from last month
             </div>
           </CardContent>
         </Card>
@@ -155,12 +186,12 @@ export function FinanceOverview({ user: _user }: FinanceOverviewProps) {
           </CardHeader>
           <CardContent>
             <div className="text-2xl font-bold">
-              {formatCurrency(totalExpenses)}
+              {formatCurrency(currentMonth.expenses)}
             </div>
             <div className="flex items-center text-xs text-muted-foreground">
               <ArrowDownRight className="h-3 w-3 mr-1" />
               {expenseChange > 0 ? "+" : ""}
-              {expenseChange}% from last month
+              {expenseChange.toFixed(1)}% from last month
             </div>
           </CardContent>
         </Card>
@@ -172,27 +203,27 @@ export function FinanceOverview({ user: _user }: FinanceOverviewProps) {
           </CardHeader>
           <CardContent>
             <div
-              className={`text-2xl font-bold ${netIncome >= 0 ? "text-green-600" : "text-red-600"}`}
+              className={`text-2xl font-bold ${currentMonth.netIncome >= 0 ? "text-green-600" : "text-red-600"}`}
             >
-              {formatCurrency(netIncome)}
+              {formatCurrency(currentMonth.netIncome)}
             </div>
             <p className="text-xs text-muted-foreground">
-              {netIncome >= 0 ? "Profit" : "Loss"}
+              {currentMonth.netIncome >= 0 ? "Profit" : "Loss"} this month
             </p>
           </CardContent>
         </Card>
 
         <Card>
           <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-            <CardTitle className="text-sm font-medium">
-              Pending Transactions
-            </CardTitle>
-            <Activity className="h-4 w-4 text-orange-600" />
+            <CardTitle className="text-sm font-medium">Transactions</CardTitle>
+            <Activity className="h-4 w-4 text-purple-600" />
           </CardHeader>
           <CardContent>
-            <div className="text-2xl font-bold">{pendingTransactions}</div>
+            <div className="text-2xl font-bold">
+              {currentMonth.transactionCount}
+            </div>
             <p className="text-xs text-muted-foreground">
-              {transactionCount} total transactions
+              Total transactions this month
             </p>
           </CardContent>
         </Card>
@@ -205,7 +236,7 @@ export function FinanceOverview({ user: _user }: FinanceOverviewProps) {
             <div>
               <CardTitle>Recent Transactions</CardTitle>
               <CardDescription>
-                Latest financial transactions and activities
+                Latest financial transactions across all sources
               </CardDescription>
             </div>
             <Button asChild variant="outline">
@@ -214,37 +245,24 @@ export function FinanceOverview({ user: _user }: FinanceOverviewProps) {
           </div>
         </CardHeader>
         <CardContent>
-          {recentTransactions.length === 0 ? (
-            <div className="text-center py-8">
-              <Receipt className="h-12 w-12 text-muted-foreground mx-auto mb-4" />
-              <p className="text-muted-foreground">No recent transactions</p>
-              <Button asChild className="mt-4">
-                <Link href="/finance/income/new">
-                  <Plus className="mr-2 h-4 w-4" />
-                  Add First Transaction
-                </Link>
-              </Button>
-            </div>
-          ) : (
+          {recentTransactions.length > 0 ? (
             <div className="space-y-4">
-              {recentTransactions.slice(0, 5).map((transaction) => (
+              {recentTransactions.slice(0, 5).map((transaction: any) => (
                 <div
                   key={transaction.id}
                   className="flex items-center justify-between p-4 border rounded-lg"
                 >
                   <div className="flex items-center space-x-4">
-                    <div
-                      className={`p-2 rounded-full ${
-                        transaction.type === "INCOME"
-                          ? "bg-green-100 text-green-600"
-                          : "bg-red-100 text-red-600"
-                      }`}
-                    >
-                      {transaction.type === "INCOME" ? (
-                        <TrendingUp className="h-4 w-4" />
-                      ) : (
-                        <TrendingDown className="h-4 w-4" />
-                      )}
+                    <div className="flex-shrink-0">
+                      <Badge
+                        variant={
+                          transaction.type === "INCOME"
+                            ? "default"
+                            : "destructive"
+                        }
+                      >
+                        {transaction.type}
+                      </Badge>
                     </div>
                     <div>
                       <p className="font-medium">{transaction.description}</p>
@@ -256,28 +274,26 @@ export function FinanceOverview({ user: _user }: FinanceOverviewProps) {
                     </div>
                   </div>
                   <div className="text-right">
-                    <p
-                      className={`font-medium ${
-                        transaction.type === "INCOME"
-                          ? "text-green-600"
-                          : "text-red-600"
-                      }`}
-                    >
-                      {transaction.type === "INCOME" ? "+" : "-"}
+                    <p className="font-medium">
                       {formatCurrency(transaction.amount)}
                     </p>
-                    <Badge
-                      variant={
-                        transaction.status === "COMPLETED"
-                          ? "default"
-                          : "secondary"
-                      }
-                    >
-                      {transaction.status}
-                    </Badge>
+                    <p className="text-sm text-muted-foreground">
+                      {transaction.source}
+                    </p>
                   </div>
                 </div>
               ))}
+            </div>
+          ) : (
+            <div className="text-center py-8">
+              <Receipt className="h-12 w-12 text-muted-foreground mx-auto mb-4" />
+              <p className="text-muted-foreground">No recent transactions</p>
+              <Button asChild className="mt-4">
+                <Link href="/finance/income/new">
+                  <Plus className="mr-2 h-4 w-4" />
+                  Add First Transaction
+                </Link>
+              </Button>
             </div>
           )}
         </CardContent>
@@ -335,9 +351,7 @@ export function FinanceOverview({ user: _user }: FinanceOverviewProps) {
               <Link href="/finance/reports">View Reports</Link>
             </Button>
             <Button asChild variant="outline" className="w-full">
-              <Link href="/finance/reports/financial-summary">
-                Financial Summary
-              </Link>
+              <Link href="/finance/reports">Financial Summary</Link>
             </Button>
           </CardContent>
         </Card>

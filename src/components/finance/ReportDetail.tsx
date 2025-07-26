@@ -6,7 +6,7 @@ import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { PageHeader } from "@/components/ui/page-header";
-import { useFinancialReports } from "@/hooks/api/finance";
+// TODO: Implement financial reports hooks
 import { formatDate } from "@/lib/utils";
 import { AppUser } from "@/types/user";
 import {
@@ -27,7 +27,10 @@ interface ReportDetailProps {
 
 export function ReportDetail({ reportId, user: _user }: ReportDetailProps) {
   const router = useRouter();
-  const { data: reports, isLoading, error } = useFinancialReports();
+  // TODO: Implement financial reports hooks
+  const reports: any[] = [];
+  const isLoading = false;
+  const error = null;
   const report = reports?.find((r: any) => r.id === reportId);
 
   if (isLoading) {
