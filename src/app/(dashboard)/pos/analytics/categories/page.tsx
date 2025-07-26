@@ -1,18 +1,24 @@
-import { auth } from "../../../../../../auth";
 import { redirect } from "next/navigation";
-import { CategoryAnalytics } from "@/components/pos/CategoryAnalytics";
+import { auth } from "../../../../../../auth";
+import { CategoryPerformance } from "@/components/pos/CategoryPerformance";
 import { DashboardPageLayout } from "@/components/layouts/DashboardPageLayout";
+import { ALL_ROLES, UserRole } from "@/lib/auth/roles";
 
 export const metadata = {
   title: "Category Performance - BaaWA Inventory POS",
-  description: "Analyze sales performance across product categories",
+  description: "Analyze category performance and sales metrics",
 };
 
-export default async function CategoryAnalyticsPage() {
+export default async function CategoryPerformancePage() {
   const session = await auth();
 
   if (!session?.user) {
     redirect("/login");
+  }
+
+  // Check role permissions - all authenticated users can access category performance
+  if (!ALL_ROLES.includes(session.user.role as UserRole)) {
+    redirect("/unauthorized");
   }
 
   if (session.user.status !== "APPROVED") {
@@ -21,10 +27,10 @@ export default async function CategoryAnalyticsPage() {
 
   return (
     <DashboardPageLayout
-      title="Category Performance Analytics"
-      description="Analyze sales performance across product categories"
+      title="Category Performance"
+      description="Analyze category performance and sales metrics"
     >
-      <CategoryAnalytics user={session.user} />
+      <CategoryPerformance user={session.user} />
     </DashboardPageLayout>
   );
 }

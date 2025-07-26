@@ -40,11 +40,23 @@ export const GET = withAuth(async (request: AuthenticatedRequest) => {
   try {
     const { searchParams } = new URL(request.url);
     const period = searchParams.get("period") || "30d";
+    const fromDate = searchParams.get("fromDate");
+    const toDate = searchParams.get("toDate");
     const search = searchParams.get("search") || "";
     const category = searchParams.get("category") || "all";
     const sortBy = searchParams.get("sortBy") || "revenue";
 
-    const periodStart = getPeriodFilter(period);
+    // Use custom date range if provided, otherwise use period
+    let periodStart: Date;
+    let periodEnd: Date | undefined;
+
+    if (fromDate && toDate) {
+      periodStart = new Date(fromDate);
+      periodEnd = new Date(toDate + "T23:59:59"); // End of day
+    } else {
+      periodStart = getPeriodFilter(period);
+      periodEnd = new Date(); // Current date
+    }
 
     // Build where clause for product filtering
     const productWhere: any = {};
@@ -75,6 +87,7 @@ export const GET = withAuth(async (request: AuthenticatedRequest) => {
             sales_transactions: {
               created_at: {
                 gte: periodStart,
+                ...(periodEnd && { lte: periodEnd }),
               },
               payment_status: PAYMENT_STATUS.PAID,
             },

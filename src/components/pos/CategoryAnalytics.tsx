@@ -5,6 +5,7 @@ import { useQuery } from "@tanstack/react-query";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
+import { DateRangePicker } from "@/components/ui/date-range-picker";
 import {
   Table,
   TableBody,
@@ -13,13 +14,7 @@ import {
   TableHeader,
   TableRow,
 } from "@/components/ui/table";
-import {
-  Select,
-  SelectContent,
-  SelectItem,
-  SelectTrigger,
-  SelectValue,
-} from "@/components/ui/select";
+
 import {
   IconTrendingUp,
   IconTrendingDown,
@@ -32,6 +27,7 @@ import {
 } from "@tabler/icons-react";
 import { formatCurrency } from "@/lib/utils";
 import { toast } from "sonner";
+import { DateRange } from "react-day-picker";
 
 interface CategoryPerformance {
   id: number;
@@ -57,11 +53,18 @@ interface CategoryAnalyticsProps {
 }
 
 async function fetchCategoryPerformance(
-  period: string
+  dateRange: DateRange | undefined
 ): Promise<CategoryPerformance[]> {
-  const response = await fetch(
-    `/api/pos/analytics/categories?period=${period}`
-  );
+  const params = new URLSearchParams();
+
+  if (dateRange?.from) {
+    params.append("fromDate", dateRange.from.toISOString().split("T")[0]);
+  }
+  if (dateRange?.to) {
+    params.append("toDate", dateRange.to.toISOString().split("T")[0]);
+  }
+
+  const response = await fetch(`/api/pos/analytics/categories?${params}`);
   if (!response.ok) {
     throw new Error("Failed to fetch category performance");
   }
@@ -69,27 +72,24 @@ async function fetchCategoryPerformance(
 }
 
 export function CategoryAnalytics({ user: _ }: CategoryAnalyticsProps) {
-  const [selectedPeriod, setSelectedPeriod] = useState("30d");
+  const [dateRange, setDateRange] = useState<DateRange | undefined>({
+    from: new Date(new Date().getTime() - 30 * 24 * 60 * 60 * 1000), // 30 days ago
+    to: new Date(), // Today
+  });
 
   const {
     data: categories = [],
     isLoading,
     error,
   } = useQuery({
-    queryKey: ["category-performance", selectedPeriod],
-    queryFn: () => fetchCategoryPerformance(selectedPeriod),
+    queryKey: ["category-performance", dateRange?.from, dateRange?.to],
+    queryFn: () => fetchCategoryPerformance(dateRange),
+    enabled: !!dateRange?.from && !!dateRange?.to,
   });
 
   if (error) {
     toast.error("Failed to load category performance data");
   }
-
-  const periods = [
-    { value: "7d", label: "Last 7 Days" },
-    { value: "30d", label: "Last 30 Days" },
-    { value: "90d", label: "Last 90 Days" },
-    { value: "1y", label: "Last Year" },
-  ];
 
   const getTrendBadge = (trending: string, percentage: number) => {
     if (trending === "up") {
@@ -132,18 +132,12 @@ export function CategoryAnalytics({ user: _ }: CategoryAnalyticsProps) {
           </p>
         </div>
         <div className="flex gap-2">
-          <Select value={selectedPeriod} onValueChange={setSelectedPeriod}>
-            <SelectTrigger className="w-[180px]">
-              <SelectValue placeholder="Select period" />
-            </SelectTrigger>
-            <SelectContent>
-              {periods.map((period) => (
-                <SelectItem key={period.value} value={period.value}>
-                  {period.label}
-                </SelectItem>
-              ))}
-            </SelectContent>
-          </Select>
+          <DateRangePicker
+            date={dateRange}
+            onDateChange={setDateRange}
+            placeholder="Select date range"
+            className="w-[300px]"
+          />
         </div>
       </div>
 

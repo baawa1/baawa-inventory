@@ -17,8 +17,14 @@ interface SalesOverview {
   }>;
   salesByPeriod: Array<{
     date: string;
-    sales: number;
     orders: number;
+    grossSales: number;
+    returns: number;
+    coupons: number;
+    netSales: number;
+    taxes: number;
+    shipping: number;
+    totalSales: number;
   }>;
   recentTransactions: Array<{
     id: number;
@@ -50,13 +56,27 @@ export const GET = withAuth(async (request: AuthenticatedRequest) => {
   try {
     const { searchParams } = new URL(request.url);
     const period = searchParams.get("period") || "7d";
-    const periodStart = getPeriodFilter(period);
+    const fromDate = searchParams.get("fromDate");
+    const toDate = searchParams.get("toDate");
+
+    // Use custom date range if provided, otherwise use period
+    let periodStart: Date;
+    let periodEnd: Date | undefined;
+
+    if (fromDate && toDate) {
+      periodStart = new Date(fromDate);
+      periodEnd = new Date(toDate + "T23:59:59"); // End of day
+    } else {
+      periodStart = getPeriodFilter(period);
+      periodEnd = new Date(); // Current date
+    }
 
     // Get total sales and orders
     const salesAggregates = await prisma.salesTransaction.aggregate({
       where: {
         created_at: {
           gte: periodStart,
+          ...(periodEnd && { lte: periodEnd }),
         },
         payment_status: PAYMENT_STATUS.PAID,
       },
@@ -73,6 +93,7 @@ export const GET = withAuth(async (request: AuthenticatedRequest) => {
       where: {
         created_at: {
           gte: periodStart,
+          ...(periodEnd && { lte: periodEnd }),
         },
         payment_status: PAYMENT_STATUS.PAID,
         customer_email: {
@@ -92,6 +113,7 @@ export const GET = withAuth(async (request: AuthenticatedRequest) => {
         sales_transactions: {
           created_at: {
             gte: periodStart,
+            ...(periodEnd && { lte: periodEnd }),
           },
           payment_status: PAYMENT_STATUS.PAID,
         },
@@ -144,6 +166,7 @@ export const GET = withAuth(async (request: AuthenticatedRequest) => {
       where: {
         created_at: {
           gte: periodStart,
+          ...(periodEnd && { lte: periodEnd }),
         },
         payment_status: PAYMENT_STATUS.PAID,
       },
@@ -164,12 +187,21 @@ export const GET = withAuth(async (request: AuthenticatedRequest) => {
         if (!acc[date]) {
           acc[date] = {
             date,
-            sales: 0,
             orders: 0,
+            grossSales: 0,
+            returns: 0,
+            coupons: 0,
+            netSales: 0,
+            taxes: 0,
+            shipping: 0,
+            totalSales: 0,
           };
         }
-        acc[date].sales += Number(item._sum.total_amount || 0);
+        const salesAmount = Number(item._sum.total_amount || 0);
         acc[date].orders += item._count.id;
+        acc[date].grossSales += salesAmount;
+        acc[date].netSales += salesAmount;
+        acc[date].totalSales += salesAmount;
         return acc;
       },
       {}

@@ -1,7 +1,6 @@
 import { auth } from "../../../../../auth";
 import { redirect } from "next/navigation";
 import { SalesAnalytics } from "@/components/pos/SalesAnalytics";
-import { DashboardPageLayout } from "@/components/layouts/DashboardPageLayout";
 
 export const metadata = {
   title: "Sales Analytics - BaaWA Inventory POS",
@@ -19,12 +18,5 @@ export default async function AnalyticsPage() {
     redirect("/pending-approval");
   }
 
-  return (
-    <DashboardPageLayout
-      title="Sales Analytics"
-      description="Analyze sales performance and business insights"
-    >
-      <SalesAnalytics user={session.user} />
-    </DashboardPageLayout>
-  );
+  return <SalesAnalytics user={session.user} />;
 }

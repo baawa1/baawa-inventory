@@ -1,11 +1,12 @@
-import { auth } from "../../../../../auth";
 import { redirect } from "next/navigation";
-import { CustomerLeaderboard } from "@/components/pos/CustomerLeaderboard";
+import { auth } from "../../../../../auth";
+import { CustomerList } from "@/components/pos/CustomerList";
 import { DashboardPageLayout } from "@/components/layouts/DashboardPageLayout";
+import { ALL_ROLES, UserRole } from "@/lib/auth/roles";
 
 export const metadata = {
-  title: "Customer Leaderboard - BaaWA Inventory POS",
-  description: "View top customers and their purchase statistics",
+  title: "Customers - BaaWA Inventory POS",
+  description: "Manage customer information and view customer analytics",
 };
 
 export default async function CustomersPage() {
@@ -15,16 +16,21 @@ export default async function CustomersPage() {
     redirect("/login");
   }
 
+  // Check role permissions - all authenticated users can access customers
+  if (!ALL_ROLES.includes(session.user.role as UserRole)) {
+    redirect("/unauthorized");
+  }
+
   if (session.user.status !== "APPROVED") {
     redirect("/pending-approval");
   }
 
   return (
     <DashboardPageLayout
-      title="Customer Leaderboard"
-      description="View top customers and their purchase statistics"
+      title="Customers"
+      description="Manage customer information and view customer analytics"
     >
-      <CustomerLeaderboard user={session.user} />
+      <CustomerList user={session.user} />
     </DashboardPageLayout>
   );
 }
