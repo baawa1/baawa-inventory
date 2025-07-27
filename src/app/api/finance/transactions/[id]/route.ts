@@ -1,6 +1,6 @@
-import { withAuth, AuthenticatedRequest } from "@/lib/api-middleware";
-import { prisma } from "@/lib/db";
-import { createApiResponse } from "@/lib/api-response";
+import { withAuth, AuthenticatedRequest } from '@/lib/api-middleware';
+import { prisma } from '@/lib/db';
+import { createApiResponse } from '@/lib/api-response';
 
 // GET /api/finance/transactions/[id] - Get specific financial transaction
 export const GET = withAuth(
@@ -13,7 +13,7 @@ export const GET = withAuth(
       const transactionId = parseInt(id);
 
       if (isNaN(transactionId)) {
-        return createApiResponse.internalError("Invalid transaction ID");
+        return createApiResponse.internalError('Invalid transaction ID');
       }
 
       const transaction = await prisma.financialTransaction.findUnique({
@@ -42,14 +42,14 @@ export const GET = withAuth(
 
       if (!transaction) {
         return createApiResponse.internalError(
-          "Financial transaction not found"
+          'Financial transaction not found'
         );
       }
 
       return createApiResponse.success(transaction);
     } catch (error) {
-      console.error("Error fetching financial transaction:", error);
-      return createApiResponse.internalError("Failed to fetch transaction");
+      console.error('Error fetching financial transaction:', error);
+      return createApiResponse.internalError('Failed to fetch transaction');
     }
   }
 );
@@ -65,12 +65,12 @@ export const PUT = withAuth(
       const transactionId = parseInt(id);
 
       if (isNaN(transactionId)) {
-        return createApiResponse.validationError("Invalid transaction ID");
+        return createApiResponse.validationError('Invalid transaction ID');
       }
 
       const body = await request.json();
       const { updateTransactionSchema } = await import(
-        "@/lib/validations/finance"
+        '@/lib/validations/finance'
       );
       const validatedData = updateTransactionSchema.parse(body);
 
@@ -84,22 +84,22 @@ export const PUT = withAuth(
       });
 
       if (!existingTransaction) {
-        return createApiResponse.notFound("Financial transaction not found");
+        return createApiResponse.notFound('Financial transaction not found');
       }
 
       // Check if transaction can be updated (not approved/rejected/cancelled)
       if (
-        ["APPROVED", "REJECTED", "CANCELLED"].includes(
+        ['APPROVED', 'REJECTED', 'CANCELLED'].includes(
           existingTransaction.status
         )
       ) {
         return createApiResponse.validationError(
-          "Cannot update a transaction that is approved, rejected, or cancelled"
+          'Cannot update a transaction that is approved, rejected, or cancelled'
         );
       }
 
       // Use Prisma transaction to ensure data consistency
-      const result = await prisma.$transaction(async (tx) => {
+      const result = await prisma.$transaction(async tx => {
         // Update the main transaction
         const transaction = await tx.financialTransaction.update({
           where: { id: transactionId },
@@ -135,7 +135,7 @@ export const PUT = withAuth(
         });
 
         // Update expense details if provided
-        if (validatedData.type === "EXPENSE" && validatedData.expenseType) {
+        if (validatedData.type === 'EXPENSE' && validatedData.expenseType) {
           await tx.expenseDetail.upsert({
             where: { transactionId },
             update: {
@@ -151,7 +151,7 @@ export const PUT = withAuth(
         }
 
         // Update income details if provided
-        if (validatedData.type === "INCOME" && validatedData.incomeSource) {
+        if (validatedData.type === 'INCOME' && validatedData.incomeSource) {
           await tx.incomeDetail.upsert({
             where: { transactionId },
             update: {
@@ -171,11 +171,11 @@ export const PUT = withAuth(
 
       return createApiResponse.success(
         result,
-        "Financial transaction updated successfully"
+        'Financial transaction updated successfully'
       );
     } catch (error) {
-      console.error("Error updating financial transaction:", error);
-      return createApiResponse.internalError("Failed to update transaction");
+      console.error('Error updating financial transaction:', error);
+      return createApiResponse.internalError('Failed to update transaction');
     }
   }
 );
@@ -191,7 +191,7 @@ export const DELETE = withAuth(
       const transactionId = parseInt(id);
 
       if (isNaN(transactionId)) {
-        return createApiResponse.validationError("Invalid transaction ID");
+        return createApiResponse.validationError('Invalid transaction ID');
       }
 
       // Get the transaction
@@ -200,13 +200,13 @@ export const DELETE = withAuth(
       });
 
       if (!transaction) {
-        return createApiResponse.notFound("Financial transaction not found");
+        return createApiResponse.notFound('Financial transaction not found');
       }
 
       // Check if transaction can be deleted (not approved/rejected)
-      if (["APPROVED", "REJECTED"].includes(transaction.status)) {
+      if (['APPROVED', 'REJECTED'].includes(transaction.status)) {
         return createApiResponse.validationError(
-          "Cannot delete a transaction that is approved or rejected"
+          'Cannot delete a transaction that is approved or rejected'
         );
       }
 
@@ -217,11 +217,11 @@ export const DELETE = withAuth(
 
       return createApiResponse.success(
         null,
-        "Financial transaction deleted successfully"
+        'Financial transaction deleted successfully'
       );
     } catch (error) {
-      console.error("Error deleting financial transaction:", error);
-      return createApiResponse.internalError("Failed to delete transaction");
+      console.error('Error deleting financial transaction:', error);
+      return createApiResponse.internalError('Failed to delete transaction');
     }
   }
 );

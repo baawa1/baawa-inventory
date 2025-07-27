@@ -1,13 +1,13 @@
-import { NextResponse } from "next/server";
+import { NextResponse } from 'next/server';
 import {
   withAuth,
   withPermission,
   AuthenticatedRequest,
-} from "@/lib/api-middleware";
-import { handleApiError } from "@/lib/api-error-handler-new";
-import { prisma } from "@/lib/db";
-import { USER_ROLES } from "@/lib/auth/roles";
-import { z } from "zod";
+} from '@/lib/api-middleware';
+import { handleApiError } from '@/lib/api-error-handler-new';
+import { prisma } from '@/lib/db';
+import { USER_ROLES } from '@/lib/auth/roles';
+import { z } from 'zod';
 
 const CategoryUpdateSchema = z.object({
   name: z.string().min(1).max(100).optional(),
@@ -29,7 +29,7 @@ export const GET = withAuth(
 
       if (isNaN(categoryId)) {
         return NextResponse.json(
-          { error: "Invalid category ID" },
+          { error: 'Invalid category ID' },
           { status: 400 }
         );
       }
@@ -62,7 +62,7 @@ export const GET = withAuth(
 
       if (!category) {
         return NextResponse.json(
-          { error: "Category not found" },
+          { error: 'Category not found' },
           { status: 404 }
         );
       }
@@ -108,7 +108,7 @@ export const PUT = withPermission(
 
       if (isNaN(categoryId)) {
         return NextResponse.json(
-          { error: "Invalid category ID" },
+          { error: 'Invalid category ID' },
           { status: 400 }
         );
       }
@@ -121,7 +121,7 @@ export const PUT = withPermission(
 
       if (!existingCategory) {
         return NextResponse.json(
-          { error: "Category not found" },
+          { error: 'Category not found' },
           { status: 404 }
         );
       }
@@ -130,7 +130,7 @@ export const PUT = withPermission(
       if (validatedData.parentId !== undefined) {
         if (validatedData.parentId === categoryId) {
           return NextResponse.json(
-            { error: "Category cannot be its own parent" },
+            { error: 'Category cannot be its own parent' },
             { status: 400 }
           );
         }
@@ -143,14 +143,14 @@ export const PUT = withPermission(
 
           if (!parentCategory) {
             return NextResponse.json(
-              { error: "Parent category not found" },
+              { error: 'Parent category not found' },
               { status: 404 }
             );
           }
 
           if (!parentCategory.isActive) {
             return NextResponse.json(
-              { error: "Cannot set inactive category as parent" },
+              { error: 'Cannot set inactive category as parent' },
               { status: 400 }
             );
           }
@@ -168,7 +168,7 @@ export const PUT = withPermission(
           where: {
             name: {
               equals: validatedData.name,
-              mode: "insensitive",
+              mode: 'insensitive',
             },
             parentId: parentId,
             id: { not: categoryId },
@@ -177,7 +177,7 @@ export const PUT = withPermission(
 
         if (nameConflict) {
           return NextResponse.json(
-            { error: "Category with this name already exists at this level" },
+            { error: 'Category with this name already exists at this level' },
             { status: 409 }
           );
         }
@@ -229,7 +229,7 @@ export const PUT = withPermission(
 
       return NextResponse.json({
         success: true,
-        message: "Category updated successfully",
+        message: 'Category updated successfully',
         data: transformedCategory,
       });
     } catch (error) {
@@ -251,7 +251,7 @@ export const DELETE = withPermission(
 
       if (isNaN(categoryId)) {
         return NextResponse.json(
-          { error: "Invalid category ID" },
+          { error: 'Invalid category ID' },
           { status: 400 }
         );
       }
@@ -271,7 +271,7 @@ export const DELETE = withPermission(
 
       if (!existingCategory) {
         return NextResponse.json(
-          { error: "Category not found" },
+          { error: 'Category not found' },
           { status: 404 }
         );
       }
@@ -280,7 +280,7 @@ export const DELETE = withPermission(
       if (existingCategory._count.products > 0) {
         return NextResponse.json(
           {
-            error: "Cannot delete category with associated products",
+            error: 'Cannot delete category with associated products',
             details: `This category has ${existingCategory._count.products} associated products`,
           },
           { status: 400 }
@@ -291,7 +291,7 @@ export const DELETE = withPermission(
       if (existingCategory._count.children > 0) {
         return NextResponse.json(
           {
-            error: "Cannot delete category with subcategories",
+            error: 'Cannot delete category with subcategories',
             details: `This category has ${existingCategory._count.children} subcategories`,
           },
           { status: 400 }
@@ -305,7 +305,7 @@ export const DELETE = withPermission(
 
       return NextResponse.json({
         success: true,
-        message: "Category deleted successfully",
+        message: 'Category deleted successfully',
         data: { id: categoryId, name: existingCategory.name },
       });
     } catch (error) {

@@ -1,6 +1,6 @@
-import { clsx, type ClassValue } from "clsx";
-import { twMerge } from "tailwind-merge";
-import { prisma } from "@/lib/db";
+import { clsx, type ClassValue } from 'clsx';
+import { twMerge } from 'tailwind-merge';
+import { prisma } from '@/lib/db';
 
 export function cn(...inputs: ClassValue[]) {
   return twMerge(clsx(inputs));
@@ -18,22 +18,22 @@ export function formatCurrency(
 ): string {
   // Handle NaN, null, or undefined values
   if (amount === null || amount === undefined || isNaN(amount)) {
-    return "₦0.00";
+    return '₦0.00';
   }
 
   const options: Intl.NumberFormatOptions = {
-    style: "currency",
-    currency: "NGN",
-    currencyDisplay: "narrowSymbol",
+    style: 'currency',
+    currency: 'NGN',
+    currencyDisplay: 'narrowSymbol',
     minimumFractionDigits: showDecimals ? 2 : 0,
     maximumFractionDigits: showDecimals ? 2 : 0,
   };
 
   // Format using Nigerian locale for proper comma separators
-  const formatted = new Intl.NumberFormat("en-NG", options).format(amount);
+  const formatted = new Intl.NumberFormat('en-NG', options).format(amount);
 
   // Replace NGN symbol with ₦ for consistency
-  return formatted.replace("NGN", "₦").replace("₦ ", "₦");
+  return formatted.replace('NGN', '₦').replace('₦ ', '₦');
 }
 
 /**
@@ -46,29 +46,29 @@ export function formatDate(
   date: string | Date | number,
   options?: {
     includeTime?: boolean;
-    dateStyle?: "short" | "medium" | "long" | "full";
-    timeStyle?: "short" | "medium" | "long" | "full";
+    dateStyle?: 'short' | 'medium' | 'long' | 'full';
+    timeStyle?: 'short' | 'medium' | 'long' | 'full';
   }
 ): string {
   const dateObj = new Date(date);
 
   if (isNaN(dateObj.getTime())) {
-    return "Invalid Date";
+    return 'Invalid Date';
   }
 
   const {
     includeTime = true,
-    dateStyle = "medium",
-    timeStyle = "short",
+    dateStyle = 'medium',
+    timeStyle = 'short',
   } = options || {};
 
   if (includeTime) {
-    return new Intl.DateTimeFormat("en-US", {
+    return new Intl.DateTimeFormat('en-US', {
       dateStyle,
       timeStyle,
     }).format(dateObj);
   } else {
-    return new Intl.DateTimeFormat("en-US", {
+    return new Intl.DateTimeFormat('en-US', {
       dateStyle,
     }).format(dateObj);
   }
@@ -88,13 +88,13 @@ export function formatRelativeTime(date: string | Date | number): string {
   const diffInDays = Math.floor(diffInHours / 24);
 
   if (diffInMinutes < 1) {
-    return "Just now";
+    return 'Just now';
   } else if (diffInMinutes < 60) {
-    return `${diffInMinutes} minute${diffInMinutes !== 1 ? "s" : ""} ago`;
+    return `${diffInMinutes} minute${diffInMinutes !== 1 ? 's' : ''} ago`;
   } else if (diffInHours < 24) {
-    return `${diffInHours} hour${diffInHours !== 1 ? "s" : ""} ago`;
+    return `${diffInHours} hour${diffInHours !== 1 ? 's' : ''} ago`;
   } else if (diffInDays < 7) {
-    return `${diffInDays} day${diffInDays !== 1 ? "s" : ""} ago`;
+    return `${diffInDays} day${diffInDays !== 1 ? 's' : ''} ago`;
   } else {
     return formatDate(date, { includeTime: false });
   }
@@ -106,7 +106,7 @@ export function formatRelativeTime(date: string | Date | number): string {
  */
 export async function generateTransactionNumber(): Promise<string> {
   const today = new Date();
-  const dateString = today.toISOString().slice(0, 10).replace(/-/g, "");
+  const dateString = today.toISOString().slice(0, 10).replace(/-/g, '');
   const prefix = `FIN-${dateString}`;
 
   // Get the count of transactions for today
@@ -131,6 +131,6 @@ export async function generateTransactionNumber(): Promise<string> {
   });
 
   // Format the sequence number with leading zeros
-  const sequence = (count + 1).toString().padStart(4, "0");
+  const sequence = (count + 1).toString().padStart(4, '0');
   return `${prefix}-${sequence}`;
 }

@@ -1,4 +1,4 @@
-"use client";
+'use client';
 
 import {
   Table,
@@ -7,19 +7,19 @@ import {
   TableHead,
   TableHeader,
   TableRow,
-} from "@/components/ui/table";
-import { Badge } from "@/components/ui/badge";
+} from '@/components/ui/table';
+import { Badge } from '@/components/ui/badge';
 import {
   Card,
   CardContent,
   CardDescription,
   CardHeader,
   CardTitle,
-} from "@/components/ui/card";
-import { IconPackage } from "@tabler/icons-react";
-import { formatCurrency } from "@/lib/utils";
-import type { StockReconciliationItem } from "@/hooks/api/stock-management";
-import { DISCREPANCY_REASONS } from "@/lib/constants/stock-reconciliation";
+} from '@/components/ui/card';
+import { IconPackage } from '@tabler/icons-react';
+import { formatCurrency } from '@/lib/utils';
+import type { StockReconciliationItem } from '@/hooks/api/stock-management';
+import { DISCREPANCY_REASONS } from '@/lib/constants/stock-reconciliation';
 
 interface ReconciliationItemsTableProps {
   items: StockReconciliationItem[];
@@ -30,8 +30,8 @@ export function ReconciliationItemsTable({
 }: ReconciliationItemsTableProps) {
   // Helper function to get human-readable discrepancy reason
   const getDiscrepancyReasonLabel = (reason: string | null | undefined) => {
-    if (!reason) return "-";
-    const found = DISCREPANCY_REASONS.find((r) => r.value === reason);
+    if (!reason) return '-';
+    const found = DISCREPANCY_REASONS.find(r => r.value === reason);
     return found ? found.label : reason;
   };
 
@@ -61,12 +61,12 @@ export function ReconciliationItemsTable({
               </TableRow>
             </TableHeader>
             <TableBody>
-              {items.map((item) => (
+              {items.map(item => (
                 <TableRow key={item.id}>
                   <TableCell>
                     <div>
                       <div className="font-medium">{item.product.name}</div>
-                      <div className="text-sm text-muted-foreground">
+                      <div className="text-muted-foreground text-sm">
                         SKU: {item.product.sku}
                       </div>
                     </div>
@@ -81,13 +81,13 @@ export function ReconciliationItemsTable({
                     <Badge
                       variant={
                         item.discrepancy === 0
-                          ? "secondary"
+                          ? 'secondary'
                           : item.discrepancy > 0
-                            ? "default"
-                            : "destructive"
+                            ? 'default'
+                            : 'destructive'
                       }
                     >
-                      {item.discrepancy > 0 ? "+" : ""}
+                      {item.discrepancy > 0 ? '+' : ''}
                       {item.discrepancy}
                     </Badge>
                   </TableCell>
@@ -107,7 +107,7 @@ export function ReconciliationItemsTable({
                   </TableCell>
                   <TableCell>
                     {item.notes ? (
-                      <span className="text-sm text-muted-foreground">
+                      <span className="text-muted-foreground text-sm">
                         {item.notes}
                       </span>
                     ) : (

@@ -1,8 +1,8 @@
-import { NextRequest, NextResponse } from "next/server";
-import { withPermission, AuthenticatedRequest } from "@/lib/api-middleware";
-import { prisma } from "@/lib/db";
-import bcrypt from "bcryptjs";
-import { emailService } from "@/lib/email";
+import { NextRequest, NextResponse } from 'next/server';
+import { withPermission, AuthenticatedRequest } from '@/lib/api-middleware';
+import { prisma } from '@/lib/db';
+import bcrypt from 'bcryptjs';
+import { emailService } from '@/lib/email';
 
 interface RouteParams {
   params: Promise<{ id: string }>;
@@ -11,7 +11,7 @@ interface RouteParams {
 // GET /api/users/[id] - Get a specific user
 export async function GET(request: NextRequest, { params }: RouteParams) {
   const handler = withPermission(
-    ["ADMIN"],
+    ['ADMIN'],
     async (_authRequest: AuthenticatedRequest) => {
       try {
         const { id } = await params;
@@ -20,7 +20,7 @@ export async function GET(request: NextRequest, { params }: RouteParams) {
         const userId = parseInt(id);
         if (isNaN(userId)) {
           return NextResponse.json(
-            { error: "Invalid user ID" },
+            { error: 'Invalid user ID' },
             { status: 400 }
           );
         }
@@ -42,7 +42,7 @@ export async function GET(request: NextRequest, { params }: RouteParams) {
 
         if (!user) {
           return NextResponse.json(
-            { error: "User not found" },
+            { error: 'User not found' },
             { status: 404 }
           );
         }
@@ -62,9 +62,9 @@ export async function GET(request: NextRequest, { params }: RouteParams) {
 
         return NextResponse.json(transformedUser);
       } catch (error) {
-        console.error("Error in GET /api/users/[id]:", error);
+        console.error('Error in GET /api/users/[id]:', error);
         return NextResponse.json(
-          { error: "Internal server error" },
+          { error: 'Internal server error' },
           { status: 500 }
         );
       }
@@ -77,7 +77,7 @@ export async function GET(request: NextRequest, { params }: RouteParams) {
 // PUT /api/users/[id] - Update a user
 export async function PUT(request: NextRequest, { params }: RouteParams) {
   const handler = withPermission(
-    ["ADMIN"],
+    ['ADMIN'],
     async (authRequest: AuthenticatedRequest) => {
       try {
         const { id } = await params;
@@ -89,7 +89,7 @@ export async function PUT(request: NextRequest, { params }: RouteParams) {
         const userId = parseInt(id);
         if (isNaN(userId)) {
           return NextResponse.json(
-            { error: "Invalid user ID" },
+            { error: 'Invalid user ID' },
             { status: 400 }
           );
         }
@@ -109,7 +109,7 @@ export async function PUT(request: NextRequest, { params }: RouteParams) {
 
         if (!existingUser) {
           return NextResponse.json(
-            { error: "User not found" },
+            { error: 'User not found' },
             { status: 404 }
           );
         }
@@ -120,7 +120,7 @@ export async function PUT(request: NextRequest, { params }: RouteParams) {
           const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
           if (!emailRegex.test(body.email)) {
             return NextResponse.json(
-              { error: "Invalid email format" },
+              { error: 'Invalid email format' },
               { status: 400 }
             );
           }
@@ -135,7 +135,7 @@ export async function PUT(request: NextRequest, { params }: RouteParams) {
 
           if (conflictUser) {
             return NextResponse.json(
-              { error: "User with this email already exists" },
+              { error: 'User with this email already exists' },
               { status: 409 }
             );
           }
@@ -143,10 +143,10 @@ export async function PUT(request: NextRequest, { params }: RouteParams) {
 
         // Validate role if provided
         if (body.role) {
-          const validRoles = ["ADMIN", "MANAGER", "STAFF"];
+          const validRoles = ['ADMIN', 'MANAGER', 'STAFF'];
           if (!validRoles.includes(body.role)) {
             return NextResponse.json(
-              { error: "Invalid role. Must be one of: ADMIN, MANAGER, STAFF" },
+              { error: 'Invalid role. Must be one of: ADMIN, MANAGER, STAFF' },
               { status: 400 }
             );
           }
@@ -164,7 +164,7 @@ export async function PUT(request: NextRequest, { params }: RouteParams) {
         if (body.notes !== undefined) updateData.notes = body.notes;
 
         // Hash password if provided
-        if (body.password && body.password.trim() !== "") {
+        if (body.password && body.password.trim() !== '') {
           updateData.password = await bcrypt.hash(body.password, 12);
         }
 
@@ -198,9 +198,9 @@ export async function PUT(request: NextRequest, { params }: RouteParams) {
         // Check if role changed and send notification email
         if (body.role && body.role !== existingUser.role) {
           try {
-            const adminName = authRequest.user?.name || "Administrator";
+            const adminName = authRequest.user?.name || 'Administrator';
             const dashboardUrl =
-              process.env.NEXTAUTH_URL || "http://localhost:3000";
+              process.env.NEXTAUTH_URL || 'http://localhost:3000';
 
             await emailService.sendRoleChangeEmail(user.email, {
               firstName: user.firstName,
@@ -210,7 +210,7 @@ export async function PUT(request: NextRequest, { params }: RouteParams) {
               dashboardLink: `${dashboardUrl}/dashboard`,
             });
           } catch (emailError) {
-            console.error("Failed to send role change email:", emailError);
+            console.error('Failed to send role change email:', emailError);
             // Don't fail the entire operation if email fails
           }
         }
@@ -235,9 +235,9 @@ export async function PUT(request: NextRequest, { params }: RouteParams) {
           sessionUpdated: !!(body.role || body.userStatus),
         });
       } catch (error) {
-        console.error("Error in PUT /api/users/[id]:", error);
+        console.error('Error in PUT /api/users/[id]:', error);
         return NextResponse.json(
-          { error: "Internal server error" },
+          { error: 'Internal server error' },
           { status: 500 }
         );
       }
@@ -250,7 +250,7 @@ export async function PUT(request: NextRequest, { params }: RouteParams) {
 // DELETE /api/users/[id] - Delete a user (mark as inactive)
 export async function DELETE(request: NextRequest, { params }: RouteParams) {
   const handler = withPermission(
-    ["ADMIN"],
+    ['ADMIN'],
     async (_authRequest: AuthenticatedRequest) => {
       try {
         const { id } = await params;
@@ -259,7 +259,7 @@ export async function DELETE(request: NextRequest, { params }: RouteParams) {
         const userId = parseInt(id);
         if (isNaN(userId)) {
           return NextResponse.json(
-            { error: "Invalid user ID" },
+            { error: 'Invalid user ID' },
             { status: 400 }
           );
         }
@@ -272,7 +272,7 @@ export async function DELETE(request: NextRequest, { params }: RouteParams) {
 
         if (!existingUser) {
           return NextResponse.json(
-            { error: "User not found" },
+            { error: 'User not found' },
             { status: 404 }
           );
         }
@@ -291,13 +291,13 @@ export async function DELETE(request: NextRequest, { params }: RouteParams) {
         });
 
         return NextResponse.json({
-          message: "User deactivated successfully",
+          message: 'User deactivated successfully',
           user,
         });
       } catch (error) {
-        console.error("Error in DELETE /api/users/[id]:", error);
+        console.error('Error in DELETE /api/users/[id]:', error);
         return NextResponse.json(
-          { error: "Internal server error" },
+          { error: 'Internal server error' },
           { status: 500 }
         );
       }

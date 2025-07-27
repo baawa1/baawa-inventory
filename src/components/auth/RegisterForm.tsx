@@ -1,19 +1,19 @@
-"use client";
+'use client';
 
-import { useState } from "react";
-import { useRouter } from "next/navigation";
-import { useForm } from "react-hook-form";
-import { zodResolver } from "@hookform/resolvers/zod";
-import { z } from "zod";
+import { useState } from 'react';
+import { useRouter } from 'next/navigation';
+import { useForm } from 'react-hook-form';
+import { zodResolver } from '@hookform/resolvers/zod';
+import { z } from 'zod';
 
-import { Button } from "@/components/ui/button";
+import { Button } from '@/components/ui/button';
 import {
   Card,
   CardContent,
   CardDescription,
   CardHeader,
   CardTitle,
-} from "@/components/ui/card";
+} from '@/components/ui/card';
 import {
   Form,
   FormControl,
@@ -21,22 +21,22 @@ import {
   FormItem,
   FormLabel,
   FormMessage,
-} from "@/components/ui/form";
-import { Input } from "@/components/ui/input";
-import { UserRole } from "@/types/app";
-import { passwordSchema } from "@/lib/validations/common";
+} from '@/components/ui/form';
+import { Input } from '@/components/ui/input';
+import { UserRole } from '@/types/app';
+import { passwordSchema } from '@/lib/validations/common';
 
 const registerSchema = z
   .object({
-    firstName: z.string().min(2, "First name must be at least 2 characters"),
-    lastName: z.string().min(2, "Last name must be at least 2 characters"),
-    email: z.string().email("Please enter a valid email address"),
+    firstName: z.string().min(2, 'First name must be at least 2 characters'),
+    lastName: z.string().min(2, 'Last name must be at least 2 characters'),
+    email: z.string().email('Please enter a valid email address'),
     password: passwordSchema, // Use the same password schema as backend
     confirmPassword: z.string(),
   })
-  .refine((data) => data.password === data.confirmPassword, {
+  .refine(data => data.password === data.confirmPassword, {
     message: "Passwords don't match",
-    path: ["confirmPassword"],
+    path: ['confirmPassword'],
   });
 
 type RegisterFormData = z.infer<typeof registerSchema>;
@@ -54,14 +54,14 @@ export function RegisterForm({ onSuccess }: RegisterFormProps) {
 
   const form = useForm<RegisterFormData>({
     resolver: zodResolver(registerSchema),
-    mode: "onBlur",
-    reValidateMode: "onChange",
+    mode: 'onBlur',
+    reValidateMode: 'onChange',
     defaultValues: {
-      firstName: "",
-      lastName: "",
-      email: "",
-      password: "",
-      confirmPassword: "",
+      firstName: '',
+      lastName: '',
+      email: '',
+      password: '',
+      confirmPassword: '',
     },
   });
 
@@ -70,10 +70,10 @@ export function RegisterForm({ onSuccess }: RegisterFormProps) {
     setError(null);
 
     try {
-      const response = await fetch("/api/auth/register", {
-        method: "POST",
+      const response = await fetch('/api/auth/register', {
+        method: 'POST',
         headers: {
-          "Content-Type": "application/json",
+          'Content-Type': 'application/json',
         },
         body: JSON.stringify({
           firstName: data.firstName,
@@ -86,7 +86,7 @@ export function RegisterForm({ onSuccess }: RegisterFormProps) {
       });
 
       if (!response.ok) {
-        let errorMessage = "Failed to create account";
+        let errorMessage = 'Failed to create account';
         try {
           const errorData = await response.json();
           errorMessage = errorData.error || errorData.message || errorMessage;
@@ -110,7 +110,7 @@ export function RegisterForm({ onSuccess }: RegisterFormProps) {
       }
     } catch (error) {
       setError(
-        error instanceof Error ? error.message : "An unexpected error occurred"
+        error instanceof Error ? error.message : 'An unexpected error occurred'
       );
     } finally {
       setIsLoading(false);
@@ -119,7 +119,7 @@ export function RegisterForm({ onSuccess }: RegisterFormProps) {
 
   if (success) {
     return (
-      <Card className="w-full max-w-md mx-auto">
+      <Card className="mx-auto w-full max-w-md">
         <CardHeader className="text-center">
           <CardTitle className="text-2xl text-green-600">
             <h1>Check Your Email!</h1>
@@ -133,7 +133,7 @@ export function RegisterForm({ onSuccess }: RegisterFormProps) {
           <Button
             onClick={() =>
               router.push(
-                `/check-email?email=${encodeURIComponent(form.getValues("email") || "")}`
+                `/check-email?email=${encodeURIComponent(form.getValues('email') || '')}`
               )
             }
             className="w-full"
@@ -146,7 +146,7 @@ export function RegisterForm({ onSuccess }: RegisterFormProps) {
   }
 
   return (
-    <Card className="w-full max-w-md mx-auto">
+    <Card className="mx-auto w-full max-w-md">
       <CardHeader className="text-center">
         <CardTitle className="text-2xl">
           <h1>Create Account</h1>
@@ -166,7 +166,7 @@ export function RegisterForm({ onSuccess }: RegisterFormProps) {
             {Object.keys(form.formState.errors).length > 0 && (
               <div
                 data-testid="validation-errors"
-                className="bg-destructive/15 text-destructive text-sm p-3 rounded-md"
+                className="bg-destructive/15 text-destructive rounded-md p-3 text-sm"
               >
                 {Object.entries(form.formState.errors).map(([field, error]) => (
                   <div key={field}>{error?.message}</div>
@@ -176,7 +176,7 @@ export function RegisterForm({ onSuccess }: RegisterFormProps) {
             {error && (
               <div
                 data-testid="error-message"
-                className="bg-destructive/15 text-destructive text-sm p-3 rounded-md"
+                className="bg-destructive/15 text-destructive rounded-md p-3 text-sm"
               >
                 {error}
               </div>
@@ -256,7 +256,7 @@ export function RegisterForm({ onSuccess }: RegisterFormProps) {
                     />
                   </FormControl>
                   <FormMessage data-testid="password-error" />
-                  <div className="text-xs text-muted-foreground mt-1">
+                  <div className="text-muted-foreground mt-1 text-xs">
                     Password must be at least 12 characters with uppercase,
                     lowercase, number, and special character
                   </div>
@@ -290,7 +290,7 @@ export function RegisterForm({ onSuccess }: RegisterFormProps) {
               className="w-full"
               disabled={isLoading}
             >
-              {isLoading ? "Creating account..." : "Create Account"}
+              {isLoading ? 'Creating account...' : 'Create Account'}
             </Button>
           </form>
         </Form>

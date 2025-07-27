@@ -1,16 +1,16 @@
-import { z } from "zod";
+import { z } from 'zod';
 
 // Zod schema for validation
 export const productImageSchema = z.object({
   id: z.string().optional(),
-  url: z.string().url("Invalid image URL"),
-  filename: z.string().min(1, "Filename is required"),
-  size: z.number().min(0, "Size must be positive"),
-  mimeType: z.string().min(1, "MIME type is required"),
+  url: z.string().url('Invalid image URL'),
+  filename: z.string().min(1, 'Filename is required'),
+  size: z.number().min(0, 'Size must be positive'),
+  mimeType: z.string().min(1, 'MIME type is required'),
   alt: z.string().optional(),
   altText: z.string().optional(), // Support both alt and altText for backward compatibility
   isPrimary: z.boolean().default(false),
-  uploadedAt: z.string().datetime("Invalid upload date"),
+  uploadedAt: z.string().datetime('Invalid upload date'),
 });
 
 export const updateImagesSchema = z.object({
@@ -50,7 +50,7 @@ export interface ImageUploadResult {
 // Constants
 export const IMAGE_CONSTANTS = {
   MAX_FILE_SIZE: 5 * 1024 * 1024, // 5MB
-  ALLOWED_TYPES: ["image/jpeg", "image/png", "image/webp"] as const,
+  ALLOWED_TYPES: ['image/jpeg', 'image/png', 'image/webp'] as const,
   MAX_DIMENSION: 1920,
   DEFAULT_QUALITY: 85,
   MAX_FILES_PER_PRODUCT: 10,

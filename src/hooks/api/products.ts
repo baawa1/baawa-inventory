@@ -1,6 +1,6 @@
-import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
-import { queryKeys } from "@/lib/query-client";
-import { CACHE_DURATIONS } from "@/lib/constants";
+import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
+import { queryKeys } from '@/lib/query-client';
+import { CACHE_DURATIONS } from '@/lib/constants';
 
 // Improved type definitions
 interface ProductVariantAttributes {
@@ -50,7 +50,7 @@ export interface Product {
   metaTitle?: string;
   metaDescription?: string;
   seoKeywords: string[];
-  status: "ACTIVE" | "INACTIVE" | "OUT_OF_STOCK" | "DISCONTINUED";
+  status: 'ACTIVE' | 'INACTIVE' | 'OUT_OF_STOCK' | 'DISCONTINUED';
 
   isFeatured: boolean;
   metaContent?: string;
@@ -79,7 +79,7 @@ export interface ProductFilters {
   supplier: string;
   lowStock: boolean;
   sortBy: string;
-  sortOrder: "asc" | "desc";
+  sortOrder: 'asc' | 'desc';
 }
 
 export interface ProductPagination {
@@ -119,18 +119,18 @@ const fetchProducts = async (
   pagination: Partial<ProductPagination>
 ): Promise<ProductListResponse> => {
   const searchParams = new URLSearchParams({
-    page: pagination.page?.toString() || "1",
-    limit: pagination.limit?.toString() || "10",
-    sortBy: filters.sortBy || "name",
-    sortOrder: filters.sortOrder || "asc",
+    page: pagination.page?.toString() || '1',
+    limit: pagination.limit?.toString() || '10',
+    sortBy: filters.sortBy || 'name',
+    sortOrder: filters.sortOrder || 'asc',
   });
 
-  if (filters.search) searchParams.set("search", filters.search);
-  if (filters.categoryId) searchParams.set("categoryId", filters.categoryId);
-  if (filters.brandId) searchParams.set("brandId", filters.brandId);
-  if (filters.status) searchParams.set("status", filters.status);
-  if (filters.supplier) searchParams.set("supplierId", filters.supplier);
-  if (filters.lowStock) searchParams.set("lowStock", "true");
+  if (filters.search) searchParams.set('search', filters.search);
+  if (filters.categoryId) searchParams.set('categoryId', filters.categoryId);
+  if (filters.brandId) searchParams.set('brandId', filters.brandId);
+  if (filters.status) searchParams.set('status', filters.status);
+  if (filters.supplier) searchParams.set('supplierId', filters.supplier);
+  if (filters.lowStock) searchParams.set('lowStock', 'true');
 
   const response = await fetch(`/api/products?${searchParams.toString()}`);
   if (!response.ok) {
@@ -157,8 +157,8 @@ const fetchBrands = async (
 ): Promise<Brand[]> => {
   const searchParams = new URLSearchParams();
   if (filters.isActive !== undefined)
-    searchParams.set("isActive", filters.isActive.toString());
-  if (filters.limit) searchParams.set("limit", filters.limit.toString());
+    searchParams.set('isActive', filters.isActive.toString());
+  if (filters.limit) searchParams.set('limit', filters.limit.toString());
 
   const response = await fetch(`/api/brands?${searchParams.toString()}`);
   if (!response.ok) {
@@ -175,8 +175,8 @@ const fetchCategories = async (
 ): Promise<Category[]> => {
   const searchParams = new URLSearchParams();
   if (filters.isActive !== undefined)
-    searchParams.set("isActive", filters.isActive.toString());
-  if (filters.limit) searchParams.set("limit", filters.limit.toString());
+    searchParams.set('isActive', filters.isActive.toString());
+  if (filters.limit) searchParams.set('limit', filters.limit.toString());
 
   const response = await fetch(`/api/categories?${searchParams.toString()}`);
   if (!response.ok) {
@@ -193,15 +193,15 @@ const fetchArchivedProducts = async (
   pagination: Partial<ProductPagination>
 ): Promise<ProductListResponse> => {
   const searchParams = new URLSearchParams({
-    page: pagination.page?.toString() || "1",
-    limit: pagination.limit?.toString() || "10",
-    sortBy: filters.sortBy || "updatedAt",
-    sortOrder: filters.sortOrder || "desc",
+    page: pagination.page?.toString() || '1',
+    limit: pagination.limit?.toString() || '10',
+    sortBy: filters.sortBy || 'updatedAt',
+    sortOrder: filters.sortOrder || 'desc',
   });
 
-  if (filters.search) searchParams.set("search", filters.search);
-  if (filters.categoryId) searchParams.set("category", filters.categoryId);
-  if (filters.brandId) searchParams.set("brand", filters.brandId);
+  if (filters.search) searchParams.set('search', filters.search);
+  if (filters.categoryId) searchParams.set('category', filters.categoryId);
+  if (filters.brandId) searchParams.set('brand', filters.brandId);
 
   const response = await fetch(
     `/api/products/archived?${searchParams.toString()}`
@@ -216,11 +216,11 @@ const fetchArchivedProducts = async (
 
 const unarchiveProduct = async (id: number): Promise<void> => {
   const response = await fetch(`/api/products/${id}/archive`, {
-    method: "PATCH",
-    headers: { "Content-Type": "application/json" },
+    method: 'PATCH',
+    headers: { 'Content-Type': 'application/json' },
     body: JSON.stringify({
       archived: false,
-      reason: "Unarchived by user",
+      reason: 'Unarchived by user',
     }),
   });
   if (!response.ok) {
@@ -240,7 +240,7 @@ export function useProducts(
     queryFn: () => fetchProducts(filters, pagination),
     staleTime: CACHE_DURATIONS.TRANSACTION_HISTORY, // 2 minutes
     gcTime: CACHE_DURATIONS.PRODUCTS, // 5 minutes
-    placeholderData: (previousData) => previousData, // Keep previous data while loading new page
+    placeholderData: previousData => previousData, // Keep previous data while loading new page
   });
 }
 
@@ -294,11 +294,11 @@ export function useCreateProduct() {
 
   return useMutation({
     mutationFn: async (
-      productData: Omit<Product, "id" | "createdAt" | "updatedAt">
+      productData: Omit<Product, 'id' | 'createdAt' | 'updatedAt'>
     ) => {
-      const response = await fetch("/api/products", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
+      const response = await fetch('/api/products', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify(productData),
       });
       if (!response.ok) {
@@ -327,8 +327,8 @@ export function useUpdateProduct() {
       ...productData
     }: Partial<Product> & { id: number }) => {
       const response = await fetch(`/api/products/${id}`, {
-        method: "PUT",
-        headers: { "Content-Type": "application/json" },
+        method: 'PUT',
+        headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify(productData),
       });
       if (!response.ok) {
@@ -356,7 +356,7 @@ export function useDeleteProduct() {
   return useMutation({
     mutationFn: async (id: number) => {
       const response = await fetch(`/api/products/${id}`, {
-        method: "DELETE",
+        method: 'DELETE',
       });
       if (!response.ok) {
         throw new Error(
@@ -397,9 +397,9 @@ export function useUnarchiveProduct() {
 // Utility Hooks
 export const useProductOptions = () => {
   return useQuery({
-    queryKey: [...queryKeys.products.all, "options"] as const,
+    queryKey: [...queryKeys.products.all, 'options'] as const,
     queryFn: async () => {
-      const response = await fetch("/api/products?status=active");
+      const response = await fetch('/api/products?status=active');
       if (!response.ok) {
         throw new Error(
           `Failed to fetch product options: ${response.statusText}`
@@ -411,7 +411,7 @@ export const useProductOptions = () => {
         label: `${product.name} (${product.sku})`,
         sku: product.sku,
         stock: product.stock,
-        category: product.category?.name || "No Category",
+        category: product.category?.name || 'No Category',
       }));
     },
     staleTime: 5 * 60 * 1000, // 5 minutes for product options

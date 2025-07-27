@@ -3,9 +3,9 @@
  * Handles hashing and verification of reset and verification tokens
  */
 
-import crypto from "crypto";
-import * as bcrypt from "bcryptjs";
-import { ErrorSanitizer } from "./error-sanitizer";
+import crypto from 'crypto';
+import * as bcrypt from 'bcryptjs';
+import { ErrorSanitizer } from './error-sanitizer';
 
 export interface TokenPair {
   rawToken: string;
@@ -27,7 +27,7 @@ export class SecureTokenManager {
   static generateTokenPair(): TokenPair {
     try {
       // Generate cryptographically secure random token
-      const rawToken = crypto.randomBytes(this.TOKEN_LENGTH).toString("hex");
+      const rawToken = crypto.randomBytes(this.TOKEN_LENGTH).toString('hex');
 
       // Hash the token for database storage
       const hashedToken = bcrypt.hashSync(rawToken, this.SALT_ROUNDS);
@@ -37,8 +37,8 @@ export class SecureTokenManager {
         hashedToken,
       };
     } catch (error) {
-      ErrorSanitizer.logError(error, "generateTokenPair");
-      throw new Error("Failed to generate secure token");
+      ErrorSanitizer.logError(error, 'generateTokenPair');
+      throw new Error('Failed to generate secure token');
     }
   }
 
@@ -53,7 +53,7 @@ export class SecureTokenManager {
       if (!rawToken || !hashedToken) {
         return {
           isValid: false,
-          error: "Missing token or hash",
+          error: 'Missing token or hash',
         };
       }
 
@@ -61,13 +61,13 @@ export class SecureTokenManager {
 
       return {
         isValid,
-        error: isValid ? undefined : "Invalid token",
+        error: isValid ? undefined : 'Invalid token',
       };
     } catch (error) {
-      ErrorSanitizer.logError(error, "verifyToken");
+      ErrorSanitizer.logError(error, 'verifyToken');
       return {
         isValid: false,
-        error: "Token verification failed",
+        error: 'Token verification failed',
       };
     }
   }
@@ -129,7 +129,7 @@ export class SecureTokenManager {
     // Check if token is hex string of expected length
     const expectedLength = this.TOKEN_LENGTH * 2; // hex encoding doubles length
     return (
-      typeof token === "string" &&
+      typeof token === 'string' &&
       token.length === expectedLength &&
       /^[a-f0-9]+$/i.test(token)
     );
@@ -139,7 +139,7 @@ export class SecureTokenManager {
    * Generate secure session ID
    */
   static generateSessionId(): string {
-    return crypto.randomBytes(32).toString("hex");
+    return crypto.randomBytes(32).toString('hex');
   }
 
   /**

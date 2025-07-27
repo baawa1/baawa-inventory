@@ -1,8 +1,8 @@
-import { NextResponse } from "next/server";
-import { withAuth, AuthenticatedRequest } from "@/lib/api-middleware";
-import { handleApiError } from "@/lib/api-error-handler-new";
-import { prisma } from "@/lib/db";
-import { PAYMENT_STATUS } from "@/lib/constants";
+import { NextResponse } from 'next/server';
+import { withAuth, AuthenticatedRequest } from '@/lib/api-middleware';
+import { handleApiError } from '@/lib/api-error-handler-new';
+import { prisma } from '@/lib/db';
+import { PAYMENT_STATUS } from '@/lib/constants';
 
 interface ProductPerformance {
   id: number;
@@ -15,7 +15,7 @@ interface ProductPerformance {
   revenue: number;
   averageOrderValue: number;
   lastSold: string | null;
-  trending: "up" | "down" | "stable";
+  trending: 'up' | 'down' | 'stable';
   trendPercentage: number;
 }
 
@@ -23,13 +23,13 @@ interface ProductPerformance {
 function getPeriodFilter(period: string): Date {
   const now = new Date();
   switch (period) {
-    case "7d":
+    case '7d':
       return new Date(now.getTime() - 7 * 24 * 60 * 60 * 1000);
-    case "30d":
+    case '30d':
       return new Date(now.getTime() - 30 * 24 * 60 * 60 * 1000);
-    case "90d":
+    case '90d':
       return new Date(now.getTime() - 90 * 24 * 60 * 60 * 1000);
-    case "1y":
+    case '1y':
       return new Date(now.getTime() - 365 * 24 * 60 * 60 * 1000);
     default:
       return new Date(now.getTime() - 30 * 24 * 60 * 60 * 1000);
@@ -39,12 +39,12 @@ function getPeriodFilter(period: string): Date {
 export const GET = withAuth(async (request: AuthenticatedRequest) => {
   try {
     const { searchParams } = new URL(request.url);
-    const period = searchParams.get("period") || "30d";
-    const fromDate = searchParams.get("fromDate");
-    const toDate = searchParams.get("toDate");
-    const search = searchParams.get("search") || "";
-    const category = searchParams.get("category") || "all";
-    const sortBy = searchParams.get("sortBy") || "revenue";
+    const period = searchParams.get('period') || '30d';
+    const fromDate = searchParams.get('fromDate');
+    const toDate = searchParams.get('toDate');
+    const search = searchParams.get('search') || '';
+    const category = searchParams.get('category') || 'all';
+    const sortBy = searchParams.get('sortBy') || 'revenue';
 
     // Use custom date range if provided, otherwise use period
     let periodStart: Date;
@@ -52,7 +52,7 @@ export const GET = withAuth(async (request: AuthenticatedRequest) => {
 
     if (fromDate && toDate) {
       periodStart = new Date(fromDate);
-      periodEnd = new Date(toDate + "T23:59:59"); // End of day
+      periodEnd = new Date(toDate + 'T23:59:59'); // End of day
     } else {
       periodStart = getPeriodFilter(period);
       periodEnd = new Date(); // Current date
@@ -63,12 +63,12 @@ export const GET = withAuth(async (request: AuthenticatedRequest) => {
 
     if (search) {
       productWhere.OR = [
-        { name: { contains: search, mode: "insensitive" } },
-        { sku: { contains: search, mode: "insensitive" } },
+        { name: { contains: search, mode: 'insensitive' } },
+        { sku: { contains: search, mode: 'insensitive' } },
       ];
     }
 
-    if (category !== "all") {
+    if (category !== 'all') {
       productWhere.categoryId = parseInt(category);
     }
 
@@ -105,7 +105,7 @@ export const GET = withAuth(async (request: AuthenticatedRequest) => {
     });
 
     // Transform to performance data
-    const productPerformance: ProductPerformance[] = products.map((product) => {
+    const productPerformance: ProductPerformance[] = products.map(product => {
       const salesItems = product.sales_items || [];
       const totalSold = salesItems.reduce(
         (sum, item) => sum + item.quantity,
@@ -121,7 +121,7 @@ export const GET = withAuth(async (request: AuthenticatedRequest) => {
       const lastSold =
         salesItems.length > 0
           ? salesItems
-              .map((item) => item.sales_transactions?.created_at)
+              .map(item => item.sales_transactions?.created_at)
               .filter(Boolean)
               .sort(
                 (a, b) => new Date(b!).getTime() - new Date(a!).getTime()
@@ -134,13 +134,13 @@ export const GET = withAuth(async (request: AuthenticatedRequest) => {
       );
 
       const recentSales = salesItems.filter(
-        (item) =>
+        item =>
           item.sales_transactions?.created_at &&
           new Date(item.sales_transactions.created_at) >= halfPeriodStart
       );
 
       const olderSales = salesItems.filter(
-        (item) =>
+        item =>
           item.sales_transactions?.created_at &&
           new Date(item.sales_transactions.created_at) < halfPeriodStart
       );
@@ -154,17 +154,17 @@ export const GET = withAuth(async (request: AuthenticatedRequest) => {
         0
       );
 
-      let trending: "up" | "down" | "stable" = "stable";
+      let trending: 'up' | 'down' | 'stable' = 'stable';
       let trendPercentage = 0;
 
       if (olderRevenue > 0) {
         const change = ((recentRevenue - olderRevenue) / olderRevenue) * 100;
         trendPercentage = Math.abs(change);
 
-        if (change > 5) trending = "up";
-        else if (change < -5) trending = "down";
+        if (change > 5) trending = 'up';
+        else if (change < -5) trending = 'down';
       } else if (recentRevenue > 0) {
-        trending = "up";
+        trending = 'up';
         trendPercentage = 100;
       }
 
@@ -187,15 +187,15 @@ export const GET = withAuth(async (request: AuthenticatedRequest) => {
     // Sort by the requested criteria
     productPerformance.sort((a, b) => {
       switch (sortBy) {
-        case "revenue":
+        case 'revenue':
           return b.revenue - a.revenue;
-        case "quantity":
+        case 'quantity':
           return b.totalSold - a.totalSold;
-        case "name":
+        case 'name':
           return a.name.localeCompare(b.name);
-        case "stock":
+        case 'stock':
           return b.currentStock - a.currentStock;
-        case "lastSold":
+        case 'lastSold':
           if (!a.lastSold && !b.lastSold) return 0;
           if (!a.lastSold) return 1;
           if (!b.lastSold) return -1;

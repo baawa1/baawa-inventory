@@ -1,4 +1,4 @@
-import { test, expect, Page } from "@playwright/test";
+import { test, expect, Page } from '@playwright/test';
 
 export class TestUtils {
   /**
@@ -9,7 +9,7 @@ export class TestUtils {
     selector: string,
     timeout: number = 10000
   ): Promise<void> {
-    await page.waitForSelector(selector, { state: "visible", timeout });
+    await page.waitForSelector(selector, { state: 'visible', timeout });
   }
 
   /**
@@ -20,7 +20,7 @@ export class TestUtils {
     text: string,
     timeout: number = 10000
   ): Promise<void> {
-    await page.waitForSelector(`text=${text}`, { state: "visible", timeout });
+    await page.waitForSelector(`text=${text}`, { state: 'visible', timeout });
   }
 
   /**
@@ -82,12 +82,12 @@ export class TestUtils {
    */
   static async waitForPageReady(page: Page): Promise<void> {
     // Wait for network to be idle
-    await page.waitForLoadState("networkidle");
+    await page.waitForLoadState('networkidle');
 
     // Wait for any loading spinners to disappear
     try {
       await page.waitForSelector('[data-testid="loading"]', {
-        state: "hidden",
+        state: 'hidden',
         timeout: 5000,
       });
     } catch {
@@ -108,14 +108,14 @@ export class TestUtils {
         fullPage: true,
       });
     } catch (error) {
-      console.error("Failed to take screenshot:", error);
+      console.error('Failed to take screenshot:', error);
     }
   }
 
   /**
    * Generate unique test data
    */
-  static generateUniqueEmail(prefix: string = "test"): string {
+  static generateUniqueEmail(prefix: string = 'test'): string {
     const timestamp = Date.now();
     const random = Math.random().toString(36).substring(2, 8);
     return `${prefix}-${timestamp}-${random}@test.com`;
@@ -124,7 +124,7 @@ export class TestUtils {
   /**
    * Generate unique test name
    */
-  static generateUniqueName(prefix: string = "Test"): string {
+  static generateUniqueName(prefix: string = 'Test'): string {
     const timestamp = Date.now();
     const random = Math.random().toString(36).substring(2, 6);
     return `${prefix}${timestamp}${random}`;
@@ -139,12 +139,12 @@ export class TestUtils {
     timeout: number = 10000
   ): Promise<void> {
     await page.waitForResponse(
-      (response) => {
+      response => {
         return (
           response
             .url()
             .includes(
-              urlPattern.toString().replace(/[.*+?^${}()|[\]\\]/g, "\\$&")
+              urlPattern.toString().replace(/[.*+?^${}()|[\]\\]/g, '\\$&')
             ) && response.status() === 200
         );
       },
@@ -160,7 +160,7 @@ export class TestUtils {
       `${formSelector} input, ${formSelector} textarea, ${formSelector} select`
     );
     for (const input of inputs) {
-      await input.fill("");
+      await input.fill('');
     }
   }
 
@@ -184,7 +184,7 @@ export class TestUtils {
     selector: string,
     timeout: number = 10000
   ): Promise<void> {
-    await page.waitForSelector(selector, { state: "hidden", timeout });
+    await page.waitForSelector(selector, { state: 'hidden', timeout });
   }
 
   /**
@@ -207,7 +207,7 @@ export class TestUtils {
         }
 
         const delay = baseDelay * Math.pow(2, i);
-        await new Promise((resolve) => setTimeout(resolve, delay));
+        await new Promise(resolve => setTimeout(resolve, delay));
       }
     }
 
@@ -218,12 +218,12 @@ export class TestUtils {
    * Common test data
    */
   static readonly TEST_DATA = {
-    VALID_PASSWORD: "SecurePass123!@#",
-    WEAK_PASSWORD: "123",
-    INVALID_EMAIL: "invalid-email",
-    VALID_EMAIL: "test@example.com",
-    LONG_NAME: "A".repeat(101),
-    SPECIAL_CHARS: "!@#$%^&*()",
+    VALID_PASSWORD: 'SecurePass123!@#',
+    WEAK_PASSWORD: '123',
+    INVALID_EMAIL: 'invalid-email',
+    VALID_EMAIL: 'test@example.com',
+    LONG_NAME: 'A'.repeat(101),
+    SPECIAL_CHARS: '!@#$%^&*()',
   };
 
   /**

@@ -1,29 +1,29 @@
 // Mock the Html5QrcodeScanner
-jest.mock("html5-qrcode", () => ({
+jest.mock('html5-qrcode', () => ({
   Html5QrcodeScanner: jest.fn().mockImplementation(() => ({
     render: jest.fn(),
     clear: jest.fn(),
   })),
 }));
 
-import React from "react";
-import { render, screen, fireEvent, waitFor } from "@testing-library/react";
-import { BarcodeScanner } from "@/components/pos/BarcodeScanner";
-import { Html5QrcodeScanner } from "html5-qrcode";
+import React from 'react';
+import { render, screen, fireEvent, waitFor } from '@testing-library/react';
+import { BarcodeScanner } from '@/components/pos/BarcodeScanner';
+import { Html5QrcodeScanner } from 'html5-qrcode';
 
 const mockHtml5QrcodeScanner = Html5QrcodeScanner as jest.MockedClass<
   typeof Html5QrcodeScanner
 >;
 
 // Mock dependencies
-jest.mock("sonner", () => ({
+jest.mock('sonner', () => ({
   toast: {
     success: jest.fn(),
     error: jest.fn(),
   },
 }));
 
-jest.mock("@/lib/logger", () => ({
+jest.mock('@/lib/logger', () => ({
   logger: {
     error: jest.fn(),
     info: jest.fn(),
@@ -31,7 +31,7 @@ jest.mock("@/lib/logger", () => ({
   },
 }));
 
-describe("BarcodeScanner", () => {
+describe('BarcodeScanner', () => {
   const mockOnScan = jest.fn();
   const mockOnClose = jest.fn();
 
@@ -39,8 +39,8 @@ describe("BarcodeScanner", () => {
     jest.clearAllMocks();
   });
 
-  describe("Initial Render", () => {
-    it("renders scanner when isOpen is true", () => {
+  describe('Initial Render', () => {
+    it('renders scanner when isOpen is true', () => {
       render(
         <BarcodeScanner
           isOpen={true}
@@ -49,13 +49,13 @@ describe("BarcodeScanner", () => {
         />
       );
 
-      expect(screen.getByText("Barcode Scanner")).toBeInTheDocument();
+      expect(screen.getByText('Barcode Scanner')).toBeInTheDocument();
       expect(
-        screen.getByText("Position the barcode within the viewfinder")
+        screen.getByText('Position the barcode within the viewfinder')
       ).toBeInTheDocument();
     });
 
-    it("does not render when isOpen is false", () => {
+    it('does not render when isOpen is false', () => {
       render(
         <BarcodeScanner
           isOpen={false}
@@ -64,12 +64,12 @@ describe("BarcodeScanner", () => {
         />
       );
 
-      expect(screen.queryByText("Barcode Scanner")).not.toBeInTheDocument();
+      expect(screen.queryByText('Barcode Scanner')).not.toBeInTheDocument();
     });
   });
 
-  describe("Scanner Functionality", () => {
-    it("initializes scanner when opened", () => {
+  describe('Scanner Functionality', () => {
+    it('initializes scanner when opened', () => {
       render(
         <BarcodeScanner
           isOpen={true}
@@ -81,7 +81,7 @@ describe("BarcodeScanner", () => {
       expect(mockHtml5QrcodeScanner).toHaveBeenCalled();
     });
 
-    it("cleans up scanner when closed", () => {
+    it('cleans up scanner when closed', () => {
       const { rerender } = render(
         <BarcodeScanner
           isOpen={true}
@@ -104,8 +104,8 @@ describe("BarcodeScanner", () => {
     });
   });
 
-  describe("User Interactions", () => {
-    it("calls onClose when close button is clicked", () => {
+  describe('User Interactions', () => {
+    it('calls onClose when close button is clicked', () => {
       render(
         <BarcodeScanner
           isOpen={true}
@@ -115,18 +115,18 @@ describe("BarcodeScanner", () => {
       );
 
       // Find the close button (the one with the X icon, no accessible name)
-      const closeButton = screen.getAllByRole("button")[0];
+      const closeButton = screen.getAllByRole('button')[0];
       fireEvent.click(closeButton);
 
       expect(mockOnClose).toHaveBeenCalled();
     });
   });
 
-  describe("Error Handling", () => {
-    it("handles scanner initialization errors", () => {
+  describe('Error Handling', () => {
+    it('handles scanner initialization errors', () => {
       // Mock a scanner initialization error
       mockHtml5QrcodeScanner.mockImplementationOnce(() => {
-        throw new Error("Scanner initialization failed");
+        throw new Error('Scanner initialization failed');
       });
 
       expect(() =>
@@ -141,8 +141,8 @@ describe("BarcodeScanner", () => {
     });
   });
 
-  describe("Accessibility", () => {
-    it("has proper ARIA labels", () => {
+  describe('Accessibility', () => {
+    it('has proper ARIA labels', () => {
       render(
         <BarcodeScanner
           isOpen={true}
@@ -151,11 +151,11 @@ describe("BarcodeScanner", () => {
         />
       );
 
-      expect(screen.getByText("Barcode Scanner")).toBeInTheDocument();
-      expect(screen.getAllByRole("button")).toHaveLength(2); // Close button and Cancel button
+      expect(screen.getByText('Barcode Scanner')).toBeInTheDocument();
+      expect(screen.getAllByRole('button')).toHaveLength(2); // Close button and Cancel button
     });
 
-    it("supports keyboard navigation", () => {
+    it('supports keyboard navigation', () => {
       render(
         <BarcodeScanner
           isOpen={true}
@@ -164,14 +164,14 @@ describe("BarcodeScanner", () => {
         />
       );
 
-      const closeButton = screen.getAllByRole("button")[0];
+      const closeButton = screen.getAllByRole('button')[0];
       closeButton.focus();
       expect(closeButton).toHaveFocus();
     });
   });
 
-  describe("Edge Cases", () => {
-    it("handles rapid open/close cycles", () => {
+  describe('Edge Cases', () => {
+    it('handles rapid open/close cycles', () => {
       const { rerender } = render(
         <BarcodeScanner
           isOpen={true}
@@ -200,7 +200,7 @@ describe("BarcodeScanner", () => {
       expect(mockHtml5QrcodeScanner).toHaveBeenCalled();
     });
 
-    it("handles undefined callbacks", () => {
+    it('handles undefined callbacks', () => {
       expect(() =>
         render(
           <BarcodeScanner

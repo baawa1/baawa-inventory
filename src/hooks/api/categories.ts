@@ -1,5 +1,5 @@
-import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
-import { queryKeys } from "@/lib/query-client";
+import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
+import { queryKeys } from '@/lib/query-client';
 
 // Types
 export interface Category {
@@ -28,7 +28,7 @@ export interface CategoryFilters {
   page: number;
   limit: number;
   sortBy: string;
-  sortOrder: "asc" | "desc";
+  sortOrder: 'asc' | 'desc';
 }
 
 export interface CategoryPagination {
@@ -62,15 +62,15 @@ const fetchCategories = async (
   const searchParams = new URLSearchParams({
     page: String(filters.page || 1),
     limit: String(filters.limit || 50),
-    sortBy: filters.sortBy || "name",
-    sortOrder: filters.sortOrder || "asc",
+    sortBy: filters.sortBy || 'name',
+    sortOrder: filters.sortOrder || 'asc',
   });
 
-  if (filters.search) searchParams.set("search", filters.search);
-  if (filters.status) searchParams.set("isActive", filters.status);
+  if (filters.search) searchParams.set('search', filters.search);
+  if (filters.status) searchParams.set('isActive', filters.status);
   if (filters.parentId !== undefined)
-    searchParams.set("parentId", String(filters.parentId));
-  if (filters.includeChildren) searchParams.set("includeChildren", "true");
+    searchParams.set('parentId', String(filters.parentId));
+  if (filters.includeChildren) searchParams.set('includeChildren', 'true');
 
   const response = await fetch(`/api/categories?${searchParams.toString()}`);
 
@@ -91,10 +91,10 @@ const fetchCategories = async (
 };
 
 const createCategory = async (data: CreateCategoryData): Promise<Category> => {
-  const response = await fetch("/api/categories", {
-    method: "POST",
+  const response = await fetch('/api/categories', {
+    method: 'POST',
     headers: {
-      "Content-Type": "application/json",
+      'Content-Type': 'application/json',
     },
     body: JSON.stringify(data),
   });
@@ -115,9 +115,9 @@ const updateCategory = async ({
   data: UpdateCategoryData;
 }): Promise<Category> => {
   const response = await fetch(`/api/categories/${id}`, {
-    method: "PUT",
+    method: 'PUT',
     headers: {
-      "Content-Type": "application/json",
+      'Content-Type': 'application/json',
     },
     body: JSON.stringify(data),
   });
@@ -132,7 +132,7 @@ const updateCategory = async ({
 
 const deleteCategory = async (id: number): Promise<void> => {
   const response = await fetch(`/api/categories/${id}`, {
-    method: "DELETE",
+    method: 'DELETE',
   });
 
   if (!response.ok) {
@@ -199,7 +199,7 @@ export const useCreateCategory = () => {
 
   return useMutation({
     mutationFn: createCategory,
-    onSuccess: (data) => {
+    onSuccess: data => {
       // Invalidate all category-related queries
       queryClient.invalidateQueries({
         queryKey: queryKeys.categories.lists(),
@@ -221,7 +221,7 @@ export const useUpdateCategory = () => {
 
   return useMutation({
     mutationFn: updateCategory,
-    onSuccess: (data) => {
+    onSuccess: data => {
       // Invalidate all category-related queries
       queryClient.invalidateQueries({
         queryKey: queryKeys.categories.lists(),
@@ -261,9 +261,9 @@ export const useDeleteCategory = () => {
 // Utility Hooks
 export const useCategoryOptions = () => {
   return useQuery({
-    queryKey: [...queryKeys.categories.all, "options"] as const,
+    queryKey: [...queryKeys.categories.all, 'options'] as const,
     queryFn: async () => {
-      const response = await fetch("/api/categories?isActive=true&limit=1000");
+      const response = await fetch('/api/categories?isActive=true&limit=1000');
       if (!response.ok) {
         throw new Error(
           `Failed to fetch category options: ${response.statusText}`

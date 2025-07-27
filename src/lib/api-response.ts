@@ -3,7 +3,7 @@
  * Ensures consistent response formats across all API endpoints
  */
 
-import { NextResponse } from "next/server";
+import { NextResponse } from 'next/server';
 
 export interface ApiSuccessResponse<T = unknown> {
   success: true;
@@ -114,7 +114,7 @@ export const createApiResponse = {
         success: false,
         error: message,
         details,
-        code: "VALIDATION_ERROR",
+        code: 'VALIDATION_ERROR',
       } as ApiErrorResponse,
       { status }
     );
@@ -124,7 +124,7 @@ export const createApiResponse = {
    * Not found error response
    */
   notFound: (
-    resource: string = "Resource",
+    resource: string = 'Resource',
     details?: unknown
   ): NextResponse => {
     return NextResponse.json(
@@ -132,7 +132,7 @@ export const createApiResponse = {
         success: false,
         error: `${resource} not found`,
         details,
-        code: "NOT_FOUND",
+        code: 'NOT_FOUND',
       } as ApiErrorResponse,
       { status: 404 }
     );
@@ -142,7 +142,7 @@ export const createApiResponse = {
    * Unauthorized error response
    */
   unauthorized: (
-    message: string = "Unauthorized",
+    message: string = 'Unauthorized',
     details?: unknown
   ): NextResponse => {
     return NextResponse.json(
@@ -150,7 +150,7 @@ export const createApiResponse = {
         success: false,
         error: message,
         details,
-        code: "UNAUTHORIZED",
+        code: 'UNAUTHORIZED',
       } as ApiErrorResponse,
       { status: 401 }
     );
@@ -160,7 +160,7 @@ export const createApiResponse = {
    * Forbidden error response
    */
   forbidden: (
-    message: string = "Forbidden",
+    message: string = 'Forbidden',
     details?: unknown
   ): NextResponse => {
     return NextResponse.json(
@@ -168,7 +168,7 @@ export const createApiResponse = {
         success: false,
         error: message,
         details,
-        code: "FORBIDDEN",
+        code: 'FORBIDDEN',
       } as ApiErrorResponse,
       { status: 403 }
     );
@@ -177,13 +177,13 @@ export const createApiResponse = {
   /**
    * Conflict error response
    */
-  conflict: (message: string = "Conflict", details?: unknown): NextResponse => {
+  conflict: (message: string = 'Conflict', details?: unknown): NextResponse => {
     return NextResponse.json(
       {
         success: false,
         error: message,
         details,
-        code: "CONFLICT",
+        code: 'CONFLICT',
       } as ApiErrorResponse,
       { status: 409 }
     );
@@ -193,7 +193,7 @@ export const createApiResponse = {
    * Internal server error response
    */
   internalError: (
-    message: string = "Internal server error",
+    message: string = 'Internal server error',
     details?: unknown
   ): NextResponse => {
     return NextResponse.json(
@@ -201,7 +201,7 @@ export const createApiResponse = {
         success: false,
         error: message,
         details,
-        code: "INTERNAL_ERROR",
+        code: 'INTERNAL_ERROR',
       } as ApiErrorResponse,
       { status: 500 }
     );

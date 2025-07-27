@@ -1,10 +1,10 @@
-import { Metadata } from "next";
-import { notFound } from "next/navigation";
-import { prisma } from "@/lib/db";
-import { ProductImageManager } from "@/components/inventory/ProductImageManager";
-import { Button } from "@/components/ui/button";
-import { ArrowLeft } from "lucide-react";
-import Link from "next/link";
+import { Metadata } from 'next';
+import { notFound } from 'next/navigation';
+import { prisma } from '@/lib/db';
+import { ProductImageManager } from '@/components/inventory/ProductImageManager';
+import { Button } from '@/components/ui/button';
+import { ArrowLeft } from 'lucide-react';
+import Link from 'next/link';
 
 interface ProductImagesPageProps {
   params: Promise<{
@@ -23,7 +23,7 @@ export async function generateMetadata({
 
   if (!product) {
     return {
-      title: "Product Not Found",
+      title: 'Product Not Found',
     };
   }
 
@@ -58,13 +58,13 @@ export default async function ProductImagesPage({
   }
 
   return (
-    <div className="container mx-auto p-6 space-y-6">
+    <div className="container mx-auto space-y-6 p-6">
       <div className="flex items-center justify-between">
         <div>
-          <div className="flex items-center gap-2 mb-2">
+          <div className="mb-2 flex items-center gap-2">
             <Button variant="ghost" asChild>
               <Link href="/inventory/products">
-                <ArrowLeft className="h-4 w-4 mr-2" />
+                <ArrowLeft className="mr-2 h-4 w-4" />
                 Back to Products
               </Link>
             </Button>

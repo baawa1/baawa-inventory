@@ -1,27 +1,27 @@
-import React, { useCallback } from "react";
+import React, { useCallback } from 'react';
 import {
   DashboardCard,
   CardHeader,
   CardTitle,
   CardDescription,
   CardContent,
-} from "@/components/dashboard/DashboardCard";
-import { Button } from "@/components/ui/button";
-import { Input } from "@/components/ui/input";
+} from '@/components/dashboard/DashboardCard';
+import { Button } from '@/components/ui/button';
+import { Input } from '@/components/ui/input';
 import {
   Select,
   SelectContent,
   SelectItem,
   SelectTrigger,
   SelectValue,
-} from "@/components/ui/select";
-import { IconSearch, IconFilter } from "@tabler/icons-react";
-import { Loader2 } from "lucide-react";
+} from '@/components/ui/select';
+import { IconSearch, IconFilter } from '@tabler/icons-react';
+import { Loader2 } from 'lucide-react';
 
 export interface FilterConfig {
   key: string;
   label: string;
-  type: "select" | "boolean" | "text" | "date";
+  type: 'select' | 'boolean' | 'text' | 'date';
   options?: Array<{ label: string; value: string }>;
   placeholder?: string;
 }
@@ -44,10 +44,10 @@ interface DashboardFiltersBarProps {
 }
 
 export function DashboardFiltersBar({
-  title = "Filters & Search",
+  title = 'Filters & Search',
   description,
-  searchPlaceholder = "Search...",
-  searchValue = "",
+  searchPlaceholder = 'Search...',
+  searchValue = '',
   onSearchChange = () => {},
   isSearching = false,
   filters = [],
@@ -56,19 +56,19 @@ export function DashboardFiltersBar({
   onResetFilters = () => {},
   quickFilters,
   sortOptions = [],
-  currentSort = "",
+  currentSort = '',
   onSortChange = () => {},
 }: DashboardFiltersBarProps) {
   const renderFilterControl = useCallback(
     (filter: FilterConfig) => {
-      const value = filterValues[filter.key] || "";
+      const value = filterValues[filter.key] || '';
       switch (filter.type) {
-        case "select":
+        case 'select':
           return (
             <Select
-              value={value === "" ? "all" : value}
+              value={value === '' ? 'all' : value}
               onValueChange={(val: string) => {
-                const newValue = val === "all" ? "" : val;
+                const newValue = val === 'all' ? '' : val;
                 onFilterChange(filter.key, newValue);
               }}
             >
@@ -77,7 +77,7 @@ export function DashboardFiltersBar({
               </SelectTrigger>
               <SelectContent>
                 <SelectItem value="all">All {filter.label}</SelectItem>
-                {filter.options?.map((option) => (
+                {filter.options?.map(option => (
                   <SelectItem key={option.value} value={option.value}>
                     {option.label}
                   </SelectItem>
@@ -85,17 +85,17 @@ export function DashboardFiltersBar({
               </SelectContent>
             </Select>
           );
-        case "boolean":
+        case 'boolean':
           return (
             <Button
-              variant={value ? "default" : "outline"}
+              variant={value ? 'default' : 'outline'}
               size="sm"
               onClick={() => onFilterChange(filter.key, !value)}
             >
               {filter.label}
             </Button>
           );
-        case "text":
+        case 'text':
           return (
             <Input
               placeholder={filter.placeholder || filter.label}
@@ -105,7 +105,7 @@ export function DashboardFiltersBar({
               }
             />
           );
-        case "date":
+        case 'date':
           return (
             <Input
               type="date"
@@ -134,40 +134,40 @@ export function DashboardFiltersBar({
       <CardContent>
         <div className="flex items-center justify-start gap-4">
           <div className="relative">
-            <IconSearch className="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-gray-400" />
+            <IconSearch className="absolute top-1/2 left-3 h-4 w-4 -translate-y-1/2 transform text-gray-400" />
             <Input
               placeholder={searchPlaceholder}
               value={searchValue}
               onChange={(e: React.ChangeEvent<HTMLInputElement>) =>
                 onSearchChange(e.target.value)
               }
-              className="pl-9 pr-8"
+              className="pr-8 pl-9"
             />
             {isSearching && (
-              <div className="absolute right-3 top-1/2 transform -translate-y-1/2">
+              <div className="absolute top-1/2 right-3 -translate-y-1/2 transform">
                 <Loader2 className="h-4 w-4 animate-spin text-gray-400" />
               </div>
             )}
           </div>
-          {filters.map((filter) => (
+          {filters.map(filter => (
             <div key={filter.key}>{renderFilterControl(filter)}</div>
           ))}
           <Button
             variant="outline"
             size="sm"
             onClick={onResetFilters}
-            className="whitespace-nowrap py-4.5"
+            className="py-4.5 whitespace-nowrap"
           >
             Reset Filters
           </Button>
           {sortOptions.length > 0 && onSortChange && (
-            <div className="flex items-center justify-center ml-auto">
-              <Select value={currentSort || ""} onValueChange={onSortChange}>
+            <div className="ml-auto flex items-center justify-center">
+              <Select value={currentSort || ''} onValueChange={onSortChange}>
                 <SelectTrigger>
                   <SelectValue placeholder="Sort by" />
                 </SelectTrigger>
                 <SelectContent>
-                  {sortOptions.map((option) => (
+                  {sortOptions.map(option => (
                     <SelectItem key={option.value} value={option.value}>
                       {option.label}
                     </SelectItem>
@@ -177,7 +177,7 @@ export function DashboardFiltersBar({
             </div>
           )}
         </div>
-        {quickFilters && <div className="flex gap-2 mt-4">{quickFilters}</div>}
+        {quickFilters && <div className="mt-4 flex gap-2">{quickFilters}</div>}
       </CardContent>
     </DashboardCard>
   );

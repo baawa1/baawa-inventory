@@ -1,7 +1,7 @@
-import { NextResponse } from "next/server";
-import { withAuth, AuthenticatedRequest } from "@/lib/api-middleware";
-import { handleApiError } from "@/lib/api-error-handler-new";
-import { prisma } from "@/lib/db";
+import { NextResponse } from 'next/server';
+import { withAuth, AuthenticatedRequest } from '@/lib/api-middleware';
+import { handleApiError } from '@/lib/api-error-handler-new';
+import { prisma } from '@/lib/db';
 
 // Simple in-memory cache for user data (in production, use Redis)
 const userCache = new Map<string, { data: any; timestamp: number }>();
@@ -34,7 +34,7 @@ export const POST = withAuth(async (_request: AuthenticatedRequest) => {
     });
 
     if (!user) {
-      return NextResponse.json({ error: "User not found" }, { status: 404 });
+      return NextResponse.json({ error: 'User not found' }, { status: 404 });
     }
 
     // Update cache

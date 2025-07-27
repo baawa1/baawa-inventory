@@ -1,8 +1,8 @@
-"use client";
+'use client';
 
-import React from "react";
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import { DateRange } from "react-day-picker";
+import React from 'react';
+import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
+import { DateRange } from 'react-day-picker';
 
 interface SimpleFinancialChartsProps {
   dateRange?: DateRange;
@@ -23,16 +23,16 @@ export function SimpleFinancialCharts({
           <CardTitle>Revenue vs Expenses Trend</CardTitle>
         </CardHeader>
         <CardContent>
-          <div className="h-[300px] flex items-center justify-center">
+          <div className="flex h-[300px] items-center justify-center">
             <p className="text-muted-foreground">
               Chart visualization will be implemented here.
               <br />
-              Date Range: {dateRange?.from?.toLocaleDateString()} -{" "}
+              Date Range: {dateRange?.from?.toLocaleDateString()} -{' '}
               {dateRange?.to?.toLocaleDateString()}
               <br />
-              Type: {transactionType || "All"}
+              Type: {transactionType || 'All'}
               <br />
-              Payment: {paymentMethod || "All"}
+              Payment: {paymentMethod || 'All'}
             </p>
           </div>
         </CardContent>
@@ -44,7 +44,7 @@ export function SimpleFinancialCharts({
           <CardTitle>Payment Method Distribution</CardTitle>
         </CardHeader>
         <CardContent>
-          <div className="h-[250px] flex items-center justify-center">
+          <div className="flex h-[250px] items-center justify-center">
             <p className="text-muted-foreground">
               Pie chart for payment methods will be implemented here.
             </p>
@@ -58,7 +58,7 @@ export function SimpleFinancialCharts({
           <CardTitle>Transaction Trends</CardTitle>
         </CardHeader>
         <CardContent>
-          <div className="h-[250px] flex items-center justify-center">
+          <div className="flex h-[250px] items-center justify-center">
             <p className="text-muted-foreground">
               Line chart for transaction trends will be implemented here.
             </p>

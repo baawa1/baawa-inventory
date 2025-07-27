@@ -1,22 +1,22 @@
-"use client";
+'use client';
 
-import * as React from "react";
-import { ChevronDown } from "lucide-react";
-import Link from "next/link";
-import { usePathname } from "next/navigation";
+import * as React from 'react';
+import { ChevronDown } from 'lucide-react';
+import Link from 'next/link';
+import { usePathname } from 'next/navigation';
 import {
   IconCash,
   IconChartBar,
   IconReceipt,
   IconTrendingUp,
   IconShoppingCart,
-} from "@tabler/icons-react";
+} from '@tabler/icons-react';
 
 import {
   Collapsible,
   CollapsibleContent,
   CollapsibleTrigger,
-} from "@/components/ui/collapsible";
+} from '@/components/ui/collapsible';
 import {
   SidebarGroup,
   SidebarGroupLabel,
@@ -26,76 +26,76 @@ import {
   SidebarMenuSub,
   SidebarMenuSubButton,
   SidebarMenuSubItem,
-} from "@/components/ui/sidebar";
+} from '@/components/ui/sidebar';
 
 const financeNavItems = [
   {
-    title: "Finance Overview",
-    url: "/finance",
+    title: 'Finance Overview',
+    url: '/finance',
     icon: IconCash,
     items: [],
   },
   {
-    title: "Income Management",
-    url: "/finance/income",
+    title: 'Income Management',
+    url: '/finance/income',
     icon: IconTrendingUp,
     items: [
       {
-        title: "View Income",
-        url: "/finance/income",
+        title: 'View Income',
+        url: '/finance/income',
       },
       {
-        title: "Add Income",
-        url: "/finance/income/new",
+        title: 'Add Income',
+        url: '/finance/income/new',
       },
     ],
   },
   {
-    title: "Expense Management",
-    url: "/finance/expenses",
+    title: 'Expense Management',
+    url: '/finance/expenses',
     icon: IconShoppingCart,
     items: [
       {
-        title: "View Expenses",
-        url: "/finance/expenses",
+        title: 'View Expenses',
+        url: '/finance/expenses',
       },
       {
-        title: "Add Expense",
-        url: "/finance/expenses/new",
+        title: 'Add Expense',
+        url: '/finance/expenses/new',
       },
     ],
   },
   {
-    title: "Transactions",
-    url: "/finance/transactions",
+    title: 'Transactions',
+    url: '/finance/transactions',
     icon: IconReceipt,
     items: [
       {
-        title: "All Transactions",
-        url: "/finance/transactions",
+        title: 'All Transactions',
+        url: '/finance/transactions',
       },
     ],
   },
   {
-    title: "Reports & Analytics",
-    url: "/finance/reports",
+    title: 'Reports & Analytics',
+    url: '/finance/reports',
     icon: IconChartBar,
     items: [
       {
-        title: "Financial Summary",
-        url: "/finance/reports",
+        title: 'Financial Summary',
+        url: '/finance/reports',
       },
       {
-        title: "Analytics Dashboard",
-        url: "/finance/reports/analytics",
+        title: 'Analytics Dashboard',
+        url: '/finance/reports/analytics',
       },
       {
-        title: "Income Statement",
-        url: "/finance/reports/income-statement",
+        title: 'Income Statement',
+        url: '/finance/reports/income-statement',
       },
       {
-        title: "Cash Flow",
-        url: "/finance/reports/cash-flow",
+        title: 'Cash Flow',
+        url: '/finance/reports/cash-flow',
       },
     ],
   },
@@ -106,14 +106,12 @@ function CollapsibleNavItem({ item }: { item: (typeof financeNavItems)[0] }) {
   const [isOpen, setIsOpen] = React.useState(false);
 
   // Check if any sub-item is active - use exact matching to avoid conflicts
-  const hasActiveChild = item.items?.some(
-    (subItem) => pathname === subItem.url
-  );
+  const hasActiveChild = item.items?.some(subItem => pathname === subItem.url);
 
   // Check if the main item URL is active (only for items without sub-items)
   // For items with sub-items, only highlight if it's an exact match and no child is active
   const isMainActive = !item.items?.length
-    ? pathname === item.url || pathname.startsWith(item.url + "/")
+    ? pathname === item.url || pathname.startsWith(item.url + '/')
     : pathname === item.url && !hasActiveChild;
 
   // Auto-open dropdown if any child is active
@@ -130,7 +128,7 @@ function CollapsibleNavItem({ item }: { item: (typeof financeNavItems)[0] }) {
         <SidebarMenuButton
           asChild
           tooltip={item.title}
-          className={isMainActive ? "bg-accent text-accent-foreground" : ""}
+          className={isMainActive ? 'bg-accent text-accent-foreground' : ''}
         >
           <Link href={item.url}>
             <item.icon />
@@ -147,13 +145,13 @@ function CollapsibleNavItem({ item }: { item: (typeof financeNavItems)[0] }) {
         <CollapsibleTrigger asChild>
           <SidebarMenuButton
             tooltip={item.title}
-            className={isMainActive ? "bg-accent text-accent-foreground" : ""}
+            className={isMainActive ? 'bg-accent text-accent-foreground' : ''}
           >
             <item.icon />
             <span>{item.title}</span>
             <ChevronDown
-              className={`ml-auto h-4 w-4 transition-transform duration-200 -rotate-90 ${
-                isOpen ? "rotate-0" : ""
+              className={`ml-auto h-4 w-4 -rotate-90 transition-transform duration-200 ${
+                isOpen ? 'rotate-0' : ''
               }`}
             />
           </SidebarMenuButton>
@@ -161,14 +159,14 @@ function CollapsibleNavItem({ item }: { item: (typeof financeNavItems)[0] }) {
         {item.items?.length ? (
           <CollapsibleContent>
             <SidebarMenuSub>
-              {item.items?.map((subItem) => {
+              {item.items?.map(subItem => {
                 const isActive = pathname === subItem.url;
                 return (
                   <SidebarMenuSubItem key={subItem.title}>
                     <SidebarMenuSubButton
                       asChild
                       className={
-                        isActive ? "bg-accent text-accent-foreground" : ""
+                        isActive ? 'bg-accent text-accent-foreground' : ''
                       }
                     >
                       <Link href={subItem.url}>
@@ -191,7 +189,7 @@ export function NavFinance() {
     <SidebarGroup>
       <SidebarGroupLabel>Finance Manager</SidebarGroupLabel>
       <SidebarMenu>
-        {financeNavItems.map((item) => (
+        {financeNavItems.map(item => (
           <CollapsibleNavItem key={item.title} item={item} />
         ))}
       </SidebarMenu>

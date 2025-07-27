@@ -1,9 +1,9 @@
-import { NextResponse } from "next/server";
-import type { NextRequest } from "next/server";
-import { auth } from "../auth";
-import { authorizeUserForRoute } from "@/lib/auth/roles";
-import type { UserRole, UserStatus } from "@/types/user";
-import { generateSecurityHeaders } from "@/lib/security-headers";
+import { NextResponse } from 'next/server';
+import type { NextRequest } from 'next/server';
+import { auth } from '../auth';
+import { authorizeUserForRoute } from '@/lib/auth/roles';
+import type { UserRole, UserStatus } from '@/types/user';
+import { generateSecurityHeaders } from '@/lib/security-headers';
 
 export default auth((req: NextRequest & { auth: any }) => {
   const token = req.auth;
@@ -11,16 +11,16 @@ export default auth((req: NextRequest & { auth: any }) => {
 
   // Public routes that don't require authentication
   const publicRoutes = [
-    "/",
-    "/login",
-    "/logout",
-    "/register",
-    "/forgot-password",
-    "/reset-password",
-    "/check-email",
-    "/verify-email",
-    "/pending-approval",
-    "/unauthorized",
+    '/',
+    '/login',
+    '/logout',
+    '/register',
+    '/forgot-password',
+    '/reset-password',
+    '/check-email',
+    '/verify-email',
+    '/pending-approval',
+    '/unauthorized',
   ];
 
   // Allow public routes without any checks
@@ -37,7 +37,7 @@ export default auth((req: NextRequest & { auth: any }) => {
 
   // If no token, redirect to login
   if (!token?.user) {
-    return NextResponse.redirect(new URL("/login", req.url));
+    return NextResponse.redirect(new URL('/login', req.url));
   }
 
   // Extract user information from token
@@ -66,40 +66,40 @@ export default auth((req: NextRequest & { auth: any }) => {
   // 4. REJECTED/SUSPENDED users → unauthorized page
 
   // Check user status first, then handle email verification for PENDING users
-  if (userStatus === "PENDING") {
+  if (userStatus === 'PENDING') {
     // PENDING users need email verification first
     if (!isEmailVerified) {
-      return safeRedirect("/check-email", "Email not verified");
+      return safeRedirect('/check-email', 'Email not verified');
     } else {
       // Email verified but still pending admin approval
       return safeRedirect(
-        "/pending-approval",
-        "User status is PENDING (needs admin approval)"
+        '/pending-approval',
+        'User status is PENDING (needs admin approval)'
       );
     }
   }
 
-  if (userStatus === "VERIFIED") {
+  if (userStatus === 'VERIFIED') {
     // Email verified but not yet approved by admin
     return safeRedirect(
-      "/pending-approval",
-      "User status is VERIFIED (needs admin approval)"
+      '/pending-approval',
+      'User status is VERIFIED (needs admin approval)'
     );
   }
 
-  if (userStatus === "REJECTED" || userStatus === "SUSPENDED") {
-    return safeRedirect("/unauthorized", `User status is ${userStatus}`);
+  if (userStatus === 'REJECTED' || userStatus === 'SUSPENDED') {
+    return safeRedirect('/unauthorized', `User status is ${userStatus}`);
   }
 
   // At this point, user should be APPROVED
-  if (userStatus !== "APPROVED") {
-    return safeRedirect("/unauthorized", `Invalid user status: ${userStatus}`);
+  if (userStatus !== 'APPROVED') {
+    return safeRedirect('/unauthorized', `Invalid user status: ${userStatus}`);
   }
 
   // Check role-based access for protected routes
   const isAuthorized = authorizeUserForRoute(pathname, userRole);
   if (!isAuthorized) {
-    return safeRedirect("/unauthorized", "Insufficient permissions");
+    return safeRedirect('/unauthorized', 'Insufficient permissions');
   }
 
   // Allow access to the requested route
@@ -125,6 +125,6 @@ export const config = {
      * - sw.js (service worker file)
      * - browserconfig.xml (IE/Edge config file)
      */
-    "/((?!api|_next/static|_next/image|favicon.ico|manifest.json|sw.js|browserconfig.xml).*)",
+    '/((?!api|_next/static|_next/image|favicon.ico|manifest.json|sw.js|browserconfig.xml).*)',
   ],
 };

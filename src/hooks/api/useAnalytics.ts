@@ -1,5 +1,5 @@
-import { useQuery } from "@tanstack/react-query";
-import { queryKeys } from "@/lib/query-client";
+import { useQuery } from '@tanstack/react-query';
+import { queryKeys } from '@/lib/query-client';
 
 export interface AnalyticsData {
   transactionStats: {
@@ -44,11 +44,11 @@ export interface AnalyticsData {
     category: string;
     supplier: string;
     lastRestocked: string;
-    status: "critical" | "low" | "normal";
+    status: 'critical' | 'low' | 'normal';
   }>;
 }
 
-export function useAnalytics(dateRange: string = "month") {
+export function useAnalytics(dateRange: string = 'month') {
   return useQuery({
     queryKey: queryKeys.analytics.dashboard(dateRange),
     queryFn: async (): Promise<AnalyticsData> => {
@@ -56,7 +56,7 @@ export function useAnalytics(dateRange: string = "month") {
         `/api/dashboard/analytics?dateRange=${dateRange}`
       );
       if (!response.ok) {
-        throw new Error("Failed to fetch analytics data");
+        throw new Error('Failed to fetch analytics data');
       }
       const data = await response.json();
       return data.data;

@@ -1,5 +1,5 @@
-import { prisma } from "@/lib/db";
-import { logger } from "@/lib/logger";
+import { prisma } from '@/lib/db';
+import { logger } from '@/lib/logger';
 
 /**
  * Get all admin email addresses for notifications
@@ -8,9 +8,9 @@ export async function getAdminEmails(): Promise<string[]> {
   try {
     const admins = await prisma.user.findMany({
       where: {
-        role: "ADMIN",
+        role: 'ADMIN',
         isActive: true,
-        userStatus: "APPROVED",
+        userStatus: 'APPROVED',
         emailNotifications: true,
       },
       select: {
@@ -18,9 +18,9 @@ export async function getAdminEmails(): Promise<string[]> {
       },
     });
 
-    return admins?.map((admin) => admin.email) || [];
+    return admins?.map(admin => admin.email) || [];
   } catch (error) {
-    logger.error("Failed to get admin emails", {
+    logger.error('Failed to get admin emails', {
       error: error instanceof Error ? error.message : String(error),
     });
     return [];
@@ -38,7 +38,7 @@ export async function getAdminEmailsWithFallback(): Promise<string[]> {
     const fallbackEmail =
       process.env.ADMIN_EMAIL || process.env.RESEND_FROM_EMAIL;
     if (fallbackEmail) {
-      logger.warn("No admin emails found in database, using fallback email", {
+      logger.warn('No admin emails found in database, using fallback email', {
         fallbackEmail,
       });
       return [fallbackEmail];
@@ -60,8 +60,8 @@ export async function notifyAdmins(
     adminEmails = await getAdminEmailsWithFallback();
 
     if (adminEmails.length === 0) {
-      logger.warn("No admin emails available for notification", {
-        notificationType: "stock-reconciliation",
+      logger.warn('No admin emails available for notification', {
+        notificationType: 'stock-reconciliation',
       });
       return;
     }
@@ -69,8 +69,8 @@ export async function notifyAdmins(
     await sendNotification(adminEmails);
     // Debug logging removed for production
   } catch (error) {
-    logger.error("Failed to send admin notification", {
-      notificationType: "stock-reconciliation",
+    logger.error('Failed to send admin notification', {
+      notificationType: 'stock-reconciliation',
       adminCount: adminEmails.length,
       error: error instanceof Error ? error.message : String(error),
     });

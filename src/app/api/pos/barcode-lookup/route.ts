@@ -1,12 +1,12 @@
-import { NextResponse } from "next/server";
-import { prisma } from "@/lib/db";
-import { z } from "zod";
-import { withPOSAuth, AuthenticatedRequest } from "@/lib/api-auth-middleware";
-import { PRODUCT_STATUS, ERROR_MESSAGES } from "@/lib/constants";
+import { NextResponse } from 'next/server';
+import { prisma } from '@/lib/db';
+import { z } from 'zod';
+import { withPOSAuth, AuthenticatedRequest } from '@/lib/api-auth-middleware';
+import { PRODUCT_STATUS, ERROR_MESSAGES } from '@/lib/constants';
 
 // Validation schema for barcode lookup
 const barcodeSchema = z.object({
-  barcode: z.string().min(1, "Barcode is required"),
+  barcode: z.string().min(1, 'Barcode is required'),
 });
 
 async function handleBarcodeSearch(request: AuthenticatedRequest) {
@@ -14,7 +14,7 @@ async function handleBarcodeSearch(request: AuthenticatedRequest) {
     // Parse and validate query parameters
     const { searchParams } = new URL(request.url);
     const validatedParams = barcodeSchema.parse({
-      barcode: searchParams.get("barcode"),
+      barcode: searchParams.get('barcode'),
     });
 
     const { barcode } = validatedParams;
@@ -63,7 +63,7 @@ async function handleBarcodeSearch(request: AuthenticatedRequest) {
 
     return NextResponse.json(formattedProduct);
   } catch (error) {
-    console.error("Error looking up barcode:", error);
+    console.error('Error looking up barcode:', error);
 
     if (error instanceof z.ZodError) {
       return NextResponse.json(

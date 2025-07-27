@@ -1,22 +1,22 @@
-import { NextRequest, NextResponse } from "next/server";
-import * as bcrypt from "bcryptjs";
-import { z } from "zod";
-import { prisma } from "@/lib/db";
-import { emailService } from "@/lib/email/service";
-import { AuditLogger } from "@/lib/utils/audit-logger";
-import { passwordSchema } from "@/lib/validations/common";
-import { withRateLimit } from "@/lib/rate-limiting";
+import { NextRequest, NextResponse } from 'next/server';
+import * as bcrypt from 'bcryptjs';
+import { z } from 'zod';
+import { prisma } from '@/lib/db';
+import { emailService } from '@/lib/email/service';
+import { AuditLogger } from '@/lib/utils/audit-logger';
+import { passwordSchema } from '@/lib/validations/common';
+import { withRateLimit } from '@/lib/rate-limiting';
 
 // Reset password validation schema
 const resetPasswordSchema = z
   .object({
-    token: z.string().min(1, "Reset token is required"),
+    token: z.string().min(1, 'Reset token is required'),
     password: passwordSchema,
     confirmPassword: z.string(),
   })
-  .refine((data) => data.password === data.confirmPassword, {
+  .refine(data => data.password === data.confirmPassword, {
     message: "Passwords don't match",
-    path: ["confirmPassword"],
+    path: ['confirmPassword'],
   });
 
 async function resetPasswordHandler(request: NextRequest) {
@@ -30,7 +30,7 @@ async function resetPasswordHandler(request: NextRequest) {
     if (!validation.success) {
       return NextResponse.json(
         {
-          error: "Invalid input data",
+          error: 'Invalid input data',
           details: validation.error.issues,
         },
         { status: 400 }
@@ -62,25 +62,25 @@ async function resetPasswordHandler(request: NextRequest) {
       // Log failed password reset attempt
       await AuditLogger.logAuthEvent(
         {
-          action: "PASSWORD_RESET_SUCCESS",
+          action: 'PASSWORD_RESET_SUCCESS',
           success: false,
-          errorMessage: "Invalid or expired reset token",
-          details: { token: token.substring(0, 8) + "..." }, // Log partial token for debugging
+          errorMessage: 'Invalid or expired reset token',
+          details: { token: token.substring(0, 8) + '...' }, // Log partial token for debugging
         },
         request
       );
 
       return NextResponse.json(
-        { error: "Invalid or expired reset token" },
+        { error: 'Invalid or expired reset token' },
         { status: 400 }
       );
     }
 
     // Verify user is in good standing
-    if (!user.emailVerified || user.userStatus !== "APPROVED") {
+    if (!user.emailVerified || user.userStatus !== 'APPROVED') {
       await AuditLogger.logAuthEvent(
         {
-          action: "PASSWORD_RESET_SUCCESS",
+          action: 'PASSWORD_RESET_SUCCESS',
           userId: user.id,
           userEmail: user.email,
           success: false,
@@ -90,7 +90,7 @@ async function resetPasswordHandler(request: NextRequest) {
       );
 
       return NextResponse.json(
-        { error: "Account is not eligible for password reset" },
+        { error: 'Account is not eligible for password reset' },
         { status: 403 }
       );
     }
@@ -116,34 +116,34 @@ async function resetPasswordHandler(request: NextRequest) {
     // Send confirmation email
     await emailService.sendPasswordResetEmail(user.email, {
       firstName: user.firstName,
-      resetLink: `${process.env.NEXTAUTH_URL || "http://localhost:3000"}/login`,
+      resetLink: `${process.env.NEXTAUTH_URL || 'http://localhost:3000'}/login`,
       expiresInHours: 0, // This is a confirmation, not a reset link
     });
 
     return NextResponse.json(
       {
         message:
-          "Password reset successful! You can now login with your new password.",
+          'Password reset successful! You can now login with your new password.',
         success: true,
       },
       { status: 200 }
     );
   } catch (error) {
-    console.error("Reset password error:", error);
+    console.error('Reset password error:', error);
 
     // Log the error
     await AuditLogger.logAuthEvent(
       {
-        action: "PASSWORD_RESET_SUCCESS",
+        action: 'PASSWORD_RESET_SUCCESS',
         success: false,
-        errorMessage: error instanceof Error ? error.message : "Unknown error",
-        details: { token: body?.token?.substring(0, 8) + "..." },
+        errorMessage: error instanceof Error ? error.message : 'Unknown error',
+        details: { token: body?.token?.substring(0, 8) + '...' },
       },
       request
     );
 
     return NextResponse.json(
-      { error: "Failed to reset password. Please try again." },
+      { error: 'Failed to reset password. Please try again.' },
       { status: 500 }
     );
   }
@@ -153,11 +153,11 @@ async function resetPasswordHandler(request: NextRequest) {
 export const POST = withRateLimit({
   windowMs: 60 * 60 * 1000, // 1 hour
   maxRequests: 5, // 5 requests per hour
-  keyGenerator: (request) => {
+  keyGenerator: request => {
     const ip =
-      request.headers.get("x-forwarded-for") ||
-      request.headers.get("x-real-ip") ||
-      "unknown";
+      request.headers.get('x-forwarded-for') ||
+      request.headers.get('x-real-ip') ||
+      'unknown';
     return `reset-password:${ip}`;
   },
 })(resetPasswordHandler);

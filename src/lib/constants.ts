@@ -4,21 +4,21 @@
  * All constants must match the exact Prisma ENUM values
  */
 
-import { USER_ROLES } from "@/lib/auth/roles";
+import { USER_ROLES } from '@/lib/auth/roles';
 import {
   IconCash,
   IconCreditCard,
   IconBuilding,
   IconWallet,
-} from "@tabler/icons-react";
+} from '@tabler/icons-react';
 
 // User Status Constants (must match Prisma UserStatus enum exactly)
 export const USER_STATUS = {
-  PENDING: "PENDING",
-  VERIFIED: "VERIFIED",
-  APPROVED: "APPROVED",
-  REJECTED: "REJECTED",
-  SUSPENDED: "SUSPENDED",
+  PENDING: 'PENDING',
+  VERIFIED: 'VERIFIED',
+  APPROVED: 'APPROVED',
+  REJECTED: 'REJECTED',
+  SUSPENDED: 'SUSPENDED',
 } as const;
 
 export type UserStatus = (typeof USER_STATUS)[keyof typeof USER_STATUS];
@@ -28,10 +28,10 @@ export const POS_ALLOWED_STATUSES: UserStatus[] = [USER_STATUS.APPROVED];
 
 // Product Status Constants (must match validation schema exactly)
 export const PRODUCT_STATUS = {
-  ACTIVE: "ACTIVE",
-  INACTIVE: "INACTIVE",
-  OUT_OF_STOCK: "OUT_OF_STOCK",
-  DISCONTINUED: "DISCONTINUED",
+  ACTIVE: 'ACTIVE',
+  INACTIVE: 'INACTIVE',
+  OUT_OF_STOCK: 'OUT_OF_STOCK',
+  DISCONTINUED: 'DISCONTINUED',
 } as const;
 
 export type ProductStatus =
@@ -39,11 +39,11 @@ export type ProductStatus =
 
 // Payment Methods (must match Prisma PaymentMethod enum exactly)
 export const PAYMENT_METHODS = {
-  CASH: "CASH",
-  BANK_TRANSFER: "BANK_TRANSFER",
-  POS_MACHINE: "POS_MACHINE",
-  CREDIT_CARD: "CREDIT_CARD",
-  MOBILE_MONEY: "MOBILE_MONEY",
+  CASH: 'CASH',
+  BANK_TRANSFER: 'BANK_TRANSFER',
+  POS_MACHINE: 'POS_MACHINE',
+  CREDIT_CARD: 'CREDIT_CARD',
+  MOBILE_MONEY: 'MOBILE_MONEY',
 } as const;
 
 export type PaymentMethod =
@@ -51,8 +51,8 @@ export type PaymentMethod =
 
 // Financial Types (must match Prisma FinancialType enum exactly)
 export const FINANCIAL_TYPES = {
-  EXPENSE: "EXPENSE",
-  INCOME: "INCOME",
+  EXPENSE: 'EXPENSE',
+  INCOME: 'INCOME',
 } as const;
 
 export type FinancialType =
@@ -60,11 +60,11 @@ export type FinancialType =
 
 // Financial Status (must match Prisma FinancialStatus enum exactly)
 export const FINANCIAL_STATUS = {
-  PENDING: "PENDING",
-  COMPLETED: "COMPLETED",
-  CANCELLED: "CANCELLED",
-  APPROVED: "APPROVED",
-  REJECTED: "REJECTED",
+  PENDING: 'PENDING',
+  COMPLETED: 'COMPLETED',
+  CANCELLED: 'CANCELLED',
+  APPROVED: 'APPROVED',
+  REJECTED: 'REJECTED',
 } as const;
 
 export type FinancialStatus =
@@ -75,35 +75,35 @@ export const ALL_PAYMENT_METHODS: PaymentMethod[] =
 
 // Payment Methods with UI data (for components)
 export const PAYMENT_METHODS_UI = [
-  { value: PAYMENT_METHODS.CASH, label: "Cash", icon: IconCash },
+  { value: PAYMENT_METHODS.CASH, label: 'Cash', icon: IconCash },
   {
     value: PAYMENT_METHODS.POS_MACHINE,
-    label: "POS Machine",
+    label: 'POS Machine',
     icon: IconCreditCard,
   },
   {
     value: PAYMENT_METHODS.BANK_TRANSFER,
-    label: "Bank Transfer",
+    label: 'Bank Transfer',
     icon: IconBuilding,
   },
   {
     value: PAYMENT_METHODS.CREDIT_CARD,
-    label: "Credit Card",
+    label: 'Credit Card',
     icon: IconCreditCard,
   },
   {
     value: PAYMENT_METHODS.MOBILE_MONEY,
-    label: "Mobile Money",
+    label: 'Mobile Money',
     icon: IconWallet,
   },
 ] as const;
 
 // Payment Status Constants (must match Prisma PaymentStatus enum exactly)
 export const PAYMENT_STATUS = {
-  PENDING: "PENDING",
-  PAID: "PAID",
-  REFUNDED: "REFUNDED",
-  CANCELLED: "CANCELLED",
+  PENDING: 'PENDING',
+  PAID: 'PAID',
+  REFUNDED: 'REFUNDED',
+  CANCELLED: 'CANCELLED',
 } as const;
 
 export type PaymentStatus =
@@ -111,10 +111,10 @@ export type PaymentStatus =
 
 // Transaction Status Constants (must match Prisma TransactionStatus enum exactly)
 export const TRANSACTION_STATUS = {
-  PENDING: "PENDING",
-  COMPLETED: "COMPLETED",
-  CANCELLED: "CANCELLED",
-  REFUNDED: "REFUNDED",
+  PENDING: 'PENDING',
+  COMPLETED: 'COMPLETED',
+  CANCELLED: 'CANCELLED',
+  REFUNDED: 'REFUNDED',
 } as const;
 
 export type TransactionStatus =
@@ -122,18 +122,18 @@ export type TransactionStatus =
 
 // Discount Type Constants (must match Prisma DiscountType enum exactly)
 export const DISCOUNT_TYPE = {
-  AMOUNT: "AMOUNT",
-  PERCENTAGE: "PERCENTAGE",
+  AMOUNT: 'AMOUNT',
+  PERCENTAGE: 'PERCENTAGE',
 } as const;
 
 export type DiscountType = (typeof DISCOUNT_TYPE)[keyof typeof DISCOUNT_TYPE];
 
 // Stock Reconciliation Status (must match Prisma StockReconciliationStatus enum exactly)
 export const STOCK_RECONCILIATION_STATUS = {
-  DRAFT: "DRAFT",
-  PENDING: "PENDING",
-  APPROVED: "APPROVED",
-  REJECTED: "REJECTED",
+  DRAFT: 'DRAFT',
+  PENDING: 'PENDING',
+  APPROVED: 'APPROVED',
+  REJECTED: 'REJECTED',
 } as const;
 
 export type StockReconciliationStatus =
@@ -141,12 +141,12 @@ export type StockReconciliationStatus =
 
 // Stock Adjustment Types (must match Prisma StockAdjustmentType enum exactly)
 export const STOCK_ADJUSTMENT_TYPES = {
-  INCREASE: "INCREASE",
-  DECREASE: "DECREASE",
-  RECOUNT: "RECOUNT",
-  DAMAGE: "DAMAGE",
-  TRANSFER: "TRANSFER",
-  RETURN: "RETURN",
+  INCREASE: 'INCREASE',
+  DECREASE: 'DECREASE',
+  RECOUNT: 'RECOUNT',
+  DAMAGE: 'DAMAGE',
+  TRANSFER: 'TRANSFER',
+  RETURN: 'RETURN',
 } as const;
 
 export type StockAdjustmentType =
@@ -154,9 +154,9 @@ export type StockAdjustmentType =
 
 // Stock Adjustment Status (must match Prisma StockAdjustmentStatus enum exactly)
 export const STOCK_ADJUSTMENT_STATUS = {
-  PENDING: "PENDING",
-  APPROVED: "APPROVED",
-  REJECTED: "REJECTED",
+  PENDING: 'PENDING',
+  APPROVED: 'APPROVED',
+  REJECTED: 'REJECTED',
 } as const;
 
 export type StockAdjustmentStatus =
@@ -164,12 +164,12 @@ export type StockAdjustmentStatus =
 
 // AI Content Type (must match Prisma AIContentType enum exactly)
 export const AI_CONTENT_TYPE = {
-  DESCRIPTION: "DESCRIPTION",
-  SEO_TITLE: "SEO_TITLE",
-  SEO_DESCRIPTION: "SEO_DESCRIPTION",
-  SOCIAL_MEDIA_POST: "SOCIAL_MEDIA_POST",
-  PRODUCT_FEATURES: "PRODUCT_FEATURES",
-  MARKETING_COPY: "MARKETING_COPY",
+  DESCRIPTION: 'DESCRIPTION',
+  SEO_TITLE: 'SEO_TITLE',
+  SEO_DESCRIPTION: 'SEO_DESCRIPTION',
+  SOCIAL_MEDIA_POST: 'SOCIAL_MEDIA_POST',
+  PRODUCT_FEATURES: 'PRODUCT_FEATURES',
+  MARKETING_COPY: 'MARKETING_COPY',
 } as const;
 
 export type AIContentType =
@@ -177,11 +177,11 @@ export type AIContentType =
 
 // Content Status (must match Prisma ContentStatus enum exactly)
 export const CONTENT_STATUS = {
-  DRAFT: "DRAFT",
-  PENDING_APPROVAL: "PENDING_APPROVAL",
-  APPROVED: "APPROVED",
-  PUBLISHED: "PUBLISHED",
-  REJECTED: "REJECTED",
+  DRAFT: 'DRAFT',
+  PENDING_APPROVAL: 'PENDING_APPROVAL',
+  APPROVED: 'APPROVED',
+  PUBLISHED: 'PUBLISHED',
+  REJECTED: 'REJECTED',
 } as const;
 
 export type ContentStatus =
@@ -189,11 +189,11 @@ export type ContentStatus =
 
 // Webflow Sync Status (must match Prisma WebflowSyncStatus enum exactly)
 export const WEBFLOW_SYNC_STATUS = {
-  PENDING: "PENDING",
-  SYNCING: "SYNCING",
-  SUCCESS: "SUCCESS",
-  FAILED: "FAILED",
-  RETRY: "RETRY",
+  PENDING: 'PENDING',
+  SYNCING: 'SYNCING',
+  SUCCESS: 'SUCCESS',
+  FAILED: 'FAILED',
+  RETRY: 'RETRY',
 } as const;
 
 export type WebflowSyncStatus =
@@ -222,22 +222,22 @@ export const STOCK_THRESHOLDS = {
 
 // Date Range Options
 export const DATE_RANGES = {
-  WEEK: "week",
-  MONTH: "month",
-  YEAR: "year",
+  WEEK: 'week',
+  MONTH: 'month',
+  YEAR: 'year',
 } as const;
 
 // Chart Configuration
 export const CHART_CONFIG = {
   COLORS: [
-    "#3b82f6", // blue
-    "#10b981", // green
-    "#f59e0b", // amber
-    "#ef4444", // red
-    "#8b5cf6", // violet
-    "#06b6d4", // cyan
-    "#84cc16", // lime
-    "#f97316", // orange
+    '#3b82f6', // blue
+    '#10b981', // green
+    '#f59e0b', // amber
+    '#ef4444', // red
+    '#8b5cf6', // violet
+    '#06b6d4', // cyan
+    '#84cc16', // lime
+    '#f97316', // orange
   ],
   HEIGHT: 300,
   STROKE_WIDTH: 2,
@@ -245,9 +245,9 @@ export const CHART_CONFIG = {
 
 // Transaction Prefixes
 export const TRANSACTION_PREFIXES = {
-  POS: "POS",
-  MANUAL: "TXN",
-  IMPORT: "IMP",
+  POS: 'POS',
+  MANUAL: 'TXN',
+  IMPORT: 'IMP',
 } as const;
 
 // Cache Durations (in milliseconds)
@@ -270,8 +270,8 @@ export const INTERVALS = {
 
 // Currency Settings
 export const CURRENCY = {
-  SYMBOL: "₦",
-  CODE: "NGN",
+  SYMBOL: '₦',
+  CODE: 'NGN',
   DECIMAL_PLACES: 2,
 } as const;
 
@@ -285,16 +285,16 @@ export const BARCODE_PATTERNS = {
 
 // Email Templates
 export const EMAIL_TEMPLATES = {
-  RECEIPT: "receipt",
-  USER_APPROVAL: "user_approval",
-  USER_REJECTION: "user_rejection",
-  PASSWORD_RESET: "password_reset",
+  RECEIPT: 'receipt',
+  USER_APPROVAL: 'user_approval',
+  USER_REJECTION: 'user_rejection',
+  PASSWORD_RESET: 'password_reset',
 } as const;
 
 // File Upload Limits
 export const UPLOAD_LIMITS = {
   MAX_FILE_SIZE: 5 * 1024 * 1024, // 5MB
-  ALLOWED_IMAGE_TYPES: ["image/jpeg", "image/png", "image/webp"],
+  ALLOWED_IMAGE_TYPES: ['image/jpeg', 'image/png', 'image/webp'],
   MAX_FILES_PER_UPLOAD: 10,
 } as const;
 
@@ -328,26 +328,26 @@ export const VALIDATION_RULES = {
 
 // Error Messages
 export const ERROR_MESSAGES = {
-  UNAUTHORIZED: "Unauthorized access",
-  FORBIDDEN: "Insufficient permissions",
-  NOT_FOUND: "Resource not found",
-  VALIDATION_ERROR: "Invalid data provided",
-  INTERNAL_ERROR: "Internal server error",
-  NETWORK_ERROR: "Network connection error",
-  SESSION_EXPIRED: "Session has expired",
-  ACCOUNT_INACTIVE: "Account is not active",
-  INSUFFICIENT_STOCK: "Insufficient stock available",
-  PAYMENT_FAILED: "Payment processing failed",
+  UNAUTHORIZED: 'Unauthorized access',
+  FORBIDDEN: 'Insufficient permissions',
+  NOT_FOUND: 'Resource not found',
+  VALIDATION_ERROR: 'Invalid data provided',
+  INTERNAL_ERROR: 'Internal server error',
+  NETWORK_ERROR: 'Network connection error',
+  SESSION_EXPIRED: 'Session has expired',
+  ACCOUNT_INACTIVE: 'Account is not active',
+  INSUFFICIENT_STOCK: 'Insufficient stock available',
+  PAYMENT_FAILED: 'Payment processing failed',
 } as const;
 
 // Success Messages
 export const SUCCESS_MESSAGES = {
-  SALE_COMPLETED: "Sale completed successfully",
-  PRODUCT_ADDED: "Product added to cart",
-  PRODUCT_UPDATED: "Product updated successfully",
-  USER_APPROVED: "User approved successfully",
-  EMAIL_SENT: "Email sent successfully",
-  DATA_SYNCED: "Data synchronized successfully",
+  SALE_COMPLETED: 'Sale completed successfully',
+  PRODUCT_ADDED: 'Product added to cart',
+  PRODUCT_UPDATED: 'Product updated successfully',
+  USER_APPROVED: 'User approved successfully',
+  EMAIL_SENT: 'Email sent successfully',
+  DATA_SYNCED: 'Data synchronized successfully',
 } as const;
 
 // Note: User Role Constants are defined in @/lib/auth/roles.ts
@@ -364,10 +364,10 @@ export const DEFAULTS = {
 
 // Placeholder Values for Development
 export const PLACEHOLDER_VALUES = {
-  VISITOR_COUNT: "999",
-  VIEW_COUNT: "1,333",
-  DISCOUNTED_ORDERS: "0",
-  DISCOUNT_CHANGE: "0%",
-  VISITOR_CHANGE: "0%",
-  VIEW_CHANGE: "0%",
+  VISITOR_COUNT: '999',
+  VIEW_COUNT: '1,333',
+  DISCOUNTED_ORDERS: '0',
+  DISCOUNT_CHANGE: '0%',
+  VISITOR_CHANGE: '0%',
+  VIEW_CHANGE: '0%',
 } as const;

@@ -1,15 +1,15 @@
-"use client";
+'use client';
 
-import { useState } from "react";
+import { useState } from 'react';
 
-import { Button } from "@/components/ui/button";
+import { Button } from '@/components/ui/button';
 import {
   Card,
   CardContent,
   CardDescription,
   CardHeader,
   CardTitle,
-} from "@/components/ui/card";
+} from '@/components/ui/card';
 import {
   Table,
   TableBody,
@@ -17,8 +17,8 @@ import {
   TableHead,
   TableHeader,
   TableRow,
-} from "@/components/ui/table";
-import { Badge } from "@/components/ui/badge";
+} from '@/components/ui/table';
+import { Badge } from '@/components/ui/badge';
 import {
   Dialog,
   DialogContent,
@@ -26,14 +26,14 @@ import {
   DialogHeader,
   DialogTitle,
   DialogFooter,
-} from "@/components/ui/dialog";
+} from '@/components/ui/dialog';
 import {
   Select,
   SelectContent,
   SelectItem,
   SelectTrigger,
   SelectValue,
-} from "@/components/ui/select";
+} from '@/components/ui/select';
 
 import {
   Clock,
@@ -44,38 +44,38 @@ import {
   Calendar,
   AlertCircle,
   RefreshCw,
-} from "lucide-react";
+} from 'lucide-react';
 
-import { usePendingUsers, useApproveUser } from "@/hooks/api/users";
-import type { AppUser as APIUser } from "@/types/user";
-import { toast } from "sonner";
-import { useAdminGuard } from "@/hooks/useAdminGuard";
-import type { UserStatus } from "@/types/user";
+import { usePendingUsers, useApproveUser } from '@/hooks/api/users';
+import type { AppUser as APIUser } from '@/types/user';
+import { toast } from 'sonner';
+import { useAdminGuard } from '@/hooks/useAdminGuard';
+import type { UserStatus } from '@/types/user';
 
 const statusConfig = {
   PENDING: {
-    label: "Pending Verification",
-    color: "bg-yellow-100 text-yellow-800 border-yellow-200",
+    label: 'Pending Verification',
+    color: 'bg-yellow-100 text-yellow-800 border-yellow-200',
     icon: Clock,
   },
   VERIFIED: {
-    label: "Awaiting Approval",
-    color: "bg-blue-100 text-blue-800 border-blue-200",
+    label: 'Awaiting Approval',
+    color: 'bg-blue-100 text-blue-800 border-blue-200',
     icon: CheckCircle,
   },
   APPROVED: {
-    label: "Approved",
-    color: "bg-green-100 text-green-800 border-green-200",
+    label: 'Approved',
+    color: 'bg-green-100 text-green-800 border-green-200',
     icon: CheckCircle,
   },
   REJECTED: {
-    label: "Rejected",
-    color: "bg-red-100 text-red-800 border-red-200",
+    label: 'Rejected',
+    color: 'bg-red-100 text-red-800 border-red-200',
     icon: XCircle,
   },
   SUSPENDED: {
-    label: "Suspended",
-    color: "bg-orange-100 text-orange-800 border-orange-200",
+    label: 'Suspended',
+    color: 'bg-orange-100 text-orange-800 border-orange-200',
     icon: AlertCircle,
   },
 };
@@ -84,7 +84,7 @@ export function PendingUsersManagement() {
   const { isAdmin, isLoading: isAuthLoading } = useAdminGuard();
   const [selectedUser, setSelectedUser] = useState<APIUser | null>(null);
   const [isDetailsDialogOpen, setIsDetailsDialogOpen] = useState(false);
-  const [filterStatus, setFilterStatus] = useState<string>("all");
+  const [filterStatus, setFilterStatus] = useState<string>('all');
 
   // TanStack Query hooks
   const {
@@ -103,14 +103,14 @@ export function PendingUsersManagement() {
     try {
       await approveUserMutation.mutateAsync({
         userId: parseInt(user.id),
-        action: "approve",
+        action: 'approve',
       });
 
-      toast.success("User approved successfully");
+      toast.success('User approved successfully');
       setIsDetailsDialogOpen(false);
     } catch (error) {
       const errorMessage =
-        error instanceof Error ? error.message : "Failed to approve user";
+        error instanceof Error ? error.message : 'Failed to approve user';
       toast.error(errorMessage);
     }
   };
@@ -120,28 +120,28 @@ export function PendingUsersManagement() {
     try {
       await approveUserMutation.mutateAsync({
         userId: parseInt(user.id),
-        action: "reject",
-        rejectionReason: reason || "Application rejected by administrator",
+        action: 'reject',
+        rejectionReason: reason || 'Application rejected by administrator',
       });
 
-      toast.success("User rejected successfully");
+      toast.success('User rejected successfully');
       setIsDetailsDialogOpen(false);
     } catch (error) {
       const errorMessage =
-        error instanceof Error ? error.message : "Failed to reject user";
+        error instanceof Error ? error.message : 'Failed to reject user';
       toast.error(errorMessage);
     }
   };
 
   // Format date for display
   const formatDate = (dateString?: string) => {
-    if (!dateString) return "Never";
-    return new Date(dateString).toLocaleDateString("en-US", {
-      year: "numeric",
-      month: "short",
-      day: "numeric",
-      hour: "2-digit",
-      minute: "2-digit",
+    if (!dateString) return 'Never';
+    return new Date(dateString).toLocaleDateString('en-US', {
+      year: 'numeric',
+      month: 'short',
+      day: 'numeric',
+      hour: '2-digit',
+      minute: '2-digit',
     });
   };
 
@@ -155,7 +155,7 @@ export function PendingUsersManagement() {
     return (
       <Card>
         <CardContent className="flex items-center justify-center py-8">
-          <RefreshCw className="h-6 w-6 animate-spin mr-2" />
+          <RefreshCw className="mr-2 h-6 w-6 animate-spin" />
           Loading pending users...
         </CardContent>
       </Card>
@@ -172,7 +172,7 @@ export function PendingUsersManagement() {
   return (
     <div className="space-y-6">
       {/* Header */}
-      <div className="flex flex-col sm:flex-row gap-4 items-start sm:items-center justify-between">
+      <div className="flex flex-col items-start justify-between gap-4 sm:flex-row sm:items-center">
         <div>
           <h2 className="text-2xl font-bold tracking-tight">
             Pending User Approvals
@@ -182,19 +182,19 @@ export function PendingUsersManagement() {
           </p>
         </div>
         <Button onClick={() => refetch()} variant="outline" size="sm">
-          <RefreshCw className="h-4 w-4 mr-2" />
+          <RefreshCw className="mr-2 h-4 w-4" />
           Refresh
         </Button>
       </div>
 
       {/* Pending Users Metrics - Beautiful Gradient Cards */}
-      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
+      <div className="grid grid-cols-1 gap-6 md:grid-cols-2 lg:grid-cols-4">
         {/* Total Pending Card */}
-        <Card className="relative overflow-hidden border-0 bg-gradient-to-br from-orange-50 to-orange-100 dark:from-orange-950 dark:to-orange-900 hover:shadow-lg transition-all duration-300 group">
-          <div className="absolute top-0 right-0 w-20 h-20 bg-orange-200/50 dark:bg-orange-800/50 rounded-full -translate-y-10 translate-x-10"></div>
+        <Card className="group relative overflow-hidden border-0 bg-gradient-to-br from-orange-50 to-orange-100 transition-all duration-300 hover:shadow-lg dark:from-orange-950 dark:to-orange-900">
+          <div className="absolute top-0 right-0 h-20 w-20 translate-x-10 -translate-y-10 rounded-full bg-orange-200/50 dark:bg-orange-800/50"></div>
           <CardHeader className="pb-3">
-            <CardTitle className="text-sm font-medium text-orange-700 dark:text-orange-300 flex items-center gap-3">
-              <div className="p-2 bg-orange-100 dark:bg-orange-800 rounded-lg group-hover:scale-110 transition-transform duration-300">
+            <CardTitle className="flex items-center gap-3 text-sm font-medium text-orange-700 dark:text-orange-300">
+              <div className="rounded-lg bg-orange-100 p-2 transition-transform duration-300 group-hover:scale-110 dark:bg-orange-800">
                 <Clock className="h-5 w-5 text-orange-600 dark:text-orange-400" />
               </div>
               Total Pending
@@ -205,13 +205,13 @@ export function PendingUsersManagement() {
               <div className="text-3xl font-bold text-orange-600 dark:text-orange-400">
                 {pendingUsers.length}
               </div>
-              <div className="text-xs text-orange-600/70 dark:text-orange-400/70 mb-1">
+              <div className="mb-1 text-xs text-orange-600/70 dark:text-orange-400/70">
                 awaiting review
               </div>
             </div>
             {pendingUsers.length > 0 && (
-              <div className="flex items-center gap-2 mt-3">
-                <div className="w-2 h-2 bg-orange-500 rounded-full animate-pulse"></div>
+              <div className="mt-3 flex items-center gap-2">
+                <div className="h-2 w-2 animate-pulse rounded-full bg-orange-500"></div>
                 <span className="text-xs text-orange-600/80 dark:text-orange-400/80">
                   Requires attention
                 </span>
@@ -221,11 +221,11 @@ export function PendingUsersManagement() {
         </Card>
 
         {/* Pending Verification Card */}
-        <Card className="relative overflow-hidden border-0 bg-gradient-to-br from-yellow-50 to-yellow-100 dark:from-yellow-950 dark:to-yellow-900 hover:shadow-lg transition-all duration-300 group">
-          <div className="absolute top-0 right-0 w-20 h-20 bg-yellow-200/50 dark:bg-yellow-800/50 rounded-full -translate-y-10 translate-x-10"></div>
+        <Card className="group relative overflow-hidden border-0 bg-gradient-to-br from-yellow-50 to-yellow-100 transition-all duration-300 hover:shadow-lg dark:from-yellow-950 dark:to-yellow-900">
+          <div className="absolute top-0 right-0 h-20 w-20 translate-x-10 -translate-y-10 rounded-full bg-yellow-200/50 dark:bg-yellow-800/50"></div>
           <CardHeader className="pb-3">
-            <CardTitle className="text-sm font-medium text-yellow-700 dark:text-yellow-300 flex items-center gap-3">
-              <div className="p-2 bg-yellow-100 dark:bg-yellow-800 rounded-lg group-hover:scale-110 transition-transform duration-300">
+            <CardTitle className="flex items-center gap-3 text-sm font-medium text-yellow-700 dark:text-yellow-300">
+              <div className="rounded-lg bg-yellow-100 p-2 transition-transform duration-300 group-hover:scale-110 dark:bg-yellow-800">
                 <Clock className="h-5 w-5 text-yellow-600 dark:text-yellow-400" />
               </div>
               Pending Verification
@@ -234,24 +234,24 @@ export function PendingUsersManagement() {
           <CardContent>
             <div className="flex items-end gap-3">
               <div className="text-3xl font-bold text-yellow-600 dark:text-yellow-400">
-                {pendingUsers.filter((u) => u.userStatus === "PENDING").length}
+                {pendingUsers.filter(u => u.userStatus === 'PENDING').length}
               </div>
-              <div className="text-xs text-yellow-600/70 dark:text-yellow-400/70 mb-1">
+              <div className="mb-1 text-xs text-yellow-600/70 dark:text-yellow-400/70">
                 need verification
               </div>
             </div>
-            <div className="text-xs text-yellow-600/70 dark:text-yellow-400/70 mt-3">
+            <div className="mt-3 text-xs text-yellow-600/70 dark:text-yellow-400/70">
               Email verification required
             </div>
           </CardContent>
         </Card>
 
         {/* Awaiting Approval Card */}
-        <Card className="relative overflow-hidden border-0 bg-gradient-to-br from-blue-50 to-blue-100 dark:from-blue-950 dark:to-blue-900 hover:shadow-lg transition-all duration-300 group">
-          <div className="absolute top-0 right-0 w-20 h-20 bg-blue-200/50 dark:bg-blue-800/50 rounded-full -translate-y-10 translate-x-10"></div>
+        <Card className="group relative overflow-hidden border-0 bg-gradient-to-br from-blue-50 to-blue-100 transition-all duration-300 hover:shadow-lg dark:from-blue-950 dark:to-blue-900">
+          <div className="absolute top-0 right-0 h-20 w-20 translate-x-10 -translate-y-10 rounded-full bg-blue-200/50 dark:bg-blue-800/50"></div>
           <CardHeader className="pb-3">
-            <CardTitle className="text-sm font-medium text-blue-700 dark:text-blue-300 flex items-center gap-3">
-              <div className="p-2 bg-blue-100 dark:bg-blue-800 rounded-lg group-hover:scale-110 transition-transform duration-300">
+            <CardTitle className="flex items-center gap-3 text-sm font-medium text-blue-700 dark:text-blue-300">
+              <div className="rounded-lg bg-blue-100 p-2 transition-transform duration-300 group-hover:scale-110 dark:bg-blue-800">
                 <CheckCircle className="h-5 w-5 text-blue-600 dark:text-blue-400" />
               </div>
               Awaiting Approval
@@ -260,17 +260,17 @@ export function PendingUsersManagement() {
           <CardContent>
             <div className="flex items-end gap-3">
               <div className="text-3xl font-bold text-blue-600 dark:text-blue-400">
-                {pendingUsers.filter((u) => u.userStatus === "VERIFIED").length}
+                {pendingUsers.filter(u => u.userStatus === 'VERIFIED').length}
               </div>
-              <div className="text-xs text-blue-600/70 dark:text-blue-400/70 mb-1">
+              <div className="mb-1 text-xs text-blue-600/70 dark:text-blue-400/70">
                 ready for approval
               </div>
             </div>
-            <div className="w-full bg-blue-200 dark:bg-blue-800 rounded-full h-2 mt-3">
+            <div className="mt-3 h-2 w-full rounded-full bg-blue-200 dark:bg-blue-800">
               <div
-                className="bg-blue-600 dark:bg-blue-400 h-2 rounded-full transition-all duration-500"
+                className="h-2 rounded-full bg-blue-600 transition-all duration-500 dark:bg-blue-400"
                 style={{
-                  width: `${Math.min((pendingUsers.filter((u) => u.userStatus === "VERIFIED").length / Math.max(pendingUsers.length, 1)) * 100, 100)}%`,
+                  width: `${Math.min((pendingUsers.filter(u => u.userStatus === 'VERIFIED').length / Math.max(pendingUsers.length, 1)) * 100, 100)}%`,
                 }}
               ></div>
             </div>
@@ -278,11 +278,11 @@ export function PendingUsersManagement() {
         </Card>
 
         {/* Rejected Users Card */}
-        <Card className="relative overflow-hidden border-0 bg-gradient-to-br from-red-50 to-red-100 dark:from-red-950 dark:to-red-900 hover:shadow-lg transition-all duration-300 group">
-          <div className="absolute top-0 right-0 w-20 h-20 bg-red-200/50 dark:bg-red-800/50 rounded-full -translate-y-10 translate-x-10"></div>
+        <Card className="group relative overflow-hidden border-0 bg-gradient-to-br from-red-50 to-red-100 transition-all duration-300 hover:shadow-lg dark:from-red-950 dark:to-red-900">
+          <div className="absolute top-0 right-0 h-20 w-20 translate-x-10 -translate-y-10 rounded-full bg-red-200/50 dark:bg-red-800/50"></div>
           <CardHeader className="pb-3">
-            <CardTitle className="text-sm font-medium text-red-700 dark:text-red-300 flex items-center gap-3">
-              <div className="p-2 bg-red-100 dark:bg-red-800 rounded-lg group-hover:scale-110 transition-transform duration-300">
+            <CardTitle className="flex items-center gap-3 text-sm font-medium text-red-700 dark:text-red-300">
+              <div className="rounded-lg bg-red-100 p-2 transition-transform duration-300 group-hover:scale-110 dark:bg-red-800">
                 <XCircle className="h-5 w-5 text-red-600 dark:text-red-400" />
               </div>
               Rejected Users
@@ -291,13 +291,13 @@ export function PendingUsersManagement() {
           <CardContent>
             <div className="flex items-end gap-3">
               <div className="text-3xl font-bold text-red-600 dark:text-red-400">
-                {pendingUsers.filter((u) => u.userStatus === "REJECTED").length}
+                {pendingUsers.filter(u => u.userStatus === 'REJECTED').length}
               </div>
-              <div className="text-xs text-red-600/70 dark:text-red-400/70 mb-1">
+              <div className="mb-1 text-xs text-red-600/70 dark:text-red-400/70">
                 applications rejected
               </div>
             </div>
-            <div className="text-xs text-red-600/70 dark:text-red-400/70 mt-3">
+            <div className="mt-3 text-xs text-red-600/70 dark:text-red-400/70">
               Review rejection reasons
             </div>
           </CardContent>
@@ -320,16 +320,16 @@ export function PendingUsersManagement() {
         </CardHeader>
         <CardContent>
           {errorMessage && (
-            <div className="bg-red-50 border border-red-200 rounded-md p-4 mb-4">
+            <div className="mb-4 rounded-md border border-red-200 bg-red-50 p-4">
               <div className="flex items-center">
-                <AlertCircle className="h-4 w-4 text-red-600 mr-2" />
+                <AlertCircle className="mr-2 h-4 w-4 text-red-600" />
                 <span className="text-red-800">{errorMessage}</span>
               </div>
             </div>
           )}
 
           {/* Filter Controls */}
-          <div className="flex items-center gap-4 mb-6">
+          <div className="mb-6 flex items-center gap-4">
             <label className="text-sm font-medium">Filter by status:</label>
             <Select value={filterStatus} onValueChange={setFilterStatus}>
               <SelectTrigger className="w-48">
@@ -350,12 +350,12 @@ export function PendingUsersManagement() {
 
           {/* Users Table */}
           {filteredUsers.length === 0 ? (
-            <div className="text-center py-8 text-gray-500">
-              <User className="h-12 w-12 mx-auto mb-4 text-gray-300" />
-              <p className="text-lg font-medium mb-2">No pending users found</p>
+            <div className="py-8 text-center text-gray-500">
+              <User className="mx-auto mb-4 h-12 w-12 text-gray-300" />
+              <p className="mb-2 text-lg font-medium">No pending users found</p>
               <p className="text-sm">
-                {filterStatus === "all"
-                  ? "All users have been processed or there are no new registrations."
+                {filterStatus === 'all'
+                  ? 'All users have been processed or there are no new registrations.'
                   : `No users with status "${filterStatus}" found.`}
               </p>
             </div>
@@ -373,7 +373,7 @@ export function PendingUsersManagement() {
                 </TableRow>
               </TableHeader>
               <TableBody>
-                {filteredUsers.map((user) => {
+                {filteredUsers.map(user => {
                   const StatusIcon =
                     statusConfig[user.userStatus as UserStatus].icon;
                   return (
@@ -396,24 +396,24 @@ export function PendingUsersManagement() {
                             statusConfig[user.userStatus as UserStatus].color
                           }
                         >
-                          <StatusIcon className="h-3 w-3 mr-1" />
+                          <StatusIcon className="mr-1 h-3 w-3" />
                           {statusConfig[user.userStatus as UserStatus].label}
                         </Badge>
                       </TableCell>
                       <TableCell>
                         <Badge
                           variant={
-                            user.isEmailVerified ? "default" : "secondary"
+                            user.isEmailVerified ? 'default' : 'secondary'
                           }
                         >
-                          {user.isEmailVerified ? "Verified" : "Pending"}
+                          {user.isEmailVerified ? 'Verified' : 'Pending'}
                         </Badge>
                       </TableCell>
                       <TableCell>
                         <div className="flex items-center gap-2 text-sm text-gray-600">
                           <Calendar className="h-4 w-4" />
                           {formatDate(
-                            typeof user.createdAt === "string"
+                            typeof user.createdAt === 'string'
                               ? user.createdAt
                               : user.createdAt?.toString()
                           )}
@@ -431,7 +431,7 @@ export function PendingUsersManagement() {
                           >
                             Review
                           </Button>
-                          {user.userStatus === "VERIFIED" && (
+                          {user.userStatus === 'VERIFIED' && (
                             <>
                               <Button
                                 variant="default"
@@ -442,7 +442,7 @@ export function PendingUsersManagement() {
                                 {isProcessing ? (
                                   <RefreshCw className="h-3 w-3 animate-spin" />
                                 ) : (
-                                  "Approve"
+                                  'Approve'
                                 )}
                               </Button>
                               <Button
@@ -519,7 +519,7 @@ export function PendingUsersManagement() {
                   </label>
                   <p className="text-sm">
                     {formatDate(
-                      typeof selectedUser.createdAt === "string"
+                      typeof selectedUser.createdAt === 'string'
                         ? selectedUser.createdAt
                         : selectedUser.createdAt?.toString()
                     )}
@@ -530,13 +530,13 @@ export function PendingUsersManagement() {
                     Email Verified
                   </label>
                   <p className="text-sm">
-                    {selectedUser.isEmailVerified ? "Yes" : "No"}
+                    {selectedUser.isEmailVerified ? 'Yes' : 'No'}
                   </p>
                 </div>
               </div>
 
               {/* Actions */}
-              {selectedUser.userStatus === "VERIFIED" && (
+              {selectedUser.userStatus === 'VERIFIED' && (
                 <DialogFooter className="gap-2">
                   <Button
                     variant="outline"
@@ -550,9 +550,9 @@ export function PendingUsersManagement() {
                     disabled={isProcessing}
                   >
                     {isProcessing ? (
-                      <RefreshCw className="h-4 w-4 animate-spin mr-2" />
+                      <RefreshCw className="mr-2 h-4 w-4 animate-spin" />
                     ) : (
-                      <XCircle className="h-4 w-4 mr-2" />
+                      <XCircle className="mr-2 h-4 w-4" />
                     )}
                     Reject Application
                   </Button>
@@ -561,9 +561,9 @@ export function PendingUsersManagement() {
                     disabled={isProcessing}
                   >
                     {isProcessing ? (
-                      <RefreshCw className="h-4 w-4 animate-spin mr-2" />
+                      <RefreshCw className="mr-2 h-4 w-4 animate-spin" />
                     ) : (
-                      <CheckCircle className="h-4 w-4 mr-2" />
+                      <CheckCircle className="mr-2 h-4 w-4" />
                     )}
                     Approve User
                   </Button>

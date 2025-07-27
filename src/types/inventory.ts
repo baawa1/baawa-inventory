@@ -5,7 +5,7 @@ import {
   Brand,
   StockAdjustment,
   StockAddition,
-} from "@prisma/client";
+} from '@prisma/client';
 
 // Product with related entities
 export type ProductWithRelations = Product & {
@@ -33,7 +33,7 @@ export interface FilterOption {
 export interface FilterConfig {
   key: string;
   label: string;
-  type: "select" | "boolean" | "text" | "date";
+  type: 'select' | 'boolean' | 'text' | 'date';
   options?: FilterOption[];
   placeholder?: string;
 }
@@ -89,7 +89,7 @@ export interface InventoryPageLayoutProps {
   visibleColumns: string[];
   onColumnsChange?: (columns: string[]) => void;
   columnCustomizerKey?: string;
-  columnCustomizerColumns?: import("@/components/inventory/ColumnCustomizer").TableColumn[];
+  columnCustomizerColumns?: import('@/components/inventory/ColumnCustomizer').TableColumn[];
   data: any[];
   renderCell: (item: any, columnKey: string) => React.ReactNode;
   renderActions?: (item: any) => React.ReactNode;

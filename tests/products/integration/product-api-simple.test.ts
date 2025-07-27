@@ -1,18 +1,18 @@
-import { describe, it, expect, beforeEach, jest } from "@jest/globals";
+import { describe, it, expect, beforeEach, jest } from '@jest/globals';
 
 // Mock fetch for API testing
 global.fetch = jest.fn() as jest.MockedFunction<typeof fetch>;
 
-describe("Product API Simple Tests", () => {
+describe('Product API Simple Tests', () => {
   beforeEach(() => {
     (global.fetch as jest.MockedFunction<typeof fetch>).mockClear();
   });
 
-  describe("GET /api/products", () => {
-    it("should fetch products list successfully", async () => {
+  describe('GET /api/products', () => {
+    it('should fetch products list successfully', async () => {
       const mockProducts = [
-        { id: 1, name: "Test Product 1", sku: "TEST-001" },
-        { id: 2, name: "Test Product 2", sku: "TEST-002" },
+        { id: 1, name: 'Test Product 1', sku: 'TEST-001' },
+        { id: 2, name: 'Test Product 2', sku: 'TEST-002' },
       ];
 
       (global.fetch as jest.MockedFunction<typeof fetch>).mockResolvedValueOnce(
@@ -26,7 +26,7 @@ describe("Product API Simple Tests", () => {
         } as Response
       );
 
-      const response = await fetch("/api/products?page=1&limit=10");
+      const response = await fetch('/api/products?page=1&limit=10');
       const data = await response.json();
 
       expect(response.ok).toBe(true);
@@ -35,9 +35,9 @@ describe("Product API Simple Tests", () => {
       expect(data.pagination.limit).toBe(10);
     });
 
-    it("should handle search parameters", async () => {
+    it('should handle search parameters', async () => {
       const mockProducts = [
-        { id: 1, name: "Search Result", sku: "SEARCH-001" },
+        { id: 1, name: 'Search Result', sku: 'SEARCH-001' },
       ];
 
       (global.fetch as jest.MockedFunction<typeof fetch>).mockResolvedValueOnce(
@@ -51,58 +51,58 @@ describe("Product API Simple Tests", () => {
         } as Response
       );
 
-      const response = await fetch("/api/products?search=test&categoryId=1");
+      const response = await fetch('/api/products?search=test&categoryId=1');
       const data = await response.json();
 
       expect(response.ok).toBe(true);
       expect(data.data).toEqual(mockProducts);
     });
 
-    it("should handle authentication errors", async () => {
+    it('should handle authentication errors', async () => {
       (global.fetch as jest.MockedFunction<typeof fetch>).mockResolvedValueOnce(
         {
           ok: false,
           status: 401,
-          json: async () => ({ error: "Authentication required" }),
+          json: async () => ({ error: 'Authentication required' }),
         } as Response
       );
 
-      const response = await fetch("/api/products");
+      const response = await fetch('/api/products');
       const data = await response.json();
 
       expect(response.ok).toBe(false);
       expect(response.status).toBe(401);
-      expect(data.error).toBe("Authentication required");
+      expect(data.error).toBe('Authentication required');
     });
 
-    it("should handle server errors", async () => {
+    it('should handle server errors', async () => {
       (global.fetch as jest.MockedFunction<typeof fetch>).mockResolvedValueOnce(
         {
           ok: false,
           status: 500,
-          json: async () => ({ error: "Failed to fetch products" }),
+          json: async () => ({ error: 'Failed to fetch products' }),
         } as Response
       );
 
-      const response = await fetch("/api/products");
+      const response = await fetch('/api/products');
       const data = await response.json();
 
       expect(response.ok).toBe(false);
       expect(response.status).toBe(500);
-      expect(data.error).toBe("Failed to fetch products");
+      expect(data.error).toBe('Failed to fetch products');
     });
   });
 
-  describe("POST /api/products", () => {
-    it("should create a new product successfully", async () => {
+  describe('POST /api/products', () => {
+    it('should create a new product successfully', async () => {
       const productData = {
-        name: "New Product",
-        sku: "NEW-001",
+        name: 'New Product',
+        sku: 'NEW-001',
         purchasePrice: 10.5,
         sellingPrice: 15.99,
         minimumStock: 5,
         currentStock: 10,
-        status: "ACTIVE",
+        status: 'ACTIVE',
       };
 
       const createdProduct = { id: 1, ...productData };
@@ -115,9 +115,9 @@ describe("Product API Simple Tests", () => {
         } as Response
       );
 
-      const response = await fetch("/api/products", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
+      const response = await fetch('/api/products', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify(productData),
       });
       const data = await response.json();
@@ -127,10 +127,10 @@ describe("Product API Simple Tests", () => {
       expect(data.data).toEqual(createdProduct);
     });
 
-    it("should handle validation errors", async () => {
+    it('should handle validation errors', async () => {
       const invalidProductData = {
-        name: "", // Invalid: empty name
-        sku: "INVALID-001",
+        name: '', // Invalid: empty name
+        sku: 'INVALID-001',
       };
 
       (global.fetch as jest.MockedFunction<typeof fetch>).mockResolvedValueOnce(
@@ -138,33 +138,33 @@ describe("Product API Simple Tests", () => {
           ok: false,
           status: 400,
           json: async () => ({
-            error: "Validation failed",
-            details: ["Name is required"],
+            error: 'Validation failed',
+            details: ['Name is required'],
           }),
         } as Response
       );
 
-      const response = await fetch("/api/products", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
+      const response = await fetch('/api/products', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify(invalidProductData),
       });
       const data = await response.json();
 
       expect(response.ok).toBe(false);
       expect(response.status).toBe(400);
-      expect(data.error).toBe("Validation failed");
+      expect(data.error).toBe('Validation failed');
     });
 
-    it("should handle duplicate SKU errors", async () => {
+    it('should handle duplicate SKU errors', async () => {
       const productData = {
-        name: "Duplicate Product",
-        sku: "EXISTING-001",
+        name: 'Duplicate Product',
+        sku: 'EXISTING-001',
         purchasePrice: 10.5,
         sellingPrice: 15.99,
         minimumStock: 5,
         currentStock: 10,
-        status: "ACTIVE",
+        status: 'ACTIVE',
       };
 
       (global.fetch as jest.MockedFunction<typeof fetch>).mockResolvedValueOnce(
@@ -172,32 +172,32 @@ describe("Product API Simple Tests", () => {
           ok: false,
           status: 400,
           json: async () => ({
-            error: "Product with this SKU already exists",
+            error: 'Product with this SKU already exists',
           }),
         } as Response
       );
 
-      const response = await fetch("/api/products", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
+      const response = await fetch('/api/products', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify(productData),
       });
       const data = await response.json();
 
       expect(response.ok).toBe(false);
       expect(response.status).toBe(400);
-      expect(data.error).toBe("Product with this SKU already exists");
+      expect(data.error).toBe('Product with this SKU already exists');
     });
 
-    it("should handle permission errors", async () => {
+    it('should handle permission errors', async () => {
       const productData = {
-        name: "New Product",
-        sku: "NEW-001",
+        name: 'New Product',
+        sku: 'NEW-001',
         purchasePrice: 10.5,
         sellingPrice: 15.99,
         minimumStock: 5,
         currentStock: 10,
-        status: "ACTIVE",
+        status: 'ACTIVE',
       };
 
       (global.fetch as jest.MockedFunction<typeof fetch>).mockResolvedValueOnce(
@@ -205,38 +205,38 @@ describe("Product API Simple Tests", () => {
           ok: false,
           status: 403,
           json: async () => ({
-            error: "Insufficient permissions",
+            error: 'Insufficient permissions',
           }),
         } as Response
       );
 
-      const response = await fetch("/api/products", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
+      const response = await fetch('/api/products', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify(productData),
       });
       const data = await response.json();
 
       expect(response.ok).toBe(false);
       expect(response.status).toBe(403);
-      expect(data.error).toBe("Insufficient permissions");
+      expect(data.error).toBe('Insufficient permissions');
     });
   });
 
-  describe("GET /api/products/[id]", () => {
-    it("should fetch single product successfully", async () => {
+  describe('GET /api/products/[id]', () => {
+    it('should fetch single product successfully', async () => {
       const mockProduct = {
         id: 1,
-        name: "Test Product",
-        sku: "TEST-001",
+        name: 'Test Product',
+        sku: 'TEST-001',
         cost: 10.5,
         price: 15.99,
         stock: 100,
         minStock: 10,
-        status: "ACTIVE",
-        category: { id: 1, name: "Test Category" },
-        brand: { id: 1, name: "Test Brand" },
-        supplier: { id: 1, name: "Test Supplier", email: "supplier@test.com" },
+        status: 'ACTIVE',
+        category: { id: 1, name: 'Test Category' },
+        brand: { id: 1, name: 'Test Brand' },
+        supplier: { id: 1, name: 'Test Supplier', email: 'supplier@test.com' },
       };
 
       (global.fetch as jest.MockedFunction<typeof fetch>).mockResolvedValueOnce(
@@ -247,52 +247,52 @@ describe("Product API Simple Tests", () => {
         } as Response
       );
 
-      const response = await fetch("/api/products/1");
+      const response = await fetch('/api/products/1');
       const data = await response.json();
 
       expect(response.ok).toBe(true);
       expect(data.data).toEqual(mockProduct);
     });
 
-    it("should handle product not found", async () => {
+    it('should handle product not found', async () => {
       (global.fetch as jest.MockedFunction<typeof fetch>).mockResolvedValueOnce(
         {
           ok: false,
           status: 404,
-          json: async () => ({ error: "Product not found" }),
+          json: async () => ({ error: 'Product not found' }),
         } as Response
       );
 
-      const response = await fetch("/api/products/999");
+      const response = await fetch('/api/products/999');
       const data = await response.json();
 
       expect(response.ok).toBe(false);
       expect(response.status).toBe(404);
-      expect(data.error).toBe("Product not found");
+      expect(data.error).toBe('Product not found');
     });
 
-    it("should handle invalid product ID", async () => {
+    it('should handle invalid product ID', async () => {
       (global.fetch as jest.MockedFunction<typeof fetch>).mockResolvedValueOnce(
         {
           ok: false,
           status: 400,
-          json: async () => ({ error: "Invalid product ID" }),
+          json: async () => ({ error: 'Invalid product ID' }),
         } as Response
       );
 
-      const response = await fetch("/api/products/invalid");
+      const response = await fetch('/api/products/invalid');
       const data = await response.json();
 
       expect(response.ok).toBe(false);
       expect(response.status).toBe(400);
-      expect(data.error).toBe("Invalid product ID");
+      expect(data.error).toBe('Invalid product ID');
     });
   });
 
-  describe("PUT /api/products/[id]", () => {
-    it("should update a product successfully", async () => {
+  describe('PUT /api/products/[id]', () => {
+    it('should update a product successfully', async () => {
       const updateData = {
-        name: "Updated Product",
+        name: 'Updated Product',
         sellingPrice: 19.99,
       };
 
@@ -306,9 +306,9 @@ describe("Product API Simple Tests", () => {
         } as Response
       );
 
-      const response = await fetch("/api/products/1", {
-        method: "PUT",
-        headers: { "Content-Type": "application/json" },
+      const response = await fetch('/api/products/1', {
+        method: 'PUT',
+        headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify(updateData),
       });
       const data = await response.json();
@@ -317,66 +317,66 @@ describe("Product API Simple Tests", () => {
       expect(data.data).toEqual(updatedProduct);
     });
 
-    it("should handle product not found during update", async () => {
+    it('should handle product not found during update', async () => {
       (global.fetch as jest.MockedFunction<typeof fetch>).mockResolvedValueOnce(
         {
           ok: false,
           status: 404,
-          json: async () => ({ error: "Product not found" }),
+          json: async () => ({ error: 'Product not found' }),
         } as Response
       );
 
-      const response = await fetch("/api/products/999", {
-        method: "PUT",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ name: "Updated" }),
+      const response = await fetch('/api/products/999', {
+        method: 'PUT',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ name: 'Updated' }),
       });
       const data = await response.json();
 
       expect(response.ok).toBe(false);
       expect(response.status).toBe(404);
-      expect(data.error).toBe("Product not found");
+      expect(data.error).toBe('Product not found');
     });
 
-    it("should handle duplicate SKU during update", async () => {
+    it('should handle duplicate SKU during update', async () => {
       (global.fetch as jest.MockedFunction<typeof fetch>).mockResolvedValueOnce(
         {
           ok: false,
           status: 400,
           json: async () => ({
-            error: "Product with this SKU already exists",
+            error: 'Product with this SKU already exists',
           }),
         } as Response
       );
 
-      const response = await fetch("/api/products/1", {
-        method: "PUT",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ sku: "EXISTING-001" }),
+      const response = await fetch('/api/products/1', {
+        method: 'PUT',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ sku: 'EXISTING-001' }),
       });
       const data = await response.json();
 
       expect(response.ok).toBe(false);
       expect(response.status).toBe(400);
-      expect(data.error).toBe("Product with this SKU already exists");
+      expect(data.error).toBe('Product with this SKU already exists');
     });
   });
 
-  describe("GET /api/products/low-stock", () => {
-    it("should fetch low stock products successfully", async () => {
+  describe('GET /api/products/low-stock', () => {
+    it('should fetch low stock products successfully', async () => {
       const mockLowStockProducts = [
         {
           id: 1,
-          name: "Low Stock Product",
-          sku: "LOW-001",
+          name: 'Low Stock Product',
+          sku: 'LOW-001',
           stock: 5,
           minStock: 10,
           cost: 10.5,
           price: 15.99,
-          status: "ACTIVE",
-          category: { id: 1, name: "Test Category" },
-          brand: { id: 1, name: "Test Brand" },
-          supplier: { id: 1, name: "Test Supplier" },
+          status: 'ACTIVE',
+          category: { id: 1, name: 'Test Category' },
+          brand: { id: 1, name: 'Test Brand' },
+          supplier: { id: 1, name: 'Test Supplier' },
         },
       ];
 
@@ -399,7 +399,7 @@ describe("Product API Simple Tests", () => {
         } as Response
       );
 
-      const response = await fetch("/api/products/low-stock");
+      const response = await fetch('/api/products/low-stock');
       const data = await response.json();
 
       expect(response.ok).toBe(true);
@@ -407,12 +407,12 @@ describe("Product API Simple Tests", () => {
       expect(data.metrics).toEqual(mockMetrics);
     });
 
-    it("should handle search in low stock products", async () => {
+    it('should handle search in low stock products', async () => {
       const mockProducts = [
         {
           id: 1,
-          name: "Search Result",
-          sku: "SEARCH-001",
+          name: 'Search Result',
+          sku: 'SEARCH-001',
           stock: 5,
           minStock: 10,
         },
@@ -435,7 +435,7 @@ describe("Product API Simple Tests", () => {
         } as Response
       );
 
-      const response = await fetch("/api/products/low-stock?search=test");
+      const response = await fetch('/api/products/low-stock?search=test');
       const data = await response.json();
 
       expect(response.ok).toBe(true);
@@ -443,17 +443,17 @@ describe("Product API Simple Tests", () => {
     });
   });
 
-  describe("GET /api/products/archived", () => {
-    it("should fetch archived products successfully", async () => {
+  describe('GET /api/products/archived', () => {
+    it('should fetch archived products successfully', async () => {
       const mockArchivedProducts = [
         {
           id: 1,
-          name: "Archived Product",
-          sku: "ARCH-001",
+          name: 'Archived Product',
+          sku: 'ARCH-001',
           isArchived: true,
-          category: { id: 1, name: "Test Category" },
-          brand: { id: 1, name: "Test Brand" },
-          supplier: { id: 1, name: "Test Supplier" },
+          category: { id: 1, name: 'Test Category' },
+          brand: { id: 1, name: 'Test Brand' },
+          supplier: { id: 1, name: 'Test Supplier' },
         },
       ];
 
@@ -474,7 +474,7 @@ describe("Product API Simple Tests", () => {
         } as Response
       );
 
-      const response = await fetch("/api/products/archived");
+      const response = await fetch('/api/products/archived');
       const data = await response.json();
 
       expect(response.ok).toBe(true);
@@ -482,12 +482,12 @@ describe("Product API Simple Tests", () => {
       expect(data.data[0].isArchived).toBe(true);
     });
 
-    it("should handle search and filters for archived products", async () => {
+    it('should handle search and filters for archived products', async () => {
       const mockProducts = [
         {
           id: 1,
-          name: "Search Result",
-          sku: "SEARCH-001",
+          name: 'Search Result',
+          sku: 'SEARCH-001',
           isArchived: true,
         },
       ];
@@ -510,7 +510,7 @@ describe("Product API Simple Tests", () => {
       );
 
       const response = await fetch(
-        "/api/products/archived?search=test&category=1&brand=1"
+        '/api/products/archived?search=test&category=1&brand=1'
       );
       const data = await response.json();
 
@@ -519,216 +519,216 @@ describe("Product API Simple Tests", () => {
     });
   });
 
-  describe("POST /api/products/archive", () => {
-    it("should bulk archive products successfully", async () => {
+  describe('POST /api/products/archive', () => {
+    it('should bulk archive products successfully', async () => {
       (global.fetch as jest.MockedFunction<typeof fetch>).mockResolvedValueOnce(
         {
           ok: true,
           status: 200,
           json: async () => ({
-            message: "2 products archived successfully",
+            message: '2 products archived successfully',
             updatedCount: 2,
           }),
         } as Response
       );
 
-      const response = await fetch("/api/products/archive", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
+      const response = await fetch('/api/products/archive', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
           productIds: [1, 2],
-          action: "archive",
+          action: 'archive',
         }),
       });
       const data = await response.json();
 
       expect(response.ok).toBe(true);
-      expect(data.message).toContain("archived");
+      expect(data.message).toContain('archived');
       expect(data.updatedCount).toBe(2);
     });
 
-    it("should bulk unarchive products successfully", async () => {
+    it('should bulk unarchive products successfully', async () => {
       (global.fetch as jest.MockedFunction<typeof fetch>).mockResolvedValueOnce(
         {
           ok: true,
           status: 200,
           json: async () => ({
-            message: "2 products unarchived successfully",
+            message: '2 products unarchived successfully',
             updatedCount: 2,
           }),
         } as Response
       );
 
-      const response = await fetch("/api/products/archive", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
+      const response = await fetch('/api/products/archive', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
           productIds: [1, 2],
-          action: "unarchive",
+          action: 'unarchive',
         }),
       });
       const data = await response.json();
 
       expect(response.ok).toBe(true);
-      expect(data.message).toContain("unarchived");
+      expect(data.message).toContain('unarchived');
       expect(data.updatedCount).toBe(2);
     });
 
-    it("should handle products not found", async () => {
+    it('should handle products not found', async () => {
       (global.fetch as jest.MockedFunction<typeof fetch>).mockResolvedValueOnce(
         {
           ok: false,
           status: 404,
           json: async () => ({
-            error: "Products not found: 999, 1000",
+            error: 'Products not found: 999, 1000',
           }),
         } as Response
       );
 
-      const response = await fetch("/api/products/archive", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
+      const response = await fetch('/api/products/archive', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
           productIds: [999, 1000],
-          action: "archive",
+          action: 'archive',
         }),
       });
       const data = await response.json();
 
       expect(response.ok).toBe(false);
       expect(response.status).toBe(404);
-      expect(data.error).toContain("Products not found");
+      expect(data.error).toContain('Products not found');
     });
 
-    it("should handle permission errors", async () => {
+    it('should handle permission errors', async () => {
       (global.fetch as jest.MockedFunction<typeof fetch>).mockResolvedValueOnce(
         {
           ok: false,
           status: 403,
           json: async () => ({
-            error: "Insufficient permissions",
+            error: 'Insufficient permissions',
           }),
         } as Response
       );
 
-      const response = await fetch("/api/products/archive", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
+      const response = await fetch('/api/products/archive', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
           productIds: [1],
-          action: "archive",
+          action: 'archive',
         }),
       });
       const data = await response.json();
 
       expect(response.ok).toBe(false);
       expect(response.status).toBe(403);
-      expect(data.error).toBe("Insufficient permissions");
+      expect(data.error).toBe('Insufficient permissions');
     });
   });
 
-  describe("PATCH /api/products/[id]/archive", () => {
-    it("should archive single product successfully", async () => {
+  describe('PATCH /api/products/[id]/archive', () => {
+    it('should archive single product successfully', async () => {
       (global.fetch as jest.MockedFunction<typeof fetch>).mockResolvedValueOnce(
         {
           ok: true,
           status: 200,
           json: async () => ({
-            data: { id: 1, name: "Test Product", isArchived: true },
-            message: "Product archived successfully",
+            data: { id: 1, name: 'Test Product', isArchived: true },
+            message: 'Product archived successfully',
           }),
         } as Response
       );
 
-      const response = await fetch("/api/products/1/archive", {
-        method: "PATCH",
-        headers: { "Content-Type": "application/json" },
+      const response = await fetch('/api/products/1/archive', {
+        method: 'PATCH',
+        headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
           archived: true,
-          reason: "Test archive",
+          reason: 'Test archive',
         }),
       });
       const data = await response.json();
 
       expect(response.ok).toBe(true);
-      expect(data.message).toContain("archived");
+      expect(data.message).toContain('archived');
       expect(data.data.isArchived).toBe(true);
     });
 
-    it("should unarchive single product successfully", async () => {
+    it('should unarchive single product successfully', async () => {
       (global.fetch as jest.MockedFunction<typeof fetch>).mockResolvedValueOnce(
         {
           ok: true,
           status: 200,
           json: async () => ({
-            data: { id: 1, name: "Test Product", isArchived: false },
-            message: "Product unarchived successfully",
+            data: { id: 1, name: 'Test Product', isArchived: false },
+            message: 'Product unarchived successfully',
           }),
         } as Response
       );
 
-      const response = await fetch("/api/products/1/archive", {
-        method: "PATCH",
-        headers: { "Content-Type": "application/json" },
+      const response = await fetch('/api/products/1/archive', {
+        method: 'PATCH',
+        headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
           archived: false,
-          reason: "Test unarchive",
+          reason: 'Test unarchive',
         }),
       });
       const data = await response.json();
 
       expect(response.ok).toBe(true);
-      expect(data.message).toContain("unarchived");
+      expect(data.message).toContain('unarchived');
       expect(data.data.isArchived).toBe(false);
     });
 
-    it("should handle already archived product", async () => {
+    it('should handle already archived product', async () => {
       (global.fetch as jest.MockedFunction<typeof fetch>).mockResolvedValueOnce(
         {
           ok: false,
           status: 400,
           json: async () => ({
-            error: "Product is already archived",
+            error: 'Product is already archived',
           }),
         } as Response
       );
 
-      const response = await fetch("/api/products/1/archive", {
-        method: "PATCH",
-        headers: { "Content-Type": "application/json" },
+      const response = await fetch('/api/products/1/archive', {
+        method: 'PATCH',
+        headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
           archived: true,
-          reason: "Test archive",
+          reason: 'Test archive',
         }),
       });
       const data = await response.json();
 
       expect(response.ok).toBe(false);
       expect(response.status).toBe(400);
-      expect(data.error).toContain("already archived");
+      expect(data.error).toContain('already archived');
     });
   });
 
-  describe("POST /api/products/barcodes", () => {
-    it("should generate barcodes successfully", async () => {
+  describe('POST /api/products/barcodes', () => {
+    it('should generate barcodes successfully', async () => {
       (global.fetch as jest.MockedFunction<typeof fetch>).mockResolvedValueOnce(
         {
           ok: true,
           status: 200,
           json: async () => ({
-            message: "Processed 2 products",
+            message: 'Processed 2 products',
             results: [
               {
                 productId: 1,
-                productName: "Product 1",
-                barcode: "1234567890123",
-                status: "generated",
+                productName: 'Product 1',
+                barcode: '1234567890123',
+                status: 'generated',
               },
               {
                 productId: 2,
-                productName: "Product 2",
-                barcode: "EXISTING-123",
-                status: "existing",
+                productName: 'Product 2',
+                barcode: 'EXISTING-123',
+                status: 'existing',
               },
             ],
             generated: 1,
@@ -737,48 +737,48 @@ describe("Product API Simple Tests", () => {
         } as Response
       );
 
-      const response = await fetch("/api/products/barcodes", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
+      const response = await fetch('/api/products/barcodes', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
-          action: "generate",
+          action: 'generate',
           productIds: [1, 2],
-          format: "EAN13",
-          prefix: "TEST",
+          format: 'EAN13',
+          prefix: 'TEST',
         }),
       });
       const data = await response.json();
 
       expect(response.ok).toBe(true);
-      expect(data.message).toContain("Processed");
+      expect(data.message).toContain('Processed');
       expect(data.generated).toBe(1);
       expect(data.existing).toBe(1);
     });
 
-    it("should validate barcode successfully", async () => {
+    it('should validate barcode successfully', async () => {
       (global.fetch as jest.MockedFunction<typeof fetch>).mockResolvedValueOnce(
         {
           ok: true,
           status: 200,
           json: async () => ({
-            barcode: "1234567890123",
+            barcode: '1234567890123',
             exists: true,
             product: {
               id: 1,
-              name: "Test Product",
-              sku: "TEST-001",
-              barcode: "1234567890123",
+              name: 'Test Product',
+              sku: 'TEST-001',
+              barcode: '1234567890123',
             },
           }),
         } as Response
       );
 
-      const response = await fetch("/api/products/barcodes", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
+      const response = await fetch('/api/products/barcodes', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
-          action: "validate",
-          barcode: "1234567890123",
+          action: 'validate',
+          barcode: '1234567890123',
         }),
       });
       const data = await response.json();
@@ -788,7 +788,7 @@ describe("Product API Simple Tests", () => {
       expect(data.product).toBeDefined();
     });
 
-    it("should handle invalid action", async () => {
+    it('should handle invalid action', async () => {
       (global.fetch as jest.MockedFunction<typeof fetch>).mockResolvedValueOnce(
         {
           ok: false,
@@ -799,23 +799,23 @@ describe("Product API Simple Tests", () => {
         } as Response
       );
 
-      const response = await fetch("/api/products/barcodes", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
+      const response = await fetch('/api/products/barcodes', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
-          action: "invalid",
+          action: 'invalid',
         }),
       });
       const data = await response.json();
 
       expect(response.ok).toBe(false);
       expect(response.status).toBe(400);
-      expect(data.error).toContain("Invalid action");
+      expect(data.error).toContain('Invalid action');
     });
   });
 
-  describe("GET /api/products/barcodes", () => {
-    it("should get barcode statistics successfully", async () => {
+  describe('GET /api/products/barcodes', () => {
+    it('should get barcode statistics successfully', async () => {
       (global.fetch as jest.MockedFunction<typeof fetch>).mockResolvedValueOnce(
         {
           ok: true,
@@ -829,8 +829,8 @@ describe("Product API Simple Tests", () => {
             },
             productsWithoutBarcodes: {
               items: [
-                { id: 1, name: "Product 1", sku: "SKU-001" },
-                { id: 2, name: "Product 2", sku: "SKU-002" },
+                { id: 1, name: 'Product 1', sku: 'SKU-001' },
+                { id: 2, name: 'Product 2', sku: 'SKU-002' },
               ],
               hasMore: false,
             },
@@ -838,7 +838,7 @@ describe("Product API Simple Tests", () => {
         } as Response
       );
 
-      const response = await fetch("/api/products/barcodes");
+      const response = await fetch('/api/products/barcodes');
       const data = await response.json();
 
       expect(response.ok).toBe(true);

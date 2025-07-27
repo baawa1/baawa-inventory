@@ -1,8 +1,8 @@
-"use client";
+'use client';
 
-import React from "react";
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import { DateRange } from "react-day-picker";
+import React from 'react';
+import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
+import { DateRange } from 'react-day-picker';
 import {
   LineChart,
   Line,
@@ -19,9 +19,9 @@ import {
   Tooltip,
   Legend,
   ResponsiveContainer,
-} from "recharts";
-import { formatCurrency } from "@/lib/utils";
-import { useFinancialAnalyticsCharts } from "@/hooks/api/useFinancialAnalytics";
+} from 'recharts';
+import { formatCurrency } from '@/lib/utils';
+import { useFinancialAnalyticsCharts } from '@/hooks/api/useFinancialAnalytics';
 
 interface FinancialChartsProps {
   dateRange?: DateRange;
@@ -30,13 +30,13 @@ interface FinancialChartsProps {
 }
 
 const COLORS = {
-  revenue: "#10b981",
-  expenses: "#ef4444",
-  transactions: "#3b82f6",
-  cash: "#10b981",
-  pos: "#3b82f6",
-  bankTransfer: "#8b5cf6",
-  mobileMoney: "#f59e0b",
+  revenue: '#10b981',
+  expenses: '#ef4444',
+  transactions: '#3b82f6',
+  cash: '#10b981',
+  pos: '#3b82f6',
+  bankTransfer: '#8b5cf6',
+  mobileMoney: '#f59e0b',
 };
 
 export function FinancialCharts({
@@ -46,8 +46,8 @@ export function FinancialCharts({
 }: FinancialChartsProps) {
   const { data: chartData, isLoading } = useFinancialAnalyticsCharts({
     dateRange,
-    type: transactionType as "all" | "income" | "expense",
-    paymentMethod: paymentMethod !== "all" ? paymentMethod : undefined,
+    type: transactionType as 'all' | 'income' | 'expense',
+    paymentMethod: paymentMethod !== 'all' ? paymentMethod : undefined,
   });
 
   if (isLoading) {
@@ -59,7 +59,7 @@ export function FinancialCharts({
               <CardTitle>Loading...</CardTitle>
             </CardHeader>
             <CardContent>
-              <div className="h-[300px] bg-gray-200 rounded animate-pulse"></div>
+              <div className="h-[300px] animate-pulse rounded bg-gray-200"></div>
             </CardContent>
           </Card>
         ))}
@@ -69,22 +69,22 @@ export function FinancialCharts({
 
   // Process payment method data for pie chart
   const paymentMethodData =
-    chartData?.paymentMethodDistribution?.map((method) => ({
+    chartData?.paymentMethodDistribution?.map(method => ({
       name: method.name,
       value: method.value,
       amount: method.amount,
       color:
         COLORS[
-          method.name.toLowerCase().replace(/\s+/g, "") as keyof typeof COLORS
-        ] || "#6b7280",
+          method.name.toLowerCase().replace(/\s+/g, '') as keyof typeof COLORS
+        ] || '#6b7280',
     })) || [];
 
   // Process daily trends data
   const dailyTrendsData =
-    chartData?.dailyTrends?.map((trend) => ({
-      date: new Date(trend.date).toLocaleDateString("en-US", {
-        month: "short",
-        day: "numeric",
+    chartData?.dailyTrends?.map(trend => ({
+      date: new Date(trend.date).toLocaleDateString('en-US', {
+        month: 'short',
+        day: 'numeric',
       }),
       revenue: trend.revenue,
       transactions: trend.transactions,
@@ -104,19 +104,19 @@ export function FinancialCharts({
               <XAxis dataKey="date" />
               <YAxis
                 yAxisId="left"
-                tickFormatter={(value) => `₦${(value / 1000).toFixed(0)}k`}
+                tickFormatter={value => `₦${(value / 1000).toFixed(0)}k`}
               />
               <YAxis
                 yAxisId="right"
                 orientation="right"
-                tickFormatter={(value) => value.toString()}
+                tickFormatter={value => value.toString()}
               />
               <Tooltip
                 formatter={(value: number, name: string) => [
-                  name === "revenue" ? formatCurrency(value) : value,
-                  name === "revenue" ? "Revenue" : "Transactions",
+                  name === 'revenue' ? formatCurrency(value) : value,
+                  name === 'revenue' ? 'Revenue' : 'Transactions',
                 ]}
-                labelFormatter={(label) => `Date: ${label}`}
+                labelFormatter={label => `Date: ${label}`}
               />
               <Legend />
               <Area
@@ -149,7 +149,7 @@ export function FinancialCharts({
           <CardTitle>Payment Method Distribution</CardTitle>
         </CardHeader>
         <CardContent>
-          <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+          <div className="grid grid-cols-1 gap-6 lg:grid-cols-2">
             <ResponsiveContainer width="100%" height={250}>
               <PieChart>
                 <Pie
@@ -183,7 +183,7 @@ export function FinancialCharts({
                 <div key={index} className="flex items-center justify-between">
                   <div className="flex items-center gap-2">
                     <div
-                      className="w-3 h-3 rounded-full"
+                      className="h-3 w-3 rounded-full"
                       style={{ backgroundColor: method.color }}
                     />
                     <span className="text-sm">{method.name}</span>
@@ -192,7 +192,7 @@ export function FinancialCharts({
                     <div className="text-sm font-medium">
                       {method.value} transactions
                     </div>
-                    <div className="text-xs text-muted-foreground">
+                    <div className="text-muted-foreground text-xs">
                       {formatCurrency(method.amount)}
                     </div>
                   </div>
@@ -215,8 +215,8 @@ export function FinancialCharts({
               <XAxis dataKey="date" />
               <YAxis />
               <Tooltip
-                formatter={(value: number) => [value, "Transactions"]}
-                labelFormatter={(label) => `Date: ${label}`}
+                formatter={(value: number) => [value, 'Transactions']}
+                labelFormatter={label => `Date: ${label}`}
               />
               <Legend />
               <Line
@@ -243,14 +243,14 @@ export function FinancialCharts({
               <CartesianGrid strokeDasharray="3 3" />
               <XAxis dataKey="date" />
               <YAxis
-                tickFormatter={(value) => `₦${(value / 1000).toFixed(0)}k`}
+                tickFormatter={value => `₦${(value / 1000).toFixed(0)}k`}
               />
               <Tooltip
                 formatter={(value: number) => [
                   formatCurrency(value),
-                  "Revenue",
+                  'Revenue',
                 ]}
-                labelFormatter={(label) => `Date: ${label}`}
+                labelFormatter={label => `Date: ${label}`}
               />
               <Legend />
               <Bar
@@ -269,25 +269,25 @@ export function FinancialCharts({
           <CardTitle>Active Filters</CardTitle>
         </CardHeader>
         <CardContent>
-          <div className="grid grid-cols-1 md:grid-cols-3 gap-4 text-sm">
+          <div className="grid grid-cols-1 gap-4 text-sm md:grid-cols-3">
             <div>
               <span className="font-medium">Date Range:</span>
               <p className="text-muted-foreground">
                 {dateRange?.from && dateRange?.to
                   ? `${dateRange.from.toLocaleDateString()} - ${dateRange.to.toLocaleDateString()}`
-                  : "All dates"}
+                  : 'All dates'}
               </p>
             </div>
             <div>
               <span className="font-medium">Transaction Type:</span>
               <p className="text-muted-foreground">
-                {transactionType || "All types"}
+                {transactionType || 'All types'}
               </p>
             </div>
             <div>
               <span className="font-medium">Payment Method:</span>
               <p className="text-muted-foreground">
-                {paymentMethod || "All methods"}
+                {paymentMethod || 'All methods'}
               </p>
             </div>
           </div>

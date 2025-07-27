@@ -4,4 +4,4 @@
  */
 
 // Export roles and permissions
-export * from "./roles";
+export * from './roles';

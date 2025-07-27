@@ -1,15 +1,15 @@
-import { test, expect } from "@playwright/test";
-import { testUserHelper, APPROVED_ADMIN } from "./test-user-helper";
+import { test, expect } from '@playwright/test';
+import { testUserHelper, APPROVED_ADMIN } from './test-user-helper';
 
-test.describe("Simple Test User Test", () => {
+test.describe('Simple Test User Test', () => {
   test.beforeAll(async () => {
     // Initialize test users before all tests
     await testUserHelper.initializeTestUsers();
   });
 
-  test("should be able to login with approved admin user", async ({ page }) => {
+  test('should be able to login with approved admin user', async ({ page }) => {
     // Go to login page
-    await page.goto("/login");
+    await page.goto('/login');
 
     // Fill in login form with approved admin user
     await page.fill('input[name="email"]', APPROVED_ADMIN.email);
@@ -26,8 +26,8 @@ test.describe("Simple Test User Test", () => {
     } catch (error) {
       // If no redirect happens, check if we're still on login page
       const currentUrl = page.url();
-      if (currentUrl.includes("/login")) {
-        console.log("⚠️ Login may have failed - still on login page");
+      if (currentUrl.includes('/login')) {
+        console.log('⚠️ Login may have failed - still on login page');
         // Check for error messages
         const errorElement = await page
           .locator('[data-testid="login-error"]')
@@ -47,17 +47,17 @@ test.describe("Simple Test User Test", () => {
     await expect(page).toHaveURL(/\/dashboard/);
 
     // Should not be redirected to unauthorized or pending-approval
-    expect(page.url()).not.toContain("/unauthorized");
-    expect(page.url()).not.toContain("/pending-approval");
+    expect(page.url()).not.toContain('/unauthorized');
+    expect(page.url()).not.toContain('/pending-approval');
 
-    console.log("✅ Successfully logged in with approved admin user");
+    console.log('✅ Successfully logged in with approved admin user');
   });
 
-  test("should be able to access POS with approved admin user", async ({
+  test('should be able to access POS with approved admin user', async ({
     page,
   }) => {
     // Go to login page
-    await page.goto("/login");
+    await page.goto('/login');
 
     // Fill in login form with approved admin user
     await page.fill('input[name="email"]', APPROVED_ADMIN.email);
@@ -69,20 +69,20 @@ test.describe("Simple Test User Test", () => {
       await page.waitForURL(/\/dashboard/, { timeout: 15000 });
     } catch (error) {
       const currentUrl = page.url();
-      if (currentUrl.includes("/login")) {
-        console.log("⚠️ Login failed - skipping POS test");
+      if (currentUrl.includes('/login')) {
+        console.log('⚠️ Login failed - skipping POS test');
         test.skip();
       }
     }
 
     // Try to access POS
-    await page.goto("/pos");
-    await expect(page).toHaveURL("/pos");
+    await page.goto('/pos');
+    await expect(page).toHaveURL('/pos');
 
     // Should not be redirected to unauthorized or pending-approval
-    expect(page.url()).not.toContain("/unauthorized");
-    expect(page.url()).not.toContain("/pending-approval");
+    expect(page.url()).not.toContain('/unauthorized');
+    expect(page.url()).not.toContain('/pending-approval');
 
-    console.log("✅ Successfully accessed POS with approved admin user");
+    console.log('✅ Successfully accessed POS with approved admin user');
   });
 });

@@ -1,12 +1,12 @@
-"use client";
+'use client';
 
-import React, { useEffect, useRef, useState } from "react";
-import { Html5QrcodeScanner } from "html5-qrcode";
-import { Button } from "@/components/ui/button";
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import { IconCamera, IconCameraOff, IconX } from "@tabler/icons-react";
-import { toast } from "sonner";
-import { logger } from "@/lib/logger";
+import React, { useEffect, useRef, useState } from 'react';
+import { Html5QrcodeScanner } from 'html5-qrcode';
+import { Button } from '@/components/ui/button';
+import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
+import { IconCamera, IconCameraOff, IconX } from '@tabler/icons-react';
+import { toast } from 'sonner';
+import { logger } from '@/lib/logger';
 
 interface BarcodeScannerProps {
   onScan: (result: string) => void;
@@ -49,7 +49,7 @@ export function BarcodeScanner({
     };
 
     const scanner = new Html5QrcodeScanner(
-      "barcode-scanner",
+      'barcode-scanner',
       config,
       /* verbose= */ false
     );
@@ -59,26 +59,26 @@ export function BarcodeScanner({
     const onScanSuccess = (decodedText: string) => {
       // Debug logging removed for production
       onScan(decodedText);
-      toast.success("Barcode scanned successfully!");
+      toast.success('Barcode scanned successfully!');
       cleanup();
     };
 
     const onScanError = (error: string) => {
       // Don't log every scan error, just continue scanning
-      logger.debug("Scan error", { error });
+      logger.debug('Scan error', { error });
     };
 
     try {
       scanner.render(onScanSuccess, onScanError);
       setError(null);
     } catch (err) {
-      logger.error("Failed to start scanner", {
+      logger.error('Failed to start scanner', {
         error: err instanceof Error ? err.message : String(err),
       });
       setError(
-        "Failed to start camera. Please ensure camera permissions are granted."
+        'Failed to start camera. Please ensure camera permissions are granted.'
       );
-      toast.error("Failed to start camera scanner");
+      toast.error('Failed to start camera scanner');
     }
 
     return cleanup;
@@ -89,7 +89,7 @@ export function BarcodeScanner({
       try {
         scannerRef.current.clear();
       } catch (err) {
-        logger.error("Failed to clear barcode scanner", {
+        logger.error('Failed to clear barcode scanner', {
           error: err instanceof Error ? err.message : String(err),
         });
       }
@@ -108,8 +108,8 @@ export function BarcodeScanner({
   }
 
   return (
-    <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
-      <Card className="w-full max-w-md mx-4">
+    <div className="bg-opacity-50 fixed inset-0 z-50 flex items-center justify-center bg-black">
+      <Card className="mx-4 w-full max-w-md">
         <CardHeader>
           <div className="flex items-center justify-between">
             <CardTitle className="flex items-center gap-2">
@@ -128,12 +128,12 @@ export function BarcodeScanner({
         </CardHeader>
         <CardContent className="space-y-4">
           {error ? (
-            <div className="text-center space-y-4">
+            <div className="space-y-4 text-center">
               <div className="flex items-center justify-center text-red-500">
-                <IconCameraOff className="h-8 w-8 mr-2" />
+                <IconCameraOff className="mr-2 h-8 w-8" />
                 <span>Camera Error</span>
               </div>
-              <p className="text-sm text-muted-foreground">{error}</p>
+              <p className="text-muted-foreground text-sm">{error}</p>
               <Button onClick={handleClose} variant="outline">
                 Close
               </Button>
@@ -141,7 +141,7 @@ export function BarcodeScanner({
           ) : (
             <div className="space-y-4">
               <div className="text-center">
-                <p className="text-sm text-muted-foreground">
+                <p className="text-muted-foreground text-sm">
                   Position the barcode within the viewfinder
                 </p>
               </div>
@@ -150,7 +150,7 @@ export function BarcodeScanner({
               <div
                 id="barcode-scanner"
                 className="w-full"
-                style={{ minHeight: "300px" }}
+                style={{ minHeight: '300px' }}
               />
 
               <div className="flex justify-center space-x-2">

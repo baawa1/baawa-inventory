@@ -1,25 +1,25 @@
-import React from "react";
-import { UseFormReturn } from "react-hook-form";
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import React from 'react';
+import { UseFormReturn } from 'react-hook-form';
+import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import {
   FormControl,
   FormField,
   FormItem,
   FormLabel,
   FormMessage,
-} from "@/components/ui/form";
-import { Input } from "@/components/ui/input";
-import { Calendar } from "@/components/ui/calendar";
+} from '@/components/ui/form';
+import { Input } from '@/components/ui/input';
+import { Calendar } from '@/components/ui/calendar';
 import {
   Popover,
   PopoverContent,
   PopoverTrigger,
-} from "@/components/ui/popover";
-import { Button } from "@/components/ui/button";
-import { CalendarIcon } from "lucide-react";
-import { cn, formatCurrency } from "@/lib/utils";
-import { format } from "date-fns";
-import { UpdateProductFormData } from "./types";
+} from '@/components/ui/popover';
+import { Button } from '@/components/ui/button';
+import { CalendarIcon } from 'lucide-react';
+import { cn, formatCurrency } from '@/lib/utils';
+import { format } from 'date-fns';
+import { UpdateProductFormData } from './types';
 
 interface PricingPromotionsSectionProps {
   form: UseFormReturn<UpdateProductFormData>;
@@ -28,15 +28,15 @@ interface PricingPromotionsSectionProps {
 export function PricingPromotionsSection({
   form,
 }: PricingPromotionsSectionProps) {
-  const sellingPrice = form.watch("sellingPrice");
-  const salePrice = form.watch("salePrice");
+  const sellingPrice = form.watch('sellingPrice');
+  const salePrice = form.watch('salePrice');
 
   const calculateDiscount = () => {
     if (sellingPrice && salePrice && sellingPrice > 0) {
       const discount = ((sellingPrice - salePrice) / sellingPrice) * 100;
       return discount.toFixed(1);
     }
-    return "0";
+    return '0';
   };
 
   return (
@@ -58,15 +58,15 @@ export function PricingPromotionsSection({
                   step="0.01"
                   min="0"
                   placeholder="0.00"
-                  onChange={(e) => {
+                  onChange={e => {
                     const value = e.target.value;
                     field.onChange(value ? parseFloat(value) : null);
                   }}
-                  value={field.value?.toString() || ""}
+                  value={field.value?.toString() || ''}
                 />
               </FormControl>
               {sellingPrice && salePrice && (
-                <p className="text-sm text-muted-foreground">
+                <p className="text-muted-foreground text-sm">
                   Discount: {calculateDiscount()}% (
                   {formatCurrency(sellingPrice - salePrice)} off)
                 </p>
@@ -76,7 +76,7 @@ export function PricingPromotionsSection({
           )}
         />
 
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+        <div className="grid grid-cols-1 gap-4 md:grid-cols-2">
           <FormField
             control={form.control}
             name="saleStartDate"
@@ -89,12 +89,12 @@ export function PricingPromotionsSection({
                       <Button
                         variant="outline"
                         className={cn(
-                          "w-full pl-3 text-left font-normal",
-                          !field.value && "text-muted-foreground"
+                          'w-full pl-3 text-left font-normal',
+                          !field.value && 'text-muted-foreground'
                         )}
                       >
                         {field.value ? (
-                          format(field.value, "PPP")
+                          format(field.value, 'PPP')
                         ) : (
                           <span>Pick a date</span>
                         )}
@@ -107,7 +107,7 @@ export function PricingPromotionsSection({
                       mode="single"
                       selected={field.value || undefined}
                       onSelect={field.onChange}
-                      disabled={(date) =>
+                      disabled={date =>
                         date < new Date(new Date().setHours(0, 0, 0, 0))
                       }
                       initialFocus
@@ -131,12 +131,12 @@ export function PricingPromotionsSection({
                       <Button
                         variant="outline"
                         className={cn(
-                          "w-full pl-3 text-left font-normal",
-                          !field.value && "text-muted-foreground"
+                          'w-full pl-3 text-left font-normal',
+                          !field.value && 'text-muted-foreground'
                         )}
                       >
                         {field.value ? (
-                          format(field.value, "PPP")
+                          format(field.value, 'PPP')
                         ) : (
                           <span>Pick a date</span>
                         )}
@@ -149,7 +149,7 @@ export function PricingPromotionsSection({
                       mode="single"
                       selected={field.value || undefined}
                       onSelect={field.onChange}
-                      disabled={(date) =>
+                      disabled={date =>
                         date < new Date(new Date().setHours(0, 0, 0, 0))
                       }
                       initialFocus
@@ -174,11 +174,11 @@ export function PricingPromotionsSection({
                   type="number"
                   min="0"
                   placeholder="0"
-                  onChange={(e) => {
+                  onChange={e => {
                     const value = e.target.value;
                     field.onChange(value ? parseInt(value) : null);
                   }}
-                  value={field.value?.toString() || ""}
+                  value={field.value?.toString() || ''}
                 />
               </FormControl>
               <FormMessage />

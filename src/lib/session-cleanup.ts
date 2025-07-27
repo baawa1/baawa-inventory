@@ -3,13 +3,13 @@
  * Handles cleanup of expired sessions and blacklist entries
  */
 
-import { logger } from "./logger";
+import { logger } from './logger';
 
 // Placeholder for SessionBlacklist until the actual implementation is created
 class SessionBlacklist {
   static async cleanupExpiredEntries(): Promise<void> {
     // TODO: Implement actual session blacklist cleanup
-    logger.info("Session blacklist cleanup placeholder called");
+    logger.info('Session blacklist cleanup placeholder called');
   }
 }
 
@@ -31,7 +31,7 @@ export class SessionCleanupService {
    */
   start(): void {
     if (this.cleanupInterval) {
-      logger.warn("Session cleanup service already running");
+      logger.warn('Session cleanup service already running');
       return;
     }
 
@@ -46,7 +46,7 @@ export class SessionCleanupService {
     // Run initial cleanup
     this.performCleanup();
 
-    logger.info("Session cleanup service started");
+    logger.info('Session cleanup service started');
   }
 
   /**
@@ -56,7 +56,7 @@ export class SessionCleanupService {
     if (this.cleanupInterval) {
       clearInterval(this.cleanupInterval);
       this.cleanupInterval = null;
-      logger.info("Session cleanup service stopped");
+      logger.info('Session cleanup service stopped');
     }
   }
 
@@ -65,15 +65,15 @@ export class SessionCleanupService {
    */
   private async performCleanup(): Promise<void> {
     try {
-      logger.info("Starting session cleanup");
+      logger.info('Starting session cleanup');
 
       // Clean up expired blacklist entries
       await SessionBlacklist.cleanupExpiredEntries();
 
-      logger.info("Session cleanup completed");
+      logger.info('Session cleanup completed');
     } catch (error) {
-      logger.error("Session cleanup failed", {
-        error: error instanceof Error ? error.message : "Unknown error",
+      logger.error('Session cleanup failed', {
+        error: error instanceof Error ? error.message : 'Unknown error',
       });
     }
   }

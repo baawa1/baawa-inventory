@@ -54,7 +54,7 @@ export interface EmailProvider {
 }
 
 export interface EmailServiceConfig {
-  provider: "resend" | "nodemailer";
+  provider: 'resend' | 'nodemailer';
   fromEmail: string;
   fromName: string;
   replyToEmail?: string;
@@ -64,20 +64,20 @@ export interface EmailServiceConfig {
  * Email Template Types for the application
  */
 export type EmailTemplateType =
-  | "welcome"
-  | "email_verification"
-  | "password_reset"
-  | "password_reset_confirmation"
-  | "user_approved"
-  | "user_rejected"
-  | "admin_new_user_pending"
-  | "admin_user_registered"
-  | "admin_digest"
-  | "account_locked"
-  | "role_changed"
-  | "user_suspension"
-  | "user_reactivation"
-  | "receipt_email";
+  | 'welcome'
+  | 'email_verification'
+  | 'password_reset'
+  | 'password_reset_confirmation'
+  | 'user_approved'
+  | 'user_rejected'
+  | 'admin_new_user_pending'
+  | 'admin_user_registered'
+  | 'admin_digest'
+  | 'account_locked'
+  | 'role_changed'
+  | 'user_suspension'
+  | 'user_reactivation'
+  | 'receipt_email';
 
 /**
  * Template data interfaces for type safety

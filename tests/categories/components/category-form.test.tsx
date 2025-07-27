@@ -1,13 +1,13 @@
-import React from "react";
-import { render, screen, fireEvent, waitFor } from "@testing-library/react";
-import userEvent from "@testing-library/user-event";
-import { CategoryForm } from "../../../src/components/inventory/category-form";
-import { CategoryDialog } from "../../../src/components/inventory/category-dialog";
-import { CategoryList } from "../../../src/components/inventory/category-list";
-import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
+import React from 'react';
+import { render, screen, fireEvent, waitFor } from '@testing-library/react';
+import userEvent from '@testing-library/user-event';
+import { CategoryForm } from '../../../src/components/inventory/category-form';
+import { CategoryDialog } from '../../../src/components/inventory/category-dialog';
+import { CategoryList } from '../../../src/components/inventory/category-list';
+import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
 
 // Mock the API hooks
-jest.mock("../../../src/hooks/api/use-categories", () => ({
+jest.mock('../../../src/hooks/api/use-categories', () => ({
   useCategories: jest.fn(),
   useCreateCategory: jest.fn(),
   useUpdateCategory: jest.fn(),
@@ -15,13 +15,13 @@ jest.mock("../../../src/hooks/api/use-categories", () => ({
 }));
 
 const mockUseCategories =
-  require("../../../src/hooks/api/use-categories").useCategories;
+  require('../../../src/hooks/api/use-categories').useCategories;
 const mockUseCreateCategory =
-  require("../../../src/hooks/api/use-categories").useCreateCategory;
+  require('../../../src/hooks/api/use-categories').useCreateCategory;
 const mockUseUpdateCategory =
-  require("../../../src/hooks/api/use-categories").useUpdateCategory;
+  require('../../../src/hooks/api/use-categories').useUpdateCategory;
 const mockUseDeleteCategory =
-  require("../../../src/hooks/api/use-categories").useDeleteCategory;
+  require('../../../src/hooks/api/use-categories').useDeleteCategory;
 
 const createTestQueryClient = () =>
   new QueryClient({
@@ -38,16 +38,16 @@ const renderWithQueryClient = (component: React.ReactElement) => {
   );
 };
 
-describe("Category Components", () => {
+describe('Category Components', () => {
   beforeEach(() => {
     jest.clearAllMocks();
   });
 
-  describe("CategoryForm", () => {
+  describe('CategoryForm', () => {
     const mockCategory = {
-      id: "1",
-      name: "Test Category",
-      description: "Test Description",
+      id: '1',
+      name: 'Test Category',
+      description: 'Test Description',
       isActive: true,
       parentId: null,
       createdAt: new Date(),
@@ -71,72 +71,72 @@ describe("Category Components", () => {
       mockUseUpdateCategory.mockReturnValue(mockUpdateMutation);
     });
 
-    it("renders create form correctly", () => {
+    it('renders create form correctly', () => {
       renderWithQueryClient(<CategoryForm />);
 
       expect(screen.getByLabelText(/category name/i)).toBeInTheDocument();
       expect(screen.getByLabelText(/description/i)).toBeInTheDocument();
       expect(
-        screen.getByRole("button", { name: /create category/i })
+        screen.getByRole('button', { name: /create category/i })
       ).toBeInTheDocument();
     });
 
-    it("renders edit form correctly", () => {
+    it('renders edit form correctly', () => {
       renderWithQueryClient(<CategoryForm category={mockCategory} />);
 
-      expect(screen.getByDisplayValue("Test Category")).toBeInTheDocument();
-      expect(screen.getByDisplayValue("Test Description")).toBeInTheDocument();
+      expect(screen.getByDisplayValue('Test Category')).toBeInTheDocument();
+      expect(screen.getByDisplayValue('Test Description')).toBeInTheDocument();
       expect(
-        screen.getByRole("button", { name: /update category/i })
+        screen.getByRole('button', { name: /update category/i })
       ).toBeInTheDocument();
     });
 
-    it("submits create form with valid data", async () => {
+    it('submits create form with valid data', async () => {
       const user = userEvent.setup();
       renderWithQueryClient(<CategoryForm />);
 
-      await user.type(screen.getByLabelText(/category name/i), "New Category");
-      await user.type(screen.getByLabelText(/description/i), "New Description");
+      await user.type(screen.getByLabelText(/category name/i), 'New Category');
+      await user.type(screen.getByLabelText(/description/i), 'New Description');
       await user.click(
-        screen.getByRole("button", { name: /create category/i })
+        screen.getByRole('button', { name: /create category/i })
       );
 
       expect(mockCreateMutation.mutate).toHaveBeenCalledWith({
-        name: "New Category",
-        description: "New Description",
+        name: 'New Category',
+        description: 'New Description',
         isActive: true,
         parentId: null,
       });
     });
 
-    it("submits update form with valid data", async () => {
+    it('submits update form with valid data', async () => {
       const user = userEvent.setup();
       renderWithQueryClient(<CategoryForm category={mockCategory} />);
 
       await user.clear(screen.getByLabelText(/category name/i));
       await user.type(
         screen.getByLabelText(/category name/i),
-        "Updated Category"
+        'Updated Category'
       );
       await user.click(
-        screen.getByRole("button", { name: /update category/i })
+        screen.getByRole('button', { name: /update category/i })
       );
 
       expect(mockUpdateMutation.mutate).toHaveBeenCalledWith({
-        id: "1",
-        name: "Updated Category",
-        description: "Test Description",
+        id: '1',
+        name: 'Updated Category',
+        description: 'Test Description',
         isActive: true,
         parentId: null,
       });
     });
 
-    it("shows validation errors for invalid data", async () => {
+    it('shows validation errors for invalid data', async () => {
       const user = userEvent.setup();
       renderWithQueryClient(<CategoryForm />);
 
       await user.click(
-        screen.getByRole("button", { name: /create category/i })
+        screen.getByRole('button', { name: /create category/i })
       );
 
       await waitFor(() => {
@@ -146,51 +146,51 @@ describe("Category Components", () => {
       });
     });
 
-    it("shows loading state during submission", () => {
+    it('shows loading state during submission', () => {
       mockCreateMutation.isPending = true;
       renderWithQueryClient(<CategoryForm />);
 
-      expect(screen.getByRole("button", { name: /creating/i })).toBeDisabled();
+      expect(screen.getByRole('button', { name: /creating/i })).toBeDisabled();
     });
 
-    it("shows error state", () => {
-      mockCreateMutation.error = new Error("Creation failed");
+    it('shows error state', () => {
+      mockCreateMutation.error = new Error('Creation failed');
       renderWithQueryClient(<CategoryForm />);
 
       expect(screen.getByText(/creation failed/i)).toBeInTheDocument();
     });
 
-    it("handles parent category selection", async () => {
+    it('handles parent category selection', async () => {
       const user = userEvent.setup();
       renderWithQueryClient(<CategoryForm />);
 
       const parentSelect = screen.getByLabelText(/parent category/i);
-      await user.selectOptions(parentSelect, "parent-1");
+      await user.selectOptions(parentSelect, 'parent-1');
 
       await user.click(
-        screen.getByRole("button", { name: /create category/i })
+        screen.getByRole('button', { name: /create category/i })
       );
 
       expect(mockCreateMutation.mutate).toHaveBeenCalledWith(
         expect.objectContaining({
-          parentId: "parent-1",
+          parentId: 'parent-1',
         })
       );
     });
   });
 
-  describe("CategoryDialog", () => {
+  describe('CategoryDialog', () => {
     const mockCategory = {
-      id: "1",
-      name: "Test Category",
-      description: "Test Description",
+      id: '1',
+      name: 'Test Category',
+      description: 'Test Description',
       isActive: true,
       parentId: null,
       createdAt: new Date(),
       updatedAt: new Date(),
     };
 
-    it("renders create dialog correctly", () => {
+    it('renders create dialog correctly', () => {
       renderWithQueryClient(
         <CategoryDialog open={true} onOpenChange={jest.fn()} />
       );
@@ -199,7 +199,7 @@ describe("Category Components", () => {
       expect(screen.getByLabelText(/category name/i)).toBeInTheDocument();
     });
 
-    it("renders edit dialog correctly", () => {
+    it('renders edit dialog correctly', () => {
       renderWithQueryClient(
         <CategoryDialog
           open={true}
@@ -209,10 +209,10 @@ describe("Category Components", () => {
       );
 
       expect(screen.getByText(/edit category/i)).toBeInTheDocument();
-      expect(screen.getByDisplayValue("Test Category")).toBeInTheDocument();
+      expect(screen.getByDisplayValue('Test Category')).toBeInTheDocument();
     });
 
-    it("closes dialog on cancel", async () => {
+    it('closes dialog on cancel', async () => {
       const onOpenChange = jest.fn();
       const user = userEvent.setup();
 
@@ -220,28 +220,28 @@ describe("Category Components", () => {
         <CategoryDialog open={true} onOpenChange={onOpenChange} />
       );
 
-      await user.click(screen.getByRole("button", { name: /cancel/i }));
+      await user.click(screen.getByRole('button', { name: /cancel/i }));
       expect(onOpenChange).toHaveBeenCalledWith(false);
     });
   });
 
-  describe("CategoryList", () => {
+  describe('CategoryList', () => {
     const mockCategories = [
       {
-        id: "1",
-        name: "Category 1",
-        description: "Description 1",
+        id: '1',
+        name: 'Category 1',
+        description: 'Description 1',
         isActive: true,
         parentId: null,
         createdAt: new Date(),
         updatedAt: new Date(),
       },
       {
-        id: "2",
-        name: "Category 2",
-        description: "Description 2",
+        id: '2',
+        name: 'Category 2',
+        description: 'Description 2',
         isActive: false,
-        parentId: "1",
+        parentId: '1',
         createdAt: new Date(),
         updatedAt: new Date(),
       },
@@ -269,15 +269,15 @@ describe("Category Components", () => {
       mockUseUpdateCategory.mockReturnValue(mockUpdateMutation);
     });
 
-    it("renders category list correctly", () => {
+    it('renders category list correctly', () => {
       renderWithQueryClient(<CategoryList />);
 
-      expect(screen.getByText("Category 1")).toBeInTheDocument();
-      expect(screen.getByText("Category 2")).toBeInTheDocument();
-      expect(screen.getByText("Description 1")).toBeInTheDocument();
+      expect(screen.getByText('Category 1')).toBeInTheDocument();
+      expect(screen.getByText('Category 2')).toBeInTheDocument();
+      expect(screen.getByText('Description 1')).toBeInTheDocument();
     });
 
-    it("shows loading state", () => {
+    it('shows loading state', () => {
       mockUseCategories.mockReturnValue({
         data: undefined,
         isLoading: true,
@@ -288,7 +288,7 @@ describe("Category Components", () => {
       expect(screen.getByText(/loading/i)).toBeInTheDocument();
     });
 
-    it("shows empty state", () => {
+    it('shows empty state', () => {
       mockUseCategories.mockReturnValue({
         data: [],
         isLoading: false,
@@ -299,21 +299,21 @@ describe("Category Components", () => {
       expect(screen.getByText(/no categories found/i)).toBeInTheDocument();
     });
 
-    it("handles category deletion", async () => {
+    it('handles category deletion', async () => {
       const user = userEvent.setup();
       renderWithQueryClient(<CategoryList />);
 
-      const deleteButtons = screen.getAllByRole("button", { name: /delete/i });
+      const deleteButtons = screen.getAllByRole('button', { name: /delete/i });
       await user.click(deleteButtons[0]);
 
-      expect(mockDeleteMutation.mutate).toHaveBeenCalledWith("1");
+      expect(mockDeleteMutation.mutate).toHaveBeenCalledWith('1');
     });
 
-    it("shows error state", () => {
+    it('shows error state', () => {
       mockUseCategories.mockReturnValue({
         data: undefined,
         isLoading: false,
-        error: new Error("Failed to load categories"),
+        error: new Error('Failed to load categories'),
       });
 
       renderWithQueryClient(<CategoryList />);
@@ -322,33 +322,33 @@ describe("Category Components", () => {
       ).toBeInTheDocument();
     });
 
-    it("filters categories by search term", async () => {
+    it('filters categories by search term', async () => {
       const user = userEvent.setup();
       renderWithQueryClient(<CategoryList />);
 
       const searchInput = screen.getByPlaceholderText(/search categories/i);
-      await user.type(searchInput, "Category 1");
+      await user.type(searchInput, 'Category 1');
 
-      expect(screen.getByText("Category 1")).toBeInTheDocument();
-      expect(screen.queryByText("Category 2")).not.toBeInTheDocument();
+      expect(screen.getByText('Category 1')).toBeInTheDocument();
+      expect(screen.queryByText('Category 2')).not.toBeInTheDocument();
     });
 
-    it("toggles category status", async () => {
+    it('toggles category status', async () => {
       const user = userEvent.setup();
       renderWithQueryClient(<CategoryList />);
 
-      const toggleButtons = screen.getAllByRole("button", {
+      const toggleButtons = screen.getAllByRole('button', {
         name: /toggle status/i,
       });
       await user.click(toggleButtons[0]);
 
       expect(mockUpdateMutation.mutate).toHaveBeenCalledWith({
-        id: "1",
+        id: '1',
         isActive: false,
       });
     });
 
-    it("shows parent-child relationships", () => {
+    it('shows parent-child relationships', () => {
       renderWithQueryClient(<CategoryList />);
 
       expect(

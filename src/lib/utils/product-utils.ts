@@ -8,11 +8,11 @@
 export function calculateStockStatus(
   currentStock: number,
   minStock: number
-): "out-of-stock" | "critical" | "low" | "normal" {
-  if (currentStock <= 0) return "out-of-stock";
-  if (currentStock <= minStock * 0.5) return "critical";
-  if (currentStock <= minStock) return "low";
-  return "normal";
+): 'out-of-stock' | 'critical' | 'low' | 'normal' {
+  if (currentStock <= 0) return 'out-of-stock';
+  if (currentStock <= minStock * 0.5) return 'critical';
+  if (currentStock <= minStock) return 'low';
+  return 'normal';
 }
 
 /**
@@ -47,15 +47,15 @@ export function generateSKU(
   // Get first 3 letters of category (default: PRD)
   const categoryCode = category
     ? category.substring(0, 3).toUpperCase()
-    : "PRD";
+    : 'PRD';
 
   // Get first 2 letters of brand (default: XX)
-  const brandCode = brand ? brand.substring(0, 2).toUpperCase() : "XX";
+  const brandCode = brand ? brand.substring(0, 2).toUpperCase() : 'XX';
 
   // Get first 3 letters of product name (default: PRO)
   const productCode = productName
     ? productName.substring(0, 3).toUpperCase()
-    : "PRO";
+    : 'PRO';
 
   // Generate random 4-digit number
   const randomNum = Math.floor(1000 + Math.random() * 9000);
@@ -73,7 +73,7 @@ export function validateBarcode(barcode: string): boolean {
   if (!/^\d{13}$/.test(barcode)) return false;
 
   // EAN-13 checksum validation
-  const digits = barcode.split("").map(Number);
+  const digits = barcode.split('').map(Number);
   const checkDigit = digits[12];
 
   let sum = 0;
@@ -96,8 +96,8 @@ export function calculateSearchRelevance(
 ): number {
   const term = searchTerm.toLowerCase();
   const name = productName.toLowerCase();
-  const sku = productSku?.toLowerCase() || "";
-  const description = productDescription?.toLowerCase() || "";
+  const sku = productSku?.toLowerCase() || '';
+  const description = productDescription?.toLowerCase() || '';
 
   let score = 0;
 
@@ -119,7 +119,7 @@ export function calculateSearchRelevance(
   const termWords = term.split(/\s+/);
 
   for (const word of termWords) {
-    if (nameWords.some((nameWord) => nameWord.startsWith(word))) {
+    if (nameWords.some(nameWord => nameWord.startsWith(word))) {
       score += 10;
     }
   }
@@ -131,9 +131,9 @@ export function calculateSearchRelevance(
  * Format currency for display
  */
 export function formatCurrency(amount: number): string {
-  return new Intl.NumberFormat("en-NG", {
-    style: "currency",
-    currency: "NGN",
+  return new Intl.NumberFormat('en-NG', {
+    style: 'currency',
+    currency: 'NGN',
     minimumFractionDigits: 2,
   }).format(amount);
 }

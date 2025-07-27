@@ -1,4 +1,4 @@
-"use client";
+'use client';
 
 import {
   IconTrendingUp,
@@ -6,8 +6,8 @@ import {
   IconAlertTriangle,
   IconCurrencyDollar,
   IconUsers,
-} from "@tabler/icons-react";
-import { Badge } from "@/components/ui/badge";
+} from '@tabler/icons-react';
+import { Badge } from '@/components/ui/badge';
 import {
   Card,
   CardAction,
@@ -15,9 +15,9 @@ import {
   CardFooter,
   CardHeader,
   CardTitle,
-} from "@/components/ui/card";
-import { formatCurrency } from "@/lib/utils";
-import { useInventoryStats } from "@/hooks/api/inventory";
+} from '@/components/ui/card';
+import { formatCurrency } from '@/lib/utils';
+import { useInventoryStats } from '@/hooks/api/inventory';
 
 export function InventoryMetrics() {
   const { data: stats, isLoading: loading, error } = useInventoryStats();
@@ -59,8 +59,8 @@ export function InventoryMetrics() {
         {[...Array(4)].map((_, i) => (
           <Card key={i} className="animate-pulse">
             <CardHeader>
-              <div className="h-4 bg-gray-200 rounded w-1/2 mb-2"></div>
-              <div className="h-8 bg-gray-200 rounded w-3/4"></div>
+              <div className="mb-2 h-4 w-1/2 rounded bg-gray-200"></div>
+              <div className="h-8 w-3/4 rounded bg-gray-200"></div>
             </CardHeader>
           </Card>
         ))}
@@ -74,7 +74,7 @@ export function InventoryMetrics() {
       <Card className="@container/card">
         <CardHeader>
           <CardDescription>Total Products</CardDescription>
-          <CardTitle className="text-2xl font-semibold tabular-nums @[250px]/card:text-3xl flex items-center gap-2">
+          <CardTitle className="flex items-center gap-2 text-2xl font-semibold tabular-nums @[250px]/card:text-3xl">
             <IconPackages className="h-6 w-6 text-blue-600" />
             {displayStats.totalProducts.toLocaleString()}
           </CardTitle>
@@ -97,7 +97,7 @@ export function InventoryMetrics() {
       <Card className="@container/card">
         <CardHeader>
           <CardDescription>Low Stock Items</CardDescription>
-          <CardTitle className="text-2xl font-semibold tabular-nums @[250px]/card:text-3xl flex items-center gap-2">
+          <CardTitle className="flex items-center gap-2 text-2xl font-semibold tabular-nums @[250px]/card:text-3xl">
             <IconAlertTriangle className="h-6 w-6 text-yellow-600" />
             {displayStats.lowStockItems}
           </CardTitle>
@@ -122,7 +122,7 @@ export function InventoryMetrics() {
       <Card className="@container/card">
         <CardHeader>
           <CardDescription>Total Stock Value</CardDescription>
-          <CardTitle className="text-2xl font-semibold tabular-nums @[250px]/card:text-3xl flex items-center gap-2">
+          <CardTitle className="flex items-center gap-2 text-2xl font-semibold tabular-nums @[250px]/card:text-3xl">
             <IconCurrencyDollar className="h-6 w-6 text-green-600" />
             {formatCurrency(displayStats.totalStockValue)}
           </CardTitle>
@@ -144,7 +144,7 @@ export function InventoryMetrics() {
       <Card className="@container/card">
         <CardHeader>
           <CardDescription>Active Suppliers</CardDescription>
-          <CardTitle className="text-2xl font-semibold tabular-nums @[250px]/card:text-3xl flex items-center gap-2">
+          <CardTitle className="flex items-center gap-2 text-2xl font-semibold tabular-nums @[250px]/card:text-3xl">
             <IconUsers className="h-6 w-6 text-purple-600" />
             {displayStats.activeSuppliers}
           </CardTitle>

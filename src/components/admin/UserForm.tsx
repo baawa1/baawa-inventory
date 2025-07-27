@@ -1,8 +1,8 @@
-"use client";
+'use client';
 
-import { useForm } from "react-hook-form";
-import { zodResolver } from "@hookform/resolvers/zod";
-import { Button } from "@/components/ui/button";
+import { useForm } from 'react-hook-form';
+import { zodResolver } from '@hookform/resolvers/zod';
+import { Button } from '@/components/ui/button';
 import {
   Form,
   FormControl,
@@ -10,22 +10,22 @@ import {
   FormItem,
   FormLabel,
   FormMessage,
-} from "@/components/ui/form";
-import { Input } from "@/components/ui/input";
+} from '@/components/ui/form';
+import { Input } from '@/components/ui/input';
 import {
   Select,
   SelectContent,
   SelectItem,
   SelectTrigger,
   SelectValue,
-} from "@/components/ui/select";
+} from '@/components/ui/select';
 import {
   createUserFormSchema,
   editUserFormSchema,
   type UserFormData,
   type EditUserFormData,
   type User,
-} from "./types/user";
+} from './types/user';
 
 interface UserFormProps {
   user?: User | null;
@@ -44,16 +44,16 @@ export function UserForm({
   const schema = isEditing ? editUserFormSchema : createUserFormSchema;
 
   const validStatuses = [
-    "PENDING",
-    "VERIFIED",
-    "APPROVED",
-    "REJECTED",
-    "SUSPENDED",
+    'PENDING',
+    'VERIFIED',
+    'APPROVED',
+    'REJECTED',
+    'SUSPENDED',
   ] as const;
   const safeUserStatus =
     user && validStatuses.includes(user.userStatus as any)
       ? (user.userStatus as (typeof validStatuses)[number])
-      : "PENDING";
+      : 'PENDING';
 
   const form = useForm<UserFormData | EditUserFormData>({
     resolver: zodResolver(schema),
@@ -66,13 +66,13 @@ export function UserForm({
           userStatus: safeUserStatus,
         }
       : {
-          firstName: "",
-          lastName: "",
-          email: "",
-          role: "STAFF",
-          userStatus: "PENDING",
-          password: "",
-          confirmPassword: "",
+          firstName: '',
+          lastName: '',
+          email: '',
+          role: 'STAFF',
+          userStatus: 'PENDING',
+          password: '',
+          confirmPassword: '',
         },
   });
 
@@ -238,10 +238,10 @@ export function UserForm({
           </Button>
           <Button type="submit" disabled={isSubmitting}>
             {isSubmitting
-              ? "Saving..."
+              ? 'Saving...'
               : isEditing
-                ? "Update User"
-                : "Create User"}
+                ? 'Update User'
+                : 'Create User'}
           </Button>
         </div>
       </form>

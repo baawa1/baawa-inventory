@@ -1,4 +1,4 @@
-"use client";
+'use client';
 
 import {
   Dialog,
@@ -6,8 +6,8 @@ import {
   DialogDescription,
   DialogHeader,
   DialogTitle,
-} from "@/components/ui/dialog";
-import { Badge } from "@/components/ui/badge";
+} from '@/components/ui/dialog';
+import { Badge } from '@/components/ui/badge';
 
 interface TransactionDetailModalProps {
   transaction: any;
@@ -35,14 +35,14 @@ export function TransactionDetailModal({
           <div>
             <h3 className="font-medium">Amount</h3>
             <p className="text-2xl font-bold">
-              {transaction.type === "INCOME" ? "+" : "-"}₦
+              {transaction.type === 'INCOME' ? '+' : '-'}₦
               {Number(transaction.amount).toLocaleString()}
             </p>
           </div>
           <div>
             <h3 className="font-medium">Type</h3>
             <Badge
-              variant={transaction.type === "INCOME" ? "default" : "secondary"}
+              variant={transaction.type === 'INCOME' ? 'default' : 'secondary'}
             >
               {transaction.type}
             </Badge>

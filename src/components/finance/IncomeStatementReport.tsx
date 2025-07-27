@@ -1,15 +1,15 @@
-"use client";
+'use client';
 
-import React, { useState } from "react";
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import { Button } from "@/components/ui/button";
+import React, { useState } from 'react';
+import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
+import { Button } from '@/components/ui/button';
 import {
   Select,
   SelectContent,
   SelectItem,
   SelectTrigger,
   SelectValue,
-} from "@/components/ui/select";
+} from '@/components/ui/select';
 import {
   IconDownload,
   IconPrinter,
@@ -18,12 +18,12 @@ import {
   IconCalendar,
   IconRefresh,
   IconCash,
-} from "@tabler/icons-react";
-import { DateRange } from "react-day-picker";
-import { formatCurrency } from "@/lib/utils";
-import { useFinancialAnalytics } from "@/hooks/api/useFinancialAnalytics";
-import { DateRangePicker } from "@/components/ui/date-range-picker";
-import { AppUser } from "@/types/user";
+} from '@tabler/icons-react';
+import { DateRange } from 'react-day-picker';
+import { formatCurrency } from '@/lib/utils';
+import { useFinancialAnalytics } from '@/hooks/api/useFinancialAnalytics';
+import { DateRangePicker } from '@/components/ui/date-range-picker';
+import { AppUser } from '@/types/user';
 
 interface IncomeStatementReportProps {
   user: AppUser;
@@ -36,7 +36,7 @@ export function IncomeStatementReport({
     from: new Date(Date.now() - 30 * 24 * 60 * 60 * 1000), // Last 30 days
     to: new Date(),
   });
-  const [period, setPeriod] = useState("monthly");
+  const [period, setPeriod] = useState('monthly');
 
   const {
     data: analyticsData,
@@ -44,7 +44,7 @@ export function IncomeStatementReport({
     refetch,
   } = useFinancialAnalytics({
     dateRange,
-    type: "all",
+    type: 'all',
   });
 
   const summary = analyticsData?.summary;
@@ -89,11 +89,11 @@ export function IncomeStatementReport({
   };
 
   const handleExportReport = () => {
-    console.log("Exporting income statement...");
+    console.log('Exporting income statement...');
   };
 
   const handlePrintReport = () => {
-    console.log("Printing income statement...");
+    console.log('Printing income statement...');
   };
 
   const handleRefresh = () => {
@@ -102,10 +102,10 @@ export function IncomeStatementReport({
 
   if (isLoading) {
     return (
-      <div className="max-w-7xl mx-auto p-6 space-y-6">
-        <div className="text-center py-8">
-          <div className="animate-spin h-8 w-8 border-b-2 border-primary mx-auto"></div>
-          <p className="mt-2 text-muted-foreground">
+      <div className="mx-auto max-w-7xl space-y-6 p-6">
+        <div className="py-8 text-center">
+          <div className="border-primary mx-auto h-8 w-8 animate-spin border-b-2"></div>
+          <p className="text-muted-foreground mt-2">
             Loading income statement data...
           </p>
         </div>
@@ -114,7 +114,7 @@ export function IncomeStatementReport({
   }
 
   return (
-    <div className="max-w-7xl mx-auto p-6 space-y-6">
+    <div className="mx-auto max-w-7xl space-y-6 p-6">
       {/* Header */}
       <div className="flex items-center justify-between">
         <div>
@@ -138,15 +138,15 @@ export function IncomeStatementReport({
             </SelectContent>
           </Select>
           <Button onClick={handleRefresh} variant="outline" size="sm">
-            <IconRefresh className="h-4 w-4 mr-2" />
+            <IconRefresh className="mr-2 h-4 w-4" />
             Refresh
           </Button>
           <Button onClick={handleExportReport} variant="outline" size="sm">
-            <IconDownload className="h-4 w-4 mr-2" />
+            <IconDownload className="mr-2 h-4 w-4" />
             Export
           </Button>
           <Button onClick={handlePrintReport} variant="outline" size="sm">
-            <IconPrinter className="h-4 w-4 mr-2" />
+            <IconPrinter className="mr-2 h-4 w-4" />
             Print
           </Button>
         </div>
@@ -180,7 +180,7 @@ export function IncomeStatementReport({
             <div className="text-2xl font-bold text-green-600">
               {formatCurrency(incomeStatementData.revenue.totalRevenue)}
             </div>
-            <p className="text-xs text-muted-foreground">
+            <p className="text-muted-foreground text-xs">
               Total income generated
             </p>
           </CardContent>
@@ -195,13 +195,13 @@ export function IncomeStatementReport({
             <div
               className={`text-2xl font-bold ${
                 incomeStatementData.grossProfit >= 0
-                  ? "text-green-600"
-                  : "text-red-600"
+                  ? 'text-green-600'
+                  : 'text-red-600'
               }`}
             >
               {formatCurrency(incomeStatementData.grossProfit)}
             </div>
-            <p className="text-xs text-muted-foreground">Revenue minus COGS</p>
+            <p className="text-muted-foreground text-xs">Revenue minus COGS</p>
           </CardContent>
         </Card>
 
@@ -216,13 +216,13 @@ export function IncomeStatementReport({
             <div
               className={`text-2xl font-bold ${
                 incomeStatementData.operatingIncome >= 0
-                  ? "text-green-600"
-                  : "text-red-600"
+                  ? 'text-green-600'
+                  : 'text-red-600'
               }`}
             >
               {formatCurrency(incomeStatementData.operatingIncome)}
             </div>
-            <p className="text-xs text-muted-foreground">
+            <p className="text-muted-foreground text-xs">
               Gross profit minus expenses
             </p>
           </CardContent>
@@ -237,13 +237,13 @@ export function IncomeStatementReport({
             <div
               className={`text-2xl font-bold ${
                 incomeStatementData.netIncome >= 0
-                  ? "text-green-600"
-                  : "text-red-600"
+                  ? 'text-green-600'
+                  : 'text-red-600'
               }`}
             >
               {formatCurrency(incomeStatementData.netIncome)}
             </div>
-            <p className="text-xs text-muted-foreground">Final profit/loss</p>
+            <p className="text-muted-foreground text-xs">Final profit/loss</p>
           </CardContent>
         </Card>
       </div>
@@ -260,20 +260,20 @@ export function IncomeStatementReport({
           </CardHeader>
           <CardContent className="space-y-4">
             <div className="space-y-3">
-              <div className="flex justify-between items-center">
+              <div className="flex items-center justify-between">
                 <span className="text-sm">Sales Revenue</span>
                 <span className="font-medium">
                   {formatCurrency(incomeStatementData.revenue.sales)}
                 </span>
               </div>
-              <div className="flex justify-between items-center">
+              <div className="flex items-center justify-between">
                 <span className="text-sm">Other Income</span>
                 <span className="font-medium">
                   {formatCurrency(incomeStatementData.revenue.otherIncome)}
                 </span>
               </div>
               <div className="border-t pt-2">
-                <div className="flex justify-between items-center font-bold">
+                <div className="flex items-center justify-between font-bold">
                   <span>Total Revenue</span>
                   <span className="text-green-600">
                     {formatCurrency(incomeStatementData.revenue.totalRevenue)}
@@ -294,7 +294,7 @@ export function IncomeStatementReport({
           </CardHeader>
           <CardContent className="space-y-4">
             <div className="space-y-3">
-              <div className="flex justify-between items-center">
+              <div className="flex items-center justify-between">
                 <span className="text-sm">Beginning Inventory</span>
                 <span className="font-medium">
                   {formatCurrency(
@@ -302,7 +302,7 @@ export function IncomeStatementReport({
                   )}
                 </span>
               </div>
-              <div className="flex justify-between items-center">
+              <div className="flex items-center justify-between">
                 <span className="text-sm">Purchases</span>
                 <span className="font-medium">
                   {formatCurrency(
@@ -310,7 +310,7 @@ export function IncomeStatementReport({
                   )}
                 </span>
               </div>
-              <div className="flex justify-between items-center">
+              <div className="flex items-center justify-between">
                 <span className="text-sm">Ending Inventory</span>
                 <span className="font-medium text-red-600">
                   -
@@ -320,7 +320,7 @@ export function IncomeStatementReport({
                 </span>
               </div>
               <div className="border-t pt-2">
-                <div className="flex justify-between items-center font-bold">
+                <div className="flex items-center justify-between font-bold">
                   <span>Total COGS</span>
                   <span className="text-red-600">
                     {formatCurrency(
@@ -343,13 +343,13 @@ export function IncomeStatementReport({
           </CardTitle>
         </CardHeader>
         <CardContent>
-          <div className="flex justify-between items-center text-xl font-bold">
+          <div className="flex items-center justify-between text-xl font-bold">
             <span>Revenue - Cost of Goods Sold</span>
             <span
               className={
                 incomeStatementData.grossProfit >= 0
-                  ? "text-green-600"
-                  : "text-red-600"
+                  ? 'text-green-600'
+                  : 'text-red-600'
               }
             >
               {formatCurrency(incomeStatementData.grossProfit)}
@@ -369,7 +369,7 @@ export function IncomeStatementReport({
         <CardContent>
           <div className="grid gap-4 md:grid-cols-2">
             <div className="space-y-3">
-              <div className="flex justify-between items-center">
+              <div className="flex items-center justify-between">
                 <span className="text-sm">Salaries & Wages</span>
                 <span className="font-medium">
                   {formatCurrency(
@@ -377,13 +377,13 @@ export function IncomeStatementReport({
                   )}
                 </span>
               </div>
-              <div className="flex justify-between items-center">
+              <div className="flex items-center justify-between">
                 <span className="text-sm">Rent</span>
                 <span className="font-medium">
                   {formatCurrency(incomeStatementData.operatingExpenses.rent)}
                 </span>
               </div>
-              <div className="flex justify-between items-center">
+              <div className="flex items-center justify-between">
                 <span className="text-sm">Utilities</span>
                 <span className="font-medium">
                   {formatCurrency(
@@ -391,7 +391,7 @@ export function IncomeStatementReport({
                   )}
                 </span>
               </div>
-              <div className="flex justify-between items-center">
+              <div className="flex items-center justify-between">
                 <span className="text-sm">Marketing</span>
                 <span className="font-medium">
                   {formatCurrency(
@@ -401,7 +401,7 @@ export function IncomeStatementReport({
               </div>
             </div>
             <div className="space-y-3">
-              <div className="flex justify-between items-center">
+              <div className="flex items-center justify-between">
                 <span className="text-sm">Insurance</span>
                 <span className="font-medium">
                   {formatCurrency(
@@ -409,7 +409,7 @@ export function IncomeStatementReport({
                   )}
                 </span>
               </div>
-              <div className="flex justify-between items-center">
+              <div className="flex items-center justify-between">
                 <span className="text-sm">Depreciation</span>
                 <span className="font-medium">
                   {formatCurrency(
@@ -417,14 +417,14 @@ export function IncomeStatementReport({
                   )}
                 </span>
               </div>
-              <div className="flex justify-between items-center">
+              <div className="flex items-center justify-between">
                 <span className="text-sm">Other Expenses</span>
                 <span className="font-medium">
                   {formatCurrency(incomeStatementData.operatingExpenses.other)}
                 </span>
               </div>
               <div className="border-t pt-2">
-                <div className="flex justify-between items-center font-bold">
+                <div className="flex items-center justify-between font-bold">
                   <span>Total Operating Expenses</span>
                   <span className="text-red-600">
                     {formatCurrency(
@@ -449,20 +449,20 @@ export function IncomeStatementReport({
             </CardTitle>
           </CardHeader>
           <CardContent className="space-y-3">
-            <div className="flex justify-between items-center">
+            <div className="flex items-center justify-between">
               <span className="text-sm">Interest Income</span>
               <span className="font-medium text-green-600">
                 +{formatCurrency(incomeStatementData.otherIncome.interest)}
               </span>
             </div>
-            <div className="flex justify-between items-center">
+            <div className="flex items-center justify-between">
               <span className="text-sm">Gains</span>
               <span className="font-medium text-green-600">
                 +{formatCurrency(incomeStatementData.otherIncome.gains)}
               </span>
             </div>
             <div className="border-t pt-2">
-              <div className="flex justify-between items-center font-bold">
+              <div className="flex items-center justify-between font-bold">
                 <span>Total Other Income</span>
                 <span className="text-green-600">
                   +
@@ -483,20 +483,20 @@ export function IncomeStatementReport({
             </CardTitle>
           </CardHeader>
           <CardContent className="space-y-3">
-            <div className="flex justify-between items-center">
+            <div className="flex items-center justify-between">
               <span className="text-sm">Interest Expense</span>
               <span className="font-medium text-red-600">
                 -{formatCurrency(incomeStatementData.otherExpenses.interest)}
               </span>
             </div>
-            <div className="flex justify-between items-center">
+            <div className="flex items-center justify-between">
               <span className="text-sm">Losses</span>
               <span className="font-medium text-red-600">
                 -{formatCurrency(incomeStatementData.otherExpenses.losses)}
               </span>
             </div>
             <div className="border-t pt-2">
-              <div className="flex justify-between items-center font-bold">
+              <div className="flex items-center justify-between font-bold">
                 <span>Total Other Expenses</span>
                 <span className="text-red-600">
                   -
@@ -518,13 +518,13 @@ export function IncomeStatementReport({
         <CardContent>
           <div className="space-y-4">
             <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-4">
-              <div className="text-center p-4 bg-green-50 rounded-lg">
+              <div className="rounded-lg bg-green-50 p-4 text-center">
                 <div className="text-2xl font-bold text-green-600">
                   {formatCurrency(incomeStatementData.revenue.totalRevenue)}
                 </div>
                 <div className="text-sm text-green-600">Total Revenue</div>
               </div>
-              <div className="text-center p-4 bg-red-50 rounded-lg">
+              <div className="rounded-lg bg-red-50 p-4 text-center">
                 <div className="text-2xl font-bold text-red-600">
                   {formatCurrency(
                     incomeStatementData.costOfGoodsSold.totalCOGS
@@ -532,24 +532,24 @@ export function IncomeStatementReport({
                 </div>
                 <div className="text-sm text-red-600">Cost of Goods Sold</div>
               </div>
-              <div className="text-center p-4 bg-blue-50 rounded-lg">
+              <div className="rounded-lg bg-blue-50 p-4 text-center">
                 <div
                   className={`text-2xl font-bold ${
                     incomeStatementData.grossProfit >= 0
-                      ? "text-green-600"
-                      : "text-red-600"
+                      ? 'text-green-600'
+                      : 'text-red-600'
                   }`}
                 >
                   {formatCurrency(incomeStatementData.grossProfit)}
                 </div>
                 <div className="text-sm text-blue-600">Gross Profit</div>
               </div>
-              <div className="text-center p-4 bg-purple-50 rounded-lg">
+              <div className="rounded-lg bg-purple-50 p-4 text-center">
                 <div
                   className={`text-2xl font-bold ${
                     incomeStatementData.netIncome >= 0
-                      ? "text-green-600"
-                      : "text-red-600"
+                      ? 'text-green-600'
+                      : 'text-red-600'
                   }`}
                 >
                   {formatCurrency(incomeStatementData.netIncome)}
@@ -558,46 +558,46 @@ export function IncomeStatementReport({
               </div>
             </div>
 
-            <div className="mt-6 p-4 bg-gray-50 rounded-lg">
-              <h3 className="font-semibold mb-2">Income Statement Analysis</h3>
+            <div className="mt-6 rounded-lg bg-gray-50 p-4">
+              <h3 className="mb-2 font-semibold">Income Statement Analysis</h3>
               <div className="space-y-2 text-sm">
                 <p>
-                  <strong>Gross Profit Margin:</strong>{" "}
+                  <strong>Gross Profit Margin:</strong>{' '}
                   {(
                     (incomeStatementData.grossProfit /
                       incomeStatementData.revenue.totalRevenue) *
                     100
                   ).toFixed(1)}
-                  % -{" "}
+                  % -{' '}
                   {incomeStatementData.grossProfit >= 0
-                    ? "Healthy"
-                    : "Concerning"}{" "}
+                    ? 'Healthy'
+                    : 'Concerning'}{' '}
                   profit margin.
                 </p>
                 <p>
-                  <strong>Operating Margin:</strong>{" "}
+                  <strong>Operating Margin:</strong>{' '}
                   {(
                     (incomeStatementData.operatingIncome /
                       incomeStatementData.revenue.totalRevenue) *
                     100
                   ).toFixed(1)}
-                  % -{" "}
+                  % -{' '}
                   {incomeStatementData.operatingIncome >= 0
-                    ? "Positive"
-                    : "Negative"}{" "}
+                    ? 'Positive'
+                    : 'Negative'}{' '}
                   operating performance.
                 </p>
                 <p>
-                  <strong>Net Profit Margin:</strong>{" "}
+                  <strong>Net Profit Margin:</strong>{' '}
                   {(
                     (incomeStatementData.netIncome /
                       incomeStatementData.revenue.totalRevenue) *
                     100
                   ).toFixed(1)}
-                  % -{" "}
+                  % -{' '}
                   {incomeStatementData.netIncome >= 0
-                    ? "Profitable"
-                    : "Loss-making"}{" "}
+                    ? 'Profitable'
+                    : 'Loss-making'}{' '}
                   business.
                 </p>
               </div>

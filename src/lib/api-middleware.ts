@@ -1,9 +1,9 @@
-import { NextRequest, NextResponse } from "next/server";
-import { auth } from "../../auth";
-import { hasRole, USER_ROLES } from "./auth/roles";
-import { AuditLogger } from "./utils/audit-logger";
-import { USER_STATUS } from "./constants";
-import type { UserRole } from "@/types/user";
+import { NextRequest, NextResponse } from 'next/server';
+import { auth } from '../../auth';
+import { hasRole, USER_ROLES } from './auth/roles';
+import { AuditLogger } from './utils/audit-logger';
+import { USER_STATUS } from './constants';
+import type { UserRole } from '@/types/user';
 // import { logger } from "./logger";
 
 // Enhanced authenticated request interface
@@ -42,7 +42,7 @@ export function withAuth<T extends unknown[]>(
       if (!session?.user) {
         // logger.warn(`[${requestId}] Auth middleware - No session found`);
         return NextResponse.json(
-          { error: "Authentication required" },
+          { error: 'Authentication required' },
           { status: 401 }
         );
       }
@@ -61,7 +61,7 @@ export function withAuth<T extends unknown[]>(
         //   session: session.user,
         // });
         return NextResponse.json(
-          { error: "Invalid session data" },
+          { error: 'Invalid session data' },
           { status: 401 }
         );
       }
@@ -73,7 +73,7 @@ export function withAuth<T extends unknown[]>(
         //   userEmail: session.user.email,
         // });
         return NextResponse.json(
-          { error: "Email verification required" },
+          { error: 'Email verification required' },
           { status: 403 }
         );
       }
@@ -85,7 +85,7 @@ export function withAuth<T extends unknown[]>(
         //   status: session.user.status,
         // });
         return NextResponse.json(
-          { error: "Account not approved" },
+          { error: 'Account not approved' },
           { status: 403 }
         );
       }
@@ -95,7 +95,7 @@ export function withAuth<T extends unknown[]>(
       authenticatedRequest.user = {
         id: session.user.id,
         email: session.user.email,
-        name: session.user.name || `${session.user.email.split("@")[0]}`,
+        name: session.user.name || `${session.user.email.split('@')[0]}`,
         role: session.user.role as UserRole,
         status: session.user.status,
         isEmailVerified: session.user.isEmailVerified,
@@ -134,7 +134,7 @@ export function withAuth<T extends unknown[]>(
 
       // Return 401 for auth-specific errors, not 500
       return NextResponse.json(
-        { error: "Authentication required" },
+        { error: 'Authentication required' },
         { status: 401 }
       );
     }
@@ -158,18 +158,18 @@ export function withPermission<T extends unknown[]>(
         if (!hasRole(request.user.role, allowedRoles)) {
           await AuditLogger.logAuthEvent(
             {
-              action: "LOGIN_FAILED",
+              action: 'LOGIN_FAILED',
               userId: parseInt(request.user.id),
               userEmail: request.user.email,
               success: false,
-              errorMessage: `Insufficient permissions. Required: ${allowedRoles.join(", ")}, Has: ${request.user.role}`,
+              errorMessage: `Insufficient permissions. Required: ${allowedRoles.join(', ')}, Has: ${request.user.role}`,
             },
             request
           );
 
           return NextResponse.json(
             {
-              error: "Insufficient permissions",
+              error: 'Insufficient permissions',
               required: allowedRoles,
               current: request.user.role,
             },
@@ -179,22 +179,22 @@ export function withPermission<T extends unknown[]>(
 
         return await handler(request, ...args);
       } catch (error) {
-        console.error("Permission middleware error:", error);
+        console.error('Permission middleware error:', error);
 
         await AuditLogger.logAuthEvent(
           {
-            action: "LOGIN_FAILED",
+            action: 'LOGIN_FAILED',
             userId: parseInt(request.user.id),
             userEmail: request.user.email,
             success: false,
             errorMessage:
-              error instanceof Error ? error.message : "Unknown error",
+              error instanceof Error ? error.message : 'Unknown error',
           },
           request
         );
 
         return NextResponse.json(
-          { error: "Authorization failed" },
+          { error: 'Authorization failed' },
           { status: 403 }
         );
       }

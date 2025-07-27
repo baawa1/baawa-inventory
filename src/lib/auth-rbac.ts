@@ -1,38 +1,38 @@
-import type { UserRole } from "@/types/user";
+import type { UserRole } from '@/types/user';
 
 // Role permissions mapping
 const rolePermissions: Record<UserRole, string[]> = {
   ADMIN: [
-    "users:read",
-    "users:write",
-    "users:delete",
-    "inventory:read",
-    "inventory:write",
-    "inventory:delete",
-    "reports:read",
-    "reports:write",
-    "settings:read",
-    "settings:write",
-    "audit:read",
-    "pos:read",
-    "pos:write",
+    'users:read',
+    'users:write',
+    'users:delete',
+    'inventory:read',
+    'inventory:write',
+    'inventory:delete',
+    'reports:read',
+    'reports:write',
+    'settings:read',
+    'settings:write',
+    'audit:read',
+    'pos:read',
+    'pos:write',
   ],
   MANAGER: [
-    "users:read",
-    "inventory:read",
-    "inventory:write",
-    "reports:read",
-    "reports:write",
-    "settings:read",
-    "pos:read",
-    "pos:write",
+    'users:read',
+    'inventory:read',
+    'inventory:write',
+    'reports:read',
+    'reports:write',
+    'settings:read',
+    'pos:read',
+    'pos:write',
   ],
   STAFF: [
-    "inventory:read",
-    "inventory:write",
-    "reports:read",
-    "pos:read",
-    "pos:write",
+    'inventory:read',
+    'inventory:write',
+    'reports:read',
+    'pos:read',
+    'pos:write',
   ],
 };
 
@@ -58,7 +58,7 @@ export function hasAnyPermission(
   role: UserRole,
   permissions: string[]
 ): boolean {
-  return permissions.some((permission) => hasPermission(role, permission));
+  return permissions.some(permission => hasPermission(role, permission));
 }
 
 /**
@@ -68,7 +68,7 @@ export function hasAllPermissions(
   role: UserRole,
   permissions: string[]
 ): boolean {
-  return permissions.every((permission) => hasPermission(role, permission));
+  return permissions.every(permission => hasPermission(role, permission));
 }
 
 /**

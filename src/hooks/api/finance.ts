@@ -1,16 +1,16 @@
-import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
-import { queryKeys } from "@/lib/query-client";
+import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
+import { queryKeys } from '@/lib/query-client';
 
 // Types
 export interface FinancialTransaction {
   id: number;
   transactionNumber: string;
-  type: "EXPENSE" | "INCOME";
+  type: 'EXPENSE' | 'INCOME';
   amount: number;
   description?: string;
   transactionDate: string;
   paymentMethod?: string;
-  status: "PENDING" | "COMPLETED" | "CANCELLED" | "APPROVED" | "REJECTED";
+  status: 'PENDING' | 'COMPLETED' | 'CANCELLED' | 'APPROVED' | 'REJECTED';
   createdAt: string;
   updatedAt: string;
   createdBy: number;
@@ -35,7 +35,7 @@ export interface FinancialTransactionFilters {
   paymentMethod: string;
   date: string;
   sortBy: string;
-  sortOrder: "asc" | "desc";
+  sortOrder: 'asc' | 'desc';
 }
 
 export interface FinancialTransactionPagination {
@@ -56,21 +56,21 @@ const fetchFinancialTransactions = async (
   pagination: Partial<FinancialTransactionPagination>
 ): Promise<FinancialTransactionListResponse> => {
   const searchParams = new URLSearchParams({
-    page: pagination.page?.toString() || "1",
-    limit: pagination.limit?.toString() || "10",
-    sortBy: filters.sortBy || "createdAt",
-    sortOrder: filters.sortOrder || "desc",
+    page: pagination.page?.toString() || '1',
+    limit: pagination.limit?.toString() || '10',
+    sortBy: filters.sortBy || 'createdAt',
+    sortOrder: filters.sortOrder || 'desc',
   });
 
-  if (filters.search) searchParams.set("search", filters.search);
-  if (filters.type && filters.type !== "all")
-    searchParams.set("type", filters.type);
-  if (filters.status && filters.status !== "all")
-    searchParams.set("status", filters.status);
-  if (filters.paymentMethod && filters.paymentMethod !== "all")
-    searchParams.set("paymentMethod", filters.paymentMethod);
-  if (filters.date && filters.date !== "all")
-    searchParams.set("date", filters.date);
+  if (filters.search) searchParams.set('search', filters.search);
+  if (filters.type && filters.type !== 'all')
+    searchParams.set('type', filters.type);
+  if (filters.status && filters.status !== 'all')
+    searchParams.set('status', filters.status);
+  if (filters.paymentMethod && filters.paymentMethod !== 'all')
+    searchParams.set('paymentMethod', filters.paymentMethod);
+  if (filters.date && filters.date !== 'all')
+    searchParams.set('date', filters.date);
 
   const response = await fetch(
     `/api/finance/transactions?${searchParams.toString()}`
@@ -123,9 +123,9 @@ export function useCreateFinancialTransaction() {
 
   return useMutation({
     mutationFn: async (data: any) => {
-      const response = await fetch("/api/finance/transactions", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
+      const response = await fetch('/api/finance/transactions', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify(data),
       });
       if (!response.ok) {
@@ -152,8 +152,8 @@ export function useUpdateFinancialTransaction() {
   return useMutation({
     mutationFn: async ({ id, data }: { id: number; data: any }) => {
       const response = await fetch(`/api/finance/transactions/${id}`, {
-        method: "PATCH",
-        headers: { "Content-Type": "application/json" },
+        method: 'PATCH',
+        headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify(data),
       });
       if (!response.ok) {
@@ -183,7 +183,7 @@ export function useDeleteFinancialTransaction() {
   return useMutation({
     mutationFn: async (id: number) => {
       const response = await fetch(`/api/finance/transactions/${id}`, {
-        method: "DELETE",
+        method: 'DELETE',
       });
       if (!response.ok) {
         throw new Error(

@@ -1,6 +1,6 @@
-import { NextResponse } from "next/server";
-import { ZodError } from "zod";
-import { logger } from "@/lib/logger";
+import { NextResponse } from 'next/server';
+import { ZodError } from 'zod';
+import { logger } from '@/lib/logger';
 
 export interface ApiError {
   message: string;
@@ -20,7 +20,7 @@ export class ApiException extends Error {
     details?: any
   ) {
     super(message);
-    this.name = "ApiException";
+    this.name = 'ApiException';
     this.statusCode = statusCode;
     this.code = code;
     this.details = details;
@@ -33,19 +33,19 @@ export class ApiException extends Error {
 function getErrorCode(statusCode: number): string {
   switch (statusCode) {
     case 400:
-      return "BAD_REQUEST";
+      return 'BAD_REQUEST';
     case 401:
-      return "UNAUTHORIZED";
+      return 'UNAUTHORIZED';
     case 403:
-      return "FORBIDDEN";
+      return 'FORBIDDEN';
     case 404:
-      return "NOT_FOUND";
+      return 'NOT_FOUND';
     case 409:
-      return "CONFLICT";
+      return 'CONFLICT';
     case 500:
-      return "INTERNAL_ERROR";
+      return 'INTERNAL_ERROR';
     default:
-      return "UNKNOWN_ERROR";
+      return 'UNKNOWN_ERROR';
   }
 }
 
@@ -60,10 +60,10 @@ export function handleApiError(
   if (error instanceof ZodError) {
     return NextResponse.json(
       {
-        error: "Validation failed",
-        code: "VALIDATION_ERROR",
-        details: error.errors.map((err) => ({
-          field: err.path.join("."),
+        error: 'Validation failed',
+        code: 'VALIDATION_ERROR',
+        details: error.errors.map(err => ({
+          field: err.path.join('.'),
           message: err.message,
           code: err.code,
         })),
@@ -96,39 +96,39 @@ export function handleApiError(
   }
 
   // Handle Prisma errors
-  if (error && typeof error === "object" && "code" in error) {
+  if (error && typeof error === 'object' && 'code' in error) {
     const prismaError = error as any;
 
     switch (prismaError.code) {
-      case "P2002":
+      case 'P2002':
         return NextResponse.json(
           {
-            error: "A record with this data already exists",
-            code: "DUPLICATE_RECORD",
+            error: 'A record with this data already exists',
+            code: 'DUPLICATE_RECORD',
             details: prismaError.meta,
           },
           { status: 409 }
         );
-      case "P2025":
+      case 'P2025':
         return NextResponse.json(
           {
-            error: "Record not found",
-            code: "NOT_FOUND",
+            error: 'Record not found',
+            code: 'NOT_FOUND',
             details: prismaError.meta,
           },
           { status: 404 }
         );
-      case "P2003":
+      case 'P2003':
         return NextResponse.json(
           {
-            error: "Foreign key constraint failed",
-            code: "CONSTRAINT_VIOLATION",
+            error: 'Foreign key constraint failed',
+            code: 'CONSTRAINT_VIOLATION',
             details: prismaError.meta,
           },
           { status: 400 }
         );
       default:
-        logger.error("Prisma database error", {
+        logger.error('Prisma database error', {
           code: prismaError.code,
           meta: prismaError.meta,
           target: prismaError.target,
@@ -136,8 +136,8 @@ export function handleApiError(
         });
         return NextResponse.json(
           {
-            error: "Database operation failed",
-            code: "DATABASE_ERROR",
+            error: 'Database operation failed',
+            code: 'DATABASE_ERROR',
           },
           { status: 500 }
         );
@@ -146,18 +146,18 @@ export function handleApiError(
 
   // Handle standard JavaScript errors
   if (error instanceof Error) {
-    logger.error("API endpoint error", {
+    logger.error('API endpoint error', {
       error: error.message,
       stack: error.stack,
     });
 
     // Don't expose internal error messages in production
-    const isDevelopment = process.env.NODE_ENV === "development";
+    const isDevelopment = process.env.NODE_ENV === 'development';
 
     return NextResponse.json(
       {
-        error: isDevelopment ? error.message : "Internal server error",
-        code: "INTERNAL_ERROR",
+        error: isDevelopment ? error.message : 'Internal server error',
+        code: 'INTERNAL_ERROR',
         ...(isDevelopment && { stack: error.stack }),
       },
       { status: 500 }
@@ -165,14 +165,14 @@ export function handleApiError(
   }
 
   // Handle unknown errors
-  logger.error("Unknown error occurred", {
+  logger.error('Unknown error occurred', {
     error: error instanceof Error ? error.message : String(error),
     stack: error instanceof Error ? error.stack : undefined,
   });
   return NextResponse.json(
     {
-      error: "An unexpected error occurred",
-      code: "UNKNOWN_ERROR",
+      error: 'An unexpected error occurred',
+      code: 'UNKNOWN_ERROR',
     },
     { status: 500 }
   );

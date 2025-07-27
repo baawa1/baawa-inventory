@@ -1,9 +1,9 @@
-import React from "react";
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import { Badge } from "@/components/ui/badge";
-import { formatCurrency } from "@/lib/utils";
-import { IconPackage, IconTag } from "@tabler/icons-react";
-import { Separator } from "@/components/ui/separator";
+import React from 'react';
+import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
+import { Badge } from '@/components/ui/badge';
+import { formatCurrency } from '@/lib/utils';
+import { IconPackage, IconTag } from '@tabler/icons-react';
+import { Separator } from '@/components/ui/separator';
 
 export interface CartItem {
   id: number;
@@ -48,17 +48,17 @@ export function OrderSummaryStep({
         </CardHeader>
         <CardContent>
           <div className="space-y-4">
-            {items.map((item) => (
+            {items.map(item => (
               <div
                 key={item.id}
-                className="flex items-center justify-between p-3 border rounded-lg"
+                className="flex items-center justify-between rounded-lg border p-3"
               >
                 <div className="flex-1">
                   <div className="font-medium">{item.name}</div>
-                  <div className="text-sm text-muted-foreground">
+                  <div className="text-muted-foreground text-sm">
                     SKU: {item.sku}
                   </div>
-                  <div className="flex items-center gap-2 mt-1">
+                  <div className="mt-1 flex items-center gap-2">
                     {item.category && (
                       <Badge variant="secondary" className="text-xs">
                         {item.category}

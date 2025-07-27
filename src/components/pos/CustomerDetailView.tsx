@@ -1,11 +1,11 @@
-"use client";
+'use client';
 
-import React, { useState } from "react";
-import { useQuery, useMutation } from "@tanstack/react-query";
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import { Button } from "@/components/ui/button";
-import { Badge } from "@/components/ui/badge";
-import { Separator } from "@/components/ui/separator";
+import React, { useState } from 'react';
+import { useQuery, useMutation } from '@tanstack/react-query';
+import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
+import { Button } from '@/components/ui/button';
+import { Badge } from '@/components/ui/badge';
+import { Separator } from '@/components/ui/separator';
 import {
   Table,
   TableBody,
@@ -13,14 +13,14 @@ import {
   TableHead,
   TableHeader,
   TableRow,
-} from "@/components/ui/table";
+} from '@/components/ui/table';
 import {
   Dialog,
   DialogContent,
   DialogHeader,
   DialogTitle,
   DialogTrigger,
-} from "@/components/ui/dialog";
+} from '@/components/ui/dialog';
 import {
   IconUser,
   IconMail,
@@ -30,10 +30,10 @@ import {
   IconShoppingBag,
   IconEye,
   IconPrinter,
-} from "@tabler/icons-react";
-import { formatCurrency } from "@/lib/utils";
-import { format } from "date-fns";
-import { toast } from "sonner";
+} from '@tabler/icons-react';
+import { formatCurrency } from '@/lib/utils';
+import { format } from 'date-fns';
+import { toast } from 'sonner';
 
 interface CustomerData {
   id: string;
@@ -79,7 +79,7 @@ async function fetchCustomerPurchases(
     `/api/pos/customers/${encodeURIComponent(customerEmail)}/purchases`
   );
   if (!response.ok) {
-    throw new Error("Failed to fetch customer purchases");
+    throw new Error('Failed to fetch customer purchases');
   }
   return response.json();
 }
@@ -87,10 +87,10 @@ async function fetchCustomerPurchases(
 // API function to reprint receipt
 async function reprintReceipt(transactionId: number): Promise<void> {
   const response = await fetch(`/api/pos/receipts/${transactionId}/reprint`, {
-    method: "POST",
+    method: 'POST',
   });
   if (!response.ok) {
-    throw new Error("Failed to reprint receipt");
+    throw new Error('Failed to reprint receipt');
   }
 }
 
@@ -108,17 +108,17 @@ export function CustomerDetailView({
     isLoading,
     error,
   } = useQuery({
-    queryKey: ["customer-purchases", customer.email],
+    queryKey: ['customer-purchases', customer.email],
     queryFn: () => fetchCustomerPurchases(customer.email),
   });
 
   const reprintMutation = useMutation({
     mutationFn: reprintReceipt,
     onSuccess: () => {
-      toast.success("Receipt sent to printer");
+      toast.success('Receipt sent to printer');
     },
     onError: () => {
-      toast.error("Failed to reprint receipt");
+      toast.error('Failed to reprint receipt');
     },
   });
 
@@ -132,7 +132,7 @@ export function CustomerDetailView({
   };
 
   if (error) {
-    toast.error("Failed to load customer purchases");
+    toast.error('Failed to load customer purchases');
   }
 
   return (
@@ -146,17 +146,17 @@ export function CustomerDetailView({
           </CardTitle>
         </CardHeader>
         <CardContent>
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+          <div className="grid grid-cols-1 gap-4 md:grid-cols-2">
             <div className="space-y-3">
               <div>
-                <label className="text-sm font-medium text-muted-foreground">
+                <label className="text-muted-foreground text-sm font-medium">
                   Name
                 </label>
                 <p className="font-medium">{customer.name}</p>
               </div>
               {customer.email && (
                 <div>
-                  <label className="text-sm font-medium text-muted-foreground">
+                  <label className="text-muted-foreground text-sm font-medium">
                     Email
                   </label>
                   <div className="flex items-center gap-2">
@@ -167,7 +167,7 @@ export function CustomerDetailView({
               )}
               {customer.phone && (
                 <div>
-                  <label className="text-sm font-medium text-muted-foreground">
+                  <label className="text-muted-foreground text-sm font-medium">
                     Phone
                   </label>
                   <div className="flex items-center gap-2">
@@ -179,7 +179,7 @@ export function CustomerDetailView({
             </div>
             <div className="space-y-3">
               <div>
-                <label className="text-sm font-medium text-muted-foreground">
+                <label className="text-muted-foreground text-sm font-medium">
                   Customer Rank
                 </label>
                 <div>
@@ -189,12 +189,12 @@ export function CustomerDetailView({
                 </div>
               </div>
               <div>
-                <label className="text-sm font-medium text-muted-foreground">
+                <label className="text-muted-foreground text-sm font-medium">
                   Last Purchase
                 </label>
                 <div className="flex items-center gap-2">
                   <IconCalendar className="h-4 w-4" />
-                  <p>{format(new Date(customer.lastPurchase), "PPP")}</p>
+                  <p>{format(new Date(customer.lastPurchase), 'PPP')}</p>
                 </div>
               </div>
             </div>
@@ -203,15 +203,15 @@ export function CustomerDetailView({
       </Card>
 
       {/* Customer Stats */}
-      <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+      <div className="grid grid-cols-1 gap-4 md:grid-cols-3">
         <Card>
           <CardContent className="p-6">
             <div className="flex items-center space-x-4">
-              <div className="p-2 bg-green-100 rounded-lg">
+              <div className="rounded-lg bg-green-100 p-2">
                 <IconCurrencyNaira className="h-6 w-6 text-green-600" />
               </div>
               <div>
-                <p className="text-sm font-medium text-muted-foreground">
+                <p className="text-muted-foreground text-sm font-medium">
                   Total Spent
                 </p>
                 <p className="text-2xl font-bold">
@@ -225,11 +225,11 @@ export function CustomerDetailView({
         <Card>
           <CardContent className="p-6">
             <div className="flex items-center space-x-4">
-              <div className="p-2 bg-blue-100 rounded-lg">
+              <div className="rounded-lg bg-blue-100 p-2">
                 <IconShoppingBag className="h-6 w-6 text-blue-600" />
               </div>
               <div>
-                <p className="text-sm font-medium text-muted-foreground">
+                <p className="text-muted-foreground text-sm font-medium">
                   Total Orders
                 </p>
                 <p className="text-2xl font-bold">{customer.totalOrders}</p>
@@ -241,11 +241,11 @@ export function CustomerDetailView({
         <Card>
           <CardContent className="p-6">
             <div className="flex items-center space-x-4">
-              <div className="p-2 bg-purple-100 rounded-lg">
+              <div className="rounded-lg bg-purple-100 p-2">
                 <IconCurrencyNaira className="h-6 w-6 text-purple-600" />
               </div>
               <div>
-                <p className="text-sm font-medium text-muted-foreground">
+                <p className="text-muted-foreground text-sm font-medium">
                   Average Order
                 </p>
                 <p className="text-2xl font-bold">
@@ -264,13 +264,13 @@ export function CustomerDetailView({
         </CardHeader>
         <CardContent>
           {isLoading ? (
-            <div className="text-center py-8">
-              <div className="animate-spin h-8 w-8 border-b-2 border-primary mx-auto"></div>
-              <p className="mt-2 text-muted-foreground">Loading orders...</p>
+            <div className="py-8 text-center">
+              <div className="border-primary mx-auto h-8 w-8 animate-spin border-b-2"></div>
+              <p className="text-muted-foreground mt-2">Loading orders...</p>
             </div>
           ) : purchases.length === 0 ? (
-            <div className="text-center py-8">
-              <IconShoppingBag className="h-12 w-12 text-muted-foreground mx-auto mb-4" />
+            <div className="py-8 text-center">
+              <IconShoppingBag className="text-muted-foreground mx-auto mb-4 h-12 w-12" />
               <p className="text-muted-foreground">No orders found</p>
             </div>
           ) : (
@@ -285,7 +285,7 @@ export function CustomerDetailView({
                 </TableRow>
               </TableHeader>
               <TableBody>
-                {purchases.map((purchase) => (
+                {purchases.map(purchase => (
                   <TableRow key={purchase.id}>
                     <TableCell className="font-mono">
                       {purchase.transactionNumber}
@@ -295,7 +295,7 @@ export function CustomerDetailView({
                         <IconCalendar className="h-3 w-3" />
                         {format(
                           new Date(purchase.createdAt),
-                          "MMM dd, yyyy HH:mm"
+                          'MMM dd, yyyy HH:mm'
                         )}
                       </div>
                     </TableCell>
@@ -306,12 +306,12 @@ export function CustomerDetailView({
                       {formatCurrency(purchase.totalAmount)}
                     </TableCell>
                     <TableCell className="text-right">
-                      <div className="flex gap-2 justify-end">
+                      <div className="flex justify-end gap-2">
                         <Dialog
                           open={
                             orderDetailOpen && selectedOrder?.id === purchase.id
                           }
-                          onOpenChange={(open) => {
+                          onOpenChange={open => {
                             setOrderDetailOpen(open);
                             if (!open) setSelectedOrder(null);
                           }}
@@ -325,7 +325,7 @@ export function CustomerDetailView({
                               <IconEye className="h-4 w-4" />
                             </Button>
                           </DialogTrigger>
-                          <DialogContent className="max-w-2xl max-h-[80vh] overflow-y-auto">
+                          <DialogContent className="max-h-[80vh] max-w-2xl overflow-y-auto">
                             <DialogHeader>
                               <DialogTitle>Order Details</DialogTitle>
                             </DialogHeader>
@@ -361,23 +361,23 @@ function OrderDetailContent({ order }: { order: CustomerPurchase }) {
     <div className="space-y-4">
       <div className="grid grid-cols-2 gap-4">
         <div>
-          <label className="text-sm font-medium text-muted-foreground">
+          <label className="text-muted-foreground text-sm font-medium">
             Transaction #
           </label>
           <p className="font-mono">{order.transactionNumber}</p>
         </div>
         <div>
-          <label className="text-sm font-medium text-muted-foreground">
+          <label className="text-muted-foreground text-sm font-medium">
             Date
           </label>
-          <p>{format(new Date(order.createdAt), "PPP p")}</p>
+          <p>{format(new Date(order.createdAt), 'PPP p')}</p>
         </div>
       </div>
 
       <Separator />
 
       <div>
-        <h3 className="font-medium mb-3">Items Purchased</h3>
+        <h3 className="mb-3 font-medium">Items Purchased</h3>
         <Table>
           <TableHeader>
             <TableRow>
@@ -409,7 +409,7 @@ function OrderDetailContent({ order }: { order: CustomerPurchase }) {
       <Separator />
 
       <div>
-        <div className="flex justify-between font-bold text-lg">
+        <div className="flex justify-between text-lg font-bold">
           <span>Total:</span>
           <span>{formatCurrency(order.totalAmount)}</span>
         </div>

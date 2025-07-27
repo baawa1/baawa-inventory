@@ -1,5 +1,5 @@
-import { useMutation, type UseMutationOptions } from "@tanstack/react-query";
-import { toast } from "sonner";
+import { useMutation, type UseMutationOptions } from '@tanstack/react-query';
+import { toast } from 'sonner';
 
 interface ToastMessages {
   loading?: string;
@@ -10,7 +10,7 @@ interface ToastMessages {
 interface UseToastMutationOptions<TData, TError, TVariables, TContext>
   extends Omit<
     UseMutationOptions<TData, TError, TVariables, TContext>,
-    "onSuccess" | "onError"
+    'onSuccess' | 'onError'
   > {
   messages?: ToastMessages;
   onSuccess?: (data: TData, variables: TVariables, context: TContext) => void;
@@ -39,14 +39,14 @@ export function useToastMutation<
   ...mutationOptions
 }: UseToastMutationOptions<TData, TError, TVariables, TContext>) {
   const {
-    loading = "Processing...",
-    success = "Operation completed successfully",
-    error = "An error occurred",
+    loading = 'Processing...',
+    success = 'Operation completed successfully',
+    error = 'An error occurred',
   } = messages;
 
   return useMutation({
     ...mutationOptions,
-    onMutate: (variables) => {
+    onMutate: variables => {
       if (showToast && loading) {
         toast.loading(loading);
       }
@@ -56,7 +56,7 @@ export function useToastMutation<
       if (showToast) {
         toast.dismiss();
         const successMessage =
-          typeof success === "function" ? success(data) : success;
+          typeof success === 'function' ? success(data) : success;
         toast.success(successMessage);
       }
       onSuccess?.(data, variables, context);
@@ -64,7 +64,7 @@ export function useToastMutation<
     onError: (err, variables, context) => {
       if (showToast) {
         toast.dismiss();
-        const errorMessage = typeof error === "function" ? error(err) : error;
+        const errorMessage = typeof error === 'function' ? error(err) : error;
         toast.error(errorMessage);
       }
       onError?.(err, variables, context);
@@ -77,7 +77,7 @@ export function useToastMutation<
  */
 export function useCreateMutation<TData, TVariables>(
   mutationFn: (variables: TVariables) => Promise<TData>,
-  entityName: string = "item"
+  entityName: string = 'item'
 ) {
   return useToastMutation({
     mutationFn,
@@ -91,7 +91,7 @@ export function useCreateMutation<TData, TVariables>(
 
 export function useUpdateMutation<TData, TVariables>(
   mutationFn: (variables: TVariables) => Promise<TData>,
-  entityName: string = "item"
+  entityName: string = 'item'
 ) {
   return useToastMutation({
     mutationFn,
@@ -105,7 +105,7 @@ export function useUpdateMutation<TData, TVariables>(
 
 export function useDeleteMutation<TData, TVariables>(
   mutationFn: (variables: TVariables) => Promise<TData>,
-  entityName: string = "item"
+  entityName: string = 'item'
 ) {
   return useToastMutation({
     mutationFn,

@@ -1,31 +1,31 @@
-"use client";
+'use client';
 
-import { useEffect } from "react";
-import { useRouter } from "next/navigation";
-import { zodResolver } from "@hookform/resolvers/zod";
-import { useForm } from "react-hook-form";
-import { PageHeader } from "@/components/ui/page-header";
-import { Button } from "@/components/ui/button";
+import { useEffect } from 'react';
+import { useRouter } from 'next/navigation';
+import { zodResolver } from '@hookform/resolvers/zod';
+import { useForm } from 'react-hook-form';
+import { PageHeader } from '@/components/ui/page-header';
+import { Button } from '@/components/ui/button';
 import {
   Card,
   CardContent,
   CardDescription,
   CardHeader,
   CardTitle,
-} from "@/components/ui/card";
-import { Form } from "@/components/ui/form";
-import { ArrowLeft, Loader2 } from "lucide-react";
-import { Alert, AlertDescription } from "@/components/ui/alert";
-import { createProductSchema } from "@/lib/validations/product";
+} from '@/components/ui/card';
+import { Form } from '@/components/ui/form';
+import { ArrowLeft, Loader2 } from 'lucide-react';
+import { Alert, AlertDescription } from '@/components/ui/alert';
+import { createProductSchema } from '@/lib/validations/product';
 
-import { BasicInfoSection } from "./add-product/BasicInfoSection";
-import { CategoryBrandSection } from "./add-product/CategoryBrandSection";
-import { PricingInventorySection } from "./add-product/PricingInventorySection";
-import { AdditionalInfoSection } from "./add-product/AdditionalInfoSection";
-import { FormActions } from "./add-product/FormActions";
-import { useFormDataQuery } from "./add-product/useFormDataQuery";
-import { useProductSubmit } from "./add-product/useProductSubmit";
-import { defaultFormValues } from "./add-product/types";
+import { BasicInfoSection } from './add-product/BasicInfoSection';
+import { CategoryBrandSection } from './add-product/CategoryBrandSection';
+import { PricingInventorySection } from './add-product/PricingInventorySection';
+import { AdditionalInfoSection } from './add-product/AdditionalInfoSection';
+import { FormActions } from './add-product/FormActions';
+import { useFormDataQuery } from './add-product/useFormDataQuery';
+import { useProductSubmit } from './add-product/useProductSubmit';
+import { defaultFormValues } from './add-product/types';
 
 export default function AddProductForm() {
   const router = useRouter();
@@ -49,18 +49,18 @@ export default function AddProductForm() {
 
   // Set first supplier as default when suppliers load
   useEffect(() => {
-    if (suppliers.length > 0 && !form.getValues("supplierId")) {
-      form.setValue("supplierId", suppliers[0].id);
+    if (suppliers.length > 0 && !form.getValues('supplierId')) {
+      form.setValue('supplierId', suppliers[0].id);
     }
   }, [suppliers, form]);
 
   if (loading) {
     return (
-      <div className="max-w-4xl mx-auto p-6 space-y-6">
+      <div className="mx-auto max-w-4xl space-y-6 p-6">
         <div className="mb-6">
           <Button
             variant="outline"
-            onClick={() => router.push("/inventory/products")}
+            onClick={() => router.push('/inventory/products')}
             className="mb-4 px-4 lg:px-6"
           >
             <ArrowLeft className="mr-2 h-4 w-4" />
@@ -75,7 +75,7 @@ export default function AddProductForm() {
         <Card>
           <CardContent className="p-6">
             <div className="flex items-center justify-center py-12">
-              <Loader2 className="h-8 w-8 animate-spin mr-3" />
+              <Loader2 className="mr-3 h-8 w-8 animate-spin" />
               <span>Loading form...</span>
             </div>
           </CardContent>
@@ -85,11 +85,11 @@ export default function AddProductForm() {
   }
 
   return (
-    <div className="max-w-4xl mx-auto p-6 space-y-6">
+    <div className="mx-auto max-w-4xl space-y-6 p-6">
       <div className="mb-6">
         <Button
           variant="ghost"
-          onClick={() => router.push("/inventory/products")}
+          onClick={() => router.push('/inventory/products')}
           className="mb-4 px-4 lg:px-6"
         >
           <ArrowLeft className="mr-2 h-4 w-4" />
@@ -134,7 +134,7 @@ export default function AddProductForm() {
 
               <FormActions
                 isSubmitting={isSubmitting}
-                onCancelAction={() => router.push("/inventory/products")}
+                onCancelAction={() => router.push('/inventory/products')}
               />
             </form>
           </Form>

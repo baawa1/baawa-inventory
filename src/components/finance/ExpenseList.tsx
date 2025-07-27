@@ -1,44 +1,44 @@
-"use client";
+'use client';
 
-import React, { useState, useMemo, useCallback } from "react";
-import { useQuery } from "@tanstack/react-query";
-import { Button } from "@/components/ui/button";
-import { Badge } from "@/components/ui/badge";
+import React, { useState, useMemo, useCallback } from 'react';
+import { useQuery } from '@tanstack/react-query';
+import { Button } from '@/components/ui/button';
+import { Badge } from '@/components/ui/badge';
 import {
   Dialog,
   DialogContent,
   DialogHeader,
   DialogTitle,
   DialogTrigger,
-} from "@/components/ui/dialog";
-import { Separator } from "@/components/ui/separator";
+} from '@/components/ui/dialog';
+import { Separator } from '@/components/ui/separator';
 import {
   IconEye,
   IconRefresh,
   IconTrendingDown,
   IconPlus,
   IconEdit,
-} from "@tabler/icons-react";
-import { format } from "date-fns";
-import { toast } from "sonner";
-import { formatCurrency } from "@/lib/utils";
-import { useDebounce } from "@/hooks/useDebounce";
-import { DashboardTableLayout } from "@/components/layouts/DashboardTableLayout";
-import type { DashboardTableColumn } from "@/components/layouts/DashboardColumnCustomizer";
-import type { FilterConfig } from "@/components/layouts/DashboardFiltersBar";
-import { AppUser } from "@/types/user";
-import Link from "next/link";
-import { canReadFinance, canWriteFinance } from "@/lib/auth/roles";
+} from '@tabler/icons-react';
+import { format } from 'date-fns';
+import { toast } from 'sonner';
+import { formatCurrency } from '@/lib/utils';
+import { useDebounce } from '@/hooks/useDebounce';
+import { DashboardTableLayout } from '@/components/layouts/DashboardTableLayout';
+import type { DashboardTableColumn } from '@/components/layouts/DashboardColumnCustomizer';
+import type { FilterConfig } from '@/components/layouts/DashboardFiltersBar';
+import { AppUser } from '@/types/user';
+import Link from 'next/link';
+import { canReadFinance, canWriteFinance } from '@/lib/auth/roles';
 
 interface FinancialTransaction {
   id: number;
   transactionNumber: string;
-  type: "INCOME" | "EXPENSE";
+  type: 'INCOME' | 'EXPENSE';
   amount: number;
   description: string | null;
   transactionDate: Date;
   paymentMethod: string | null;
-  status: "PENDING" | "COMPLETED" | "CANCELLED" | "APPROVED" | "REJECTED";
+  status: 'PENDING' | 'COMPLETED' | 'CANCELLED' | 'APPROVED' | 'REJECTED';
   approvedBy: number | null;
   approvedAt: Date | null;
   createdBy: number;
@@ -86,10 +86,10 @@ export function ExpenseList({ user }: ExpenseListProps) {
 
   // Filters state
   const [filters, setFilters] = useState({
-    search: "",
-    status: "",
-    payment: "",
-    date: "",
+    search: '',
+    status: '',
+    payment: '',
+    date: '',
   });
 
   // Debounce search term
@@ -103,33 +103,33 @@ export function ExpenseList({ user }: ExpenseListProps) {
     refetch,
   } = useQuery({
     queryKey: [
-      "financial-transactions",
+      'financial-transactions',
       {
-        type: "EXPENSE",
+        type: 'EXPENSE',
         search: debouncedSearchTerm,
-        status: filters.status !== "all" ? filters.status : undefined,
-        paymentMethod: filters.payment !== "all" ? filters.payment : undefined,
+        status: filters.status !== 'all' ? filters.status : undefined,
+        paymentMethod: filters.payment !== 'all' ? filters.payment : undefined,
         page: pagination.page,
         limit: pagination.limit,
-        sortBy: "transactionDate",
-        sortOrder: "desc",
+        sortBy: 'transactionDate',
+        sortOrder: 'desc',
       },
     ],
     queryFn: async () => {
       const params = new URLSearchParams();
-      params.append("type", "EXPENSE");
-      if (debouncedSearchTerm) params.append("search", debouncedSearchTerm);
-      if (filters.status && filters.status !== "all")
-        params.append("status", filters.status);
-      if (filters.payment && filters.payment !== "all")
-        params.append("paymentMethod", filters.payment);
-      params.append("page", String(pagination.page));
-      params.append("limit", String(pagination.limit));
-      params.append("sortBy", "transactionDate");
-      params.append("sortOrder", "desc");
+      params.append('type', 'EXPENSE');
+      if (debouncedSearchTerm) params.append('search', debouncedSearchTerm);
+      if (filters.status && filters.status !== 'all')
+        params.append('status', filters.status);
+      if (filters.payment && filters.payment !== 'all')
+        params.append('paymentMethod', filters.payment);
+      params.append('page', String(pagination.page));
+      params.append('limit', String(pagination.limit));
+      params.append('sortBy', 'transactionDate');
+      params.append('sortOrder', 'desc');
 
       const response = await fetch(`/api/finance/transactions?${params}`);
-      if (!response.ok) throw new Error("Failed to fetch expense transactions");
+      if (!response.ok) throw new Error('Failed to fetch expense transactions');
       return response.json();
     },
   });
@@ -147,57 +147,57 @@ export function ExpenseList({ user }: ExpenseListProps) {
   };
 
   if (error) {
-    toast.error("Failed to load expense transactions");
+    toast.error('Failed to load expense transactions');
   }
 
   // Column configuration
   const columns: DashboardTableColumn[] = useMemo(
     () => [
       {
-        key: "transactionNumber",
-        label: "Transaction #",
+        key: 'transactionNumber',
+        label: 'Transaction #',
         defaultVisible: true,
         required: true,
       },
       {
-        key: "description",
-        label: "Description",
+        key: 'description',
+        label: 'Description',
         sortable: true,
         defaultVisible: true,
         required: true,
       },
       {
-        key: "expenseType",
-        label: "Expense Type",
+        key: 'expenseType',
+        label: 'Expense Type',
         defaultVisible: true,
       },
       {
-        key: "vendorName",
-        label: "Vendor",
+        key: 'vendorName',
+        label: 'Vendor',
         defaultVisible: true,
       },
       {
-        key: "amount",
-        label: "Amount",
+        key: 'amount',
+        label: 'Amount',
         sortable: true,
         defaultVisible: true,
         required: true,
       },
       {
-        key: "transactionDate",
-        label: "Date",
+        key: 'transactionDate',
+        label: 'Date',
         sortable: true,
         defaultVisible: true,
         required: true,
       },
       {
-        key: "paymentMethod",
-        label: "Payment Method",
+        key: 'paymentMethod',
+        label: 'Payment Method',
         defaultVisible: true,
       },
       {
-        key: "status",
-        label: "Status",
+        key: 'status',
+        label: 'Status',
         defaultVisible: true,
       },
     ],
@@ -206,7 +206,7 @@ export function ExpenseList({ user }: ExpenseListProps) {
 
   // Initialize visible columns
   const defaultVisibleColumns = useMemo(
-    () => columns.filter((col) => col.defaultVisible).map((col) => col.key),
+    () => columns.filter(col => col.defaultVisible).map(col => col.key),
     [columns]
   );
 
@@ -218,44 +218,44 @@ export function ExpenseList({ user }: ExpenseListProps) {
   const filterConfigs: FilterConfig[] = useMemo(
     () => [
       {
-        key: "status",
-        label: "Status",
-        type: "select",
+        key: 'status',
+        label: 'Status',
+        type: 'select',
         options: [
-          { value: "all", label: "All Status" },
-          { value: "PENDING", label: "Pending" },
-          { value: "COMPLETED", label: "Completed" },
-          { value: "APPROVED", label: "Approved" },
-          { value: "REJECTED", label: "Rejected" },
-          { value: "CANCELLED", label: "Cancelled" },
+          { value: 'all', label: 'All Status' },
+          { value: 'PENDING', label: 'Pending' },
+          { value: 'COMPLETED', label: 'Completed' },
+          { value: 'APPROVED', label: 'Approved' },
+          { value: 'REJECTED', label: 'Rejected' },
+          { value: 'CANCELLED', label: 'Cancelled' },
         ],
-        placeholder: "All Status",
+        placeholder: 'All Status',
       },
       {
-        key: "payment",
-        label: "Payment Method",
-        type: "select",
+        key: 'payment',
+        label: 'Payment Method',
+        type: 'select',
         options: [
-          { value: "all", label: "All Methods" },
-          { value: "CASH", label: "Cash" },
-          { value: "BANK_TRANSFER", label: "Bank Transfer" },
-          { value: "POS", label: "POS" },
-          { value: "MOBILE_MONEY", label: "Mobile Money" },
+          { value: 'all', label: 'All Methods' },
+          { value: 'CASH', label: 'Cash' },
+          { value: 'BANK_TRANSFER', label: 'Bank Transfer' },
+          { value: 'POS', label: 'POS' },
+          { value: 'MOBILE_MONEY', label: 'Mobile Money' },
         ],
-        placeholder: "All Methods",
+        placeholder: 'All Methods',
       },
       {
-        key: "date",
-        label: "Date Range",
-        type: "select",
+        key: 'date',
+        label: 'Date Range',
+        type: 'select',
         options: [
-          { value: "all", label: "All Dates" },
-          { value: "today", label: "Today" },
-          { value: "yesterday", label: "Yesterday" },
-          { value: "week", label: "This Week" },
-          { value: "month", label: "This Month" },
+          { value: 'all', label: 'All Dates' },
+          { value: 'today', label: 'Today' },
+          { value: 'yesterday', label: 'Yesterday' },
+          { value: 'week', label: 'This Week' },
+          { value: 'month', label: 'This Month' },
         ],
-        placeholder: "All Dates",
+        placeholder: 'All Dates',
       },
     ],
     []
@@ -263,44 +263,44 @@ export function ExpenseList({ user }: ExpenseListProps) {
 
   // Handle filter changes
   const handleFilterChange = useCallback((key: string, value: any) => {
-    setFilters((prev) => {
+    setFilters(prev => {
       if (prev[key as keyof typeof prev] === value) return prev;
       return { ...prev, [key]: value };
     });
-    setPagination((prev) => ({ ...prev, page: 1 }));
+    setPagination(prev => ({ ...prev, page: 1 }));
   }, []);
 
   // Clear all filters
   const handleResetFilters = useCallback(() => {
     setFilters({
-      search: "",
-      status: "",
-      payment: "",
-      date: "",
+      search: '',
+      status: '',
+      payment: '',
+      date: '',
     });
-    setPagination((prev) => ({ ...prev, page: 1 }));
+    setPagination(prev => ({ ...prev, page: 1 }));
   }, []);
 
   const handlePageChange = useCallback((newPage: number) => {
-    setPagination((prev) => ({ ...prev, page: newPage }));
+    setPagination(prev => ({ ...prev, page: newPage }));
   }, []);
 
   const handlePageSizeChange = useCallback((newSize: number) => {
-    setPagination((prev) => ({ ...prev, limit: newSize, page: 1 }));
+    setPagination(prev => ({ ...prev, limit: newSize, page: 1 }));
   }, []);
 
   // Get status badge
   const getStatusBadge = useCallback((status: string) => {
     switch (status) {
-      case "COMPLETED":
+      case 'COMPLETED':
         return <Badge className="bg-green-100 text-green-700">Completed</Badge>;
-      case "PENDING":
+      case 'PENDING':
         return <Badge className="bg-yellow-100 text-yellow-700">Pending</Badge>;
-      case "APPROVED":
+      case 'APPROVED':
         return <Badge className="bg-blue-100 text-blue-700">Approved</Badge>;
-      case "REJECTED":
+      case 'REJECTED':
         return <Badge variant="destructive">Rejected</Badge>;
-      case "CANCELLED":
+      case 'CANCELLED':
         return <Badge variant="destructive">Cancelled</Badge>;
       default:
         return <Badge variant="secondary">{status}</Badge>;
@@ -310,13 +310,13 @@ export function ExpenseList({ user }: ExpenseListProps) {
   // Get payment method icon
   const getPaymentIcon = useCallback((method: string) => {
     switch (method?.toLowerCase()) {
-      case "cash":
+      case 'cash':
         return <span className="text-green-600">💵</span>;
-      case "bank_transfer":
+      case 'bank_transfer':
         return <span className="text-blue-600">🏦</span>;
-      case "pos":
+      case 'pos':
         return <span className="text-purple-600">💳</span>;
-      case "mobile_money":
+      case 'mobile_money':
         return <span className="text-orange-600">📱</span>;
       default:
         return <span className="text-gray-600">💰</span>;
@@ -327,58 +327,58 @@ export function ExpenseList({ user }: ExpenseListProps) {
   const renderCell = useCallback(
     (transaction: FinancialTransaction, columnKey: string) => {
       switch (columnKey) {
-        case "transactionNumber":
+        case 'transactionNumber':
           return (
             <span className="font-mono text-sm">
               {transaction.transactionNumber}
             </span>
           );
-        case "description":
+        case 'description':
           return (
             <div>
               <div className="font-medium">{transaction.description}</div>
               {transaction.expenseDetails?.vendorName && (
-                <div className="text-sm text-muted-foreground">
+                <div className="text-muted-foreground text-sm">
                   Vendor: {transaction.expenseDetails.vendorName}
                 </div>
               )}
             </div>
           );
-        case "expenseType":
+        case 'expenseType':
           return (
             <span className="capitalize">
-              {transaction.expenseDetails?.expenseType || "N/A"}
+              {transaction.expenseDetails?.expenseType || 'N/A'}
             </span>
           );
-        case "vendorName":
-          return <span>{transaction.expenseDetails?.vendorName || "N/A"}</span>;
-        case "amount":
+        case 'vendorName':
+          return <span>{transaction.expenseDetails?.vendorName || 'N/A'}</span>;
+        case 'amount':
           return (
             <span className="font-semibold text-red-600">
               -{formatCurrency(transaction.amount)}
             </span>
           );
-        case "transactionDate":
+        case 'transactionDate':
           return (
             <div>
               <div className="font-medium">
-                {format(new Date(transaction.transactionDate), "MMM dd, yyyy")}
+                {format(new Date(transaction.transactionDate), 'MMM dd, yyyy')}
               </div>
-              <div className="text-sm text-muted-foreground">
-                {format(new Date(transaction.transactionDate), "HH:mm")}
+              <div className="text-muted-foreground text-sm">
+                {format(new Date(transaction.transactionDate), 'HH:mm')}
               </div>
             </div>
           );
-        case "paymentMethod":
+        case 'paymentMethod':
           return (
             <div className="flex items-center gap-2">
-              {getPaymentIcon(transaction.paymentMethod || "")}
+              {getPaymentIcon(transaction.paymentMethod || '')}
               <span className="capitalize">
-                {transaction.paymentMethod?.replace("_", " ") || "N/A"}
+                {transaction.paymentMethod?.replace('_', ' ') || 'N/A'}
               </span>
             </div>
           );
-        case "status":
+        case 'status':
           return getStatusBadge(transaction.status);
         default:
           return null;
@@ -409,7 +409,7 @@ export function ExpenseList({ user }: ExpenseListProps) {
                 <IconEye className="h-4 w-4" />
               </Button>
             </DialogTrigger>
-            <DialogContent className="max-w-2xl max-h-[80vh] overflow-y-auto">
+            <DialogContent className="max-h-[80vh] max-w-2xl overflow-y-auto">
               <DialogHeader>
                 <DialogTitle>
                   Expense Details - {transaction.transactionNumber}
@@ -444,13 +444,13 @@ export function ExpenseList({ user }: ExpenseListProps) {
         actions={
           <div className="flex gap-2">
             <Button onClick={() => refetch()} variant="outline" size="sm">
-              <IconRefresh className="h-4 w-4 mr-2" />
+              <IconRefresh className="mr-2 h-4 w-4" />
               Refresh
             </Button>
             {canWrite && (
               <Button asChild>
                 <Link href="/finance/expenses/new">
-                  <IconPlus className="h-4 w-4 mr-2" />
+                  <IconPlus className="mr-2 h-4 w-4" />
                   Add Expense
                 </Link>
               </Button>
@@ -460,7 +460,7 @@ export function ExpenseList({ user }: ExpenseListProps) {
         // Filters
         searchPlaceholder="Search expense transactions..."
         searchValue={filters.search}
-        onSearchChange={(value) => handleFilterChange("search", value)}
+        onSearchChange={value => handleFilterChange('search', value)}
         isSearching={isSearching}
         filters={filterConfigs}
         filterValues={filters}
@@ -495,13 +495,13 @@ export function ExpenseList({ user }: ExpenseListProps) {
           filters.status ||
           filters.payment ||
           filters.date
-            ? "No expense transactions found matching your filters."
-            : "No expense transactions found."
+            ? 'No expense transactions found matching your filters.'
+            : 'No expense transactions found.'
         }
         emptyStateAction={
           <Button asChild>
             <Link href="/finance/expenses/new">
-              <IconPlus className="h-4 w-4 mr-2" />
+              <IconPlus className="mr-2 h-4 w-4" />
               Add First Expense
             </Link>
           </Button>
@@ -521,7 +521,7 @@ function TransactionDetailsContent({
       {/* Basic Info */}
       <div className="grid grid-cols-2 gap-4">
         <div>
-          <h4 className="text-sm font-medium mb-2">Transaction Details</h4>
+          <h4 className="mb-2 text-sm font-medium">Transaction Details</h4>
           <div className="space-y-2 text-sm">
             <div className="flex justify-between">
               <span className="text-muted-foreground">Transaction #:</span>
@@ -536,7 +536,7 @@ function TransactionDetailsContent({
             <div className="flex justify-between">
               <span className="text-muted-foreground">Date:</span>
               <span>
-                {format(new Date(transaction.transactionDate), "PPP")}
+                {format(new Date(transaction.transactionDate), 'PPP')}
               </span>
             </div>
             <div className="flex justify-between">
@@ -548,12 +548,12 @@ function TransactionDetailsContent({
           </div>
         </div>
         <div>
-          <h4 className="text-sm font-medium mb-2">Payment Info</h4>
+          <h4 className="mb-2 text-sm font-medium">Payment Info</h4>
           <div className="space-y-2 text-sm">
             <div className="flex justify-between">
               <span className="text-muted-foreground">Method:</span>
               <span className="capitalize">
-                {transaction.paymentMethod?.replace("_", " ") || "N/A"}
+                {transaction.paymentMethod?.replace('_', ' ') || 'N/A'}
               </span>
             </div>
           </div>
@@ -565,7 +565,7 @@ function TransactionDetailsContent({
       {/* Expense Details */}
       {transaction.expenseDetails && (
         <div>
-          <h4 className="text-sm font-medium mb-3">Expense Details</h4>
+          <h4 className="mb-3 text-sm font-medium">Expense Details</h4>
           <div className="space-y-2 text-sm">
             <div className="flex justify-between">
               <span className="text-muted-foreground">Expense Type:</span>
@@ -587,9 +587,9 @@ function TransactionDetailsContent({
 
       {/* Created By */}
       <div>
-        <h4 className="text-sm font-medium mb-2">Created By</h4>
-        <div className="text-sm text-muted-foreground">
-          {transaction.createdByUser.firstName}{" "}
+        <h4 className="mb-2 text-sm font-medium">Created By</h4>
+        <div className="text-muted-foreground text-sm">
+          {transaction.createdByUser.firstName}{' '}
           {transaction.createdByUser.lastName}
           <br />
           {transaction.createdByUser.email}
@@ -601,16 +601,16 @@ function TransactionDetailsContent({
         <>
           <Separator />
           <div>
-            <h4 className="text-sm font-medium mb-2">Approved By</h4>
-            <div className="text-sm text-muted-foreground">
-              {transaction.approvedByUser.firstName}{" "}
+            <h4 className="mb-2 text-sm font-medium">Approved By</h4>
+            <div className="text-muted-foreground text-sm">
+              {transaction.approvedByUser.firstName}{' '}
               {transaction.approvedByUser.lastName}
               <br />
               {transaction.approvedByUser.email}
               {transaction.approvedAt && (
                 <>
                   <br />
-                  {format(new Date(transaction.approvedAt), "PPP")}
+                  {format(new Date(transaction.approvedAt), 'PPP')}
                 </>
               )}
             </div>

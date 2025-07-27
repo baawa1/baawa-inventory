@@ -2,13 +2,13 @@ import {
   withAuth,
   withPermission,
   AuthenticatedRequest,
-} from "@/lib/api-middleware";
-import { handleApiError } from "@/lib/api-error-handler-new";
-import { createApiResponse } from "@/lib/api-response";
-import { prisma } from "@/lib/db";
-import { z } from "zod";
-import { USER_ROLES } from "@/lib/auth/roles";
-import { Prisma } from "@prisma/client";
+} from '@/lib/api-middleware';
+import { handleApiError } from '@/lib/api-error-handler-new';
+import { createApiResponse } from '@/lib/api-response';
+import { prisma } from '@/lib/db';
+import { z } from 'zod';
+import { USER_ROLES } from '@/lib/auth/roles';
+import { Prisma } from '@prisma/client';
 
 // Validation schema for category creation
 const CategoryCreateSchema = z.object({
@@ -31,25 +31,25 @@ const _CategoryUpdateSchema = z.object({
 export const GET = withAuth(async (request: AuthenticatedRequest) => {
   try {
     const { searchParams } = new URL(request.url);
-    const isActive = searchParams.get("isActive");
-    const search = searchParams.get("search") || "";
-    const page = parseInt(searchParams.get("page") || "1");
-    const limit = parseInt(searchParams.get("limit") || "10");
-    const sortBy = searchParams.get("sortBy") || "name";
-    const sortOrder = searchParams.get("sortOrder") || "asc";
-    const includeChildren = searchParams.get("includeChildren") === "true";
+    const isActive = searchParams.get('isActive');
+    const search = searchParams.get('search') || '';
+    const page = parseInt(searchParams.get('page') || '1');
+    const limit = parseInt(searchParams.get('limit') || '10');
+    const sortBy = searchParams.get('sortBy') || 'name';
+    const sortOrder = searchParams.get('sortOrder') || 'asc';
+    const includeChildren = searchParams.get('includeChildren') === 'true';
 
     // Build where clause
     const where: Prisma.CategoryWhereInput = {};
 
     if (isActive !== null) {
-      where.isActive = isActive === "true";
+      where.isActive = isActive === 'true';
     }
 
     if (search) {
       where.OR = [
-        { name: { contains: search, mode: "insensitive" } },
-        { description: { contains: search, mode: "insensitive" } },
+        { name: { contains: search, mode: 'insensitive' } },
+        { description: { contains: search, mode: 'insensitive' } },
       ];
     }
 
@@ -58,14 +58,14 @@ export const GET = withAuth(async (request: AuthenticatedRequest) => {
 
     // Build order by clause
     const orderBy: Prisma.CategoryOrderByWithRelationInput = {};
-    if (sortBy === "name") {
-      orderBy.name = sortOrder as "asc" | "desc";
-    } else if (sortBy === "createdAt") {
-      orderBy.createdAt = sortOrder as "asc" | "desc";
-    } else if (sortBy === "updatedAt") {
-      orderBy.updatedAt = sortOrder as "asc" | "desc";
+    if (sortBy === 'name') {
+      orderBy.name = sortOrder as 'asc' | 'desc';
+    } else if (sortBy === 'createdAt') {
+      orderBy.createdAt = sortOrder as 'asc' | 'desc';
+    } else if (sortBy === 'updatedAt') {
+      orderBy.updatedAt = sortOrder as 'asc' | 'desc';
     } else {
-      orderBy.name = "asc";
+      orderBy.name = 'asc';
     }
 
     // Get categories with pagination
@@ -103,7 +103,7 @@ export const GET = withAuth(async (request: AuthenticatedRequest) => {
     ]);
 
     // Transform categories to include product count
-    const transformedCategories = categories.map((category) => ({
+    const transformedCategories = categories.map(category => ({
       id: category.id,
       name: category.name,
       description: category.description,
@@ -150,7 +150,7 @@ export const POST = withPermission(
         });
 
         if (!parentExists) {
-          return createApiResponse.notFound("Parent category");
+          return createApiResponse.notFound('Parent category');
         }
       }
 
@@ -159,14 +159,14 @@ export const POST = withPermission(
         where: {
           name: {
             equals: validatedData.name,
-            mode: "insensitive",
+            mode: 'insensitive',
           },
         },
       });
 
       if (existingCategory) {
         return createApiResponse.conflict(
-          "Category with this name already exists"
+          'Category with this name already exists'
         );
       }
 
@@ -210,7 +210,7 @@ export const POST = withPermission(
 
       return createApiResponse.success(
         transformedCategory,
-        "Category created successfully",
+        'Category created successfully',
         201
       );
     } catch (error) {

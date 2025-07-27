@@ -3,8 +3,8 @@
  * Provides hooks for stock reconciliations and related operations
  */
 
-import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
-import { queryKeys } from "@/lib/query-client";
+import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
+import { queryKeys } from '@/lib/query-client';
 
 // Types
 export interface User {
@@ -18,7 +18,7 @@ export interface StockReconciliation {
   id: number;
   title: string;
   description?: string;
-  status: "DRAFT" | "PENDING" | "APPROVED" | "REJECTED";
+  status: 'DRAFT' | 'PENDING' | 'APPROVED' | 'REJECTED';
   notes?: string;
   createdAt: string;
   updatedAt: string;
@@ -49,7 +49,7 @@ export interface StockReconciliationFilters {
   search?: string;
   status?: string;
   sortBy?: string;
-  sortOrder?: "asc" | "desc";
+  sortOrder?: 'asc' | 'desc';
   page?: number;
   limit?: number;
 }
@@ -59,14 +59,14 @@ const fetchStockReconciliations = async (
   filters: Partial<StockReconciliationFilters> = {}
 ) => {
   const searchParams = new URLSearchParams({
-    page: filters.page?.toString() || "1",
-    limit: filters.limit?.toString() || "10",
-    sortBy: filters.sortBy || "createdAt",
-    sortOrder: filters.sortOrder || "desc",
+    page: filters.page?.toString() || '1',
+    limit: filters.limit?.toString() || '10',
+    sortBy: filters.sortBy || 'createdAt',
+    sortOrder: filters.sortOrder || 'desc',
   });
 
-  if (filters.search) searchParams.set("search", filters.search);
-  if (filters.status) searchParams.set("status", filters.status);
+  if (filters.search) searchParams.set('search', filters.search);
+  if (filters.status) searchParams.set('status', filters.status);
 
   const response = await fetch(
     `/api/stock-reconciliations?${searchParams.toString()}`
@@ -92,9 +92,9 @@ const fetchStockReconciliation = async (id: string) => {
 const createStockReconciliation = async (
   data: Partial<StockReconciliation>
 ) => {
-  const response = await fetch("/api/stock-reconciliations", {
-    method: "POST",
-    headers: { "Content-Type": "application/json" },
+  const response = await fetch('/api/stock-reconciliations', {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
     body: JSON.stringify(data),
   });
   if (!response.ok) {
@@ -110,8 +110,8 @@ const updateStockReconciliation = async ({
   ...data
 }: { id: string } & Partial<StockReconciliation>) => {
   const response = await fetch(`/api/stock-reconciliations/${id}`, {
-    method: "PUT",
-    headers: { "Content-Type": "application/json" },
+    method: 'PUT',
+    headers: { 'Content-Type': 'application/json' },
     body: JSON.stringify(data),
   });
   if (!response.ok) {
@@ -124,7 +124,7 @@ const updateStockReconciliation = async ({
 
 const submitStockReconciliation = async (id: number) => {
   const response = await fetch(`/api/stock-reconciliations/${id}/submit`, {
-    method: "POST",
+    method: 'POST',
   });
   if (!response.ok) {
     throw new Error(
@@ -141,8 +141,8 @@ const approveStockReconciliation = async (params: {
   const response = await fetch(
     `/api/stock-reconciliations/${params.id}/approve`,
     {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({ notes: params.notes }),
     }
   );
@@ -161,8 +161,8 @@ const rejectStockReconciliation = async (params: {
   const response = await fetch(
     `/api/stock-reconciliations/${params.id}/reject`,
     {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({ reason: params.reason }),
     }
   );
@@ -176,7 +176,7 @@ const rejectStockReconciliation = async (params: {
 
 const deleteStockReconciliation = async (id: string) => {
   const response = await fetch(`/api/stock-reconciliations/${id}`, {
-    method: "DELETE",
+    method: 'DELETE',
   });
   if (!response.ok) {
     throw new Error(

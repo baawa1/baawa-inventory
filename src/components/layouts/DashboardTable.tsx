@@ -1,11 +1,11 @@
-import React from "react";
+import React from 'react';
 import {
   DashboardCard,
   CardHeader,
   CardTitle,
   CardDescription,
   CardContent,
-} from "@/components/dashboard/DashboardCard";
+} from '@/components/dashboard/DashboardCard';
 import {
   Table,
   TableHeader,
@@ -13,7 +13,7 @@ import {
   TableHead,
   TableBody,
   TableCell,
-} from "@/components/ui/table";
+} from '@/components/ui/table';
 import {
   Pagination,
   PaginationContent,
@@ -22,21 +22,21 @@ import {
   PaginationNext,
   PaginationLink,
   PaginationEllipsis,
-} from "@/components/ui/pagination";
+} from '@/components/ui/pagination';
 import {
   Select,
   SelectTrigger,
   SelectValue,
   SelectContent,
   SelectItem,
-} from "@/components/ui/select";
-import { Button } from "@/components/ui/button";
+} from '@/components/ui/select';
+import { Button } from '@/components/ui/button';
 import {
   DashboardColumnCustomizer,
   DashboardTableColumn,
-} from "@/components/layouts/DashboardColumnCustomizer";
-import { IconPackages } from "@tabler/icons-react";
-import { Loader2 } from "lucide-react";
+} from '@/components/layouts/DashboardColumnCustomizer';
+import { IconPackages } from '@tabler/icons-react';
+import { Loader2 } from 'lucide-react';
 
 interface DashboardTableProps<T = Record<string, unknown>> {
   tableTitle?: string;
@@ -68,7 +68,7 @@ interface DashboardTableProps<T = Record<string, unknown>> {
 }
 
 export function DashboardTable<T = Record<string, unknown>>({
-  tableTitle = "Table",
+  tableTitle = 'Table',
   totalCount = 0,
   currentCount = 0,
   showingText,
@@ -87,7 +87,7 @@ export function DashboardTable<T = Record<string, unknown>>({
   error,
   onRetry,
   emptyStateIcon,
-  emptyStateMessage = "No items found",
+  emptyStateMessage = 'No items found',
   emptyStateAction,
 }: DashboardTableProps<T>) {
   return (
@@ -117,18 +117,18 @@ export function DashboardTable<T = Record<string, unknown>>({
             {[...Array(5)].map((_, i) => (
               <div
                 key={i}
-                className="flex items-center space-x-4 animate-pulse"
+                className="flex animate-pulse items-center space-x-4"
               >
-                <div className="w-12 h-12 bg-gray-200 rounded"></div>
+                <div className="h-12 w-12 rounded bg-gray-200"></div>
                 <div className="flex-1 space-y-2">
-                  <div className="h-4 bg-gray-200 rounded w-1/4"></div>
-                  <div className="h-3 bg-gray-200 rounded w-1/2"></div>
+                  <div className="h-4 w-1/4 rounded bg-gray-200"></div>
+                  <div className="h-3 w-1/2 rounded bg-gray-200"></div>
                 </div>
               </div>
             ))}
           </div>
         ) : error ? (
-          <div className="text-center py-8">
+          <div className="py-8 text-center">
             <p className="text-red-500">{error}</p>
             {onRetry && (
               <Button onClick={onRetry} className="mt-4">
@@ -137,9 +137,9 @@ export function DashboardTable<T = Record<string, unknown>>({
             )}
           </div>
         ) : data.length === 0 ? (
-          <div className="text-center py-8">
+          <div className="py-8 text-center">
             {emptyStateIcon || (
-              <IconPackages className="h-12 w-12 text-gray-400 mx-auto mb-4" />
+              <IconPackages className="mx-auto mb-4 h-12 w-12 text-gray-400" />
             )}
             <p className="text-gray-500">{emptyStateMessage}</p>
             {emptyStateAction && <div className="mt-4">{emptyStateAction}</div>}
@@ -148,9 +148,9 @@ export function DashboardTable<T = Record<string, unknown>>({
           <>
             <div className="relative">
               {isRefetching && (
-                <div className="absolute inset-0 bg-white/80 backdrop-blur-sm z-10 flex items-center justify-center rounded-md">
-                  <div className="flex items-center gap-2 bg-white px-4 py-2 rounded-lg shadow-sm border">
-                    <Loader2 className="w-4 h-4 animate-spin text-blue-600" />
+                <div className="absolute inset-0 z-10 flex items-center justify-center rounded-md bg-white/80 backdrop-blur-sm">
+                  <div className="flex items-center gap-2 rounded-lg border bg-white px-4 py-2 shadow-sm">
+                    <Loader2 className="h-4 w-4 animate-spin text-blue-600" />
                     <span className="text-sm text-gray-600">Loading...</span>
                   </div>
                 </div>
@@ -192,18 +192,18 @@ export function DashboardTable<T = Record<string, unknown>>({
               </Table>
             </div>
             {pagination.totalPages > 1 && (
-              <div className="flex items-center justify-between mt-6">
+              <div className="mt-6 flex items-center justify-between">
                 <div className="flex items-center gap-4">
                   <p className="text-sm text-gray-500">
-                    Showing {(pagination.page - 1) * pagination.limit + 1} to{" "}
+                    Showing {(pagination.page - 1) * pagination.limit + 1} to{' '}
                     {Math.min(
                       pagination.page * pagination.limit,
                       pagination.totalItems
-                    )}{" "}
+                    )}{' '}
                     of {pagination.totalItems} items
                   </p>
                 </div>
-                <div className="flex items-center gap-4 ml-auto">
+                <div className="ml-auto flex items-center gap-4">
                   <div className="flex items-center gap-2">
                     <span className="text-sm text-gray-500">Show:</span>
                     <Select
@@ -232,8 +232,8 @@ export function DashboardTable<T = Record<string, unknown>>({
                           }
                           className={
                             pagination.page === 1
-                              ? "pointer-events-none opacity-50"
-                              : "cursor-pointer"
+                              ? 'pointer-events-none opacity-50'
+                              : 'cursor-pointer'
                           }
                         />
                       </PaginationItem>
@@ -310,8 +310,8 @@ export function DashboardTable<T = Record<string, unknown>>({
                           }
                           className={
                             pagination.page === pagination.totalPages
-                              ? "pointer-events-none opacity-50"
-                              : "cursor-pointer"
+                              ? 'pointer-events-none opacity-50'
+                              : 'cursor-pointer'
                           }
                         />
                       </PaginationItem>

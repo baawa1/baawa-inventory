@@ -1,18 +1,18 @@
-import { withAuth, AuthenticatedRequest } from "@/lib/api-middleware";
-import { prisma } from "@/lib/db";
+import { withAuth, AuthenticatedRequest } from '@/lib/api-middleware';
+import { prisma } from '@/lib/db';
 import {
   createTransactionSchema,
   transactionFiltersSchema,
-} from "@/lib/validations/finance";
+} from '@/lib/validations/finance';
 import {
   createApiResponse,
   transformDatabaseResponse,
-} from "@/lib/api-response";
-import { generateTransactionNumber } from "@/lib/utils";
-import { createAuditLog } from "@/lib/audit";
-import { AuditLogAction } from "@/types/audit";
-import { z } from "zod";
-import { logger } from "@/lib/logger";
+} from '@/lib/api-response';
+import { generateTransactionNumber } from '@/lib/utils';
+import { createAuditLog } from '@/lib/audit';
+import { AuditLogAction } from '@/types/audit';
+import { z } from 'zod';
+import { logger } from '@/lib/logger';
 
 // GET /api/finance/transactions - List financial transactions with filtering
 export const GET = withAuth(async (request: AuthenticatedRequest) => {
@@ -21,16 +21,16 @@ export const GET = withAuth(async (request: AuthenticatedRequest) => {
 
     // Parse and validate query parameters
     const queryParams = {
-      page: parseInt(searchParams.get("page") || "1"),
-      limit: parseInt(searchParams.get("limit") || "10"),
-      search: searchParams.get("search") || undefined,
-      type: searchParams.get("type") || undefined,
+      page: parseInt(searchParams.get('page') || '1'),
+      limit: parseInt(searchParams.get('limit') || '10'),
+      search: searchParams.get('search') || undefined,
+      type: searchParams.get('type') || undefined,
 
-      status: searchParams.get("status") || undefined,
-      startDate: searchParams.get("startDate") || undefined,
-      endDate: searchParams.get("endDate") || undefined,
-      sortBy: searchParams.get("sortBy") || "transactionDate",
-      sortOrder: (searchParams.get("sortOrder") as "asc" | "desc") || "desc",
+      status: searchParams.get('status') || undefined,
+      startDate: searchParams.get('startDate') || undefined,
+      endDate: searchParams.get('endDate') || undefined,
+      sortBy: searchParams.get('sortBy') || 'transactionDate',
+      sortOrder: (searchParams.get('sortOrder') as 'asc' | 'desc') || 'desc',
     };
 
     const validatedQuery = transactionFiltersSchema.parse(queryParams);
@@ -51,13 +51,13 @@ export const GET = withAuth(async (request: AuthenticatedRequest) => {
 
     if (search) {
       where.OR = [
-        { transactionNumber: { contains: search, mode: "insensitive" } },
-        { description: { contains: search, mode: "insensitive" } },
+        { transactionNumber: { contains: search, mode: 'insensitive' } },
+        { description: { contains: search, mode: 'insensitive' } },
       ];
     }
 
-    if (type && type !== "ALL") where.type = type;
-    if (status && status !== "ALL") where.status = status;
+    if (type && type !== 'ALL') where.type = type;
+    if (status && status !== 'ALL') where.status = status;
 
     if (startDate || endDate) {
       where.transactionDate = {};
@@ -70,14 +70,14 @@ export const GET = withAuth(async (request: AuthenticatedRequest) => {
 
     // Build order by clause
     const orderBy: any = {};
-    if (sortBy === "transactionDate") {
+    if (sortBy === 'transactionDate') {
       orderBy.transactionDate = sortOrder;
-    } else if (sortBy === "amount") {
+    } else if (sortBy === 'amount') {
       orderBy.amount = sortOrder;
-    } else if (sortBy === "createdAt") {
+    } else if (sortBy === 'createdAt') {
       orderBy.createdAt = sortOrder;
     } else {
-      orderBy.transactionDate = "desc";
+      orderBy.transactionDate = 'desc';
     }
 
     // Get transactions with related data
@@ -112,7 +112,7 @@ export const GET = withAuth(async (request: AuthenticatedRequest) => {
     ]);
 
     // Transform database response to camelCase for frontend
-    const transformedTransactions = transactions.map((transaction) =>
+    const transformedTransactions = transactions.map(transaction =>
       transformDatabaseResponse(transaction)
     );
 
@@ -129,8 +129,8 @@ export const GET = withAuth(async (request: AuthenticatedRequest) => {
       `Retrieved ${transactions.length} financial transactions`
     );
   } catch (error) {
-    console.error("Error fetching financial transactions:", error);
-    return createApiResponse.internalError("Failed to fetch transactions");
+    console.error('Error fetching financial transactions:', error);
+    return createApiResponse.internalError('Failed to fetch transactions');
   }
 });
 
@@ -157,7 +157,7 @@ export const POST = withAuth(async (request: AuthenticatedRequest) => {
         error:
           parseError instanceof Error ? parseError.message : String(parseError),
       });
-      return createApiResponse.validationError("Invalid JSON in request body");
+      return createApiResponse.validationError('Invalid JSON in request body');
     }
 
     // Validate data with schema
@@ -172,7 +172,7 @@ export const POST = withAuth(async (request: AuthenticatedRequest) => {
             : validationError,
       });
       return createApiResponse.validationError(
-        "Invalid transaction data",
+        'Invalid transaction data',
         validationError instanceof z.ZodError
           ? validationError.errors
           : undefined
@@ -191,14 +191,14 @@ export const POST = withAuth(async (request: AuthenticatedRequest) => {
             : String(numberError),
       });
       return createApiResponse.internalError(
-        "Failed to generate transaction number"
+        'Failed to generate transaction number'
       );
     }
 
     // Use Prisma transaction to ensure data consistency
     let result;
     try {
-      result = await prisma.$transaction(async (tx) => {
+      result = await prisma.$transaction(async tx => {
         // Validate user ID before creating transaction
         const userId = parseInt(request.user.id);
         if (isNaN(userId) || userId <= 0) {
@@ -239,22 +239,22 @@ export const POST = withAuth(async (request: AuthenticatedRequest) => {
         });
 
         // Create expense details if provided
-        if (validatedData.type === "EXPENSE") {
+        if (validatedData.type === 'EXPENSE') {
           await tx.expenseDetail.create({
             data: {
               transactionId: transaction.id,
-              expenseType: (validatedData.expenseType as any) || "",
+              expenseType: (validatedData.expenseType as any) || '',
               vendorName: validatedData.vendorName,
             },
           });
         }
 
         // Create income details if provided
-        if (validatedData.type === "INCOME") {
+        if (validatedData.type === 'INCOME') {
           await tx.incomeDetail.create({
             data: {
               transactionId: transaction.id,
-              incomeSource: (validatedData.incomeSource as any) || "",
+              incomeSource: (validatedData.incomeSource as any) || '',
               payerName: validatedData.payerName,
             },
           });
@@ -291,7 +291,7 @@ export const POST = withAuth(async (request: AuthenticatedRequest) => {
         await createAuditLog({
           userId: parseInt(request.user.id),
           action: AuditLogAction.SALE_CREATED,
-          tableName: "financial_transactions",
+          tableName: 'financial_transactions',
           recordId: result.id,
           newValues: completeTransaction,
         });
@@ -304,7 +304,7 @@ export const POST = withAuth(async (request: AuthenticatedRequest) => {
 
       return createApiResponse.success(
         completeTransaction,
-        "Financial transaction created successfully",
+        'Financial transaction created successfully',
         201
       );
     } catch (dbError) {
@@ -322,7 +322,7 @@ export const POST = withAuth(async (request: AuthenticatedRequest) => {
 
       // Return more specific error information
       const errorMessage =
-        dbError instanceof Error ? dbError.message : "Unknown database error";
+        dbError instanceof Error ? dbError.message : 'Unknown database error';
       return createApiResponse.internalError(
         `Failed to create transaction in database: ${errorMessage}`
       );
@@ -341,7 +341,7 @@ export const POST = withAuth(async (request: AuthenticatedRequest) => {
               name: error.name,
             }
           : error,
-      userId: request.user?.id || "undefined",
+      userId: request.user?.id || 'undefined',
     });
 
     // Check if it's a validation error
@@ -350,14 +350,14 @@ export const POST = withAuth(async (request: AuthenticatedRequest) => {
         errors: error.errors,
       });
       return createApiResponse.validationError(
-        "Invalid transaction data",
+        'Invalid transaction data',
         error.errors
       );
     }
 
     // Return more specific error message
     const errorMessage =
-      error instanceof Error ? error.message : "Unknown error";
+      error instanceof Error ? error.message : 'Unknown error';
     return createApiResponse.internalError(
       `Failed to create transaction: ${errorMessage}`
     );

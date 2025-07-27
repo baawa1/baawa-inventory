@@ -1,6 +1,6 @@
-import * as React from "react";
-import { Input } from "@/components/ui/input";
-import { Button } from "@/components/ui/button";
+import * as React from 'react';
+import { Input } from '@/components/ui/input';
+import { Button } from '@/components/ui/button';
 import {
   subDays,
   subHours,
@@ -8,8 +8,8 @@ import {
   subMonths,
   startOfDay,
   endOfDay,
-} from "date-fns";
-import { DateRange } from "react-day-picker";
+} from 'date-fns';
+import { DateRange } from 'react-day-picker';
 
 interface CustomDateInputProps {
   onDateRangeChange: (range: DateRange | undefined) => void;
@@ -22,7 +22,7 @@ export function CustomDateInput({
   placeholder = "Enter custom range (e.g., 'Last 7 days')",
   className,
 }: CustomDateInputProps) {
-  const [inputValue, setInputValue] = React.useState("");
+  const [inputValue, setInputValue] = React.useState('');
 
   const parseCustomDateRange = (input: string): DateRange | null => {
     const lowerInput = input.toLowerCase().trim();
@@ -64,19 +64,19 @@ export function CustomDateInput({
     }
 
     // Parse "Today"
-    if (lowerInput === "today") {
+    if (lowerInput === 'today') {
       const today = new Date();
       return { from: startOfDay(today), to: endOfDay(today) };
     }
 
     // Parse "Yesterday"
-    if (lowerInput === "yesterday") {
+    if (lowerInput === 'yesterday') {
       const yesterday = subDays(new Date(), 1);
       return { from: startOfDay(yesterday), to: endOfDay(yesterday) };
     }
 
     // Parse "This week"
-    if (lowerInput === "this week") {
+    if (lowerInput === 'this week') {
       const now = new Date();
       const start = startOfDay(subDays(now, now.getDay()));
       const end = endOfDay(new Date());
@@ -84,7 +84,7 @@ export function CustomDateInput({
     }
 
     // Parse "This month"
-    if (lowerInput === "this month") {
+    if (lowerInput === 'this month') {
       const now = new Date();
       const start = new Date(now.getFullYear(), now.getMonth(), 1);
       const end = endOfDay(new Date());
@@ -102,12 +102,12 @@ export function CustomDateInput({
     const parsedRange = parseCustomDateRange(inputValue);
     if (parsedRange) {
       onDateRangeChange(parsedRange);
-      setInputValue("");
+      setInputValue('');
     }
   };
 
   const handleKeyPress = (e: React.KeyboardEvent<HTMLInputElement>) => {
-    if (e.key === "Enter") {
+    if (e.key === 'Enter') {
       handleApply();
     }
   };

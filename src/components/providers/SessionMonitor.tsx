@@ -1,22 +1,22 @@
-"use client";
+'use client';
 
-import { useEffect, useRef } from "react";
-import { useRouter } from "next/navigation";
-import { INTERVALS } from "@/lib/constants";
-import { logger } from "@/lib/logger";
+import { useEffect, useRef } from 'react';
+import { useRouter } from 'next/navigation';
+import { INTERVALS } from '@/lib/constants';
+import { logger } from '@/lib/logger';
 
 // Dynamic import to avoid webpack issues
 let useSession: any = null;
 
 // Lazy load next-auth to prevent webpack issues
 const loadNextAuth = async () => {
-  if (typeof window !== "undefined" && !useSession) {
+  if (typeof window !== 'undefined' && !useSession) {
     try {
-      const nextAuth = await import("next-auth/react");
+      const nextAuth = await import('next-auth/react');
       useSession = nextAuth.useSession;
     } catch (error) {
-      logger.error("Failed to load next-auth", {
-        error: error instanceof Error ? error.message : "Unknown error",
+      logger.error('Failed to load next-auth', {
+        error: error instanceof Error ? error.message : 'Unknown error',
       });
     }
   }
@@ -44,9 +44,9 @@ export function SessionMonitor() {
         if (now - lastCheckRef.current < INTERVALS.SESSION_CHECK_MIN) return; // Minimum 1 minute between checks
         lastCheckRef.current = now;
 
-        const response = await fetch("/api/auth/refresh-session", {
-          method: "POST",
-          credentials: "include",
+        const response = await fetch('/api/auth/refresh-session', {
+          method: 'POST',
+          credentials: 'include',
         });
 
         if (response.ok) {
@@ -61,7 +61,7 @@ export function SessionMonitor() {
                 sessionData.data.user.isEmailVerified;
 
             if (hasChanges) {
-              logger.session("Session data changed, updating", {
+              logger.session('Session data changed, updating', {
                 oldRole: sessionData.data.user.role,
                 newRole: data.user.role,
                 oldStatus: sessionData.data.user.status,
@@ -76,8 +76,8 @@ export function SessionMonitor() {
           }
         }
       } catch (error) {
-        logger.error("Error checking session updates", {
-          error: error instanceof Error ? error.message : "Unknown error",
+        logger.error('Error checking session updates', {
+          error: error instanceof Error ? error.message : 'Unknown error',
         });
       }
     }, INTERVALS.SESSION_MONITOR); // Check every 2 minutes instead of 30 seconds

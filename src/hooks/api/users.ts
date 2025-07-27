@@ -1,6 +1,6 @@
-import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
-import { queryKeys } from "@/lib/query-client";
-import type { AppUser } from "@/types/user";
+import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
+import { queryKeys } from '@/lib/query-client';
+import type { AppUser } from '@/types/user';
 
 // Types for Users API
 export interface CreateUserData {
@@ -31,23 +31,23 @@ const fetchUsers = async (filters: UserFilters = {}): Promise<AppUser[]> => {
   const params = new URLSearchParams();
 
   if (filters.isActive !== undefined) {
-    params.append("isActive", filters.isActive.toString());
+    params.append('isActive', filters.isActive.toString());
   }
   if (filters.status) {
-    params.append("status", filters.status);
+    params.append('status', filters.status);
   }
   if (filters.role) {
-    params.append("role", filters.role);
+    params.append('role', filters.role);
   }
 
-  const url = `/api/users${params.toString() ? `?${params.toString()}` : ""}`;
+  const url = `/api/users${params.toString() ? `?${params.toString()}` : ''}`;
   const response = await fetch(url, {
-    credentials: "include",
+    credentials: 'include',
   });
 
   if (!response.ok) {
     const errorData = await response.json().catch(() => ({}));
-    throw new Error(errorData.error || "Failed to fetch users");
+    throw new Error(errorData.error || 'Failed to fetch users');
   }
 
   const data = await response.json();
@@ -55,18 +55,18 @@ const fetchUsers = async (filters: UserFilters = {}): Promise<AppUser[]> => {
 };
 
 const createUser = async (userData: CreateUserData): Promise<AppUser> => {
-  const response = await fetch("/api/users", {
-    method: "POST",
-    credentials: "include",
+  const response = await fetch('/api/users', {
+    method: 'POST',
+    credentials: 'include',
     headers: {
-      "Content-Type": "application/json",
+      'Content-Type': 'application/json',
     },
     body: JSON.stringify(userData),
   });
 
   if (!response.ok) {
     const errorData = await response.json().catch(() => ({}));
-    throw new Error(errorData.error || "Failed to create user");
+    throw new Error(errorData.error || 'Failed to create user');
   }
 
   const data = await response.json();
@@ -78,17 +78,17 @@ const updateUser = async ({
   ...userData
 }: UpdateUserData & { id: number }): Promise<AppUser> => {
   const response = await fetch(`/api/users/${id}`, {
-    method: "PUT",
-    credentials: "include",
+    method: 'PUT',
+    credentials: 'include',
     headers: {
-      "Content-Type": "application/json",
+      'Content-Type': 'application/json',
     },
     body: JSON.stringify(userData),
   });
 
   if (!response.ok) {
     const errorData = await response.json().catch(() => ({}));
-    throw new Error(errorData.error || "Failed to update user");
+    throw new Error(errorData.error || 'Failed to update user');
   }
 
   const data = await response.json();
@@ -97,26 +97,26 @@ const updateUser = async ({
 
 const deleteUser = async (id: number): Promise<void> => {
   const response = await fetch(`/api/users/${id}`, {
-    method: "DELETE",
-    credentials: "include",
+    method: 'DELETE',
+    credentials: 'include',
   });
 
   if (!response.ok) {
     const errorData = await response.json().catch(() => ({}));
-    throw new Error(errorData.error || "Failed to delete user");
+    throw new Error(errorData.error || 'Failed to delete user');
   }
 };
 
 const approveUser = async (
   userId: number,
-  action: "approve" | "reject",
+  action: 'approve' | 'reject',
   rejectionReason?: string
 ): Promise<void> => {
-  const response = await fetch("/api/admin/approve-user", {
-    method: "POST",
-    credentials: "include",
+  const response = await fetch('/api/admin/approve-user', {
+    method: 'POST',
+    credentials: 'include',
     headers: {
-      "Content-Type": "application/json",
+      'Content-Type': 'application/json',
     },
     body: JSON.stringify({
       userId,
@@ -151,7 +151,7 @@ export const useDeactivatedUsers = () => {
 
 export const usePendingUsers = (status?: string) => {
   const filters: UserFilters = {};
-  if (status && status !== "all") {
+  if (status && status !== 'all') {
     filters.status = status;
   }
 
@@ -160,8 +160,8 @@ export const usePendingUsers = (status?: string) => {
     queryFn: async () => {
       const users = await fetchUsers(filters);
       // Filter users to show non-approved users for pending management
-      return status === "all" || !status
-        ? users.filter((user) => user.userStatus !== "APPROVED")
+      return status === 'all' || !status
+        ? users.filter(user => user.userStatus !== 'APPROVED')
         : users;
     },
     staleTime: 2 * 60 * 1000, // 2 minutes for more frequent updates
@@ -216,7 +216,7 @@ export const useApproveUser = () => {
       rejectionReason,
     }: {
       userId: number;
-      action: "approve" | "reject";
+      action: 'approve' | 'reject';
       rejectionReason?: string;
     }) => approveUser(userId, action, rejectionReason),
     onSuccess: () => {
@@ -249,7 +249,7 @@ export const useReactivateUser = () => {
         lastName,
         email,
         role,
-        userStatus: "APPROVED", // Reactivating users should set them as approved
+        userStatus: 'APPROVED', // Reactivating users should set them as approved
       }),
     onSuccess: () => {
       // Invalidate all user-related queries

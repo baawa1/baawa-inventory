@@ -1,22 +1,22 @@
-import { NextResponse } from "next/server";
-import { prisma } from "@/lib/db";
-import { withPermission, AuthenticatedRequest } from "@/lib/api-middleware";
+import { NextResponse } from 'next/server';
+import { prisma } from '@/lib/db';
+import { withPermission, AuthenticatedRequest } from '@/lib/api-middleware';
 
-import { z } from "zod";
-import { validateRequest } from "@/lib/validations";
-import { emailService } from "@/lib/email";
+import { z } from 'zod';
+import { validateRequest } from '@/lib/validations';
+import { emailService } from '@/lib/email';
 
 // Schema for admin user approval/rejection
 const userApprovalSchema = z.object({
   userId: z.number().int().positive(),
-  action: z.enum(["approve", "reject"]),
+  action: z.enum(['approve', 'reject']),
   rejectionReason: z.string().optional(),
 });
 
 // POST /api/admin/approve-user - Approve or reject a user
 // Requires admin permission and rate limiting
 export const POST = withPermission(
-  ["ADMIN"],
+  ['ADMIN'],
   async function (request: AuthenticatedRequest) {
     try {
       const body = await request.json();
@@ -25,7 +25,7 @@ export const POST = withPermission(
       const validation = validateRequest(userApprovalSchema, body);
       if (!validation.success) {
         return NextResponse.json(
-          { error: "Invalid request data", details: validation.errors },
+          { error: 'Invalid request data', details: validation.errors },
           { status: 400 }
         );
       }
@@ -35,7 +35,7 @@ export const POST = withPermission(
       // User is guaranteed to exist when using withPermission
       if (!request.user) {
         return NextResponse.json(
-          { error: "Authentication required" },
+          { error: 'Authentication required' },
           { status: 401 }
         );
       }
@@ -57,24 +57,24 @@ export const POST = withPermission(
       });
 
       if (!user) {
-        return NextResponse.json({ error: "User not found" }, { status: 404 });
+        return NextResponse.json({ error: 'User not found' }, { status: 404 });
       }
 
       // Check if user is in a valid state for approval/rejection
-      if (user.userStatus !== "VERIFIED" && user.userStatus !== "PENDING") {
+      if (user.userStatus !== 'VERIFIED' && user.userStatus !== 'PENDING') {
         return NextResponse.json(
           {
             error:
-              "User must be in VERIFIED or PENDING status to be approved/rejected",
+              'User must be in VERIFIED or PENDING status to be approved/rejected',
           },
           { status: 400 }
         );
       }
 
       // If rejecting, require a reason
-      if (action === "reject" && !rejectionReason?.trim()) {
+      if (action === 'reject' && !rejectionReason?.trim()) {
         return NextResponse.json(
-          { error: "Rejection reason is required when rejecting a user" },
+          { error: 'Rejection reason is required when rejecting a user' },
           { status: 400 }
         );
       }
@@ -85,11 +85,11 @@ export const POST = withPermission(
         approvedAt: new Date(),
       };
 
-      if (action === "approve") {
-        updateData.userStatus = "APPROVED";
+      if (action === 'approve') {
+        updateData.userStatus = 'APPROVED';
         updateData.rejectionReason = null;
       } else {
-        updateData.userStatus = "REJECTED";
+        updateData.userStatus = 'REJECTED';
         updateData.rejectionReason = rejectionReason;
       }
 
@@ -114,25 +114,25 @@ export const POST = withPermission(
 
       // Send notification email to user about approval/rejection
       try {
-        const adminName = request.user.name || "Administrator";
-        const supportEmail = process.env.SUPPORT_EMAIL || "support@baawa.com";
+        const adminName = request.user.name || 'Administrator';
+        const supportEmail = process.env.SUPPORT_EMAIL || 'support@baawa.com';
         const dashboardUrl =
-          process.env.NEXTAUTH_URL || "http://localhost:3000";
+          process.env.NEXTAUTH_URL || 'http://localhost:3000';
 
-        if (action === "approve") {
+        if (action === 'approve') {
           // Send approval notification
           await emailService.sendUserApprovalEmail(updatedUser.email, {
             firstName: updatedUser.firstName,
             adminName,
             dashboardLink: `${dashboardUrl}/dashboard`,
-            role: user.role || "STAFF",
+            role: user.role || 'STAFF',
           });
 
           // Send welcome email as well
           await emailService.sendWelcomeEmail(updatedUser.email, {
             firstName: updatedUser.firstName,
             email: updatedUser.email,
-            companyName: "Baawa Accessories",
+            companyName: 'Baawa Accessories',
           });
         } else {
           await emailService.sendUserRejectionEmail(updatedUser.email, {
@@ -143,13 +143,13 @@ export const POST = withPermission(
           });
         }
       } catch (emailError) {
-        console.error("Failed to send notification email:", emailError);
+        console.error('Failed to send notification email:', emailError);
         // Don't fail the entire operation if email fails
       }
 
       return NextResponse.json({
         success: true,
-        message: `User ${action === "approve" ? "approved" : "rejected"} successfully`,
+        message: `User ${action === 'approve' ? 'approved' : 'rejected'} successfully`,
         user: {
           id: updatedUser.id,
           firstName: updatedUser.firstName,
@@ -163,9 +163,9 @@ export const POST = withPermission(
         sessionUpdated: true,
       });
     } catch (error) {
-      console.error("Error in POST /api/admin/approve-user:", error);
+      console.error('Error in POST /api/admin/approve-user:', error);
       return NextResponse.json(
-        { error: "Internal server error" },
+        { error: 'Internal server error' },
         { status: 500 }
       );
     }

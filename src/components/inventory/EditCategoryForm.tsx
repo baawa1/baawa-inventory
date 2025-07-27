@@ -1,22 +1,22 @@
-"use client";
+'use client';
 
-import { useState } from "react";
-import { useRouter } from "next/navigation";
-import { useForm } from "react-hook-form";
-import { zodResolver } from "@hookform/resolvers/zod";
-import { z } from "zod";
-import { Button } from "@/components/ui/button";
+import { useState } from 'react';
+import { useRouter } from 'next/navigation';
+import { useForm } from 'react-hook-form';
+import { zodResolver } from '@hookform/resolvers/zod';
+import { z } from 'zod';
+import { Button } from '@/components/ui/button';
 import {
   Card,
   CardContent,
   CardDescription,
   CardHeader,
   CardTitle,
-} from "@/components/ui/card";
-import { Input } from "@/components/ui/input";
-import { Textarea } from "@/components/ui/textarea";
-import { Switch } from "@/components/ui/switch";
-import { Badge } from "@/components/ui/badge";
+} from '@/components/ui/card';
+import { Input } from '@/components/ui/input';
+import { Textarea } from '@/components/ui/textarea';
+import { Switch } from '@/components/ui/switch';
+import { Badge } from '@/components/ui/badge';
 import {
   Form,
   FormControl,
@@ -24,16 +24,16 @@ import {
   FormItem,
   FormLabel,
   FormMessage,
-} from "@/components/ui/form";
-import { ArrowLeft, Loader2 } from "lucide-react";
-import { Alert, AlertDescription } from "@/components/ui/alert";
-import { PageHeader } from "@/components/ui/page-header";
-import { FormLoading } from "@/components/ui/form-loading";
-import { ImageUpload } from "@/components/ui/image-upload";
+} from '@/components/ui/form';
+import { ArrowLeft, Loader2 } from 'lucide-react';
+import { Alert, AlertDescription } from '@/components/ui/alert';
+import { PageHeader } from '@/components/ui/page-header';
+import { FormLoading } from '@/components/ui/form-loading';
+import { ImageUpload } from '@/components/ui/image-upload';
 
-import { toast } from "sonner";
-import { useUpdateCategory } from "@/hooks/api/categories";
-import { logger } from "@/lib/logger";
+import { toast } from 'sonner';
+import { useUpdateCategory } from '@/hooks/api/categories';
+import { logger } from '@/lib/logger';
 
 interface Category {
   id: number;
@@ -52,15 +52,15 @@ interface EditCategoryFormProps {
 const updateCategorySchema = z.object({
   name: z
     .string()
-    .min(1, "Category name is required")
-    .max(100, "Category name must be 100 characters or less")
+    .min(1, 'Category name is required')
+    .max(100, 'Category name must be 100 characters or less')
     .trim(),
   description: z
     .string()
-    .max(500, "Description must be 500 characters or less")
+    .max(500, 'Description must be 500 characters or less')
     .optional()
-    .or(z.literal("")),
-  image: z.string().min(1, "Category image is required"),
+    .or(z.literal('')),
+  image: z.string().min(1, 'Category image is required'),
   isActive: z.boolean(),
 });
 
@@ -75,8 +75,8 @@ export default function EditCategoryForm({ category }: EditCategoryFormProps) {
     resolver: zodResolver(updateCategorySchema),
     defaultValues: {
       name: category.name,
-      description: category.description || "",
-      image: category.image || "",
+      description: category.description || '',
+      image: category.image || '',
       isActive: category.isActive,
     },
   });
@@ -88,13 +88,13 @@ export default function EditCategoryForm({ category }: EditCategoryFormProps) {
       updateCategoryMutation.mutate(
         { id: category.id, data },
         {
-          onSuccess: (_updatedCategory) => {
+          onSuccess: _updatedCategory => {
             // Debug logging removed for production
-            toast.success("Category updated successfully!");
-            router.push("/inventory/categories");
+            toast.success('Category updated successfully!');
+            router.push('/inventory/categories');
           },
-          onError: (error) => {
-            logger.error("Failed to update category", {
+          onError: error => {
+            logger.error('Failed to update category', {
               categoryId: category.id,
               categoryName: data.name,
               error: error instanceof Error ? error.message : String(error),
@@ -102,7 +102,7 @@ export default function EditCategoryForm({ category }: EditCategoryFormProps) {
             const errorMessage =
               error instanceof Error
                 ? error.message
-                : "Failed to update category";
+                : 'Failed to update category';
             setError(errorMessage);
             toast.error(errorMessage);
           },
@@ -113,17 +113,17 @@ export default function EditCategoryForm({ category }: EditCategoryFormProps) {
         }
       );
     } catch (error) {
-      logger.error("Failed to update category", {
+      logger.error('Failed to update category', {
         categoryId: category.id,
         categoryName: data.name,
         error: error instanceof Error ? error.message : String(error),
       });
-      toast.error("Failed to update category");
+      toast.error('Failed to update category');
     }
   };
 
   const handleCancel = () => {
-    router.push("/inventory/categories");
+    router.push('/inventory/categories');
   };
 
   // Show loading state
@@ -140,7 +140,7 @@ export default function EditCategoryForm({ category }: EditCategoryFormProps) {
   }
 
   return (
-    <div className="max-w-4xl mx-auto p-6 space-y-6">
+    <div className="mx-auto max-w-4xl space-y-6 p-6">
       <div className="mb-6">
         <Button
           variant="ghost"
@@ -190,7 +190,7 @@ export default function EditCategoryForm({ category }: EditCategoryFormProps) {
                         placeholder="e.g., Electronics, Clothing, Books"
                         {...field}
                         className={
-                          form.formState.errors.name ? "border-red-500" : ""
+                          form.formState.errors.name ? 'border-red-500' : ''
                         }
                       />
                     </FormControl>
@@ -241,9 +241,9 @@ export default function EditCategoryForm({ category }: EditCategoryFormProps) {
                     <FormControl>
                       <ImageUpload
                         value={field.value}
-                        onChange={(url) => field.onChange(url || "")}
-                        onError={(error) => {
-                          form.setError("image", { message: error });
+                        onChange={url => field.onChange(url || '')}
+                        onError={error => {
+                          form.setError('image', { message: error });
                         }}
                         placeholder="Upload a category image (required)"
                         folder="categories"
@@ -282,7 +282,7 @@ export default function EditCategoryForm({ category }: EditCategoryFormProps) {
               />
 
               {/* Form Actions */}
-              <div className="flex justify-end space-x-4 pt-6 border-t">
+              <div className="flex justify-end space-x-4 border-t pt-6">
                 <Button
                   type="button"
                   variant="outline"
@@ -300,8 +300,8 @@ export default function EditCategoryForm({ category }: EditCategoryFormProps) {
                     <Loader2 className="h-4 w-4 animate-spin" />
                   )}
                   {updateCategoryMutation.isPending
-                    ? "Updating..."
-                    : "Update Category"}
+                    ? 'Updating...'
+                    : 'Update Category'}
                 </Button>
               </div>
             </form>

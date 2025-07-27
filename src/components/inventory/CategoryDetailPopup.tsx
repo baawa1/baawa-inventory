@@ -1,24 +1,24 @@
-"use client";
+'use client';
 
-import React from "react";
-import Link from "next/link";
+import React from 'react';
+import Link from 'next/link';
 
 // Hooks
-import { useCategory } from "@/hooks/api/categories";
-import { Category } from "@/hooks/api/categories";
+import { useCategory } from '@/hooks/api/categories';
+import { Category } from '@/hooks/api/categories';
 
 // UI Components
-import { Button } from "@/components/ui/button";
-import { Badge } from "@/components/ui/badge";
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import { Separator } from "@/components/ui/separator";
-import { ImagePreview } from "@/components/ui/image-preview";
+import { Button } from '@/components/ui/button';
+import { Badge } from '@/components/ui/badge';
+import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
+import { Separator } from '@/components/ui/separator';
+import { ImagePreview } from '@/components/ui/image-preview';
 import {
   Dialog,
   DialogContent,
   DialogHeader,
   DialogTitle,
-} from "@/components/ui/dialog";
+} from '@/components/ui/dialog';
 
 // Icons
 import {
@@ -27,7 +27,7 @@ import {
   IconFolder,
   IconPackage,
   IconEye,
-} from "@tabler/icons-react";
+} from '@tabler/icons-react';
 
 interface User {
   id: string;
@@ -56,7 +56,7 @@ export default function CategoryDetailPopup({
   const { data: categoryData, isLoading, error } = useCategory(categoryId || 0);
 
   // Permission checks
-  const canManageCategories = ["ADMIN", "MANAGER"].includes(user.role);
+  const canManageCategories = ['ADMIN', 'MANAGER'].includes(user.role);
 
   if (!categoryId) {
     return null;
@@ -65,7 +65,7 @@ export default function CategoryDetailPopup({
   return (
     <>
       <Dialog open={open} onOpenChange={onOpenChange}>
-        <DialogContent className="max-w-4xl max-h-[90vh] overflow-y-auto">
+        <DialogContent className="max-h-[90vh] max-w-4xl overflow-y-auto">
           <DialogHeader>
             <DialogTitle className="flex items-center gap-2">
               <IconTag className="h-5 w-5" />
@@ -74,9 +74,9 @@ export default function CategoryDetailPopup({
           </DialogHeader>
 
           {isLoading && (
-            <div className="flex items-center justify-center h-64">
+            <div className="flex h-64 items-center justify-center">
               <div className="text-center">
-                <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary mx-auto mb-4"></div>
+                <div className="border-primary mx-auto mb-4 h-8 w-8 animate-spin rounded-full border-b-2"></div>
                 <p className="text-muted-foreground">
                   Loading category details...
                 </p>
@@ -86,8 +86,8 @@ export default function CategoryDetailPopup({
 
           {error && (
             <div className="text-center">
-              <IconTag className="h-12 w-12 text-gray-400 mx-auto mb-4" />
-              <h2 className="text-xl font-semibold mb-2">Category Not Found</h2>
+              <IconTag className="mx-auto mb-4 h-12 w-12 text-gray-400" />
+              <h2 className="mb-2 text-xl font-semibold">Category Not Found</h2>
               <p className="text-muted-foreground mb-4">
                 The category you're looking for doesn't exist or has been
                 deleted.
@@ -124,7 +124,7 @@ export default function CategoryDetailPopup({
 
               <div className="flex flex-col gap-4">
                 {/* Main Category Information */}
-                <div className="lg:col-span-2 space-y-6">
+                <div className="space-y-6 lg:col-span-2">
                   {/* Category Image and Basic Info */}
                   <Card>
                     <CardHeader>
@@ -145,7 +145,7 @@ export default function CategoryDetailPopup({
                               className="rounded-lg border"
                             />
                           ) : (
-                            <div className="w-32 h-32 bg-gray-100 rounded-lg flex items-center justify-center">
+                            <div className="flex h-32 w-32 items-center justify-center rounded-lg bg-gray-100">
                               <IconTag className="h-8 w-8 text-gray-400" />
                             </div>
                           )}
@@ -155,15 +155,15 @@ export default function CategoryDetailPopup({
                             <h3 className="text-lg font-semibold">
                               {categoryData.name}
                             </h3>
-                            <div className="flex items-center gap-2 mt-1">
+                            <div className="mt-1 flex items-center gap-2">
                               <Badge
                                 variant={
                                   categoryData.isActive
-                                    ? "default"
-                                    : "secondary"
+                                    ? 'default'
+                                    : 'secondary'
                                 }
                               >
-                                {categoryData.isActive ? "Active" : "Inactive"}
+                                {categoryData.isActive ? 'Active' : 'Inactive'}
                               </Badge>
                               {categoryData.parent && (
                                 <Badge
@@ -179,7 +179,7 @@ export default function CategoryDetailPopup({
 
                           {categoryData.description && (
                             <div>
-                              <h4 className="font-medium text-sm text-muted-foreground mb-1">
+                              <h4 className="text-muted-foreground mb-1 text-sm font-medium">
                                 Description
                               </h4>
                               <p className="text-sm">
@@ -193,7 +193,7 @@ export default function CategoryDetailPopup({
                               <span className="text-muted-foreground">
                                 Products:
                               </span>
-                              <div className="flex items-center gap-1 mt-1">
+                              <div className="mt-1 flex items-center gap-1">
                                 <IconPackage className="h-4 w-4" />
                                 <span className="font-medium">
                                   {categoryData.productCount}
@@ -204,7 +204,7 @@ export default function CategoryDetailPopup({
                               <span className="text-muted-foreground">
                                 Subcategories:
                               </span>
-                              <div className="flex items-center gap-1 mt-1">
+                              <div className="mt-1 flex items-center gap-1">
                                 <IconFolder className="h-4 w-4" />
                                 <span className="font-medium">
                                   {categoryData.subcategoryCount}
@@ -228,17 +228,17 @@ export default function CategoryDetailPopup({
                           </CardTitle>
                         </CardHeader>
                         <CardContent>
-                          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                          <div className="grid grid-cols-1 gap-4 md:grid-cols-2">
                             {categoryData.children.map((child: Category) => (
                               <div
                                 key={child.id}
-                                className="flex items-center justify-between p-3 border rounded-lg hover:bg-gray-50 transition-colors"
+                                className="flex items-center justify-between rounded-lg border p-3 transition-colors hover:bg-gray-50"
                               >
                                 <div className="flex items-center gap-3">
-                                  <IconFolder className="h-4 w-4 text-muted-foreground" />
+                                  <IconFolder className="text-muted-foreground h-4 w-4" />
                                   <div>
                                     <p className="font-medium">{child.name}</p>
-                                    <p className="text-sm text-muted-foreground">
+                                    <p className="text-muted-foreground text-sm">
                                       {child.productCount || 0} products
                                     </p>
                                   </div>
@@ -271,7 +271,7 @@ export default function CategoryDetailPopup({
                     </CardHeader>
                     <CardContent className="space-y-4">
                       <div className="flex items-center justify-between">
-                        <span className="text-sm text-muted-foreground">
+                        <span className="text-muted-foreground text-sm">
                           Total Products
                         </span>
                         <Badge variant="outline">
@@ -280,7 +280,7 @@ export default function CategoryDetailPopup({
                       </div>
                       <Separator />
                       <div className="flex items-center justify-between">
-                        <span className="text-sm text-muted-foreground">
+                        <span className="text-muted-foreground text-sm">
                           Subcategories
                         </span>
                         <Badge variant="outline">
@@ -289,15 +289,15 @@ export default function CategoryDetailPopup({
                       </div>
                       <Separator />
                       <div className="flex items-center justify-between">
-                        <span className="text-sm text-muted-foreground">
+                        <span className="text-muted-foreground text-sm">
                           Status
                         </span>
                         <Badge
                           variant={
-                            categoryData.isActive ? "default" : "secondary"
+                            categoryData.isActive ? 'default' : 'secondary'
                           }
                         >
-                          {categoryData.isActive ? "Active" : "Inactive"}
+                          {categoryData.isActive ? 'Active' : 'Inactive'}
                         </Badge>
                       </div>
                     </CardContent>

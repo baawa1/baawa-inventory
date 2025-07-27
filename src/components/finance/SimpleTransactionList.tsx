@@ -1,9 +1,9 @@
-"use client";
+'use client';
 
-import React from "react";
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import { Button } from "@/components/ui/button";
-import { Badge } from "@/components/ui/badge";
+import React from 'react';
+import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
+import { Button } from '@/components/ui/button';
+import { Badge } from '@/components/ui/badge';
 import {
   Table,
   TableBody,
@@ -11,10 +11,10 @@ import {
   TableHead,
   TableHeader,
   TableRow,
-} from "@/components/ui/table";
-import { IconEye, IconRefresh } from "@tabler/icons-react";
-import { format } from "date-fns";
-import { formatCurrency } from "@/lib/utils";
+} from '@/components/ui/table';
+import { IconEye, IconRefresh } from '@tabler/icons-react';
+import { format } from 'date-fns';
+import { formatCurrency } from '@/lib/utils';
 
 interface SimpleTransactionListProps {
   user: any;
@@ -36,17 +36,17 @@ export function SimpleTransactionList({
         <CardTitle className="flex items-center justify-between">
           Recent Transactions
           <Button variant="outline" size="sm">
-            <IconRefresh className="h-4 w-4 mr-2" />
+            <IconRefresh className="mr-2 h-4 w-4" />
             Refresh
           </Button>
         </CardTitle>
       </CardHeader>
       <CardContent>
-        <div className="text-center py-8">
+        <div className="py-8 text-center">
           <p className="text-muted-foreground">
             Transaction list will be implemented here with real data.
           </p>
-          <p className="text-sm text-muted-foreground mt-2">
+          <p className="text-muted-foreground mt-2 text-sm">
             Filters: {JSON.stringify(filters)}
           </p>
         </div>

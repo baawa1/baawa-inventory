@@ -19,7 +19,7 @@ interface Logger {
 }
 
 class StructuredLogger implements Logger {
-  private isDevelopment = process.env.NODE_ENV === "development";
+  private isDevelopment = process.env.NODE_ENV === 'development';
 
   private formatMessage(
     level: string,
@@ -27,7 +27,7 @@ class StructuredLogger implements Logger {
     context?: LogContext
   ): string {
     const timestamp = new Date().toISOString();
-    const contextStr = context ? ` | ${JSON.stringify(context)}` : "";
+    const contextStr = context ? ` | ${JSON.stringify(context)}` : '';
     return `[${timestamp}] [${level.toUpperCase()}] ${message}${contextStr}`;
   }
 
@@ -37,13 +37,13 @@ class StructuredLogger implements Logger {
     // In development, use console for better debugging
     if (this.isDevelopment) {
       switch (level) {
-        case "error":
+        case 'error':
           console.error(formattedMessage);
           break;
-        case "warn":
+        case 'warn':
           console.warn(formattedMessage);
           break;
-        case "debug":
+        case 'debug':
           console.debug(formattedMessage);
           break;
         default:
@@ -57,37 +57,37 @@ class StructuredLogger implements Logger {
   }
 
   error(message: string, context?: LogContext): void {
-    this.log("error", message, context);
+    this.log('error', message, context);
   }
 
   warn(message: string, context?: LogContext): void {
-    this.log("warn", message, context);
+    this.log('warn', message, context);
   }
 
   info(message: string, context?: LogContext): void {
-    this.log("info", message, context);
+    this.log('info', message, context);
   }
 
   debug(message: string, context?: LogContext): void {
     if (this.isDevelopment) {
-      this.log("debug", message, context);
+      this.log('debug', message, context);
     }
   }
 
   auth(message: string, context?: LogContext): void {
-    this.log("auth", message, context);
+    this.log('auth', message, context);
   }
 
   session(message: string, context?: LogContext): void {
-    this.log("session", message, context);
+    this.log('session', message, context);
   }
 
   security(message: string, context?: LogContext): void {
-    this.log("security", message, context);
+    this.log('security', message, context);
   }
 
   upload(message: string, context?: LogContext): void {
-    this.log("upload", message, context);
+    this.log('upload', message, context);
   }
 }
 

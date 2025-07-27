@@ -1,4 +1,4 @@
-import { z } from "zod";
+import { z } from 'zod';
 
 // Common validation schemas
 export const idSchema = z.number().int().positive();
@@ -6,8 +6,8 @@ export const idSchema = z.number().int().positive();
 export const paginationSchema = z.object({
   page: z.coerce.number().int().min(1).default(1),
   limit: z.coerce.number().int().min(1).max(100).default(10),
-  sortBy: z.string().optional().default("createdAt"),
-  sortOrder: z.enum(["asc", "desc"]).default("desc"),
+  sortBy: z.string().optional().default('createdAt'),
+  sortOrder: z.enum(['asc', 'desc']).default('desc'),
 });
 
 export const searchSchema = z.object({
@@ -20,114 +20,114 @@ export const dateRangeSchema = z.object({
 });
 
 // Enum schemas based on Prisma schema
-export const userRoleSchema = z.enum(["ADMIN", "MANAGER", "STAFF"]);
+export const userRoleSchema = z.enum(['ADMIN', 'MANAGER', 'STAFF']);
 
 export const userStatusSchema = z.enum([
-  "PENDING",
-  "VERIFIED",
-  "APPROVED",
-  "REJECTED",
-  "SUSPENDED",
+  'PENDING',
+  'VERIFIED',
+  'APPROVED',
+  'REJECTED',
+  'SUSPENDED',
 ]);
 
 export const productStatusSchema = z.enum([
-  "ACTIVE",
-  "INACTIVE",
-  "OUT_OF_STOCK",
-  "DISCONTINUED",
+  'ACTIVE',
+  'INACTIVE',
+  'OUT_OF_STOCK',
+  'DISCONTINUED',
 ]);
 
 export const paymentMethodSchema = z.enum([
-  "CASH",
-  "BANK_TRANSFER",
-  "POS_MACHINE",
-  "CREDIT_CARD",
-  "MOBILE_MONEY",
+  'CASH',
+  'BANK_TRANSFER',
+  'POS_MACHINE',
+  'CREDIT_CARD',
+  'MOBILE_MONEY',
 ]);
 
 export const paymentStatusSchema = z.enum([
-  "PENDING",
-  "PAID",
-  "REFUNDED",
-  "CANCELLED",
+  'PENDING',
+  'PAID',
+  'REFUNDED',
+  'CANCELLED',
 ]);
 
 // Common field validations
-export const emailSchema = z.string().email("Invalid email format");
+export const emailSchema = z.string().email('Invalid email format');
 
 export const phoneSchema = z
   .string()
   .regex(
     /^(\+234[7-9]\d{9}|0[7-9]\d{9})$/,
-    "Phone number must be in Nigerian format: +2347087367278 or 07039893476"
+    'Phone number must be in Nigerian format: +2347087367278 or 07039893476'
   );
 
 // Import price validation schemas
-import { nairaPriceSchema } from "./price";
+import { nairaPriceSchema } from './price';
 
 export const priceSchema = nairaPriceSchema;
 
 export const stockSchema = z
   .number()
-  .int("Stock must be a whole number")
-  .min(0, "Stock cannot be negative");
+  .int('Stock must be a whole number')
+  .min(0, 'Stock cannot be negative');
 
 export const skuSchema = z
   .string()
-  .min(1, "SKU is required")
-  .max(50, "SKU must be 50 characters or less")
+  .min(1, 'SKU is required')
+  .max(50, 'SKU must be 50 characters or less')
   .regex(
     /^[A-Z0-9\-_]+$/i,
-    "SKU can only contain letters, numbers, hyphens, and underscores"
+    'SKU can only contain letters, numbers, hyphens, and underscores'
   );
 
 export const nameSchema = z
   .string()
-  .min(1, "Name is required")
-  .max(255, "Name must be 255 characters or less")
+  .min(1, 'Name is required')
+  .max(255, 'Name must be 255 characters or less')
   .trim();
 
 // Password validation schemas - Enhanced security requirements
 export const passwordSchema = z
   .string()
-  .min(12, "Password must be at least 12 characters")
-  .max(128, "Password must be less than 128 characters")
+  .min(12, 'Password must be at least 12 characters')
+  .max(128, 'Password must be less than 128 characters')
   .regex(
     /^(?=.*[a-z])(?=.*[A-Z])(?=.*\d)(?=.*[@$!%*?&])[A-Za-z\d@$!%*?&]/,
-    "Password must contain at least one lowercase letter, one uppercase letter, one number, and one special character (@$!%*?&)"
+    'Password must contain at least one lowercase letter, one uppercase letter, one number, and one special character (@$!%*?&)'
   )
-  .refine((password) => {
+  .refine(password => {
     // Check for common weak passwords
     const commonPasswords = [
-      "123456789012",
-      "password123!",
-      "Password123!",
-      "qwerty123456",
-      "admin123456!",
-      "welcome123!",
+      '123456789012',
+      'password123!',
+      'Password123!',
+      'qwerty123456',
+      'admin123456!',
+      'welcome123!',
     ];
     return !commonPasswords.includes(password.toLowerCase());
-  }, "Password is too common. Please choose a more secure password.");
+  }, 'Password is too common. Please choose a more secure password.');
 
 // Legacy simple password schema - for backwards compatibility only
 // DEPRECATED: Use passwordSchema for new implementations
 export const simplePasswordSchema = z
   .string()
-  .min(8, "Password must be at least 8 characters")
+  .min(8, 'Password must be at least 8 characters')
   .regex(
     /^(?=.*[a-z])(?=.*[A-Z])(?=.*\d)/,
-    "Password must contain at least one lowercase letter, one uppercase letter, and one number"
+    'Password must contain at least one lowercase letter, one uppercase letter, and one number'
   );
 
 export const currentPasswordSchema = z
   .string()
-  .min(1, "Current password is required");
+  .min(1, 'Current password is required');
 
 // Error handling utility
 export function formatZodError(error: z.ZodError): Record<string, string> {
   return error.errors.reduce(
     (acc, err) => {
-      const path = err.path.join(".");
+      const path = err.path.join('.');
       acc[path] = err.message;
       return acc;
     },
@@ -154,7 +154,7 @@ export function validateRequest<T>(
     if (error instanceof z.ZodError) {
       return { success: false, errors: formatZodError(error) };
     }
-    return { success: false, errors: { general: "Validation failed" } };
+    return { success: false, errors: { general: 'Validation failed' } };
   }
 }
 
@@ -169,7 +169,7 @@ export async function validateRequestBody<T>(
   } catch (_error) {
     return {
       success: false,
-      errors: { general: "Invalid JSON in request body" },
+      errors: { general: 'Invalid JSON in request body' },
     };
   }
 }
@@ -200,7 +200,7 @@ export function validateSearchParams<T>(
   } catch (_error) {
     return {
       success: false,
-      errors: { general: "Invalid search parameters" },
+      errors: { general: 'Invalid search parameters' },
     };
   }
 }
@@ -221,7 +221,7 @@ export function createValidationError(
   return {
     message,
     errors,
-    code: code || "VALIDATION_ERROR",
+    code: code || 'VALIDATION_ERROR',
   };
 }
 
@@ -240,10 +240,10 @@ export const baseFormValidations = {
   percentage: () =>
     z
       .number()
-      .min(0, "Percentage cannot be negative")
-      .max(100, "Percentage cannot exceed 100"),
+      .min(0, 'Percentage cannot be negative')
+      .max(100, 'Percentage cannot exceed 100'),
 
-  positiveInteger: () => z.number().int().positive("Must be a positive number"),
+  positiveInteger: () => z.number().int().positive('Must be a positive number'),
 
   optionalPositiveInteger: () =>
     z.number().int().positive().optional().nullable(),

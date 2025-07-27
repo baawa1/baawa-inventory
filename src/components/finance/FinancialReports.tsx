@@ -1,17 +1,17 @@
-"use client";
+'use client';
 
-import React, { useState } from "react";
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import { Button } from "@/components/ui/button";
-import { Badge } from "@/components/ui/badge";
-import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import React, { useState } from 'react';
+import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
+import { Button } from '@/components/ui/button';
+import { Badge } from '@/components/ui/badge';
+import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import {
   Select,
   SelectContent,
   SelectItem,
   SelectTrigger,
   SelectValue,
-} from "@/components/ui/select";
+} from '@/components/ui/select';
 import {
   IconDownload,
   IconPrinter,
@@ -20,10 +20,10 @@ import {
   IconTrendingDown,
   IconCash,
   IconCalendar,
-} from "@tabler/icons-react";
-import { DateRange } from "react-day-picker";
-import { formatCurrency } from "@/lib/utils";
-import { useFinancialAnalytics } from "@/hooks/api/useFinancialAnalytics";
+} from '@tabler/icons-react';
+import { DateRange } from 'react-day-picker';
+import { formatCurrency } from '@/lib/utils';
+import { useFinancialAnalytics } from '@/hooks/api/useFinancialAnalytics';
 
 interface FinancialReportsProps {
   dateRange?: DateRange;
@@ -36,13 +36,13 @@ export function FinancialReports({
   transactionType,
   paymentMethod,
 }: FinancialReportsProps) {
-  const [reportType, setReportType] = useState("profit-loss");
-  const [period, setPeriod] = useState("monthly");
+  const [reportType, setReportType] = useState('profit-loss');
+  const [period, setPeriod] = useState('monthly');
 
   const { data: analyticsData, isLoading } = useFinancialAnalytics({
     dateRange,
-    type: transactionType as "all" | "income" | "expense",
-    paymentMethod: paymentMethod !== "all" ? paymentMethod : undefined,
+    type: transactionType as 'all' | 'income' | 'expense',
+    paymentMethod: paymentMethod !== 'all' ? paymentMethod : undefined,
   });
 
   const summary = analyticsData?.summary;
@@ -96,9 +96,9 @@ export function FinancialReports({
   if (isLoading) {
     return (
       <div className="space-y-6">
-        <div className="text-center py-8">
-          <div className="animate-spin h-8 w-8 border-b-2 border-primary mx-auto"></div>
-          <p className="mt-2 text-muted-foreground">
+        <div className="py-8 text-center">
+          <div className="border-primary mx-auto h-8 w-8 animate-spin border-b-2"></div>
+          <p className="text-muted-foreground mt-2">
             Loading financial reports...
           </p>
         </div>
@@ -160,19 +160,19 @@ export function FinancialReports({
                 Profit & Loss Statement
                 <div className="flex items-center gap-2">
                   <Button
-                    onClick={() => handleExportReport("profit-loss")}
+                    onClick={() => handleExportReport('profit-loss')}
                     variant="outline"
                     size="sm"
                   >
-                    <IconDownload className="h-4 w-4 mr-2" />
+                    <IconDownload className="mr-2 h-4 w-4" />
                     Export
                   </Button>
                   <Button
-                    onClick={() => handlePrintReport("profit-loss")}
+                    onClick={() => handlePrintReport('profit-loss')}
                     variant="outline"
                     size="sm"
                   >
-                    <IconPrinter className="h-4 w-4 mr-2" />
+                    <IconPrinter className="mr-2 h-4 w-4" />
                     Print
                   </Button>
                 </div>
@@ -182,21 +182,21 @@ export function FinancialReports({
               <div className="space-y-6">
                 {/* Revenue Section */}
                 <div>
-                  <h3 className="text-lg font-semibold mb-3">Revenue</h3>
+                  <h3 className="mb-3 text-lg font-semibold">Revenue</h3>
                   <div className="space-y-2">
-                    <div className="flex justify-between items-center">
+                    <div className="flex items-center justify-between">
                       <span>Sales Revenue</span>
                       <span className="font-medium">
                         {formatCurrency(profitLossData.revenue.sales)}
                       </span>
                     </div>
-                    <div className="flex justify-between items-center">
+                    <div className="flex items-center justify-between">
                       <span>Other Income</span>
                       <span className="font-medium">
                         {formatCurrency(profitLossData.revenue.otherIncome)}
                       </span>
                     </div>
-                    <div className="flex justify-between items-center border-t pt-2">
+                    <div className="flex items-center justify-between border-t pt-2">
                       <span className="font-semibold">Total Revenue</span>
                       <span className="font-bold text-green-600">
                         {formatCurrency(profitLossData.revenue.totalRevenue)}
@@ -207,15 +207,15 @@ export function FinancialReports({
 
                 {/* Expenses Section */}
                 <div>
-                  <h3 className="text-lg font-semibold mb-3">Expenses</h3>
+                  <h3 className="mb-3 text-lg font-semibold">Expenses</h3>
                   <div className="space-y-2">
-                    <div className="flex justify-between items-center">
+                    <div className="flex items-center justify-between">
                       <span>Cost of Goods Sold</span>
                       <span className="font-medium">
                         {formatCurrency(profitLossData.expenses.costOfGoods)}
                       </span>
                     </div>
-                    <div className="flex justify-between items-center">
+                    <div className="flex items-center justify-between">
                       <span>Operating Expenses</span>
                       <span className="font-medium">
                         {formatCurrency(
@@ -223,7 +223,7 @@ export function FinancialReports({
                         )}
                       </span>
                     </div>
-                    <div className="flex justify-between items-center border-t pt-2">
+                    <div className="flex items-center justify-between border-t pt-2">
                       <span className="font-semibold">Total Expenses</span>
                       <span className="font-bold text-red-600">
                         {formatCurrency(profitLossData.expenses.totalExpenses)}
@@ -235,16 +235,16 @@ export function FinancialReports({
                 {/* Profit Section */}
                 <div>
                   <div className="space-y-2">
-                    <div className="flex justify-between items-center">
+                    <div className="flex items-center justify-between">
                       <span className="font-semibold">Gross Profit</span>
                       <span className="font-bold text-green-600">
                         {formatCurrency(profitLossData.grossProfit)}
                       </span>
                     </div>
-                    <div className="flex justify-between items-center border-t pt-2">
+                    <div className="flex items-center justify-between border-t pt-2">
                       <span className="text-lg font-bold">Net Profit</span>
                       <span
-                        className={`text-lg font-bold ${profitLossData.netProfit >= 0 ? "text-green-600" : "text-red-600"}`}
+                        className={`text-lg font-bold ${profitLossData.netProfit >= 0 ? 'text-green-600' : 'text-red-600'}`}
                       >
                         {formatCurrency(profitLossData.netProfit)}
                       </span>
@@ -264,19 +264,19 @@ export function FinancialReports({
                 Cash Flow Statement
                 <div className="flex items-center gap-2">
                   <Button
-                    onClick={() => handleExportReport("cash-flow")}
+                    onClick={() => handleExportReport('cash-flow')}
                     variant="outline"
                     size="sm"
                   >
-                    <IconDownload className="h-4 w-4 mr-2" />
+                    <IconDownload className="mr-2 h-4 w-4" />
                     Export
                   </Button>
                   <Button
-                    onClick={() => handlePrintReport("cash-flow")}
+                    onClick={() => handlePrintReport('cash-flow')}
                     variant="outline"
                     size="sm"
                   >
-                    <IconPrinter className="h-4 w-4 mr-2" />
+                    <IconPrinter className="mr-2 h-4 w-4" />
                     Print
                   </Button>
                 </div>
@@ -286,11 +286,11 @@ export function FinancialReports({
               <div className="space-y-6">
                 {/* Operating Activities */}
                 <div>
-                  <h3 className="text-lg font-semibold mb-3">
+                  <h3 className="mb-3 text-lg font-semibold">
                     Operating Activities
                   </h3>
                   <div className="space-y-2">
-                    <div className="flex justify-between items-center">
+                    <div className="flex items-center justify-between">
                       <span>Net Income</span>
                       <span className="font-medium">
                         {formatCurrency(
@@ -298,7 +298,7 @@ export function FinancialReports({
                         )}
                       </span>
                     </div>
-                    <div className="flex justify-between items-center">
+                    <div className="flex items-center justify-between">
                       <span>Depreciation</span>
                       <span className="font-medium">
                         {formatCurrency(
@@ -306,7 +306,7 @@ export function FinancialReports({
                         )}
                       </span>
                     </div>
-                    <div className="flex justify-between items-center">
+                    <div className="flex items-center justify-between">
                       <span>Changes in Working Capital</span>
                       <span className="font-medium">
                         {formatCurrency(
@@ -315,7 +315,7 @@ export function FinancialReports({
                         )}
                       </span>
                     </div>
-                    <div className="flex justify-between items-center border-t pt-2">
+                    <div className="flex items-center justify-between border-t pt-2">
                       <span className="font-semibold">
                         Net Operating Cash Flow
                       </span>
@@ -330,11 +330,11 @@ export function FinancialReports({
 
                 {/* Investing Activities */}
                 <div>
-                  <h3 className="text-lg font-semibold mb-3">
+                  <h3 className="mb-3 text-lg font-semibold">
                     Investing Activities
                   </h3>
                   <div className="space-y-2">
-                    <div className="flex justify-between items-center">
+                    <div className="flex items-center justify-between">
                       <span>Capital Expenditures</span>
                       <span className="font-medium">
                         {formatCurrency(
@@ -342,7 +342,7 @@ export function FinancialReports({
                         )}
                       </span>
                     </div>
-                    <div className="flex justify-between items-center">
+                    <div className="flex items-center justify-between">
                       <span>Investments</span>
                       <span className="font-medium">
                         {formatCurrency(
@@ -350,7 +350,7 @@ export function FinancialReports({
                         )}
                       </span>
                     </div>
-                    <div className="flex justify-between items-center border-t pt-2">
+                    <div className="flex items-center justify-between border-t pt-2">
                       <span className="font-semibold">
                         Net Investing Cash Flow
                       </span>
@@ -365,17 +365,17 @@ export function FinancialReports({
 
                 {/* Financing Activities */}
                 <div>
-                  <h3 className="text-lg font-semibold mb-3">
+                  <h3 className="mb-3 text-lg font-semibold">
                     Financing Activities
                   </h3>
                   <div className="space-y-2">
-                    <div className="flex justify-between items-center">
+                    <div className="flex items-center justify-between">
                       <span>Loans</span>
                       <span className="font-medium">
                         {formatCurrency(cashFlowData.financingActivities.loans)}
                       </span>
                     </div>
-                    <div className="flex justify-between items-center">
+                    <div className="flex items-center justify-between">
                       <span>Repayments</span>
                       <span className="font-medium">
                         {formatCurrency(
@@ -383,7 +383,7 @@ export function FinancialReports({
                         )}
                       </span>
                     </div>
-                    <div className="flex justify-between items-center border-t pt-2">
+                    <div className="flex items-center justify-between border-t pt-2">
                       <span className="font-semibold">
                         Net Financing Cash Flow
                       </span>
@@ -402,7 +402,7 @@ export function FinancialReports({
 
         {/* Financial Summary */}
         <TabsContent value="summary" className="space-y-6">
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+          <div className="grid grid-cols-1 gap-6 md:grid-cols-2 lg:grid-cols-3">
             <Card>
               <CardHeader>
                 <CardTitle className="text-sm font-medium">
@@ -413,7 +413,7 @@ export function FinancialReports({
                 <div className="text-2xl font-bold text-green-600">
                   {formatCurrency(summary?.totalRevenue || 0)}
                 </div>
-                <p className="text-xs text-muted-foreground mt-1">
+                <p className="text-muted-foreground mt-1 text-xs">
                   +{summary?.revenueGrowth || 0}% from last period
                 </p>
               </CardContent>
@@ -429,7 +429,7 @@ export function FinancialReports({
                 <div className="text-2xl font-bold text-red-600">
                   {formatCurrency(summary?.totalExpenses || 0)}
                 </div>
-                <p className="text-xs text-muted-foreground mt-1">
+                <p className="text-muted-foreground mt-1 text-xs">
                   +{summary?.expenseGrowth || 0}% from last period
                 </p>
               </CardContent>
@@ -443,12 +443,12 @@ export function FinancialReports({
               </CardHeader>
               <CardContent>
                 <div
-                  className={`text-2xl font-bold ${(summary?.netProfit || 0) >= 0 ? "text-green-600" : "text-red-600"}`}
+                  className={`text-2xl font-bold ${(summary?.netProfit || 0) >= 0 ? 'text-green-600' : 'text-red-600'}`}
                 >
                   {formatCurrency(summary?.netProfit || 0)}
                 </div>
-                <p className="text-xs text-muted-foreground mt-1">
-                  {(summary?.netProfit || 0) >= 0 ? "Profit" : "Loss"}
+                <p className="text-muted-foreground mt-1 text-xs">
+                  {(summary?.netProfit || 0) >= 0 ? 'Profit' : 'Loss'}
                 </p>
               </CardContent>
             </Card>
@@ -463,8 +463,8 @@ export function FinancialReports({
                 <div className="text-2xl font-bold">
                   {(summary?.totalTransactions || 0).toLocaleString()}
                 </div>
-                <p className="text-xs text-muted-foreground mt-1">
-                  Average:{" "}
+                <p className="text-muted-foreground mt-1 text-xs">
+                  Average:{' '}
                   {formatCurrency(summary?.averageTransactionValue || 0)}
                 </p>
               </CardContent>
@@ -478,9 +478,9 @@ export function FinancialReports({
               </CardHeader>
               <CardContent>
                 <div className="text-2xl font-bold capitalize">
-                  {summary?.topPaymentMethod || "Cash"}
+                  {summary?.topPaymentMethod || 'Cash'}
                 </div>
-                <p className="text-xs text-muted-foreground mt-1">
+                <p className="text-muted-foreground mt-1 text-xs">
                   Most used payment method
                 </p>
               </CardContent>
@@ -496,10 +496,10 @@ export function FinancialReports({
                 <div className="text-2xl font-bold">
                   {period.charAt(0).toUpperCase() + period.slice(1)}
                 </div>
-                <p className="text-xs text-muted-foreground mt-1">
+                <p className="text-muted-foreground mt-1 text-xs">
                   {dateRange?.from && dateRange?.to
                     ? `${dateRange.from.toLocaleDateString()} - ${dateRange.to.toLocaleDateString()}`
-                    : "Custom range"}
+                    : 'Custom range'}
                 </p>
               </CardContent>
             </Card>

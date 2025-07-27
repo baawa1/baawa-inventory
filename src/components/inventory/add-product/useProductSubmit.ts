@@ -1,10 +1,10 @@
-"use client";
+'use client';
 
-import { UseFormReturn } from "react-hook-form";
-import { useRouter } from "next/navigation";
-import { toast } from "sonner";
-import type { CreateProductData } from "./types";
-import { logger } from "@/lib/logger";
+import { UseFormReturn } from 'react-hook-form';
+import { useRouter } from 'next/navigation';
+import { toast } from 'sonner';
+import type { CreateProductData } from './types';
+import { logger } from '@/lib/logger';
 
 export function useProductSubmit(
   form: UseFormReturn<CreateProductData>,
@@ -30,29 +30,29 @@ export function useProductSubmit(
 
       // Debug logging removed for production
 
-      const response = await fetch("/api/products", {
-        method: "POST",
+      const response = await fetch('/api/products', {
+        method: 'POST',
         headers: {
-          "Content-Type": "application/json",
+          'Content-Type': 'application/json',
         },
         body: JSON.stringify(cleanedData),
       });
 
       if (!response.ok) {
         const errorData = await response.json();
-        throw new Error(errorData.message || "Failed to create product");
+        throw new Error(errorData.message || 'Failed to create product');
       }
 
       const _result = await response.json();
       // Debug logging removed for production
 
       // Show success notification
-      toast.success("Product created successfully!");
+      toast.success('Product created successfully!');
 
       // Redirect to products list
-      router.push("/inventory/products");
+      router.push('/inventory/products');
     } catch (error) {
-      logger.error("Failed to create product", {
+      logger.error('Failed to create product', {
         productName: data.name,
         sku: data.sku,
         error: error instanceof Error ? error.message : String(error),

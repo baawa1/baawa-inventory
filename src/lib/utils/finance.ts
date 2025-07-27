@@ -1,4 +1,4 @@
-import { prisma } from "@/lib/db";
+import { prisma } from '@/lib/db';
 
 /**
  * Generate a unique transaction number
@@ -6,7 +6,7 @@ import { prisma } from "@/lib/db";
  */
 export async function generateTransactionNumber(): Promise<string> {
   const today = new Date();
-  const dateString = today.toISOString().slice(0, 10).replace(/-/g, "");
+  const dateString = today.toISOString().slice(0, 10).replace(/-/g, '');
   const prefix = `FIN-${dateString}`;
 
   // Get the count of transactions for today
@@ -31,7 +31,7 @@ export async function generateTransactionNumber(): Promise<string> {
   });
 
   // Format the sequence number with leading zeros
-  const sequence = (count + 1).toString().padStart(4, "0");
+  const sequence = (count + 1).toString().padStart(4, '0');
   return `${prefix}-${sequence}`;
 }
 
@@ -58,14 +58,14 @@ export function calculateTaxAmount(amount: number, taxRate: number): number {
 export function formatCurrency(
   amount: number | string | null | undefined
 ): string {
-  if (amount === null || amount === undefined) return "₦0.00";
+  if (amount === null || amount === undefined) return '₦0.00';
 
-  const numAmount = typeof amount === "string" ? parseFloat(amount) : amount;
-  if (isNaN(numAmount)) return "₦0.00";
+  const numAmount = typeof amount === 'string' ? parseFloat(amount) : amount;
+  if (isNaN(numAmount)) return '₦0.00';
 
-  return new Intl.NumberFormat("en-NG", {
-    style: "currency",
-    currency: "NGN",
+  return new Intl.NumberFormat('en-NG', {
+    style: 'currency',
+    currency: 'NGN',
     minimumFractionDigits: 2,
   }).format(numAmount);
 }
@@ -81,8 +81,8 @@ export function getFinancialSummary(transactions: any[]) {
     transactionCount: transactions.length,
   };
 
-  transactions.forEach((transaction) => {
-    if (transaction.type === "INCOME") {
+  transactions.forEach(transaction => {
+    if (transaction.type === 'INCOME') {
       summary.totalIncome += Number(transaction.amount);
     } else {
       summary.totalExpense += Number(transaction.amount);
@@ -108,7 +108,7 @@ export function calculatePercentageChange(
  * Format percentage with sign
  */
 export function formatPercentage(value: number): string {
-  const sign = value >= 0 ? "+" : "";
+  const sign = value >= 0 ? '+' : '';
   return `${sign}${value.toFixed(1)}%`;
 }
 
@@ -116,32 +116,32 @@ export function formatPercentage(value: number): string {
  * Get date range for period type
  */
 export function getDateRangeForPeriod(
-  periodType: "MONTHLY" | "QUARTERLY" | "YEARLY",
+  periodType: 'MONTHLY' | 'QUARTERLY' | 'YEARLY',
   referenceDate: Date = new Date()
 ): { startDate: Date; endDate: Date } {
   const year = referenceDate.getFullYear();
   const month = referenceDate.getMonth();
 
   switch (periodType) {
-    case "MONTHLY":
+    case 'MONTHLY':
       return {
         startDate: new Date(year, month, 1),
         endDate: new Date(year, month + 1, 0),
       };
-    case "QUARTERLY":
+    case 'QUARTERLY':
       const quarter = Math.floor(month / 3);
       const quarterStartMonth = quarter * 3;
       return {
         startDate: new Date(year, quarterStartMonth, 1),
         endDate: new Date(year, quarterStartMonth + 3, 0),
       };
-    case "YEARLY":
+    case 'YEARLY':
       return {
         startDate: new Date(year, 0, 1),
         endDate: new Date(year, 11, 31),
       };
     default:
-      throw new Error("Invalid period type");
+      throw new Error('Invalid period type');
   }
 }
 
@@ -156,7 +156,7 @@ export function validateTransactionAmount(amount: number): boolean {
  * Sanitize file upload URL
  */
 export function sanitizeFileUrl(url: string | null | undefined): string | null {
-  if (!url || url.trim() === "") return null;
+  if (!url || url.trim() === '') return null;
 
   try {
     new URL(url);
@@ -184,7 +184,7 @@ export function generateReportDataStructure(
       end: periodEnd.toISOString(),
     },
     summary,
-    transactions: transactions.map((t) => ({
+    transactions: transactions.map(t => ({
       id: t.id,
       date: t.transactionDate,
       type: t.type,
@@ -212,15 +212,15 @@ export function calculateBudgetUtilization(
  * Get budget status based on utilization
  */
 export function getBudgetStatus(utilizationPercentage: number): {
-  status: "on-track" | "warning" | "over-budget";
+  status: 'on-track' | 'warning' | 'over-budget';
   color: string;
 } {
   if (utilizationPercentage <= 75) {
-    return { status: "on-track", color: "green" };
+    return { status: 'on-track', color: 'green' };
   } else if (utilizationPercentage <= 100) {
-    return { status: "warning", color: "yellow" };
+    return { status: 'warning', color: 'yellow' };
   } else {
-    return { status: "over-budget", color: "red" };
+    return { status: 'over-budget', color: 'red' };
   }
 }
 
@@ -229,18 +229,18 @@ export function getBudgetStatus(utilizationPercentage: number): {
  */
 export function getStatusBadgeVariant(
   status: string
-): "default" | "secondary" | "destructive" | "outline" {
+): 'default' | 'secondary' | 'destructive' | 'outline' {
   switch (status) {
-    case "COMPLETED":
-    case "APPROVED":
-      return "default";
-    case "PENDING":
-      return "secondary";
-    case "REJECTED":
-    case "CANCELLED":
-      return "destructive";
+    case 'COMPLETED':
+    case 'APPROVED':
+      return 'default';
+    case 'PENDING':
+      return 'secondary';
+    case 'REJECTED':
+    case 'CANCELLED':
+      return 'destructive';
     default:
-      return "outline";
+      return 'outline';
   }
 }
 
@@ -249,14 +249,14 @@ export function getStatusBadgeVariant(
  */
 export function getTypeBadgeVariant(
   type: string
-): "default" | "secondary" | "destructive" | "outline" {
+): 'default' | 'secondary' | 'destructive' | 'outline' {
   switch (type) {
-    case "INCOME":
-      return "default";
-    case "EXPENSE":
-      return "destructive";
+    case 'INCOME':
+      return 'default';
+    case 'EXPENSE':
+      return 'destructive';
     default:
-      return "outline";
+      return 'outline';
   }
 }
 
@@ -265,7 +265,7 @@ export function getTypeBadgeVariant(
  */
 export function exportToCSV(data: any[], filename: string): void {
   if (!data || data.length === 0) {
-    console.warn("No data to export");
+    console.warn('No data to export');
     return;
   }
 
@@ -274,31 +274,31 @@ export function exportToCSV(data: any[], filename: string): void {
 
   // Create CSV content
   const csvContent = [
-    headers.join(","),
-    ...data.map((row) =>
+    headers.join(','),
+    ...data.map(row =>
       headers
-        .map((header) => {
+        .map(header => {
           const value = row[header];
           // Handle values that need quotes (contain commas, quotes, or newlines)
           if (
-            typeof value === "string" &&
-            (value.includes(",") || value.includes('"') || value.includes("\n"))
+            typeof value === 'string' &&
+            (value.includes(',') || value.includes('"') || value.includes('\n'))
           ) {
             return `"${value.replace(/"/g, '""')}"`;
           }
           return value;
         })
-        .join(",")
+        .join(',')
     ),
-  ].join("\n");
+  ].join('\n');
 
   // Create and download file
-  const blob = new Blob([csvContent], { type: "text/csv;charset=utf-8;" });
-  const link = document.createElement("a");
+  const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' });
+  const link = document.createElement('a');
   const url = URL.createObjectURL(blob);
-  link.setAttribute("href", url);
-  link.setAttribute("download", `${filename}.csv`);
-  link.style.visibility = "hidden";
+  link.setAttribute('href', url);
+  link.setAttribute('download', `${filename}.csv`);
+  link.style.visibility = 'hidden';
   document.body.appendChild(link);
   link.click();
   document.body.removeChild(link);
@@ -310,13 +310,13 @@ export function exportToCSV(data: any[], filename: string): void {
 export function exportToJSON(data: any, filename: string): void {
   const jsonContent = JSON.stringify(data, null, 2);
   const blob = new Blob([jsonContent], {
-    type: "application/json;charset=utf-8;",
+    type: 'application/json;charset=utf-8;',
   });
-  const link = document.createElement("a");
+  const link = document.createElement('a');
   const url = URL.createObjectURL(blob);
-  link.setAttribute("href", url);
-  link.setAttribute("download", `${filename}.json`);
-  link.style.visibility = "hidden";
+  link.setAttribute('href', url);
+  link.setAttribute('download', `${filename}.json`);
+  link.style.visibility = 'hidden';
   document.body.appendChild(link);
   link.click();
   document.body.removeChild(link);
@@ -326,7 +326,7 @@ export function exportToJSON(data: any, filename: string): void {
  * Format date for export filenames
  */
 export function formatDateForExport(date: Date = new Date()): string {
-  return date.toISOString().slice(0, 10).replace(/-/g, "");
+  return date.toISOString().slice(0, 10).replace(/-/g, '');
 }
 
 /**
@@ -338,7 +338,7 @@ export function generateExportFilename(
 ): string {
   const date = formatDateForExport();
   const type = reportType
-    ? `-${reportType.toLowerCase().replace(/\s+/g, "-")}`
-    : "";
+    ? `-${reportType.toLowerCase().replace(/\s+/g, '-')}`
+    : '';
   return `${baseName}${type}-${date}`;
 }

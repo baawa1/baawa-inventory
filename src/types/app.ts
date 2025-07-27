@@ -1,39 +1,39 @@
 // Base types for the application
-export type UserRole = "ADMIN" | "MANAGER" | "STAFF";
+export type UserRole = 'ADMIN' | 'MANAGER' | 'STAFF';
 
 export type ProductStatus =
-  | "ACTIVE"
-  | "INACTIVE"
-  | "OUT_OF_STOCK"
-  | "DISCONTINUED";
+  | 'ACTIVE'
+  | 'INACTIVE'
+  | 'OUT_OF_STOCK'
+  | 'DISCONTINUED';
 
 export type PaymentMethod =
-  | "CASH"
-  | "BANK_TRANSFER"
-  | "POS_MACHINE"
-  | "CREDIT_CARD"
-  | "MOBILE_MONEY";
+  | 'CASH'
+  | 'BANK_TRANSFER'
+  | 'POS_MACHINE'
+  | 'CREDIT_CARD'
+  | 'MOBILE_MONEY';
 
-export type PaymentStatus = "PENDING" | "PAID" | "REFUNDED" | "CANCELLED";
+export type PaymentStatus = 'PENDING' | 'PAID' | 'REFUNDED' | 'CANCELLED';
 
-export type DiscountType = "AMOUNT" | "PERCENTAGE";
+export type DiscountType = 'AMOUNT' | 'PERCENTAGE';
 
 export type AIContentType =
-  | "DESCRIPTION"
-  | "SEO_TITLE"
-  | "SEO_DESCRIPTION"
-  | "SOCIAL_MEDIA_POST"
-  | "PRODUCT_FEATURES"
-  | "MARKETING_COPY";
+  | 'DESCRIPTION'
+  | 'SEO_TITLE'
+  | 'SEO_DESCRIPTION'
+  | 'SOCIAL_MEDIA_POST'
+  | 'PRODUCT_FEATURES'
+  | 'MARKETING_COPY';
 
 export type ContentStatus =
-  | "DRAFT"
-  | "PENDING_APPROVAL"
-  | "APPROVED"
-  | "PUBLISHED"
-  | "REJECTED";
+  | 'DRAFT'
+  | 'PENDING_APPROVAL'
+  | 'APPROVED'
+  | 'PUBLISHED'
+  | 'REJECTED';
 
-export type ContentSyncStatus = "pending" | "synced" | "failed";
+export type ContentSyncStatus = 'pending' | 'synced' | 'failed';
 
 // Product types
 export interface Product {
@@ -208,7 +208,7 @@ export interface InventoryItem {
   currentStock: number;
   minStock: number;
   maxStock?: number;
-  status: "IN_STOCK" | "LOW_STOCK" | "OUT_OF_STOCK";
+  status: 'IN_STOCK' | 'LOW_STOCK' | 'OUT_OF_STOCK';
   value: number;
   lastUpdated: Date;
 }

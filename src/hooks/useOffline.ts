@@ -3,17 +3,17 @@
  * Provides offline state and functionality to React components
  */
 
-"use client";
+'use client';
 
-import { useState, useEffect, useCallback } from "react";
+import { useState, useEffect, useCallback } from 'react';
 import {
   offlineModeManager,
   NetworkStatus,
   OfflineQueueStats,
-} from "@/lib/utils/offline-mode";
-import { offlineStorage } from "@/lib/utils/offline-storage";
-import { INTERVALS } from "@/lib/constants";
-import { logger } from "@/lib/logger";
+} from '@/lib/utils/offline-mode';
+import { offlineStorage } from '@/lib/utils/offline-storage';
+import { INTERVALS } from '@/lib/constants';
+import { logger } from '@/lib/logger';
 
 export interface UseOfflineReturn {
   // Network status
@@ -59,8 +59,8 @@ export function useOffline(): UseOfflineReturn {
       const stats = await offlineModeManager.getQueueStats();
       setQueueStats(stats);
     } catch (err) {
-      logger.error("Error updating queue stats", {
-        error: err instanceof Error ? err.message : "Unknown error",
+      logger.error('Error updating queue stats', {
+        error: err instanceof Error ? err.message : 'Unknown error',
       });
     }
   }, []);
@@ -76,17 +76,17 @@ export function useOffline(): UseOfflineReturn {
           await updateQueueStats();
         }
       } catch (err) {
-        logger.error("Error initializing offline storage", {
-          error: err instanceof Error ? err.message : "Unknown error",
+        logger.error('Error initializing offline storage', {
+          error: err instanceof Error ? err.message : 'Unknown error',
         });
         if (mounted) {
-          setError("Failed to initialize offline storage");
+          setError('Failed to initialize offline storage');
         }
       }
     };
 
     // Listen for network status changes
-    const unsubscribe = offlineModeManager.addStatusListener((status) => {
+    const unsubscribe = offlineModeManager.addStatusListener(status => {
       if (mounted) {
         setNetworkStatus(status);
         // Update queue stats when network status changes
@@ -121,7 +121,7 @@ export function useOffline(): UseOfflineReturn {
         return transactionId;
       } catch (err) {
         const errorMessage =
-          err instanceof Error ? err.message : "Failed to queue transaction";
+          err instanceof Error ? err.message : 'Failed to queue transaction';
         setError(errorMessage);
         throw new Error(errorMessage);
       }
@@ -143,7 +143,7 @@ export function useOffline(): UseOfflineReturn {
 
       return result;
     } catch (err) {
-      const errorMessage = err instanceof Error ? err.message : "Sync failed";
+      const errorMessage = err instanceof Error ? err.message : 'Sync failed';
       setError(errorMessage);
       throw new Error(errorMessage);
     } finally {
@@ -161,7 +161,7 @@ export function useOffline(): UseOfflineReturn {
       await updateQueueStats();
     } catch (err) {
       const errorMessage =
-        err instanceof Error ? err.message : "Failed to cache products";
+        err instanceof Error ? err.message : 'Failed to cache products';
       setError(errorMessage);
       throw new Error(errorMessage);
     } finally {
@@ -179,7 +179,7 @@ export function useOffline(): UseOfflineReturn {
       const errorMessage =
         err instanceof Error
           ? err.message
-          : "Failed to clear failed transactions";
+          : 'Failed to clear failed transactions';
       setError(errorMessage);
       throw new Error(errorMessage);
     }
@@ -215,7 +215,7 @@ export function useOfflineProducts() {
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
-  const searchProducts = useCallback(async (searchTerm: string = "") => {
+  const searchProducts = useCallback(async (searchTerm: string = '') => {
     try {
       setIsLoading(true);
       setError(null);
@@ -224,7 +224,7 @@ export function useOfflineProducts() {
       const results = await offlineStorage.searchCachedProducts(searchTerm);
       setProducts(results);
     } catch (err) {
-      const errorMessage = err instanceof Error ? err.message : "Search failed";
+      const errorMessage = err instanceof Error ? err.message : 'Search failed';
       setError(errorMessage);
       setProducts([]);
     } finally {
@@ -239,7 +239,7 @@ export function useOfflineProducts() {
       return await offlineStorage.getProductByBarcode(barcode);
     } catch (err) {
       const errorMessage =
-        err instanceof Error ? err.message : "Barcode lookup failed";
+        err instanceof Error ? err.message : 'Barcode lookup failed';
       setError(errorMessage);
       return null;
     }
@@ -266,8 +266,8 @@ export function useOfflineStats() {
       const dbStats = await offlineStorage.getStats();
       setStats(dbStats);
     } catch (err) {
-      logger.error("Error getting offline stats", {
-        error: err instanceof Error ? err.message : "Unknown error",
+      logger.error('Error getting offline stats', {
+        error: err instanceof Error ? err.message : 'Unknown error',
       });
     } finally {
       setIsLoading(false);

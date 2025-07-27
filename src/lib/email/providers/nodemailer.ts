@@ -1,6 +1,6 @@
-import * as nodemailer from "nodemailer";
-import { EmailProvider, EmailOptions } from "../types";
-import { logger } from "@/lib/logger";
+import * as nodemailer from 'nodemailer';
+import { EmailProvider, EmailOptions } from '../types';
+import { logger } from '@/lib/logger';
 
 /**
  * Nodemailer Email Provider
@@ -37,21 +37,21 @@ export class NodemailerProvider implements EmailProvider {
     try {
       const mailOptions = {
         from: `"${this.fromName}" <${this.fromEmail}>`,
-        to: Array.isArray(options.to) ? options.to.join(", ") : options.to,
+        to: Array.isArray(options.to) ? options.to.join(', ') : options.to,
         cc: options.cc
           ? Array.isArray(options.cc)
-            ? options.cc.join(", ")
+            ? options.cc.join(', ')
             : options.cc
           : undefined,
         bcc: options.bcc
           ? Array.isArray(options.bcc)
-            ? options.bcc.join(", ")
+            ? options.bcc.join(', ')
             : options.bcc
           : undefined,
         subject: options.subject,
         html: options.html,
         text: options.text,
-        attachments: options.attachments?.map((attachment) => ({
+        attachments: options.attachments?.map(attachment => ({
           filename: attachment.filename,
           content: attachment.content,
           contentType: attachment.type,
@@ -60,7 +60,7 @@ export class NodemailerProvider implements EmailProvider {
 
       await this.transporter.sendMail(mailOptions);
     } catch (error) {
-      logger.error("Nodemailer email sending failed", {
+      logger.error('Nodemailer email sending failed', {
         recipient: options.to,
         subject: options.subject,
         error: error instanceof Error ? error.message : String(error),
@@ -82,7 +82,7 @@ export class NodemailerProvider implements EmailProvider {
       await this.transporter.verify();
       return true;
     } catch (error) {
-      logger.error("Nodemailer configuration validation failed", {
+      logger.error('Nodemailer configuration validation failed', {
         config: this.transporter,
         error: error instanceof Error ? error.message : String(error),
       });
@@ -91,6 +91,6 @@ export class NodemailerProvider implements EmailProvider {
   }
 
   getProviderName(): string {
-    return "Nodemailer (SMTP)";
+    return 'Nodemailer (SMTP)';
   }
 }

@@ -1,12 +1,12 @@
-import { prisma } from "@/lib/db";
-import { createEmailService } from "@/lib/email";
-import { logger } from "@/lib/logger";
+import { prisma } from '@/lib/db';
+import { createEmailService } from '@/lib/email';
+import { logger } from '@/lib/logger';
 
 export interface NotificationData {
   type:
-    | "RECONCILIATION_SUBMITTED"
-    | "RECONCILIATION_APPROVED"
-    | "RECONCILIATION_REJECTED";
+    | 'RECONCILIATION_SUBMITTED'
+    | 'RECONCILIATION_APPROVED'
+    | 'RECONCILIATION_REJECTED';
   reconciliationId: number;
   reconciliationTitle: string;
   createdBy: {
@@ -27,18 +27,18 @@ export interface NotificationData {
 export async function sendReconciliationNotification(data: NotificationData) {
   try {
     switch (data.type) {
-      case "RECONCILIATION_SUBMITTED":
+      case 'RECONCILIATION_SUBMITTED':
         await notifyAdminsOfSubmission(data);
         break;
-      case "RECONCILIATION_APPROVED":
+      case 'RECONCILIATION_APPROVED':
         await notifyCreatorOfApproval(data);
         break;
-      case "RECONCILIATION_REJECTED":
+      case 'RECONCILIATION_REJECTED':
         await notifyCreatorOfRejection(data);
         break;
     }
   } catch (error) {
-    logger.error("Failed to send stock reconciliation notification", {
+    logger.error('Failed to send stock reconciliation notification', {
       reconciliationId: data.reconciliationId,
       error: error instanceof Error ? error.message : String(error),
     });
@@ -49,7 +49,7 @@ async function notifyAdminsOfSubmission(data: NotificationData) {
   // Get all admin users who have email notifications enabled
   const admins = await prisma.user.findMany({
     where: {
-      role: "ADMIN",
+      role: 'ADMIN',
       isActive: true,
       emailNotifications: true,
     },
@@ -135,7 +135,7 @@ async function notifyCreatorOfRejection(data: NotificationData) {
       <li><strong>Title:</strong> ${data.reconciliationTitle}</li>
       <li><strong>Reconciliation ID:</strong> #${data.reconciliationId}</li>
       <li><strong>Rejected by:</strong> ${data.approvedBy?.firstName} ${data.approvedBy?.lastName}</li>
-      ${data.comments ? `<li><strong>Comments:</strong> ${data.comments}</li>` : ""}
+      ${data.comments ? `<li><strong>Comments:</strong> ${data.comments}</li>` : ''}
     </ul>
     
     <p>You can edit the reconciliation and resubmit it for approval.</p>

@@ -1,13 +1,13 @@
-import { NextResponse } from "next/server";
+import { NextResponse } from 'next/server';
 import {
   withAuth,
   withPermission,
   AuthenticatedRequest,
-} from "@/lib/api-middleware";
-import { handleApiError } from "@/lib/api-error-handler-new";
-import { prisma } from "@/lib/db";
-import { USER_ROLES } from "@/lib/auth/roles";
-import { z } from "zod";
+} from '@/lib/api-middleware';
+import { handleApiError } from '@/lib/api-error-handler-new';
+import { prisma } from '@/lib/db';
+import { USER_ROLES } from '@/lib/auth/roles';
+import { z } from 'zod';
 
 // Input validation schemas
 const ProductUpdateSchema = z.object({
@@ -63,7 +63,7 @@ export const GET = withAuth(
 
       if (isNaN(productId)) {
         return NextResponse.json(
-          { error: "Invalid product ID" },
+          { error: 'Invalid product ID' },
           { status: 400 }
         );
       }
@@ -96,7 +96,7 @@ export const GET = withAuth(
 
       if (!product) {
         return NextResponse.json(
-          { error: "Product not found" },
+          { error: 'Product not found' },
           { status: 404 }
         );
       }
@@ -127,7 +127,7 @@ export const PUT = withPermission(
 
       if (isNaN(productId)) {
         return NextResponse.json(
-          { error: "Invalid product ID" },
+          { error: 'Invalid product ID' },
           { status: 400 }
         );
       }
@@ -140,7 +140,7 @@ export const PUT = withPermission(
 
       if (!existingProduct) {
         return NextResponse.json(
-          { error: "Product not found" },
+          { error: 'Product not found' },
           { status: 404 }
         );
       }
@@ -220,7 +220,7 @@ export const PUT = withPermission(
 
         if (skuConflict) {
           return NextResponse.json(
-            { error: "Product with this SKU already exists" },
+            { error: 'Product with this SKU already exists' },
             { status: 409 }
           );
         }
@@ -241,7 +241,7 @@ export const PUT = withPermission(
 
         if (barcodeConflict) {
           return NextResponse.json(
-            { error: "Product with this barcode already exists" },
+            { error: 'Product with this barcode already exists' },
             { status: 409 }
           );
         }
@@ -255,7 +255,7 @@ export const PUT = withPermission(
         });
         if (!category) {
           return NextResponse.json(
-            { error: "Category not found" },
+            { error: 'Category not found' },
             { status: 404 }
           );
         }
@@ -268,7 +268,7 @@ export const PUT = withPermission(
         });
         if (!brand) {
           return NextResponse.json(
-            { error: "Brand not found" },
+            { error: 'Brand not found' },
             { status: 404 }
           );
         }
@@ -281,7 +281,7 @@ export const PUT = withPermission(
         });
         if (!supplier) {
           return NextResponse.json(
-            { error: "Supplier not found" },
+            { error: 'Supplier not found' },
             { status: 404 }
           );
         }
@@ -317,7 +317,7 @@ export const PUT = withPermission(
 
       return NextResponse.json({
         success: true,
-        message: "Product updated successfully",
+        message: 'Product updated successfully',
         data: updatedProduct,
       });
     } catch (error) {
@@ -339,7 +339,7 @@ export const DELETE = withPermission(
 
       if (isNaN(productId)) {
         return NextResponse.json(
-          { error: "Invalid product ID" },
+          { error: 'Invalid product ID' },
           { status: 400 }
         );
       }
@@ -352,7 +352,7 @@ export const DELETE = withPermission(
 
       if (!existingProduct) {
         return NextResponse.json(
-          { error: "Product not found" },
+          { error: 'Product not found' },
           { status: 404 }
         );
       }
@@ -372,7 +372,7 @@ export const DELETE = withPermission(
 
       return NextResponse.json({
         success: true,
-        message: "Product archived successfully",
+        message: 'Product archived successfully',
         data: archivedProduct,
       });
     } catch (error) {

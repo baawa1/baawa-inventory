@@ -1,16 +1,16 @@
-import { NextResponse } from "next/server";
+import { NextResponse } from 'next/server';
 import {
   withAuth,
   withPermission,
   AuthenticatedRequest,
-} from "@/lib/api-middleware";
-import { handleApiError } from "@/lib/api-error-handler-new";
-import { prisma } from "@/lib/db";
-import { USER_ROLES } from "@/lib/auth/roles";
+} from '@/lib/api-middleware';
+import { handleApiError } from '@/lib/api-error-handler-new';
+import { prisma } from '@/lib/db';
+import { USER_ROLES } from '@/lib/auth/roles';
 import {
   supplierIdSchema,
   updateSupplierSchema,
-} from "@/lib/validations/supplier";
+} from '@/lib/validations/supplier';
 
 // GET /api/suppliers/[id] - Get a specific supplier
 export const GET = withAuth(
@@ -36,7 +36,7 @@ export const GET = withAuth(
 
       if (!supplier) {
         return NextResponse.json(
-          { error: "Supplier not found" },
+          { error: 'Supplier not found' },
           { status: 404 }
         );
       }
@@ -95,7 +95,7 @@ export const PUT = withPermission(
 
       if (!existingSupplier) {
         return NextResponse.json(
-          { error: "Supplier not found" },
+          { error: 'Supplier not found' },
           { status: 404 }
         );
       }
@@ -106,7 +106,7 @@ export const PUT = withPermission(
           where: {
             name: {
               equals: validatedData.name,
-              mode: "insensitive",
+              mode: 'insensitive',
             },
             id: { not: id },
           },
@@ -115,7 +115,7 @@ export const PUT = withPermission(
 
         if (conflictSupplier) {
           return NextResponse.json(
-            { error: "Supplier with this name already exists" },
+            { error: 'Supplier with this name already exists' },
             { status: 409 }
           );
         }
@@ -173,7 +173,7 @@ export const PUT = withPermission(
 
       return NextResponse.json({
         success: true,
-        message: "Supplier updated successfully",
+        message: 'Supplier updated successfully',
         data: transformedSupplier,
       });
     } catch (error) {
@@ -202,7 +202,7 @@ export const DELETE = withPermission(
 
       if (!existingSupplier) {
         return NextResponse.json(
-          { error: "Supplier not found" },
+          { error: 'Supplier not found' },
           { status: 404 }
         );
       }
@@ -215,7 +215,7 @@ export const DELETE = withPermission(
       if (productsCount > 0) {
         return NextResponse.json(
           {
-            error: "Cannot delete supplier with associated products",
+            error: 'Cannot delete supplier with associated products',
             details: `This supplier has ${productsCount} products associated with it`,
           },
           { status: 400 }
@@ -229,7 +229,7 @@ export const DELETE = withPermission(
 
       return NextResponse.json({
         success: true,
-        message: "Supplier deleted successfully",
+        message: 'Supplier deleted successfully',
         data: { id, name: existingSupplier.name },
       });
     } catch (error) {
@@ -254,14 +254,14 @@ export const PATCH = withPermission(
       const body = await request.json();
 
       // Check if this is a status update (reactivation/deactivation)
-      if (body.hasOwnProperty("isActive")) {
+      if (body.hasOwnProperty('isActive')) {
         const supplier = await prisma.supplier.update({
           where: { id },
           data: { isActive: body.isActive },
           select: { id: true, name: true, isActive: true },
         });
 
-        const action = body.isActive ? "reactivated" : "deactivated";
+        const action = body.isActive ? 'reactivated' : 'deactivated';
         return NextResponse.json({
           success: true,
           message: `Supplier ${action} successfully`,
@@ -271,7 +271,7 @@ export const PATCH = withPermission(
 
       // Handle other patch operations (can be extended later)
       return NextResponse.json(
-        { error: "Invalid patch operation" },
+        { error: 'Invalid patch operation' },
         { status: 400 }
       );
     } catch (error) {

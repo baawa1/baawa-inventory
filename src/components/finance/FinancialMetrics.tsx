@@ -1,8 +1,8 @@
-"use client";
+'use client';
 
-import React from "react";
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import { Badge } from "@/components/ui/badge";
+import React from 'react';
+import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
+import { Badge } from '@/components/ui/badge';
 import {
   IconTrendingUp,
   IconTrendingDown,
@@ -10,9 +10,9 @@ import {
   IconShoppingCart,
   IconUsers,
   IconPackage,
-} from "@tabler/icons-react";
-import { DateRange } from "react-day-picker";
-import { formatCurrency } from "@/lib/utils";
+} from '@tabler/icons-react';
+import { DateRange } from 'react-day-picker';
+import { formatCurrency } from '@/lib/utils';
 
 interface TransactionStats {
   totalRevenue: number;
@@ -38,14 +38,14 @@ export function FinancialMetrics({
 }: FinancialMetricsProps) {
   if (isLoading) {
     return (
-      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
+      <div className="grid grid-cols-1 gap-6 md:grid-cols-2 lg:grid-cols-4">
         {[...Array(4)].map((_, i) => (
           <Card key={i}>
             <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
               <CardTitle className="text-sm font-medium">Loading...</CardTitle>
             </CardHeader>
             <CardContent>
-              <div className="h-8 bg-gray-200 rounded animate-pulse"></div>
+              <div className="h-8 animate-pulse rounded bg-gray-200"></div>
             </CardContent>
           </Card>
         ))}
@@ -55,7 +55,7 @@ export function FinancialMetrics({
 
   if (!transactionStats) {
     return (
-      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
+      <div className="grid grid-cols-1 gap-6 md:grid-cols-2 lg:grid-cols-4">
         <Card>
           <CardContent className="p-6">
             <p className="text-muted-foreground text-center">
@@ -80,43 +80,43 @@ export function FinancialMetrics({
 
   const metrics = [
     {
-      title: "Total Revenue",
+      title: 'Total Revenue',
       value: formatCurrency(totalRevenue),
       icon: IconTrendingUp,
       trend: revenueGrowth,
-      trendLabel: "vs last period",
-      className: "text-green-600",
+      trendLabel: 'vs last period',
+      className: 'text-green-600',
     },
     {
-      title: "Total Expenses",
+      title: 'Total Expenses',
       value: formatCurrency(totalExpenses),
       icon: IconTrendingDown,
       trend: expenseGrowth,
-      trendLabel: "vs last period",
-      className: "text-red-600",
+      trendLabel: 'vs last period',
+      className: 'text-red-600',
     },
     {
-      title: "Net Profit",
+      title: 'Net Profit',
       value: formatCurrency(netProfit),
       icon: IconCash,
-      trend: netProfit > 0 ? "positive" : "negative",
-      trendLabel: netProfit > 0 ? "Profit" : "Loss",
-      className: netProfit > 0 ? "text-green-600" : "text-red-600",
+      trend: netProfit > 0 ? 'positive' : 'negative',
+      trendLabel: netProfit > 0 ? 'Profit' : 'Loss',
+      className: netProfit > 0 ? 'text-green-600' : 'text-red-600',
     },
     {
-      title: "Total Transactions",
+      title: 'Total Transactions',
       value: totalTransactions.toLocaleString(),
       icon: IconShoppingCart,
-      trend: "neutral",
-      trendLabel: "transactions",
-      className: "text-blue-600",
+      trend: 'neutral',
+      trendLabel: 'transactions',
+      className: 'text-blue-600',
     },
   ];
 
   return (
     <div className="space-y-6">
       {/* Key Metrics Grid */}
-      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
+      <div className="grid grid-cols-1 gap-6 md:grid-cols-2 lg:grid-cols-4">
         {metrics.map((metric, index) => {
           const Icon = metric.icon;
           return (
@@ -129,18 +129,18 @@ export function FinancialMetrics({
               </CardHeader>
               <CardContent>
                 <div className="text-2xl font-bold">{metric.value}</div>
-                <div className="flex items-center space-x-2 text-xs text-muted-foreground">
-                  {metric.trend !== "neutral" && (
+                <div className="text-muted-foreground flex items-center space-x-2 text-xs">
+                  {metric.trend !== 'neutral' && (
                     <Badge
                       variant={
-                        metric.trend === "positive" ? "default" : "destructive"
+                        metric.trend === 'positive' ? 'default' : 'destructive'
                       }
                       className="text-xs"
                     >
-                      {metric.trend === "positive" ? "+" : "-"}
-                      {typeof metric.trend === "number"
+                      {metric.trend === 'positive' ? '+' : '-'}
+                      {typeof metric.trend === 'number'
                         ? `${Math.abs(metric.trend)}%`
-                        : ""}
+                        : ''}
                     </Badge>
                   )}
                   <span>{metric.trendLabel}</span>
@@ -152,7 +152,7 @@ export function FinancialMetrics({
       </div>
 
       {/* Additional Metrics */}
-      <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+      <div className="grid grid-cols-1 gap-6 md:grid-cols-2">
         <Card>
           <CardHeader>
             <CardTitle className="text-sm font-medium">
@@ -163,7 +163,7 @@ export function FinancialMetrics({
             <div className="text-2xl font-bold">
               {formatCurrency(averageTransactionValue)}
             </div>
-            <p className="text-xs text-muted-foreground">Per transaction</p>
+            <p className="text-muted-foreground text-xs">Per transaction</p>
           </CardContent>
         </Card>
 
@@ -177,7 +177,7 @@ export function FinancialMetrics({
             <div className="text-2xl font-bold capitalize">
               {topPaymentMethod}
             </div>
-            <p className="text-xs text-muted-foreground">
+            <p className="text-muted-foreground text-xs">
               Most used payment method
             </p>
           </CardContent>
@@ -191,10 +191,10 @@ export function FinancialMetrics({
             <CardTitle className="text-sm font-medium">Date Range</CardTitle>
           </CardHeader>
           <CardContent>
-            <p className="text-sm text-muted-foreground">
+            <p className="text-muted-foreground text-sm">
               {dateRange.from && dateRange.to
                 ? `${dateRange.from.toLocaleDateString()} - ${dateRange.to.toLocaleDateString()}`
-                : "Custom date range selected"}
+                : 'Custom date range selected'}
             </p>
           </CardContent>
         </Card>

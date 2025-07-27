@@ -3,18 +3,18 @@
  * Displays network status and offline queue information
  */
 
-"use client";
+'use client';
 
-import React from "react";
-import { Badge } from "@/components/ui/badge";
-import { Button } from "@/components/ui/button";
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import React from 'react';
+import { Badge } from '@/components/ui/badge';
+import { Button } from '@/components/ui/button';
+import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import {
   Tooltip,
   TooltipContent,
   TooltipProvider,
   TooltipTrigger,
-} from "@/components/ui/tooltip";
+} from '@/components/ui/tooltip';
 import {
   Dialog,
   DialogContent,
@@ -22,7 +22,7 @@ import {
   DialogHeader,
   DialogTitle,
   DialogTrigger,
-} from "@/components/ui/dialog";
+} from '@/components/ui/dialog';
 import {
   IconWifi,
   IconWifiOff,
@@ -32,9 +32,9 @@ import {
   IconRefresh,
   IconDatabase,
   IconTrash,
-} from "@tabler/icons-react";
-import { useOffline, useOfflineStats } from "@/hooks/useOffline";
-import { toast } from "sonner";
+} from '@tabler/icons-react';
+import { useOffline, useOfflineStats } from '@/hooks/useOffline';
+import { toast } from 'sonner';
 
 interface OfflineStatusIndicatorProps {
   className?: string;
@@ -42,7 +42,7 @@ interface OfflineStatusIndicatorProps {
 }
 
 export function OfflineStatusIndicator({
-  className = "",
+  className = '',
   showDetails = false,
 }: OfflineStatusIndicatorProps) {
   const {
@@ -68,7 +68,7 @@ export function OfflineStatusIndicator({
       );
     } catch (err) {
       toast.error(
-        "Sync failed: " + (err instanceof Error ? err.message : "Unknown error")
+        'Sync failed: ' + (err instanceof Error ? err.message : 'Unknown error')
       );
     }
   };
@@ -77,11 +77,11 @@ export function OfflineStatusIndicator({
     try {
       await cacheProducts();
       await refreshStats();
-      toast.success("Products cached successfully");
+      toast.success('Products cached successfully');
     } catch (err) {
       toast.error(
-        "Cache failed: " +
-          (err instanceof Error ? err.message : "Unknown error")
+        'Cache failed: ' +
+          (err instanceof Error ? err.message : 'Unknown error')
       );
     }
   };
@@ -89,25 +89,25 @@ export function OfflineStatusIndicator({
   const handleClearFailed = async () => {
     try {
       await clearFailedTransactions();
-      toast.success("Failed transactions cleared");
+      toast.success('Failed transactions cleared');
     } catch (err) {
       toast.error(
-        "Clear failed: " +
-          (err instanceof Error ? err.message : "Unknown error")
+        'Clear failed: ' +
+          (err instanceof Error ? err.message : 'Unknown error')
       );
     }
   };
 
   const getStatusColor = () => {
-    if (!isOnline) return "bg-red-500";
-    if (isSlowConnection) return "bg-yellow-500";
-    return "bg-green-500";
+    if (!isOnline) return 'bg-red-500';
+    if (isSlowConnection) return 'bg-yellow-500';
+    return 'bg-green-500';
   };
 
   const getStatusText = () => {
-    if (!isOnline) return "Offline";
-    if (isSlowConnection) return "Slow Connection";
-    return "Online";
+    if (!isOnline) return 'Offline';
+    if (isSlowConnection) return 'Slow Connection';
+    return 'Online';
   };
 
   const getStatusIcon = () => {
@@ -129,7 +129,7 @@ export function OfflineStatusIndicator({
                   className={`flex items-center gap-2 ${className}`}
                 >
                   {getStatusIcon()}
-                  <div className={`w-2 h-2 rounded-full ${getStatusColor()}`} />
+                  <div className={`h-2 w-2 rounded-full ${getStatusColor()}`} />
                   {queueStats.pendingTransactions > 0 && (
                     <Badge
                       variant="secondary"
@@ -220,7 +220,7 @@ function OfflineStatusDetails({
   onSyncNow,
   onCacheProducts,
   onClearFailed,
-  className = "",
+  className = '',
 }: OfflineStatusDetailsProps) {
   return (
     <div className={`space-y-4 ${className}`}>
@@ -239,16 +239,16 @@ function OfflineStatusDetails({
         <CardContent className="space-y-2">
           <div className="flex items-center justify-between">
             <span>Connection:</span>
-            <Badge variant={isOnline ? "default" : "destructive"}>
-              {isOnline ? "Online" : "Offline"}
+            <Badge variant={isOnline ? 'default' : 'destructive'}>
+              {isOnline ? 'Online' : 'Offline'}
             </Badge>
           </div>
 
           {isOnline && (
             <div className="flex items-center justify-between">
               <span>Speed:</span>
-              <Badge variant={isSlowConnection ? "secondary" : "default"}>
-                {isSlowConnection ? "Slow" : "Good"}
+              <Badge variant={isSlowConnection ? 'secondary' : 'default'}>
+                {isSlowConnection ? 'Slow' : 'Good'}
               </Badge>
             </div>
           )}
@@ -256,7 +256,7 @@ function OfflineStatusDetails({
           {networkStatus.connectionType && (
             <div className="flex items-center justify-between">
               <span>Type:</span>
-              <span className="text-sm text-muted-foreground">
+              <span className="text-muted-foreground text-sm">
                 {networkStatus.connectionType}
               </span>
             </div>
@@ -265,7 +265,7 @@ function OfflineStatusDetails({
           {networkStatus.lastOfflineTime && (
             <div className="flex items-center justify-between">
               <span>Last Offline:</span>
-              <span className="text-sm text-muted-foreground">
+              <span className="text-muted-foreground text-sm">
                 {networkStatus.lastOfflineTime.toLocaleTimeString()}
               </span>
             </div>
@@ -286,7 +286,7 @@ function OfflineStatusDetails({
             <span>Pending:</span>
             <Badge
               variant={
-                queueStats.pendingTransactions > 0 ? "secondary" : "default"
+                queueStats.pendingTransactions > 0 ? 'secondary' : 'default'
               }
             >
               {queueStats.pendingTransactions}
@@ -305,7 +305,7 @@ function OfflineStatusDetails({
           {queueStats.lastSyncAttempt && (
             <div className="flex items-center justify-between">
               <span>Last Sync:</span>
-              <span className="text-sm text-muted-foreground">
+              <span className="text-muted-foreground text-sm">
                 {queueStats.lastSyncAttempt.toLocaleTimeString()}
               </span>
             </div>
@@ -322,12 +322,12 @@ function OfflineStatusDetails({
             >
               {isSyncing ? (
                 <>
-                  <IconRefresh className="h-4 w-4 mr-1 animate-spin" />
+                  <IconRefresh className="mr-1 h-4 w-4 animate-spin" />
                   Syncing...
                 </>
               ) : (
                 <>
-                  <IconRefresh className="h-4 w-4 mr-1" />
+                  <IconRefresh className="mr-1 h-4 w-4" />
                   Sync Now
                 </>
               )}
@@ -335,7 +335,7 @@ function OfflineStatusDetails({
 
             {queueStats.failedTransactions > 0 && (
               <Button size="sm" variant="outline" onClick={onClearFailed}>
-                <IconTrash className="h-4 w-4 mr-1" />
+                <IconTrash className="mr-1 h-4 w-4" />
                 Clear Failed
               </Button>
             )}
@@ -355,14 +355,14 @@ function OfflineStatusDetails({
           <CardContent className="space-y-2">
             <div className="flex items-center justify-between">
               <span>Cached Products:</span>
-              <span className="text-sm text-muted-foreground">
+              <span className="text-muted-foreground text-sm">
                 {stats.cachedProducts}
               </span>
             </div>
 
             <div className="flex items-center justify-between">
               <span>Total Transactions:</span>
-              <span className="text-sm text-muted-foreground">
+              <span className="text-muted-foreground text-sm">
                 {stats.totalTransactions}
               </span>
             </div>
@@ -370,7 +370,7 @@ function OfflineStatusDetails({
             {stats.lastSync && (
               <div className="flex items-center justify-between">
                 <span>Last Cache Update:</span>
-                <span className="text-sm text-muted-foreground">
+                <span className="text-muted-foreground text-sm">
                   {stats.lastSync.toLocaleDateString()}
                 </span>
               </div>
@@ -381,16 +381,16 @@ function OfflineStatusDetails({
               variant="outline"
               onClick={onCacheProducts}
               disabled={!isOnline || isCaching}
-              className="w-full mt-2"
+              className="mt-2 w-full"
             >
               {isCaching ? (
                 <>
-                  <IconRefresh className="h-4 w-4 mr-1 animate-spin" />
+                  <IconRefresh className="mr-1 h-4 w-4 animate-spin" />
                   Caching...
                 </>
               ) : (
                 <>
-                  <IconDatabase className="h-4 w-4 mr-1" />
+                  <IconDatabase className="mr-1 h-4 w-4" />
                   Update Cache
                 </>
               )}
@@ -407,7 +407,7 @@ function OfflineStatusDetails({
               <IconAlertTriangle className="h-4 w-4" />
               <span className="text-sm font-medium">Error</span>
             </div>
-            <p className="text-sm text-red-600 mt-1">{error}</p>
+            <p className="mt-1 text-sm text-red-600">{error}</p>
           </CardContent>
         </Card>
       )}
@@ -416,11 +416,11 @@ function OfflineStatusDetails({
       {!isOnline && (
         <Card className="border-blue-200 bg-blue-50">
           <CardContent className="pt-4">
-            <div className="flex items-center gap-2 text-blue-600 mb-2">
+            <div className="mb-2 flex items-center gap-2 text-blue-600">
               <IconClock className="h-4 w-4" />
               <span className="text-sm font-medium">Offline Mode</span>
             </div>
-            <ul className="text-sm text-blue-600 space-y-1">
+            <ul className="space-y-1 text-sm text-blue-600">
               <li>• Transactions will be saved locally</li>
               <li>• Use cached products for sales</li>
               <li>• Data will sync when back online</li>

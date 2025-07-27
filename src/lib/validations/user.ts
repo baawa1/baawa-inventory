@@ -1,4 +1,4 @@
-import { z } from "zod";
+import { z } from 'zod';
 import {
   idSchema,
   paginationSchema,
@@ -10,7 +10,7 @@ import {
   nameSchema,
   passwordSchema,
   currentPasswordSchema,
-} from "./common";
+} from './common';
 
 // User creation schema
 export const createUserSchema = z.object({
@@ -19,11 +19,11 @@ export const createUserSchema = z.object({
   email: emailSchema,
   password: passwordSchema, // Changed from simplePasswordSchema to passwordSchema
   phone: phoneSchema.optional(),
-  role: userRoleSchema.default("STAFF"),
+  role: userRoleSchema.default('STAFF'),
   isActive: z.boolean().default(true),
   notes: z
     .string()
-    .max(500, "Notes must be 500 characters or less")
+    .max(500, 'Notes must be 500 characters or less')
     .optional()
     .nullable(),
 });
@@ -34,8 +34,8 @@ export const updateUserSchema = createUserSchema
   .extend({
     password: passwordSchema.optional(), // Changed from simplePasswordSchema to passwordSchema
   })
-  .refine((data) => Object.keys(data).length > 0, {
-    message: "At least one field must be provided for update",
+  .refine(data => Object.keys(data).length > 0, {
+    message: 'At least one field must be provided for update',
   });
 
 // User query parameters schema
@@ -45,10 +45,10 @@ export const userQuerySchema = paginationSchema.merge(searchSchema).extend({
   isActive: z
     .string()
     .optional()
-    .transform((val) => {
+    .transform(val => {
       if (val === undefined) return undefined;
-      if (val === "true") return true;
-      if (val === "false") return false;
+      if (val === 'true') return true;
+      if (val === 'false') return false;
       return undefined;
     }),
 });
@@ -71,9 +71,9 @@ export const changePasswordSchema = z
     newPassword: passwordSchema,
     confirmPassword: z.string(),
   })
-  .refine((data) => data.newPassword === data.confirmPassword, {
+  .refine(data => data.newPassword === data.confirmPassword, {
     message: "Passwords don't match",
-    path: ["confirmPassword"],
+    path: ['confirmPassword'],
   });
 
 // User profile update schema (limited fields)
@@ -83,18 +83,18 @@ export const updateUserProfileSchema = z.object({
   phone: phoneSchema,
   notes: z
     .string()
-    .max(500, "Notes must be 500 characters or less")
+    .max(500, 'Notes must be 500 characters or less')
     .optional()
     .nullable(),
 });
 
 // Bulk user operations
 export const bulkUpdateUserStatusSchema = z.object({
-  userIds: z.array(idSchema).min(1, "At least one user ID is required"),
+  userIds: z.array(idSchema).min(1, 'At least one user ID is required'),
   isActive: z.boolean(),
 });
 
 export const bulkUpdateUserRoleSchema = z.object({
-  userIds: z.array(idSchema).min(1, "At least one user ID is required"),
+  userIds: z.array(idSchema).min(1, 'At least one user ID is required'),
   role: userRoleSchema,
 });

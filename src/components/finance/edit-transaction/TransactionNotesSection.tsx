@@ -1,15 +1,15 @@
-import React from "react";
-import { UseFormReturn } from "react-hook-form";
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import React from 'react';
+import { UseFormReturn } from 'react-hook-form';
+import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import {
   FormControl,
   FormField,
   FormItem,
   FormLabel,
   FormMessage,
-} from "@/components/ui/form";
-import { Input } from "@/components/ui/input";
-import { Textarea } from "@/components/ui/textarea";
+} from '@/components/ui/form';
+import { Input } from '@/components/ui/input';
+import { Textarea } from '@/components/ui/textarea';
 
 interface TransactionNotesSectionProps {
   form: UseFormReturn<any>;
@@ -36,7 +36,7 @@ export function TransactionNotesSection({
                   className="resize-none"
                   rows={3}
                   {...field}
-                  value={field.value || ""}
+                  value={field.value || ''}
                 />
               </FormControl>
               <FormMessage />
@@ -55,7 +55,7 @@ export function TransactionNotesSection({
                   type="url"
                   placeholder="https://example.com/receipt.pdf"
                   {...field}
-                  value={field.value || ""}
+                  value={field.value || ''}
                 />
               </FormControl>
               <FormMessage />

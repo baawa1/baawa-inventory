@@ -3,13 +3,13 @@
  * Provides consistent authentication and authorization across all API endpoints
  */
 
-import { NextRequest, NextResponse } from "next/server";
-import { auth } from "../../auth";
-import { hasPermission } from "./auth/roles";
-import { AuditLogger } from "./utils/audit-logger";
-import { USER_STATUS } from "./constants";
-import { logger } from "./logger";
-import type { UserRole, UserStatus } from "@/types/user";
+import { NextRequest, NextResponse } from 'next/server';
+import { auth } from '../../auth';
+import { hasPermission } from './auth/roles';
+import { AuditLogger } from './utils/audit-logger';
+import { USER_STATUS } from './constants';
+import { logger } from './logger';
+import type { UserRole, UserStatus } from '@/types/user';
 
 export interface AuthenticatedRequest extends NextRequest {
   user: {
@@ -36,15 +36,15 @@ export function withPOSAuth<T extends unknown[]>(
       if (!session?.user) {
         await AuditLogger.logAuthEvent(
           {
-            action: "LOGIN_FAILED",
+            action: 'LOGIN_FAILED',
             success: false,
-            errorMessage: "No session found",
+            errorMessage: 'No session found',
           },
           request
         );
 
         return NextResponse.json(
-          { error: "Authentication required" },
+          { error: 'Authentication required' },
           { status: 401 }
         );
       }
@@ -53,35 +53,35 @@ export function withPOSAuth<T extends unknown[]>(
       if (!session.user.id || !session.user.email || !session.user.role) {
         await AuditLogger.logAuthEvent(
           {
-            action: "LOGIN_FAILED",
+            action: 'LOGIN_FAILED',
             userEmail: session.user.email || undefined,
             success: false,
-            errorMessage: "Invalid session data",
+            errorMessage: 'Invalid session data',
           },
           request
         );
 
         return NextResponse.json(
-          { error: "Invalid session data" },
+          { error: 'Invalid session data' },
           { status: 401 }
         );
       }
 
       // Check if user has POS access permission
-      if (!hasPermission(session.user.role, "POS_ACCESS")) {
+      if (!hasPermission(session.user.role, 'POS_ACCESS')) {
         await AuditLogger.logAuthEvent(
           {
-            action: "LOGIN_FAILED",
+            action: 'LOGIN_FAILED',
             userId: parseInt(session.user.id),
             userEmail: session.user.email,
             success: false,
-            errorMessage: "Insufficient permissions for POS access",
+            errorMessage: 'Insufficient permissions for POS access',
           },
           request
         );
 
         return NextResponse.json(
-          { error: "Insufficient permissions for POS access" },
+          { error: 'Insufficient permissions for POS access' },
           { status: 403 }
         );
       }
@@ -90,7 +90,7 @@ export function withPOSAuth<T extends unknown[]>(
       if (session.user.status !== USER_STATUS.APPROVED) {
         await AuditLogger.logAuthEvent(
           {
-            action: "LOGIN_FAILED",
+            action: 'LOGIN_FAILED',
             userId: parseInt(session.user.id),
             userEmail: session.user.email,
             success: false,
@@ -100,7 +100,7 @@ export function withPOSAuth<T extends unknown[]>(
         );
 
         return NextResponse.json(
-          { error: "Account not approved" },
+          { error: 'Account not approved' },
           { status: 403 }
         );
       }
@@ -110,29 +110,29 @@ export function withPOSAuth<T extends unknown[]>(
       authenticatedRequest.user = {
         id: session.user.id,
         email: session.user.email,
-        name: session.user.name || `${session.user.email.split("@")[0]}`,
+        name: session.user.name || `${session.user.email.split('@')[0]}`,
         role: session.user.role as UserRole,
         status: session.user.status as UserStatus,
       };
 
       return await handler(authenticatedRequest, ...args);
     } catch (error) {
-      logger.error("POS Auth middleware error", {
-        error: error instanceof Error ? error.message : "Unknown error",
+      logger.error('POS Auth middleware error', {
+        error: error instanceof Error ? error.message : 'Unknown error',
       });
 
       await AuditLogger.logAuthEvent(
         {
-          action: "LOGIN_FAILED",
+          action: 'LOGIN_FAILED',
           success: false,
           errorMessage:
-            error instanceof Error ? error.message : "Unknown error",
+            error instanceof Error ? error.message : 'Unknown error',
         },
         request
       );
 
       return NextResponse.json(
-        { error: "Authentication failed" },
+        { error: 'Authentication failed' },
         { status: 500 }
       );
     }

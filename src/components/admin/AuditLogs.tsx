@@ -1,17 +1,17 @@
-"use client";
+'use client';
 
-import { useState, useMemo } from "react";
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import { Button } from "@/components/ui/button";
-import { Input } from "@/components/ui/input";
-import { Badge } from "@/components/ui/badge";
+import { useState, useMemo } from 'react';
+import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
+import { Button } from '@/components/ui/button';
+import { Input } from '@/components/ui/input';
+import { Badge } from '@/components/ui/badge';
 import {
   Select,
   SelectContent,
   SelectItem,
   SelectTrigger,
   SelectValue,
-} from "@/components/ui/select";
+} from '@/components/ui/select';
 import {
   IconClipboardList,
   IconSearch,
@@ -23,8 +23,8 @@ import {
   IconSettings,
   IconEye,
   IconCalendar,
-} from "@tabler/icons-react";
-import { formatDate } from "@/lib/utils";
+} from '@tabler/icons-react';
+import { formatDate } from '@/lib/utils';
 
 interface AuditLog {
   id: number;
@@ -38,108 +38,108 @@ interface AuditLog {
   timestamp: string;
   ipAddress: string;
   userAgent: string;
-  status: "success" | "failed" | "pending";
-  category: "user" | "product" | "sale" | "system" | "security";
+  status: 'success' | 'failed' | 'pending';
+  category: 'user' | 'product' | 'sale' | 'system' | 'security';
 }
 
 export function AuditLogs() {
-  const [searchTerm, setSearchTerm] = useState("");
-  const [categoryFilter, setCategoryFilter] = useState("all");
-  const [statusFilter, setStatusFilter] = useState("all");
-  const [dateFilter, setDateFilter] = useState("7days");
+  const [searchTerm, setSearchTerm] = useState('');
+  const [categoryFilter, setCategoryFilter] = useState('all');
+  const [statusFilter, setStatusFilter] = useState('all');
+  const [dateFilter, setDateFilter] = useState('7days');
 
   // Sample audit logs data - in real app, this would come from API
   const auditLogs: AuditLog[] = [
     {
       id: 1,
-      action: "USER_LOGIN",
-      entity: "User",
-      entityId: "123",
-      userId: "admin",
-      userName: "Admin User",
-      userEmail: "admin@example.com",
-      details: "User logged in successfully",
-      timestamp: "2024-01-15T10:30:00Z",
-      ipAddress: "192.168.1.100",
-      userAgent: "Mozilla/5.0 (Windows NT 10.0; Win64; x64)",
-      status: "success",
-      category: "security",
+      action: 'USER_LOGIN',
+      entity: 'User',
+      entityId: '123',
+      userId: 'admin',
+      userName: 'Admin User',
+      userEmail: 'admin@example.com',
+      details: 'User logged in successfully',
+      timestamp: '2024-01-15T10:30:00Z',
+      ipAddress: '192.168.1.100',
+      userAgent: 'Mozilla/5.0 (Windows NT 10.0; Win64; x64)',
+      status: 'success',
+      category: 'security',
     },
     {
       id: 2,
-      action: "PRODUCT_CREATED",
-      entity: "Product",
-      entityId: "P001",
-      userId: "manager",
-      userName: "Manager User",
-      userEmail: "manager@example.com",
-      details: "Created new product: Samsung Galaxy S23",
-      timestamp: "2024-01-15T09:15:00Z",
-      ipAddress: "192.168.1.101",
-      userAgent: "Mozilla/5.0 (Windows NT 10.0; Win64; x64)",
-      status: "success",
-      category: "product",
+      action: 'PRODUCT_CREATED',
+      entity: 'Product',
+      entityId: 'P001',
+      userId: 'manager',
+      userName: 'Manager User',
+      userEmail: 'manager@example.com',
+      details: 'Created new product: Samsung Galaxy S23',
+      timestamp: '2024-01-15T09:15:00Z',
+      ipAddress: '192.168.1.101',
+      userAgent: 'Mozilla/5.0 (Windows NT 10.0; Win64; x64)',
+      status: 'success',
+      category: 'product',
     },
     {
       id: 3,
-      action: "USER_APPROVED",
-      entity: "User",
-      entityId: "456",
-      userId: "admin",
-      userName: "Admin User",
-      userEmail: "admin@example.com",
-      details: "Approved user registration for john.doe@example.com",
-      timestamp: "2024-01-15T08:45:00Z",
-      ipAddress: "192.168.1.100",
-      userAgent: "Mozilla/5.0 (Windows NT 10.0; Win64; x64)",
-      status: "success",
-      category: "user",
+      action: 'USER_APPROVED',
+      entity: 'User',
+      entityId: '456',
+      userId: 'admin',
+      userName: 'Admin User',
+      userEmail: 'admin@example.com',
+      details: 'Approved user registration for john.doe@example.com',
+      timestamp: '2024-01-15T08:45:00Z',
+      ipAddress: '192.168.1.100',
+      userAgent: 'Mozilla/5.0 (Windows NT 10.0; Win64; x64)',
+      status: 'success',
+      category: 'user',
     },
     {
       id: 4,
-      action: "SALE_COMPLETED",
-      entity: "Sale",
-      entityId: "S001",
-      userId: "staff",
-      userName: "Staff User",
-      userEmail: "staff@example.com",
-      details: "Completed sale transaction for ₦45,000",
-      timestamp: "2024-01-15T08:00:00Z",
-      ipAddress: "192.168.1.102",
-      userAgent: "Mozilla/5.0 (Windows NT 10.0; Win64; x64)",
-      status: "success",
-      category: "sale",
+      action: 'SALE_COMPLETED',
+      entity: 'Sale',
+      entityId: 'S001',
+      userId: 'staff',
+      userName: 'Staff User',
+      userEmail: 'staff@example.com',
+      details: 'Completed sale transaction for ₦45,000',
+      timestamp: '2024-01-15T08:00:00Z',
+      ipAddress: '192.168.1.102',
+      userAgent: 'Mozilla/5.0 (Windows NT 10.0; Win64; x64)',
+      status: 'success',
+      category: 'sale',
     },
     {
       id: 5,
-      action: "FAILED_LOGIN",
-      entity: "User",
-      entityId: "789",
-      userId: "unknown",
-      userName: "Unknown User",
-      userEmail: "unknown@example.com",
-      details: "Failed login attempt - invalid credentials",
-      timestamp: "2024-01-15T07:30:00Z",
-      ipAddress: "192.168.1.150",
-      userAgent: "Mozilla/5.0 (Windows NT 10.0; Win64; x64)",
-      status: "failed",
-      category: "security",
+      action: 'FAILED_LOGIN',
+      entity: 'User',
+      entityId: '789',
+      userId: 'unknown',
+      userName: 'Unknown User',
+      userEmail: 'unknown@example.com',
+      details: 'Failed login attempt - invalid credentials',
+      timestamp: '2024-01-15T07:30:00Z',
+      ipAddress: '192.168.1.150',
+      userAgent: 'Mozilla/5.0 (Windows NT 10.0; Win64; x64)',
+      status: 'failed',
+      category: 'security',
     },
   ];
 
   // Filter logs based on search and filters
   const filteredLogs = useMemo(() => {
-    return auditLogs.filter((log) => {
+    return auditLogs.filter(log => {
       const matchesSearch =
-        searchTerm === "" ||
+        searchTerm === '' ||
         log.action.toLowerCase().includes(searchTerm.toLowerCase()) ||
         log.userName.toLowerCase().includes(searchTerm.toLowerCase()) ||
         log.details.toLowerCase().includes(searchTerm.toLowerCase());
 
       const matchesCategory =
-        categoryFilter === "all" || log.category === categoryFilter;
+        categoryFilter === 'all' || log.category === categoryFilter;
       const matchesStatus =
-        statusFilter === "all" || log.status === statusFilter;
+        statusFilter === 'all' || log.status === statusFilter;
 
       // Simple date filtering (in real app, this would be more sophisticated)
       const logDate = new Date(log.timestamp);
@@ -149,11 +149,11 @@ export function AuditLogs() {
       );
 
       let matchesDate = true;
-      if (dateFilter === "today") {
+      if (dateFilter === 'today') {
         matchesDate = daysDiff === 0;
-      } else if (dateFilter === "7days") {
+      } else if (dateFilter === '7days') {
         matchesDate = daysDiff <= 7;
-      } else if (dateFilter === "30days") {
+      } else if (dateFilter === '30days') {
         matchesDate = daysDiff <= 30;
       }
 
@@ -163,15 +163,15 @@ export function AuditLogs() {
 
   const getActionIcon = (category: string) => {
     switch (category) {
-      case "user":
+      case 'user':
         return <IconUser className="h-4 w-4 text-blue-600" />;
-      case "product":
+      case 'product':
         return <IconPackages className="h-4 w-4 text-green-600" />;
-      case "sale":
+      case 'sale':
         return <IconShoppingCart className="h-4 w-4 text-purple-600" />;
-      case "system":
+      case 'system':
         return <IconSettings className="h-4 w-4 text-gray-600" />;
-      case "security":
+      case 'security':
         return <IconEye className="h-4 w-4 text-red-600" />;
       default:
         return <IconClipboardList className="h-4 w-4 text-gray-600" />;
@@ -180,15 +180,15 @@ export function AuditLogs() {
 
   const getStatusBadge = (status: string) => {
     switch (status) {
-      case "success":
+      case 'success':
         return (
           <Badge variant="default" className="bg-green-100 text-green-700">
             Success
           </Badge>
         );
-      case "failed":
+      case 'failed':
         return <Badge variant="destructive">Failed</Badge>;
-      case "pending":
+      case 'pending':
         return <Badge variant="secondary">Pending</Badge>;
       default:
         return <Badge variant="outline">Unknown</Badge>;
@@ -197,36 +197,36 @@ export function AuditLogs() {
 
   const getCategoryBadge = (category: string) => {
     switch (category) {
-      case "user":
+      case 'user':
         return (
-          <Badge variant="outline" className="text-blue-600 border-blue-200">
+          <Badge variant="outline" className="border-blue-200 text-blue-600">
             User
           </Badge>
         );
-      case "product":
+      case 'product':
         return (
-          <Badge variant="outline" className="text-green-600 border-green-200">
+          <Badge variant="outline" className="border-green-200 text-green-600">
             Product
           </Badge>
         );
-      case "sale":
+      case 'sale':
         return (
           <Badge
             variant="outline"
-            className="text-purple-600 border-purple-200"
+            className="border-purple-200 text-purple-600"
           >
             Sale
           </Badge>
         );
-      case "system":
+      case 'system':
         return (
-          <Badge variant="outline" className="text-gray-600 border-gray-200">
+          <Badge variant="outline" className="border-gray-200 text-gray-600">
             System
           </Badge>
         );
-      case "security":
+      case 'security':
         return (
-          <Badge variant="outline" className="text-red-600 border-red-200">
+          <Badge variant="outline" className="border-red-200 text-red-600">
             Security
           </Badge>
         );
@@ -238,19 +238,19 @@ export function AuditLogs() {
   const exportLogs = () => {
     // In real app, this would generate and download CSV/Excel file
     const csvContent =
-      "data:text/csv;charset=utf-8," +
-      "Timestamp,Action,User,Details,Status,Category\n" +
+      'data:text/csv;charset=utf-8,' +
+      'Timestamp,Action,User,Details,Status,Category\n' +
       filteredLogs
         .map(
-          (log) =>
+          log =>
             `${log.timestamp},${log.action},${log.userName},${log.details},${log.status},${log.category}`
         )
-        .join("\n");
+        .join('\n');
 
     const encodedUri = encodeURI(csvContent);
-    const link = document.createElement("a");
-    link.setAttribute("href", encodedUri);
-    link.setAttribute("download", "audit_logs.csv");
+    const link = document.createElement('a');
+    link.setAttribute('href', encodedUri);
+    link.setAttribute('download', 'audit_logs.csv');
     document.body.appendChild(link);
     link.click();
     document.body.removeChild(link);
@@ -267,7 +267,7 @@ export function AuditLogs() {
           </p>
         </div>
         <Button onClick={exportLogs}>
-          <IconDownload className="h-4 w-4 mr-2" />
+          <IconDownload className="mr-2 h-4 w-4" />
           Export Logs
         </Button>
       </div>
@@ -281,15 +281,15 @@ export function AuditLogs() {
           </CardTitle>
         </CardHeader>
         <CardContent>
-          <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
+          <div className="grid grid-cols-1 gap-4 md:grid-cols-4">
             <div className="space-y-2">
               <label className="text-sm font-medium">Search</label>
               <div className="relative">
-                <IconSearch className="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-muted-foreground" />
+                <IconSearch className="text-muted-foreground absolute top-1/2 left-3 h-4 w-4 -translate-y-1/2 transform" />
                 <Input
                   placeholder="Search actions, users, details..."
                   value={searchTerm}
-                  onChange={(e) => setSearchTerm(e.target.value)}
+                  onChange={e => setSearchTerm(e.target.value)}
                   className="pl-10"
                 />
               </div>
@@ -346,7 +346,7 @@ export function AuditLogs() {
       </Card>
 
       {/* Summary Stats */}
-      <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
+      <div className="grid grid-cols-1 gap-4 md:grid-cols-4">
         <Card>
           <CardContent className="p-4">
             <div className="flex items-center gap-2">
@@ -368,7 +368,7 @@ export function AuditLogs() {
               <div>
                 <p className="text-sm font-medium">User Actions</p>
                 <p className="text-2xl font-bold text-green-600">
-                  {filteredLogs.filter((log) => log.category === "user").length}
+                  {filteredLogs.filter(log => log.category === 'user').length}
                 </p>
               </div>
             </div>
@@ -383,7 +383,7 @@ export function AuditLogs() {
                 <p className="text-sm font-medium">Security Events</p>
                 <p className="text-2xl font-bold text-red-600">
                   {
-                    filteredLogs.filter((log) => log.category === "security")
+                    filteredLogs.filter(log => log.category === 'security')
                       .length
                   }
                 </p>
@@ -399,7 +399,7 @@ export function AuditLogs() {
               <div>
                 <p className="text-sm font-medium">Failed Actions</p>
                 <p className="text-2xl font-bold text-purple-600">
-                  {filteredLogs.filter((log) => log.status === "failed").length}
+                  {filteredLogs.filter(log => log.status === 'failed').length}
                 </p>
               </div>
             </div>
@@ -415,30 +415,30 @@ export function AuditLogs() {
         <CardContent>
           <div className="space-y-4">
             {filteredLogs.length === 0 ? (
-              <div className="text-center py-8">
-                <IconClipboardList className="h-12 w-12 text-muted-foreground mx-auto mb-4" />
+              <div className="py-8 text-center">
+                <IconClipboardList className="text-muted-foreground mx-auto mb-4 h-12 w-12" />
                 <p className="text-muted-foreground">
                   No audit logs found matching your criteria
                 </p>
               </div>
             ) : (
-              filteredLogs.map((log) => (
-                <div key={log.id} className="border rounded-lg p-4 space-y-3">
+              filteredLogs.map(log => (
+                <div key={log.id} className="space-y-3 rounded-lg border p-4">
                   <div className="flex items-start justify-between">
                     <div className="flex items-start gap-3">
                       {getActionIcon(log.category)}
                       <div className="space-y-1">
                         <div className="flex items-center gap-2">
                           <h4 className="font-medium">
-                            {log.action.replace(/_/g, " ")}
+                            {log.action.replace(/_/g, ' ')}
                           </h4>
                           {getStatusBadge(log.status)}
                           {getCategoryBadge(log.category)}
                         </div>
-                        <p className="text-sm text-muted-foreground">
+                        <p className="text-muted-foreground text-sm">
                           {log.details}
                         </p>
-                        <div className="flex items-center gap-4 text-xs text-muted-foreground">
+                        <div className="text-muted-foreground flex items-center gap-4 text-xs">
                           <span className="flex items-center gap-1">
                             <IconUser className="h-3 w-3" />
                             {log.userName} ({log.userEmail})

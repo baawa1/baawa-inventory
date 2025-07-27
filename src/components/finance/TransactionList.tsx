@@ -1,10 +1,10 @@
-"use client";
+'use client';
 
-import React, { useState, useMemo } from "react";
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import { Button } from "@/components/ui/button";
-import { Badge } from "@/components/ui/badge";
-import { Input } from "@/components/ui/input";
+import React, { useState, useMemo } from 'react';
+import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
+import { Button } from '@/components/ui/button';
+import { Badge } from '@/components/ui/badge';
+import { Input } from '@/components/ui/input';
 import {
   Table,
   TableBody,
@@ -12,14 +12,14 @@ import {
   TableHead,
   TableHeader,
   TableRow,
-} from "@/components/ui/table";
+} from '@/components/ui/table';
 import {
   Select,
   SelectContent,
   SelectItem,
   SelectTrigger,
   SelectValue,
-} from "@/components/ui/select";
+} from '@/components/ui/select';
 import {
   IconSearch,
   IconFilter,
@@ -30,10 +30,10 @@ import {
   IconCreditCard,
   IconBuildingBank,
   IconDeviceMobile,
-} from "@tabler/icons-react";
-import { format } from "date-fns";
-import { useQuery } from "@tanstack/react-query";
-import { formatCurrency } from "@/lib/utils";
+} from '@tabler/icons-react';
+import { format } from 'date-fns';
+import { useQuery } from '@tanstack/react-query';
+import { formatCurrency } from '@/lib/utils';
 
 interface Transaction {
   id: string;
@@ -73,14 +73,14 @@ const paymentMethodIcons = {
 };
 
 const paymentMethodLabels = {
-  cash: "Cash",
-  pos: "POS Machine",
-  bank_transfer: "Bank Transfer",
-  mobile_money: "Mobile Money",
+  cash: 'Cash',
+  pos: 'POS Machine',
+  bank_transfer: 'Bank Transfer',
+  mobile_money: 'Mobile Money',
 };
 
 export function TransactionList({ user, filters = {} }: TransactionListProps) {
-  const [search, setSearch] = useState("");
+  const [search, setSearch] = useState('');
   const [currentPage, setCurrentPage] = useState(1);
   const [pageSize, setPageSize] = useState(10);
 
@@ -91,13 +91,13 @@ export function TransactionList({ user, filters = {} }: TransactionListProps) {
       limit: pageSize.toString(),
     });
 
-    if (search) params.append("search", search);
-    if (filters.dateFrom) params.append("dateFrom", filters.dateFrom);
-    if (filters.dateTo) params.append("dateTo", filters.dateTo);
-    if (filters.type && filters.type !== "all")
-      params.append("type", filters.type);
-    if (filters.paymentMethod && filters.paymentMethod !== "all") {
-      params.append("paymentMethod", filters.paymentMethod);
+    if (search) params.append('search', search);
+    if (filters.dateFrom) params.append('dateFrom', filters.dateFrom);
+    if (filters.dateTo) params.append('dateTo', filters.dateTo);
+    if (filters.type && filters.type !== 'all')
+      params.append('type', filters.type);
+    if (filters.paymentMethod && filters.paymentMethod !== 'all') {
+      params.append('paymentMethod', filters.paymentMethod);
     }
 
     return params.toString();
@@ -110,11 +110,11 @@ export function TransactionList({ user, filters = {} }: TransactionListProps) {
     error,
     refetch,
   } = useQuery({
-    queryKey: ["transactions", queryParams],
+    queryKey: ['transactions', queryParams],
     queryFn: async () => {
       const response = await fetch(`/api/sales?${queryParams}`);
       if (!response.ok) {
-        throw new Error("Failed to fetch transactions");
+        throw new Error('Failed to fetch transactions');
       }
       return response.json();
     },
@@ -143,13 +143,13 @@ export function TransactionList({ user, filters = {} }: TransactionListProps) {
   // Export transactions
   const handleExport = () => {
     const csvData = transactions.map((t: Transaction) => ({
-      "Transaction ID": t.transactionNumber,
-      Date: format(new Date(t.createdAt), "yyyy-MM-dd HH:mm:ss"),
-      Customer: t.customerName || "",
-      Phone: t.customerPhone || "",
-      Email: t.customerEmail || "",
+      'Transaction ID': t.transactionNumber,
+      Date: format(new Date(t.createdAt), 'yyyy-MM-dd HH:mm:ss'),
+      Customer: t.customerName || '',
+      Phone: t.customerPhone || '',
+      Email: t.customerEmail || '',
       Amount: t.totalAmount,
-      "Payment Method":
+      'Payment Method':
         paymentMethodLabels[
           t.paymentMethod as keyof typeof paymentMethodLabels
         ] || t.paymentMethod,
@@ -158,15 +158,15 @@ export function TransactionList({ user, filters = {} }: TransactionListProps) {
     }));
 
     const csvContent = [
-      Object.keys(csvData[0]).join(","),
-      ...csvData.map((row: any) => Object.values(row).join(",")),
-    ].join("\n");
+      Object.keys(csvData[0]).join(','),
+      ...csvData.map((row: any) => Object.values(row).join(',')),
+    ].join('\n');
 
-    const blob = new Blob([csvContent], { type: "text/csv" });
+    const blob = new Blob([csvContent], { type: 'text/csv' });
     const url = URL.createObjectURL(blob);
-    const link = document.createElement("a");
+    const link = document.createElement('a');
     link.href = url;
-    link.download = `transactions-${format(new Date(), "yyyy-MM-dd")}.csv`;
+    link.download = `transactions-${format(new Date(), 'yyyy-MM-dd')}.csv`;
     link.click();
     URL.revokeObjectURL(url);
   };
@@ -182,7 +182,7 @@ export function TransactionList({ user, filters = {} }: TransactionListProps) {
               variant="outline"
               className="mt-2"
             >
-              <IconRefresh className="h-4 w-4 mr-2" />
+              <IconRefresh className="mr-2 h-4 w-4" />
               Retry
             </Button>
           </div>
@@ -203,11 +203,11 @@ export function TransactionList({ user, filters = {} }: TransactionListProps) {
         </div>
         <div className="flex items-center gap-2">
           <Button onClick={() => refetch()} variant="outline" size="sm">
-            <IconRefresh className="h-4 w-4 mr-2" />
+            <IconRefresh className="mr-2 h-4 w-4" />
             Refresh
           </Button>
           <Button onClick={handleExport} variant="outline" size="sm">
-            <IconDownload className="h-4 w-4 mr-2" />
+            <IconDownload className="mr-2 h-4 w-4" />
             Export
           </Button>
         </div>
@@ -227,15 +227,15 @@ export function TransactionList({ user, filters = {} }: TransactionListProps) {
               <Input
                 placeholder="Search transactions..."
                 value={search}
-                onChange={(e) => handleSearch(e.target.value)}
+                onChange={e => handleSearch(e.target.value)}
                 className="max-w-sm"
               />
             </div>
             <div className="flex items-center gap-2">
-              <span className="text-sm text-muted-foreground">Page Size:</span>
+              <span className="text-muted-foreground text-sm">Page Size:</span>
               <Select
                 value={pageSize.toString()}
-                onValueChange={(value) => handlePageSizeChange(parseInt(value))}
+                onValueChange={value => handlePageSizeChange(parseInt(value))}
               >
                 <SelectTrigger className="w-20">
                   <SelectValue />
@@ -259,14 +259,14 @@ export function TransactionList({ user, filters = {} }: TransactionListProps) {
         </CardHeader>
         <CardContent>
           {isLoading ? (
-            <div className="text-center py-8">
-              <div className="animate-spin h-8 w-8 border-b-2 border-primary mx-auto"></div>
-              <p className="mt-2 text-muted-foreground">
+            <div className="py-8 text-center">
+              <div className="border-primary mx-auto h-8 w-8 animate-spin border-b-2"></div>
+              <p className="text-muted-foreground mt-2">
                 Loading transactions...
               </p>
             </div>
           ) : transactions.length === 0 ? (
-            <div className="text-center py-8">
+            <div className="py-8 text-center">
               <p className="text-muted-foreground">No transactions found</p>
             </div>
           ) : (
@@ -299,13 +299,13 @@ export function TransactionList({ user, filters = {} }: TransactionListProps) {
                         <TableCell>
                           {format(
                             new Date(transaction.createdAt),
-                            "MMM dd, yyyy HH:mm"
+                            'MMM dd, yyyy HH:mm'
                           )}
                         </TableCell>
                         <TableCell>
-                          {transaction.customerName || "-"}
+                          {transaction.customerName || '-'}
                           {transaction.customerPhone && (
-                            <div className="text-xs text-muted-foreground">
+                            <div className="text-muted-foreground text-xs">
                               {transaction.customerPhone}
                             </div>
                           )}
@@ -326,9 +326,9 @@ export function TransactionList({ user, filters = {} }: TransactionListProps) {
                         <TableCell>
                           <Badge
                             variant={
-                              transaction.paymentStatus === "completed"
-                                ? "default"
-                                : "secondary"
+                              transaction.paymentStatus === 'completed'
+                                ? 'default'
+                                : 'secondary'
                             }
                           >
                             {transaction.paymentStatus}
@@ -348,10 +348,10 @@ export function TransactionList({ user, filters = {} }: TransactionListProps) {
 
               {/* Pagination */}
               {pagination.totalPages > 1 && (
-                <div className="flex items-center justify-between mt-4">
-                  <div className="text-sm text-muted-foreground">
-                    Showing {(currentPage - 1) * pageSize + 1} to{" "}
-                    {Math.min(currentPage * pageSize, pagination.totalItems)} of{" "}
+                <div className="mt-4 flex items-center justify-between">
+                  <div className="text-muted-foreground text-sm">
+                    Showing {(currentPage - 1) * pageSize + 1} to{' '}
+                    {Math.min(currentPage * pageSize, pagination.totalItems)} of{' '}
                     {pagination.totalItems} results
                   </div>
                   <div className="flex items-center gap-2">

@@ -1,7 +1,7 @@
-import { NextRequest, NextResponse } from "next/server";
-import { auth } from "../../../../../../../auth";
-import { prisma } from "@/lib/db";
-import { PAYMENT_STATUS } from "@/lib/constants";
+import { NextRequest, NextResponse } from 'next/server';
+import { auth } from '../../../../../../../auth';
+import { prisma } from '@/lib/db';
+import { PAYMENT_STATUS } from '@/lib/constants';
 
 interface CustomerPurchase {
   id: number;
@@ -25,12 +25,12 @@ export async function GET(
     const { email } = await params;
 
     if (!session?.user) {
-      return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+      return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
     }
 
     // Check if user has permission to view customer data
-    if (!["ADMIN", "MANAGER", "STAFF"].includes(session.user.role)) {
-      return NextResponse.json({ error: "Forbidden" }, { status: 403 });
+    if (!['ADMIN', 'MANAGER', 'STAFF'].includes(session.user.role)) {
+      return NextResponse.json({ error: 'Forbidden' }, { status: 403 });
     }
 
     const customerEmail = decodeURIComponent(email);
@@ -53,20 +53,20 @@ export async function GET(
         },
       },
       orderBy: {
-        created_at: "desc",
+        created_at: 'desc',
       },
     });
 
     // Transform the data into the format expected by the frontend
     const customerPurchases: CustomerPurchase[] = transactions.map(
-      (transaction) => ({
+      transaction => ({
         id: transaction.id,
         transactionNumber: transaction.transaction_number,
         totalAmount: Number(transaction.total_amount),
         createdAt:
           transaction.created_at?.toISOString() || new Date().toISOString(),
-        items: transaction.sales_items.map((item) => ({
-          productName: item.products?.name || "Unknown Product",
+        items: transaction.sales_items.map(item => ({
+          productName: item.products?.name || 'Unknown Product',
           quantity: item.quantity,
           unitPrice: Number(item.unit_price),
           totalPrice: Number(item.total_price),
@@ -76,9 +76,9 @@ export async function GET(
 
     return NextResponse.json(customerPurchases);
   } catch (error) {
-    console.error("Error fetching customer purchases:", error);
+    console.error('Error fetching customer purchases:', error);
     return NextResponse.json(
-      { error: "Failed to fetch customer purchases" },
+      { error: 'Failed to fetch customer purchases' },
       { status: 500 }
     );
   }

@@ -1,10 +1,10 @@
-"use client";
+'use client';
 
-import { InventoryMetrics } from "@/components/inventory/InventoryMetrics";
-import { InventoryCharts } from "@/components/inventory/InventoryCharts";
-import { RecentActivity } from "@/components/inventory/RecentActivity";
-import { QuickActions } from "@/components/inventory/QuickActions";
-import { LowStockWidget } from "@/components/inventory/LowStockWidget";
+import { InventoryMetrics } from '@/components/inventory/InventoryMetrics';
+import { InventoryCharts } from '@/components/inventory/InventoryCharts';
+import { RecentActivity } from '@/components/inventory/RecentActivity';
+import { QuickActions } from '@/components/inventory/QuickActions';
+import { LowStockWidget } from '@/components/inventory/LowStockWidget';
 
 interface User {
   id: string;
@@ -38,7 +38,7 @@ export function InventoryDashboard({ user }: InventoryDashboardProps) {
 
           {/* Low Stock Widget and Recent Activity */}
           <div>
-            <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+            <div className="grid grid-cols-1 gap-6 lg:grid-cols-2">
               <LowStockWidget />
               <RecentActivity />
             </div>

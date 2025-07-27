@@ -1,15 +1,15 @@
-"use client";
+'use client';
 
-import { useState } from "react";
+import { useState } from 'react';
 
-import { Button } from "@/components/ui/button";
+import { Button } from '@/components/ui/button';
 import {
   Card,
   CardContent,
   CardDescription,
   CardHeader,
   CardTitle,
-} from "@/components/ui/card";
+} from '@/components/ui/card';
 import {
   Table,
   TableBody,
@@ -17,18 +17,18 @@ import {
   TableHead,
   TableHeader,
   TableRow,
-} from "@/components/ui/table";
-import { Badge } from "@/components/ui/badge";
-import { useDeactivatedUsers, useReactivateUser } from "@/hooks/api/users";
-import type { AppUser as APIUser } from "@/types/user";
-import { toast } from "sonner";
-import { useAdminGuard } from "@/hooks/useAdminGuard";
+} from '@/components/ui/table';
+import { Badge } from '@/components/ui/badge';
+import { useDeactivatedUsers, useReactivateUser } from '@/hooks/api/users';
+import type { AppUser as APIUser } from '@/types/user';
+import { toast } from 'sonner';
+import { useAdminGuard } from '@/hooks/useAdminGuard';
 import {
   IconUserX,
   IconUserCheck,
   IconCalendar,
   IconRefresh,
-} from "@tabler/icons-react";
+} from '@tabler/icons-react';
 
 // Use APIUser type directly
 type User = APIUser;
@@ -54,10 +54,10 @@ export function DeactivatedUsersManagement() {
         role: user.role,
       });
 
-      toast.success("User reactivated successfully");
+      toast.success('User reactivated successfully');
     } catch (error) {
       const errorMessage =
-        error instanceof Error ? error.message : "Failed to reactivate user";
+        error instanceof Error ? error.message : 'Failed to reactivate user';
       toast.error(errorMessage);
     } finally {
       setActivatingUser(null);
@@ -75,7 +75,7 @@ export function DeactivatedUsersManagement() {
   return (
     <div className="space-y-6">
       {/* Header */}
-      <div className="flex flex-col sm:flex-row gap-4 items-start sm:items-center justify-between">
+      <div className="flex flex-col items-start justify-between gap-4 sm:flex-row sm:items-center">
         <div>
           <h2 className="text-2xl font-bold tracking-tight">
             Deactivated Users
@@ -89,19 +89,19 @@ export function DeactivatedUsersManagement() {
           size="sm"
           onClick={() => window.location.reload()}
         >
-          <IconRefresh className="h-4 w-4 mr-2" />
+          <IconRefresh className="mr-2 h-4 w-4" />
           Refresh
         </Button>
       </div>
 
       {/* Deactivated Users Metrics - Beautiful Gradient Cards */}
-      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
+      <div className="grid grid-cols-1 gap-6 md:grid-cols-2 lg:grid-cols-4">
         {/* Total Deactivated Card */}
-        <Card className="relative overflow-hidden border-0 bg-gradient-to-br from-gray-50 to-gray-100 dark:from-gray-950 dark:to-gray-900 hover:shadow-lg transition-all duration-300 group">
-          <div className="absolute top-0 right-0 w-20 h-20 bg-gray-200/50 dark:bg-gray-800/50 rounded-full -translate-y-10 translate-x-10"></div>
+        <Card className="group relative overflow-hidden border-0 bg-gradient-to-br from-gray-50 to-gray-100 transition-all duration-300 hover:shadow-lg dark:from-gray-950 dark:to-gray-900">
+          <div className="absolute top-0 right-0 h-20 w-20 translate-x-10 -translate-y-10 rounded-full bg-gray-200/50 dark:bg-gray-800/50"></div>
           <CardHeader className="pb-3">
-            <CardTitle className="text-sm font-medium text-gray-700 dark:text-gray-300 flex items-center gap-3">
-              <div className="p-2 bg-gray-100 dark:bg-gray-800 rounded-lg group-hover:scale-110 transition-transform duration-300">
+            <CardTitle className="flex items-center gap-3 text-sm font-medium text-gray-700 dark:text-gray-300">
+              <div className="rounded-lg bg-gray-100 p-2 transition-transform duration-300 group-hover:scale-110 dark:bg-gray-800">
                 <IconUserX className="h-5 w-5 text-gray-600 dark:text-gray-400" />
               </div>
               Total Deactivated
@@ -112,24 +112,24 @@ export function DeactivatedUsersManagement() {
               <div className="text-3xl font-bold text-gray-600 dark:text-gray-400">
                 {users.length}
               </div>
-              <div className="text-xs text-gray-600/70 dark:text-gray-400/70 mb-1">
+              <div className="mb-1 text-xs text-gray-600/70 dark:text-gray-400/70">
                 inactive accounts
               </div>
             </div>
-            <div className="text-xs text-gray-600/70 dark:text-gray-400/70 mt-3">
+            <div className="mt-3 text-xs text-gray-600/70 dark:text-gray-400/70">
               {users.length === 0
-                ? "All users active"
-                : "Manage inactive users"}
+                ? 'All users active'
+                : 'Manage inactive users'}
             </div>
           </CardContent>
         </Card>
 
         {/* Recently Deactivated Card */}
-        <Card className="relative overflow-hidden border-0 bg-gradient-to-br from-red-50 to-red-100 dark:from-red-950 dark:to-red-900 hover:shadow-lg transition-all duration-300 group">
-          <div className="absolute top-0 right-0 w-20 h-20 bg-red-200/50 dark:bg-red-800/50 rounded-full -translate-y-10 translate-x-10"></div>
+        <Card className="group relative overflow-hidden border-0 bg-gradient-to-br from-red-50 to-red-100 transition-all duration-300 hover:shadow-lg dark:from-red-950 dark:to-red-900">
+          <div className="absolute top-0 right-0 h-20 w-20 translate-x-10 -translate-y-10 rounded-full bg-red-200/50 dark:bg-red-800/50"></div>
           <CardHeader className="pb-3">
-            <CardTitle className="text-sm font-medium text-red-700 dark:text-red-300 flex items-center gap-3">
-              <div className="p-2 bg-red-100 dark:bg-red-800 rounded-lg group-hover:scale-110 transition-transform duration-300">
+            <CardTitle className="flex items-center gap-3 text-sm font-medium text-red-700 dark:text-red-300">
+              <div className="rounded-lg bg-red-100 p-2 transition-transform duration-300 group-hover:scale-110 dark:bg-red-800">
                 <IconCalendar className="h-5 w-5 text-red-600 dark:text-red-400" />
               </div>
               Recently Deactivated
@@ -139,7 +139,7 @@ export function DeactivatedUsersManagement() {
             <div className="flex items-end gap-3">
               <div className="text-3xl font-bold text-red-600 dark:text-red-400">
                 {
-                  users.filter((u) => {
+                  users.filter(u => {
                     const deactivatedDate = new Date(
                       u.updatedAt || u.createdAt
                     );
@@ -149,22 +149,22 @@ export function DeactivatedUsersManagement() {
                   }).length
                 }
               </div>
-              <div className="text-xs text-red-600/70 dark:text-red-400/70 mb-1">
+              <div className="mb-1 text-xs text-red-600/70 dark:text-red-400/70">
                 last 30 days
               </div>
             </div>
-            <div className="text-xs text-red-600/70 dark:text-red-400/70 mt-3">
+            <div className="mt-3 text-xs text-red-600/70 dark:text-red-400/70">
               Recent deactivations
             </div>
           </CardContent>
         </Card>
 
         {/* Ready to Reactivate Card */}
-        <Card className="relative overflow-hidden border-0 bg-gradient-to-br from-blue-50 to-blue-100 dark:from-blue-950 dark:to-blue-900 hover:shadow-lg transition-all duration-300 group">
-          <div className="absolute top-0 right-0 w-20 h-20 bg-blue-200/50 dark:bg-blue-800/50 rounded-full -translate-y-10 translate-x-10"></div>
+        <Card className="group relative overflow-hidden border-0 bg-gradient-to-br from-blue-50 to-blue-100 transition-all duration-300 hover:shadow-lg dark:from-blue-950 dark:to-blue-900">
+          <div className="absolute top-0 right-0 h-20 w-20 translate-x-10 -translate-y-10 rounded-full bg-blue-200/50 dark:bg-blue-800/50"></div>
           <CardHeader className="pb-3">
-            <CardTitle className="text-sm font-medium text-blue-700 dark:text-blue-300 flex items-center gap-3">
-              <div className="p-2 bg-blue-100 dark:bg-blue-800 rounded-lg group-hover:scale-110 transition-transform duration-300">
+            <CardTitle className="flex items-center gap-3 text-sm font-medium text-blue-700 dark:text-blue-300">
+              <div className="rounded-lg bg-blue-100 p-2 transition-transform duration-300 group-hover:scale-110 dark:bg-blue-800">
                 <IconUserCheck className="h-5 w-5 text-blue-600 dark:text-blue-400" />
               </div>
               Ready to Reactivate
@@ -175,13 +175,13 @@ export function DeactivatedUsersManagement() {
               <div className="text-3xl font-bold text-blue-600 dark:text-blue-400">
                 {users.length}
               </div>
-              <div className="text-xs text-blue-600/70 dark:text-blue-400/70 mb-1">
+              <div className="mb-1 text-xs text-blue-600/70 dark:text-blue-400/70">
                 can be reactivated
               </div>
             </div>
-            <div className="w-full bg-blue-200 dark:bg-blue-800 rounded-full h-2 mt-3">
+            <div className="mt-3 h-2 w-full rounded-full bg-blue-200 dark:bg-blue-800">
               <div
-                className="bg-blue-600 dark:bg-blue-400 h-2 rounded-full transition-all duration-500"
+                className="h-2 rounded-full bg-blue-600 transition-all duration-500 dark:bg-blue-400"
                 style={{
                   width: `${Math.min((users.length / Math.max(users.length, 1)) * 100, 100)}%`,
                 }}
@@ -191,11 +191,11 @@ export function DeactivatedUsersManagement() {
         </Card>
 
         {/* System Status Card */}
-        <Card className="relative overflow-hidden border-0 bg-gradient-to-br from-emerald-50 to-emerald-100 dark:from-emerald-950 dark:to-emerald-900 hover:shadow-lg transition-all duration-300 group">
-          <div className="absolute top-0 right-0 w-20 h-20 bg-emerald-200/50 dark:bg-emerald-800/50 rounded-full -translate-y-10 translate-x-10"></div>
+        <Card className="group relative overflow-hidden border-0 bg-gradient-to-br from-emerald-50 to-emerald-100 transition-all duration-300 hover:shadow-lg dark:from-emerald-950 dark:to-emerald-900">
+          <div className="absolute top-0 right-0 h-20 w-20 translate-x-10 -translate-y-10 rounded-full bg-emerald-200/50 dark:bg-emerald-800/50"></div>
           <CardHeader className="pb-3">
-            <CardTitle className="text-sm font-medium text-emerald-700 dark:text-emerald-300 flex items-center gap-3">
-              <div className="p-2 bg-emerald-100 dark:bg-emerald-800 rounded-lg group-hover:scale-110 transition-transform duration-300">
+            <CardTitle className="flex items-center gap-3 text-sm font-medium text-emerald-700 dark:text-emerald-300">
+              <div className="rounded-lg bg-emerald-100 p-2 transition-transform duration-300 group-hover:scale-110 dark:bg-emerald-800">
                 <IconUserCheck className="h-5 w-5 text-emerald-600 dark:text-emerald-400" />
               </div>
               System Status
@@ -204,14 +204,14 @@ export function DeactivatedUsersManagement() {
           <CardContent>
             <div className="flex items-center gap-3">
               <div className="flex items-center gap-2">
-                <div className="w-3 h-3 bg-emerald-500 rounded-full animate-pulse"></div>
+                <div className="h-3 w-3 animate-pulse rounded-full bg-emerald-500"></div>
                 <span className="text-lg font-semibold text-emerald-600 dark:text-emerald-400">
-                  {users.length === 0 ? "Clean" : "Needs Review"}
+                  {users.length === 0 ? 'Clean' : 'Needs Review'}
                 </span>
               </div>
             </div>
-            <div className="text-xs text-emerald-600/70 dark:text-emerald-400/70 mt-3">
-              {users.length === 0 ? "No deactivated users" : "Review required"}
+            <div className="mt-3 text-xs text-emerald-600/70 dark:text-emerald-400/70">
+              {users.length === 0 ? 'No deactivated users' : 'Review required'}
             </div>
           </CardContent>
         </Card>
@@ -230,8 +230,8 @@ export function DeactivatedUsersManagement() {
               <div>Loading deactivated users...</div>
             </div>
           ) : error ? (
-            <div className="bg-destructive/15 text-destructive text-sm p-3 rounded-md">
-              {error instanceof Error ? error.message : "Failed to load users"}
+            <div className="bg-destructive/15 text-destructive rounded-md p-3 text-sm">
+              {error instanceof Error ? error.message : 'Failed to load users'}
             </div>
           ) : users.length === 0 ? (
             <div className="flex items-center justify-center py-8">
@@ -239,7 +239,7 @@ export function DeactivatedUsersManagement() {
                 <p className="text-muted-foreground">
                   No deactivated users found.
                 </p>
-                <p className="text-sm text-muted-foreground mt-1">
+                <p className="text-muted-foreground mt-1 text-sm">
                   All users are currently active.
                 </p>
               </div>
@@ -257,7 +257,7 @@ export function DeactivatedUsersManagement() {
                 </TableRow>
               </TableHeader>
               <TableBody>
-                {users.map((user) => (
+                {users.map(user => (
                   <TableRow key={user.id}>
                     <TableCell className="font-medium">
                       {user.firstName} {user.lastName}
@@ -266,11 +266,11 @@ export function DeactivatedUsersManagement() {
                     <TableCell>
                       <Badge
                         variant={
-                          user.role === "ADMIN"
-                            ? "destructive"
-                            : user.role === "MANAGER"
-                              ? "default"
-                              : "secondary"
+                          user.role === 'ADMIN'
+                            ? 'destructive'
+                            : user.role === 'MANAGER'
+                              ? 'default'
+                              : 'secondary'
                         }
                       >
                         {user.role}
@@ -282,7 +282,7 @@ export function DeactivatedUsersManagement() {
                     <TableCell>
                       {user.lastLogin
                         ? new Date(user.lastLogin).toLocaleDateString()
-                        : "Never"}
+                        : 'Never'}
                     </TableCell>
                     <TableCell>
                       <Button
@@ -292,8 +292,8 @@ export function DeactivatedUsersManagement() {
                         disabled={activatingUser === user.id}
                       >
                         {activatingUser === user.id
-                          ? "Reactivating..."
-                          : "Reactivate"}
+                          ? 'Reactivating...'
+                          : 'Reactivate'}
                       </Button>
                     </TableCell>
                   </TableRow>

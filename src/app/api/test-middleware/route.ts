@@ -1,40 +1,40 @@
-import { NextRequest, NextResponse } from "next/server";
-import { auth } from "../../../../auth";
+import { NextRequest, NextResponse } from 'next/server';
+import { auth } from '../../../../auth';
 
 export async function GET(_req: NextRequest) {
   try {
     const token = await auth();
 
     // Simulate middleware logic
-    const pathname = "/dashboard"; // Simulate accessing dashboard
+    const pathname = '/dashboard'; // Simulate accessing dashboard
 
     // Public routes that don't require authentication
     const publicRoutes = [
-      "/",
-      "/login",
-      "/logout",
-      "/register",
-      "/forgot-password",
-      "/reset-password",
-      "/check-email",
-      "/verify-email",
-      "/pending-approval",
-      "/unauthorized",
+      '/',
+      '/login',
+      '/logout',
+      '/register',
+      '/forgot-password',
+      '/reset-password',
+      '/check-email',
+      '/verify-email',
+      '/pending-approval',
+      '/unauthorized',
     ];
 
     // Allow public routes without any checks
     if (publicRoutes.includes(pathname)) {
       return NextResponse.json({
-        result: "public_route",
-        message: "Public route - no checks needed",
+        result: 'public_route',
+        message: 'Public route - no checks needed',
       });
     }
 
     // If no token, redirect to login
     if (!token?.user) {
       return NextResponse.json({
-        result: "redirect_to_login",
-        message: "No token - should redirect to login",
+        result: 'redirect_to_login',
+        message: 'No token - should redirect to login',
         token: null,
       });
     }
@@ -55,35 +55,35 @@ export async function GET(_req: NextRequest) {
     // Check if email is not verified
     if (!isEmailVerified) {
       return NextResponse.json({
-        result: "redirect_to_verify_email",
-        message: "Email not verified - should redirect to verify-email",
+        result: 'redirect_to_verify_email',
+        message: 'Email not verified - should redirect to verify-email',
         userStatus,
         isEmailVerified,
       });
     }
 
     // Check user status after email verification
-    if (userStatus === "PENDING") {
+    if (userStatus === 'PENDING') {
       return NextResponse.json({
-        result: "redirect_to_pending_approval",
-        message: "User status is PENDING (needs admin approval)",
+        result: 'redirect_to_pending_approval',
+        message: 'User status is PENDING (needs admin approval)',
         userStatus,
         isEmailVerified,
       });
     }
 
-    if (userStatus === "VERIFIED") {
+    if (userStatus === 'VERIFIED') {
       return NextResponse.json({
-        result: "redirect_to_pending_approval",
-        message: "User status is VERIFIED (needs admin approval)",
+        result: 'redirect_to_pending_approval',
+        message: 'User status is VERIFIED (needs admin approval)',
         userStatus,
         isEmailVerified,
       });
     }
 
-    if (userStatus === "REJECTED" || userStatus === "SUSPENDED") {
+    if (userStatus === 'REJECTED' || userStatus === 'SUSPENDED') {
       return NextResponse.json({
-        result: "redirect_to_unauthorized",
+        result: 'redirect_to_unauthorized',
         message: `User status is ${userStatus}`,
         userStatus,
         isEmailVerified,
@@ -91,9 +91,9 @@ export async function GET(_req: NextRequest) {
     }
 
     // At this point, user should be APPROVED
-    if (userStatus !== "APPROVED") {
+    if (userStatus !== 'APPROVED') {
       return NextResponse.json({
-        result: "redirect_to_unauthorized",
+        result: 'redirect_to_unauthorized',
         message: `Invalid user status: ${userStatus}`,
         userStatus,
         isEmailVerified,
@@ -101,18 +101,18 @@ export async function GET(_req: NextRequest) {
     }
 
     return NextResponse.json({
-      result: "access_granted",
-      message: "User is approved and can access dashboard",
+      result: 'access_granted',
+      message: 'User is approved and can access dashboard',
       userStatus,
       isEmailVerified,
       userRole,
     });
   } catch (error) {
-    console.error("Test middleware error:", error);
+    console.error('Test middleware error:', error);
     return NextResponse.json(
       {
         success: false,
-        error: error instanceof Error ? error.message : "Unknown error",
+        error: error instanceof Error ? error.message : 'Unknown error',
       },
       { status: 500 }
     );

@@ -1,7 +1,7 @@
-"use client";
+'use client';
 
-import { useState, useEffect } from "react";
-import { Button } from "@/components/ui/button";
+import { useState, useEffect } from 'react';
+import { Button } from '@/components/ui/button';
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -9,8 +9,8 @@ import {
   DropdownMenuTrigger,
   DropdownMenuLabel,
   DropdownMenuSeparator,
-} from "@/components/ui/dropdown-menu";
-import { IconColumns, IconEye, IconEyeOff } from "@tabler/icons-react";
+} from '@/components/ui/dropdown-menu';
+import { IconColumns, IconEye, IconEyeOff } from '@tabler/icons-react';
 
 export interface DashboardTableColumn {
   key: string;
@@ -43,8 +43,8 @@ export function DashboardColumnCustomizer({
         const parsed = JSON.parse(savedColumns);
         // Ensure required columns are always included and first
         const requiredColumns = columns
-          .filter((col) => col.required)
-          .map((col) => col.key);
+          .filter(col => col.required)
+          .map(col => col.key);
         const otherColumns = parsed.filter(
           (col: string) => !requiredColumns.includes(col)
         );
@@ -54,11 +54,11 @@ export function DashboardColumnCustomizer({
       } catch {
         // Fallback to defaults if parsing fails
         const requiredColumns = columns
-          .filter((col) => col.required)
-          .map((col) => col.key);
+          .filter(col => col.required)
+          .map(col => col.key);
         const defaultColumns = columns
-          .filter((col) => col.defaultVisible && !col.required)
-          .map((col) => col.key);
+          .filter(col => col.defaultVisible && !col.required)
+          .map(col => col.key);
         const mergedColumns = [...requiredColumns, ...defaultColumns];
         setVisibleColumns(mergedColumns);
         onColumnsChange(mergedColumns);
@@ -66,11 +66,11 @@ export function DashboardColumnCustomizer({
     } else {
       // Use default visible columns
       const requiredColumns = columns
-        .filter((col) => col.required)
-        .map((col) => col.key);
+        .filter(col => col.required)
+        .map(col => col.key);
       const defaultColumns = columns
-        .filter((col) => col.defaultVisible && !col.required)
-        .map((col) => col.key);
+        .filter(col => col.defaultVisible && !col.required)
+        .map(col => col.key);
       const mergedColumns = [...requiredColumns, ...defaultColumns];
       setVisibleColumns(mergedColumns);
       onColumnsChange(mergedColumns);
@@ -79,14 +79,14 @@ export function DashboardColumnCustomizer({
 
   const handleColumnToggle = (columnKey: string, checked: boolean) => {
     // Don't allow disabling required columns
-    const column = columns.find((col) => col.key === columnKey);
+    const column = columns.find(col => col.key === columnKey);
     if (!checked && column?.required) {
       return;
     }
 
     const newVisibleColumns = checked
       ? [...visibleColumns, columnKey]
-      : visibleColumns.filter((key) => key !== columnKey);
+      : visibleColumns.filter(key => key !== columnKey);
 
     setVisibleColumns(newVisibleColumns);
     onColumnsChange(newVisibleColumns);
@@ -97,11 +97,11 @@ export function DashboardColumnCustomizer({
 
   const resetToDefaults = () => {
     const requiredColumns = columns
-      .filter((col) => col.required)
-      .map((col) => col.key);
+      .filter(col => col.required)
+      .map(col => col.key);
     const defaultColumns = columns
-      .filter((col) => col.defaultVisible && !col.required)
-      .map((col) => col.key);
+      .filter(col => col.defaultVisible && !col.required)
+      .map(col => col.key);
     const mergedColumns = [...requiredColumns, ...defaultColumns];
 
     setVisibleColumns(mergedColumns);
@@ -110,7 +110,7 @@ export function DashboardColumnCustomizer({
   };
 
   const showAllColumns = () => {
-    const allColumns = columns.map((col) => col.key);
+    const allColumns = columns.map(col => col.key);
     setVisibleColumns(allColumns);
     onColumnsChange(allColumns);
     localStorage.setItem(localStorageKey, JSON.stringify(allColumns));
@@ -118,8 +118,8 @@ export function DashboardColumnCustomizer({
 
   const hideOptionalColumns = () => {
     const requiredColumns = columns
-      .filter((col) => col.required)
-      .map((col) => col.key);
+      .filter(col => col.required)
+      .map(col => col.key);
 
     setVisibleColumns(requiredColumns);
     onColumnsChange(requiredColumns);
@@ -135,8 +135,8 @@ export function DashboardColumnCustomizer({
         <Button variant="outline" size="sm" className="gap-2">
           <IconColumns className="h-4 w-4" />
           Customize Columns
-          <span className="ml-1 text-xs text-muted-foreground">
-            {isClient ? `(${visibleCount}/${totalCount})` : "(0/0)"}
+          <span className="text-muted-foreground ml-1 text-xs">
+            {isClient ? `(${visibleCount}/${totalCount})` : '(0/0)'}
           </span>
         </Button>
       </DropdownMenuTrigger>
@@ -157,23 +157,23 @@ export function DashboardColumnCustomizer({
         <DropdownMenuSeparator />
 
         <div className="p-1">
-          <div className="flex gap-1 mb-2">
+          <div className="mb-2 flex gap-1">
             <Button
               variant="ghost"
               size="sm"
               onClick={showAllColumns}
-              className="h-6 px-2 text-xs flex-1"
+              className="h-6 flex-1 px-2 text-xs"
             >
-              <IconEye className="h-3 w-3 mr-1" />
+              <IconEye className="mr-1 h-3 w-3" />
               Show All
             </Button>
             <Button
               variant="ghost"
               size="sm"
               onClick={hideOptionalColumns}
-              className="h-6 px-2 text-xs flex-1"
+              className="h-6 flex-1 px-2 text-xs"
             >
-              <IconEyeOff className="h-3 w-3 mr-1" />
+              <IconEyeOff className="mr-1 h-3 w-3" />
               Hide Optional
             </Button>
           </div>
@@ -182,20 +182,20 @@ export function DashboardColumnCustomizer({
         <DropdownMenuSeparator />
 
         <div className="max-h-64 overflow-y-auto">
-          {columns.map((column) => (
+          {columns.map(column => (
             <DropdownMenuCheckboxItem
               key={column.key}
               checked={visibleColumns.includes(column.key)}
-              onCheckedChange={(checked) =>
+              onCheckedChange={checked =>
                 handleColumnToggle(column.key, checked)
               }
               disabled={column.required}
               className="text-sm"
             >
-              <div className="flex items-center justify-between w-full">
+              <div className="flex w-full items-center justify-between">
                 <span>{column.label}</span>
                 {column.required && (
-                  <span className="text-xs text-muted-foreground ml-2">
+                  <span className="text-muted-foreground ml-2 text-xs">
                     Required
                   </span>
                 )}

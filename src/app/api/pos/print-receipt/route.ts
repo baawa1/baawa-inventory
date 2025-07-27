@@ -1,34 +1,34 @@
-import { NextResponse } from "next/server";
-import { withPOSAuth, AuthenticatedRequest } from "@/lib/api-auth-middleware";
-import { createXprinterService, ReceiptData } from "@/lib/pos/thermal-printer";
-import { z } from "zod";
-import { ERROR_MESSAGES, VALIDATION_RULES } from "@/lib/constants";
+import { NextResponse } from 'next/server';
+import { withPOSAuth, AuthenticatedRequest } from '@/lib/api-auth-middleware';
+import { createXprinterService, ReceiptData } from '@/lib/pos/thermal-printer';
+import { z } from 'zod';
+import { ERROR_MESSAGES, VALIDATION_RULES } from '@/lib/constants';
 
 // Validation schema for print receipt request
 const printReceiptSchema = z.object({
-  saleId: z.string().min(1, "Sale ID is required"),
-  timestamp: z.string().datetime("Invalid timestamp"),
-  staffName: z.string().min(1, "Staff name is required"),
+  saleId: z.string().min(1, 'Sale ID is required'),
+  timestamp: z.string().datetime('Invalid timestamp'),
+  staffName: z.string().min(1, 'Staff name is required'),
   customerName: z.string().max(VALIDATION_RULES.MAX_NAME_LENGTH).optional(),
   customerPhone: z.string().max(20).optional(),
   items: z.array(
     z.object({
-      name: z.string().min(1, "Item name is required"),
-      sku: z.string().min(1, "SKU is required"),
-      quantity: z.number().positive("Quantity must be positive"),
-      price: z.number().positive("Price must be positive"),
-      total: z.number().positive("Total must be positive"),
+      name: z.string().min(1, 'Item name is required'),
+      sku: z.string().min(1, 'SKU is required'),
+      quantity: z.number().positive('Quantity must be positive'),
+      price: z.number().positive('Price must be positive'),
+      total: z.number().positive('Total must be positive'),
       category: z.string().optional(),
     })
   ),
-  subtotal: z.number().positive("Subtotal must be positive"),
-  discount: z.number().min(0, "Discount cannot be negative"),
-  total: z.number().positive("Total must be positive"),
-  paymentMethod: z.string().min(1, "Payment method is required"),
+  subtotal: z.number().positive('Subtotal must be positive'),
+  discount: z.number().min(0, 'Discount cannot be negative'),
+  total: z.number().positive('Total must be positive'),
+  paymentMethod: z.string().min(1, 'Payment method is required'),
   printerConfig: z
     .object({
-      type: z.enum(["usb", "network", "serial"]),
-      interface: z.string().min(1, "Interface is required"),
+      type: z.enum(['usb', 'network', 'serial']),
+      interface: z.string().min(1, 'Interface is required'),
       options: z
         .object({
           width: z.number().optional(),
@@ -83,7 +83,7 @@ async function handlePrintReceipt(request: AuthenticatedRequest) {
     const isConnected = await printerService.testConnection();
     if (!isConnected) {
       return NextResponse.json(
-        { error: "Printer not connected. Please check USB connection." },
+        { error: 'Printer not connected. Please check USB connection.' },
         { status: 503 }
       );
     }
@@ -92,21 +92,21 @@ async function handlePrintReceipt(request: AuthenticatedRequest) {
     const printSuccess = await printerService.printReceipt(receiptData);
     if (!printSuccess) {
       return NextResponse.json(
-        { error: "Failed to print receipt. Please try again." },
+        { error: 'Failed to print receipt. Please try again.' },
         { status: 500 }
       );
     }
 
     return NextResponse.json({
       success: true,
-      message: "Receipt printed successfully",
+      message: 'Receipt printed successfully',
       saleId,
     });
   } catch (error) {
-    console.error("Error printing receipt:", error);
+    console.error('Error printing receipt:', error);
 
     if (error instanceof z.ZodError) {
-      console.error("Validation errors:", error.errors);
+      console.error('Validation errors:', error.errors);
       return NextResponse.json(
         { error: ERROR_MESSAGES.VALIDATION_ERROR, details: error.errors },
         { status: 400 }
@@ -132,7 +132,7 @@ async function handleTestPrinter(request: AuthenticatedRequest) {
     const isConnected = await printerService.testConnection();
     if (!isConnected) {
       return NextResponse.json(
-        { error: "Printer not connected" },
+        { error: 'Printer not connected' },
         { status: 503 }
       );
     }
@@ -141,27 +141,27 @@ async function handleTestPrinter(request: AuthenticatedRequest) {
     const testSuccess = await printerService.printTestPage();
     if (!testSuccess) {
       return NextResponse.json(
-        { error: "Failed to print test page" },
+        { error: 'Failed to print test page' },
         { status: 500 }
       );
     }
 
     return NextResponse.json({
       success: true,
-      message: "Printer test successful",
+      message: 'Printer test successful',
     });
   } catch (error) {
-    console.error("Printer test error:", error);
-    return NextResponse.json({ error: "Printer test failed" }, { status: 500 });
+    console.error('Printer test error:', error);
+    return NextResponse.json({ error: 'Printer test failed' }, { status: 500 });
   }
 }
 
 // Route handlers
 export const POST = withPOSAuth(async (request: AuthenticatedRequest) => {
   const url = new URL(request.url);
-  const action = url.searchParams.get("action");
+  const action = url.searchParams.get('action');
 
-  if (action === "test") {
+  if (action === 'test') {
     return handleTestPrinter(request);
   }
 

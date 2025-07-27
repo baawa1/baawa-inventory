@@ -1,32 +1,32 @@
-"use client";
+'use client';
 
-import { useState } from "react";
-import { useRouter } from "next/navigation";
-import { useForm } from "react-hook-form";
-import { zodResolver } from "@hookform/resolvers/zod";
+import { useState } from 'react';
+import { useRouter } from 'next/navigation';
+import { useForm } from 'react-hook-form';
+import { zodResolver } from '@hookform/resolvers/zod';
 import {
   updateBrandFormSchema,
   type UpdateBrandFormData,
-} from "@/lib/validations/brand";
-import { Button } from "@/components/ui/button";
-import { Input } from "@/components/ui/input";
-import { Label } from "@/components/ui/label";
-import { Textarea } from "@/components/ui/textarea";
-import { Switch } from "@/components/ui/switch";
+} from '@/lib/validations/brand';
+import { Button } from '@/components/ui/button';
+import { Input } from '@/components/ui/input';
+import { Label } from '@/components/ui/label';
+import { Textarea } from '@/components/ui/textarea';
+import { Switch } from '@/components/ui/switch';
 import {
   Card,
   CardContent,
   CardHeader,
   CardTitle,
   CardDescription,
-} from "@/components/ui/card";
-import { ArrowLeft, Loader2 } from "lucide-react";
-import { PageHeader } from "@/components/ui/page-header";
-import { FormLoading } from "@/components/ui/form-loading";
-import { ImageUpload } from "@/components/ui/image-upload";
-import { toast } from "sonner";
-import { useBrandById, useUpdateBrand } from "@/hooks/api/brands";
-import { logger } from "@/lib/logger";
+} from '@/components/ui/card';
+import { ArrowLeft, Loader2 } from 'lucide-react';
+import { PageHeader } from '@/components/ui/page-header';
+import { FormLoading } from '@/components/ui/form-loading';
+import { ImageUpload } from '@/components/ui/image-upload';
+import { toast } from 'sonner';
+import { useBrandById, useUpdateBrand } from '@/hooks/api/brands';
+import { logger } from '@/lib/logger';
 
 interface EditBrandFormProps {
   brandId: number;
@@ -62,14 +62,14 @@ export default function EditBrandForm({ brandId }: EditBrandFormProps) {
       : undefined,
   });
 
-  const isActive = watch("isActive");
+  const isActive = watch('isActive');
 
   const onSubmit = async (data: UpdateBrandFormData) => {
     try {
       setServerError(null);
 
       // Clean up website URL
-      if (data.website && data.website.trim() === "") {
+      if (data.website && data.website.trim() === '') {
         data.website = null;
       }
 
@@ -84,15 +84,15 @@ export default function EditBrandForm({ brandId }: EditBrandFormProps) {
       };
 
       await updateBrandMutation.mutateAsync({ id: data.id, data: apiData });
-      toast.success("Brand updated successfully!");
-      router.push("/inventory/brands");
+      toast.success('Brand updated successfully!');
+      router.push('/inventory/brands');
     } catch (error) {
-      logger.error("Failed to update brand", {
+      logger.error('Failed to update brand', {
         brandId: brand.id,
         brandName: data.name,
         error: error instanceof Error ? error.message : String(error),
       });
-      toast.error("Failed to update brand");
+      toast.error('Failed to update brand');
     }
   };
 
@@ -102,7 +102,7 @@ export default function EditBrandForm({ brandId }: EditBrandFormProps) {
         title="Edit Brand"
         description="Loading brand information..."
         backLabel="Back to Brands"
-        onBack={() => router.push("/inventory/brands")}
+        onBack={() => router.push('/inventory/brands')}
         backUrl="/inventory/brands"
       />
     );
@@ -115,7 +115,7 @@ export default function EditBrandForm({ brandId }: EditBrandFormProps) {
         title="Edit Brand"
         description="Updating brand information..."
         backLabel="Back to Brands"
-        onBack={() => router.push("/inventory/brands")}
+        onBack={() => router.push('/inventory/brands')}
         backUrl="/inventory/brands"
       />
     );
@@ -126,11 +126,11 @@ export default function EditBrandForm({ brandId }: EditBrandFormProps) {
   }
 
   return (
-    <div className="max-w-4xl mx-auto p-6 space-y-6">
+    <div className="mx-auto max-w-4xl space-y-6 p-6">
       <div className="mb-6">
         <Button
           variant="ghost"
-          onClick={() => router.push("/inventory/brands")}
+          onClick={() => router.push('/inventory/brands')}
           className="mb-4 px-4 lg:px-6"
         >
           <ArrowLeft className="mr-2 h-4 w-4" />
@@ -158,12 +158,12 @@ export default function EditBrandForm({ brandId }: EditBrandFormProps) {
               </Label>
               <Input
                 id="name"
-                {...register("name")}
+                {...register('name')}
                 placeholder="Enter brand name"
                 disabled={updateBrandMutation.isPending}
               />
               {errors.name && (
-                <p className="text-sm text-destructive">
+                <p className="text-destructive text-sm">
                   {errors.name.message}
                 </p>
               )}
@@ -173,29 +173,29 @@ export default function EditBrandForm({ brandId }: EditBrandFormProps) {
               <Label htmlFor="description">Description</Label>
               <Textarea
                 id="description"
-                {...register("description")}
+                {...register('description')}
                 placeholder="Enter brand description (optional)"
                 rows={3}
                 disabled={updateBrandMutation.isPending}
               />
               {errors.description && (
-                <p className="text-sm text-destructive">
+                <p className="text-destructive text-sm">
                   {errors.description.message}
                 </p>
               )}
             </div>
 
             <ImageUpload
-              value={watch("image")}
-              onChange={(url) => setValue("image", url)}
+              value={watch('image')}
+              onChange={url => setValue('image', url)}
               onError={(error: unknown) => {
                 // Handle error in form validation
-                logger.error("Brand image upload failed", {
+                logger.error('Brand image upload failed', {
                   brandId: brand.id,
-                  brandName: watch("name"),
+                  brandName: watch('name'),
                   error: error instanceof Error ? error.message : String(error),
                 });
-                toast.error("Failed to upload image");
+                toast.error('Failed to upload image');
               }}
               label="Brand Image"
               placeholder="Upload a brand image"
@@ -204,7 +204,7 @@ export default function EditBrandForm({ brandId }: EditBrandFormProps) {
               alt="Brand image"
             />
             {errors.image && (
-              <p className="text-sm text-destructive">{errors.image.message}</p>
+              <p className="text-destructive text-sm">{errors.image.message}</p>
             )}
 
             <div className="space-y-2">
@@ -212,12 +212,12 @@ export default function EditBrandForm({ brandId }: EditBrandFormProps) {
               <Input
                 id="website"
                 type="url"
-                {...register("website")}
+                {...register('website')}
                 placeholder="https://example.com (optional)"
                 disabled={updateBrandMutation.isPending}
               />
               {errors.website && (
-                <p className="text-sm text-destructive">
+                <p className="text-destructive text-sm">
                   {errors.website.message}
                 </p>
               )}
@@ -235,21 +235,21 @@ export default function EditBrandForm({ brandId }: EditBrandFormProps) {
               <Switch
                 id="isActive"
                 checked={isActive}
-                onCheckedChange={(checked) => setValue("isActive", checked)}
+                onCheckedChange={checked => setValue('isActive', checked)}
                 disabled={updateBrandMutation.isPending}
               />
             </div>
             {errors.isActive && (
-              <p className="text-sm text-destructive">
+              <p className="text-destructive text-sm">
                 {errors.isActive.message}
               </p>
             )}
 
-            <div className="flex justify-end space-x-4 pt-6 border-t">
+            <div className="flex justify-end space-x-4 border-t pt-6">
               <Button
                 type="button"
                 variant="outline"
-                onClick={() => router.push("/inventory/brands")}
+                onClick={() => router.push('/inventory/brands')}
                 disabled={updateBrandMutation.isPending}
               >
                 Cancel
@@ -262,7 +262,7 @@ export default function EditBrandForm({ brandId }: EditBrandFormProps) {
                 {updateBrandMutation.isPending && (
                   <Loader2 className="h-4 w-4 animate-spin" />
                 )}
-                {updateBrandMutation.isPending ? "Updating..." : "Update Brand"}
+                {updateBrandMutation.isPending ? 'Updating...' : 'Update Brand'}
               </Button>
             </div>
           </form>

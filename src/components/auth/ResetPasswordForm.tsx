@@ -1,19 +1,19 @@
-"use client";
+'use client';
 
-import { useState, useEffect, Suspense } from "react";
-import { useRouter, useSearchParams } from "next/navigation";
-import { zodResolver } from "@hookform/resolvers/zod";
-import { useForm } from "react-hook-form";
-import { z } from "zod";
-import { Button } from "@/components/ui/button";
+import { useState, useEffect, Suspense } from 'react';
+import { useRouter, useSearchParams } from 'next/navigation';
+import { zodResolver } from '@hookform/resolvers/zod';
+import { useForm } from 'react-hook-form';
+import { z } from 'zod';
+import { Button } from '@/components/ui/button';
 import {
   Card,
   CardContent,
   CardDescription,
   CardHeader,
   CardTitle,
-} from "@/components/ui/card";
-import { Input } from "@/components/ui/input";
+} from '@/components/ui/card';
+import { Input } from '@/components/ui/input';
 import {
   Form,
   FormControl,
@@ -21,23 +21,23 @@ import {
   FormItem,
   FormLabel,
   FormMessage,
-} from "@/components/ui/form";
+} from '@/components/ui/form';
 
 const resetPasswordSchema = z
   .object({
     password: z
       .string()
-      .min(12, "Password must be at least 12 characters")
-      .max(128, "Password must be less than 128 characters")
+      .min(12, 'Password must be at least 12 characters')
+      .max(128, 'Password must be less than 128 characters')
       .regex(
         /^(?=.*[a-z])(?=.*[A-Z])(?=.*\d)(?=.*[@$!%*?&])[A-Za-z\d@$!%*?&]/,
-        "Password must contain at least one lowercase letter, one uppercase letter, one number, and one special character (@$!%*?&)"
+        'Password must contain at least one lowercase letter, one uppercase letter, one number, and one special character (@$!%*?&)'
       ),
     confirmPassword: z.string(),
   })
-  .refine((data) => data.password === data.confirmPassword, {
+  .refine(data => data.password === data.confirmPassword, {
     message: "Passwords don't match",
-    path: ["confirmPassword"],
+    path: ['confirmPassword'],
   });
 
 type ResetPasswordFormData = z.infer<typeof resetPasswordSchema>;
@@ -60,15 +60,15 @@ function ResetPasswordFormContent({ className }: ResetPasswordFormProps) {
   const [isValidToken, setIsValidToken] = useState<boolean | null>(null);
   const router = useRouter();
   const searchParams = useSearchParams();
-  const token = searchParams.get("token");
+  const token = searchParams.get('token');
 
   const form = useForm<ResetPasswordFormData>({
     resolver: zodResolver(resetPasswordSchema),
-    mode: "onBlur",
-    reValidateMode: "onChange",
+    mode: 'onBlur',
+    reValidateMode: 'onChange',
     defaultValues: {
-      password: "",
-      confirmPassword: "",
+      password: '',
+      confirmPassword: '',
     },
   });
 
@@ -80,17 +80,17 @@ function ResetPasswordFormContent({ className }: ResetPasswordFormProps) {
       }
 
       try {
-        const response = await fetch("/api/auth/validate-reset-token", {
-          method: "POST",
+        const response = await fetch('/api/auth/validate-reset-token', {
+          method: 'POST',
           headers: {
-            "Content-Type": "application/json",
+            'Content-Type': 'application/json',
           },
           body: JSON.stringify({ token }),
         });
 
         setIsValidToken(response.ok);
       } catch (error) {
-        console.error("Token validation error:", error);
+        console.error('Token validation error:', error);
         setIsValidToken(false);
       }
     };
@@ -100,7 +100,7 @@ function ResetPasswordFormContent({ className }: ResetPasswordFormProps) {
 
   const onSubmit = async (data: ResetPasswordFormData) => {
     if (!token) {
-      setError("Invalid reset token");
+      setError('Invalid reset token');
       return;
     }
 
@@ -108,10 +108,10 @@ function ResetPasswordFormContent({ className }: ResetPasswordFormProps) {
     setError(null);
 
     try {
-      const response = await fetch("/api/auth/reset-password", {
-        method: "POST",
+      const response = await fetch('/api/auth/reset-password', {
+        method: 'POST',
         headers: {
-          "Content-Type": "application/json",
+          'Content-Type': 'application/json',
         },
         body: JSON.stringify({
           token,
@@ -122,14 +122,14 @@ function ResetPasswordFormContent({ className }: ResetPasswordFormProps) {
 
       if (!response.ok) {
         const errorData = await response.json();
-        throw new Error(errorData.error || "Failed to reset password");
+        throw new Error(errorData.error || 'Failed to reset password');
       }
 
       // Redirect to login with success message
-      router.push("/login?message=password-reset-success");
+      router.push('/login?message=password-reset-success');
     } catch (error) {
-      console.error("Reset password error:", error);
-      setError(error instanceof Error ? error.message : "An error occurred");
+      console.error('Reset password error:', error);
+      setError(error instanceof Error ? error.message : 'An error occurred');
     } finally {
       setIsLoading(false);
     }
@@ -160,14 +160,14 @@ function ResetPasswordFormContent({ className }: ResetPasswordFormProps) {
           </CardHeader>
           <CardContent>
             <div className="space-y-4">
-              <p className="text-sm text-muted-foreground">
+              <p className="text-muted-foreground text-sm">
                 Password reset links expire after 1 hour. Please request a new
                 reset link.
               </p>
               <Button
                 variant="outline"
                 className="w-full"
-                onClick={() => router.push("/forgot-password")}
+                onClick={() => router.push('/forgot-password')}
               >
                 Request New Reset Link
               </Button>
@@ -237,7 +237,7 @@ function ResetPasswordFormContent({ className }: ResetPasswordFormProps) {
               {error && (
                 <div
                   data-testid="password-mismatch-error"
-                  className="text-sm text-destructive bg-destructive/10 p-3 rounded-md"
+                  className="text-destructive bg-destructive/10 rounded-md p-3 text-sm"
                 >
                   {error}
                 </div>
@@ -249,7 +249,7 @@ function ResetPasswordFormContent({ className }: ResetPasswordFormProps) {
                 className="w-full"
                 disabled={isLoading}
               >
-                {isLoading ? "Resetting..." : "Reset Password"}
+                {isLoading ? 'Resetting...' : 'Reset Password'}
               </Button>
             </form>
           </Form>

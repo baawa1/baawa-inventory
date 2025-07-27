@@ -1,4 +1,4 @@
-import { PrismaClient } from "@prisma/client";
+import { PrismaClient } from '@prisma/client';
 
 const prisma = new PrismaClient();
 
@@ -6,8 +6,8 @@ export interface TestUser {
   email: string;
   firstName: string;
   lastName: string;
-  role: "ADMIN" | "MANAGER" | "STAFF";
-  status: "PENDING" | "VERIFIED" | "APPROVED" | "REJECTED" | "SUSPENDED";
+  role: 'ADMIN' | 'MANAGER' | 'STAFF';
+  status: 'PENDING' | 'VERIFIED' | 'APPROVED' | 'REJECTED' | 'SUSPENDED';
   isEmailVerified: boolean;
 }
 
@@ -17,7 +17,7 @@ export class DbTestHelper {
    */
   static async createTestUser(
     user: TestUser,
-    password: string = "SecurePass123!@#"
+    password: string = 'SecurePass123!@#'
   ): Promise<void> {
     try {
       // Check if user already exists
@@ -54,7 +54,7 @@ export class DbTestHelper {
         });
       }
     } catch (error) {
-      console.error("Error creating test user:", error);
+      console.error('Error creating test user:', error);
       throw error;
     }
   }
@@ -64,7 +64,7 @@ export class DbTestHelper {
    */
   static async updateUserStatus(
     email: string,
-    status: TestUser["status"]
+    status: TestUser['status']
   ): Promise<void> {
     try {
       await prisma.user.update({
@@ -73,7 +73,7 @@ export class DbTestHelper {
       });
       console.log(`Updated user ${email} status to ${status}`);
     } catch (error) {
-      console.error("Error updating user status:", error);
+      console.error('Error updating user status:', error);
       throw error;
     }
   }
@@ -83,7 +83,7 @@ export class DbTestHelper {
    */
   static async updateUserRole(
     email: string,
-    role: TestUser["role"]
+    role: TestUser['role']
   ): Promise<void> {
     try {
       await prisma.user.update({
@@ -92,7 +92,7 @@ export class DbTestHelper {
       });
       console.log(`Updated user ${email} role to ${role}`);
     } catch (error) {
-      console.error("Error updating user role:", error);
+      console.error('Error updating user role:', error);
       throw error;
     }
   }
@@ -107,12 +107,12 @@ export class DbTestHelper {
         data: {
           emailVerified: true,
           emailVerifiedAt: new Date(),
-          userStatus: "VERIFIED", // Move from PENDING to VERIFIED
+          userStatus: 'VERIFIED', // Move from PENDING to VERIFIED
         },
       });
       console.log(`Verified email for user ${email}`);
     } catch (error) {
-      console.error("Error verifying user email:", error);
+      console.error('Error verifying user email:', error);
       throw error;
     }
   }
@@ -124,11 +124,11 @@ export class DbTestHelper {
     try {
       await prisma.user.update({
         where: { email },
-        data: { userStatus: "APPROVED" },
+        data: { userStatus: 'APPROVED' },
       });
       console.log(`Approved user ${email}`);
     } catch (error) {
-      console.error("Error approving user:", error);
+      console.error('Error approving user:', error);
       throw error;
     }
   }
@@ -143,7 +143,7 @@ export class DbTestHelper {
       });
       console.log(`Deleted test user ${email}`);
     } catch (error) {
-      console.error("Error deleting test user:", error);
+      console.error('Error deleting test user:', error);
       // Don't throw error if user doesn't exist
     }
   }
@@ -156,7 +156,7 @@ export class DbTestHelper {
       const testUsers = await prisma.user.findMany({
         where: {
           email: {
-            contains: "test",
+            contains: 'test',
           },
         },
       });
@@ -169,7 +169,7 @@ export class DbTestHelper {
 
       console.log(`Cleaned up ${testUsers.length} test users`);
     } catch (error) {
-      console.error("Error cleaning up test users:", error);
+      console.error('Error cleaning up test users:', error);
     }
   }
 
@@ -182,7 +182,7 @@ export class DbTestHelper {
         where: { email },
       });
     } catch (error) {
-      console.error("Error getting user:", error);
+      console.error('Error getting user:', error);
       return null;
     }
   }
@@ -197,38 +197,38 @@ export class DbTestHelper {
     unapprovedUser: TestUser;
   }> {
     const adminUser: TestUser = {
-      email: "admin@test.com",
-      firstName: "Admin",
-      lastName: "User",
-      role: "ADMIN",
-      status: "APPROVED",
+      email: 'admin@test.com',
+      firstName: 'Admin',
+      lastName: 'User',
+      role: 'ADMIN',
+      status: 'APPROVED',
       isEmailVerified: true,
     };
 
     const managerUser: TestUser = {
-      email: "manager@test.com",
-      firstName: "Manager",
-      lastName: "User",
-      role: "MANAGER",
-      status: "APPROVED",
+      email: 'manager@test.com',
+      firstName: 'Manager',
+      lastName: 'User',
+      role: 'MANAGER',
+      status: 'APPROVED',
       isEmailVerified: true,
     };
 
     const staffUser: TestUser = {
-      email: "staff@test.com",
-      firstName: "Staff",
-      lastName: "User",
-      role: "STAFF",
-      status: "APPROVED",
+      email: 'staff@test.com',
+      firstName: 'Staff',
+      lastName: 'User',
+      role: 'STAFF',
+      status: 'APPROVED',
       isEmailVerified: true,
     };
 
     const unapprovedUser: TestUser = {
-      email: "unapproved@test.com",
-      firstName: "Unapproved",
-      lastName: "User",
-      role: "STAFF",
-      status: "VERIFIED",
+      email: 'unapproved@test.com',
+      firstName: 'Unapproved',
+      lastName: 'User',
+      role: 'STAFF',
+      status: 'VERIFIED',
       isEmailVerified: true,
     };
 

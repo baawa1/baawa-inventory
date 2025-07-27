@@ -1,6 +1,6 @@
-import { useMutation, useQueryClient } from "@tanstack/react-query";
-import { toast } from "sonner";
-import { useRouter } from "next/navigation";
+import { useMutation, useQueryClient } from '@tanstack/react-query';
+import { toast } from 'sonner';
+import { useRouter } from 'next/navigation';
 
 interface UpdateExpenseData {
   amount: number;
@@ -25,25 +25,25 @@ export function useExpenseUpdate() {
       data: UpdateExpenseData;
     }) => {
       const response = await fetch(`/api/finance/transactions/${id}`, {
-        method: "PUT",
+        method: 'PUT',
         headers: {
-          "Content-Type": "application/json",
+          'Content-Type': 'application/json',
         },
         body: JSON.stringify(data),
       });
 
       if (!response.ok) {
         const error = await response.json();
-        throw new Error(error.message || "Failed to update expense");
+        throw new Error(error.message || 'Failed to update expense');
       }
 
       return response.json();
     },
     onSuccess: () => {
-      toast.success("Expense updated successfully");
-      queryClient.invalidateQueries({ queryKey: ["expense"] });
-      queryClient.invalidateQueries({ queryKey: ["finance-transactions"] });
-      router.push("/finance/expenses");
+      toast.success('Expense updated successfully');
+      queryClient.invalidateQueries({ queryKey: ['expense'] });
+      queryClient.invalidateQueries({ queryKey: ['finance-transactions'] });
+      router.push('/finance/expenses');
     },
     onError: (error: Error) => {
       toast.error(error.message);

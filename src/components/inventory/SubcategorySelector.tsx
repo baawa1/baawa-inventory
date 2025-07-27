@@ -1,10 +1,10 @@
-"use client";
+'use client';
 
-import React, { useState, useEffect } from "react";
+import React, { useState, useEffect } from 'react';
 import {
   useTopLevelCategories,
   useSubcategories,
-} from "@/hooks/api/categories";
+} from '@/hooks/api/categories';
 
 import {
   Select,
@@ -12,13 +12,13 @@ import {
   SelectItem,
   SelectTrigger,
   SelectValue,
-} from "@/components/ui/select";
-import { Badge } from "@/components/ui/badge";
+} from '@/components/ui/select';
+import { Badge } from '@/components/ui/badge';
 import {
   IconChevronDown,
   IconChevronRight,
   IconFolder,
-} from "@tabler/icons-react";
+} from '@tabler/icons-react';
 
 interface SubcategorySelectorProps {
   value?: number | null;
@@ -38,7 +38,7 @@ interface CategoryOption {
 export function SubcategorySelector({
   value,
   onChange,
-  placeholder = "Select category...",
+  placeholder = 'Select category...',
   disabled = false,
   showTopLevel = true,
 }: SubcategorySelectorProps) {
@@ -58,7 +58,7 @@ export function SubcategorySelector({
     const options: CategoryOption[] = [];
 
     if (showTopLevel && topLevelData?.data) {
-      topLevelData.data.forEach((category) => {
+      topLevelData.data.forEach(category => {
         options.push({
           id: category.id,
           name: category.name,
@@ -69,7 +69,7 @@ export function SubcategorySelector({
     }
 
     if (subcategoriesData?.data) {
-      subcategoriesData.data.forEach((category) => {
+      subcategoriesData.data.forEach(category => {
         options.push({
           id: category.id,
           name: category.name,
@@ -84,7 +84,7 @@ export function SubcategorySelector({
 
   const handleCategoryClick = (categoryId: number, hasChildren: boolean) => {
     if (hasChildren) {
-      setExpandedCategories((prev) => {
+      setExpandedCategories(prev => {
         const newSet = new Set(prev);
         if (newSet.has(categoryId)) {
           newSet.delete(categoryId);
@@ -105,8 +105,8 @@ export function SubcategorySelector({
     <div className="space-y-2">
       <div className="flex items-center space-x-2">
         <Select
-          value={value?.toString() || ""}
-          onValueChange={(val) => onChange(val ? parseInt(val) : null)}
+          value={value?.toString() || ''}
+          onValueChange={val => onChange(val ? parseInt(val) : null)}
           disabled={disabled || isLoading}
         >
           <SelectTrigger className="w-full">
@@ -118,7 +118,7 @@ export function SubcategorySelector({
                 <span className="text-muted-foreground">No category</span>
               </SelectItem>
             )}
-            {categoryOptions.map((category) => (
+            {categoryOptions.map(category => (
               <SelectItem key={category.id} value={category.id.toString()}>
                 <div className="flex items-center space-x-2">
                   <IconFolder className="h-4 w-4" />
@@ -136,19 +136,19 @@ export function SubcategorySelector({
       </div>
 
       {/* Hierarchical Tree View */}
-      <div className="border rounded-md p-2 max-h-60 overflow-y-auto">
+      <div className="max-h-60 overflow-y-auto rounded-md border p-2">
         {isLoading ? (
-          <div className="text-center py-4 text-muted-foreground">
+          <div className="text-muted-foreground py-4 text-center">
             Loading categories...
           </div>
         ) : (
           <div className="space-y-1">
             {showTopLevel &&
-              topLevelData?.data?.map((category) => (
+              topLevelData?.data?.map(category => (
                 <div key={category.id} className="space-y-1">
                   <div
-                    className={`flex items-center space-x-2 p-2 rounded cursor-pointer hover:bg-accent ${
-                      value === category.id ? "bg-accent" : ""
+                    className={`hover:bg-accent flex cursor-pointer items-center space-x-2 rounded p-2 ${
+                      value === category.id ? 'bg-accent' : ''
                     }`}
                     onClick={() =>
                       handleCategoryClick(
@@ -178,11 +178,11 @@ export function SubcategorySelector({
                   {/* Subcategories */}
                   {expandedCategories.has(category.id) && category.children && (
                     <div className="ml-6 space-y-1">
-                      {category.children.map((subcategory) => (
+                      {category.children.map(subcategory => (
                         <div
                           key={subcategory.id}
-                          className={`flex items-center space-x-2 p-2 rounded cursor-pointer hover:bg-accent ${
-                            value === subcategory.id ? "bg-accent" : ""
+                          className={`hover:bg-accent flex cursor-pointer items-center space-x-2 rounded p-2 ${
+                            value === subcategory.id ? 'bg-accent' : ''
                           }`}
                           onClick={() =>
                             handleCategoryClick(subcategory.id, false)

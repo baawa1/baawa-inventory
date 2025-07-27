@@ -1,28 +1,28 @@
-"use client";
+'use client';
 
-import { Button } from "@/components/ui/button";
-import { useRouter } from "next/navigation";
-import Link from "next/link";
+import { Button } from '@/components/ui/button';
+import { useRouter } from 'next/navigation';
+import Link from 'next/link';
 import {
   Card,
   CardContent,
   CardDescription,
   CardHeader,
   CardTitle,
-} from "@/components/ui/card";
-import { Form } from "@/components/ui/form";
-import { AlertCircle, ArrowLeft, Image as ImageIcon } from "lucide-react";
-import { Alert, AlertDescription } from "@/components/ui/alert";
-import { useEditProductData } from "./edit-product/useEditProductData";
-import { useEditProductSubmit } from "./edit-product/useEditProductSubmitNew";
-import { BasicInfoSection } from "./edit-product/BasicInfoSection";
-import { CategoryBrandSupplierSection } from "./edit-product/CategoryBrandSupplierSection";
-import { PricingInventorySection } from "./edit-product/PricingInventorySection";
-import { ProductSpecificationsSection } from "./edit-product/ProductSpecificationsSection";
-import { PricingPromotionsSection } from "./edit-product/PricingPromotionsSection";
-import { SEOMarketingSection } from "./edit-product/SEOMarketingSection";
-import { Skeleton } from "@/components/ui/skeleton";
-import { PageHeader } from "../ui/page-header";
+} from '@/components/ui/card';
+import { Form } from '@/components/ui/form';
+import { AlertCircle, ArrowLeft, Image as ImageIcon } from 'lucide-react';
+import { Alert, AlertDescription } from '@/components/ui/alert';
+import { useEditProductData } from './edit-product/useEditProductData';
+import { useEditProductSubmit } from './edit-product/useEditProductSubmitNew';
+import { BasicInfoSection } from './edit-product/BasicInfoSection';
+import { CategoryBrandSupplierSection } from './edit-product/CategoryBrandSupplierSection';
+import { PricingInventorySection } from './edit-product/PricingInventorySection';
+import { ProductSpecificationsSection } from './edit-product/ProductSpecificationsSection';
+import { PricingPromotionsSection } from './edit-product/PricingPromotionsSection';
+import { SEOMarketingSection } from './edit-product/SEOMarketingSection';
+import { Skeleton } from '@/components/ui/skeleton';
+import { PageHeader } from '../ui/page-header';
 
 interface EditProductFormProps {
   productId: number;
@@ -30,7 +30,7 @@ interface EditProductFormProps {
 
 function LoadingSkeleton() {
   return (
-    <div className="max-w-4xl mx-auto p-6 space-y-6">
+    <div className="mx-auto max-w-4xl space-y-6 p-6">
       <div className="flex items-center space-x-2">
         <Skeleton className="h-8 w-8" />
         <Skeleton className="h-8 w-48" />
@@ -43,14 +43,14 @@ function LoadingSkeleton() {
         <CardContent className="space-y-6">
           <div className="space-y-4">
             <Skeleton className="h-6 w-40" />
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+            <div className="grid grid-cols-1 gap-4 md:grid-cols-2">
               <Skeleton className="h-20 w-full" />
               <Skeleton className="h-20 w-full" />
             </div>
           </div>
           <div className="space-y-4">
             <Skeleton className="h-6 w-40" />
-            <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+            <div className="grid grid-cols-1 gap-4 md:grid-cols-3">
               <Skeleton className="h-20 w-full" />
               <Skeleton className="h-20 w-full" />
               <Skeleton className="h-20 w-full" />
@@ -58,7 +58,7 @@ function LoadingSkeleton() {
           </div>
           <div className="space-y-4">
             <Skeleton className="h-6 w-40" />
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+            <div className="grid grid-cols-1 gap-4 md:grid-cols-2">
               <Skeleton className="h-20 w-full" />
               <Skeleton className="h-20 w-full" />
             </div>
@@ -94,7 +94,7 @@ export default function EditProductForm({ productId }: EditProductFormProps) {
 
   if (!product) {
     return (
-      <div className="max-w-4xl mx-auto p-6">
+      <div className="mx-auto max-w-4xl p-6">
         <Alert variant="destructive">
           <AlertCircle className="h-4 w-4" />
           <AlertDescription>
@@ -106,11 +106,11 @@ export default function EditProductForm({ productId }: EditProductFormProps) {
   }
 
   return (
-    <div className="max-w-4xl mx-auto p-6 space-y-6">
+    <div className="mx-auto max-w-4xl space-y-6 p-6">
       <div className="mb-6">
         <Button
           variant="ghost"
-          onClick={() => router.push("/inventory/products")}
+          onClick={() => router.push('/inventory/products')}
           className="mb-4 px-4 lg:px-6"
         >
           <ArrowLeft className="mr-2 h-4 w-4" />
@@ -168,17 +168,17 @@ export default function EditProductForm({ productId }: EditProductFormProps) {
               <SEOMarketingSection form={form} />
 
               {/* Form Actions */}
-              <div className="flex justify-end space-x-4 pt-6 border-t">
+              <div className="flex justify-end space-x-4 border-t pt-6">
                 <Button
                   type="button"
                   variant="outline"
-                  onClick={() => router.push("/inventory/products")}
+                  onClick={() => router.push('/inventory/products')}
                   disabled={isSubmitting}
                 >
                   Cancel
                 </Button>
                 <Button type="submit" disabled={isSubmitting}>
-                  {isSubmitting ? "Updating..." : "Update Product"}
+                  {isSubmitting ? 'Updating...' : 'Update Product'}
                 </Button>
               </div>
             </form>

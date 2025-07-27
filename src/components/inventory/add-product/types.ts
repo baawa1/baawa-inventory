@@ -1,5 +1,5 @@
-import type { z } from "zod";
-import { createProductSchema } from "@/lib/validations/product";
+import type { z } from 'zod';
+import { createProductSchema } from '@/lib/validations/product';
 
 export type CreateProductData = z.infer<typeof createProductSchema>;
 
@@ -44,8 +44,8 @@ export interface FormState {
 
 // Default form values that match the schema
 export const defaultFormValues: CreateProductData = {
-  name: "",
-  sku: "",
+  name: '',
+  sku: '',
   barcode: null,
   description: null,
   categoryId: null,
@@ -56,7 +56,7 @@ export const defaultFormValues: CreateProductData = {
   currentStock: 0,
   maximumStock: null,
   supplierId: null,
-  status: "ACTIVE",
+  status: 'ACTIVE',
   imageUrl: null,
   notes: null,
 };

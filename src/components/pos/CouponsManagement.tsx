@@ -1,13 +1,13 @@
-"use client";
+'use client';
 
-import React, { useState } from "react";
-import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import { Badge } from "@/components/ui/badge";
-import { Button } from "@/components/ui/button";
-import { Input } from "@/components/ui/input";
-import { Label } from "@/components/ui/label";
-import { Textarea } from "@/components/ui/textarea";
+import React, { useState } from 'react';
+import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
+import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
+import { Badge } from '@/components/ui/badge';
+import { Button } from '@/components/ui/button';
+import { Input } from '@/components/ui/input';
+import { Label } from '@/components/ui/label';
+import { Textarea } from '@/components/ui/textarea';
 import {
   Table,
   TableBody,
@@ -15,14 +15,14 @@ import {
   TableHead,
   TableHeader,
   TableRow,
-} from "@/components/ui/table";
+} from '@/components/ui/table';
 import {
   Select,
   SelectContent,
   SelectItem,
   SelectTrigger,
   SelectValue,
-} from "@/components/ui/select";
+} from '@/components/ui/select';
 import {
   Dialog,
   DialogContent,
@@ -31,7 +31,7 @@ import {
   DialogTitle,
   DialogTrigger,
   DialogFooter,
-} from "@/components/ui/dialog";
+} from '@/components/ui/dialog';
 import {
   IconSearch,
   IconPlus,
@@ -43,16 +43,16 @@ import {
   IconCopy,
   IconCheck,
   IconX,
-} from "@tabler/icons-react";
-import { formatCurrency } from "@/lib/utils";
-import { toast } from "sonner";
+} from '@tabler/icons-react';
+import { formatCurrency } from '@/lib/utils';
+import { toast } from 'sonner';
 
 interface Coupon {
   id: number;
   code: string;
   name: string;
   description: string;
-  type: "percentage" | "fixed";
+  type: 'percentage' | 'fixed';
   value: number;
   minimumAmount: number | null;
   maxUses: number | null;
@@ -75,7 +75,7 @@ interface CreateCouponData {
   code: string;
   name: string;
   description: string;
-  type: "percentage" | "fixed";
+  type: 'percentage' | 'fixed';
   value: number;
   minimumAmount: number | null;
   maxUses: number | null;
@@ -91,49 +91,49 @@ async function fetchCoupons(search: string, status: string): Promise<Coupon[]> {
 
   const response = await fetch(`/api/pos/coupons?${params}`);
   if (!response.ok) {
-    throw new Error("Failed to fetch coupons");
+    throw new Error('Failed to fetch coupons');
   }
   return response.json();
 }
 
 async function createCoupon(data: CreateCouponData): Promise<Coupon> {
-  const response = await fetch("/api/pos/coupons", {
-    method: "POST",
+  const response = await fetch('/api/pos/coupons', {
+    method: 'POST',
     headers: {
-      "Content-Type": "application/json",
+      'Content-Type': 'application/json',
     },
     body: JSON.stringify(data),
   });
 
   if (!response.ok) {
-    throw new Error("Failed to create coupon");
+    throw new Error('Failed to create coupon');
   }
   return response.json();
 }
 
 async function toggleCouponStatus(couponId: number): Promise<void> {
   const response = await fetch(`/api/pos/coupons/${couponId}/toggle`, {
-    method: "PATCH",
+    method: 'PATCH',
   });
 
   if (!response.ok) {
-    throw new Error("Failed to toggle coupon status");
+    throw new Error('Failed to toggle coupon status');
   }
 }
 
 async function deleteCoupon(couponId: number): Promise<void> {
   const response = await fetch(`/api/pos/coupons/${couponId}`, {
-    method: "DELETE",
+    method: 'DELETE',
   });
 
   if (!response.ok) {
-    throw new Error("Failed to delete coupon");
+    throw new Error('Failed to delete coupon');
   }
 }
 
 export function CouponsManagement({ user }: CouponsManagementProps) {
-  const [searchTerm, setSearchTerm] = useState("");
-  const [selectedStatus, setSelectedStatus] = useState("all");
+  const [searchTerm, setSearchTerm] = useState('');
+  const [selectedStatus, setSelectedStatus] = useState('all');
   const [isCreateDialogOpen, setIsCreateDialogOpen] = useState(false);
   const [selectedCoupon, setSelectedCoupon] = useState<Coupon | null>(null);
 
@@ -144,53 +144,53 @@ export function CouponsManagement({ user }: CouponsManagementProps) {
     isLoading,
     error,
   } = useQuery({
-    queryKey: ["coupons", searchTerm, selectedStatus],
+    queryKey: ['coupons', searchTerm, selectedStatus],
     queryFn: () => fetchCoupons(searchTerm, selectedStatus),
   });
 
   const createMutation = useMutation({
     mutationFn: createCoupon,
     onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ["coupons"] });
-      toast.success("Coupon created successfully");
+      queryClient.invalidateQueries({ queryKey: ['coupons'] });
+      toast.success('Coupon created successfully');
       setIsCreateDialogOpen(false);
     },
     onError: () => {
-      toast.error("Failed to create coupon");
+      toast.error('Failed to create coupon');
     },
   });
 
   const toggleStatusMutation = useMutation({
     mutationFn: toggleCouponStatus,
     onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ["coupons"] });
-      toast.success("Coupon status updated");
+      queryClient.invalidateQueries({ queryKey: ['coupons'] });
+      toast.success('Coupon status updated');
     },
     onError: () => {
-      toast.error("Failed to update coupon status");
+      toast.error('Failed to update coupon status');
     },
   });
 
   const deleteMutation = useMutation({
     mutationFn: deleteCoupon,
     onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ["coupons"] });
-      toast.success("Coupon deleted successfully");
+      queryClient.invalidateQueries({ queryKey: ['coupons'] });
+      toast.success('Coupon deleted successfully');
     },
     onError: () => {
-      toast.error("Failed to delete coupon");
+      toast.error('Failed to delete coupon');
     },
   });
 
   if (error) {
-    toast.error("Failed to load coupons");
+    toast.error('Failed to load coupons');
   }
 
   const statusOptions = [
-    { value: "all", label: "All Coupons" },
-    { value: "active", label: "Active" },
-    { value: "inactive", label: "Inactive" },
-    { value: "expired", label: "Expired" },
+    { value: 'all', label: 'All Coupons' },
+    { value: 'active', label: 'Active' },
+    { value: 'inactive', label: 'Inactive' },
+    { value: 'expired', label: 'Expired' },
   ];
 
   const getStatusBadge = (coupon: Coupon) => {
@@ -216,7 +216,7 @@ export function CouponsManagement({ user }: CouponsManagementProps) {
     if (!coupon.maxUses) return null;
     const percentage = (coupon.currentUses / coupon.maxUses) * 100;
     return (
-      <div className="w-full bg-gray-200 rounded-full h-2">
+      <div className="h-2 w-full rounded-full bg-gray-200">
         <div
           className="bg-primary h-2 rounded-full"
           style={{ width: `${Math.min(percentage, 100)}%` }}
@@ -226,12 +226,12 @@ export function CouponsManagement({ user }: CouponsManagementProps) {
   };
 
   const generateCouponCode = () => {
-    return "SAVE" + Math.random().toString(36).substr(2, 6).toUpperCase();
+    return 'SAVE' + Math.random().toString(36).substr(2, 6).toUpperCase();
   };
 
   const copyToClipboard = (text: string) => {
     navigator.clipboard.writeText(text);
-    toast.success("Coupon code copied to clipboard");
+    toast.success('Coupon code copied to clipboard');
   };
 
   const handleCreateCoupon = (event: React.FormEvent<HTMLFormElement>) => {
@@ -239,19 +239,19 @@ export function CouponsManagement({ user }: CouponsManagementProps) {
     const formData = new FormData(event.currentTarget);
 
     const data: CreateCouponData = {
-      code: formData.get("code") as string,
-      name: formData.get("name") as string,
-      description: formData.get("description") as string,
-      type: formData.get("type") as "percentage" | "fixed",
-      value: parseFloat(formData.get("value") as string),
-      minimumAmount: formData.get("minimumAmount")
-        ? parseFloat(formData.get("minimumAmount") as string)
+      code: formData.get('code') as string,
+      name: formData.get('name') as string,
+      description: formData.get('description') as string,
+      type: formData.get('type') as 'percentage' | 'fixed',
+      value: parseFloat(formData.get('value') as string),
+      minimumAmount: formData.get('minimumAmount')
+        ? parseFloat(formData.get('minimumAmount') as string)
         : null,
-      maxUses: formData.get("maxUses")
-        ? parseInt(formData.get("maxUses") as string)
+      maxUses: formData.get('maxUses')
+        ? parseInt(formData.get('maxUses') as string)
         : null,
-      validFrom: formData.get("validFrom") as string,
-      validUntil: formData.get("validUntil") as string,
+      validFrom: formData.get('validFrom') as string,
+      validUntil: formData.get('validUntil') as string,
     };
 
     createMutation.mutate(data);
@@ -259,16 +259,16 @@ export function CouponsManagement({ user }: CouponsManagementProps) {
 
   // Calculate summary stats
   const activeCoupons = coupons.filter(
-    (c) => c.isActive && new Date(c.validUntil) > new Date()
+    c => c.isActive && new Date(c.validUntil) > new Date()
   ).length;
   const totalUsage = coupons.reduce((sum, c) => sum + c.currentUses, 0);
   const expiredCoupons = coupons.filter(
-    (c) => new Date(c.validUntil) < new Date()
+    c => new Date(c.validUntil) < new Date()
   ).length;
 
   return (
-    <div className="container mx-auto p-6 space-y-6">
-      <div className="flex justify-between items-center">
+    <div className="container mx-auto space-y-6 p-6">
+      <div className="flex items-center justify-between">
         <div>
           <h1 className="text-3xl font-bold">Coupons Management</h1>
           <p className="text-muted-foreground">
@@ -278,7 +278,7 @@ export function CouponsManagement({ user }: CouponsManagementProps) {
         <Dialog open={isCreateDialogOpen} onOpenChange={setIsCreateDialogOpen}>
           <DialogTrigger asChild>
             <Button>
-              <IconPlus className="w-4 h-4 mr-1" />
+              <IconPlus className="mr-1 h-4 w-4" />
               Create Coupon
             </Button>
           </DialogTrigger>
@@ -304,10 +304,10 @@ export function CouponsManagement({ user }: CouponsManagementProps) {
                     <Button
                       type="button"
                       variant="outline"
-                      onClick={(e) => {
+                      onClick={e => {
                         const input = (e.target as HTMLElement)
-                          .closest(".flex")
-                          ?.querySelector("input") as HTMLInputElement;
+                          .closest('.flex')
+                          ?.querySelector('input') as HTMLInputElement;
                         if (input) input.value = generateCouponCode();
                       }}
                     >
@@ -415,7 +415,7 @@ export function CouponsManagement({ user }: CouponsManagementProps) {
                   Cancel
                 </Button>
                 <Button type="submit" disabled={createMutation.isPending}>
-                  {createMutation.isPending ? "Creating..." : "Create Coupon"}
+                  {createMutation.isPending ? 'Creating...' : 'Create Coupon'}
                 </Button>
               </DialogFooter>
             </form>
@@ -424,11 +424,11 @@ export function CouponsManagement({ user }: CouponsManagementProps) {
       </div>
 
       {/* Summary Stats */}
-      <div className="grid grid-cols-1 md:grid-cols-4 gap-6">
+      <div className="grid grid-cols-1 gap-6 md:grid-cols-4">
         <Card>
           <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
             <CardTitle className="text-sm font-medium">Total Coupons</CardTitle>
-            <IconTicket className="h-4 w-4 text-muted-foreground" />
+            <IconTicket className="text-muted-foreground h-4 w-4" />
           </CardHeader>
           <CardContent>
             <div className="text-2xl font-bold">{coupons.length}</div>
@@ -440,11 +440,11 @@ export function CouponsManagement({ user }: CouponsManagementProps) {
             <CardTitle className="text-sm font-medium">
               Active Coupons
             </CardTitle>
-            <IconCheck className="h-4 w-4 text-muted-foreground" />
+            <IconCheck className="text-muted-foreground h-4 w-4" />
           </CardHeader>
           <CardContent>
             <div className="text-2xl font-bold">{activeCoupons}</div>
-            <div className="text-xs text-muted-foreground">
+            <div className="text-muted-foreground text-xs">
               Currently available
             </div>
           </CardContent>
@@ -453,22 +453,22 @@ export function CouponsManagement({ user }: CouponsManagementProps) {
         <Card>
           <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
             <CardTitle className="text-sm font-medium">Total Usage</CardTitle>
-            <IconPercentage className="h-4 w-4 text-muted-foreground" />
+            <IconPercentage className="text-muted-foreground h-4 w-4" />
           </CardHeader>
           <CardContent>
             <div className="text-2xl font-bold">{totalUsage}</div>
-            <div className="text-xs text-muted-foreground">Times used</div>
+            <div className="text-muted-foreground text-xs">Times used</div>
           </CardContent>
         </Card>
 
         <Card>
           <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
             <CardTitle className="text-sm font-medium">Expired</CardTitle>
-            <IconX className="h-4 w-4 text-muted-foreground" />
+            <IconX className="text-muted-foreground h-4 w-4" />
           </CardHeader>
           <CardContent>
             <div className="text-2xl font-bold">{expiredCoupons}</div>
-            <div className="text-xs text-muted-foreground">
+            <div className="text-muted-foreground text-xs">
               Past expiry date
             </div>
           </CardContent>
@@ -481,14 +481,14 @@ export function CouponsManagement({ user }: CouponsManagementProps) {
           <CardTitle>Filters</CardTitle>
         </CardHeader>
         <CardContent>
-          <div className="flex flex-col sm:flex-row gap-4">
+          <div className="flex flex-col gap-4 sm:flex-row">
             <div className="flex-1">
               <div className="relative">
-                <IconSearch className="absolute left-2 top-2.5 h-4 w-4 text-muted-foreground" />
+                <IconSearch className="text-muted-foreground absolute top-2.5 left-2 h-4 w-4" />
                 <Input
                   placeholder="Search coupons..."
                   value={searchTerm}
-                  onChange={(e) => setSearchTerm(e.target.value)}
+                  onChange={e => setSearchTerm(e.target.value)}
                   className="pl-8"
                 />
               </div>
@@ -498,7 +498,7 @@ export function CouponsManagement({ user }: CouponsManagementProps) {
                 <SelectValue placeholder="Filter by status" />
               </SelectTrigger>
               <SelectContent>
-                {statusOptions.map((option) => (
+                {statusOptions.map(option => (
                   <SelectItem key={option.value} value={option.value}>
                     {option.label}
                   </SelectItem>
@@ -517,7 +517,7 @@ export function CouponsManagement({ user }: CouponsManagementProps) {
         <CardContent>
           {isLoading ? (
             <div className="flex justify-center py-8">
-              <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-gray-900"></div>
+              <div className="h-8 w-8 animate-spin rounded-full border-b-2 border-gray-900"></div>
             </div>
           ) : (
             <Table>
@@ -533,7 +533,7 @@ export function CouponsManagement({ user }: CouponsManagementProps) {
                 </TableRow>
               </TableHeader>
               <TableBody>
-                {coupons.map((coupon) => (
+                {coupons.map(coupon => (
                   <TableRow key={coupon.id}>
                     <TableCell>
                       <div className="flex items-center space-x-2">
@@ -545,7 +545,7 @@ export function CouponsManagement({ user }: CouponsManagementProps) {
                           size="sm"
                           onClick={() => copyToClipboard(coupon.code)}
                         >
-                          <IconCopy className="w-3 h-3" />
+                          <IconCopy className="h-3 w-3" />
                         </Button>
                       </div>
                     </TableCell>
@@ -553,7 +553,7 @@ export function CouponsManagement({ user }: CouponsManagementProps) {
                       <div>
                         <div className="font-medium">{coupon.name}</div>
                         {coupon.description && (
-                          <div className="text-sm text-muted-foreground truncate max-w-xs">
+                          <div className="text-muted-foreground max-w-xs truncate text-sm">
                             {coupon.description}
                           </div>
                         )}
@@ -561,20 +561,20 @@ export function CouponsManagement({ user }: CouponsManagementProps) {
                     </TableCell>
                     <TableCell>
                       <div className="flex items-center space-x-1">
-                        {coupon.type === "percentage" ? (
+                        {coupon.type === 'percentage' ? (
                           <>
-                            <IconPercentage className="w-4 h-4" />
+                            <IconPercentage className="h-4 w-4" />
                             <span>{coupon.value}%</span>
                           </>
                         ) : (
                           <>
-                            <IconCurrencyNaira className="w-4 h-4" />
+                            <IconCurrencyNaira className="h-4 w-4" />
                             <span>{formatCurrency(coupon.value)}</span>
                           </>
                         )}
                       </div>
                       {coupon.minimumAmount && (
-                        <div className="text-xs text-muted-foreground">
+                        <div className="text-muted-foreground text-xs">
                           Min: {formatCurrency(coupon.minimumAmount)}
                         </div>
                       )}
@@ -583,7 +583,7 @@ export function CouponsManagement({ user }: CouponsManagementProps) {
                       <div className="space-y-1">
                         <div className="text-sm">
                           {coupon.currentUses}
-                          {coupon.maxUses ? `/${coupon.maxUses}` : ""} uses
+                          {coupon.maxUses ? `/${coupon.maxUses}` : ''} uses
                         </div>
                         {getUsageProgress(coupon)}
                       </div>
@@ -606,11 +606,11 @@ export function CouponsManagement({ user }: CouponsManagementProps) {
                           size="sm"
                           onClick={() => setSelectedCoupon(coupon)}
                         >
-                          <IconEye className="w-4 h-4 mr-1" />
+                          <IconEye className="mr-1 h-4 w-4" />
                           View
                         </Button>
 
-                        {user.role !== "STAFF" && (
+                        {user.role !== 'STAFF' && (
                           <>
                             <Button
                               variant="outline"
@@ -621,9 +621,9 @@ export function CouponsManagement({ user }: CouponsManagementProps) {
                               disabled={toggleStatusMutation.isPending}
                             >
                               {coupon.isActive ? (
-                                <IconX className="w-4 h-4" />
+                                <IconX className="h-4 w-4" />
                               ) : (
-                                <IconCheck className="w-4 h-4" />
+                                <IconCheck className="h-4 w-4" />
                               )}
                             </Button>
 
@@ -633,7 +633,7 @@ export function CouponsManagement({ user }: CouponsManagementProps) {
                               onClick={() => deleteMutation.mutate(coupon.id)}
                               disabled={deleteMutation.isPending}
                             >
-                              <IconTrash className="w-4 h-4" />
+                              <IconTrash className="h-4 w-4" />
                             </Button>
                           </>
                         )}
@@ -646,7 +646,7 @@ export function CouponsManagement({ user }: CouponsManagementProps) {
           )}
 
           {coupons.length === 0 && !isLoading && (
-            <div className="text-center py-8 text-muted-foreground">
+            <div className="text-muted-foreground py-8 text-center">
               No coupons found. Create your first coupon to get started.
             </div>
           )}
@@ -680,7 +680,7 @@ export function CouponsManagement({ user }: CouponsManagementProps) {
                       size="sm"
                       onClick={() => copyToClipboard(selectedCoupon.code)}
                     >
-                      <IconCopy className="w-4 h-4" />
+                      <IconCopy className="h-4 w-4" />
                     </Button>
                   </div>
                 </div>
@@ -706,7 +706,7 @@ export function CouponsManagement({ user }: CouponsManagementProps) {
                 <div>
                   <label className="text-sm font-medium">Discount</label>
                   <p className="text-sm">
-                    {selectedCoupon.type === "percentage"
+                    {selectedCoupon.type === 'percentage'
                       ? `${selectedCoupon.value}% off`
                       : `${formatCurrency(selectedCoupon.value)} off`}
                   </p>
@@ -716,7 +716,7 @@ export function CouponsManagement({ user }: CouponsManagementProps) {
                   <p className="text-sm">
                     {selectedCoupon.minimumAmount
                       ? formatCurrency(selectedCoupon.minimumAmount)
-                      : "No minimum"}
+                      : 'No minimum'}
                   </p>
                 </div>
               </div>
@@ -728,13 +728,13 @@ export function CouponsManagement({ user }: CouponsManagementProps) {
                     {selectedCoupon.currentUses}
                     {selectedCoupon.maxUses
                       ? ` of ${selectedCoupon.maxUses}`
-                      : " (unlimited)"}
+                      : ' (unlimited)'}
                   </p>
                 </div>
                 <div>
                   <label className="text-sm font-medium">Valid Period</label>
                   <p className="text-sm">
-                    {new Date(selectedCoupon.validFrom).toLocaleDateString()} -{" "}
+                    {new Date(selectedCoupon.validFrom).toLocaleDateString()} -{' '}
                     {new Date(selectedCoupon.validUntil).toLocaleDateString()}
                   </p>
                 </div>

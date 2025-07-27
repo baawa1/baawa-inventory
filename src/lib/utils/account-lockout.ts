@@ -1,6 +1,6 @@
-import { prisma } from "@/lib/db";
-import { AuditLogger } from "./audit-logger";
-import { logger } from "@/lib/logger";
+import { prisma } from '@/lib/db';
+import { AuditLogger } from './audit-logger';
+import { logger } from '@/lib/logger';
 
 export interface LockoutStatus {
   isLocked: boolean;
@@ -27,13 +27,13 @@ export class AccountLockout {
    */
   static async checkLockoutStatus(
     identifier: string,
-    type: "email" | "ip"
+    type: 'email' | 'ip'
   ): Promise<LockoutStatus> {
     try {
       // Get failed attempts in the last 24 hours
       const failedAttempts = await AuditLogger.getFailedLoginAttempts(
-        type === "ip" ? identifier : "unknown",
-        type === "email" ? identifier : undefined,
+        type === 'ip' ? identifier : 'unknown',
+        type === 'email' ? identifier : undefined,
         24 // Look back 24 hours
       );
 
@@ -82,7 +82,7 @@ export class AccountLockout {
       // Lockout has expired
       return { isLocked: false, failedAttempts };
     } catch (error) {
-      logger.error("Failed to check account lockout status", {
+      logger.error('Failed to check account lockout status', {
         email: identifier,
         error: error instanceof Error ? error.message : String(error),
       });
@@ -96,32 +96,32 @@ export class AccountLockout {
    */
   private static async getLastFailedAttempt(
     identifier: string,
-    type: "email" | "ip"
+    type: 'email' | 'ip'
   ): Promise<Date | null> {
     try {
       const where: any = {
-        action: "LOGIN_FAILED",
+        action: 'LOGIN_FAILED',
         created_at: {
           gte: new Date(Date.now() - 24 * 60 * 60 * 1000), // Last 24 hours
         },
       };
 
-      if (type === "email") {
+      if (type === 'email') {
         where.userEmail = identifier;
-      } else if (identifier !== "unknown") {
+      } else if (identifier !== 'unknown') {
         // Only add IP address filter if it's not "unknown"
         where.ip_address = identifier;
       }
 
       const lastAttempt = await prisma.auditLog.findFirst({
         where,
-        orderBy: { created_at: "desc" },
+        orderBy: { created_at: 'desc' },
         select: { created_at: true },
       });
 
       return lastAttempt?.created_at || null;
     } catch (error) {
-      logger.error("Failed to get last failed login attempt", {
+      logger.error('Failed to get last failed login attempt', {
         email: identifier,
         error: error instanceof Error ? error.message : String(error),
       });
@@ -159,14 +159,14 @@ export class AccountLockout {
 
       // Log that the lockout has been reset
       await AuditLogger.logAuthEvent({
-        action: "LOGIN_SUCCESS", // This will naturally reset the failed attempt count
+        action: 'LOGIN_SUCCESS', // This will naturally reset the failed attempt count
         userEmail: email,
         ipAddress,
         success: true,
         details: { lockoutReset: true },
       });
     } catch (error) {
-      logger.error("Failed to reset failed login attempts", {
+      logger.error('Failed to reset failed login attempts', {
         email,
         error: error instanceof Error ? error.message : String(error),
       });
@@ -178,17 +178,17 @@ export class AccountLockout {
    */
   static getLockoutMessage(status: LockoutStatus): string {
     if (!status.isLocked) {
-      return "";
+      return '';
     }
 
     const remainingMinutes = Math.ceil((status.remainingTime || 0) / 60);
 
     if (remainingMinutes < 60) {
-      return `Account temporarily locked. Please try again in ${remainingMinutes} minute${remainingMinutes !== 1 ? "s" : ""}.`;
+      return `Account temporarily locked. Please try again in ${remainingMinutes} minute${remainingMinutes !== 1 ? 's' : ''}.`;
     }
 
     const remainingHours = Math.ceil(remainingMinutes / 60);
-    return `Account temporarily locked. Please try again in ${remainingHours} hour${remainingHours !== 1 ? "s" : ""}.`;
+    return `Account temporarily locked. Please try again in ${remainingHours} hour${remainingHours !== 1 ? 's' : ''}.`;
   }
 
   /**
@@ -205,21 +205,21 @@ export class AccountLockout {
     if (failedAttempts === 0) return null;
 
     const nextThreshold = this.LOCKOUT_THRESHOLDS.find(
-      (threshold) => failedAttempts < threshold.attempts
+      threshold => failedAttempts < threshold.attempts
     );
 
     if (!nextThreshold) {
-      return "Your account will be locked for 24 hours after the next failed attempt.";
+      return 'Your account will be locked for 24 hours after the next failed attempt.';
     }
 
     const attemptsRemaining = nextThreshold.attempts - failedAttempts;
     const lockoutDuration = nextThreshold.delayMinutes;
 
     if (lockoutDuration < 60) {
-      return `${attemptsRemaining} attempt${attemptsRemaining !== 1 ? "s" : ""} remaining before ${lockoutDuration}-minute lockout.`;
+      return `${attemptsRemaining} attempt${attemptsRemaining !== 1 ? 's' : ''} remaining before ${lockoutDuration}-minute lockout.`;
     } else {
       const hours = lockoutDuration / 60;
-      return `${attemptsRemaining} attempt${attemptsRemaining !== 1 ? "s" : ""} remaining before ${hours}-hour lockout.`;
+      return `${attemptsRemaining} attempt${attemptsRemaining !== 1 ? 's' : ''} remaining before ${hours}-hour lockout.`;
     }
   }
 }

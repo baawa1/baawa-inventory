@@ -1,8 +1,8 @@
-"use client";
+'use client';
 
-import React from "react";
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import { DateRange } from "react-day-picker";
+import React from 'react';
+import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
+import { DateRange } from 'react-day-picker';
 
 interface SimpleFinancialMetricsProps {
   transactionStats?: any;
@@ -17,14 +17,14 @@ export function SimpleFinancialMetrics({
 }: SimpleFinancialMetricsProps) {
   if (isLoading) {
     return (
-      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
+      <div className="grid grid-cols-1 gap-6 md:grid-cols-2 lg:grid-cols-4">
         {[...Array(4)].map((_, i) => (
           <Card key={i}>
             <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
               <CardTitle className="text-sm font-medium">Loading...</CardTitle>
             </CardHeader>
             <CardContent>
-              <div className="h-8 bg-gray-200 rounded animate-pulse"></div>
+              <div className="h-8 animate-pulse rounded bg-gray-200"></div>
             </CardContent>
           </Card>
         ))}
@@ -34,14 +34,14 @@ export function SimpleFinancialMetrics({
 
   return (
     <div className="space-y-6">
-      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
+      <div className="grid grid-cols-1 gap-6 md:grid-cols-2 lg:grid-cols-4">
         <Card>
           <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
             <CardTitle className="text-sm font-medium">Total Revenue</CardTitle>
           </CardHeader>
           <CardContent>
             <div className="text-2xl font-bold">
-              ₦{transactionStats?.totalRevenue?.toLocaleString() || "0"}
+              ₦{transactionStats?.totalRevenue?.toLocaleString() || '0'}
             </div>
           </CardContent>
         </Card>
@@ -54,7 +54,7 @@ export function SimpleFinancialMetrics({
           </CardHeader>
           <CardContent>
             <div className="text-2xl font-bold">
-              ₦{transactionStats?.totalExpenses?.toLocaleString() || "0"}
+              ₦{transactionStats?.totalExpenses?.toLocaleString() || '0'}
             </div>
           </CardContent>
         </Card>
@@ -65,7 +65,7 @@ export function SimpleFinancialMetrics({
           </CardHeader>
           <CardContent>
             <div className="text-2xl font-bold">
-              ₦{transactionStats?.netProfit?.toLocaleString() || "0"}
+              ₦{transactionStats?.netProfit?.toLocaleString() || '0'}
             </div>
           </CardContent>
         </Card>
@@ -78,7 +78,7 @@ export function SimpleFinancialMetrics({
           </CardHeader>
           <CardContent>
             <div className="text-2xl font-bold">
-              {transactionStats?.totalTransactions?.toLocaleString() || "0"}
+              {transactionStats?.totalTransactions?.toLocaleString() || '0'}
             </div>
           </CardContent>
         </Card>
@@ -90,10 +90,10 @@ export function SimpleFinancialMetrics({
             <CardTitle className="text-sm font-medium">Date Range</CardTitle>
           </CardHeader>
           <CardContent>
-            <p className="text-sm text-muted-foreground">
+            <p className="text-muted-foreground text-sm">
               {dateRange.from && dateRange.to
                 ? `${dateRange.from.toLocaleDateString()} - ${dateRange.to.toLocaleDateString()}`
-                : "Custom date range selected"}
+                : 'Custom date range selected'}
             </p>
           </CardContent>
         </Card>

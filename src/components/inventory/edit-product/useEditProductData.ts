@@ -1,21 +1,21 @@
-import { useEffect } from "react";
-import { useForm } from "react-hook-form";
-import { zodResolver } from "@hookform/resolvers/zod";
-import { updateProductSchema } from "@/lib/validations/product";
-import { UpdateProductFormData } from "./types";
-import { useProduct } from "@/hooks/api/products";
-import { useCategoriesWithHierarchy } from "@/hooks/api/categories";
-import { useBrands } from "@/hooks/api/brands";
-import { useSuppliers } from "@/hooks/api/suppliers";
+import { useEffect } from 'react';
+import { useForm } from 'react-hook-form';
+import { zodResolver } from '@hookform/resolvers/zod';
+import { updateProductSchema } from '@/lib/validations/product';
+import { UpdateProductFormData } from './types';
+import { useProduct } from '@/hooks/api/products';
+import { useCategoriesWithHierarchy } from '@/hooks/api/categories';
+import { useBrands } from '@/hooks/api/brands';
+import { useSuppliers } from '@/hooks/api/suppliers';
 
 export function useEditProductData(productId: number) {
   const form = useForm<UpdateProductFormData>({
     resolver: zodResolver(updateProductSchema),
     defaultValues: {
-      name: "",
-      description: "",
-      sku: "",
-      barcode: "",
+      name: '',
+      description: '',
+      sku: '',
+      barcode: '',
       categoryId: undefined,
       brandId: undefined,
       supplierId: undefined,
@@ -24,21 +24,21 @@ export function useEditProductData(productId: number) {
       currentStock: 0,
       minimumStock: 0,
       maximumStock: undefined,
-      status: "ACTIVE",
-      notes: "",
+      status: 'ACTIVE',
+      notes: '',
       // New fields
-      unit: "piece",
+      unit: 'piece',
       weight: undefined,
-      dimensions: "",
-      color: "",
-      size: "",
-      material: "",
+      dimensions: '',
+      color: '',
+      size: '',
+      material: '',
       tags: [],
       salePrice: undefined,
       saleStartDate: undefined,
       saleEndDate: undefined,
-      metaTitle: "",
-      metaDescription: "",
+      metaTitle: '',
+      metaDescription: '',
       seoKeywords: [],
       isFeatured: false,
       sortOrder: undefined,
@@ -48,8 +48,8 @@ export function useEditProductData(productId: number) {
   // TanStack Query hooks for parallel data fetching
   const product = useProduct(productId);
   const categories = useCategoriesWithHierarchy();
-  const brands = useBrands({ status: "true" });
-  const suppliers = useSuppliers({ status: "true" });
+  const brands = useBrands({ status: 'true' });
+  const suppliers = useSuppliers({ status: 'true' });
 
   // Combine loading states
   const loading =
@@ -79,9 +79,9 @@ export function useEditProductData(productId: number) {
       setTimeout(() => {
         form.reset({
           name: productData.name,
-          description: productData.description || "",
+          description: productData.description || '',
           sku: productData.sku,
-          barcode: productData.barcode || "",
+          barcode: productData.barcode || '',
           categoryId: productData.category?.id || undefined,
           brandId: productData.brand?.id || undefined,
           supplierId: productData.supplier?.id || undefined,
@@ -91,21 +91,21 @@ export function useEditProductData(productId: number) {
           minimumStock: productData.minStock,
           maximumStock: productData.maxStock || undefined,
           status: productData.status?.toUpperCase() as
-            | "ACTIVE"
-            | "INACTIVE"
-            | "OUT_OF_STOCK"
-            | "DISCONTINUED",
-          notes: "",
+            | 'ACTIVE'
+            | 'INACTIVE'
+            | 'OUT_OF_STOCK'
+            | 'DISCONTINUED',
+          notes: '',
           // New fields
-          unit: productData.unit || "piece",
+          unit: productData.unit || 'piece',
           weight:
             productData.weight !== null && productData.weight !== undefined
               ? Number(productData.weight)
               : undefined,
-          dimensions: productData.dimensions || "",
-          color: productData.color || "",
-          size: productData.size || "",
-          material: productData.material || "",
+          dimensions: productData.dimensions || '',
+          color: productData.color || '',
+          size: productData.size || '',
+          material: productData.material || '',
           tags: productData.tags || [],
           salePrice: productData.salePrice || undefined,
           saleStartDate: productData.saleStartDate
@@ -114,8 +114,8 @@ export function useEditProductData(productId: number) {
           saleEndDate: productData.saleEndDate
             ? new Date(productData.saleEndDate)
             : undefined,
-          metaTitle: productData.metaTitle || "",
-          metaDescription: productData.metaDescription || "",
+          metaTitle: productData.metaTitle || '',
+          metaDescription: productData.metaDescription || '',
           seoKeywords: productData.seoKeywords || [],
           isFeatured: productData.isFeatured || false,
           sortOrder: productData.sortOrder || undefined,

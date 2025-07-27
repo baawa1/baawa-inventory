@@ -1,10 +1,10 @@
-import { prisma } from "@/lib/db";
-import { createSaleSchema, saleQuerySchema } from "@/lib/validations/sale";
-import { withAuth, AuthenticatedRequest } from "@/lib/api-middleware";
+import { prisma } from '@/lib/db';
+import { createSaleSchema, saleQuerySchema } from '@/lib/validations/sale';
+import { withAuth, AuthenticatedRequest } from '@/lib/api-middleware';
 import {
   createApiResponse,
   transformDatabaseResponse,
-} from "@/lib/api-response";
+} from '@/lib/api-response';
 
 // GET /api/sales - List sales transactions with optional filtering and pagination
 export const GET = withAuth(async function (request: AuthenticatedRequest) {
@@ -15,20 +15,20 @@ export const GET = withAuth(async function (request: AuthenticatedRequest) {
 
     // Convert search params to proper types for validation
     const queryParams = {
-      page: searchParams.get("page") ? parseInt(searchParams.get("page")!) : 1,
-      limit: searchParams.get("limit")
-        ? parseInt(searchParams.get("limit")!)
+      page: searchParams.get('page') ? parseInt(searchParams.get('page')!) : 1,
+      limit: searchParams.get('limit')
+        ? parseInt(searchParams.get('limit')!)
         : 10,
-      search: searchParams.get("search") || undefined,
-      paymentStatus: searchParams.get("paymentStatus") || undefined,
-      paymentMethod: searchParams.get("paymentMethod") || undefined,
-      userId: searchParams.get("userId")
-        ? parseInt(searchParams.get("userId")!)
+      search: searchParams.get('search') || undefined,
+      paymentStatus: searchParams.get('paymentStatus') || undefined,
+      paymentMethod: searchParams.get('paymentMethod') || undefined,
+      userId: searchParams.get('userId')
+        ? parseInt(searchParams.get('userId')!)
         : undefined,
-      fromDate: searchParams.get("fromDate") || undefined,
-      toDate: searchParams.get("toDate") || undefined,
-      sortBy: searchParams.get("sortBy") || "createdAt",
-      sortOrder: searchParams.get("sortOrder") || "desc",
+      fromDate: searchParams.get('fromDate') || undefined,
+      toDate: searchParams.get('toDate') || undefined,
+      sortBy: searchParams.get('sortBy') || 'createdAt',
+      sortOrder: searchParams.get('sortOrder') || 'desc',
     };
 
     // Validate query parameters
@@ -60,9 +60,9 @@ export const GET = withAuth(async function (request: AuthenticatedRequest) {
     // Apply filters
     if (search) {
       where.OR = [
-        { transaction_number: { contains: search, mode: "insensitive" } },
-        { customer_name: { contains: search, mode: "insensitive" } },
-        { notes: { contains: search, mode: "insensitive" } },
+        { transaction_number: { contains: search, mode: 'insensitive' } },
+        { customer_name: { contains: search, mode: 'insensitive' } },
+        { notes: { contains: search, mode: 'insensitive' } },
       ];
     }
 
@@ -86,11 +86,11 @@ export const GET = withAuth(async function (request: AuthenticatedRequest) {
 
     // Build orderBy clause
     const orderBy: any = {};
-    if (sortBy === "createdAt") {
+    if (sortBy === 'createdAt') {
       orderBy.created_at = sortOrder;
-    } else if (sortBy === "total") {
+    } else if (sortBy === 'total') {
       orderBy.total_amount = sortOrder;
-    } else if (sortBy === "transactionNumber") {
+    } else if (sortBy === 'transactionNumber') {
       orderBy.transaction_number = sortOrder;
     } else {
       orderBy.created_at = sortOrder; // default fallback
@@ -157,8 +157,8 @@ export const GET = withAuth(async function (request: AuthenticatedRequest) {
           items: transaction.sales_items.map((item: any) => ({
             id: item.id,
             productId: item.products?.id,
-            name: item.products?.name || "Unknown Product",
-            sku: item.products?.sku || "",
+            name: item.products?.name || 'Unknown Product',
+            sku: item.products?.sku || '',
             price: Number(item.unit_price),
             quantity: item.quantity,
             total: Number(item.total_price || item.unit_price * item.quantity),
@@ -180,14 +180,14 @@ export const GET = withAuth(async function (request: AuthenticatedRequest) {
       `Retrieved ${transformedTransactions.length} sales transactions`
     );
   } catch (error) {
-    console.error("Error in GET /api/sales:", error);
+    console.error('Error in GET /api/sales:', error);
     console.error(
-      "Error stack:",
-      error instanceof Error ? error.stack : "No stack trace"
+      'Error stack:',
+      error instanceof Error ? error.stack : 'No stack trace'
     );
     return createApiResponse.internalError(
-      "Internal server error",
-      error instanceof Error ? error.message : "Unknown error"
+      'Internal server error',
+      error instanceof Error ? error.message : 'Unknown error'
     );
   }
 });
@@ -205,7 +205,7 @@ export const POST = withAuth(async function (request: AuthenticatedRequest) {
     });
 
     if (!user) {
-      return createApiResponse.notFound("User");
+      return createApiResponse.notFound('User');
     }
 
     // Generate transaction code
@@ -213,7 +213,7 @@ export const POST = withAuth(async function (request: AuthenticatedRequest) {
     const transactionCode = `TXN-${timestamp}`;
 
     // Use Prisma transaction to ensure data consistency
-    const result = await prisma.$transaction(async (tx) => {
+    const result = await prisma.$transaction(async tx => {
       // Calculate totals from items
       let subtotal = 0;
       const itemsWithProducts = [];
@@ -334,13 +334,13 @@ export const POST = withAuth(async function (request: AuthenticatedRequest) {
         salesTransaction: completeSalesTransaction,
         stockUpdates: result.stockUpdates,
       },
-      "Sales transaction created successfully",
+      'Sales transaction created successfully',
       201
     );
   } catch (error) {
-    console.error("Error in POST /api/sales:", error);
+    console.error('Error in POST /api/sales:', error);
     return createApiResponse.internalError(
-      error instanceof Error ? error.message : "Internal server error"
+      error instanceof Error ? error.message : 'Internal server error'
     );
   }
 });

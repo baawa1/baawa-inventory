@@ -1,14 +1,14 @@
-"use client";
+'use client';
 
-import React from "react";
-import { useRouter } from "next/navigation";
-import { Button } from "@/components/ui/button";
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import { Badge } from "@/components/ui/badge";
-import { PageHeader } from "@/components/ui/page-header";
+import React from 'react';
+import { useRouter } from 'next/navigation';
+import { Button } from '@/components/ui/button';
+import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
+import { Badge } from '@/components/ui/badge';
+import { PageHeader } from '@/components/ui/page-header';
 // TODO: Implement financial reports hooks
-import { formatDate } from "@/lib/utils";
-import { AppUser } from "@/types/user";
+import { formatDate } from '@/lib/utils';
+import { AppUser } from '@/types/user';
 import {
   ArrowLeft,
   Download,
@@ -18,7 +18,7 @@ import {
   TrendingDown,
   DollarSign,
   Calendar,
-} from "lucide-react";
+} from 'lucide-react';
 
 interface ReportDetailProps {
   reportId: number;
@@ -35,10 +35,10 @@ export function ReportDetail({ reportId, user: _user }: ReportDetailProps) {
 
   if (isLoading) {
     return (
-      <div className="max-w-4xl mx-auto p-6">
-        <div className="flex items-center justify-center h-64">
+      <div className="mx-auto max-w-4xl p-6">
+        <div className="flex h-64 items-center justify-center">
           <div className="text-center">
-            <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary mx-auto mb-4"></div>
+            <div className="border-primary mx-auto mb-4 h-8 w-8 animate-spin rounded-full border-b-2"></div>
             <p className="text-muted-foreground">Loading report details...</p>
           </div>
         </div>
@@ -48,14 +48,14 @@ export function ReportDetail({ reportId, user: _user }: ReportDetailProps) {
 
   if (error || !report) {
     return (
-      <div className="max-w-4xl mx-auto p-6">
+      <div className="mx-auto max-w-4xl p-6">
         <div className="text-center">
-          <FileText className="h-12 w-12 text-gray-400 mx-auto mb-4" />
-          <h2 className="text-xl font-semibold mb-2">Report Not Found</h2>
+          <FileText className="mx-auto mb-4 h-12 w-12 text-gray-400" />
+          <h2 className="mb-2 text-xl font-semibold">Report Not Found</h2>
           <p className="text-muted-foreground mb-4">
             The report you're looking for doesn't exist or has been deleted.
           </p>
-          <Button onClick={() => router.push("/finance/reports")}>
+          <Button onClick={() => router.push('/finance/reports')}>
             Back to Reports
           </Button>
         </div>
@@ -65,13 +65,13 @@ export function ReportDetail({ reportId, user: _user }: ReportDetailProps) {
 
   const getReportTypeIcon = (type: string) => {
     switch (type) {
-      case "FINANCIAL_SUMMARY":
+      case 'FINANCIAL_SUMMARY':
         return <DollarSign className="h-5 w-5" />;
-      case "INCOME_STATEMENT":
+      case 'INCOME_STATEMENT':
         return <TrendingUp className="h-5 w-5 text-green-600" />;
-      case "EXPENSE_REPORT":
+      case 'EXPENSE_REPORT':
         return <TrendingDown className="h-5 w-5 text-red-600" />;
-      case "CASH_FLOW":
+      case 'CASH_FLOW':
         return <BarChart3 className="h-5 w-5 text-blue-600" />;
       default:
         return <FileText className="h-5 w-5" />;
@@ -80,26 +80,26 @@ export function ReportDetail({ reportId, user: _user }: ReportDetailProps) {
 
   const getReportTypeLabel = (type: string) => {
     switch (type) {
-      case "FINANCIAL_SUMMARY":
-        return "Financial Summary";
-      case "INCOME_STATEMENT":
-        return "Income Statement";
-      case "EXPENSE_REPORT":
-        return "Expense Report";
-      case "CASH_FLOW":
-        return "Cash Flow";
+      case 'FINANCIAL_SUMMARY':
+        return 'Financial Summary';
+      case 'INCOME_STATEMENT':
+        return 'Income Statement';
+      case 'EXPENSE_REPORT':
+        return 'Expense Report';
+      case 'CASH_FLOW':
+        return 'Cash Flow';
       default:
         return type;
     }
   };
 
   return (
-    <div className="max-w-4xl mx-auto p-6 space-y-6">
+    <div className="mx-auto max-w-4xl space-y-6 p-6">
       {/* Header */}
       <div className="mb-6">
         <Button
           variant="ghost"
-          onClick={() => router.push("/finance/reports")}
+          onClick={() => router.push('/finance/reports')}
           className="mb-4 px-4 lg:px-6"
         >
           <ArrowLeft className="mr-2 h-4 w-4" />
@@ -139,16 +139,16 @@ export function ReportDetail({ reportId, user: _user }: ReportDetailProps) {
           </div>
         </CardHeader>
         <CardContent className="space-y-4">
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+          <div className="grid grid-cols-1 gap-4 md:grid-cols-2">
             <div className="space-y-2">
-              <div className="flex items-center gap-2 text-sm text-muted-foreground">
+              <div className="text-muted-foreground flex items-center gap-2 text-sm">
                 <FileText className="h-4 w-4" />
                 Report Title
               </div>
               <div className="text-lg font-medium">{report.reportName}</div>
             </div>
             <div className="space-y-2">
-              <div className="flex items-center gap-2 text-sm text-muted-foreground">
+              <div className="text-muted-foreground flex items-center gap-2 text-sm">
                 <Calendar className="h-4 w-4" />
                 Generated Date
               </div>
@@ -166,16 +166,16 @@ export function ReportDetail({ reportId, user: _user }: ReportDetailProps) {
           <CardTitle>Report Parameters</CardTitle>
         </CardHeader>
         <CardContent className="space-y-4">
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+          <div className="grid grid-cols-1 gap-4 md:grid-cols-2">
             <div className="space-y-2">
-              <div className="text-sm text-muted-foreground">Period Start</div>
+              <div className="text-muted-foreground text-sm">Period Start</div>
               <div className="font-medium">
                 {formatDate(report.periodStart)}
               </div>
             </div>
 
             <div className="space-y-2">
-              <div className="text-sm text-muted-foreground">Period End</div>
+              <div className="text-muted-foreground text-sm">Period End</div>
               <div className="font-medium">{formatDate(report.periodEnd)}</div>
             </div>
           </div>
@@ -188,20 +188,20 @@ export function ReportDetail({ reportId, user: _user }: ReportDetailProps) {
           <CardTitle>System Information</CardTitle>
         </CardHeader>
         <CardContent className="space-y-4">
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+          <div className="grid grid-cols-1 gap-4 md:grid-cols-2">
             <div className="space-y-2">
-              <div className="text-sm text-muted-foreground">Report ID</div>
+              <div className="text-muted-foreground text-sm">Report ID</div>
               <div className="font-mono text-sm">{report.id}</div>
             </div>
 
             <div className="space-y-2">
-              <div className="text-sm text-muted-foreground">Generated</div>
+              <div className="text-muted-foreground text-sm">Generated</div>
               <div className="text-sm">{formatDate(report.generatedAt)}</div>
             </div>
 
             {report.generatedBy && (
               <div className="space-y-2">
-                <div className="text-sm text-muted-foreground">
+                <div className="text-muted-foreground text-sm">
                   Generated By
                 </div>
                 <div className="text-sm">{report.generatedBy}</div>

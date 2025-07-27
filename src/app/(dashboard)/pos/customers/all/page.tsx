@@ -1,22 +1,22 @@
-import { auth } from "../../../../../../auth";
-import { redirect } from "next/navigation";
-import { CustomerHistoryList } from "@/components/pos/CustomerHistoryList";
-import { DashboardPageLayout } from "@/components/layouts/DashboardPageLayout";
+import { auth } from '../../../../../../auth';
+import { redirect } from 'next/navigation';
+import { CustomerHistoryList } from '@/components/pos/CustomerHistoryList';
+import { DashboardPageLayout } from '@/components/layouts/DashboardPageLayout';
 
 export const metadata = {
-  title: "Customer History - BaaWA Inventory POS",
-  description: "View and manage all customers and their purchase history",
+  title: 'Customer History - BaaWA Inventory POS',
+  description: 'View and manage all customers and their purchase history',
 };
 
 export default async function CustomerHistoryPage() {
   const session = await auth();
 
   if (!session?.user) {
-    redirect("/login");
+    redirect('/login');
   }
 
-  if (session.user.status !== "APPROVED") {
-    redirect("/pending-approval");
+  if (session.user.status !== 'APPROVED') {
+    redirect('/pending-approval');
   }
 
   return (

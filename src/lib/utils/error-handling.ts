@@ -1,5 +1,5 @@
-import { toast } from "sonner";
-import { logger } from "@/lib/logger";
+import { toast } from 'sonner';
+import { logger } from '@/lib/logger';
 
 export interface ApiError {
   message: string;
@@ -16,11 +16,11 @@ export class AppError extends Error {
   constructor(
     message: string,
     status: number = 500,
-    code: string = "INTERNAL_ERROR",
+    code: string = 'INTERNAL_ERROR',
     details?: unknown
   ) {
     super(message);
-    this.name = "AppError";
+    this.name = 'AppError';
     this.status = status;
     this.code = code;
     this.details = details;
@@ -39,15 +39,15 @@ export const getErrorMessage = (error: unknown): string => {
     return error.message;
   }
 
-  if (typeof error === "string") {
+  if (typeof error === 'string') {
     return error;
   }
 
-  if (error && typeof error === "object" && "message" in error) {
+  if (error && typeof error === 'object' && 'message' in error) {
     return String(error.message);
   }
 
-  return "An unexpected error occurred";
+  return 'An unexpected error occurred';
 };
 
 /**
@@ -59,10 +59,10 @@ export const handleApiError = (
 ): void => {
   const message = getErrorMessage(error);
   const contextMessage =
-    typeof context === "string" ? `${context}: ${message}` : message;
+    typeof context === 'string' ? `${context}: ${message}` : message;
 
   logger.error(
-    `API Error${typeof context === "string" ? ` (${context})` : ""}`,
+    `API Error${typeof context === 'string' ? ` (${context})` : ''}`,
     {
       error: error instanceof Error ? error.message : String(error),
     }
@@ -105,7 +105,7 @@ export const handleFormError = (error: unknown, fieldName?: string): void => {
   const message = getErrorMessage(error);
   const contextMessage = fieldName ? `${fieldName}: ${message}` : message;
 
-  logger.error(`Form Error${fieldName ? ` (${fieldName})` : ""}`, {
+  logger.error(`Form Error${fieldName ? ` (${fieldName})` : ''}`, {
     fieldName,
     error: error instanceof Error ? error.message : String(error),
   });
@@ -116,27 +116,27 @@ export const handleFormError = (error: unknown, fieldName?: string): void => {
  * Handle network errors
  */
 export const handleNetworkError = (error: unknown): void => {
-  logger.error("Network Error:", {
+  logger.error('Network Error:', {
     error: error instanceof Error ? error.message : String(error),
   });
-  toast.error("Network error. Please check your connection and try again.");
+  toast.error('Network error. Please check your connection and try again.');
 };
 
 /**
  * Handle authentication errors
  */
 export const handleAuthError = (error: unknown): void => {
-  logger.error("Authentication Error:", {
+  logger.error('Authentication Error:', {
     error: error instanceof Error ? error.message : String(error),
   });
-  toast.error("Authentication failed. Please log in again.");
+  toast.error('Authentication failed. Please log in again.');
 };
 
 /**
  * Handle permission errors
  */
 export const handlePermissionError = (error: unknown): void => {
-  logger.error("Permission Error:", {
+  logger.error('Permission Error:', {
     error: error instanceof Error ? error.message : String(error),
   });
   toast.error("You don't have permission to perform this action.");
@@ -168,7 +168,7 @@ export const withErrorHandling = async <T>(
   try {
     return await promise;
   } catch (error) {
-    logger.error(`API request failed${context ? ` (${context})` : ""}`, {
+    logger.error(`API request failed${context ? ` (${context})` : ''}`, {
       error: error instanceof Error ? error.message : String(error),
     });
     return null;
@@ -182,7 +182,7 @@ export const handleErrorBoundaryError = (
   error: Error,
   errorInfo: React.ErrorInfo
 ): void => {
-  logger.error("Error Boundary caught an error", {
+  logger.error('Error Boundary caught an error', {
     error: error instanceof Error ? error.message : String(error),
     errorInfo,
     componentStack: errorInfo?.componentStack,

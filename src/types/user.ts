@@ -1,15 +1,15 @@
 // Unified user and session types for backend and frontend
 
 // User roles
-export type UserRole = "ADMIN" | "MANAGER" | "STAFF";
+export type UserRole = 'ADMIN' | 'MANAGER' | 'STAFF';
 
 // User status - must match Prisma schema
 export type UserStatus =
-  | "PENDING"
-  | "VERIFIED"
-  | "APPROVED"
-  | "REJECTED"
-  | "SUSPENDED";
+  | 'PENDING'
+  | 'VERIFIED'
+  | 'APPROVED'
+  | 'REJECTED'
+  | 'SUSPENDED';
 
 // Minimal user type for authentication/session
 export interface AuthUser {

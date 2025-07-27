@@ -1,12 +1,12 @@
-import { prisma } from "@/lib/db";
-import { z } from "zod";
-import { withPOSAuth, AuthenticatedRequest } from "@/lib/api-auth-middleware";
-import { PRODUCT_STATUS, API_LIMITS, ERROR_MESSAGES } from "@/lib/constants";
-import { createApiResponse } from "@/lib/api-response";
+import { prisma } from '@/lib/db';
+import { z } from 'zod';
+import { withPOSAuth, AuthenticatedRequest } from '@/lib/api-auth-middleware';
+import { PRODUCT_STATUS, API_LIMITS, ERROR_MESSAGES } from '@/lib/constants';
+import { createApiResponse } from '@/lib/api-response';
 
 // Validation schema for search parameters
 const searchParamsSchema = z.object({
-  search: z.string().min(1, "Search term is required"),
+  search: z.string().min(1, 'Search term is required'),
   limit: z
     .string()
     .optional()
@@ -19,9 +19,9 @@ async function handleSearchProducts(request: AuthenticatedRequest) {
     // Parse and validate query parameters
     const { searchParams } = new URL(request.url);
     const validatedParams = searchParamsSchema.parse({
-      search: searchParams.get("search"),
-      limit: searchParams.get("limit"),
-      status: searchParams.get("status"),
+      search: searchParams.get('search'),
+      limit: searchParams.get('limit'),
+      status: searchParams.get('status'),
     });
 
     const { search, limit, status } = validatedParams;
@@ -32,36 +32,36 @@ async function handleSearchProducts(request: AuthenticatedRequest) {
       AND: [
         {
           status: status as
-            | "ACTIVE"
-            | "INACTIVE"
-            | "OUT_OF_STOCK"
-            | "DISCONTINUED",
+            | 'ACTIVE'
+            | 'INACTIVE'
+            | 'OUT_OF_STOCK'
+            | 'DISCONTINUED',
         },
         {
           OR: [
             {
               name: {
                 contains: search,
-                mode: "insensitive" as const,
+                mode: 'insensitive' as const,
               },
             },
             {
               sku: {
                 contains: search,
-                mode: "insensitive" as const,
+                mode: 'insensitive' as const,
               },
             },
             {
               barcode: {
                 contains: search,
-                mode: "insensitive" as const,
+                mode: 'insensitive' as const,
               },
             },
             {
               category: {
                 name: {
                   contains: search,
-                  mode: "insensitive" as const,
+                  mode: 'insensitive' as const,
                 },
               },
             },
@@ -69,7 +69,7 @@ async function handleSearchProducts(request: AuthenticatedRequest) {
               brand: {
                 name: {
                   contains: search,
-                  mode: "insensitive" as const,
+                  mode: 'insensitive' as const,
                 },
               },
             },
@@ -96,14 +96,14 @@ async function handleSearchProducts(request: AuthenticatedRequest) {
         },
       },
       orderBy: [
-        { stock: "desc" }, // Show in-stock products first
-        { name: "asc" },
+        { stock: 'desc' }, // Show in-stock products first
+        { name: 'asc' },
       ],
       take: limitNum,
     });
 
     // Format response data
-    const formattedProducts = products.map((product) => ({
+    const formattedProducts = products.map(product => ({
       id: product.id,
       name: product.name,
       sku: product.sku,
@@ -125,7 +125,7 @@ async function handleSearchProducts(request: AuthenticatedRequest) {
       `Found ${formattedProducts.length} products matching "${search}"`
     );
   } catch (error) {
-    console.error("Error searching products for POS:", error);
+    console.error('Error searching products for POS:', error);
 
     if (error instanceof z.ZodError) {
       return createApiResponse.validationError(

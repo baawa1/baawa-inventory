@@ -1,9 +1,9 @@
-"use client";
+'use client';
 
-import { useState } from "react";
-import { Check, ChevronsUpDown, Package } from "lucide-react";
-import { cn } from "@/lib/utils";
-import { Button } from "@/components/ui/button";
+import { useState } from 'react';
+import { Check, ChevronsUpDown, Package } from 'lucide-react';
+import { cn } from '@/lib/utils';
+import { Button } from '@/components/ui/button';
 import {
   Command,
   CommandEmpty,
@@ -11,12 +11,12 @@ import {
   CommandInput,
   CommandItem,
   CommandList,
-} from "@/components/ui/command";
+} from '@/components/ui/command';
 import {
   Popover,
   PopoverContent,
   PopoverTrigger,
-} from "@/components/ui/popover";
+} from '@/components/ui/popover';
 
 interface Product {
   id: number;
@@ -40,15 +40,15 @@ export function ProductCombobox({
   products,
   value,
   onValueChange,
-  placeholder = "Select a product...",
-  emptyMessage = "No products found.",
+  placeholder = 'Select a product...',
+  emptyMessage = 'No products found.',
   disabled = false,
   className,
 }: ProductComboboxProps) {
   const [open, setOpen] = useState(false);
 
   const selectedProduct = products.find(
-    (product) => product.id.toString() === value
+    product => product.id.toString() === value
   );
 
   return (
@@ -59,20 +59,20 @@ export function ProductCombobox({
           role="combobox"
           aria-expanded={open}
           className={cn(
-            "w-full justify-between h-auto min-h-[40px] px-2 py-1.5 text-xs",
+            'h-auto min-h-[40px] w-full justify-between px-2 py-1.5 text-xs',
             className
           )}
           disabled={disabled}
         >
           {selectedProduct ? (
-            <div className="flex items-center gap-1.5 text-left flex-1 min-w-0">
+            <div className="flex min-w-0 flex-1 items-center gap-1.5 text-left">
               <Package className="h-3 w-3 flex-shrink-0" />
-              <div className="flex-1 min-w-0 overflow-hidden">
-                <div className="font-medium truncate text-xs">
+              <div className="min-w-0 flex-1 overflow-hidden">
+                <div className="truncate text-xs font-medium">
                   {selectedProduct.name}
                 </div>
-                <div className="text-xs text-muted-foreground truncate">
-                  {selectedProduct.sku} •{" "}
+                <div className="text-muted-foreground truncate text-xs">
+                  {selectedProduct.sku} •{' '}
                   {selectedProduct.stock || selectedProduct.stock_quantity || 0}
                 </div>
               </div>
@@ -92,11 +92,11 @@ export function ProductCombobox({
           <CommandList>
             <CommandEmpty>{emptyMessage}</CommandEmpty>
             <CommandGroup>
-              {products.map((product) => (
+              {products.map(product => (
                 <CommandItem
                   key={product.id}
                   value={`${product.name} ${product.sku}`}
-                  onSelect={(_value) => {
+                  onSelect={_value => {
                     onValueChange(product.id.toString());
                     setOpen(false);
                   }}
@@ -104,17 +104,17 @@ export function ProductCombobox({
                 >
                   <Check
                     className={cn(
-                      "mr-2 h-4 w-4",
+                      'mr-2 h-4 w-4',
                       value === product.id.toString()
-                        ? "opacity-100"
-                        : "opacity-0"
+                        ? 'opacity-100'
+                        : 'opacity-0'
                     )}
                   />
                   <Package className="h-4 w-4 flex-shrink-0" />
-                  <div className="flex-1 min-w-0">
-                    <div className="font-medium truncate">{product.name}</div>
-                    <div className="text-xs text-muted-foreground truncate">
-                      {product.sku} •{" "}
+                  <div className="min-w-0 flex-1">
+                    <div className="truncate font-medium">{product.name}</div>
+                    <div className="text-muted-foreground truncate text-xs">
+                      {product.sku} •{' '}
                       {product.stock || product.stock_quantity || 0} in stock
                     </div>
                   </div>

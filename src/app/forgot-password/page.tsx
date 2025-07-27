@@ -1,5 +1,5 @@
-import { ForgotPasswordForm } from "@/components/auth/ForgotPasswordForm";
-import Link from "next/link";
+import { ForgotPasswordForm } from '@/components/auth/ForgotPasswordForm';
+import Link from 'next/link';
 
 export default function ForgotPasswordPage() {
   return (
@@ -9,7 +9,7 @@ export default function ForgotPasswordPage() {
         <div className="mt-4 text-center">
           <Link
             href="/login"
-            className="text-sm text-muted-foreground hover:text-primary hover:underline"
+            className="text-muted-foreground hover:text-primary text-sm hover:underline"
           >
             Back to Login
           </Link>

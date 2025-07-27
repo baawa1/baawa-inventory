@@ -1,7 +1,7 @@
-"use client";
+'use client';
 
-import { UseFormReturn } from "react-hook-form";
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { UseFormReturn } from 'react-hook-form';
+import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import {
   FormControl,
   FormDescription,
@@ -9,19 +9,19 @@ import {
   FormItem,
   FormLabel,
   FormMessage,
-} from "@/components/ui/form";
+} from '@/components/ui/form';
 import {
   Select,
   SelectContent,
   SelectItem,
   SelectTrigger,
   SelectValue,
-} from "@/components/ui/select";
+} from '@/components/ui/select';
 import type {
   CreateIncomeData,
   IncomeSourceOption,
   PaymentMethodOption,
-} from "./types";
+} from './types';
 
 interface IncomeDetailsSectionProps {
   form: UseFormReturn<CreateIncomeData>;
@@ -40,7 +40,7 @@ export function IncomeDetailsSection({
         <CardTitle>Income Details</CardTitle>
       </CardHeader>
       <CardContent className="space-y-4">
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+        <div className="grid grid-cols-1 gap-4 md:grid-cols-2">
           <FormField
             control={form.control}
             name="incomeSource"
@@ -59,7 +59,7 @@ export function IncomeDetailsSection({
                     </SelectTrigger>
                   </FormControl>
                   <SelectContent>
-                    {incomeSourceOptions.map((source) => (
+                    {incomeSourceOptions.map(source => (
                       <SelectItem key={source.value} value={source.value}>
                         {source.label}
                       </SelectItem>
@@ -92,7 +92,7 @@ export function IncomeDetailsSection({
                     </SelectTrigger>
                   </FormControl>
                   <SelectContent>
-                    {paymentMethodOptions.map((method) => (
+                    {paymentMethodOptions.map(method => (
                       <SelectItem key={method.value} value={method.value}>
                         {method.label}
                       </SelectItem>

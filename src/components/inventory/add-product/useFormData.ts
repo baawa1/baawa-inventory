@@ -1,10 +1,10 @@
-"use client";
+'use client';
 
-import { useState } from "react";
-import { useCategories } from "@/hooks/api/categories";
-import { useBrands } from "@/hooks/api/brands";
-import { useSuppliers } from "@/hooks/api/suppliers";
-import type { Category, Brand, Supplier } from "./types";
+import { useState } from 'react';
+import { useCategories } from '@/hooks/api/categories';
+import { useBrands } from '@/hooks/api/brands';
+import { useSuppliers } from '@/hooks/api/suppliers';
+import type { Category, Brand, Supplier } from './types';
 
 export function useFormData() {
   // Use TanStack Query hooks for data fetching

@@ -1,13 +1,13 @@
-"use client";
+'use client';
 
-import { Card, CardContent } from "@/components/ui/card";
+import { Card, CardContent } from '@/components/ui/card';
 import {
   useStockReconciliation,
   type StockReconciliationItem,
-} from "@/hooks/api/stock-management";
-import { ReconciliationHeader } from "./stock-reconciliation/ReconciliationHeader";
-import { ReconciliationItemsTable } from "./stock-reconciliation/ReconciliationItemsTable";
-import { ReconciliationActions } from "./stock-reconciliation/ReconciliationActions";
+} from '@/hooks/api/stock-management';
+import { ReconciliationHeader } from './stock-reconciliation/ReconciliationHeader';
+import { ReconciliationItemsTable } from './stock-reconciliation/ReconciliationItemsTable';
+import { ReconciliationActions } from './stock-reconciliation/ReconciliationActions';
 
 interface StockReconciliationDetailProps {
   reconciliationId: number;
@@ -22,7 +22,7 @@ export function StockReconciliationDetail({
   userId,
   onUpdate,
 }: StockReconciliationDetailProps) {
-  const isAdmin = userRole === "ADMIN";
+  const isAdmin = userRole === 'ADMIN';
 
   // TanStack Query hooks
   const {
@@ -47,7 +47,7 @@ export function StockReconciliationDetail({
     return (
       <Card>
         <CardContent className="p-6">
-          <div className="text-center text-destructive">
+          <div className="text-destructive text-center">
             Failed to load reconciliation details
           </div>
         </CardContent>
@@ -59,7 +59,7 @@ export function StockReconciliationDetail({
     return (
       <Card>
         <CardContent className="p-6">
-          <div className="text-center text-muted-foreground">
+          <div className="text-muted-foreground text-center">
             Reconciliation not found
           </div>
         </CardContent>
@@ -68,12 +68,12 @@ export function StockReconciliationDetail({
   }
 
   const canEdit =
-    reconciliation.status === "DRAFT" &&
+    reconciliation.status === 'DRAFT' &&
     (isAdmin || reconciliation.createdBy.id === userId);
   const canSubmit =
-    reconciliation.status === "DRAFT" &&
+    reconciliation.status === 'DRAFT' &&
     (isAdmin || reconciliation.createdBy.id === userId);
-  const canApprove = reconciliation.status === "PENDING" && isAdmin;
+  const canApprove = reconciliation.status === 'PENDING' && isAdmin;
 
   const totalDiscrepancy = reconciliation.items.reduce(
     (total: number, item: StockReconciliationItem) => total + item.discrepancy,
@@ -86,7 +86,7 @@ export function StockReconciliationDetail({
       if (item.estimatedImpact !== null && item.estimatedImpact !== undefined) {
         // Convert to number if it's a string, or use as is if it's already a number
         impact =
-          typeof item.estimatedImpact === "string"
+          typeof item.estimatedImpact === 'string'
             ? parseFloat(item.estimatedImpact)
             : Number(item.estimatedImpact);
 

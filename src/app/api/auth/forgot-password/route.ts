@@ -1,11 +1,11 @@
-import { NextRequest, NextResponse } from "next/server";
-import { z } from "zod";
-import { prisma } from "@/lib/db";
-import { emailService } from "@/lib/email/service";
-import { AuditLogger } from "@/lib/utils/audit-logger";
-import { emailSchema } from "@/lib/validations/common";
-import { randomBytes } from "crypto";
-import { withRateLimit } from "@/lib/rate-limiting";
+import { NextRequest, NextResponse } from 'next/server';
+import { z } from 'zod';
+import { prisma } from '@/lib/db';
+import { emailService } from '@/lib/email/service';
+import { AuditLogger } from '@/lib/utils/audit-logger';
+import { emailSchema } from '@/lib/validations/common';
+import { randomBytes } from 'crypto';
+import { withRateLimit } from '@/lib/rate-limiting';
 
 // Forgot password validation schema
 const forgotPasswordSchema = z.object({
@@ -23,7 +23,7 @@ async function forgotPasswordHandler(request: NextRequest) {
     if (!validation.success) {
       return NextResponse.json(
         {
-          error: "Invalid email format",
+          error: 'Invalid email format',
           details: validation.error.issues,
         },
         { status: 400 }
@@ -52,10 +52,10 @@ async function forgotPasswordHandler(request: NextRequest) {
       user &&
       user.isActive &&
       user.emailVerified &&
-      user.userStatus === "APPROVED"
+      user.userStatus === 'APPROVED'
     ) {
       // Generate reset token
-      const resetToken = randomBytes(32).toString("hex");
+      const resetToken = randomBytes(32).toString('hex');
       const resetTokenExpires = new Date(Date.now() + 2 * 60 * 60 * 1000); // 2 hours
 
       // Update user with reset token
@@ -70,7 +70,7 @@ async function forgotPasswordHandler(request: NextRequest) {
       // Send password reset email
       await emailService.sendPasswordResetEmail(user.email, {
         firstName: user.firstName,
-        resetLink: `${process.env.NEXTAUTH_URL || "http://localhost:3000"}/reset-password?token=${resetToken}`,
+        resetLink: `${process.env.NEXTAUTH_URL || 'http://localhost:3000'}/reset-password?token=${resetToken}`,
         expiresInHours: 2,
       });
 
@@ -80,12 +80,12 @@ async function forgotPasswordHandler(request: NextRequest) {
       // Log failed password reset request for security monitoring
       await AuditLogger.logAuthEvent(
         {
-          action: "PASSWORD_RESET_REQUEST",
+          action: 'PASSWORD_RESET_REQUEST',
           userEmail: email,
           success: false,
           errorMessage: user
             ? `User not eligible: active=${user.isActive}, verified=${user.emailVerified}, status=${user.userStatus}`
-            : "User not found",
+            : 'User not found',
         },
         request
       );
@@ -95,27 +95,27 @@ async function forgotPasswordHandler(request: NextRequest) {
     return NextResponse.json(
       {
         message:
-          "If an account with this email exists, a password reset link has been sent.",
+          'If an account with this email exists, a password reset link has been sent.',
         success: true,
       },
       { status: 200 }
     );
   } catch (error) {
-    console.error("Forgot password error:", error);
+    console.error('Forgot password error:', error);
 
     // Log the error
     await AuditLogger.logAuthEvent(
       {
-        action: "PASSWORD_RESET_REQUEST",
+        action: 'PASSWORD_RESET_REQUEST',
         userEmail: body?.email,
         success: false,
-        errorMessage: error instanceof Error ? error.message : "Unknown error",
+        errorMessage: error instanceof Error ? error.message : 'Unknown error',
       },
       request
     );
 
     return NextResponse.json(
-      { error: "Failed to process password reset request. Please try again." },
+      { error: 'Failed to process password reset request. Please try again.' },
       { status: 500 }
     );
   }
@@ -125,11 +125,11 @@ async function forgotPasswordHandler(request: NextRequest) {
 export const POST = withRateLimit({
   windowMs: 60 * 60 * 1000, // 1 hour
   maxRequests: 3, // 3 requests per hour
-  keyGenerator: (request) => {
+  keyGenerator: request => {
     const ip =
-      request.headers.get("x-forwarded-for") ||
-      request.headers.get("x-real-ip") ||
-      "unknown";
+      request.headers.get('x-forwarded-for') ||
+      request.headers.get('x-real-ip') ||
+      'unknown';
     return `forgot-password:${ip}`;
   },
 })(forgotPasswordHandler);

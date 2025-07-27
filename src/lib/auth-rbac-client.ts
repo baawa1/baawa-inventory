@@ -1,8 +1,8 @@
-"use client";
+'use client';
 
-import { useSession } from "next-auth/react";
-import type { UserRole } from "@/types/user";
-import { getRolePermissions } from "./auth-rbac";
+import { useSession } from 'next-auth/react';
+import type { UserRole } from '@/types/user';
+import { getRolePermissions } from './auth-rbac';
 
 /**
  * Custom hook for role-based access control using Auth.js v5
@@ -18,7 +18,7 @@ export const useAuth = () => {
     user,
     role,
     permissions,
-    isLoading: status === "loading",
-    isAuthenticated: status === "authenticated" && !!session,
+    isLoading: status === 'loading',
+    isAuthenticated: status === 'authenticated' && !!session,
   };
 };

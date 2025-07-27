@@ -1,19 +1,19 @@
-"use client";
+'use client';
 
-import React, { useState, useMemo, useCallback } from "react";
-import { useQuery } from "@tanstack/react-query";
-import { toast } from "sonner";
-import { DashboardTableLayout } from "@/components/layouts/DashboardTableLayout";
-import { DashboardTableColumn } from "@/components/layouts/DashboardColumnCustomizer";
-import { formatCurrency } from "@/lib/utils";
-import { Button } from "@/components/ui/button";
+import React, { useState, useMemo, useCallback } from 'react';
+import { useQuery } from '@tanstack/react-query';
+import { toast } from 'sonner';
+import { DashboardTableLayout } from '@/components/layouts/DashboardTableLayout';
+import { DashboardTableColumn } from '@/components/layouts/DashboardColumnCustomizer';
+import { formatCurrency } from '@/lib/utils';
+import { Button } from '@/components/ui/button';
 
 import {
   Dialog,
   DialogContent,
   DialogHeader,
   DialogTitle,
-} from "@/components/ui/dialog";
+} from '@/components/ui/dialog';
 import {
   IconEye,
   IconDownload,
@@ -22,9 +22,9 @@ import {
   IconCreditCard,
   IconBuildingBank,
   IconDeviceMobile,
-} from "@tabler/icons-react";
-import { format } from "date-fns";
-import type { FilterConfig } from "@/components/layouts/DashboardFiltersBar";
+} from '@tabler/icons-react';
+import { format } from 'date-fns';
+import type { FilterConfig } from '@/components/layouts/DashboardFiltersBar';
 
 interface User {
   id: string;
@@ -77,11 +77,11 @@ const paymentMethodIcons = {
 
 async function fetchDailyOrders(date: string): Promise<DailyOrdersResponse> {
   const params = new URLSearchParams();
-  params.append("date", date);
+  params.append('date', date);
 
   const response = await fetch(`/api/pos/analytics/daily-orders?${params}`);
   if (!response.ok) {
-    throw new Error("Failed to fetch daily orders");
+    throw new Error('Failed to fetch daily orders');
   }
   return response.json();
 }
@@ -97,9 +97,9 @@ export function DailyOrdersDetails({ user: _, date }: DailyOrdersDetailsProps) {
 
   // Filters state
   const [filters, setFilters] = useState({
-    search: "",
-    paymentMethod: "all",
-    customerName: "all",
+    search: '',
+    paymentMethod: 'all',
+    customerName: 'all',
   });
 
   const {
@@ -108,19 +108,19 @@ export function DailyOrdersDetails({ user: _, date }: DailyOrdersDetailsProps) {
     error,
     refetch,
   } = useQuery({
-    queryKey: ["daily-orders", date],
+    queryKey: ['daily-orders', date],
     queryFn: () => fetchDailyOrders(date),
   });
 
   if (error) {
-    toast.error("Failed to load daily orders");
+    toast.error('Failed to load daily orders');
   }
 
   const orders = ordersData?.orders || [];
 
   // Filter orders based on search and filters
   const filteredOrders = useMemo(() => {
-    return orders.filter((order) => {
+    return orders.filter(order => {
       const matchesSearch =
         order.transactionNumber
           .toLowerCase()
@@ -131,7 +131,7 @@ export function DailyOrdersDetails({ user: _, date }: DailyOrdersDetailsProps) {
             .includes(filters.search.toLowerCase()));
 
       const matchesPaymentMethod =
-        filters.paymentMethod === "all" ||
+        filters.paymentMethod === 'all' ||
         order.paymentMethod === filters.paymentMethod;
 
       return matchesSearch && matchesPaymentMethod;
@@ -140,9 +140,7 @@ export function DailyOrdersDetails({ user: _, date }: DailyOrdersDetailsProps) {
 
   // Get unique customers for filters
   const uniqueCustomers = useMemo(
-    () => [
-      ...new Set(orders.map((order) => order.customerName).filter(Boolean)),
-    ],
+    () => [...new Set(orders.map(order => order.customerName).filter(Boolean))],
     [orders]
   );
 
@@ -150,26 +148,26 @@ export function DailyOrdersDetails({ user: _, date }: DailyOrdersDetailsProps) {
   const filterConfigs: FilterConfig[] = useMemo(
     () => [
       {
-        key: "paymentMethod",
-        label: "Payment Method",
-        type: "select",
+        key: 'paymentMethod',
+        label: 'Payment Method',
+        type: 'select',
         options: [
-          { value: "cash", label: "Cash" },
-          { value: "pos", label: "POS" },
-          { value: "bank_transfer", label: "Bank Transfer" },
-          { value: "mobile_money", label: "Mobile Money" },
+          { value: 'cash', label: 'Cash' },
+          { value: 'pos', label: 'POS' },
+          { value: 'bank_transfer', label: 'Bank Transfer' },
+          { value: 'mobile_money', label: 'Mobile Money' },
         ],
-        placeholder: "All Methods",
+        placeholder: 'All Methods',
       },
       {
-        key: "customerName",
-        label: "Customer",
-        type: "select",
-        options: uniqueCustomers.map((customer) => ({
+        key: 'customerName',
+        label: 'Customer',
+        type: 'select',
+        options: uniqueCustomers.map(customer => ({
           value: customer!,
           label: customer!,
         })),
-        placeholder: "All Customers",
+        placeholder: 'All Customers',
       },
     ],
     [uniqueCustomers]
@@ -177,66 +175,66 @@ export function DailyOrdersDetails({ user: _, date }: DailyOrdersDetailsProps) {
 
   // Handle filter changes
   const handleFilterChange = useCallback((key: string, value: unknown) => {
-    setFilters((prev) => ({
+    setFilters(prev => ({
       ...prev,
       [key]: value,
     }));
-    setPagination((prev) => ({ ...prev, page: 1 }));
+    setPagination(prev => ({ ...prev, page: 1 }));
   }, []);
 
   // Clear all filters
   const handleResetFilters = useCallback(() => {
     setFilters({
-      search: "",
-      paymentMethod: "all",
-      customerName: "all",
+      search: '',
+      paymentMethod: 'all',
+      customerName: 'all',
     });
-    setPagination((prev) => ({ ...prev, page: 1 }));
+    setPagination(prev => ({ ...prev, page: 1 }));
   }, []);
 
   // Table columns configuration
   const columns: DashboardTableColumn[] = useMemo(
     () => [
       {
-        key: "transactionNumber",
-        label: "Order #",
+        key: 'transactionNumber',
+        label: 'Order #',
         sortable: true,
         defaultVisible: true,
         required: true,
       },
       {
-        key: "customerName",
-        label: "Customer",
+        key: 'customerName',
+        label: 'Customer',
         sortable: true,
         defaultVisible: true,
       },
       {
-        key: "itemCount",
-        label: "Items",
+        key: 'itemCount',
+        label: 'Items',
         sortable: true,
         defaultVisible: true,
       },
       {
-        key: "totalAmount",
-        label: "Total Amount",
+        key: 'totalAmount',
+        label: 'Total Amount',
         sortable: true,
         defaultVisible: true,
       },
       {
-        key: "paymentMethod",
-        label: "Payment Method",
+        key: 'paymentMethod',
+        label: 'Payment Method',
         sortable: true,
         defaultVisible: true,
       },
       {
-        key: "createdAt",
-        label: "Time",
+        key: 'createdAt',
+        label: 'Time',
         sortable: true,
         defaultVisible: true,
       },
       {
-        key: "actions",
-        label: "Actions",
+        key: 'actions',
+        label: 'Actions',
         sortable: false,
         defaultVisible: true,
       },
@@ -245,27 +243,27 @@ export function DailyOrdersDetails({ user: _, date }: DailyOrdersDetailsProps) {
   );
 
   const [visibleColumns, setVisibleColumns] = useState<string[]>(
-    columns.filter((col) => col.defaultVisible).map((col) => col.key)
+    columns.filter(col => col.defaultVisible).map(col => col.key)
   );
 
   // Render cell function
   const renderCell = useCallback((item: Order, columnKey: string) => {
     switch (columnKey) {
-      case "transactionNumber":
+      case 'transactionNumber':
         return (
           <span className="font-mono text-sm">{item.transactionNumber}</span>
         );
-      case "customerName":
-        return item.customerName || "Walk-in Customer";
-      case "itemCount":
+      case 'customerName':
+        return item.customerName || 'Walk-in Customer';
+      case 'itemCount':
         return (
-          <span className="text-sm text-muted-foreground">
+          <span className="text-muted-foreground text-sm">
             {item.itemCount} items
           </span>
         );
-      case "totalAmount":
+      case 'totalAmount':
         return formatCurrency(item.totalAmount);
-      case "paymentMethod":
+      case 'paymentMethod':
         const PaymentIcon =
           paymentMethodIcons[
             item.paymentMethod as keyof typeof paymentMethodIcons
@@ -274,13 +272,13 @@ export function DailyOrdersDetails({ user: _, date }: DailyOrdersDetailsProps) {
           <div className="flex items-center gap-2">
             <PaymentIcon className="h-4 w-4" />
             <span className="capitalize">
-              {item.paymentMethod.replace("_", " ")}
+              {item.paymentMethod.replace('_', ' ')}
             </span>
           </div>
         );
-      case "createdAt":
-        return format(new Date(item.createdAt), "HH:mm:ss");
-      case "actions":
+      case 'createdAt':
+        return format(new Date(item.createdAt), 'HH:mm:ss');
+      case 'actions':
         return (
           <div className="flex items-center gap-2">
             <Button
@@ -299,11 +297,11 @@ export function DailyOrdersDetails({ user: _, date }: DailyOrdersDetailsProps) {
 
   // Handle pagination
   const handlePageChange = useCallback((page: number) => {
-    setPagination((prev) => ({ ...prev, page }));
+    setPagination(prev => ({ ...prev, page }));
   }, []);
 
   const handlePageSizeChange = useCallback((size: number) => {
-    setPagination((prev) => ({ ...prev, limit: size, page: 1 }));
+    setPagination(prev => ({ ...prev, limit: size, page: 1 }));
   }, []);
 
   // Summary stats
@@ -331,37 +329,37 @@ export function DailyOrdersDetails({ user: _, date }: DailyOrdersDetailsProps) {
     try {
       const csvContent = [
         [
-          "Order #",
-          "Customer",
-          "Items",
-          "Total Amount",
-          "Payment Method",
-          "Time",
+          'Order #',
+          'Customer',
+          'Items',
+          'Total Amount',
+          'Payment Method',
+          'Time',
         ],
-        ...filteredOrders.map((order) => [
+        ...filteredOrders.map(order => [
           order.transactionNumber,
-          order.customerName || "Walk-in Customer",
+          order.customerName || 'Walk-in Customer',
           order.itemCount.toString(),
           order.totalAmount.toString(),
           order.paymentMethod,
-          format(new Date(order.createdAt), "HH:mm:ss"),
+          format(new Date(order.createdAt), 'HH:mm:ss'),
         ]),
       ]
-        .map((row) => row.map((cell) => `"${cell}"`).join(","))
-        .join("\n");
+        .map(row => row.map(cell => `"${cell}"`).join(','))
+        .join('\n');
 
-      const blob = new Blob([csvContent], { type: "text/csv" });
+      const blob = new Blob([csvContent], { type: 'text/csv' });
       const url = window.URL.createObjectURL(blob);
-      const a = document.createElement("a");
+      const a = document.createElement('a');
       a.href = url;
       a.download = `daily-orders-${date}.csv`;
       document.body.appendChild(a);
       a.click();
       window.URL.revokeObjectURL(url);
       document.body.removeChild(a);
-      toast.success("Orders exported successfully");
+      toast.success('Orders exported successfully');
     } catch (_err) {
-      toast.error("Failed to export orders");
+      toast.error('Failed to export orders');
     }
   }, [filteredOrders, date]);
 
@@ -376,25 +374,25 @@ export function DailyOrdersDetails({ user: _, date }: DailyOrdersDetailsProps) {
           <div className="grid grid-cols-2 gap-4">
             <div>
               <label className="text-sm font-medium">Date & Time</label>
-              <p className="text-sm text-muted-foreground">
-                {format(new Date(order.createdAt), "MMM dd, yyyy HH:mm:ss")}
+              <p className="text-muted-foreground text-sm">
+                {format(new Date(order.createdAt), 'MMM dd, yyyy HH:mm:ss')}
               </p>
             </div>
             <div>
               <label className="text-sm font-medium">Customer</label>
-              <p className="text-sm text-muted-foreground">
-                {order.customerName || "Walk-in Customer"}
+              <p className="text-muted-foreground text-sm">
+                {order.customerName || 'Walk-in Customer'}
               </p>
             </div>
             <div>
               <label className="text-sm font-medium">Payment Method</label>
-              <p className="text-sm text-muted-foreground capitalize">
-                {order.paymentMethod.replace("_", " ")}
+              <p className="text-muted-foreground text-sm capitalize">
+                {order.paymentMethod.replace('_', ' ')}
               </p>
             </div>
             <div>
               <label className="text-sm font-medium">Items Count</label>
-              <p className="text-sm text-muted-foreground">
+              <p className="text-muted-foreground text-sm">
                 {order.itemCount} items
               </p>
             </div>
@@ -404,7 +402,7 @@ export function DailyOrdersDetails({ user: _, date }: DailyOrdersDetailsProps) {
             <div>
               <label className="text-sm font-medium">Items</label>
               <div className="mt-2 space-y-2">
-                {order.items.map((item) => (
+                {order.items.map(item => (
                   <div key={item.id} className="flex justify-between text-sm">
                     <span>
                       {item.name} (x{item.quantity})
@@ -442,15 +440,15 @@ export function DailyOrdersDetails({ user: _, date }: DailyOrdersDetailsProps) {
   return (
     <>
       {/* Summary Cards */}
-      <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mb-6">
+      <div className="mb-6 grid grid-cols-1 gap-4 md:grid-cols-3">
         <div className="bg-card rounded-lg border p-4">
-          <div className="text-sm font-medium text-muted-foreground">
+          <div className="text-muted-foreground text-sm font-medium">
             Total Orders
           </div>
           <div className="text-2xl font-bold">{summaryStats.totalOrders}</div>
         </div>
         <div className="bg-card rounded-lg border p-4">
-          <div className="text-sm font-medium text-muted-foreground">
+          <div className="text-muted-foreground text-sm font-medium">
             Total Amount
           </div>
           <div className="text-2xl font-bold">
@@ -458,7 +456,7 @@ export function DailyOrdersDetails({ user: _, date }: DailyOrdersDetailsProps) {
           </div>
         </div>
         <div className="bg-card rounded-lg border p-4">
-          <div className="text-sm font-medium text-muted-foreground">
+          <div className="text-muted-foreground text-sm font-medium">
             Average Order Value
           </div>
           <div className="text-2xl font-bold">
@@ -469,22 +467,22 @@ export function DailyOrdersDetails({ user: _, date }: DailyOrdersDetailsProps) {
 
       <DashboardTableLayout
         title="Daily Orders"
-        description={`Orders for ${format(new Date(date), "MMM dd, yyyy")}`}
+        description={`Orders for ${format(new Date(date), 'MMM dd, yyyy')}`}
         actions={
           <div className="flex items-center gap-2">
             <Button variant="outline" size="sm" onClick={() => refetch()}>
-              <IconRefresh className="h-4 w-4 mr-2" />
+              <IconRefresh className="mr-2 h-4 w-4" />
               Refresh
             </Button>
             <Button variant="outline" size="sm" onClick={exportOrders}>
-              <IconDownload className="h-4 w-4 mr-2" />
+              <IconDownload className="mr-2 h-4 w-4" />
               Export CSV
             </Button>
           </div>
         }
         searchPlaceholder="Search by order number or customer..."
         searchValue={filters.search}
-        onSearchChange={(value) => handleFilterChange("search", value)}
+        onSearchChange={value => handleFilterChange('search', value)}
         filters={filterConfigs}
         filterValues={filters}
         onFilterChange={handleFilterChange}

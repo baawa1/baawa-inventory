@@ -1,31 +1,31 @@
-"use client";
+'use client';
 
-import { useRouter } from "next/navigation";
-import { useForm } from "react-hook-form";
-import { zodResolver } from "@hookform/resolvers/zod";
+import { useRouter } from 'next/navigation';
+import { useForm } from 'react-hook-form';
+import { zodResolver } from '@hookform/resolvers/zod';
 import {
   createBrandFormSchema,
   type CreateBrandFormData,
-} from "@/lib/validations/brand";
-import { Button } from "@/components/ui/button";
-import { Input } from "@/components/ui/input";
-import { Label } from "@/components/ui/label";
-import { Textarea } from "@/components/ui/textarea";
-import { Switch } from "@/components/ui/switch";
+} from '@/lib/validations/brand';
+import { Button } from '@/components/ui/button';
+import { Input } from '@/components/ui/input';
+import { Label } from '@/components/ui/label';
+import { Textarea } from '@/components/ui/textarea';
+import { Switch } from '@/components/ui/switch';
 import {
   Card,
   CardContent,
   CardHeader,
   CardTitle,
   CardDescription,
-} from "@/components/ui/card";
-import { ArrowLeft, Loader2 } from "lucide-react";
-import { PageHeader } from "@/components/ui/page-header";
-import { FormLoading } from "@/components/ui/form-loading";
-import { ImageUpload } from "@/components/ui/image-upload";
-import { toast } from "sonner";
-import { useCreateBrand } from "@/hooks/api/brands";
-import { logger } from "@/lib/logger";
+} from '@/components/ui/card';
+import { ArrowLeft, Loader2 } from 'lucide-react';
+import { PageHeader } from '@/components/ui/page-header';
+import { FormLoading } from '@/components/ui/form-loading';
+import { ImageUpload } from '@/components/ui/image-upload';
+import { toast } from 'sonner';
+import { useCreateBrand } from '@/hooks/api/brands';
+import { logger } from '@/lib/logger';
 
 export default function AddBrandForm() {
   const router = useRouter();
@@ -40,7 +40,7 @@ export default function AddBrandForm() {
   } = useForm<CreateBrandFormData>({
     resolver: zodResolver(createBrandFormSchema),
     defaultValues: {
-      name: "",
+      name: '',
       description: null,
       image: null,
       website: null,
@@ -48,7 +48,7 @@ export default function AddBrandForm() {
     },
   });
 
-  const isActive = watch("isActive");
+  const isActive = watch('isActive');
 
   const onSubmit = async (data: CreateBrandFormData) => {
     // Clean up website URL and description to match Brand interface types
@@ -63,23 +63,23 @@ export default function AddBrandForm() {
     try {
       createBrandMutation.mutate(brandData, {
         onSuccess: () => {
-          toast.success("Brand created successfully!");
-          router.push("/inventory/brands");
+          toast.success('Brand created successfully!');
+          router.push('/inventory/brands');
         },
-        onError: (error) => {
-          logger.error("Failed to create brand", {
+        onError: error => {
+          logger.error('Failed to create brand', {
             brandName: data.name,
             error: error instanceof Error ? error.message : String(error),
           });
-          toast.error("Failed to create brand");
+          toast.error('Failed to create brand');
         },
       });
     } catch (error) {
-      logger.error("Failed to create brand", {
+      logger.error('Failed to create brand', {
         brandName: data.name,
         error: error instanceof Error ? error.message : String(error),
       });
-      toast.error("Failed to create brand");
+      toast.error('Failed to create brand');
     }
   };
 
@@ -90,18 +90,18 @@ export default function AddBrandForm() {
         title="Add Brand"
         description="Create a new brand to organize your products"
         backLabel="Back to Brands"
-        onBack={() => router.push("/inventory/brands")}
+        onBack={() => router.push('/inventory/brands')}
         backUrl="/inventory/brands"
       />
     );
   }
 
   return (
-    <div className="max-w-4xl mx-auto p-6 space-y-6">
+    <div className="mx-auto max-w-4xl space-y-6 p-6">
       <div className="mb-6">
         <Button
           variant="ghost"
-          onClick={() => router.push("/inventory/brands")}
+          onClick={() => router.push('/inventory/brands')}
           className="mb-4 px-4 lg:px-6"
         >
           <ArrowLeft className="mr-2 h-4 w-4" />
@@ -129,12 +129,12 @@ export default function AddBrandForm() {
               </Label>
               <Input
                 id="name"
-                {...register("name")}
+                {...register('name')}
                 placeholder="Enter brand name"
                 disabled={createBrandMutation.isPending}
               />
               {errors.name && (
-                <p className="text-sm text-destructive">
+                <p className="text-destructive text-sm">
                   {errors.name.message}
                 </p>
               )}
@@ -144,28 +144,28 @@ export default function AddBrandForm() {
               <Label htmlFor="description">Description</Label>
               <Textarea
                 id="description"
-                {...register("description")}
+                {...register('description')}
                 placeholder="Enter brand description (optional)"
                 rows={3}
                 disabled={createBrandMutation.isPending}
               />
               {errors.description && (
-                <p className="text-sm text-destructive">
+                <p className="text-destructive text-sm">
                   {errors.description.message}
                 </p>
               )}
             </div>
 
             <ImageUpload
-              value={watch("image")}
-              onChange={(url) => setValue("image", url)}
+              value={watch('image')}
+              onChange={url => setValue('image', url)}
               onError={(error: unknown) => {
                 // Handle error in form validation
-                logger.error("Brand image upload failed", {
-                  brandName: watch("name"),
+                logger.error('Brand image upload failed', {
+                  brandName: watch('name'),
                   error: error instanceof Error ? error.message : String(error),
                 });
-                toast.error("Failed to upload image");
+                toast.error('Failed to upload image');
               }}
               label="Brand Image"
               placeholder="Upload a brand image"
@@ -174,7 +174,7 @@ export default function AddBrandForm() {
               alt="Brand image"
             />
             {errors.image && (
-              <p className="text-sm text-destructive">{errors.image.message}</p>
+              <p className="text-destructive text-sm">{errors.image.message}</p>
             )}
 
             <div className="space-y-2">
@@ -182,12 +182,12 @@ export default function AddBrandForm() {
               <Input
                 id="website"
                 type="url"
-                {...register("website")}
+                {...register('website')}
                 placeholder="https://example.com (optional)"
                 disabled={createBrandMutation.isPending}
               />
               {errors.website && (
-                <p className="text-sm text-destructive">
+                <p className="text-destructive text-sm">
                   {errors.website.message}
                 </p>
               )}
@@ -205,12 +205,12 @@ export default function AddBrandForm() {
               <Switch
                 id="isActive"
                 checked={isActive}
-                onCheckedChange={(checked) => setValue("isActive", checked)}
+                onCheckedChange={checked => setValue('isActive', checked)}
                 disabled={createBrandMutation.isPending}
               />
             </div>
             {errors.isActive && (
-              <p className="text-sm text-destructive">
+              <p className="text-destructive text-sm">
                 {errors.isActive.message}
               </p>
             )}
@@ -224,13 +224,13 @@ export default function AddBrandForm() {
                 {createBrandMutation.isPending && (
                   <Loader2 className="h-4 w-4 animate-spin" />
                 )}
-                {createBrandMutation.isPending ? "Creating..." : "Create Brand"}
+                {createBrandMutation.isPending ? 'Creating...' : 'Create Brand'}
               </Button>
 
               <Button
                 type="button"
                 variant="outline"
-                onClick={() => router.push("/inventory/brands")}
+                onClick={() => router.push('/inventory/brands')}
                 disabled={createBrandMutation.isPending}
               >
                 Cancel

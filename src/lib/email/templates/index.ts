@@ -1,4 +1,4 @@
-import { EmailTemplate, EmailTemplateType } from "../types";
+import { EmailTemplate, EmailTemplateType } from '../types';
 import {
   welcomeTemplate,
   emailVerificationTemplate,
@@ -12,7 +12,7 @@ import {
   userSuspensionTemplate,
   userReactivationTemplate,
   createReceiptEmailTemplate,
-} from "./base-templates";
+} from './base-templates';
 
 /**
  * Get the appropriate email template based on type and data
@@ -22,33 +22,33 @@ export async function getEmailTemplate(
   data: any
 ): Promise<EmailTemplate> {
   switch (templateType) {
-    case "welcome":
+    case 'welcome':
       return welcomeTemplate(data);
-    case "email_verification":
+    case 'email_verification':
       return emailVerificationTemplate(data);
-    case "password_reset":
+    case 'password_reset':
       return passwordResetTemplate(data);
-    case "password_reset_confirmation":
+    case 'password_reset_confirmation':
       return passwordResetConfirmationTemplate(data);
-    case "user_approved":
+    case 'user_approved':
       return userApprovalTemplate(data);
-    case "user_rejected":
+    case 'user_rejected':
       return userRejectionTemplate(data);
-    case "admin_new_user_pending":
+    case 'admin_new_user_pending':
       return adminNewUserNotificationTemplate(data);
-    case "admin_user_registered":
+    case 'admin_user_registered':
       return adminNewUserNotificationTemplate(data);
-    case "account_locked":
+    case 'account_locked':
       return userRejectionTemplate(data);
-    case "role_changed":
+    case 'role_changed':
       return roleChangeTemplate(data);
-    case "admin_digest":
+    case 'admin_digest':
       return adminDigestTemplate(data);
-    case "user_suspension":
+    case 'user_suspension':
       return userSuspensionTemplate(data);
-    case "user_reactivation":
+    case 'user_reactivation':
       return userReactivationTemplate(data);
-    case "receipt_email":
+    case 'receipt_email':
       return createReceiptEmailTemplate(data);
     default:
       throw new Error(`Unknown email template type: ${templateType}`);
@@ -60,19 +60,19 @@ export async function getEmailTemplate(
  */
 export function getAvailableTemplateTypes(): EmailTemplateType[] {
   return [
-    "welcome",
-    "email_verification",
-    "password_reset",
-    "password_reset_confirmation",
-    "user_approved",
-    "user_rejected",
-    "admin_new_user_pending",
-    "admin_user_registered",
-    "admin_digest",
-    "account_locked",
-    "role_changed",
-    "user_suspension",
-    "user_reactivation",
+    'welcome',
+    'email_verification',
+    'password_reset',
+    'password_reset_confirmation',
+    'user_approved',
+    'user_rejected',
+    'admin_new_user_pending',
+    'admin_user_registered',
+    'admin_digest',
+    'account_locked',
+    'role_changed',
+    'user_suspension',
+    'user_reactivation',
   ];
 }
 

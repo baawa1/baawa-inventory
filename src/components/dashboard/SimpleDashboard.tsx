@@ -1,17 +1,17 @@
-"use client";
+'use client';
 
-import { useState } from "react";
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import { Button } from "@/components/ui/button";
-import { Badge } from "@/components/ui/badge";
-import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import { useState } from 'react';
+import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
+import { Button } from '@/components/ui/button';
+import { Badge } from '@/components/ui/badge';
+import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import {
   Select,
   SelectContent,
   SelectItem,
   SelectTrigger,
   SelectValue,
-} from "@/components/ui/select";
+} from '@/components/ui/select';
 import {
   IconTrendingUp,
   IconTrendingDown,
@@ -25,18 +25,18 @@ import {
   IconAlertTriangle,
   IconChartBar,
   IconDatabase,
-} from "@tabler/icons-react";
-import { formatCurrency } from "@/lib/utils";
-import { useTransactionStats } from "@/hooks/api/transactions";
-import { useActiveUsers } from "@/hooks/api/users";
-import { AnalyticsDashboard } from "./AnalyticsDashboard";
+} from '@tabler/icons-react';
+import { formatCurrency } from '@/lib/utils';
+import { useTransactionStats } from '@/hooks/api/transactions';
+import { useActiveUsers } from '@/hooks/api/users';
+import { AnalyticsDashboard } from './AnalyticsDashboard';
 
 interface SimpleDashboardProps {
   user: any;
 }
 
 export function SimpleDashboard({ user }: SimpleDashboardProps) {
-  const [dateRange, setDateRange] = useState("30days");
+  const [dateRange, setDateRange] = useState('30days');
   const [refreshKey, setRefreshKey] = useState(0);
 
   // Fetch real-time data
@@ -46,25 +46,25 @@ export function SimpleDashboard({ user }: SimpleDashboardProps) {
     useActiveUsers();
 
   const refreshDashboard = () => {
-    setRefreshKey((prev) => prev + 1);
+    setRefreshKey(prev => prev + 1);
   };
 
   const _getDateRangeFilter = () => {
     const now = new Date();
     switch (dateRange) {
-      case "7days":
+      case '7days':
         const sevenDaysAgo = new Date(now.getTime() - 7 * 24 * 60 * 60 * 1000);
-        return { dateFrom: sevenDaysAgo.toISOString().split("T")[0] };
-      case "30days":
+        return { dateFrom: sevenDaysAgo.toISOString().split('T')[0] };
+      case '30days':
         const thirtyDaysAgo = new Date(
           now.getTime() - 30 * 24 * 60 * 60 * 1000
         );
-        return { dateFrom: thirtyDaysAgo.toISOString().split("T")[0] };
-      case "90days":
+        return { dateFrom: thirtyDaysAgo.toISOString().split('T')[0] };
+      case '90days':
         const ninetyDaysAgo = new Date(
           now.getTime() - 90 * 24 * 60 * 60 * 1000
         );
-        return { dateFrom: ninetyDaysAgo.toISOString().split("T")[0] };
+        return { dateFrom: ninetyDaysAgo.toISOString().split('T')[0] };
       default:
         return {};
     }
@@ -73,48 +73,48 @@ export function SimpleDashboard({ user }: SimpleDashboardProps) {
   // KPI Data
   const kpiData = [
     {
-      title: "Total Revenue",
+      title: 'Total Revenue',
       value: formatCurrency(transactionStats?.totalSales || 0),
       change: transactionStats?.salesChange || 0,
-      trend: (transactionStats?.salesChange || 0) >= 0 ? "up" : "down",
+      trend: (transactionStats?.salesChange || 0) >= 0 ? 'up' : 'down',
       icon: <IconCurrencyNaira className="h-5 w-5" />,
-      color: "text-green-600",
-      bgColor: "bg-green-100",
+      color: 'text-green-600',
+      bgColor: 'bg-green-100',
     },
     {
-      title: "Total Transactions",
+      title: 'Total Transactions',
       value: transactionStats?.totalTransactions || 0,
       change: transactionStats?.transactionsChange || 0,
-      trend: (transactionStats?.transactionsChange || 0) >= 0 ? "up" : "down",
+      trend: (transactionStats?.transactionsChange || 0) >= 0 ? 'up' : 'down',
       icon: <IconShoppingCart className="h-5 w-5" />,
-      color: "text-blue-600",
-      bgColor: "bg-blue-100",
+      color: 'text-blue-600',
+      bgColor: 'bg-blue-100',
     },
     {
-      title: "Active Users",
+      title: 'Active Users',
       value: activeUsers.length,
       change: 8.2,
-      trend: "up",
+      trend: 'up',
       icon: <IconUsers className="h-5 w-5" />,
-      color: "text-purple-600",
-      bgColor: "bg-purple-100",
+      color: 'text-purple-600',
+      bgColor: 'bg-purple-100',
     },
     {
-      title: "Average Order Value",
+      title: 'Average Order Value',
       value: formatCurrency(transactionStats?.averageOrderValue || 0),
       change: transactionStats?.averageOrderValueChange || 0,
       trend:
-        (transactionStats?.averageOrderValueChange || 0) >= 0 ? "up" : "down",
+        (transactionStats?.averageOrderValueChange || 0) >= 0 ? 'up' : 'down',
       icon: <IconPackages className="h-5 w-5" />,
-      color: "text-orange-600",
-      bgColor: "bg-orange-100",
+      color: 'text-orange-600',
+      bgColor: 'bg-orange-100',
     },
   ];
 
   return (
     <div className="space-y-6" key={refreshKey}>
       {/* Header Section */}
-      <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
+      <div className="flex flex-col items-start justify-between gap-4 sm:flex-row sm:items-center">
         <div>
           <h1 className="text-3xl font-bold tracking-tight">
             Dashboard Overview
@@ -155,32 +155,32 @@ export function SimpleDashboard({ user }: SimpleDashboardProps) {
       </div>
 
       {/* Key Performance Indicators */}
-      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
+      <div className="grid grid-cols-1 gap-4 md:grid-cols-2 lg:grid-cols-4">
         {isLoadingStats || isLoadingUsers
           ? Array.from({ length: 4 }).map((_, i) => (
               <Card key={i}>
                 <CardHeader className="pb-2">
-                  <div className="h-4 bg-muted rounded w-20 animate-pulse" />
+                  <div className="bg-muted h-4 w-20 animate-pulse rounded" />
                 </CardHeader>
                 <CardContent>
-                  <div className="h-8 bg-muted rounded w-24 mb-2 animate-pulse" />
-                  <div className="h-3 bg-muted rounded w-16 animate-pulse" />
+                  <div className="bg-muted mb-2 h-8 w-24 animate-pulse rounded" />
+                  <div className="bg-muted h-3 w-16 animate-pulse rounded" />
                 </CardContent>
               </Card>
             ))
           : kpiData.map((kpi, index) => (
               <Card key={index}>
                 <CardHeader className="pb-2">
-                  <CardTitle className="text-sm font-medium flex items-center justify-between">
+                  <CardTitle className="flex items-center justify-between text-sm font-medium">
                     <span className="flex items-center gap-2">
                       <div
-                        className={`p-2 rounded-lg ${kpi.bgColor} ${kpi.color}`}
+                        className={`rounded-lg p-2 ${kpi.bgColor} ${kpi.color}`}
                       >
                         {kpi.icon}
                       </div>
                       {kpi.title}
                     </span>
-                    {kpi.trend === "up" ? (
+                    {kpi.trend === 'up' ? (
                       <IconTrendingUp className="h-4 w-4 text-green-600" />
                     ) : (
                       <IconTrendingDown className="h-4 w-4 text-red-600" />
@@ -192,13 +192,13 @@ export function SimpleDashboard({ user }: SimpleDashboardProps) {
                     <div className="text-2xl font-bold">{kpi.value}</div>
                     <div className="flex items-center gap-1">
                       <Badge
-                        variant={kpi.trend === "up" ? "default" : "destructive"}
+                        variant={kpi.trend === 'up' ? 'default' : 'destructive'}
                         className="text-xs"
                       >
-                        {kpi.change > 0 ? "+" : ""}
+                        {kpi.change > 0 ? '+' : ''}
                         {kpi.change.toFixed(1)}%
                       </Badge>
-                      <span className="text-xs text-muted-foreground">
+                      <span className="text-muted-foreground text-xs">
                         vs last period
                       </span>
                     </div>
@@ -236,7 +236,7 @@ export function SimpleDashboard({ user }: SimpleDashboardProps) {
 
         {/* Sales Tab */}
         <TabsContent value="sales" className="space-y-6">
-          <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+          <div className="grid grid-cols-1 gap-6 lg:grid-cols-2">
             <Card>
               <CardHeader>
                 <CardTitle className="flex items-center gap-2">
@@ -246,13 +246,13 @@ export function SimpleDashboard({ user }: SimpleDashboardProps) {
               </CardHeader>
               <CardContent>
                 <div className="space-y-4">
-                  <div className="flex justify-between items-center">
+                  <div className="flex items-center justify-between">
                     <span className="text-sm font-medium">Total Revenue</span>
                     <span className="text-lg font-bold text-green-600">
                       {formatCurrency(transactionStats?.totalSales || 0)}
                     </span>
                   </div>
-                  <div className="flex justify-between items-center">
+                  <div className="flex items-center justify-between">
                     <span className="text-sm font-medium">
                       Total Transactions
                     </span>
@@ -260,7 +260,7 @@ export function SimpleDashboard({ user }: SimpleDashboardProps) {
                       {transactionStats?.totalTransactions || 0}
                     </span>
                   </div>
-                  <div className="flex justify-between items-center">
+                  <div className="flex items-center justify-between">
                     <span className="text-sm font-medium">
                       Average Order Value
                     </span>
@@ -281,15 +281,15 @@ export function SimpleDashboard({ user }: SimpleDashboardProps) {
               </CardHeader>
               <CardContent>
                 <div className="space-y-3">
-                  <div className="flex justify-between items-center">
+                  <div className="flex items-center justify-between">
                     <span className="text-sm">Cash</span>
                     <Badge variant="secondary">45%</Badge>
                   </div>
-                  <div className="flex justify-between items-center">
+                  <div className="flex items-center justify-between">
                     <span className="text-sm">POS</span>
                     <Badge variant="secondary">35%</Badge>
                   </div>
-                  <div className="flex justify-between items-center">
+                  <div className="flex items-center justify-between">
                     <span className="text-sm">Transfer</span>
                     <Badge variant="secondary">20%</Badge>
                   </div>
@@ -301,7 +301,7 @@ export function SimpleDashboard({ user }: SimpleDashboardProps) {
 
         {/* Inventory Tab */}
         <TabsContent value="inventory" className="space-y-6">
-          <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+          <div className="grid grid-cols-1 gap-6 lg:grid-cols-2">
             <Card>
               <CardHeader>
                 <CardTitle className="flex items-center gap-2">
@@ -311,23 +311,23 @@ export function SimpleDashboard({ user }: SimpleDashboardProps) {
               </CardHeader>
               <CardContent>
                 <div className="space-y-4">
-                  <div className="flex justify-between items-center">
+                  <div className="flex items-center justify-between">
                     <span className="text-sm font-medium">Total Products</span>
                     <span className="text-lg font-bold">1,247</span>
                   </div>
-                  <div className="flex justify-between items-center">
+                  <div className="flex items-center justify-between">
                     <span className="text-sm font-medium">In Stock</span>
                     <span className="text-lg font-bold text-green-600">
                       1,215
                     </span>
                   </div>
-                  <div className="flex justify-between items-center">
+                  <div className="flex items-center justify-between">
                     <span className="text-sm font-medium">Low Stock</span>
                     <span className="text-lg font-bold text-yellow-600">
                       27
                     </span>
                   </div>
-                  <div className="flex justify-between items-center">
+                  <div className="flex items-center justify-between">
                     <span className="text-sm font-medium">Out of Stock</span>
                     <span className="text-lg font-bold text-red-600">5</span>
                   </div>
@@ -346,37 +346,37 @@ export function SimpleDashboard({ user }: SimpleDashboardProps) {
                 <div className="space-y-3">
                   {[
                     {
-                      action: "Product Added",
-                      item: "iPhone 15 Pro",
-                      time: "5 min ago",
+                      action: 'Product Added',
+                      item: 'iPhone 15 Pro',
+                      time: '5 min ago',
                     },
                     {
-                      action: "Stock Updated",
-                      item: "Samsung Galaxy",
-                      time: "12 min ago",
+                      action: 'Stock Updated',
+                      item: 'Samsung Galaxy',
+                      time: '12 min ago',
                     },
                     {
-                      action: "Low Stock Alert",
-                      item: "AirPods Pro",
-                      time: "25 min ago",
+                      action: 'Low Stock Alert',
+                      item: 'AirPods Pro',
+                      time: '25 min ago',
                     },
                     {
-                      action: "Sale Completed",
-                      item: "MacBook Air",
-                      time: "1 hour ago",
+                      action: 'Sale Completed',
+                      item: 'MacBook Air',
+                      time: '1 hour ago',
                     },
                   ].map((activity, i) => (
                     <div
                       key={i}
-                      className="flex justify-between items-center p-2 border-l-2 border-blue-200 pl-3"
+                      className="flex items-center justify-between border-l-2 border-blue-200 p-2 pl-3"
                     >
                       <div>
                         <p className="text-sm font-medium">{activity.action}</p>
-                        <p className="text-xs text-muted-foreground">
+                        <p className="text-muted-foreground text-xs">
                           {activity.item}
                         </p>
                       </div>
-                      <span className="text-xs text-muted-foreground">
+                      <span className="text-muted-foreground text-xs">
                         {activity.time}
                       </span>
                     </div>
@@ -389,7 +389,7 @@ export function SimpleDashboard({ user }: SimpleDashboardProps) {
 
         {/* System Tab */}
         <TabsContent value="system" className="space-y-6">
-          <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+          <div className="grid grid-cols-1 gap-6 lg:grid-cols-2">
             <Card>
               <CardHeader>
                 <CardTitle className="flex items-center gap-2">
@@ -399,25 +399,25 @@ export function SimpleDashboard({ user }: SimpleDashboardProps) {
               </CardHeader>
               <CardContent>
                 <div className="space-y-4">
-                  <div className="flex justify-between items-center">
+                  <div className="flex items-center justify-between">
                     <span className="text-sm">Database</span>
                     <Badge className="bg-green-100 text-green-700">
                       Healthy
                     </Badge>
                   </div>
-                  <div className="flex justify-between items-center">
+                  <div className="flex items-center justify-between">
                     <span className="text-sm">API Server</span>
                     <Badge className="bg-green-100 text-green-700">
                       Online
                     </Badge>
                   </div>
-                  <div className="flex justify-between items-center">
+                  <div className="flex items-center justify-between">
                     <span className="text-sm">Storage</span>
                     <Badge className="bg-yellow-100 text-yellow-700">
                       78% Full
                     </Badge>
                   </div>
-                  <div className="flex justify-between items-center">
+                  <div className="flex items-center justify-between">
                     <span className="text-sm">Uptime</span>
                     <Badge className="bg-green-100 text-green-700">99.9%</Badge>
                   </div>

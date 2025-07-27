@@ -1,20 +1,20 @@
-"use client";
+'use client';
 
-import { useState } from "react";
-import { useRouter } from "next/navigation";
-import { useForm } from "react-hook-form";
-import { zodResolver } from "@hookform/resolvers/zod";
-import { z } from "zod";
-import { signIn } from "next-auth/react";
-import { Button } from "@/components/ui/button";
-import { Input } from "@/components/ui/input";
+import { useState } from 'react';
+import { useRouter } from 'next/navigation';
+import { useForm } from 'react-hook-form';
+import { zodResolver } from '@hookform/resolvers/zod';
+import { z } from 'zod';
+import { signIn } from 'next-auth/react';
+import { Button } from '@/components/ui/button';
+import { Input } from '@/components/ui/input';
 import {
   Card,
   CardContent,
   CardDescription,
   CardHeader,
   CardTitle,
-} from "@/components/ui/card";
+} from '@/components/ui/card';
 import {
   Form,
   FormControl,
@@ -22,13 +22,13 @@ import {
   FormItem,
   FormLabel,
   FormMessage,
-} from "@/components/ui/form";
-import { Alert, AlertDescription } from "@/components/ui/alert";
-import { Eye, EyeOff, Loader2 } from "lucide-react";
+} from '@/components/ui/form';
+import { Alert, AlertDescription } from '@/components/ui/alert';
+import { Eye, EyeOff, Loader2 } from 'lucide-react';
 
 const loginSchema = z.object({
-  email: z.string().email("Please enter a valid email address"),
-  password: z.string().min(1, "Password is required"),
+  email: z.string().email('Please enter a valid email address'),
+  password: z.string().min(1, 'Password is required'),
 });
 
 type LoginFormData = z.infer<typeof loginSchema>;
@@ -40,39 +40,39 @@ interface LoginFormProps {
 export function LoginForm({ callbackUrl }: LoginFormProps) {
   const [isLoading, setIsLoading] = useState(false);
   const [showPassword, setShowPassword] = useState(false);
-  const [generalError, setGeneralError] = useState("");
+  const [generalError, setGeneralError] = useState('');
   const router = useRouter();
 
   const form = useForm<LoginFormData>({
     resolver: zodResolver(loginSchema),
-    mode: "onBlur",
+    mode: 'onBlur',
     defaultValues: {
-      email: "",
-      password: "",
+      email: '',
+      password: '',
     },
   });
 
   const onSubmit = async (data: LoginFormData) => {
     setIsLoading(true);
-    setGeneralError("");
+    setGeneralError('');
 
     try {
-      const result = await signIn("credentials", {
+      const result = await signIn('credentials', {
         email: data.email,
         password: data.password,
-        callbackUrl: callbackUrl || "/dashboard",
+        callbackUrl: callbackUrl || '/dashboard',
         redirect: false,
       });
 
       if (result?.error) {
-        setGeneralError("Invalid email or password. Please try again.");
+        setGeneralError('Invalid email or password. Please try again.');
       } else if (result?.ok) {
-        router.push(callbackUrl || "/dashboard");
+        router.push(callbackUrl || '/dashboard');
       }
     } catch (error) {
-      console.error("Login error:", error);
+      console.error('Login error:', error);
       setGeneralError(
-        "Network error. Please check your connection and try again."
+        'Network error. Please check your connection and try again.'
       );
     } finally {
       setIsLoading(false);
@@ -81,14 +81,14 @@ export function LoginForm({ callbackUrl }: LoginFormProps) {
 
   const handleInputChange = () => {
     if (generalError) {
-      setGeneralError("");
+      setGeneralError('');
     }
   };
 
   return (
     <Card className="w-full">
       <CardHeader className="space-y-1">
-        <CardTitle className="text-2xl text-center">Sign in</CardTitle>
+        <CardTitle className="text-center text-2xl">Sign in</CardTitle>
         <CardDescription className="text-center">
           Enter your credentials to access your account
         </CardDescription>
@@ -101,7 +101,7 @@ export function LoginForm({ callbackUrl }: LoginFormProps) {
             className="space-y-4"
           >
             {generalError && (
-              <Alert variant="default" className="bg-red-100 border-red-200">
+              <Alert variant="default" className="border-red-200 bg-red-100">
                 <AlertDescription
                   data-testid="login-error"
                   className="text-red-700"
@@ -144,7 +144,7 @@ export function LoginForm({ callbackUrl }: LoginFormProps) {
                       <Input
                         id="password"
                         data-testid="password-input"
-                        type={showPassword ? "text" : "password"}
+                        type={showPassword ? 'text' : 'password'}
                         placeholder="Enter your password"
                         {...field}
                         onFocus={handleInputChange}
@@ -154,7 +154,7 @@ export function LoginForm({ callbackUrl }: LoginFormProps) {
                         type="button"
                         variant="ghost"
                         size="sm"
-                        className="absolute right-0 top-0 h-full px-3 py-2 hover:bg-transparent"
+                        className="absolute top-0 right-0 h-full px-3 py-2 hover:bg-transparent"
                         onClick={() => setShowPassword(!showPassword)}
                         disabled={isLoading}
                       >
@@ -183,7 +183,7 @@ export function LoginForm({ callbackUrl }: LoginFormProps) {
                   Signing in...
                 </>
               ) : (
-                "Sign in"
+                'Sign in'
               )}
             </Button>
           </form>
@@ -192,7 +192,7 @@ export function LoginForm({ callbackUrl }: LoginFormProps) {
         <div className="text-center">
           <Button
             variant="link"
-            onClick={() => router.push("/forgot-password")}
+            onClick={() => router.push('/forgot-password')}
             className="text-sm"
           >
             Forgot your password?

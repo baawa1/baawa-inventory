@@ -1,12 +1,12 @@
-"use client";
+'use client';
 
-import React, { useState } from "react";
-import { useQuery } from "@tanstack/react-query";
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import { Badge } from "@/components/ui/badge";
-import { Button } from "@/components/ui/button";
-import { Input } from "@/components/ui/input";
-import { DateRangePicker } from "@/components/ui/date-range-picker";
+import React, { useState } from 'react';
+import { useQuery } from '@tanstack/react-query';
+import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
+import { Badge } from '@/components/ui/badge';
+import { Button } from '@/components/ui/button';
+import { Input } from '@/components/ui/input';
+import { DateRangePicker } from '@/components/ui/date-range-picker';
 import {
   Table,
   TableBody,
@@ -14,14 +14,14 @@ import {
   TableHead,
   TableHeader,
   TableRow,
-} from "@/components/ui/table";
+} from '@/components/ui/table';
 import {
   Select,
   SelectContent,
   SelectItem,
   SelectTrigger,
   SelectValue,
-} from "@/components/ui/select";
+} from '@/components/ui/select';
 import {
   IconSearch,
   IconTrendingUp,
@@ -30,10 +30,10 @@ import {
   IconCurrencyNaira,
   IconShoppingCart,
   IconEye,
-} from "@tabler/icons-react";
-import { formatCurrency } from "@/lib/utils";
-import { toast } from "sonner";
-import { DateRange } from "react-day-picker";
+} from '@tabler/icons-react';
+import { formatCurrency } from '@/lib/utils';
+import { toast } from 'sonner';
+import { DateRange } from 'react-day-picker';
 
 interface ProductPerformance {
   id: number;
@@ -46,7 +46,7 @@ interface ProductPerformance {
   revenue: number;
   averageOrderValue: number;
   lastSold: string | null;
-  trending: "up" | "down" | "stable";
+  trending: 'up' | 'down' | 'stable';
   trendPercentage: number;
 }
 
@@ -70,23 +70,23 @@ async function fetchProductPerformance(
   });
 
   if (dateRange?.from) {
-    params.append("fromDate", dateRange.from.toISOString().split("T")[0]);
+    params.append('fromDate', dateRange.from.toISOString().split('T')[0]);
   }
   if (dateRange?.to) {
-    params.append("toDate", dateRange.to.toISOString().split("T")[0]);
+    params.append('toDate', dateRange.to.toISOString().split('T')[0]);
   }
 
   const response = await fetch(`/api/pos/analytics/products?${params}`);
   if (!response.ok) {
-    throw new Error("Failed to fetch product performance");
+    throw new Error('Failed to fetch product performance');
   }
   return response.json();
 }
 
 async function fetchCategories(): Promise<{ id: number; name: string }[]> {
-  const response = await fetch("/api/inventory/categories");
+  const response = await fetch('/api/inventory/categories');
   if (!response.ok) {
-    throw new Error("Failed to fetch categories");
+    throw new Error('Failed to fetch categories');
   }
   return response.json();
 }
@@ -96,9 +96,9 @@ export function ProductAnalytics({ user: _ }: ProductAnalyticsProps) {
     from: new Date(new Date().getTime() - 30 * 24 * 60 * 60 * 1000), // 30 days ago
     to: new Date(), // Today
   });
-  const [searchTerm, setSearchTerm] = useState("");
-  const [selectedCategory, setSelectedCategory] = useState("all");
-  const [sortBy, setSortBy] = useState("revenue");
+  const [searchTerm, setSearchTerm] = useState('');
+  const [selectedCategory, setSelectedCategory] = useState('all');
+  const [sortBy, setSortBy] = useState('revenue');
 
   const {
     data: products = [],
@@ -106,7 +106,7 @@ export function ProductAnalytics({ user: _ }: ProductAnalyticsProps) {
     error,
   } = useQuery({
     queryKey: [
-      "product-performance",
+      'product-performance',
       dateRange?.from,
       dateRange?.to,
       searchTerm,
@@ -119,32 +119,32 @@ export function ProductAnalytics({ user: _ }: ProductAnalyticsProps) {
   });
 
   const { data: categories = [] } = useQuery({
-    queryKey: ["categories-list"],
+    queryKey: ['categories-list'],
     queryFn: fetchCategories,
   });
 
   if (error) {
-    toast.error("Failed to load product performance data");
+    toast.error('Failed to load product performance data');
   }
 
   const sortOptions = [
-    { value: "revenue", label: "Revenue" },
-    { value: "totalSold", label: "Units Sold" },
-    { value: "averageOrderValue", label: "Avg Order Value" },
-    { value: "name", label: "Product Name" },
+    { value: 'revenue', label: 'Revenue' },
+    { value: 'totalSold', label: 'Units Sold' },
+    { value: 'averageOrderValue', label: 'Avg Order Value' },
+    { value: 'name', label: 'Product Name' },
   ];
 
   const getTrendBadge = (trending: string, percentage: number) => {
-    if (trending === "up") {
+    if (trending === 'up') {
       return (
         <Badge className="bg-green-100 text-green-800">
-          <IconTrendingUp className="w-3 h-3 mr-1" />+{percentage}%
+          <IconTrendingUp className="mr-1 h-3 w-3" />+{percentage}%
         </Badge>
       );
-    } else if (trending === "down") {
+    } else if (trending === 'down') {
       return (
         <Badge className="bg-red-100 text-red-800">
-          <IconTrendingDown className="w-3 h-3 mr-1" />-{percentage}%
+          <IconTrendingDown className="mr-1 h-3 w-3" />-{percentage}%
         </Badge>
       );
     }
@@ -164,8 +164,8 @@ export function ProductAnalytics({ user: _ }: ProductAnalyticsProps) {
     products.length > 0 ? totalRevenue / products.length : 0;
 
   return (
-    <div className="container mx-auto p-6 space-y-6">
-      <div className="flex justify-between items-center">
+    <div className="container mx-auto space-y-6 p-6">
+      <div className="flex items-center justify-between">
         <div>
           <h1 className="text-3xl font-bold">Product Performance</h1>
           <p className="text-muted-foreground">
@@ -175,17 +175,17 @@ export function ProductAnalytics({ user: _ }: ProductAnalyticsProps) {
       </div>
 
       {/* Summary Stats */}
-      <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+      <div className="grid grid-cols-1 gap-6 md:grid-cols-3">
         <Card>
           <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
             <CardTitle className="text-sm font-medium">Total Revenue</CardTitle>
-            <IconCurrencyNaira className="h-4 w-4 text-muted-foreground" />
+            <IconCurrencyNaira className="text-muted-foreground h-4 w-4" />
           </CardHeader>
           <CardContent>
             <div className="text-2xl font-bold">
               {formatCurrency(totalRevenue)}
             </div>
-            <p className="text-xs text-muted-foreground">
+            <p className="text-muted-foreground text-xs">
               Across {products.length} products
             </p>
           </CardContent>
@@ -194,13 +194,13 @@ export function ProductAnalytics({ user: _ }: ProductAnalyticsProps) {
         <Card>
           <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
             <CardTitle className="text-sm font-medium">Units Sold</CardTitle>
-            <IconShoppingCart className="h-4 w-4 text-muted-foreground" />
+            <IconShoppingCart className="text-muted-foreground h-4 w-4" />
           </CardHeader>
           <CardContent>
             <div className="text-2xl font-bold">
               {totalUnitsSold.toLocaleString()}
             </div>
-            <p className="text-xs text-muted-foreground">Total units moved</p>
+            <p className="text-muted-foreground text-xs">Total units moved</p>
           </CardContent>
         </Card>
 
@@ -209,13 +209,13 @@ export function ProductAnalytics({ user: _ }: ProductAnalyticsProps) {
             <CardTitle className="text-sm font-medium">
               Average Revenue
             </CardTitle>
-            <IconPackages className="h-4 w-4 text-muted-foreground" />
+            <IconPackages className="text-muted-foreground h-4 w-4" />
           </CardHeader>
           <CardContent>
             <div className="text-2xl font-bold">
               {formatCurrency(averageRevenue)}
             </div>
-            <p className="text-xs text-muted-foreground">Per product</p>
+            <p className="text-muted-foreground text-xs">Per product</p>
           </CardContent>
         </Card>
       </div>
@@ -226,13 +226,13 @@ export function ProductAnalytics({ user: _ }: ProductAnalyticsProps) {
           <CardTitle>Filters</CardTitle>
         </CardHeader>
         <CardContent>
-          <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
+          <div className="grid grid-cols-1 gap-4 md:grid-cols-4">
             <div className="relative">
-              <IconSearch className="absolute left-2 top-2.5 h-4 w-4 text-muted-foreground" />
+              <IconSearch className="text-muted-foreground absolute top-2.5 left-2 h-4 w-4" />
               <Input
                 placeholder="Search products..."
                 value={searchTerm}
-                onChange={(e) => setSearchTerm(e.target.value)}
+                onChange={e => setSearchTerm(e.target.value)}
                 className="pl-8"
               />
             </div>
@@ -246,7 +246,7 @@ export function ProductAnalytics({ user: _ }: ProductAnalyticsProps) {
               </SelectTrigger>
               <SelectContent>
                 <SelectItem value="all">All Categories</SelectItem>
-                {categories.map((category) => (
+                {categories.map(category => (
                   <SelectItem key={category.id} value={category.id.toString()}>
                     {category.name}
                   </SelectItem>
@@ -266,7 +266,7 @@ export function ProductAnalytics({ user: _ }: ProductAnalyticsProps) {
                 <SelectValue placeholder="Sort by" />
               </SelectTrigger>
               <SelectContent>
-                {sortOptions.map((option) => (
+                {sortOptions.map(option => (
                   <SelectItem key={option.value} value={option.value}>
                     {option.label}
                   </SelectItem>
@@ -285,7 +285,7 @@ export function ProductAnalytics({ user: _ }: ProductAnalyticsProps) {
         <CardContent>
           {isLoading ? (
             <div className="flex justify-center py-8">
-              <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-gray-900"></div>
+              <div className="h-8 w-8 animate-spin rounded-full border-b-2 border-gray-900"></div>
             </div>
           ) : (
             <Table>
@@ -303,12 +303,12 @@ export function ProductAnalytics({ user: _ }: ProductAnalyticsProps) {
                 </TableRow>
               </TableHeader>
               <TableBody>
-                {products.map((product) => (
+                {products.map(product => (
                   <TableRow key={product.id}>
                     <TableCell>
                       <div>
                         <div className="font-medium">{product.name}</div>
-                        <div className="text-sm text-muted-foreground">
+                        <div className="text-muted-foreground text-sm">
                           {product.sku}
                         </div>
                       </div>
@@ -319,7 +319,7 @@ export function ProductAnalytics({ user: _ }: ProductAnalyticsProps) {
                           <Badge variant="outline">{product.category}</Badge>
                         )}
                         {product.brand && (
-                          <div className="text-sm text-muted-foreground">
+                          <div className="text-muted-foreground text-sm">
                             {product.brand}
                           </div>
                         )}
@@ -328,7 +328,7 @@ export function ProductAnalytics({ user: _ }: ProductAnalyticsProps) {
                     <TableCell>
                       <Badge
                         variant={
-                          product.currentStock > 10 ? "default" : "destructive"
+                          product.currentStock > 10 ? 'default' : 'destructive'
                         }
                       >
                         {product.currentStock}
@@ -355,7 +355,7 @@ export function ProductAnalytics({ user: _ }: ProductAnalyticsProps) {
                     </TableCell>
                     <TableCell>
                       <Button variant="outline" size="sm">
-                        <IconEye className="w-4 h-4 mr-1" />
+                        <IconEye className="mr-1 h-4 w-4" />
                         View Details
                       </Button>
                     </TableCell>
@@ -366,7 +366,7 @@ export function ProductAnalytics({ user: _ }: ProductAnalyticsProps) {
           )}
 
           {products.length === 0 && !isLoading && (
-            <div className="text-center py-8 text-muted-foreground">
+            <div className="text-muted-foreground py-8 text-center">
               No products found matching your criteria.
             </div>
           )}

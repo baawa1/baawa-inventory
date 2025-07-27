@@ -1,16 +1,16 @@
-import { NextRequest, NextResponse } from "next/server";
-import * as bcrypt from "bcryptjs";
-import { z } from "zod";
-import { prisma } from "@/lib/db";
-import { emailService } from "@/lib/email/service";
-import { AuditLogger } from "@/lib/utils/audit-logger";
+import { NextRequest, NextResponse } from 'next/server';
+import * as bcrypt from 'bcryptjs';
+import { z } from 'zod';
+import { prisma } from '@/lib/db';
+import { emailService } from '@/lib/email/service';
+import { AuditLogger } from '@/lib/utils/audit-logger';
 import {
   emailSchema,
   nameSchema,
   passwordSchema,
-} from "@/lib/validations/common";
-import { randomBytes } from "crypto";
-import { withRateLimit } from "@/lib/rate-limiting";
+} from '@/lib/validations/common';
+import { randomBytes } from 'crypto';
+import { withRateLimit } from '@/lib/rate-limiting';
 
 // Registration validation schema
 const registerSchema = z
@@ -21,9 +21,9 @@ const registerSchema = z
     password: passwordSchema,
     confirmPassword: z.string(),
   })
-  .refine((data) => data.password === data.confirmPassword, {
+  .refine(data => data.password === data.confirmPassword, {
     message: "Passwords don't match",
-    path: ["confirmPassword"],
+    path: ['confirmPassword'],
   });
 
 async function registerHandler(request: NextRequest) {
@@ -37,7 +37,7 @@ async function registerHandler(request: NextRequest) {
     if (!validation.success) {
       return NextResponse.json(
         {
-          error: "Invalid input data",
+          error: 'Invalid input data',
           details: validation.error.issues,
         },
         { status: 400 }
@@ -55,12 +55,12 @@ async function registerHandler(request: NextRequest) {
     if (existingUser) {
       if (existingUser.emailVerified) {
         return NextResponse.json(
-          { error: "User with this email already exists" },
+          { error: 'User with this email already exists' },
           { status: 409 }
         );
       } else {
         // User exists but email not verified - resend verification
-        const verificationToken = randomBytes(32).toString("hex");
+        const verificationToken = randomBytes(32).toString('hex');
         const verificationExpires = new Date(Date.now() + 24 * 60 * 60 * 1000); // 24 hours
 
         await prisma.user.update({
@@ -74,13 +74,13 @@ async function registerHandler(request: NextRequest) {
         // Send verification email
         await emailService.sendVerificationEmail(email, {
           firstName,
-          verificationLink: `${process.env.NEXTAUTH_URL || "http://localhost:3000"}/verify-email?token=${verificationToken}`,
+          verificationLink: `${process.env.NEXTAUTH_URL || 'http://localhost:3000'}/verify-email?token=${verificationToken}`,
           expiresInHours: 24,
         });
 
         return NextResponse.json(
           {
-            message: "Verification email sent. Please check your inbox.",
+            message: 'Verification email sent. Please check your inbox.',
             requiresVerification: true,
           },
           { status: 200 }
@@ -92,7 +92,7 @@ async function registerHandler(request: NextRequest) {
     const hashedPassword = await bcrypt.hash(password, 12);
 
     // Generate email verification token
-    const verificationToken = randomBytes(32).toString("hex");
+    const verificationToken = randomBytes(32).toString('hex');
     const verificationExpires = new Date(Date.now() + 24 * 60 * 60 * 1000); // 24 hours
 
     // Create user
@@ -104,8 +104,8 @@ async function registerHandler(request: NextRequest) {
         password: hashedPassword,
         emailVerificationToken: verificationToken,
         emailVerificationExpires: verificationExpires,
-        userStatus: "PENDING",
-        role: "STAFF", // Default role
+        userStatus: 'PENDING',
+        role: 'STAFF', // Default role
         isActive: true,
         emailNotifications: true,
         marketingEmails: false,
@@ -128,23 +128,23 @@ async function registerHandler(request: NextRequest) {
     let emailId: string | undefined = undefined;
     try {
       if (
-        process.env.NODE_ENV !== "production" &&
-        typeof emailService.sendVerificationEmailWithId === "function"
+        process.env.NODE_ENV !== 'production' &&
+        typeof emailService.sendVerificationEmailWithId === 'function'
       ) {
         emailId = await emailService.sendVerificationEmailWithId(email, {
           firstName,
-          verificationLink: `${process.env.NEXTAUTH_URL || "http://localhost:3000"}/verify-email?token=${verificationToken}`,
+          verificationLink: `${process.env.NEXTAUTH_URL || 'http://localhost:3000'}/verify-email?token=${verificationToken}`,
           expiresInHours: 24,
         });
       } else {
         await emailService.sendVerificationEmail(email, {
           firstName,
-          verificationLink: `${process.env.NEXTAUTH_URL || "http://localhost:3000"}/verify-email?token=${verificationToken}`,
+          verificationLink: `${process.env.NEXTAUTH_URL || 'http://localhost:3000'}/verify-email?token=${verificationToken}`,
           expiresInHours: 24,
         });
       }
     } catch (emailError) {
-      console.error("Failed to send verification email:", emailError);
+      console.error('Failed to send verification email:', emailError);
       // Don't fail the registration if email sending fails
       // The user can request a new verification email later
     }
@@ -152,25 +152,25 @@ async function registerHandler(request: NextRequest) {
     // Send admin notification for new user
     try {
       const adminUsers = await prisma.user.findMany({
-        where: { role: "ADMIN", isActive: true },
+        where: { role: 'ADMIN', isActive: true },
         select: { email: true },
       });
 
       if (adminUsers.length > 0) {
         await emailService.sendAdminNewUserNotification(
-          adminUsers.map((admin) => admin.email),
+          adminUsers.map(admin => admin.email),
           {
             userFirstName: firstName,
             userLastName: lastName,
             userEmail: email,
-            approvalLink: `${process.env.NEXTAUTH_URL || "http://localhost:3000"}/admin/users`,
+            approvalLink: `${process.env.NEXTAUTH_URL || 'http://localhost:3000'}/admin/users`,
             registrationDate: new Date().toISOString(),
           }
         );
       }
     } catch (adminEmailError) {
       console.error(
-        "Failed to send admin notification email:",
+        'Failed to send admin notification email:',
         adminEmailError
       );
       // Don't fail the registration if admin notification fails
@@ -179,7 +179,7 @@ async function registerHandler(request: NextRequest) {
     // Build response
     const response: any = {
       message:
-        "Registration successful! Please check your email to verify your account.",
+        'Registration successful! Please check your email to verify your account.',
       user: {
         id: user.id,
         firstName: user.firstName,
@@ -189,7 +189,7 @@ async function registerHandler(request: NextRequest) {
         role: user.role,
       },
       requiresVerification: true,
-      redirectTo: "/check-email", // Add explicit redirect instruction
+      redirectTo: '/check-email', // Add explicit redirect instruction
     };
     if (emailId) {
       response.emailId = emailId;
@@ -197,21 +197,21 @@ async function registerHandler(request: NextRequest) {
 
     return NextResponse.json(response, { status: 201 });
   } catch (error) {
-    console.error("Registration error:", error);
+    console.error('Registration error:', error);
 
     // Log the error for debugging
     await AuditLogger.logAuthEvent(
       {
-        action: "REGISTRATION",
+        action: 'REGISTRATION',
         userEmail: body?.email,
         success: false,
-        errorMessage: error instanceof Error ? error.message : "Unknown error",
+        errorMessage: error instanceof Error ? error.message : 'Unknown error',
       },
       request
     );
 
     return NextResponse.json(
-      { error: "Registration failed. Please try again." },
+      { error: 'Registration failed. Please try again.' },
       { status: 500 }
     );
   }
@@ -221,11 +221,11 @@ async function registerHandler(request: NextRequest) {
 export const POST = withRateLimit({
   windowMs: 60 * 60 * 1000, // 1 hour
   maxRequests: 5, // 5 requests per hour
-  keyGenerator: (request) => {
+  keyGenerator: request => {
     const ip =
-      request.headers.get("x-forwarded-for") ||
-      request.headers.get("x-real-ip") ||
-      "unknown";
+      request.headers.get('x-forwarded-for') ||
+      request.headers.get('x-real-ip') ||
+      'unknown';
     return `register:${ip}`;
   },
 })(registerHandler);

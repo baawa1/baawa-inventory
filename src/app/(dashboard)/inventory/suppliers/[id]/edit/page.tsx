@@ -1,9 +1,9 @@
-import { Metadata } from "next";
-import EditSupplierForm from "@/components/inventory/EditSupplierForm";
+import { Metadata } from 'next';
+import EditSupplierForm from '@/components/inventory/EditSupplierForm';
 
 export const metadata: Metadata = {
-  title: "Edit Supplier | BaaWA Inventory Manager",
-  description: "Edit supplier information in your inventory system",
+  title: 'Edit Supplier | BaaWA Inventory Manager',
+  description: 'Edit supplier information in your inventory system',
 };
 
 interface EditSupplierPageProps {

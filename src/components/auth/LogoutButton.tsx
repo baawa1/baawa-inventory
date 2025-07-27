@@ -1,26 +1,26 @@
-"use client";
+'use client';
 
-import { Button } from "@/components/ui/button";
-import { useRouter } from "next/navigation";
+import { Button } from '@/components/ui/button';
+import { useRouter } from 'next/navigation';
 
 interface LogoutButtonProps {
   variant?:
-    | "default"
-    | "destructive"
-    | "outline"
-    | "secondary"
-    | "ghost"
-    | "link";
-  size?: "default" | "sm" | "lg" | "icon";
+    | 'default'
+    | 'destructive'
+    | 'outline'
+    | 'secondary'
+    | 'ghost'
+    | 'link';
+  size?: 'default' | 'sm' | 'lg' | 'icon';
   className?: string;
   children?: React.ReactNode;
   immediate?: boolean; // Optional prop to force immediate logout
 }
 
 export function LogoutButton({
-  variant = "outline",
-  size = "default",
-  className = "ml-auto",
+  variant = 'outline',
+  size = 'default',
+  className = 'ml-auto',
   children,
   immediate = false,
 }: LogoutButtonProps) {
@@ -29,10 +29,10 @@ export function LogoutButton({
   const handleLogout = () => {
     if (immediate) {
       // Use immediate logout for security-critical scenarios
-      router.push("/logout/immediate");
+      router.push('/logout/immediate');
     } else {
       // Use confirmation logout for normal user-initiated logouts
-      router.push("/logout");
+      router.push('/logout');
     }
   };
 
@@ -43,7 +43,7 @@ export function LogoutButton({
       onClick={handleLogout}
       className={className}
     >
-      {children || "Sign Out"}
+      {children || 'Sign Out'}
     </Button>
   );
 }

@@ -1,4 +1,4 @@
-"use client";
+'use client';
 
 import {
   IconCreditCard,
@@ -6,10 +6,10 @@ import {
   IconLogout,
   IconNotification,
   IconUserCircle,
-} from "@tabler/icons-react";
-import { useRouter } from "next/navigation";
+} from '@tabler/icons-react';
+import { useRouter } from 'next/navigation';
 
-import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
+import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -18,13 +18,13 @@ import {
   DropdownMenuLabel,
   DropdownMenuSeparator,
   DropdownMenuTrigger,
-} from "@/components/ui/dropdown-menu";
+} from '@/components/ui/dropdown-menu';
 import {
   SidebarMenu,
   SidebarMenuButton,
   SidebarMenuItem,
   useSidebar,
-} from "@/components/ui/sidebar";
+} from '@/components/ui/sidebar';
 
 export function NavUser({
   user,
@@ -39,7 +39,7 @@ export function NavUser({
   const router = useRouter();
 
   const handleLogout = () => {
-    router.push("/logout");
+    router.push('/logout');
   };
 
   return (
@@ -55,9 +55,9 @@ export function NavUser({
                 <AvatarImage src={user.avatar} alt={user.name} />
                 <AvatarFallback className="rounded-lg">
                   {user.name
-                    .split(" ")
-                    .map((n) => n[0])
-                    .join("")
+                    .split(' ')
+                    .map(n => n[0])
+                    .join('')
                     .toUpperCase()
                     .slice(0, 2)}
                 </AvatarFallback>
@@ -76,7 +76,7 @@ export function NavUser({
           </DropdownMenuTrigger>
           <DropdownMenuContent
             className="w-(--radix-dropdown-menu-trigger-width) min-w-56 rounded-lg"
-            side={isMobile ? "bottom" : "right"}
+            side={isMobile ? 'bottom' : 'right'}
             align="end"
             sideOffset={4}
           >
@@ -86,9 +86,9 @@ export function NavUser({
                   <AvatarImage src={user.avatar} alt={user.name} />
                   <AvatarFallback className="rounded-lg">
                     {user.name
-                      .split(" ")
-                      .map((n) => n[0])
-                      .join("")
+                      .split(' ')
+                      .map(n => n[0])
+                      .join('')
                       .toUpperCase()
                       .slice(0, 2)}
                   </AvatarFallback>

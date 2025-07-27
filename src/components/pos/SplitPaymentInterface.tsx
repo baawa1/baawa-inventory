@@ -1,9 +1,9 @@
-import React, { useState } from "react";
-import { Button } from "@/components/ui/button";
-import { Input } from "@/components/ui/input";
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import { Badge } from "@/components/ui/badge";
-import { IconCreditCard, IconPlus, IconX } from "@tabler/icons-react";
+import React, { useState } from 'react';
+import { Button } from '@/components/ui/button';
+import { Input } from '@/components/ui/input';
+import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
+import { Badge } from '@/components/ui/badge';
+import { IconCreditCard, IconPlus, IconX } from '@tabler/icons-react';
 
 interface SplitPayment {
   id: string;
@@ -20,7 +20,7 @@ interface SplitPaymentInterfaceProps {
   isSubmitting: boolean;
 }
 
-const PAYMENT_METHODS = ["Cash", "Card", "Transfer", "POS", "Wallet"] as const;
+const PAYMENT_METHODS = ['Cash', 'Card', 'Transfer', 'POS', 'Wallet'] as const;
 
 export const SplitPaymentInterface: React.FC<SplitPaymentInterfaceProps> = ({
   total,
@@ -30,8 +30,8 @@ export const SplitPaymentInterface: React.FC<SplitPaymentInterfaceProps> = ({
   onConfirm,
   isSubmitting,
 }) => {
-  const [newPayment, setNewPayment] = useState<Omit<SplitPayment, "id">>({
-    method: "Cash",
+  const [newPayment, setNewPayment] = useState<Omit<SplitPayment, 'id'>>({
+    method: 'Cash',
     amount: 0,
   });
 
@@ -50,11 +50,11 @@ export const SplitPaymentInterface: React.FC<SplitPaymentInterfaceProps> = ({
     };
 
     onSplitPaymentsChange([...splitPayments, payment]);
-    setNewPayment({ method: "Cash", amount: 0 });
+    setNewPayment({ method: 'Cash', amount: 0 });
   };
 
   const removePayment = (id: string) => {
-    onSplitPaymentsChange(splitPayments.filter((payment) => payment.id !== id));
+    onSplitPaymentsChange(splitPayments.filter(payment => payment.id !== id));
   };
 
   const updatePayment = (
@@ -63,7 +63,7 @@ export const SplitPaymentInterface: React.FC<SplitPaymentInterfaceProps> = ({
     value: string | number
   ) => {
     onSplitPaymentsChange(
-      splitPayments.map((payment) =>
+      splitPayments.map(payment =>
         payment.id === id ? { ...payment, [field]: value } : payment
       )
     );
@@ -72,7 +72,7 @@ export const SplitPaymentInterface: React.FC<SplitPaymentInterfaceProps> = ({
   const isComplete = totalPaid >= total;
 
   return (
-    <Card className="w-full max-w-2xl mx-auto">
+    <Card className="mx-auto w-full max-w-2xl">
       <CardHeader>
         <CardTitle className="flex items-center gap-2">
           <IconCreditCard className="h-5 w-5" />
@@ -81,7 +81,7 @@ export const SplitPaymentInterface: React.FC<SplitPaymentInterfaceProps> = ({
       </CardHeader>
       <CardContent className="space-y-6">
         {/* Total and Remaining */}
-        <div className="grid grid-cols-2 gap-4 p-4 bg-gray-50 rounded">
+        <div className="grid grid-cols-2 gap-4 rounded bg-gray-50 p-4">
           <div>
             <p className="text-sm text-gray-600">Total Amount</p>
             <p className="text-xl font-bold">₦{total.toLocaleString()}</p>
@@ -89,7 +89,7 @@ export const SplitPaymentInterface: React.FC<SplitPaymentInterfaceProps> = ({
           <div>
             <p className="text-sm text-gray-600">Remaining</p>
             <p
-              className={`text-xl font-bold ${remaining > 0 ? "text-red-600" : "text-green-600"}`}
+              className={`text-xl font-bold ${remaining > 0 ? 'text-red-600' : 'text-green-600'}`}
             >
               ₦{remaining.toLocaleString()}
             </p>
@@ -101,19 +101,19 @@ export const SplitPaymentInterface: React.FC<SplitPaymentInterfaceProps> = ({
           <div className="space-y-3">
             <h3 className="font-semibold">Payment Methods</h3>
             <div className="space-y-2">
-              {splitPayments.map((payment) => (
+              {splitPayments.map(payment => (
                 <div
                   key={payment.id}
-                  className="flex items-center gap-3 p-3 bg-gray-50 rounded"
+                  className="flex items-center gap-3 rounded bg-gray-50 p-3"
                 >
                   <select
                     value={payment.method}
-                    onChange={(e) =>
-                      updatePayment(payment.id, "method", e.target.value)
+                    onChange={e =>
+                      updatePayment(payment.id, 'method', e.target.value)
                     }
-                    className="flex-1 p-2 border rounded"
+                    className="flex-1 rounded border p-2"
                   >
-                    {PAYMENT_METHODS.map((method) => (
+                    {PAYMENT_METHODS.map(method => (
                       <option key={method} value={method}>
                         {method}
                       </option>
@@ -122,10 +122,10 @@ export const SplitPaymentInterface: React.FC<SplitPaymentInterfaceProps> = ({
                   <Input
                     type="number"
                     value={payment.amount}
-                    onChange={(e) =>
+                    onChange={e =>
                       updatePayment(
                         payment.id,
-                        "amount",
+                        'amount',
                         parseFloat(e.target.value) || 0
                       )
                     }
@@ -156,12 +156,12 @@ export const SplitPaymentInterface: React.FC<SplitPaymentInterfaceProps> = ({
           <div className="flex items-center gap-3">
             <select
               value={newPayment.method}
-              onChange={(e) =>
+              onChange={e =>
                 setNewPayment({ ...newPayment, method: e.target.value })
               }
-              className="flex-1 p-2 border rounded"
+              className="flex-1 rounded border p-2"
             >
-              {PAYMENT_METHODS.map((method) => (
+              {PAYMENT_METHODS.map(method => (
                 <option key={method} value={method}>
                   {method}
                 </option>
@@ -170,7 +170,7 @@ export const SplitPaymentInterface: React.FC<SplitPaymentInterfaceProps> = ({
             <Input
               type="number"
               value={newPayment.amount}
-              onChange={(e) =>
+              onChange={e =>
                 setNewPayment({
                   ...newPayment,
                   amount: parseFloat(e.target.value) || 0,
@@ -199,7 +199,7 @@ export const SplitPaymentInterface: React.FC<SplitPaymentInterfaceProps> = ({
           <div className="flex justify-between">
             <span>Remaining:</span>
             <span
-              className={`font-semibold ${remaining > 0 ? "text-red-600" : "text-green-600"}`}
+              className={`font-semibold ${remaining > 0 ? 'text-red-600' : 'text-green-600'}`}
             >
               ₦{remaining.toLocaleString()}
             </span>
@@ -228,7 +228,7 @@ export const SplitPaymentInterface: React.FC<SplitPaymentInterfaceProps> = ({
             className="flex-1"
             disabled={isSubmitting || !isComplete}
           >
-            {isSubmitting ? "Processing..." : "Confirm Split Payment"}
+            {isSubmitting ? 'Processing...' : 'Confirm Split Payment'}
           </Button>
         </div>
       </CardContent>

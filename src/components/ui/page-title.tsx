@@ -1,4 +1,4 @@
-import { CardTitle, CardDescription } from "@/components/ui/card";
+import { CardTitle, CardDescription } from '@/components/ui/card';
 
 export function PageTitle({
   title,

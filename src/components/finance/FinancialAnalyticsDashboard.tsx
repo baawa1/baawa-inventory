@@ -1,16 +1,16 @@
-"use client";
+'use client';
 
-import React, { useState, useMemo } from "react";
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import { Button } from "@/components/ui/button";
-import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import React, { useState, useMemo } from 'react';
+import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
+import { Button } from '@/components/ui/button';
+import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import {
   Select,
   SelectContent,
   SelectItem,
   SelectTrigger,
   SelectValue,
-} from "@/components/ui/select";
+} from '@/components/ui/select';
 import {
   IconChartLine,
   IconCash,
@@ -20,21 +20,21 @@ import {
   IconDownload,
   IconFilter,
   IconPlus,
-} from "@tabler/icons-react";
-import { DateRange } from "react-day-picker";
-import Link from "next/link";
+} from '@tabler/icons-react';
+import { DateRange } from 'react-day-picker';
+import Link from 'next/link';
 
 // Import custom components
-import { DateRangePicker } from "@/components/ui/date-range-picker";
-import { CustomDateInput } from "@/components/ui/custom-date-input";
-import { FinancialCharts } from "./FinancialCharts";
-import { TransactionList } from "./TransactionList";
-import { SimpleFinancialMetrics } from "./SimpleFinancialMetrics";
-import { FinancialReports } from "./FinancialReports";
-import { AdvancedAnalytics } from "./AdvancedAnalytics";
+import { DateRangePicker } from '@/components/ui/date-range-picker';
+import { CustomDateInput } from '@/components/ui/custom-date-input';
+import { FinancialCharts } from './FinancialCharts';
+import { TransactionList } from './TransactionList';
+import { SimpleFinancialMetrics } from './SimpleFinancialMetrics';
+import { FinancialReports } from './FinancialReports';
+import { AdvancedAnalytics } from './AdvancedAnalytics';
 
 // Import hooks
-import { useFinancialAnalytics } from "@/hooks/api/useFinancialAnalytics";
+import { useFinancialAnalytics } from '@/hooks/api/useFinancialAnalytics';
 
 interface FinancialAnalyticsDashboardProps {
   user: any;
@@ -47,9 +47,9 @@ export function FinancialAnalyticsDashboard({
     from: new Date(Date.now() - 30 * 24 * 60 * 60 * 1000), // Last 30 days
     to: new Date(),
   });
-  const [transactionType, setTransactionType] = useState<string>("all");
-  const [paymentMethod, setPaymentMethod] = useState<string>("all");
-  const [activeTab, setActiveTab] = useState("overview");
+  const [transactionType, setTransactionType] = useState<string>('all');
+  const [paymentMethod, setPaymentMethod] = useState<string>('all');
+  const [activeTab, setActiveTab] = useState('overview');
 
   // Fetch financial analytics data
   const {
@@ -58,16 +58,16 @@ export function FinancialAnalyticsDashboard({
     refetch,
   } = useFinancialAnalytics({
     dateRange,
-    type: transactionType as "all" | "income" | "expense",
-    paymentMethod: paymentMethod !== "all" ? paymentMethod : undefined,
+    type: transactionType as 'all' | 'income' | 'expense',
+    paymentMethod: paymentMethod !== 'all' ? paymentMethod : undefined,
   });
 
   // Calculate date range filter for API calls
   const dateRangeFilter = useMemo(() => {
     if (!dateRange?.from || !dateRange?.to) return {};
     return {
-      dateFrom: dateRange.from.toISOString().split("T")[0],
-      dateTo: dateRange.to.toISOString().split("T")[0],
+      dateFrom: dateRange.from.toISOString().split('T')[0],
+      dateTo: dateRange.to.toISOString().split('T')[0],
     };
   }, [dateRange]);
 
@@ -89,7 +89,7 @@ export function FinancialAnalyticsDashboard({
   // Export data
   const handleExport = () => {
     // Implementation for data export
-    console.log("Exporting data...");
+    console.log('Exporting data...');
   };
 
   return (
@@ -107,22 +107,22 @@ export function FinancialAnalyticsDashboard({
         <div className="flex items-center gap-2">
           <Button asChild variant="default" size="sm">
             <Link href="/finance/income/new">
-              <IconPlus className="h-4 w-4 mr-2" />
+              <IconPlus className="mr-2 h-4 w-4" />
               Add Income
             </Link>
           </Button>
           <Button asChild variant="outline" size="sm">
             <Link href="/finance/expenses/new">
-              <IconPlus className="h-4 w-4 mr-2" />
+              <IconPlus className="mr-2 h-4 w-4" />
               Add Expense
             </Link>
           </Button>
           <Button onClick={handleRefresh} variant="outline" size="sm">
-            <IconRefresh className="h-4 w-4 mr-2" />
+            <IconRefresh className="mr-2 h-4 w-4" />
             Refresh
           </Button>
           <Button onClick={handleExport} variant="outline" size="sm">
-            <IconDownload className="h-4 w-4 mr-2" />
+            <IconDownload className="mr-2 h-4 w-4" />
             Export
           </Button>
         </div>
@@ -137,7 +137,7 @@ export function FinancialAnalyticsDashboard({
           </CardTitle>
         </CardHeader>
         <CardContent>
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
+          <div className="grid grid-cols-1 gap-4 md:grid-cols-2 lg:grid-cols-4">
             {/* Date Range Picker */}
             <div className="space-y-2">
               <label className="text-sm font-medium">Date Range</label>
@@ -230,7 +230,7 @@ export function FinancialAnalyticsDashboard({
           />
 
           {/* Charts */}
-          <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+          <div className="grid grid-cols-1 gap-6 lg:grid-cols-2">
             <FinancialCharts
               dateRange={dateRange}
               transactionType={transactionType}
@@ -245,9 +245,9 @@ export function FinancialAnalyticsDashboard({
             user={user}
             filters={{
               ...dateRangeFilter,
-              type: transactionType !== "all" ? transactionType : undefined,
+              type: transactionType !== 'all' ? transactionType : undefined,
               paymentMethod:
-                paymentMethod !== "all" ? paymentMethod : undefined,
+                paymentMethod !== 'all' ? paymentMethod : undefined,
             }}
           />
         </TabsContent>

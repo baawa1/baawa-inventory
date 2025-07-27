@@ -1,20 +1,20 @@
-"use client";
+'use client';
 
-import React, { useState } from "react";
-import { Button } from "@/components/ui/button";
-import { Input } from "@/components/ui/input";
-import { Label } from "@/components/ui/label";
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import React, { useState } from 'react';
+import { Button } from '@/components/ui/button';
+import { Input } from '@/components/ui/input';
+import { Label } from '@/components/ui/label';
+import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import {
   Select,
   SelectContent,
   SelectItem,
   SelectTrigger,
   SelectValue,
-} from "@/components/ui/select";
-import { toast } from "sonner";
-import { IconTestPipe, IconSettings } from "@tabler/icons-react";
-import { logger } from "@/lib/logger";
+} from '@/components/ui/select';
+import { toast } from 'sonner';
+import { IconTestPipe, IconSettings } from '@tabler/icons-react';
+import { logger } from '@/lib/logger';
 
 interface PrinterConfigProps {
   onConfigChange: (config: any) => void;
@@ -22,13 +22,13 @@ interface PrinterConfigProps {
 
 export function PrinterConfig({ onConfigChange }: PrinterConfigProps) {
   const [config, setConfig] = useState({
-    type: "usb",
-    interface: "USB001",
+    type: 'usb',
+    interface: 'USB001',
     options: {
       width: 32,
-      characterSet: "SLOVENIA",
+      characterSet: 'SLOVENIA',
       removeSpecialCharacters: false,
-      lineCharacter: "-",
+      lineCharacter: '-',
     },
   });
 
@@ -36,9 +36,9 @@ export function PrinterConfig({ onConfigChange }: PrinterConfigProps) {
 
   const handleConfigChange = (key: string, value: any) => {
     const newConfig = { ...config };
-    if (key.includes(".")) {
-      const [parent, child] = key.split(".");
-      if (parent === "options") {
+    if (key.includes('.')) {
+      const [parent, child] = key.split('.');
+      if (parent === 'options') {
         newConfig.options = {
           ...newConfig.options,
           [child]: value,
@@ -54,27 +54,27 @@ export function PrinterConfig({ onConfigChange }: PrinterConfigProps) {
   const testPrinter = async () => {
     setIsTesting(true);
     try {
-      const response = await fetch("/api/pos/print-receipt?action=test", {
-        method: "POST",
+      const response = await fetch('/api/pos/print-receipt?action=test', {
+        method: 'POST',
         headers: {
-          "Content-Type": "application/json",
+          'Content-Type': 'application/json',
         },
         body: JSON.stringify({ printerConfig: config }),
       });
 
       if (response.ok) {
-        toast.success("Printer test successful! Check your printer.");
+        toast.success('Printer test successful! Check your printer.');
       } else {
         const error = await response.json();
-        toast.error(error.error || "Printer test failed");
+        toast.error(error.error || 'Printer test failed');
       }
     } catch (error) {
-      logger.error("Printer test failed", {
+      logger.error('Printer test failed', {
         config: config.type,
         interface: config.interface,
         error: error instanceof Error ? error.message : String(error),
       });
-      toast.error("Printer test failed");
+      toast.error('Printer test failed');
     } finally {
       setIsTesting(false);
     }
@@ -94,7 +94,7 @@ export function PrinterConfig({ onConfigChange }: PrinterConfigProps) {
           <Label htmlFor="connection-type">Connection Type</Label>
           <Select
             value={config.type}
-            onValueChange={(value) => handleConfigChange("type", value)}
+            onValueChange={value => handleConfigChange('type', value)}
           >
             <SelectTrigger>
               <SelectValue placeholder="Select connection type" />
@@ -113,13 +113,13 @@ export function PrinterConfig({ onConfigChange }: PrinterConfigProps) {
           <Input
             id="interface"
             value={config.interface}
-            onChange={(e) => handleConfigChange("interface", e.target.value)}
+            onChange={e => handleConfigChange('interface', e.target.value)}
             placeholder="USB001, 192.168.1.100, COM1"
           />
-          <p className="text-sm text-muted-foreground">
-            {config.type === "usb" && "Common USB interfaces: USB001, USB002"}
-            {config.type === "network" && "Network IP: 192.168.1.100"}
-            {config.type === "serial" && "Serial port: COM1, /dev/ttyUSB0"}
+          <p className="text-muted-foreground text-sm">
+            {config.type === 'usb' && 'Common USB interfaces: USB001, USB002'}
+            {config.type === 'network' && 'Network IP: 192.168.1.100'}
+            {config.type === 'serial' && 'Serial port: COM1, /dev/ttyUSB0'}
           </p>
         </div>
 
@@ -130,13 +130,13 @@ export function PrinterConfig({ onConfigChange }: PrinterConfigProps) {
             id="width"
             type="number"
             value={config.options.width}
-            onChange={(e) =>
-              handleConfigChange("options.width", parseInt(e.target.value))
+            onChange={e =>
+              handleConfigChange('options.width', parseInt(e.target.value))
             }
             min="24"
             max="48"
           />
-          <p className="text-sm text-muted-foreground">
+          <p className="text-muted-foreground text-sm">
             Xprinter XP 58 supports 32 characters (default)
           </p>
         </div>
@@ -146,8 +146,8 @@ export function PrinterConfig({ onConfigChange }: PrinterConfigProps) {
           <Label htmlFor="character-set">Character Set</Label>
           <Select
             value={config.options.characterSet}
-            onValueChange={(value) =>
-              handleConfigChange("options.characterSet", value)
+            onValueChange={value =>
+              handleConfigChange('options.characterSet', value)
             }
           >
             <SelectTrigger>
@@ -179,8 +179,8 @@ export function PrinterConfig({ onConfigChange }: PrinterConfigProps) {
           <Input
             id="line-character"
             value={config.options.lineCharacter}
-            onChange={(e) =>
-              handleConfigChange("options.lineCharacter", e.target.value)
+            onChange={e =>
+              handleConfigChange('options.lineCharacter', e.target.value)
             }
             maxLength={1}
             placeholder="-"
@@ -195,13 +195,13 @@ export function PrinterConfig({ onConfigChange }: PrinterConfigProps) {
             className="w-full"
             variant="outline"
           >
-            <IconTestPipe className="h-4 w-4 mr-2" />
-            {isTesting ? "Testing..." : "Test Printer Connection"}
+            <IconTestPipe className="mr-2 h-4 w-4" />
+            {isTesting ? 'Testing...' : 'Test Printer Connection'}
           </Button>
         </div>
 
         {/* Help Text */}
-        <div className="text-sm text-muted-foreground space-y-2">
+        <div className="text-muted-foreground space-y-2 text-sm">
           <p>
             <strong>USB Connection:</strong> Make sure your Xprinter XP 58 is
             connected via USB and recognized by your system.

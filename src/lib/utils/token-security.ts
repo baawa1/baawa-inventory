@@ -1,6 +1,6 @@
-import crypto from "crypto";
-import bcrypt from "bcryptjs";
-import { logger } from "@/lib/logger";
+import crypto from 'crypto';
+import bcrypt from 'bcryptjs';
+import { logger } from '@/lib/logger';
 
 /**
  * Token security utilities for handling sensitive tokens
@@ -15,7 +15,7 @@ export class TokenSecurity {
     rawToken: string;
     hashedToken: string;
   } {
-    const rawToken = crypto.randomBytes(length).toString("hex");
+    const rawToken = crypto.randomBytes(length).toString('hex');
     const hashedToken = bcrypt.hashSync(rawToken, 10);
 
     return {
@@ -37,8 +37,8 @@ export class TokenSecurity {
     try {
       return await bcrypt.compare(rawToken, hashedToken);
     } catch (error) {
-      logger.security("Token verification failed", {
-        tokenType: "reset",
+      logger.security('Token verification failed', {
+        tokenType: 'reset',
         error: error instanceof Error ? error.message : String(error),
       });
       return false;
@@ -74,7 +74,7 @@ export class TokenSecurity {
     hashedToken: string;
     expires: Date;
   } {
-    const rawToken = crypto.randomBytes(length).toString("hex");
+    const rawToken = crypto.randomBytes(length).toString('hex');
     const hashedToken = bcrypt.hashSync(rawToken, 10);
     const expires = new Date(Date.now() + 24 * 60 * 60 * 1000); // 24 hours
 
@@ -98,8 +98,8 @@ export class TokenSecurity {
     try {
       return await bcrypt.compare(rawToken, hashedToken);
     } catch (error) {
-      logger.security("Email token verification failed", {
-        tokenType: "email-verification",
+      logger.security('Email token verification failed', {
+        tokenType: 'email-verification',
         error: error instanceof Error ? error.message : String(error),
       });
       return false;

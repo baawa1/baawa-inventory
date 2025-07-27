@@ -1,4 +1,4 @@
-import { useQuery } from "@tanstack/react-query";
+import { useQuery } from '@tanstack/react-query';
 
 interface Supplier {
   id: number;
@@ -36,9 +36,9 @@ export function useSupplierData(
     isLoading: loading,
     error,
   } = useQuery({
-    queryKey: ["suppliers", supplierId],
+    queryKey: ['suppliers', supplierId],
     queryFn: async () => {
-      if (!supplierId) throw new Error("No supplier ID provided");
+      if (!supplierId) throw new Error('No supplier ID provided');
 
       const response = await fetch(`/api/suppliers/${supplierId}`);
       if (!response.ok) {

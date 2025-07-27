@@ -1,12 +1,12 @@
-"use client";
+'use client';
 
-import { useSession } from "next-auth/react";
+import { useSession } from 'next-auth/react';
 
 // Re-export the basic useSession from next-auth for backward compatibility
-export { useSession } from "next-auth/react";
+export { useSession } from 'next-auth/react';
 
 // Export the existing useSessionUpdate hook
-export { useSessionUpdate } from "./useSessionUpdate";
+export { useSessionUpdate } from './useSessionUpdate';
 
 // Placeholder exports for future implementation
 export const useSessionManagement = () => {
@@ -40,7 +40,7 @@ export const useSessionValidationState = () => {
 };
 
 // Migration utilities (placeholder)
-export const MIGRATION_GUIDE = "Session management migration guide";
+export const MIGRATION_GUIDE = 'Session management migration guide';
 export const logSessionMigrationStatus = () => {
-  console.log("Session migration status logged");
+  console.log('Session migration status logged');
 };

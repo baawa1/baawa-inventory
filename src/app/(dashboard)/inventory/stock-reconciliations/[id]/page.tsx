@@ -1,13 +1,13 @@
-import { auth } from "../../../../../../auth";
-import { redirect } from "next/navigation";
-import Link from "next/link";
-import { StockReconciliationDetail } from "@/components/inventory/StockReconciliationDetail";
-import { Button } from "@/components/ui/button";
-import { IconArrowLeft } from "@tabler/icons-react";
+import { auth } from '../../../../../../auth';
+import { redirect } from 'next/navigation';
+import Link from 'next/link';
+import { StockReconciliationDetail } from '@/components/inventory/StockReconciliationDetail';
+import { Button } from '@/components/ui/button';
+import { IconArrowLeft } from '@tabler/icons-react';
 
 export const metadata = {
-  title: "Stock Reconciliation Details - BaaWA Inventory POS",
-  description: "View and manage stock reconciliation details",
+  title: 'Stock Reconciliation Details - BaaWA Inventory POS',
+  description: 'View and manage stock reconciliation details',
 };
 
 interface ReconciliationDetailPageProps {
@@ -22,20 +22,20 @@ export default async function ReconciliationDetailPage({
   // Check role permissions - only staff and above can access inventory
   if (
     !session?.user ||
-    !["ADMIN", "MANAGER", "STAFF"].includes(session.user.role)
+    !['ADMIN', 'MANAGER', 'STAFF'].includes(session.user.role)
   ) {
-    redirect("/unauthorized");
+    redirect('/unauthorized');
   }
 
   const resolvedParams = await params;
   const reconciliationId = parseInt(resolvedParams.id);
 
   if (isNaN(reconciliationId)) {
-    redirect("/inventory/stock-reconciliations");
+    redirect('/inventory/stock-reconciliations');
   }
 
   return (
-    <div className="max-w-4xl mx-auto p-6 space-y-6">
+    <div className="mx-auto max-w-4xl space-y-6 p-6">
       {/* Header */}
       <div className="mb-6">
         <Button variant="ghost" asChild className="mb-4 px-4 lg:px-6">

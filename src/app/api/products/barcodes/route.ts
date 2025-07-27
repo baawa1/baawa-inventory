@@ -1,44 +1,44 @@
-import { NextResponse } from "next/server";
-import { withPermission, AuthenticatedRequest } from "@/lib/api-middleware";
-import { USER_ROLES } from "@/lib/auth/roles";
-import { prisma } from "@/lib/db";
-import { z } from "zod";
+import { NextResponse } from 'next/server';
+import { withPermission, AuthenticatedRequest } from '@/lib/api-middleware';
+import { USER_ROLES } from '@/lib/auth/roles';
+import { prisma } from '@/lib/db';
+import { z } from 'zod';
 
 // Schema for barcode operations
 const barcodeGenerateSchema = z.object({
-  productIds: z.array(z.number()).min(1, "At least one product ID is required"),
-  prefix: z.string().optional().default(""),
-  format: z.enum(["EAN13", "CODE128", "AUTO"]).default("AUTO"),
+  productIds: z.array(z.number()).min(1, 'At least one product ID is required'),
+  prefix: z.string().optional().default(''),
+  format: z.enum(['EAN13', 'CODE128', 'AUTO']).default('AUTO'),
 });
 
 const barcodeValidateSchema = z.object({
-  barcode: z.string().min(8, "Barcode must be at least 8 characters"),
+  barcode: z.string().min(8, 'Barcode must be at least 8 characters'),
 });
 
 // Function to generate barcode based on format
 function generateBarcode(
   productId: number,
   format: string,
-  prefix: string = ""
+  prefix: string = ''
 ): string {
   const timestamp = Date.now().toString().slice(-6);
-  const productIdStr = productId.toString().padStart(4, "0");
+  const productIdStr = productId.toString().padStart(4, '0');
 
   switch (format) {
-    case "EAN13":
+    case 'EAN13':
       // Generate 13-digit EAN barcode
       const ean13Base = `${prefix}${productIdStr}${timestamp}`.slice(0, 12);
       // Simple checksum calculation (not actual EAN13 algorithm)
       const checksum =
-        ean13Base.split("").reduce((sum, digit) => sum + parseInt(digit), 0) %
+        ean13Base.split('').reduce((sum, digit) => sum + parseInt(digit), 0) %
         10;
       return ean13Base + checksum;
 
-    case "CODE128":
+    case 'CODE128':
       // Generate CODE128 format
       return `${prefix}${productIdStr}${timestamp}`;
 
-    case "AUTO":
+    case 'AUTO':
     default:
       // Auto format - simple concatenation
       return `${prefix}${productIdStr}${timestamp}`.slice(0, 13);
@@ -53,7 +53,7 @@ export const POST = withPermission(
       const body = await request.json();
       const { action } = body;
 
-      if (action === "generate") {
+      if (action === 'generate') {
         const validatedData = barcodeGenerateSchema.parse(body);
 
         // Check if products exist
@@ -63,12 +63,12 @@ export const POST = withPermission(
         });
 
         if (products.length !== validatedData.productIds.length) {
-          const foundIds = products.map((p) => p.id);
+          const foundIds = products.map(p => p.id);
           const missingIds = validatedData.productIds.filter(
-            (id) => !foundIds.includes(id)
+            id => !foundIds.includes(id)
           );
           return NextResponse.json(
-            { error: `Products not found: ${missingIds.join(", ")}` },
+            { error: `Products not found: ${missingIds.join(', ')}` },
             { status: 404 }
           );
         }
@@ -121,14 +121,14 @@ export const POST = withPermission(
               productId: product.id,
               productName: product.name,
               barcode: newBarcode,
-              status: "generated",
+              status: 'generated',
             });
           } else {
             results.push({
               productId: product.id,
               productName: product.name,
               barcode: product.barcode,
-              status: "existing",
+              status: 'existing',
             });
           }
         }
@@ -141,10 +141,10 @@ export const POST = withPermission(
         return NextResponse.json({
           message: `Processed ${results.length} products`,
           results,
-          generated: results.filter((r) => r.status === "generated").length,
-          existing: results.filter((r) => r.status === "existing").length,
+          generated: results.filter(r => r.status === 'generated').length,
+          existing: results.filter(r => r.status === 'existing').length,
         });
-      } else if (action === "validate") {
+      } else if (action === 'validate') {
         const validatedData = barcodeValidateSchema.parse(body);
 
         // Check if barcode exists
@@ -173,16 +173,16 @@ export const POST = withPermission(
       if (error instanceof z.ZodError) {
         return NextResponse.json(
           {
-            error: "Validation failed",
+            error: 'Validation failed',
             details: error.errors,
           },
           { status: 400 }
         );
       }
 
-      console.error("Error in barcode operation:", error);
+      console.error('Error in barcode operation:', error);
       return NextResponse.json(
-        { error: "Failed to process barcode operation" },
+        { error: 'Failed to process barcode operation' },
         { status: 500 }
       );
     }
@@ -209,7 +209,7 @@ export const GET = withPermission(
       const productsWithoutBarcodes = await prisma.product.findMany({
         where: {
           isArchived: false,
-          OR: [{ barcode: null }, { barcode: "" }],
+          OR: [{ barcode: null }, { barcode: '' }],
         },
         select: {
           id: true,
@@ -235,9 +235,9 @@ export const GET = withPermission(
         },
       });
     } catch (error) {
-      console.error("Error getting barcode statistics:", error);
+      console.error('Error getting barcode statistics:', error);
       return NextResponse.json(
-        { error: "Failed to get barcode statistics" },
+        { error: 'Failed to get barcode statistics' },
         { status: 500 }
       );
     }

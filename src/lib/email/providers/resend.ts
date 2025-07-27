@@ -1,6 +1,6 @@
-import { Resend } from "resend";
-import { EmailProvider, EmailOptions } from "../types";
-import { logger } from "@/lib/logger";
+import { Resend } from 'resend';
+import { EmailProvider, EmailOptions } from '../types';
+import { logger } from '@/lib/logger';
 
 /**
  * Resend Email Provider
@@ -13,10 +13,10 @@ export class ResendProvider implements EmailProvider {
 
   constructor(apiKey: string, fromEmail: string, fromName: string) {
     if (!apiKey) {
-      throw new Error("Resend API key is required");
+      throw new Error('Resend API key is required');
     }
     if (!fromEmail) {
-      throw new Error("From email is required");
+      throw new Error('From email is required');
     }
 
     this.fromEmail = fromEmail;
@@ -54,7 +54,7 @@ export class ResendProvider implements EmailProvider {
 
       // Add attachments if provided
       if (options.attachments && options.attachments.length > 0) {
-        emailData.attachments = options.attachments.map((attachment) => ({
+        emailData.attachments = options.attachments.map(attachment => ({
           filename: attachment.filename,
           content: Buffer.isBuffer(attachment.content)
             ? attachment.content
@@ -71,7 +71,7 @@ export class ResendProvider implements EmailProvider {
       // Return the email ID if available
       return result.data?.id;
     } catch (error) {
-      logger.error("Resend email sending failed", {
+      logger.error('Resend email sending failed', {
         recipient: options.to,
         subject: options.subject,
         error: error instanceof Error ? error.message : String(error),
@@ -82,10 +82,10 @@ export class ResendProvider implements EmailProvider {
 
   async sendBulkEmails(emails: EmailOptions[]): Promise<void> {
     try {
-      const emailPromises = emails.map((email) => this.sendEmail(email));
+      const emailPromises = emails.map(email => this.sendEmail(email));
       await Promise.all(emailPromises);
     } catch (error) {
-      logger.error("Resend bulk email sending failed", {
+      logger.error('Resend bulk email sending failed', {
         recipientCount: emails.length,
         error: error instanceof Error ? error.message : String(error),
       });
@@ -100,7 +100,7 @@ export class ResendProvider implements EmailProvider {
       const result = await this.resend.domains.list();
       return !result.error;
     } catch (error) {
-      logger.error("Resend configuration validation failed", {
+      logger.error('Resend configuration validation failed', {
         config: this.resend, // Assuming 'this.config' is not defined, using 'this.resend' for context
         error: error instanceof Error ? error.message : String(error),
       });
@@ -109,7 +109,7 @@ export class ResendProvider implements EmailProvider {
   }
 
   getProviderName(): string {
-    return "Resend";
+    return 'Resend';
   }
 
   /**
@@ -119,14 +119,14 @@ export class ResendProvider implements EmailProvider {
     try {
       const domains = await this.resend.domains.list();
       return {
-        provider: "Resend",
+        provider: 'Resend',
         fromEmail: this.fromEmail,
         fromName: this.fromName,
         domains: domains.data || [],
         hasError: !!domains.error,
       };
     } catch (error) {
-      logger.error("Failed to get Resend account information", {
+      logger.error('Failed to get Resend account information', {
         error: error instanceof Error ? error.message : String(error),
       });
       throw error;

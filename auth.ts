@@ -1,18 +1,18 @@
-import NextAuth from "next-auth";
-import type { NextAuthConfig } from "next-auth";
-import CredentialsProvider from "next-auth/providers/credentials";
-import { prisma } from "./src/lib/db";
-import * as bcrypt from "bcryptjs";
-import { AccountLockout } from "./src/lib/utils/account-lockout";
-import { AuditLogger } from "./src/lib/utils/audit-logger";
+import NextAuth from 'next-auth';
+import type { NextAuthConfig } from 'next-auth';
+import CredentialsProvider from 'next-auth/providers/credentials';
+import { prisma } from './src/lib/db';
+import * as bcrypt from 'bcryptjs';
+import { AccountLockout } from './src/lib/utils/account-lockout';
+import { AuditLogger } from './src/lib/utils/audit-logger';
 
 const config: NextAuthConfig = {
   providers: [
     CredentialsProvider({
-      name: "credentials",
+      name: 'credentials',
       credentials: {
-        email: { label: "Email", type: "email" },
-        password: { label: "Password", type: "password" },
+        email: { label: 'Email', type: 'email' },
+        password: { label: 'Password', type: 'password' },
       },
       async authorize(credentials, req) {
         const email = credentials?.email as string;
@@ -20,8 +20,8 @@ const config: NextAuthConfig = {
 
         if (!email || !password) {
           await AuditLogger.logLoginFailed(
-            email || "unknown",
-            "Missing credentials"
+            email || 'unknown',
+            'Missing credentials'
           );
           return null;
         }
@@ -30,7 +30,7 @@ const config: NextAuthConfig = {
           // Check account lockout status
           const emailLockoutStatus = await AccountLockout.checkLockoutStatus(
             email,
-            "email"
+            'email'
           );
           if (emailLockoutStatus.isLocked) {
             await AuditLogger.logLoginFailed(
@@ -42,12 +42,12 @@ const config: NextAuthConfig = {
 
           // Check IP lockout status
           const ipAddress =
-            req.headers?.get("x-forwarded-for") ||
-            req.headers?.get("x-real-ip") ||
-            "unknown";
+            req.headers?.get('x-forwarded-for') ||
+            req.headers?.get('x-real-ip') ||
+            'unknown';
           const ipLockoutStatus = await AccountLockout.checkLockoutStatus(
             ipAddress,
-            "ip"
+            'ip'
           );
           if (ipLockoutStatus.isLocked) {
             await AuditLogger.logLoginFailed(
@@ -81,26 +81,26 @@ const config: NextAuthConfig = {
           });
 
           if (!user) {
-            await AuditLogger.logLoginFailed(email, "User not found");
+            await AuditLogger.logLoginFailed(email, 'User not found');
             return null;
           }
 
           // Validate password first
           if (!user.password) {
-            await AuditLogger.logLoginFailed(email, "No password set");
+            await AuditLogger.logLoginFailed(email, 'No password set');
             return null;
           }
 
           const isValidPassword = await bcrypt.compare(password, user.password);
           if (!isValidPassword) {
-            await AuditLogger.logLoginFailed(email, "Invalid password");
+            await AuditLogger.logLoginFailed(email, 'Invalid password');
             return null;
           }
 
           // Allow login for all active users regardless of status
           // The middleware will handle redirects based on status
           if (!user.isActive) {
-            await AuditLogger.logLoginFailed(email, "User account is inactive");
+            await AuditLogger.logLoginFailed(email, 'User account is inactive');
             return null;
           }
 
@@ -121,26 +121,26 @@ const config: NextAuthConfig = {
             email: user.email,
             name: `${user.firstName} ${user.lastName}`,
             role: user.role,
-            status: user.userStatus || "PENDING",
+            status: user.userStatus || 'PENDING',
             isEmailVerified: Boolean(user.emailVerified),
             firstName: user.firstName,
             lastName: user.lastName,
             isActive: user.isActive,
-            userStatus: user.userStatus || "PENDING",
+            userStatus: user.userStatus || 'PENDING',
             createdAt: user.createdAt || new Date(),
           };
         } catch (error) {
-          console.error("Authentication error:", error);
-          await AuditLogger.logLoginFailed(email, "Authentication failed");
+          console.error('Authentication error:', error);
+          await AuditLogger.logLoginFailed(email, 'Authentication failed');
           return null;
         }
       },
     }),
   ],
   session: {
-    strategy: "jwt" as const,
+    strategy: 'jwt' as const,
     maxAge: 24 * 60 * 60, // 24 hours
-    updateAge: process.env.NODE_ENV === "development" ? 15 * 60 : 5 * 60, // 15 minutes in dev, 5 minutes in prod
+    updateAge: process.env.NODE_ENV === 'development' ? 15 * 60 : 5 * 60, // 15 minutes in dev, 5 minutes in prod
   },
   callbacks: {
     async jwt({ token, user, trigger }) {
@@ -165,22 +165,22 @@ const config: NextAuthConfig = {
       // or if this is a token refresh trigger
       // BUT NOT in middleware/edge runtime environment
       const shouldFetchFreshData =
-        trigger === "update" ||
+        trigger === 'update' ||
         !token.dataFetchedAt ||
         Date.now() - (token.dataFetchedAt as number) >
-          (process.env.NODE_ENV === "development"
+          (process.env.NODE_ENV === 'development'
             ? 15 * 60 * 1000
             : 5 * 60 * 1000); // 15 minutes in dev, 5 minutes in prod
 
       // Check if we're in Edge Runtime (middleware) - if so, skip database calls
       const isEdgeRuntime =
-        process.env.NEXT_RUNTIME === "edge" ||
-        typeof (globalThis as any).EdgeRuntime !== "undefined";
+        process.env.NEXT_RUNTIME === 'edge' ||
+        typeof (globalThis as any).EdgeRuntime !== 'undefined';
 
       if (
         token.sub &&
         shouldFetchFreshData &&
-        typeof window === "undefined" &&
+        typeof window === 'undefined' &&
         !isEdgeRuntime
       ) {
         try {
@@ -205,12 +205,12 @@ const config: NextAuthConfig = {
 
             // Update token with fresh data from database
             token.role = freshUser.role;
-            token.status = freshUser.userStatus || "PENDING";
+            token.status = freshUser.userStatus || 'PENDING';
             token.isEmailVerified = Boolean(freshUser.emailVerified);
             token.firstName = freshUser.firstName;
             token.lastName = freshUser.lastName;
             token.isActive = freshUser.isActive;
-            token.userStatus = freshUser.userStatus || "PENDING";
+            token.userStatus = freshUser.userStatus || 'PENDING';
             token.createdAt = freshUser.createdAt || new Date();
             token.dataFetchedAt = Date.now();
           } else {
@@ -256,12 +256,12 @@ const config: NextAuthConfig = {
         // Log successful sign-in
         await AuditLogger.logLoginSuccess(
           parseInt(message.user.id),
-          message.user.email || "unknown"
+          message.user.email || 'unknown'
         );
       }
     },
     async signOut(message) {
-      if ("token" in message && message.token?.sub) {
+      if ('token' in message && message.token?.sub) {
         const userId = parseInt(message.token.sub);
         const userEmail = message.token.email as string;
 
@@ -280,7 +280,7 @@ const config: NextAuthConfig = {
             });
 
             // Log logout event
-            await AuditLogger.logLogout(userId, userEmail || "unknown");
+            await AuditLogger.logLogout(userId, userEmail || 'unknown');
           } else {
             // User not found during signOut event
           }
@@ -290,7 +290,7 @@ const config: NextAuthConfig = {
       }
     },
     async session(message) {
-      if ("token" in message && message.token?.sub) {
+      if ('token' in message && message.token?.sub) {
         const userId = parseInt(message.token.sub);
 
         try {
@@ -316,13 +316,13 @@ const config: NextAuthConfig = {
     },
   },
   pages: {
-    signIn: "/login",
-    error: "/login",
-    verifyRequest: "/check-email",
-    newUser: "/register",
+    signIn: '/login',
+    error: '/login',
+    verifyRequest: '/check-email',
+    newUser: '/register',
   },
   // Enhanced security settings
-  useSecureCookies: process.env.NODE_ENV === "production",
+  useSecureCookies: process.env.NODE_ENV === 'production',
   secret: process.env.NEXTAUTH_SECRET,
   // Enhanced JWT options
   jwt: {

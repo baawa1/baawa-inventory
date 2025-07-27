@@ -1,14 +1,14 @@
-"use client";
+'use client';
 
-import React, { useState, useEffect, useMemo } from "react";
-import { useQuery } from "@tanstack/react-query";
-import { Badge } from "@/components/ui/badge";
-import { Button } from "@/components/ui/button";
-import { InventoryPageLayout } from "@/components/inventory/InventoryPageLayout";
-import { IconDownload, IconTrendingUp, IconHistory } from "@tabler/icons-react";
-import { toast } from "sonner";
-import { format } from "date-fns";
-import { FilterConfig, SortOption, PaginationState } from "@/types/inventory";
+import React, { useState, useEffect, useMemo } from 'react';
+import { useQuery } from '@tanstack/react-query';
+import { Badge } from '@/components/ui/badge';
+import { Button } from '@/components/ui/button';
+import { InventoryPageLayout } from '@/components/inventory/InventoryPageLayout';
+import { IconDownload, IconTrendingUp, IconHistory } from '@tabler/icons-react';
+import { toast } from 'sonner';
+import { format } from 'date-fns';
+import { FilterConfig, SortOption, PaginationState } from '@/types/inventory';
 
 interface StockHistoryItem {
   id: string;
@@ -47,10 +47,10 @@ interface StockHistoryListProps {
 }
 
 export function StockHistoryList({ user: _ }: StockHistoryListProps) {
-  const [searchTerm, setSearchTerm] = useState("");
-  const [sortBy, setSortBy] = useState("createdAt");
-  const [sortOrder, setSortOrder] = useState<"asc" | "desc">("desc");
-  const [supplierFilter, setSupplierFilter] = useState<string>("all");
+  const [searchTerm, setSearchTerm] = useState('');
+  const [sortBy, setSortBy] = useState('createdAt');
+  const [sortOrder, setSortOrder] = useState<'asc' | 'desc'>('desc');
+  const [supplierFilter, setSupplierFilter] = useState<string>('all');
   const [pagination, setPagination] = useState<PaginationState>({
     page: 1,
     limit: 10,
@@ -65,7 +65,7 @@ export function StockHistoryList({ user: _ }: StockHistoryListProps) {
     refetch,
   } = useQuery({
     queryKey: [
-      "stock-history",
+      'stock-history',
       {
         search: searchTerm,
         sort: sortBy,
@@ -78,23 +78,23 @@ export function StockHistoryList({ user: _ }: StockHistoryListProps) {
         search: searchTerm,
         sortBy,
         sortOrder,
-        ...(supplierFilter !== "all" && { supplier: supplierFilter }),
+        ...(supplierFilter !== 'all' && { supplier: supplierFilter }),
       });
 
       const response = await fetch(`/api/stock-additions?${params}`);
       if (!response.ok) {
-        throw new Error("Failed to fetch stock history");
+        throw new Error('Failed to fetch stock history');
       }
       return response.json();
     },
   });
 
   const { data: suppliers } = useQuery({
-    queryKey: ["suppliers-list"],
+    queryKey: ['suppliers-list'],
     queryFn: async () => {
-      const response = await fetch("/api/suppliers");
+      const response = await fetch('/api/suppliers');
       if (!response.ok) {
-        throw new Error("Failed to fetch suppliers");
+        throw new Error('Failed to fetch suppliers');
       }
       return response.json();
     },
@@ -102,68 +102,68 @@ export function StockHistoryList({ user: _ }: StockHistoryListProps) {
 
   const exportStockHistory = async () => {
     try {
-      const response = await fetch("/api/stock-additions/export", {
-        method: "GET",
+      const response = await fetch('/api/stock-additions/export', {
+        method: 'GET',
         headers: {
-          "Content-Type": "application/json",
+          'Content-Type': 'application/json',
         },
       });
 
       if (!response.ok) {
-        throw new Error("Failed to export stock history");
+        throw new Error('Failed to export stock history');
       }
 
       const blob = await response.blob();
       const url = window.URL.createObjectURL(blob);
-      const a = document.createElement("a");
+      const a = document.createElement('a');
       a.href = url;
-      a.download = `stock-history-${format(new Date(), "yyyy-MM-dd")}.csv`;
+      a.download = `stock-history-${format(new Date(), 'yyyy-MM-dd')}.csv`;
       document.body.appendChild(a);
       a.click();
       window.URL.revokeObjectURL(url);
       document.body.removeChild(a);
 
-      toast.success("Stock history exported successfully");
+      toast.success('Stock history exported successfully');
     } catch (_error) {
-      toast.error("Failed to export stock history");
+      toast.error('Failed to export stock history');
     }
   };
 
   const formatCurrency = (amount: number) => {
-    return new Intl.NumberFormat("en-NG", {
-      style: "currency",
-      currency: "NGN",
+    return new Intl.NumberFormat('en-NG', {
+      style: 'currency',
+      currency: 'NGN',
     }).format(amount);
   };
 
   const handleFilterChange = (key: string, value: any) => {
-    if (key === "supplier") {
+    if (key === 'supplier') {
       if (supplierFilter === value) return; // Prevent unnecessary updates
       setSupplierFilter(value);
     }
-    setPagination((prev) => ({ ...prev, page: 1 }));
+    setPagination(prev => ({ ...prev, page: 1 }));
   };
 
   const handleResetFilters = () => {
-    setSearchTerm("");
-    setSupplierFilter("all");
-    setSortBy("createdAt");
-    setSortOrder("desc");
-    setPagination((prev) => ({ ...prev, page: 1 }));
+    setSearchTerm('');
+    setSupplierFilter('all');
+    setSortBy('createdAt');
+    setSortOrder('desc');
+    setPagination(prev => ({ ...prev, page: 1 }));
   };
 
   const handleSortChange = (value: string) => {
-    const [field, order] = value.split("-");
+    const [field, order] = value.split('-');
     setSortBy(field);
-    setSortOrder(order as "asc" | "desc");
+    setSortOrder(order as 'asc' | 'desc');
   };
 
   const handlePageChange = (newPage: number) => {
-    setPagination((prev) => ({ ...prev, page: newPage }));
+    setPagination(prev => ({ ...prev, page: newPage }));
   };
 
   const handlePageSizeChange = (newPageSize: number) => {
-    setPagination((prev) => ({
+    setPagination(prev => ({
       ...prev,
       limit: newPageSize,
       page: 1,
@@ -172,53 +172,53 @@ export function StockHistoryList({ user: _ }: StockHistoryListProps) {
 
   const renderCell = (item: StockHistoryItem, columnKey: string) => {
     switch (columnKey) {
-      case "date":
+      case 'date':
         return (
           <div className="text-sm">
             <div className="font-medium">
-              {format(new Date(item.createdAt), "MMM dd, yyyy")}
+              {format(new Date(item.createdAt), 'MMM dd, yyyy')}
             </div>
             <div className="text-gray-500">
-              {format(new Date(item.createdAt), "HH:mm")}
+              {format(new Date(item.createdAt), 'HH:mm')}
             </div>
           </div>
         );
-      case "product":
+      case 'product':
         return (
           <div>
             <div className="font-medium">{item.product.name}</div>
             <div className="text-sm text-gray-500">{item.product.sku}</div>
           </div>
         );
-      case "previous_stock":
+      case 'previous_stock':
         return (
           <Badge variant="secondary">{item.previousStock || 0} units</Badge>
         );
-      case "added":
+      case 'added':
         return (
           <Badge variant="default" className="bg-green-100 text-green-800">
-            <IconTrendingUp className="h-3 w-3 mr-1" />+{item.quantity}
+            <IconTrendingUp className="mr-1 h-3 w-3" />+{item.quantity}
           </Badge>
         );
-      case "new_stock":
+      case 'new_stock':
         return (
           <Badge variant="outline">
             {(item.previousStock || 0) + item.quantity} units
           </Badge>
         );
-      case "cost_per_unit":
+      case 'cost_per_unit':
         return formatCurrency(item.costPerUnit);
-      case "total_cost":
+      case 'total_cost':
         return (
           <span className="font-medium">{formatCurrency(item.totalCost)}</span>
         );
-      case "supplier":
+      case 'supplier':
         return item.supplier ? (
           <Badge variant="outline">{item.supplier.name}</Badge>
         ) : (
           <span className="text-gray-400">-</span>
         );
-      case "reference":
+      case 'reference':
         return item.referenceNumber ? (
           <Badge variant="secondary" className="font-mono text-xs">
             {item.referenceNumber}
@@ -226,60 +226,60 @@ export function StockHistoryList({ user: _ }: StockHistoryListProps) {
         ) : (
           <span className="text-gray-400">-</span>
         );
-      case "added_by":
+      case 'added_by':
         return <div className="text-sm">{item.createdBy.name}</div>;
       default:
-        return "-";
+        return '-';
     }
   };
 
   const columns = [
-    { key: "date", label: "Date/Time", sortable: true },
-    { key: "product", label: "Product", sortable: true },
-    { key: "previous_stock", label: "Previous Stock", sortable: false },
-    { key: "added", label: "Added", sortable: true },
-    { key: "new_stock", label: "New Stock", sortable: false },
-    { key: "cost_per_unit", label: "Cost per Unit", sortable: true },
-    { key: "total_cost", label: "Total Cost", sortable: true },
-    { key: "supplier", label: "Supplier", sortable: true },
-    { key: "reference", label: "Reference", sortable: false },
-    { key: "added_by", label: "Added By", sortable: true },
+    { key: 'date', label: 'Date/Time', sortable: true },
+    { key: 'product', label: 'Product', sortable: true },
+    { key: 'previous_stock', label: 'Previous Stock', sortable: false },
+    { key: 'added', label: 'Added', sortable: true },
+    { key: 'new_stock', label: 'New Stock', sortable: false },
+    { key: 'cost_per_unit', label: 'Cost per Unit', sortable: true },
+    { key: 'total_cost', label: 'Total Cost', sortable: true },
+    { key: 'supplier', label: 'Supplier', sortable: true },
+    { key: 'reference', label: 'Reference', sortable: false },
+    { key: 'added_by', label: 'Added By', sortable: true },
   ];
 
   const filterConfigs: FilterConfig[] = useMemo(
     () => [
       {
-        key: "supplier",
-        label: "Suppliers",
-        type: "select",
+        key: 'supplier',
+        label: 'Suppliers',
+        type: 'select',
         options: [
-          { value: "all", label: "All Suppliers" },
+          { value: 'all', label: 'All Suppliers' },
           ...(suppliers?.data?.map((supplier: any) => ({
             value: supplier.id,
             label: supplier.name,
           })) || []),
         ],
-        placeholder: "All Suppliers",
+        placeholder: 'All Suppliers',
       },
     ],
     [suppliers?.data]
   );
 
   const sortOptions: SortOption[] = [
-    { value: "createdAt-desc", label: "Newest First" },
-    { value: "createdAt-asc", label: "Oldest First" },
-    { value: "product-asc", label: "Product A-Z" },
-    { value: "product-desc", label: "Product Z-A" },
-    { value: "quantity-desc", label: "Highest Quantity" },
-    { value: "quantity-asc", label: "Lowest Quantity" },
-    { value: "totalCost-desc", label: "Highest Cost" },
-    { value: "totalCost-asc", label: "Lowest Cost" },
+    { value: 'createdAt-desc', label: 'Newest First' },
+    { value: 'createdAt-asc', label: 'Oldest First' },
+    { value: 'product-asc', label: 'Product A-Z' },
+    { value: 'product-desc', label: 'Product Z-A' },
+    { value: 'quantity-desc', label: 'Highest Quantity' },
+    { value: 'quantity-asc', label: 'Lowest Quantity' },
+    { value: 'totalCost-desc', label: 'Highest Cost' },
+    { value: 'totalCost-asc', label: 'Lowest Cost' },
   ];
 
   // Update pagination when data changes
   useEffect(() => {
     const data = stockHistory?.data || [];
-    setPagination((prev) => ({
+    setPagination(prev => ({
       ...prev,
       totalPages: Math.ceil(data.length / prev.limit),
       totalItems: data.length,
@@ -319,7 +319,7 @@ export function StockHistoryList({ user: _ }: StockHistoryListProps) {
       totalCount={stockHistory?.data?.length || 0}
       currentCount={stockHistory?.data?.length || 0}
       columns={columns}
-      visibleColumns={columns.map((col) => col.key)}
+      visibleColumns={columns.map(col => col.key)}
       onColumnsChange={undefined}
       columnCustomizerKey={undefined}
       data={stockHistory?.data || []}
@@ -336,7 +336,7 @@ export function StockHistoryList({ user: _ }: StockHistoryListProps) {
       onRetry={() => refetch()}
       // Empty state
       emptyStateIcon={
-        <IconHistory className="h-12 w-12 text-gray-400 mx-auto mb-4" />
+        <IconHistory className="mx-auto mb-4 h-12 w-12 text-gray-400" />
       }
       emptyStateMessage="No stock history found"
     />

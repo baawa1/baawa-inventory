@@ -1,19 +1,19 @@
-import { prisma } from "@/lib/db";
-import { withAuth, AuthenticatedRequest } from "@/lib/api-middleware";
-import { createApiResponse } from "@/lib/api-response";
+import { prisma } from '@/lib/db';
+import { withAuth, AuthenticatedRequest } from '@/lib/api-middleware';
+import { createApiResponse } from '@/lib/api-response';
 import {
   PRODUCT_STATUS,
   PAYMENT_STATUS,
   API_LIMITS,
   STOCK_THRESHOLDS,
   DATE_RANGES,
-} from "@/lib/constants";
+} from '@/lib/constants';
 
 // GET /api/dashboard/analytics - Get dashboard analytics data
 export const GET = withAuth(async (request: AuthenticatedRequest) => {
   try {
     const { searchParams } = new URL(request.url);
-    const dateRange = searchParams.get("dateRange") || DATE_RANGES.MONTH;
+    const dateRange = searchParams.get('dateRange') || DATE_RANGES.MONTH;
 
     // Calculate date range
     const now = new Date();
@@ -36,7 +36,7 @@ export const GET = withAuth(async (request: AuthenticatedRequest) => {
     // Fetch transaction statistics
     const [transactionStats, topCustomers, lowStockItems] = await Promise.all([
       // Transaction statistics
-      prisma.$transaction(async (tx) => {
+      prisma.$transaction(async tx => {
         const totalSales = await tx.salesTransaction.aggregate({
           where: {
             created_at: { gte: startDate },
@@ -86,7 +86,7 @@ export const GET = withAuth(async (request: AuthenticatedRequest) => {
 
       // Top customers
       prisma.salesTransaction.groupBy({
-        by: ["customer_name", "customer_email"],
+        by: ['customer_name', 'customer_email'],
         where: {
           created_at: { gte: startDate },
           payment_status: PAYMENT_STATUS.PAID,
@@ -94,7 +94,7 @@ export const GET = withAuth(async (request: AuthenticatedRequest) => {
         },
         _sum: { total_amount: true },
         _count: { id: true },
-        orderBy: { _sum: { total_amount: "desc" } },
+        orderBy: { _sum: { total_amount: 'desc' } },
         take: API_LIMITS.TOP_CUSTOMERS_LIMIT,
       }),
 
@@ -108,7 +108,7 @@ export const GET = withAuth(async (request: AuthenticatedRequest) => {
             { stock: { lte: STOCK_THRESHOLDS.LOW_STOCK_DEFAULT } },
           ],
         },
-        orderBy: [{ stock: "asc" }, { name: "asc" }],
+        orderBy: [{ stock: 'asc' }, { name: 'asc' }],
         take: API_LIMITS.LOW_STOCK_DISPLAY_LIMIT,
       }),
     ]);
@@ -116,13 +116,13 @@ export const GET = withAuth(async (request: AuthenticatedRequest) => {
     // Transform top customers data
     const transformedTopCustomers = topCustomers.map((customer, index) => ({
       id: index + 1,
-      name: customer.customer_name || "Unknown Customer",
+      name: customer.customer_name || 'Unknown Customer',
       orders: customer._count.id,
       totalSpend: Number(customer._sum.total_amount || 0),
     }));
 
     // Transform low stock items data
-    const transformedLowStockItems = lowStockItems.map((item) => ({
+    const transformedLowStockItems = lowStockItems.map(item => ({
       id: item.id,
       name: item.name,
       sku: item.sku,
@@ -130,15 +130,15 @@ export const GET = withAuth(async (request: AuthenticatedRequest) => {
       minStock: item.minStock,
       maxStock: item.maxStock,
       price: Number(item.price),
-      category: "Uncategorized", // Will be fetched separately if needed
-      supplier: "Unknown Supplier", // Will be fetched separately if needed
-      lastRestocked: item.updatedAt?.toISOString().split("T")[0] || "Unknown",
+      category: 'Uncategorized', // Will be fetched separately if needed
+      supplier: 'Unknown Supplier', // Will be fetched separately if needed
+      lastRestocked: item.updatedAt?.toISOString().split('T')[0] || 'Unknown',
       status:
         item.stock === STOCK_THRESHOLDS.CRITICAL_STOCK
-          ? "critical"
+          ? 'critical'
           : item.stock <= STOCK_THRESHOLDS.LOW_STOCK_DEFAULT
-            ? "low"
-            : "normal",
+            ? 'low'
+            : 'normal',
     }));
 
     // Generate sales data for charts (last 30 days)
@@ -147,9 +147,9 @@ export const GET = withAuth(async (request: AuthenticatedRequest) => {
 
     for (let i = daysToShow - 1; i >= 0; i--) {
       const date = new Date(now.getTime() - i * 24 * 60 * 60 * 1000);
-      const dateStr = date.toLocaleDateString("en-US", {
-        month: "short",
-        day: "numeric",
+      const dateStr = date.toLocaleDateString('en-US', {
+        month: 'short',
+        day: 'numeric',
       });
 
       const daySales = await prisma.salesTransaction.aggregate({
@@ -178,15 +178,15 @@ export const GET = withAuth(async (request: AuthenticatedRequest) => {
 
     // For now, return sample data for categories and products until we fix the complex queries
     const topCategories = [
-      { id: 1, name: "Electronics", itemsSold: 15, netSales: 450000 },
-      { id: 2, name: "Wristwatches", itemsSold: 8, netSales: 320000 },
-      { id: 3, name: "Accessories", itemsSold: 12, netSales: 180000 },
+      { id: 1, name: 'Electronics', itemsSold: 15, netSales: 450000 },
+      { id: 2, name: 'Wristwatches', itemsSold: 8, netSales: 320000 },
+      { id: 3, name: 'Accessories', itemsSold: 12, netSales: 180000 },
     ];
 
     const topProducts = [
-      { id: 1, name: "Apple Watch Series 9", itemsSold: 5, netSales: 425000 },
-      { id: 2, name: "Wireless Earbuds Pro", itemsSold: 8, netSales: 200000 },
-      { id: 3, name: "Smart Fitness Tracker", itemsSold: 3, netSales: 105000 },
+      { id: 1, name: 'Apple Watch Series 9', itemsSold: 5, netSales: 425000 },
+      { id: 2, name: 'Wireless Earbuds Pro', itemsSold: 8, netSales: 200000 },
+      { id: 3, name: 'Smart Fitness Tracker', itemsSold: 3, netSales: 105000 },
     ];
 
     return createApiResponse.success(
@@ -198,10 +198,10 @@ export const GET = withAuth(async (request: AuthenticatedRequest) => {
         topProducts,
         lowStockItems: transformedLowStockItems,
       },
-      "Analytics data retrieved successfully"
+      'Analytics data retrieved successfully'
     );
   } catch (error) {
-    console.error("Error fetching analytics data:", error);
-    return createApiResponse.internalError("Failed to fetch analytics data");
+    console.error('Error fetching analytics data:', error);
+    return createApiResponse.internalError('Failed to fetch analytics data');
   }
 });

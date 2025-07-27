@@ -1,43 +1,43 @@
-import React from "react";
-import { UseFormReturn } from "react-hook-form";
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import React from 'react';
+import { UseFormReturn } from 'react-hook-form';
+import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import {
   FormControl,
   FormField,
   FormItem,
   FormLabel,
   FormMessage,
-} from "@/components/ui/form";
-import { Input } from "@/components/ui/input";
+} from '@/components/ui/form';
+import { Input } from '@/components/ui/input';
 import {
   Select,
   SelectContent,
   SelectItem,
   SelectTrigger,
   SelectValue,
-} from "@/components/ui/select";
-import { UpdateProductFormData } from "./types";
+} from '@/components/ui/select';
+import { UpdateProductFormData } from './types';
 
 interface ProductSpecificationsSectionProps {
   form: UseFormReturn<UpdateProductFormData>;
 }
 
 const UNITS = [
-  "piece",
-  "kg",
-  "g",
-  "liter",
-  "ml",
-  "meter",
-  "cm",
-  "box",
-  "pack",
-  "bottle",
-  "set",
-  "pair",
-  "dozen",
-  "roll",
-  "sheet",
+  'piece',
+  'kg',
+  'g',
+  'liter',
+  'ml',
+  'meter',
+  'cm',
+  'box',
+  'pack',
+  'bottle',
+  'set',
+  'pair',
+  'dozen',
+  'roll',
+  'sheet',
 ];
 
 export function ProductSpecificationsSection({
@@ -49,7 +49,7 @@ export function ProductSpecificationsSection({
         <CardTitle>Product Specifications</CardTitle>
       </CardHeader>
       <CardContent className="space-y-4">
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+        <div className="grid grid-cols-1 gap-4 md:grid-cols-2">
           <FormField
             control={form.control}
             name="unit"
@@ -58,7 +58,7 @@ export function ProductSpecificationsSection({
                 <FormLabel>Unit</FormLabel>
                 <Select
                   onValueChange={field.onChange}
-                  value={field.value || "piece"}
+                  value={field.value || 'piece'}
                 >
                   <FormControl>
                     <SelectTrigger>
@@ -66,7 +66,7 @@ export function ProductSpecificationsSection({
                     </SelectTrigger>
                   </FormControl>
                   <SelectContent>
-                    {UNITS.map((unit) => (
+                    {UNITS.map(unit => (
                       <SelectItem key={unit} value={unit}>
                         {unit}
                       </SelectItem>
@@ -91,16 +91,16 @@ export function ProductSpecificationsSection({
                     step="0.001"
                     min="0"
                     placeholder="0.000"
-                    onChange={(e) => {
+                    onChange={e => {
                       const value = e.target.value;
-                      if (value === "") {
+                      if (value === '') {
                         field.onChange(null);
                       } else {
                         const numValue = parseFloat(value);
                         field.onChange(isNaN(numValue) ? null : numValue);
                       }
                     }}
-                    value={field.value?.toString() || ""}
+                    value={field.value?.toString() || ''}
                   />
                 </FormControl>
                 <FormMessage />
@@ -118,7 +118,7 @@ export function ProductSpecificationsSection({
               <FormControl>
                 <Input
                   {...field}
-                  value={field.value || ""}
+                  value={field.value || ''}
                   placeholder="e.g., 10x5x2 cm"
                 />
               </FormControl>
@@ -127,7 +127,7 @@ export function ProductSpecificationsSection({
           )}
         />
 
-        <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+        <div className="grid grid-cols-1 gap-4 md:grid-cols-3">
           <FormField
             control={form.control}
             name="color"
@@ -137,7 +137,7 @@ export function ProductSpecificationsSection({
                 <FormControl>
                   <Input
                     {...field}
-                    value={field.value || ""}
+                    value={field.value || ''}
                     placeholder="e.g., Red, Blue"
                   />
                 </FormControl>
@@ -155,7 +155,7 @@ export function ProductSpecificationsSection({
                 <FormControl>
                   <Input
                     {...field}
-                    value={field.value || ""}
+                    value={field.value || ''}
                     placeholder="e.g., Large, XL"
                   />
                 </FormControl>
@@ -173,7 +173,7 @@ export function ProductSpecificationsSection({
                 <FormControl>
                   <Input
                     {...field}
-                    value={field.value || ""}
+                    value={field.value || ''}
                     placeholder="e.g., Cotton, Plastic"
                   />
                 </FormControl>

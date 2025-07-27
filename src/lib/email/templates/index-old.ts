@@ -1,4 +1,4 @@
-import { EmailTemplate, EmailTemplateType } from "../types";
+import { EmailTemplate, EmailTemplateType } from '../types';
 import {
   welcomeTemplate,
   emailVerificationTemplate,
@@ -11,7 +11,7 @@ import {
   adminDigestTemplate,
   userSuspensionTemplate,
   userReactivationTemplate,
-} from "./base-templates";
+} from './base-templates';
 
 /**
  * Get the appropriate email template based on type and data
@@ -21,13 +21,13 @@ export async function getEmailTemplate(
   data: any
 ): Promise<EmailTemplate> {
   switch (templateType) {
-    case "welcome":
+    case 'welcome':
       return welcomeTemplate(data);
 
-    case "email_verification":
+    case 'email_verification':
       return emailVerificationTemplate(data);
 
-    case "password_reset":
+    case 'password_reset':
       return passwordResetTemplate(
         data as {
           firstName: string;
@@ -36,10 +36,10 @@ export async function getEmailTemplate(
         }
       );
 
-    case "password_reset_confirmation":
+    case 'password_reset_confirmation':
       return passwordResetConfirmationTemplate(data as { firstName: string });
 
-    case "user_approved":
+    case 'user_approved':
       return userApprovalTemplate(
         data as {
           firstName: string;
@@ -49,7 +49,7 @@ export async function getEmailTemplate(
         }
       );
 
-    case "user_rejected":
+    case 'user_rejected':
       return userRejectionTemplate(
         data as {
           firstName: string;
@@ -59,7 +59,7 @@ export async function getEmailTemplate(
         }
       );
 
-    case "admin_new_user_pending":
+    case 'admin_new_user_pending':
       return adminNewUserNotificationTemplate(
         data as {
           userFirstName: string;
@@ -71,7 +71,7 @@ export async function getEmailTemplate(
         }
       );
 
-    case "admin_user_registered":
+    case 'admin_user_registered':
       return getAdminUserRegisteredTemplate(
         data as {
           userFirstName: string;
@@ -82,12 +82,12 @@ export async function getEmailTemplate(
         }
       );
 
-    case "account_locked":
+    case 'account_locked':
       return getAccountLockedTemplate(
         data as { firstName: string; reason: string }
       );
 
-    case "role_changed":
+    case 'role_changed':
       return roleChangeTemplate(
         data as {
           firstName: string;
@@ -98,7 +98,7 @@ export async function getEmailTemplate(
         }
       );
 
-    case "admin_digest":
+    case 'admin_digest':
       return adminDigestTemplate(
         data as {
           adminName: string;
@@ -116,10 +116,10 @@ export async function getEmailTemplate(
         }
       );
 
-    case "user_suspension":
+    case 'user_suspension':
       return userSuspensionTemplate(data);
 
-    case "user_reactivation":
+    case 'user_reactivation':
       return userReactivationTemplate(data);
 
     default:
@@ -148,7 +148,7 @@ function _getUserRejectedTemplate(data: {
             <p><strong>Reason:</strong> ${data.reason}</p>
         </div>
         `
-            : ""
+            : ''
         }
         
         <p>If you believe this is an error or would like to discuss your application, please contact our support team.</p>
@@ -157,12 +157,12 @@ function _getUserRejectedTemplate(data: {
   `;
 
   return {
-    subject: "Account Application Update - Baawa Inventory POS",
-    html: createBaseTemplate(content, "Account Application Update"),
+    subject: 'Account Application Update - Baawa Inventory POS',
+    html: createBaseTemplate(content, 'Account Application Update'),
     text: `Hi ${
       data.firstName
     },\n\nYour account application could not be approved at this time.${
-      data.reason ? `\n\nReason: ${data.reason}` : ""
+      data.reason ? `\n\nReason: ${data.reason}` : ''
     }\n\nContact support if you have questions.\n\nBest regards,\nThe Baawa Team`,
   };
 }
@@ -190,7 +190,7 @@ function getAdminUserRegisteredTemplate(data: {
                 ${
                   data.userCompany
                     ? `<li>Company: <span class="highlight">${data.userCompany}</span></li>`
-                    : ""
+                    : ''
                 }
                 <li>Registration Date: <span class="highlight">${
                   data.registrationDate
@@ -205,11 +205,11 @@ function getAdminUserRegisteredTemplate(data: {
 
   return {
     subject: `New User Registered: ${data.userFirstName} ${data.userLastName}`,
-    html: createBaseTemplate(content, "New User Registration"),
+    html: createBaseTemplate(content, 'New User Registration'),
     text: `New user registered:\n\nName: ${data.userFirstName} ${
       data.userLastName
     }\nEmail: ${data.userEmail}\n${
-      data.userCompany ? `Company: ${data.userCompany}\n` : ""
+      data.userCompany ? `Company: ${data.userCompany}\n` : ''
     }Registration Date: ${data.registrationDate}`,
   };
 }
@@ -235,8 +235,8 @@ function getAccountLockedTemplate(data: {
   `;
 
   return {
-    subject: "Account Security Alert - Baawa Inventory POS",
-    html: createBaseTemplate(content, "Account Security Alert"),
+    subject: 'Account Security Alert - Baawa Inventory POS',
+    html: createBaseTemplate(content, 'Account Security Alert'),
     text: `Hi ${data.firstName},\n\nYour account has been locked.\n\nReason: ${data.reason}\n\nContact support to unlock your account.\n\nBest regards,\nThe Baawa Team`,
   };
 }
@@ -269,8 +269,8 @@ function _getRoleChangedTemplate(data: {
   `;
 
   return {
-    subject: "Your Role Has Been Updated - Baawa Inventory POS",
-    html: createBaseTemplate(content, "Account Role Updated"),
+    subject: 'Your Role Has Been Updated - Baawa Inventory POS',
+    html: createBaseTemplate(content, 'Account Role Updated'),
     text: `Hi ${data.firstName},\n\nYour role has been changed from ${data.oldRole} to ${data.newRole} by ${data.changedBy}.\n\nBest regards,\nThe Baawa Team`,
   };
 }
@@ -296,8 +296,8 @@ function _getUserSuspendedTemplate(data: {
   `;
 
   return {
-    subject: "Account Suspended - Baawa Inventory POS",
-    html: createBaseTemplate(content, "Account Suspended"),
+    subject: 'Account Suspended - Baawa Inventory POS',
+    html: createBaseTemplate(content, 'Account Suspended'),
     text: `Hi ${data.firstName},\n\nYour account has been suspended.\n\nReason: ${data.reason}\n\nContact ${data.adminName} for more information.\n\nBest regards,\nThe Baawa Team`,
   };
 }
@@ -317,8 +317,8 @@ function _getUserReactivatedTemplate(data: {
   `;
 
   return {
-    subject: "Account Reactivated - Baawa Inventory POS",
-    html: createBaseTemplate(content, "Account Reactivated"),
+    subject: 'Account Reactivated - Baawa Inventory POS',
+    html: createBaseTemplate(content, 'Account Reactivated'),
     text: `Hi ${data.firstName},\n\nYour account has been reactivated.\n\nBest regards,\nThe Baawa Team`,
   };
 }

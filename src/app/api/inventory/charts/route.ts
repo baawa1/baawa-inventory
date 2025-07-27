@@ -1,6 +1,6 @@
-import { NextResponse } from "next/server";
-import { withAuth, AuthenticatedRequest } from "@/lib/api-middleware";
-import { prisma } from "@/lib/db";
+import { NextResponse } from 'next/server';
+import { withAuth, AuthenticatedRequest } from '@/lib/api-middleware';
+import { prisma } from '@/lib/db';
 
 // GET /api/inventory/charts - Get inventory chart data
 export const GET = withAuth(
@@ -37,7 +37,7 @@ export const GET = withAuth(
                   gte: monthStart,
                   lte: monthEnd,
                 },
-                adjustment_type: "DECREASE",
+                adjustment_type: 'DECREASE',
               },
               _sum: {
                 quantity: true,
@@ -46,7 +46,7 @@ export const GET = withAuth(
           ]);
 
           return {
-            month: date.toLocaleDateString("en-US", { month: "short" }),
+            month: date.toLocaleDateString('en-US', { month: 'short' }),
             stockIn: stockIn._sum.quantity || 0,
             stockOut: stockOut._sum.quantity || 0,
           };
@@ -73,8 +73,8 @@ export const GET = withAuth(
       // Group sales by category
       const salesByCategory = salesItems.reduce(
         (acc, item) => {
-          const categoryName = item.products?.category?.name || "Uncategorized";
-          const existing = acc.find((i) => i.category === categoryName);
+          const categoryName = item.products?.category?.name || 'Uncategorized';
+          const existing = acc.find(i => i.category === categoryName);
 
           if (existing) {
             existing.sales += item.quantity;
@@ -101,9 +101,9 @@ export const GET = withAuth(
         salesData: topSalesData,
       });
     } catch (error) {
-      console.error("Error fetching inventory charts:", error);
+      console.error('Error fetching inventory charts:', error);
       return NextResponse.json(
-        { error: "Failed to fetch inventory charts" },
+        { error: 'Failed to fetch inventory charts' },
         { status: 500 }
       );
     }

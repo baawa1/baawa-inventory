@@ -1,9 +1,9 @@
-import { useState } from "react";
-import { UseFormReturn } from "react-hook-form";
-import { UpdateProductFormData } from "./types";
-import { toast } from "sonner";
-import { useRouter } from "next/navigation";
-import { useQueryClient } from "@tanstack/react-query";
+import { useState } from 'react';
+import { UseFormReturn } from 'react-hook-form';
+import { UpdateProductFormData } from './types';
+import { toast } from 'sonner';
+import { useRouter } from 'next/navigation';
+import { useQueryClient } from '@tanstack/react-query';
 
 export function useEditProductSubmit(
   productId: number,
@@ -35,7 +35,7 @@ export function useEditProductSubmit(
         maximumStock: data.maximumStock || null,
         status: data.status,
         // New fields
-        unit: data.unit || "piece",
+        unit: data.unit || 'piece',
         weight:
           data.weight !== undefined && data.weight !== null
             ? Number(data.weight)
@@ -58,29 +58,29 @@ export function useEditProductSubmit(
       };
 
       const response = await fetch(`/api/products/${productId}`, {
-        method: "PUT",
+        method: 'PUT',
         headers: {
-          "Content-Type": "application/json",
+          'Content-Type': 'application/json',
         },
         body: JSON.stringify(submitData),
       });
 
       if (!response.ok) {
         const errorData = await response.json();
-        throw new Error(errorData.message || "Failed to update product");
+        throw new Error(errorData.message || 'Failed to update product');
       }
 
-      toast.success("Product updated successfully");
+      toast.success('Product updated successfully');
 
       // Invalidate and refetch related queries
-      queryClient.invalidateQueries({ queryKey: ["products"] });
-      queryClient.invalidateQueries({ queryKey: ["product", productId] });
-      queryClient.invalidateQueries({ queryKey: ["inventory-metrics"] });
+      queryClient.invalidateQueries({ queryKey: ['products'] });
+      queryClient.invalidateQueries({ queryKey: ['product', productId] });
+      queryClient.invalidateQueries({ queryKey: ['inventory-metrics'] });
 
-      router.push("/inventory/products");
+      router.push('/inventory/products');
     } catch (error) {
       const errorMessage =
-        error instanceof Error ? error.message : "An unexpected error occurred";
+        error instanceof Error ? error.message : 'An unexpected error occurred';
       setSubmitError(errorMessage);
       toast.error(errorMessage);
     } finally {

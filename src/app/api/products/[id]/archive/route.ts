@@ -1,7 +1,7 @@
-import { NextRequest, NextResponse } from "next/server";
-import { auth } from "../../../../../../auth";
-import { prisma } from "@/lib/db";
-import { z } from "zod";
+import { NextRequest, NextResponse } from 'next/server';
+import { auth } from '../../../../../../auth';
+import { prisma } from '@/lib/db';
+import { z } from 'zod';
 
 // Archive/Unarchive product endpoint
 const archiveProductSchema = z.object({
@@ -20,7 +20,7 @@ export async function PATCH(
 
     if (!session?.user) {
       return NextResponse.json(
-        { error: "Authentication required" },
+        { error: 'Authentication required' },
         { status: 401 }
       );
     }
@@ -44,14 +44,14 @@ export async function PATCH(
     });
 
     if (!existingProduct) {
-      return NextResponse.json({ error: "Product not found" }, { status: 404 });
+      return NextResponse.json({ error: 'Product not found' }, { status: 404 });
     }
 
     // Check if already in requested state
     if (existingProduct.isArchived === archived) {
       return NextResponse.json(
         {
-          error: `Product is already ${archived ? "archived" : "active"}`,
+          error: `Product is already ${archived ? 'archived' : 'active'}`,
         },
         { status: 400 }
       );
@@ -77,8 +77,8 @@ export async function PATCH(
       await prisma.auditLog.create({
         data: {
           user_id: parseInt(session.user.id),
-          action: archived ? "ARCHIVE" : "UNARCHIVE",
-          table_name: "products",
+          action: archived ? 'ARCHIVE' : 'UNARCHIVE',
+          table_name: 'products',
           record_id: productId,
           new_values: {
             isArchived: archived,
@@ -91,12 +91,12 @@ export async function PATCH(
 
     return NextResponse.json({
       data: updatedProduct,
-      message: `Product ${archived ? "archived" : "unarchived"} successfully`,
+      message: `Product ${archived ? 'archived' : 'unarchived'} successfully`,
     });
   } catch (error) {
-    console.error("Error in PATCH /api/products/[id]/archive:", error);
+    console.error('Error in PATCH /api/products/[id]/archive:', error);
     return NextResponse.json(
-      { error: "Internal server error" },
+      { error: 'Internal server error' },
       { status: 500 }
     );
   }

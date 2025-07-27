@@ -1,4 +1,4 @@
-"use client";
+'use client';
 
 import {
   Card,
@@ -6,25 +6,25 @@ import {
   CardDescription,
   CardHeader,
   CardTitle,
-} from "@/components/ui/card";
-import { Badge } from "@/components/ui/badge";
+} from '@/components/ui/card';
+import { Badge } from '@/components/ui/badge';
 import {
   IconPackages,
   IconAdjustments,
   IconTruck,
   IconShoppingCart,
-} from "@tabler/icons-react";
-import { formatCurrency } from "@/lib/utils";
-import { useRecentActivity } from "@/hooks/api/inventory";
+} from '@tabler/icons-react';
+import { formatCurrency } from '@/lib/utils';
+import { useRecentActivity } from '@/hooks/api/inventory';
 
 // Legacy interface for backward compatibility
 interface ActivityItem {
   id: number;
   type:
-    | "product_added"
-    | "stock_adjustment"
-    | "supplier_added"
-    | "sale_completed";
+    | 'product_added'
+    | 'stock_adjustment'
+    | 'supplier_added'
+    | 'sale_completed';
   description: string;
   timestamp: string;
   user: string;
@@ -38,45 +38,45 @@ export function RecentActivity() {
   const fallbackActivities: ActivityItem[] = [
     {
       id: 1,
-      type: "product_added",
+      type: 'product_added',
       description: 'Added new product "Samsung Galaxy Watch"',
-      timestamp: "2 minutes ago",
-      user: "John Doe",
-      metadata: { productId: 123, sku: "SGW-001" },
+      timestamp: '2 minutes ago',
+      user: 'John Doe',
+      metadata: { productId: 123, sku: 'SGW-001' },
     },
     {
       id: 2,
-      type: "stock_adjustment",
+      type: 'stock_adjustment',
       description:
         'Stock adjusted for "iPhone 14 Case" - Increased by 50 units',
-      timestamp: "15 minutes ago",
-      user: "Jane Smith",
-      metadata: { productId: 456, adjustment: 50, reason: "New shipment" },
+      timestamp: '15 minutes ago',
+      user: 'Jane Smith',
+      metadata: { productId: 456, adjustment: 50, reason: 'New shipment' },
     },
     {
       id: 3,
-      type: "supplier_added",
+      type: 'supplier_added',
       description: 'New supplier "Tech Accessories Ltd." added',
-      timestamp: "1 hour ago",
-      user: "Admin User",
+      timestamp: '1 hour ago',
+      user: 'Admin User',
       metadata: { supplierId: 789 },
     },
     {
       id: 4,
-      type: "sale_completed",
+      type: 'sale_completed',
       description: `Sale completed - 3 items sold for ${formatCurrency(150.0)}`,
-      timestamp: "2 hours ago",
-      user: "Store Assistant",
-      metadata: { saleId: "TXN-1234567890", amount: 150.0 },
+      timestamp: '2 hours ago',
+      user: 'Store Assistant',
+      metadata: { saleId: 'TXN-1234567890', amount: 150.0 },
     },
     {
       id: 5,
-      type: "stock_adjustment",
+      type: 'stock_adjustment',
       description:
         'Stock adjusted for "Wireless Earbuds" - Decreased by 2 units',
-      timestamp: "3 hours ago",
-      user: "John Doe",
-      metadata: { productId: 321, adjustment: -2, reason: "Damage reported" },
+      timestamp: '3 hours ago',
+      user: 'John Doe',
+      metadata: { productId: 321, adjustment: -2, reason: 'Damage reported' },
     },
   ];
 
@@ -84,50 +84,50 @@ export function RecentActivity() {
   const activities = data
     ? data.map((item, index) => ({
         id: index + 1,
-        type: item.type as ActivityItem["type"],
+        type: item.type as ActivityItem['type'],
         description: item.description,
         timestamp: item.timestamp,
-        user: item.user || "System",
+        user: item.user || 'System',
         metadata: item,
       }))
     : fallbackActivities;
 
-  const getActivityIcon = (type: ActivityItem["type"]) => {
+  const getActivityIcon = (type: ActivityItem['type']) => {
     switch (type) {
-      case "product_added":
+      case 'product_added':
         return <IconPackages className="h-4 w-4 text-blue-600" />;
-      case "stock_adjustment":
+      case 'stock_adjustment':
         return <IconAdjustments className="h-4 w-4 text-orange-600" />;
-      case "supplier_added":
+      case 'supplier_added':
         return <IconTruck className="h-4 w-4 text-green-600" />;
-      case "sale_completed":
+      case 'sale_completed':
         return <IconShoppingCart className="h-4 w-4 text-purple-600" />;
       default:
         return <IconPackages className="h-4 w-4 text-gray-600" />;
     }
   };
 
-  const getActivityBadge = (type: ActivityItem["type"]) => {
+  const getActivityBadge = (type: ActivityItem['type']) => {
     switch (type) {
-      case "product_added":
+      case 'product_added':
         return (
           <Badge variant="outline" className="text-blue-600">
             Product
           </Badge>
         );
-      case "stock_adjustment":
+      case 'stock_adjustment':
         return (
           <Badge variant="outline" className="text-orange-600">
             Stock
           </Badge>
         );
-      case "supplier_added":
+      case 'supplier_added':
         return (
           <Badge variant="outline" className="text-green-600">
             Supplier
           </Badge>
         );
-      case "sale_completed":
+      case 'sale_completed':
         return (
           <Badge variant="outline" className="text-purple-600">
             Sale
@@ -160,20 +160,20 @@ export function RecentActivity() {
       <div className="px-4 lg:px-6">
         <Card>
           <CardHeader>
-            <div className="h-6 bg-gray-200 rounded w-1/4 mb-2"></div>
-            <div className="h-4 bg-gray-200 rounded w-1/2"></div>
+            <div className="mb-2 h-6 w-1/4 rounded bg-gray-200"></div>
+            <div className="h-4 w-1/2 rounded bg-gray-200"></div>
           </CardHeader>
           <CardContent>
             <div className="space-y-4">
               {[...Array(5)].map((_, i) => (
                 <div
                   key={i}
-                  className="flex items-center space-x-4 animate-pulse"
+                  className="flex animate-pulse items-center space-x-4"
                 >
-                  <div className="w-8 h-8 bg-gray-200 rounded"></div>
+                  <div className="h-8 w-8 rounded bg-gray-200"></div>
                   <div className="flex-1">
-                    <div className="h-4 bg-gray-200 rounded w-3/4 mb-2"></div>
-                    <div className="h-3 bg-gray-200 rounded w-1/2"></div>
+                    <div className="mb-2 h-4 w-3/4 rounded bg-gray-200"></div>
+                    <div className="h-3 w-1/2 rounded bg-gray-200"></div>
                   </div>
                 </div>
               ))}
@@ -195,17 +195,17 @@ export function RecentActivity() {
         </CardHeader>
         <CardContent>
           <div className="space-y-4">
-            {activities.map((activity) => (
+            {activities.map(activity => (
               <div
                 key={activity.id}
-                className="flex items-start space-x-4 p-3 rounded-lg border bg-card hover:bg-accent/50 transition-colors"
+                className="bg-card hover:bg-accent/50 flex items-start space-x-4 rounded-lg border p-3 transition-colors"
               >
-                <div className="flex-shrink-0 mt-0.5">
+                <div className="mt-0.5 flex-shrink-0">
                   {getActivityIcon(activity.type)}
                 </div>
-                <div className="flex-1 min-w-0">
+                <div className="min-w-0 flex-1">
                   <div className="flex items-center justify-between gap-2">
-                    <p className="text-sm font-medium text-gray-900 dark:text-gray-100 truncate">
+                    <p className="truncate text-sm font-medium text-gray-900 dark:text-gray-100">
                       {activity.description}
                     </p>
                     {getActivityBadge(activity.type)}
@@ -222,7 +222,7 @@ export function RecentActivity() {
           <div className="mt-4 text-center">
             <a
               href="/inventory/activity"
-              className="text-sm text-primary hover:underline"
+              className="text-primary text-sm hover:underline"
             >
               View all activity →
             </a>

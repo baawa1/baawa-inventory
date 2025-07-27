@@ -1,21 +1,21 @@
-import { NextResponse } from "next/server";
-import { prisma } from "@/lib/db";
-import { withPermission, AuthenticatedRequest } from "@/lib/api-middleware";
-import { emailService } from "@/lib/email";
-import { z } from "zod";
+import { NextResponse } from 'next/server';
+import { prisma } from '@/lib/db';
+import { withPermission, AuthenticatedRequest } from '@/lib/api-middleware';
+import { emailService } from '@/lib/email';
+import { z } from 'zod';
 
 const bulkOperationSchema = z.object({
   operation: z.enum([
-    "bulk-approve-users",
-    "bulk-reject-users",
-    "bulk-deactivate-users",
-    "send-notification-emails",
-    "cleanup-expired-sessions",
-    "cleanup-audit-logs",
-    "export-user-data",
-    "refresh-system-cache",
-    "database-optimization",
-    "backup-database",
+    'bulk-approve-users',
+    'bulk-reject-users',
+    'bulk-deactivate-users',
+    'send-notification-emails',
+    'cleanup-expired-sessions',
+    'cleanup-audit-logs',
+    'export-user-data',
+    'refresh-system-cache',
+    'database-optimization',
+    'backup-database',
   ]),
   parameters: z.record(z.string()).optional(),
   userIds: z.array(z.number()).optional(),
@@ -23,7 +23,7 @@ const bulkOperationSchema = z.object({
 
 // POST /api/admin/bulk-operations - Execute bulk operations
 export const POST = withPermission(
-  ["ADMIN"],
+  ['ADMIN'],
   async function (request: AuthenticatedRequest) {
     try {
       const body = await request.json();
@@ -33,7 +33,7 @@ export const POST = withPermission(
       const validation = bulkOperationSchema.safeParse(body);
       if (!validation.success) {
         return NextResponse.json(
-          { error: "Invalid operation data", details: validation.error.issues },
+          { error: 'Invalid operation data', details: validation.error.issues },
           { status: 400 }
         );
       }
@@ -43,58 +43,58 @@ export const POST = withPermission(
       let result: any = { success: true };
 
       switch (operation) {
-        case "bulk-approve-users":
+        case 'bulk-approve-users':
           result = await bulkApproveUsers(userIds, request.user.id);
           break;
 
-        case "bulk-reject-users":
+        case 'bulk-reject-users':
           result = await bulkRejectUsers(
             userIds,
-            parameters.reason || "Bulk rejection",
+            parameters.reason || 'Bulk rejection',
             request.user.id
           );
           break;
 
-        case "bulk-deactivate-users":
+        case 'bulk-deactivate-users':
           result = await bulkDeactivateUsers(userIds, request.user.id);
           break;
 
-        case "send-notification-emails":
+        case 'send-notification-emails':
           result = await sendNotificationEmails(
-            parameters.targetGroup || "all",
-            parameters.message || ""
+            parameters.targetGroup || 'all',
+            parameters.message || ''
           );
           break;
 
-        case "cleanup-expired-sessions":
+        case 'cleanup-expired-sessions':
           result = await cleanupExpiredSessions();
           break;
 
-        case "cleanup-audit-logs":
+        case 'cleanup-audit-logs':
           result = await cleanupAuditLogs(
-            parseInt(parameters.daysToKeep || "90")
+            parseInt(parameters.daysToKeep || '90')
           );
           break;
 
-        case "export-user-data":
-          result = await exportUserData(parameters.format || "csv");
+        case 'export-user-data':
+          result = await exportUserData(parameters.format || 'csv');
           break;
 
-        case "refresh-system-cache":
+        case 'refresh-system-cache':
           result = await refreshSystemCache();
           break;
 
-        case "database-optimization":
+        case 'database-optimization':
           result = await optimizeDatabase();
           break;
 
-        case "backup-database":
+        case 'backup-database':
           result = await backupDatabase();
           break;
 
         default:
           return NextResponse.json(
-            { error: "Operation not supported" },
+            { error: 'Operation not supported' },
             { status: 400 }
           );
       }
@@ -108,9 +108,9 @@ export const POST = withPermission(
         timestamp: new Date().toISOString(),
       });
     } catch (error) {
-      console.error("Error in POST /api/admin/bulk-operations:", error);
+      console.error('Error in POST /api/admin/bulk-operations:', error);
       return NextResponse.json(
-        { error: "Internal server error" },
+        { error: 'Internal server error' },
         { status: 500 }
       );
     }
@@ -120,13 +120,13 @@ export const POST = withPermission(
 // Bulk approve users
 async function bulkApproveUsers(userIds: number[], adminId: string) {
   if (userIds.length === 0) {
-    throw new Error("No users provided for approval");
+    throw new Error('No users provided for approval');
   }
 
   const users = await prisma.user.findMany({
     where: {
       id: { in: userIds },
-      userStatus: { in: ["PENDING", "VERIFIED"] },
+      userStatus: { in: ['PENDING', 'VERIFIED'] },
     },
     select: {
       id: true,
@@ -138,14 +138,14 @@ async function bulkApproveUsers(userIds: number[], adminId: string) {
   });
 
   if (users.length === 0) {
-    throw new Error("No eligible users found for approval");
+    throw new Error('No eligible users found for approval');
   }
 
   // Update users to approved status
   await prisma.user.updateMany({
-    where: { id: { in: users.map((u) => u.id) } },
+    where: { id: { in: users.map(u => u.id) } },
     data: {
-      userStatus: "APPROVED",
+      userStatus: 'APPROVED',
       approvedBy: parseInt(adminId),
       approvedAt: new Date(),
       sessionNeedsRefresh: true,
@@ -158,9 +158,9 @@ async function bulkApproveUsers(userIds: number[], adminId: string) {
     try {
       await emailService.sendUserApprovalEmail(user.email, {
         firstName: user.firstName,
-        adminName: "Administrator",
-        dashboardLink: `${process.env.NEXTAUTH_URL || "http://localhost:3000"}/dashboard`,
-        role: user.role || "STAFF",
+        adminName: 'Administrator',
+        dashboardLink: `${process.env.NEXTAUTH_URL || 'http://localhost:3000'}/dashboard`,
+        role: user.role || 'STAFF',
       });
     } catch (emailError) {
       console.error(
@@ -172,7 +172,7 @@ async function bulkApproveUsers(userIds: number[], adminId: string) {
 
   return {
     approved: users.length,
-    userIds: users.map((u) => u.id),
+    userIds: users.map(u => u.id),
     emails_sent: users.length,
   };
 }
@@ -184,13 +184,13 @@ async function bulkRejectUsers(
   adminId: string
 ) {
   if (userIds.length === 0) {
-    throw new Error("No users provided for rejection");
+    throw new Error('No users provided for rejection');
   }
 
   const users = await prisma.user.findMany({
     where: {
       id: { in: userIds },
-      userStatus: { in: ["PENDING", "VERIFIED"] },
+      userStatus: { in: ['PENDING', 'VERIFIED'] },
     },
     select: {
       id: true,
@@ -201,14 +201,14 @@ async function bulkRejectUsers(
   });
 
   if (users.length === 0) {
-    throw new Error("No eligible users found for rejection");
+    throw new Error('No eligible users found for rejection');
   }
 
   // Update users to rejected status
   await prisma.user.updateMany({
-    where: { id: { in: users.map((u) => u.id) } },
+    where: { id: { in: users.map(u => u.id) } },
     data: {
-      userStatus: "REJECTED",
+      userStatus: 'REJECTED',
       rejectionReason: reason,
       approvedBy: parseInt(adminId),
       approvedAt: new Date(),
@@ -222,9 +222,9 @@ async function bulkRejectUsers(
     try {
       await emailService.sendUserRejectionEmail(user.email, {
         firstName: user.firstName,
-        adminName: "Administrator",
+        adminName: 'Administrator',
         rejectionReason: reason,
-        supportEmail: process.env.SUPPORT_EMAIL || "support@baawa.com",
+        supportEmail: process.env.SUPPORT_EMAIL || 'support@baawa.com',
       });
     } catch (emailError) {
       console.error(
@@ -236,7 +236,7 @@ async function bulkRejectUsers(
 
   return {
     rejected: users.length,
-    userIds: users.map((u) => u.id),
+    userIds: users.map(u => u.id),
     reason,
     emails_sent: users.length,
   };
@@ -245,7 +245,7 @@ async function bulkRejectUsers(
 // Bulk deactivate users
 async function bulkDeactivateUsers(userIds: number[], _adminId: string) {
   if (userIds.length === 0) {
-    throw new Error("No users provided for deactivation");
+    throw new Error('No users provided for deactivation');
   }
 
   const users = await prisma.user.findMany({
@@ -257,15 +257,15 @@ async function bulkDeactivateUsers(userIds: number[], _adminId: string) {
   });
 
   if (users.length === 0) {
-    throw new Error("No active users found for deactivation");
+    throw new Error('No active users found for deactivation');
   }
 
   // Deactivate users
   await prisma.user.updateMany({
-    where: { id: { in: users.map((u) => u.id) } },
+    where: { id: { in: users.map(u => u.id) } },
     data: {
       isActive: false,
-      userStatus: "SUSPENDED",
+      userStatus: 'SUSPENDED',
       sessionNeedsRefresh: true,
       sessionRefreshAt: new Date(),
     },
@@ -273,33 +273,33 @@ async function bulkDeactivateUsers(userIds: number[], _adminId: string) {
 
   return {
     deactivated: users.length,
-    userIds: users.map((u) => u.id),
+    userIds: users.map(u => u.id),
   };
 }
 
 // Send notification emails
 async function sendNotificationEmails(targetGroup: string, message: string) {
   if (!message.trim()) {
-    throw new Error("Message content is required");
+    throw new Error('Message content is required');
   }
 
   let whereClause: any = {};
 
   switch (targetGroup) {
-    case "admins":
-      whereClause = { role: "ADMIN", isActive: true, userStatus: "APPROVED" };
+    case 'admins':
+      whereClause = { role: 'ADMIN', isActive: true, userStatus: 'APPROVED' };
       break;
-    case "managers":
-      whereClause = { role: "MANAGER", isActive: true, userStatus: "APPROVED" };
+    case 'managers':
+      whereClause = { role: 'MANAGER', isActive: true, userStatus: 'APPROVED' };
       break;
-    case "staff":
-      whereClause = { role: "STAFF", isActive: true, userStatus: "APPROVED" };
+    case 'staff':
+      whereClause = { role: 'STAFF', isActive: true, userStatus: 'APPROVED' };
       break;
-    case "pending":
-      whereClause = { userStatus: { in: ["PENDING", "VERIFIED"] } };
+    case 'pending':
+      whereClause = { userStatus: { in: ['PENDING', 'VERIFIED'] } };
       break;
     default:
-      whereClause = { isActive: true, userStatus: "APPROVED" };
+      whereClause = { isActive: true, userStatus: 'APPROVED' };
   }
 
   const users = await prisma.user.findMany({
@@ -314,7 +314,7 @@ async function sendNotificationEmails(targetGroup: string, message: string) {
       await emailService.sendWelcomeEmail(user.email, {
         firstName: user.firstName,
         email: user.email,
-        companyName: "Baawa Accessories",
+        companyName: 'Baawa Accessories',
       });
       emailsSent++;
     } catch (emailError) {
@@ -329,7 +329,7 @@ async function sendNotificationEmails(targetGroup: string, message: string) {
     target_group: targetGroup,
     users_targeted: users.length,
     emails_sent: emailsSent,
-    message: message.substring(0, 100) + (message.length > 100 ? "..." : ""),
+    message: message.substring(0, 100) + (message.length > 100 ? '...' : ''),
   };
 }
 
@@ -385,7 +385,7 @@ async function exportUserData(format: string) {
     users_exported: users.length,
     export_timestamp: new Date().toISOString(),
     data:
-      format === "json"
+      format === 'json'
         ? users
         : `CSV export of ${users.length} users generated`,
   };
@@ -394,7 +394,7 @@ async function exportUserData(format: string) {
 // Refresh system cache
 async function refreshSystemCache() {
   // Simulate cache refresh
-  await new Promise((resolve) => setTimeout(resolve, 500));
+  await new Promise(resolve => setTimeout(resolve, 500));
 
   return {
     cache_cleared: true,
@@ -406,11 +406,11 @@ async function refreshSystemCache() {
 async function optimizeDatabase() {
   // This would typically run database optimization commands
   // For now, we'll simulate the operation
-  await new Promise((resolve) => setTimeout(resolve, 2000));
+  await new Promise(resolve => setTimeout(resolve, 2000));
 
   return {
     optimization_completed: true,
-    tables_optimized: ["users", "audit_logs", "sessions"],
+    tables_optimized: ['users', 'audit_logs', 'sessions'],
     timestamp: new Date().toISOString(),
   };
 }
@@ -419,7 +419,7 @@ async function optimizeDatabase() {
 async function backupDatabase() {
   // This would typically create a database backup
   // For now, we'll simulate the operation
-  await new Promise((resolve) => setTimeout(resolve, 3000));
+  await new Promise(resolve => setTimeout(resolve, 3000));
 
   const backupId = `backup_${Date.now()}`;
 

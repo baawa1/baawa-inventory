@@ -3,10 +3,10 @@
  * Persistent rate limiting that survives server restarts
  */
 
-import { Redis } from "ioredis";
-import { NextRequest } from "next/server";
-import { logger } from "./logger";
-import { ErrorSanitizer } from "./utils/error-sanitizer";
+import { Redis } from 'ioredis';
+import { NextRequest } from 'next/server';
+import { logger } from './logger';
+import { ErrorSanitizer } from './utils/error-sanitizer';
 
 export interface RateLimitResult {
   success: boolean;
@@ -40,7 +40,7 @@ export class RedisRateLimiter {
       const redisUrl = process.env.REDIS_URL;
       if (!redisUrl) {
         logger.warn(
-          "Redis URL not configured, falling back to in-memory rate limiting"
+          'Redis URL not configured, falling back to in-memory rate limiting'
         );
         return;
       }
@@ -50,27 +50,27 @@ export class RedisRateLimiter {
         lazyConnect: true,
       });
 
-      this.redis.on("connect", () => {
+      this.redis.on('connect', () => {
         this.isRedisAvailable = true;
-        logger.info("Redis connected for rate limiting");
+        logger.info('Redis connected for rate limiting');
       });
 
-      this.redis.on("error", (error: any) => {
+      this.redis.on('error', (error: any) => {
         this.isRedisAvailable = false;
-        ErrorSanitizer.logError(error, "Redis rate limiter error");
+        ErrorSanitizer.logError(error, 'Redis rate limiter error');
       });
 
-      this.redis.on("close", () => {
+      this.redis.on('close', () => {
         this.isRedisAvailable = false;
         logger.warn(
-          "Redis connection closed, falling back to in-memory rate limiting"
+          'Redis connection closed, falling back to in-memory rate limiting'
         );
       });
 
       await this.redis.connect();
     } catch (error) {
       this.isRedisAvailable = false;
-      ErrorSanitizer.logError(error, "Failed to initialize Redis rate limiter");
+      ErrorSanitizer.logError(error, 'Failed to initialize Redis rate limiter');
     }
   }
 
@@ -83,10 +83,10 @@ export class RedisRateLimiter {
     }
 
     // Default key generation based on IP
-    const forwarded = req.headers.get("x-forwarded-for");
+    const forwarded = req.headers.get('x-forwarded-for');
     const ip = forwarded
-      ? forwarded.split(",")[0]
-      : req.headers.get("x-real-ip") || "unknown";
+      ? forwarded.split(',')[0]
+      : req.headers.get('x-real-ip') || 'unknown';
     const pathname = req.nextUrl.pathname;
 
     return `rate_limit:${ip}:${pathname}`;
@@ -142,7 +142,7 @@ export class RedisRateLimiter {
           remaining <= 0 ? Math.ceil(config.windowMs / 1000) : undefined,
       };
     } catch (error) {
-      ErrorSanitizer.logError(error, "Redis rate limit check failed");
+      ErrorSanitizer.logError(error, 'Redis rate limit check failed');
       return this.checkRateLimitMemory(key, config);
     }
   }
@@ -215,7 +215,7 @@ export class RedisRateLimiter {
       }
       this.fallbackStore.delete(key);
     } catch (error) {
-      ErrorSanitizer.logError(error, "Failed to reset rate limit");
+      ErrorSanitizer.logError(error, 'Failed to reset rate limit');
     }
   }
 
@@ -240,7 +240,7 @@ export class RedisRateLimiter {
         return { count, resetTime };
       }
     } catch (error) {
-      ErrorSanitizer.logError(error, "Failed to get Redis rate limit status");
+      ErrorSanitizer.logError(error, 'Failed to get Redis rate limit status');
     }
 
     // Fallback to memory
@@ -284,28 +284,28 @@ export const REDIS_RATE_LIMITS = {
   AUTH: {
     windowMs: 15 * 60 * 1000, // 15 minutes
     maxRequests: 5, // 5 requests per 15 minutes
-    message: "Too many authentication attempts. Please try again later.",
+    message: 'Too many authentication attempts. Please try again later.',
   },
 
   // Medium limits for API endpoints
   API: {
     windowMs: 1 * 60 * 1000, // 1 minute
     maxRequests: 60, // 60 requests per minute
-    message: "Too many requests. Please slow down.",
+    message: 'Too many requests. Please slow down.',
   },
 
   // Looser limits for data fetching
   DATA: {
     windowMs: 1 * 60 * 1000, // 1 minute
     maxRequests: 100, // 100 requests per minute
-    message: "Too many requests. Please slow down.",
+    message: 'Too many requests. Please slow down.',
   },
 
   // Very strict for admin actions
   ADMIN: {
     windowMs: 5 * 60 * 1000, // 5 minutes
     maxRequests: 10, // 10 admin actions per 5 minutes
-    message: "Too many admin actions. Please wait before trying again.",
+    message: 'Too many admin actions. Please wait before trying again.',
   },
 } as const;
 

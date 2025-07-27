@@ -1,17 +1,17 @@
-import { NextResponse } from "next/server";
+import { NextResponse } from 'next/server';
 import {
   withAuth,
   withPermission,
   AuthenticatedRequest,
-} from "@/lib/api-middleware";
-import { handleApiError } from "@/lib/api-error-handler-new";
-import { prisma } from "@/lib/db";
-import { USER_ROLES } from "@/lib/auth/roles";
+} from '@/lib/api-middleware';
+import { handleApiError } from '@/lib/api-error-handler-new';
+import { prisma } from '@/lib/db';
+import { USER_ROLES } from '@/lib/auth/roles';
 import {
   createStockReconciliationSchema,
   stockReconciliationQuerySchema,
   type CreateStockReconciliationData,
-} from "@/lib/validations/stock-management";
+} from '@/lib/validations/stock-management';
 
 // GET /api/stock-reconciliations - List stock reconciliations with filtering
 export const GET = withAuth(async (request: AuthenticatedRequest) => {
@@ -22,10 +22,10 @@ export const GET = withAuth(async (request: AuthenticatedRequest) => {
     // Parse query parameters
     for (const [key, value] of searchParams) {
       if (
-        key === "createdBy" ||
-        key === "approvedBy" ||
-        key === "page" ||
-        key === "limit"
+        key === 'createdBy' ||
+        key === 'approvedBy' ||
+        key === 'page' ||
+        key === 'limit'
       ) {
         queryParams[key] = parseInt(value);
       } else {
@@ -87,7 +87,7 @@ export const GET = withAuth(async (request: AuthenticatedRequest) => {
             },
           },
         },
-        orderBy: { createdAt: "desc" },
+        orderBy: { createdAt: 'desc' },
         skip,
         take: limit,
       }),
@@ -96,9 +96,9 @@ export const GET = withAuth(async (request: AuthenticatedRequest) => {
 
     return NextResponse.json({
       success: true,
-      data: reconciliations.map((reconciliation) => ({
+      data: reconciliations.map(reconciliation => ({
         ...reconciliation,
-        items: reconciliation.items.map((item) => ({
+        items: reconciliation.items.map(item => ({
           ...item,
           estimatedImpact:
             item.estimatedImpact !== null && item.estimatedImpact !== undefined
@@ -130,7 +130,7 @@ export const POST = withPermission(
         createStockReconciliationSchema.parse(body);
 
       // Validate all products exist and get current stock counts
-      const productIds = validatedData.items.map((item) => item.productId);
+      const productIds = validatedData.items.map(item => item.productId);
       const products = await prisma.product.findMany({
         where: { id: { in: productIds } },
         select: { id: true, name: true, sku: true, stock: true, cost: true },
@@ -138,23 +138,23 @@ export const POST = withPermission(
 
       if (products.length !== productIds.length) {
         const missingIds = productIds.filter(
-          (id) => !products.find((p) => p.id === id)
+          id => !products.find(p => p.id === id)
         );
         return NextResponse.json(
-          { error: `Products not found: ${missingIds.join(", ")}` },
+          { error: `Products not found: ${missingIds.join(', ')}` },
           { status: 404 }
         );
       }
 
       // Create reconciliation in transaction
-      const reconciliation = await prisma.$transaction(async (tx) => {
+      const reconciliation = await prisma.$transaction(async tx => {
         // Create the reconciliation record
         const newReconciliation = await tx.stockReconciliation.create({
           data: {
             title: validatedData.title,
             description: validatedData.description,
             notes: validatedData.notes,
-            status: "DRAFT",
+            status: 'DRAFT',
             createdById: parseInt(request.user.id),
           },
           include: {
@@ -170,8 +170,8 @@ export const POST = withPermission(
         });
 
         // Create reconciliation items with proper schema fields
-        const itemsData = validatedData.items.map((item) => {
-          const product = products.find((p) => p.id === item.productId)!;
+        const itemsData = validatedData.items.map(item => {
+          const product = products.find(p => p.id === item.productId)!;
           const discrepancy = item.physicalCount - item.systemCount;
 
           // Calculate estimated impact with proper null handling
@@ -235,11 +235,11 @@ export const POST = withPermission(
       return NextResponse.json(
         {
           success: true,
-          message: "Stock reconciliation created successfully",
+          message: 'Stock reconciliation created successfully',
           data: completeReconciliation
             ? {
                 ...completeReconciliation,
-                items: completeReconciliation.items.map((item) => ({
+                items: completeReconciliation.items.map(item => ({
                   ...item,
                   estimatedImpact:
                     item.estimatedImpact !== null &&

@@ -1,9 +1,9 @@
-import { NextResponse } from "next/server";
-import { withPermission, AuthenticatedRequest } from "@/lib/api-middleware";
-import { handleApiError } from "@/lib/api-error-handler-new";
-import { prisma } from "@/lib/db";
-import { USER_ROLES } from "@/lib/auth/roles";
-import { sendReconciliationNotification } from "@/lib/notifications/stock-reconciliation";
+import { NextResponse } from 'next/server';
+import { withPermission, AuthenticatedRequest } from '@/lib/api-middleware';
+import { handleApiError } from '@/lib/api-error-handler-new';
+import { prisma } from '@/lib/db';
+import { USER_ROLES } from '@/lib/auth/roles';
+import { sendReconciliationNotification } from '@/lib/notifications/stock-reconciliation';
 
 export const POST = withPermission(
   [USER_ROLES.ADMIN],
@@ -17,7 +17,7 @@ export const POST = withPermission(
 
       if (isNaN(reconciliationId)) {
         return NextResponse.json(
-          { error: "Invalid reconciliation ID" },
+          { error: 'Invalid reconciliation ID' },
           { status: 400 }
         );
       }
@@ -25,7 +25,7 @@ export const POST = withPermission(
       await request.json(); // Optional approval notes
 
       // Use transaction to ensure data consistency
-      const result = await prisma.$transaction(async (tx) => {
+      const result = await prisma.$transaction(async tx => {
         // Get reconciliation with items
         const reconciliation = await tx.stockReconciliation.findUnique({
           where: { id: reconciliationId },
@@ -44,12 +44,12 @@ export const POST = withPermission(
         });
 
         if (!reconciliation) {
-          throw new Error("Stock reconciliation not found");
+          throw new Error('Stock reconciliation not found');
         }
 
         // Can only approve pending reconciliations
-        if (reconciliation.status !== "PENDING") {
-          throw new Error("Only pending reconciliations can be approved");
+        if (reconciliation.status !== 'PENDING') {
+          throw new Error('Only pending reconciliations can be approved');
         }
 
         // Update product stock levels based on discrepancies
@@ -71,7 +71,7 @@ export const POST = withPermission(
         const updatedReconciliation = await tx.stockReconciliation.update({
           where: { id: reconciliationId },
           data: {
-            status: "APPROVED",
+            status: 'APPROVED',
             approvedById: parseInt(request.user.id),
             approvedAt: new Date(),
           },
@@ -113,7 +113,7 @@ export const POST = withPermission(
       // Send notification about the approved reconciliation
       try {
         await sendReconciliationNotification({
-          type: "RECONCILIATION_APPROVED",
+          type: 'RECONCILIATION_APPROVED',
           reconciliationId: result.id,
           reconciliationTitle: result.title,
           createdBy: result.createdBy,
@@ -121,7 +121,7 @@ export const POST = withPermission(
         });
       } catch (notificationError) {
         console.error(
-          "Failed to send approval notification:",
+          'Failed to send approval notification:',
           notificationError
         );
         // Don't fail the whole operation if notification fails
@@ -129,7 +129,7 @@ export const POST = withPermission(
 
       return NextResponse.json({
         success: true,
-        message: "Stock reconciliation approved successfully",
+        message: 'Stock reconciliation approved successfully',
         data: result,
       });
     } catch (error) {

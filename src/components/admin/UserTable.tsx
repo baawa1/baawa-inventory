@@ -1,6 +1,6 @@
-"use client";
+'use client';
 
-import { Button } from "@/components/ui/button";
+import { Button } from '@/components/ui/button';
 import {
   Table,
   TableBody,
@@ -8,10 +8,10 @@ import {
   TableHead,
   TableHeader,
   TableRow,
-} from "@/components/ui/table";
-import { Badge } from "@/components/ui/badge";
-import { type User } from "./types/user";
-import Link from "next/link";
+} from '@/components/ui/table';
+import { Badge } from '@/components/ui/badge';
+import { type User } from './types/user';
+import Link from 'next/link';
 
 interface UserTableProps {
   users: User[];
@@ -22,31 +22,31 @@ interface UserTableProps {
 
 const getRoleColor = (role: string) => {
   switch (role) {
-    case "ADMIN":
-      return "destructive";
-    case "MANAGER":
-      return "default";
-    case "STAFF":
-      return "secondary";
+    case 'ADMIN':
+      return 'destructive';
+    case 'MANAGER':
+      return 'default';
+    case 'STAFF':
+      return 'secondary';
     default:
-      return "outline";
+      return 'outline';
   }
 };
 
 const getStatusColor = (status: string) => {
   switch (status) {
-    case "APPROVED":
-      return "default";
-    case "PENDING":
-      return "secondary";
-    case "VERIFIED":
-      return "outline";
-    case "REJECTED":
-      return "destructive";
-    case "SUSPENDED":
-      return "destructive";
+    case 'APPROVED':
+      return 'default';
+    case 'PENDING':
+      return 'secondary';
+    case 'VERIFIED':
+      return 'outline';
+    case 'REJECTED':
+      return 'destructive';
+    case 'SUSPENDED':
+      return 'destructive';
     default:
-      return "outline";
+      return 'outline';
   }
 };
 
@@ -87,7 +87,7 @@ export function UserTable({
         </TableRow>
       </TableHeader>
       <TableBody>
-        {users.map((user) => (
+        {users.map(user => (
           <TableRow key={user.id}>
             <TableCell className="font-medium">
               {user.firstName} {user.lastName}
@@ -102,8 +102,8 @@ export function UserTable({
               </Badge>
             </TableCell>
             <TableCell>
-              <Badge variant={user.isActive ? "default" : "secondary"}>
-                {user.isActive ? "Active" : "Inactive"}
+              <Badge variant={user.isActive ? 'default' : 'secondary'}>
+                {user.isActive ? 'Active' : 'Inactive'}
               </Badge>
             </TableCell>
             <TableCell>
@@ -112,9 +112,9 @@ export function UserTable({
             <TableCell>
               {user.lastLogin
                 ? new Date(user.lastLogin).toLocaleDateString()
-                : "Never"}
+                : 'Never'}
             </TableCell>
-            <TableCell className="text-right space-x-2">
+            <TableCell className="space-x-2 text-right">
               <Button
                 variant="outline"
                 size="sm"

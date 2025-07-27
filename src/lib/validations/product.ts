@@ -1,4 +1,4 @@
-import { z } from "zod";
+import { z } from 'zod';
 import {
   idSchema,
   paginationSchema,
@@ -7,8 +7,8 @@ import {
   stockSchema,
   skuSchema,
   nameSchema,
-} from "./common";
-import { nairaPriceSchema, costPriceSchema, salePriceSchema } from "./price";
+} from './common';
+import { nairaPriceSchema, costPriceSchema, salePriceSchema } from './price';
 
 // Product creation schema
 export const createProductSchema = z.object({
@@ -17,19 +17,19 @@ export const createProductSchema = z.object({
   barcode: z.string().optional().nullable(),
   description: z
     .string()
-    .max(1000, "Description must be 1000 characters or less")
+    .max(1000, 'Description must be 1000 characters or less')
     .optional()
     .nullable(),
   categoryId: z
     .number()
     .int()
-    .positive("Category is required")
+    .positive('Category is required')
     .optional()
     .nullable(),
   brandId: z
     .number()
     .int()
-    .positive("Brand must be a valid ID")
+    .positive('Brand must be a valid ID')
     .optional()
     .nullable(),
   purchasePrice: costPriceSchema,
@@ -42,30 +42,30 @@ export const createProductSchema = z.object({
   imageUrl: z.string().optional().nullable(),
   notes: z
     .string()
-    .max(500, "Notes must be 500 characters or less")
+    .max(500, 'Notes must be 500 characters or less')
     .optional()
     .nullable(),
   // New fields
-  unit: z.string().max(20, "Unit must be 20 characters or less").optional(),
-  weight: z.number().positive("Weight must be positive").optional().nullable(),
+  unit: z.string().max(20, 'Unit must be 20 characters or less').optional(),
+  weight: z.number().positive('Weight must be positive').optional().nullable(),
   dimensions: z
     .string()
-    .max(100, "Dimensions must be 100 characters or less")
+    .max(100, 'Dimensions must be 100 characters or less')
     .optional()
     .nullable(),
   color: z
     .string()
-    .max(50, "Color must be 50 characters or less")
+    .max(50, 'Color must be 50 characters or less')
     .optional()
     .nullable(),
   size: z
     .string()
-    .max(50, "Size must be 50 characters or less")
+    .max(50, 'Size must be 50 characters or less')
     .optional()
     .nullable(),
   material: z
     .string()
-    .max(100, "Material must be 100 characters or less")
+    .max(100, 'Material must be 100 characters or less')
     .optional()
     .nullable(),
   tags: z.array(z.string()).optional(),
@@ -74,12 +74,12 @@ export const createProductSchema = z.object({
   saleEndDate: z.date().optional().nullable(),
   metaTitle: z
     .string()
-    .max(255, "Meta title must be 255 characters or less")
+    .max(255, 'Meta title must be 255 characters or less')
     .optional()
     .nullable(),
   metaDescription: z
     .string()
-    .max(500, "Meta description must be 500 characters or less")
+    .max(500, 'Meta description must be 500 characters or less')
     .optional()
     .nullable(),
   seoKeywords: z.array(z.string()).optional(),
@@ -90,8 +90,8 @@ export const createProductSchema = z.object({
 // Product update schema (all fields optional except validation rules)
 export const updateProductSchema = createProductSchema
   .partial()
-  .refine((data) => Object.keys(data).length > 0, {
-    message: "At least one field must be provided for update",
+  .refine(data => Object.keys(data).length > 0, {
+    message: 'At least one field must be provided for update',
   });
 
 // Product query parameters schema
@@ -116,22 +116,22 @@ export const stockUpdateSchema = z.object({
   quantity: z.number().int(),
   reason: z
     .string()
-    .min(1, "Reason is required")
-    .max(255, "Reason must be 255 characters or less"),
+    .min(1, 'Reason is required')
+    .max(255, 'Reason must be 255 characters or less'),
 });
 
 // Bulk operation schemas
 export const bulkUpdatePricesSchema = z.object({
-  productIds: z.array(idSchema).min(1, "At least one product ID is required"),
+  productIds: z.array(idSchema).min(1, 'At least one product ID is required'),
   priceAdjustment: z.object({
-    type: z.enum(["PERCENTAGE", "FIXED_AMOUNT"]),
+    type: z.enum(['PERCENTAGE', 'FIXED_AMOUNT']),
     value: z.number(),
-    applyTo: z.enum(["PURCHASE_PRICE", "SELLING_PRICE", "BOTH"]),
+    applyTo: z.enum(['PURCHASE_PRICE', 'SELLING_PRICE', 'BOTH']),
   }),
 });
 
 export const bulkUpdateStatusSchema = z.object({
-  productIds: z.array(idSchema).min(1, "At least one product ID is required"),
+  productIds: z.array(idSchema).min(1, 'At least one product ID is required'),
   status: productStatusSchema,
 });
 

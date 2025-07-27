@@ -14,10 +14,10 @@ import {
   UserSuspensionData,
   UserReactivationData,
   ReceiptEmailData,
-} from "./types";
-import { EmailProviderFactory } from "./providers/factory";
-import { getEmailTemplate } from "./templates";
-import { logger } from "@/lib/logger";
+} from './types';
+import { EmailProviderFactory } from './providers/factory';
+import { getEmailTemplate } from './templates';
+import { logger } from '@/lib/logger';
 
 /**
  * Main Email Service
@@ -84,7 +84,7 @@ export class EmailService {
   ): Promise<void> {
     try {
       const emails: EmailOptions[] = await Promise.all(
-        recipients.map(async (recipient) => {
+        recipients.map(async recipient => {
           const template = await getEmailTemplate(templateType, recipient.data);
           return {
             to: recipient.email,
@@ -129,8 +129,8 @@ export function createEmailService(): EmailService {
   const fromEmail =
     process.env.RESEND_FROM_EMAIL ||
     process.env.FROM_EMAIL ||
-    "noreply@baawa.com";
-  const fromName = process.env.RESEND_FROM_NAME || "Baawa Inventory POS";
+    'noreply@baawa.com';
+  const fromName = process.env.RESEND_FROM_NAME || 'Baawa Inventory POS';
   const replyToEmail = process.env.REPLY_TO_EMAIL;
 
   const config = EmailProviderFactory.detectProviderConfig(
@@ -150,7 +150,7 @@ export const emailService = {
    */
   sendWelcomeEmail: async (to: string, data: WelcomeEmailData) => {
     const service = createEmailService();
-    return service.sendTemplatedEmail("welcome", to, data);
+    return service.sendTemplatedEmail('welcome', to, data);
   },
 
   /**
@@ -158,7 +158,7 @@ export const emailService = {
    */
   sendVerificationEmail: async (to: string, data: EmailVerificationData) => {
     const service = createEmailService();
-    return service.sendTemplatedEmail("email_verification", to, data);
+    return service.sendTemplatedEmail('email_verification', to, data);
   },
 
   /**
@@ -169,17 +169,17 @@ export const emailService = {
     data: EmailVerificationData
   ) => {
     const service = createEmailService();
-    const template = await getEmailTemplate("email_verification", data);
+    const template = await getEmailTemplate('email_verification', data);
     const emailOptions = {
       to,
       subject: template.subject,
       html: template.html,
       text: template.text,
     };
-    if (typeof service["provider"].sendEmailWithId === "function") {
-      return service["provider"].sendEmailWithId!(emailOptions);
+    if (typeof service['provider'].sendEmailWithId === 'function') {
+      return service['provider'].sendEmailWithId!(emailOptions);
     } else {
-      await service.sendTemplatedEmail("email_verification", to, data);
+      await service.sendTemplatedEmail('email_verification', to, data);
       return undefined;
     }
   },
@@ -189,7 +189,7 @@ export const emailService = {
    */
   sendPasswordResetEmail: async (to: string, data: PasswordResetData) => {
     const service = createEmailService();
-    return service.sendTemplatedEmail("password_reset", to, data);
+    return service.sendTemplatedEmail('password_reset', to, data);
   },
 
   /**
@@ -197,7 +197,7 @@ export const emailService = {
    */
   sendUserApprovalEmail: async (to: string, data: UserApprovalData) => {
     const service = createEmailService();
-    return service.sendTemplatedEmail("user_approved", to, data);
+    return service.sendTemplatedEmail('user_approved', to, data);
   },
 
   /**
@@ -208,7 +208,7 @@ export const emailService = {
     data: AdminNotificationData
   ) => {
     const service = createEmailService();
-    return service.sendTemplatedEmail("admin_new_user_pending", to, data);
+    return service.sendTemplatedEmail('admin_new_user_pending', to, data);
   },
 
   /**
@@ -216,7 +216,7 @@ export const emailService = {
    */
   sendUserRejectionEmail: async (to: string, data: UserRejectionData) => {
     const service = createEmailService();
-    return service.sendTemplatedEmail("user_rejected", to, data);
+    return service.sendTemplatedEmail('user_rejected', to, data);
   },
 
   /**
@@ -224,7 +224,7 @@ export const emailService = {
    */
   sendRoleChangeEmail: async (to: string, data: RoleChangeData) => {
     const service = createEmailService();
-    return service.sendTemplatedEmail("role_changed", to, data);
+    return service.sendTemplatedEmail('role_changed', to, data);
   },
 
   /**
@@ -235,7 +235,7 @@ export const emailService = {
     data: AdminDigestData
   ) => {
     const service = createEmailService();
-    return service.sendTemplatedEmail("admin_digest", to, data);
+    return service.sendTemplatedEmail('admin_digest', to, data);
   },
 
   /**
@@ -246,7 +246,7 @@ export const emailService = {
     data: UserSuspensionData
   ): Promise<void> {
     const service = createEmailService();
-    const template = await getEmailTemplate("user_suspension", data);
+    const template = await getEmailTemplate('user_suspension', data);
     await service.sendEmail({
       to,
       subject: template.subject,
@@ -263,7 +263,7 @@ export const emailService = {
     data: UserReactivationData
   ): Promise<void> {
     const service = createEmailService();
-    const template = await getEmailTemplate("user_reactivation", data);
+    const template = await getEmailTemplate('user_reactivation', data);
     await service.sendEmail({
       to,
       subject: template.subject,
@@ -306,10 +306,10 @@ export const emailService = {
         staffName: data.staffName,
       };
 
-      await service.sendTemplatedEmail("receipt_email", data.to, receiptData);
+      await service.sendTemplatedEmail('receipt_email', data.to, receiptData);
       return true;
     } catch (error) {
-      logger.error("Failed to send receipt email", {
+      logger.error('Failed to send receipt email', {
         transactionId: data.saleId,
         customerEmail: data.to,
         error: error instanceof Error ? error.message : String(error),
@@ -337,11 +337,11 @@ export const emailTestUtils = {
    */
   getTestEmailFor: (
     purpose:
-      | "verification"
-      | "password-reset"
-      | "approval"
-      | "welcome"
-      | "general"
+      | 'verification'
+      | 'password-reset'
+      | 'approval'
+      | 'welcome'
+      | 'general'
   ): string => {
     const timestamp = Date.now().toString().slice(-4);
     return `baawapay+${purpose}-${timestamp}@gmail.com`;
@@ -352,11 +352,11 @@ export const emailTestUtils = {
    * In development, redirects emails to baawapay test addresses
    */
   getEmailAddress: (originalEmail: string, testPurpose?: string): string => {
-    const isDevelopment = process.env.NODE_ENV === "development";
-    const forceTestEmail = process.env.FORCE_TEST_EMAIL === "true";
+    const isDevelopment = process.env.NODE_ENV === 'development';
+    const forceTestEmail = process.env.FORCE_TEST_EMAIL === 'true';
 
     if (isDevelopment || forceTestEmail) {
-      const purpose = testPurpose || "dev";
+      const purpose = testPurpose || 'dev';
       return emailTestUtils.getTestEmailFor(purpose as any);
     }
 
@@ -366,9 +366,9 @@ export const emailTestUtils = {
   /**
    * Send a test email to verify setup
    */
-  sendTestEmail: async (purpose: string = "setup-test"): Promise<void> => {
+  sendTestEmail: async (purpose: string = 'setup-test'): Promise<void> => {
     const service = createEmailService();
-    const testEmail = emailTestUtils.getTestEmailFor("general");
+    const testEmail = emailTestUtils.getTestEmailFor('general');
 
     await service.sendEmail({
       to: testEmail,

@@ -1,10 +1,10 @@
-"use client";
+'use client';
 
-import { useState } from "react";
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import { Badge } from "@/components/ui/badge";
-import { Button } from "@/components/ui/button";
-import { Input } from "@/components/ui/input";
+import { useState } from 'react';
+import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
+import { Badge } from '@/components/ui/badge';
+import { Button } from '@/components/ui/button';
+import { Input } from '@/components/ui/input';
 import {
   Table,
   TableBody,
@@ -12,21 +12,21 @@ import {
   TableHead,
   TableHeader,
   TableRow,
-} from "@/components/ui/table";
+} from '@/components/ui/table';
 import {
   Select,
   SelectContent,
   SelectItem,
   SelectTrigger,
   SelectValue,
-} from "@/components/ui/select";
+} from '@/components/ui/select';
 import {
   IconShoppingCart,
   IconSearch,
   IconArrowRight,
-} from "@tabler/icons-react";
-import { formatCurrency } from "@/lib/utils";
-import { useTransactions } from "@/hooks/api/transactions";
+} from '@tabler/icons-react';
+import { formatCurrency } from '@/lib/utils';
+import { useTransactions } from '@/hooks/api/transactions';
 
 interface RecentTransactionsTableProps {
   limit?: number;
@@ -37,15 +37,15 @@ export function RecentTransactionsTable({
   limit = 10,
   showFilters = false,
 }: RecentTransactionsTableProps) {
-  const [search, setSearch] = useState("");
-  const [paymentMethod, setPaymentMethod] = useState("all");
-  const [paymentStatus, setPaymentStatus] = useState("all");
+  const [search, setSearch] = useState('');
+  const [paymentMethod, setPaymentMethod] = useState('all');
+  const [paymentStatus, setPaymentStatus] = useState('all');
 
   const { data: transactionsData, isLoading } = useTransactions(
     {
       search,
-      paymentMethod: paymentMethod !== "all" ? paymentMethod : undefined,
-      paymentStatus: paymentStatus !== "all" ? paymentStatus : undefined,
+      paymentMethod: paymentMethod !== 'all' ? paymentMethod : undefined,
+      paymentStatus: paymentStatus !== 'all' ? paymentStatus : undefined,
     },
     { page: 1, limit }
   );
@@ -54,11 +54,11 @@ export function RecentTransactionsTable({
 
   const getStatusBadge = (status: string) => {
     switch (status.toLowerCase()) {
-      case "completed":
+      case 'completed':
         return <Badge className="bg-green-100 text-green-700">Completed</Badge>;
-      case "pending":
+      case 'pending':
         return <Badge className="bg-yellow-100 text-yellow-700">Pending</Badge>;
-      case "cancelled":
+      case 'cancelled':
         return <Badge variant="destructive">Cancelled</Badge>;
       default:
         return <Badge variant="secondary">{status}</Badge>;
@@ -67,23 +67,23 @@ export function RecentTransactionsTable({
 
   const getPaymentMethodBadge = (method: string) => {
     switch (method.toLowerCase()) {
-      case "cash":
+      case 'cash':
         return (
-          <Badge variant="outline" className="text-green-600 border-green-200">
+          <Badge variant="outline" className="border-green-200 text-green-600">
             Cash
           </Badge>
         );
-      case "pos":
+      case 'pos':
         return (
-          <Badge variant="outline" className="text-blue-600 border-blue-200">
+          <Badge variant="outline" className="border-blue-200 text-blue-600">
             POS
           </Badge>
         );
-      case "transfer":
+      case 'transfer':
         return (
           <Badge
             variant="outline"
-            className="text-purple-600 border-purple-200"
+            className="border-purple-200 text-purple-600"
           >
             Transfer
           </Badge>
@@ -107,13 +107,13 @@ export function RecentTransactionsTable({
       </CardHeader>
       <CardContent>
         {showFilters && (
-          <div className="flex flex-col sm:flex-row gap-4 mb-6">
+          <div className="mb-6 flex flex-col gap-4 sm:flex-row">
             <div className="relative flex-1">
-              <IconSearch className="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-muted-foreground" />
+              <IconSearch className="text-muted-foreground absolute top-1/2 left-3 h-4 w-4 -translate-y-1/2 transform" />
               <Input
                 placeholder="Search transactions..."
                 value={search}
-                onChange={(e) => setSearch(e.target.value)}
+                onChange={e => setSearch(e.target.value)}
                 className="pl-9"
               />
             </div>
@@ -160,25 +160,25 @@ export function RecentTransactionsTable({
                 Array.from({ length: limit }).map((_, i) => (
                   <TableRow key={i}>
                     <TableCell className="animate-pulse">
-                      <div className="h-4 bg-muted rounded w-20"></div>
+                      <div className="bg-muted h-4 w-20 rounded"></div>
                     </TableCell>
                     <TableCell className="animate-pulse">
-                      <div className="h-4 bg-muted rounded w-24"></div>
+                      <div className="bg-muted h-4 w-24 rounded"></div>
                     </TableCell>
                     <TableCell className="animate-pulse">
-                      <div className="h-4 bg-muted rounded w-12"></div>
+                      <div className="bg-muted h-4 w-12 rounded"></div>
                     </TableCell>
                     <TableCell className="animate-pulse">
-                      <div className="h-4 bg-muted rounded w-16"></div>
+                      <div className="bg-muted h-4 w-16 rounded"></div>
                     </TableCell>
                     <TableCell className="animate-pulse">
-                      <div className="h-4 bg-muted rounded w-20"></div>
+                      <div className="bg-muted h-4 w-20 rounded"></div>
                     </TableCell>
                     <TableCell className="animate-pulse">
-                      <div className="h-4 bg-muted rounded w-16"></div>
+                      <div className="bg-muted h-4 w-16 rounded"></div>
                     </TableCell>
                     <TableCell className="animate-pulse">
-                      <div className="h-4 bg-muted rounded w-20"></div>
+                      <div className="bg-muted h-4 w-20 rounded"></div>
                     </TableCell>
                   </TableRow>
                 ))
@@ -186,13 +186,13 @@ export function RecentTransactionsTable({
                 <TableRow>
                   <TableCell
                     colSpan={7}
-                    className="text-center py-8 text-muted-foreground"
+                    className="text-muted-foreground py-8 text-center"
                   >
                     No transactions found
                   </TableCell>
                 </TableRow>
               ) : (
-                transactions.map((transaction) => (
+                transactions.map(transaction => (
                   <TableRow key={transaction.id} className="hover:bg-muted/50">
                     <TableCell className="font-medium">
                       {transaction.transactionNumber}
@@ -200,10 +200,10 @@ export function RecentTransactionsTable({
                     <TableCell>
                       <div>
                         <p className="font-medium">
-                          {transaction.customerName || "Walk-in"}
+                          {transaction.customerName || 'Walk-in'}
                         </p>
                         {transaction.customerPhone && (
-                          <p className="text-sm text-muted-foreground">
+                          <p className="text-muted-foreground text-sm">
                             {transaction.customerPhone}
                           </p>
                         )}

@@ -1,9 +1,9 @@
-import React from "react";
-import { Button } from "@/components/ui/button";
-import { Input } from "@/components/ui/input";
-import { Label } from "@/components/ui/label";
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import { IconUser, IconPhone, IconMail, IconMapPin } from "@tabler/icons-react";
+import React from 'react';
+import { Button } from '@/components/ui/button';
+import { Input } from '@/components/ui/input';
+import { Label } from '@/components/ui/label';
+import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
+import { IconUser, IconPhone, IconMail, IconMapPin } from '@tabler/icons-react';
 
 interface CustomerInfoStepProps {
   customerInfo: {
@@ -13,7 +13,7 @@ interface CustomerInfoStepProps {
     address: string;
   };
   onCustomerInfoChange: (
-    field: keyof CustomerInfoStepProps["customerInfo"],
+    field: keyof CustomerInfoStepProps['customerInfo'],
     value: string
   ) => void;
   onNext: () => void;
@@ -34,7 +34,7 @@ export const CustomerInfoStep: React.FC<CustomerInfoStepProps> = ({
   };
 
   return (
-    <Card className="w-full max-w-md mx-auto">
+    <Card className="mx-auto w-full max-w-md">
       <CardHeader>
         <CardTitle className="flex items-center gap-2">
           <IconUser className="h-5 w-5" />
@@ -53,7 +53,7 @@ export const CustomerInfoStep: React.FC<CustomerInfoStepProps> = ({
               type="text"
               placeholder="Enter customer name"
               value={customerInfo.name}
-              onChange={(e) => onCustomerInfoChange("name", e.target.value)}
+              onChange={e => onCustomerInfoChange('name', e.target.value)}
               required
             />
           </div>
@@ -68,7 +68,7 @@ export const CustomerInfoStep: React.FC<CustomerInfoStepProps> = ({
               type="tel"
               placeholder="Enter phone number"
               value={customerInfo.phone}
-              onChange={(e) => onCustomerInfoChange("phone", e.target.value)}
+              onChange={e => onCustomerInfoChange('phone', e.target.value)}
               required
             />
           </div>
@@ -83,7 +83,7 @@ export const CustomerInfoStep: React.FC<CustomerInfoStepProps> = ({
               type="email"
               placeholder="Enter email address"
               value={customerInfo.email}
-              onChange={(e) => onCustomerInfoChange("email", e.target.value)}
+              onChange={e => onCustomerInfoChange('email', e.target.value)}
             />
           </div>
 
@@ -100,7 +100,7 @@ export const CustomerInfoStep: React.FC<CustomerInfoStepProps> = ({
               type="text"
               placeholder="Enter delivery address"
               value={customerInfo.address}
-              onChange={(e) => onCustomerInfoChange("address", e.target.value)}
+              onChange={e => onCustomerInfoChange('address', e.target.value)}
             />
           </div>
 
@@ -115,7 +115,7 @@ export const CustomerInfoStep: React.FC<CustomerInfoStepProps> = ({
               Back
             </Button>
             <Button type="submit" className="flex-1" disabled={isSubmitting}>
-              {isSubmitting ? "Processing..." : "Next"}
+              {isSubmitting ? 'Processing...' : 'Next'}
             </Button>
           </div>
         </form>

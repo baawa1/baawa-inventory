@@ -1,5 +1,5 @@
-import { test, expect } from "@playwright/test";
-import fetch from "node-fetch";
+import { test, expect } from '@playwright/test';
+import fetch from 'node-fetch';
 
 export interface EmailTestConfig {
   resendApiKey?: string;
@@ -15,7 +15,7 @@ export class EmailTestUtils {
   constructor(config: EmailTestConfig = {}) {
     this.config = {
       resendApiKey: process.env.RESEND_API_KEY,
-      baseEmail: "baawapay@gmail.com",
+      baseEmail: 'baawapay@gmail.com',
       waitTime: 5000,
       rateLimitDelay: 1000, // 1 second delay between emails
       ...config,
@@ -29,20 +29,22 @@ export class EmailTestUtils {
     const now = Date.now();
     const timeSinceLastEmail = now - this.lastEmailSent;
     const requiredDelay = this.config.rateLimitDelay || 1000;
-    
+
     if (timeSinceLastEmail < requiredDelay) {
       const delayNeeded = requiredDelay - timeSinceLastEmail;
-      console.log(`⏳ Rate limiting: waiting ${delayNeeded}ms before next email`);
+      console.log(
+        `⏳ Rate limiting: waiting ${delayNeeded}ms before next email`
+      );
       await new Promise(resolve => setTimeout(resolve, delayNeeded));
     }
-    
+
     this.lastEmailSent = Date.now();
   }
 
   /**
    * Generate a unique test email address
    */
-  generateTestEmail(prefix: string = "test"): string {
+  generateTestEmail(prefix: string = 'test'): string {
     const timestamp = Date.now();
     const random = Math.random().toString(36).substring(2, 8);
     return `baawapay+${prefix}-${timestamp}-${random}@gmail.com`;
@@ -76,7 +78,7 @@ export class EmailTestUtils {
    * Verify email success message
    */
   async verifyEmailSuccess(page: any): Promise<void> {
-    const successMessage = page.locator("text=Check Your Email!");
+    const successMessage = page.locator('text=Check Your Email!');
     await expect(successMessage).toBeVisible();
   }
 
@@ -85,22 +87,22 @@ export class EmailTestUtils {
    */
   async createTestAccount(
     page: any,
-    firstName: string = "Test",
-    lastName: string = "User"
+    firstName: string = 'Test',
+    lastName: string = 'User'
   ): Promise<string> {
-    const testEmail = this.generateTestEmail("e2e");
+    const testEmail = this.generateTestEmail('e2e');
 
-    await page.goto("/register");
+    await page.goto('/register');
     await page.waitForSelector('[data-testid="registration-form"]');
 
     // Fill in registration data using data-testid selectors
     await page.fill('[data-testid="firstName-input"]', firstName);
     await page.fill('[data-testid="lastName-input"]', lastName);
     await page.fill('[data-testid="email-input"]', testEmail);
-    await page.fill('[data-testid="password-input"]', "SecurePass123!@#");
+    await page.fill('[data-testid="password-input"]', 'SecurePass123!@#');
     await page.fill(
       '[data-testid="confirmPassword-input"]',
-      "SecurePass123!@#"
+      'SecurePass123!@#'
     );
 
     // Submit the form
@@ -110,7 +112,7 @@ export class EmailTestUtils {
     await page.waitForURL(/\/check-email/, { timeout: 10000 });
 
     // Verify we're on the check-email page
-    expect(page.url()).toContain("/check-email");
+    expect(page.url()).toContain('/check-email');
     expect(page.url()).toContain(`email=${encodeURIComponent(testEmail)}`);
 
     // Respect rate limiting after email sending
@@ -126,7 +128,7 @@ export class EmailTestUtils {
    */
   async fetchLatestEmail(to: string): Promise<any> {
     if (!this.config.resendApiKey) {
-      throw new Error("RESEND_API_KEY is not set in environment variables");
+      throw new Error('RESEND_API_KEY is not set in environment variables');
     }
 
     // Resend API doesn't provide a way to fetch sent emails
@@ -138,10 +140,10 @@ export class EmailTestUtils {
 
     // Return a mock email object
     return {
-      subject: "Verify your email address",
+      subject: 'Verify your email address',
       html: `<p>Please verify your email by clicking this link: <a href="http://localhost:3000/verify-email?token=mock-verification-token">Verify Email</a></p>`,
       to: to,
-      from: "noreply@baawa.com",
+      from: 'noreply@baawa.com',
       created_at: new Date().toISOString(),
     };
   }
@@ -152,24 +154,24 @@ export class EmailTestUtils {
   async createMultipleTestAccounts(
     page: any,
     count: number,
-    baseName: string = "Test"
+    baseName: string = 'Test'
   ): Promise<string[]> {
     const emails: string[] = [];
-    
+
     for (let i = 0; i < count; i++) {
       const email = await this.createTestAccount(
         page,
         `${baseName}${i + 1}`,
-        "User"
+        'User'
       );
       emails.push(email);
-      
+
       // Additional delay between multiple account creations
       if (i < count - 1) {
         await this.respectRateLimit();
       }
     }
-    
+
     return emails;
   }
 }

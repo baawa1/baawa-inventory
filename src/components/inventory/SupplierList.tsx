@@ -1,26 +1,26 @@
-"use client";
+'use client';
 
-import React, { useState, useMemo, useCallback } from "react";
-import Link from "next/link";
-import { useRouter } from "next/navigation";
-import { toast } from "sonner";
-import { useDebounce } from "@/hooks/useDebounce";
+import React, { useState, useMemo, useCallback } from 'react';
+import Link from 'next/link';
+import { useRouter } from 'next/navigation';
+import { toast } from 'sonner';
+import { useDebounce } from '@/hooks/useDebounce';
 import {
   useSuppliers,
   useDeleteSupplier,
   useUpdateSupplier,
   type Supplier as APISupplier,
-} from "@/hooks/api/suppliers";
-import { InventoryPageLayout } from "@/components/inventory/InventoryPageLayout";
-import SupplierDetailModal from "@/components/inventory/SupplierDetailModal";
-import { Button } from "@/components/ui/button";
-import { Badge } from "@/components/ui/badge";
+} from '@/hooks/api/suppliers';
+import { InventoryPageLayout } from '@/components/inventory/InventoryPageLayout';
+import SupplierDetailModal from '@/components/inventory/SupplierDetailModal';
+import { Button } from '@/components/ui/button';
+import { Badge } from '@/components/ui/badge';
 import {
   DropdownMenu,
   DropdownMenuContent,
   DropdownMenuItem,
   DropdownMenuTrigger,
-} from "@/components/ui/dropdown-menu";
+} from '@/components/ui/dropdown-menu';
 import {
   AlertDialog,
   AlertDialogAction,
@@ -30,7 +30,7 @@ import {
   AlertDialogFooter,
   AlertDialogHeader,
   AlertDialogTitle,
-} from "@/components/ui/alert-dialog";
+} from '@/components/ui/alert-dialog';
 import {
   IconPlus,
   IconDots,
@@ -42,10 +42,10 @@ import {
   IconX,
   IconRefresh,
   IconAlertTriangle,
-} from "@tabler/icons-react";
-import type { FilterConfig } from "@/types/inventory";
-import type { DashboardTableColumn } from "@/components/layouts/DashboardColumnCustomizer";
-import { logger } from "@/lib/logger";
+} from '@tabler/icons-react';
+import type { FilterConfig } from '@/types/inventory';
+import type { DashboardTableColumn } from '@/components/layouts/DashboardColumnCustomizer';
+import { logger } from '@/lib/logger';
 
 interface User {
   id: string;
@@ -87,26 +87,26 @@ const SupplierList = ({ user }: SupplierListProps) => {
   const columns: DashboardTableColumn[] = useMemo(
     () => [
       {
-        key: "name",
-        label: "Name",
+        key: 'name',
+        label: 'Name',
         sortable: true,
         defaultVisible: true,
         required: true,
       },
-      { key: "contactPerson", label: "Contact Person", defaultVisible: true },
-      { key: "email", label: "Email", defaultVisible: true },
-      { key: "phone", label: "Phone", defaultVisible: true },
-      { key: "address", label: "Address", defaultVisible: true },
-      { key: "isActive", label: "Status", defaultVisible: true },
-      { key: "createdAt", label: "Created", defaultVisible: true },
-      { key: "updatedAt", label: "Updated", defaultVisible: false },
+      { key: 'contactPerson', label: 'Contact Person', defaultVisible: true },
+      { key: 'email', label: 'Email', defaultVisible: true },
+      { key: 'phone', label: 'Phone', defaultVisible: true },
+      { key: 'address', label: 'Address', defaultVisible: true },
+      { key: 'isActive', label: 'Status', defaultVisible: true },
+      { key: 'createdAt', label: 'Created', defaultVisible: true },
+      { key: 'updatedAt', label: 'Updated', defaultVisible: false },
     ],
     []
   );
 
   // Initialize visibleColumns with default values to prevent hydration mismatch
   const defaultVisibleColumns = useMemo(
-    () => columns.filter((col) => col.defaultVisible).map((col) => col.key),
+    () => columns.filter(col => col.defaultVisible).map(col => col.key),
     [columns]
   );
 
@@ -117,16 +117,16 @@ const SupplierList = ({ user }: SupplierListProps) => {
   // Clean up any "actions" column from localStorage and state - run once on mount
   React.useEffect(() => {
     // Clean up localStorage if it contains "actions"
-    const storageKey = "suppliers-visible-columns";
+    const storageKey = 'suppliers-visible-columns';
     const storedColumns = localStorage.getItem(storageKey);
     if (storedColumns) {
       try {
         const parsed = JSON.parse(storedColumns);
-        if (Array.isArray(parsed) && parsed.includes("actions")) {
-          const cleaned = parsed.filter((col: string) => col !== "actions");
+        if (Array.isArray(parsed) && parsed.includes('actions')) {
+          const cleaned = parsed.filter((col: string) => col !== 'actions');
           localStorage.setItem(storageKey, JSON.stringify(cleaned));
           // Also update the visible columns state
-          setVisibleColumns((prev) => prev.filter((col) => col !== "actions"));
+          setVisibleColumns(prev => prev.filter(col => col !== 'actions'));
         }
       } catch (_error) {
         // If parsing fails, remove the item
@@ -137,8 +137,8 @@ const SupplierList = ({ user }: SupplierListProps) => {
 
   // Filters
   const [filters, setFilters] = useState({
-    search: "",
-    isActive: "",
+    search: '',
+    isActive: '',
   });
 
   // Debounce search term to avoid excessive API calls
@@ -151,8 +151,8 @@ const SupplierList = ({ user }: SupplierListProps) => {
   const suppliersQuery = useSuppliers({
     search: debouncedSearchTerm,
     status: filters.isActive,
-    sortBy: "name",
-    sortOrder: "asc",
+    sortBy: 'name',
+    sortOrder: 'asc',
     page: pagination.page,
     limit: pagination.limit,
   });
@@ -176,21 +176,21 @@ const SupplierList = ({ user }: SupplierListProps) => {
   };
 
   // Permission checks
-  const canManageSuppliers = ["ADMIN", "MANAGER"].includes(user.role);
-  const canDeleteSuppliers = user.role === "ADMIN";
+  const canManageSuppliers = ['ADMIN', 'MANAGER'].includes(user.role);
+  const canDeleteSuppliers = user.role === 'ADMIN';
 
   // Filter configurations - memoized to prevent unnecessary re-renders
   const filterConfigs: FilterConfig[] = useMemo(
     () => [
       {
-        key: "isActive",
-        label: "Status",
-        type: "select",
+        key: 'isActive',
+        label: 'Status',
+        type: 'select',
         options: [
-          { value: "true", label: "Active" },
-          { value: "false", label: "Inactive" },
+          { value: 'true', label: 'Active' },
+          { value: 'false', label: 'Inactive' },
         ],
-        placeholder: "All Status",
+        placeholder: 'All Status',
       },
     ],
     []
@@ -198,28 +198,28 @@ const SupplierList = ({ user }: SupplierListProps) => {
 
   // Handle filter changes
   const handleFilterChange = useCallback((key: string, value: string) => {
-    setFilters((prev) => {
+    setFilters(prev => {
       if (prev[key as keyof typeof prev] === value) return prev; // Prevent unnecessary updates
       return { ...prev, [key]: value };
     });
-    setPagination((prev) => ({ ...prev, page: 1 }));
+    setPagination(prev => ({ ...prev, page: 1 }));
   }, []);
 
   // Clear all filters
   const handleResetFilters = useCallback(() => {
     setFilters({
-      search: "",
-      isActive: "",
+      search: '',
+      isActive: '',
     });
-    setPagination((prev) => ({ ...prev, page: 1 }));
+    setPagination(prev => ({ ...prev, page: 1 }));
   }, []);
 
   const handlePageChange = useCallback((newPage: number) => {
-    setPagination((prev) => ({ ...prev, page: newPage }));
+    setPagination(prev => ({ ...prev, page: newPage }));
   }, []);
 
   const handlePageSizeChange = useCallback((newSize: number) => {
-    setPagination((prev) => ({ ...prev, limit: newSize, page: 1 }));
+    setPagination(prev => ({ ...prev, limit: newSize, page: 1 }));
   }, []);
 
   // Modal handlers
@@ -248,13 +248,13 @@ const SupplierList = ({ user }: SupplierListProps) => {
           id: supplierId,
           data: { isActive: false },
         });
-        toast.success("Supplier deactivated successfully");
+        toast.success('Supplier deactivated successfully');
       } catch (error) {
-        logger.error("Failed to deactivate supplier", {
+        logger.error('Failed to deactivate supplier', {
           supplierId,
           error: error instanceof Error ? error.message : String(error),
         });
-        toast.error("Failed to deactivate supplier");
+        toast.error('Failed to deactivate supplier');
       }
     },
     [updateSupplierMutation]
@@ -267,13 +267,13 @@ const SupplierList = ({ user }: SupplierListProps) => {
           id: supplierId,
           data: { isActive: true },
         });
-        toast.success("Supplier reactivated successfully");
+        toast.success('Supplier reactivated successfully');
       } catch (error) {
-        logger.error("Failed to reactivate supplier", {
+        logger.error('Failed to reactivate supplier', {
           supplierId,
           error: error instanceof Error ? error.message : String(error),
         });
-        toast.error("Failed to reactivate supplier");
+        toast.error('Failed to reactivate supplier');
       }
     },
     [updateSupplierMutation]
@@ -288,14 +288,14 @@ const SupplierList = ({ user }: SupplierListProps) => {
         id: supplierToReactivate.id,
         data: { isActive: true },
       });
-      toast.success("Supplier reactivated successfully");
+      toast.success('Supplier reactivated successfully');
     } catch (error) {
-      logger.error("Failed to reactivate supplier", {
+      logger.error('Failed to reactivate supplier', {
         supplierId: supplierToReactivate.id,
         supplierName: supplierToReactivate.name,
         error: error instanceof Error ? error.message : String(error),
       });
-      toast.error("Failed to reactivate supplier");
+      toast.error('Failed to reactivate supplier');
     } finally {
       setReactivateDialogOpen(false);
       setSupplierToReactivate(null);
@@ -322,45 +322,45 @@ const SupplierList = ({ user }: SupplierListProps) => {
 
     if (visibleColumns.length === 0) {
       columnsToShow = columns
-        .filter((col) => col.defaultVisible)
-        .map((col) => col.key);
+        .filter(col => col.defaultVisible)
+        .map(col => col.key);
     }
 
     // Filter out any "actions" column since it's handled automatically by the table
-    return columnsToShow.filter((col) => col !== "actions");
+    return columnsToShow.filter(col => col !== 'actions');
   }, [visibleColumns, columns]);
 
   // Render cell function
   const renderCell = useCallback(
     (supplier: APISupplier, columnKey: string) => {
       switch (columnKey) {
-        case "name":
+        case 'name':
           return <span className="font-medium">{supplier.name}</span>;
-        case "contactPerson":
+        case 'contactPerson':
           return (
             supplier.contactPerson || (
               <span className="text-gray-400 italic">No contact</span>
             )
           );
-        case "email":
+        case 'email':
           return supplier.email ? (
             <div className="flex items-center text-sm">
-              <IconMail className="h-3 w-3 mr-1" />
+              <IconMail className="mr-1 h-3 w-3" />
               {supplier.email}
             </div>
           ) : (
             <span className="text-gray-400 italic">No email</span>
           );
-        case "phone":
+        case 'phone':
           return supplier.phone ? (
             <div className="flex items-center text-sm">
-              <IconPhone className="h-3 w-3 mr-1" />
+              <IconPhone className="mr-1 h-3 w-3" />
               {supplier.phone}
             </div>
           ) : (
             <span className="text-gray-400 italic">No phone</span>
           );
-        case "address":
+        case 'address':
           return supplier.address ? (
             <div className="max-w-xs truncate" title={supplier.address}>
               {supplier.address}
@@ -368,11 +368,11 @@ const SupplierList = ({ user }: SupplierListProps) => {
           ) : (
             <span className="text-gray-400 italic">No address</span>
           );
-        case "isActive":
+        case 'isActive':
           return getStatusBadge(supplier.isActive);
-        case "createdAt":
+        case 'createdAt':
           return new Date(supplier.createdAt).toLocaleDateString();
-        case "updatedAt":
+        case 'updatedAt':
           return supplier.updatedAt ? (
             <span className="text-sm">
               {new Date(supplier.updatedAt).toLocaleDateString()}
@@ -459,7 +459,7 @@ const SupplierList = ({ user }: SupplierListProps) => {
         // Filters
         searchPlaceholder="Search suppliers..."
         searchValue={filters.search}
-        onSearchChange={(value) => handleFilterChange("search", value)}
+        onSearchChange={value => handleFilterChange('search', value)}
         isSearching={isSearching}
         filters={filterConfigs}
         filterValues={filters}
@@ -490,14 +490,14 @@ const SupplierList = ({ user }: SupplierListProps) => {
         emptyStateIcon={<IconTruck className="h-12 w-12 text-gray-400" />}
         emptyStateMessage={
           debouncedSearchTerm || filters.isActive
-            ? "No suppliers found matching your filters."
-            : "No suppliers found. Add your first supplier to get started."
+            ? 'No suppliers found matching your filters.'
+            : 'No suppliers found. Add your first supplier to get started.'
         }
         emptyStateAction={
           canManageSuppliers ? (
             <Button asChild>
               <Link href="/inventory/suppliers/add">
-                <IconPlus className="h-4 w-4 mr-2" />
+                <IconPlus className="mr-2 h-4 w-4" />
                 Add Supplier
               </Link>
             </Button>
@@ -529,15 +529,15 @@ const SupplierList = ({ user }: SupplierListProps) => {
                     await deleteSupplierMutation.mutateAsync(
                       supplierToDelete.id
                     );
-                    toast.success("Supplier deactivated successfully");
+                    toast.success('Supplier deactivated successfully');
                   } catch (error) {
-                    logger.error("Failed to deactivate supplier", {
+                    logger.error('Failed to deactivate supplier', {
                       supplierId: supplierToDelete.id,
                       supplierName: supplierToDelete.name,
                       error:
                         error instanceof Error ? error.message : String(error),
                     });
-                    toast.error("Failed to deactivate supplier");
+                    toast.error('Failed to deactivate supplier');
                   } finally {
                     setDeleteDialogOpen(false);
                     setSupplierToDelete(null);

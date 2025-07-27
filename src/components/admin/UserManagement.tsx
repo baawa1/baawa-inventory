@@ -1,23 +1,23 @@
-"use client";
+'use client';
 
-import React, { useState } from "react";
-import { Button } from "@/components/ui/button";
+import React, { useState } from 'react';
+import { Button } from '@/components/ui/button';
 import {
   Card,
   CardContent,
   CardDescription,
   CardHeader,
   CardTitle,
-} from "@/components/ui/card";
-import { Input } from "@/components/ui/input";
-import { Badge } from "@/components/ui/badge";
+} from '@/components/ui/card';
+import { Input } from '@/components/ui/input';
+import { Badge } from '@/components/ui/badge';
 import {
   Select,
   SelectContent,
   SelectItem,
   SelectTrigger,
   SelectValue,
-} from "@/components/ui/select";
+} from '@/components/ui/select';
 import {
   IconUsers,
   IconUserCheck,
@@ -29,14 +29,14 @@ import {
   IconRefresh,
   IconUserPlus,
   IconFileExport,
-} from "@tabler/icons-react";
-import { UserTable } from "./UserTable";
-import { UserDialog } from "./UserDialog";
+} from '@tabler/icons-react';
+import { UserTable } from './UserTable';
+import { UserDialog } from './UserDialog';
 import {
   type User,
   type UserFormData,
   type EditUserFormData,
-} from "./types/user";
+} from './types/user';
 import {
   useActiveUsers,
   useCreateUser,
@@ -44,9 +44,9 @@ import {
   useDeleteUser,
   type CreateUserData,
   type UpdateUserData,
-} from "@/hooks/api/users";
-import { toast } from "sonner";
-import { useAdminGuard } from "@/hooks/useAdminGuard";
+} from '@/hooks/api/users';
+import { toast } from 'sonner';
+import { useAdminGuard } from '@/hooks/useAdminGuard';
 
 interface UserFilters {
   search: string;
@@ -61,7 +61,7 @@ interface UserMetric {
   title: string;
   value: string | number;
   change: number;
-  trend: "up" | "down" | "neutral";
+  trend: 'up' | 'down' | 'neutral';
   icon: React.ReactNode;
   color: string;
 }
@@ -72,12 +72,12 @@ const UserManagement = () => {
   const [editingUser, setEditingUser] = useState<User | null>(null);
   const [showFilters, setShowFilters] = useState(false);
   const [filters, setFilters] = useState<UserFilters>({
-    search: "",
-    role: "all",
-    status: "all",
-    isActive: "all",
-    sortBy: "createdAt",
-    sortOrder: "desc",
+    search: '',
+    role: 'all',
+    status: 'all',
+    isActive: 'all',
+    sortBy: 'createdAt',
+    sortOrder: 'desc',
   });
 
   // TanStack Query hooks
@@ -89,56 +89,56 @@ const UserManagement = () => {
   // Calculate user metrics
   const userMetrics: UserMetric[] = [
     {
-      title: "Total Users",
+      title: 'Total Users',
       value: users.length,
       change: 12.5,
-      trend: "up",
+      trend: 'up',
       icon: <IconUsers className="h-5 w-5" />,
-      color: "text-blue-600",
+      color: 'text-blue-600',
     },
     {
-      title: "Active Users",
-      value: users.filter((u) => u.isActive).length,
+      title: 'Active Users',
+      value: users.filter(u => u.isActive).length,
       change: 8.2,
-      trend: "up",
+      trend: 'up',
       icon: <IconUserCheck className="h-5 w-5" />,
-      color: "text-green-600",
+      color: 'text-green-600',
     },
     {
-      title: "Pending Approval",
+      title: 'Pending Approval',
       value: users.filter(
-        (u) => u.userStatus === "VERIFIED" || u.userStatus === "PENDING"
+        u => u.userStatus === 'VERIFIED' || u.userStatus === 'PENDING'
       ).length,
       change: -3.1,
-      trend: "down",
+      trend: 'down',
       icon: <IconCalendar className="h-5 w-5" />,
-      color: "text-yellow-600",
+      color: 'text-yellow-600',
     },
     {
-      title: "Admins",
-      value: users.filter((u) => u.role === "ADMIN").length,
+      title: 'Admins',
+      value: users.filter(u => u.role === 'ADMIN').length,
       change: 0,
-      trend: "neutral",
+      trend: 'neutral',
       icon: <IconUserX className="h-5 w-5" />,
-      color: "text-purple-600",
+      color: 'text-purple-600',
     },
   ];
 
   // Filter users based on current filters
-  const filteredUsers = users.filter((user) => {
+  const filteredUsers = users.filter(user => {
     const searchMatch =
-      filters.search === "" ||
+      filters.search === '' ||
       user.firstName.toLowerCase().includes(filters.search.toLowerCase()) ||
       user.lastName.toLowerCase().includes(filters.search.toLowerCase()) ||
       user.email.toLowerCase().includes(filters.search.toLowerCase());
 
-    const roleMatch = filters.role === "all" || user.role === filters.role;
+    const roleMatch = filters.role === 'all' || user.role === filters.role;
     const statusMatch =
-      filters.status === "all" || user.userStatus === filters.status;
+      filters.status === 'all' || user.userStatus === filters.status;
     const activeMatch =
-      filters.isActive === "all" ||
-      (filters.isActive === "true" && user.isActive) ||
-      (filters.isActive === "false" && !user.isActive);
+      filters.isActive === 'all' ||
+      (filters.isActive === 'true' && user.isActive) ||
+      (filters.isActive === 'false' && !user.isActive);
 
     return searchMatch && roleMatch && statusMatch && activeMatch;
   });
@@ -161,11 +161,11 @@ const UserManagement = () => {
           ...updateData,
         });
 
-        toast.success("User updated successfully");
+        toast.success('User updated successfully');
       } else {
         // Create new user
-        if (!("password" in data) || !data.password) {
-          throw new Error("Password is required for new users");
+        if (!('password' in data) || !data.password) {
+          throw new Error('Password is required for new users');
         }
 
         const createData: CreateUserData = {
@@ -178,7 +178,7 @@ const UserManagement = () => {
         };
 
         await createUserMutation.mutateAsync(createData);
-        toast.success("User created successfully");
+        toast.success('User created successfully');
       }
 
       // Close dialog and reset state
@@ -186,7 +186,7 @@ const UserManagement = () => {
       setEditingUser(null);
     } catch (error) {
       const errorMessage =
-        error instanceof Error ? error.message : "Failed to save user";
+        error instanceof Error ? error.message : 'Failed to save user';
       toast.error(errorMessage);
     }
   };
@@ -194,16 +194,16 @@ const UserManagement = () => {
   // Handle user deletion/deactivation
   const handleDeleteUser = async (userId: number) => {
     if (userId.toString() === session?.user.id) {
-      toast.error("Cannot delete your own account");
+      toast.error('Cannot delete your own account');
       return;
     }
 
     try {
       await deleteUserMutation.mutateAsync(userId);
-      toast.success("User deactivated successfully");
+      toast.success('User deactivated successfully');
     } catch (error) {
       const errorMessage =
-        error instanceof Error ? error.message : "Failed to delete user";
+        error instanceof Error ? error.message : 'Failed to delete user';
       toast.error(errorMessage);
     }
   };
@@ -230,18 +230,18 @@ const UserManagement = () => {
 
   // Handle filter changes
   const handleFilterChange = (key: keyof UserFilters, value: string) => {
-    setFilters((prev) => ({ ...prev, [key]: value }));
+    setFilters(prev => ({ ...prev, [key]: value }));
   };
 
   // Clear all filters
   const clearFilters = () => {
     setFilters({
-      search: "",
-      role: "all",
-      status: "all",
-      isActive: "all",
-      sortBy: "createdAt",
-      sortOrder: "desc",
+      search: '',
+      role: 'all',
+      status: 'all',
+      isActive: 'all',
+      sortBy: 'createdAt',
+      sortOrder: 'desc',
     });
   };
 
@@ -249,38 +249,38 @@ const UserManagement = () => {
   const handleExportUsers = () => {
     const csvContent = [
       [
-        "Name",
-        "Email",
-        "Role",
-        "Status",
-        "Active",
-        "Created",
-        "Last Login",
-      ].join(","),
-      ...filteredUsers.map((user) =>
+        'Name',
+        'Email',
+        'Role',
+        'Status',
+        'Active',
+        'Created',
+        'Last Login',
+      ].join(','),
+      ...filteredUsers.map(user =>
         [
           `"${user.firstName} ${user.lastName}"`,
           user.email,
           user.role,
           user.userStatus,
-          user.isActive ? "Yes" : "No",
+          user.isActive ? 'Yes' : 'No',
           new Date(user.createdAt).toLocaleDateString(),
           user.lastLogin
             ? new Date(user.lastLogin).toLocaleDateString()
-            : "Never",
-        ].join(",")
+            : 'Never',
+        ].join(',')
       ),
-    ].join("\n");
+    ].join('\n');
 
-    const blob = new Blob([csvContent], { type: "text/csv" });
+    const blob = new Blob([csvContent], { type: 'text/csv' });
     const url = window.URL.createObjectURL(blob);
-    const a = document.createElement("a");
+    const a = document.createElement('a');
     a.href = url;
-    a.download = `users-export-${new Date().toISOString().split("T")[0]}.csv`;
+    a.download = `users-export-${new Date().toISOString().split('T')[0]}.csv`;
     a.click();
     window.URL.revokeObjectURL(url);
 
-    toast.success("Users data exported successfully");
+    toast.success('Users data exported successfully');
   };
 
   if (isAuthLoading) {
@@ -299,7 +299,7 @@ const UserManagement = () => {
   return (
     <div className="space-y-6">
       {/* Header */}
-      <div className="flex flex-col sm:flex-row gap-4 items-start sm:items-center justify-between">
+      <div className="flex flex-col items-start justify-between gap-4 sm:flex-row sm:items-center">
         <div>
           <h2 className="text-2xl font-bold tracking-tight">User Management</h2>
           <p className="text-muted-foreground">
@@ -308,28 +308,28 @@ const UserManagement = () => {
         </div>
         <div className="flex gap-2">
           <Button onClick={() => refetch()} variant="outline" size="sm">
-            <IconRefresh className="h-4 w-4 mr-2" />
+            <IconRefresh className="mr-2 h-4 w-4" />
             Refresh
           </Button>
           <Button onClick={handleExportUsers} variant="outline" size="sm">
-            <IconFileExport className="h-4 w-4 mr-2" />
+            <IconFileExport className="mr-2 h-4 w-4" />
             Export
           </Button>
           <Button onClick={handleNewUser}>
-            <IconUserPlus className="h-4 w-4 mr-2" />
+            <IconUserPlus className="mr-2 h-4 w-4" />
             Add User
           </Button>
         </div>
       </div>
 
       {/* User Metrics - Beautiful Gradient Cards */}
-      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
+      <div className="grid grid-cols-1 gap-6 md:grid-cols-2 lg:grid-cols-4">
         {/* Total Users Card */}
-        <Card className="relative overflow-hidden border-0 bg-gradient-to-br from-blue-50 to-blue-100 dark:from-blue-950 dark:to-blue-900 hover:shadow-lg transition-all duration-300 group">
-          <div className="absolute top-0 right-0 w-20 h-20 bg-blue-200/50 dark:bg-blue-800/50 rounded-full -translate-y-10 translate-x-10"></div>
+        <Card className="group relative overflow-hidden border-0 bg-gradient-to-br from-blue-50 to-blue-100 transition-all duration-300 hover:shadow-lg dark:from-blue-950 dark:to-blue-900">
+          <div className="absolute top-0 right-0 h-20 w-20 translate-x-10 -translate-y-10 rounded-full bg-blue-200/50 dark:bg-blue-800/50"></div>
           <CardHeader className="pb-3">
-            <CardTitle className="text-sm font-medium text-blue-700 dark:text-blue-300 flex items-center gap-3">
-              <div className="p-2 bg-blue-100 dark:bg-blue-800 rounded-lg group-hover:scale-110 transition-transform duration-300">
+            <CardTitle className="flex items-center gap-3 text-sm font-medium text-blue-700 dark:text-blue-300">
+              <div className="rounded-lg bg-blue-100 p-2 transition-transform duration-300 group-hover:scale-110 dark:bg-blue-800">
                 <IconUsers className="h-5 w-5 text-blue-600 dark:text-blue-400" />
               </div>
               Total Users
@@ -340,13 +340,13 @@ const UserManagement = () => {
               <div className="text-3xl font-bold text-blue-600 dark:text-blue-400">
                 {userMetrics[0].value}
               </div>
-              <div className="text-xs text-blue-600/70 dark:text-blue-400/70 mb-1">
+              <div className="mb-1 text-xs text-blue-600/70 dark:text-blue-400/70">
                 +{userMetrics[0].change}% growth
               </div>
             </div>
-            <div className="w-full bg-blue-200 dark:bg-blue-800 rounded-full h-2 mt-3">
+            <div className="mt-3 h-2 w-full rounded-full bg-blue-200 dark:bg-blue-800">
               <div
-                className="bg-blue-600 dark:bg-blue-400 h-2 rounded-full transition-all duration-500"
+                className="h-2 rounded-full bg-blue-600 transition-all duration-500 dark:bg-blue-400"
                 style={{
                   width: `${Math.min(userMetrics[0].change, 100)}%`,
                 }}
@@ -356,11 +356,11 @@ const UserManagement = () => {
         </Card>
 
         {/* Active Users Card */}
-        <Card className="relative overflow-hidden border-0 bg-gradient-to-br from-green-50 to-green-100 dark:from-green-950 dark:to-green-900 hover:shadow-lg transition-all duration-300 group">
-          <div className="absolute top-0 right-0 w-20 h-20 bg-green-200/50 dark:bg-green-800/50 rounded-full -translate-y-10 translate-x-10"></div>
+        <Card className="group relative overflow-hidden border-0 bg-gradient-to-br from-green-50 to-green-100 transition-all duration-300 hover:shadow-lg dark:from-green-950 dark:to-green-900">
+          <div className="absolute top-0 right-0 h-20 w-20 translate-x-10 -translate-y-10 rounded-full bg-green-200/50 dark:bg-green-800/50"></div>
           <CardHeader className="pb-3">
-            <CardTitle className="text-sm font-medium text-green-700 dark:text-green-300 flex items-center gap-3">
-              <div className="p-2 bg-green-100 dark:bg-green-800 rounded-lg group-hover:scale-110 transition-transform duration-300">
+            <CardTitle className="flex items-center gap-3 text-sm font-medium text-green-700 dark:text-green-300">
+              <div className="rounded-lg bg-green-100 p-2 transition-transform duration-300 group-hover:scale-110 dark:bg-green-800">
                 <IconUserCheck className="h-5 w-5 text-green-600 dark:text-green-400" />
               </div>
               Active Users
@@ -371,13 +371,13 @@ const UserManagement = () => {
               <div className="text-3xl font-bold text-green-600 dark:text-green-400">
                 {userMetrics[1].value}
               </div>
-              <div className="text-xs text-green-600/70 dark:text-green-400/70 mb-1">
+              <div className="mb-1 text-xs text-green-600/70 dark:text-green-400/70">
                 +{userMetrics[1].change}% growth
               </div>
             </div>
-            <div className="w-full bg-green-200 dark:bg-green-800 rounded-full h-2 mt-3">
+            <div className="mt-3 h-2 w-full rounded-full bg-green-200 dark:bg-green-800">
               <div
-                className="bg-green-600 dark:bg-green-400 h-2 rounded-full transition-all duration-500"
+                className="h-2 rounded-full bg-green-600 transition-all duration-500 dark:bg-green-400"
                 style={{
                   width: `${Math.min(userMetrics[1].change, 100)}%`,
                 }}
@@ -387,11 +387,11 @@ const UserManagement = () => {
         </Card>
 
         {/* Pending Approval Card */}
-        <Card className="relative overflow-hidden border-0 bg-gradient-to-br from-orange-50 to-orange-100 dark:from-orange-950 dark:to-orange-900 hover:shadow-lg transition-all duration-300 group">
-          <div className="absolute top-0 right-0 w-20 h-20 bg-orange-200/50 dark:bg-orange-800/50 rounded-full -translate-y-10 translate-x-10"></div>
+        <Card className="group relative overflow-hidden border-0 bg-gradient-to-br from-orange-50 to-orange-100 transition-all duration-300 hover:shadow-lg dark:from-orange-950 dark:to-orange-900">
+          <div className="absolute top-0 right-0 h-20 w-20 translate-x-10 -translate-y-10 rounded-full bg-orange-200/50 dark:bg-orange-800/50"></div>
           <CardHeader className="pb-3">
-            <CardTitle className="text-sm font-medium text-orange-700 dark:text-orange-300 flex items-center gap-3">
-              <div className="p-2 bg-orange-100 dark:bg-orange-800 rounded-lg group-hover:scale-110 transition-transform duration-300">
+            <CardTitle className="flex items-center gap-3 text-sm font-medium text-orange-700 dark:text-orange-300">
+              <div className="rounded-lg bg-orange-100 p-2 transition-transform duration-300 group-hover:scale-110 dark:bg-orange-800">
                 <IconCalendar className="h-5 w-5 text-orange-600 dark:text-orange-400" />
               </div>
               Pending Approval
@@ -402,14 +402,14 @@ const UserManagement = () => {
               <div className="text-3xl font-bold text-orange-600 dark:text-orange-400">
                 {userMetrics[2].value}
               </div>
-              <div className="text-xs text-orange-600/70 dark:text-orange-400/70 mb-1">
-                {userMetrics[2].change > 0 ? "+" : ""}
+              <div className="mb-1 text-xs text-orange-600/70 dark:text-orange-400/70">
+                {userMetrics[2].change > 0 ? '+' : ''}
                 {userMetrics[2].change}% change
               </div>
             </div>
             {Number(userMetrics[2].value) > 0 && (
-              <div className="flex items-center gap-2 mt-3">
-                <div className="w-2 h-2 bg-orange-500 rounded-full animate-pulse"></div>
+              <div className="mt-3 flex items-center gap-2">
+                <div className="h-2 w-2 animate-pulse rounded-full bg-orange-500"></div>
                 <span className="text-xs text-orange-600/80 dark:text-orange-400/80">
                   Requires attention
                 </span>
@@ -419,11 +419,11 @@ const UserManagement = () => {
         </Card>
 
         {/* Admins Card */}
-        <Card className="relative overflow-hidden border-0 bg-gradient-to-br from-purple-50 to-purple-100 dark:from-purple-950 dark:to-purple-900 hover:shadow-lg transition-all duration-300 group">
-          <div className="absolute top-0 right-0 w-20 h-20 bg-purple-200/50 dark:bg-purple-800/50 rounded-full -translate-y-10 translate-x-10"></div>
+        <Card className="group relative overflow-hidden border-0 bg-gradient-to-br from-purple-50 to-purple-100 transition-all duration-300 hover:shadow-lg dark:from-purple-950 dark:to-purple-900">
+          <div className="absolute top-0 right-0 h-20 w-20 translate-x-10 -translate-y-10 rounded-full bg-purple-200/50 dark:bg-purple-800/50"></div>
           <CardHeader className="pb-3">
-            <CardTitle className="text-sm font-medium text-purple-700 dark:text-purple-300 flex items-center gap-3">
-              <div className="p-2 bg-purple-100 dark:bg-purple-800 rounded-lg group-hover:scale-110 transition-transform duration-300">
+            <CardTitle className="flex items-center gap-3 text-sm font-medium text-purple-700 dark:text-purple-300">
+              <div className="rounded-lg bg-purple-100 p-2 transition-transform duration-300 group-hover:scale-110 dark:bg-purple-800">
                 <IconUserX className="h-5 w-5 text-purple-600 dark:text-purple-400" />
               </div>
               Admins
@@ -434,11 +434,11 @@ const UserManagement = () => {
               <div className="text-3xl font-bold text-purple-600 dark:text-purple-400">
                 {userMetrics[3].value}
               </div>
-              <div className="text-xs text-purple-600/70 dark:text-purple-400/70 mb-1">
+              <div className="mb-1 text-xs text-purple-600/70 dark:text-purple-400/70">
                 System administrators
               </div>
             </div>
-            <div className="text-xs text-purple-600/70 dark:text-purple-400/70 mt-3">
+            <div className="mt-3 text-xs text-purple-600/70 dark:text-purple-400/70">
               Full system access
             </div>
           </CardContent>
@@ -459,8 +459,8 @@ const UserManagement = () => {
                 size="sm"
                 onClick={() => setShowFilters(!showFilters)}
               >
-                <IconFilter className="h-4 w-4 mr-2" />
-                {showFilters ? "Hide" : "Show"} Filters
+                <IconFilter className="mr-2 h-4 w-4" />
+                {showFilters ? 'Hide' : 'Show'} Filters
               </Button>
               <Button variant="outline" size="sm" onClick={clearFilters}>
                 Clear All
@@ -470,16 +470,14 @@ const UserManagement = () => {
         </CardHeader>
         {showFilters && (
           <CardContent>
-            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-6 gap-4">
+            <div className="grid grid-cols-1 gap-4 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-6">
               <div className="col-span-full lg:col-span-2">
                 <div className="relative">
-                  <IconSearch className="absolute left-3 top-3 h-4 w-4 text-muted-foreground" />
+                  <IconSearch className="text-muted-foreground absolute top-3 left-3 h-4 w-4" />
                   <Input
                     placeholder="Search users..."
                     value={filters.search}
-                    onChange={(e) =>
-                      handleFilterChange("search", e.target.value)
-                    }
+                    onChange={e => handleFilterChange('search', e.target.value)}
                     className="pl-9"
                   />
                 </div>
@@ -487,7 +485,7 @@ const UserManagement = () => {
 
               <Select
                 value={filters.role}
-                onValueChange={(value) => handleFilterChange("role", value)}
+                onValueChange={value => handleFilterChange('role', value)}
               >
                 <SelectTrigger>
                   <SelectValue placeholder="Role" />
@@ -502,7 +500,7 @@ const UserManagement = () => {
 
               <Select
                 value={filters.status}
-                onValueChange={(value) => handleFilterChange("status", value)}
+                onValueChange={value => handleFilterChange('status', value)}
               >
                 <SelectTrigger>
                   <SelectValue placeholder="Status" />
@@ -519,7 +517,7 @@ const UserManagement = () => {
 
               <Select
                 value={filters.isActive}
-                onValueChange={(value) => handleFilterChange("isActive", value)}
+                onValueChange={value => handleFilterChange('isActive', value)}
               >
                 <SelectTrigger>
                   <SelectValue placeholder="Active" />
@@ -533,7 +531,7 @@ const UserManagement = () => {
 
               <Select
                 value={filters.sortBy}
-                onValueChange={(value) => handleFilterChange("sortBy", value)}
+                onValueChange={value => handleFilterChange('sortBy', value)}
               >
                 <SelectTrigger>
                   <SelectValue placeholder="Sort By" />
@@ -552,7 +550,7 @@ const UserManagement = () => {
       </Card>
 
       {errorMessage && (
-        <div className="bg-destructive/15 text-destructive text-sm p-3 rounded-md">
+        <div className="bg-destructive/15 text-destructive rounded-md p-3 text-sm">
           {errorMessage}
         </div>
       )}
@@ -565,15 +563,15 @@ const UserManagement = () => {
               <CardTitle>Users ({filteredUsers.length})</CardTitle>
               <CardDescription>
                 {filters.search ||
-                filters.role !== "all" ||
-                filters.status !== "all" ||
-                filters.isActive !== "all"
+                filters.role !== 'all' ||
+                filters.status !== 'all' ||
+                filters.isActive !== 'all'
                   ? `Filtered results from ${users.length} total users`
-                  : "A list of all users in the system with their roles and status"}
+                  : 'A list of all users in the system with their roles and status'}
               </CardDescription>
             </div>
             <Badge variant="outline" className="text-xs">
-              <IconDatabase className="h-3 w-3 mr-1" />
+              <IconDatabase className="mr-1 h-3 w-3" />
               {filteredUsers.length} shown
             </Badge>
           </div>

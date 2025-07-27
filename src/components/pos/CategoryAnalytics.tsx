@@ -1,11 +1,11 @@
-"use client";
+'use client';
 
-import React, { useState } from "react";
-import { useQuery } from "@tanstack/react-query";
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import { Badge } from "@/components/ui/badge";
-import { Button } from "@/components/ui/button";
-import { DateRangePicker } from "@/components/ui/date-range-picker";
+import React, { useState } from 'react';
+import { useQuery } from '@tanstack/react-query';
+import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
+import { Badge } from '@/components/ui/badge';
+import { Button } from '@/components/ui/button';
+import { DateRangePicker } from '@/components/ui/date-range-picker';
 import {
   Table,
   TableBody,
@@ -13,7 +13,7 @@ import {
   TableHead,
   TableHeader,
   TableRow,
-} from "@/components/ui/table";
+} from '@/components/ui/table';
 
 import {
   IconTrendingUp,
@@ -24,10 +24,10 @@ import {
   IconEye,
   IconChartPie,
   IconTag,
-} from "@tabler/icons-react";
-import { formatCurrency } from "@/lib/utils";
-import { toast } from "sonner";
-import { DateRange } from "react-day-picker";
+} from '@tabler/icons-react';
+import { formatCurrency } from '@/lib/utils';
+import { toast } from 'sonner';
+import { DateRange } from 'react-day-picker';
 
 interface CategoryPerformance {
   id: number;
@@ -37,7 +37,7 @@ interface CategoryPerformance {
   revenue: number;
   averageOrderValue: number;
   marketShare: number;
-  trending: "up" | "down" | "stable";
+  trending: 'up' | 'down' | 'stable';
   trendPercentage: number;
   topProduct: {
     name: string;
@@ -58,15 +58,15 @@ async function fetchCategoryPerformance(
   const params = new URLSearchParams();
 
   if (dateRange?.from) {
-    params.append("fromDate", dateRange.from.toISOString().split("T")[0]);
+    params.append('fromDate', dateRange.from.toISOString().split('T')[0]);
   }
   if (dateRange?.to) {
-    params.append("toDate", dateRange.to.toISOString().split("T")[0]);
+    params.append('toDate', dateRange.to.toISOString().split('T')[0]);
   }
 
   const response = await fetch(`/api/pos/analytics/categories?${params}`);
   if (!response.ok) {
-    throw new Error("Failed to fetch category performance");
+    throw new Error('Failed to fetch category performance');
   }
   return response.json();
 }
@@ -82,26 +82,26 @@ export function CategoryAnalytics({ user: _ }: CategoryAnalyticsProps) {
     isLoading,
     error,
   } = useQuery({
-    queryKey: ["category-performance", dateRange?.from, dateRange?.to],
+    queryKey: ['category-performance', dateRange?.from, dateRange?.to],
     queryFn: () => fetchCategoryPerformance(dateRange),
     enabled: !!dateRange?.from && !!dateRange?.to,
   });
 
   if (error) {
-    toast.error("Failed to load category performance data");
+    toast.error('Failed to load category performance data');
   }
 
   const getTrendBadge = (trending: string, percentage: number) => {
-    if (trending === "up") {
+    if (trending === 'up') {
       return (
         <Badge className="bg-green-100 text-green-800">
-          <IconTrendingUp className="w-3 h-3 mr-1" />+{percentage}%
+          <IconTrendingUp className="mr-1 h-3 w-3" />+{percentage}%
         </Badge>
       );
-    } else if (trending === "down") {
+    } else if (trending === 'down') {
       return (
         <Badge className="bg-red-100 text-red-800">
-          <IconTrendingDown className="w-3 h-3 mr-1" />-{percentage}%
+          <IconTrendingDown className="mr-1 h-3 w-3" />-{percentage}%
         </Badge>
       );
     }
@@ -123,8 +123,8 @@ export function CategoryAnalytics({ user: _ }: CategoryAnalyticsProps) {
   );
 
   return (
-    <div className="container mx-auto p-6 space-y-6">
-      <div className="flex justify-between items-center">
+    <div className="container mx-auto space-y-6 p-6">
+      <div className="flex items-center justify-between">
         <div>
           <h1 className="text-3xl font-bold">Category Performance</h1>
           <p className="text-muted-foreground">
@@ -143,24 +143,24 @@ export function CategoryAnalytics({ user: _ }: CategoryAnalyticsProps) {
 
       {isLoading ? (
         <div className="flex justify-center py-12">
-          <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-gray-900"></div>
+          <div className="h-8 w-8 animate-spin rounded-full border-b-2 border-gray-900"></div>
         </div>
       ) : categories.length > 0 ? (
         <>
           {/* Summary Stats */}
-          <div className="grid grid-cols-1 md:grid-cols-4 gap-6">
+          <div className="grid grid-cols-1 gap-6 md:grid-cols-4">
             <Card>
               <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
                 <CardTitle className="text-sm font-medium">
                   Total Revenue
                 </CardTitle>
-                <IconCurrencyNaira className="h-4 w-4 text-muted-foreground" />
+                <IconCurrencyNaira className="text-muted-foreground h-4 w-4" />
               </CardHeader>
               <CardContent>
                 <div className="text-2xl font-bold">
                   {formatCurrency(totalRevenue)}
                 </div>
-                <p className="text-xs text-muted-foreground">
+                <p className="text-muted-foreground text-xs">
                   Across {categories.length} categories
                 </p>
               </CardContent>
@@ -171,13 +171,13 @@ export function CategoryAnalytics({ user: _ }: CategoryAnalyticsProps) {
                 <CardTitle className="text-sm font-medium">
                   Units Sold
                 </CardTitle>
-                <IconShoppingCart className="h-4 w-4 text-muted-foreground" />
+                <IconShoppingCart className="text-muted-foreground h-4 w-4" />
               </CardHeader>
               <CardContent>
                 <div className="text-2xl font-bold">
                   {totalUnitsSold.toLocaleString()}
                 </div>
-                <p className="text-xs text-muted-foreground">
+                <p className="text-muted-foreground text-xs">
                   Total units moved
                 </p>
               </CardContent>
@@ -188,11 +188,11 @@ export function CategoryAnalytics({ user: _ }: CategoryAnalyticsProps) {
                 <CardTitle className="text-sm font-medium">
                   Total Products
                 </CardTitle>
-                <IconPackages className="h-4 w-4 text-muted-foreground" />
+                <IconPackages className="text-muted-foreground h-4 w-4" />
               </CardHeader>
               <CardContent>
                 <div className="text-2xl font-bold">{totalProducts}</div>
-                <p className="text-xs text-muted-foreground">
+                <p className="text-muted-foreground text-xs">
                   In all categories
                 </p>
               </CardContent>
@@ -203,11 +203,11 @@ export function CategoryAnalytics({ user: _ }: CategoryAnalyticsProps) {
                 <CardTitle className="text-sm font-medium">
                   Categories
                 </CardTitle>
-                <IconTag className="h-4 w-4 text-muted-foreground" />
+                <IconTag className="text-muted-foreground h-4 w-4" />
               </CardHeader>
               <CardContent>
                 <div className="text-2xl font-bold">{categories.length}</div>
-                <p className="text-xs text-muted-foreground">
+                <p className="text-muted-foreground text-xs">
                   Active categories
                 </p>
               </CardContent>
@@ -223,11 +223,11 @@ export function CategoryAnalytics({ user: _ }: CategoryAnalyticsProps) {
               <div className="space-y-4">
                 {categories
                   .sort((a, b) => b.marketShare - a.marketShare)
-                  .map((category) => (
+                  .map(category => (
                     <div key={category.id} className="space-y-2">
-                      <div className="flex justify-between items-center">
+                      <div className="flex items-center justify-between">
                         <div className="flex items-center space-x-2">
-                          <IconChartPie className="h-4 w-4 text-primary" />
+                          <IconChartPie className="text-primary h-4 w-4" />
                           <span className="font-medium">{category.name}</span>
                           <Badge variant="outline">
                             {category.productCount} products
@@ -237,12 +237,12 @@ export function CategoryAnalytics({ user: _ }: CategoryAnalyticsProps) {
                           <div className="font-medium">
                             {formatCurrency(category.revenue)}
                           </div>
-                          <div className="text-sm text-muted-foreground">
+                          <div className="text-muted-foreground text-sm">
                             {category.marketShare.toFixed(1)}% of total sales
                           </div>
                         </div>
                       </div>
-                      <div className="w-full bg-gray-200 rounded-full h-2">
+                      <div className="h-2 w-full rounded-full bg-gray-200">
                         <div
                           className="bg-primary h-2 rounded-full"
                           style={{ width: `${category.marketShare}%` }}
@@ -277,11 +277,11 @@ export function CategoryAnalytics({ user: _ }: CategoryAnalyticsProps) {
                 <TableBody>
                   {categories
                     .sort((a, b) => b.revenue - a.revenue)
-                    .map((category) => (
+                    .map(category => (
                       <TableRow key={category.id}>
                         <TableCell>
                           <div className="flex items-center space-x-2">
-                            <IconTag className="h-4 w-4 text-primary" />
+                            <IconTag className="text-primary h-4 w-4" />
                             <span className="font-medium">{category.name}</span>
                           </div>
                         </TableCell>
@@ -299,7 +299,7 @@ export function CategoryAnalytics({ user: _ }: CategoryAnalyticsProps) {
                         <TableCell>
                           <div className="flex items-center space-x-2">
                             <span>{category.marketShare.toFixed(1)}%</span>
-                            <div className="w-16 bg-gray-200 rounded-full h-1">
+                            <div className="h-1 w-16 rounded-full bg-gray-200">
                               <div
                                 className="bg-primary h-1 rounded-full"
                                 style={{ width: `${category.marketShare}%` }}
@@ -313,10 +313,10 @@ export function CategoryAnalytics({ user: _ }: CategoryAnalyticsProps) {
                         <TableCell>
                           {category.topProduct ? (
                             <div>
-                              <div className="font-medium text-sm">
+                              <div className="text-sm font-medium">
                                 {category.topProduct.name}
                               </div>
-                              <div className="text-xs text-muted-foreground">
+                              <div className="text-muted-foreground text-xs">
                                 {formatCurrency(category.topProduct.revenue)}
                               </div>
                             </div>
@@ -332,7 +332,7 @@ export function CategoryAnalytics({ user: _ }: CategoryAnalyticsProps) {
                         </TableCell>
                         <TableCell>
                           <Button variant="outline" size="sm">
-                            <IconEye className="w-4 h-4 mr-1" />
+                            <IconEye className="mr-1 h-4 w-4" />
                             View Products
                           </Button>
                         </TableCell>
@@ -344,7 +344,7 @@ export function CategoryAnalytics({ user: _ }: CategoryAnalyticsProps) {
           </Card>
 
           {/* Top Performing Categories */}
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+          <div className="grid grid-cols-1 gap-6 md:grid-cols-2">
             <Card>
               <CardHeader>
                 <CardTitle>Top Revenue Categories</CardTitle>
@@ -360,7 +360,7 @@ export function CategoryAnalytics({ user: _ }: CategoryAnalyticsProps) {
                         className="flex items-center justify-between"
                       >
                         <div className="flex items-center space-x-3">
-                          <div className="w-6 h-6 rounded-full bg-primary/10 flex items-center justify-center text-xs font-medium">
+                          <div className="bg-primary/10 flex h-6 w-6 items-center justify-center rounded-full text-xs font-medium">
                             {index + 1}
                           </div>
                           <span className="font-medium">{category.name}</span>
@@ -369,7 +369,7 @@ export function CategoryAnalytics({ user: _ }: CategoryAnalyticsProps) {
                           <div className="font-medium">
                             {formatCurrency(category.revenue)}
                           </div>
-                          <div className="text-xs text-muted-foreground">
+                          <div className="text-muted-foreground text-xs">
                             {category.totalSold} units
                           </div>
                         </div>
@@ -394,7 +394,7 @@ export function CategoryAnalytics({ user: _ }: CategoryAnalyticsProps) {
                         className="flex items-center justify-between"
                       >
                         <div className="flex items-center space-x-3">
-                          <div className="w-6 h-6 rounded-full bg-blue-100 flex items-center justify-center text-xs font-medium">
+                          <div className="flex h-6 w-6 items-center justify-center rounded-full bg-blue-100 text-xs font-medium">
                             {index + 1}
                           </div>
                           <span className="font-medium">{category.name}</span>
@@ -403,7 +403,7 @@ export function CategoryAnalytics({ user: _ }: CategoryAnalyticsProps) {
                           <div className="font-medium">
                             {category.totalSold} units
                           </div>
-                          <div className="text-xs text-muted-foreground">
+                          <div className="text-muted-foreground text-xs">
                             {formatCurrency(category.revenue)}
                           </div>
                         </div>
@@ -415,7 +415,7 @@ export function CategoryAnalytics({ user: _ }: CategoryAnalyticsProps) {
           </div>
         </>
       ) : (
-        <div className="text-center py-12 text-muted-foreground">
+        <div className="text-muted-foreground py-12 text-center">
           No category data available for the selected period.
         </div>
       )}

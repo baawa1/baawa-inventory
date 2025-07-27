@@ -1,6 +1,6 @@
-import { User } from "@prisma/client";
-import { prisma } from "@/lib/db";
-import bcrypt from "bcryptjs";
+import { User } from '@prisma/client';
+import { prisma } from '@/lib/db';
+import bcrypt from 'bcryptjs';
 
 /**
  * Database service that provides a consistent interface for user operations
@@ -109,7 +109,7 @@ export const dbService = {
           email: params.data.email,
           password: hashedPassword,
           phone: params.data.phone || null,
-          role: (params.data.role as any) || "STAFF",
+          role: (params.data.role as any) || 'STAFF',
           isActive: params.data.isActive !== false,
         },
       });

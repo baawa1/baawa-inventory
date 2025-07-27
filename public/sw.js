@@ -3,42 +3,42 @@
  * Handles offline caching, background sync, and PWA functionality
  */
 
-const CACHE_NAME = "baawa-pos-v2";
-const OFFLINE_CACHE = "baawa-pos-offline-v2";
-const DYNAMIC_CACHE = "baawa-pos-dynamic-v2";
+const CACHE_NAME = 'baawa-pos-v2';
+const OFFLINE_CACHE = 'baawa-pos-offline-v2';
+const DYNAMIC_CACHE = 'baawa-pos-dynamic-v2';
 
 // Files to cache immediately - only include files that actually exist
 const STATIC_ASSETS = [
-  "/",
-  "/login",
-  "/offline",
-  "/manifest.json",
-  "/favicon.ico",
+  '/',
+  '/login',
+  '/offline',
+  '/manifest.json',
+  '/favicon.ico',
 ];
 
 // URLs that should always go to network first
 const NETWORK_FIRST_URLS = [
-  "/api/auth/",
-  "/api/pos/create-sale",
-  "/api/pos/transactions",
-  "/api/pos/products",
-  "/api/pos/search-products",
+  '/api/auth/',
+  '/api/pos/create-sale',
+  '/api/pos/transactions',
+  '/api/pos/products',
+  '/api/pos/search-products',
 ];
 
 // URLs that can be served from cache first
-const CACHE_FIRST_URLS = ["/_next/static/", "/icons/", "/fonts/", "/images/"];
+const CACHE_FIRST_URLS = ['/_next/static/', '/icons/', '/fonts/', '/images/'];
 
-self.addEventListener("install", (event) => {
-  console.log("[SW] Installing...");
+self.addEventListener('install', event => {
+  console.log('[SW] Installing...');
 
   event.waitUntil(
     caches
       .open(CACHE_NAME)
-      .then(async (cache) => {
-        console.log("[SW] Caching static assets");
+      .then(async cache => {
+        console.log('[SW] Caching static assets');
 
         // Cache each asset individually to avoid complete failure if one fails
-        const cachePromises = STATIC_ASSETS.map(async (asset) => {
+        const cachePromises = STATIC_ASSETS.map(async asset => {
           try {
             await cache.add(asset);
             console.log(`[SW] Cached: ${asset}`);
@@ -48,75 +48,75 @@ self.addEventListener("install", (event) => {
         });
 
         await Promise.allSettled(cachePromises);
-        console.log("[SW] Static assets caching completed");
+        console.log('[SW] Static assets caching completed');
         return self.skipWaiting();
       })
-      .catch((error) => {
-        console.error("[SW] Failed to open cache:", error);
+      .catch(error => {
+        console.error('[SW] Failed to open cache:', error);
         return self.skipWaiting(); // Continue installation even if caching fails
       })
   );
 });
 
-self.addEventListener("activate", (event) => {
-  console.log("[SW] Activating...");
+self.addEventListener('activate', event => {
+  console.log('[SW] Activating...');
 
   event.waitUntil(
     caches
       .keys()
-      .then((cacheNames) => {
+      .then(cacheNames => {
         return Promise.all(
-          cacheNames.map((cacheName) => {
+          cacheNames.map(cacheName => {
             if (
               cacheName !== CACHE_NAME &&
               cacheName !== OFFLINE_CACHE &&
               cacheName !== DYNAMIC_CACHE
             ) {
-              console.log("[SW] Deleting old cache:", cacheName);
+              console.log('[SW] Deleting old cache:', cacheName);
               return caches.delete(cacheName);
             }
           })
         );
       })
       .then(() => {
-        console.log("[SW] Activated");
+        console.log('[SW] Activated');
         return self.clients.claim();
       })
   );
 });
 
-self.addEventListener("fetch", (event) => {
+self.addEventListener('fetch', event => {
   const { request } = event;
   const url = new URL(request.url);
 
   // Skip non-GET requests and chrome-extension requests
-  if (request.method !== "GET" || url.protocol === "chrome-extension:") {
+  if (request.method !== 'GET' || url.protocol === 'chrome-extension:') {
     return;
   }
 
   // Skip external domains (like placeholder images) - let browser handle them
   if (
-    url.hostname !== "localhost" &&
-    url.hostname !== "127.0.0.1" &&
-    !url.hostname.includes("localhost")
+    url.hostname !== 'localhost' &&
+    url.hostname !== '127.0.0.1' &&
+    !url.hostname.includes('localhost')
   ) {
     return;
   }
 
   // Handle API requests differently
-  if (url.pathname.startsWith("/api/")) {
+  if (url.pathname.startsWith('/api/')) {
     event.respondWith(handleApiRequest(request));
     return;
   }
 
   // Handle static assets with cache first strategy
-  if (CACHE_FIRST_URLS.some((pattern) => url.pathname.startsWith(pattern))) {
+  if (CACHE_FIRST_URLS.some(pattern => url.pathname.startsWith(pattern))) {
     event.respondWith(handleCacheFirst(request));
     return;
   }
 
   // Handle navigation requests
-  if (request.destination === "document") {
+  if (request.destination === 'document') {
     event.respondWith(handleNavigationRequest(request));
     return;
   }
@@ -133,33 +133,33 @@ async function handleApiRequest(request) {
     const response = await fetch(request);
 
     // Cache successful responses for offline fallback
-    if (response.ok && request.method === "GET") {
+    if (response.ok && request.method === 'GET') {
       const cache = await caches.open(DYNAMIC_CACHE);
       cache.put(request, response.clone());
     }
 
     return response;
   } catch (error) {
-    console.log("[SW] API request failed, checking cache:", url.pathname);
+    console.log('[SW] API request failed, checking cache:', url.pathname);
 
     // Try to serve from cache if network fails
     const cache = await caches.open(DYNAMIC_CACHE);
     const cachedResponse = await cache.match(request);
 
     if (cachedResponse) {
-      console.log("[SW] Serving API response from cache");
+      console.log('[SW] Serving API response from cache');
       return cachedResponse;
     }
 
     // Return offline response for specific endpoints
-    if (url.pathname.includes("/api/pos/products")) {
+    if (url.pathname.includes('/api/pos/products')) {
       return new Response(
         JSON.stringify({
           products: [],
-          message: "Offline mode - using cached data",
+          message: 'Offline mode - using cached data',
         }),
         {
-          headers: { "Content-Type": "application/json" },
+          headers: { 'Content-Type': 'application/json' },
           status: 200,
         }
       );
@@ -177,7 +177,7 @@ async function handleCacheFirst(request) {
     if (cachedResponse) {
       // Serve from cache and update in background
       fetch(request)
-        .then((response) => {
+        .then(response => {
           if (response.ok) {
             cache.put(request, response.clone());
           }
@@ -197,7 +197,7 @@ async function handleCacheFirst(request) {
 
     return response;
   } catch (error) {
-    console.error("[SW] Cache first strategy failed:", error);
+    console.error('[SW] Cache first strategy failed:', error);
     throw error;
   }
 }
@@ -215,7 +215,7 @@ async function handleNavigationRequest(request) {
 
     return response;
   } catch (error) {
-    console.log("[SW] Navigation request failed, trying cache");
+    console.log('[SW] Navigation request failed, trying cache');
 
     // Try to serve from cache
     const cache = await caches.open(DYNAMIC_CACHE);
@@ -227,7 +227,7 @@ async function handleNavigationRequest(request) {
 
     // Serve offline page for navigation failures
     const offlineCache = await caches.open(CACHE_NAME);
-    const offlinePage = await offlineCache.match("/offline");
+    const offlinePage = await offlineCache.match('/offline');
 
     if (offlinePage) {
       return offlinePage;
@@ -256,7 +256,7 @@ async function handleNavigationRequest(request) {
         </body>
       </html>`,
       {
-        headers: { "Content-Type": "text/html" },
+        headers: { 'Content-Type': 'text/html' },
         status: 200,
       }
     );
@@ -280,7 +280,7 @@ async function handleNetworkFirst(request) {
     const cachedResponse = await cache.match(request);
 
     if (cachedResponse) {
-      console.log("[SW] Serving from cache:", request.url);
+      console.log('[SW] Serving from cache:', request.url);
       return cachedResponse;
     }
 
@@ -289,47 +289,47 @@ async function handleNetworkFirst(request) {
 }
 
 // Background sync for offline transactions
-self.addEventListener("sync", (event) => {
-  console.log("[SW] Background sync triggered:", event.tag);
+self.addEventListener('sync', event => {
+  console.log('[SW] Background sync triggered:', event.tag);
 
-  if (event.tag === "pos-transactions-sync") {
+  if (event.tag === 'pos-transactions-sync') {
     event.waitUntil(syncOfflineTransactions());
   }
 });
 
 async function syncOfflineTransactions() {
   try {
-    console.log("[SW] Syncing offline transactions...");
+    console.log('[SW] Syncing offline transactions...');
 
     // This would integrate with your offline storage
     // For now, we'll just post a message to the main thread
     const clients = await self.clients.matchAll();
-    clients.forEach((client) => {
+    clients.forEach(client => {
       client.postMessage({
-        type: "SYNC_OFFLINE_TRANSACTIONS",
+        type: 'SYNC_OFFLINE_TRANSACTIONS',
         timestamp: Date.now(),
       });
     });
 
-    console.log("[SW] Offline transaction sync completed");
+    console.log('[SW] Offline transaction sync completed');
   } catch (error) {
-    console.error("[SW] Failed to sync offline transactions:", error);
+    console.error('[SW] Failed to sync offline transactions:', error);
   }
 }
 
 // Handle messages from the main thread
-self.addEventListener("message", (event) => {
+self.addEventListener('message', event => {
   const { data } = event;
 
-  if (data.type === "SKIP_WAITING") {
+  if (data.type === 'SKIP_WAITING') {
     self.skipWaiting();
   }
 
-  if (data.type === "CLAIM_CLIENTS") {
+  if (data.type === 'CLAIM_CLIENTS') {
     self.clients.claim();
   }
 
-  if (data.type === "CACHE_PRODUCTS") {
+  if (data.type === 'CACHE_PRODUCTS') {
     event.waitUntil(cacheProductsData(data.products));
   }
 });
@@ -340,14 +340,14 @@ async function cacheProductsData(products) {
 
     // Cache products as a JSON response
     const response = new Response(JSON.stringify({ products }), {
-      headers: { "Content-Type": "application/json" },
+      headers: { 'Content-Type': 'application/json' },
     });
 
-    await cache.put("/api/pos/products?offline=true", response);
-    console.log("[SW] Cached products data for offline use");
+    await cache.put('/api/pos/products?offline=true', response);
+    console.log('[SW] Cached products data for offline use');
   } catch (error) {
-    console.error("[SW] Failed to cache products:", error);
+    console.error('[SW] Failed to cache products:', error);
   }
 }
 
-console.log("[SW] Service Worker loaded");
+console.log('[SW] Service Worker loaded');

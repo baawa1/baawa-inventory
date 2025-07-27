@@ -1,15 +1,15 @@
-"use client";
+'use client';
 
-import React, { useState, useMemo } from "react";
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import { Button } from "@/components/ui/button";
+import React, { useState, useMemo } from 'react';
+import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
+import { Button } from '@/components/ui/button';
 import {
   Select,
   SelectContent,
   SelectItem,
   SelectTrigger,
   SelectValue,
-} from "@/components/ui/select";
+} from '@/components/ui/select';
 import {
   Table,
   TableBody,
@@ -17,9 +17,9 @@ import {
   TableHead,
   TableHeader,
   TableRow,
-} from "@/components/ui/table";
-import { Badge } from "@/components/ui/badge";
-import { Input } from "@/components/ui/input";
+} from '@/components/ui/table';
+import { Badge } from '@/components/ui/badge';
+import { Input } from '@/components/ui/input';
 import {
   IconSearch,
   IconDownload,
@@ -27,8 +27,8 @@ import {
   IconTrendingUp,
   IconTrendingDown,
   IconMinus,
-} from "@tabler/icons-react";
-import { formatCurrency } from "@/lib/utils";
+} from '@tabler/icons-react';
+import { formatCurrency } from '@/lib/utils';
 
 interface User {
   id: string;
@@ -57,17 +57,17 @@ interface ProductPerformanceData {
 }
 
 export function ProductPerformance({ user: _ }: ProductPerformanceProps) {
-  const [dateRange, setDateRange] = useState("month-to-date");
-  const [showFilter, setShowFilter] = useState("all-products");
-  const [searchTerm, setSearchTerm] = useState("");
+  const [dateRange, setDateRange] = useState('month-to-date');
+  const [showFilter, setShowFilter] = useState('all-products');
+  const [searchTerm, setSearchTerm] = useState('');
 
   // Mock data - replace with actual API calls
   const mockData: ProductPerformanceData[] = [
     {
-      id: "1",
-      name: "Patek Philippe PP8011G Gold Mens Watch",
-      sku: "PP8011G",
-      category: "Wristwatches > Chain",
+      id: '1',
+      name: 'Patek Philippe PP8011G Gold Mens Watch',
+      sku: 'PP8011G',
+      category: 'Wristwatches > Chain',
       itemsSold: 2,
       netSales: 209000,
       orders: 2,
@@ -76,10 +76,10 @@ export function ProductPerformance({ user: _ }: ProductPerformanceProps) {
       previousOrders: 3,
     },
     {
-      id: "2",
-      name: "Fusili G0375 Rubber watch",
-      sku: "G0375",
-      category: "Wristwatches",
+      id: '2',
+      name: 'Fusili G0375 Rubber watch',
+      sku: 'G0375',
+      category: 'Wristwatches',
       itemsSold: 2,
       netSales: 38000,
       orders: 2,
@@ -91,7 +91,7 @@ export function ProductPerformance({ user: _ }: ProductPerformanceProps) {
 
   const filteredData = useMemo(() => {
     return mockData.filter(
-      (product) =>
+      product =>
         product.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
         product.sku.toLowerCase().includes(searchTerm.toLowerCase())
     );
@@ -144,20 +144,20 @@ export function ProductPerformance({ user: _ }: ProductPerformanceProps) {
     if (change > 0) {
       return (
         <Badge variant="secondary" className="bg-green-100 text-green-800">
-          <IconTrendingUp className="h-3 w-3 mr-1" />+{change.toFixed(0)}%
+          <IconTrendingUp className="mr-1 h-3 w-3" />+{change.toFixed(0)}%
         </Badge>
       );
     } else if (change < 0) {
       return (
         <Badge variant="secondary" className="bg-red-100 text-red-800">
-          <IconTrendingDown className="h-3 w-3 mr-1" />
+          <IconTrendingDown className="mr-1 h-3 w-3" />
           {change.toFixed(0)}%
         </Badge>
       );
     } else {
       return (
         <Badge variant="secondary" className="bg-gray-100 text-gray-800">
-          <IconMinus className="h-3 w-3 mr-1" />
+          <IconMinus className="mr-1 h-3 w-3" />
           0%
         </Badge>
       );
@@ -167,7 +167,7 @@ export function ProductPerformance({ user: _ }: ProductPerformanceProps) {
   return (
     <div className="space-y-6">
       {/* Header with Filters */}
-      <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
+      <div className="flex flex-col items-start justify-between gap-4 sm:flex-row sm:items-center">
         <div>
           <h2 className="text-2xl font-bold tracking-tight">Products</h2>
         </div>
@@ -203,14 +203,14 @@ export function ProductPerformance({ user: _ }: ProductPerformanceProps) {
       </div>
 
       {/* Summary Metrics */}
-      <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+      <div className="grid grid-cols-1 gap-4 md:grid-cols-3">
         <Card>
           <CardHeader className="pb-2">
             <CardTitle className="text-sm font-medium">Items sold</CardTitle>
           </CardHeader>
           <CardContent>
             <div className="text-2xl font-bold">{summaryStats.itemsSold}</div>
-            <div className="flex items-center mt-2">
+            <div className="mt-2 flex items-center">
               {getChangeBadge(summaryStats.itemsSoldChange)}
             </div>
           </CardContent>
@@ -223,7 +223,7 @@ export function ProductPerformance({ user: _ }: ProductPerformanceProps) {
             <div className="text-2xl font-bold">
               {formatCurrency(summaryStats.netSales)}
             </div>
-            <div className="flex items-center mt-2">
+            <div className="mt-2 flex items-center">
               {getChangeBadge(summaryStats.netSalesChange)}
             </div>
           </CardContent>
@@ -234,7 +234,7 @@ export function ProductPerformance({ user: _ }: ProductPerformanceProps) {
           </CardHeader>
           <CardContent>
             <div className="text-2xl font-bold">{summaryStats.orders}</div>
-            <div className="flex items-center mt-2">
+            <div className="mt-2 flex items-center">
               {getChangeBadge(summaryStats.ordersChange)}
             </div>
           </CardContent>
@@ -251,12 +251,12 @@ export function ProductPerformance({ user: _ }: ProductPerformanceProps) {
                 Compare
               </Button>
               <div className="relative">
-                <IconSearch className="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-gray-400" />
+                <IconSearch className="absolute top-1/2 left-3 h-4 w-4 -translate-y-1/2 transform text-gray-400" />
                 <Input
                   placeholder="Search products..."
                   value={searchTerm}
-                  onChange={(e) => setSearchTerm(e.target.value)}
-                  className="pl-9 w-64"
+                  onChange={e => setSearchTerm(e.target.value)}
+                  className="w-64 pl-9"
                 />
               </div>
               <Button variant="outline" size="sm">
@@ -281,7 +281,7 @@ export function ProductPerformance({ user: _ }: ProductPerformanceProps) {
               </TableRow>
             </TableHeader>
             <TableBody>
-              {filteredData.map((product) => (
+              {filteredData.map(product => (
                 <TableRow key={product.id}>
                   <TableCell className="font-medium">{product.name}</TableCell>
                   <TableCell>{product.sku}</TableCell>
@@ -293,9 +293,9 @@ export function ProductPerformance({ user: _ }: ProductPerformanceProps) {
               ))}
             </TableBody>
           </Table>
-          <div className="mt-4 text-sm text-muted-foreground">
-            {filteredData.length} Products {summaryStats.itemsSold} Items sold{" "}
-            {formatCurrency(summaryStats.netSales)} Net sales{" "}
+          <div className="text-muted-foreground mt-4 text-sm">
+            {filteredData.length} Products {summaryStats.itemsSold} Items sold{' '}
+            {formatCurrency(summaryStats.netSales)} Net sales{' '}
             {summaryStats.orders} Orders
           </div>
         </CardContent>

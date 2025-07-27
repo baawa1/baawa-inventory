@@ -1,5 +1,5 @@
-import { NextResponse } from "next/server";
-import { logger } from "@/lib/logger";
+import { NextResponse } from 'next/server';
+import { logger } from '@/lib/logger';
 
 // Simple in-memory cache for API responses
 interface CacheEntry<T = any> {
@@ -22,7 +22,7 @@ class APICache {
   ): string {
     const keyData = {
       endpoint,
-      params: params ? JSON.stringify(params) : "",
+      params: params ? JSON.stringify(params) : '',
       userId: userId || null,
     };
     return btoa(JSON.stringify(keyData));
@@ -93,7 +93,7 @@ class APICache {
       }
     }
 
-    keysToDelete.forEach((key) => this.cache.delete(key));
+    keysToDelete.forEach(key => this.cache.delete(key));
   }
 
   /**
@@ -126,7 +126,7 @@ class APICache {
       }
     }
 
-    keysToDelete.forEach((key) => this.cache.delete(key));
+    keysToDelete.forEach(key => this.cache.delete(key));
   }
 }
 
@@ -134,7 +134,7 @@ class APICache {
 export const apiCache = new APICache();
 
 // Cleanup expired entries every 10 minutes
-if (typeof window === "undefined") {
+if (typeof window === 'undefined') {
   // Only run on server
   setInterval(
     () => {
@@ -171,12 +171,12 @@ export function withApiCache<
     const cacheParams = { ...searchParams, ...routeParams };
 
     // Only cache GET requests
-    if (request.method !== "GET") {
+    if (request.method !== 'GET') {
       const response = await handler(...args);
 
       // Invalidate cache for related endpoints on mutations
       if (options.invalidateOn) {
-        options.invalidateOn.forEach((pattern) => {
+        options.invalidateOn.forEach(pattern => {
           apiCache.invalidate(pattern);
         });
       }
@@ -190,8 +190,8 @@ export function withApiCache<
       return NextResponse.json(cachedData.body, {
         status: cachedData.status,
         headers: {
-          "X-Cache": "HIT",
-          "Cache-Control": "public, max-age=300",
+          'X-Cache': 'HIT',
+          'Cache-Control': 'public, max-age=300',
         },
       });
     }
@@ -213,7 +213,7 @@ export function withApiCache<
           options.ttlMs
         );
       } catch (error) {
-        logger.warn("Failed to cache API response", {
+        logger.warn('Failed to cache API response', {
           url,
           error: error instanceof Error ? error.message : String(error),
         });
@@ -222,8 +222,8 @@ export function withApiCache<
 
     // Add cache miss header
     const headers = new Headers(response.headers);
-    headers.set("X-Cache", "MISS");
-    headers.set("Cache-Control", "public, max-age=300");
+    headers.set('X-Cache', 'MISS');
+    headers.set('Cache-Control', 'public, max-age=300');
 
     return new NextResponse(response.body, {
       status: response.status,
@@ -240,36 +240,36 @@ export const cachePresets = {
   // Products - cache for 10 minutes, invalidate on product mutations
   products: {
     ttlMs: 10 * 60 * 1000,
-    invalidateOn: ["/api/products"],
+    invalidateOn: ['/api/products'],
   },
 
   // Users - cache for 5 minutes, invalidate on user mutations
   users: {
     ttlMs: 5 * 60 * 1000,
-    invalidateOn: ["/api/users"],
+    invalidateOn: ['/api/users'],
   },
 
   // Categories - cache for 30 minutes, rarely change
   categories: {
     ttlMs: 30 * 60 * 1000,
-    invalidateOn: ["/api/categories"],
+    invalidateOn: ['/api/categories'],
   },
 
   // Suppliers - cache for 15 minutes
   suppliers: {
     ttlMs: 15 * 60 * 1000,
-    invalidateOn: ["/api/suppliers"],
+    invalidateOn: ['/api/suppliers'],
   },
 
   // Sales - cache for 2 minutes, frequently updated
   sales: {
     ttlMs: 2 * 60 * 1000,
-    invalidateOn: ["/api/sales", "/api/products"],
+    invalidateOn: ['/api/sales', '/api/products'],
   },
 
   // Stock - cache for 1 minute, frequently updated
   stock: {
     ttlMs: 1 * 60 * 1000,
-    invalidateOn: ["/api/stock-additions", "/api/products", "/api/sales"],
+    invalidateOn: ['/api/stock-additions', '/api/products', '/api/sales'],
   },
 };

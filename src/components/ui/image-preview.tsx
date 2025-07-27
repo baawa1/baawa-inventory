@@ -1,24 +1,24 @@
-"use client";
+'use client';
 
-import { useState } from "react";
-import Image from "next/image";
-import { ImageIcon } from "lucide-react";
-import { cn } from "@/lib/utils";
+import { useState } from 'react';
+import Image from 'next/image';
+import { ImageIcon } from 'lucide-react';
+import { cn } from '@/lib/utils';
 
 interface ImagePreviewProps {
   src?: string | null;
   alt?: string;
   className?: string;
   fallbackClassName?: string;
-  size?: "sm" | "md" | "lg" | "xl";
+  size?: 'sm' | 'md' | 'lg' | 'xl';
   rounded?: boolean;
 }
 
 const sizeClasses = {
-  sm: "w-8 h-8",
-  md: "w-12 h-12",
-  lg: "w-16 h-16",
-  xl: "w-24 h-24",
+  sm: 'w-8 h-8',
+  md: 'w-12 h-12',
+  lg: 'w-16 h-16',
+  xl: 'w-24 h-24',
 };
 
 // Helper function to validate image URL
@@ -28,7 +28,7 @@ function isValidImageUrl(url: string): boolean {
   // Check if it's a valid URL
   try {
     const urlObj = new URL(url);
-    return urlObj.protocol === "http:" || urlObj.protocol === "https:";
+    return urlObj.protocol === 'http:' || urlObj.protocol === 'https:';
   } catch {
     return false;
   }
@@ -36,10 +36,10 @@ function isValidImageUrl(url: string): boolean {
 
 export function ImagePreview({
   src,
-  alt = "Image",
+  alt = 'Image',
   className,
   fallbackClassName,
-  size = "md",
+  size = 'md',
   rounded = true,
 }: ImagePreviewProps) {
   const [imageError, setImageError] = useState(false);
@@ -49,13 +49,13 @@ export function ImagePreview({
     return (
       <div
         className={cn(
-          "flex items-center justify-center bg-gray-100 dark:bg-gray-800",
+          'flex items-center justify-center bg-gray-100 dark:bg-gray-800',
           sizeClasses[size],
-          rounded && "rounded-lg",
+          rounded && 'rounded-lg',
           fallbackClassName
         )}
       >
-        <ImageIcon className="w-1/2 h-1/2 text-gray-400" />
+        <ImageIcon className="h-1/2 w-1/2 text-gray-400" />
       </div>
     );
   }
@@ -63,9 +63,9 @@ export function ImagePreview({
   return (
     <div
       className={cn(
-        "relative overflow-hidden",
+        'relative overflow-hidden',
         sizeClasses[size],
-        rounded && "rounded-lg",
+        rounded && 'rounded-lg',
         className
       )}
     >
@@ -75,8 +75,8 @@ export function ImagePreview({
         fill
         className="object-cover"
         onError={() => setImageError(true)}
-        sizes={`(max-width: 768px) 100vw, ${sizeClasses[size].split(" ")[1]}`}
-        unoptimized={src.includes("unsplash.com")} // Skip optimization for external images
+        sizes={`(max-width: 768px) 100vw, ${sizeClasses[size].split(' ')[1]}`}
+        unoptimized={src.includes('unsplash.com')} // Skip optimization for external images
       />
     </div>
   );

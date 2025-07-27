@@ -7,14 +7,14 @@ import {
   getDiscrepancyVariant,
   getStockStatusInfo,
   STATUS_COLORS,
-} from "@/lib/constants/ui";
+} from '@/lib/constants/ui';
 
 export interface BadgeVariant {
-  variant: "default" | "secondary" | "destructive" | "outline";
+  variant: 'default' | 'secondary' | 'destructive' | 'outline';
 }
 
 export interface BadgeConfig {
-  variant: "default" | "secondary" | "destructive" | "outline";
+  variant: 'default' | 'secondary' | 'destructive' | 'outline';
   label: string;
 }
 
@@ -48,10 +48,10 @@ export function getStockStatusBadgeConfig(
  */
 export function getUserStatusBadgeConfig(status: string): BadgeConfig {
   const variant =
-    STATUS_COLORS[status as keyof typeof STATUS_COLORS] || "outline";
+    STATUS_COLORS[status as keyof typeof STATUS_COLORS] || 'outline';
 
   return {
-    variant: variant as BadgeVariant["variant"],
+    variant: variant as BadgeVariant['variant'],
     label: status,
   };
 }
@@ -60,8 +60,8 @@ export function getUserStatusBadgeConfig(status: string): BadgeConfig {
  * Get product status badge configuration
  */
 export function getProductStatusBadgeConfig(status: string): BadgeConfig {
-  const variant = status === "ACTIVE" ? "default" : "secondary";
-  const label = status === "ACTIVE" ? "Active" : "Inactive";
+  const variant = status === 'ACTIVE' ? 'default' : 'secondary';
+  const label = status === 'ACTIVE' ? 'Active' : 'Inactive';
 
   return { variant, label };
 }
@@ -70,7 +70,7 @@ export function getProductStatusBadgeConfig(status: string): BadgeConfig {
  * Get profit margin badge configuration
  */
 export function getProfitMarginBadgeConfig(profitMargin: number): BadgeConfig {
-  const variant = profitMargin > 0 ? "default" : "secondary";
+  const variant = profitMargin > 0 ? 'default' : 'secondary';
 
   return {
     variant,
@@ -85,7 +85,7 @@ export function getGenericStatusBadgeConfig(
   status: string,
   statusMapping?: Record<
     string,
-    { variant: BadgeVariant["variant"]; label?: string }
+    { variant: BadgeVariant['variant']; label?: string }
   >
 ): BadgeConfig {
   const mapping = statusMapping || {};
@@ -100,7 +100,7 @@ export function getGenericStatusBadgeConfig(
 
   // Default fallback
   return {
-    variant: "outline",
+    variant: 'outline',
     label: status,
   };
 }

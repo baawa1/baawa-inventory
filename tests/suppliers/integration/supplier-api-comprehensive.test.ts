@@ -1,32 +1,32 @@
-import { describe, it, expect, beforeEach, afterEach } from "@jest/globals";
-import { NextRequest } from "next/server";
-import { GET, POST } from "@/app/api/suppliers/route";
-import { GET as GET_BY_ID, PUT, DELETE } from "@/app/api/suppliers/[id]/route";
-import { prisma } from "@/lib/db";
+import { describe, it, expect, beforeEach, afterEach } from '@jest/globals';
+import { NextRequest } from 'next/server';
+import { GET, POST } from '@/app/api/suppliers/route';
+import { GET as GET_BY_ID, PUT, DELETE } from '@/app/api/suppliers/[id]/route';
+import { prisma } from '@/lib/db';
 // Mock utility functions
 const createMockSession = () => ({
   user: {
-    id: "1",
-    email: "test@example.com",
-    role: "ADMIN",
-    status: "APPROVED",
+    id: '1',
+    email: 'test@example.com',
+    role: 'ADMIN',
+    status: 'APPROVED',
   },
 });
 
 // Mock authentication
-jest.mock("../../../../auth", () => ({
+jest.mock('../../../../auth', () => ({
   auth: jest.fn(),
 }));
 
 // Mock permissions
-jest.mock("@/lib/auth/roles", () => ({
+jest.mock('@/lib/auth/roles', () => ({
   hasPermission: jest.fn(),
 }));
 
-const { auth } = require("../../../../auth");
-const { hasPermission } = require("@/lib/auth/roles");
+const { auth } = require('../../../../auth');
+const { hasPermission } = require('@/lib/auth/roles');
 
-describe("Supplier API - Comprehensive Integration Tests", () => {
+describe('Supplier API - Comprehensive Integration Tests', () => {
   let mockSession: any;
   let testSupplier: any;
 
@@ -38,11 +38,11 @@ describe("Supplier API - Comprehensive Integration Tests", () => {
     // Create test user
     const testUser = await prisma.user.create({
       data: {
-        email: "test@example.com",
-        firstName: "Test",
-        lastName: "User",
-        role: "ADMIN",
-        userStatus: "APPROVED",
+        email: 'test@example.com',
+        firstName: 'Test',
+        lastName: 'User',
+        role: 'ADMIN',
+        userStatus: 'APPROVED',
         emailVerified: true,
       },
     });
@@ -50,14 +50,14 @@ describe("Supplier API - Comprehensive Integration Tests", () => {
     // Create test supplier
     testSupplier = await prisma.supplier.create({
       data: {
-        name: "Test Supplier",
-        contactPerson: "John Doe",
-        email: "john@testsupplier.com",
-        phone: "+2348012345678",
-        address: "123 Test Street",
-        city: "Lagos",
-        state: "Lagos",
-        country: "Nigeria",
+        name: 'Test Supplier',
+        contactPerson: 'John Doe',
+        email: 'john@testsupplier.com',
+        phone: '+2348012345678',
+        address: '123 Test Street',
+        city: 'Lagos',
+        state: 'Lagos',
+        country: 'Nigeria',
         isActive: true,
       },
     });
@@ -79,14 +79,14 @@ describe("Supplier API - Comprehensive Integration Tests", () => {
     jest.clearAllMocks();
   });
 
-  describe("GET /api/suppliers", () => {
-    it("should return suppliers list with pagination", async () => {
+  describe('GET /api/suppliers', () => {
+    it('should return suppliers list with pagination', async () => {
       // Create additional suppliers
       await prisma.supplier.createMany({
         data: [
-          { name: "Supplier 1", isActive: true },
-          { name: "Supplier 2", isActive: true },
-          { name: "Supplier 3", isActive: true },
+          { name: 'Supplier 1', isActive: true },
+          { name: 'Supplier 2', isActive: true },
+          { name: 'Supplier 3', isActive: true },
         ],
       });
 
@@ -94,7 +94,7 @@ describe("Supplier API - Comprehensive Integration Tests", () => {
       hasPermission.mockReturnValue(true);
 
       const request = new NextRequest(
-        "http://localhost:3000/api/suppliers?page=1&limit=2"
+        'http://localhost:3000/api/suppliers?page=1&limit=2'
       );
       const response = await GET(request);
       const data = await response.json();
@@ -107,12 +107,12 @@ describe("Supplier API - Comprehensive Integration Tests", () => {
       expect(data.pagination.limit).toBe(2);
     });
 
-    it("should filter suppliers by search term", async () => {
+    it('should filter suppliers by search term', async () => {
       auth.mockResolvedValue(mockSession);
       hasPermission.mockReturnValue(true);
 
       const request = new NextRequest(
-        "http://localhost:3000/api/suppliers?search=Test"
+        'http://localhost:3000/api/suppliers?search=Test'
       );
       const response = await GET(request);
       const data = await response.json();
@@ -120,19 +120,19 @@ describe("Supplier API - Comprehensive Integration Tests", () => {
       expect(response.status).toBe(200);
       expect(data.success).toBe(true);
       expect(data.data).toHaveLength(1);
-      expect(data.data[0].name).toBe("Test Supplier");
+      expect(data.data[0].name).toBe('Test Supplier');
     });
 
-    it("should filter suppliers by active status", async () => {
+    it('should filter suppliers by active status', async () => {
       await prisma.supplier.create({
-        data: { name: "Inactive Supplier", isActive: false },
+        data: { name: 'Inactive Supplier', isActive: false },
       });
 
       auth.mockResolvedValue(mockSession);
       hasPermission.mockReturnValue(true);
 
       const request = new NextRequest(
-        "http://localhost:3000/api/suppliers?isActive=true"
+        'http://localhost:3000/api/suppliers?isActive=true'
       );
       const response = await GET(request);
       const data = await response.json();
@@ -142,11 +142,11 @@ describe("Supplier API - Comprehensive Integration Tests", () => {
       expect(data.data.every((s: any) => s.isActive)).toBe(true);
     });
 
-    it("should sort suppliers by name", async () => {
+    it('should sort suppliers by name', async () => {
       await prisma.supplier.createMany({
         data: [
-          { name: "Alpha Supplier", isActive: true },
-          { name: "Beta Supplier", isActive: true },
+          { name: 'Alpha Supplier', isActive: true },
+          { name: 'Beta Supplier', isActive: true },
         ],
       });
 
@@ -154,42 +154,42 @@ describe("Supplier API - Comprehensive Integration Tests", () => {
       hasPermission.mockReturnValue(true);
 
       const request = new NextRequest(
-        "http://localhost:3000/api/suppliers?sortBy=name&sortOrder=asc"
+        'http://localhost:3000/api/suppliers?sortBy=name&sortOrder=asc'
       );
       const response = await GET(request);
       const data = await response.json();
 
       expect(response.status).toBe(200);
       expect(data.success).toBe(true);
-      expect(data.data[0].name).toBe("Alpha Supplier");
-      expect(data.data[1].name).toBe("Beta Supplier");
+      expect(data.data[0].name).toBe('Alpha Supplier');
+      expect(data.data[1].name).toBe('Beta Supplier');
     });
 
-    it("should return 401 for unauthenticated request", async () => {
+    it('should return 401 for unauthenticated request', async () => {
       auth.mockResolvedValue(null);
 
-      const request = new NextRequest("http://localhost:3000/api/suppliers");
+      const request = new NextRequest('http://localhost:3000/api/suppliers');
       const response = await GET(request);
 
       expect(response.status).toBe(401);
     });
 
-    it("should return 403 for insufficient permissions", async () => {
+    it('should return 403 for insufficient permissions', async () => {
       auth.mockResolvedValue(mockSession);
       hasPermission.mockReturnValue(false);
 
-      const request = new NextRequest("http://localhost:3000/api/suppliers");
+      const request = new NextRequest('http://localhost:3000/api/suppliers');
       const response = await GET(request);
 
       expect(response.status).toBe(403);
     });
 
-    it("should handle invalid query parameters", async () => {
+    it('should handle invalid query parameters', async () => {
       auth.mockResolvedValue(mockSession);
       hasPermission.mockReturnValue(true);
 
       const request = new NextRequest(
-        "http://localhost:3000/api/suppliers?page=0&limit=0"
+        'http://localhost:3000/api/suppliers?page=0&limit=0'
       );
       const response = await GET(request);
 
@@ -197,25 +197,25 @@ describe("Supplier API - Comprehensive Integration Tests", () => {
     });
   });
 
-  describe("POST /api/suppliers", () => {
-    it("should create a new supplier successfully", async () => {
+  describe('POST /api/suppliers', () => {
+    it('should create a new supplier successfully', async () => {
       auth.mockResolvedValue(mockSession);
       hasPermission.mockReturnValue(true);
 
       const supplierData = {
-        name: "New Supplier",
-        contactPerson: "Jane Doe",
-        email: "jane@newsupplier.com",
-        phone: "+2348098765432",
-        address: "456 New Street",
-        city: "Abuja",
-        state: "FCT",
-        country: "Nigeria",
+        name: 'New Supplier',
+        contactPerson: 'Jane Doe',
+        email: 'jane@newsupplier.com',
+        phone: '+2348098765432',
+        address: '456 New Street',
+        city: 'Abuja',
+        state: 'FCT',
+        country: 'Nigeria',
         isActive: true,
       };
 
-      const request = new NextRequest("http://localhost:3000/api/suppliers", {
-        method: "POST",
+      const request = new NextRequest('http://localhost:3000/api/suppliers', {
+        method: 'POST',
         body: JSON.stringify(supplierData),
       });
 
@@ -224,27 +224,27 @@ describe("Supplier API - Comprehensive Integration Tests", () => {
 
       expect(response.status).toBe(201);
       expect(data.success).toBe(true);
-      expect(data.data.name).toBe("New Supplier");
-      expect(data.data.email).toBe("jane@newsupplier.com");
+      expect(data.data.name).toBe('New Supplier');
+      expect(data.data.email).toBe('jane@newsupplier.com');
 
       // Verify supplier was created in database
       const createdSupplier = await prisma.supplier.findFirst({
-        where: { name: "New Supplier" },
+        where: { name: 'New Supplier' },
       });
       expect(createdSupplier).toBeTruthy();
     });
 
-    it("should reject supplier with duplicate name", async () => {
+    it('should reject supplier with duplicate name', async () => {
       auth.mockResolvedValue(mockSession);
       hasPermission.mockReturnValue(true);
 
       const supplierData = {
-        name: "Test Supplier", // Already exists
+        name: 'Test Supplier', // Already exists
         isActive: true,
       };
 
-      const request = new NextRequest("http://localhost:3000/api/suppliers", {
-        method: "POST",
+      const request = new NextRequest('http://localhost:3000/api/suppliers', {
+        method: 'POST',
         body: JSON.stringify(supplierData),
       });
 
@@ -253,18 +253,18 @@ describe("Supplier API - Comprehensive Integration Tests", () => {
       expect(response.status).toBe(409);
     });
 
-    it("should reject supplier without required fields", async () => {
+    it('should reject supplier without required fields', async () => {
       auth.mockResolvedValue(mockSession);
       hasPermission.mockReturnValue(true);
 
       const supplierData = {
-        contactPerson: "John Doe",
-        email: "john@example.com",
+        contactPerson: 'John Doe',
+        email: 'john@example.com',
         // Missing name and isActive
       };
 
-      const request = new NextRequest("http://localhost:3000/api/suppliers", {
-        method: "POST",
+      const request = new NextRequest('http://localhost:3000/api/suppliers', {
+        method: 'POST',
         body: JSON.stringify(supplierData),
       });
 
@@ -273,18 +273,18 @@ describe("Supplier API - Comprehensive Integration Tests", () => {
       expect(response.status).toBe(400);
     });
 
-    it("should reject supplier with invalid email", async () => {
+    it('should reject supplier with invalid email', async () => {
       auth.mockResolvedValue(mockSession);
       hasPermission.mockReturnValue(true);
 
       const supplierData = {
-        name: "Invalid Email Supplier",
-        email: "invalid-email",
+        name: 'Invalid Email Supplier',
+        email: 'invalid-email',
         isActive: true,
       };
 
-      const request = new NextRequest("http://localhost:3000/api/suppliers", {
-        method: "POST",
+      const request = new NextRequest('http://localhost:3000/api/suppliers', {
+        method: 'POST',
         body: JSON.stringify(supplierData),
       });
 
@@ -293,18 +293,18 @@ describe("Supplier API - Comprehensive Integration Tests", () => {
       expect(response.status).toBe(400);
     });
 
-    it("should reject supplier with invalid phone", async () => {
+    it('should reject supplier with invalid phone', async () => {
       auth.mockResolvedValue(mockSession);
       hasPermission.mockReturnValue(true);
 
       const supplierData = {
-        name: "Invalid Phone Supplier",
-        phone: "invalid-phone",
+        name: 'Invalid Phone Supplier',
+        phone: 'invalid-phone',
         isActive: true,
       };
 
-      const request = new NextRequest("http://localhost:3000/api/suppliers", {
-        method: "POST",
+      const request = new NextRequest('http://localhost:3000/api/suppliers', {
+        method: 'POST',
         body: JSON.stringify(supplierData),
       });
 
@@ -313,18 +313,18 @@ describe("Supplier API - Comprehensive Integration Tests", () => {
       expect(response.status).toBe(400);
     });
 
-    it("should reject supplier with invalid website", async () => {
+    it('should reject supplier with invalid website', async () => {
       auth.mockResolvedValue(mockSession);
       hasPermission.mockReturnValue(true);
 
       const supplierData = {
-        name: "Invalid Website Supplier",
-        website: "not-a-url",
+        name: 'Invalid Website Supplier',
+        website: 'not-a-url',
         isActive: true,
       };
 
-      const request = new NextRequest("http://localhost:3000/api/suppliers", {
-        method: "POST",
+      const request = new NextRequest('http://localhost:3000/api/suppliers', {
+        method: 'POST',
         body: JSON.stringify(supplierData),
       });
 
@@ -333,12 +333,12 @@ describe("Supplier API - Comprehensive Integration Tests", () => {
       expect(response.status).toBe(400);
     });
 
-    it("should return 401 for unauthenticated request", async () => {
+    it('should return 401 for unauthenticated request', async () => {
       auth.mockResolvedValue(null);
 
-      const request = new NextRequest("http://localhost:3000/api/suppliers", {
-        method: "POST",
-        body: JSON.stringify({ name: "Test", isActive: true }),
+      const request = new NextRequest('http://localhost:3000/api/suppliers', {
+        method: 'POST',
+        body: JSON.stringify({ name: 'Test', isActive: true }),
       });
 
       const response = await POST(request);
@@ -346,13 +346,13 @@ describe("Supplier API - Comprehensive Integration Tests", () => {
       expect(response.status).toBe(401);
     });
 
-    it("should return 403 for insufficient permissions", async () => {
+    it('should return 403 for insufficient permissions', async () => {
       auth.mockResolvedValue(mockSession);
       hasPermission.mockReturnValue(false);
 
-      const request = new NextRequest("http://localhost:3000/api/suppliers", {
-        method: "POST",
-        body: JSON.stringify({ name: "Test", isActive: true }),
+      const request = new NextRequest('http://localhost:3000/api/suppliers', {
+        method: 'POST',
+        body: JSON.stringify({ name: 'Test', isActive: true }),
       });
 
       const response = await POST(request);
@@ -361,8 +361,8 @@ describe("Supplier API - Comprehensive Integration Tests", () => {
     });
   });
 
-  describe("GET /api/suppliers/[id]", () => {
-    it("should return supplier by ID", async () => {
+  describe('GET /api/suppliers/[id]', () => {
+    it('should return supplier by ID', async () => {
       auth.mockResolvedValue(mockSession);
       hasPermission.mockReturnValue(true);
 
@@ -377,38 +377,38 @@ describe("Supplier API - Comprehensive Integration Tests", () => {
       expect(response.status).toBe(200);
       expect(data.success).toBe(true);
       expect(data.data.id).toBe(testSupplier.id);
-      expect(data.data.name).toBe("Test Supplier");
+      expect(data.data.name).toBe('Test Supplier');
     });
 
-    it("should return 404 for non-existent supplier", async () => {
+    it('should return 404 for non-existent supplier', async () => {
       auth.mockResolvedValue(mockSession);
       hasPermission.mockReturnValue(true);
 
       const request = new NextRequest(
-        "http://localhost:3000/api/suppliers/99999"
+        'http://localhost:3000/api/suppliers/99999'
       );
       const response = await GET_BY_ID(request, {
-        params: Promise.resolve({ id: "99999" }),
+        params: Promise.resolve({ id: '99999' }),
       });
 
       expect(response.status).toBe(404);
     });
 
-    it("should return 400 for invalid ID format", async () => {
+    it('should return 400 for invalid ID format', async () => {
       auth.mockResolvedValue(mockSession);
       hasPermission.mockReturnValue(true);
 
       const request = new NextRequest(
-        "http://localhost:3000/api/suppliers/invalid"
+        'http://localhost:3000/api/suppliers/invalid'
       );
       const response = await GET_BY_ID(request, {
-        params: Promise.resolve({ id: "invalid" }),
+        params: Promise.resolve({ id: 'invalid' }),
       });
 
       expect(response.status).toBe(400);
     });
 
-    it("should return 401 for unauthenticated request", async () => {
+    it('should return 401 for unauthenticated request', async () => {
       auth.mockResolvedValue(null);
 
       const request = new NextRequest(
@@ -422,21 +422,21 @@ describe("Supplier API - Comprehensive Integration Tests", () => {
     });
   });
 
-  describe("PUT /api/suppliers/[id]", () => {
-    it("should update supplier successfully", async () => {
+  describe('PUT /api/suppliers/[id]', () => {
+    it('should update supplier successfully', async () => {
       auth.mockResolvedValue(mockSession);
       hasPermission.mockReturnValue(true);
 
       const updateData = {
-        name: "Updated Supplier Name",
-        contactPerson: "Jane Doe",
-        email: "jane@updatedsupplier.com",
+        name: 'Updated Supplier Name',
+        contactPerson: 'Jane Doe',
+        email: 'jane@updatedsupplier.com',
       };
 
       const request = new NextRequest(
         `http://localhost:3000/api/suppliers/${testSupplier.id}`,
         {
-          method: "PUT",
+          method: 'PUT',
           body: JSON.stringify(updateData),
         }
       );
@@ -448,33 +448,33 @@ describe("Supplier API - Comprehensive Integration Tests", () => {
 
       expect(response.status).toBe(200);
       expect(data.success).toBe(true);
-      expect(data.data.name).toBe("Updated Supplier Name");
-      expect(data.data.contactPerson).toBe("Jane Doe");
+      expect(data.data.name).toBe('Updated Supplier Name');
+      expect(data.data.contactPerson).toBe('Jane Doe');
 
       // Verify supplier was updated in database
       const updatedSupplier = await prisma.supplier.findUnique({
         where: { id: testSupplier.id },
       });
-      expect(updatedSupplier?.name).toBe("Updated Supplier Name");
+      expect(updatedSupplier?.name).toBe('Updated Supplier Name');
     });
 
-    it("should reject update with duplicate name", async () => {
+    it('should reject update with duplicate name', async () => {
       // Create another supplier
       const otherSupplier = await prisma.supplier.create({
-        data: { name: "Other Supplier", isActive: true },
+        data: { name: 'Other Supplier', isActive: true },
       });
 
       auth.mockResolvedValue(mockSession);
       hasPermission.mockReturnValue(true);
 
       const updateData = {
-        name: "Other Supplier", // Duplicate name
+        name: 'Other Supplier', // Duplicate name
       };
 
       const request = new NextRequest(
         `http://localhost:3000/api/suppliers/${testSupplier.id}`,
         {
-          method: "PUT",
+          method: 'PUT',
           body: JSON.stringify(updateData),
         }
       );
@@ -486,18 +486,18 @@ describe("Supplier API - Comprehensive Integration Tests", () => {
       expect(response.status).toBe(409);
     });
 
-    it("should reject update with invalid data", async () => {
+    it('should reject update with invalid data', async () => {
       auth.mockResolvedValue(mockSession);
       hasPermission.mockReturnValue(true);
 
       const updateData = {
-        email: "invalid-email",
+        email: 'invalid-email',
       };
 
       const request = new NextRequest(
         `http://localhost:3000/api/suppliers/${testSupplier.id}`,
         {
-          method: "PUT",
+          method: 'PUT',
           body: JSON.stringify(updateData),
         }
       );
@@ -509,33 +509,33 @@ describe("Supplier API - Comprehensive Integration Tests", () => {
       expect(response.status).toBe(400);
     });
 
-    it("should return 404 for non-existent supplier", async () => {
+    it('should return 404 for non-existent supplier', async () => {
       auth.mockResolvedValue(mockSession);
       hasPermission.mockReturnValue(true);
 
       const request = new NextRequest(
-        "http://localhost:3000/api/suppliers/99999",
+        'http://localhost:3000/api/suppliers/99999',
         {
-          method: "PUT",
-          body: JSON.stringify({ name: "Updated Name" }),
+          method: 'PUT',
+          body: JSON.stringify({ name: 'Updated Name' }),
         }
       );
 
       const response = await PUT(request, {
-        params: Promise.resolve({ id: "99999" }),
+        params: Promise.resolve({ id: '99999' }),
       });
 
       expect(response.status).toBe(404);
     });
 
-    it("should return 401 for unauthenticated request", async () => {
+    it('should return 401 for unauthenticated request', async () => {
       auth.mockResolvedValue(null);
 
       const request = new NextRequest(
         `http://localhost:3000/api/suppliers/${testSupplier.id}`,
         {
-          method: "PUT",
-          body: JSON.stringify({ name: "Updated Name" }),
+          method: 'PUT',
+          body: JSON.stringify({ name: 'Updated Name' }),
         }
       );
 
@@ -547,15 +547,15 @@ describe("Supplier API - Comprehensive Integration Tests", () => {
     });
   });
 
-  describe("DELETE /api/suppliers/[id]", () => {
-    it("should delete supplier successfully", async () => {
+  describe('DELETE /api/suppliers/[id]', () => {
+    it('should delete supplier successfully', async () => {
       auth.mockResolvedValue(mockSession);
       hasPermission.mockReturnValue(true);
 
       const request = new NextRequest(
         `http://localhost:3000/api/suppliers/${testSupplier.id}`,
         {
-          method: "DELETE",
+          method: 'DELETE',
         }
       );
 
@@ -572,31 +572,31 @@ describe("Supplier API - Comprehensive Integration Tests", () => {
       expect(deletedSupplier).toBeNull();
     });
 
-    it("should return 404 for non-existent supplier", async () => {
+    it('should return 404 for non-existent supplier', async () => {
       auth.mockResolvedValue(mockSession);
       hasPermission.mockReturnValue(true);
 
       const request = new NextRequest(
-        "http://localhost:3000/api/suppliers/99999",
+        'http://localhost:3000/api/suppliers/99999',
         {
-          method: "DELETE",
+          method: 'DELETE',
         }
       );
 
       const response = await DELETE(request, {
-        params: Promise.resolve({ id: "99999" }),
+        params: Promise.resolve({ id: '99999' }),
       });
 
       expect(response.status).toBe(404);
     });
 
-    it("should return 401 for unauthenticated request", async () => {
+    it('should return 401 for unauthenticated request', async () => {
       auth.mockResolvedValue(null);
 
       const request = new NextRequest(
         `http://localhost:3000/api/suppliers/${testSupplier.id}`,
         {
-          method: "DELETE",
+          method: 'DELETE',
         }
       );
 
@@ -607,14 +607,14 @@ describe("Supplier API - Comprehensive Integration Tests", () => {
       expect(response.status).toBe(401);
     });
 
-    it("should return 403 for insufficient permissions", async () => {
+    it('should return 403 for insufficient permissions', async () => {
       auth.mockResolvedValue(mockSession);
       hasPermission.mockReturnValue(false);
 
       const request = new NextRequest(
         `http://localhost:3000/api/suppliers/${testSupplier.id}`,
         {
-          method: "DELETE",
+          method: 'DELETE',
         }
       );
 
@@ -626,35 +626,35 @@ describe("Supplier API - Comprehensive Integration Tests", () => {
     });
   });
 
-  describe("Edge Cases and Error Handling", () => {
-    it("should handle database connection errors gracefully", async () => {
+  describe('Edge Cases and Error Handling', () => {
+    it('should handle database connection errors gracefully', async () => {
       // Mock database error
       jest
-        .spyOn(prisma.supplier, "findMany")
-        .mockRejectedValue(new Error("Database connection failed"));
+        .spyOn(prisma.supplier, 'findMany')
+        .mockRejectedValue(new Error('Database connection failed'));
 
       auth.mockResolvedValue(mockSession);
       hasPermission.mockReturnValue(true);
 
-      const request = new NextRequest("http://localhost:3000/api/suppliers");
+      const request = new NextRequest('http://localhost:3000/api/suppliers');
       const response = await GET(request);
 
       expect(response.status).toBe(500);
     });
 
-    it("should handle validation errors with detailed messages", async () => {
+    it('should handle validation errors with detailed messages', async () => {
       auth.mockResolvedValue(mockSession);
       hasPermission.mockReturnValue(true);
 
       const invalidData = {
-        name: "", // Empty name
-        email: "invalid-email",
-        phone: "123", // Too short
+        name: '', // Empty name
+        email: 'invalid-email',
+        phone: '123', // Too short
         isActive: true,
       };
 
-      const request = new NextRequest("http://localhost:3000/api/suppliers", {
-        method: "POST",
+      const request = new NextRequest('http://localhost:3000/api/suppliers', {
+        method: 'POST',
         body: JSON.stringify(invalidData),
       });
 
@@ -665,17 +665,17 @@ describe("Supplier API - Comprehensive Integration Tests", () => {
       expect(data.error).toBeDefined();
     });
 
-    it("should handle concurrent updates correctly", async () => {
+    it('should handle concurrent updates correctly', async () => {
       auth.mockResolvedValue(mockSession);
       hasPermission.mockReturnValue(true);
 
-      const updateData1 = { name: "Update 1" };
-      const updateData2 = { name: "Update 2" };
+      const updateData1 = { name: 'Update 1' };
+      const updateData2 = { name: 'Update 2' };
 
       const request1 = new NextRequest(
         `http://localhost:3000/api/suppliers/${testSupplier.id}`,
         {
-          method: "PUT",
+          method: 'PUT',
           body: JSON.stringify(updateData1),
         }
       );
@@ -683,7 +683,7 @@ describe("Supplier API - Comprehensive Integration Tests", () => {
       const request2 = new NextRequest(
         `http://localhost:3000/api/suppliers/${testSupplier.id}`,
         {
-          method: "PUT",
+          method: 'PUT',
           body: JSON.stringify(updateData2),
         }
       );

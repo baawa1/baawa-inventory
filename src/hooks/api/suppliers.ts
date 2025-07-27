@@ -1,5 +1,5 @@
-import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
-import { queryKeys } from "@/lib/query-client";
+import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
+import { queryKeys } from '@/lib/query-client';
 
 // Types
 export interface Supplier {
@@ -18,7 +18,7 @@ export interface SupplierFilters {
   search: string;
   status: string;
   sortBy: string;
-  sortOrder: "asc" | "desc";
+  sortOrder: 'asc' | 'desc';
   isActive?: boolean;
   page?: number;
   limit?: number;
@@ -55,12 +55,12 @@ const fetchSuppliers = async (
   const searchParams = new URLSearchParams({
     page: String(filters.page || 1),
     limit: String(filters.limit || 10),
-    sortBy: filters.sortBy || "name",
-    sortOrder: filters.sortOrder || "asc",
+    sortBy: filters.sortBy || 'name',
+    sortOrder: filters.sortOrder || 'asc',
   });
 
-  if (filters.search) searchParams.set("search", filters.search);
-  if (filters.status) searchParams.set("isActive", filters.status);
+  if (filters.search) searchParams.set('search', filters.search);
+  if (filters.status) searchParams.set('isActive', filters.status);
 
   const response = await fetch(`/api/suppliers?${searchParams.toString()}`);
 
@@ -81,10 +81,10 @@ const fetchSuppliers = async (
 };
 
 const createSupplier = async (data: CreateSupplierData): Promise<Supplier> => {
-  const response = await fetch("/api/suppliers", {
-    method: "POST",
+  const response = await fetch('/api/suppliers', {
+    method: 'POST',
     headers: {
-      "Content-Type": "application/json",
+      'Content-Type': 'application/json',
     },
     body: JSON.stringify(data),
   });
@@ -93,8 +93,8 @@ const createSupplier = async (data: CreateSupplierData): Promise<Supplier> => {
     const errorData = await response.json().catch(() => ({}));
 
     // Handle validation errors specifically
-    if (response.status === 400 && errorData.code === "VALIDATION_ERROR") {
-      const validationError = new Error("Validation failed");
+    if (response.status === 400 && errorData.code === 'VALIDATION_ERROR') {
+      const validationError = new Error('Validation failed');
       (validationError as any).details = errorData.details;
       (validationError as any).code = errorData.code;
       throw validationError;
@@ -102,7 +102,7 @@ const createSupplier = async (data: CreateSupplierData): Promise<Supplier> => {
 
     // Handle other specific errors
     if (response.status === 409) {
-      throw new Error("A supplier with this name already exists");
+      throw new Error('A supplier with this name already exists');
     }
 
     // Handle generic errors
@@ -125,9 +125,9 @@ const updateSupplier = async ({
   data: UpdateSupplierData;
 }): Promise<Supplier> => {
   const response = await fetch(`/api/suppliers/${id}`, {
-    method: "PUT",
+    method: 'PUT',
     headers: {
-      "Content-Type": "application/json",
+      'Content-Type': 'application/json',
     },
     body: JSON.stringify(data),
   });
@@ -142,7 +142,7 @@ const updateSupplier = async ({
 
 const deleteSupplier = async (id: number): Promise<void> => {
   const response = await fetch(`/api/suppliers/${id}`, {
-    method: "DELETE",
+    method: 'DELETE',
   });
 
   if (!response.ok) {
@@ -191,7 +191,7 @@ export const useUpdateSupplier = () => {
 
   return useMutation({
     mutationFn: updateSupplier,
-    onSuccess: (data) => {
+    onSuccess: data => {
       queryClient.invalidateQueries({ queryKey: queryKeys.suppliers.all });
       queryClient.setQueryData(queryKeys.suppliers.detail(data.id), data);
     },
@@ -212,9 +212,9 @@ export const useDeleteSupplier = () => {
 // Utility Hooks
 export const useSupplierOptions = () => {
   return useQuery({
-    queryKey: [...queryKeys.suppliers.all, "options"] as const,
+    queryKey: [...queryKeys.suppliers.all, 'options'] as const,
     queryFn: async () => {
-      const response = await fetch("/api/suppliers?isActive=true");
+      const response = await fetch('/api/suppliers?isActive=true');
       if (!response.ok) {
         throw new Error(
           `Failed to fetch supplier options: ${response.statusText}`
