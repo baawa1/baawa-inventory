@@ -108,6 +108,17 @@ async function fetchCustomers({
   return response.json();
 }
 
+// Helper function to check if we should search for phone
+const shouldSearchPhone = (phone: string): boolean => {
+  const digitsOnly = phone.replace(/\D/g, '');
+  return digitsOnly.length >= 7;
+};
+
+// Helper function to check if we should search for email
+const shouldSearchEmail = (email: string): boolean => {
+  return email.length >= 5 && email.includes('@');
+};
+
 export function SlidingPaymentInterface({
   items,
   subtotal,
@@ -641,6 +652,8 @@ function CustomerInfoStep({
     exists: boolean;
     message: string;
   }>({ checking: false, exists: false, message: '' });
+  const [autoSearchResults, setAutoSearchResults] = useState<any[]>([]);
+  const [showAutoSearch, setShowAutoSearch] = useState(false);
 
   const {
     data: customers = [],
@@ -649,8 +662,52 @@ function CustomerInfoStep({
   } = useQuery({
     queryKey: ['customers', searchTerm],
     queryFn: fetchCustomers,
-    enabled: showCustomerSearch,
+    enabled: showCustomerSearch && searchTerm.length > 0,
   });
+
+  // Auto-search for phone numbers
+  const autoSearchPhone = async (phone: string) => {
+    if (!shouldSearchPhone(phone)) {
+      setAutoSearchResults([]);
+      setShowAutoSearch(false);
+      return;
+    }
+
+    try {
+      const response = await fetch(
+        `/api/pos/customers?search=${encodeURIComponent(phone)}`
+      );
+      if (response.ok) {
+        const results = await response.json();
+        setAutoSearchResults(results);
+        setShowAutoSearch(results.length > 0);
+      }
+    } catch (error) {
+      console.error('Auto-search error:', error);
+    }
+  };
+
+  // Auto-search for emails
+  const autoSearchEmail = async (email: string) => {
+    if (!shouldSearchEmail(email)) {
+      setAutoSearchResults([]);
+      setShowAutoSearch(false);
+      return;
+    }
+
+    try {
+      const response = await fetch(
+        `/api/pos/customers?search=${encodeURIComponent(email)}`
+      );
+      if (response.ok) {
+        const results = await response.json();
+        setAutoSearchResults(results);
+        setShowAutoSearch(results.length > 0);
+      }
+    } catch (error) {
+      console.error('Auto-search error:', error);
+    }
+  };
 
   const selectCustomer = (customer: any) => {
     setSelectedCustomer(customer);
@@ -661,14 +718,21 @@ function CustomerInfoStep({
       email: customer.email,
     });
     setShowCustomerSearch(false);
+    setShowAutoSearch(false);
     setSearchTerm('');
+    setAutoSearchResults([]);
+    // Reset validation states
+    setEmailValidation({ checking: false, exists: false, message: '' });
+    setPhoneValidation({ checking: false, exists: false, message: '' });
   };
 
   const selectNewCustomer = () => {
     setSelectedCustomer(null);
     onCustomerInfoChange({ name: '', phone: '', email: '' });
     setShowCustomerSearch(false);
+    setShowAutoSearch(false);
     setSearchTerm('');
+    setAutoSearchResults([]);
     // Reset validation states
     setEmailValidation({ checking: false, exists: false, message: '' });
     setPhoneValidation({ checking: false, exists: false, message: '' });
@@ -698,6 +762,12 @@ function CustomerInfoStep({
           exists: data.exists,
           message: data.message,
         });
+
+        // If there are partial matches, show them in auto-search
+        if (data.hasPartialMatches && data.customers.length > 0) {
+          setAutoSearchResults(data.customers);
+          setShowAutoSearch(true);
+        }
       } else {
         setEmailValidation({
           checking: false,
@@ -738,6 +808,12 @@ function CustomerInfoStep({
           exists: data.exists,
           message: data.message,
         });
+
+        // If there are partial matches, show them in auto-search
+        if (data.hasPartialMatches && data.customers.length > 0) {
+          setAutoSearchResults(data.customers);
+          setShowAutoSearch(true);
+        }
       } else {
         setPhoneValidation({
           checking: false,
@@ -841,30 +917,143 @@ function CustomerInfoStep({
                 </div>
 
                 {/* Existing Customers */}
-                {filteredCustomers.map((customer, index) => (
+                {filteredCustomers.map((customer, index) => {
+                  const isStaff = customer.type === 'user';
+
+                  return (
+                    <div
+                      key={`${customer.id}-${index}`}
+                      className={`hover:bg-muted flex cursor-pointer items-center justify-between rounded p-2 transition-colors ${
+                        isStaff ? 'border-l-4 border-l-blue-500' : ''
+                      }`}
+                      onClick={() => selectCustomer(customer)}
+                    >
+                      <div className="flex-1">
+                        <div className="flex items-center gap-2">
+                          <div className="font-medium">{customer.name}</div>
+                          {isStaff && (
+                            <span className="rounded-full bg-blue-100 px-2 py-1 text-xs text-blue-800">
+                              Staff
+                            </span>
+                          )}
+                        </div>
+                        <div className="text-muted-foreground text-sm">
+                          {customer.email}
+                          {customer.phone && ` • ${customer.phone}`}
+                        </div>
+                        <div className="text-muted-foreground text-xs">
+                          {isStaff
+                            ? `Staff Member • ${customer.role}`
+                            : `${customer.totalOrders} orders • ${customer.totalSpent.toLocaleString()} spent`}
+                        </div>
+                      </div>
+                      <Button size="sm" variant="ghost">
+                        Select
+                      </Button>
+                    </div>
+                  );
+                })}
+              </div>
+            )}
+          </div>
+        )}
+
+        {/* Auto-search Results */}
+        {showAutoSearch && autoSearchResults.length > 0 && (
+          <div className="rounded-lg border border-gray-600 bg-black p-4">
+            <div className="mb-3">
+              <div className="flex items-center gap-2">
+                <IconUser className="h-4 w-4 text-white" />
+                <h4 className="text-sm font-medium text-white">
+                  Found Existing Customer
+                  {autoSearchResults.length > 1 ? 's' : ''}
+                </h4>
+              </div>
+              <p className="text-xs text-gray-400">
+                We found customer{autoSearchResults.length > 1 ? 's' : ''} with
+                similar information. Select one or continue as new customer.
+              </p>
+            </div>
+
+            <div className="max-h-32 space-y-2 overflow-y-auto">
+              {/* Continue as New Customer */}
+              <div
+                className="flex cursor-pointer items-center justify-between rounded border border-gray-600 bg-black p-2 transition-colors hover:bg-gray-900"
+                onClick={selectNewCustomer}
+              >
+                <div className="flex-1">
+                  <div className="font-medium text-white">
+                    Continue as New Customer
+                  </div>
+                  <div className="text-xs text-gray-400">
+                    Create a new customer record
+                  </div>
+                </div>
+                <Button
+                  size="sm"
+                  variant="ghost"
+                  className="text-white hover:bg-gray-800"
+                >
+                  Continue
+                </Button>
+              </div>
+
+              {/* Existing Customers */}
+              {autoSearchResults.map((customer, index) => {
+                // Check if this is an exact match for current input
+                const isExactEmailMatch =
+                  customerInfo.email &&
+                  customer.email.toLowerCase() ===
+                    customerInfo.email.toLowerCase();
+                const isExactPhoneMatch =
+                  customerInfo.phone &&
+                  (customer.phone === customerInfo.phone ||
+                    customer.phone?.replace(/\D/g, '') ===
+                      customerInfo.phone.replace(/\D/g, ''));
+
+                const isExactMatch = isExactEmailMatch || isExactPhoneMatch;
+
+                return (
                   <div
-                    key={`${customer.id}-${index}`}
-                    className="hover:bg-muted flex cursor-pointer items-center justify-between rounded p-2 transition-colors"
+                    key={`auto-${customer.id}-${index}`}
+                    className={`flex cursor-pointer items-center justify-between rounded border p-2 transition-colors hover:bg-gray-900 ${
+                      isExactMatch
+                        ? 'border-red-500 bg-red-900/20'
+                        : 'border-gray-600 bg-black'
+                    }`}
                     onClick={() => selectCustomer(customer)}
                   >
                     <div className="flex-1">
-                      <div className="font-medium">{customer.name}</div>
-                      <div className="text-muted-foreground text-sm">
+                      <div className="flex items-center gap-2">
+                        <div className="font-medium text-white">
+                          {customer.name}
+                        </div>
+                        {isExactMatch && (
+                          <span className="rounded-full border border-red-500 bg-red-900/50 px-2 py-1 text-xs text-red-300">
+                            Exact Match
+                          </span>
+                        )}
+                      </div>
+                      <div className="text-sm text-gray-400">
                         {customer.email}
                         {customer.phone && ` • ${customer.phone}`}
                       </div>
-                      <div className="text-muted-foreground text-xs">
+                      <div className="text-xs text-gray-500">
                         {customer.totalOrders} orders •{' '}
                         {customer.totalSpent.toLocaleString()} spent
                       </div>
                     </div>
-                    <Button size="sm" variant="ghost">
+                    <Button
+                      size="sm"
+                      variant="ghost"
+                      className="text-white hover:bg-gray-800"
+                    >
                       Select
                     </Button>
                   </div>
-                ))}
-              </div>
-            )}
+                );
+              })}
+            </div>
           </div>
         )}
       </div>
@@ -940,6 +1129,13 @@ function CustomerInfoStep({
                     ...customerInfo,
                     phone,
                   });
+                  // Auto-search when phone has 7+ digits
+                  if (shouldSearchPhone(phone)) {
+                    autoSearchPhone(phone);
+                  } else {
+                    setShowAutoSearch(false);
+                    setAutoSearchResults([]);
+                  }
                   // Check uniqueness after a delay
                   setTimeout(() => checkPhoneUniqueness(phone), 500);
                 }}
@@ -960,6 +1156,12 @@ function CustomerInfoStep({
                 {phoneValidation.message}
               </p>
             )}
+            {phoneValidation.exists && (
+              <p className="mt-1 text-xs font-medium text-red-600">
+                ⚠️ This phone number is already registered. Please select the
+                existing customer or use a different number.
+              </p>
+            )}
           </div>
 
           <div>
@@ -975,6 +1177,13 @@ function CustomerInfoStep({
                     ...customerInfo,
                     email,
                   });
+                  // Auto-search when email has sufficient characters
+                  if (shouldSearchEmail(email)) {
+                    autoSearchEmail(email);
+                  } else {
+                    setShowAutoSearch(false);
+                    setAutoSearchResults([]);
+                  }
                   // Check uniqueness after a delay
                   setTimeout(() => checkEmailUniqueness(email), 500);
                 }}
@@ -993,6 +1202,12 @@ function CustomerInfoStep({
                 }`}
               >
                 {emailValidation.message}
+              </p>
+            )}
+            {emailValidation.exists && (
+              <p className="mt-1 text-xs font-medium text-red-600">
+                ⚠️ This email is already registered. Please select the existing
+                customer or use a different email.
               </p>
             )}
           </div>
