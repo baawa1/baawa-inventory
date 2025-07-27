@@ -22,6 +22,8 @@ import {
   IconArrowLeft,
   IconArrowRight,
   IconSearch,
+  IconMail,
+  IconPrinter,
 } from '@tabler/icons-react';
 import { usePOSErrorHandler } from './POSErrorBoundary';
 import { DiscountStep } from './payment/DiscountStep';
@@ -86,6 +88,7 @@ const STEPS = [
   { id: 'payment-method', title: 'Payment Method', icon: IconCreditCard },
   { id: 'customer-info', title: 'Customer Info', icon: IconUser },
   { id: 'review', title: 'Review & Complete', icon: IconCheck },
+  { id: 'receipt', title: 'Receipt', icon: IconReceipt },
 ];
 
 // API function to fetch customers
@@ -130,6 +133,7 @@ export function SlidingPaymentInterface({
   const [splitPayments, setSplitPayments] = useState<
     Array<{ id: string; amount: number; method: string }>
   >([]);
+  const [completedSale, setCompletedSale] = useState<Sale | null>(null);
 
   const { handleError } = usePOSErrorHandler();
 
@@ -194,6 +198,9 @@ export function SlidingPaymentInterface({
         splitPayments: isSplitPayment ? splitPayments : undefined,
       };
 
+      // Debug logging
+      console.log('Sale data being sent:', saleData);
+
       const response = await fetch('/api/pos/create-sale', {
         method: 'POST',
         headers: {
@@ -204,6 +211,15 @@ export function SlidingPaymentInterface({
 
       if (!response.ok) {
         const errorData = await response.json();
+        console.error('API Error Response:', errorData);
+
+        if (errorData.details && Array.isArray(errorData.details)) {
+          const errorMessages = errorData.details
+            .map((err: any) => `${err.field}: ${err.message}`)
+            .join(', ');
+          throw new Error(`Validation failed: ${errorMessages}`);
+        }
+
         throw new Error(errorData.error || 'Failed to process payment');
       }
 
@@ -223,8 +239,9 @@ export function SlidingPaymentInterface({
         timestamp: new Date(),
       };
 
+      setCompletedSale(sale);
+      setCurrentStep(5); // Move to receipt step
       toast.success('Payment processed successfully!');
-      onPaymentSuccess(sale);
     } catch (error) {
       const errorMessage = 'Payment processing failed';
       toast.error(errorMessage);
@@ -259,6 +276,8 @@ export function SlidingPaymentInterface({
       case 3: // Customer Info - always can proceed
         return true;
       case 4: // Review - always can proceed
+        return true;
+      case 5: // Receipt - always can proceed
         return true;
       default:
         return false;
@@ -330,6 +349,8 @@ export function SlidingPaymentInterface({
             splitPayments={splitPayments}
           />
         );
+      case 5:
+        return <ReceiptStep sale={completedSale} />;
       default:
         return null;
     }
@@ -367,10 +388,21 @@ export function SlidingPaymentInterface({
           {STEPS.map((step, index) => (
             <button
               key={step.id}
-              onClick={() => setCurrentStep(index)}
+              onClick={() => {
+                // Prevent clicking on receipt step (index 5) unless we're already there
+                if (index === 5 && currentStep !== 5) {
+                  return;
+                }
+                // Prevent clicking on any step when we're on receipt step
+                if (currentStep === 5) {
+                  return;
+                }
+                setCurrentStep(index);
+              }}
+              disabled={currentStep === 5 || (index === 5 && currentStep !== 5)}
               className={`h-2 flex-1 rounded-full transition-colors ${
                 index <= currentStep ? 'bg-primary' : 'bg-muted'
-              }`}
+              } ${currentStep === 5 || (index === 5 && currentStep !== 5) ? 'cursor-not-allowed' : 'cursor-pointer'}`}
             />
           ))}
         </div>
@@ -381,16 +413,18 @@ export function SlidingPaymentInterface({
 
       {/* Navigation */}
       <div className="flex justify-between border-t p-4">
-        <Button
-          variant="outline"
-          onClick={prevStep}
-          disabled={currentStep === 0 || processing}
-        >
-          <IconArrowLeft className="mr-2 h-4 w-4" />
-          Previous
-        </Button>
+        {currentStep !== 5 && (
+          <Button
+            variant="outline"
+            onClick={prevStep}
+            disabled={currentStep === 0 || processing}
+          >
+            <IconArrowLeft className="mr-2 h-4 w-4" />
+            Previous
+          </Button>
+        )}
 
-        {currentStep === STEPS.length - 1 ? (
+        {currentStep === 4 ? (
           <Button
             onClick={handlePayment}
             disabled={!canProceed() || processing}
@@ -408,6 +442,23 @@ export function SlidingPaymentInterface({
               </>
             )}
           </Button>
+        ) : currentStep === 5 ? (
+          <div className="ml-auto flex gap-3">
+            <Button variant="outline" onClick={onCancel} className="min-w-32">
+              <IconX className="mr-2 h-4 w-4" />
+              Close
+            </Button>
+            <Button
+              onClick={() => {
+                onPaymentSuccess(completedSale!);
+                onCancel();
+              }}
+              className="min-w-32"
+            >
+              <IconCash className="mr-2 h-4 w-4" />
+              New Sale
+            </Button>
+          </div>
         ) : (
           <Button onClick={nextStep} disabled={!canProceed() || processing}>
             Next
@@ -492,11 +543,14 @@ function PaymentMethodStep({
         >
           Split Payment
         </Button>
-        {isSplitPayment && (
-          <span className="text-muted-foreground text-sm">
-            Total: ₦{(total - discount).toLocaleString()}
-          </span>
-        )}
+      </div>
+
+      {/* Total Amount Display */}
+      <div className="bg-muted mb-4 flex items-center justify-between rounded p-3">
+        <span className="font-medium">Total Amount:</span>
+        <span className="text-primary text-lg font-bold">
+          ₦{(total - discount).toLocaleString()}
+        </span>
       </div>
 
       {!isSplitPayment ? (
@@ -526,23 +580,40 @@ function PaymentMethodStep({
         />
       )}
 
-      {/* Amount Paid (for non-split payments) */}
+      {/* Payment Amounts (for non-split payments) */}
       {!isSplitPayment && paymentMethod && (
-        <div className="space-y-2">
-          <Label htmlFor="amountPaid">Amount Paid (₦)</Label>
-          <Input
-            id="amountPaid"
-            type="number"
-            step="0.01"
-            value={amountPaid}
-            onChange={e => setAmountPaid(parseFloat(e.target.value) || 0)}
-            disabled={processing}
-          />
+        <div className="space-y-4">
+          {/* Amount Paid Input */}
+          <div className="space-y-2">
+            <Label htmlFor="amountPaid">Amount Paid (₦)</Label>
+            <Input
+              id="amountPaid"
+              type="number"
+              step="0.01"
+              value={amountPaid}
+              onChange={e => setAmountPaid(parseFloat(e.target.value) || 0)}
+              disabled={processing}
+            />
+          </div>
+
+          {/* Change Due */}
           {paymentMethod === 'cash' && change > 0 && (
             <div className="bg-muted flex items-center justify-between rounded p-3">
               <span className="font-medium">Change Due:</span>
-              <span className="text-lg font-bold">
+              <span className="text-lg font-bold text-green-600">
                 ₦{change.toLocaleString()}
+              </span>
+            </div>
+          )}
+
+          {/* Insufficient Payment Warning */}
+          {paymentMethod === 'cash' && amountPaid < total - discount && (
+            <div className="bg-destructive/10 border-destructive/20 flex items-center justify-between rounded border p-3">
+              <span className="text-destructive font-medium">
+                Insufficient Payment:
+              </span>
+              <span className="text-destructive text-lg font-bold">
+                ₦{(total - discount - amountPaid).toLocaleString()}
               </span>
             </div>
           )}
@@ -1108,9 +1179,6 @@ function SplitPaymentInterface({
     <div className="space-y-4">
       <div className="flex items-center justify-between">
         <span className="text-sm font-medium">Split Payments</span>
-        <span className="text-muted-foreground text-sm">
-          Total: ₦{total.toLocaleString()}
-        </span>
       </div>
 
       <div className="space-y-3">
@@ -1187,6 +1255,370 @@ function SplitPaymentInterface({
             ₦{remaining.toLocaleString()}
           </span>
         </div>
+      </div>
+    </div>
+  );
+}
+
+function ReceiptStep({ sale }: { sale: Sale | null }) {
+  if (!sale) {
+    return (
+      <div className="flex h-full items-center justify-center">
+        <div className="text-center">
+          <p className="text-muted-foreground">No sale data available</p>
+        </div>
+      </div>
+    );
+  }
+
+  const formatDate = (date: Date) => {
+    return date.toLocaleDateString('en-US', {
+      year: 'numeric',
+      month: 'long',
+      day: 'numeric',
+    });
+  };
+
+  const formatTime = (date: Date) => {
+    return date.toLocaleTimeString('en-US', {
+      hour: '2-digit',
+      minute: '2-digit',
+    });
+  };
+
+  const PAYMENT_METHOD_ICONS = {
+    cash: IconCash,
+    pos: IconCreditCard,
+    bank_transfer: IconBuilding,
+    mobile_money: IconWallet,
+    split: IconWallet,
+  };
+
+  const PAYMENT_METHOD_LABELS = {
+    cash: 'Cash',
+    pos: 'POS Machine',
+    bank_transfer: 'Bank Transfer',
+    mobile_money: 'Mobile Money',
+    split: 'Split Payment',
+  };
+
+  const _PaymentIcon =
+    PAYMENT_METHOD_ICONS[
+      sale.paymentMethod as keyof typeof PAYMENT_METHOD_ICONS
+    ] || IconCash;
+  const paymentLabel =
+    PAYMENT_METHOD_LABELS[
+      sale.paymentMethod as keyof typeof PAYMENT_METHOD_LABELS
+    ] || 'Cash';
+
+  // Print receipt
+  const handlePrint = () => {
+    const printWindow = window.open('', '_blank');
+    if (printWindow) {
+      const receiptHTML = `
+        <!DOCTYPE html>
+        <html>
+        <head>
+          <title>Receipt - ${sale.id}</title>
+          <style>
+            body { font-family: monospace; font-size: 12px; line-height: 1.4; margin: 20px; }
+            .header { text-align: center; margin-bottom: 20px; }
+            .store-name { font-size: 18px; font-weight: bold; }
+            .receipt-details { margin-bottom: 20px; }
+            .items { margin-bottom: 20px; }
+            .item { margin-bottom: 10px; border-bottom: 1px solid #ddd; padding-bottom: 8px; }
+            .item-name { font-weight: bold; }
+            .item-details { color: #666; font-size: 11px; }
+            .totals { margin-top: 20px; padding-top: 10px; border-top: 2px solid #000; }
+            .total-line { display: flex; justify-content: space-between; margin-bottom: 5px; }
+            .grand-total { font-weight: bold; font-size: 14px; }
+            .footer { margin-top: 30px; text-align: center; font-size: 11px; color: #666; }
+            @media print { 
+              body { margin: 0; }
+              .no-print { display: none; }
+            }
+          </style>
+        </head>
+        <body>
+          <div class="header">
+            <div class="store-name">BaaWA ACCESSORIES</div>
+            <div>Quality Accessories Store</div>
+            <div>Receipt #${sale.id}</div>
+          </div>
+          
+          <div class="receipt-details">
+            <div><strong>Date:</strong> ${formatDate(sale.timestamp)}</div>
+            <div><strong>Time:</strong> ${formatTime(sale.timestamp)}</div>
+            <div><strong>Staff:</strong> ${sale.staffName}</div>
+            <div><strong>Payment:</strong> ${paymentLabel}</div>
+            
+            ${sale.customerName ? `<div><strong>Customer:</strong> ${sale.customerName}</div>` : ''}
+            ${sale.customerPhone ? `<div><strong>Phone:</strong> ${sale.customerPhone}</div>` : ''}
+          </div>
+          
+          <div class="items">
+            ${sale.items
+              .map(
+                item => `
+              <div class="item">
+                <div class="item-name">${item.name}</div>
+                <div class="item-details">SKU: ${item.sku} | ${item.category || 'N/A'}</div>
+                <div class="total-line">
+                  <span>${item.quantity} × ₦${item.price.toLocaleString()}</span>
+                  <span>₦${(item.price * item.quantity).toLocaleString()}</span>
+                </div>
+              </div>
+            `
+              )
+              .join('')}
+          </div>
+          
+          <div class="totals">
+            <div class="total-line">
+              <span>Subtotal:</span>
+              <span>₦${sale.subtotal.toLocaleString()}</span>
+            </div>
+            <div class="total-line">
+              <span>Discount:</span>
+              <span>-₦${sale.discount.toLocaleString()}</span>
+            </div>
+            <div class="total-line grand-total">
+              <span>TOTAL:</span>
+              <span>₦${sale.total.toLocaleString()}</span>
+            </div>
+          </div>
+          
+          <div class="footer">
+            <div>Thank you for shopping with us!</div>
+            <div>Visit us again soon</div>
+            <div style="margin-top: 20px;">.</div>
+          </div>
+        </body>
+        </html>
+      `;
+
+      printWindow.document.write(receiptHTML);
+      printWindow.document.close();
+      printWindow.print();
+      printWindow.close();
+      toast.success('Receipt sent to printer');
+    }
+  };
+
+  // Thermal printer receipt
+  const handleThermalPrint = async () => {
+    try {
+      const response = await fetch('/api/pos/print-receipt', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          saleId: sale.id,
+          timestamp: sale.timestamp.toISOString(),
+          staffName: sale.staffName,
+          customerName: sale.customerName,
+          customerPhone: sale.customerPhone,
+          items: sale.items.map(item => ({
+            name: item.name,
+            sku: item.sku,
+            quantity: item.quantity,
+            price: item.price,
+            total: item.price * item.quantity,
+            category: item.category,
+          })),
+          subtotal: sale.subtotal,
+          discount: sale.discount,
+          total: sale.total,
+          paymentMethod: sale.paymentMethod,
+        }),
+      });
+
+      if (response.ok) {
+        toast.success('Receipt printed on thermal printer!');
+      } else {
+        const error = await response.json();
+        toast.error(error.error || 'Failed to print receipt');
+      }
+    } catch (_error) {
+      toast.error('Failed to print receipt');
+    }
+  };
+
+  // Email receipt
+  const handleEmailReceipt = async () => {
+    if (!sale.customerEmail) {
+      toast.error('No customer email available');
+      return;
+    }
+
+    try {
+      const response = await fetch('/api/pos/email-receipt', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          saleId: sale.id,
+          customerEmail: sale.customerEmail,
+          customerName: sale.customerName,
+          receiptData: {
+            items: sale.items.map(item => ({
+              name: item.name,
+              quantity: item.quantity,
+              price: item.price,
+              total: item.price * item.quantity,
+            })),
+            subtotal: sale.subtotal,
+            discount: sale.discount,
+            total: sale.total,
+            paymentMethod: sale.paymentMethod,
+            timestamp: sale.timestamp.toISOString(),
+            staffName: sale.staffName,
+          },
+        }),
+      });
+
+      if (response.ok) {
+        toast.success('Receipt sent successfully!');
+      } else {
+        toast.error('Failed to send receipt');
+      }
+    } catch (_error) {
+      toast.error('Failed to send receipt');
+    }
+  };
+
+  return (
+    <div className="space-y-4">
+      {/* Header */}
+      <div className="text-center">
+        <div className="mx-auto mb-4 flex h-16 w-16 items-center justify-center rounded-full bg-green-100">
+          <IconCheck className="h-8 w-8 text-green-600" />
+        </div>
+        <h2 className="text-2xl font-bold text-green-600">
+          Payment Successful!
+        </h2>
+        <p className="text-muted-foreground">
+          Transaction completed on {formatDate(sale.timestamp)} at{' '}
+          {formatTime(sale.timestamp)}
+        </p>
+      </div>
+
+      {/* Sale Details */}
+      <div className="space-y-3">
+        <h3 className="text-lg font-semibold">Sale Details</h3>
+        <div className="space-y-2">
+          <div className="flex justify-between">
+            <span className="text-muted-foreground">Transaction ID:</span>
+            <span className="font-medium">{sale.id}</span>
+          </div>
+          <div className="flex justify-between">
+            <span className="text-muted-foreground">Staff:</span>
+            <span className="font-medium">{sale.staffName}</span>
+          </div>
+          <div className="flex justify-between">
+            <span className="text-muted-foreground">Payment Method:</span>
+            <span className="font-medium">{paymentLabel}</span>
+          </div>
+        </div>
+      </div>
+
+      {/* Customer Info */}
+      {(sale.customerName || sale.customerPhone || sale.customerEmail) && (
+        <div className="space-y-3">
+          <h3 className="text-lg font-semibold">Customer Information</h3>
+          <div className="space-y-2">
+            {sale.customerName && (
+              <div className="flex justify-between">
+                <span className="text-muted-foreground">Name:</span>
+                <span className="font-medium">{sale.customerName}</span>
+              </div>
+            )}
+            {sale.customerPhone && (
+              <div className="flex justify-between">
+                <span className="text-muted-foreground">Phone:</span>
+                <span className="font-medium">{sale.customerPhone}</span>
+              </div>
+            )}
+            {sale.customerEmail && (
+              <div className="flex justify-between">
+                <span className="text-muted-foreground">Email:</span>
+                <span className="font-medium">{sale.customerEmail}</span>
+              </div>
+            )}
+          </div>
+        </div>
+      )}
+
+      {/* Items */}
+      <div className="space-y-3">
+        <h3 className="text-lg font-semibold">Items</h3>
+        <div className="space-y-3">
+          {sale.items.map((item, index) => (
+            <div
+              key={index}
+              className="flex items-center justify-between border-b py-2 last:border-b-0"
+            >
+              <div className="flex-1">
+                <p className="font-medium">{item.name}</p>
+                <p className="text-muted-foreground text-sm">
+                  {item.quantity} × ₦{item.price.toLocaleString()}
+                </p>
+              </div>
+              <div className="text-right">
+                <p className="font-medium">
+                  ₦{(item.price * item.quantity).toLocaleString()}
+                </p>
+              </div>
+            </div>
+          ))}
+        </div>
+      </div>
+
+      <Separator />
+
+      {/* Totals */}
+      <div className="space-y-2">
+        <div className="flex justify-between">
+          <span>Subtotal:</span>
+          <span>₦{sale.subtotal.toLocaleString()}</span>
+        </div>
+        <div className="flex justify-between text-red-600">
+          <span>Discount:</span>
+          <span>-₦{sale.discount.toLocaleString()}</span>
+        </div>
+        <Separator />
+        <div className="flex justify-between text-lg font-bold">
+          <span>Total:</span>
+          <span>₦{sale.total.toLocaleString()}</span>
+        </div>
+      </div>
+
+      {/* Printer Actions */}
+      <div className="flex gap-3 pt-4">
+        <Button onClick={handlePrint} variant="outline" className="flex-1">
+          <IconPrinter className="mr-2 h-4 w-4" />
+          Print
+        </Button>
+        <Button
+          onClick={handleThermalPrint}
+          variant="outline"
+          className="flex-1"
+        >
+          <IconPrinter className="mr-2 h-4 w-4" />
+          Thermal Printer
+        </Button>
+        {sale.customerEmail && (
+          <Button
+            onClick={handleEmailReceipt}
+            variant="outline"
+            className="flex-1"
+          >
+            <IconMail className="mr-2 h-4 w-4" />
+            Email
+          </Button>
+        )}
       </div>
     </div>
   );
