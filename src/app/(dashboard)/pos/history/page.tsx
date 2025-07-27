@@ -26,10 +26,7 @@ export default async function TransactionHistoryPage() {
   }
 
   return (
-    <DashboardPageLayout
-      title="Transaction History"
-      description="View and manage transaction history"
-    >
+    <DashboardPageLayout>
       <TransactionHistory />
     </DashboardPageLayout>
   );
