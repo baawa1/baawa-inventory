@@ -7,23 +7,23 @@
  * with @map directives. This should be fixed in a future schema migration.
  */
 
-import { prisma } from "@/lib/db";
-import { z } from "zod";
-import { withPOSAuth, AuthenticatedRequest } from "@/lib/api-auth-middleware";
+import { prisma } from '@/lib/db';
+import { z } from 'zod';
+import { withPOSAuth, AuthenticatedRequest } from '@/lib/api-auth-middleware';
 import {
   ALL_PAYMENT_METHODS,
   API_LIMITS,
   ERROR_MESSAGES,
-} from "@/lib/constants";
-import { createApiResponse } from "@/lib/api-response";
+} from '@/lib/constants';
+import { createApiResponse } from '@/lib/api-response';
 import {
   TransactionWhereClause,
   SalesTransactionWithIncludes,
   TransformedTransaction,
-} from "@/types/pos";
+} from '@/types/pos';
 
 const querySchema = z.object({
-  page: z.string().optional().default("1"),
+  page: z.string().optional().default('1'),
   limit: z
     .string()
     .optional()
@@ -54,15 +54,15 @@ async function handleGetTransactions(request: AuthenticatedRequest) {
 
     if (search) {
       where.OR = [
-        { transaction_number: { contains: search, mode: "insensitive" } },
-        { customer_name: { contains: search, mode: "insensitive" } },
-        { customer_phone: { contains: search, mode: "insensitive" } },
-        { customer_email: { contains: search, mode: "insensitive" } },
+        { transaction_number: { contains: search, mode: 'insensitive' } },
+        { customer_name: { contains: search, mode: 'insensitive' } },
+        { customer_phone: { contains: search, mode: 'insensitive' } },
+        { customer_email: { contains: search, mode: 'insensitive' } },
         {
           users: {
             OR: [
-              { firstName: { contains: search, mode: "insensitive" } },
-              { lastName: { contains: search, mode: "insensitive" } },
+              { firstName: { contains: search, mode: 'insensitive' } },
+              { lastName: { contains: search, mode: 'insensitive' } },
             ],
           },
         },
@@ -79,7 +79,7 @@ async function handleGetTransactions(request: AuthenticatedRequest) {
         where.created_at.gte = new Date(dateFrom);
       }
       if (dateTo) {
-        where.created_at.lte = new Date(dateTo + "T23:59:59");
+        where.created_at.lte = new Date(dateTo + 'T23:59:59');
       }
     }
 
@@ -112,7 +112,7 @@ async function handleGetTransactions(request: AuthenticatedRequest) {
           },
         },
         orderBy: {
-          created_at: "desc",
+          created_at: 'desc',
         },
         skip: offset,
         take: limitNum,
@@ -125,11 +125,11 @@ async function handleGetTransactions(request: AuthenticatedRequest) {
       (sale: SalesTransactionWithIncludes) => ({
         id: sale.id,
         transactionNumber: sale.transaction_number,
-        items: sale.sales_items.map((item) => ({
+        items: sale.sales_items.map(item => ({
           id: item.id,
           productId: item.product_id || 0, // Handle null case
-          name: item.products?.name || "Unknown Product",
-          sku: item.products?.sku || "",
+          name: item.products?.name || 'Unknown Product',
+          sku: item.products?.sku || '',
           price: Number(item.unit_price), // Convert Decimal to number
           quantity: item.quantity,
           total: Number(item.total_price), // Convert Decimal to number
@@ -163,7 +163,7 @@ async function handleGetTransactions(request: AuthenticatedRequest) {
       `Retrieved ${transformedTransactions.length} of ${totalCount} transactions`
     );
   } catch (error) {
-    console.error("Error fetching transactions:", error);
+    console.error('Error fetching transactions:', error);
 
     if (error instanceof z.ZodError) {
       return createApiResponse.validationError(

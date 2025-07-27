@@ -1,8 +1,8 @@
-import { withAuth, AuthenticatedRequest } from "@/lib/api-middleware";
-import { prisma } from "@/lib/db";
-import { createApiResponse } from "@/lib/api-response";
-import { createAuditLog } from "@/lib/audit";
-import { AuditLogAction } from "@/types/audit";
+import { withAuth, AuthenticatedRequest } from '@/lib/api-middleware';
+import { prisma } from '@/lib/db';
+import { createApiResponse } from '@/lib/api-response';
+import { createAuditLog } from '@/lib/audit';
+import { AuditLogAction } from '@/types/audit';
 
 // POST /api/finance/transactions/[id]/approve - Approve financial transaction
 export const POST = withAuth(
@@ -15,13 +15,13 @@ export const POST = withAuth(
       const transactionId = parseInt(id);
 
       if (isNaN(transactionId)) {
-        return createApiResponse.validationError("Invalid transaction ID");
+        return createApiResponse.validationError('Invalid transaction ID');
       }
 
       // Check if user has permission to approve (ADMIN or MANAGER)
-      if (!["ADMIN", "MANAGER"].includes(request.user.role)) {
+      if (!['ADMIN', 'MANAGER'].includes(request.user.role)) {
         return createApiResponse.forbidden(
-          "Insufficient permissions to approve transactions"
+          'Insufficient permissions to approve transactions'
         );
       }
 
@@ -43,23 +43,23 @@ export const POST = withAuth(
       });
 
       if (!transaction) {
-        return createApiResponse.notFound("Financial transaction not found");
+        return createApiResponse.notFound('Financial transaction not found');
       }
 
       // Check if transaction is already approved
-      if (transaction.status === "APPROVED") {
+      if (transaction.status === 'APPROVED') {
         return createApiResponse.validationError(
-          "Transaction is already approved"
+          'Transaction is already approved'
         );
       }
 
       // Check if transaction is cancelled or rejected
       if (
-        transaction.status === "CANCELLED" ||
-        transaction.status === "REJECTED"
+        transaction.status === 'CANCELLED' ||
+        transaction.status === 'REJECTED'
       ) {
         return createApiResponse.validationError(
-          "Cannot approve a cancelled or rejected transaction"
+          'Cannot approve a cancelled or rejected transaction'
         );
       }
 
@@ -67,7 +67,7 @@ export const POST = withAuth(
       const updatedTransaction = await prisma.financialTransaction.update({
         where: { id: transactionId },
         data: {
-          status: "APPROVED",
+          status: 'APPROVED',
           approvedBy: parseInt(request.user.id),
           approvedAt: new Date(),
         },
@@ -97,7 +97,7 @@ export const POST = withAuth(
       await createAuditLog({
         userId: parseInt(request.user.id),
         action: AuditLogAction.SALE_CREATED, // Using existing action for now
-        tableName: "financial_transactions",
+        tableName: 'financial_transactions',
         recordId: transactionId,
         oldValues: transaction,
         newValues: updatedTransaction,
@@ -105,11 +105,11 @@ export const POST = withAuth(
 
       return createApiResponse.success(
         updatedTransaction,
-        "Transaction approved successfully"
+        'Transaction approved successfully'
       );
     } catch (error) {
-      console.error("Error approving financial transaction:", error);
-      return createApiResponse.internalError("Failed to approve transaction");
+      console.error('Error approving financial transaction:', error);
+      return createApiResponse.internalError('Failed to approve transaction');
     }
   }
 );

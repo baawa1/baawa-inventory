@@ -1,10 +1,10 @@
-import { z } from "zod";
-import { expenseTransactionSchema } from "@/lib/validations/finance";
+import { z } from 'zod';
+import { expenseTransactionSchema } from '@/lib/validations/finance';
 import {
   FINANCIAL_TYPES,
   PAYMENT_METHODS,
   EXPENSE_TYPES,
-} from "@/lib/constants/finance";
+} from '@/lib/constants/finance';
 
 // Form data type - only for expense transactions
 export type CreateExpenseData = z.infer<typeof expenseTransactionSchema>;
@@ -13,11 +13,11 @@ export type CreateExpenseData = z.infer<typeof expenseTransactionSchema>;
 export const defaultFormValues: CreateExpenseData = {
   type: FINANCIAL_TYPES.EXPENSE,
   amount: 0.01,
-  description: "",
-  transactionDate: new Date().toISOString().split("T")[0],
+  description: '',
+  transactionDate: new Date().toISOString().split('T')[0],
   paymentMethod: PAYMENT_METHODS.CASH,
   expenseType: EXPENSE_TYPES.OTHER,
-  vendorName: "",
+  vendorName: '',
 };
 
 // Form section props interface

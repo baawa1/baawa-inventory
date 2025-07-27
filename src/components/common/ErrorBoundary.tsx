@@ -1,10 +1,10 @@
-"use client";
+'use client';
 
-import React from "react";
-import { Button } from "@/components/ui/button";
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import { Alert, AlertDescription } from "@/components/ui/alert";
-import { IconAlertTriangle, IconRefresh } from "@tabler/icons-react";
+import React from 'react';
+import { Button } from '@/components/ui/button';
+import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
+import { Alert, AlertDescription } from '@/components/ui/alert';
+import { IconAlertTriangle, IconRefresh } from '@tabler/icons-react';
 
 interface ErrorBoundaryState {
   hasError: boolean;
@@ -28,7 +28,7 @@ const DefaultErrorFallback: React.FC<ErrorFallbackProps> = ({
   resetError,
 }) => {
   return (
-    <Card className="w-full max-w-2xl mx-auto mt-8">
+    <Card className="mx-auto mt-8 w-full max-w-2xl">
       <CardHeader>
         <CardTitle className="flex items-center gap-2 text-red-600">
           <IconAlertTriangle className="h-5 w-5" />
@@ -39,16 +39,16 @@ const DefaultErrorFallback: React.FC<ErrorFallbackProps> = ({
         <Alert variant="destructive">
           <IconAlertTriangle className="h-4 w-4" />
           <AlertDescription>
-            {error.message || "An unexpected error occurred"}
+            {error.message || 'An unexpected error occurred'}
           </AlertDescription>
         </Alert>
 
-        {process.env.NODE_ENV === "development" && (
+        {process.env.NODE_ENV === 'development' && (
           <details className="text-sm">
-            <summary className="cursor-pointer font-medium mb-2">
+            <summary className="mb-2 cursor-pointer font-medium">
               Error Details (Development)
             </summary>
-            <pre className="bg-gray-100 p-2 rounded text-xs overflow-auto">
+            <pre className="overflow-auto rounded bg-gray-100 p-2 text-xs">
               {error.stack}
             </pre>
           </details>
@@ -56,7 +56,7 @@ const DefaultErrorFallback: React.FC<ErrorFallbackProps> = ({
 
         <div className="flex gap-2">
           <Button onClick={resetError} variant="outline">
-            <IconRefresh className="h-4 w-4 mr-2" />
+            <IconRefresh className="mr-2 h-4 w-4" />
             Try Again
           </Button>
           <Button onClick={() => window.location.reload()} variant="outline">
@@ -95,8 +95,8 @@ export class ErrorBoundary extends React.Component<
     });
 
     // Log error to console in development
-    if (process.env.NODE_ENV === "development") {
-      console.error("ErrorBoundary caught an error:", error, errorInfo);
+    if (process.env.NODE_ENV === 'development') {
+      console.error('ErrorBoundary caught an error:', error, errorInfo);
     }
 
     // Call optional error handler

@@ -1,5 +1,5 @@
-import { NextRequest, NextResponse } from "next/server";
-import { auth } from "../../../../../../../auth";
+import { NextRequest, NextResponse } from 'next/server';
+import { auth } from '../../../../../../../auth';
 
 export async function POST(
   _request: NextRequest,
@@ -10,19 +10,19 @@ export async function POST(
     const { transactionId: transactionIdParam } = await params;
 
     if (!session?.user) {
-      return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+      return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
     }
 
     // Check if user has permission to reprint receipts
-    if (!["ADMIN", "MANAGER", "STAFF"].includes(session.user.role)) {
-      return NextResponse.json({ error: "Forbidden" }, { status: 403 });
+    if (!['ADMIN', 'MANAGER', 'STAFF'].includes(session.user.role)) {
+      return NextResponse.json({ error: 'Forbidden' }, { status: 403 });
     }
 
     const transactionId = parseInt(transactionIdParam);
 
     if (isNaN(transactionId)) {
       return NextResponse.json(
-        { error: "Invalid transaction ID" },
+        { error: 'Invalid transaction ID' },
         { status: 400 }
       );
     }
@@ -38,13 +38,13 @@ export async function POST(
 
     return NextResponse.json({
       success: true,
-      message: "Receipt sent to printer",
+      message: 'Receipt sent to printer',
       transactionId,
     });
   } catch (error) {
-    console.error("Error reprinting receipt:", error);
+    console.error('Error reprinting receipt:', error);
     return NextResponse.json(
-      { error: "Failed to reprint receipt" },
+      { error: 'Failed to reprint receipt' },
       { status: 500 }
     );
   }

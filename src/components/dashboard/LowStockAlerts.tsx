@@ -1,19 +1,19 @@
-"use client";
+'use client';
 
-import { useState } from "react";
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import { Badge } from "@/components/ui/badge";
-import { Button } from "@/components/ui/button";
-import { Progress } from "@/components/ui/progress";
+import { useState } from 'react';
+import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
+import { Badge } from '@/components/ui/badge';
+import { Button } from '@/components/ui/button';
+import { Progress } from '@/components/ui/progress';
 import {
   IconAlertTriangle,
   IconPackage,
   IconChevronDown,
   IconChevronUp,
   IconExternalLink,
-} from "@tabler/icons-react";
-import { formatCurrency } from "@/lib/utils";
-import { useAnalytics } from "@/hooks/api/useAnalytics";
+} from '@tabler/icons-react';
+import { formatCurrency } from '@/lib/utils';
+import { useAnalytics } from '@/hooks/api/useAnalytics';
 
 interface LowStockAlertsProps {
   expanded?: boolean;
@@ -27,18 +27,18 @@ export function LowStockAlerts({ expanded = false }: LowStockAlertsProps) {
   const lowStockItems = analyticsData?.lowStockItems || [];
 
   const criticalItems = lowStockItems.filter(
-    (item) => item.status === "critical"
+    item => item.status === 'critical'
   ).length;
   const lowStockCount = lowStockItems.filter(
-    (item) => item.status === "low"
+    item => item.status === 'low'
   ).length;
   const displayItems = isExpanded ? lowStockItems : lowStockItems.slice(0, 5);
 
   const getStatusColor = (status: string, currentStock: number) => {
-    if (currentStock === 0) return "text-red-600";
-    if (status === "critical") return "text-red-600";
-    if (status === "low") return "text-yellow-600";
-    return "text-gray-600";
+    if (currentStock === 0) return 'text-red-600';
+    if (status === 'critical') return 'text-red-600';
+    if (status === 'low') return 'text-yellow-600';
+    return 'text-gray-600';
   };
 
   const getStatusBadge = (status: string, currentStock: number) => {
@@ -49,14 +49,14 @@ export function LowStockAlerts({ expanded = false }: LowStockAlertsProps) {
         </Badge>
       );
     }
-    if (status === "critical") {
+    if (status === 'critical') {
       return (
         <Badge variant="destructive" className="text-xs">
           Critical
         </Badge>
       );
     }
-    if (status === "low") {
+    if (status === 'low') {
       return (
         <Badge variant="secondary" className="text-xs">
           Low Stock
@@ -82,17 +82,17 @@ export function LowStockAlerts({ expanded = false }: LowStockAlertsProps) {
           <CardTitle className="text-sm font-medium">
             Low Stock Alerts
           </CardTitle>
-          <div className="h-4 w-4 bg-gray-200 rounded animate-pulse" />
+          <div className="h-4 w-4 animate-pulse rounded bg-gray-200" />
         </CardHeader>
         <CardContent>
           <div className="space-y-4">
             {[...Array(3)].map((_, i) => (
               <div key={i} className="flex items-center justify-between">
                 <div className="space-y-1">
-                  <div className="h-4 w-32 bg-gray-200 rounded animate-pulse" />
-                  <div className="h-3 w-24 bg-gray-200 rounded animate-pulse" />
+                  <div className="h-4 w-32 animate-pulse rounded bg-gray-200" />
+                  <div className="h-3 w-24 animate-pulse rounded bg-gray-200" />
                 </div>
-                <div className="h-4 w-16 bg-gray-200 rounded animate-pulse" />
+                <div className="h-4 w-16 animate-pulse rounded bg-gray-200" />
               </div>
             ))}
           </div>
@@ -108,12 +108,12 @@ export function LowStockAlerts({ expanded = false }: LowStockAlertsProps) {
           <CardTitle className="text-sm font-medium">
             Low Stock Alerts
           </CardTitle>
-          <IconPackage className="h-4 w-4 text-muted-foreground" />
+          <IconPackage className="text-muted-foreground h-4 w-4" />
         </CardHeader>
         <CardContent>
-          <div className="text-center py-6">
-            <IconPackage className="h-8 w-8 text-muted-foreground mx-auto mb-2" />
-            <p className="text-sm text-muted-foreground">
+          <div className="py-6 text-center">
+            <IconPackage className="text-muted-foreground mx-auto mb-2 h-8 w-8" />
+            <p className="text-muted-foreground text-sm">
               No low stock items found
             </p>
           </div>
@@ -158,21 +158,21 @@ export function LowStockAlerts({ expanded = false }: LowStockAlertsProps) {
       </CardHeader>
       <CardContent>
         <div className="space-y-4">
-          {displayItems.map((item) => (
+          {displayItems.map(item => (
             <div key={item.id} className="flex items-center justify-between">
-              <div className="flex-1 min-w-0">
+              <div className="min-w-0 flex-1">
                 <div className="flex items-center justify-between">
                   <div className="flex items-center space-x-2">
-                    <div className="flex-1 min-w-0">
-                      <p className="text-sm font-medium truncate">
+                    <div className="min-w-0 flex-1">
+                      <p className="truncate text-sm font-medium">
                         {item.name}
                       </p>
-                      <p className="text-xs text-muted-foreground truncate">
+                      <p className="text-muted-foreground truncate text-xs">
                         {item.sku} • {item.category}
                       </p>
                     </div>
                   </div>
-                  <div className="flex items-center space-x-2 ml-2">
+                  <div className="ml-2 flex items-center space-x-2">
                     {getStatusBadge(item.status, item.currentStock)}
                     <Button
                       variant="ghost"
@@ -180,7 +180,7 @@ export function LowStockAlerts({ expanded = false }: LowStockAlertsProps) {
                       className="h-6 w-6 p-0"
                       onClick={() => {
                         // Navigate to product detail or inventory management
-                        window.open(`/inventory/products/${item.id}`, "_blank");
+                        window.open(`/inventory/products/${item.id}`, '_blank');
                       }}
                     >
                       <IconExternalLink className="h-3 w-3" />
@@ -214,14 +214,14 @@ export function LowStockAlerts({ expanded = false }: LowStockAlertsProps) {
           ))}
         </div>
         {lowStockItems.length > 5 && (
-          <div className="mt-4 pt-4 border-t">
+          <div className="mt-4 border-t pt-4">
             <Button
               variant="outline"
               size="sm"
               className="w-full"
               onClick={() => {
                 // Navigate to full inventory management
-                window.open("/inventory", "_blank");
+                window.open('/inventory', '_blank');
               }}
             >
               View All Inventory

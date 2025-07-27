@@ -3,19 +3,19 @@
  * Handles service worker registration and PWA install prompts
  */
 
-"use client";
+'use client';
 
-import { useEffect, useState } from "react";
-import { Button } from "@/components/ui/button";
-import { Card, CardContent } from "@/components/ui/card";
-import { IconDownload, IconX } from "@tabler/icons-react";
-import { toast } from "sonner";
-import { logger } from "@/lib/logger";
+import { useEffect, useState } from 'react';
+import { Button } from '@/components/ui/button';
+import { Card, CardContent } from '@/components/ui/card';
+import { IconDownload, IconX } from '@tabler/icons-react';
+import { toast } from 'sonner';
+import { logger } from '@/lib/logger';
 
 interface BeforeInstallPromptEvent extends Event {
   readonly platforms: string[];
   readonly userChoice: Promise<{
-    outcome: "accepted" | "dismissed";
+    outcome: 'accepted' | 'dismissed';
     platform: string;
   }>;
   prompt(): Promise<void>;
@@ -35,12 +35,12 @@ export function PWAManager() {
 
   useEffect(() => {
     // Check if already installed
-    if (window.matchMedia("(display-mode: standalone)").matches) {
+    if (window.matchMedia('(display-mode: standalone)').matches) {
       setIsInstalled(true);
     }
 
     // Register service worker
-    if ("serviceWorker" in navigator) {
+    if ('serviceWorker' in navigator) {
       registerServiceWorker();
     }
 
@@ -64,39 +64,39 @@ export function PWAManager() {
       setIsInstalled(true);
       setShowInstallPrompt(false);
       setDeferredPrompt(null);
-      toast.success("App installed successfully!");
+      toast.success('App installed successfully!');
     };
 
-    window.addEventListener("beforeinstallprompt", handleBeforeInstallPrompt);
-    window.addEventListener("appinstalled", handleAppInstalled);
+    window.addEventListener('beforeinstallprompt', handleBeforeInstallPrompt);
+    window.addEventListener('appinstalled', handleAppInstalled);
 
     return () => {
       window.removeEventListener(
-        "beforeinstallprompt",
+        'beforeinstallprompt',
         handleBeforeInstallPrompt
       );
-      window.removeEventListener("appinstalled", handleAppInstalled);
+      window.removeEventListener('appinstalled', handleAppInstalled);
     };
   }, [isInstalled]);
 
   const registerServiceWorker = async () => {
     try {
-      const registration = await navigator.serviceWorker.register("/sw.js", {
-        scope: "/",
+      const registration = await navigator.serviceWorker.register('/sw.js', {
+        scope: '/',
       });
 
-      registration.addEventListener("updatefound", () => {
+      registration.addEventListener('updatefound', () => {
         const newWorker = registration.installing;
         if (newWorker) {
-          newWorker.addEventListener("statechange", () => {
+          newWorker.addEventListener('statechange', () => {
             if (
-              newWorker.state === "installed" &&
+              newWorker.state === 'installed' &&
               navigator.serviceWorker.controller
             ) {
               // New content available
-              toast.info("New version available! Refresh to update.", {
+              toast.info('New version available! Refresh to update.', {
                 action: {
-                  label: "Refresh",
+                  label: 'Refresh',
                   onClick: () => window.location.reload(),
                 },
               });
@@ -106,8 +106,8 @@ export function PWAManager() {
       });
 
       // Listen for service worker messages
-      navigator.serviceWorker.addEventListener("message", (event) => {
-        if (event.data.type === "SYNC_OFFLINE_TRANSACTIONS") {
+      navigator.serviceWorker.addEventListener('message', event => {
+        if (event.data.type === 'SYNC_OFFLINE_TRANSACTIONS') {
           // Trigger offline transaction sync
           // Debug logging removed for production
           // This would trigger the useOffline hook sync
@@ -116,7 +116,7 @@ export function PWAManager() {
 
       // Debug logging removed for production
     } catch (error) {
-      logger.error("Service Worker registration failed", {
+      logger.error('Service Worker registration failed', {
         error: error instanceof Error ? error.message : String(error),
       });
     }
@@ -129,7 +129,7 @@ export function PWAManager() {
       await deferredPrompt.prompt();
       const { outcome } = await deferredPrompt.userChoice;
 
-      if (outcome === "accepted") {
+      if (outcome === 'accepted') {
         // Debug logging removed for production
       } else {
         // Debug logging removed for production
@@ -138,7 +138,7 @@ export function PWAManager() {
       setDeferredPrompt(null);
       setShowInstallPrompt(false);
     } catch (error) {
-      logger.error("Failed to show install prompt", {
+      logger.error('Failed to show install prompt', {
         error: error instanceof Error ? error.message : String(error),
       });
     }
@@ -146,7 +146,7 @@ export function PWAManager() {
 
   const handleDismissInstall = () => {
     setShowInstallPrompt(false);
-    localStorage.setItem("pwa-install-dismissed", Date.now().toString());
+    localStorage.setItem('pwa-install-dismissed', Date.now().toString());
   };
 
   // Don't show if already installed or no prompt available
@@ -155,16 +155,16 @@ export function PWAManager() {
   }
 
   return (
-    <Card className="fixed bottom-4 right-4 w-80 z-50 shadow-lg border-2 border-primary/20">
+    <Card className="border-primary/20 fixed right-4 bottom-4 z-50 w-80 border-2 shadow-lg">
       <CardContent className="p-4">
-        <div className="flex items-start justify-between mb-3">
+        <div className="mb-3 flex items-start justify-between">
           <div className="flex items-center gap-3">
-            <div className="p-2 bg-primary/10 rounded-lg">
-              <IconDownload className="h-5 w-5 text-primary" />
+            <div className="bg-primary/10 rounded-lg p-2">
+              <IconDownload className="text-primary h-5 w-5" />
             </div>
             <div>
-              <h3 className="font-semibold text-sm">Install BaaWA POS</h3>
-              <p className="text-xs text-muted-foreground">
+              <h3 className="text-sm font-semibold">Install BaaWA POS</h3>
+              <p className="text-muted-foreground text-xs">
                 Get the full app experience
               </p>
             </div>
@@ -179,7 +179,7 @@ export function PWAManager() {
           </Button>
         </div>
 
-        <div className="text-xs text-muted-foreground mb-3">
+        <div className="text-muted-foreground mb-3 text-xs">
           • Works offline • Faster loading • Desktop/mobile shortcuts • Push
           notifications
         </div>
@@ -209,7 +209,7 @@ export function usePWA() {
 
   useEffect(() => {
     // Check if running as PWA
-    if (window.matchMedia("(display-mode: standalone)").matches) {
+    if (window.matchMedia('(display-mode: standalone)').matches) {
       setIsInstalled(true);
     }
 
@@ -218,11 +218,11 @@ export function usePWA() {
       setIsInstallable(true);
     };
 
-    window.addEventListener("beforeinstallprompt", handleBeforeInstallPrompt);
+    window.addEventListener('beforeinstallprompt', handleBeforeInstallPrompt);
 
     return () => {
       window.removeEventListener(
-        "beforeinstallprompt",
+        'beforeinstallprompt',
         handleBeforeInstallPrompt
       );
     };

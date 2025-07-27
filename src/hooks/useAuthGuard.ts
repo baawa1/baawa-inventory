@@ -1,9 +1,9 @@
-"use client";
+'use client';
 
-import { useEffect, useState } from "react";
-import { useRouter } from "next/navigation";
-import { useSession } from "next-auth/react";
-import type { UserRole } from "@/types/user";
+import { useEffect, useState } from 'react';
+import { useRouter } from 'next/navigation';
+import { useSession } from 'next-auth/react';
+import type { UserRole } from '@/types/user';
 
 interface AuthSession {
   user: {
@@ -32,7 +32,7 @@ export function useAuthGuard(
   options: UseAuthGuardOptions = {}
 ): UseAuthGuardReturn {
   const {
-    redirectTo = "/login",
+    redirectTo = '/login',
     requireRole,
     requireActiveStatus = true,
   } = options;
@@ -42,17 +42,17 @@ export function useAuthGuard(
   const router = useRouter();
 
   useEffect(() => {
-    if (status === "loading") return;
+    if (status === 'loading') return;
 
-    if (status === "unauthenticated" || !session?.user) {
+    if (status === 'unauthenticated' || !session?.user) {
       router.push(redirectTo);
       return;
     }
 
     // Check status requirement
-    if (requireActiveStatus && session.user.status !== "APPROVED") {
-      setError("Account not active");
-      router.push("/pending-approval");
+    if (requireActiveStatus && session.user.status !== 'APPROVED') {
+      setError('Account not active');
+      router.push('/pending-approval');
       return;
     }
 
@@ -62,8 +62,8 @@ export function useAuthGuard(
         ? requireRole
         : [requireRole];
       if (!allowedRoles.includes(session.user.role as UserRole)) {
-        setError("Insufficient permissions");
-        router.push("/unauthorized");
+        setError('Insufficient permissions');
+        router.push('/unauthorized');
         return;
       }
     }
@@ -73,7 +73,7 @@ export function useAuthGuard(
 
   return {
     session: session as AuthSession | null,
-    isLoading: status === "loading",
+    isLoading: status === 'loading',
     error,
   };
 }
@@ -91,9 +91,9 @@ export function useRequireRole(
 }
 
 export function useRequireAdmin(redirectTo?: string) {
-  return useAuthGuard({ requireRole: "ADMIN", redirectTo });
+  return useAuthGuard({ requireRole: 'ADMIN', redirectTo });
 }
 
 export function useRequireManager(redirectTo?: string) {
-  return useAuthGuard({ requireRole: ["ADMIN", "MANAGER"], redirectTo });
+  return useAuthGuard({ requireRole: ['ADMIN', 'MANAGER'], redirectTo });
 }

@@ -1,16 +1,16 @@
-"use client";
+'use client';
 
-import { useState } from "react";
-import { Button } from "@/components/ui/button";
-import { Textarea } from "@/components/ui/textarea";
-import { Label } from "@/components/ui/label";
+import { useState } from 'react';
+import { Button } from '@/components/ui/button';
+import { Textarea } from '@/components/ui/textarea';
+import { Label } from '@/components/ui/label';
 import {
   Card,
   CardContent,
   CardDescription,
   CardHeader,
   CardTitle,
-} from "@/components/ui/card";
+} from '@/components/ui/card';
 import {
   Dialog,
   DialogContent,
@@ -18,19 +18,19 @@ import {
   DialogFooter,
   DialogHeader,
   DialogTitle,
-} from "@/components/ui/dialog";
+} from '@/components/ui/dialog';
 import {
   IconCheck,
   IconX,
   IconSend,
   IconShieldCheck,
-} from "@tabler/icons-react";
-import { toast } from "sonner";
+} from '@tabler/icons-react';
+import { toast } from 'sonner';
 import {
   useSubmitStockReconciliation,
   useApproveStockReconciliation,
   useRejectStockReconciliation,
-} from "@/hooks/api/stock-management";
+} from '@/hooks/api/stock-management';
 
 interface ReconciliationActionsProps {
   reconciliationId: number;
@@ -51,8 +51,8 @@ export function ReconciliationActions({
 }: ReconciliationActionsProps) {
   const [showApprovalDialog, setShowApprovalDialog] = useState(false);
   const [showRejectionDialog, setShowRejectionDialog] = useState(false);
-  const [approvalNotes, setApprovalNotes] = useState("");
-  const [rejectionReason, setRejectionReason] = useState("");
+  const [approvalNotes, setApprovalNotes] = useState('');
+  const [rejectionReason, setRejectionReason] = useState('');
 
   const submitMutation = useSubmitStockReconciliation();
   const approveMutation = useApproveStockReconciliation();
@@ -61,10 +61,10 @@ export function ReconciliationActions({
   const handleSubmitForApproval = async () => {
     try {
       await submitMutation.mutateAsync(reconciliationId);
-      toast.success("Reconciliation submitted for approval");
+      toast.success('Reconciliation submitted for approval');
       onUpdate?.();
     } catch (_error) {
-      toast.error("Failed to submit reconciliation");
+      toast.error('Failed to submit reconciliation');
     }
   };
 
@@ -74,18 +74,18 @@ export function ReconciliationActions({
         id: reconciliationId,
         notes: approvalNotes,
       });
-      toast.success("Reconciliation approved successfully");
+      toast.success('Reconciliation approved successfully');
       setShowApprovalDialog(false);
-      setApprovalNotes("");
+      setApprovalNotes('');
       onUpdate?.();
     } catch (_error) {
-      toast.error("Failed to approve reconciliation");
+      toast.error('Failed to approve reconciliation');
     }
   };
 
   const handleReject = async () => {
     if (!rejectionReason.trim()) {
-      toast.error("Please provide a reason for rejection");
+      toast.error('Please provide a reason for rejection');
       return;
     }
 
@@ -94,12 +94,12 @@ export function ReconciliationActions({
         id: reconciliationId,
         reason: rejectionReason,
       });
-      toast.success("Reconciliation rejected");
+      toast.success('Reconciliation rejected');
       setShowRejectionDialog(false);
-      setRejectionReason("");
+      setRejectionReason('');
       onUpdate?.();
     } catch (_error) {
-      toast.error("Failed to reject reconciliation");
+      toast.error('Failed to reject reconciliation');
     }
   };
 
@@ -175,7 +175,7 @@ export function ReconciliationActions({
                 id="approval-notes"
                 placeholder="Add any notes about this approval..."
                 value={approvalNotes}
-                onChange={(e) => setApprovalNotes(e.target.value)}
+                onChange={e => setApprovalNotes(e.target.value)}
                 rows={3}
               />
             </div>
@@ -211,7 +211,7 @@ export function ReconciliationActions({
                 id="rejection-reason"
                 placeholder="Explain why this reconciliation is being rejected..."
                 value={rejectionReason}
-                onChange={(e) => setRejectionReason(e.target.value)}
+                onChange={e => setRejectionReason(e.target.value)}
                 rows={3}
                 required
               />

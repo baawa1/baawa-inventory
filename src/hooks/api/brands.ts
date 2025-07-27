@@ -1,5 +1,5 @@
-import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
-import { queryKeys } from "@/lib/query-client";
+import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
+import { queryKeys } from '@/lib/query-client';
 
 // Types
 export interface Brand {
@@ -18,7 +18,7 @@ export interface BrandFilters {
   search: string;
   status: string;
   sortBy: string;
-  sortOrder: "asc" | "desc";
+  sortOrder: 'asc' | 'desc';
   page: number;
   limit: number;
 }
@@ -53,12 +53,12 @@ const fetchBrands = async (
   const searchParams = new URLSearchParams({
     page: String(filters.page || 1),
     limit: String(filters.limit || 50),
-    sortBy: filters.sortBy || "name",
-    sortOrder: filters.sortOrder || "asc",
+    sortBy: filters.sortBy || 'name',
+    sortOrder: filters.sortOrder || 'asc',
   });
 
-  if (filters.search) searchParams.set("search", filters.search);
-  if (filters.status) searchParams.set("isActive", filters.status);
+  if (filters.search) searchParams.set('search', filters.search);
+  if (filters.status) searchParams.set('isActive', filters.status);
 
   const response = await fetch(`/api/brands?${searchParams.toString()}`);
 
@@ -79,10 +79,10 @@ const fetchBrands = async (
 };
 
 const createBrand = async (data: CreateBrandData): Promise<Brand> => {
-  const response = await fetch("/api/brands", {
-    method: "POST",
+  const response = await fetch('/api/brands', {
+    method: 'POST',
     headers: {
-      "Content-Type": "application/json",
+      'Content-Type': 'application/json',
     },
     body: JSON.stringify(data),
   });
@@ -103,9 +103,9 @@ const updateBrand = async ({
   data: UpdateBrandData;
 }): Promise<Brand> => {
   const response = await fetch(`/api/brands/${id}`, {
-    method: "PUT",
+    method: 'PUT',
     headers: {
-      "Content-Type": "application/json",
+      'Content-Type': 'application/json',
     },
     body: JSON.stringify(data),
   });
@@ -120,7 +120,7 @@ const updateBrand = async ({
 
 const deleteBrand = async (id: number): Promise<void> => {
   const response = await fetch(`/api/brands/${id}`, {
-    method: "DELETE",
+    method: 'DELETE',
   });
 
   if (!response.ok) {
@@ -181,7 +181,7 @@ export const useUpdateBrand = () => {
 
   return useMutation({
     mutationFn: updateBrand,
-    onSuccess: (data) => {
+    onSuccess: data => {
       // Invalidate all brand-related queries
       queryClient.invalidateQueries({
         queryKey: queryKeys.brands.all,
@@ -221,9 +221,9 @@ export const useDeleteBrand = () => {
 // Utility Hooks
 export const useBrandOptions = () => {
   return useQuery({
-    queryKey: [...queryKeys.brands.all, "options"] as const,
+    queryKey: [...queryKeys.brands.all, 'options'] as const,
     queryFn: async () => {
-      const response = await fetch("/api/brands?isActive=true&limit=1000");
+      const response = await fetch('/api/brands?isActive=true&limit=1000');
       if (!response.ok) {
         throw new Error(
           `Failed to fetch brand options: ${response.statusText}`

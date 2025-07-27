@@ -1,10 +1,10 @@
-"use client";
+'use client';
 
-import { UseFormReturn } from "react-hook-form";
-import { useRouter } from "next/navigation";
-import { toast } from "sonner";
-import { useCreateFinancialTransaction } from "@/hooks/api/finance";
-import type { CreateExpenseData } from "./types";
+import { UseFormReturn } from 'react-hook-form';
+import { useRouter } from 'next/navigation';
+import { toast } from 'sonner';
+import { useCreateFinancialTransaction } from '@/hooks/api/finance';
+import type { CreateExpenseData } from './types';
 
 export function useExpenseSubmit(
   form: UseFormReturn<CreateExpenseData>,
@@ -23,8 +23,8 @@ export function useExpenseSubmit(
       const cleanedData = {
         ...data,
         amount: parseFloat(data.amount.toString()),
-        description: data.description?.trim() || "",
-        ...(data.type === "EXPENSE" && {
+        description: data.description?.trim() || '',
+        ...(data.type === 'EXPENSE' && {
           vendorName: data.vendorName?.trim() || undefined,
         }),
       };
@@ -32,17 +32,17 @@ export function useExpenseSubmit(
       const _result = await createTransaction.mutateAsync(cleanedData);
 
       // Show success notification
-      toast.success("Expense transaction created successfully!");
+      toast.success('Expense transaction created successfully!');
 
       // Redirect to expense list
-      router.push("/finance/expenses");
+      router.push('/finance/expenses');
     } catch (error) {
-      console.error("Expense form submission failed:", error);
+      console.error('Expense form submission failed:', error);
 
       setSubmitError(
         error instanceof Error
           ? error.message
-          : "Failed to create expense transaction"
+          : 'Failed to create expense transaction'
       );
     } finally {
       setIsSubmitting(false);

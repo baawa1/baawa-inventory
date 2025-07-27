@@ -6,9 +6,9 @@
 
 // Define the exact role names as string literals (UPPER_CASE for constants)
 export const USER_ROLES = {
-  ADMIN: "ADMIN",
-  MANAGER: "MANAGER",
-  STAFF: "STAFF",
+  ADMIN: 'ADMIN',
+  MANAGER: 'MANAGER',
+  STAFF: 'STAFF',
 } as const;
 
 // Type for user roles based on the USER_ROLES object
@@ -26,18 +26,18 @@ export const ROLE_HIERARCHY: Record<UserRole, number> = {
 
 // Role display names for UI presentation
 export const ROLE_DISPLAY_NAMES: Record<UserRole, string> = {
-  [USER_ROLES.ADMIN]: "Administrator",
-  [USER_ROLES.MANAGER]: "Manager",
-  [USER_ROLES.STAFF]: "Staff",
+  [USER_ROLES.ADMIN]: 'Administrator',
+  [USER_ROLES.MANAGER]: 'Manager',
+  [USER_ROLES.STAFF]: 'Staff',
 };
 
 // Role descriptions for documentation and UI
 export const ROLE_DESCRIPTIONS: Record<UserRole, string> = {
-  [USER_ROLES.ADMIN]: "Full access to all system features and user management",
+  [USER_ROLES.ADMIN]: 'Full access to all system features and user management',
   [USER_ROLES.MANAGER]:
-    "Can manage inventory, view reports, and handle day-to-day operations",
+    'Can manage inventory, view reports, and handle day-to-day operations',
   [USER_ROLES.STAFF]:
-    "Can view inventory, process sales, and access basic reports",
+    'Can view inventory, process sales, and access basic reports',
 };
 
 // Permission groups by role
@@ -84,7 +84,7 @@ export const hasRole = (
   if (!userRole) return false;
 
   // Safe type check
-  return allowedRoles.some((role) => role === userRole);
+  return allowedRoles.some(role => role === userRole);
 };
 
 /**
@@ -98,7 +98,7 @@ export const hasPermission = (
   const allowedRoles = ROLE_PERMISSIONS[permission];
 
   // Safe type check
-  return allowedRoles.some((role) => role === userRole);
+  return allowedRoles.some(role => role === userRole);
 };
 
 /**
@@ -128,7 +128,7 @@ export const isStaff = (userRole: string | undefined | null): boolean => {
 export const canManageInventory = (
   userRole: string | undefined | null
 ): boolean => {
-  return hasPermission(userRole, "INVENTORY_WRITE");
+  return hasPermission(userRole, 'INVENTORY_WRITE');
 };
 
 /**
@@ -137,7 +137,7 @@ export const canManageInventory = (
 export const canDeleteInventory = (
   userRole: string | undefined | null
 ): boolean => {
-  return hasPermission(userRole, "INVENTORY_DELETE");
+  return hasPermission(userRole, 'INVENTORY_DELETE');
 };
 
 /**
@@ -146,14 +146,14 @@ export const canDeleteInventory = (
 export const canManageUsers = (
   userRole: string | undefined | null
 ): boolean => {
-  return hasPermission(userRole, "USER_MANAGEMENT");
+  return hasPermission(userRole, 'USER_MANAGEMENT');
 };
 
 /**
  * Check if a user can access the POS system
  */
 export const canAccessPOS = (userRole: string | undefined | null): boolean => {
-  return hasPermission(userRole, "POS_ACCESS");
+  return hasPermission(userRole, 'POS_ACCESS');
 };
 
 /**
@@ -162,7 +162,7 @@ export const canAccessPOS = (userRole: string | undefined | null): boolean => {
 export const canAccessReports = (
   userRole: string | undefined | null
 ): boolean => {
-  return hasPermission(userRole, "REPORTS_READ");
+  return hasPermission(userRole, 'REPORTS_READ');
 };
 
 /**
@@ -171,7 +171,7 @@ export const canAccessReports = (
 export const canAccessSettings = (
   userRole: string | undefined | null
 ): boolean => {
-  return hasPermission(userRole, "SETTINGS_ACCESS");
+  return hasPermission(userRole, 'SETTINGS_ACCESS');
 };
 
 /**
@@ -180,7 +180,7 @@ export const canAccessSettings = (
 export const canViewLowStock = (
   userRole: string | undefined | null
 ): boolean => {
-  return hasPermission(userRole, "INVENTORY_LOW_STOCK");
+  return hasPermission(userRole, 'INVENTORY_LOW_STOCK');
 };
 
 /**
@@ -189,7 +189,7 @@ export const canViewLowStock = (
 export const canReadFinance = (
   userRole: string | undefined | null
 ): boolean => {
-  return hasPermission(userRole, "FINANCE_READ");
+  return hasPermission(userRole, 'FINANCE_READ');
 };
 
 /**
@@ -198,7 +198,7 @@ export const canReadFinance = (
 export const canWriteFinance = (
   userRole: string | undefined | null
 ): boolean => {
-  return hasPermission(userRole, "FINANCE_WRITE");
+  return hasPermission(userRole, 'FINANCE_WRITE');
 };
 
 /**
@@ -207,7 +207,7 @@ export const canWriteFinance = (
 export const canApproveFinance = (
   userRole: string | undefined | null
 ): boolean => {
-  return hasPermission(userRole, "FINANCE_APPROVE");
+  return hasPermission(userRole, 'FINANCE_APPROVE');
 };
 
 /**
@@ -216,7 +216,7 @@ export const canApproveFinance = (
 export const canDeleteFinance = (
   userRole: string | undefined | null
 ): boolean => {
-  return hasPermission(userRole, "FINANCE_DELETE");
+  return hasPermission(userRole, 'FINANCE_DELETE');
 };
 
 /**
@@ -232,16 +232,16 @@ export const authorizeUserForRoute = (
   if (userRole === USER_ROLES.ADMIN) return true;
 
   // Route-based authorization
-  if (route.startsWith("/admin")) {
+  if (route.startsWith('/admin')) {
     return userRole === USER_ROLES.ADMIN;
   }
 
-  if (route.startsWith("/reports") || route.startsWith("/settings")) {
+  if (route.startsWith('/reports') || route.startsWith('/settings')) {
     return userRole === USER_ROLES.ADMIN || userRole === USER_ROLES.MANAGER;
   }
 
-  if (route.startsWith("/pos")) {
-    return hasPermission(userRole, "POS_ACCESS");
+  if (route.startsWith('/pos')) {
+    return hasPermission(userRole, 'POS_ACCESS');
   }
 
   // Default routes (dashboard, inventory) accessible to all roles

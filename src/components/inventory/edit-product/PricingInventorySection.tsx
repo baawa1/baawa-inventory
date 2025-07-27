@@ -1,16 +1,16 @@
-import React from "react";
-import { UseFormReturn } from "react-hook-form";
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import React from 'react';
+import { UseFormReturn } from 'react-hook-form';
+import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import {
   FormControl,
   FormField,
   FormItem,
   FormLabel,
   FormMessage,
-} from "@/components/ui/form";
-import { Input } from "@/components/ui/input";
-import { formatCurrency } from "@/lib/utils";
-import { UpdateProductFormData } from "./types";
+} from '@/components/ui/form';
+import { Input } from '@/components/ui/input';
+import { formatCurrency } from '@/lib/utils';
+import { UpdateProductFormData } from './types';
 
 interface PricingInventorySectionProps {
   form: UseFormReturn<UpdateProductFormData>;
@@ -19,15 +19,15 @@ interface PricingInventorySectionProps {
 export function PricingInventorySection({
   form,
 }: PricingInventorySectionProps) {
-  const purchasePrice = form.watch("purchasePrice");
-  const sellingPrice = form.watch("sellingPrice");
+  const purchasePrice = form.watch('purchasePrice');
+  const sellingPrice = form.watch('sellingPrice');
 
   const calculateMargin = () => {
     if (purchasePrice && sellingPrice && purchasePrice > 0) {
       const margin = ((sellingPrice - purchasePrice) / sellingPrice) * 100;
       return margin.toFixed(2);
     }
-    return "0.00";
+    return '0.00';
   };
 
   const calculateMarkup = () => {
@@ -35,7 +35,7 @@ export function PricingInventorySection({
       const markup = ((sellingPrice - purchasePrice) / purchasePrice) * 100;
       return markup.toFixed(2);
     }
-    return "0.00";
+    return '0.00';
   };
 
   return (
@@ -44,7 +44,7 @@ export function PricingInventorySection({
         <CardTitle>Pricing & Inventory</CardTitle>
       </CardHeader>
       <CardContent className="space-y-4">
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+        <div className="grid grid-cols-1 gap-4 md:grid-cols-2">
           <FormField
             control={form.control}
             name="purchasePrice"
@@ -58,11 +58,11 @@ export function PricingInventorySection({
                     step="0.01"
                     min="0"
                     placeholder="0.00"
-                    onChange={(e) => {
+                    onChange={e => {
                       const value = e.target.value;
                       field.onChange(value ? parseFloat(value) : undefined);
                     }}
-                    value={field.value?.toString() || ""}
+                    value={field.value?.toString() || ''}
                   />
                 </FormControl>
                 <FormMessage />
@@ -83,11 +83,11 @@ export function PricingInventorySection({
                     step="0.01"
                     min="0"
                     placeholder="0.00"
-                    onChange={(e) => {
+                    onChange={e => {
                       const value = e.target.value;
                       field.onChange(value ? parseFloat(value) : undefined);
                     }}
-                    value={field.value?.toString() || ""}
+                    value={field.value?.toString() || ''}
                   />
                 </FormControl>
                 <FormMessage />
@@ -98,25 +98,25 @@ export function PricingInventorySection({
 
         {/* Profit Calculations */}
         {purchasePrice && sellingPrice && (
-          <div className="grid grid-cols-1 md:grid-cols-3 gap-4 p-4 bg-muted border border-border rounded-lg">
+          <div className="bg-muted border-border grid grid-cols-1 gap-4 rounded-lg border p-4 md:grid-cols-3">
             <div className="text-center">
-              <p className="text-sm text-muted-foreground">Profit</p>
+              <p className="text-muted-foreground text-sm">Profit</p>
               <p className="font-semibold">
                 {formatCurrency(sellingPrice - purchasePrice)}
               </p>
             </div>
             <div className="text-center">
-              <p className="text-sm text-muted-foreground">Margin</p>
+              <p className="text-muted-foreground text-sm">Margin</p>
               <p className="font-semibold">{calculateMargin()}%</p>
             </div>
             <div className="text-center">
-              <p className="text-sm text-muted-foreground">Markup</p>
+              <p className="text-muted-foreground text-sm">Markup</p>
               <p className="font-semibold">{calculateMarkup()}%</p>
             </div>
           </div>
         )}
 
-        <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+        <div className="grid grid-cols-1 gap-4 md:grid-cols-3">
           <FormField
             control={form.control}
             name="currentStock"
@@ -129,11 +129,11 @@ export function PricingInventorySection({
                     type="number"
                     min="0"
                     placeholder="0"
-                    onChange={(e) => {
+                    onChange={e => {
                       const value = e.target.value;
                       field.onChange(value ? parseInt(value) : undefined);
                     }}
-                    value={field.value?.toString() || ""}
+                    value={field.value?.toString() || ''}
                   />
                 </FormControl>
                 <FormMessage />
@@ -153,11 +153,11 @@ export function PricingInventorySection({
                     type="number"
                     min="0"
                     placeholder="0"
-                    onChange={(e) => {
+                    onChange={e => {
                       const value = e.target.value;
                       field.onChange(value ? parseInt(value) : undefined);
                     }}
-                    value={field.value?.toString() || ""}
+                    value={field.value?.toString() || ''}
                   />
                 </FormControl>
                 <FormMessage />
@@ -177,11 +177,11 @@ export function PricingInventorySection({
                     type="number"
                     min="0"
                     placeholder="0"
-                    onChange={(e) => {
+                    onChange={e => {
                       const value = e.target.value;
                       field.onChange(value ? parseInt(value) : null);
                     }}
-                    value={field.value?.toString() || ""}
+                    value={field.value?.toString() || ''}
                   />
                 </FormControl>
                 <FormMessage />

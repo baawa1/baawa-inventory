@@ -1,6 +1,6 @@
-import { useMemo } from "react";
+import { useMemo } from 'react';
 
-export type UserRole = "ADMIN" | "MANAGER" | "STAFF";
+export type UserRole = 'ADMIN' | 'MANAGER' | 'STAFF';
 
 export interface User {
   id: string;
@@ -279,41 +279,41 @@ export const hasAnyPermission = (
   user: User | null,
   permissions: Array<keyof PermissionSet>
 ): boolean => {
-  return permissions.some((permission) => checkPermission(user, permission));
+  return permissions.some(permission => checkPermission(user, permission));
 };
 
 export const hasAllPermissions = (
   user: User | null,
   permissions: Array<keyof PermissionSet>
 ): boolean => {
-  return permissions.every((permission) => checkPermission(user, permission));
+  return permissions.every(permission => checkPermission(user, permission));
 };
 
 // Legacy permission helpers (for backward compatibility)
 export const canManageProducts = (user: User | null): boolean => {
   return (
-    checkPermission(user, "canCreateProducts") ||
-    checkPermission(user, "canEditProducts")
+    checkPermission(user, 'canCreateProducts') ||
+    checkPermission(user, 'canEditProducts')
   );
 };
 
 export const canManageCategories = (user: User | null): boolean => {
   return (
-    checkPermission(user, "canCreateCategories") ||
-    checkPermission(user, "canEditCategories")
+    checkPermission(user, 'canCreateCategories') ||
+    checkPermission(user, 'canEditCategories')
   );
 };
 
 export const canManageSuppliers = (user: User | null): boolean => {
   return (
-    checkPermission(user, "canCreateSuppliers") ||
-    checkPermission(user, "canEditSuppliers")
+    checkPermission(user, 'canCreateSuppliers') ||
+    checkPermission(user, 'canEditSuppliers')
   );
 };
 
 export const canManageStock = (user: User | null): boolean => {
   return (
-    checkPermission(user, "canAdjustStock") ||
-    checkPermission(user, "canReconcileStock")
+    checkPermission(user, 'canAdjustStock') ||
+    checkPermission(user, 'canReconcileStock')
   );
 };

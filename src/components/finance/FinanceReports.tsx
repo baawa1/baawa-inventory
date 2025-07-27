@@ -1,24 +1,24 @@
-"use client";
+'use client';
 
-import { useState, useEffect, useCallback } from "react";
+import { useState, useEffect, useCallback } from 'react';
 import {
   Card,
   CardContent,
   CardDescription,
   CardHeader,
   CardTitle,
-} from "@/components/ui/card";
-import { Button } from "@/components/ui/button";
+} from '@/components/ui/card';
+import { Button } from '@/components/ui/button';
 import {
   Select,
   SelectContent,
   SelectItem,
   SelectTrigger,
   SelectValue,
-} from "@/components/ui/select";
-import { Input } from "@/components/ui/input";
-import { Label } from "@/components/ui/label";
-import { Badge } from "@/components/ui/badge";
+} from '@/components/ui/select';
+import { Input } from '@/components/ui/input';
+import { Label } from '@/components/ui/label';
+import { Badge } from '@/components/ui/badge';
 import {
   BarChart,
   Bar,
@@ -30,7 +30,7 @@ import {
   PieChart,
   Pie,
   Cell,
-} from "recharts";
+} from 'recharts';
 import {
   TrendingUp,
   TrendingDown,
@@ -41,8 +41,8 @@ import {
   Filter,
   Download,
   RefreshCw,
-} from "lucide-react";
-import { formatCurrency } from "@/lib/utils";
+} from 'lucide-react';
+import { formatCurrency } from '@/lib/utils';
 
 interface FinancialData {
   totalIncome: number;
@@ -89,18 +89,18 @@ interface CashFlowData {
 }
 
 const COLORS = [
-  "#0088FE",
-  "#00C49F",
-  "#FFBB28",
-  "#FF8042",
-  "#8884D8",
-  "#82CA9D",
+  '#0088FE',
+  '#00C49F',
+  '#FFBB28',
+  '#FF8042',
+  '#8884D8',
+  '#82CA9D',
 ];
 
 export default function FinanceReports() {
-  const [reportType, setReportType] = useState("FINANCIAL_SUMMARY");
-  const [startDate, setStartDate] = useState("");
-  const [endDate, setEndDate] = useState("");
+  const [reportType, setReportType] = useState('FINANCIAL_SUMMARY');
+  const [startDate, setStartDate] = useState('');
+  const [endDate, setEndDate] = useState('');
   const [includeSales, setIncludeSales] = useState(true);
   const [includePurchases, setIncludePurchases] = useState(true);
   const [data, setData] = useState<
@@ -120,19 +120,19 @@ export default function FinanceReports() {
         includePurchases: includePurchases.toString(),
       });
 
-      if (startDate) params.append("startDate", startDate);
-      if (endDate) params.append("endDate", endDate);
+      if (startDate) params.append('startDate', startDate);
+      if (endDate) params.append('endDate', endDate);
 
       const response = await fetch(`/api/finance/reports?${params}`);
       const result = await response.json();
 
       if (!response.ok) {
-        throw new Error(result.message || "Failed to fetch data");
+        throw new Error(result.message || 'Failed to fetch data');
       }
 
       setData(result.data);
     } catch (err) {
-      setError(err instanceof Error ? err.message : "An error occurred");
+      setError(err instanceof Error ? err.message : 'An error occurred');
     } finally {
       setLoading(false);
     }
@@ -149,7 +149,7 @@ export default function FinanceReports() {
   const renderFinancialSummary = (data: FinancialData) => (
     <div className="space-y-6">
       {/* Summary Cards */}
-      <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+      <div className="grid grid-cols-1 gap-4 md:grid-cols-3">
         <Card>
           <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
             <CardTitle className="text-sm font-medium">Total Income</CardTitle>
@@ -159,7 +159,7 @@ export default function FinanceReports() {
             <div className="text-2xl font-bold text-green-600">
               {formatCurrency(data.totalIncome)}
             </div>
-            <p className="text-xs text-muted-foreground">
+            <p className="text-muted-foreground text-xs">
               {data.transactionCount} transactions
             </p>
           </CardContent>
@@ -176,7 +176,7 @@ export default function FinanceReports() {
             <div className="text-2xl font-bold text-red-600">
               {formatCurrency(data.totalExpenses)}
             </div>
-            <p className="text-xs text-muted-foreground">
+            <p className="text-muted-foreground text-xs">
               {data.transactionCount} transactions
             </p>
           </CardContent>
@@ -189,12 +189,12 @@ export default function FinanceReports() {
           </CardHeader>
           <CardContent>
             <div
-              className={`text-2xl font-bold ${data.netIncome >= 0 ? "text-green-600" : "text-red-600"}`}
+              className={`text-2xl font-bold ${data.netIncome >= 0 ? 'text-green-600' : 'text-red-600'}`}
             >
               {formatCurrency(data.netIncome)}
             </div>
-            <p className="text-xs text-muted-foreground">
-              {data.netIncome >= 0 ? "Profit" : "Loss"}
+            <p className="text-muted-foreground text-xs">
+              {data.netIncome >= 0 ? 'Profit' : 'Loss'}
             </p>
           </CardContent>
         </Card>
@@ -242,20 +242,20 @@ export default function FinanceReports() {
         </CardHeader>
         <CardContent>
           <div className="space-y-3">
-            {data.recentTransactions?.map((transaction) => (
+            {data.recentTransactions?.map(transaction => (
               <div
                 key={transaction.id}
-                className="flex items-center justify-between p-3 border rounded-lg"
+                className="flex items-center justify-between rounded-lg border p-3"
               >
                 <div className="flex items-center space-x-3">
                   <div
-                    className={`p-2 rounded-full ${
-                      transaction.type === "INCOME"
-                        ? "bg-green-100 text-green-600"
-                        : "bg-red-100 text-red-600"
+                    className={`rounded-full p-2 ${
+                      transaction.type === 'INCOME'
+                        ? 'bg-green-100 text-green-600'
+                        : 'bg-red-100 text-red-600'
                     }`}
                   >
-                    {transaction.type === "INCOME" ? (
+                    {transaction.type === 'INCOME' ? (
                       <TrendingUp className="h-4 w-4" />
                     ) : (
                       <TrendingDown className="h-4 w-4" />
@@ -263,13 +263,13 @@ export default function FinanceReports() {
                   </div>
                   <div>
                     <p className="font-medium">{transaction.description}</p>
-                    <p className="text-sm text-muted-foreground">
-                      {transaction.transactionNumber} •{" "}
+                    <p className="text-muted-foreground text-sm">
+                      {transaction.transactionNumber} •{' '}
                       {new Date(
                         transaction.transactionDate
                       ).toLocaleDateString()}
                     </p>
-                    <div className="flex items-center gap-2 mt-1">
+                    <div className="mt-1 flex items-center gap-2">
                       <Badge variant="outline" className="text-xs">
                         {transaction.source}
                       </Badge>
@@ -288,12 +288,12 @@ export default function FinanceReports() {
                 </div>
                 <div className="text-right">
                   <p
-                    className={`font-bold ${transaction.type === "INCOME" ? "text-green-600" : "text-red-600"}`}
+                    className={`font-bold ${transaction.type === 'INCOME' ? 'text-green-600' : 'text-red-600'}`}
                   >
-                    {transaction.type === "INCOME" ? "+" : "-"}
+                    {transaction.type === 'INCOME' ? '+' : '-'}
                     {formatCurrency(transaction.amount)}
                   </p>
-                  <p className="text-sm text-muted-foreground">
+                  <p className="text-muted-foreground text-sm">
                     {transaction.paymentMethod}
                   </p>
                 </div>
@@ -312,15 +312,15 @@ export default function FinanceReports() {
         <CardHeader>
           <CardTitle>Income Summary</CardTitle>
           <CardDescription>
-            Total income: {formatCurrency(data.totalIncome)} from{" "}
+            Total income: {formatCurrency(data.totalIncome)} from{' '}
             {data.transactionCount} transactions
           </CardDescription>
         </CardHeader>
         <CardContent>
-          <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+          <div className="grid grid-cols-1 gap-6 lg:grid-cols-2">
             {/* Pie Chart */}
             <div>
-              <h3 className="text-lg font-semibold mb-4">Income by Source</h3>
+              <h3 className="mb-4 text-lg font-semibold">Income by Source</h3>
               <ResponsiveContainer width="100%" height={300}>
                 <PieChart>
                   <Pie
@@ -342,24 +342,20 @@ export default function FinanceReports() {
                       />
                     ))}
                   </Pie>
-                  <Tooltip
-                    formatter={(value) => formatCurrency(Number(value))}
-                  />
+                  <Tooltip formatter={value => formatCurrency(Number(value))} />
                 </PieChart>
               </ResponsiveContainer>
             </div>
 
             {/* Bar Chart */}
             <div>
-              <h3 className="text-lg font-semibold mb-4">Income Breakdown</h3>
+              <h3 className="mb-4 text-lg font-semibold">Income Breakdown</h3>
               <ResponsiveContainer width="100%" height={300}>
                 <BarChart data={data.incomeBreakdown}>
                   <CartesianGrid strokeDasharray="3 3" />
                   <XAxis dataKey="source" />
                   <YAxis />
-                  <Tooltip
-                    formatter={(value) => formatCurrency(Number(value))}
-                  />
+                  <Tooltip formatter={value => formatCurrency(Number(value))} />
                   <Bar dataKey="amount" fill="#8884d8" />
                 </BarChart>
               </ResponsiveContainer>
@@ -375,14 +371,14 @@ export default function FinanceReports() {
         </CardHeader>
         <CardContent>
           <div className="space-y-3">
-            {data.incomeBreakdown.map((item) => (
+            {data.incomeBreakdown.map(item => (
               <div
                 key={item.source}
-                className="flex items-center justify-between p-3 border rounded-lg"
+                className="flex items-center justify-between rounded-lg border p-3"
               >
                 <div>
                   <p className="font-medium">{item.source}</p>
-                  <p className="text-sm text-muted-foreground">
+                  <p className="text-muted-foreground text-sm">
                     {item.count} transactions
                   </p>
                 </div>
@@ -390,7 +386,7 @@ export default function FinanceReports() {
                   <p className="font-bold text-green-600">
                     {formatCurrency(item.amount)}
                   </p>
-                  <p className="text-sm text-muted-foreground">
+                  <p className="text-muted-foreground text-sm">
                     {((item.amount / data.totalIncome) * 100).toFixed(1)}% of
                     total
                   </p>
@@ -410,15 +406,15 @@ export default function FinanceReports() {
         <CardHeader>
           <CardTitle>Expense Summary</CardTitle>
           <CardDescription>
-            Total expenses: {formatCurrency(data.totalExpenses)} from{" "}
+            Total expenses: {formatCurrency(data.totalExpenses)} from{' '}
             {data.transactionCount} transactions
           </CardDescription>
         </CardHeader>
         <CardContent>
-          <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+          <div className="grid grid-cols-1 gap-6 lg:grid-cols-2">
             {/* Pie Chart */}
             <div>
-              <h3 className="text-lg font-semibold mb-4">Expenses by Type</h3>
+              <h3 className="mb-4 text-lg font-semibold">Expenses by Type</h3>
               <ResponsiveContainer width="100%" height={300}>
                 <PieChart>
                   <Pie
@@ -440,24 +436,20 @@ export default function FinanceReports() {
                       />
                     ))}
                   </Pie>
-                  <Tooltip
-                    formatter={(value) => formatCurrency(Number(value))}
-                  />
+                  <Tooltip formatter={value => formatCurrency(Number(value))} />
                 </PieChart>
               </ResponsiveContainer>
             </div>
 
             {/* Bar Chart */}
             <div>
-              <h3 className="text-lg font-semibold mb-4">Expense Breakdown</h3>
+              <h3 className="mb-4 text-lg font-semibold">Expense Breakdown</h3>
               <ResponsiveContainer width="100%" height={300}>
                 <BarChart data={data.expenseBreakdown}>
                   <CartesianGrid strokeDasharray="3 3" />
                   <XAxis dataKey="type" />
                   <YAxis />
-                  <Tooltip
-                    formatter={(value) => formatCurrency(Number(value))}
-                  />
+                  <Tooltip formatter={value => formatCurrency(Number(value))} />
                   <Bar dataKey="amount" fill="#ff6b6b" />
                 </BarChart>
               </ResponsiveContainer>
@@ -473,14 +465,14 @@ export default function FinanceReports() {
         </CardHeader>
         <CardContent>
           <div className="space-y-3">
-            {data.expenseBreakdown.map((item) => (
+            {data.expenseBreakdown.map(item => (
               <div
                 key={item.type}
-                className="flex items-center justify-between p-3 border rounded-lg"
+                className="flex items-center justify-between rounded-lg border p-3"
               >
                 <div>
                   <p className="font-medium">{item.type}</p>
-                  <p className="text-sm text-muted-foreground">
+                  <p className="text-muted-foreground text-sm">
                     {item.count} transactions
                   </p>
                 </div>
@@ -488,7 +480,7 @@ export default function FinanceReports() {
                   <p className="font-bold text-red-600">
                     {formatCurrency(item.amount)}
                   </p>
-                  <p className="text-sm text-muted-foreground">
+                  <p className="text-muted-foreground text-sm">
                     {((item.amount / data.totalExpenses) * 100).toFixed(1)}% of
                     total
                   </p>
@@ -504,7 +496,7 @@ export default function FinanceReports() {
   const renderCashFlowReport = (data: CashFlowData) => (
     <div className="space-y-6">
       {/* Cash Flow Summary */}
-      <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
+      <div className="grid grid-cols-1 gap-4 md:grid-cols-4">
         <Card>
           <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
             <CardTitle className="text-sm font-medium">
@@ -514,11 +506,11 @@ export default function FinanceReports() {
           </CardHeader>
           <CardContent>
             <div
-              className={`text-2xl font-bold ${data.operatingCashFlow >= 0 ? "text-green-600" : "text-red-600"}`}
+              className={`text-2xl font-bold ${data.operatingCashFlow >= 0 ? 'text-green-600' : 'text-red-600'}`}
             >
               {formatCurrency(data.operatingCashFlow)}
             </div>
-            <p className="text-xs text-muted-foreground">From operations</p>
+            <p className="text-muted-foreground text-xs">From operations</p>
           </CardContent>
         </Card>
 
@@ -531,11 +523,11 @@ export default function FinanceReports() {
           </CardHeader>
           <CardContent>
             <div
-              className={`text-2xl font-bold ${data.investingCashFlow >= 0 ? "text-green-600" : "text-red-600"}`}
+              className={`text-2xl font-bold ${data.investingCashFlow >= 0 ? 'text-green-600' : 'text-red-600'}`}
             >
               {formatCurrency(data.investingCashFlow)}
             </div>
-            <p className="text-xs text-muted-foreground">From investments</p>
+            <p className="text-muted-foreground text-xs">From investments</p>
           </CardContent>
         </Card>
 
@@ -548,11 +540,11 @@ export default function FinanceReports() {
           </CardHeader>
           <CardContent>
             <div
-              className={`text-2xl font-bold ${data.financingCashFlow >= 0 ? "text-green-600" : "text-red-600"}`}
+              className={`text-2xl font-bold ${data.financingCashFlow >= 0 ? 'text-green-600' : 'text-red-600'}`}
             >
               {formatCurrency(data.financingCashFlow)}
             </div>
-            <p className="text-xs text-muted-foreground">From financing</p>
+            <p className="text-muted-foreground text-xs">From financing</p>
           </CardContent>
         </Card>
 
@@ -563,11 +555,11 @@ export default function FinanceReports() {
           </CardHeader>
           <CardContent>
             <div
-              className={`text-2xl font-bold ${data.netCashFlow >= 0 ? "text-green-600" : "text-red-600"}`}
+              className={`text-2xl font-bold ${data.netCashFlow >= 0 ? 'text-green-600' : 'text-red-600'}`}
             >
               {formatCurrency(data.netCashFlow)}
             </div>
-            <p className="text-xs text-muted-foreground">Total change</p>
+            <p className="text-muted-foreground text-xs">Total change</p>
           </CardContent>
         </Card>
       </div>
@@ -583,31 +575,31 @@ export default function FinanceReports() {
             <BarChart
               data={[
                 {
-                  category: "Operating",
+                  category: 'Operating',
                   amount: data.operatingCashFlow,
-                  color: data.operatingCashFlow >= 0 ? "#10b981" : "#ef4444",
+                  color: data.operatingCashFlow >= 0 ? '#10b981' : '#ef4444',
                 },
                 {
-                  category: "Investing",
+                  category: 'Investing',
                   amount: data.investingCashFlow,
-                  color: data.investingCashFlow >= 0 ? "#10b981" : "#ef4444",
+                  color: data.investingCashFlow >= 0 ? '#10b981' : '#ef4444',
                 },
                 {
-                  category: "Financing",
+                  category: 'Financing',
                   amount: data.financingCashFlow,
-                  color: data.financingCashFlow >= 0 ? "#10b981" : "#ef4444",
+                  color: data.financingCashFlow >= 0 ? '#10b981' : '#ef4444',
                 },
                 {
-                  category: "Net",
+                  category: 'Net',
                   amount: data.netCashFlow,
-                  color: data.netCashFlow >= 0 ? "#10b981" : "#ef4444",
+                  color: data.netCashFlow >= 0 ? '#10b981' : '#ef4444',
                 },
               ]}
             >
               <CartesianGrid strokeDasharray="3 3" />
               <XAxis dataKey="category" />
               <YAxis />
-              <Tooltip formatter={(value) => formatCurrency(Number(value))} />
+              <Tooltip formatter={value => formatCurrency(Number(value))} />
               <Bar dataKey="amount" fill="#8884d8" />
             </BarChart>
           </ResponsiveContainer>
@@ -628,12 +620,12 @@ export default function FinanceReports() {
         </div>
         <div className="flex items-center space-x-2">
           <Button variant="outline" onClick={handleExport}>
-            <Download className="h-4 w-4 mr-2" />
+            <Download className="mr-2 h-4 w-4" />
             Export
           </Button>
           <Button onClick={fetchData} disabled={loading}>
             <RefreshCw
-              className={`h-4 w-4 mr-2 ${loading ? "animate-spin" : ""}`}
+              className={`mr-2 h-4 w-4 ${loading ? 'animate-spin' : ''}`}
             />
             Refresh
           </Button>
@@ -649,7 +641,7 @@ export default function FinanceReports() {
           </CardTitle>
         </CardHeader>
         <CardContent>
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
+          <div className="grid grid-cols-1 gap-4 md:grid-cols-2 lg:grid-cols-4">
             <div className="space-y-2">
               <Label htmlFor="report-type">Report Type</Label>
               <Select value={reportType} onValueChange={setReportType}>
@@ -673,7 +665,7 @@ export default function FinanceReports() {
                 id="start-date"
                 type="date"
                 value={startDate}
-                onChange={(e) => setStartDate(e.target.value)}
+                onChange={e => setStartDate(e.target.value)}
               />
             </div>
 
@@ -683,7 +675,7 @@ export default function FinanceReports() {
                 id="end-date"
                 type="date"
                 value={endDate}
-                onChange={(e) => setEndDate(e.target.value)}
+                onChange={e => setEndDate(e.target.value)}
               />
             </div>
 
@@ -695,7 +687,7 @@ export default function FinanceReports() {
                     type="checkbox"
                     id="include-sales"
                     checked={includeSales}
-                    onChange={(e) => setIncludeSales(e.target.checked)}
+                    onChange={e => setIncludeSales(e.target.checked)}
                   />
                   <Label htmlFor="include-sales" className="text-sm">
                     Include Sales
@@ -706,7 +698,7 @@ export default function FinanceReports() {
                     type="checkbox"
                     id="include-purchases"
                     checked={includePurchases}
-                    onChange={(e) => setIncludePurchases(e.target.checked)}
+                    onChange={e => setIncludePurchases(e.target.checked)}
                   />
                   <Label htmlFor="include-purchases" className="text-sm">
                     Include Purchases
@@ -734,8 +726,8 @@ export default function FinanceReports() {
         <Card>
           <CardContent className="flex items-center justify-center py-12">
             <div className="text-center">
-              <p className="text-red-600 mb-2">Error loading report</p>
-              <p className="text-sm text-muted-foreground">{error}</p>
+              <p className="mb-2 text-red-600">Error loading report</p>
+              <p className="text-muted-foreground text-sm">{error}</p>
             </div>
           </CardContent>
         </Card>
@@ -743,13 +735,13 @@ export default function FinanceReports() {
 
       {data && !loading && (
         <div>
-          {reportType === "FINANCIAL_SUMMARY" &&
+          {reportType === 'FINANCIAL_SUMMARY' &&
             renderFinancialSummary(data as FinancialData)}
-          {reportType === "INCOME_REPORT" &&
+          {reportType === 'INCOME_REPORT' &&
             renderIncomeReport(data as IncomeData)}
-          {reportType === "EXPENSE_REPORT" &&
+          {reportType === 'EXPENSE_REPORT' &&
             renderExpenseReport(data as ExpenseData)}
-          {reportType === "CASH_FLOW" &&
+          {reportType === 'CASH_FLOW' &&
             renderCashFlowReport(data as CashFlowData)}
         </div>
       )}

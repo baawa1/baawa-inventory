@@ -1,5 +1,5 @@
-import { NextResponse } from "next/server";
-import { logger } from "./logger";
+import { NextResponse } from 'next/server';
+import { logger } from './logger';
 
 export interface ApiError {
   message: string;
@@ -20,7 +20,7 @@ export class ApiErrorHandler {
   static createErrorResponse(
     message: string,
     statusCode: number = 500,
-    code: string = "INTERNAL_ERROR",
+    code: string = 'INTERNAL_ERROR',
     details?: Record<string, any>
   ): NextResponse<ApiError> {
     const error: ApiError = {
@@ -45,7 +45,7 @@ export class ApiErrorHandler {
    */
   static handleValidationError(
     errors: ValidationError[],
-    message: string = "Validation failed"
+    message: string = 'Validation failed'
   ): NextResponse<ApiError> {
     const details = errors.reduce(
       (acc, error) => {
@@ -55,73 +55,73 @@ export class ApiErrorHandler {
       {} as Record<string, string>
     );
 
-    return this.createErrorResponse(message, 400, "VALIDATION_ERROR", details);
+    return this.createErrorResponse(message, 400, 'VALIDATION_ERROR', details);
   }
 
   /**
    * Handle authentication errors
    */
   static handleAuthError(
-    message: string = "Authentication required"
+    message: string = 'Authentication required'
   ): NextResponse<ApiError> {
-    return this.createErrorResponse(message, 401, "AUTHENTICATION_ERROR");
+    return this.createErrorResponse(message, 401, 'AUTHENTICATION_ERROR');
   }
 
   /**
    * Handle authorization errors
    */
   static handleForbiddenError(
-    message: string = "Insufficient permissions"
+    message: string = 'Insufficient permissions'
   ): NextResponse<ApiError> {
-    return this.createErrorResponse(message, 403, "FORBIDDEN_ERROR");
+    return this.createErrorResponse(message, 403, 'FORBIDDEN_ERROR');
   }
 
   /**
    * Handle not found errors
    */
   static handleNotFoundError(
-    message: string = "Resource not found"
+    message: string = 'Resource not found'
   ): NextResponse<ApiError> {
-    return this.createErrorResponse(message, 404, "NOT_FOUND_ERROR");
+    return this.createErrorResponse(message, 404, 'NOT_FOUND_ERROR');
   }
 
   /**
    * Handle database errors
    */
   static handleDatabaseError(error: unknown): NextResponse<ApiError> {
-    const message = "Database operation failed";
+    const message = 'Database operation failed';
 
     // Log the actual error for debugging
-    logger.error("Database error", {
-      error: error instanceof Error ? error.message : "Unknown database error",
+    logger.error('Database error', {
+      error: error instanceof Error ? error.message : 'Unknown database error',
       stack: error instanceof Error ? error.stack : undefined,
     });
 
-    return this.createErrorResponse(message, 500, "DATABASE_ERROR");
+    return this.createErrorResponse(message, 500, 'DATABASE_ERROR');
   }
 
   /**
    * Handle unexpected errors
    */
   static handleUnexpectedError(error: unknown): NextResponse<ApiError> {
-    const message = "An unexpected error occurred";
+    const message = 'An unexpected error occurred';
 
     // Log the actual error for debugging
-    logger.error("Unexpected error", {
-      error: error instanceof Error ? error.message : "Unknown error",
+    logger.error('Unexpected error', {
+      error: error instanceof Error ? error.message : 'Unknown error',
       stack: error instanceof Error ? error.stack : undefined,
     });
 
-    return this.createErrorResponse(message, 500, "INTERNAL_ERROR");
+    return this.createErrorResponse(message, 500, 'INTERNAL_ERROR');
   }
 
   /**
    * Handle rate limiting errors
    */
   static handleRateLimitError(
-    message: string = "Too many requests"
+    message: string = 'Too many requests'
   ): NextResponse<ApiError> {
-    return this.createErrorResponse(message, 429, "RATE_LIMIT_ERROR");
+    return this.createErrorResponse(message, 429, 'RATE_LIMIT_ERROR');
   }
 
   /**
@@ -129,7 +129,7 @@ export class ApiErrorHandler {
    */
   static handleBusinessError(
     message: string,
-    code: string = "BUSINESS_ERROR",
+    code: string = 'BUSINESS_ERROR',
     details?: Record<string, any>
   ): NextResponse<ApiError> {
     return this.createErrorResponse(message, 400, code, details);

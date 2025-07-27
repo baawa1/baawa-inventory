@@ -1,17 +1,17 @@
-"use client";
+'use client';
 
-import { useSession } from "next-auth/react";
-import { useRouter } from "next/navigation";
-import { useEffect, useState } from "react";
+import { useSession } from 'next-auth/react';
+import { useRouter } from 'next/navigation';
+import { useEffect, useState } from 'react';
 import {
   Card,
   CardContent,
   CardDescription,
   CardHeader,
   CardTitle,
-} from "@/components/ui/card";
-import { Button } from "@/components/ui/button";
-import { Clock, RefreshCw } from "lucide-react";
+} from '@/components/ui/card';
+import { Button } from '@/components/ui/button';
+import { Clock, RefreshCw } from 'lucide-react';
 
 export default function PendingApprovalPage() {
   const { data: session, status, update } = useSession();
@@ -19,10 +19,10 @@ export default function PendingApprovalPage() {
   const [isRefreshing, setIsRefreshing] = useState(false);
 
   useEffect(() => {
-    if (status === "loading") return; // Still loading
+    if (status === 'loading') return; // Still loading
 
-    if (status === "unauthenticated") {
-      router.push("/login");
+    if (status === 'unauthenticated') {
+      router.push('/login');
       return;
     }
 
@@ -30,33 +30,33 @@ export default function PendingApprovalPage() {
     // PENDING users should be on check-email page
     // APPROVED users should go to dashboard
     // REJECTED/SUSPENDED users should go to unauthorized
-    if (session?.user?.status === "PENDING") {
-      router.push("/check-email");
+    if (session?.user?.status === 'PENDING') {
+      router.push('/check-email');
       return;
     }
 
-    if (session?.user?.status === "APPROVED") {
-      router.push("/dashboard");
+    if (session?.user?.status === 'APPROVED') {
+      router.push('/dashboard');
       return;
     }
 
     if (
-      session?.user?.status === "REJECTED" ||
-      session?.user?.status === "SUSPENDED"
+      session?.user?.status === 'REJECTED' ||
+      session?.user?.status === 'SUSPENDED'
     ) {
-      router.push("/unauthorized");
+      router.push('/unauthorized');
       return;
     }
 
     // If status is not VERIFIED, redirect to unauthorized
-    if (session?.user?.status !== "VERIFIED") {
-      router.push("/unauthorized");
+    if (session?.user?.status !== 'VERIFIED') {
+      router.push('/unauthorized');
       return;
     }
   }, [session, status, router]);
 
   const handleLogout = () => {
-    router.push("/logout");
+    router.push('/logout');
   };
 
   const handleRefreshSession = async () => {
@@ -69,24 +69,24 @@ export default function PendingApprovalPage() {
       await update();
       // Debug logging removed for production
     } catch (error) {
-      console.error("Error refreshing session:", error);
+      console.error('Error refreshing session:', error);
     } finally {
       setIsRefreshing(false);
     }
   };
 
-  if (status === "loading") {
+  if (status === 'loading') {
     return (
-      <div className="flex items-center justify-center min-h-screen">
+      <div className="flex min-h-screen items-center justify-center">
         <div className="text-center">
-          <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-blue-600 mx-auto"></div>
-          <p className="mt-2 ">Loading...</p>
+          <div className="mx-auto h-8 w-8 animate-spin rounded-full border-b-2 border-blue-600"></div>
+          <p className="mt-2">Loading...</p>
         </div>
       </div>
     );
   }
 
-  if (status === "unauthenticated") {
+  if (status === 'unauthenticated') {
     return null; // Will redirect
   }
 
@@ -99,19 +99,19 @@ export default function PendingApprovalPage() {
     // This page should only be accessible to VERIFIED users
     // Other statuses should be redirected elsewhere
     return {
-      title: "Your account is pending approval",
-      description: "Please wait for an administrator to approve your account.",
+      title: 'Your account is pending approval',
+      description: 'Please wait for an administrator to approve your account.',
     };
   };
 
   const statusInfo = getStatusMessage();
 
   return (
-    <div className="min-h-screen flex items-center justify-center  py-12 px-4 sm:px-6 lg:px-8">
-      <div className="max-w-md w-full space-y-8">
+    <div className="flex min-h-screen items-center justify-center px-4 py-12 sm:px-6 lg:px-8">
+      <div className="w-full max-w-md space-y-8">
         <Card>
           <CardHeader className="text-center">
-            <div className="flex justify-center mb-4">{getStatusIcon()}</div>
+            <div className="mb-4 flex justify-center">{getStatusIcon()}</div>
             <CardTitle className="text-2xl font-bold">
               {statusInfo.title}
             </CardTitle>
@@ -121,20 +121,20 @@ export default function PendingApprovalPage() {
           </CardHeader>
           <CardContent className="space-y-4">
             <div className="text-center">
-              <p className="text-sm ">
-                Logged in as:{" "}
+              <p className="text-sm">
+                Logged in as:{' '}
                 <span className="font-medium">{session?.user?.email}</span>
               </p>
-              <p className="text-sm ">
+              <p className="text-sm">
                 Role: <span className="font-medium">{session?.user?.role}</span>
               </p>
-              <p className="text-sm ">
-                Status:{" "}
+              <p className="text-sm">
+                Status:{' '}
                 <span className="font-medium">{session?.user?.status}</span>
               </p>
             </div>
 
-            <div className="bg-yellow-50 border border-yellow-200 rounded-md p-3">
+            <div className="rounded-md border border-yellow-200 bg-yellow-50 p-3">
               <p className="text-sm text-yellow-800">
                 Your account registration was successful! Please wait for an
                 administrator to approve your access.
@@ -156,9 +156,9 @@ export default function PendingApprovalPage() {
               className="w-full"
             >
               <RefreshCw
-                className={`h-4 w-4 mr-2 ${isRefreshing ? "animate-spin" : ""}`}
+                className={`mr-2 h-4 w-4 ${isRefreshing ? 'animate-spin' : ''}`}
               />
-              {isRefreshing ? "Refreshing..." : "Refresh Status"}
+              {isRefreshing ? 'Refreshing...' : 'Refresh Status'}
             </Button>
           </CardContent>
         </Card>

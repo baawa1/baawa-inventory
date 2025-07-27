@@ -1,6 +1,6 @@
-import React from "react";
-import { UseFormReturn } from "react-hook-form";
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import React from 'react';
+import { UseFormReturn } from 'react-hook-form';
+import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import {
   FormControl,
   FormField,
@@ -8,12 +8,12 @@ import {
   FormLabel,
   FormMessage,
   FormDescription,
-} from "@/components/ui/form";
-import { Input } from "@/components/ui/input";
-import { Textarea } from "@/components/ui/textarea";
-import { Switch } from "@/components/ui/switch";
-import { TagInput } from "@/components/ui/tag-input";
-import { UpdateProductFormData } from "./types";
+} from '@/components/ui/form';
+import { Input } from '@/components/ui/input';
+import { Textarea } from '@/components/ui/textarea';
+import { Switch } from '@/components/ui/switch';
+import { TagInput } from '@/components/ui/tag-input';
+import { UpdateProductFormData } from './types';
 
 interface SEOMarketingSectionProps {
   form: UseFormReturn<UpdateProductFormData>;
@@ -57,7 +57,7 @@ export function SEOMarketingSection({ form }: SEOMarketingSectionProps) {
               <FormControl>
                 <Input
                   {...field}
-                  value={field.value || ""}
+                  value={field.value || ''}
                   placeholder="SEO title for search engines"
                   maxLength={255}
                 />
@@ -79,7 +79,7 @@ export function SEOMarketingSection({ form }: SEOMarketingSectionProps) {
               <FormControl>
                 <Textarea
                   {...field}
-                  value={field.value || ""}
+                  value={field.value || ''}
                   placeholder="Brief description for search engines"
                   rows={3}
                   maxLength={500}

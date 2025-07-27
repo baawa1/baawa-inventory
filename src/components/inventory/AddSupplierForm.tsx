@@ -1,21 +1,21 @@
-"use client";
+'use client';
 
-import React from "react";
-import { useRouter } from "next/navigation";
-import { useForm } from "react-hook-form";
-import { zodResolver } from "@hookform/resolvers/zod";
-import { z } from "zod";
-import { Button } from "@/components/ui/button";
-import { Input } from "@/components/ui/input";
-import { Textarea } from "@/components/ui/textarea";
+import React from 'react';
+import { useRouter } from 'next/navigation';
+import { useForm } from 'react-hook-form';
+import { zodResolver } from '@hookform/resolvers/zod';
+import { z } from 'zod';
+import { Button } from '@/components/ui/button';
+import { Input } from '@/components/ui/input';
+import { Textarea } from '@/components/ui/textarea';
 import {
   Card,
   CardContent,
   CardHeader,
   CardTitle,
   CardDescription,
-} from "@/components/ui/card";
-import { Switch } from "@/components/ui/switch";
+} from '@/components/ui/card';
+import { Switch } from '@/components/ui/switch';
 import {
   Form,
   FormControl,
@@ -24,14 +24,14 @@ import {
   FormItem,
   FormLabel,
   FormMessage,
-} from "@/components/ui/form";
-import { ArrowLeft, Loader2 } from "lucide-react";
-import { PageHeader } from "@/components/ui/page-header";
-import { FormLoading } from "@/components/ui/form-loading";
-import { toast } from "sonner";
-import { nameSchema, phoneSchema } from "@/lib/validations/common";
-import { useCreateSupplier } from "@/hooks/api/suppliers";
-import { logger } from "@/lib/logger";
+} from '@/components/ui/form';
+import { ArrowLeft, Loader2 } from 'lucide-react';
+import { PageHeader } from '@/components/ui/page-header';
+import { FormLoading } from '@/components/ui/form-loading';
+import { toast } from 'sonner';
+import { nameSchema, phoneSchema } from '@/lib/validations/common';
+import { useCreateSupplier } from '@/hooks/api/suppliers';
+import { logger } from '@/lib/logger';
 
 interface ValidationError {
   field: string;
@@ -47,38 +47,38 @@ const supplierFormSchema = z.object({
   name: nameSchema,
   contactPerson: z
     .string()
-    .max(255, "Contact person must be 255 characters or less")
+    .max(255, 'Contact person must be 255 characters or less')
     .optional(),
-  email: z.string().email("Invalid email format").optional().or(z.literal("")),
-  phone: phoneSchema.optional().or(z.literal("")),
+  email: z.string().email('Invalid email format').optional().or(z.literal('')),
+  phone: phoneSchema.optional().or(z.literal('')),
   address: z
     .string()
-    .max(500, "Address must be 500 characters or less")
+    .max(500, 'Address must be 500 characters or less')
     .optional(),
-  city: z.string().max(100, "City must be 100 characters or less").optional(),
-  state: z.string().max(100, "State must be 100 characters or less").optional(),
+  city: z.string().max(100, 'City must be 100 characters or less').optional(),
+  state: z.string().max(100, 'State must be 100 characters or less').optional(),
   country: z
     .string()
-    .max(100, "Country must be 100 characters or less")
+    .max(100, 'Country must be 100 characters or less')
     .optional(),
   postalCode: z
     .string()
-    .max(20, "Postal code must be 20 characters or less")
+    .max(20, 'Postal code must be 20 characters or less')
     .optional(),
-  website: z.string().url("Invalid URL format").optional().or(z.literal("")),
+  website: z.string().url('Invalid URL format').optional().or(z.literal('')),
   taxNumber: z
     .string()
-    .max(100, "Tax number must be 100 characters or less")
+    .max(100, 'Tax number must be 100 characters or less')
     .optional(),
   paymentTerms: z
     .string()
-    .max(255, "Payment terms must be 255 characters or less")
+    .max(255, 'Payment terms must be 255 characters or less')
     .optional(),
   creditLimit: z.string().optional(),
   isActive: z.boolean(),
   notes: z
     .string()
-    .max(1000, "Notes must be 1000 characters or less")
+    .max(1000, 'Notes must be 1000 characters or less')
     .optional(),
 });
 
@@ -91,21 +91,21 @@ export default function AddSupplierForm() {
   const form = useForm<SupplierFormData>({
     resolver: zodResolver(supplierFormSchema),
     defaultValues: {
-      name: "",
-      contactPerson: "",
-      email: "",
-      phone: "",
-      address: "",
-      city: "",
-      state: "",
-      country: "",
-      postalCode: "",
-      website: "",
-      taxNumber: "",
-      paymentTerms: "",
-      creditLimit: "",
+      name: '',
+      contactPerson: '',
+      email: '',
+      phone: '',
+      address: '',
+      city: '',
+      state: '',
+      country: '',
+      postalCode: '',
+      website: '',
+      taxNumber: '',
+      paymentTerms: '',
+      creditLimit: '',
       isActive: true,
-      notes: "",
+      notes: '',
     },
   });
 
@@ -114,11 +114,11 @@ export default function AddSupplierForm() {
     if (data.creditLimit && data.creditLimit.trim()) {
       const creditLimitValue = parseFloat(data.creditLimit);
       if (isNaN(creditLimitValue) || creditLimitValue <= 0) {
-        form.setError("creditLimit", {
-          type: "manual",
-          message: "Credit limit must be a positive number",
+        form.setError('creditLimit', {
+          type: 'manual',
+          message: 'Credit limit must be a positive number',
         });
-        toast.error("Please fix the validation errors below");
+        toast.error('Please fix the validation errors below');
         return;
       }
     }
@@ -127,12 +127,12 @@ export default function AddSupplierForm() {
     if (data.phone && data.phone.trim()) {
       const phoneRegex = /^(\+234[7-9]\d{9}|0[7-9]\d{9})$/;
       if (!phoneRegex.test(data.phone)) {
-        form.setError("phone", {
-          type: "manual",
+        form.setError('phone', {
+          type: 'manual',
           message:
-            "Phone number must be in Nigerian format: +2347087367278 or 07039893476",
+            'Phone number must be in Nigerian format: +2347087367278 or 07039893476',
         });
-        toast.error("Please fix the validation errors below");
+        toast.error('Please fix the validation errors below');
         return;
       }
     }
@@ -159,17 +159,17 @@ export default function AddSupplierForm() {
     try {
       createSupplierMutation.mutate(supplierData, {
         onSuccess: () => {
-          toast.success("Supplier created successfully!");
-          router.push("/inventory/suppliers");
+          toast.success('Supplier created successfully!');
+          router.push('/inventory/suppliers');
         },
-        onError: (error) => {
+        onError: error => {
           // Handle validation errors from backend
           if (error instanceof Error) {
             const errorMessage = error.message;
 
             // Check if it's a validation error response
             if (
-              errorMessage === "Validation failed" &&
+              errorMessage === 'Validation failed' &&
               (error as unknown as ValidationErrorResponse).details
             ) {
               // Set form errors for each validation field
@@ -177,41 +177,41 @@ export default function AddSupplierForm() {
                 (detail: ValidationError) => {
                   if (detail.field && detail.message) {
                     form.setError(detail.field as keyof SupplierFormData, {
-                      type: "server",
+                      type: 'server',
                       message: detail.message,
                     });
                   }
                 }
               );
-              toast.error("Please fix the validation errors below");
+              toast.error('Please fix the validation errors below');
               return;
             }
 
             // Show specific error message if available
-            if (errorMessage.includes("already exists")) {
-              toast.error("A supplier with this name already exists");
+            if (errorMessage.includes('already exists')) {
+              toast.error('A supplier with this name already exists');
             } else {
               toast.error(
                 errorMessage ||
-                  "Failed to create supplier. Please check your input and try again."
+                  'Failed to create supplier. Please check your input and try again.'
               );
             }
           } else {
-            toast.error("Failed to create supplier");
+            toast.error('Failed to create supplier');
           }
 
-          logger.error("Failed to create supplier", {
+          logger.error('Failed to create supplier', {
             supplierName: data.name,
             error: error instanceof Error ? error.message : String(error),
           });
         },
       });
     } catch (error) {
-      logger.error("Failed to create supplier", {
+      logger.error('Failed to create supplier', {
         supplierName: data.name,
         error: error instanceof Error ? error.message : String(error),
       });
-      toast.error("Failed to create supplier");
+      toast.error('Failed to create supplier');
     }
   };
 
@@ -222,18 +222,18 @@ export default function AddSupplierForm() {
         title="Add Supplier"
         description="Create a new supplier to manage your inventory sources"
         backLabel="Back to Suppliers"
-        onBack={() => router.push("/inventory/suppliers")}
+        onBack={() => router.push('/inventory/suppliers')}
         backUrl="/inventory/suppliers"
       />
     );
   }
 
   return (
-    <div className="max-w-4xl mx-auto p-6 space-y-6">
+    <div className="mx-auto max-w-4xl space-y-6 p-6">
       <div className="mb-6">
         <Button
           variant="ghost"
-          onClick={() => router.push("/inventory/suppliers")}
+          onClick={() => router.push('/inventory/suppliers')}
           className="mb-4 px-4 lg:px-6"
         >
           <ArrowLeft className="mr-2 h-4 w-4" />
@@ -328,29 +328,29 @@ export default function AddSupplierForm() {
                           placeholder="e.g., +2347087367278 or 07039893476"
                           pattern="^(\+234[7-9]\d{9}|0[7-9]\d{9})$"
                           maxLength={14}
-                          onKeyPress={(e) => {
+                          onKeyPress={e => {
                             // Allow only numbers, +, and backspace
                             const allowedChars = /[0-9+]/;
                             if (
                               !allowedChars.test(e.key) &&
-                              e.key !== "Backspace" &&
-                              e.key !== "Delete" &&
-                              e.key !== "Tab"
+                              e.key !== 'Backspace' &&
+                              e.key !== 'Delete' &&
+                              e.key !== 'Tab'
                             ) {
                               e.preventDefault();
                             }
                           }}
                           value={field.value}
-                          onChange={(e) => {
+                          onChange={e => {
                             const value = e.target.value;
                             // Only allow numbers, +, and basic phone characters
-                            const cleanedValue = value.replace(/[^0-9+]/g, "");
+                            const cleanedValue = value.replace(/[^0-9+]/g, '');
                             field.onChange(cleanedValue);
                           }}
                           onBlur={field.onBlur}
                           disabled={createSupplierMutation.isPending}
                           className={
-                            !isValidPhone && field.value ? "border-red-500" : ""
+                            !isValidPhone && field.value ? 'border-red-500' : ''
                           }
                         />
                       </FormControl>
@@ -358,7 +358,7 @@ export default function AddSupplierForm() {
                         Nigerian phone number format: +2347087367278 or
                         07039893476
                         {field.value && !isValidPhone && (
-                          <span className="text-red-500 block mt-1">
+                          <span className="mt-1 block text-red-500">
                             Invalid phone number format
                           </span>
                         )}
@@ -418,7 +418,7 @@ export default function AddSupplierForm() {
                 )}
               />
 
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+              <div className="grid grid-cols-1 gap-4 md:grid-cols-2">
                 <FormField
                   control={form.control}
                   name="city"
@@ -623,7 +623,7 @@ export default function AddSupplierForm() {
             <Button
               type="button"
               variant="outline"
-              onClick={() => router.push("/inventory/suppliers")}
+              onClick={() => router.push('/inventory/suppliers')}
               disabled={createSupplierMutation.isPending}
             >
               Cancel
@@ -635,7 +635,7 @@ export default function AddSupplierForm() {
                   Creating...
                 </>
               ) : (
-                "Create Supplier"
+                'Create Supplier'
               )}
             </Button>
           </div>

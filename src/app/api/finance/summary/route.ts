@@ -1,6 +1,6 @@
-import { withAuth, AuthenticatedRequest } from "@/lib/api-middleware";
-import { createApiResponse } from "@/lib/api-response";
-import { prisma } from "@/lib/db";
+import { withAuth, AuthenticatedRequest } from '@/lib/api-middleware';
+import { createApiResponse } from '@/lib/api-response';
+import { prisma } from '@/lib/db';
 
 // GET /api/finance/summary - Get financial summary statistics with real data including sales and purchases
 export const GET = withAuth(async (_request: AuthenticatedRequest) => {
@@ -51,8 +51,8 @@ export const GET = withAuth(async (_request: AuthenticatedRequest) => {
 
     return createApiResponse.success(summary);
   } catch (error) {
-    console.error("Error fetching financial summary:", error);
-    return createApiResponse.internalError("Failed to fetch financial summary");
+    console.error('Error fetching financial summary:', error);
+    return createApiResponse.internalError('Failed to fetch financial summary');
   }
 });
 
@@ -73,11 +73,11 @@ async function getPeriodStats(
 
   const [incomeTotal, expenseTotal, transactionCount] = await Promise.all([
     prisma.financialTransaction.aggregate({
-      where: { ...manualWhereClause, type: "INCOME" },
+      where: { ...manualWhereClause, type: 'INCOME' },
       _sum: { amount: true },
     }),
     prisma.financialTransaction.aggregate({
-      where: { ...manualWhereClause, type: "EXPENSE" },
+      where: { ...manualWhereClause, type: 'EXPENSE' },
       _sum: { amount: true },
     }),
     prisma.financialTransaction.count({ where: manualWhereClause }),
@@ -93,7 +93,7 @@ async function getPeriodStats(
         gte: startDate,
         lte: endDate,
       },
-      payment_status: "paid",
+      payment_status: 'paid',
     };
 
     const salesTotal = await prisma.salesTransaction.aggregate({
@@ -149,12 +149,12 @@ async function getRecentTransactions(
       incomeDetails: true,
       expenseDetails: true,
     },
-    orderBy: { transactionDate: "desc" },
+    orderBy: { transactionDate: 'desc' },
     take: 5,
   });
 
   transactions.push(
-    ...manualTransactions.map((t) => ({
+    ...manualTransactions.map(t => ({
       id: t.id,
       transactionNumber: t.transactionNumber,
       type: t.type,
@@ -165,35 +165,35 @@ async function getRecentTransactions(
       createdBy: t.createdByUser,
       incomeSource: t.incomeDetails?.incomeSource,
       expenseType: t.expenseDetails?.expenseType,
-      source: "manual",
+      source: 'manual',
     }))
   );
 
   // Add recent sales if requested
   if (includeSales) {
     const salesTransactions = await prisma.salesTransaction.findMany({
-      where: { payment_status: "paid" },
+      where: { payment_status: 'paid' },
       include: {
         users: {
           select: { firstName: true, lastName: true, email: true },
         },
       },
-      orderBy: { created_at: "desc" },
+      orderBy: { created_at: 'desc' },
       take: 3,
     });
 
     transactions.push(
-      ...salesTransactions.map((s) => ({
+      ...salesTransactions.map(s => ({
         id: s.id,
         transactionNumber: s.transaction_number,
-        type: "INCOME",
+        type: 'INCOME',
         amount: s.total_amount,
-        description: `POS Sale - ${s.customer_name || s.customer_email || "Walk-in Customer"}`,
+        description: `POS Sale - ${s.customer_name || s.customer_email || 'Walk-in Customer'}`,
         transactionDate: s.created_at,
         paymentMethod: s.payment_method,
         createdBy: s.users,
-        incomeSource: "SALES",
-        source: "sales",
+        incomeSource: 'SALES',
+        source: 'sales',
       }))
     );
   }
@@ -209,22 +209,22 @@ async function getRecentTransactions(
           select: { name: true },
         },
       },
-      orderBy: { purchaseDate: "desc" },
+      orderBy: { purchaseDate: 'desc' },
       take: 3,
     });
 
     transactions.push(
-      ...stockAdditions.map((sa) => ({
+      ...stockAdditions.map(sa => ({
         id: sa.id,
         transactionNumber: sa.referenceNo || `STOCK-${sa.id}`,
-        type: "EXPENSE",
+        type: 'EXPENSE',
         amount: sa.totalCost,
         description: `Inventory Purchase - ${sa.product.name}`,
         transactionDate: sa.purchaseDate,
-        paymentMethod: "BANK_TRANSFER",
+        paymentMethod: 'BANK_TRANSFER',
         createdBy: sa.createdBy,
-        expenseType: "INVENTORY_PURCHASES",
-        source: "purchase",
+        expenseType: 'INVENTORY_PURCHASES',
+        source: 'purchase',
       }))
     );
   }

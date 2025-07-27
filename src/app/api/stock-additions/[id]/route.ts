@@ -1,11 +1,11 @@
-import { auth } from "../../../../../auth";
-import { NextRequest, NextResponse } from "next/server";
-import { prisma } from "@/lib/db";
-import { hasPermission } from "@/lib/auth/roles";
+import { auth } from '../../../../../auth';
+import { NextRequest, NextResponse } from 'next/server';
+import { prisma } from '@/lib/db';
+import { hasPermission } from '@/lib/auth/roles';
 import {
   updateStockAdditionSchema,
   type UpdateStockAdditionData,
-} from "@/lib/validations/stock-management";
+} from '@/lib/validations/stock-management';
 
 // GET /api/stock-additions/[id] - Get individual stock addition
 export async function GET(
@@ -15,7 +15,7 @@ export async function GET(
   try {
     const session = await auth();
     if (!session?.user) {
-      return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+      return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
     }
 
     const { id } = await params;
@@ -23,7 +23,7 @@ export async function GET(
     const additionId = parseInt(id);
     if (isNaN(additionId)) {
       return NextResponse.json(
-        { error: "Invalid stock addition ID" },
+        { error: 'Invalid stock addition ID' },
         { status: 400 }
       );
     }
@@ -58,16 +58,16 @@ export async function GET(
 
     if (!stockAddition) {
       return NextResponse.json(
-        { error: "Stock addition not found" },
+        { error: 'Stock addition not found' },
         { status: 404 }
       );
     }
 
     return NextResponse.json({ stockAddition });
   } catch (error) {
-    console.error("Error fetching stock addition:", error);
+    console.error('Error fetching stock addition:', error);
     return NextResponse.json(
-      { error: "Failed to fetch stock addition" },
+      { error: 'Failed to fetch stock addition' },
       { status: 500 }
     );
   }
@@ -81,13 +81,13 @@ export async function PUT(
   try {
     const session = await auth();
     if (!session?.user) {
-      return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+      return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
     }
 
     // Check if user has proper role
-    if (!hasPermission(session.user.role, "INVENTORY_WRITE")) {
+    if (!hasPermission(session.user.role, 'INVENTORY_WRITE')) {
       return NextResponse.json(
-        { error: "Insufficient permissions" },
+        { error: 'Insufficient permissions' },
         { status: 403 }
       );
     }
@@ -96,7 +96,7 @@ export async function PUT(
     const additionId = parseInt(id);
     if (isNaN(additionId)) {
       return NextResponse.json(
-        { error: "Invalid stock addition ID" },
+        { error: 'Invalid stock addition ID' },
         { status: 400 }
       );
     }
@@ -113,7 +113,7 @@ export async function PUT(
 
     if (!existingStockAddition) {
       return NextResponse.json(
-        { error: "Stock addition not found" },
+        { error: 'Stock addition not found' },
         { status: 404 }
       );
     }
@@ -127,21 +127,21 @@ export async function PUT(
 
       if (!supplier) {
         return NextResponse.json(
-          { error: "Supplier not found" },
+          { error: 'Supplier not found' },
           { status: 404 }
         );
       }
 
       if (!supplier.isActive) {
         return NextResponse.json(
-          { error: "Supplier is inactive" },
+          { error: 'Supplier is inactive' },
           { status: 400 }
         );
       }
     }
 
     // Update in transaction to handle stock quantity changes
-    const result = await prisma.$transaction(async (tx) => {
+    const result = await prisma.$transaction(async tx => {
       // If quantity is being updated, adjust product stock
       if (
         validatedData.quantity &&
@@ -209,20 +209,20 @@ export async function PUT(
 
     return NextResponse.json({
       stockAddition: result,
-      message: "Stock addition updated successfully",
+      message: 'Stock addition updated successfully',
     });
   } catch (error) {
-    console.error("Error updating stock addition:", error);
+    console.error('Error updating stock addition:', error);
 
-    if (error instanceof Error && error.name === "ZodError") {
+    if (error instanceof Error && error.name === 'ZodError') {
       return NextResponse.json(
-        { error: "Invalid input data", details: error.message },
+        { error: 'Invalid input data', details: error.message },
         { status: 400 }
       );
     }
 
     return NextResponse.json(
-      { error: "Failed to update stock addition" },
+      { error: 'Failed to update stock addition' },
       { status: 500 }
     );
   }
@@ -236,13 +236,13 @@ export async function DELETE(
   try {
     const session = await auth();
     if (!session?.user) {
-      return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+      return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
     }
 
     // Only admin can delete stock additions
-    if (session.user.role !== "ADMIN") {
+    if (session.user.role !== 'ADMIN') {
       return NextResponse.json(
-        { error: "Insufficient permissions" },
+        { error: 'Insufficient permissions' },
         { status: 403 }
       );
     }
@@ -251,7 +251,7 @@ export async function DELETE(
     const additionId = parseInt(id);
     if (isNaN(additionId)) {
       return NextResponse.json(
-        { error: "Invalid stock addition ID" },
+        { error: 'Invalid stock addition ID' },
         { status: 400 }
       );
     }
@@ -269,13 +269,13 @@ export async function DELETE(
 
     if (!stockAddition) {
       return NextResponse.json(
-        { error: "Stock addition not found" },
+        { error: 'Stock addition not found' },
         { status: 404 }
       );
     }
 
     // Delete in transaction and adjust product stock
-    await prisma.$transaction(async (tx) => {
+    await prisma.$transaction(async tx => {
       // Reduce product stock by the added quantity
       await tx.product.update({
         where: { id: stockAddition.productId },
@@ -296,9 +296,9 @@ export async function DELETE(
       message: `Stock addition deleted successfully. Reduced ${stockAddition.product.name} stock by ${stockAddition.quantity} units.`,
     });
   } catch (error) {
-    console.error("Error deleting stock addition:", error);
+    console.error('Error deleting stock addition:', error);
     return NextResponse.json(
-      { error: "Failed to delete stock addition" },
+      { error: 'Failed to delete stock addition' },
       { status: 500 }
     );
   }

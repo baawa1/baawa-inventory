@@ -1,7 +1,7 @@
-import { UseFormReturn } from "react-hook-form";
-import { updateSupplierSchema } from "@/lib/validations/supplier";
-import { z } from "zod";
-import { toast } from "sonner";
+import { UseFormReturn } from 'react-hook-form';
+import { updateSupplierSchema } from '@/lib/validations/supplier';
+import { z } from 'zod';
+import { toast } from 'sonner';
 
 type SupplierFormData = z.infer<typeof updateSupplierSchema>;
 
@@ -24,14 +24,14 @@ export function useSupplierSubmit(
     try {
       const isCreating = supplierId === null;
       const url = isCreating
-        ? "/api/suppliers"
+        ? '/api/suppliers'
         : `/api/suppliers/${supplierId}`;
-      const method = isCreating ? "POST" : "PUT";
+      const method = isCreating ? 'POST' : 'PUT';
 
       const response = await fetch(url, {
         method,
         headers: {
-          "Content-Type": "application/json",
+          'Content-Type': 'application/json',
         },
         body: JSON.stringify(data),
       });
@@ -41,25 +41,25 @@ export function useSupplierSubmit(
       if (!response.ok) {
         throw new Error(
           result.message ||
-            `Failed to ${isCreating ? "create" : "update"} supplier`
+            `Failed to ${isCreating ? 'create' : 'update'} supplier`
         );
       }
 
       if (result.success) {
         toast.success(
-          `Supplier ${isCreating ? "created" : "updated"} successfully`
+          `Supplier ${isCreating ? 'created' : 'updated'} successfully`
         );
         onSuccess?.();
         onClose?.();
       } else {
         throw new Error(
           result.message ||
-            `Failed to ${isCreating ? "create" : "update"} supplier`
+            `Failed to ${isCreating ? 'create' : 'update'} supplier`
         );
       }
     } catch (error) {
       const errorMessage =
-        error instanceof Error ? error.message : "An unexpected error occurred";
+        error instanceof Error ? error.message : 'An unexpected error occurred';
       setSubmitError(errorMessage);
       toast.error(errorMessage);
     } finally {

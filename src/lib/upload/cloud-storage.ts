@@ -4,7 +4,7 @@
  * Currently implements a simple file upload that can be replaced with any cloud provider
  */
 
-import { logger } from "@/lib/logger";
+import { logger } from '@/lib/logger';
 
 export interface UploadResult {
   url: string;
@@ -25,7 +25,7 @@ export class CloudStorageService {
   private baseUrl: string;
   private apiKey?: string;
 
-  constructor(baseUrl: string = "/api/upload", apiKey?: string) {
+  constructor(baseUrl: string = '/api/upload', apiKey?: string) {
     this.baseUrl = baseUrl;
     this.apiKey = apiKey;
   }
@@ -38,8 +38,8 @@ export class CloudStorageService {
     options: UploadOptions = {}
   ): Promise<UploadResult> {
     const {
-      folder = "products",
-      allowedTypes = ["image/jpeg", "image/png", "image/webp"],
+      folder = 'products',
+      allowedTypes = ['image/jpeg', 'image/png', 'image/webp'],
       maxSize = 5 * 1024 * 1024, // 5MB default
       quality = 85,
     } = options;
@@ -61,13 +61,13 @@ export class CloudStorageService {
 
     // Create form data
     const formData = new FormData();
-    formData.append("file", optimizedFile);
-    formData.append("folder", folder);
-    formData.append("quality", quality.toString());
+    formData.append('file', optimizedFile);
+    formData.append('folder', folder);
+    formData.append('quality', quality.toString());
 
     try {
       const response = await fetch(this.baseUrl, {
-        method: "POST",
+        method: 'POST',
         body: formData,
         headers: this.apiKey
           ? {
@@ -78,7 +78,7 @@ export class CloudStorageService {
 
       if (!response.ok) {
         const error = await response.json();
-        throw new Error(error.message || "Upload failed");
+        throw new Error(error.message || 'Upload failed');
       }
 
       const result = await response.json();
@@ -91,13 +91,13 @@ export class CloudStorageService {
         publicId: result.publicId,
       };
     } catch (error) {
-      logger.upload("Cloud storage upload failed", {
+      logger.upload('Cloud storage upload failed', {
         filename: file.name,
         size: file.size,
         error: error instanceof Error ? error.message : String(error),
       });
       throw new Error(
-        `Failed to upload file: ${error instanceof Error ? error.message : "Unknown error"}`
+        `Failed to upload file: ${error instanceof Error ? error.message : 'Unknown error'}`
       );
     }
   }
@@ -107,8 +107,8 @@ export class CloudStorageService {
    */
   private async optimizeImage(file: File, quality: number): Promise<File> {
     return new Promise((resolve, reject) => {
-      const canvas = document.createElement("canvas");
-      const ctx = canvas.getContext("2d");
+      const canvas = document.createElement('canvas');
+      const ctx = canvas.getContext('2d');
       const img = new Image();
 
       img.onload = () => {
@@ -133,7 +133,7 @@ export class CloudStorageService {
         ctx?.drawImage(img, 0, 0, width, height);
 
         canvas.toBlob(
-          (blob) => {
+          blob => {
             if (blob) {
               const optimizedFile = new File([blob], file.name, {
                 type: file.type,
@@ -141,7 +141,7 @@ export class CloudStorageService {
               });
               resolve(optimizedFile);
             } else {
-              reject(new Error("Failed to optimize image"));
+              reject(new Error('Failed to optimize image'));
             }
           },
           file.type,
@@ -149,7 +149,7 @@ export class CloudStorageService {
         );
       };
 
-      img.onerror = () => reject(new Error("Failed to load image"));
+      img.onerror = () => reject(new Error('Failed to load image'));
       img.src = URL.createObjectURL(file);
     });
   }
@@ -160,7 +160,7 @@ export class CloudStorageService {
   async deleteFile(publicId: string): Promise<void> {
     try {
       const response = await fetch(`${this.baseUrl}?publicId=${publicId}`, {
-        method: "DELETE",
+        method: 'DELETE',
         headers: this.apiKey
           ? {
               Authorization: `Bearer ${this.apiKey}`,
@@ -170,15 +170,15 @@ export class CloudStorageService {
 
       if (!response.ok) {
         const error = await response.json();
-        throw new Error(error.message || "Delete failed");
+        throw new Error(error.message || 'Delete failed');
       }
     } catch (error) {
-      logger.upload("Cloud storage deletion failed", {
+      logger.upload('Cloud storage deletion failed', {
         storagePath: publicId,
         error: error instanceof Error ? error.message : String(error),
       });
       throw new Error(
-        `Failed to delete file: ${error instanceof Error ? error.message : "Unknown error"}`
+        `Failed to delete file: ${error instanceof Error ? error.message : 'Unknown error'}`
       );
     }
   }

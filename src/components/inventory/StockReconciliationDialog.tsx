@@ -1,10 +1,10 @@
-"use client";
+'use client';
 
-import { useState, useMemo } from "react";
-import { useForm, useFieldArray } from "react-hook-form";
-import { zodResolver } from "@hookform/resolvers/zod";
-import { z } from "zod";
-import { toast } from "sonner";
+import { useState, useMemo } from 'react';
+import { useForm, useFieldArray } from 'react-hook-form';
+import { zodResolver } from '@hookform/resolvers/zod';
+import { z } from 'zod';
+import { toast } from 'sonner';
 import {
   Dialog,
   DialogContent,
@@ -12,7 +12,7 @@ import {
   DialogFooter,
   DialogHeader,
   DialogTitle,
-} from "@/components/ui/dialog";
+} from '@/components/ui/dialog';
 import {
   Form,
   FormControl,
@@ -21,7 +21,7 @@ import {
   FormItem,
   FormLabel,
   FormMessage,
-} from "@/components/ui/form";
+} from '@/components/ui/form';
 import {
   Table,
   TableBody,
@@ -29,33 +29,33 @@ import {
   TableHead,
   TableHeader,
   TableRow,
-} from "@/components/ui/table";
-import { Input } from "@/components/ui/input";
-import { Button } from "@/components/ui/button";
-import { Textarea } from "@/components/ui/textarea";
-import { Badge } from "@/components/ui/badge";
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+} from '@/components/ui/table';
+import { Input } from '@/components/ui/input';
+import { Button } from '@/components/ui/button';
+import { Textarea } from '@/components/ui/textarea';
+import { Badge } from '@/components/ui/badge';
+import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import {
   Select,
   SelectContent,
   SelectItem,
   SelectTrigger,
   SelectValue,
-} from "@/components/ui/select";
+} from '@/components/ui/select';
 import {
   IconPlus,
   IconTrash,
   IconSearch,
   IconCalculator,
-} from "@tabler/icons-react";
-import { formatCurrency } from "@/lib/utils";
-import { useProductSearch } from "@/hooks/useProductSearch";
+} from '@tabler/icons-react';
+import { formatCurrency } from '@/lib/utils';
+import { useProductSearch } from '@/hooks/useProductSearch';
 import {
   useCreateStockReconciliation,
   useSubmitStockReconciliation,
-} from "@/hooks/api/stock-management";
-import { DISCREPANCY_REASONS } from "@/lib/constants/stock-reconciliation";
-import { getDiscrepancyBadgeConfig } from "@/lib/utils/badge-helpers";
+} from '@/hooks/api/stock-management';
+import { DISCREPANCY_REASONS } from '@/lib/constants/stock-reconciliation';
+import { getDiscrepancyBadgeConfig } from '@/lib/utils/badge-helpers';
 
 const reconciliationItemSchema = z.object({
   productId: z.number().int().positive(),
@@ -68,12 +68,12 @@ const reconciliationItemSchema = z.object({
 });
 
 const reconciliationSchema = z.object({
-  title: z.string().min(1, "Title is required").max(255),
+  title: z.string().min(1, 'Title is required').max(255),
   description: z.string().optional(),
   notes: z.string().optional(),
   items: z
     .array(reconciliationItemSchema)
-    .min(1, "At least one product is required"),
+    .min(1, 'At least one product is required'),
 });
 
 type ReconciliationFormData = z.infer<typeof reconciliationSchema>;
@@ -97,7 +97,7 @@ export function StockReconciliationDialog({
   onClose,
   onSuccess,
 }: StockReconciliationDialogProps) {
-  const [searchTerm, setSearchTerm] = useState("");
+  const [searchTerm, setSearchTerm] = useState('');
 
   // TanStack Query hooks
   const { data: productsData, isLoading: _loadingProducts } =
@@ -110,16 +110,16 @@ export function StockReconciliationDialog({
   const form = useForm<ReconciliationFormData>({
     resolver: zodResolver(reconciliationSchema),
     defaultValues: {
-      title: "",
-      description: "",
-      notes: "",
+      title: '',
+      description: '',
+      notes: '',
       items: [],
     },
   });
 
   const { fields, append, remove } = useFieldArray({
     control: form.control,
-    name: "items",
+    name: 'items',
   });
 
   const handleSearchProducts = (search: string) => {
@@ -128,9 +128,9 @@ export function StockReconciliationDialog({
 
   const addProduct = (product: Product) => {
     // Check if product is already added
-    const existingItem = fields.find((item) => item.productId === product.id);
+    const existingItem = fields.find(item => item.productId === product.id);
     if (existingItem) {
-      toast.error("Product already added to reconciliation");
+      toast.error('Product already added to reconciliation');
       return;
     }
 
@@ -140,8 +140,8 @@ export function StockReconciliationDialog({
       productSku: product.sku,
       systemCount: product.stock,
       physicalCount: product.stock,
-      discrepancyReason: "",
-      notes: "",
+      discrepancyReason: '',
+      notes: '',
     });
   };
 
@@ -150,7 +150,7 @@ export function StockReconciliationDialog({
   };
 
   // Watch all form values to trigger recalculations
-  const watchedValues = form.watch("items");
+  const watchedValues = form.watch('items');
 
   const totalDiscrepancy = useMemo(() => {
     return fields.reduce((total, item, index) => {
@@ -177,7 +177,7 @@ export function StockReconciliationDialog({
   const onSubmit = async (data: ReconciliationFormData, saveAsDraft = true) => {
     try {
       // Calculate discrepancies and estimated impacts
-      const itemsWithCalculations = data.items.map((item) => {
+      const itemsWithCalculations = data.items.map(item => {
         const discrepancy = calculateDiscrepancy(
           item.systemCount,
           item.physicalCount
@@ -207,32 +207,32 @@ export function StockReconciliationDialog({
       // If not saving as draft, submit for approval immediately
       if (!saveAsDraft) {
         await submitMutation.mutateAsync(result.data.id);
-        toast.success("Stock reconciliation submitted for approval");
+        toast.success('Stock reconciliation submitted for approval');
       } else {
-        toast.success("Stock reconciliation saved as draft");
+        toast.success('Stock reconciliation saved as draft');
       }
 
       form.reset();
       onSuccess?.();
       onClose();
     } catch (_error) {
-      toast.error("Failed to create stock reconciliation");
+      toast.error('Failed to create stock reconciliation');
     }
   };
 
   const handleSaveDraft = () => {
-    form.handleSubmit((data) => onSubmit(data, true))();
+    form.handleSubmit(data => onSubmit(data, true))();
   };
 
   const handleSubmitForApproval = () => {
-    form.handleSubmit((data) => onSubmit(data, false))();
+    form.handleSubmit(data => onSubmit(data, false))();
   };
 
   const isLoading = createMutation.isPending || submitMutation.isPending;
 
   return (
     <Dialog open={isOpen} onOpenChange={onClose}>
-      <DialogContent className="max-w-6xl max-h-[90vh] overflow-y-auto">
+      <DialogContent className="max-h-[90vh] max-w-6xl overflow-y-auto">
         <DialogHeader>
           <DialogTitle>Create Stock Reconciliation</DialogTitle>
           <DialogDescription>
@@ -242,9 +242,9 @@ export function StockReconciliationDialog({
         </DialogHeader>
 
         <Form {...form}>
-          <form className="space-y-6" onSubmit={(e) => e.preventDefault()}>
+          <form className="space-y-6" onSubmit={e => e.preventDefault()}>
             {/* Basic Information */}
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+            <div className="grid grid-cols-1 gap-4 md:grid-cols-2">
               <FormField
                 control={form.control}
                 name="title"
@@ -295,29 +295,29 @@ export function StockReconciliationDialog({
                       <Input
                         placeholder="Search products by name or SKU..."
                         value={searchTerm}
-                        onChange={(e) => handleSearchProducts(e.target.value)}
+                        onChange={e => handleSearchProducts(e.target.value)}
                       />
                     </div>
                   </div>
 
                   {searchTerm && products.length > 0 && (
-                    <div className="border rounded-lg max-h-48 overflow-y-auto">
+                    <div className="max-h-48 overflow-y-auto rounded-lg border">
                       {products.map((product: Product) => (
                         <div
                           key={product.id}
-                          className="flex items-center justify-between p-3 border-b last:border-b-0 hover:bg-muted"
+                          className="hover:bg-muted flex items-center justify-between border-b p-3 last:border-b-0"
                         >
                           <div>
                             <p className="font-medium">{product.name}</p>
-                            <p className="text-sm text-muted-foreground">
-                              SKU: {product.sku} | Current Stock:{" "}
+                            <p className="text-muted-foreground text-sm">
+                              SKU: {product.sku} | Current Stock:{' '}
                               {product.stock}
                             </p>
                           </div>
                           <Button
                             size="sm"
                             type="button"
-                            onClick={(e) => {
+                            onClick={e => {
                               e.preventDefault();
                               e.stopPropagation();
                               addProduct(product);
@@ -369,7 +369,7 @@ export function StockReconciliationDialog({
                                   <p className="font-medium">
                                     {item.productName}
                                   </p>
-                                  <p className="text-sm text-muted-foreground">
+                                  <p className="text-muted-foreground text-sm">
                                     {item.productSku}
                                   </p>
                                 </div>
@@ -386,7 +386,7 @@ export function StockReconciliationDialog({
                                           min="0"
                                           disabled
                                           {...field}
-                                          onChange={(e) =>
+                                          onChange={e =>
                                             field.onChange(
                                               parseInt(e.target.value) || 0
                                             )
@@ -408,7 +408,7 @@ export function StockReconciliationDialog({
                                           type="number"
                                           min="0"
                                           {...field}
-                                          onChange={(e) =>
+                                          onChange={e =>
                                             field.onChange(
                                               parseInt(e.target.value) || 0
                                             )
@@ -445,16 +445,14 @@ export function StockReconciliationDialog({
                                             <SelectValue placeholder="Select reason..." />
                                           </SelectTrigger>
                                           <SelectContent>
-                                            {DISCREPANCY_REASONS.map(
-                                              (reason) => (
-                                                <SelectItem
-                                                  key={reason.value}
-                                                  value={reason.value}
-                                                >
-                                                  {reason.label}
-                                                </SelectItem>
-                                              )
-                                            )}
+                                            {DISCREPANCY_REASONS.map(reason => (
+                                              <SelectItem
+                                                key={reason.value}
+                                                value={reason.value}
+                                              >
+                                                {reason.label}
+                                              </SelectItem>
+                                            ))}
                                           </SelectContent>
                                         </Select>
                                       </FormControl>
@@ -496,9 +494,9 @@ export function StockReconciliationDialog({
                   </div>
 
                   {/* Summary */}
-                  <div className="mt-4 p-4 bg-muted rounded-lg">
-                    <h4 className="font-medium mb-2">Reconciliation Summary</h4>
-                    <div className="grid grid-cols-2 md:grid-cols-4 gap-4 text-sm">
+                  <div className="bg-muted mt-4 rounded-lg p-4">
+                    <h4 className="mb-2 font-medium">Reconciliation Summary</h4>
+                    <div className="grid grid-cols-2 gap-4 text-sm md:grid-cols-4">
                       <div>
                         <span className="text-muted-foreground">
                           Total Products:
@@ -510,9 +508,9 @@ export function StockReconciliationDialog({
                           Total Discrepancy:
                         </span>
                         <p
-                          className={`font-medium ${totalDiscrepancy === 0 ? "text-green-600" : totalDiscrepancy > 0 ? "text-blue-600" : "text-red-600"}`}
+                          className={`font-medium ${totalDiscrepancy === 0 ? 'text-green-600' : totalDiscrepancy > 0 ? 'text-blue-600' : 'text-red-600'}`}
                         >
-                          {totalDiscrepancy > 0 ? "+" : ""}
+                          {totalDiscrepancy > 0 ? '+' : ''}
                           {totalDiscrepancy} units
                         </p>
                       </div>
@@ -521,7 +519,7 @@ export function StockReconciliationDialog({
                           Estimated Impact:
                         </span>
                         <p
-                          className={`font-medium ${estimatedImpact === 0 ? "text-green-600" : estimatedImpact > 0 ? "text-blue-600" : "text-red-600"}`}
+                          className={`font-medium ${estimatedImpact === 0 ? 'text-green-600' : estimatedImpact > 0 ? 'text-blue-600' : 'text-red-600'}`}
                         >
                           {formatCurrency(Math.abs(estimatedImpact))}
                         </p>
@@ -568,14 +566,14 @@ export function StockReconciliationDialog({
                 onClick={handleSaveDraft}
                 disabled={isLoading || fields.length === 0}
               >
-                {isLoading ? "Saving..." : "Save Draft"}
+                {isLoading ? 'Saving...' : 'Save Draft'}
               </Button>
               <Button
                 type="button"
                 onClick={handleSubmitForApproval}
                 disabled={isLoading || fields.length === 0}
               >
-                {isLoading ? "Submitting..." : "Submit for Approval"}
+                {isLoading ? 'Submitting...' : 'Submit for Approval'}
               </Button>
             </DialogFooter>
           </form>

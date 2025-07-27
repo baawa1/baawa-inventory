@@ -1,4 +1,4 @@
-import { useState, useCallback } from "react";
+import { useState, useCallback } from 'react';
 
 export interface ListFiltersState {
   search: string;
@@ -18,7 +18,7 @@ export function useListFilters<T extends ListFiltersState>({
 
   const updateFilter = useCallback(
     (key: keyof T, value: string | boolean) => {
-      setFilters((prev) => {
+      setFilters(prev => {
         // Prevent unnecessary updates
         if (prev[key] === value) return prev;
 
@@ -37,7 +37,7 @@ export function useListFilters<T extends ListFiltersState>({
 
   const updateMultipleFilters = useCallback(
     (updates: Partial<T>) => {
-      setFilters((prev) => {
+      setFilters(prev => {
         const newFilters = { ...prev, ...updates };
         onFilterChange?.(newFilters);
         return newFilters;
@@ -63,16 +63,16 @@ export const createFilterConfig = (
 ) => ({
   key,
   label,
-  type: "select" as const,
+  type: 'select' as const,
   options,
   placeholder: placeholder || `All ${label}`,
 });
 
 export const createStatusFilterConfig = (
-  key: string = "status",
-  label: string = "Status",
+  key: string = 'status',
+  label: string = 'Status',
   statusOptions: Array<{ value: string; label: string }> = [
-    { value: "ACTIVE", label: "Active" },
-    { value: "INACTIVE", label: "Inactive" },
+    { value: 'ACTIVE', label: 'Active' },
+    { value: 'INACTIVE', label: 'Inactive' },
   ]
 ) => createFilterConfig(key, label, statusOptions);

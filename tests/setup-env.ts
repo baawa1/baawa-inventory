@@ -1,5 +1,5 @@
-import "@testing-library/jest-dom";
-import { TextEncoder, TextDecoder } from "util";
+import '@testing-library/jest-dom';
+import { TextEncoder, TextDecoder } from 'util';
 
 // Mock global objects
 global.TextEncoder = TextEncoder;
@@ -15,8 +15,8 @@ const originalConsoleWarn = console.warn;
 beforeAll(() => {
   console.error = (...args: any[]) => {
     if (
-      typeof args[0] === "string" &&
-      args[0].includes("Warning: ReactDOM.render is no longer supported")
+      typeof args[0] === 'string' &&
+      args[0].includes('Warning: ReactDOM.render is no longer supported')
     ) {
       return;
     }
@@ -25,9 +25,9 @@ beforeAll(() => {
 
   console.warn = (...args: any[]) => {
     if (
-      typeof args[0] === "string" &&
-      (args[0].includes("Warning: componentWillReceiveProps") ||
-        args[0].includes("Warning: componentWillUpdate"))
+      typeof args[0] === 'string' &&
+      (args[0].includes('Warning: componentWillReceiveProps') ||
+        args[0].includes('Warning: componentWillUpdate'))
     ) {
       return;
     }
@@ -55,9 +55,9 @@ global.IntersectionObserver = jest.fn().mockImplementation(() => ({
 }));
 
 // Mock matchMedia
-Object.defineProperty(window, "matchMedia", {
+Object.defineProperty(window, 'matchMedia', {
   writable: true,
-  value: jest.fn().mockImplementation((query) => ({
+  value: jest.fn().mockImplementation(query => ({
     matches: false,
     media: query,
     onchange: null,
@@ -70,13 +70,13 @@ Object.defineProperty(window, "matchMedia", {
 });
 
 // Mock window.scrollTo
-Object.defineProperty(window, "scrollTo", {
+Object.defineProperty(window, 'scrollTo', {
   writable: true,
   value: jest.fn(),
 });
 
 // Mock window.getComputedStyle
-Object.defineProperty(window, "getComputedStyle", {
+Object.defineProperty(window, 'getComputedStyle', {
   writable: true,
   value: jest.fn().mockImplementation(() => ({
     getPropertyValue: jest.fn(),
@@ -102,38 +102,38 @@ const sessionStorageMock = {
 global.sessionStorage = sessionStorageMock;
 
 // Mock URL.createObjectURL
-global.URL.createObjectURL = jest.fn(() => "mocked-url");
+global.URL.createObjectURL = jest.fn(() => 'mocked-url');
 
 // Mock URL.revokeObjectURL
 global.URL.revokeObjectURL = jest.fn();
 
 // Mock crypto.randomUUID
-Object.defineProperty(global, "crypto", {
+Object.defineProperty(global, 'crypto', {
   value: {
-    randomUUID: jest.fn(() => "test-uuid"),
+    randomUUID: jest.fn(() => 'test-uuid'),
   },
 });
 
 // Mock process.env
-process.env.NODE_ENV = "test";
-process.env.NEXT_PUBLIC_API_URL = "http://localhost:3000/api";
-process.env.NEXT_PUBLIC_APP_URL = "http://localhost:3000";
+process.env.NODE_ENV = 'test';
+process.env.NEXT_PUBLIC_API_URL = 'http://localhost:3000/api';
+process.env.NEXT_PUBLIC_APP_URL = 'http://localhost:3000';
 
 // Setup test database functions
 export const setupTestDatabase = async () => {
   // This would be implemented to set up a test database
   // For now, we'll just log that it's being called
-  console.log("Setting up test database...");
+  console.log('Setting up test database...');
 };
 
 export const cleanupTestDatabase = async () => {
   // This would be implemented to clean up the test database
   // For now, we'll just log that it's being called
-  console.log("Cleaning up test database...");
+  console.log('Cleaning up test database...');
 };
 
 // Mock Prisma client
-jest.mock("@/lib/prisma", () => ({
+jest.mock('@/lib/prisma', () => ({
   prisma: {
     brand: {
       findMany: jest.fn(),
@@ -171,13 +171,13 @@ jest.mock("@/lib/prisma", () => ({
 }));
 
 // Mock Next.js router
-jest.mock("next/router", () => ({
+jest.mock('next/router', () => ({
   useRouter() {
     return {
-      route: "/",
-      pathname: "/",
+      route: '/',
+      pathname: '/',
       query: {},
-      asPath: "/",
+      asPath: '/',
       push: jest.fn(),
       pop: jest.fn(),
       reload: jest.fn(),
@@ -195,7 +195,7 @@ jest.mock("next/router", () => ({
 }));
 
 // Mock Next.js navigation
-jest.mock("next/navigation", () => ({
+jest.mock('next/navigation', () => ({
   useRouter() {
     return {
       push: jest.fn(),
@@ -210,12 +210,12 @@ jest.mock("next/navigation", () => ({
     return new URLSearchParams();
   },
   usePathname() {
-    return "/";
+    return '/';
   },
 }));
 
 // Mock authentication
-jest.mock("@/lib/auth", () => ({
+jest.mock('@/lib/auth', () => ({
   getServerSession: jest.fn(),
   getSession: jest.fn(),
   signIn: jest.fn(),
@@ -223,20 +223,20 @@ jest.mock("@/lib/auth", () => ({
 }));
 
 // Mock email service
-jest.mock("@/lib/email", () => ({
+jest.mock('@/lib/email', () => ({
   sendEmail: jest.fn(),
   sendVerificationEmail: jest.fn(),
   sendPasswordResetEmail: jest.fn(),
 }));
 
 // Mock upload service
-jest.mock("@/lib/upload", () => ({
+jest.mock('@/lib/upload', () => ({
   uploadImage: jest.fn(),
   deleteImage: jest.fn(),
 }));
 
 // Mock notifications
-jest.mock("@/lib/notifications", () => ({
+jest.mock('@/lib/notifications', () => ({
   showNotification: jest.fn(),
   showError: jest.fn(),
   showSuccess: jest.fn(),
@@ -244,11 +244,11 @@ jest.mock("@/lib/notifications", () => ({
 
 // Setup test utilities
 export const createMockUser = (overrides = {}) => ({
-  id: "test-user-id",
-  email: "test@example.com",
-  name: "Test User",
-  role: "ADMIN",
-  userStatus: "APPROVED",
+  id: 'test-user-id',
+  email: 'test@example.com',
+  name: 'Test User',
+  role: 'ADMIN',
+  userStatus: 'APPROVED',
   emailVerified: true,
   createdAt: new Date(),
   updatedAt: new Date(),
@@ -256,9 +256,9 @@ export const createMockUser = (overrides = {}) => ({
 });
 
 export const createMockBrand = (overrides = {}) => ({
-  id: "test-brand-id",
-  name: "Test Brand",
-  description: "Test Description",
+  id: 'test-brand-id',
+  name: 'Test Brand',
+  description: 'Test Description',
   isActive: true,
   createdAt: new Date(),
   updatedAt: new Date(),
@@ -266,9 +266,9 @@ export const createMockBrand = (overrides = {}) => ({
 });
 
 export const createMockCategory = (overrides = {}) => ({
-  id: "test-category-id",
-  name: "Test Category",
-  description: "Test Description",
+  id: 'test-category-id',
+  name: 'Test Category',
+  description: 'Test Description',
   isActive: true,
   parentId: null,
   createdAt: new Date(),
@@ -277,16 +277,16 @@ export const createMockCategory = (overrides = {}) => ({
 });
 
 export const createMockProduct = (overrides = {}) => ({
-  id: "test-product-id",
-  name: "Test Product",
-  description: "Test Description",
-  sku: "TEST-SKU-001",
+  id: 'test-product-id',
+  name: 'Test Product',
+  description: 'Test Description',
+  sku: 'TEST-SKU-001',
   price: 1000,
   costPrice: 500,
   stockQuantity: 100,
   minStockLevel: 10,
-  brandId: "test-brand-id",
-  categoryId: "test-category-id",
+  brandId: 'test-brand-id',
+  categoryId: 'test-category-id',
   isActive: true,
   createdAt: new Date(),
   updatedAt: new Date(),
@@ -294,10 +294,10 @@ export const createMockProduct = (overrides = {}) => ({
 });
 
 // Setup test environment variables
-process.env.TEST_DATABASE_URL = "postgresql://test:test@localhost:5432/test_db";
-process.env.TEST_API_URL = "http://localhost:3001/api";
-process.env.TEST_ADMIN_EMAIL = "admin@test.com";
-process.env.TEST_ADMIN_PASSWORD = "password123";
+process.env.TEST_DATABASE_URL = 'postgresql://test:test@localhost:5432/test_db';
+process.env.TEST_API_URL = 'http://localhost:3001/api';
+process.env.TEST_ADMIN_EMAIL = 'admin@test.com';
+process.env.TEST_ADMIN_PASSWORD = 'password123';
 
 // Export test configuration
 export const testConfig = {

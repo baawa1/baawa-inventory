@@ -1,6 +1,6 @@
-import { EmailProvider, EmailServiceConfig } from "../types";
-import { ResendProvider } from "./resend";
-import { NodemailerProvider } from "./nodemailer";
+import { EmailProvider, EmailServiceConfig } from '../types';
+import { ResendProvider } from './resend';
+import { NodemailerProvider } from './nodemailer';
 
 /**
  * Provider Factory
@@ -12,9 +12,9 @@ export class EmailProviderFactory {
    */
   static createProvider(config: EmailServiceConfig): EmailProvider {
     switch (config.provider) {
-      case "resend":
+      case 'resend':
         return EmailProviderFactory.createResendProvider(config);
-      case "nodemailer":
+      case 'nodemailer':
         return EmailProviderFactory.createNodemailerProvider(config);
       default:
         throw new Error(`Unsupported email provider: ${config.provider}`);
@@ -29,7 +29,7 @@ export class EmailProviderFactory {
   ): ResendProvider {
     const resendApiKey = process.env.RESEND_API_KEY;
     if (!resendApiKey) {
-      throw new Error("RESEND_API_KEY environment variable is required");
+      throw new Error('RESEND_API_KEY environment variable is required');
     }
     return new ResendProvider(resendApiKey, config.fromEmail, config.fromName);
   }
@@ -41,10 +41,10 @@ export class EmailProviderFactory {
     config: EmailServiceConfig
   ): NodemailerProvider {
     const smtpConfig = {
-      host: process.env.SMTP_HOST || "",
-      port: parseInt(process.env.SMTP_PORT || "587"),
-      user: process.env.SMTP_USER || "",
-      pass: process.env.SMTP_PASS || "",
+      host: process.env.SMTP_HOST || '',
+      port: parseInt(process.env.SMTP_PORT || '587'),
+      user: process.env.SMTP_USER || '',
+      pass: process.env.SMTP_PASS || '',
       fromEmail: config.fromEmail,
       fromName: config.fromName,
     };
@@ -52,7 +52,7 @@ export class EmailProviderFactory {
     // Validate required SMTP configuration
     if (!smtpConfig.host || !smtpConfig.user || !smtpConfig.pass) {
       throw new Error(
-        "SMTP configuration is incomplete. Required: SMTP_HOST, SMTP_USER, SMTP_PASS"
+        'SMTP configuration is incomplete. Required: SMTP_HOST, SMTP_USER, SMTP_PASS'
       );
     }
 
@@ -90,16 +90,16 @@ export class EmailProviderFactory {
       process.env.SMTP_PASS
     );
 
-    let provider: "resend" | "nodemailer";
+    let provider: 'resend' | 'nodemailer';
 
     // Prefer Resend if available, fall back to nodemailer
     if (hasResendKey) {
-      provider = "resend";
+      provider = 'resend';
     } else if (hasSmtpConfig) {
-      provider = "nodemailer";
+      provider = 'nodemailer';
     } else {
       throw new Error(
-        "No email provider configured. Set either RESEND_API_KEY or SMTP credentials (SMTP_HOST, SMTP_USER, SMTP_PASS)."
+        'No email provider configured. Set either RESEND_API_KEY or SMTP credentials (SMTP_HOST, SMTP_USER, SMTP_PASS).'
       );
     }
 
@@ -122,33 +122,33 @@ export class EmailProviderFactory {
 
     // Validate common config
     if (!config.fromEmail) {
-      errors.push("fromEmail is required");
+      errors.push('fromEmail is required');
     }
     if (!config.fromName) {
-      errors.push("fromName is required");
+      errors.push('fromName is required');
     }
 
     // Validate provider-specific config
-    if (config.provider === "resend") {
+    if (config.provider === 'resend') {
       if (!process.env.RESEND_API_KEY) {
         errors.push(
-          "RESEND_API_KEY environment variable is required for Resend provider"
+          'RESEND_API_KEY environment variable is required for Resend provider'
         );
       }
-    } else if (config.provider === "nodemailer") {
+    } else if (config.provider === 'nodemailer') {
       if (!process.env.SMTP_HOST) {
         errors.push(
-          "SMTP_HOST environment variable is required for Nodemailer provider"
+          'SMTP_HOST environment variable is required for Nodemailer provider'
         );
       }
       if (!process.env.SMTP_USER) {
         errors.push(
-          "SMTP_USER environment variable is required for Nodemailer provider"
+          'SMTP_USER environment variable is required for Nodemailer provider'
         );
       }
       if (!process.env.SMTP_PASS) {
         errors.push(
-          "SMTP_PASS environment variable is required for Nodemailer provider"
+          'SMTP_PASS environment variable is required for Nodemailer provider'
         );
       }
     } else {

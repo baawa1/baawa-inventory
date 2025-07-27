@@ -1,14 +1,14 @@
-"use client";
+'use client';
 
-import React from "react";
-import { useRouter } from "next/navigation";
-import { Button } from "@/components/ui/button";
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import { Badge } from "@/components/ui/badge";
-import { PageHeader } from "@/components/ui/page-header";
-import { useFinancialTransaction } from "@/hooks/api/finance";
-import { formatCurrency, formatDate } from "@/lib/utils";
-import { AppUser } from "@/types/user";
+import React from 'react';
+import { useRouter } from 'next/navigation';
+import { Button } from '@/components/ui/button';
+import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
+import { Badge } from '@/components/ui/badge';
+import { PageHeader } from '@/components/ui/page-header';
+import { useFinancialTransaction } from '@/hooks/api/finance';
+import { formatCurrency, formatDate } from '@/lib/utils';
+import { AppUser } from '@/types/user';
 import {
   ArrowLeft,
   Edit,
@@ -17,8 +17,8 @@ import {
   DollarSign,
   Calendar,
   FileText,
-} from "lucide-react";
-import Link from "next/link";
+} from 'lucide-react';
+import Link from 'next/link';
 
 interface TransactionDetailProps {
   transactionId: number;
@@ -38,10 +38,10 @@ export function TransactionDetail({
 
   if (isLoading) {
     return (
-      <div className="max-w-4xl mx-auto p-6">
-        <div className="flex items-center justify-center h-64">
+      <div className="mx-auto max-w-4xl p-6">
+        <div className="flex h-64 items-center justify-center">
           <div className="text-center">
-            <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary mx-auto mb-4"></div>
+            <div className="border-primary mx-auto mb-4 h-8 w-8 animate-spin rounded-full border-b-2"></div>
             <p className="text-muted-foreground">
               Loading transaction details...
             </p>
@@ -53,15 +53,15 @@ export function TransactionDetail({
 
   if (error || !transaction) {
     return (
-      <div className="max-w-4xl mx-auto p-6">
+      <div className="mx-auto max-w-4xl p-6">
         <div className="text-center">
-          <DollarSign className="h-12 w-12 text-gray-400 mx-auto mb-4" />
-          <h2 className="text-xl font-semibold mb-2">Transaction Not Found</h2>
+          <DollarSign className="mx-auto mb-4 h-12 w-12 text-gray-400" />
+          <h2 className="mb-2 text-xl font-semibold">Transaction Not Found</h2>
           <p className="text-muted-foreground mb-4">
             The transaction you're looking for doesn't exist or has been
             deleted.
           </p>
-          <Button onClick={() => router.push("/finance")}>
+          <Button onClick={() => router.push('/finance')}>
             Back to Finance
           </Button>
         </div>
@@ -71,11 +71,11 @@ export function TransactionDetail({
 
   const getStatusBadge = (status: string) => {
     const statusConfig = {
-      PENDING: { variant: "secondary" as const, label: "Pending" },
-      COMPLETED: { variant: "default" as const, label: "Completed" },
-      CANCELLED: { variant: "destructive" as const, label: "Cancelled" },
-      APPROVED: { variant: "default" as const, label: "Approved" },
-      REJECTED: { variant: "destructive" as const, label: "Rejected" },
+      PENDING: { variant: 'secondary' as const, label: 'Pending' },
+      COMPLETED: { variant: 'default' as const, label: 'Completed' },
+      CANCELLED: { variant: 'destructive' as const, label: 'Cancelled' },
+      APPROVED: { variant: 'default' as const, label: 'Approved' },
+      REJECTED: { variant: 'destructive' as const, label: 'Rejected' },
     };
 
     const config =
@@ -83,15 +83,15 @@ export function TransactionDetail({
     return <Badge variant={config.variant}>{config.label}</Badge>;
   };
 
-  const isIncome = transaction.type === "INCOME";
+  const isIncome = transaction.type === 'INCOME';
 
   return (
-    <div className="max-w-4xl mx-auto p-6 space-y-6">
+    <div className="mx-auto max-w-4xl space-y-6 p-6">
       {/* Header */}
       <div className="mb-6">
         <Button
           variant="ghost"
-          onClick={() => router.push("/finance")}
+          onClick={() => router.push('/finance')}
           className="mb-4 px-4 lg:px-6"
         >
           <ArrowLeft className="mr-2 h-4 w-4" />
@@ -99,7 +99,7 @@ export function TransactionDetail({
         </Button>
         <div className="flex items-center justify-between">
           <PageHeader
-            title={`${isIncome ? "Income" : "Expense"} Transaction`}
+            title={`${isIncome ? 'Income' : 'Expense'} Transaction`}
             description={`Transaction #${transaction.transactionNumber} - ${transaction.description}`}
           />
           <div className="flex items-center gap-2">
@@ -129,9 +129,9 @@ export function TransactionDetail({
           </div>
         </CardHeader>
         <CardContent className="space-y-4">
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+          <div className="grid grid-cols-1 gap-4 md:grid-cols-2">
             <div className="space-y-2">
-              <div className="flex items-center gap-2 text-sm text-muted-foreground">
+              <div className="text-muted-foreground flex items-center gap-2 text-sm">
                 <DollarSign className="h-4 w-4" />
                 Amount
               </div>
@@ -140,7 +140,7 @@ export function TransactionDetail({
               </div>
             </div>
             <div className="space-y-2">
-              <div className="flex items-center gap-2 text-sm text-muted-foreground">
+              <div className="text-muted-foreground flex items-center gap-2 text-sm">
                 <Calendar className="h-4 w-4" />
                 Transaction Date
               </div>
@@ -151,7 +151,7 @@ export function TransactionDetail({
           </div>
 
           <div className="space-y-2">
-            <div className="flex items-center gap-2 text-sm text-muted-foreground">
+            <div className="text-muted-foreground flex items-center gap-2 text-sm">
               <FileText className="h-4 w-4" />
               Description
             </div>
@@ -159,7 +159,7 @@ export function TransactionDetail({
           </div>
 
           <div className="space-y-2">
-            <div className="text-sm text-muted-foreground">
+            <div className="text-muted-foreground text-sm">
               Transaction Number
             </div>
             <div className="font-mono text-lg">
@@ -176,15 +176,15 @@ export function TransactionDetail({
         </CardHeader>
         <CardContent className="space-y-4">
           <div className="space-y-2">
-            <div className="text-sm text-muted-foreground">Payment Method</div>
+            <div className="text-muted-foreground text-sm">Payment Method</div>
             <div className="font-medium">{transaction.paymentMethod}</div>
           </div>
 
           <div className="space-y-2">
-            <div className="text-sm text-muted-foreground">
+            <div className="text-muted-foreground text-sm">
               Transaction Type
             </div>
-            <div className="font-medium">{isIncome ? "Income" : "Expense"}</div>
+            <div className="font-medium">{isIncome ? 'Income' : 'Expense'}</div>
           </div>
         </CardContent>
       </Card>
@@ -195,27 +195,27 @@ export function TransactionDetail({
           <CardTitle>System Information</CardTitle>
         </CardHeader>
         <CardContent className="space-y-4">
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+          <div className="grid grid-cols-1 gap-4 md:grid-cols-2">
             <div className="space-y-2">
-              <div className="text-sm text-muted-foreground">
+              <div className="text-muted-foreground text-sm">
                 Transaction ID
               </div>
               <div className="font-mono text-sm">{transaction.id}</div>
             </div>
 
             <div className="space-y-2">
-              <div className="text-sm text-muted-foreground">Created</div>
+              <div className="text-muted-foreground text-sm">Created</div>
               <div className="text-sm">{formatDate(transaction.createdAt)}</div>
             </div>
 
             <div className="space-y-2">
-              <div className="text-sm text-muted-foreground">Last Updated</div>
+              <div className="text-muted-foreground text-sm">Last Updated</div>
               <div className="text-sm">{formatDate(transaction.updatedAt)}</div>
             </div>
 
             {transaction.createdByName && (
               <div className="space-y-2">
-                <div className="text-sm text-muted-foreground">Created By</div>
+                <div className="text-muted-foreground text-sm">Created By</div>
                 <div className="text-sm">{transaction.createdByName}</div>
               </div>
             )}

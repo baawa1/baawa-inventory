@@ -1,11 +1,11 @@
-"use client";
+'use client';
 
-import { useState, useEffect } from "react";
-import { useForm, useFieldArray } from "react-hook-form";
-import { zodResolver } from "@hookform/resolvers/zod";
-import { z } from "zod";
-import { toast } from "sonner";
-import { useRouter } from "next/navigation";
+import { useState, useEffect } from 'react';
+import { useForm, useFieldArray } from 'react-hook-form';
+import { zodResolver } from '@hookform/resolvers/zod';
+import { z } from 'zod';
+import { toast } from 'sonner';
+import { useRouter } from 'next/navigation';
 import {
   Form,
   FormControl,
@@ -14,7 +14,7 @@ import {
   FormItem,
   FormLabel,
   FormMessage,
-} from "@/components/ui/form";
+} from '@/components/ui/form';
 import {
   Table,
   TableBody,
@@ -22,19 +22,19 @@ import {
   TableHead,
   TableHeader,
   TableRow,
-} from "@/components/ui/table";
-import { Input } from "@/components/ui/input";
-import { Button } from "@/components/ui/button";
-import { Textarea } from "@/components/ui/textarea";
-import { Badge } from "@/components/ui/badge";
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+} from '@/components/ui/table';
+import { Input } from '@/components/ui/input';
+import { Button } from '@/components/ui/button';
+import { Textarea } from '@/components/ui/textarea';
+import { Badge } from '@/components/ui/badge';
+import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import {
   Select,
   SelectContent,
   SelectItem,
   SelectTrigger,
   SelectValue,
-} from "@/components/ui/select";
+} from '@/components/ui/select';
 import {
   IconPlus,
   IconTrash,
@@ -42,19 +42,19 @@ import {
   IconCalculator,
   IconDeviceFloppy,
   IconSend,
-} from "@tabler/icons-react";
-import { ArrowLeft } from "lucide-react";
-import { PageHeader } from "@/components/ui/page-header";
-import { FormLoading } from "@/components/ui/form-loading";
-import { formatCurrency } from "@/lib/utils";
-import { useProductSearch } from "@/hooks/useProductSearch";
+} from '@tabler/icons-react';
+import { ArrowLeft } from 'lucide-react';
+import { PageHeader } from '@/components/ui/page-header';
+import { FormLoading } from '@/components/ui/form-loading';
+import { formatCurrency } from '@/lib/utils';
+import { useProductSearch } from '@/hooks/useProductSearch';
 import {
   useStockReconciliation,
   useUpdateStockReconciliation,
   useSubmitStockReconciliation,
-} from "@/hooks/api/stock-management";
-import { DISCREPANCY_REASONS } from "@/lib/constants/stock-reconciliation";
-import { getDiscrepancyBadgeConfig } from "@/lib/utils/badge-helpers";
+} from '@/hooks/api/stock-management';
+import { DISCREPANCY_REASONS } from '@/lib/constants/stock-reconciliation';
+import { getDiscrepancyBadgeConfig } from '@/lib/utils/badge-helpers';
 
 const reconciliationItemSchema = z.object({
   productId: z.number().int().positive(),
@@ -67,12 +67,12 @@ const reconciliationItemSchema = z.object({
 });
 
 const reconciliationSchema = z.object({
-  title: z.string().min(1, "Title is required").max(255),
+  title: z.string().min(1, 'Title is required').max(255),
   description: z.string().optional(),
   notes: z.string().optional(),
   items: z
     .array(reconciliationItemSchema)
-    .min(1, "At least one product is required"),
+    .min(1, 'At least one product is required'),
 });
 
 type ReconciliationFormData = z.infer<typeof reconciliationSchema>;
@@ -104,7 +104,7 @@ interface StockReconciliationEditFormProps {
 export function StockReconciliationEditForm({
   reconciliationId,
 }: StockReconciliationEditFormProps) {
-  const [searchTerm, setSearchTerm] = useState("");
+  const [searchTerm, setSearchTerm] = useState('');
   const [showProductSearch, setShowProductSearch] = useState(false);
   const router = useRouter();
 
@@ -122,24 +122,24 @@ export function StockReconciliationEditForm({
   const form = useForm<ReconciliationFormData>({
     resolver: zodResolver(reconciliationSchema),
     defaultValues: {
-      title: "",
-      description: "",
-      notes: "",
+      title: '',
+      description: '',
+      notes: '',
       items: [],
     },
   });
 
   const { fields, append, remove, replace } = useFieldArray({
     control: form.control,
-    name: "items",
+    name: 'items',
   });
 
   // Load reconciliation data into form
   useEffect(() => {
     if (reconciliation) {
-      form.setValue("title", reconciliation.title);
-      form.setValue("description", reconciliation.description || "");
-      form.setValue("notes", reconciliation.notes || "");
+      form.setValue('title', reconciliation.title);
+      form.setValue('description', reconciliation.description || '');
+      form.setValue('notes', reconciliation.notes || '');
 
       const items = reconciliation.items.map((item: ReconciliationItem) => ({
         productId: item.product.id,
@@ -147,8 +147,8 @@ export function StockReconciliationEditForm({
         productSku: item.product.sku,
         systemCount: item.systemCount,
         physicalCount: item.physicalCount,
-        discrepancyReason: item.discrepancyReason || "",
-        notes: item.notes || "",
+        discrepancyReason: item.discrepancyReason || '',
+        notes: item.notes || '',
       }));
 
       replace(items);
@@ -156,12 +156,12 @@ export function StockReconciliationEditForm({
   }, [reconciliation, form, replace]);
 
   // Check if reconciliation can be edited
-  const canEdit = reconciliation?.status === "DRAFT";
+  const canEdit = reconciliation?.status === 'DRAFT';
 
   const addProduct = (product: Product) => {
-    const existingItem = fields.find((item) => item.productId === product.id);
+    const existingItem = fields.find(item => item.productId === product.id);
     if (existingItem) {
-      toast.error("Product already added to reconciliation");
+      toast.error('Product already added to reconciliation');
       return;
     }
 
@@ -171,12 +171,12 @@ export function StockReconciliationEditForm({
       productSku: product.sku,
       systemCount: product.stock,
       physicalCount: product.stock,
-      discrepancyReason: "",
-      notes: "",
+      discrepancyReason: '',
+      notes: '',
     });
 
     setShowProductSearch(false);
-    setSearchTerm("");
+    setSearchTerm('');
   };
 
   const calculateDiscrepancy = (systemCount: number, physicalCount: number) => {
@@ -213,7 +213,7 @@ export function StockReconciliationEditForm({
   ) => {
     try {
       // Calculate discrepancies and estimated impacts
-      const itemsWithCalculations = data.items.map((item) => {
+      const itemsWithCalculations = data.items.map(item => {
         const discrepancy = calculateDiscrepancy(
           item.systemCount,
           item.physicalCount
@@ -245,17 +245,17 @@ export function StockReconciliationEditForm({
       if (submitForApproval) {
         await submitMutation.mutateAsync(reconciliationId);
         toast.success(
-          "Stock reconciliation updated and submitted for approval"
+          'Stock reconciliation updated and submitted for approval'
         );
       } else {
-        toast.success("Stock reconciliation updated successfully");
+        toast.success('Stock reconciliation updated successfully');
       }
 
       // Navigate back to the reconciliation detail page
       router.push(`/inventory/stock-reconciliations/${reconciliationId}`);
     } catch (error) {
-      console.error("Error updating reconciliation:", error);
-      toast.error("Failed to update stock reconciliation");
+      console.error('Error updating reconciliation:', error);
+      toast.error('Failed to update stock reconciliation');
     }
   };
 
@@ -265,7 +265,7 @@ export function StockReconciliationEditForm({
         title="Edit Stock Reconciliation"
         description="Loading reconciliation..."
         backLabel="Back to Reconciliations"
-        onBack={() => router.push("/inventory/stock-reconciliations")}
+        onBack={() => router.push('/inventory/stock-reconciliations')}
         backUrl="/inventory/stock-reconciliations"
       />
     );
@@ -278,7 +278,7 @@ export function StockReconciliationEditForm({
         title="Edit Stock Reconciliation"
         description="Updating reconciliation..."
         backLabel="Back to Reconciliations"
-        onBack={() => router.push("/inventory/stock-reconciliations")}
+        onBack={() => router.push('/inventory/stock-reconciliations')}
         backUrl="/inventory/stock-reconciliations"
       />
     );
@@ -286,11 +286,11 @@ export function StockReconciliationEditForm({
 
   if (!reconciliation) {
     return (
-      <div className="max-w-4xl mx-auto p-6 space-y-6">
+      <div className="mx-auto max-w-4xl space-y-6 p-6">
         <div className="mb-6">
           <Button
             variant="ghost"
-            onClick={() => router.push("/inventory/stock-reconciliations")}
+            onClick={() => router.push('/inventory/stock-reconciliations')}
             className="mb-4 px-4 lg:px-6"
           >
             <ArrowLeft className="mr-2 h-4 w-4" />
@@ -304,13 +304,13 @@ export function StockReconciliationEditForm({
 
         <Card>
           <CardContent className="p-6">
-            <div className="text-center py-12">
-              <p className="text-lg text-muted-foreground mb-4">
+            <div className="py-12 text-center">
+              <p className="text-muted-foreground mb-4 text-lg">
                 Reconciliation not found
               </p>
               <Button
                 variant="outline"
-                onClick={() => router.push("/inventory/stock-reconciliations")}
+                onClick={() => router.push('/inventory/stock-reconciliations')}
               >
                 Back to Reconciliations
               </Button>
@@ -323,7 +323,7 @@ export function StockReconciliationEditForm({
 
   if (!canEdit) {
     return (
-      <div className="max-w-4xl mx-auto p-6 space-y-6">
+      <div className="mx-auto max-w-4xl space-y-6 p-6">
         <div className="mb-6">
           <Button
             variant="ghost"
@@ -345,9 +345,9 @@ export function StockReconciliationEditForm({
 
         <Card>
           <CardContent className="p-6">
-            <div className="text-center py-12">
-              <p className="text-lg text-muted-foreground mb-4">
-                This reconciliation cannot be edited (Status:{" "}
+            <div className="py-12 text-center">
+              <p className="text-muted-foreground mb-4 text-lg">
+                This reconciliation cannot be edited (Status:{' '}
                 {reconciliation.status})
               </p>
               <Button
@@ -368,7 +368,7 @@ export function StockReconciliationEditForm({
   }
 
   return (
-    <div className="max-w-4xl mx-auto p-6 space-y-6">
+    <div className="mx-auto max-w-4xl space-y-6 p-6">
       <div className="mb-6">
         <Button
           variant="ghost"
@@ -387,7 +387,7 @@ export function StockReconciliationEditForm({
       </div>
 
       <Form {...form}>
-        <form className="space-y-6" onSubmit={(e) => e.preventDefault()}>
+        <form className="space-y-6" onSubmit={e => e.preventDefault()}>
           {/* Basic Information */}
           <Card>
             <CardHeader>
@@ -467,7 +467,7 @@ export function StockReconciliationEditForm({
                   size="sm"
                   onClick={() => setShowProductSearch(!showProductSearch)}
                 >
-                  <IconPlus className="h-4 w-4 mr-2" />
+                  <IconPlus className="mr-2 h-4 w-4" />
                   Add Product
                 </Button>
               </CardTitle>
@@ -475,27 +475,27 @@ export function StockReconciliationEditForm({
             <CardContent>
               {/* Product Search */}
               {showProductSearch && (
-                <div className="mb-4 p-4 border rounded-lg">
-                  <div className="flex items-center space-x-2 mb-3">
-                    <IconSearch className="h-4 w-4 text-muted-foreground" />
+                <div className="mb-4 rounded-lg border p-4">
+                  <div className="mb-3 flex items-center space-x-2">
+                    <IconSearch className="text-muted-foreground h-4 w-4" />
                     <Input
                       placeholder="Search products by name or SKU..."
                       value={searchTerm}
-                      onChange={(e) => setSearchTerm(e.target.value)}
+                      onChange={e => setSearchTerm(e.target.value)}
                       className="flex-1"
                     />
                   </div>
 
                   {searchTerm && (
-                    <div className="max-h-48 overflow-y-auto space-y-2">
+                    <div className="max-h-48 space-y-2 overflow-y-auto">
                       {products.map((product: Product) => (
                         <div
                           key={product.id}
-                          className="flex items-center justify-between p-2 hover:bg-muted rounded"
+                          className="hover:bg-muted flex items-center justify-between rounded p-2"
                         >
                           <div>
                             <div className="font-medium">{product.name}</div>
-                            <div className="text-sm text-muted-foreground">
+                            <div className="text-muted-foreground text-sm">
                               SKU: {product.sku} • Stock: {product.stock}
                             </div>
                           </div>
@@ -503,7 +503,7 @@ export function StockReconciliationEditForm({
                             size="sm"
                             variant="outline"
                             type="button"
-                            onClick={(e) => {
+                            onClick={e => {
                               e.preventDefault();
                               e.stopPropagation();
                               addProduct(product);
@@ -514,7 +514,7 @@ export function StockReconciliationEditForm({
                         </div>
                       ))}
                       {products.length === 0 && (
-                        <div className="text-center py-4 text-muted-foreground">
+                        <div className="text-muted-foreground py-4 text-center">
                           No products found matching "{searchTerm}"
                         </div>
                       )}
@@ -587,7 +587,7 @@ export function StockReconciliationEditForm({
                                     className="w-20 text-center"
                                     disabled
                                     {...field}
-                                    onChange={(e) =>
+                                    onChange={e =>
                                       field.onChange(
                                         parseInt(e.target.value) || 0
                                       )
@@ -606,7 +606,7 @@ export function StockReconciliationEditForm({
                                     min="0"
                                     className="w-20 text-center"
                                     {...field}
-                                    onChange={(e) =>
+                                    onChange={e =>
                                       field.onChange(
                                         parseInt(e.target.value) || 0
                                       )
@@ -639,7 +639,7 @@ export function StockReconciliationEditForm({
                                       <SelectValue placeholder="Select reason..." />
                                     </SelectTrigger>
                                     <SelectContent>
-                                      {DISCREPANCY_REASONS.map((reason) => (
+                                      {DISCREPANCY_REASONS.map(reason => (
                                         <SelectItem
                                           key={reason.value}
                                           value={reason.value}
@@ -669,7 +669,7 @@ export function StockReconciliationEditForm({
                   </Table>
                 </div>
               ) : (
-                <div className="text-center py-8 text-muted-foreground">
+                <div className="text-muted-foreground py-8 text-center">
                   No products added yet. Use the "Add Product" button to get
                   started.
                 </div>
@@ -682,7 +682,7 @@ export function StockReconciliationEditForm({
             <Card>
               <CardHeader>
                 <CardTitle className="flex items-center">
-                  <IconCalculator className="h-5 w-5 mr-2" />
+                  <IconCalculator className="mr-2 h-5 w-5" />
                   Summary
                 </CardTitle>
               </CardHeader>
@@ -695,7 +695,7 @@ export function StockReconciliationEditForm({
                   <div>
                     <div className="text-sm font-medium">Total Discrepancy</div>
                     <div className="text-2xl font-bold">
-                      {calculateTotalDiscrepancy() > 0 ? "+" : ""}
+                      {calculateTotalDiscrepancy() > 0 ? '+' : ''}
                       {calculateTotalDiscrepancy()}
                     </div>
                   </div>
@@ -726,21 +726,21 @@ export function StockReconciliationEditForm({
             <Button
               type="button"
               variant="outline"
-              onClick={form.handleSubmit((data) => onSubmit(data, false))}
+              onClick={form.handleSubmit(data => onSubmit(data, false))}
               disabled={updateMutation.isPending || submitMutation.isPending}
             >
-              <IconDeviceFloppy className="h-4 w-4 mr-2" />
-              {updateMutation.isPending ? "Saving..." : "Save Changes"}
+              <IconDeviceFloppy className="mr-2 h-4 w-4" />
+              {updateMutation.isPending ? 'Saving...' : 'Save Changes'}
             </Button>
             <Button
               type="button"
-              onClick={form.handleSubmit((data) => onSubmit(data, true))}
+              onClick={form.handleSubmit(data => onSubmit(data, true))}
               disabled={updateMutation.isPending || submitMutation.isPending}
             >
-              <IconSend className="h-4 w-4 mr-2" />
+              <IconSend className="mr-2 h-4 w-4" />
               {submitMutation.isPending
-                ? "Submitting..."
-                : "Save & Submit for Approval"}
+                ? 'Submitting...'
+                : 'Save & Submit for Approval'}
             </Button>
           </div>
         </form>

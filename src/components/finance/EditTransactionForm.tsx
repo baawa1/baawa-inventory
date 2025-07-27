@@ -1,24 +1,24 @@
-"use client";
+'use client';
 
-import React, { useState } from "react";
-import { useRouter } from "next/navigation";
-import { useForm } from "react-hook-form";
-import { toast } from "sonner";
+import React, { useState } from 'react';
+import { useRouter } from 'next/navigation';
+import { useForm } from 'react-hook-form';
+import { toast } from 'sonner';
 import {
   useFinancialTransaction,
   useUpdateFinancialTransaction,
-} from "@/hooks/api/finance";
-import { AppUser } from "@/types/user";
-import { Button } from "@/components/ui/button";
-import { Input } from "@/components/ui/input";
-import { Textarea } from "@/components/ui/textarea";
+} from '@/hooks/api/finance';
+import { AppUser } from '@/types/user';
+import { Button } from '@/components/ui/button';
+import { Input } from '@/components/ui/input';
+import { Textarea } from '@/components/ui/textarea';
 import {
   Select,
   SelectContent,
   SelectItem,
   SelectTrigger,
   SelectValue,
-} from "@/components/ui/select";
+} from '@/components/ui/select';
 import {
   Form,
   FormControl,
@@ -26,17 +26,17 @@ import {
   FormItem,
   FormLabel,
   FormMessage,
-} from "@/components/ui/form";
+} from '@/components/ui/form';
 import {
   Card,
   CardContent,
   CardDescription,
   CardHeader,
   CardTitle,
-} from "@/components/ui/card";
-import { Alert, AlertDescription } from "@/components/ui/alert";
-import { PageHeader } from "@/components/ui/page-header";
-import { ArrowLeft, AlertCircle, Loader2 } from "lucide-react";
+} from '@/components/ui/card';
+import { Alert, AlertDescription } from '@/components/ui/alert';
+import { PageHeader } from '@/components/ui/page-header';
+import { ArrowLeft, AlertCircle, Loader2 } from 'lucide-react';
 
 interface EditTransactionFormProps {
   transactionId: number;
@@ -45,40 +45,40 @@ interface EditTransactionFormProps {
 
 type FormData = {
   id: number;
-  type: "INCOME" | "EXPENSE";
+  type: 'INCOME' | 'EXPENSE';
   amount: number;
   description: string;
   transactionDate: string;
   paymentMethod:
-    | "CASH"
-    | "BANK_TRANSFER"
-    | "CARD"
-    | "MOBILE_MONEY"
-    | "CHECK"
-    | "OTHER";
+    | 'CASH'
+    | 'BANK_TRANSFER'
+    | 'CARD'
+    | 'MOBILE_MONEY'
+    | 'CHECK'
+    | 'OTHER';
   // Income specific fields
   incomeSource?:
-    | "SALES"
-    | "LOAN"
-    | "SERVICES"
-    | "INVESTMENT"
-    | "RENTAL"
-    | "COMMISSION"
-    | "REFUND"
-    | "OTHER";
+    | 'SALES'
+    | 'LOAN'
+    | 'SERVICES'
+    | 'INVESTMENT'
+    | 'RENTAL'
+    | 'COMMISSION'
+    | 'REFUND'
+    | 'OTHER';
   payerName?: string;
   // Expense specific fields
   expenseType?:
-    | "SUPPLIES"
-    | "RENT"
-    | "UTILITIES"
-    | "SALARY"
-    | "MARKETING"
-    | "TRAVEL"
-    | "MAINTENANCE"
-    | "INSURANCE"
-    | "TAXES"
-    | "OTHER";
+    | 'SUPPLIES'
+    | 'RENT'
+    | 'UTILITIES'
+    | 'SALARY'
+    | 'MARKETING'
+    | 'TRAVEL'
+    | 'MAINTENANCE'
+    | 'INSURANCE'
+    | 'TAXES'
+    | 'OTHER';
   vendorName?: string;
 };
 
@@ -100,15 +100,15 @@ export function EditTransactionForm({
   const form = useForm<FormData>({
     defaultValues: {
       id: transactionId,
-      type: "INCOME",
+      type: 'INCOME',
       amount: 0,
-      description: "",
-      transactionDate: new Date().toISOString().split("T")[0],
-      paymentMethod: "CASH",
-      incomeSource: "SALES",
-      payerName: "",
-      expenseType: "SUPPLIES",
-      vendorName: "",
+      description: '',
+      transactionDate: new Date().toISOString().split('T')[0],
+      paymentMethod: 'CASH',
+      incomeSource: 'SALES',
+      payerName: '',
+      expenseType: 'SUPPLIES',
+      vendorName: '',
     },
   });
 
@@ -119,17 +119,17 @@ export function EditTransactionForm({
         id: transaction.id,
         type: transaction.type,
         amount: transaction.amount,
-        description: transaction.description || "",
+        description: transaction.description || '',
         transactionDate: new Date(transaction.transactionDate)
           .toISOString()
-          .split("T")[0],
-        paymentMethod: (transaction.paymentMethod as any) || "CASH",
+          .split('T')[0],
+        paymentMethod: (transaction.paymentMethod as any) || 'CASH',
         // Income specific fields
-        incomeSource: (transaction as any).incomeSource || "SALES",
-        payerName: (transaction as any).payerName || "",
+        incomeSource: (transaction as any).incomeSource || 'SALES',
+        payerName: (transaction as any).payerName || '',
         // Expense specific fields
-        expenseType: (transaction as any).expenseType || "SUPPLIES",
-        vendorName: (transaction as any).vendorName || "",
+        expenseType: (transaction as any).expenseType || 'SUPPLIES',
+        vendorName: (transaction as any).vendorName || '',
       });
     }
   }, [transaction, form]);
@@ -140,11 +140,11 @@ export function EditTransactionForm({
 
     try {
       await updateTransaction.mutateAsync({ id: transactionId, data });
-      toast.success("Transaction updated successfully");
+      toast.success('Transaction updated successfully');
       router.push(`/finance/transactions/${transactionId}`);
     } catch (error) {
       const errorMessage =
-        error instanceof Error ? error.message : "Failed to update transaction";
+        error instanceof Error ? error.message : 'Failed to update transaction';
       setSubmitError(errorMessage);
       toast.error(errorMessage);
     } finally {
@@ -154,10 +154,10 @@ export function EditTransactionForm({
 
   if (isLoading) {
     return (
-      <div className="max-w-4xl mx-auto p-6">
-        <div className="flex items-center justify-center h-64">
+      <div className="mx-auto max-w-4xl p-6">
+        <div className="flex h-64 items-center justify-center">
           <div className="text-center">
-            <Loader2 className="h-8 w-8 animate-spin mx-auto mb-4" />
+            <Loader2 className="mx-auto mb-4 h-8 w-8 animate-spin" />
             <p className="text-muted-foreground">
               Loading transaction details...
             </p>
@@ -169,7 +169,7 @@ export function EditTransactionForm({
 
   if (error || !transaction) {
     return (
-      <div className="max-w-4xl mx-auto p-6">
+      <div className="mx-auto max-w-4xl p-6">
         <Alert variant="destructive">
           <AlertCircle className="h-4 w-4" />
           <AlertDescription>
@@ -182,7 +182,7 @@ export function EditTransactionForm({
   }
 
   return (
-    <div className="max-w-4xl mx-auto p-6 space-y-6">
+    <div className="mx-auto max-w-4xl space-y-6 p-6">
       <div className="mb-6">
         <Button
           variant="ghost"
@@ -209,7 +209,7 @@ export function EditTransactionForm({
         <CardHeader>
           <CardTitle>Transaction Information</CardTitle>
           <CardDescription>
-            Update the details for this {transaction.type.toLowerCase()}{" "}
+            Update the details for this {transaction.type.toLowerCase()}{' '}
             transaction.
           </CardDescription>
         </CardHeader>
@@ -233,7 +233,7 @@ export function EditTransactionForm({
                           step="0.01"
                           min="0"
                           placeholder="0.00"
-                          onChange={(e) =>
+                          onChange={e =>
                             field.onChange(parseFloat(e.target.value) || 0)
                           }
                           disabled={isSubmitting}
@@ -250,7 +250,7 @@ export function EditTransactionForm({
                   render={({ field }) => (
                     <FormItem>
                       <FormLabel>
-                        Transaction Date{" "}
+                        Transaction Date{' '}
                         <span className="text-destructive">*</span>
                       </FormLabel>
                       <FormControl>
@@ -283,14 +283,14 @@ export function EditTransactionForm({
               />
 
               {/* Transaction Type Specific Fields */}
-              {transaction.type === "INCOME" ? (
+              {transaction.type === 'INCOME' ? (
                 <FormField
                   control={form.control}
                   name="incomeSource"
                   render={({ field }) => (
                     <FormItem>
                       <FormLabel>
-                        Income Source{" "}
+                        Income Source{' '}
                         <span className="text-destructive">*</span>
                       </FormLabel>
                       <Select
@@ -401,19 +401,19 @@ export function EditTransactionForm({
               <FormField
                 control={form.control}
                 name={
-                  transaction.type === "INCOME" ? "payerName" : "vendorName"
+                  transaction.type === 'INCOME' ? 'payerName' : 'vendorName'
                 }
                 render={({ field }) => (
                   <FormItem>
                     <FormLabel>
-                      {transaction.type === "INCOME"
-                        ? "Payer Name"
-                        : "Vendor Name"}
+                      {transaction.type === 'INCOME'
+                        ? 'Payer Name'
+                        : 'Vendor Name'}
                     </FormLabel>
                     <FormControl>
                       <Input
                         {...field}
-                        placeholder={`Enter ${transaction.type === "INCOME" ? "payer" : "vendor"} name (optional)`}
+                        placeholder={`Enter ${transaction.type === 'INCOME' ? 'payer' : 'vendor'} name (optional)`}
                         disabled={isSubmitting}
                       />
                     </FormControl>
@@ -423,7 +423,7 @@ export function EditTransactionForm({
               />
 
               {/* Form Actions */}
-              <div className="flex justify-end space-x-4 pt-6 border-t">
+              <div className="flex justify-end space-x-4 border-t pt-6">
                 <Button
                   type="button"
                   variant="outline"
@@ -441,7 +441,7 @@ export function EditTransactionForm({
                       Updating...
                     </>
                   ) : (
-                    "Update Transaction"
+                    'Update Transaction'
                   )}
                 </Button>
               </div>

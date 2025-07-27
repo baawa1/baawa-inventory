@@ -2,15 +2,15 @@ import {
   withAuth,
   withPermission,
   AuthenticatedRequest,
-} from "@/lib/api-middleware";
-import { prisma } from "@/lib/db";
-import { USER_ROLES } from "@/lib/auth/roles";
+} from '@/lib/api-middleware';
+import { prisma } from '@/lib/db';
+import { USER_ROLES } from '@/lib/auth/roles';
 import {
   createSupplierSchema,
   supplierQuerySchema,
-} from "@/lib/validations/supplier";
-import { handleApiError, createApiResponse } from "@/lib/api-error-handler-new";
-import { Prisma } from "@prisma/client";
+} from '@/lib/validations/supplier';
+import { handleApiError, createApiResponse } from '@/lib/api-error-handler-new';
+import { Prisma } from '@prisma/client';
 
 // GET /api/suppliers - List suppliers with optional filtering and pagination
 export const GET = withAuth(async (request: AuthenticatedRequest) => {
@@ -19,14 +19,14 @@ export const GET = withAuth(async (request: AuthenticatedRequest) => {
 
     // Convert search params to proper types for validation
     const queryParams = {
-      page: Math.max(parseInt(searchParams.get("page") || "1"), 1),
-      limit: Math.min(parseInt(searchParams.get("limit") || "10"), 100),
-      search: searchParams.get("search") || undefined,
-      isActive: searchParams.get("isActive")
-        ? searchParams.get("isActive") === "true"
+      page: Math.max(parseInt(searchParams.get('page') || '1'), 1),
+      limit: Math.min(parseInt(searchParams.get('limit') || '10'), 100),
+      search: searchParams.get('search') || undefined,
+      isActive: searchParams.get('isActive')
+        ? searchParams.get('isActive') === 'true'
         : undefined,
-      sortBy: searchParams.get("sortBy") || "createdAt",
-      sortOrder: searchParams.get("sortOrder") || "desc",
+      sortBy: searchParams.get('sortBy') || 'createdAt',
+      sortOrder: searchParams.get('sortOrder') || 'desc',
     };
 
     // Validate query parameters
@@ -42,10 +42,10 @@ export const GET = withAuth(async (request: AuthenticatedRequest) => {
     // Apply filters
     if (search) {
       where.OR = [
-        { name: { contains: search, mode: "insensitive" } },
-        { email: { contains: search, mode: "insensitive" } },
-        { phone: { contains: search, mode: "insensitive" } },
-        { contactPerson: { contains: search, mode: "insensitive" } },
+        { name: { contains: search, mode: 'insensitive' } },
+        { email: { contains: search, mode: 'insensitive' } },
+        { phone: { contains: search, mode: 'insensitive' } },
+        { contactPerson: { contains: search, mode: 'insensitive' } },
       ];
     }
 
@@ -55,7 +55,7 @@ export const GET = withAuth(async (request: AuthenticatedRequest) => {
 
     // Build orderBy clause - handle nested fields
     const orderBy: Prisma.SupplierOrderByWithRelationInput = {};
-    if (sortBy === "productCount") {
+    if (sortBy === 'productCount') {
       // Handle special case for product count sorting
       orderBy.products = { _count: sortOrder };
     } else {
@@ -82,7 +82,7 @@ export const GET = withAuth(async (request: AuthenticatedRequest) => {
     ]);
 
     // Transform response to include product count
-    const transformedSuppliers = suppliers.map((supplier) => ({
+    const transformedSuppliers = suppliers.map(supplier => ({
       id: supplier.id,
       name: supplier.name,
       contactPerson: supplier.contactPerson,
@@ -129,7 +129,7 @@ export const POST = withPermission(
 
       if (existingSupplier) {
         return handleApiError(
-          new Error("Supplier with this name already exists"),
+          new Error('Supplier with this name already exists'),
           409
         );
       }
@@ -165,7 +165,7 @@ export const POST = withPermission(
       return createApiResponse(
         {
           success: true,
-          message: "Supplier created successfully",
+          message: 'Supplier created successfully',
           data: transformedSupplier,
         },
         201

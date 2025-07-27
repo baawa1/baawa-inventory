@@ -1,9 +1,9 @@
-"use client";
+'use client';
 
-import * as React from "react";
-import { ChevronDown } from "lucide-react";
-import Link from "next/link";
-import { usePathname } from "next/navigation";
+import * as React from 'react';
+import { ChevronDown } from 'lucide-react';
+import Link from 'next/link';
+import { usePathname } from 'next/navigation';
 import {
   IconPackages,
   IconTag,
@@ -11,13 +11,13 @@ import {
   IconAdjustments,
   IconBuildingStore,
   IconChartBar,
-} from "@tabler/icons-react";
+} from '@tabler/icons-react';
 
 import {
   Collapsible,
   CollapsibleContent,
   CollapsibleTrigger,
-} from "@/components/ui/collapsible";
+} from '@/components/ui/collapsible';
 import {
   SidebarGroup,
   SidebarGroupLabel,
@@ -27,117 +27,117 @@ import {
   SidebarMenuSub,
   SidebarMenuSubButton,
   SidebarMenuSubItem,
-} from "@/components/ui/sidebar";
+} from '@/components/ui/sidebar';
 
 const inventoryNavItems = [
   {
-    title: "Products",
-    url: "/inventory/products",
+    title: 'Products',
+    url: '/inventory/products',
     icon: IconPackages,
     items: [
       {
-        title: "All Products",
-        url: "/inventory/products",
+        title: 'All Products',
+        url: '/inventory/products',
       },
       {
-        title: "Add Product",
-        url: "/inventory/products/add",
+        title: 'Add Product',
+        url: '/inventory/products/add',
       },
       {
-        title: "Low Stock",
-        url: "/inventory/low-stock",
+        title: 'Low Stock',
+        url: '/inventory/low-stock',
       },
       {
-        title: "Archived Products",
-        url: "/inventory/products/archived",
+        title: 'Archived Products',
+        url: '/inventory/products/archived',
       },
     ],
   },
   {
-    title: "Categories",
-    url: "/inventory/categories",
+    title: 'Categories',
+    url: '/inventory/categories',
     icon: IconTag,
     items: [
       {
-        title: "All Categories",
-        url: "/inventory/categories",
+        title: 'All Categories',
+        url: '/inventory/categories',
       },
       {
-        title: "Add Category",
-        url: "/inventory/categories/add",
+        title: 'Add Category',
+        url: '/inventory/categories/add',
       },
     ],
   },
   {
-    title: "Brands",
-    url: "/inventory/brands",
+    title: 'Brands',
+    url: '/inventory/brands',
     icon: IconBuildingStore,
     items: [
       {
-        title: "All Brands",
-        url: "/inventory/brands",
+        title: 'All Brands',
+        url: '/inventory/brands',
       },
       {
-        title: "Add Brand",
-        url: "/inventory/brands/add",
+        title: 'Add Brand',
+        url: '/inventory/brands/add',
       },
     ],
   },
   {
-    title: "Suppliers",
-    url: "/inventory/suppliers",
+    title: 'Suppliers',
+    url: '/inventory/suppliers',
     icon: IconTruck,
     items: [
       {
-        title: "All Suppliers",
-        url: "/inventory/suppliers",
+        title: 'All Suppliers',
+        url: '/inventory/suppliers',
       },
       {
-        title: "Add Supplier",
-        url: "/inventory/suppliers/add",
+        title: 'Add Supplier',
+        url: '/inventory/suppliers/add',
       },
     ],
   },
 
   {
-    title: "Stock Reconciliation",
-    url: "/inventory/stock-reconciliations",
+    title: 'Stock Reconciliation',
+    url: '/inventory/stock-reconciliations',
     icon: IconAdjustments,
     items: [
       {
-        title: "All Reconciliations",
-        url: "/inventory/stock-reconciliations",
+        title: 'All Reconciliations',
+        url: '/inventory/stock-reconciliations',
       },
       {
-        title: "Add Reconciliation",
-        url: "/inventory/stock-reconciliations/add",
+        title: 'Add Reconciliation',
+        url: '/inventory/stock-reconciliations/add',
       },
       {
-        title: "Stock History",
-        url: "/inventory/stock-history",
+        title: 'Stock History',
+        url: '/inventory/stock-history',
       },
     ],
   },
   {
-    title: "Reports",
-    url: "/inventory/reports",
+    title: 'Reports',
+    url: '/inventory/reports',
     icon: IconChartBar,
     items: [
       {
-        title: "Inventory Reports",
-        url: "/inventory/reports",
+        title: 'Inventory Reports',
+        url: '/inventory/reports',
       },
       {
-        title: "Current Stock",
-        url: "/inventory/reports?type=current_stock",
+        title: 'Current Stock',
+        url: '/inventory/reports?type=current_stock',
       },
       {
-        title: "Stock Value",
-        url: "/inventory/reports?type=stock_value",
+        title: 'Stock Value',
+        url: '/inventory/reports?type=stock_value',
       },
       {
-        title: "Low Stock",
-        url: "/inventory/reports?type=low_stock",
+        title: 'Low Stock',
+        url: '/inventory/reports?type=low_stock',
       },
     ],
   },
@@ -148,14 +148,12 @@ function CollapsibleNavItem({ item }: { item: (typeof inventoryNavItems)[0] }) {
   const [isOpen, setIsOpen] = React.useState(false);
 
   // Check if any sub-item is active - use exact matching to avoid conflicts
-  const hasActiveChild = item.items?.some(
-    (subItem) => pathname === subItem.url
-  );
+  const hasActiveChild = item.items?.some(subItem => pathname === subItem.url);
 
   // Check if the main item URL is active (only for items without sub-items)
   // For items with sub-items, only highlight if it's an exact match and no child is active
   const isMainActive = !item.items?.length
-    ? pathname === item.url || pathname.startsWith(item.url + "/")
+    ? pathname === item.url || pathname.startsWith(item.url + '/')
     : pathname === item.url && !hasActiveChild;
 
   // Auto-open dropdown if any child is active
@@ -171,13 +169,13 @@ function CollapsibleNavItem({ item }: { item: (typeof inventoryNavItems)[0] }) {
         <CollapsibleTrigger asChild>
           <SidebarMenuButton
             tooltip={item.title}
-            className={isMainActive ? "bg-accent text-accent-foreground" : ""}
+            className={isMainActive ? 'bg-accent text-accent-foreground' : ''}
           >
             <item.icon />
             <span>{item.title}</span>
             <ChevronDown
-              className={`ml-auto h-4 w-4 transition-transform duration-200 -rotate-90 ${
-                isOpen ? "rotate-0" : ""
+              className={`ml-auto h-4 w-4 -rotate-90 transition-transform duration-200 ${
+                isOpen ? 'rotate-0' : ''
               }`}
             />
           </SidebarMenuButton>
@@ -185,14 +183,14 @@ function CollapsibleNavItem({ item }: { item: (typeof inventoryNavItems)[0] }) {
         {item.items?.length ? (
           <CollapsibleContent>
             <SidebarMenuSub>
-              {item.items?.map((subItem) => {
+              {item.items?.map(subItem => {
                 const isActive = pathname === subItem.url;
                 return (
                   <SidebarMenuSubItem key={subItem.title}>
                     <SidebarMenuSubButton
                       asChild
                       className={
-                        isActive ? "bg-accent text-accent-foreground" : ""
+                        isActive ? 'bg-accent text-accent-foreground' : ''
                       }
                     >
                       <Link href={subItem.url}>
@@ -215,7 +213,7 @@ export function NavInventory() {
     <SidebarGroup>
       <SidebarGroupLabel>Inventory Management</SidebarGroupLabel>
       <SidebarMenu>
-        {inventoryNavItems.map((item) => (
+        {inventoryNavItems.map(item => (
           <CollapsibleNavItem key={item.title} item={item} />
         ))}
       </SidebarMenu>

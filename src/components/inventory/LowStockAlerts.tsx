@@ -1,16 +1,16 @@
-"use client";
+'use client';
 
-import React, { useState, useEffect } from "react";
-import { useQuery } from "@tanstack/react-query";
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import { Badge } from "@/components/ui/badge";
-import { Button } from "@/components/ui/button";
-import { InventoryPageLayout } from "@/components/inventory/InventoryPageLayout";
-import { AlertTriangle, Package, RefreshCw, Loader2 } from "lucide-react";
-import { toast } from "sonner";
-import { formatCurrency } from "@/lib/utils";
-import { PaginationState } from "@/types/inventory";
-import { IconAlertTriangle, IconRefresh } from "@tabler/icons-react";
+import React, { useState, useEffect } from 'react';
+import { useQuery } from '@tanstack/react-query';
+import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
+import { Badge } from '@/components/ui/badge';
+import { Button } from '@/components/ui/button';
+import { InventoryPageLayout } from '@/components/inventory/InventoryPageLayout';
+import { AlertTriangle, Package, RefreshCw, Loader2 } from 'lucide-react';
+import { toast } from 'sonner';
+import { formatCurrency } from '@/lib/utils';
+import { PaginationState } from '@/types/inventory';
+import { IconAlertTriangle, IconRefresh } from '@tabler/icons-react';
 
 interface LowStockProduct {
   id: number;
@@ -49,7 +49,7 @@ interface LowStockResponse {
 const fetchLowStockProducts = async (
   offset: number = 0,
   limit: number = 10,
-  search: string = ""
+  search: string = ''
 ): Promise<LowStockResponse> => {
   const params = new URLSearchParams({
     offset: offset.toString(),
@@ -57,21 +57,21 @@ const fetchLowStockProducts = async (
   });
 
   if (search) {
-    params.append("search", search);
+    params.append('search', search);
   }
 
   const response = await fetch(`/api/products/low-stock?${params}`);
   if (!response.ok) {
-    throw new Error("Failed to fetch low stock products");
+    throw new Error('Failed to fetch low stock products');
   }
   return response.json();
 };
 
 const getStockStatusColor = (stock: number, minStock: number) => {
-  if (stock === 0) return "destructive";
-  if (stock <= minStock * 0.5) return "destructive";
-  if (stock <= minStock) return "secondary";
-  return "default";
+  if (stock === 0) return 'destructive';
+  if (stock <= minStock * 0.5) return 'destructive';
+  if (stock <= minStock) return 'secondary';
+  return 'default';
 };
 
 const getStockStatusIcon = (stock: number, minStock: number) => {
@@ -85,14 +85,14 @@ const getStockStatusIcon = (stock: number, minStock: number) => {
 };
 
 const getStockStatusText = (stock: number, minStock: number) => {
-  if (stock === 0) return "OUT OF STOCK";
-  if (stock <= minStock * 0.5) return "CRITICAL";
-  if (stock <= minStock) return "LOW";
-  return "NORMAL";
+  if (stock === 0) return 'OUT OF STOCK';
+  if (stock <= minStock * 0.5) return 'CRITICAL';
+  if (stock <= minStock) return 'LOW';
+  return 'NORMAL';
 };
 
 export function LowStockAlerts() {
-  const [searchTerm, setSearchTerm] = useState("");
+  const [searchTerm, setSearchTerm] = useState('');
   const [pagination, setPagination] = useState<PaginationState>({
     page: 1,
     limit: 10,
@@ -108,7 +108,7 @@ export function LowStockAlerts() {
     isRefetching,
   } = useQuery({
     queryKey: [
-      "low-stock-products",
+      'low-stock-products',
       pagination.page,
       pagination.limit,
       searchTerm,
@@ -134,7 +134,7 @@ export function LowStockAlerts() {
   // Update pagination when response changes
   useEffect(() => {
     if (response?.pagination) {
-      setPagination((prev) => ({
+      setPagination(prev => ({
         ...prev,
         totalPages: Math.ceil(response.pagination.total / prev.limit),
         totalItems: response.pagination.total,
@@ -144,47 +144,47 @@ export function LowStockAlerts() {
 
   // Reset to page 1 when search term changes
   useEffect(() => {
-    setPagination((prev) => ({ ...prev, page: 1 }));
+    setPagination(prev => ({ ...prev, page: 1 }));
   }, [searchTerm]);
 
   const handleRefresh = async () => {
     try {
       await refetch();
-      toast.success("Low stock data refreshed");
+      toast.success('Low stock data refreshed');
     } catch (_error) {
-      toast.error("Failed to refresh data");
+      toast.error('Failed to refresh data');
     }
   };
 
   const handlePageChange = (newPage: number) => {
-    setPagination((prev) => ({ ...prev, page: newPage }));
+    setPagination(prev => ({ ...prev, page: newPage }));
   };
 
   const handlePageSizeChange = (newPageSize: number) => {
-    setPagination((prev) => ({
+    setPagination(prev => ({
       ...prev,
       limit: newPageSize,
       page: 1,
     }));
   };
 
-  const getStatusBadge = (status: LowStockProduct["status"]) => {
+  const getStatusBadge = (status: LowStockProduct['status']) => {
     switch (status) {
-      case "ACTIVE":
+      case 'ACTIVE':
         return (
           <Badge variant="default" className="bg-green-500">
             Active
           </Badge>
         );
-      case "INACTIVE":
+      case 'INACTIVE':
         return <Badge variant="secondary">Inactive</Badge>;
-      case "OUT_OF_STOCK":
+      case 'OUT_OF_STOCK':
         return (
           <Badge variant="secondary" className="bg-yellow-500">
             Out of Stock
           </Badge>
         );
-      case "DISCONTINUED":
+      case 'DISCONTINUED':
         return (
           <Badge variant="secondary" className="bg-gray-500">
             Discontinued
@@ -203,7 +203,7 @@ export function LowStockAlerts() {
 
   const renderCell = (product: LowStockProduct, columnKey: string) => {
     switch (columnKey) {
-      case "product":
+      case 'product':
         return (
           <div className="flex items-center gap-2">
             {getStockStatusIcon(product.stock, product.minStock)}
@@ -213,42 +213,42 @@ export function LowStockAlerts() {
             </div>
           </div>
         );
-      case "category":
-        return product.category?.name || "-";
-      case "brand":
-        return product.brand?.name || "-";
-      case "stock":
+      case 'category':
+        return product.category?.name || '-';
+      case 'brand':
+        return product.brand?.name || '-';
+      case 'stock':
         return (
           <div className="flex items-center gap-2">
             <span className="font-medium">{product.stock}</span>
             <span className="text-gray-400">/ {product.minStock} min</span>
           </div>
         );
-      case "status":
+      case 'status':
         return getStockStatusBadge(product.stock, product.minStock);
-      case "cost":
+      case 'cost':
         return formatCurrency(product.cost);
-      case "price":
+      case 'price':
         return formatCurrency(product.price);
-      case "supplier":
-        return product.supplier?.name || "-";
-      case "product_status":
+      case 'supplier':
+        return product.supplier?.name || '-';
+      case 'product_status':
         return getStatusBadge(product.status);
       default:
-        return "-";
+        return '-';
     }
   };
 
   const columns = [
-    { key: "product", label: "Product", sortable: true },
-    { key: "category", label: "Category", sortable: true },
-    { key: "brand", label: "Brand", sortable: true },
-    { key: "stock", label: "Current Stock", sortable: true },
-    { key: "status", label: "Stock Status", sortable: false },
-    { key: "cost", label: "Cost Price", sortable: true },
-    { key: "price", label: "Selling Price", sortable: true },
-    { key: "supplier", label: "Supplier", sortable: true },
-    { key: "product_status", label: "Status", sortable: false },
+    { key: 'product', label: 'Product', sortable: true },
+    { key: 'category', label: 'Category', sortable: true },
+    { key: 'brand', label: 'Brand', sortable: true },
+    { key: 'stock', label: 'Current Stock', sortable: true },
+    { key: 'status', label: 'Stock Status', sortable: false },
+    { key: 'cost', label: 'Cost Price', sortable: true },
+    { key: 'price', label: 'Selling Price', sortable: true },
+    { key: 'supplier', label: 'Supplier', sortable: true },
+    { key: 'product_status', label: 'Status', sortable: false },
   ];
 
   if (error) {
@@ -265,7 +265,7 @@ export function LowStockAlerts() {
             Failed to load low stock products. Please try again later.
           </p>
           <Button onClick={handleRefresh} className="mt-4">
-            <RefreshCw className="h-4 w-4 mr-2" />
+            <RefreshCw className="mr-2 h-4 w-4" />
             Retry
           </Button>
         </CardContent>
@@ -285,7 +285,7 @@ export function LowStockAlerts() {
           disabled={isRefetching}
         >
           <IconRefresh
-            className={`h-4 w-4 mr-2 ${isRefetching ? "animate-spin" : ""}`}
+            className={`mr-2 h-4 w-4 ${isRefetching ? 'animate-spin' : ''}`}
           />
           Refresh
         </Button>
@@ -307,7 +307,7 @@ export function LowStockAlerts() {
             </CardTitle>
           </CardHeader>
           <CardContent>
-            <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+            <div className="grid grid-cols-1 gap-4 md:grid-cols-3">
               <Card>
                 <CardHeader className="pb-2">
                   <CardTitle className="text-sm font-medium">
@@ -325,7 +325,7 @@ export function LowStockAlerts() {
                       )}
                     </span>
                   </div>
-                  <p className="text-xs text-muted-foreground mt-1">
+                  <p className="text-muted-foreground mt-1 text-xs">
                     Products requiring immediate attention
                   </p>
                 </CardContent>
@@ -348,7 +348,7 @@ export function LowStockAlerts() {
                       )}
                     </span>
                   </div>
-                  <p className="text-xs text-muted-foreground mt-1">
+                  <p className="text-muted-foreground mt-1 text-xs">
                     Products below minimum threshold
                   </p>
                 </CardContent>
@@ -371,7 +371,7 @@ export function LowStockAlerts() {
                       )}
                     </span>
                   </div>
-                  <p className="text-xs text-muted-foreground mt-1">
+                  <p className="text-muted-foreground mt-1 text-xs">
                     Total value of low stock items
                   </p>
                 </CardContent>
@@ -385,7 +385,7 @@ export function LowStockAlerts() {
       totalCount={pagination.totalItems}
       currentCount={products.length}
       columns={columns}
-      visibleColumns={columns.map((col) => col.key)}
+      visibleColumns={columns.map(col => col.key)}
       onColumnsChange={undefined}
       columnCustomizerKey={undefined}
       data={products}
@@ -402,7 +402,7 @@ export function LowStockAlerts() {
       onRetry={() => refetch()}
       // Empty state
       emptyStateIcon={
-        <IconAlertTriangle className="h-12 w-12 text-gray-400 mx-auto mb-4" />
+        <IconAlertTriangle className="mx-auto mb-4 h-12 w-12 text-gray-400" />
       }
       emptyStateMessage="No low stock products found"
     />

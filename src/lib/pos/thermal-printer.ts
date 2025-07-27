@@ -1,8 +1,8 @@
-import { toast } from "sonner";
-import { logger } from "@/lib/logger";
+import { toast } from 'sonner';
+import { logger } from '@/lib/logger';
 
 export interface PrinterConfig {
-  type: "usb" | "network" | "serial";
+  type: 'usb' | 'network' | 'serial';
   interface: string;
   options?: {
     width?: number;
@@ -56,11 +56,11 @@ export class XprinterXP58Service {
       // - Send to printer via WebUSB, local service, or network
       // - Handle printer status and errors
 
-      toast.success("Receipt sent to printer");
+      toast.success('Receipt sent to printer');
       return true;
     } catch (error) {
-      logger.error("Thermal printer operation failed", {
-        operation: "print",
+      logger.error('Thermal printer operation failed', {
+        operation: 'print',
         error: error instanceof Error ? error.message : String(error),
       });
       throw error;
@@ -71,11 +71,11 @@ export class XprinterXP58Service {
     const lines: string[] = [];
 
     // Header
-    lines.push("        BaaWA ACCESSORIES        ");
-    lines.push("     Quality Accessories Store   ");
-    lines.push("--------------------------------");
+    lines.push('        BaaWA ACCESSORIES        ');
+    lines.push('     Quality Accessories Store   ');
+    lines.push('--------------------------------');
     lines.push(`Receipt #${receiptData.saleId}`);
-    lines.push("--------------------------------");
+    lines.push('--------------------------------');
 
     // Transaction details
     lines.push(`Date: ${this.formatDate(receiptData.timestamp)}`);
@@ -93,11 +93,11 @@ export class XprinterXP58Service {
       lines.push(`Phone: ${receiptData.customerPhone}`);
     }
 
-    lines.push("--------------------------------");
+    lines.push('--------------------------------');
 
     // Items
-    lines.push("ITEMS:");
-    receiptData.items.forEach((item) => {
+    lines.push('ITEMS:');
+    receiptData.items.forEach(item => {
       lines.push(this.truncateText(item.name, 24));
       lines.push(`  SKU: ${item.sku}`);
       if (item.category) {
@@ -106,14 +106,14 @@ export class XprinterXP58Service {
 
       const quantityText = `${item.quantity} × ₦${item.price.toLocaleString()}`;
       const totalText = `₦${item.total.toLocaleString()}`;
-      const spacing = " ".repeat(
+      const spacing = ' '.repeat(
         Math.max(0, 32 - quantityText.length - totalText.length)
       );
       lines.push(`${quantityText}${spacing}${totalText}`);
-      lines.push("");
+      lines.push('');
     });
 
-    lines.push("--------------------------------");
+    lines.push('--------------------------------');
 
     // Totals
     lines.push(`Subtotal: ₦${receiptData.subtotal.toLocaleString()}`);
@@ -123,46 +123,46 @@ export class XprinterXP58Service {
     }
 
     lines.push(`TOTAL: ₦${receiptData.total.toLocaleString()}`);
-    lines.push("--------------------------------");
+    lines.push('--------------------------------');
 
     // Footer
-    lines.push("     Thank you for shopping!     ");
-    lines.push("       Visit us again soon       ");
-    lines.push("");
+    lines.push('     Thank you for shopping!     ');
+    lines.push('       Visit us again soon       ');
+    lines.push('');
 
-    const content = lines.join("\n");
+    const content = lines.join('\n');
     // Debug logging removed for production
     return content;
   }
 
   private formatDate(date: Date): string {
-    return date.toLocaleDateString("en-NG", {
-      year: "numeric",
-      month: "short",
-      day: "numeric",
+    return date.toLocaleDateString('en-NG', {
+      year: 'numeric',
+      month: 'short',
+      day: 'numeric',
     });
   }
 
   private formatTime(date: Date): string {
-    return date.toLocaleTimeString("en-NG", {
-      hour: "2-digit",
-      minute: "2-digit",
+    return date.toLocaleTimeString('en-NG', {
+      hour: '2-digit',
+      minute: '2-digit',
     });
   }
 
   private getPaymentMethodLabel(method: string): string {
     const labels: Record<string, string> = {
-      cash: "Cash",
-      pos: "POS Machine",
-      bank_transfer: "Bank Transfer",
-      mobile_money: "Mobile Money",
+      cash: 'Cash',
+      pos: 'POS Machine',
+      bank_transfer: 'Bank Transfer',
+      mobile_money: 'Mobile Money',
     };
     return labels[method] || method;
   }
 
   private truncateText(text: string, maxLength: number): string {
     if (text.length <= maxLength) return text;
-    return text.substring(0, maxLength - 3) + "...";
+    return text.substring(0, maxLength - 3) + '...';
   }
 
   async testConnection(): Promise<boolean> {
@@ -173,7 +173,7 @@ export class XprinterXP58Service {
       // In production, this would check printer status
       return true;
     } catch (error) {
-      logger.error("Printer connection test failed", {
+      logger.error('Printer connection test failed', {
         printerConfig: this.config,
         error: error instanceof Error ? error.message : String(error),
       });
@@ -185,20 +185,20 @@ export class XprinterXP58Service {
     try {
       // Debug logging removed for production
       const _testContent = [
-        "================================",
-        "           TEST PAGE            ",
-        "================================",
-        "      Xprinter XP 58          ",
+        '================================',
+        '           TEST PAGE            ',
+        '================================',
+        '      Xprinter XP 58          ',
         `      ${new Date().toLocaleString()}      `,
-        "================================",
-        "         Connection OK          ",
-        "================================",
-      ].join("\n");
+        '================================',
+        '         Connection OK          ',
+        '================================',
+      ].join('\n');
 
       // Debug logging removed for production
       return true;
     } catch (error) {
-      logger.error("Test page print failed", {
+      logger.error('Test page print failed', {
         printerConfig: this.config,
         error: error instanceof Error ? error.message : String(error),
       });
@@ -209,13 +209,13 @@ export class XprinterXP58Service {
 
 // Default configuration for Xprinter XP 58
 export const defaultXprinterConfig: PrinterConfig = {
-  type: "usb",
-  interface: "USB001", // Common USB interface name
+  type: 'usb',
+  interface: 'USB001', // Common USB interface name
   options: {
     width: 32, // Xprinter XP 58 paper width
-    characterSet: "SLOVENIA",
+    characterSet: 'SLOVENIA',
     removeSpecialCharacters: false,
-    lineCharacter: "-",
+    lineCharacter: '-',
   },
 };
 

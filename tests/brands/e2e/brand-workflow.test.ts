@@ -1,52 +1,52 @@
-import { test, expect } from "@playwright/test";
-import { setupTestDatabase, cleanupTestDatabase } from "../setup-env";
+import { test, expect } from '@playwright/test';
+import { setupTestDatabase, cleanupTestDatabase } from '../setup-env';
 
-test.describe("Brand E2E Workflows", () => {
+test.describe('Brand E2E Workflows', () => {
   test.beforeEach(async ({ page }) => {
     await setupTestDatabase();
-    await page.goto("/login");
+    await page.goto('/login');
 
     // Login as admin
-    await page.fill('[data-testid="email-input"]', "admin@test.com");
-    await page.fill('[data-testid="password-input"]', "password123");
+    await page.fill('[data-testid="email-input"]', 'admin@test.com');
+    await page.fill('[data-testid="password-input"]', 'password123');
     await page.click('[data-testid="login-button"]');
 
-    await page.waitForURL("/dashboard");
+    await page.waitForURL('/dashboard');
   });
 
   test.afterEach(async () => {
     await cleanupTestDatabase();
   });
 
-  test("Complete brand management workflow", async ({ page }) => {
+  test('Complete brand management workflow', async ({ page }) => {
     // Navigate to brands page
     await page.click('[data-testid="nav-brands"]');
-    await page.waitForURL("/dashboard/brands");
+    await page.waitForURL('/dashboard/brands');
 
     // Create a new brand
     await page.click('[data-testid="create-brand-button"]');
     await page.waitForSelector('[data-testid="brand-form"]');
 
-    await page.fill('[data-testid="brand-name-input"]', "Test Brand");
+    await page.fill('[data-testid="brand-name-input"]', 'Test Brand');
     await page.fill(
       '[data-testid="brand-description-input"]',
-      "Test Description"
+      'Test Description'
     );
     await page.click('[data-testid="submit-brand-button"]');
 
     // Verify brand was created
-    await expect(page.locator("text=Test Brand")).toBeVisible();
-    await expect(page.locator("text=Test Description")).toBeVisible();
+    await expect(page.locator('text=Test Brand')).toBeVisible();
+    await expect(page.locator('text=Test Description')).toBeVisible();
 
     // Edit the brand
     await page.click('[data-testid="edit-brand-button"]');
     await page.waitForSelector('[data-testid="brand-form"]');
 
-    await page.fill('[data-testid="brand-name-input"]', "Updated Test Brand");
+    await page.fill('[data-testid="brand-name-input"]', 'Updated Test Brand');
     await page.click('[data-testid="submit-brand-button"]');
 
     // Verify brand was updated
-    await expect(page.locator("text=Updated Test Brand")).toBeVisible();
+    await expect(page.locator('text=Updated Test Brand')).toBeVisible();
 
     // Toggle brand status
     await page.click('[data-testid="toggle-brand-status"]');
@@ -57,46 +57,46 @@ test.describe("Brand E2E Workflows", () => {
     // Search for brand
     await page.fill(
       '[data-testid="search-brands-input"]',
-      "Updated Test Brand"
+      'Updated Test Brand'
     );
-    await expect(page.locator("text=Updated Test Brand")).toBeVisible();
+    await expect(page.locator('text=Updated Test Brand')).toBeVisible();
 
     // Delete the brand
     await page.click('[data-testid="delete-brand-button"]');
     await page.click('[data-testid="confirm-delete-button"]');
 
     // Verify brand was deleted
-    await expect(page.locator("text=Updated Test Brand")).not.toBeVisible();
+    await expect(page.locator('text=Updated Test Brand')).not.toBeVisible();
   });
 
-  test("Brand validation errors", async ({ page }) => {
+  test('Brand validation errors', async ({ page }) => {
     await page.click('[data-testid="nav-brands"]');
     await page.click('[data-testid="create-brand-button"]');
 
     // Try to submit empty form
     await page.click('[data-testid="submit-brand-button"]');
-    await expect(page.locator("text=Brand name is required")).toBeVisible();
+    await expect(page.locator('text=Brand name is required')).toBeVisible();
 
     // Try to submit with invalid name
-    await page.fill('[data-testid="brand-name-input"]', "a");
+    await page.fill('[data-testid="brand-name-input"]', 'a');
     await page.click('[data-testid="submit-brand-button"]');
     await expect(
-      page.locator("text=Brand name must be at least 2 characters")
+      page.locator('text=Brand name must be at least 2 characters')
     ).toBeVisible();
 
     // Try to submit with too long name
-    await page.fill('[data-testid="brand-name-input"]', "a".repeat(101));
+    await page.fill('[data-testid="brand-name-input"]', 'a'.repeat(101));
     await page.click('[data-testid="submit-brand-button"]');
     await expect(
-      page.locator("text=Brand name must be at most 100 characters")
+      page.locator('text=Brand name must be at most 100 characters')
     ).toBeVisible();
   });
 
-  test("Brand search and filtering", async ({ page }) => {
+  test('Brand search and filtering', async ({ page }) => {
     // Create multiple brands
     await page.click('[data-testid="nav-brands"]');
 
-    const brands = ["Apple", "Samsung", "Google", "Microsoft"];
+    const brands = ['Apple', 'Samsung', 'Google', 'Microsoft'];
 
     for (const brand of brands) {
       await page.click('[data-testid="create-brand-button"]');
@@ -110,28 +110,28 @@ test.describe("Brand E2E Workflows", () => {
     }
 
     // Test search functionality
-    await page.fill('[data-testid="search-brands-input"]', "Apple");
-    await expect(page.locator("text=Apple")).toBeVisible();
-    await expect(page.locator("text=Samsung")).not.toBeVisible();
+    await page.fill('[data-testid="search-brands-input"]', 'Apple');
+    await expect(page.locator('text=Apple')).toBeVisible();
+    await expect(page.locator('text=Samsung')).not.toBeVisible();
 
     // Clear search
-    await page.fill('[data-testid="search-brands-input"]', "");
-    await expect(page.locator("text=Apple")).toBeVisible();
-    await expect(page.locator("text=Samsung")).toBeVisible();
+    await page.fill('[data-testid="search-brands-input"]', '');
+    await expect(page.locator('text=Apple')).toBeVisible();
+    await expect(page.locator('text=Samsung')).toBeVisible();
 
     // Test status filtering
     await page.click('[data-testid="filter-active-brands"]');
-    await expect(page.locator("text=Apple")).toBeVisible();
+    await expect(page.locator('text=Apple')).toBeVisible();
 
     await page.click('[data-testid="filter-inactive-brands"]');
-    await expect(page.locator("text=Apple")).not.toBeVisible();
+    await expect(page.locator('text=Apple')).not.toBeVisible();
   });
 
-  test("Brand bulk operations", async ({ page }) => {
+  test('Brand bulk operations', async ({ page }) => {
     await page.click('[data-testid="nav-brands"]');
 
     // Create multiple brands
-    const brands = ["Brand 1", "Brand 2", "Brand 3"];
+    const brands = ['Brand 1', 'Brand 2', 'Brand 3'];
 
     for (const brand of brands) {
       await page.click('[data-testid="create-brand-button"]');
@@ -181,7 +181,7 @@ test.describe("Brand E2E Workflows", () => {
     }
   });
 
-  test("Brand pagination", async ({ page }) => {
+  test('Brand pagination', async ({ page }) => {
     await page.click('[data-testid="nav-brands"]');
 
     // Create more than 10 brands to test pagination
@@ -201,20 +201,20 @@ test.describe("Brand E2E Workflows", () => {
 
     // Navigate to second page
     await page.click('[data-testid="next-page-button"]');
-    await expect(page.locator("text=Brand 11")).toBeVisible();
-    await expect(page.locator("text=Brand 1")).not.toBeVisible();
+    await expect(page.locator('text=Brand 11')).toBeVisible();
+    await expect(page.locator('text=Brand 1')).not.toBeVisible();
 
     // Navigate back to first page
     await page.click('[data-testid="prev-page-button"]');
-    await expect(page.locator("text=Brand 1")).toBeVisible();
-    await expect(page.locator("text=Brand 11")).not.toBeVisible();
+    await expect(page.locator('text=Brand 1')).toBeVisible();
+    await expect(page.locator('text=Brand 11')).not.toBeVisible();
   });
 
-  test("Brand export functionality", async ({ page }) => {
+  test('Brand export functionality', async ({ page }) => {
     await page.click('[data-testid="nav-brands"]');
 
     // Create some brands
-    const brands = ["Export Brand 1", "Export Brand 2"];
+    const brands = ['Export Brand 1', 'Export Brand 2'];
 
     for (const brand of brands) {
       await page.click('[data-testid="create-brand-button"]');
@@ -231,7 +231,7 @@ test.describe("Brand E2E Workflows", () => {
     await page.click('[data-testid="export-brands-button"]');
 
     // Wait for download to start
-    const downloadPromise = page.waitForEvent("download");
+    const downloadPromise = page.waitForEvent('download');
     await page.click('[data-testid="confirm-export-button"]');
     const download = await downloadPromise;
 
@@ -240,7 +240,7 @@ test.describe("Brand E2E Workflows", () => {
     );
   });
 
-  test("Brand import functionality", async ({ page }) => {
+  test('Brand import functionality', async ({ page }) => {
     await page.click('[data-testid="nav-brands"]');
 
     // Click import button
@@ -248,61 +248,61 @@ test.describe("Brand E2E Workflows", () => {
 
     // Upload CSV file
     await page.setInputFiles('[data-testid="csv-file-input"]', {
-      name: "brands-import.csv",
-      mimeType: "text/csv",
+      name: 'brands-import.csv',
+      mimeType: 'text/csv',
       buffer: Buffer.from(
-        "name,description,isActive\nImported Brand 1,Description 1,true\nImported Brand 2,Description 2,false"
+        'name,description,isActive\nImported Brand 1,Description 1,true\nImported Brand 2,Description 2,false'
       ),
     });
 
     await page.click('[data-testid="confirm-import-button"]');
 
     // Verify brands were imported
-    await expect(page.locator("text=Imported Brand 1")).toBeVisible();
-    await expect(page.locator("text=Imported Brand 2")).toBeVisible();
+    await expect(page.locator('text=Imported Brand 1')).toBeVisible();
+    await expect(page.locator('text=Imported Brand 2')).toBeVisible();
   });
 
-  test("Brand error handling", async ({ page }) => {
+  test('Brand error handling', async ({ page }) => {
     await page.click('[data-testid="nav-brands"]');
 
     // Test network error during creation
-    await page.route("/api/brands", (route) => route.abort());
+    await page.route('/api/brands', route => route.abort());
 
     await page.click('[data-testid="create-brand-button"]');
-    await page.fill('[data-testid="brand-name-input"]', "Error Brand");
+    await page.fill('[data-testid="brand-name-input"]', 'Error Brand');
     await page.click('[data-testid="submit-brand-button"]');
 
-    await expect(page.locator("text=Failed to create brand")).toBeVisible();
+    await expect(page.locator('text=Failed to create brand')).toBeVisible();
 
     // Restore network
-    await page.unroute("/api/brands");
+    await page.unroute('/api/brands');
 
     // Test validation error
-    await page.fill('[data-testid="brand-name-input"]', "");
+    await page.fill('[data-testid="brand-name-input"]', '');
     await page.click('[data-testid="submit-brand-button"]');
 
-    await expect(page.locator("text=Brand name is required")).toBeVisible();
+    await expect(page.locator('text=Brand name is required')).toBeVisible();
   });
 
-  test("Brand accessibility", async ({ page }) => {
+  test('Brand accessibility', async ({ page }) => {
     await page.click('[data-testid="nav-brands"]');
 
     // Test keyboard navigation
-    await page.keyboard.press("Tab");
+    await page.keyboard.press('Tab');
     await expect(
       page.locator('[data-testid="create-brand-button"]:focus')
     ).toBeVisible();
 
-    await page.keyboard.press("Enter");
+    await page.keyboard.press('Enter');
     await expect(page.locator('[data-testid="brand-form"]')).toBeVisible();
 
     // Test screen reader support
     await expect(
       page.locator('[data-testid="brand-name-input"]')
-    ).toHaveAttribute("aria-label");
+    ).toHaveAttribute('aria-label');
     await expect(
       page.locator('[data-testid="submit-brand-button"]')
-    ).toHaveAttribute("aria-label");
+    ).toHaveAttribute('aria-label');
 
     // Test focus management
     await page.click('[data-testid="cancel-button"]');

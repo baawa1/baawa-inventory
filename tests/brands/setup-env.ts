@@ -1,12 +1,12 @@
-import { config } from "dotenv";
+import { config } from 'dotenv';
 
 // Load environment variables for testing
-config({ path: ".env.test" });
+config({ path: '.env.test' });
 
 // Set up global test environment
-process.env.DATABASE_URL = "postgresql://test:test@localhost:5432/test_db";
-process.env.NEXTAUTH_SECRET = "test-secret";
-process.env.NEXTAUTH_URL = "http://localhost:3000";
+process.env.DATABASE_URL = 'postgresql://test:test@localhost:5432/test_db';
+process.env.NEXTAUTH_SECRET = 'test-secret';
+process.env.NEXTAUTH_URL = 'http://localhost:3000';
 
 // Mock console methods to reduce noise in tests
 const originalConsole = { ...console };
@@ -29,13 +29,13 @@ afterAll(() => {
 global.testUtils = {
   createMockBrand: (overrides = {}) => ({
     id: 1,
-    name: "Test Brand",
-    description: "A test brand",
-    image: "https://example.com/test.jpg",
-    website: "https://testbrand.com",
+    name: 'Test Brand',
+    description: 'A test brand',
+    image: 'https://example.com/test.jpg',
+    website: 'https://testbrand.com',
     isActive: true,
-    createdAt: new Date("2024-01-01"),
-    updatedAt: new Date("2024-01-01"),
+    createdAt: new Date('2024-01-01'),
+    updatedAt: new Date('2024-01-01'),
     ...overrides,
   }),
 
@@ -47,16 +47,16 @@ global.testUtils = {
       image: `https://example.com/brand${i + 1}.jpg`,
       website: `https://brand${i + 1}.com`,
       isActive: true,
-      createdAt: new Date("2024-01-01"),
-      updatedAt: new Date("2024-01-01"),
+      createdAt: new Date('2024-01-01'),
+      updatedAt: new Date('2024-01-01'),
       _count: { products: Math.floor(Math.random() * 10) },
     })),
 
   createMockUser: (overrides = {}) => ({
     id: 1,
-    email: "test@example.com",
-    role: "ADMIN",
-    status: "APPROVED",
+    email: 'test@example.com',
+    role: 'ADMIN',
+    status: 'APPROVED',
     ...overrides,
   }),
 

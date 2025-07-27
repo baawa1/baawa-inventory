@@ -1,13 +1,13 @@
-import { NextResponse } from "next/server";
+import { NextResponse } from 'next/server';
 import {
   withAuth,
   withPermission,
   AuthenticatedRequest,
-} from "@/lib/api-middleware";
-import { handleApiError } from "@/lib/api-error-handler-new";
-import { prisma } from "@/lib/db";
-import { USER_ROLES } from "@/lib/auth/roles";
-import { brandIdSchema, updateBrandSchema } from "@/lib/validations/brand";
+} from '@/lib/api-middleware';
+import { handleApiError } from '@/lib/api-error-handler-new';
+import { prisma } from '@/lib/db';
+import { USER_ROLES } from '@/lib/auth/roles';
+import { brandIdSchema, updateBrandSchema } from '@/lib/validations/brand';
 
 // GET /api/brands/[id] - Get a specific brand
 export const GET = withAuth(
@@ -32,7 +32,7 @@ export const GET = withAuth(
       });
 
       if (!brand) {
-        return NextResponse.json({ error: "Brand not found" }, { status: 404 });
+        return NextResponse.json({ error: 'Brand not found' }, { status: 404 });
       }
 
       // Transform response to include product count
@@ -80,7 +80,7 @@ export const PUT = withPermission(
       });
 
       if (!existingBrand) {
-        return NextResponse.json({ error: "Brand not found" }, { status: 404 });
+        return NextResponse.json({ error: 'Brand not found' }, { status: 404 });
       }
 
       // Check if the new name conflicts with existing brands (excluding current brand)
@@ -89,7 +89,7 @@ export const PUT = withPermission(
           where: {
             name: {
               equals: validatedData.name,
-              mode: "insensitive",
+              mode: 'insensitive',
             },
             id: { not: id },
           },
@@ -97,7 +97,7 @@ export const PUT = withPermission(
 
         if (nameConflict) {
           return NextResponse.json(
-            { error: "Brand with this name already exists" },
+            { error: 'Brand with this name already exists' },
             { status: 409 }
           );
         }
@@ -131,7 +131,7 @@ export const PUT = withPermission(
 
       return NextResponse.json({
         success: true,
-        message: "Brand updated successfully",
+        message: 'Brand updated successfully',
         data: transformedBrand,
       });
     } catch (error) {
@@ -159,7 +159,7 @@ export const DELETE = withPermission(
       });
 
       if (!existingBrand) {
-        return NextResponse.json({ error: "Brand not found" }, { status: 404 });
+        return NextResponse.json({ error: 'Brand not found' }, { status: 404 });
       }
 
       // Check if brand is being used by products
@@ -170,7 +170,7 @@ export const DELETE = withPermission(
 
       if (products) {
         return NextResponse.json(
-          { error: "Cannot delete brand that is being used by products" },
+          { error: 'Cannot delete brand that is being used by products' },
           { status: 400 }
         );
       }
@@ -182,7 +182,7 @@ export const DELETE = withPermission(
 
       return NextResponse.json({
         success: true,
-        message: "Brand deleted successfully",
+        message: 'Brand deleted successfully',
         data: { id, name: existingBrand.name },
       });
     } catch (error) {

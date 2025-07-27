@@ -1,15 +1,15 @@
-import { auth } from "../../../../../../auth";
-import { NextRequest } from "next/server";
-import { prisma } from "@/lib/db";
-import { logger } from "@/lib/logger";
-import { createSecureResponse } from "@/lib/security-headers";
-import { withRateLimit, RATE_LIMIT_CONFIGS } from "@/lib/rate-limiting";
-import { z } from "zod";
+import { auth } from '../../../../../../auth';
+import { NextRequest } from 'next/server';
+import { prisma } from '@/lib/db';
+import { logger } from '@/lib/logger';
+import { createSecureResponse } from '@/lib/security-headers';
+import { withRateLimit, RATE_LIMIT_CONFIGS } from '@/lib/rate-limiting';
+import { z } from 'zod';
 import {
   updateImagesSchema,
   ProductImage,
   IMAGE_CONSTANTS,
-} from "@/types/product-images";
+} from '@/types/product-images';
 import {
   convertLegacyImages,
   convertToStorageFormat,
@@ -18,7 +18,7 @@ import {
   validateImageCount,
   ensureUniqueImages,
   sortImages,
-} from "@/lib/utils/image-utils";
+} from '@/lib/utils/image-utils';
 
 export const GET = withRateLimit(RATE_LIMIT_CONFIGS.API)(async (
   request: NextRequest,
@@ -27,14 +27,14 @@ export const GET = withRateLimit(RATE_LIMIT_CONFIGS.API)(async (
   try {
     const session = await auth();
     if (!session?.user) {
-      return createSecureResponse({ error: "Unauthorized" }, 401);
+      return createSecureResponse({ error: 'Unauthorized' }, 401);
     }
 
     // Allow all authenticated users to view images
     const { id } = await params;
     const productId = parseInt(id);
     if (isNaN(productId)) {
-      return createSecureResponse({ error: "Invalid product ID" }, 400);
+      return createSecureResponse({ error: 'Invalid product ID' }, 400);
     }
 
     const product = await prisma.product.findUnique({
@@ -49,7 +49,7 @@ export const GET = withRateLimit(RATE_LIMIT_CONFIGS.API)(async (
     });
 
     if (!product) {
-      return createSecureResponse({ error: "Product not found" }, 404);
+      return createSecureResponse({ error: 'Product not found' }, 404);
     }
 
     // Handle both legacy string array and new image object array
@@ -58,7 +58,7 @@ export const GET = withRateLimit(RATE_LIMIT_CONFIGS.API)(async (
     if (product.images) {
       if (
         Array.isArray(product.images) &&
-        typeof product.images[0] === "string"
+        typeof product.images[0] === 'string'
       ) {
         // Legacy format: string array
         images = convertLegacyImages(product.images as string[]);
@@ -76,7 +76,7 @@ export const GET = withRateLimit(RATE_LIMIT_CONFIGS.API)(async (
     // Sort images and ensure uniqueness
     const sortedImages = sortImages(ensureUniqueImages(images));
 
-    logger.info("Product images fetched successfully", {
+    logger.info('Product images fetched successfully', {
       productId: product.id,
       imageCount: sortedImages.length,
       userId: session.user.id,
@@ -89,13 +89,13 @@ export const GET = withRateLimit(RATE_LIMIT_CONFIGS.API)(async (
     });
   } catch (error) {
     const session = await auth();
-    logger.error("Error fetching product images", {
-      error: error instanceof Error ? error.message : "Unknown error",
-      productId: await params.then((p) => p.id),
+    logger.error('Error fetching product images', {
+      error: error instanceof Error ? error.message : 'Unknown error',
+      productId: await params.then(p => p.id),
       userId: session?.user?.id,
     });
     return createSecureResponse(
-      { error: "Failed to fetch product images" },
+      { error: 'Failed to fetch product images' },
       500
     );
   }
@@ -108,18 +108,18 @@ export const PUT = withRateLimit(RATE_LIMIT_CONFIGS.UPLOAD)(async (
   try {
     const session = await auth();
     if (!session?.user) {
-      return createSecureResponse({ error: "Unauthorized" }, 401);
+      return createSecureResponse({ error: 'Unauthorized' }, 401);
     }
 
     // Check permissions
-    if (!["ADMIN", "MANAGER"].includes(session.user.role)) {
-      return createSecureResponse({ error: "Insufficient permissions" }, 403);
+    if (!['ADMIN', 'MANAGER'].includes(session.user.role)) {
+      return createSecureResponse({ error: 'Insufficient permissions' }, 403);
     }
 
     const { id } = await params;
     const productId = parseInt(id);
     if (isNaN(productId)) {
-      return createSecureResponse({ error: "Invalid product ID" }, 400);
+      return createSecureResponse({ error: 'Invalid product ID' }, 400);
     }
 
     const body = await request.json();
@@ -146,7 +146,7 @@ export const PUT = withRateLimit(RATE_LIMIT_CONFIGS.UPLOAD)(async (
     if (currentProduct?.images) {
       if (
         Array.isArray(currentProduct.images) &&
-        typeof currentProduct.images[0] === "string"
+        typeof currentProduct.images[0] === 'string'
       ) {
         // Legacy format
         currentImageUrls = currentProduct.images as string[];
@@ -160,7 +160,7 @@ export const PUT = withRateLimit(RATE_LIMIT_CONFIGS.UPLOAD)(async (
 
     // Find images that were removed (for cleanup)
     const removedImageUrls = currentImageUrls.filter(
-      (currentUrl) => !images.some((newImg) => newImg.url === currentUrl)
+      currentUrl => !images.some(newImg => newImg.url === currentUrl)
     );
 
     // Clean up removed files from storage
@@ -171,7 +171,7 @@ export const PUT = withRateLimit(RATE_LIMIT_CONFIGS.UPLOAD)(async (
           const deleteResponse = await fetch(
             `${request.nextUrl.origin}/api/upload?publicId=${encodeURIComponent(storagePath)}`,
             {
-              method: "DELETE",
+              method: 'DELETE',
               headers: {
                 Authorization: `Bearer ${session.user.id}`,
               },
@@ -179,15 +179,15 @@ export const PUT = withRateLimit(RATE_LIMIT_CONFIGS.UPLOAD)(async (
           );
 
           if (!deleteResponse.ok) {
-            logger.warn("Failed to delete removed file from storage", {
+            logger.warn('Failed to delete removed file from storage', {
               removedImageUrl,
               status: deleteResponse.status,
               userId: session.user.id,
             });
           }
         } catch (error) {
-          logger.warn("Error deleting removed file from storage", {
-            error: error instanceof Error ? error.message : "Unknown error",
+          logger.warn('Error deleting removed file from storage', {
+            error: error instanceof Error ? error.message : 'Unknown error',
             removedImageUrl,
             userId: session.user.id,
           });
@@ -196,10 +196,10 @@ export const PUT = withRateLimit(RATE_LIMIT_CONFIGS.UPLOAD)(async (
     }
 
     // Ensure only one image is marked as primary
-    const primaryImages = images.filter((img) => img.isPrimary);
+    const primaryImages = images.filter(img => img.isPrimary);
     if (primaryImages.length > 1) {
       return createSecureResponse(
-        { error: "Only one image can be marked as primary" },
+        { error: 'Only one image can be marked as primary' },
         400
       );
     }
@@ -212,7 +212,7 @@ export const PUT = withRateLimit(RATE_LIMIT_CONFIGS.UPLOAD)(async (
     // Convert to storage format
     const imageObjects = convertToStorageFormat(images);
 
-    logger.info("Updating product images", {
+    logger.info('Updating product images', {
       productId,
       imageCount: images.length,
       userId: session.user.id,
@@ -227,7 +227,7 @@ export const PUT = withRateLimit(RATE_LIMIT_CONFIGS.UPLOAD)(async (
     });
 
     return createSecureResponse({
-      message: "Product images updated successfully",
+      message: 'Product images updated successfully',
       product: {
         id: updatedProduct.id,
         name: updatedProduct.name,
@@ -237,19 +237,19 @@ export const PUT = withRateLimit(RATE_LIMIT_CONFIGS.UPLOAD)(async (
   } catch (error) {
     if (error instanceof z.ZodError) {
       return createSecureResponse(
-        { error: "Invalid image data", details: error.errors },
+        { error: 'Invalid image data', details: error.errors },
         400
       );
     }
 
     const session = await auth();
-    logger.error("Error updating product images", {
-      error: error instanceof Error ? error.message : "Unknown error",
-      productId: await params.then((p) => p.id),
+    logger.error('Error updating product images', {
+      error: error instanceof Error ? error.message : 'Unknown error',
+      productId: await params.then(p => p.id),
       userId: session?.user?.id,
     });
     return createSecureResponse(
-      { error: "Failed to update product images" },
+      { error: 'Failed to update product images' },
       500
     );
   }
@@ -262,26 +262,26 @@ export const DELETE = withRateLimit(RATE_LIMIT_CONFIGS.UPLOAD)(async (
   try {
     const session = await auth();
     if (!session?.user) {
-      return createSecureResponse({ error: "Unauthorized" }, 401);
+      return createSecureResponse({ error: 'Unauthorized' }, 401);
     }
 
     // Check permissions
-    if (!["ADMIN", "MANAGER"].includes(session.user.role)) {
-      return createSecureResponse({ error: "Insufficient permissions" }, 403);
+    if (!['ADMIN', 'MANAGER'].includes(session.user.role)) {
+      return createSecureResponse({ error: 'Insufficient permissions' }, 403);
     }
 
     const { id } = await params;
     const productId = parseInt(id);
     if (isNaN(productId)) {
-      return createSecureResponse({ error: "Invalid product ID" }, 400);
+      return createSecureResponse({ error: 'Invalid product ID' }, 400);
     }
 
     // Get the imageUrl from query parameters
     const { searchParams } = new URL(request.url);
-    const imageUrl = searchParams.get("imageUrl");
+    const imageUrl = searchParams.get('imageUrl');
 
     if (!imageUrl) {
-      return createSecureResponse({ error: "Image URL is required" }, 400);
+      return createSecureResponse({ error: 'Image URL is required' }, 400);
     }
 
     // Get current images
@@ -292,7 +292,7 @@ export const DELETE = withRateLimit(RATE_LIMIT_CONFIGS.UPLOAD)(async (
 
     if (!currentProduct?.images) {
       return createSecureResponse(
-        { error: "No images found for this product" },
+        { error: 'No images found for this product' },
         404
       );
     }
@@ -301,14 +301,14 @@ export const DELETE = withRateLimit(RATE_LIMIT_CONFIGS.UPLOAD)(async (
     let currentImages: any[] = [];
     if (
       Array.isArray(currentProduct.images) &&
-      typeof currentProduct.images[0] === "string"
+      typeof currentProduct.images[0] === 'string'
     ) {
       // Legacy format: convert to new format for processing
       currentImages = (currentProduct.images as string[]).map((url, index) => ({
         url,
-        filename: url.split("/").pop() || `image-${index}`,
-        mimeType: "image/jpeg",
-        alt: "",
+        filename: url.split('/').pop() || `image-${index}`,
+        mimeType: 'image/jpeg',
+        alt: '',
         isPrimary: index === 0,
         uploadedAt: new Date().toISOString(),
       }));
@@ -318,13 +318,13 @@ export const DELETE = withRateLimit(RATE_LIMIT_CONFIGS.UPLOAD)(async (
     }
 
     // Find the image to delete by URL
-    const imageToDelete = currentImages.find((img) => img.url === imageUrl);
+    const imageToDelete = currentImages.find(img => img.url === imageUrl);
     if (!imageToDelete) {
-      return createSecureResponse({ error: "Image not found" }, 404);
+      return createSecureResponse({ error: 'Image not found' }, 404);
     }
 
     // Remove the image from the array
-    const updatedImages = currentImages.filter((img) => img.url !== imageUrl);
+    const updatedImages = currentImages.filter(img => img.url !== imageUrl);
 
     // If we deleted the primary image and there are other images, make the first one primary
     if (imageToDelete.isPrimary && updatedImages.length > 0) {
@@ -338,7 +338,7 @@ export const DELETE = withRateLimit(RATE_LIMIT_CONFIGS.UPLOAD)(async (
         const deleteResponse = await fetch(
           `${request.nextUrl.origin}/api/upload?publicId=${encodeURIComponent(storagePath)}`,
           {
-            method: "DELETE",
+            method: 'DELETE',
             headers: {
               Authorization: `Bearer ${session.user.id}`,
             },
@@ -346,15 +346,15 @@ export const DELETE = withRateLimit(RATE_LIMIT_CONFIGS.UPLOAD)(async (
         );
 
         if (!deleteResponse.ok) {
-          logger.warn("Failed to delete file from storage", {
+          logger.warn('Failed to delete file from storage', {
             imageUrl: imageToDelete.url,
             status: deleteResponse.status,
             userId: session.user.id,
           });
         }
       } catch (error) {
-        logger.warn("Error deleting file from storage", {
-          error: error instanceof Error ? error.message : "Unknown error",
+        logger.warn('Error deleting file from storage', {
+          error: error instanceof Error ? error.message : 'Unknown error',
           imageUrl: imageToDelete.url,
           userId: session.user.id,
         });
@@ -364,7 +364,7 @@ export const DELETE = withRateLimit(RATE_LIMIT_CONFIGS.UPLOAD)(async (
     // Convert back to the format stored in the database
     const imageObjects = convertToStorageFormat(updatedImages);
 
-    logger.info("Image deleted successfully", {
+    logger.info('Image deleted successfully', {
       productId,
       imageUrl,
       userId: session.user.id,
@@ -380,7 +380,7 @@ export const DELETE = withRateLimit(RATE_LIMIT_CONFIGS.UPLOAD)(async (
     });
 
     return createSecureResponse({
-      message: "Image deleted successfully",
+      message: 'Image deleted successfully',
       product: {
         id: updatedProduct.id,
         name: updatedProduct.name,
@@ -389,11 +389,11 @@ export const DELETE = withRateLimit(RATE_LIMIT_CONFIGS.UPLOAD)(async (
     });
   } catch (error) {
     const session = await auth();
-    logger.error("Error deleting image", {
-      error: error instanceof Error ? error.message : "Unknown error",
-      productId: await params.then((p) => p.id),
+    logger.error('Error deleting image', {
+      error: error instanceof Error ? error.message : 'Unknown error',
+      productId: await params.then(p => p.id),
       userId: session?.user?.id,
     });
-    return createSecureResponse({ error: "Failed to delete image" }, 500);
+    return createSecureResponse({ error: 'Failed to delete image' }, 500);
   }
 });

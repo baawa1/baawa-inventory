@@ -1,17 +1,17 @@
-"use client";
+'use client';
 
-import React from "react";
+import React from 'react';
 import {
   Card,
   CardContent,
   CardDescription,
   CardHeader,
   CardTitle,
-} from "@/components/ui/card";
-import { Progress } from "@/components/ui/progress";
-import { Badge } from "@/components/ui/badge";
-import { formatCurrency } from "@/lib/utils";
-import { TrendingDown, AlertTriangle, CheckCircle } from "lucide-react";
+} from '@/components/ui/card';
+import { Progress } from '@/components/ui/progress';
+import { Badge } from '@/components/ui/badge';
+import { formatCurrency } from '@/lib/utils';
+import { TrendingDown, AlertTriangle, CheckCircle } from 'lucide-react';
 
 interface BudgetCategory {
   id: string;
@@ -20,7 +20,7 @@ interface BudgetCategory {
   spent: number;
   remaining: number;
   utilization: number;
-  status: "on-track" | "warning" | "over-budget";
+  status: 'on-track' | 'warning' | 'over-budget';
 }
 
 interface BudgetOverviewProps {
@@ -40,24 +40,24 @@ export function BudgetOverview({
 }: BudgetOverviewProps) {
   const getStatusColor = (status: string) => {
     switch (status) {
-      case "on-track":
-        return "text-green-600";
-      case "warning":
-        return "text-yellow-600";
-      case "over-budget":
-        return "text-red-600";
+      case 'on-track':
+        return 'text-green-600';
+      case 'warning':
+        return 'text-yellow-600';
+      case 'over-budget':
+        return 'text-red-600';
       default:
-        return "text-gray-600";
+        return 'text-gray-600';
     }
   };
 
   const getStatusIcon = (status: string) => {
     switch (status) {
-      case "on-track":
+      case 'on-track':
         return <CheckCircle className="h-4 w-4" />;
-      case "warning":
+      case 'warning':
         return <AlertTriangle className="h-4 w-4" />;
-      case "over-budget":
+      case 'over-budget':
         return <TrendingDown className="h-4 w-4" />;
       default:
         return null;
@@ -75,21 +75,21 @@ export function BudgetOverview({
           </CardDescription>
         </CardHeader>
         <CardContent className="space-y-4">
-          <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+          <div className="grid grid-cols-1 gap-4 md:grid-cols-3">
             <div className="text-center">
-              <p className="text-sm text-muted-foreground">Total Budget</p>
+              <p className="text-muted-foreground text-sm">Total Budget</p>
               <p className="text-2xl font-bold">
                 {formatCurrency(totalBudget)}
               </p>
             </div>
             <div className="text-center">
-              <p className="text-sm text-muted-foreground">Total Spent</p>
+              <p className="text-muted-foreground text-sm">Total Spent</p>
               <p className="text-2xl font-bold text-red-600">
                 {formatCurrency(totalSpent)}
               </p>
             </div>
             <div className="text-center">
-              <p className="text-sm text-muted-foreground">Remaining</p>
+              <p className="text-muted-foreground text-sm">Remaining</p>
               <p className="text-2xl font-bold text-green-600">
                 {formatCurrency(totalRemaining)}
               </p>
@@ -116,7 +116,7 @@ export function BudgetOverview({
         </CardHeader>
         <CardContent>
           <div className="space-y-4">
-            {categories.map((category) => (
+            {categories.map(category => (
               <div key={category.id} className="space-y-2">
                 <div className="flex items-center justify-between">
                   <div className="flex items-center space-x-2">
@@ -127,16 +127,16 @@ export function BudgetOverview({
                     >
                       {getStatusIcon(category.status)}
                       <span className="ml-1 capitalize">
-                        {category.status.replace("-", " ")}
+                        {category.status.replace('-', ' ')}
                       </span>
                     </Badge>
                   </div>
                   <div className="text-right">
                     <p className="text-sm font-medium">
-                      {formatCurrency(category.spent)} /{" "}
+                      {formatCurrency(category.spent)} /{' '}
                       {formatCurrency(category.budget)}
                     </p>
-                    <p className="text-xs text-muted-foreground">
+                    <p className="text-muted-foreground text-xs">
                       {category.utilization.toFixed(1)}% used
                     </p>
                   </div>

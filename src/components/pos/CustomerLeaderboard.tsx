@@ -1,11 +1,11 @@
-"use client";
+'use client';
 
-import React, { useState } from "react";
-import { useQuery } from "@tanstack/react-query";
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import { Badge } from "@/components/ui/badge";
-import { Button } from "@/components/ui/button";
-import { Input } from "@/components/ui/input";
+import React, { useState } from 'react';
+import { useQuery } from '@tanstack/react-query';
+import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
+import { Badge } from '@/components/ui/badge';
+import { Button } from '@/components/ui/button';
+import { Input } from '@/components/ui/input';
 import {
   Table,
   TableBody,
@@ -13,7 +13,7 @@ import {
   TableHead,
   TableHeader,
   TableRow,
-} from "@/components/ui/table";
+} from '@/components/ui/table';
 import {
   Dialog,
   DialogContent,
@@ -21,14 +21,14 @@ import {
   DialogHeader,
   DialogTitle,
   DialogTrigger,
-} from "@/components/ui/dialog";
+} from '@/components/ui/dialog';
 import {
   Select,
   SelectContent,
   SelectItem,
   SelectTrigger,
   SelectValue,
-} from "@/components/ui/select";
+} from '@/components/ui/select';
 import {
   IconSearch,
   IconEye,
@@ -38,9 +38,9 @@ import {
   IconPhone,
   IconCalendar,
   IconCurrencyNaira,
-} from "@tabler/icons-react";
-import { formatCurrency } from "@/lib/utils";
-import { toast } from "sonner";
+} from '@tabler/icons-react';
+import { formatCurrency } from '@/lib/utils';
+import { toast } from 'sonner';
 
 interface Customer {
   id: string;
@@ -75,9 +75,9 @@ interface CustomerLeaderboardProps {
 }
 
 async function fetchCustomers(): Promise<Customer[]> {
-  const response = await fetch("/api/pos/customers");
+  const response = await fetch('/api/pos/customers');
   if (!response.ok) {
-    throw new Error("Failed to fetch customers");
+    throw new Error('Failed to fetch customers');
   }
   return response.json();
 }
@@ -89,16 +89,16 @@ async function fetchCustomerPurchases(
     `/api/pos/customers/${encodeURIComponent(customerEmail)}/purchases`
   );
   if (!response.ok) {
-    throw new Error("Failed to fetch customer purchases");
+    throw new Error('Failed to fetch customer purchases');
   }
   return response.json();
 }
 
 export function CustomerLeaderboard({ user: _ }: CustomerLeaderboardProps) {
-  const [searchTerm, setSearchTerm] = useState("");
+  const [searchTerm, setSearchTerm] = useState('');
   const [sortBy, setSortBy] = useState<
-    "totalSpent" | "totalOrders" | "lastPurchase"
-  >("totalSpent");
+    'totalSpent' | 'totalOrders' | 'lastPurchase'
+  >('totalSpent');
   const [selectedCustomer, setSelectedCustomer] = useState<Customer | null>(
     null
   );
@@ -108,30 +108,30 @@ export function CustomerLeaderboard({ user: _ }: CustomerLeaderboardProps) {
     isLoading,
     error,
   } = useQuery({
-    queryKey: ["customers"],
+    queryKey: ['customers'],
     queryFn: fetchCustomers,
   });
 
   const { data: customerPurchases = [], isLoading: purchasesLoading } =
     useQuery({
-      queryKey: ["customer-purchases", selectedCustomer?.email],
+      queryKey: ['customer-purchases', selectedCustomer?.email],
       queryFn: () => fetchCustomerPurchases(selectedCustomer!.email),
       enabled: !!selectedCustomer,
     });
 
   const filteredCustomers = customers
     .filter(
-      (customer) =>
+      customer =>
         customer.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
         customer.email.toLowerCase().includes(searchTerm.toLowerCase())
     )
     .sort((a, b) => {
       switch (sortBy) {
-        case "totalSpent":
+        case 'totalSpent':
           return b.totalSpent - a.totalSpent;
-        case "totalOrders":
+        case 'totalOrders':
           return b.totalOrders - a.totalOrders;
-        case "lastPurchase":
+        case 'lastPurchase':
           return (
             new Date(b.lastPurchase).getTime() -
             new Date(a.lastPurchase).getTime()
@@ -145,7 +145,7 @@ export function CustomerLeaderboard({ user: _ }: CustomerLeaderboardProps) {
     if (rank === 1)
       return (
         <Badge className="bg-yellow-500 text-white">
-          <IconTrophy className="w-3 h-3 mr-1" />
+          <IconTrophy className="mr-1 h-3 w-3" />
           Champion
         </Badge>
       );
@@ -157,12 +157,12 @@ export function CustomerLeaderboard({ user: _ }: CustomerLeaderboardProps) {
   };
 
   if (error) {
-    toast.error("Failed to load customer data");
+    toast.error('Failed to load customer data');
   }
 
   return (
-    <div className="container mx-auto p-6 space-y-6">
-      <div className="flex justify-between items-center">
+    <div className="container mx-auto space-y-6 p-6">
+      <div className="flex items-center justify-between">
         <div>
           <h1 className="text-3xl font-bold">Customer Leaderboard</h1>
           <p className="text-muted-foreground">
@@ -172,13 +172,13 @@ export function CustomerLeaderboard({ user: _ }: CustomerLeaderboardProps) {
       </div>
 
       {/* Stats Cards */}
-      <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+      <div className="grid grid-cols-1 gap-6 md:grid-cols-3">
         <Card>
           <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
             <CardTitle className="text-sm font-medium">
               Total Customers
             </CardTitle>
-            <IconUser className="h-4 w-4 text-muted-foreground" />
+            <IconUser className="text-muted-foreground h-4 w-4" />
           </CardHeader>
           <CardContent>
             <div className="text-2xl font-bold">{customers.length}</div>
@@ -190,15 +190,13 @@ export function CustomerLeaderboard({ user: _ }: CustomerLeaderboardProps) {
             <CardTitle className="text-sm font-medium">
               Top Customer Spent
             </CardTitle>
-            <IconCurrencyNaira className="h-4 w-4 text-muted-foreground" />
+            <IconCurrencyNaira className="text-muted-foreground h-4 w-4" />
           </CardHeader>
           <CardContent>
             <div className="text-2xl font-bold">
               {customers.length > 0
-                ? formatCurrency(
-                    Math.max(...customers.map((c) => c.totalSpent))
-                  )
-                : "₦0.00"}
+                ? formatCurrency(Math.max(...customers.map(c => c.totalSpent)))
+                : '₦0.00'}
             </div>
           </CardContent>
         </Card>
@@ -208,7 +206,7 @@ export function CustomerLeaderboard({ user: _ }: CustomerLeaderboardProps) {
             <CardTitle className="text-sm font-medium">
               Average Order Value
             </CardTitle>
-            <IconCurrencyNaira className="h-4 w-4 text-muted-foreground" />
+            <IconCurrencyNaira className="text-muted-foreground h-4 w-4" />
           </CardHeader>
           <CardContent>
             <div className="text-2xl font-bold">
@@ -217,7 +215,7 @@ export function CustomerLeaderboard({ user: _ }: CustomerLeaderboardProps) {
                     customers.reduce((sum, c) => sum + c.averageOrderValue, 0) /
                       customers.length
                   )
-                : "₦0.00"}
+                : '₦0.00'}
             </div>
           </CardContent>
         </Card>
@@ -229,14 +227,14 @@ export function CustomerLeaderboard({ user: _ }: CustomerLeaderboardProps) {
           <CardTitle>Filters</CardTitle>
         </CardHeader>
         <CardContent>
-          <div className="flex flex-col sm:flex-row gap-4">
+          <div className="flex flex-col gap-4 sm:flex-row">
             <div className="flex-1">
               <div className="relative">
-                <IconSearch className="absolute left-2 top-2.5 h-4 w-4 text-muted-foreground" />
+                <IconSearch className="text-muted-foreground absolute top-2.5 left-2 h-4 w-4" />
                 <Input
                   placeholder="Search customers..."
                   value={searchTerm}
-                  onChange={(e) => setSearchTerm(e.target.value)}
+                  onChange={e => setSearchTerm(e.target.value)}
                   className="pl-8"
                 />
               </div>
@@ -266,7 +264,7 @@ export function CustomerLeaderboard({ user: _ }: CustomerLeaderboardProps) {
         <CardContent>
           {isLoading ? (
             <div className="flex justify-center py-8">
-              <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-gray-900"></div>
+              <div className="h-8 w-8 animate-spin rounded-full border-b-2 border-gray-900"></div>
             </div>
           ) : (
             <Table>
@@ -289,8 +287,8 @@ export function CustomerLeaderboard({ user: _ }: CustomerLeaderboardProps) {
                     <TableCell>
                       <div>
                         <div className="font-medium">{customer.name}</div>
-                        <div className="text-sm text-muted-foreground flex items-center">
-                          <IconMail className="w-3 h-3 mr-1" />
+                        <div className="text-muted-foreground flex items-center text-sm">
+                          <IconMail className="mr-1 h-3 w-3" />
                           {customer.email}
                         </div>
                       </div>
@@ -298,7 +296,7 @@ export function CustomerLeaderboard({ user: _ }: CustomerLeaderboardProps) {
                     <TableCell>
                       {customer.phone ? (
                         <div className="flex items-center text-sm">
-                          <IconPhone className="w-3 h-3 mr-1" />
+                          <IconPhone className="mr-1 h-3 w-3" />
                           {customer.phone}
                         </div>
                       ) : (
@@ -314,7 +312,7 @@ export function CustomerLeaderboard({ user: _ }: CustomerLeaderboardProps) {
                     </TableCell>
                     <TableCell>
                       <div className="flex items-center text-sm">
-                        <IconCalendar className="w-3 h-3 mr-1" />
+                        <IconCalendar className="mr-1 h-3 w-3" />
                         {new Date(customer.lastPurchase).toLocaleDateString()}
                       </div>
                     </TableCell>
@@ -326,11 +324,11 @@ export function CustomerLeaderboard({ user: _ }: CustomerLeaderboardProps) {
                             size="sm"
                             onClick={() => setSelectedCustomer(customer)}
                           >
-                            <IconEye className="w-4 h-4 mr-1" />
+                            <IconEye className="mr-1 h-4 w-4" />
                             View Purchases
                           </Button>
                         </DialogTrigger>
-                        <DialogContent className="max-w-4xl max-h-[80vh] overflow-y-auto">
+                        <DialogContent className="max-h-[80vh] max-w-4xl overflow-y-auto">
                           <DialogHeader>
                             <DialogTitle>
                               Purchase History - {customer.name}
@@ -342,20 +340,20 @@ export function CustomerLeaderboard({ user: _ }: CustomerLeaderboardProps) {
 
                           {purchasesLoading ? (
                             <div className="flex justify-center py-8">
-                              <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-gray-900"></div>
+                              <div className="h-8 w-8 animate-spin rounded-full border-b-2 border-gray-900"></div>
                             </div>
                           ) : (
                             <div className="space-y-4">
-                              {customerPurchases.map((purchase) => (
+                              {customerPurchases.map(purchase => (
                                 <Card key={purchase.id}>
                                   <CardHeader className="pb-2">
-                                    <div className="flex justify-between items-center">
+                                    <div className="flex items-center justify-between">
                                       <div>
                                         <CardTitle className="text-lg">
                                           Transaction #
                                           {purchase.transactionNumber}
                                         </CardTitle>
-                                        <p className="text-sm text-muted-foreground">
+                                        <p className="text-muted-foreground text-sm">
                                           {new Date(
                                             purchase.createdAt
                                           ).toLocaleString()}
@@ -406,7 +404,7 @@ export function CustomerLeaderboard({ user: _ }: CustomerLeaderboardProps) {
                               ))}
 
                               {customerPurchases.length === 0 && (
-                                <div className="text-center py-8 text-muted-foreground">
+                                <div className="text-muted-foreground py-8 text-center">
                                   No purchases found for this customer.
                                 </div>
                               )}
@@ -422,7 +420,7 @@ export function CustomerLeaderboard({ user: _ }: CustomerLeaderboardProps) {
           )}
 
           {filteredCustomers.length === 0 && !isLoading && (
-            <div className="text-center py-8 text-muted-foreground">
+            <div className="text-muted-foreground py-8 text-center">
               No customers found matching your search.
             </div>
           )}

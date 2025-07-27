@@ -1,6 +1,6 @@
-import { withAuth, AuthenticatedRequest } from "@/lib/api-middleware";
-import { createApiResponse } from "@/lib/api-response";
-import { prisma } from "@/lib/db";
+import { withAuth, AuthenticatedRequest } from '@/lib/api-middleware';
+import { createApiResponse } from '@/lib/api-response';
+import { prisma } from '@/lib/db';
 
 // GET /api/inventory/stats - Get inventory statistics
 export const GET = withAuth(async (_request: AuthenticatedRequest) => {
@@ -66,10 +66,10 @@ export const GET = withAuth(async (_request: AuthenticatedRequest) => {
         recentSales,
         stockMovement,
       },
-      "Inventory statistics retrieved successfully"
+      'Inventory statistics retrieved successfully'
     );
   } catch (error) {
-    console.error("Error fetching inventory stats:", error);
-    return createApiResponse.internalError("Failed to fetch inventory stats");
+    console.error('Error fetching inventory stats:', error);
+    return createApiResponse.internalError('Failed to fetch inventory stats');
   }
 });

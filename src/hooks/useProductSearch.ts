@@ -1,5 +1,5 @@
-import { useQuery } from "@tanstack/react-query";
-import { useDebounce } from "@/hooks/useDebounce";
+import { useQuery } from '@tanstack/react-query';
+import { useDebounce } from '@/hooks/useDebounce';
 
 // API function for product search
 const fetchProducts = async (filters: {
@@ -9,18 +9,18 @@ const fetchProducts = async (filters: {
   sortOrder?: string;
 }) => {
   const searchParams = new URLSearchParams({
-    limit: filters.limit?.toString() || "100",
-    sortBy: filters.sortBy || "name",
-    sortOrder: filters.sortOrder || "asc",
+    limit: filters.limit?.toString() || '100',
+    sortBy: filters.sortBy || 'name',
+    sortOrder: filters.sortOrder || 'asc',
   });
 
   if (filters.search) {
-    searchParams.append("search", filters.search);
+    searchParams.append('search', filters.search);
   }
 
   const response = await fetch(`/api/products?${searchParams}`);
   if (!response.ok) {
-    throw new Error("Failed to fetch products");
+    throw new Error('Failed to fetch products');
   }
   return response.json();
 };
@@ -35,13 +35,13 @@ export function useProductSearch(searchTerm: string, delay: number = 300) {
   const debouncedSearchTerm = useDebounce(searchTerm, delay);
 
   return useQuery({
-    queryKey: ["products", "search", debouncedSearchTerm],
+    queryKey: ['products', 'search', debouncedSearchTerm],
     queryFn: () =>
       fetchProducts({
         search: debouncedSearchTerm,
         limit: 100,
-        sortBy: "name",
-        sortOrder: "asc",
+        sortBy: 'name',
+        sortOrder: 'asc',
       }),
     enabled:
       debouncedSearchTerm.length >= 2 || debouncedSearchTerm.length === 0,

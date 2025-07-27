@@ -2,7 +2,7 @@ import {
   ProductImage,
   ProductImageStorage,
   IMAGE_CONSTANTS,
-} from "@/types/product-images";
+} from '@/types/product-images';
 
 /**
  * Image utility functions for consistent image handling across the application
@@ -15,10 +15,10 @@ export function convertLegacyImages(imageUrls: string[]): ProductImage[] {
   return imageUrls.map((url, index) => ({
     id: `legacy-${index}`,
     url,
-    filename: url.split("/").pop() || `image-${index}`,
+    filename: url.split('/').pop() || `image-${index}`,
     size: 0,
-    mimeType: "image/jpeg",
-    alt: "",
+    mimeType: 'image/jpeg',
+    alt: '',
     isPrimary: index === 0,
     uploadedAt: new Date().toISOString(),
   }));
@@ -30,9 +30,9 @@ export function convertLegacyImages(imageUrls: string[]): ProductImage[] {
 export function convertToStorageFormat(
   images: ProductImage[]
 ): ProductImageStorage[] {
-  return images.map((img) => ({
+  return images.map(img => ({
     url: img.url,
-    altText: img.alt || img.altText || "",
+    altText: img.alt || img.altText || '',
     isPrimary: img.isPrimary,
   }));
 }
@@ -49,9 +49,9 @@ export function convertFromStorageFormat(
   return storageImages.map((img, index) => ({
     id: img.id || `restored-${index}`,
     url: img.url,
-    filename: img.filename || img.url.split("/").pop() || `image-${index}`,
+    filename: img.filename || img.url.split('/').pop() || `image-${index}`,
     size: img.size || 0,
-    mimeType: img.mimeType || "image/jpeg",
+    mimeType: img.mimeType || 'image/jpeg',
     alt:
       img.alt ||
       img.altText ||
@@ -70,8 +70,8 @@ export function generateAltText(
   categoryName?: string,
   index: number = 0
 ): string {
-  const brandText = brandName ? ` ${brandName}` : "";
-  const categoryText = categoryName ? ` ${categoryName}` : "";
+  const brandText = brandName ? ` ${brandName}` : '';
+  const categoryText = categoryName ? ` ${categoryName}` : '';
 
   if (index === 0) {
     return `${productName}${brandText}${categoryText}`;
@@ -92,34 +92,34 @@ export function generateMeaningfulFilename(
 ): string {
   // Clean product name: remove special chars, convert to lowercase, replace spaces with hyphens
   const cleanName = productName
-    .replace(/[^a-zA-Z0-9\s]/g, "")
-    .replace(/\s+/g, "-")
+    .replace(/[^a-zA-Z0-9\s]/g, '')
+    .replace(/\s+/g, '-')
     .toLowerCase()
     .substring(0, 60); // Limit length
 
   // Clean brand name
   const cleanBrandName = brandName
     ? brandName
-        .replace(/[^a-zA-Z0-9\s]/g, "")
-        .replace(/\s+/g, "-")
+        .replace(/[^a-zA-Z0-9\s]/g, '')
+        .replace(/\s+/g, '-')
         .toLowerCase()
         .substring(0, 30)
-    : "no-brand";
+    : 'no-brand';
 
   // Clean category name
   const cleanCategoryName = categoryName
     ? categoryName
-        .replace(/[^a-zA-Z0-9\s]/g, "")
-        .replace(/\s+/g, "-")
+        .replace(/[^a-zA-Z0-9\s]/g, '')
+        .replace(/\s+/g, '-')
         .toLowerCase()
         .substring(0, 30)
-    : "uncategorized";
+    : 'uncategorized';
 
   // Get file extension from original filename
-  const extension = originalFilename.split(".").pop()?.toLowerCase() || "jpg";
+  const extension = originalFilename.split('.').pop()?.toLowerCase() || 'jpg';
 
   // Generate increment (01, 02, 03, etc.)
-  const increment = String(index + 1).padStart(2, "0");
+  const increment = String(index + 1).padStart(2, '0');
 
   // Combine all parts
   return `${cleanName}-${cleanBrandName}-${cleanCategoryName}-${increment}.${extension}`;
@@ -131,7 +131,7 @@ export function generateMeaningfulFilename(
 export function ensureUniqueImages(images: ProductImage[]): ProductImage[] {
   return images.filter(
     (image, index, self) =>
-      index === self.findIndex((img) => img.url === image.url)
+      index === self.findIndex(img => img.url === image.url)
   );
 }
 
@@ -154,9 +154,9 @@ export function sortImages(images: ProductImage[]): ProductImage[] {
 export function validateImageData(image: any): ProductImage {
   return {
     url: String(image.url),
-    filename: String(image.filename || image.url.split("/").pop() || "image"),
-    mimeType: String(image.mimeType || "image/jpeg"),
-    alt: image.alt ? String(image.alt) : "",
+    filename: String(image.filename || image.url.split('/').pop() || 'image'),
+    mimeType: String(image.mimeType || 'image/jpeg'),
+    alt: image.alt ? String(image.alt) : '',
     isPrimary: Boolean(image.isPrimary),
     uploadedAt: String(image.uploadedAt || new Date().toISOString()),
     size: Number(image.size || 0),
@@ -167,13 +167,13 @@ export function validateImageData(image: any): ProductImage {
  * Extract storage path from Supabase URL
  */
 export function extractStoragePath(url: string): string | null {
-  if (!url.includes("supabase.co")) {
+  if (!url.includes('supabase.co')) {
     return null;
   }
 
   try {
-    const urlParts = url.split("/");
-    return urlParts.slice(-2).join("/"); // Get folder/filename
+    const urlParts = url.split('/');
+    return urlParts.slice(-2).join('/'); // Get folder/filename
   } catch {
     return null;
   }

@@ -3,26 +3,26 @@
  * Prevents sensitive information from being logged or exposed
  */
 
-import { logger } from "../logger";
+import { logger } from '../logger';
 
 // List of sensitive fields that should never be logged
 const SENSITIVE_FIELDS = [
-  "password",
-  "password_hash",
-  "token",
-  "secret",
-  "key",
-  "credential",
-  "authorization",
-  "cookie",
-  "session",
-  "resetToken",
-  "emailVerificationToken",
-  "csrf",
-  "api_key",
-  "private_key",
-  "access_token",
-  "refresh_token",
+  'password',
+  'password_hash',
+  'token',
+  'secret',
+  'key',
+  'credential',
+  'authorization',
+  'cookie',
+  'session',
+  'resetToken',
+  'emailVerificationToken',
+  'csrf',
+  'api_key',
+  'private_key',
+  'access_token',
+  'refresh_token',
 ];
 
 // Patterns that indicate sensitive data
@@ -65,29 +65,29 @@ export class ErrorSanitizer {
       };
     }
 
-    if (typeof error === "string") {
+    if (typeof error === 'string') {
       return {
         message: this.sanitizeMessage(error),
-        type: "StringError",
+        type: 'StringError',
         timestamp,
         sanitized: true,
       };
     }
 
-    if (typeof error === "object" && error !== null) {
+    if (typeof error === 'object' && error !== null) {
       return {
         message: this.sanitizeMessage(
           JSON.stringify(this.sanitizeObject(error))
         ),
-        type: "ObjectError",
+        type: 'ObjectError',
         timestamp,
         sanitized: true,
       };
     }
 
     return {
-      message: "Unknown error occurred",
-      type: "UnknownError",
+      message: 'Unknown error occurred',
+      type: 'UnknownError',
       timestamp,
       sanitized: true,
     };
@@ -100,20 +100,20 @@ export class ErrorSanitizer {
     let sanitized = message;
 
     // Remove common sensitive patterns
-    SENSITIVE_PATTERNS.forEach((pattern) => {
-      sanitized = sanitized.replace(pattern, "[REDACTED]");
+    SENSITIVE_PATTERNS.forEach(pattern => {
+      sanitized = sanitized.replace(pattern, '[REDACTED]');
     });
 
     // Remove potential tokens or keys (long alphanumeric strings)
-    sanitized = sanitized.replace(/[a-zA-Z0-9]{32,}/g, "[REDACTED_TOKEN]");
+    sanitized = sanitized.replace(/[a-zA-Z0-9]{32,}/g, '[REDACTED_TOKEN]');
 
     // Remove email addresses in error messages
-    sanitized = sanitized.replace(/[\w.-]+@[\w.-]+\.\w+/g, "[REDACTED_EMAIL]");
+    sanitized = sanitized.replace(/[\w.-]+@[\w.-]+\.\w+/g, '[REDACTED_EMAIL]');
 
     // Remove potential IP addresses
     sanitized = sanitized.replace(
       /\b(?:\d{1,3}\.){3}\d{1,3}\b/g,
-      "[REDACTED_IP]"
+      '[REDACTED_IP]'
     );
 
     return sanitized;
@@ -123,12 +123,12 @@ export class ErrorSanitizer {
    * Sanitize object by removing sensitive fields
    */
   private static sanitizeObject(obj: any): any {
-    if (obj === null || typeof obj !== "object") {
+    if (obj === null || typeof obj !== 'object') {
       return obj;
     }
 
     if (Array.isArray(obj)) {
-      return obj.map((item) => this.sanitizeObject(item));
+      return obj.map(item => this.sanitizeObject(item));
     }
 
     const sanitized: any = {};
@@ -136,11 +136,11 @@ export class ErrorSanitizer {
     for (const [key, value] of Object.entries(obj)) {
       // Check if field name is sensitive
       if (this.isSensitiveField(key)) {
-        sanitized[key] = "[REDACTED]";
-      } else if (typeof value === "object" && value !== null) {
+        sanitized[key] = '[REDACTED]';
+      } else if (typeof value === 'object' && value !== null) {
         sanitized[key] = this.sanitizeObject(value);
-      } else if (typeof value === "string" && this.isSensitiveValue(value)) {
-        sanitized[key] = "[REDACTED]";
+      } else if (typeof value === 'string' && this.isSensitiveValue(value)) {
+        sanitized[key] = '[REDACTED]';
       } else {
         sanitized[key] = value;
       }
@@ -154,7 +154,7 @@ export class ErrorSanitizer {
    */
   private static isSensitiveField(fieldName: string): boolean {
     const lowerField = fieldName.toLowerCase();
-    return SENSITIVE_FIELDS.some((sensitive) =>
+    return SENSITIVE_FIELDS.some(sensitive =>
       lowerField.includes(sensitive.toLowerCase())
     );
   }
@@ -174,7 +174,7 @@ export class ErrorSanitizer {
     }
 
     // Check for bearer tokens
-    if (value.toLowerCase().startsWith("bearer ")) {
+    if (value.toLowerCase().startsWith('bearer ')) {
       return true;
     }
 
@@ -190,7 +190,7 @@ export class ErrorSanitizer {
       ? this.sanitizeObject(additionalData)
       : undefined;
 
-    logger.error(context || "Error occurred", {
+    logger.error(context || 'Error occurred', {
       error: sanitizedError,
       ...sanitizedData,
     });
@@ -205,7 +205,7 @@ export class ErrorSanitizer {
       ? this.sanitizeObject(additionalData)
       : undefined;
 
-    logger.error("Authentication error", {
+    logger.error('Authentication error', {
       error: sanitizedError,
       email: email ? this.sanitizeEmail(email) : undefined,
       ...sanitizedData,
@@ -216,11 +216,11 @@ export class ErrorSanitizer {
    * Sanitize email for logging (show domain but hide username)
    */
   private static sanitizeEmail(email: string): string {
-    if (!email.includes("@")) return "[INVALID_EMAIL]";
+    if (!email.includes('@')) return '[INVALID_EMAIL]';
 
-    const [username, domain] = email.split("@");
+    const [username, domain] = email.split('@');
     const sanitizedUsername =
-      username.length > 2 ? username.substring(0, 2) + "***" : "***";
+      username.length > 2 ? username.substring(0, 2) + '***' : '***';
 
     return `${sanitizedUsername}@${domain}`;
   }

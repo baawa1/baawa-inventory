@@ -1,11 +1,11 @@
-"use client";
+'use client';
 
-import { useEffect, useState } from "react";
+import { useEffect, useState } from 'react';
 import {
   PasswordPolicy,
   PasswordStrengthResult,
-} from "@/lib/utils/password-policy";
-import { Check, X, AlertCircle } from "lucide-react";
+} from '@/lib/utils/password-policy';
+import { Check, X, AlertCircle } from 'lucide-react';
 
 interface PasswordStrengthIndicatorProps {
   password: string;
@@ -19,7 +19,7 @@ interface PasswordStrengthIndicatorProps {
 export function PasswordStrengthIndicator({
   password,
   onValidationChange,
-  className = "",
+  className = '',
 }: PasswordStrengthIndicatorProps) {
   const [result, setResult] = useState<PasswordStrengthResult | null>(null);
 
@@ -38,60 +38,60 @@ export function PasswordStrengthIndicator({
     return null;
   }
 
-  const getStrengthColor = (strength: PasswordStrengthResult["strength"]) => {
+  const getStrengthColor = (strength: PasswordStrengthResult['strength']) => {
     switch (strength) {
-      case "very-weak":
-        return "bg-red-500";
-      case "weak":
-        return "bg-red-400";
-      case "fair":
-        return "bg-yellow-500";
-      case "good":
-        return "bg-blue-500";
-      case "strong":
-        return "bg-green-500";
-      case "very-strong":
-        return "bg-green-600";
+      case 'very-weak':
+        return 'bg-red-500';
+      case 'weak':
+        return 'bg-red-400';
+      case 'fair':
+        return 'bg-yellow-500';
+      case 'good':
+        return 'bg-blue-500';
+      case 'strong':
+        return 'bg-green-500';
+      case 'very-strong':
+        return 'bg-green-600';
       default:
-        return "bg-gray-300";
+        return 'bg-gray-300';
     }
   };
 
-  const getStrengthText = (strength: PasswordStrengthResult["strength"]) => {
+  const getStrengthText = (strength: PasswordStrengthResult['strength']) => {
     switch (strength) {
-      case "very-weak":
-        return "Very Weak";
-      case "weak":
-        return "Weak";
-      case "fair":
-        return "Fair";
-      case "good":
-        return "Good";
-      case "strong":
-        return "Strong";
-      case "very-strong":
-        return "Very Strong";
+      case 'very-weak':
+        return 'Very Weak';
+      case 'weak':
+        return 'Weak';
+      case 'fair':
+        return 'Fair';
+      case 'good':
+        return 'Good';
+      case 'strong':
+        return 'Strong';
+      case 'very-strong':
+        return 'Very Strong';
       default:
-        return "Unknown";
+        return 'Unknown';
     }
   };
 
   const getStrengthTextColor = (
-    strength: PasswordStrengthResult["strength"]
+    strength: PasswordStrengthResult['strength']
   ) => {
     switch (strength) {
-      case "very-weak":
-      case "weak":
-        return "text-red-600";
-      case "fair":
-        return "text-yellow-600";
-      case "good":
-        return "text-blue-600";
-      case "strong":
-      case "very-strong":
-        return "text-green-600";
+      case 'very-weak':
+      case 'weak':
+        return 'text-red-600';
+      case 'fair':
+        return 'text-yellow-600';
+      case 'good':
+        return 'text-blue-600';
+      case 'strong':
+      case 'very-strong':
+        return 'text-green-600';
       default:
-        return "text-gray-600";
+        return 'text-gray-600';
     }
   };
 
@@ -99,7 +99,7 @@ export function PasswordStrengthIndicator({
     <div className={`space-y-3 ${className}`}>
       {/* Strength Bar */}
       <div className="space-y-1">
-        <div className="flex justify-between items-center">
+        <div className="flex items-center justify-between">
           <span className="text-sm font-medium text-gray-700">
             Password Strength
           </span>
@@ -109,7 +109,7 @@ export function PasswordStrengthIndicator({
             {getStrengthText(result.strength)} ({result.score}/100)
           </span>
         </div>
-        <div className="w-full bg-gray-200 rounded-full h-2">
+        <div className="h-2 w-full rounded-full bg-gray-200">
           <div
             className={`h-2 rounded-full transition-all duration-300 ${getStrengthColor(result.strength)}`}
             style={{ width: `${result.score}%` }}
@@ -162,7 +162,7 @@ export function PasswordStrengthIndicator({
                 key={index}
                 className="flex items-start gap-2 text-sm text-red-600"
               >
-                <AlertCircle className="h-4 w-4 mt-0.5 flex-shrink-0" />
+                <AlertCircle className="mt-0.5 h-4 w-4 flex-shrink-0" />
                 <span>{feedback}</span>
               </div>
             ))}
@@ -173,7 +173,7 @@ export function PasswordStrengthIndicator({
       {/* Overall Status */}
       <div
         className={`flex items-center gap-2 text-sm font-medium ${
-          result.isValid ? "text-green-600" : "text-red-600"
+          result.isValid ? 'text-green-600' : 'text-red-600'
         }`}
       >
         {result.isValid ? (
@@ -200,7 +200,7 @@ interface RequirementItemProps {
 function RequirementItem({ met, text }: RequirementItemProps) {
   return (
     <div
-      className={`flex items-center gap-2 ${met ? "text-green-600" : "text-red-600"}`}
+      className={`flex items-center gap-2 ${met ? 'text-green-600' : 'text-red-600'}`}
     >
       {met ? <Check className="h-4 w-4" /> : <X className="h-4 w-4" />}
       <span>{text}</span>

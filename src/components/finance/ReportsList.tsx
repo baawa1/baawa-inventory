@@ -1,19 +1,19 @@
-"use client";
+'use client';
 
-import React, { useState } from "react";
-import Link from "next/link";
+import React, { useState } from 'react';
+import Link from 'next/link';
 // TODO: Implement financial reports hooks
-import { AppUser } from "@/types/user";
+import { AppUser } from '@/types/user';
 
 // UI Components
-import { Button } from "@/components/ui/button";
+import { Button } from '@/components/ui/button';
 import {
   Card,
   CardContent,
   CardDescription,
   CardHeader,
   CardTitle,
-} from "@/components/ui/card";
+} from '@/components/ui/card';
 import {
   Table,
   TableBody,
@@ -21,8 +21,8 @@ import {
   TableHead,
   TableHeader,
   TableRow,
-} from "@/components/ui/table";
-import { PageHeader } from "@/components/ui/page-header";
+} from '@/components/ui/table';
+import { PageHeader } from '@/components/ui/page-header';
 import {
   Dialog,
   DialogContent,
@@ -30,16 +30,16 @@ import {
   DialogHeader,
   DialogTitle,
   DialogTrigger,
-} from "@/components/ui/dialog";
-import { Input } from "@/components/ui/input";
-import { Label } from "@/components/ui/label";
+} from '@/components/ui/dialog';
+import { Input } from '@/components/ui/input';
+import { Label } from '@/components/ui/label';
 import {
   Select,
   SelectContent,
   SelectItem,
   SelectTrigger,
   SelectValue,
-} from "@/components/ui/select";
+} from '@/components/ui/select';
 
 // Icons
 import {
@@ -52,7 +52,7 @@ import {
   TrendingDown,
   DollarSign,
   Activity,
-} from "lucide-react";
+} from 'lucide-react';
 
 interface ReportsListProps {
   user: AppUser;
@@ -60,9 +60,9 @@ interface ReportsListProps {
 
 export function ReportsList({ user: _user }: ReportsListProps) {
   const [isGenerateDialogOpen, setIsGenerateDialogOpen] = useState(false);
-  const [reportType, setReportType] = useState("FINANCIAL_SUMMARY");
-  const [startDate, setStartDate] = useState("");
-  const [endDate, setEndDate] = useState("");
+  const [reportType, setReportType] = useState('FINANCIAL_SUMMARY');
+  const [startDate, setStartDate] = useState('');
+  const [endDate, setEndDate] = useState('');
 
   // TODO: Implement financial reports hooks
   const reports: any[] = [];
@@ -75,7 +75,7 @@ export function ReportsList({ user: _user }: ReportsListProps) {
 
   const handleGenerateReport = async () => {
     if (!startDate || !endDate) {
-      alert("Please select both start and end dates");
+      alert('Please select both start and end dates');
       return;
     }
 
@@ -83,19 +83,19 @@ export function ReportsList({ user: _user }: ReportsListProps) {
       await generateReport.mutateAsync();
       setIsGenerateDialogOpen(false);
     } catch (error) {
-      console.error("Error generating report:", error);
+      console.error('Error generating report:', error);
     }
   };
 
   const getReportTypeIcon = (type: string) => {
     switch (type) {
-      case "FINANCIAL_SUMMARY":
+      case 'FINANCIAL_SUMMARY':
         return <DollarSign className="h-4 w-4" />;
-      case "INCOME_STATEMENT":
+      case 'INCOME_STATEMENT':
         return <TrendingUp className="h-4 w-4" />;
-      case "EXPENSE_REPORT":
+      case 'EXPENSE_REPORT':
         return <TrendingDown className="h-4 w-4" />;
-      case "CASH_FLOW":
+      case 'CASH_FLOW':
         return <BarChart3 className="h-4 w-4" />;
       default:
         return <FileText className="h-4 w-4" />;
@@ -104,14 +104,14 @@ export function ReportsList({ user: _user }: ReportsListProps) {
 
   const getReportTypeLabel = (type: string) => {
     switch (type) {
-      case "FINANCIAL_SUMMARY":
-        return "Financial Summary";
-      case "INCOME_STATEMENT":
-        return "Income Statement";
-      case "EXPENSE_REPORT":
-        return "Expense Report";
-      case "CASH_FLOW":
-        return "Cash Flow";
+      case 'FINANCIAL_SUMMARY':
+        return 'Financial Summary';
+      case 'INCOME_STATEMENT':
+        return 'Income Statement';
+      case 'EXPENSE_REPORT':
+        return 'Expense Report';
+      case 'CASH_FLOW':
+        return 'Cash Flow';
       default:
         return type;
     }
@@ -119,7 +119,7 @@ export function ReportsList({ user: _user }: ReportsListProps) {
 
   if (error) {
     return (
-      <div className="max-w-7xl mx-auto p-6">
+      <div className="mx-auto max-w-7xl p-6">
         <Card>
           <CardContent className="p-6">
             <div className="text-center">
@@ -141,7 +141,7 @@ export function ReportsList({ user: _user }: ReportsListProps) {
   }
 
   return (
-    <div className="max-w-7xl mx-auto p-6 space-y-6">
+    <div className="mx-auto max-w-7xl space-y-6 p-6">
       <div className="flex items-center justify-between">
         <PageHeader
           title="Financial Reports"
@@ -192,7 +192,7 @@ export function ReportsList({ user: _user }: ReportsListProps) {
                   id="startDate"
                   type="date"
                   value={startDate}
-                  onChange={(e) => setStartDate(e.target.value)}
+                  onChange={e => setStartDate(e.target.value)}
                 />
               </div>
               <div className="grid gap-2">
@@ -201,7 +201,7 @@ export function ReportsList({ user: _user }: ReportsListProps) {
                   id="endDate"
                   type="date"
                   value={endDate}
-                  onChange={(e) => setEndDate(e.target.value)}
+                  onChange={e => setEndDate(e.target.value)}
                 />
               </div>
             </div>
@@ -216,7 +216,7 @@ export function ReportsList({ user: _user }: ReportsListProps) {
                 onClick={handleGenerateReport}
                 disabled={generateReport.isPending}
               >
-                {generateReport.isPending ? "Generating..." : "Generate Report"}
+                {generateReport.isPending ? 'Generating...' : 'Generate Report'}
               </Button>
             </div>
           </DialogContent>
@@ -230,11 +230,11 @@ export function ReportsList({ user: _user }: ReportsListProps) {
             <CardTitle className="text-sm font-medium">
               Financial Summary
             </CardTitle>
-            <DollarSign className="h-4 w-4 text-muted-foreground" />
+            <DollarSign className="text-muted-foreground h-4 w-4" />
           </CardHeader>
           <CardContent>
             <div className="text-2xl font-bold">Overview</div>
-            <p className="text-xs text-muted-foreground">
+            <p className="text-muted-foreground text-xs">
               Complete financial overview
             </p>
           </CardContent>
@@ -245,11 +245,11 @@ export function ReportsList({ user: _user }: ReportsListProps) {
             <CardTitle className="text-sm font-medium">
               Income Statement
             </CardTitle>
-            <TrendingUp className="h-4 w-4 text-muted-foreground" />
+            <TrendingUp className="text-muted-foreground h-4 w-4" />
           </CardHeader>
           <CardContent>
             <div className="text-2xl font-bold">Income</div>
-            <p className="text-xs text-muted-foreground">
+            <p className="text-muted-foreground text-xs">
               Revenue and income analysis
             </p>
           </CardContent>
@@ -260,11 +260,11 @@ export function ReportsList({ user: _user }: ReportsListProps) {
             <CardTitle className="text-sm font-medium">
               Expense Report
             </CardTitle>
-            <TrendingDown className="h-4 w-4 text-muted-foreground" />
+            <TrendingDown className="text-muted-foreground h-4 w-4" />
           </CardHeader>
           <CardContent>
             <div className="text-2xl font-bold">Expenses</div>
-            <p className="text-xs text-muted-foreground">
+            <p className="text-muted-foreground text-xs">
               Cost and expense breakdown
             </p>
           </CardContent>
@@ -273,25 +273,25 @@ export function ReportsList({ user: _user }: ReportsListProps) {
         <Card>
           <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
             <CardTitle className="text-sm font-medium">Cash Flow</CardTitle>
-            <BarChart3 className="h-4 w-4 text-muted-foreground" />
+            <BarChart3 className="text-muted-foreground h-4 w-4" />
           </CardHeader>
           <CardContent>
             <div className="text-2xl font-bold">Flow</div>
-            <p className="text-xs text-muted-foreground">Cash flow analysis</p>
+            <p className="text-muted-foreground text-xs">Cash flow analysis</p>
           </CardContent>
         </Card>
 
-        <Card className="cursor-pointer hover:shadow-md transition-shadow">
+        <Card className="cursor-pointer transition-shadow hover:shadow-md">
           <Link href="/finance/reports/analytics">
             <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
               <CardTitle className="text-sm font-medium">
                 Analytics Dashboard
               </CardTitle>
-              <Activity className="h-4 w-4 text-muted-foreground" />
+              <Activity className="text-muted-foreground h-4 w-4" />
             </CardHeader>
             <CardContent>
               <div className="text-2xl font-bold">Analytics</div>
-              <p className="text-xs text-muted-foreground">
+              <p className="text-muted-foreground text-xs">
                 Comprehensive analytics
               </p>
             </CardContent>
@@ -310,12 +310,12 @@ export function ReportsList({ user: _user }: ReportsListProps) {
         <CardContent>
           {isLoading ? (
             <div className="flex items-center justify-center py-8">
-              <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary"></div>
+              <div className="border-primary h-8 w-8 animate-spin rounded-full border-b-2"></div>
               <span className="ml-2">Loading reports...</span>
             </div>
           ) : !reports || reports.length === 0 ? (
-            <div className="text-center py-8">
-              <FileText className="h-12 w-12 text-muted-foreground mx-auto mb-4" />
+            <div className="py-8 text-center">
+              <FileText className="text-muted-foreground mx-auto mb-4 h-12 w-12" />
               <p className="text-muted-foreground">No reports generated yet</p>
               <Button
                 onClick={() => setIsGenerateDialogOpen(true)}
@@ -338,7 +338,7 @@ export function ReportsList({ user: _user }: ReportsListProps) {
                 </TableRow>
               </TableHeader>
               <TableBody>
-                {reports.map((report) => (
+                {reports.map(report => (
                   <TableRow key={report.id}>
                     <TableCell className="font-medium">
                       {report.reportName}
@@ -350,11 +350,11 @@ export function ReportsList({ user: _user }: ReportsListProps) {
                       </div>
                     </TableCell>
                     <TableCell>
-                      {new Date(report.periodStart).toLocaleDateString()} -{" "}
+                      {new Date(report.periodStart).toLocaleDateString()} -{' '}
                       {new Date(report.periodEnd).toLocaleDateString()}
                     </TableCell>
                     <TableCell>
-                      {report.generatedByUser.firstName}{" "}
+                      {report.generatedByUser.firstName}{' '}
                       {report.generatedByUser.lastName}
                     </TableCell>
                     <TableCell>

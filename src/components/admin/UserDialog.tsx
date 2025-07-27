@@ -1,4 +1,4 @@
-"use client";
+'use client';
 
 import {
   Dialog,
@@ -6,13 +6,13 @@ import {
   DialogDescription,
   DialogHeader,
   DialogTitle,
-} from "@/components/ui/dialog";
-import { UserForm } from "./UserForm";
+} from '@/components/ui/dialog';
+import { UserForm } from './UserForm';
 import {
   type User,
   type UserFormData,
   type EditUserFormData,
-} from "./types/user";
+} from './types/user';
 
 interface UserDialogProps {
   isOpen: boolean;
@@ -47,12 +47,12 @@ export function UserDialog({
       <DialogContent className="sm:max-w-[500px]">
         <DialogHeader>
           <DialogTitle>
-            {isEditing ? "Edit User" : "Create New User"}
+            {isEditing ? 'Edit User' : 'Create New User'}
           </DialogTitle>
           <DialogDescription>
             {isEditing
-              ? "Update the user information below."
-              : "Fill in the details to create a new user account."}
+              ? 'Update the user information below.'
+              : 'Fill in the details to create a new user account.'}
           </DialogDescription>
         </DialogHeader>
         <UserForm

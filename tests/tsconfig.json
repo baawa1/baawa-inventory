@@ -34,13 +34,6 @@
     },
     "types": ["jest", "node", "@testing-library/jest-dom"]
   },
-  "include": [
-    "**/*.ts",
-    "**/*.tsx",
-    "**/*.js",
-    "**/*.jsx",
-    "setup-env.ts",
-    "jest.setup.ts"
-  ],
+  "include": ["**/*.ts", "**/*.tsx", "**/*.js", "**/*.jsx", "setup-env.ts", "jest.setup.ts"],
   "exclude": ["node_modules", "coverage", "dist", "build", ".next", "out"]
 }

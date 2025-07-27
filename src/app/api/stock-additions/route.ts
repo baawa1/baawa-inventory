@@ -1,18 +1,18 @@
-import { NextResponse } from "next/server";
+import { NextResponse } from 'next/server';
 import {
   withAuth,
   withPermission,
   AuthenticatedRequest,
-} from "@/lib/api-middleware";
-import { handleApiError } from "@/lib/api-error-handler-new";
-import { prisma } from "@/lib/db";
+} from '@/lib/api-middleware';
+import { handleApiError } from '@/lib/api-error-handler-new';
+import { prisma } from '@/lib/db';
 
-import { USER_ROLES } from "@/lib/auth/roles";
+import { USER_ROLES } from '@/lib/auth/roles';
 import {
   createStockAdditionSchema,
   stockAdditionQuerySchema,
   type CreateStockAdditionData,
-} from "@/lib/validations/stock-management";
+} from '@/lib/validations/stock-management';
 
 // GET /api/stock-additions - List stock additions with filtering
 export const GET = withAuth(async (request: AuthenticatedRequest) => {
@@ -23,11 +23,11 @@ export const GET = withAuth(async (request: AuthenticatedRequest) => {
     // Parse query parameters
     for (const [key, value] of searchParams) {
       if (
-        key === "productId" ||
-        key === "supplierId" ||
-        key === "createdBy" ||
-        key === "page" ||
-        key === "limit"
+        key === 'productId' ||
+        key === 'supplierId' ||
+        key === 'createdBy' ||
+        key === 'page' ||
+        key === 'limit'
       ) {
         queryParams[key] = parseInt(value);
       } else {
@@ -84,7 +84,7 @@ export const GET = withAuth(async (request: AuthenticatedRequest) => {
             },
           },
         },
-        orderBy: { createdAt: "desc" },
+        orderBy: { createdAt: 'desc' },
         skip: offset,
         take: limit,
       }),
@@ -92,7 +92,7 @@ export const GET = withAuth(async (request: AuthenticatedRequest) => {
     ]);
 
     // Transform the data
-    const transformedStockAdditions = stockAdditions.map((addition) => ({
+    const transformedStockAdditions = stockAdditions.map(addition => ({
       id: addition.id,
       productId: addition.productId,
       product: addition.product,
@@ -138,11 +138,11 @@ export const POST = withPermission(
       // Ensure user ID is properly parsed
       const userId = parseInt(request.user.id);
       if (isNaN(userId)) {
-        throw new Error("Invalid user ID in session");
+        throw new Error('Invalid user ID in session');
       }
 
       // Execute all operations in a transaction
-      const result = await prisma.$transaction(async (tx) => {
+      const result = await prisma.$transaction(async tx => {
         // Check if product exists
         const product = await tx.product.findUnique({
           where: { id: validatedData.productId },
@@ -234,7 +234,7 @@ export const POST = withPermission(
       return NextResponse.json(
         {
           success: true,
-          message: "Stock addition created successfully",
+          message: 'Stock addition created successfully',
           data: {
             id: result.stockAddition.id,
             productId: result.stockAddition.productId,

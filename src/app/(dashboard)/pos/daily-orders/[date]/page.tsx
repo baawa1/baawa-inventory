@@ -1,11 +1,11 @@
-import { auth } from "../../../../../../auth";
-import { redirect } from "next/navigation";
-import { DailyOrdersDetails } from "@/components/pos/DailyOrdersDetails";
-import { DashboardPageLayout } from "@/components/layouts/DashboardPageLayout";
+import { auth } from '../../../../../../auth';
+import { redirect } from 'next/navigation';
+import { DailyOrdersDetails } from '@/components/pos/DailyOrdersDetails';
+import { DashboardPageLayout } from '@/components/layouts/DashboardPageLayout';
 
 export const metadata = {
-  title: "Daily Orders - BaaWA Inventory POS",
-  description: "View detailed orders for a specific date",
+  title: 'Daily Orders - BaaWA Inventory POS',
+  description: 'View detailed orders for a specific date',
 };
 
 export default async function DailyOrdersPage({
@@ -16,11 +16,11 @@ export default async function DailyOrdersPage({
   const session = await auth();
 
   if (!session?.user) {
-    redirect("/login");
+    redirect('/login');
   }
 
-  if (session.user.status !== "APPROVED") {
-    redirect("/pending-approval");
+  if (session.user.status !== 'APPROVED') {
+    redirect('/pending-approval');
   }
 
   return (

@@ -1,7 +1,7 @@
-import { test, expect, Page } from "@playwright/test";
-import { TestUtils } from "../../e2e/test-utils";
+import { test, expect, Page } from '@playwright/test';
+import { TestUtils } from '../../e2e/test-utils';
 
-test.describe("Products E2E Workflow", () => {
+test.describe('Products E2E Workflow', () => {
   let page: Page;
   let testProductId: string;
 
@@ -10,51 +10,51 @@ test.describe("Products E2E Workflow", () => {
 
     // Mock authentication for admin user
     await page.addInitScript(() => {
-      window.localStorage.setItem("auth-token", "mock-admin-token");
+      window.localStorage.setItem('auth-token', 'mock-admin-token');
       window.localStorage.setItem(
-        "user",
+        'user',
         JSON.stringify({
-          id: "1",
-          email: "admin@test.com",
-          role: "ADMIN",
-          status: "APPROVED",
+          id: '1',
+          email: 'admin@test.com',
+          role: 'ADMIN',
+          status: 'APPROVED',
           isEmailVerified: true,
         })
       );
     });
 
     // Mock API responses
-    await page.route("**/api/products**", async (route) => {
+    await page.route('**/api/products**', async route => {
       const url = route.request().url();
 
-      if (route.request().method() === "GET") {
+      if (route.request().method() === 'GET') {
         await route.fulfill({
           status: 200,
-          contentType: "application/json",
+          contentType: 'application/json',
           body: JSON.stringify({
             data: [
               {
                 id: 1,
-                name: "Test Product",
-                sku: "TEST-001",
-                barcode: "1234567890123",
+                name: 'Test Product',
+                sku: 'TEST-001',
+                barcode: '1234567890123',
                 cost: 10.5,
                 price: 15.99,
                 stock: 10,
                 minStock: 5,
                 maxStock: 50,
-                unit: "piece",
-                status: "ACTIVE",
+                unit: 'piece',
+                status: 'ACTIVE',
                 isArchived: false,
-                category: { id: 1, name: "Electronics" },
-                brand: { id: 1, name: "Test Brand" },
+                category: { id: 1, name: 'Electronics' },
+                brand: { id: 1, name: 'Test Brand' },
                 supplier: {
                   id: 1,
-                  name: "Test Supplier",
-                  email: "supplier@test.com",
+                  name: 'Test Supplier',
+                  email: 'supplier@test.com',
                 },
                 images: [],
-                stockStatus: "normal",
+                stockStatus: 'normal',
                 profitMargin: 5.49,
                 profitMarginPercent: 52.29,
               },
@@ -68,107 +68,107 @@ test.describe("Products E2E Workflow", () => {
               hasPreviousPage: false,
             },
             filters: {
-              search: "",
+              search: '',
               categoryId: null,
               brandId: null,
               supplierId: null,
               lowStock: false,
-              status: "ACTIVE",
-              sortBy: "name",
-              sortOrder: "asc",
+              status: 'ACTIVE',
+              sortBy: 'name',
+              sortOrder: 'asc',
             },
           }),
         });
-      } else if (route.request().method() === "POST") {
+      } else if (route.request().method() === 'POST') {
         await route.fulfill({
           status: 201,
-          contentType: "application/json",
+          contentType: 'application/json',
           body: JSON.stringify({
             data: {
               id: 2,
-              name: "New Test Product",
-              sku: "NEW-TEST-001",
+              name: 'New Test Product',
+              sku: 'NEW-TEST-001',
             },
           }),
         });
       }
     });
 
-    await page.route("**/api/categories**", async (route) => {
+    await page.route('**/api/categories**', async route => {
       await route.fulfill({
         status: 200,
-        contentType: "application/json",
+        contentType: 'application/json',
         body: JSON.stringify([
-          { id: 1, name: "Electronics" },
-          { id: 2, name: "Clothing" },
+          { id: 1, name: 'Electronics' },
+          { id: 2, name: 'Clothing' },
         ]),
       });
     });
 
-    await page.route("**/api/brands**", async (route) => {
+    await page.route('**/api/brands**', async route => {
       await route.fulfill({
         status: 200,
-        contentType: "application/json",
+        contentType: 'application/json',
         body: JSON.stringify([
-          { id: 1, name: "Test Brand" },
-          { id: 2, name: "Another Brand" },
+          { id: 1, name: 'Test Brand' },
+          { id: 2, name: 'Another Brand' },
         ]),
       });
     });
 
-    await page.route("**/api/suppliers**", async (route) => {
+    await page.route('**/api/suppliers**', async route => {
       await route.fulfill({
         status: 200,
-        contentType: "application/json",
+        contentType: 'application/json',
         body: JSON.stringify([
-          { id: 1, name: "Test Supplier" },
-          { id: 2, name: "Another Supplier" },
+          { id: 1, name: 'Test Supplier' },
+          { id: 2, name: 'Another Supplier' },
         ]),
       });
     });
   });
 
-  test("should navigate to products page", async () => {
-    await page.goto("/inventory/products");
+  test('should navigate to products page', async () => {
+    await page.goto('/inventory/products');
 
     await TestUtils.waitForPageReady(page);
 
-    expect(page.url()).toContain("/inventory/products");
-    await expect(page.locator("h1")).toContainText("Products");
+    expect(page.url()).toContain('/inventory/products');
+    await expect(page.locator('h1')).toContainText('Products');
   });
 
-  test("should display products list", async () => {
-    await page.goto("/inventory/products");
+  test('should display products list', async () => {
+    await page.goto('/inventory/products');
 
     await TestUtils.waitForPageReady(page);
 
-    await expect(page.locator("text=Test Product")).toBeVisible();
-    await expect(page.locator("text=TEST-001")).toBeVisible();
-    await expect(page.locator("text=₦15.99")).toBeVisible();
-    await expect(page.locator("text=Electronics")).toBeVisible();
+    await expect(page.locator('text=Test Product')).toBeVisible();
+    await expect(page.locator('text=TEST-001')).toBeVisible();
+    await expect(page.locator('text=₦15.99')).toBeVisible();
+    await expect(page.locator('text=Electronics')).toBeVisible();
   });
 
-  test("should add a new product", async () => {
-    await page.goto("/inventory/products");
+  test('should add a new product', async () => {
+    await page.goto('/inventory/products');
 
     // Click add product button
-    await page.click("text=Add Product");
+    await page.click('text=Add Product');
 
     // Wait for form to load
     await TestUtils.waitForPageReady(page);
-    await expect(page.locator("h1")).toContainText("Add New Product");
+    await expect(page.locator('h1')).toContainText('Add New Product');
 
     // Fill in required fields
-    await page.fill('input[name="name"]', "New Test Product");
-    await page.fill('input[name="sku"]', "NEW-TEST-001");
-    await page.fill('input[name="purchasePrice"]', "12.50");
-    await page.fill('input[name="sellingPrice"]', "19.99");
-    await page.fill('input[name="currentStock"]', "15");
-    await page.fill('input[name="minimumStock"]', "5");
+    await page.fill('input[name="name"]', 'New Test Product');
+    await page.fill('input[name="sku"]', 'NEW-TEST-001');
+    await page.fill('input[name="purchasePrice"]', '12.50');
+    await page.fill('input[name="sellingPrice"]', '19.99');
+    await page.fill('input[name="currentStock"]', '15');
+    await page.fill('input[name="minimumStock"]', '5');
 
     // Fill in optional fields
-    await page.fill('textarea[name="description"]', "A new test product");
-    await page.fill('input[name="barcode"]', "9876543210987");
+    await page.fill('textarea[name="description"]', 'A new test product');
+    await page.fill('input[name="barcode"]', '9876543210987');
 
     // Select category
     await page.click('select[name="categoryId"]');
@@ -187,13 +187,13 @@ test.describe("Products E2E Workflow", () => {
 
     // Wait for success and redirect
     await expect(
-      page.locator("text=Product created successfully")
+      page.locator('text=Product created successfully')
     ).toBeVisible();
-    expect(page.url()).toContain("/inventory/products");
+    expect(page.url()).toContain('/inventory/products');
   });
 
-  test("should validate required fields when adding product", async () => {
-    await page.goto("/inventory/products/add");
+  test('should validate required fields when adding product', async () => {
+    await page.goto('/inventory/products/add');
 
     await TestUtils.waitForPageReady(page);
 
@@ -201,51 +201,51 @@ test.describe("Products E2E Workflow", () => {
     await page.click('button[type="submit"]');
 
     // Check for validation errors
-    await expect(page.locator("text=Product name is required")).toBeVisible();
-    await expect(page.locator("text=SKU is required")).toBeVisible();
-    await expect(page.locator("text=Purchase price is required")).toBeVisible();
-    await expect(page.locator("text=Selling price is required")).toBeVisible();
+    await expect(page.locator('text=Product name is required')).toBeVisible();
+    await expect(page.locator('text=SKU is required')).toBeVisible();
+    await expect(page.locator('text=Purchase price is required')).toBeVisible();
+    await expect(page.locator('text=Selling price is required')).toBeVisible();
   });
 
-  test("should validate SKU format", async () => {
-    await page.goto("/inventory/products/add");
+  test('should validate SKU format', async () => {
+    await page.goto('/inventory/products/add');
 
     await TestUtils.waitForPageReady(page);
 
     // Enter invalid SKU
-    await page.fill('input[name="sku"]', "invalid@sku");
-    await page.fill('input[name="name"]', "Test Product");
-    await page.fill('input[name="purchasePrice"]', "10");
-    await page.fill('input[name="sellingPrice"]', "15");
-    await page.fill('input[name="currentStock"]', "10");
-    await page.fill('input[name="minimumStock"]', "5");
+    await page.fill('input[name="sku"]', 'invalid@sku');
+    await page.fill('input[name="name"]', 'Test Product');
+    await page.fill('input[name="purchasePrice"]', '10');
+    await page.fill('input[name="sellingPrice"]', '15');
+    await page.fill('input[name="currentStock"]', '10');
+    await page.fill('input[name="minimumStock"]', '5');
 
     await page.click('button[type="submit"]');
 
     await expect(
       page.locator(
-        "text=SKU can only contain letters, numbers, hyphens, and underscores"
+        'text=SKU can only contain letters, numbers, hyphens, and underscores'
       )
     ).toBeVisible();
   });
 
-  test("should search products", async () => {
-    await page.goto("/inventory/products");
+  test('should search products', async () => {
+    await page.goto('/inventory/products');
 
     await TestUtils.waitForPageReady(page);
 
     // Enter search term
-    await page.fill('input[placeholder*="search"]', "Test Product");
+    await page.fill('input[placeholder*="search"]', 'Test Product');
 
     // Wait for search to execute
     await page.waitForTimeout(1000);
 
     // Verify search results
-    await expect(page.locator("text=Test Product")).toBeVisible();
+    await expect(page.locator('text=Test Product')).toBeVisible();
   });
 
-  test("should filter products by category", async () => {
-    await page.goto("/inventory/products");
+  test('should filter products by category', async () => {
+    await page.goto('/inventory/products');
 
     await TestUtils.waitForPageReady(page);
 
@@ -257,11 +257,11 @@ test.describe("Products E2E Workflow", () => {
     await page.waitForTimeout(500);
 
     // Verify filtered results
-    await expect(page.locator("text=Electronics")).toBeVisible();
+    await expect(page.locator('text=Electronics')).toBeVisible();
   });
 
-  test("should filter products by brand", async () => {
-    await page.goto("/inventory/products");
+  test('should filter products by brand', async () => {
+    await page.goto('/inventory/products');
 
     await TestUtils.waitForPageReady(page);
 
@@ -273,11 +273,11 @@ test.describe("Products E2E Workflow", () => {
     await page.waitForTimeout(500);
 
     // Verify filtered results
-    await expect(page.locator("text=Test Brand")).toBeVisible();
+    await expect(page.locator('text=Test Brand')).toBeVisible();
   });
 
-  test("should filter low stock products", async () => {
-    await page.goto("/inventory/products");
+  test('should filter low stock products', async () => {
+    await page.goto('/inventory/products');
 
     await TestUtils.waitForPageReady(page);
 
@@ -288,11 +288,11 @@ test.describe("Products E2E Workflow", () => {
     await page.waitForTimeout(500);
 
     // Verify low stock indicator
-    await expect(page.locator("text=LOW")).toBeVisible();
+    await expect(page.locator('text=LOW')).toBeVisible();
   });
 
-  test("should sort products", async () => {
-    await page.goto("/inventory/products");
+  test('should sort products', async () => {
+    await page.goto('/inventory/products');
 
     await TestUtils.waitForPageReady(page);
 
@@ -304,22 +304,22 @@ test.describe("Products E2E Workflow", () => {
     await page.waitForTimeout(500);
 
     // Verify products are sorted by price
-    await expect(page.locator("text=₦15.99")).toBeVisible();
+    await expect(page.locator('text=₦15.99')).toBeVisible();
   });
 
-  test("should edit a product", async () => {
+  test('should edit a product', async () => {
     // Mock the product data for editing
-    await page.route("**/api/products/1**", async (route) => {
-      if (route.request().method() === "GET") {
+    await page.route('**/api/products/1**', async route => {
+      if (route.request().method() === 'GET') {
         await route.fulfill({
           status: 200,
-          contentType: "application/json",
+          contentType: 'application/json',
           body: JSON.stringify({
             data: {
               id: 1,
-              name: "Test Product",
-              sku: "TEST-001",
-              description: "Original description",
+              name: 'Test Product',
+              sku: 'TEST-001',
+              description: 'Original description',
               cost: 10.5,
               price: 15.99,
               stock: 10,
@@ -327,64 +327,64 @@ test.describe("Products E2E Workflow", () => {
               categoryId: 1,
               brandId: 1,
               supplierId: 1,
-              status: "ACTIVE",
+              status: 'ACTIVE',
             },
           }),
         });
-      } else if (route.request().method() === "PUT") {
+      } else if (route.request().method() === 'PUT') {
         await route.fulfill({
           status: 200,
-          contentType: "application/json",
+          contentType: 'application/json',
           body: JSON.stringify({
             data: {
               id: 1,
-              name: "Updated Test Product",
-              sku: "TEST-001",
+              name: 'Updated Test Product',
+              sku: 'TEST-001',
             },
           }),
         });
       }
     });
 
-    await page.goto("/inventory/products/1/edit");
+    await page.goto('/inventory/products/1/edit');
 
     await TestUtils.waitForPageReady(page);
 
     // Verify form is populated
     await expect(page.locator('input[name="name"]')).toHaveValue(
-      "Test Product"
+      'Test Product'
     );
-    await expect(page.locator('input[name="sku"]')).toHaveValue("TEST-001");
+    await expect(page.locator('input[name="sku"]')).toHaveValue('TEST-001');
 
     // Update product name
-    await page.fill('input[name="name"]', "Updated Test Product");
+    await page.fill('input[name="name"]', 'Updated Test Product');
 
     // Submit form
     await page.click('button[type="submit"]');
 
     // Wait for success message
     await expect(
-      page.locator("text=Product updated successfully")
+      page.locator('text=Product updated successfully')
     ).toBeVisible();
   });
 
-  test("should archive a product", async () => {
+  test('should archive a product', async () => {
     // Mock archive endpoint
-    await page.route("**/api/products/1/archive", async (route) => {
+    await page.route('**/api/products/1/archive', async route => {
       await route.fulfill({
         status: 200,
-        contentType: "application/json",
+        contentType: 'application/json',
         body: JSON.stringify({
           data: {
             id: 1,
-            name: "Test Product",
+            name: 'Test Product',
             isArchived: true,
           },
         }),
       });
     });
 
-    await page.goto("/inventory/products");
+    await page.goto('/inventory/products');
 
     await TestUtils.waitForPageReady(page);
 
@@ -399,19 +399,19 @@ test.describe("Products E2E Workflow", () => {
 
     // Wait for success message
     await expect(
-      page.locator("text=Product archived successfully")
+      page.locator('text=Product archived successfully')
     ).toBeVisible();
   });
 
-  test("should handle pagination", async () => {
+  test('should handle pagination', async () => {
     // Mock paginated response
-    await page.route("**/api/products**", async (route) => {
+    await page.route('**/api/products**', async route => {
       const url = new URL(route.request().url());
-      const page = url.searchParams.get("page");
+      const page = url.searchParams.get('page');
 
       await route.fulfill({
         status: 200,
-        contentType: "application/json",
+        contentType: 'application/json',
         body: JSON.stringify({
           data: Array.from({ length: 10 }, (_, i) => ({
             id: i + 1,
@@ -421,32 +421,32 @@ test.describe("Products E2E Workflow", () => {
             price: 15,
             stock: 10,
             minStock: 5,
-            status: "ACTIVE",
-            category: { id: 1, name: "Electronics" },
-            brand: { id: 1, name: "Test Brand" },
+            status: 'ACTIVE',
+            category: { id: 1, name: 'Electronics' },
+            brand: { id: 1, name: 'Test Brand' },
             supplier: {
               id: 1,
-              name: "Test Supplier",
-              email: "supplier@test.com",
+              name: 'Test Supplier',
+              email: 'supplier@test.com',
             },
             images: [],
-            stockStatus: "normal",
+            stockStatus: 'normal',
             profitMargin: 5,
             profitMarginPercent: 50,
           })),
           pagination: {
-            page: parseInt(page || "1"),
+            page: parseInt(page || '1'),
             limit: 10,
             total: 25,
             totalPages: 3,
-            hasNextPage: parseInt(page || "1") < 3,
-            hasPreviousPage: parseInt(page || "1") > 1,
+            hasNextPage: parseInt(page || '1') < 3,
+            hasPreviousPage: parseInt(page || '1') > 1,
           },
         }),
       });
     });
 
-    await page.goto("/inventory/products");
+    await page.goto('/inventory/products');
 
     await TestUtils.waitForPageReady(page);
 
@@ -457,11 +457,11 @@ test.describe("Products E2E Workflow", () => {
     await page.waitForTimeout(500);
 
     // Verify we're on page 2
-    await expect(page.locator("text=Page 2 of 3")).toBeVisible();
+    await expect(page.locator('text=Page 2 of 3')).toBeVisible();
   });
 
-  test("should handle bulk actions", async () => {
-    await page.goto("/inventory/products");
+  test('should handle bulk actions', async () => {
+    await page.goto('/inventory/products');
 
     await TestUtils.waitForPageReady(page);
 
@@ -470,7 +470,7 @@ test.describe("Products E2E Workflow", () => {
     await page.check('input[type="checkbox"]:nth-child(2)'); // Select first product
 
     // Verify bulk actions are available
-    await expect(page.locator("text=1 selected")).toBeVisible();
+    await expect(page.locator('text=1 selected')).toBeVisible();
 
     // Click bulk archive
     await page.click('button:has-text("Archive Selected")');
@@ -480,12 +480,12 @@ test.describe("Products E2E Workflow", () => {
 
     // Wait for success message
     await expect(
-      page.locator("text=Products archived successfully")
+      page.locator('text=Products archived successfully')
     ).toBeVisible();
   });
 
-  test("should export products", async () => {
-    await page.goto("/inventory/products");
+  test('should export products', async () => {
+    await page.goto('/inventory/products');
 
     await TestUtils.waitForPageReady(page);
 
@@ -500,96 +500,96 @@ test.describe("Products E2E Workflow", () => {
     await expect(page.locator('button:has-text("Export")')).toBeVisible();
   });
 
-  test("should show product details", async () => {
-    await page.goto("/inventory/products");
+  test('should show product details', async () => {
+    await page.goto('/inventory/products');
 
     await TestUtils.waitForPageReady(page);
 
     // Click on product name to view details
-    await page.click("text=Test Product");
+    await page.click('text=Test Product');
 
     // Wait for details page to load
     await TestUtils.waitForPageReady(page);
 
     // Verify product details are displayed
-    await expect(page.locator("text=Test Product")).toBeVisible();
-    await expect(page.locator("text=TEST-001")).toBeVisible();
-    await expect(page.locator("text=₦15.99")).toBeVisible();
-    await expect(page.locator("text=Electronics")).toBeVisible();
+    await expect(page.locator('text=Test Product')).toBeVisible();
+    await expect(page.locator('text=TEST-001')).toBeVisible();
+    await expect(page.locator('text=₦15.99')).toBeVisible();
+    await expect(page.locator('text=Electronics')).toBeVisible();
   });
 
-  test("should handle image upload", async () => {
-    await page.goto("/inventory/products/add");
+  test('should handle image upload', async () => {
+    await page.goto('/inventory/products/add');
 
     await TestUtils.waitForPageReady(page);
 
     // Fill required fields first
-    await page.fill('input[name="name"]', "Product with Images");
-    await page.fill('input[name="sku"]', "IMG-TEST-001");
-    await page.fill('input[name="purchasePrice"]', "10");
-    await page.fill('input[name="sellingPrice"]', "15");
-    await page.fill('input[name="currentStock"]', "10");
-    await page.fill('input[name="minimumStock"]', "5");
+    await page.fill('input[name="name"]', 'Product with Images');
+    await page.fill('input[name="sku"]', 'IMG-TEST-001');
+    await page.fill('input[name="purchasePrice"]', '10');
+    await page.fill('input[name="sellingPrice"]', '15');
+    await page.fill('input[name="currentStock"]', '10');
+    await page.fill('input[name="minimumStock"]', '5');
 
     // Mock file upload
     await page.setInputFiles('input[type="file"]', {
-      name: "test-image.jpg",
-      mimeType: "image/jpeg",
-      buffer: Buffer.from("fake-image-data"),
+      name: 'test-image.jpg',
+      mimeType: 'image/jpeg',
+      buffer: Buffer.from('fake-image-data'),
     });
 
     // Verify image preview
     await expect(page.locator("img[alt='Product image']")).toBeVisible();
   });
 
-  test("should handle form errors gracefully", async () => {
+  test('should handle form errors gracefully', async () => {
     // Mock API error response
-    await page.route("**/api/products", async (route) => {
+    await page.route('**/api/products', async route => {
       await route.fulfill({
         status: 400,
-        contentType: "application/json",
+        contentType: 'application/json',
         body: JSON.stringify({
-          error: "Product with this SKU already exists",
+          error: 'Product with this SKU already exists',
         }),
       });
     });
 
-    await page.goto("/inventory/products/add");
+    await page.goto('/inventory/products/add');
 
     await TestUtils.waitForPageReady(page);
 
     // Fill form with duplicate SKU
-    await page.fill('input[name="name"]', "Duplicate Product");
-    await page.fill('input[name="sku"]', "TEST-001"); // Existing SKU
-    await page.fill('input[name="purchasePrice"]', "10");
-    await page.fill('input[name="sellingPrice"]', "15");
-    await page.fill('input[name="currentStock"]', "10");
-    await page.fill('input[name="minimumStock"]', "5");
+    await page.fill('input[name="name"]', 'Duplicate Product');
+    await page.fill('input[name="sku"]', 'TEST-001'); // Existing SKU
+    await page.fill('input[name="purchasePrice"]', '10');
+    await page.fill('input[name="sellingPrice"]', '15');
+    await page.fill('input[name="currentStock"]', '10');
+    await page.fill('input[name="minimumStock"]', '5');
 
     // Submit form
     await page.click('button[type="submit"]');
 
     // Verify error message
     await expect(
-      page.locator("text=Product with this SKU already exists")
+      page.locator('text=Product with this SKU already exists')
     ).toBeVisible();
   });
 
-  test("should handle network errors", async () => {
+  test('should handle network errors', async () => {
     // Mock network error
-    await page.route("**/api/products**", async (route) => {
-      await route.abort("failed");
+    await page.route('**/api/products**', async route => {
+      await route.abort('failed');
     });
 
-    await page.goto("/inventory/products");
+    await page.goto('/inventory/products');
 
     // Wait for error state
-    await expect(page.locator("text=Failed to load products")).toBeVisible();
+    await expect(page.locator('text=Failed to load products')).toBeVisible();
 
     // Click retry button
     await page.click('button:has-text("Retry")');
 
     // Verify retry attempt
-    await expect(page.locator("text=Retry")).toBeVisible();
+    await expect(page.locator('text=Retry')).toBeVisible();
   });
 });

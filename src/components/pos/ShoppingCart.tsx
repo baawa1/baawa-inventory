@@ -1,10 +1,10 @@
-"use client";
+'use client';
 
-import React from "react";
-import { Button } from "@/components/ui/button";
-import { Input } from "@/components/ui/input";
-import { Card, CardContent } from "@/components/ui/card";
-import { Badge } from "@/components/ui/badge";
+import React from 'react';
+import { Button } from '@/components/ui/button';
+import { Input } from '@/components/ui/input';
+import { Card, CardContent } from '@/components/ui/card';
+import { Badge } from '@/components/ui/badge';
 import {
   IconMinus,
   IconPlus,
@@ -12,8 +12,8 @@ import {
   IconShoppingCartOff,
   IconPackage,
   IconTag,
-} from "@tabler/icons-react";
-import { formatCurrency } from "@/lib/utils";
+} from '@tabler/icons-react';
+import { formatCurrency } from '@/lib/utils';
 
 export interface CartItem {
   id: number;
@@ -43,8 +43,8 @@ export function ShoppingCart({
 }: ShoppingCartProps) {
   if (items.length === 0) {
     return (
-      <div className="text-center py-8 text-muted-foreground">
-        <IconShoppingCartOff className="h-12 w-12 mx-auto mb-2 opacity-50" />
+      <div className="text-muted-foreground py-8 text-center">
+        <IconShoppingCartOff className="mx-auto mb-2 h-12 w-12 opacity-50" />
         <p>Your cart is empty</p>
         <p className="text-sm">Search for products to add to your cart</p>
       </div>
@@ -58,11 +58,11 @@ export function ShoppingCart({
   );
 
   return (
-    <div className="h-full flex flex-col">
+    <div className="flex h-full flex-col">
       {/* Cart Header - Fixed */}
-      <div className="flex items-center justify-between flex-shrink-0 mb-4">
-        <div className="text-sm text-muted-foreground">
-          {totalItems} item{totalItems !== 1 ? "s" : ""} •{" "}
+      <div className="mb-4 flex flex-shrink-0 items-center justify-between">
+        <div className="text-muted-foreground text-sm">
+          {totalItems} item{totalItems !== 1 ? 's' : ''} •{' '}
           {formatCurrency(totalValue)}
         </div>
         <Button
@@ -71,33 +71,33 @@ export function ShoppingCart({
           onClick={onClearCart}
           disabled={disabled}
         >
-          <IconTrash className="h-4 w-4 mr-1" />
+          <IconTrash className="mr-1 h-4 w-4" />
           Clear
         </Button>
       </div>
 
       {/* Cart Items - Scrollable */}
-      <div className="flex-1 min-h-0 overflow-y-auto max-h-80 space-y-3 pr-2 pt-2 pb-2">
-        {items.map((item) => (
-          <Card key={item.id} className="border-l-4 border-l-primary">
+      <div className="max-h-80 min-h-0 flex-1 space-y-3 overflow-y-auto pt-2 pr-2 pb-2">
+        {items.map(item => (
+          <Card key={item.id} className="border-l-primary border-l-4">
             <CardContent className="p-4">
               <div className="space-y-3">
                 {/* Product Info */}
                 <div className="flex items-start justify-between">
                   <div className="flex-1">
                     <h3 className="font-semibold">{item.name}</h3>
-                    <div className="flex items-center gap-2 mt-1">
+                    <div className="mt-1 flex items-center gap-2">
                       <Badge variant="outline" className="text-xs">
                         {item.sku}
                       </Badge>
                       {item.category && (
-                        <span className="flex items-center gap-1 text-xs text-muted-foreground">
+                        <span className="text-muted-foreground flex items-center gap-1 text-xs">
                           <IconTag className="h-3 w-3" />
                           {item.category}
                         </span>
                       )}
                       {item.brand && (
-                        <span className="flex items-center gap-1 text-xs text-muted-foreground">
+                        <span className="text-muted-foreground flex items-center gap-1 text-xs">
                           <IconPackage className="h-3 w-3" />
                           {item.brand}
                         </span>
@@ -131,7 +131,7 @@ export function ShoppingCart({
                     <Input
                       type="number"
                       value={item.quantity}
-                      onChange={(e) => {
+                      onChange={e => {
                         const newQuantity = parseInt(e.target.value) || 0;
                         if (newQuantity >= 1 && newQuantity <= item.stock) {
                           onUpdateQuantity(item.id, newQuantity);
@@ -156,7 +156,7 @@ export function ShoppingCart({
                   </div>
 
                   <div className="text-right">
-                    <div className="text-sm text-muted-foreground">
+                    <div className="text-muted-foreground text-sm">
                       {formatCurrency(item.price)} each
                     </div>
                     <div className="font-semibold">
@@ -167,13 +167,13 @@ export function ShoppingCart({
 
                 {/* Stock Warning */}
                 {item.quantity >= item.stock && (
-                  <div className="text-xs text-amber-600 bg-amber-50 p-2 rounded">
+                  <div className="rounded bg-amber-50 p-2 text-xs text-amber-600">
                     Maximum quantity reached ({item.stock} available)
                   </div>
                 )}
 
                 {/* Stock Info */}
-                <div className="flex items-center justify-between text-xs text-muted-foreground">
+                <div className="text-muted-foreground flex items-center justify-between text-xs">
                   <span>{item.stock} available in stock</span>
                   {item.stock <= 5 && (
                     <Badge variant="destructive" className="text-xs">
@@ -188,12 +188,12 @@ export function ShoppingCart({
       </div>
 
       {/* Cart Summary - Fixed at bottom */}
-      <div className="space-y-2 pt-4 border-t mt-auto flex-shrink-0">
+      <div className="mt-auto flex-shrink-0 space-y-2 border-t pt-4">
         <div className="flex justify-between text-sm">
           <span>Total Items:</span>
           <span>{totalItems}</span>
         </div>
-        <div className="flex justify-between font-semibold text-lg">
+        <div className="flex justify-between text-lg font-semibold">
           <span>Subtotal:</span>
           <span>{formatCurrency(totalValue)}</span>
         </div>

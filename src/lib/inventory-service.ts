@@ -1,6 +1,6 @@
-import { prisma } from "@/lib/db";
-import { AuditLogAction } from "@/types/audit";
-import { createAuditLog } from "@/lib/audit";
+import { prisma } from '@/lib/db';
+import { AuditLogAction } from '@/types/audit';
+import { createAuditLog } from '@/lib/audit';
 // import { ProductWithRelations } from "@/types/inventory";
 
 interface StockUpdateData {
@@ -38,7 +38,7 @@ export class InventoryService {
       productId,
       quantity,
       userId,
-      reason: _reason = "Stock Addition",
+      reason: _reason = 'Stock Addition',
       notes,
       referenceNo,
       supplierId,
@@ -46,13 +46,13 @@ export class InventoryService {
     } = data;
 
     if (quantity <= 0) {
-      throw new Error("Quantity must be greater than zero");
+      throw new Error('Quantity must be greater than zero');
     }
 
     // Calculate total cost if cost per unit is provided
     const totalCost = costPerUnit ? costPerUnit * quantity : undefined;
 
-    return await prisma.$transaction(async (tx) => {
+    return await prisma.$transaction(async tx => {
       // Update product stock
       const updatedProduct = await tx.product.update({
         where: { id: productId },
@@ -85,7 +85,7 @@ export class InventoryService {
         tx,
         userId,
         action: AuditLogAction.STOCK_ADDITION,
-        tableName: "products",
+        tableName: 'products',
         recordId: productId,
         oldValues: { stock: updatedProduct.stock - quantity },
         newValues: { stock: updatedProduct.stock },
@@ -105,26 +105,26 @@ export class InventoryService {
       productId,
       quantity,
       userId,
-      reason = "Stock Removal",
+      reason = 'Stock Removal',
       notes,
     } = data;
 
     if (quantity <= 0) {
-      throw new Error("Quantity must be greater than zero");
+      throw new Error('Quantity must be greater than zero');
     }
 
-    return await prisma.$transaction(async (tx) => {
+    return await prisma.$transaction(async tx => {
       // Get current product data
       const product = await tx.product.findUnique({
         where: { id: productId },
       });
 
       if (!product) {
-        throw new Error("Product not found");
+        throw new Error('Product not found');
       }
 
       if (product.stock < quantity) {
-        throw new Error("Insufficient stock");
+        throw new Error('Insufficient stock');
       }
 
       // Update product stock
@@ -144,14 +144,14 @@ export class InventoryService {
       const stockAdjustment = await tx.stockAdjustment.create({
         data: {
           product_id: productId,
-          adjustment_type: "REMOVAL",
+          adjustment_type: 'REMOVAL',
           quantity,
           old_quantity: product.stock,
           new_quantity: updatedProduct.stock,
           reason,
           notes,
           user_id: userId,
-          status: "COMPLETED",
+          status: 'COMPLETED',
         },
       });
 
@@ -160,7 +160,7 @@ export class InventoryService {
         tx,
         userId,
         action: AuditLogAction.STOCK_REMOVAL,
-        tableName: "products",
+        tableName: 'products',
         recordId: productId,
         oldValues: { stock: product.stock },
         newValues: { stock: updatedProduct.stock },
@@ -180,27 +180,27 @@ export class InventoryService {
       productId,
       quantity, // This is the new quantity to set
       userId,
-      reason = "Stock Adjustment",
+      reason = 'Stock Adjustment',
       notes,
     } = data;
 
     if (quantity < 0) {
-      throw new Error("Quantity cannot be negative");
+      throw new Error('Quantity cannot be negative');
     }
 
-    return await prisma.$transaction(async (tx) => {
+    return await prisma.$transaction(async tx => {
       // Get current product data
       const product = await tx.product.findUnique({
         where: { id: productId },
       });
 
       if (!product) {
-        throw new Error("Product not found");
+        throw new Error('Product not found');
       }
 
       const oldQuantity = product.stock;
       const adjustmentQuantity = Math.abs(quantity - oldQuantity);
-      const adjustmentType = quantity > oldQuantity ? "ADDITION" : "REDUCTION";
+      const adjustmentType = quantity > oldQuantity ? 'ADDITION' : 'REDUCTION';
 
       // Update product stock to the exact value
       const updatedProduct = await tx.product.update({
@@ -226,7 +226,7 @@ export class InventoryService {
           reason,
           notes,
           user_id: userId,
-          status: "COMPLETED",
+          status: 'COMPLETED',
         },
       });
 
@@ -235,7 +235,7 @@ export class InventoryService {
         tx,
         userId,
         action: AuditLogAction.STOCK_ADJUSTMENT,
-        tableName: "products",
+        tableName: 'products',
         recordId: productId,
         oldValues: { stock: oldQuantity },
         newValues: { stock: quantity },
@@ -258,20 +258,20 @@ export class InventoryService {
   }) {
     const { title, description, userId, items } = data;
 
-    return await prisma.$transaction(async (tx) => {
+    return await prisma.$transaction(async tx => {
       // Create reconciliation record
       const reconciliation = await tx.stockReconciliation.create({
         data: {
           title,
           description,
           createdById: userId,
-          status: "DRAFT",
+          status: 'DRAFT',
         },
       });
 
       // Create reconciliation items
       const reconciliationItems = await Promise.all(
-        items.map(async (item) => {
+        items.map(async item => {
           const {
             productId,
             systemCount,
@@ -312,7 +312,7 @@ export class InventoryService {
    * @returns The updated reconciliation with applied stock changes
    */
   static async approveReconciliation(reconciliationId: number, userId: number) {
-    return await prisma.$transaction(async (tx) => {
+    return await prisma.$transaction(async tx => {
       // Get reconciliation with items
       const reconciliation = await tx.stockReconciliation.findUnique({
         where: { id: reconciliationId },
@@ -326,11 +326,11 @@ export class InventoryService {
       });
 
       if (!reconciliation) {
-        throw new Error("Reconciliation not found");
+        throw new Error('Reconciliation not found');
       }
 
-      if (reconciliation.status !== "PENDING") {
-        throw new Error("Only pending reconciliations can be approved");
+      if (reconciliation.status !== 'PENDING') {
+        throw new Error('Only pending reconciliations can be approved');
       }
 
       // Update each product's stock based on the reconciliation
@@ -349,15 +349,15 @@ export class InventoryService {
             product_id: productId,
             adjustment_type:
               discrepancy >= 0
-                ? "RECONCILIATION_ADDITION"
-                : "RECONCILIATION_REDUCTION",
+                ? 'RECONCILIATION_ADDITION'
+                : 'RECONCILIATION_REDUCTION',
             quantity: Math.abs(discrepancy),
             old_quantity: systemCount,
             new_quantity: physicalCount,
             reason: `Stock reconciliation #${reconciliationId}`,
-            notes: item.discrepancyReason || "Stock reconciliation adjustment",
+            notes: item.discrepancyReason || 'Stock reconciliation adjustment',
             user_id: userId,
-            status: "COMPLETED",
+            status: 'COMPLETED',
           },
         });
 
@@ -366,7 +366,7 @@ export class InventoryService {
           tx,
           userId,
           action: AuditLogAction.STOCK_RECONCILIATION,
-          tableName: "products",
+          tableName: 'products',
           recordId: productId,
           oldValues: { stock: systemCount },
           newValues: { stock: physicalCount },
@@ -377,7 +377,7 @@ export class InventoryService {
       const updatedReconciliation = await tx.stockReconciliation.update({
         where: { id: reconciliationId },
         data: {
-          status: "APPROVED",
+          status: 'APPROVED',
           approvedById: userId,
           approvedAt: new Date(),
         },
@@ -416,7 +416,7 @@ export class InventoryService {
     // Build the where clause for filtering
     const where: any = {
       isArchived: false,
-      status: "ACTIVE",
+      status: 'ACTIVE',
     };
 
     // Apply additional filters if provided
@@ -435,7 +435,7 @@ export class InventoryService {
     }
 
     // Execute the query with a transaction to ensure consistency
-    return await prisma.$transaction(async (tx) => {
+    return await prisma.$transaction(async tx => {
       // Get products with count for pagination
       const [products, totalCount] = await Promise.all([
         tx.product.findMany({
@@ -445,7 +445,7 @@ export class InventoryService {
             brand: true,
             supplier: true,
           },
-          orderBy: [{ stock: "asc" }, { minStock: "desc" }],
+          orderBy: [{ stock: 'asc' }, { minStock: 'desc' }],
           skip: offset,
           take: limit,
         }),
@@ -453,9 +453,9 @@ export class InventoryService {
       ]);
 
       // Calculate metrics
-      const criticalStock = products.filter((p) => p.stock === 0).length;
+      const criticalStock = products.filter(p => p.stock === 0).length;
       const lowStock = products.filter(
-        (p) => p.stock > 0 && p.stock <= p.minStock
+        p => p.stock > 0 && p.stock <= p.minStock
       ).length;
       const totalValue = products.reduce((sum, product) => {
         return sum + Number(product.cost) * product.stock;
@@ -531,7 +531,7 @@ export class InventoryService {
     });
 
     if (!existingProduct) {
-      throw new Error("Product not found");
+      throw new Error('Product not found');
     }
 
     // If SKU is being updated, check for conflicts
@@ -544,7 +544,7 @@ export class InventoryService {
       });
 
       if (skuExists) {
-        throw new Error("Product with this SKU already exists");
+        throw new Error('Product with this SKU already exists');
       }
     }
 
@@ -568,13 +568,13 @@ export class InventoryService {
     };
 
     // Filter out undefined values
-    Object.keys(updateData).forEach((key) => {
+    Object.keys(updateData).forEach(key => {
       if (updateData[key] === undefined) {
         delete updateData[key];
       }
     });
 
-    return await prisma.$transaction(async (tx) => {
+    return await prisma.$transaction(async tx => {
       // Get original product for audit log
       const originalProduct = await tx.product.findUnique({
         where: { id },
@@ -611,7 +611,7 @@ export class InventoryService {
         tx,
         userId,
         action: AuditLogAction.PRODUCT_UPDATED,
-        tableName: "products",
+        tableName: 'products',
         recordId: id,
         oldValues: originalProduct,
         newValues: updatedProduct,
@@ -628,14 +628,14 @@ export class InventoryService {
    * @returns The archived product
    */
   static async archiveProduct(id: number, userId: number) {
-    return await prisma.$transaction(async (tx) => {
+    return await prisma.$transaction(async tx => {
       // Get original product for audit log
       const originalProduct = await tx.product.findUnique({
         where: { id },
       });
 
       if (!originalProduct) {
-        throw new Error("Product not found");
+        throw new Error('Product not found');
       }
 
       // Archive the product
@@ -643,7 +643,7 @@ export class InventoryService {
         where: { id },
         data: {
           isArchived: true,
-          status: "INACTIVE",
+          status: 'INACTIVE',
         },
         select: {
           id: true,
@@ -657,7 +657,7 @@ export class InventoryService {
         tx,
         userId,
         action: AuditLogAction.PRODUCT_ARCHIVED,
-        tableName: "products",
+        tableName: 'products',
         recordId: id,
         oldValues: { isArchived: originalProduct.isArchived },
         newValues: { isArchived: true },
@@ -674,14 +674,14 @@ export class InventoryService {
    * @returns Success message
    */
   static async deleteProduct(id: number, userId: number) {
-    return await prisma.$transaction(async (tx) => {
+    return await prisma.$transaction(async tx => {
       // Check if product exists
       const product = await tx.product.findUnique({
         where: { id },
       });
 
       if (!product) {
-        throw new Error("Product not found");
+        throw new Error('Product not found');
       }
 
       // Check for related sales records
@@ -691,7 +691,7 @@ export class InventoryService {
 
       if (salesItems) {
         throw new Error(
-          "Cannot delete product with existing sales records. Use archive instead."
+          'Cannot delete product with existing sales records. Use archive instead.'
         );
       }
 
@@ -700,7 +700,7 @@ export class InventoryService {
         tx,
         userId,
         action: AuditLogAction.PRODUCT_DELETED,
-        tableName: "products",
+        tableName: 'products',
         recordId: id,
         oldValues: product,
         newValues: {},
@@ -711,7 +711,7 @@ export class InventoryService {
         where: { id },
       });
 
-      return { message: "Product deleted successfully" };
+      return { message: 'Product deleted successfully' };
     });
   }
 
@@ -757,7 +757,7 @@ export class InventoryService {
    * @returns The updated sales transaction
    */
   static async updateSalesTransaction(id: number, data: any) {
-    return await prisma.$transaction(async (tx) => {
+    return await prisma.$transaction(async tx => {
       // First fetch the current transaction to compare changes
       const currentTransaction = await tx.salesTransaction.findUnique({
         where: { id },
@@ -767,7 +767,7 @@ export class InventoryService {
       });
 
       if (!currentTransaction) {
-        throw new Error("Sales transaction not found");
+        throw new Error('Sales transaction not found');
       }
 
       // Update the transaction
@@ -788,7 +788,7 @@ export class InventoryService {
         tx,
         userId: data.userId,
         action: AuditLogAction.SALE_UPDATED,
-        tableName: "sales_transactions",
+        tableName: 'sales_transactions',
         recordId: id,
         oldValues: currentTransaction,
         newValues: updatedTransaction,
@@ -813,7 +813,7 @@ export class InventoryService {
     // TODO: Fix this method to work with the actual SalesTransaction schema
     // The current implementation assumes fields that don't exist in the schema
     throw new Error(
-      "voidSalesTransaction method needs to be updated for current schema"
+      'voidSalesTransaction method needs to be updated for current schema'
     );
   }
 }

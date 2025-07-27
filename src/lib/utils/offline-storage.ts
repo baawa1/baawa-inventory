@@ -16,14 +16,14 @@ export interface OfflineTransaction {
   subtotal: number;
   discount: number;
   total: number;
-  paymentMethod: "cash" | "pos" | "bank_transfer" | "mobile_money";
+  paymentMethod: 'cash' | 'pos' | 'bank_transfer' | 'mobile_money';
   customerName?: string;
   customerPhone?: string;
   customerEmail?: string;
   staffName: string;
   staffId: number;
   timestamp: Date;
-  status: "pending" | "synced" | "failed";
+  status: 'pending' | 'synced' | 'failed';
   syncAttempts: number;
   lastSyncAttempt?: Date;
   errorMessage?: string;
@@ -39,12 +39,12 @@ export interface OfflineProduct {
   category: string;
   brand: string;
   description?: string;
-  status: "ACTIVE" | "INACTIVE" | "OUT_OF_STOCK" | "DISCONTINUED";
+  status: 'ACTIVE' | 'INACTIVE' | 'OUT_OF_STOCK' | 'DISCONTINUED';
   lastUpdated: Date;
 }
 
 class OfflineStorageManager {
-  private dbName = "baawa_pos_offline";
+  private dbName = 'baawa_pos_offline';
   private dbVersion = 1;
   private db: IDBDatabase | null = null;
 
@@ -56,7 +56,7 @@ class OfflineStorageManager {
       const request = indexedDB.open(this.dbName, this.dbVersion);
 
       request.onerror = () => {
-        reject(new Error("Failed to open IndexedDB"));
+        reject(new Error('Failed to open IndexedDB'));
       };
 
       request.onsuccess = () => {
@@ -64,36 +64,36 @@ class OfflineStorageManager {
         resolve();
       };
 
-      request.onupgradeneeded = (event) => {
+      request.onupgradeneeded = event => {
         const db = (event.target as IDBOpenDBRequest).result;
 
         // Create transactions store
-        if (!db.objectStoreNames.contains("transactions")) {
-          const transactionStore = db.createObjectStore("transactions", {
-            keyPath: "id",
+        if (!db.objectStoreNames.contains('transactions')) {
+          const transactionStore = db.createObjectStore('transactions', {
+            keyPath: 'id',
           });
-          transactionStore.createIndex("status", "status", { unique: false });
-          transactionStore.createIndex("timestamp", "timestamp", {
+          transactionStore.createIndex('status', 'status', { unique: false });
+          transactionStore.createIndex('timestamp', 'timestamp', {
             unique: false,
           });
-          transactionStore.createIndex("staffId", "staffId", { unique: false });
+          transactionStore.createIndex('staffId', 'staffId', { unique: false });
         }
 
         // Create products cache store
-        if (!db.objectStoreNames.contains("products")) {
-          const productStore = db.createObjectStore("products", {
-            keyPath: "id",
+        if (!db.objectStoreNames.contains('products')) {
+          const productStore = db.createObjectStore('products', {
+            keyPath: 'id',
           });
-          productStore.createIndex("sku", "sku", { unique: false });
-          productStore.createIndex("barcode", "barcode", { unique: false });
-          productStore.createIndex("category", "category", { unique: false });
-          productStore.createIndex("brand", "brand", { unique: false });
-          productStore.createIndex("status", "status", { unique: false });
+          productStore.createIndex('sku', 'sku', { unique: false });
+          productStore.createIndex('barcode', 'barcode', { unique: false });
+          productStore.createIndex('category', 'category', { unique: false });
+          productStore.createIndex('brand', 'brand', { unique: false });
+          productStore.createIndex('status', 'status', { unique: false });
         }
 
         // Create sync status store
-        if (!db.objectStoreNames.contains("syncStatus")) {
-          db.createObjectStore("syncStatus", { keyPath: "key" });
+        if (!db.objectStoreNames.contains('syncStatus')) {
+          db.createObjectStore('syncStatus', { keyPath: 'key' });
         }
       };
     });
@@ -103,16 +103,16 @@ class OfflineStorageManager {
    * Store a transaction offline
    */
   async storeTransaction(transaction: OfflineTransaction): Promise<void> {
-    if (!this.db) throw new Error("Database not initialized");
+    if (!this.db) throw new Error('Database not initialized');
 
     return new Promise((resolve, reject) => {
-      const tx = this.db!.transaction(["transactions"], "readwrite");
-      const store = tx.objectStore("transactions");
+      const tx = this.db!.transaction(['transactions'], 'readwrite');
+      const store = tx.objectStore('transactions');
 
       const request = store.add(transaction);
 
       request.onsuccess = () => resolve();
-      request.onerror = () => reject(new Error("Failed to store transaction"));
+      request.onerror = () => reject(new Error('Failed to store transaction'));
     });
   }
 
@@ -120,18 +120,18 @@ class OfflineStorageManager {
    * Get all pending transactions
    */
   async getPendingTransactions(): Promise<OfflineTransaction[]> {
-    if (!this.db) throw new Error("Database not initialized");
+    if (!this.db) throw new Error('Database not initialized');
 
     return new Promise((resolve, reject) => {
-      const tx = this.db!.transaction(["transactions"], "readonly");
-      const store = tx.objectStore("transactions");
-      const index = store.index("status");
+      const tx = this.db!.transaction(['transactions'], 'readonly');
+      const store = tx.objectStore('transactions');
+      const index = store.index('status');
 
-      const request = index.getAll("pending");
+      const request = index.getAll('pending');
 
       request.onsuccess = () => resolve(request.result);
       request.onerror = () =>
-        reject(new Error("Failed to get pending transactions"));
+        reject(new Error('Failed to get pending transactions'));
     });
   }
 
@@ -139,17 +139,17 @@ class OfflineStorageManager {
    * Get all transactions (including pending, synced, and failed)
    */
   async getAllTransactions(): Promise<OfflineTransaction[]> {
-    if (!this.db) throw new Error("Database not initialized");
+    if (!this.db) throw new Error('Database not initialized');
 
     return new Promise((resolve, reject) => {
-      const tx = this.db!.transaction(["transactions"], "readonly");
-      const store = tx.objectStore("transactions");
+      const tx = this.db!.transaction(['transactions'], 'readonly');
+      const store = tx.objectStore('transactions');
 
       const request = store.getAll();
 
       request.onsuccess = () => resolve(request.result);
       request.onerror = () =>
-        reject(new Error("Failed to get all transactions"));
+        reject(new Error('Failed to get all transactions'));
     });
   }
 
@@ -158,14 +158,14 @@ class OfflineStorageManager {
    */
   async updateTransactionStatus(
     id: string,
-    status: "pending" | "synced" | "failed",
+    status: 'pending' | 'synced' | 'failed',
     errorMessage?: string
   ): Promise<void> {
-    if (!this.db) throw new Error("Database not initialized");
+    if (!this.db) throw new Error('Database not initialized');
 
     return new Promise((resolve, reject) => {
-      const tx = this.db!.transaction(["transactions"], "readwrite");
-      const store = tx.objectStore("transactions");
+      const tx = this.db!.transaction(['transactions'], 'readwrite');
+      const store = tx.objectStore('transactions');
 
       const getRequest = store.get(id);
 
@@ -180,13 +180,13 @@ class OfflineStorageManager {
           const updateRequest = store.put(transaction);
           updateRequest.onsuccess = () => resolve();
           updateRequest.onerror = () =>
-            reject(new Error("Failed to update transaction"));
+            reject(new Error('Failed to update transaction'));
         } else {
-          reject(new Error("Transaction not found"));
+          reject(new Error('Transaction not found'));
         }
       };
 
-      getRequest.onerror = () => reject(new Error("Failed to get transaction"));
+      getRequest.onerror = () => reject(new Error('Failed to get transaction'));
     });
   }
 
@@ -194,11 +194,11 @@ class OfflineStorageManager {
    * Cache products for offline use
    */
   async cacheProducts(products: OfflineProduct[]): Promise<void> {
-    if (!this.db) throw new Error("Database not initialized");
+    if (!this.db) throw new Error('Database not initialized');
 
     return new Promise((resolve, reject) => {
-      const tx = this.db!.transaction(["products"], "readwrite");
-      const store = tx.objectStore("products");
+      const tx = this.db!.transaction(['products'], 'readwrite');
+      const store = tx.objectStore('products');
 
       // Clear existing products
       const clearRequest = store.clear();
@@ -211,19 +211,19 @@ class OfflineStorageManager {
           return;
         }
 
-        products.forEach((product) => {
+        products.forEach(product => {
           const addRequest = store.add(product);
           addRequest.onsuccess = () => {
             remaining--;
             if (remaining === 0) resolve();
           };
           addRequest.onerror = () =>
-            reject(new Error("Failed to cache product"));
+            reject(new Error('Failed to cache product'));
         });
       };
 
       clearRequest.onerror = () =>
-        reject(new Error("Failed to clear products"));
+        reject(new Error('Failed to clear products'));
     });
   }
 
@@ -231,17 +231,17 @@ class OfflineStorageManager {
    * Get cached products
    */
   async getCachedProducts(): Promise<OfflineProduct[]> {
-    if (!this.db) throw new Error("Database not initialized");
+    if (!this.db) throw new Error('Database not initialized');
 
     return new Promise((resolve, reject) => {
-      const tx = this.db!.transaction(["products"], "readonly");
-      const store = tx.objectStore("products");
+      const tx = this.db!.transaction(['products'], 'readonly');
+      const store = tx.objectStore('products');
 
       const request = store.getAll();
 
       request.onsuccess = () => resolve(request.result);
       request.onerror = () =>
-        reject(new Error("Failed to get cached products"));
+        reject(new Error('Failed to get cached products'));
     });
   }
 
@@ -251,12 +251,12 @@ class OfflineStorageManager {
   async searchCachedProducts(searchTerm: string): Promise<OfflineProduct[]> {
     const products = await this.getCachedProducts();
 
-    if (!searchTerm) return products.filter((p) => p.status === "ACTIVE");
+    if (!searchTerm) return products.filter(p => p.status === 'ACTIVE');
 
     const term = searchTerm.toLowerCase();
     return products.filter(
-      (product) =>
-        product.status === "ACTIVE" &&
+      product =>
+        product.status === 'ACTIVE' &&
         (product.name.toLowerCase().includes(term) ||
           product.sku.toLowerCase().includes(term) ||
           product.barcode?.toLowerCase().includes(term) ||
@@ -269,18 +269,18 @@ class OfflineStorageManager {
    * Get product by barcode
    */
   async getProductByBarcode(barcode: string): Promise<OfflineProduct | null> {
-    if (!this.db) throw new Error("Database not initialized");
+    if (!this.db) throw new Error('Database not initialized');
 
     return new Promise((resolve, reject) => {
-      const tx = this.db!.transaction(["products"], "readonly");
-      const store = tx.objectStore("products");
-      const index = store.index("barcode");
+      const tx = this.db!.transaction(['products'], 'readonly');
+      const store = tx.objectStore('products');
+      const index = store.index('barcode');
 
       const request = index.get(barcode);
 
       request.onsuccess = () => resolve(request.result || null);
       request.onerror = () =>
-        reject(new Error("Failed to get product by barcode"));
+        reject(new Error('Failed to get product by barcode'));
     });
   }
 
@@ -288,16 +288,16 @@ class OfflineStorageManager {
    * Update sync status
    */
   async updateSyncStatus(key: string, value: any): Promise<void> {
-    if (!this.db) throw new Error("Database not initialized");
+    if (!this.db) throw new Error('Database not initialized');
 
     return new Promise((resolve, reject) => {
-      const tx = this.db!.transaction(["syncStatus"], "readwrite");
-      const store = tx.objectStore("syncStatus");
+      const tx = this.db!.transaction(['syncStatus'], 'readwrite');
+      const store = tx.objectStore('syncStatus');
 
       const request = store.put({ key, value, timestamp: new Date() });
 
       request.onsuccess = () => resolve();
-      request.onerror = () => reject(new Error("Failed to update sync status"));
+      request.onerror = () => reject(new Error('Failed to update sync status'));
     });
   }
 
@@ -305,16 +305,16 @@ class OfflineStorageManager {
    * Get sync status
    */
   async getSyncStatus(key: string): Promise<any> {
-    if (!this.db) throw new Error("Database not initialized");
+    if (!this.db) throw new Error('Database not initialized');
 
     return new Promise((resolve, reject) => {
-      const tx = this.db!.transaction(["syncStatus"], "readonly");
-      const store = tx.objectStore("syncStatus");
+      const tx = this.db!.transaction(['syncStatus'], 'readonly');
+      const store = tx.objectStore('syncStatus');
 
       const request = store.get(key);
 
       request.onsuccess = () => resolve(request.result?.value || null);
-      request.onerror = () => reject(new Error("Failed to get sync status"));
+      request.onerror = () => reject(new Error('Failed to get sync status'));
     });
   }
 
@@ -322,15 +322,15 @@ class OfflineStorageManager {
    * Clear all data
    */
   async clearAllData(): Promise<void> {
-    if (!this.db) throw new Error("Database not initialized");
+    if (!this.db) throw new Error('Database not initialized');
 
-    const stores = ["transactions", "products", "syncStatus"];
+    const stores = ['transactions', 'products', 'syncStatus'];
 
     return new Promise((resolve, reject) => {
-      const tx = this.db!.transaction(stores, "readwrite");
+      const tx = this.db!.transaction(stores, 'readwrite');
       let remaining = stores.length;
 
-      stores.forEach((storeName) => {
+      stores.forEach(storeName => {
         const store = tx.objectStore(storeName);
         const request = store.clear();
 
@@ -354,15 +354,15 @@ class OfflineStorageManager {
     totalTransactions: number;
     lastSync?: Date;
   }> {
-    if (!this.db) throw new Error("Database not initialized");
+    if (!this.db) throw new Error('Database not initialized');
 
     const pendingTransactions = await this.getPendingTransactions();
     const allProducts = await this.getCachedProducts();
-    const lastSync = await this.getSyncStatus("lastProductSync");
+    const lastSync = await this.getSyncStatus('lastProductSync');
 
     return new Promise((resolve, reject) => {
-      const tx = this.db!.transaction(["transactions"], "readonly");
-      const store = tx.objectStore("transactions");
+      const tx = this.db!.transaction(['transactions'], 'readonly');
+      const store = tx.objectStore('transactions');
 
       const request = store.count();
 
@@ -375,7 +375,7 @@ class OfflineStorageManager {
         });
       };
 
-      request.onerror = () => reject(new Error("Failed to get stats"));
+      request.onerror = () => reject(new Error('Failed to get stats'));
     });
   }
 }
@@ -389,5 +389,5 @@ export const generateTransactionId = (): string => {
 };
 
 export const isOfflineTransaction = (id: string): boolean => {
-  return id.startsWith("offline_");
+  return id.startsWith('offline_');
 };

@@ -1,22 +1,22 @@
-import { withAuth, AuthenticatedRequest } from "@/lib/api-middleware";
-import { createApiResponse } from "@/lib/api-response";
-import { prisma } from "@/lib/db";
-import { INCOME_SOURCES, EXPENSE_TYPES } from "@/lib/constants/finance";
+import { withAuth, AuthenticatedRequest } from '@/lib/api-middleware';
+import { createApiResponse } from '@/lib/api-response';
+import { prisma } from '@/lib/db';
+import { INCOME_SOURCES, EXPENSE_TYPES } from '@/lib/constants/finance';
 
 // GET /api/finance/reports - Get financial reports with real data including sales and purchases
 export const GET = withAuth(async (request: AuthenticatedRequest) => {
   try {
     const { searchParams } = new URL(request.url);
-    const reportType = searchParams.get("type") || "FINANCIAL_SUMMARY";
-    const startDate = searchParams.get("startDate");
-    const endDate = searchParams.get("endDate");
-    const includeSales = searchParams.get("includeSales") !== "false"; // Default to true
-    const includePurchases = searchParams.get("includePurchases") !== "false"; // Default to true
+    const reportType = searchParams.get('type') || 'FINANCIAL_SUMMARY';
+    const startDate = searchParams.get('startDate');
+    const endDate = searchParams.get('endDate');
+    const includeSales = searchParams.get('includeSales') !== 'false'; // Default to true
+    const includePurchases = searchParams.get('includePurchases') !== 'false'; // Default to true
 
     let reportData;
 
     switch (reportType) {
-      case "FINANCIAL_SUMMARY":
+      case 'FINANCIAL_SUMMARY':
         reportData = await getFinancialSummary(
           startDate,
           endDate,
@@ -24,17 +24,17 @@ export const GET = withAuth(async (request: AuthenticatedRequest) => {
           includePurchases
         );
         break;
-      case "INCOME_REPORT":
+      case 'INCOME_REPORT':
         reportData = await getIncomeReport(startDate, endDate, includeSales);
         break;
-      case "EXPENSE_REPORT":
+      case 'EXPENSE_REPORT':
         reportData = await getExpenseReport(
           startDate,
           endDate,
           includePurchases
         );
         break;
-      case "CASH_FLOW":
+      case 'CASH_FLOW':
         reportData = await getCashFlowReport(
           startDate,
           endDate,
@@ -43,13 +43,13 @@ export const GET = withAuth(async (request: AuthenticatedRequest) => {
         );
         break;
       default:
-        return createApiResponse.error("Invalid report type", 400);
+        return createApiResponse.error('Invalid report type', 400);
     }
 
     return createApiResponse.success(reportData);
   } catch (error) {
-    console.error("Error generating finance report:", error);
-    return createApiResponse.internalError("Failed to generate report");
+    console.error('Error generating finance report:', error);
+    return createApiResponse.internalError('Failed to generate report');
   }
 });
 
@@ -71,11 +71,11 @@ async function getFinancialSummary(
   // Get manual financial transactions
   const [incomeTotal, expenseTotal, transactionCount] = await Promise.all([
     prisma.financialTransaction.aggregate({
-      where: { ...whereClause, type: "INCOME" },
+      where: { ...whereClause, type: 'INCOME' },
       _sum: { amount: true },
     }),
     prisma.financialTransaction.aggregate({
-      where: { ...whereClause, type: "EXPENSE" },
+      where: { ...whereClause, type: 'EXPENSE' },
       _sum: { amount: true },
     }),
     prisma.financialTransaction.count({ where: whereClause }),
@@ -92,7 +92,7 @@ async function getFinancialSummary(
       if (startDate) salesWhereClause.created_at.gte = new Date(startDate);
       if (endDate) salesWhereClause.created_at.lte = new Date(endDate);
     }
-    salesWhereClause.payment_status = "paid";
+    salesWhereClause.payment_status = 'paid';
 
     const salesTotal = await prisma.salesTransaction.aggregate({
       where: salesWhereClause,
@@ -151,7 +151,7 @@ async function getIncomeReport(
   endDate?: string | null,
   includeSales: boolean = true
 ) {
-  const whereClause: any = { type: "INCOME" };
+  const whereClause: any = { type: 'INCOME' };
 
   if (startDate || endDate) {
     whereClause.transactionDate = {};
@@ -170,7 +170,7 @@ async function getIncomeReport(
   // Group by income source
   const incomeBreakdown = incomeBySource.reduce(
     (acc, transaction) => {
-      const source = transaction.incomeDetails?.incomeSource || "Other";
+      const source = transaction.incomeDetails?.incomeSource || 'Other';
       if (!acc[source]) {
         acc[source] = { source, amount: 0, count: 0 };
       }
@@ -189,7 +189,7 @@ async function getIncomeReport(
       if (startDate) salesWhereClause.created_at.gte = new Date(startDate);
       if (endDate) salesWhereClause.created_at.lte = new Date(endDate);
     }
-    salesWhereClause.payment_status = "paid";
+    salesWhereClause.payment_status = 'paid';
 
     const salesTransactions = await prisma.salesTransaction.findMany({
       where: salesWhereClause,
@@ -202,8 +202,8 @@ async function getIncomeReport(
     const salesCount = salesTransactions.length;
 
     if (salesAmount > 0) {
-      incomeBreakdown["SALES"] = {
-        source: "SALES",
+      incomeBreakdown['SALES'] = {
+        source: 'SALES',
         amount: salesAmount,
         count: salesCount,
       };
@@ -231,7 +231,7 @@ async function getExpenseReport(
   endDate?: string | null,
   includePurchases: boolean = true
 ) {
-  const whereClause: any = { type: "EXPENSE" };
+  const whereClause: any = { type: 'EXPENSE' };
 
   if (startDate || endDate) {
     whereClause.transactionDate = {};
@@ -250,7 +250,7 @@ async function getExpenseReport(
   // Group by expense type
   const expenseBreakdown = expensesByType.reduce(
     (acc, transaction) => {
-      const type = transaction.expenseDetails?.expenseType || "Other";
+      const type = transaction.expenseDetails?.expenseType || 'Other';
       if (!acc[type]) {
         acc[type] = { type, amount: 0, count: 0 };
       }
@@ -286,8 +286,8 @@ async function getExpenseReport(
     const purchaseCount = stockAdditions.length;
 
     if (purchaseAmount > 0) {
-      expenseBreakdown["INVENTORY_PURCHASES"] = {
-        type: "INVENTORY_PURCHASES",
+      expenseBreakdown['INVENTORY_PURCHASES'] = {
+        type: 'INVENTORY_PURCHASES',
         amount: purchaseAmount,
         count: purchaseCount,
       };
@@ -331,38 +331,38 @@ async function getCashFlowReport(
       incomeDetails: true,
       expenseDetails: true,
     },
-    orderBy: { transactionDate: "asc" },
+    orderBy: { transactionDate: 'asc' },
   });
 
   // Calculate cash flow components from manual transactions
   let operatingCashFlow = transactions
     .filter(
-      (t) => t.type === "INCOME" && t.incomeDetails?.incomeSource === "SALES"
+      t => t.type === 'INCOME' && t.incomeDetails?.incomeSource === 'SALES'
     )
     .reduce((sum, t) => sum + Number(t.amount), 0);
 
   let investingCashFlow = transactions
     .filter(
-      (t) =>
-        t.type === "EXPENSE" &&
-        ["MAINTENANCE", "INSURANCE", "RENT"].includes(
-          t.expenseDetails?.expenseType || ""
+      t =>
+        t.type === 'EXPENSE' &&
+        ['MAINTENANCE', 'INSURANCE', 'RENT'].includes(
+          t.expenseDetails?.expenseType || ''
         )
     )
     .reduce((sum, t) => sum - Number(t.amount), 0);
 
   let financingCashFlow = transactions
     .filter(
-      (t) =>
-        (t.type === "INCOME" &&
+      t =>
+        (t.type === 'INCOME' &&
           t.incomeDetails?.incomeSource ===
             (INCOME_SOURCES.INVESTMENTS as any)) ||
-        (t.type === "EXPENSE" &&
+        (t.type === 'EXPENSE' &&
           t.expenseDetails?.expenseType === (EXPENSE_TYPES.SALARIES as any))
     )
     .reduce(
       (sum, t) =>
-        sum + (t.type === "INCOME" ? Number(t.amount) : -Number(t.amount)),
+        sum + (t.type === 'INCOME' ? Number(t.amount) : -Number(t.amount)),
       0
     );
 
@@ -374,7 +374,7 @@ async function getCashFlowReport(
       if (startDate) salesWhereClause.created_at.gte = new Date(startDate);
       if (endDate) salesWhereClause.created_at.lte = new Date(endDate);
     }
-    salesWhereClause.payment_status = "paid";
+    salesWhereClause.payment_status = 'paid';
 
     const salesTotal = await prisma.salesTransaction.aggregate({
       where: salesWhereClause,
@@ -443,12 +443,12 @@ async function getRecentTransactions(
       incomeDetails: true,
       expenseDetails: true,
     },
-    orderBy: { transactionDate: "desc" },
+    orderBy: { transactionDate: 'desc' },
     take: 10,
   });
 
   transactions.push(
-    ...manualTransactions.map((t) => ({
+    ...manualTransactions.map(t => ({
       id: t.id,
       transactionNumber: t.transactionNumber,
       type: t.type,
@@ -459,7 +459,7 @@ async function getRecentTransactions(
       createdBy: t.createdByUser,
       incomeSource: t.incomeDetails?.incomeSource,
       expenseType: t.expenseDetails?.expenseType,
-      source: "manual",
+      source: 'manual',
     }))
   );
 
@@ -471,7 +471,7 @@ async function getRecentTransactions(
       if (startDate) salesWhereClause.created_at.gte = new Date(startDate);
       if (endDate) salesWhereClause.created_at.lte = new Date(endDate);
     }
-    salesWhereClause.payment_status = "paid";
+    salesWhereClause.payment_status = 'paid';
 
     const salesTransactions = await prisma.salesTransaction.findMany({
       where: salesWhereClause,
@@ -480,22 +480,22 @@ async function getRecentTransactions(
           select: { firstName: true, lastName: true, email: true },
         },
       },
-      orderBy: { created_at: "desc" },
+      orderBy: { created_at: 'desc' },
       take: 5,
     });
 
     transactions.push(
-      ...salesTransactions.map((s) => ({
+      ...salesTransactions.map(s => ({
         id: s.id,
         transactionNumber: s.transaction_number,
-        type: "INCOME",
+        type: 'INCOME',
         amount: s.total_amount,
-        description: `POS Sale - ${s.customer_name || s.customer_email || "Walk-in Customer"}`,
+        description: `POS Sale - ${s.customer_name || s.customer_email || 'Walk-in Customer'}`,
         transactionDate: s.created_at,
         paymentMethod: s.payment_method,
         createdBy: s.users,
-        incomeSource: "SALES",
-        source: "sales",
+        incomeSource: 'SALES',
+        source: 'sales',
       }))
     );
   }
@@ -519,22 +519,22 @@ async function getRecentTransactions(
           select: { name: true },
         },
       },
-      orderBy: { purchaseDate: "desc" },
+      orderBy: { purchaseDate: 'desc' },
       take: 5,
     });
 
     transactions.push(
-      ...stockAdditions.map((sa) => ({
+      ...stockAdditions.map(sa => ({
         id: sa.id,
         transactionNumber: sa.referenceNo || `STOCK-${sa.id}`,
-        type: "EXPENSE",
+        type: 'EXPENSE',
         amount: sa.totalCost,
         description: `Inventory Purchase - ${sa.product.name}`,
         transactionDate: sa.purchaseDate,
-        paymentMethod: "BANK_TRANSFER",
+        paymentMethod: 'BANK_TRANSFER',
         createdBy: sa.createdBy,
-        expenseType: "INVENTORY_PURCHASES",
-        source: "purchase",
+        expenseType: 'INVENTORY_PURCHASES',
+        source: 'purchase',
       }))
     );
   }

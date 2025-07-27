@@ -1,25 +1,25 @@
-"use client";
+'use client';
 
-import { UseFormReturn } from "react-hook-form";
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { UseFormReturn } from 'react-hook-form';
+import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import {
   FormControl,
   FormField,
   FormItem,
   FormLabel,
   FormMessage,
-} from "@/components/ui/form";
+} from '@/components/ui/form';
 import {
   Select,
   SelectContent,
   SelectItem,
   SelectTrigger,
   SelectValue,
-} from "@/components/ui/select";
-import { ImagePreview } from "@/components/ui/image-preview";
-import { IconTag, IconBrandX } from "@tabler/icons-react";
-import type { CreateProductData, Category, Brand, Supplier } from "./types";
-import { formatCategoryHierarchy } from "@/lib/utils/category";
+} from '@/components/ui/select';
+import { ImagePreview } from '@/components/ui/image-preview';
+import { IconTag, IconBrandX } from '@tabler/icons-react';
+import type { CreateProductData, Category, Brand, Supplier } from './types';
+import { formatCategoryHierarchy } from '@/lib/utils/category';
 
 interface CategoryBrandSectionProps {
   form: UseFormReturn<CreateProductData>;
@@ -42,7 +42,7 @@ export function CategoryBrandSection({
         <CardTitle>Category, Brand & Supplier</CardTitle>
       </CardHeader>
       <CardContent className="space-y-4">
-        <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+        <div className="grid grid-cols-1 gap-4 md:grid-cols-3">
           <FormField
             control={form.control}
             name="categoryId"
@@ -51,8 +51,8 @@ export function CategoryBrandSection({
                 <FormLabel>Category *</FormLabel>
                 <Select
                   disabled={loading}
-                  onValueChange={(value) => field.onChange(parseInt(value))}
-                  value={field.value?.toString() || ""}
+                  onValueChange={value => field.onChange(parseInt(value))}
+                  value={field.value?.toString() || ''}
                 >
                   <FormControl>
                     <SelectTrigger>
@@ -60,7 +60,7 @@ export function CategoryBrandSection({
                     </SelectTrigger>
                   </FormControl>
                   <SelectContent>
-                    {categories.map((category) => (
+                    {categories.map(category => (
                       <SelectItem
                         key={category.id}
                         value={category.id.toString()}
@@ -74,7 +74,7 @@ export function CategoryBrandSection({
                               className="rounded"
                             />
                           ) : (
-                            <div className="w-6 h-6 bg-gray-100 rounded flex items-center justify-center">
+                            <div className="flex h-6 w-6 items-center justify-center rounded bg-gray-100">
                               <IconTag className="h-3 w-3 text-gray-400" />
                             </div>
                           )}
@@ -97,12 +97,12 @@ export function CategoryBrandSection({
                 <FormLabel>Brand</FormLabel>
                 <Select
                   disabled={loading}
-                  onValueChange={(value) =>
+                  onValueChange={value =>
                     field.onChange(
-                      value === "none" ? undefined : parseInt(value)
+                      value === 'none' ? undefined : parseInt(value)
                     )
                   }
-                  value={field.value?.toString() || "none"}
+                  value={field.value?.toString() || 'none'}
                 >
                   <FormControl>
                     <SelectTrigger>
@@ -110,7 +110,7 @@ export function CategoryBrandSection({
                     </SelectTrigger>
                   </FormControl>
                   <SelectContent>
-                    {brands.map((brand) => (
+                    {brands.map(brand => (
                       <SelectItem key={brand.id} value={brand.id.toString()}>
                         <div className="flex items-center gap-2">
                           {brand.image ? (
@@ -121,7 +121,7 @@ export function CategoryBrandSection({
                               className="rounded"
                             />
                           ) : (
-                            <div className="w-6 h-6 bg-gray-100 rounded flex items-center justify-center">
+                            <div className="flex h-6 w-6 items-center justify-center rounded bg-gray-100">
                               <IconBrandX className="h-3 w-3 text-gray-400" />
                             </div>
                           )}
@@ -144,8 +144,8 @@ export function CategoryBrandSection({
                 <FormLabel>Supplier *</FormLabel>
                 <Select
                   disabled={loading}
-                  onValueChange={(value) => field.onChange(parseInt(value))}
-                  value={field.value?.toString() || ""}
+                  onValueChange={value => field.onChange(parseInt(value))}
+                  value={field.value?.toString() || ''}
                 >
                   <FormControl>
                     <SelectTrigger>
@@ -153,7 +153,7 @@ export function CategoryBrandSection({
                     </SelectTrigger>
                   </FormControl>
                   <SelectContent>
-                    {suppliers.map((supplier) => (
+                    {suppliers.map(supplier => (
                       <SelectItem
                         key={supplier.id}
                         value={supplier.id.toString()}

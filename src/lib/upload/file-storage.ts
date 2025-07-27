@@ -25,8 +25,8 @@ export class FileStorageService {
   private publicUrl: string;
 
   constructor(
-    uploadDir: string = "public/uploads",
-    publicUrl: string = "/uploads"
+    uploadDir: string = 'public/uploads',
+    publicUrl: string = '/uploads'
   ) {
     this.uploadDir = uploadDir;
     this.publicUrl = publicUrl;
@@ -40,8 +40,8 @@ export class FileStorageService {
     options: UploadOptions = {}
   ): Promise<UploadResult> {
     const {
-      folder = "products",
-      allowedTypes = ["image/jpeg", "image/png", "image/webp"],
+      folder = 'products',
+      allowedTypes = ['image/jpeg', 'image/png', 'image/webp'],
       maxSize = 5 * 1024 * 1024, // 5MB default
       quality = 85,
     } = options;
@@ -64,7 +64,7 @@ export class FileStorageService {
     // Generate unique filename
     const timestamp = Date.now();
     const randomId = Math.random().toString(36).substring(2, 15);
-    const extension = file.name.split(".").pop();
+    const extension = file.name.split('.').pop();
     const filename = `${timestamp}_${randomId}.${extension}`;
     const storagePath = `${folder}/${filename}`;
 
@@ -88,8 +88,8 @@ export class FileStorageService {
   private async fileToDataUrl(file: File): Promise<string> {
     return new Promise((resolve, reject) => {
       const reader = new FileReader();
-      reader.onload = (e) => resolve(e.target?.result as string);
-      reader.onerror = () => reject(new Error("Failed to read file"));
+      reader.onload = e => resolve(e.target?.result as string);
+      reader.onerror = () => reject(new Error('Failed to read file'));
       reader.readAsDataURL(file);
     });
   }
@@ -99,8 +99,8 @@ export class FileStorageService {
    */
   private async optimizeImage(file: File, quality: number): Promise<File> {
     return new Promise((resolve, reject) => {
-      const canvas = document.createElement("canvas");
-      const ctx = canvas.getContext("2d");
+      const canvas = document.createElement('canvas');
+      const ctx = canvas.getContext('2d');
       const img = new Image();
 
       img.onload = () => {
@@ -125,7 +125,7 @@ export class FileStorageService {
         ctx?.drawImage(img, 0, 0, width, height);
 
         canvas.toBlob(
-          (blob) => {
+          blob => {
             if (blob) {
               const optimizedFile = new File([blob], file.name, {
                 type: file.type,
@@ -133,7 +133,7 @@ export class FileStorageService {
               });
               resolve(optimizedFile);
             } else {
-              reject(new Error("Failed to optimize image"));
+              reject(new Error('Failed to optimize image'));
             }
           },
           file.type,
@@ -141,7 +141,7 @@ export class FileStorageService {
         );
       };
 
-      img.onerror = () => reject(new Error("Failed to load image"));
+      img.onerror = () => reject(new Error('Failed to load image'));
       img.src = URL.createObjectURL(file);
     });
   }

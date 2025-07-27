@@ -1,6 +1,6 @@
-import { useEffect } from "react";
-import { UseFormReturn } from "react-hook-form";
-import { UseQueryResult } from "@tanstack/react-query";
+import { useEffect } from 'react';
+import { UseFormReturn } from 'react-hook-form';
+import { UseQueryResult } from '@tanstack/react-query';
 
 interface UseFormWithQueryOptions<TData> {
   form: UseFormReturn<any>;

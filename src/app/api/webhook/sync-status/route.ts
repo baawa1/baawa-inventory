@@ -1,12 +1,12 @@
-import { NextRequest, NextResponse } from "next/server";
-import { prisma } from "@/lib/db";
-import { z } from "zod";
+import { NextRequest, NextResponse } from 'next/server';
+import { prisma } from '@/lib/db';
+import { z } from 'zod';
 
 // Validation schema for sync status updates
 const syncStatusSchema = z.object({
-  entityType: z.enum(["product", "category", "brand"]),
+  entityType: z.enum(['product', 'category', 'brand']),
   entityId: z.number().int().positive(),
-  status: z.enum(["synced", "failed"]),
+  status: z.enum(['synced', 'failed']),
   errorMessage: z.string().optional(),
   webhookUrl: z.string().url().optional(),
 });
@@ -41,7 +41,7 @@ export async function POST(req: NextRequest) {
     });
 
     // Also update the product sync fields if it's a product
-    if (validatedData.entityType === "product") {
+    if (validatedData.entityType === 'product') {
       await prisma.product.update({
         where: { id: validatedData.entityId },
         data: {
@@ -60,9 +60,9 @@ export async function POST(req: NextRequest) {
     if (error instanceof z.ZodError) {
       return NextResponse.json(
         {
-          error: "Validation failed",
-          details: error.errors.map((e) => ({
-            field: e.path.join("."),
+          error: 'Validation failed',
+          details: error.errors.map(e => ({
+            field: e.path.join('.'),
             message: e.message,
           })),
         },
@@ -70,9 +70,9 @@ export async function POST(req: NextRequest) {
       );
     }
 
-    console.error("Sync status update error:", error);
+    console.error('Sync status update error:', error);
     return NextResponse.json(
-      { error: "Internal server error" },
+      { error: 'Internal server error' },
       { status: 500 }
     );
   }

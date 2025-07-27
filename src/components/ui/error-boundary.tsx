@@ -1,14 +1,14 @@
-"use client";
+'use client';
 
-import React from "react";
-import { Button } from "@/components/ui/button";
+import React from 'react';
+import { Button } from '@/components/ui/button';
 import {
   Card,
   CardContent,
   CardDescription,
   CardHeader,
   CardTitle,
-} from "@/components/ui/card";
+} from '@/components/ui/card';
 
 interface ErrorBoundaryState {
   hasError: boolean;
@@ -44,7 +44,7 @@ export class ErrorBoundary extends React.Component<
   }
 
   componentDidCatch(error: Error, errorInfo: React.ErrorInfo) {
-    console.error("ErrorBoundary caught an error:", error, errorInfo);
+    console.error('ErrorBoundary caught an error:', error, errorInfo);
 
     this.setState({
       error,
@@ -78,7 +78,7 @@ export class ErrorBoundary extends React.Component<
 
 function DefaultErrorFallback({ error, resetError }: ErrorFallbackProps) {
   return (
-    <Card className="w-full max-w-md mx-auto">
+    <Card className="mx-auto w-full max-w-md">
       <CardHeader>
         <CardTitle className="text-destructive">Something went wrong</CardTitle>
         <CardDescription>
@@ -86,8 +86,8 @@ function DefaultErrorFallback({ error, resetError }: ErrorFallbackProps) {
         </CardDescription>
       </CardHeader>
       <CardContent className="space-y-4">
-        <div className="p-3 bg-destructive/10 border border-destructive/20 rounded-md">
-          <p className="text-sm text-destructive font-mono">{error.message}</p>
+        <div className="bg-destructive/10 border-destructive/20 rounded-md border p-3">
+          <p className="text-destructive font-mono text-sm">{error.message}</p>
         </div>
         <div className="flex gap-2">
           <Button onClick={resetError} variant="outline" size="sm">
@@ -101,12 +101,12 @@ function DefaultErrorFallback({ error, resetError }: ErrorFallbackProps) {
             Reload Page
           </Button>
         </div>
-        {process.env.NODE_ENV === "development" && (
+        {process.env.NODE_ENV === 'development' && (
           <details className="mt-4">
-            <summary className="cursor-pointer text-sm text-muted-foreground">
+            <summary className="text-muted-foreground cursor-pointer text-sm">
               Error Details (Development)
             </summary>
-            <pre className="mt-2 p-2 bg-muted rounded text-xs overflow-auto">
+            <pre className="bg-muted mt-2 overflow-auto rounded p-2 text-xs">
               {error.stack}
             </pre>
           </details>
@@ -140,9 +140,9 @@ export function FormErrorBoundary({
         </CardDescription>
       </CardHeader>
       <CardContent className="space-y-4">
-        <div className="p-3 bg-destructive/10 border border-destructive/20 rounded-md">
-          <p className="text-sm text-destructive">
-            {error.message || "An unexpected error occurred"}
+        <div className="bg-destructive/10 border-destructive/20 rounded-md border p-3">
+          <p className="text-destructive text-sm">
+            {error.message || 'An unexpected error occurred'}
           </p>
         </div>
         <Button onClick={resetError} variant="outline" size="sm">
@@ -168,7 +168,7 @@ export function useErrorHandler() {
   }, []);
 
   const handleError = React.useCallback((error: Error) => {
-    console.error("Async error:", error);
+    console.error('Async error:', error);
     setError(error);
   }, []);
 

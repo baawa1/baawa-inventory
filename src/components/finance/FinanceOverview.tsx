@@ -1,18 +1,18 @@
-"use client";
+'use client';
 
-import React from "react";
+import React from 'react';
 import {
   Card,
   CardContent,
   CardDescription,
   CardHeader,
   CardTitle,
-} from "@/components/ui/card";
-import { Button } from "@/components/ui/button";
-import { Badge } from "@/components/ui/badge";
-import { PageHeader } from "@/components/ui/page-header";
+} from '@/components/ui/card';
+import { Button } from '@/components/ui/button';
+import { Badge } from '@/components/ui/badge';
+import { PageHeader } from '@/components/ui/page-header';
 
-import { formatCurrency } from "@/lib/utils";
+import { formatCurrency } from '@/lib/utils';
 import {
   TrendingUp,
   TrendingDown,
@@ -22,11 +22,11 @@ import {
   ArrowUpRight,
   ArrowDownRight,
   Activity,
-} from "lucide-react";
-import Link from "next/link";
-import { AppUser } from "@/types/user";
-import { useQuery } from "@tanstack/react-query";
-import { queryKeys } from "@/lib/query-client";
+} from 'lucide-react';
+import Link from 'next/link';
+import { AppUser } from '@/types/user';
+import { useQuery } from '@tanstack/react-query';
+import { queryKeys } from '@/lib/query-client';
 
 interface FinanceOverviewProps {
   user: AppUser;
@@ -34,9 +34,9 @@ interface FinanceOverviewProps {
 
 // API function to fetch financial summary
 const fetchFinancialSummary = async () => {
-  const response = await fetch("/api/finance/summary");
+  const response = await fetch('/api/finance/summary');
   if (!response.ok) {
-    throw new Error("Failed to fetch financial summary");
+    throw new Error('Failed to fetch financial summary');
   }
   return response.json();
 };
@@ -55,7 +55,7 @@ export function FinanceOverview({ user: _user }: FinanceOverviewProps) {
 
   if (isLoading) {
     return (
-      <div className="max-w-7xl mx-auto p-6 space-y-6">
+      <div className="mx-auto max-w-7xl space-y-6 p-6">
         <PageHeader
           title="Finance Overview"
           description="Track your business finances and financial performance"
@@ -67,11 +67,11 @@ export function FinanceOverview({ user: _user }: FinanceOverviewProps) {
                 <CardTitle className="text-sm font-medium">
                   Loading...
                 </CardTitle>
-                <div className="h-4 w-4 bg-gray-200 rounded animate-pulse" />
+                <div className="h-4 w-4 animate-pulse rounded bg-gray-200" />
               </CardHeader>
               <CardContent>
                 <div className="text-2xl font-bold">--</div>
-                <p className="text-xs text-muted-foreground">Loading...</p>
+                <p className="text-muted-foreground text-xs">Loading...</p>
               </CardContent>
             </Card>
           ))}
@@ -82,7 +82,7 @@ export function FinanceOverview({ user: _user }: FinanceOverviewProps) {
 
   if (error) {
     return (
-      <div className="max-w-7xl mx-auto p-6 space-y-6">
+      <div className="mx-auto max-w-7xl space-y-6 p-6">
         <PageHeader
           title="Finance Overview"
           description="Track your business finances and financial performance"
@@ -136,7 +136,7 @@ export function FinanceOverview({ user: _user }: FinanceOverviewProps) {
       : 0;
 
   return (
-    <div className="max-w-7xl mx-auto p-6 space-y-6">
+    <div className="mx-auto max-w-7xl space-y-6 p-6">
       <div className="flex items-center justify-between">
         <PageHeader
           title="Finance Overview"
@@ -169,9 +169,9 @@ export function FinanceOverview({ user: _user }: FinanceOverviewProps) {
             <div className="text-2xl font-bold">
               {formatCurrency(currentMonth.income)}
             </div>
-            <div className="flex items-center text-xs text-muted-foreground">
-              <ArrowUpRight className="h-3 w-3 mr-1" />
-              {incomeChange > 0 ? "+" : ""}
+            <div className="text-muted-foreground flex items-center text-xs">
+              <ArrowUpRight className="mr-1 h-3 w-3" />
+              {incomeChange > 0 ? '+' : ''}
               {incomeChange.toFixed(1)}% from last month
             </div>
           </CardContent>
@@ -188,9 +188,9 @@ export function FinanceOverview({ user: _user }: FinanceOverviewProps) {
             <div className="text-2xl font-bold">
               {formatCurrency(currentMonth.expenses)}
             </div>
-            <div className="flex items-center text-xs text-muted-foreground">
-              <ArrowDownRight className="h-3 w-3 mr-1" />
-              {expenseChange > 0 ? "+" : ""}
+            <div className="text-muted-foreground flex items-center text-xs">
+              <ArrowDownRight className="mr-1 h-3 w-3" />
+              {expenseChange > 0 ? '+' : ''}
               {expenseChange.toFixed(1)}% from last month
             </div>
           </CardContent>
@@ -203,12 +203,12 @@ export function FinanceOverview({ user: _user }: FinanceOverviewProps) {
           </CardHeader>
           <CardContent>
             <div
-              className={`text-2xl font-bold ${currentMonth.netIncome >= 0 ? "text-green-600" : "text-red-600"}`}
+              className={`text-2xl font-bold ${currentMonth.netIncome >= 0 ? 'text-green-600' : 'text-red-600'}`}
             >
               {formatCurrency(currentMonth.netIncome)}
             </div>
-            <p className="text-xs text-muted-foreground">
-              {currentMonth.netIncome >= 0 ? "Profit" : "Loss"} this month
+            <p className="text-muted-foreground text-xs">
+              {currentMonth.netIncome >= 0 ? 'Profit' : 'Loss'} this month
             </p>
           </CardContent>
         </Card>
@@ -222,7 +222,7 @@ export function FinanceOverview({ user: _user }: FinanceOverviewProps) {
             <div className="text-2xl font-bold">
               {currentMonth.transactionCount}
             </div>
-            <p className="text-xs text-muted-foreground">
+            <p className="text-muted-foreground text-xs">
               Total transactions this month
             </p>
           </CardContent>
@@ -250,15 +250,15 @@ export function FinanceOverview({ user: _user }: FinanceOverviewProps) {
               {recentTransactions.slice(0, 5).map((transaction: any) => (
                 <div
                   key={transaction.id}
-                  className="flex items-center justify-between p-4 border rounded-lg"
+                  className="flex items-center justify-between rounded-lg border p-4"
                 >
                   <div className="flex items-center space-x-4">
                     <div className="flex-shrink-0">
                       <Badge
                         variant={
-                          transaction.type === "INCOME"
-                            ? "default"
-                            : "destructive"
+                          transaction.type === 'INCOME'
+                            ? 'default'
+                            : 'destructive'
                         }
                       >
                         {transaction.type}
@@ -266,7 +266,7 @@ export function FinanceOverview({ user: _user }: FinanceOverviewProps) {
                     </div>
                     <div>
                       <p className="font-medium">{transaction.description}</p>
-                      <p className="text-sm text-muted-foreground">
+                      <p className="text-muted-foreground text-sm">
                         {new Date(
                           transaction.transactionDate
                         ).toLocaleDateString()}
@@ -277,7 +277,7 @@ export function FinanceOverview({ user: _user }: FinanceOverviewProps) {
                     <p className="font-medium">
                       {formatCurrency(transaction.amount)}
                     </p>
-                    <p className="text-sm text-muted-foreground">
+                    <p className="text-muted-foreground text-sm">
                       {transaction.source}
                     </p>
                   </div>
@@ -285,8 +285,8 @@ export function FinanceOverview({ user: _user }: FinanceOverviewProps) {
               ))}
             </div>
           ) : (
-            <div className="text-center py-8">
-              <Receipt className="h-12 w-12 text-muted-foreground mx-auto mb-4" />
+            <div className="py-8 text-center">
+              <Receipt className="text-muted-foreground mx-auto mb-4 h-12 w-12" />
               <p className="text-muted-foreground">No recent transactions</p>
               <Button asChild className="mt-4">
                 <Link href="/finance/income/new">

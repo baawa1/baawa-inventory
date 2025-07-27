@@ -1,8 +1,8 @@
-import { useQuery } from "@tanstack/react-query";
+import { useQuery } from '@tanstack/react-query';
 
 interface ExpenseData {
   id: number;
-  type: "INCOME" | "EXPENSE";
+  type: 'INCOME' | 'EXPENSE';
   amount: number;
   description: string | null;
   transactionDate: Date;
@@ -17,11 +17,11 @@ interface ExpenseData {
 
 export function useExpenseData(expenseId: string) {
   return useQuery({
-    queryKey: ["expense", expenseId],
+    queryKey: ['expense', expenseId],
     queryFn: async (): Promise<ExpenseData> => {
       const response = await fetch(`/api/finance/transactions/${expenseId}`);
       if (!response.ok) {
-        throw new Error("Failed to fetch expense data");
+        throw new Error('Failed to fetch expense data');
       }
       const data = await response.json();
       // API returns { success: true, data: transaction, message?: string }

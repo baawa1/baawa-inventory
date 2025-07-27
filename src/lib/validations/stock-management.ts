@@ -1,4 +1,4 @@
-import { z } from "zod";
+import { z } from 'zod';
 
 // Stock Addition Validation Schemas
 export const createStockAdditionSchema = z.object({
@@ -10,7 +10,7 @@ export const createStockAdditionSchema = z.object({
     .string()
     .optional()
     .refine(
-      (date) => {
+      date => {
         if (!date) return true;
         // Accept both date strings (YYYY-MM-DD) and datetime strings
         return /^\d{4}-\d{2}-\d{2}(T\d{2}:\d{2}:\d{2}(\.\d{3})?Z?)?$/.test(
@@ -18,7 +18,7 @@ export const createStockAdditionSchema = z.object({
         );
       },
       {
-        message: "Purchase date must be in YYYY-MM-DD or ISO datetime format",
+        message: 'Purchase date must be in YYYY-MM-DD or ISO datetime format',
       }
     ),
   notes: z.string().optional(),
@@ -44,9 +44,9 @@ export const stockAdditionQuerySchema = z.object({
   page: z.number().int().positive().default(1),
   limit: z.number().int().positive().max(100).default(10),
   sortBy: z
-    .enum(["createdAt", "purchaseDate", "quantity", "totalCost"])
-    .default("createdAt"),
-  sortOrder: z.enum(["asc", "desc"]).default("desc"),
+    .enum(['createdAt', 'purchaseDate', 'quantity', 'totalCost'])
+    .default('createdAt'),
+  sortOrder: z.enum(['asc', 'desc']).default('desc'),
 });
 
 // Stock Reconciliation Validation Schemas
@@ -74,7 +74,7 @@ export const updateStockReconciliationSchema = z.object({
 });
 
 export const stockReconciliationQuerySchema = z.object({
-  status: z.enum(["DRAFT", "PENDING", "APPROVED", "REJECTED"]).optional(),
+  status: z.enum(['DRAFT', 'PENDING', 'APPROVED', 'REJECTED']).optional(),
   createdBy: z.number().int().positive().optional(),
   approvedBy: z.number().int().positive().optional(),
   startDate: z.string().datetime().optional(),
@@ -82,19 +82,19 @@ export const stockReconciliationQuerySchema = z.object({
   page: z.number().int().positive().default(1),
   limit: z.number().int().positive().max(100).default(10),
   sortBy: z
-    .enum(["createdAt", "updatedAt", "submittedAt", "approvedAt", "title"])
-    .default("createdAt"),
-  sortOrder: z.enum(["asc", "desc"]).default("desc"),
+    .enum(['createdAt', 'updatedAt', 'submittedAt', 'approvedAt', 'title'])
+    .default('createdAt'),
+  sortOrder: z.enum(['asc', 'desc']).default('desc'),
 });
 
 export const reconciliationActionSchema = z.object({
-  action: z.enum(["submit", "approve", "reject"]),
+  action: z.enum(['submit', 'approve', 'reject']),
   notes: z.string().optional(),
 });
 
 export const bulkReconciliationSchema = z.object({
   reconciliationIds: z.array(z.number().int().positive()).min(1),
-  action: z.enum(["approve", "reject"]),
+  action: z.enum(['approve', 'reject']),
   notes: z.string().optional(),
 });
 

@@ -1,5 +1,5 @@
-import { useQuery } from "@tanstack/react-query";
-import { queryKeys } from "@/lib/query-client";
+import { useQuery } from '@tanstack/react-query';
+import { queryKeys } from '@/lib/query-client';
 
 // Types for inventory metrics
 interface InventoryStats {
@@ -25,7 +25,7 @@ interface SalesData {
 
 interface RecentActivityItem {
   id: string;
-  type: "stock_in" | "stock_out" | "adjustment" | "sale";
+  type: 'stock_in' | 'stock_out' | 'adjustment' | 'sale';
   description: string;
   timestamp: string;
   amount?: number;
@@ -34,7 +34,7 @@ interface RecentActivityItem {
 
 // API Functions
 const fetchInventoryStats = async (): Promise<InventoryStats> => {
-  const response = await fetch("/api/inventory/stats");
+  const response = await fetch('/api/inventory/stats');
   if (!response.ok) {
     throw new Error(`Failed to fetch inventory stats: ${response.statusText}`);
   }
@@ -45,7 +45,7 @@ const fetchInventoryCharts = async (): Promise<{
   stockData: StockData[];
   salesData: SalesData[];
 }> => {
-  const response = await fetch("/api/inventory/charts");
+  const response = await fetch('/api/inventory/charts');
   if (!response.ok) {
     throw new Error(`Failed to fetch inventory charts: ${response.statusText}`);
   }
@@ -53,7 +53,7 @@ const fetchInventoryCharts = async (): Promise<{
 };
 
 const fetchRecentActivity = async (): Promise<RecentActivityItem[]> => {
-  const response = await fetch("/api/inventory/activity/recent");
+  const response = await fetch('/api/inventory/activity/recent');
   if (!response.ok) {
     throw new Error(`Failed to fetch recent activity: ${response.statusText}`);
   }

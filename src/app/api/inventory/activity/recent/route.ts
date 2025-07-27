@@ -1,6 +1,6 @@
-import { NextResponse } from "next/server";
-import { withAuth, AuthenticatedRequest } from "@/lib/api-middleware";
-import { prisma } from "@/lib/db";
+import { NextResponse } from 'next/server';
+import { withAuth, AuthenticatedRequest } from '@/lib/api-middleware';
+import { prisma } from '@/lib/db';
 
 // GET /api/inventory/activity/recent - Get recent inventory activity
 export const GET = withAuth(
@@ -10,7 +10,7 @@ export const GET = withAuth(
       const recentStockAdditions = await prisma.stockAddition.findMany({
         take: 10,
         orderBy: {
-          createdAt: "desc",
+          createdAt: 'desc',
         },
         include: {
           product: {
@@ -37,7 +37,7 @@ export const GET = withAuth(
       const recentStockAdjustments = await prisma.stockAdjustment.findMany({
         take: 10,
         orderBy: {
-          created_at: "desc",
+          created_at: 'desc',
         },
         include: {
           products: {
@@ -59,7 +59,7 @@ export const GET = withAuth(
       const recentSales = await prisma.salesTransaction.findMany({
         take: 10,
         orderBy: {
-          created_at: "desc",
+          created_at: 'desc',
         },
         include: {
           users: {
@@ -73,9 +73,9 @@ export const GET = withAuth(
 
       // Combine and format activities
       const activities = [
-        ...recentStockAdditions.map((addition) => ({
+        ...recentStockAdditions.map(addition => ({
           id: `stock-addition-${addition.id}`,
-          type: "stock_in" as const,
+          type: 'stock_in' as const,
           description: `Added ${addition.quantity} units of "${addition.product.name}"`,
           timestamp:
             addition.createdAt?.toISOString() || new Date().toISOString(),
@@ -88,10 +88,10 @@ export const GET = withAuth(
             cost: Number(addition.costPerUnit),
           },
         })),
-        ...recentStockAdjustments.map((adjustment) => ({
+        ...recentStockAdjustments.map(adjustment => ({
           id: `stock-adjustment-${adjustment.id}`,
-          type: "adjustment" as const,
-          description: `${adjustment.adjustment_type === "INCREASE" ? "Increased" : "Decreased"} stock for "${adjustment.products?.name || "Unknown Product"}" by ${Math.abs(adjustment.quantity)} units`,
+          type: 'adjustment' as const,
+          description: `${adjustment.adjustment_type === 'INCREASE' ? 'Increased' : 'Decreased'} stock for "${adjustment.products?.name || 'Unknown Product'}" by ${Math.abs(adjustment.quantity)} units`,
           timestamp:
             adjustment.created_at?.toISOString() || new Date().toISOString(),
           amount: adjustment.quantity,
@@ -104,9 +104,9 @@ export const GET = withAuth(
             newQuantity: adjustment.new_quantity,
           },
         })),
-        ...recentSales.map((sale) => ({
+        ...recentSales.map(sale => ({
           id: `sale-${sale.id}`,
-          type: "sale" as const,
+          type: 'sale' as const,
           description: `Sale completed - Transaction #${sale.transaction_number}`,
           timestamp: sale.created_at?.toISOString() || new Date().toISOString(),
           amount: Number(sale.total_amount),
@@ -132,9 +132,9 @@ export const GET = withAuth(
         activities: sortedActivities,
       });
     } catch (error) {
-      console.error("Error fetching recent activity:", error);
+      console.error('Error fetching recent activity:', error);
       return NextResponse.json(
-        { error: "Failed to fetch recent activity" },
+        { error: 'Failed to fetch recent activity' },
         { status: 500 }
       );
     }

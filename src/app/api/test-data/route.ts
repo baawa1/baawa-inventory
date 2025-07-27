@@ -1,5 +1,5 @@
-import { NextResponse } from "next/server";
-import { prisma } from "@/lib/db";
+import { NextResponse } from 'next/server';
+import { prisma } from '@/lib/db';
 
 export async function GET() {
   try {
@@ -7,25 +7,25 @@ export async function GET() {
     const categoriesData = await prisma.category.findMany({
       where: { isActive: true },
       select: { id: true, name: true },
-      orderBy: { name: "asc" },
+      orderBy: { name: 'asc' },
     });
 
     // Test brands
     const brandsData = await prisma.brand.findMany({
       where: { isActive: true },
       select: { id: true, name: true },
-      orderBy: { name: "asc" },
+      orderBy: { name: 'asc' },
     });
 
     return NextResponse.json({
       categories: { data: categoriesData || [] },
       brands: { data: brandsData || [] },
-      message: "Test data fetched successfully",
+      message: 'Test data fetched successfully',
     });
   } catch (error) {
-    console.error("Test data error:", error);
+    console.error('Test data error:', error);
     return NextResponse.json(
-      { error: "Internal server error", details: error },
+      { error: 'Internal server error', details: error },
       { status: 500 }
     );
   }

@@ -1,5 +1,5 @@
-import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
-import { toast } from "sonner";
+import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
+import { toast } from 'sonner';
 
 interface TransactionFilters {
   search?: string;
@@ -10,27 +10,27 @@ interface TransactionFilters {
   page?: number;
   limit?: number;
   sortBy?: string;
-  sortOrder?: "asc" | "desc";
+  sortOrder?: 'asc' | 'desc';
 }
 
 export interface FinancialTransaction {
   id: number;
   transactionNumber: string;
-  type: "INCOME" | "EXPENSE";
+  type: 'INCOME' | 'EXPENSE';
   amount: number;
   currency: string;
   description: string | null;
   transactionDate: Date;
   paymentMethod: string | null;
   referenceNumber: string | null;
-  status: "PENDING" | "COMPLETED" | "CANCELLED" | "APPROVED" | "REJECTED";
+  status: 'PENDING' | 'COMPLETED' | 'CANCELLED' | 'APPROVED' | 'REJECTED';
   createdBy: number;
   createdAt: Date;
   updatedAt: Date;
 }
 
 interface CreateTransactionData {
-  type: "INCOME" | "EXPENSE";
+  type: 'INCOME' | 'EXPENSE';
   amount: number;
   currency: string;
   description: string;
@@ -45,7 +45,7 @@ interface UpdateTransactionData extends Partial<CreateTransactionData> {
 
 // Fetch financial transactions
 export const useFinancialTransactions = (filters: TransactionFilters = {}) => {
-  const queryKey = ["financial-transactions", filters];
+  const queryKey = ['financial-transactions', filters];
 
   return useQuery({
     queryKey,
@@ -64,7 +64,7 @@ export const useFinancialTransactions = (filters: TransactionFilters = {}) => {
 
       const response = await fetch(`/api/finance/transactions?${params}`);
       if (!response.ok) {
-        throw new Error("Failed to fetch financial transactions");
+        throw new Error('Failed to fetch financial transactions');
       }
       const data = await response.json();
       return {
@@ -81,11 +81,11 @@ export const useFinancialTransactions = (filters: TransactionFilters = {}) => {
 // Get single transaction
 export const useFinancialTransaction = (id: number) => {
   return useQuery({
-    queryKey: ["financial-transaction", id],
+    queryKey: ['financial-transaction', id],
     queryFn: async (): Promise<FinancialTransaction> => {
       const response = await fetch(`/api/finance/transactions/${id}`);
       if (!response.ok) {
-        throw new Error("Failed to fetch transaction");
+        throw new Error('Failed to fetch transaction');
       }
       const data = await response.json();
       return data.data;
@@ -102,25 +102,25 @@ export const useCreateTransaction = () => {
     mutationFn: async (
       data: CreateTransactionData
     ): Promise<FinancialTransaction> => {
-      const response = await fetch("/api/finance/transactions", {
-        method: "POST",
+      const response = await fetch('/api/finance/transactions', {
+        method: 'POST',
         headers: {
-          "Content-Type": "application/json",
+          'Content-Type': 'application/json',
         },
         body: JSON.stringify(data),
       });
 
       if (!response.ok) {
         const error = await response.json();
-        throw new Error(error.message || "Failed to create transaction");
+        throw new Error(error.message || 'Failed to create transaction');
       }
 
       return response.json();
     },
     onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ["financial-transactions"] });
-      queryClient.invalidateQueries({ queryKey: ["finance-summary"] });
-      toast.success("Transaction created successfully");
+      queryClient.invalidateQueries({ queryKey: ['financial-transactions'] });
+      queryClient.invalidateQueries({ queryKey: ['finance-summary'] });
+      toast.success('Transaction created successfully');
     },
     onError: (error: Error) => {
       toast.error(error.message);
@@ -137,27 +137,27 @@ export const useUpdateTransaction = () => {
       data: UpdateTransactionData
     ): Promise<FinancialTransaction> => {
       const response = await fetch(`/api/finance/transactions/${data.id}`, {
-        method: "PUT",
+        method: 'PUT',
         headers: {
-          "Content-Type": "application/json",
+          'Content-Type': 'application/json',
         },
         body: JSON.stringify(data),
       });
 
       if (!response.ok) {
         const error = await response.json();
-        throw new Error(error.message || "Failed to update transaction");
+        throw new Error(error.message || 'Failed to update transaction');
       }
 
       return response.json();
     },
     onSuccess: (_, variables) => {
-      queryClient.invalidateQueries({ queryKey: ["financial-transactions"] });
+      queryClient.invalidateQueries({ queryKey: ['financial-transactions'] });
       queryClient.invalidateQueries({
-        queryKey: ["financial-transaction", variables.id],
+        queryKey: ['financial-transaction', variables.id],
       });
-      queryClient.invalidateQueries({ queryKey: ["finance-summary"] });
-      toast.success("Transaction updated successfully");
+      queryClient.invalidateQueries({ queryKey: ['finance-summary'] });
+      toast.success('Transaction updated successfully');
     },
     onError: (error: Error) => {
       toast.error(error.message);
@@ -172,18 +172,18 @@ export const useDeleteTransaction = () => {
   return useMutation({
     mutationFn: async (id: number): Promise<void> => {
       const response = await fetch(`/api/finance/transactions/${id}`, {
-        method: "DELETE",
+        method: 'DELETE',
       });
 
       if (!response.ok) {
         const error = await response.json();
-        throw new Error(error.message || "Failed to delete transaction");
+        throw new Error(error.message || 'Failed to delete transaction');
       }
     },
     onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ["financial-transactions"] });
-      queryClient.invalidateQueries({ queryKey: ["finance-summary"] });
-      toast.success("Transaction deleted successfully");
+      queryClient.invalidateQueries({ queryKey: ['financial-transactions'] });
+      queryClient.invalidateQueries({ queryKey: ['finance-summary'] });
+      toast.success('Transaction deleted successfully');
     },
     onError: (error: Error) => {
       toast.error(error.message);

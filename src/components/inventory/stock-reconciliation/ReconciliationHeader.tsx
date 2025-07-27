@@ -1,22 +1,22 @@
-"use client";
+'use client';
 
-import { Badge } from "@/components/ui/badge";
+import { Badge } from '@/components/ui/badge';
 import {
   Card,
   CardContent,
   CardDescription,
   CardHeader,
   CardTitle,
-} from "@/components/ui/card";
-import { Separator } from "@/components/ui/separator";
+} from '@/components/ui/card';
+import { Separator } from '@/components/ui/separator';
 import {
   IconUser,
   IconCalendar,
   IconFileText,
   IconNotes,
-} from "@tabler/icons-react";
-import { formatCurrency } from "@/lib/utils";
-import type { StockReconciliationItem } from "@/hooks/api/stock-management";
+} from '@tabler/icons-react';
+import { formatCurrency } from '@/lib/utils';
+import type { StockReconciliationItem } from '@/hooks/api/stock-management';
 
 interface ReconciliationHeaderProps {
   reconciliation: {
@@ -48,24 +48,24 @@ interface ReconciliationHeaderProps {
 
 const statusConfig = {
   DRAFT: {
-    color: "secondary",
-    label: "Draft",
-    className: "bg-gray-100 text-gray-800 border-gray-200",
+    color: 'secondary',
+    label: 'Draft',
+    className: 'bg-gray-100 text-gray-800 border-gray-200',
   },
   PENDING: {
-    color: "secondary",
-    label: "Pending",
-    className: "bg-yellow-100 text-yellow-800 border-yellow-200",
+    color: 'secondary',
+    label: 'Pending',
+    className: 'bg-yellow-100 text-yellow-800 border-yellow-200',
   },
   APPROVED: {
-    color: "default",
-    label: "Approved",
-    className: "bg-green-100 text-green-800 border-green-200",
+    color: 'default',
+    label: 'Approved',
+    className: 'bg-green-100 text-green-800 border-green-200',
   },
   REJECTED: {
-    color: "destructive",
-    label: "Rejected",
-    className: "bg-red-100 text-red-800 border-red-200",
+    color: 'destructive',
+    label: 'Rejected',
+    className: 'bg-red-100 text-red-800 border-red-200',
   },
 } as const;
 
@@ -94,24 +94,24 @@ export function ReconciliationHeader({
       </CardHeader>
       <CardContent className="space-y-6">
         {/* Summary Stats */}
-        <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-          <div className="text-center p-4 bg-muted rounded-lg">
+        <div className="grid grid-cols-1 gap-4 md:grid-cols-3">
+          <div className="bg-muted rounded-lg p-4 text-center">
             <div className="text-2xl font-bold">
               {reconciliation.items.length}
             </div>
-            <div className="text-sm text-muted-foreground">Items</div>
+            <div className="text-muted-foreground text-sm">Items</div>
           </div>
-          <div className="text-center p-4 bg-muted rounded-lg">
+          <div className="bg-muted rounded-lg p-4 text-center">
             <div className="text-2xl font-bold">{totalDiscrepancy}</div>
-            <div className="text-sm text-muted-foreground">
+            <div className="text-muted-foreground text-sm">
               Total Discrepancy
             </div>
           </div>
-          <div className="text-center p-4 bg-muted rounded-lg">
+          <div className="bg-muted rounded-lg p-4 text-center">
             <div className="text-2xl font-bold">
               {formatCurrency(totalImpact)}
             </div>
-            <div className="text-sm text-muted-foreground">
+            <div className="text-muted-foreground text-sm">
               Estimated Impact
             </div>
           </div>
@@ -120,23 +120,23 @@ export function ReconciliationHeader({
         <Separator />
 
         {/* Reconciliation Information */}
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
+        <div className="grid grid-cols-1 gap-4 md:grid-cols-2 lg:grid-cols-4">
           <div className="flex items-center gap-2">
-            <IconUser className="h-4 w-4 text-muted-foreground" />
+            <IconUser className="text-muted-foreground h-4 w-4" />
             <div>
               <p className="text-sm font-medium">Created By</p>
-              <p className="text-sm text-muted-foreground">
-                {reconciliation.createdBy.firstName}{" "}
+              <p className="text-muted-foreground text-sm">
+                {reconciliation.createdBy.firstName}{' '}
                 {reconciliation.createdBy.lastName}
               </p>
             </div>
           </div>
 
           <div className="flex items-center gap-2">
-            <IconCalendar className="h-4 w-4 text-muted-foreground" />
+            <IconCalendar className="text-muted-foreground h-4 w-4" />
             <div>
               <p className="text-sm font-medium">Created</p>
-              <p className="text-sm text-muted-foreground">
+              <p className="text-muted-foreground text-sm">
                 {new Date(reconciliation.createdAt).toLocaleDateString()}
               </p>
             </div>
@@ -144,10 +144,10 @@ export function ReconciliationHeader({
 
           {reconciliation.submittedAt && (
             <div className="flex items-center gap-2">
-              <IconFileText className="h-4 w-4 text-muted-foreground" />
+              <IconFileText className="text-muted-foreground h-4 w-4" />
               <div>
                 <p className="text-sm font-medium">Submitted</p>
-                <p className="text-sm text-muted-foreground">
+                <p className="text-muted-foreground text-sm">
                   {new Date(reconciliation.submittedAt).toLocaleDateString()}
                 </p>
               </div>
@@ -156,11 +156,11 @@ export function ReconciliationHeader({
 
           {reconciliation.approvedAt && reconciliation.approvedBy && (
             <div className="flex items-center gap-2">
-              <IconUser className="h-4 w-4 text-muted-foreground" />
+              <IconUser className="text-muted-foreground h-4 w-4" />
               <div>
                 <p className="text-sm font-medium">Approved By</p>
-                <p className="text-sm text-muted-foreground">
-                  {reconciliation.approvedBy.firstName}{" "}
+                <p className="text-muted-foreground text-sm">
+                  {reconciliation.approvedBy.firstName}{' '}
                   {reconciliation.approvedBy.lastName}
                 </p>
               </div>
@@ -172,12 +172,12 @@ export function ReconciliationHeader({
         {reconciliation.notes && (
           <>
             <Separator />
-            <div className="p-4 border rounded-lg bg-muted/50">
-              <div className="flex items-center gap-2 mb-2">
-                <IconNotes className="h-4 w-4 text-muted-foreground" />
+            <div className="bg-muted/50 rounded-lg border p-4">
+              <div className="mb-2 flex items-center gap-2">
+                <IconNotes className="text-muted-foreground h-4 w-4" />
                 <p className="text-sm font-medium">Notes</p>
               </div>
-              <p className="text-sm text-muted-foreground whitespace-pre-wrap">
+              <p className="text-muted-foreground text-sm whitespace-pre-wrap">
                 {reconciliation.notes}
               </p>
             </div>

@@ -1,5 +1,5 @@
-import { useState, useEffect } from "react";
-import { logger } from "@/lib/logger";
+import { useState, useEffect } from 'react';
+import { logger } from '@/lib/logger';
 
 // Common table column configurations
 export interface TableColumn<T = Record<string, unknown>> {
@@ -8,7 +8,7 @@ export interface TableColumn<T = Record<string, unknown>> {
   sortable?: boolean;
   render?: (value: unknown, row: T) => React.ReactNode;
   width?: string;
-  align?: "left" | "center" | "right";
+  align?: 'left' | 'center' | 'right';
   fixed?: boolean;
 }
 
@@ -23,7 +23,7 @@ export interface PaginationConfig {
 // Sort configuration
 export interface SortConfig<T = Record<string, unknown>> {
   field: keyof T | null;
-  direction: "asc" | "desc";
+  direction: 'asc' | 'desc';
 }
 
 // Filter configuration
@@ -41,7 +41,7 @@ export const tableUtils = {
       sortable?: boolean;
       render?: (value: unknown, row: T) => React.ReactNode;
       width?: string;
-      align?: "left" | "center" | "right";
+      align?: 'left' | 'center' | 'right';
     }
   ): TableColumn<T> => ({
     key,
@@ -49,37 +49,37 @@ export const tableUtils = {
     sortable: options?.sortable ?? true,
     render: options?.render,
     width: options?.width,
-    align: options?.align ?? "left",
+    align: options?.align ?? 'left',
   }),
 
   // Format common data types for display
   formatters: {
     currency: (value: number | string): string => {
-      const numValue = typeof value === "string" ? parseFloat(value) : value;
-      return new Intl.NumberFormat("en-NG", {
-        style: "currency",
-        currency: "NGN",
+      const numValue = typeof value === 'string' ? parseFloat(value) : value;
+      return new Intl.NumberFormat('en-NG', {
+        style: 'currency',
+        currency: 'NGN',
         minimumFractionDigits: 2,
       }).format(numValue || 0);
     },
 
     date: (value: string | Date): string => {
-      const date = typeof value === "string" ? new Date(value) : value;
-      return new Intl.DateTimeFormat("en-NG", {
-        year: "numeric",
-        month: "short",
-        day: "numeric",
+      const date = typeof value === 'string' ? new Date(value) : value;
+      return new Intl.DateTimeFormat('en-NG', {
+        year: 'numeric',
+        month: 'short',
+        day: 'numeric',
       }).format(date);
     },
 
     dateTime: (value: string | Date): string => {
-      const date = typeof value === "string" ? new Date(value) : value;
-      return new Intl.DateTimeFormat("en-NG", {
-        year: "numeric",
-        month: "short",
-        day: "numeric",
-        hour: "2-digit",
-        minute: "2-digit",
+      const date = typeof value === 'string' ? new Date(value) : value;
+      return new Intl.DateTimeFormat('en-NG', {
+        year: 'numeric',
+        month: 'short',
+        day: 'numeric',
+        hour: '2-digit',
+        minute: '2-digit',
       }).format(date);
     },
 
@@ -88,7 +88,7 @@ export const tableUtils = {
     },
 
     number: (value: number): string => {
-      return new Intl.NumberFormat("en-NG").format(value);
+      return new Intl.NumberFormat('en-NG').format(value);
     },
 
     truncate: (value: string, maxLength: number = 50): string => {
@@ -102,11 +102,11 @@ export const tableUtils = {
 
     badge: (
       value: string,
-      variant?: "default" | "success" | "warning" | "error"
+      variant?: 'default' | 'success' | 'warning' | 'error'
     ) => {
       return {
         text: value,
-        variant: variant || "default",
+        variant: variant || 'default',
       };
     },
   },
@@ -115,57 +115,57 @@ export const tableUtils = {
   statusFormatters: {
     userStatus: (status: string) => {
       const statusMap = {
-        PENDING: { text: "Pending", variant: "warning" as const },
-        VERIFIED: { text: "Verified", variant: "default" as const },
-        APPROVED: { text: "Approved", variant: "success" as const },
-        REJECTED: { text: "Rejected", variant: "error" as const },
-        SUSPENDED: { text: "Suspended", variant: "error" as const },
+        PENDING: { text: 'Pending', variant: 'warning' as const },
+        VERIFIED: { text: 'Verified', variant: 'default' as const },
+        APPROVED: { text: 'Approved', variant: 'success' as const },
+        REJECTED: { text: 'Rejected', variant: 'error' as const },
+        SUSPENDED: { text: 'Suspended', variant: 'error' as const },
       };
       return (
         statusMap[status as keyof typeof statusMap] || {
           text: status,
-          variant: "default" as const,
+          variant: 'default' as const,
         }
       );
     },
 
     productStatus: (status: string) => {
       const statusMap = {
-        ACTIVE: { text: "Active", variant: "success" as const },
-        INACTIVE: { text: "Inactive", variant: "warning" as const },
-        OUT_OF_STOCK: { text: "Out of Stock", variant: "warning" as const },
-        DISCONTINUED: { text: "Discontinued", variant: "error" as const },
+        ACTIVE: { text: 'Active', variant: 'success' as const },
+        INACTIVE: { text: 'Inactive', variant: 'warning' as const },
+        OUT_OF_STOCK: { text: 'Out of Stock', variant: 'warning' as const },
+        DISCONTINUED: { text: 'Discontinued', variant: 'error' as const },
       };
       return (
         statusMap[status as keyof typeof statusMap] || {
           text: status,
-          variant: "default" as const,
+          variant: 'default' as const,
         }
       );
     },
 
     paymentStatus: (status: string) => {
       const statusMap = {
-        PENDING: { text: "Pending", variant: "warning" as const },
-        PAID: { text: "Paid", variant: "success" as const },
-        REFUNDED: { text: "Refunded", variant: "default" as const },
-        CANCELLED: { text: "Cancelled", variant: "error" as const },
+        PENDING: { text: 'Pending', variant: 'warning' as const },
+        PAID: { text: 'Paid', variant: 'success' as const },
+        REFUNDED: { text: 'Refunded', variant: 'default' as const },
+        CANCELLED: { text: 'Cancelled', variant: 'error' as const },
       };
       return (
         statusMap[status as keyof typeof statusMap] || {
           text: status,
-          variant: "default" as const,
+          variant: 'default' as const,
         }
       );
     },
 
     stockLevel: (current: number, minimum: number) => {
       if (current <= 0) {
-        return { text: "Out of Stock", variant: "error" as const };
+        return { text: 'Out of Stock', variant: 'error' as const };
       } else if (current <= minimum) {
-        return { text: "Low Stock", variant: "warning" as const };
+        return { text: 'Low Stock', variant: 'warning' as const };
       } else {
-        return { text: "In Stock", variant: "success" as const };
+        return { text: 'In Stock', variant: 'success' as const };
       }
     },
   },
@@ -189,7 +189,7 @@ export const useTableState = <T extends Record<string, unknown>>(
 
   const [sorting, setSorting] = useState<SortConfig<T>>({
     field: null,
-    direction: "asc",
+    direction: 'asc',
     ...initialConfig.sorting,
   });
 
@@ -199,15 +199,15 @@ export const useTableState = <T extends Record<string, unknown>>(
 
   // Update pagination when data changes
   const updatePagination = (updates: Partial<PaginationConfig>) => {
-    setPagination((prev) => ({ ...prev, ...updates }));
+    setPagination(prev => ({ ...prev, ...updates }));
   };
 
   // Handle sorting
   const handleSort = (field: keyof T) => {
-    setSorting((prev) => ({
+    setSorting(prev => ({
       field,
       direction:
-        prev.field === field && prev.direction === "asc" ? "desc" : "asc",
+        prev.field === field && prev.direction === 'asc' ? 'desc' : 'asc',
     }));
   };
 
@@ -216,15 +216,15 @@ export const useTableState = <T extends Record<string, unknown>>(
     key: string,
     value: string | number | boolean | null
   ) => {
-    setFilters((prev) => ({ ...prev, [key]: value }));
+    setFilters(prev => ({ ...prev, [key]: value }));
     // Reset to first page when filters change
-    setPagination((prev) => ({ ...prev, page: 1 }));
+    setPagination(prev => ({ ...prev, page: 1 }));
   };
 
   // Clear all filters
   const clearFilters = () => {
     setFilters({});
-    setPagination((prev) => ({ ...prev, page: 1 }));
+    setPagination(prev => ({ ...prev, page: 1 }));
   };
 
   // Reset table state
@@ -235,7 +235,7 @@ export const useTableState = <T extends Record<string, unknown>>(
       totalPages: 1,
       totalItems: 0,
     });
-    setSorting({ field: null, direction: "asc" });
+    setSorting({ field: null, direction: 'asc' });
     setFilters({});
   };
 
@@ -257,7 +257,7 @@ export const useColumnVisibility = (
   defaultColumns: string[]
 ) => {
   const [visibleColumns, setVisibleColumns] = useState<string[]>(() => {
-    if (typeof window === "undefined") return defaultColumns;
+    if (typeof window === 'undefined') return defaultColumns;
 
     try {
       const stored = localStorage.getItem(storageKey);
@@ -267,7 +267,7 @@ export const useColumnVisibility = (
         return parsed.filter((col: string) => defaultColumns.includes(col));
       }
     } catch (error) {
-      logger.warn("Failed to parse stored column visibility", {
+      logger.warn('Failed to parse stored column visibility', {
         storageKey,
         error: error instanceof Error ? error.message : String(error),
       });
@@ -279,16 +279,16 @@ export const useColumnVisibility = (
 
   // Update column visibility
   const toggleColumn = (columnKey: string) => {
-    setVisibleColumns((prev) => {
+    setVisibleColumns(prev => {
       const updated = prev.includes(columnKey)
-        ? prev.filter((col) => col !== columnKey)
+        ? prev.filter(col => col !== columnKey)
         : [...prev, columnKey];
 
       // Save to localStorage
       try {
         localStorage.setItem(storageKey, JSON.stringify(updated));
       } catch (error) {
-        logger.warn("Failed to save column visibility to localStorage", {
+        logger.warn('Failed to save column visibility to localStorage', {
           storageKey,
           columns: visibleColumns,
           error: error instanceof Error ? error.message : String(error),
@@ -305,7 +305,7 @@ export const useColumnVisibility = (
     try {
       localStorage.setItem(storageKey, JSON.stringify(defaultColumns));
     } catch (error) {
-      logger.warn("Failed to save column visibility to sessionStorage", {
+      logger.warn('Failed to save column visibility to sessionStorage', {
         storageKey,
         columns: visibleColumns,
         error: error instanceof Error ? error.message : String(error),
@@ -346,24 +346,24 @@ export const tableConfigs = {
   paginationOptions: [10, 20, 50, 100],
 
   // Common sort directions
-  sortDirections: ["asc", "desc"] as const,
+  sortDirections: ['asc', 'desc'] as const,
 
   // Default table classes for consistent styling
   tableClasses: {
-    container: "border rounded-lg",
-    table: "w-full",
-    header: "border-b",
-    headerCell: "px-4 py-3 text-left font-medium",
-    row: "border-b hover:bg-muted/50",
-    cell: "px-4 py-3",
-    sortableHeader: "cursor-pointer hover:bg-muted/50",
-    loading: "animate-pulse bg-muted/50",
+    container: 'border rounded-lg',
+    table: 'w-full',
+    header: 'border-b',
+    headerCell: 'px-4 py-3 text-left font-medium',
+    row: 'border-b hover:bg-muted/50',
+    cell: 'px-4 py-3',
+    sortableHeader: 'cursor-pointer hover:bg-muted/50',
+    loading: 'animate-pulse bg-muted/50',
   },
 
   // Loading skeleton configuration
   loadingSkeleton: {
     rows: 5,
-    height: "h-4",
-    className: "animate-pulse bg-muted rounded",
+    height: 'h-4',
+    className: 'animate-pulse bg-muted rounded',
   },
 };

@@ -1,11 +1,11 @@
-import { useQuery } from "@tanstack/react-query";
-import { DateRange } from "react-day-picker";
+import { useQuery } from '@tanstack/react-query';
+import { DateRange } from 'react-day-picker';
 
 interface FinancialAnalyticsFilters {
   dateRange?: DateRange;
-  type?: "all" | "income" | "expense";
+  type?: 'all' | 'income' | 'expense';
   paymentMethod?: string;
-  groupBy?: "day" | "week" | "month";
+  groupBy?: 'day' | 'week' | 'month';
 }
 
 interface AnalyticsSummary {
@@ -51,26 +51,26 @@ const fetchFinancialAnalytics = async (
 
   if (filters.dateRange?.from) {
     params.append(
-      "dateFrom",
-      filters.dateRange.from.toISOString().split("T")[0]
+      'dateFrom',
+      filters.dateRange.from.toISOString().split('T')[0]
     );
   }
   if (filters.dateRange?.to) {
-    params.append("dateTo", filters.dateRange.to.toISOString().split("T")[0]);
+    params.append('dateTo', filters.dateRange.to.toISOString().split('T')[0]);
   }
-  if (filters.type && filters.type !== "all") {
-    params.append("type", filters.type);
+  if (filters.type && filters.type !== 'all') {
+    params.append('type', filters.type);
   }
-  if (filters.paymentMethod && filters.paymentMethod !== "all") {
-    params.append("paymentMethod", filters.paymentMethod);
+  if (filters.paymentMethod && filters.paymentMethod !== 'all') {
+    params.append('paymentMethod', filters.paymentMethod);
   }
   if (filters.groupBy) {
-    params.append("groupBy", filters.groupBy);
+    params.append('groupBy', filters.groupBy);
   }
 
   const response = await fetch(`/api/finance/analytics?${params.toString()}`);
   if (!response.ok) {
-    throw new Error("Failed to fetch financial analytics data");
+    throw new Error('Failed to fetch financial analytics data');
   }
 
   const result = await response.json();
@@ -79,7 +79,7 @@ const fetchFinancialAnalytics = async (
 
 export function useFinancialAnalytics(filters: FinancialAnalyticsFilters = {}) {
   return useQuery({
-    queryKey: ["financial-analytics", filters],
+    queryKey: ['financial-analytics', filters],
     queryFn: () => fetchFinancialAnalytics(filters),
     staleTime: 5 * 60 * 1000, // 5 minutes
     refetchInterval: 5 * 60 * 1000, // Refetch every 5 minutes

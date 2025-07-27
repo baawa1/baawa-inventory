@@ -1,23 +1,23 @@
-"use client";
+'use client';
 
-import React, { useState, useEffect, useMemo } from "react";
-import Image from "next/image";
-import Link from "next/link";
-import { toast } from "sonner";
+import React, { useState, useEffect, useMemo } from 'react';
+import Image from 'next/image';
+import Link from 'next/link';
+import { toast } from 'sonner';
 
 // Hooks
-import { useDebounce } from "@/hooks/useDebounce";
-import { useProducts, type Product as APIProduct } from "@/hooks/api/products";
-import { useBrands } from "@/hooks/api/brands";
-import { useCategoriesWithHierarchy } from "@/hooks/api/categories";
-import { useSyncEntity, useSyncAllEntities } from "@/hooks/api/useWebhookSync";
+import { useDebounce } from '@/hooks/useDebounce';
+import { useProducts, type Product as APIProduct } from '@/hooks/api/products';
+import { useBrands } from '@/hooks/api/brands';
+import { useCategoriesWithHierarchy } from '@/hooks/api/categories';
+import { useSyncEntity, useSyncAllEntities } from '@/hooks/api/useWebhookSync';
 
 // Constants
-import { ALL_ROLES } from "@/lib/auth/roles";
+import { ALL_ROLES } from '@/lib/auth/roles';
 
 // UI Components
-import { Button } from "@/components/ui/button";
-import { Badge } from "@/components/ui/badge";
+import { Button } from '@/components/ui/button';
+import { Badge } from '@/components/ui/badge';
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -25,14 +25,14 @@ import {
   DropdownMenuLabel,
   DropdownMenuSeparator,
   DropdownMenuTrigger,
-} from "@/components/ui/dropdown-menu";
+} from '@/components/ui/dropdown-menu';
 
 // Custom Components
-import { ErrorBoundary } from "@/components/common/ErrorBoundary";
-import { InventoryPageLayout } from "@/components/inventory/InventoryPageLayout";
-import { AddStockDialog } from "@/components/inventory/AddStockDialog";
-import { ProductDetailModal } from "@/components/inventory/ProductDetailModal";
-import { PRODUCT_COLUMNS } from "@/components/inventory/ColumnCustomizer";
+import { ErrorBoundary } from '@/components/common/ErrorBoundary';
+import { InventoryPageLayout } from '@/components/inventory/InventoryPageLayout';
+import { AddStockDialog } from '@/components/inventory/AddStockDialog';
+import { ProductDetailModal } from '@/components/inventory/ProductDetailModal';
+import { PRODUCT_COLUMNS } from '@/components/inventory/ColumnCustomizer';
 
 // Icons
 import {
@@ -46,13 +46,13 @@ import {
   IconAlertTriangle,
   IconArchive,
   IconPhoto,
-} from "@tabler/icons-react";
+} from '@tabler/icons-react';
 
 // Utils and Types
-import { formatCurrency } from "@/lib/utils";
-import { formatCategoryHierarchy } from "@/lib/utils/category";
-import { ErrorHandlers } from "@/lib/utils/error-handling";
-import { FilterConfig, SortOption, PaginationState } from "@/types/inventory";
+import { formatCurrency } from '@/lib/utils';
+import { formatCategoryHierarchy } from '@/lib/utils/category';
+import { ErrorHandlers } from '@/lib/utils/error-handling';
+import { FilterConfig, SortOption, PaginationState } from '@/types/inventory';
 
 interface User {
   id: string;
@@ -75,18 +75,18 @@ interface ProductFilters {
   supplier: string;
   lowStock: boolean;
   sortBy: string;
-  sortOrder: "asc" | "desc";
+  sortOrder: 'asc' | 'desc';
 }
 
 const SORT_OPTIONS: SortOption[] = [
-  { value: "name-asc", label: "Name (A-Z)" },
-  { value: "name-desc", label: "Name (Z-A)" },
-  { value: "createdAt-desc", label: "Newest First" },
-  { value: "createdAt-asc", label: "Oldest First" },
-  { value: "stock-asc", label: "Stock (Low to High)" },
-  { value: "stock-desc", label: "Stock (High to Low)" },
-  { value: "price-asc", label: "Price (Low to High)" },
-  { value: "price-desc", label: "Price (High to Low)" },
+  { value: 'name-asc', label: 'Name (A-Z)' },
+  { value: 'name-desc', label: 'Name (Z-A)' },
+  { value: 'createdAt-desc', label: 'Newest First' },
+  { value: 'createdAt-asc', label: 'Oldest First' },
+  { value: 'stock-asc', label: 'Stock (Low to High)' },
+  { value: 'stock-desc', label: 'Stock (High to Low)' },
+  { value: 'price-asc', label: 'Price (Low to High)' },
+  { value: 'price-desc', label: 'Price (High to Low)' },
 ];
 
 const ProductList = ({ user }: ProductListProps) => {
@@ -98,14 +98,14 @@ const ProductList = ({ user }: ProductListProps) => {
   });
   const [visibleColumns, setVisibleColumns] = useState<string[]>([]);
   const [filters, setFilters] = useState<ProductFilters>({
-    search: "",
-    categoryId: "",
-    brandId: "",
-    status: "",
-    supplier: "",
+    search: '',
+    categoryId: '',
+    brandId: '',
+    status: '',
+    supplier: '',
     lowStock: false,
-    sortBy: "createdAt",
-    sortOrder: "desc",
+    sortBy: 'createdAt',
+    sortOrder: 'desc',
   });
 
   // Dialog states
@@ -139,7 +139,7 @@ const ProductList = ({ user }: ProductListProps) => {
     }
   );
 
-  const brandsQuery = useBrands({ status: "true" });
+  const brandsQuery = useBrands({ status: 'true' });
   const categoriesQuery = useCategoriesWithHierarchy();
 
   // Sync hooks
@@ -150,12 +150,12 @@ const ProductList = ({ user }: ProductListProps) => {
   useEffect(() => {
     if (syncEntityMutation.isSuccess) {
       toast.success(
-        syncEntityMutation.data?.message || "Product synced successfully"
+        syncEntityMutation.data?.message || 'Product synced successfully'
       );
     }
     if (syncEntityMutation.isError) {
       toast.error(
-        syncEntityMutation.error?.message || "Failed to sync product"
+        syncEntityMutation.error?.message || 'Failed to sync product'
       );
     }
   }, [
@@ -169,12 +169,12 @@ const ProductList = ({ user }: ProductListProps) => {
     if (syncAllEntitiesMutation.isSuccess) {
       toast.success(
         syncAllEntitiesMutation.data?.message ||
-          "All products synced successfully"
+          'All products synced successfully'
       );
     }
     if (syncAllEntitiesMutation.isError) {
       toast.error(
-        syncAllEntitiesMutation.error?.message || "Failed to sync all products"
+        syncAllEntitiesMutation.error?.message || 'Failed to sync all products'
       );
     }
   }, [
@@ -189,13 +189,13 @@ const ProductList = ({ user }: ProductListProps) => {
   const brands = brandsQuery.data?.data || [];
   const categories = categoriesQuery.data?.data || [];
 
-  const canManageProducts = ["ADMIN", "MANAGER"].includes(user.role);
+  const canManageProducts = ['ADMIN', 'MANAGER'].includes(user.role);
   const canEditProducts = ALL_ROLES.includes(user.role as any);
 
   // Memoize category options to prevent unnecessary re-renders
   const categoryOptions = useMemo(
     () =>
-      categories.map((cat) => ({
+      categories.map(cat => ({
         value: String(cat.id),
         label: formatCategoryHierarchy(cat),
       })),
@@ -205,7 +205,7 @@ const ProductList = ({ user }: ProductListProps) => {
   // Memoize brand options to prevent unnecessary re-renders
   const brandOptions = useMemo(
     () =>
-      brands.map((brand) => ({
+      brands.map(brand => ({
         value: String(brand.id),
         label: brand.name,
       })),
@@ -214,78 +214,78 @@ const ProductList = ({ user }: ProductListProps) => {
 
   // Static status options (no need to memoize)
   const statusOptions = [
-    { value: "ACTIVE", label: "Active" },
-    { value: "INACTIVE", label: "Inactive" },
-    { value: "OUT_OF_STOCK", label: "Out of Stock" },
-    { value: "DISCONTINUED", label: "Discontinued" },
+    { value: 'ACTIVE', label: 'Active' },
+    { value: 'INACTIVE', label: 'Inactive' },
+    { value: 'OUT_OF_STOCK', label: 'Out of Stock' },
+    { value: 'DISCONTINUED', label: 'Discontinued' },
   ];
 
   // Filter configurations - properly memoized to prevent unnecessary re-renders
   const filterConfigs: FilterConfig[] = useMemo(
     () => [
       {
-        key: "categoryId",
-        label: "Categories",
-        type: "select",
+        key: 'categoryId',
+        label: 'Categories',
+        type: 'select',
         options: categoryOptions,
-        placeholder: "All Categories",
+        placeholder: 'All Categories',
       },
       {
-        key: "brandId",
-        label: "Brands",
-        type: "select",
+        key: 'brandId',
+        label: 'Brands',
+        type: 'select',
         options: brandOptions,
-        placeholder: "All Brands",
+        placeholder: 'All Brands',
       },
       {
-        key: "status",
-        label: "Status",
-        type: "select",
+        key: 'status',
+        label: 'Status',
+        type: 'select',
         options: statusOptions,
-        placeholder: "All Status",
+        placeholder: 'All Status',
       },
     ],
     [categoryOptions, brandOptions]
   );
 
   const handleFilterChange = (key: string, value: string | boolean) => {
-    setFilters((prev) => {
+    setFilters(prev => {
       const filterKey = key as keyof ProductFilters;
       if (prev[filterKey] === value) return prev; // Prevent unnecessary updates
       return { ...prev, [filterKey]: value };
     });
-    setPagination((prev) => ({ ...prev, page: 1 }));
+    setPagination(prev => ({ ...prev, page: 1 }));
   };
 
   const handleResetFilters = () => {
     setFilters({
-      search: "",
-      categoryId: "",
-      brandId: "",
-      status: "",
-      supplier: "",
+      search: '',
+      categoryId: '',
+      brandId: '',
+      status: '',
+      supplier: '',
       lowStock: false,
-      sortBy: "createdAt",
-      sortOrder: "desc",
+      sortBy: 'createdAt',
+      sortOrder: 'desc',
     });
-    setPagination((prev) => ({ ...prev, page: 1 }));
+    setPagination(prev => ({ ...prev, page: 1 }));
   };
 
   const handleSortChange = (value: string) => {
-    const [sortBy, sortOrder] = value.split("-");
-    setFilters((prev) => ({
+    const [sortBy, sortOrder] = value.split('-');
+    setFilters(prev => ({
       ...prev,
       sortBy,
-      sortOrder: sortOrder as "asc" | "desc",
+      sortOrder: sortOrder as 'asc' | 'desc',
     }));
   };
 
   const handlePageChange = (newPage: number) => {
-    setPagination((prev) => ({ ...prev, page: newPage }));
+    setPagination(prev => ({ ...prev, page: newPage }));
   };
 
   const handlePageSizeChange = (newPageSize: number) => {
-    setPagination((prev) => ({
+    setPagination(prev => ({
       ...prev,
       limit: newPageSize,
       page: 1,
@@ -299,8 +299,8 @@ const ProductList = ({ user }: ProductListProps) => {
   ) => {
     try {
       const response = await fetch(`/api/products/${productId}/archive`, {
-        method: "PATCH",
-        headers: { "Content-Type": "application/json" },
+        method: 'PATCH',
+        headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
           archived: true,
           reason: `Archived by ${user.role}`,
@@ -308,33 +308,33 @@ const ProductList = ({ user }: ProductListProps) => {
       });
 
       if (!response.ok) {
-        throw new Error("Failed to archive product");
+        throw new Error('Failed to archive product');
       }
 
       toast.success(`Product "${productName}" has been archived`);
       productsQuery.refetch(); // Refresh the products list
     } catch (err) {
-      ErrorHandlers.api(err, "Failed to archive product");
+      ErrorHandlers.api(err, 'Failed to archive product');
     }
   };
 
-  const getStatusBadge = (status: APIProduct["status"]) => {
+  const getStatusBadge = (status: APIProduct['status']) => {
     switch (status) {
-      case "ACTIVE":
+      case 'ACTIVE':
         return (
           <Badge variant="default" className="bg-green-500">
             Active
           </Badge>
         );
-      case "INACTIVE":
+      case 'INACTIVE':
         return <Badge variant="secondary">Inactive</Badge>;
-      case "OUT_OF_STOCK":
+      case 'OUT_OF_STOCK':
         return (
           <Badge variant="secondary" className="bg-yellow-500">
             Out of Stock
           </Badge>
         );
-      case "DISCONTINUED":
+      case 'DISCONTINUED':
         return (
           <Badge variant="secondary" className="bg-gray-500">
             Discontinued
@@ -349,20 +349,20 @@ const ProductList = ({ user }: ProductListProps) => {
     if (product.stock === 0) {
       return {
         icon: <IconAlertTriangle className="h-4 w-4 text-red-500" />,
-        text: "Out of stock",
-        color: "text-red-500",
+        text: 'Out of stock',
+        color: 'text-red-500',
       };
     } else if (product.stock <= product.minStock) {
       return {
         icon: <IconAlertTriangle className="h-4 w-4 text-yellow-500" />,
-        text: "Low stock",
-        color: "text-yellow-500",
+        text: 'Low stock',
+        color: 'text-yellow-500',
       };
     }
     return {
       icon: <IconPackages className="h-4 w-4 text-green-500" />,
-      text: "In stock",
-      color: "text-green-500",
+      text: 'In stock',
+      color: 'text-green-500',
     };
   };
 
@@ -370,32 +370,32 @@ const ProductList = ({ user }: ProductListProps) => {
   const getProductImage = (product: APIProduct): string => {
     if (Array.isArray(product.images) && product.images.length > 0) {
       // Check if it's the new format (array of objects)
-      if (typeof product.images[0] === "object" && "url" in product.images[0]) {
+      if (typeof product.images[0] === 'object' && 'url' in product.images[0]) {
         return (product.images[0] as any).url;
       }
       // Legacy format (array of strings)
       return product.images[0] as string;
     }
-    return product.image || "";
+    return product.image || '';
   };
 
   const isValidUrl = (url: string): boolean => {
     return (
-      url.startsWith("/") ||
-      url.startsWith("http://") ||
-      url.startsWith("https://")
+      url.startsWith('/') ||
+      url.startsWith('http://') ||
+      url.startsWith('https://')
     );
   };
 
   const renderCell = (product: APIProduct, columnKey: string) => {
     switch (columnKey) {
-      case "image":
+      case 'image':
         const productImage = getProductImage(product);
 
         return (
           <div className="flex items-center justify-start">
             {productImage &&
-            productImage.trim() !== "" &&
+            productImage.trim() !== '' &&
             isValidUrl(productImage.trim()) ? (
               <div className="relative h-12 w-12 overflow-hidden rounded-md border">
                 <Image
@@ -413,7 +413,7 @@ const ProductList = ({ user }: ProductListProps) => {
             )}
           </div>
         );
-      case "name":
+      case 'name':
         return (
           <div>
             <div className="font-medium">{product.name}</div>
@@ -422,19 +422,19 @@ const ProductList = ({ user }: ProductListProps) => {
             )}
           </div>
         );
-      case "sku":
+      case 'sku':
         return <span className="font-mono text-sm">{product.sku}</span>;
-      case "category":
+      case 'category':
         // Find the category with hierarchy information
         const categoryWithHierarchy = categories.find(
-          (cat) => cat.id === product.category?.id
+          cat => cat.id === product.category?.id
         );
         return categoryWithHierarchy
           ? formatCategoryHierarchy(categoryWithHierarchy)
-          : product.category?.name || "-";
-      case "brand":
-        return product.brand?.name || "-";
-      case "stock":
+          : product.category?.name || '-';
+      case 'brand':
+        return product.brand?.name || '-';
+      case 'stock':
         const stockStatus = getStockStatus(product);
         return (
           <div className="flex items-center gap-2">
@@ -443,40 +443,40 @@ const ProductList = ({ user }: ProductListProps) => {
             <span className="text-gray-400">/ {product.minStock} min</span>
           </div>
         );
-      case "price":
+      case 'price':
         return (
           <div>
             <div className="font-medium">{formatCurrency(product.price)}</div>
           </div>
         );
-      case "cost":
+      case 'cost':
         return <span className="text-sm">{formatCurrency(product.cost)}</span>;
-      case "status":
+      case 'status':
         return getStatusBadge(product.status);
-      case "supplier":
-        return product.supplier?.name || "-";
-      case "description":
+      case 'supplier':
+        return product.supplier?.name || '-';
+      case 'description':
         return (
           <div className="max-w-xs truncate text-sm">
-            {product.description || "-"}
+            {product.description || '-'}
           </div>
         );
-      case "barcode":
+      case 'barcode':
         return (
-          <span className="font-mono text-sm">{product.barcode || "-"}</span>
+          <span className="font-mono text-sm">{product.barcode || '-'}</span>
         );
-      case "minStock":
+      case 'minStock':
         return product.minStock;
-      case "maxStock":
-        return product.maxStock || "-";
-      case "unit":
+      case 'maxStock':
+        return product.maxStock || '-';
+      case 'unit':
         return product.unit;
-      case "createdAt":
+      case 'createdAt':
         return new Date(product.createdAt).toLocaleDateString();
-      case "updatedAt":
+      case 'updatedAt':
         return new Date(product.updatedAt).toLocaleDateString();
       default:
-        return "-";
+        return '-';
     }
   };
 
@@ -537,7 +537,7 @@ const ProductList = ({ user }: ProductListProps) => {
             <DropdownMenuItem
               onClick={() => {
                 syncEntityMutation.mutate({
-                  entityType: "product",
+                  entityType: 'product',
                   entityId: product.id,
                 });
               }}
@@ -545,13 +545,13 @@ const ProductList = ({ user }: ProductListProps) => {
               className="flex items-center gap-2"
             >
               <IconPackages className="h-4 w-4" />
-              {syncEntityMutation.isPending ? "Syncing..." : "Sync to N8N"}
+              {syncEntityMutation.isPending ? 'Syncing...' : 'Sync to N8N'}
             </DropdownMenuItem>
             <DropdownMenuItem
               className="text-red-600"
               onClick={() => handleArchiveProduct(product.id, product.name)}
             >
-              <IconTrash className="h-4 w-4 mr-2" />
+              <IconTrash className="mr-2 h-4 w-4" />
               Archive Product
             </DropdownMenuItem>
           </>
@@ -564,7 +564,7 @@ const ProductList = ({ user }: ProductListProps) => {
   useEffect(() => {
     if (productsQuery.data?.pagination) {
       const apiPagination = productsQuery.data.pagination;
-      setPagination((prev) => ({
+      setPagination(prev => ({
         ...prev,
         totalPages:
           apiPagination.totalPages ||
@@ -607,14 +607,14 @@ const ProductList = ({ user }: ProductListProps) => {
                 variant="outline"
                 className="flex items-center gap-2"
                 onClick={() => {
-                  syncAllEntitiesMutation.mutate("product");
+                  syncAllEntitiesMutation.mutate('product');
                 }}
                 disabled={syncAllEntitiesMutation.isPending}
               >
                 <IconPackages className="h-4 w-4" />
                 {syncAllEntitiesMutation.isPending
-                  ? "Syncing All..."
-                  : "Sync All"}
+                  ? 'Syncing All...'
+                  : 'Sync All'}
               </Button>
               <Button asChild>
                 <Link
@@ -631,7 +631,7 @@ const ProductList = ({ user }: ProductListProps) => {
         // Filters
         searchPlaceholder="Search products..."
         searchValue={filters.search}
-        onSearchChange={(value) => handleFilterChange("search", value)}
+        onSearchChange={value => handleFilterChange('search', value)}
         isSearching={isSearching}
         filters={filterConfigs}
         filterValues={filters as unknown as Record<string, unknown>}
@@ -641,11 +641,11 @@ const ProductList = ({ user }: ProductListProps) => {
         onResetFilters={handleResetFilters}
         quickFilters={
           <Button
-            variant={filters.lowStock ? "default" : "outline"}
+            variant={filters.lowStock ? 'default' : 'outline'}
             size="sm"
-            onClick={() => handleFilterChange("lowStock", !filters.lowStock)}
+            onClick={() => handleFilterChange('lowStock', !filters.lowStock)}
           >
-            <IconAlertTriangle className="h-4 w-4 mr-1" />
+            <IconAlertTriangle className="mr-1 h-4 w-4" />
             Low Stock Only
           </Button>
         }
@@ -675,7 +675,7 @@ const ProductList = ({ user }: ProductListProps) => {
         onRetry={() => productsQuery.refetch()}
         // Empty state
         emptyStateIcon={
-          <IconPackages className="h-12 w-12 text-gray-400 mx-auto mb-4" />
+          <IconPackages className="mx-auto mb-4 h-12 w-12 text-gray-400" />
         }
         emptyStateMessage="No products found"
         emptyStateAction={
@@ -706,9 +706,9 @@ const ProductList = ({ user }: ProductListProps) => {
                 setProductDetailModalOpen(false);
                 setSelectedProductForDetail(null);
               }}
-              onAddStock={(productId) => {
+              onAddStock={productId => {
                 // Find the product and set it for the AddStockDialog
-                const product = products?.find((p) => p.id === productId);
+                const product = products?.find(p => p.id === productId);
                 if (product) {
                   setSelectedProductForStock(product);
                   setAddStockDialogOpen(true);

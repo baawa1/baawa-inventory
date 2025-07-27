@@ -1,6 +1,6 @@
-import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
-import { queryKeys } from "@/lib/query-client";
-import { PAYMENT_METHODS, TRANSACTION_STATUS } from "@/lib/constants";
+import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
+import { queryKeys } from '@/lib/query-client';
+import { PAYMENT_METHODS, TRANSACTION_STATUS } from '@/lib/constants';
 
 // Types
 export interface TransactionItem {
@@ -41,7 +41,7 @@ export interface TransactionFilters {
   dateTo: string;
   staffId: string;
   sortBy: string;
-  sortOrder: "asc" | "desc";
+  sortOrder: 'asc' | 'desc';
 }
 
 export interface TransactionPagination {
@@ -83,21 +83,21 @@ const fetchTransactions = async (
   pagination: Partial<TransactionPagination>
 ): Promise<TransactionListResponse> => {
   const searchParams = new URLSearchParams({
-    page: pagination.page?.toString() || "1",
-    limit: pagination.limit?.toString() || "10",
-    sortBy: filters.sortBy || "createdAt",
-    sortOrder: filters.sortOrder || "desc",
+    page: pagination.page?.toString() || '1',
+    limit: pagination.limit?.toString() || '10',
+    sortBy: filters.sortBy || 'createdAt',
+    sortOrder: filters.sortOrder || 'desc',
   });
 
-  if (filters.search) searchParams.set("search", filters.search);
-  if (filters.paymentMethod && filters.paymentMethod !== "all")
-    searchParams.set("paymentMethod", filters.paymentMethod);
-  if (filters.paymentStatus && filters.paymentStatus !== "all")
-    searchParams.set("paymentStatus", filters.paymentStatus);
-  if (filters.dateFrom) searchParams.set("dateFrom", filters.dateFrom);
-  if (filters.dateTo) searchParams.set("dateTo", filters.dateTo);
-  if (filters.staffId && filters.staffId !== "all")
-    searchParams.set("staffId", filters.staffId);
+  if (filters.search) searchParams.set('search', filters.search);
+  if (filters.paymentMethod && filters.paymentMethod !== 'all')
+    searchParams.set('paymentMethod', filters.paymentMethod);
+  if (filters.paymentStatus && filters.paymentStatus !== 'all')
+    searchParams.set('paymentStatus', filters.paymentStatus);
+  if (filters.dateFrom) searchParams.set('dateFrom', filters.dateFrom);
+  if (filters.dateTo) searchParams.set('dateTo', filters.dateTo);
+  if (filters.staffId && filters.staffId !== 'all')
+    searchParams.set('staffId', filters.staffId);
 
   const response = await fetch(`/api/sales?${searchParams.toString()}`);
   if (!response.ok) {
@@ -124,8 +124,8 @@ const fetchTransactionStats = async (
   dateTo?: string
 ): Promise<TransactionStats> => {
   const searchParams = new URLSearchParams();
-  if (dateFrom) searchParams.set("dateFrom", dateFrom);
-  if (dateTo) searchParams.set("dateTo", dateTo);
+  if (dateFrom) searchParams.set('dateFrom', dateFrom);
+  if (dateTo) searchParams.set('dateTo', dateTo);
 
   const response = await fetch(`/api/sales/stats?${searchParams.toString()}`);
   if (!response.ok) {
@@ -175,8 +175,8 @@ export function useUpdateTransaction() {
   return useMutation({
     mutationFn: async ({ id, data }: { id: number; data: any }) => {
       const response = await fetch(`/api/sales/${id}`, {
-        method: "PATCH",
-        headers: { "Content-Type": "application/json" },
+        method: 'PATCH',
+        headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify(data),
       });
       if (!response.ok) {
@@ -196,7 +196,7 @@ export function useDeleteTransaction() {
   return useMutation({
     mutationFn: async (id: number) => {
       const response = await fetch(`/api/sales/${id}`, {
-        method: "DELETE",
+        method: 'DELETE',
       });
       if (!response.ok) {
         throw new Error(`Failed to delete transaction: ${response.statusText}`);
@@ -213,11 +213,11 @@ export function useDeleteTransaction() {
 export const getPaymentMethodLabel = (method: string): string => {
   switch (method) {
     case PAYMENT_METHODS.CASH:
-      return "Cash";
+      return 'Cash';
     case PAYMENT_METHODS.BANK_TRANSFER:
-      return "Bank Transfer";
+      return 'Bank Transfer';
     case PAYMENT_METHODS.MOBILE_MONEY:
-      return "Mobile Money";
+      return 'Mobile Money';
     default:
       return method;
   }
@@ -226,13 +226,13 @@ export const getPaymentMethodLabel = (method: string): string => {
 export const getPaymentStatusLabel = (status: string): string => {
   switch (status) {
     case TRANSACTION_STATUS.PENDING:
-      return "Pending";
+      return 'Pending';
     case TRANSACTION_STATUS.COMPLETED:
-      return "Completed";
+      return 'Completed';
     case TRANSACTION_STATUS.CANCELLED:
-      return "Cancelled";
+      return 'Cancelled';
     case TRANSACTION_STATUS.REFUNDED:
-      return "Refunded";
+      return 'Refunded';
     default:
       return status;
   }
@@ -241,14 +241,14 @@ export const getPaymentStatusLabel = (status: string): string => {
 export const getPaymentStatusColor = (status: string): string => {
   switch (status) {
     case TRANSACTION_STATUS.PENDING:
-      return "bg-yellow-100 text-yellow-800";
+      return 'bg-yellow-100 text-yellow-800';
     case TRANSACTION_STATUS.COMPLETED:
-      return "bg-green-100 text-green-800";
+      return 'bg-green-100 text-green-800';
     case TRANSACTION_STATUS.CANCELLED:
-      return "bg-red-100 text-red-800";
+      return 'bg-red-100 text-red-800';
     case TRANSACTION_STATUS.REFUNDED:
-      return "bg-blue-100 text-blue-800";
+      return 'bg-blue-100 text-blue-800';
     default:
-      return "bg-gray-100 text-gray-800";
+      return 'bg-gray-100 text-gray-800';
   }
 };

@@ -1,46 +1,46 @@
-import type { Metadata, Viewport } from "next";
-import { Oxanium, Plus_Jakarta_Sans, Roboto } from "next/font/google";
-import "./globals.css";
+import type { Metadata, Viewport } from 'next';
+import { Oxanium, Plus_Jakarta_Sans, Roboto } from 'next/font/google';
+import './globals.css';
 
-import { QueryProvider } from "@/components/providers/QueryProvider";
-import { SessionProvider } from "@/components/providers/SessionProvider";
+import { QueryProvider } from '@/components/providers/QueryProvider';
+import { SessionProvider } from '@/components/providers/SessionProvider';
 // import { SessionMonitor } from "@/components/providers/SessionMonitor";
-import { ThemeProvider } from "@/components/theme-provider";
-import { Toaster } from "@/components/ui/sonner";
-import { PWAManager } from "@/components/pwa/PWAManager";
+import { ThemeProvider } from '@/components/theme-provider';
+import { Toaster } from '@/components/ui/sonner';
+import { PWAManager } from '@/components/pwa/PWAManager';
 
 const oxanium = Oxanium({
-  variable: "--font-sans",
-  subsets: ["latin"],
+  variable: '--font-sans',
+  subsets: ['latin'],
 });
 
 const plusJakartaSans = Plus_Jakarta_Sans({
-  variable: "--font-serif",
-  subsets: ["latin"],
+  variable: '--font-serif',
+  subsets: ['latin'],
 });
 
 const roboto = Roboto({
-  variable: "--font-mono",
-  subsets: ["latin"],
-  weight: ["300", "400", "500", "700"],
+  variable: '--font-mono',
+  subsets: ['latin'],
+  weight: ['300', '400', '500', '700'],
 });
 
 export const metadata: Metadata = {
-  title: "BaaWA Inventory & POS",
+  title: 'BaaWA Inventory & POS',
   description:
-    "Inventory management and point of sale system for BaaWA Accessories",
-  manifest: "/manifest.json",
+    'Inventory management and point of sale system for BaaWA Accessories',
+  manifest: '/manifest.json',
   keywords: [
-    "inventory",
-    "pos",
-    "point of sale",
-    "retail",
-    "baawa",
-    "accessories",
+    'inventory',
+    'pos',
+    'point of sale',
+    'retail',
+    'baawa',
+    'accessories',
   ],
-  authors: [{ name: "BaaWA Accessories" }],
-  creator: "BaaWA Accessories",
-  publisher: "BaaWA Accessories",
+  authors: [{ name: 'BaaWA Accessories' }],
+  creator: 'BaaWA Accessories',
+  publisher: 'BaaWA Accessories',
   formatDetection: {
     email: false,
     address: false,
@@ -48,28 +48,28 @@ export const metadata: Metadata = {
   },
   appleWebApp: {
     capable: true,
-    statusBarStyle: "default",
-    title: "BaaWA POS",
+    statusBarStyle: 'default',
+    title: 'BaaWA POS',
   },
   other: {
-    "mobile-web-app-capable": "yes",
-    "apple-mobile-web-app-capable": "yes",
-    "apple-mobile-web-app-status-bar-style": "default",
-    "apple-mobile-web-app-title": "BaaWA POS",
-    "application-name": "BaaWA POS",
-    "msapplication-TileColor": "#2563eb",
-    "msapplication-config": "/browserconfig.xml",
-    "theme-color": "#2563eb",
+    'mobile-web-app-capable': 'yes',
+    'apple-mobile-web-app-capable': 'yes',
+    'apple-mobile-web-app-status-bar-style': 'default',
+    'apple-mobile-web-app-title': 'BaaWA POS',
+    'application-name': 'BaaWA POS',
+    'msapplication-TileColor': '#2563eb',
+    'msapplication-config': '/browserconfig.xml',
+    'theme-color': '#2563eb',
   },
 };
 
 export const viewport: Viewport = {
-  themeColor: "#2563eb",
-  width: "device-width",
+  themeColor: '#2563eb',
+  width: 'device-width',
   initialScale: 1,
   maximumScale: 1,
   userScalable: false,
-  viewportFit: "cover",
+  viewportFit: 'cover',
 };
 
 export default function RootLayout({

@@ -40,7 +40,7 @@ export interface ProductResponse {
   minStock: number;
   maxStock: number | null;
   unit: string;
-  status: "ACTIVE" | "INACTIVE" | "OUT_OF_STOCK" | "DISCONTINUED";
+  status: 'ACTIVE' | 'INACTIVE' | 'OUT_OF_STOCK' | 'DISCONTINUED';
   image: string | null;
   images: Array<{ id: number; url: string; alt?: string }> | string[];
   categoryId: number | null;
@@ -73,7 +73,7 @@ export interface CreateProductRequest {
   minStock: number;
   maxStock?: number;
   unit: string;
-  status: "ACTIVE" | "INACTIVE" | "OUT_OF_STOCK" | "DISCONTINUED";
+  status: 'ACTIVE' | 'INACTIVE' | 'OUT_OF_STOCK' | 'DISCONTINUED';
   imageUrl?: string;
   categoryId?: number;
   brandId?: number;
@@ -174,7 +174,7 @@ export interface StockReconciliationResponse {
   id: number;
   title: string;
   description: string | null;
-  status: "DRAFT" | "PENDING" | "APPROVED" | "REJECTED";
+  status: 'DRAFT' | 'PENDING' | 'APPROVED' | 'REJECTED';
   notes: string | null;
   createdAt: string;
   updatedAt: string;
@@ -229,8 +229,8 @@ export interface UserResponse {
   id: string;
   email: string;
   name: string | null;
-  role: "ADMIN" | "MANAGER" | "STAFF";
-  status: "PENDING" | "VERIFIED" | "APPROVED" | "REJECTED" | "SUSPENDED";
+  role: 'ADMIN' | 'MANAGER' | 'STAFF';
+  status: 'PENDING' | 'VERIFIED' | 'APPROVED' | 'REJECTED' | 'SUSPENDED';
   isEmailVerified: boolean;
   createdAt: string;
   updatedAt: string;
@@ -239,7 +239,7 @@ export interface UserResponse {
 export interface CreateUserRequest {
   email: string;
   name?: string;
-  role: "ADMIN" | "MANAGER" | "STAFF";
+  role: 'ADMIN' | 'MANAGER' | 'STAFF';
   password: string;
 }
 
@@ -256,7 +256,7 @@ export interface ProductQueryParams {
   supplier?: string;
   lowStock?: boolean;
   sortBy?: string;
-  sortOrder?: "asc" | "desc";
+  sortOrder?: 'asc' | 'desc';
   page?: number;
   limit?: number;
 }
@@ -265,7 +265,7 @@ export interface CategoryQueryParams {
   search?: string;
   status?: string;
   sortBy?: string;
-  sortOrder?: "asc" | "desc";
+  sortOrder?: 'asc' | 'desc';
   page?: number;
   limit?: number;
 }
@@ -274,7 +274,7 @@ export interface SupplierQueryParams {
   search?: string;
   status?: string;
   sortBy?: string;
-  sortOrder?: "asc" | "desc";
+  sortOrder?: 'asc' | 'desc';
   page?: number;
   limit?: number;
 }
@@ -284,13 +284,13 @@ export interface StockReconciliationQueryParams {
   status?: string;
   createdBy?: string;
   sortBy?: string;
-  sortOrder?: "asc" | "desc";
+  sortOrder?: 'asc' | 'desc';
   page?: number;
   limit?: number;
 }
 
 // API Method Types
-export type ApiMethod = "GET" | "POST" | "PUT" | "DELETE" | "PATCH";
+export type ApiMethod = 'GET' | 'POST' | 'PUT' | 'DELETE' | 'PATCH';
 
 export interface ApiRequestConfig {
   method: ApiMethod;

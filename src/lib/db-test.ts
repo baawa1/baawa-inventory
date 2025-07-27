@@ -1,4 +1,4 @@
-import { prisma } from "./db";
+import { prisma } from './db';
 
 /**
  * Test database connection using Prisma
@@ -15,13 +15,13 @@ export async function testDatabaseConnection(): Promise<{
 
     return {
       success: true,
-      message: "Database connection successful",
+      message: 'Database connection successful',
     };
   } catch (error) {
     return {
       success: false,
       message: `Database connection failed: ${
-        error instanceof Error ? error.message : "Unknown error"
+        error instanceof Error ? error.message : 'Unknown error'
       }`,
     };
   } finally {
@@ -44,13 +44,13 @@ export async function getDatabaseInfo() {
     return {
       success: true,
       tables,
-      message: "Schema information retrieved",
+      message: 'Schema information retrieved',
     };
   } catch (error) {
     return {
       success: false,
       message: `Failed to get schema info: ${
-        error instanceof Error ? error.message : "Unknown error"
+        error instanceof Error ? error.message : 'Unknown error'
       }`,
     };
   }

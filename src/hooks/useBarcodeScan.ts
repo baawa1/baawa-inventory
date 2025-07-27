@@ -1,6 +1,6 @@
-import { useState, useCallback } from "react";
-import { toast } from "sonner";
-import { logger } from "@/lib/logger";
+import { useState, useCallback } from 'react';
+import { toast } from 'sonner';
+import { logger } from '@/lib/logger';
 
 interface UseBarcodeScanProps {
   onScan: (barcode: string) => void;
@@ -30,11 +30,11 @@ export function useBarcodeScan({ onScan }: UseBarcodeScanProps) {
   );
 
   const handleError = useCallback((error: string) => {
-    logger.error("Barcode scan error", {
+    logger.error('Barcode scan error', {
       error,
     });
     setError(error);
-    toast.error("Barcode scan failed");
+    toast.error('Barcode scan failed');
   }, []);
 
   // Manual barcode lookup
@@ -47,13 +47,13 @@ export function useBarcodeScan({ onScan }: UseBarcodeScanProps) {
       );
 
       if (!response.ok) {
-        throw new Error("Product not found");
+        throw new Error('Product not found');
       }
 
       const product = await response.json();
       return product;
     } catch (error) {
-      logger.error("Barcode lookup failed", {
+      logger.error('Barcode lookup failed', {
         barcode,
         error: error instanceof Error ? error.message : String(error),
       });

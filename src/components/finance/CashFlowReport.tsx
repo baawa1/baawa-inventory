@@ -1,16 +1,16 @@
-"use client";
+'use client';
 
-import React, { useState } from "react";
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import { Button } from "@/components/ui/button";
-import { Badge } from "@/components/ui/badge";
+import React, { useState } from 'react';
+import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
+import { Button } from '@/components/ui/button';
+import { Badge } from '@/components/ui/badge';
 import {
   Select,
   SelectContent,
   SelectItem,
   SelectTrigger,
   SelectValue,
-} from "@/components/ui/select";
+} from '@/components/ui/select';
 import {
   IconDownload,
   IconPrinter,
@@ -19,12 +19,12 @@ import {
   IconTrendingDown,
   IconCalendar,
   IconRefresh,
-} from "@tabler/icons-react";
-import { DateRange } from "react-day-picker";
-import { formatCurrency } from "@/lib/utils";
-import { useFinancialAnalytics } from "@/hooks/api/useFinancialAnalytics";
-import { DateRangePicker } from "@/components/ui/date-range-picker";
-import { AppUser } from "@/types/user";
+} from '@tabler/icons-react';
+import { DateRange } from 'react-day-picker';
+import { formatCurrency } from '@/lib/utils';
+import { useFinancialAnalytics } from '@/hooks/api/useFinancialAnalytics';
+import { DateRangePicker } from '@/components/ui/date-range-picker';
+import { AppUser } from '@/types/user';
 
 interface CashFlowReportProps {
   user: AppUser;
@@ -35,7 +35,7 @@ export function CashFlowReport({ user }: CashFlowReportProps) {
     from: new Date(Date.now() - 30 * 24 * 60 * 60 * 1000), // Last 30 days
     to: new Date(),
   });
-  const [period, setPeriod] = useState("monthly");
+  const [period, setPeriod] = useState('monthly');
 
   const {
     data: analyticsData,
@@ -43,7 +43,7 @@ export function CashFlowReport({ user }: CashFlowReportProps) {
     refetch,
   } = useFinancialAnalytics({
     dateRange,
-    type: "all",
+    type: 'all',
   });
 
   const summary = analyticsData?.summary;
@@ -79,11 +79,11 @@ export function CashFlowReport({ user }: CashFlowReportProps) {
     cashFlowData.financingActivities.netFinancingCashFlow;
 
   const handleExportReport = () => {
-    console.log("Exporting cash flow report...");
+    console.log('Exporting cash flow report...');
   };
 
   const handlePrintReport = () => {
-    console.log("Printing cash flow report...");
+    console.log('Printing cash flow report...');
   };
 
   const handleRefresh = () => {
@@ -92,10 +92,10 @@ export function CashFlowReport({ user }: CashFlowReportProps) {
 
   if (isLoading) {
     return (
-      <div className="max-w-7xl mx-auto p-6 space-y-6">
-        <div className="text-center py-8">
-          <div className="animate-spin h-8 w-8 border-b-2 border-primary mx-auto"></div>
-          <p className="mt-2 text-muted-foreground">
+      <div className="mx-auto max-w-7xl space-y-6 p-6">
+        <div className="py-8 text-center">
+          <div className="border-primary mx-auto h-8 w-8 animate-spin border-b-2"></div>
+          <p className="text-muted-foreground mt-2">
             Loading cash flow data...
           </p>
         </div>
@@ -104,7 +104,7 @@ export function CashFlowReport({ user }: CashFlowReportProps) {
   }
 
   return (
-    <div className="max-w-7xl mx-auto p-6 space-y-6">
+    <div className="mx-auto max-w-7xl space-y-6 p-6">
       {/* Header */}
       <div className="flex items-center justify-between">
         <div>
@@ -128,15 +128,15 @@ export function CashFlowReport({ user }: CashFlowReportProps) {
             </SelectContent>
           </Select>
           <Button onClick={handleRefresh} variant="outline" size="sm">
-            <IconRefresh className="h-4 w-4 mr-2" />
+            <IconRefresh className="mr-2 h-4 w-4" />
             Refresh
           </Button>
           <Button onClick={handleExportReport} variant="outline" size="sm">
-            <IconDownload className="h-4 w-4 mr-2" />
+            <IconDownload className="mr-2 h-4 w-4" />
             Export
           </Button>
           <Button onClick={handlePrintReport} variant="outline" size="sm">
-            <IconPrinter className="h-4 w-4 mr-2" />
+            <IconPrinter className="mr-2 h-4 w-4" />
             Print
           </Button>
         </div>
@@ -172,15 +172,15 @@ export function CashFlowReport({ user }: CashFlowReportProps) {
             <div
               className={`text-2xl font-bold ${
                 cashFlowData.operatingActivities.netOperatingCashFlow >= 0
-                  ? "text-green-600"
-                  : "text-red-600"
+                  ? 'text-green-600'
+                  : 'text-red-600'
               }`}
             >
               {formatCurrency(
                 cashFlowData.operatingActivities.netOperatingCashFlow
               )}
             </div>
-            <p className="text-xs text-muted-foreground">
+            <p className="text-muted-foreground text-xs">
               Net cash from operations
             </p>
           </CardContent>
@@ -199,7 +199,7 @@ export function CashFlowReport({ user }: CashFlowReportProps) {
                 cashFlowData.investingActivities.netInvestingCashFlow
               )}
             </div>
-            <p className="text-xs text-muted-foreground">
+            <p className="text-muted-foreground text-xs">
               Net cash from investments
             </p>
           </CardContent>
@@ -218,7 +218,7 @@ export function CashFlowReport({ user }: CashFlowReportProps) {
                 cashFlowData.financingActivities.netFinancingCashFlow
               )}
             </div>
-            <p className="text-xs text-muted-foreground">
+            <p className="text-muted-foreground text-xs">
               Net cash from financing
             </p>
           </CardContent>
@@ -232,12 +232,12 @@ export function CashFlowReport({ user }: CashFlowReportProps) {
           <CardContent>
             <div
               className={`text-2xl font-bold ${
-                totalCashFlow >= 0 ? "text-green-600" : "text-red-600"
+                totalCashFlow >= 0 ? 'text-green-600' : 'text-red-600'
               }`}
             >
               {formatCurrency(totalCashFlow)}
             </div>
-            <p className="text-xs text-muted-foreground">
+            <p className="text-muted-foreground text-xs">
               Total change in cash
             </p>
           </CardContent>
@@ -256,13 +256,13 @@ export function CashFlowReport({ user }: CashFlowReportProps) {
           </CardHeader>
           <CardContent className="space-y-4">
             <div className="space-y-3">
-              <div className="flex justify-between items-center">
+              <div className="flex items-center justify-between">
                 <span className="text-sm">Net Income</span>
                 <span className="font-medium">
                   {formatCurrency(cashFlowData.operatingActivities.netIncome)}
                 </span>
               </div>
-              <div className="flex justify-between items-center">
+              <div className="flex items-center justify-between">
                 <span className="text-sm">Depreciation</span>
                 <span className="font-medium text-green-600">
                   +
@@ -271,7 +271,7 @@ export function CashFlowReport({ user }: CashFlowReportProps) {
                   )}
                 </span>
               </div>
-              <div className="flex justify-between items-center">
+              <div className="flex items-center justify-between">
                 <span className="text-sm">Accounts Receivable</span>
                 <span className="font-medium text-red-600">
                   {formatCurrency(
@@ -279,7 +279,7 @@ export function CashFlowReport({ user }: CashFlowReportProps) {
                   )}
                 </span>
               </div>
-              <div className="flex justify-between items-center">
+              <div className="flex items-center justify-between">
                 <span className="text-sm">Accounts Payable</span>
                 <span className="font-medium text-green-600">
                   +
@@ -288,20 +288,20 @@ export function CashFlowReport({ user }: CashFlowReportProps) {
                   )}
                 </span>
               </div>
-              <div className="flex justify-between items-center">
+              <div className="flex items-center justify-between">
                 <span className="text-sm">Inventory</span>
                 <span className="font-medium text-red-600">
                   {formatCurrency(cashFlowData.operatingActivities.inventory)}
                 </span>
               </div>
               <div className="border-t pt-2">
-                <div className="flex justify-between items-center font-bold">
+                <div className="flex items-center justify-between font-bold">
                   <span>Net Operating Cash Flow</span>
                   <span
                     className={
                       cashFlowData.operatingActivities.netOperatingCashFlow >= 0
-                        ? "text-green-600"
-                        : "text-red-600"
+                        ? 'text-green-600'
+                        : 'text-red-600'
                     }
                   >
                     {formatCurrency(
@@ -324,7 +324,7 @@ export function CashFlowReport({ user }: CashFlowReportProps) {
           </CardHeader>
           <CardContent className="space-y-4">
             <div className="space-y-3">
-              <div className="flex justify-between items-center">
+              <div className="flex items-center justify-between">
                 <span className="text-sm">Capital Expenditures</span>
                 <span className="font-medium text-red-600">
                   {formatCurrency(
@@ -332,20 +332,20 @@ export function CashFlowReport({ user }: CashFlowReportProps) {
                   )}
                 </span>
               </div>
-              <div className="flex justify-between items-center">
+              <div className="flex items-center justify-between">
                 <span className="text-sm">Investments</span>
                 <span className="font-medium text-red-600">
                   {formatCurrency(cashFlowData.investingActivities.investments)}
                 </span>
               </div>
-              <div className="flex justify-between items-center">
+              <div className="flex items-center justify-between">
                 <span className="text-sm">Asset Sales</span>
                 <span className="font-medium text-green-600">
                   +{formatCurrency(cashFlowData.investingActivities.assetSales)}
                 </span>
               </div>
               <div className="border-t pt-2">
-                <div className="flex justify-between items-center font-bold">
+                <div className="flex items-center justify-between font-bold">
                   <span>Net Investing Cash Flow</span>
                   <span className="text-red-600">
                     {formatCurrency(
@@ -368,26 +368,26 @@ export function CashFlowReport({ user }: CashFlowReportProps) {
           </CardHeader>
           <CardContent className="space-y-4">
             <div className="space-y-3">
-              <div className="flex justify-between items-center">
+              <div className="flex items-center justify-between">
                 <span className="text-sm">Loans</span>
                 <span className="font-medium text-green-600">
                   +{formatCurrency(cashFlowData.financingActivities.loans)}
                 </span>
               </div>
-              <div className="flex justify-between items-center">
+              <div className="flex items-center justify-between">
                 <span className="text-sm">Repayments</span>
                 <span className="font-medium text-red-600">
                   {formatCurrency(cashFlowData.financingActivities.repayments)}
                 </span>
               </div>
-              <div className="flex justify-between items-center">
+              <div className="flex items-center justify-between">
                 <span className="text-sm">Dividends</span>
                 <span className="font-medium text-red-600">
                   {formatCurrency(cashFlowData.financingActivities.dividends)}
                 </span>
               </div>
               <div className="border-t pt-2">
-                <div className="flex justify-between items-center font-bold">
+                <div className="flex items-center justify-between font-bold">
                   <span>Net Financing Cash Flow</span>
                   <span className="text-green-600">
                     {formatCurrency(
@@ -409,7 +409,7 @@ export function CashFlowReport({ user }: CashFlowReportProps) {
         <CardContent>
           <div className="space-y-4">
             <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-4">
-              <div className="text-center p-4 bg-blue-50 rounded-lg">
+              <div className="rounded-lg bg-blue-50 p-4 text-center">
                 <div className="text-2xl font-bold text-blue-600">
                   {formatCurrency(
                     cashFlowData.operatingActivities.netOperatingCashFlow
@@ -417,7 +417,7 @@ export function CashFlowReport({ user }: CashFlowReportProps) {
                 </div>
                 <div className="text-sm text-blue-600">Operating</div>
               </div>
-              <div className="text-center p-4 bg-orange-50 rounded-lg">
+              <div className="rounded-lg bg-orange-50 p-4 text-center">
                 <div className="text-2xl font-bold text-orange-600">
                   {formatCurrency(
                     cashFlowData.investingActivities.netInvestingCashFlow
@@ -425,7 +425,7 @@ export function CashFlowReport({ user }: CashFlowReportProps) {
                 </div>
                 <div className="text-sm text-orange-600">Investing</div>
               </div>
-              <div className="text-center p-4 bg-purple-50 rounded-lg">
+              <div className="rounded-lg bg-purple-50 p-4 text-center">
                 <div className="text-2xl font-bold text-purple-600">
                   {formatCurrency(
                     cashFlowData.financingActivities.netFinancingCashFlow
@@ -433,10 +433,10 @@ export function CashFlowReport({ user }: CashFlowReportProps) {
                 </div>
                 <div className="text-sm text-purple-600">Financing</div>
               </div>
-              <div className="text-center p-4 bg-indigo-50 rounded-lg">
+              <div className="rounded-lg bg-indigo-50 p-4 text-center">
                 <div
                   className={`text-2xl font-bold ${
-                    totalCashFlow >= 0 ? "text-green-600" : "text-red-600"
+                    totalCashFlow >= 0 ? 'text-green-600' : 'text-red-600'
                   }`}
                 >
                   {formatCurrency(totalCashFlow)}
@@ -445,35 +445,35 @@ export function CashFlowReport({ user }: CashFlowReportProps) {
               </div>
             </div>
 
-            <div className="mt-6 p-4 bg-gray-50 rounded-lg">
-              <h3 className="font-semibold mb-2">Cash Flow Analysis</h3>
+            <div className="mt-6 rounded-lg bg-gray-50 p-4">
+              <h3 className="mb-2 font-semibold">Cash Flow Analysis</h3>
               <div className="space-y-2 text-sm">
                 <p>
-                  <strong>Operating Cash Flow:</strong>{" "}
-                  {totalCashFlow >= 0 ? "Positive" : "Negative"} operating cash
-                  flow indicates {totalCashFlow >= 0 ? "strong" : "weak"}{" "}
+                  <strong>Operating Cash Flow:</strong>{' '}
+                  {totalCashFlow >= 0 ? 'Positive' : 'Negative'} operating cash
+                  flow indicates {totalCashFlow >= 0 ? 'strong' : 'weak'}{' '}
                   operational performance.
                 </p>
                 <p>
-                  <strong>Investing Activities:</strong>{" "}
+                  <strong>Investing Activities:</strong>{' '}
                   {cashFlowData.investingActivities.netInvestingCashFlow < 0
-                    ? "Net outflow"
-                    : "Net inflow"}{" "}
-                  shows{" "}
+                    ? 'Net outflow'
+                    : 'Net inflow'}{' '}
+                  shows{' '}
                   {cashFlowData.investingActivities.netInvestingCashFlow < 0
-                    ? "investment in assets"
-                    : "asset sales"}
+                    ? 'investment in assets'
+                    : 'asset sales'}
                   .
                 </p>
                 <p>
-                  <strong>Financing Activities:</strong>{" "}
+                  <strong>Financing Activities:</strong>{' '}
                   {cashFlowData.financingActivities.netFinancingCashFlow >= 0
-                    ? "Net inflow"
-                    : "Net outflow"}{" "}
-                  indicates{" "}
+                    ? 'Net inflow'
+                    : 'Net outflow'}{' '}
+                  indicates{' '}
                   {cashFlowData.financingActivities.netFinancingCashFlow >= 0
-                    ? "new financing"
-                    : "debt repayment"}
+                    ? 'new financing'
+                    : 'debt repayment'}
                   .
                 </p>
               </div>

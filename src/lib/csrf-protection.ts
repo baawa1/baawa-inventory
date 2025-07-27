@@ -3,10 +3,10 @@
  * Provides CSRF token generation, validation, and middleware
  */
 
-import { NextRequest } from "next/server";
-import crypto from "crypto";
-import { auth } from "../../auth";
-import { logger } from "@/lib/logger";
+import { NextRequest } from 'next/server';
+import crypto from 'crypto';
+import { auth } from '../../auth';
+import { logger } from '@/lib/logger';
 
 interface CSRFVerificationResult {
   valid: boolean;
@@ -19,14 +19,14 @@ interface CSRFVerificationResult {
  */
 export class CSRFProtection {
   private static readonly TOKEN_LENGTH = 32;
-  private static readonly HEADER_NAME = "x-csrf-token";
-  private static readonly FORM_FIELD_NAME = "csrfToken";
+  private static readonly HEADER_NAME = 'x-csrf-token';
+  private static readonly FORM_FIELD_NAME = 'csrfToken';
 
   /**
    * Generate a cryptographically secure CSRF token
    */
   static generateToken(): string {
-    return crypto.randomBytes(this.TOKEN_LENGTH).toString("hex");
+    return crypto.randomBytes(this.TOKEN_LENGTH).toString('hex');
   }
 
   /**
@@ -38,7 +38,7 @@ export class CSRFProtection {
   ): Promise<CSRFVerificationResult> {
     try {
       // Skip CSRF for GET requests (idempotent operations)
-      if (request.method === "GET") {
+      if (request.method === 'GET') {
         return { valid: true };
       }
 
@@ -49,8 +49,8 @@ export class CSRFProtection {
       // Try to extract token from form data if present
       if (
         request.headers
-          .get("content-type")
-          ?.includes("application/x-www-form-urlencoded")
+          .get('content-type')
+          ?.includes('application/x-www-form-urlencoded')
       ) {
         try {
           const formData = await request.clone().formData();
@@ -65,7 +65,7 @@ export class CSRFProtection {
       if (!providedToken) {
         return {
           valid: false,
-          error: "CSRF token missing from request",
+          error: 'CSRF token missing from request',
         };
       }
 
@@ -76,7 +76,7 @@ export class CSRFProtection {
         if (!session?.user) {
           return {
             valid: false,
-            error: "No session found for CSRF validation",
+            error: 'No session found for CSRF validation',
           };
         }
         // In a real implementation, you'd store CSRF tokens in session
@@ -90,18 +90,18 @@ export class CSRFProtection {
       if (!isValid) {
         return {
           valid: false,
-          error: "Invalid CSRF token",
+          error: 'Invalid CSRF token',
         };
       }
 
       return { valid: true };
     } catch (error) {
-      logger.security("CSRF token verification failed", {
+      logger.security('CSRF token verification failed', {
         error: error instanceof Error ? error.message : String(error),
       });
       return {
         valid: false,
-        error: "CSRF verification failed",
+        error: 'CSRF verification failed',
       };
     }
   }
@@ -134,12 +134,12 @@ export class CSRFProtection {
       if (!verification.valid) {
         return new Response(
           JSON.stringify({
-            error: verification.error || "CSRF validation failed",
-            code: "CSRF_INVALID",
+            error: verification.error || 'CSRF validation failed',
+            code: 'CSRF_INVALID',
           }),
           {
             status: 403,
-            headers: { "Content-Type": "application/json" },
+            headers: { 'Content-Type': 'application/json' },
           }
         );
       }

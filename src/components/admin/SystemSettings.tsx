@@ -1,14 +1,14 @@
-"use client";
+'use client';
 
-import { useState } from "react";
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import { Button } from "@/components/ui/button";
-import { Input } from "@/components/ui/input";
-import { Label } from "@/components/ui/label";
-import { Switch } from "@/components/ui/switch";
-import { Textarea } from "@/components/ui/textarea";
-import { Separator } from "@/components/ui/separator";
-import { Badge } from "@/components/ui/badge";
+import { useState } from 'react';
+import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
+import { Button } from '@/components/ui/button';
+import { Input } from '@/components/ui/input';
+import { Label } from '@/components/ui/label';
+import { Switch } from '@/components/ui/switch';
+import { Textarea } from '@/components/ui/textarea';
+import { Separator } from '@/components/ui/separator';
+import { Badge } from '@/components/ui/badge';
 import {
   IconSettings,
   IconShield,
@@ -20,17 +20,17 @@ import {
   IconCheck,
   IconGlobe,
   IconBell,
-} from "@tabler/icons-react";
-import { toast } from "sonner";
+} from '@tabler/icons-react';
+import { toast } from 'sonner';
 
 export function SystemSettings() {
   const [loading, setLoading] = useState(false);
   const [settings, setSettings] = useState({
     // General Settings
-    appName: "BaaWA Inventory",
-    appDescription: "Modern inventory management system",
-    timezone: "Africa/Lagos",
-    currency: "NGN",
+    appName: 'BaaWA Inventory',
+    appDescription: 'Modern inventory management system',
+    timezone: 'Africa/Lagos',
+    currency: 'NGN',
 
     // Security Settings
     passwordMinLength: 8,
@@ -40,11 +40,11 @@ export function SystemSettings() {
     maxLoginAttempts: 5,
 
     // Email Settings
-    emailProvider: "smtp",
-    smtpHost: "smtp.gmail.com",
+    emailProvider: 'smtp',
+    smtpHost: 'smtp.gmail.com',
     smtpPort: 587,
-    smtpUsername: "",
-    smtpPassword: "",
+    smtpUsername: '',
+    smtpPassword: '',
 
     // Feature Toggles
     enableRegistration: true,
@@ -62,10 +62,10 @@ export function SystemSettings() {
     setLoading(true);
     try {
       // In a real app, this would make an API call to save settings
-      await new Promise((resolve) => setTimeout(resolve, 1000));
-      toast.success("Settings saved successfully");
+      await new Promise(resolve => setTimeout(resolve, 1000));
+      toast.success('Settings saved successfully');
     } catch (_error) {
-      toast.error("Failed to save settings");
+      toast.error('Failed to save settings');
     } finally {
       setLoading(false);
     }
@@ -74,20 +74,20 @@ export function SystemSettings() {
   const handleReset = () => {
     // Reset to default values
     setSettings({
-      appName: "BaaWA Inventory",
-      appDescription: "Modern inventory management system",
-      timezone: "Africa/Lagos",
-      currency: "NGN",
+      appName: 'BaaWA Inventory',
+      appDescription: 'Modern inventory management system',
+      timezone: 'Africa/Lagos',
+      currency: 'NGN',
       passwordMinLength: 8,
       requireEmailVerification: true,
       enableTwoFactor: false,
       sessionTimeout: 30,
       maxLoginAttempts: 5,
-      emailProvider: "smtp",
-      smtpHost: "smtp.gmail.com",
+      emailProvider: 'smtp',
+      smtpHost: 'smtp.gmail.com',
       smtpPort: 587,
-      smtpUsername: "",
-      smtpPassword: "",
+      smtpUsername: '',
+      smtpPassword: '',
       enableRegistration: true,
       enableInventoryAlerts: true,
       enableSalesReports: true,
@@ -96,11 +96,11 @@ export function SystemSettings() {
       enableLowStockAlerts: true,
       lowStockThreshold: 10,
     });
-    toast.info("Settings reset to defaults");
+    toast.info('Settings reset to defaults');
   };
 
   const updateSetting = (key: string, value: any) => {
-    setSettings((prev) => ({ ...prev, [key]: value }));
+    setSettings(prev => ({ ...prev, [key]: value }));
   };
 
   return (
@@ -115,17 +115,17 @@ export function SystemSettings() {
         </div>
         <div className="flex gap-2">
           <Button variant="outline" onClick={handleReset}>
-            <IconRefresh className="h-4 w-4 mr-2" />
+            <IconRefresh className="mr-2 h-4 w-4" />
             Reset to Defaults
           </Button>
           <Button onClick={handleSave} disabled={loading}>
-            <IconDeviceFloppy className="h-4 w-4 mr-2" />
-            {loading ? "Saving..." : "Save Changes"}
+            <IconDeviceFloppy className="mr-2 h-4 w-4" />
+            {loading ? 'Saving...' : 'Save Changes'}
           </Button>
         </div>
       </div>
 
-      <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+      <div className="grid grid-cols-1 gap-6 lg:grid-cols-2">
         {/* General Settings */}
         <Card>
           <CardHeader>
@@ -140,7 +140,7 @@ export function SystemSettings() {
               <Input
                 id="appName"
                 value={settings.appName}
-                onChange={(e) => updateSetting("appName", e.target.value)}
+                onChange={e => updateSetting('appName', e.target.value)}
               />
             </div>
 
@@ -149,9 +149,7 @@ export function SystemSettings() {
               <Textarea
                 id="appDescription"
                 value={settings.appDescription}
-                onChange={(e) =>
-                  updateSetting("appDescription", e.target.value)
-                }
+                onChange={e => updateSetting('appDescription', e.target.value)}
                 rows={3}
               />
             </div>
@@ -162,7 +160,7 @@ export function SystemSettings() {
                 <Input
                   id="timezone"
                   value={settings.timezone}
-                  onChange={(e) => updateSetting("timezone", e.target.value)}
+                  onChange={e => updateSetting('timezone', e.target.value)}
                 />
               </div>
 
@@ -171,7 +169,7 @@ export function SystemSettings() {
                 <Input
                   id="currency"
                   value={settings.currency}
-                  onChange={(e) => updateSetting("currency", e.target.value)}
+                  onChange={e => updateSetting('currency', e.target.value)}
                 />
               </div>
             </div>
@@ -194,8 +192,8 @@ export function SystemSettings() {
                   id="passwordMinLength"
                   type="number"
                   value={settings.passwordMinLength}
-                  onChange={(e) =>
-                    updateSetting("passwordMinLength", parseInt(e.target.value))
+                  onChange={e =>
+                    updateSetting('passwordMinLength', parseInt(e.target.value))
                   }
                 />
               </div>
@@ -206,8 +204,8 @@ export function SystemSettings() {
                   id="sessionTimeout"
                   type="number"
                   value={settings.sessionTimeout}
-                  onChange={(e) =>
-                    updateSetting("sessionTimeout", parseInt(e.target.value))
+                  onChange={e =>
+                    updateSetting('sessionTimeout', parseInt(e.target.value))
                   }
                 />
               </div>
@@ -219,8 +217,8 @@ export function SystemSettings() {
                 id="maxLoginAttempts"
                 type="number"
                 value={settings.maxLoginAttempts}
-                onChange={(e) =>
-                  updateSetting("maxLoginAttempts", parseInt(e.target.value))
+                onChange={e =>
+                  updateSetting('maxLoginAttempts', parseInt(e.target.value))
                 }
               />
             </div>
@@ -231,14 +229,14 @@ export function SystemSettings() {
               <div className="flex items-center justify-between">
                 <div className="space-y-0.5">
                   <Label>Email Verification Required</Label>
-                  <p className="text-sm text-muted-foreground">
+                  <p className="text-muted-foreground text-sm">
                     Require users to verify email before login
                   </p>
                 </div>
                 <Switch
                   checked={settings.requireEmailVerification}
-                  onCheckedChange={(checked) =>
-                    updateSetting("requireEmailVerification", checked)
+                  onCheckedChange={checked =>
+                    updateSetting('requireEmailVerification', checked)
                   }
                 />
               </div>
@@ -246,14 +244,14 @@ export function SystemSettings() {
               <div className="flex items-center justify-between">
                 <div className="space-y-0.5">
                   <Label>Two-Factor Authentication</Label>
-                  <p className="text-sm text-muted-foreground">
+                  <p className="text-muted-foreground text-sm">
                     Enable 2FA for enhanced security
                   </p>
                 </div>
                 <Switch
                   checked={settings.enableTwoFactor}
-                  onCheckedChange={(checked) =>
-                    updateSetting("enableTwoFactor", checked)
+                  onCheckedChange={checked =>
+                    updateSetting('enableTwoFactor', checked)
                   }
                 />
               </div>
@@ -276,7 +274,7 @@ export function SystemSettings() {
                 <Input
                   id="smtpHost"
                   value={settings.smtpHost}
-                  onChange={(e) => updateSetting("smtpHost", e.target.value)}
+                  onChange={e => updateSetting('smtpHost', e.target.value)}
                 />
               </div>
 
@@ -286,8 +284,8 @@ export function SystemSettings() {
                   id="smtpPort"
                   type="number"
                   value={settings.smtpPort}
-                  onChange={(e) =>
-                    updateSetting("smtpPort", parseInt(e.target.value))
+                  onChange={e =>
+                    updateSetting('smtpPort', parseInt(e.target.value))
                   }
                 />
               </div>
@@ -298,7 +296,7 @@ export function SystemSettings() {
               <Input
                 id="smtpUsername"
                 value={settings.smtpUsername}
-                onChange={(e) => updateSetting("smtpUsername", e.target.value)}
+                onChange={e => updateSetting('smtpUsername', e.target.value)}
               />
             </div>
 
@@ -308,12 +306,12 @@ export function SystemSettings() {
                 id="smtpPassword"
                 type="password"
                 value={settings.smtpPassword}
-                onChange={(e) => updateSetting("smtpPassword", e.target.value)}
+                onChange={e => updateSetting('smtpPassword', e.target.value)}
               />
             </div>
 
             <Button variant="outline" size="sm" className="w-full">
-              <IconMail className="h-4 w-4 mr-2" />
+              <IconMail className="mr-2 h-4 w-4" />
               Test Email Configuration
             </Button>
           </CardContent>
@@ -331,14 +329,14 @@ export function SystemSettings() {
             <div className="flex items-center justify-between">
               <div className="space-y-0.5">
                 <Label>User Registration</Label>
-                <p className="text-sm text-muted-foreground">
+                <p className="text-muted-foreground text-sm">
                   Allow new user registrations
                 </p>
               </div>
               <Switch
                 checked={settings.enableRegistration}
-                onCheckedChange={(checked) =>
-                  updateSetting("enableRegistration", checked)
+                onCheckedChange={checked =>
+                  updateSetting('enableRegistration', checked)
                 }
               />
             </div>
@@ -346,14 +344,14 @@ export function SystemSettings() {
             <div className="flex items-center justify-between">
               <div className="space-y-0.5">
                 <Label>Inventory Alerts</Label>
-                <p className="text-sm text-muted-foreground">
+                <p className="text-muted-foreground text-sm">
                   Enable low stock notifications
                 </p>
               </div>
               <Switch
                 checked={settings.enableInventoryAlerts}
-                onCheckedChange={(checked) =>
-                  updateSetting("enableInventoryAlerts", checked)
+                onCheckedChange={checked =>
+                  updateSetting('enableInventoryAlerts', checked)
                 }
               />
             </div>
@@ -361,14 +359,14 @@ export function SystemSettings() {
             <div className="flex items-center justify-between">
               <div className="space-y-0.5">
                 <Label>Sales Reports</Label>
-                <p className="text-sm text-muted-foreground">
+                <p className="text-muted-foreground text-sm">
                   Enable sales reporting features
                 </p>
               </div>
               <Switch
                 checked={settings.enableSalesReports}
-                onCheckedChange={(checked) =>
-                  updateSetting("enableSalesReports", checked)
+                onCheckedChange={checked =>
+                  updateSetting('enableSalesReports', checked)
                 }
               />
             </div>
@@ -376,14 +374,14 @@ export function SystemSettings() {
             <div className="flex items-center justify-between">
               <div className="space-y-0.5">
                 <Label>Audit Logging</Label>
-                <p className="text-sm text-muted-foreground">
+                <p className="text-muted-foreground text-sm">
                   Track user actions and changes
                 </p>
               </div>
               <Switch
                 checked={settings.enableAuditLogs}
-                onCheckedChange={(checked) =>
-                  updateSetting("enableAuditLogs", checked)
+                onCheckedChange={checked =>
+                  updateSetting('enableAuditLogs', checked)
                 }
               />
             </div>
@@ -400,19 +398,19 @@ export function SystemSettings() {
           </CardTitle>
         </CardHeader>
         <CardContent>
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+          <div className="grid grid-cols-1 gap-6 md:grid-cols-2">
             <div className="space-y-4">
               <div className="flex items-center justify-between">
                 <div className="space-y-0.5">
                   <Label>Email Notifications</Label>
-                  <p className="text-sm text-muted-foreground">
+                  <p className="text-muted-foreground text-sm">
                     Send notifications via email
                   </p>
                 </div>
                 <Switch
                   checked={settings.enableEmailNotifications}
-                  onCheckedChange={(checked) =>
-                    updateSetting("enableEmailNotifications", checked)
+                  onCheckedChange={checked =>
+                    updateSetting('enableEmailNotifications', checked)
                   }
                 />
               </div>
@@ -420,14 +418,14 @@ export function SystemSettings() {
               <div className="flex items-center justify-between">
                 <div className="space-y-0.5">
                   <Label>Low Stock Alerts</Label>
-                  <p className="text-sm text-muted-foreground">
+                  <p className="text-muted-foreground text-sm">
                     Alert when stock is running low
                   </p>
                 </div>
                 <Switch
                   checked={settings.enableLowStockAlerts}
-                  onCheckedChange={(checked) =>
-                    updateSetting("enableLowStockAlerts", checked)
+                  onCheckedChange={checked =>
+                    updateSetting('enableLowStockAlerts', checked)
                   }
                 />
               </div>
@@ -439,11 +437,11 @@ export function SystemSettings() {
                 id="lowStockThreshold"
                 type="number"
                 value={settings.lowStockThreshold}
-                onChange={(e) =>
-                  updateSetting("lowStockThreshold", parseInt(e.target.value))
+                onChange={e =>
+                  updateSetting('lowStockThreshold', parseInt(e.target.value))
                 }
               />
-              <p className="text-sm text-muted-foreground">
+              <p className="text-muted-foreground text-sm">
                 Alert when stock falls below this number
               </p>
             </div>
@@ -460,8 +458,8 @@ export function SystemSettings() {
           </CardTitle>
         </CardHeader>
         <CardContent>
-          <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-            <div className="flex items-center justify-between p-3 bg-green-50 rounded-lg">
+          <div className="grid grid-cols-1 gap-4 md:grid-cols-3">
+            <div className="flex items-center justify-between rounded-lg bg-green-50 p-3">
               <div className="flex items-center gap-2">
                 <IconCheck className="h-4 w-4 text-green-600" />
                 <span className="text-sm font-medium">Database</span>
@@ -471,7 +469,7 @@ export function SystemSettings() {
               </Badge>
             </div>
 
-            <div className="flex items-center justify-between p-3 bg-green-50 rounded-lg">
+            <div className="flex items-center justify-between rounded-lg bg-green-50 p-3">
               <div className="flex items-center gap-2">
                 <IconCheck className="h-4 w-4 text-green-600" />
                 <span className="text-sm font-medium">Email Service</span>
@@ -481,7 +479,7 @@ export function SystemSettings() {
               </Badge>
             </div>
 
-            <div className="flex items-center justify-between p-3 bg-yellow-50 rounded-lg">
+            <div className="flex items-center justify-between rounded-lg bg-yellow-50 p-3">
               <div className="flex items-center gap-2">
                 <IconAlertTriangle className="h-4 w-4 text-yellow-600" />
                 <span className="text-sm font-medium">Backup</span>

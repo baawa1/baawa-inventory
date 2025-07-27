@@ -1,18 +1,18 @@
-"use client";
+'use client';
 
-import { useEffect, useState } from "react";
-import { useSession } from "next-auth/react";
-import { useRouter } from "next/navigation";
-import Link from "next/link";
-import { Button } from "@/components/ui/button";
+import { useEffect, useState } from 'react';
+import { useSession } from 'next-auth/react';
+import { useRouter } from 'next/navigation';
+import Link from 'next/link';
+import { Button } from '@/components/ui/button';
 import {
   Card,
   CardContent,
   CardDescription,
   CardHeader,
   CardTitle,
-} from "@/components/ui/card";
-import { AlertTriangle, Clock, XCircle, RefreshCw } from "lucide-react";
+} from '@/components/ui/card';
+import { AlertTriangle, Clock, XCircle, RefreshCw } from 'lucide-react';
 
 export default function UnauthorizedPage() {
   const { data: session, status, update } = useSession();
@@ -21,11 +21,11 @@ export default function UnauthorizedPage() {
   const [isRefreshing, setIsRefreshing] = useState(false);
 
   useEffect(() => {
-    if (status === "loading") return; // Still loading session
+    if (status === 'loading') return; // Still loading session
 
     if (!session?.user) {
       // No session, redirect to login
-      router.push("/login");
+      router.push('/login');
       return;
     }
 
@@ -33,21 +33,21 @@ export default function UnauthorizedPage() {
     const isEmailVerified = session.user.isEmailVerified;
 
     // Smart redirect based on user status
-    if (userStatus === "PENDING") {
+    if (userStatus === 'PENDING') {
       if (!isEmailVerified) {
         setIsRedirecting(true);
-        router.push("/check-email");
+        router.push('/check-email');
         return;
       } else {
         setIsRedirecting(true);
-        router.push("/pending-approval");
+        router.push('/pending-approval');
         return;
       }
     }
 
-    if (userStatus === "VERIFIED") {
+    if (userStatus === 'VERIFIED') {
       setIsRedirecting(true);
-      router.push("/pending-approval");
+      router.push('/pending-approval');
       return;
     }
 
@@ -56,13 +56,13 @@ export default function UnauthorizedPage() {
   }, [session, status, router]);
 
   // Show loading while redirecting
-  if (isRedirecting || status === "loading") {
+  if (isRedirecting || status === 'loading') {
     return (
-      <div className="min-h-screen flex items-center justify-center">
+      <div className="flex min-h-screen items-center justify-center">
         <Card className="w-full max-w-md">
           <CardHeader className="text-center">
-            <div className="flex justify-center mb-4">
-              <Clock className="h-16 w-16 text-blue-500 animate-spin" />
+            <div className="mb-4 flex justify-center">
+              <Clock className="h-16 w-16 animate-spin text-blue-500" />
             </div>
             <CardTitle className="text-2xl text-blue-600">
               Redirecting...
@@ -81,30 +81,30 @@ export default function UnauthorizedPage() {
 
   const getStatusInfo = () => {
     switch (userStatus) {
-      case "REJECTED":
+      case 'REJECTED':
         return {
           icon: <XCircle className="h-16 w-16 text-red-500" />,
-          title: "Account Rejected",
-          description: "Your account has been rejected by an administrator.",
-          message: "Please contact support if you believe this is an error.",
-          color: "text-red-600",
+          title: 'Account Rejected',
+          description: 'Your account has been rejected by an administrator.',
+          message: 'Please contact support if you believe this is an error.',
+          color: 'text-red-600',
         };
-      case "SUSPENDED":
+      case 'SUSPENDED':
         return {
           icon: <XCircle className="h-16 w-16 text-orange-500" />,
-          title: "Account Suspended",
-          description: "Your account has been temporarily suspended.",
-          message: "Please contact support to resolve this issue.",
-          color: "text-orange-600",
+          title: 'Account Suspended',
+          description: 'Your account has been temporarily suspended.',
+          message: 'Please contact support to resolve this issue.',
+          color: 'text-orange-600',
         };
       default:
         return {
           icon: <AlertTriangle className="h-16 w-16 text-yellow-500" />,
-          title: "Access Denied",
+          title: 'Access Denied',
           description: "You don't have permission to access this page.",
           message:
-            "This page requires elevated permissions. Please contact your administrator if you believe you should have access to this area.",
-          color: "text-yellow-600",
+            'This page requires elevated permissions. Please contact your administrator if you believe you should have access to this area.',
+          color: 'text-yellow-600',
         };
     }
   };
@@ -112,10 +112,10 @@ export default function UnauthorizedPage() {
   const statusInfo = getStatusInfo();
 
   return (
-    <div className="min-h-screen flex items-center justify-center">
+    <div className="flex min-h-screen items-center justify-center">
       <Card className="w-full max-w-md">
         <CardHeader className="text-center">
-          <div className="flex justify-center mb-4">{statusInfo.icon}</div>
+          <div className="mb-4 flex justify-center">{statusInfo.icon}</div>
           <CardTitle className={`text-2xl font-bold ${statusInfo.color}`}>
             {statusInfo.title}
           </CardTitle>
@@ -124,7 +124,7 @@ export default function UnauthorizedPage() {
           </CardDescription>
         </CardHeader>
         <CardContent className="space-y-4">
-          <div className="text-center text-sm text-muted-foreground">
+          <div className="text-muted-foreground text-center text-sm">
             <p>{statusInfo.message}</p>
           </div>
 
@@ -145,7 +145,7 @@ export default function UnauthorizedPage() {
                   await update();
                   // Debug logging removed for production
                 } catch (error) {
-                  console.error("Error refreshing session:", error);
+                  console.error('Error refreshing session:', error);
                 } finally {
                   setIsRefreshing(false);
                 }

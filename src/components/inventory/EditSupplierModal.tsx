@@ -1,4 +1,4 @@
-"use client";
+'use client';
 
 import {
   Card,
@@ -6,7 +6,7 @@ import {
   CardDescription,
   CardHeader,
   CardTitle,
-} from "@/components/ui/card";
+} from '@/components/ui/card';
 
 interface EditSupplierModalProps {
   supplier: any;
@@ -23,7 +23,7 @@ export function EditSupplierModal({
 
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50">
-      <Card className="w-full max-w-2xl mx-4">
+      <Card className="mx-4 w-full max-w-2xl">
         <CardHeader>
           <CardTitle>Edit Supplier</CardTitle>
           <CardDescription>
@@ -36,7 +36,7 @@ export function EditSupplierModal({
           </p>
           <button
             onClick={onClose}
-            className="mt-4 px-4 py-2 bg-primary text-primary-foreground rounded"
+            className="bg-primary text-primary-foreground mt-4 rounded px-4 py-2"
           >
             Close
           </button>

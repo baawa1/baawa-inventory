@@ -1,8 +1,8 @@
-import { withAuth, AuthenticatedRequest } from "@/lib/api-middleware";
-import { handleApiError } from "@/lib/api-error-handler-new";
-import { createApiResponse } from "@/lib/api-response";
-import { prisma } from "@/lib/db";
-import { PAYMENT_STATUS } from "@/lib/constants";
+import { withAuth, AuthenticatedRequest } from '@/lib/api-middleware';
+import { handleApiError } from '@/lib/api-error-handler-new';
+import { createApiResponse } from '@/lib/api-response';
+import { prisma } from '@/lib/db';
+import { PAYMENT_STATUS } from '@/lib/constants';
 
 interface SalesOverview {
   totalSales: number;
@@ -39,13 +39,13 @@ interface SalesOverview {
 function getPeriodFilter(period: string): Date {
   const now = new Date();
   switch (period) {
-    case "7d":
+    case '7d':
       return new Date(now.getTime() - 7 * 24 * 60 * 60 * 1000);
-    case "30d":
+    case '30d':
       return new Date(now.getTime() - 30 * 24 * 60 * 60 * 1000);
-    case "90d":
+    case '90d':
       return new Date(now.getTime() - 90 * 24 * 60 * 60 * 1000);
-    case "1y":
+    case '1y':
       return new Date(now.getTime() - 365 * 24 * 60 * 60 * 1000);
     default:
       return new Date(now.getTime() - 7 * 24 * 60 * 60 * 1000);
@@ -55,9 +55,9 @@ function getPeriodFilter(period: string): Date {
 export const GET = withAuth(async (request: AuthenticatedRequest) => {
   try {
     const { searchParams } = new URL(request.url);
-    const period = searchParams.get("period") || "7d";
-    const fromDate = searchParams.get("fromDate");
-    const toDate = searchParams.get("toDate");
+    const period = searchParams.get('period') || '7d';
+    const fromDate = searchParams.get('fromDate');
+    const toDate = searchParams.get('toDate');
 
     // Use custom date range if provided, otherwise use period
     let periodStart: Date;
@@ -65,7 +65,7 @@ export const GET = withAuth(async (request: AuthenticatedRequest) => {
 
     if (fromDate && toDate) {
       periodStart = new Date(fromDate);
-      periodEnd = new Date(toDate + "T23:59:59"); // End of day
+      periodEnd = new Date(toDate + 'T23:59:59'); // End of day
     } else {
       periodStart = getPeriodFilter(period);
       periodEnd = new Date(); // Current date
@@ -103,12 +103,12 @@ export const GET = withAuth(async (request: AuthenticatedRequest) => {
       select: {
         customer_email: true,
       },
-      distinct: ["customer_email"],
+      distinct: ['customer_email'],
     });
 
     // Get top selling products
     const topProducts = await prisma.salesItem.groupBy({
-      by: ["product_id"],
+      by: ['product_id'],
       where: {
         sales_transactions: {
           created_at: {
@@ -127,7 +127,7 @@ export const GET = withAuth(async (request: AuthenticatedRequest) => {
       },
       orderBy: {
         _sum: {
-          quantity: "desc",
+          quantity: 'desc',
         },
       },
       take: 5,
@@ -151,10 +151,10 @@ export const GET = withAuth(async (request: AuthenticatedRequest) => {
 
     // Format top selling products
     const topSellingProducts = topProducts.map((item: any) => {
-      const product = products.find((p) => p.id === item.product_id);
+      const product = products.find(p => p.id === item.product_id);
       return {
         id: item.product_id || 0,
-        name: product?.name || "Unknown Product",
+        name: product?.name || 'Unknown Product',
         totalSold: item._sum.quantity || 0,
         revenue: Number(item._sum.total_price || 0),
       };
@@ -162,7 +162,7 @@ export const GET = withAuth(async (request: AuthenticatedRequest) => {
 
     // Get sales by period (daily breakdown)
     const salesByDay = await prisma.salesTransaction.groupBy({
-      by: ["created_at"],
+      by: ['created_at'],
       where: {
         created_at: {
           gte: periodStart,
@@ -183,7 +183,7 @@ export const GET = withAuth(async (request: AuthenticatedRequest) => {
       (acc: Record<string, any>, item) => {
         const date = (item.created_at || new Date())
           .toISOString()
-          .split("T")[0];
+          .split('T')[0];
         if (!acc[date]) {
           acc[date] = {
             date,
@@ -220,7 +220,7 @@ export const GET = withAuth(async (request: AuthenticatedRequest) => {
         created_at: true,
       },
       orderBy: {
-        created_at: "desc",
+        created_at: 'desc',
       },
       take: 10,
     });
@@ -238,7 +238,7 @@ export const GET = withAuth(async (request: AuthenticatedRequest) => {
       averageOrderValue,
       topSellingProducts,
       salesByPeriod: Object.values(salesByPeriod),
-      recentTransactions: recentTransactions.map((t) => ({
+      recentTransactions: recentTransactions.map(t => ({
         id: t.id,
         transactionNumber: t.transaction_number,
         customerName: t.customer_name,
@@ -253,7 +253,7 @@ export const GET = withAuth(async (request: AuthenticatedRequest) => {
         period,
         periodStart: periodStart.toISOString(),
       },
-      "POS analytics overview retrieved successfully"
+      'POS analytics overview retrieved successfully'
     );
   } catch (error) {
     return handleApiError(error);

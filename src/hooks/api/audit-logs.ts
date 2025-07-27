@@ -2,7 +2,7 @@
  * TanStack Query hooks for Audit Logs API
  */
 
-import { useQuery } from "@tanstack/react-query";
+import { useQuery } from '@tanstack/react-query';
 
 export interface AuditLogFilters {
   page?: number;
@@ -44,7 +44,7 @@ export function useAuditLogs(filters: AuditLogFilters = {}) {
   const { page = 1, limit = 10, userId, action, from, to } = filters;
 
   return useQuery({
-    queryKey: ["audit-logs", { page, limit, userId, action, from, to }],
+    queryKey: ['audit-logs', { page, limit, userId, action, from, to }],
     queryFn: async (): Promise<AuditLogsResponse> => {
       const params = new URLSearchParams({
         page: String(page),

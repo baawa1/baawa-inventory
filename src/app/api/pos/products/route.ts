@@ -1,16 +1,16 @@
-import { prisma } from "@/lib/db";
-import { withPOSAuth, AuthenticatedRequest } from "@/lib/api-auth-middleware";
-import { createApiResponse } from "@/lib/api-response";
-import { PRODUCT_STATUS, ERROR_MESSAGES, API_LIMITS } from "@/lib/constants";
+import { prisma } from '@/lib/db';
+import { withPOSAuth, AuthenticatedRequest } from '@/lib/api-auth-middleware';
+import { createApiResponse } from '@/lib/api-response';
+import { PRODUCT_STATUS, ERROR_MESSAGES, API_LIMITS } from '@/lib/constants';
 
 async function handleGetProducts(request: AuthenticatedRequest) {
   try {
     // Get query parameters
     const { searchParams } = new URL(request.url);
-    const page = parseInt(searchParams.get("page") || "1");
-    const limit = parseInt(searchParams.get("limit") || "0"); // 0 means fetch all
-    const category = searchParams.get("category");
-    const brand = searchParams.get("brand");
+    const page = parseInt(searchParams.get('page') || '1');
+    const limit = parseInt(searchParams.get('limit') || '0'); // 0 means fetch all
+    const category = searchParams.get('category');
+    const brand = searchParams.get('brand');
 
     // Build where clause
     const whereClause: any = {
@@ -25,7 +25,7 @@ async function handleGetProducts(request: AuthenticatedRequest) {
       whereClause.category = {
         name: {
           contains: category,
-          mode: "insensitive",
+          mode: 'insensitive',
         },
       };
     }
@@ -34,7 +34,7 @@ async function handleGetProducts(request: AuthenticatedRequest) {
       whereClause.brand = {
         name: {
           contains: brand,
-          mode: "insensitive",
+          mode: 'insensitive',
         },
       };
     }
@@ -62,7 +62,7 @@ async function handleGetProducts(request: AuthenticatedRequest) {
             },
           },
         },
-        orderBy: [{ name: "asc" }, { createdAt: "desc" }],
+        orderBy: [{ name: 'asc' }, { createdAt: 'desc' }],
         skip,
         take,
       }),
@@ -70,7 +70,7 @@ async function handleGetProducts(request: AuthenticatedRequest) {
     ]);
 
     // Format response
-    const formattedProducts = products.map((product) => ({
+    const formattedProducts = products.map(product => ({
       id: product.id,
       name: product.name,
       sku: product.sku,
@@ -78,8 +78,8 @@ async function handleGetProducts(request: AuthenticatedRequest) {
       price: product.price,
       stock: product.stock,
       status: product.status,
-      category: product.category?.name || "Uncategorized",
-      brand: product.brand?.name || "No Brand",
+      category: product.category?.name || 'Uncategorized',
+      brand: product.brand?.name || 'No Brand',
       description: product.description,
       images: product.images,
     }));
@@ -88,7 +88,7 @@ async function handleGetProducts(request: AuthenticatedRequest) {
     if (limit === 0) {
       return createApiResponse.success(
         formattedProducts,
-        "Products retrieved successfully"
+        'Products retrieved successfully'
       );
     }
 
@@ -102,10 +102,10 @@ async function handleGetProducts(request: AuthenticatedRequest) {
         hasNextPage: page < Math.ceil(totalCount / limit),
         hasPreviousPage: page > 1,
       },
-      "Products retrieved successfully"
+      'Products retrieved successfully'
     );
   } catch (error) {
-    console.error("Error fetching products:", error);
+    console.error('Error fetching products:', error);
     return createApiResponse.internalError(ERROR_MESSAGES.INTERNAL_ERROR);
   }
 }

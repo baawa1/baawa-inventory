@@ -6,7 +6,7 @@ import {
   CardTitle,
   CardDescription,
   CardAction,
-} from "@/components/ui/card";
+} from '@/components/ui/card';
 
 export function DashboardCard({
   className,
@@ -14,7 +14,7 @@ export function DashboardCard({
 }: React.ComponentProps<typeof Card>) {
   return (
     <Card
-      className={`bg-white dark:bg-card px-4 lg:px-6 ${className || ""}`}
+      className={`dark:bg-card bg-white px-4 lg:px-6 ${className || ''}`}
       {...props}
     />
   );

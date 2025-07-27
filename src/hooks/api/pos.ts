@@ -1,4 +1,4 @@
-import { useQuery, useMutation } from "@tanstack/react-query";
+import { useQuery, useMutation } from '@tanstack/react-query';
 
 // Types
 export interface POSProduct {
@@ -36,14 +36,14 @@ const searchProducts = async (
 ): Promise<{ products: POSProduct[] }> => {
   const searchParams = new URLSearchParams();
 
-  if (params.search) searchParams.set("search", params.search);
-  if (params.status) searchParams.set("status", params.status);
-  if (params.limit) searchParams.set("limit", params.limit.toString());
+  if (params.search) searchParams.set('search', params.search);
+  if (params.status) searchParams.set('status', params.status);
+  if (params.limit) searchParams.set('limit', params.limit.toString());
 
   const response = await fetch(`/api/pos/search-products?${searchParams}`);
 
   if (!response.ok) {
-    throw new Error("Failed to search products");
+    throw new Error('Failed to search products');
   }
 
   return response.json();
@@ -55,7 +55,7 @@ const lookupBarcode = async (barcode: string): Promise<POSProduct> => {
   );
 
   if (!response.ok) {
-    throw new Error("Product not found");
+    throw new Error('Product not found');
   }
 
   return response.json();
@@ -64,11 +64,11 @@ const lookupBarcode = async (barcode: string): Promise<POSProduct> => {
 // Query Hooks
 export function useProductSearch(searchTerm: string, enabled: boolean = true) {
   return useQuery({
-    queryKey: ["pos-product-search", searchTerm],
+    queryKey: ['pos-product-search', searchTerm],
     queryFn: () =>
       searchProducts({
         search: searchTerm,
-        status: "ACTIVE",
+        status: 'ACTIVE',
         limit: 20,
       }),
     enabled: enabled && searchTerm.trim().length > 0,
@@ -79,7 +79,7 @@ export function useProductSearch(searchTerm: string, enabled: boolean = true) {
 
 export function useBarcodeLookup(barcode: string, enabled: boolean = true) {
   return useQuery({
-    queryKey: ["pos-barcode-lookup", barcode],
+    queryKey: ['pos-barcode-lookup', barcode],
     queryFn: () => lookupBarcode(barcode),
     enabled: enabled && barcode.trim().length > 0,
     staleTime: 10 * 60 * 1000, // 10 minutes

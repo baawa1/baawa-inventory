@@ -1,20 +1,20 @@
-import { prisma } from "@/lib/db";
-import { withAuth, AuthenticatedRequest } from "@/lib/api-middleware";
-import { createApiResponse } from "@/lib/api-response";
+import { prisma } from '@/lib/db';
+import { withAuth, AuthenticatedRequest } from '@/lib/api-middleware';
+import { createApiResponse } from '@/lib/api-response';
 
 // GET /api/sales/stats - Get sales statistics
 export const GET = withAuth(async function (request: AuthenticatedRequest) {
   try {
     const { searchParams } = new URL(request.url);
-    const fromDate = searchParams.get("fromDate");
-    const toDate = searchParams.get("toDate");
+    const fromDate = searchParams.get('fromDate');
+    const toDate = searchParams.get('toDate');
 
     // Build where clause for date filtering
     const where: any = {};
     if (fromDate || toDate) {
       where.created_at = {};
       if (fromDate) where.created_at.gte = new Date(fromDate);
-      if (toDate) where.created_at.lte = new Date(toDate + "T23:59:59");
+      if (toDate) where.created_at.lte = new Date(toDate + 'T23:59:59');
     }
 
     // Get current date for comparison
@@ -48,7 +48,7 @@ export const GET = withAuth(async function (request: AuthenticatedRequest) {
     const [currentPeriodStats, previousPeriodStats, totalStats] =
       await Promise.all([
         // Current period stats
-        prisma.$transaction(async (tx) => {
+        prisma.$transaction(async tx => {
           const [transactions, totalSales, totalItems, totalDiscount] =
             await Promise.all([
               tx.salesTransaction.count({ where: currentPeriodWhere }),
@@ -77,7 +77,7 @@ export const GET = withAuth(async function (request: AuthenticatedRequest) {
         }),
 
         // Previous period stats
-        prisma.$transaction(async (tx) => {
+        prisma.$transaction(async tx => {
           const [transactions, totalSales, totalItems, totalDiscount] =
             await Promise.all([
               tx.salesTransaction.count({ where: previousPeriodWhere }),
@@ -107,7 +107,7 @@ export const GET = withAuth(async function (request: AuthenticatedRequest) {
 
         // Overall stats (if no date filter)
         !fromDate && !toDate
-          ? prisma.$transaction(async (tx) => {
+          ? prisma.$transaction(async tx => {
               const [transactions, totalSales, totalItems, totalDiscount] =
                 await Promise.all([
                   tx.salesTransaction.count({ where }),
@@ -199,10 +199,10 @@ export const GET = withAuth(async function (request: AuthenticatedRequest) {
 
     return createApiResponse.success(
       stats,
-      "Sales statistics retrieved successfully"
+      'Sales statistics retrieved successfully'
     );
   } catch (error) {
-    console.error("Error in GET /api/sales/stats:", error);
-    return createApiResponse.internalError("Internal server error");
+    console.error('Error in GET /api/sales/stats:', error);
+    return createApiResponse.internalError('Internal server error');
   }
 });

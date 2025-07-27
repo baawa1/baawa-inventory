@@ -1,25 +1,25 @@
-import { prisma } from "@/lib/db";
-import { NextRequest } from "next/server";
-import { ErrorSanitizer } from "./error-sanitizer";
-import { logger } from "@/lib/logger";
+import { prisma } from '@/lib/db';
+import { NextRequest } from 'next/server';
+import { ErrorSanitizer } from './error-sanitizer';
+import { logger } from '@/lib/logger';
 
 export type AuditAction =
-  | "LOGIN_SUCCESS"
-  | "LOGIN_FAILED"
-  | "LOGOUT"
-  | "REGISTRATION"
-  | "PASSWORD_RESET_REQUEST"
-  | "PASSWORD_RESET_SUCCESS"
-  | "EMAIL_VERIFICATION"
-  | "ADMIN_USER_APPROVED"
-  | "ADMIN_USER_REJECTED"
-  | "ROLE_CHANGED"
-  | "ACCOUNT_SUSPENDED"
-  | "ACCOUNT_REACTIVATED"
-  | "SESSION_EXPIRED"
-  | "SESSION_BLACKLISTED"
-  | "SUSPICIOUS_ACTIVITY"
-  | "RATE_LIMIT_EXCEEDED";
+  | 'LOGIN_SUCCESS'
+  | 'LOGIN_FAILED'
+  | 'LOGOUT'
+  | 'REGISTRATION'
+  | 'PASSWORD_RESET_REQUEST'
+  | 'PASSWORD_RESET_SUCCESS'
+  | 'EMAIL_VERIFICATION'
+  | 'ADMIN_USER_APPROVED'
+  | 'ADMIN_USER_REJECTED'
+  | 'ROLE_CHANGED'
+  | 'ACCOUNT_SUSPENDED'
+  | 'ACCOUNT_REACTIVATED'
+  | 'SESSION_EXPIRED'
+  | 'SESSION_BLACKLISTED'
+  | 'SUSPICIOUS_ACTIVITY'
+  | 'RATE_LIMIT_EXCEEDED';
 
 export interface AuditLogData {
   action: AuditAction;
@@ -42,38 +42,38 @@ function extractRequestInfo(request?: NextRequest): {
 } {
   if (!request) {
     return {
-      ipAddress: "unknown",
-      userAgent: "unknown",
+      ipAddress: 'unknown',
+      userAgent: 'unknown',
       securityInfo: {},
     };
   }
 
   // Extract IP address from various headers (prioritize most reliable sources)
-  const forwarded = request.headers.get("x-forwarded-for");
-  const realIp = request.headers.get("x-real-ip");
-  const cfConnectingIp = request.headers.get("cf-connecting-ip");
-  const remoteAddr = request.headers.get("x-remote-addr");
+  const forwarded = request.headers.get('x-forwarded-for');
+  const realIp = request.headers.get('x-real-ip');
+  const cfConnectingIp = request.headers.get('cf-connecting-ip');
+  const remoteAddr = request.headers.get('x-remote-addr');
 
   const ipAddress =
     cfConnectingIp || // Cloudflare (most reliable)
     realIp || // Nginx/Apache
-    forwarded?.split(",")[0] || // Load balancer
+    forwarded?.split(',')[0] || // Load balancer
     remoteAddr ||
-    "unknown";
+    'unknown';
 
-  const userAgent = request.headers.get("user-agent") || "unknown";
+  const userAgent = request.headers.get('user-agent') || 'unknown';
 
   // Collect additional security-relevant information
   const securityInfo = {
-    origin: request.headers.get("origin"),
-    referer: request.headers.get("referer"),
-    acceptLanguage: request.headers.get("accept-language"),
-    acceptEncoding: request.headers.get("accept-encoding"),
-    connection: request.headers.get("connection"),
-    upgradeInsecureRequests: request.headers.get("upgrade-insecure-requests"),
-    secFetchSite: request.headers.get("sec-fetch-site"),
-    secFetchMode: request.headers.get("sec-fetch-mode"),
-    secFetchDest: request.headers.get("sec-fetch-dest"),
+    origin: request.headers.get('origin'),
+    referer: request.headers.get('referer'),
+    acceptLanguage: request.headers.get('accept-language'),
+    acceptEncoding: request.headers.get('accept-encoding'),
+    connection: request.headers.get('connection'),
+    upgradeInsecureRequests: request.headers.get('upgrade-insecure-requests'),
+    secFetchSite: request.headers.get('sec-fetch-site'),
+    secFetchMode: request.headers.get('sec-fetch-mode'),
+    secFetchDest: request.headers.get('sec-fetch-dest'),
     forwardedChain: forwarded, // Full forwarded chain for analysis
     timestamp: new Date().toISOString(),
     method: request.method,
@@ -114,16 +114,16 @@ export class AuditLogger {
         data: {
           action: data.action,
           user_id: data.userId || null,
-          table_name: "users", // Default table for auth events
+          table_name: 'users', // Default table for auth events
           record_id: data.userId || null,
-          ip_address: ipAddress === "unknown" ? null : ipAddress,
+          ip_address: ipAddress === 'unknown' ? null : ipAddress,
           user_agent: data.userAgent || userAgent,
           new_values: JSON.stringify(auditDetails),
         },
       });
     } catch (error) {
       // Use sanitized error logging to prevent sensitive data exposure
-      ErrorSanitizer.logError(error, "Audit logging failed", {
+      ErrorSanitizer.logError(error, 'Audit logging failed', {
         action: data.action,
         userId: data.userId,
         // Don't log full details to prevent sensitive data in error logs
@@ -141,7 +141,7 @@ export class AuditLogger {
   ): Promise<void> {
     await this.logAuthEvent(
       {
-        action: "LOGIN_SUCCESS",
+        action: 'LOGIN_SUCCESS',
         userId,
         userEmail,
         success: true,
@@ -160,7 +160,7 @@ export class AuditLogger {
   ): Promise<void> {
     await this.logAuthEvent(
       {
-        action: "LOGIN_FAILED",
+        action: 'LOGIN_FAILED',
         userEmail,
         success: false,
         errorMessage: reason,
@@ -179,7 +179,7 @@ export class AuditLogger {
   ): Promise<void> {
     await this.logAuthEvent(
       {
-        action: "LOGOUT",
+        action: 'LOGOUT',
         userId,
         userEmail,
         success: true,
@@ -198,7 +198,7 @@ export class AuditLogger {
   ): Promise<void> {
     await this.logAuthEvent(
       {
-        action: "REGISTRATION",
+        action: 'REGISTRATION',
         userEmail,
         success: true,
         details: { role },
@@ -216,7 +216,7 @@ export class AuditLogger {
   ): Promise<void> {
     await this.logAuthEvent(
       {
-        action: "PASSWORD_RESET_REQUEST",
+        action: 'PASSWORD_RESET_REQUEST',
         userEmail,
         success: true,
       },
@@ -234,7 +234,7 @@ export class AuditLogger {
   ): Promise<void> {
     await this.logAuthEvent(
       {
-        action: "PASSWORD_RESET_SUCCESS",
+        action: 'PASSWORD_RESET_SUCCESS',
         userId,
         userEmail,
         success: true,
@@ -253,7 +253,7 @@ export class AuditLogger {
   ): Promise<void> {
     await this.logAuthEvent(
       {
-        action: "EMAIL_VERIFICATION",
+        action: 'EMAIL_VERIFICATION',
         userId,
         userEmail,
         success: true,
@@ -274,7 +274,7 @@ export class AuditLogger {
     request?: NextRequest
   ): Promise<void> {
     const action =
-      newStatus === "APPROVED" ? "ADMIN_USER_APPROVED" : "ADMIN_USER_REJECTED";
+      newStatus === 'APPROVED' ? 'ADMIN_USER_APPROVED' : 'ADMIN_USER_REJECTED';
 
     await this.logAuthEvent(
       {
@@ -305,7 +305,7 @@ export class AuditLogger {
   ): Promise<void> {
     await this.logAuthEvent(
       {
-        action: "ROLE_CHANGED",
+        action: 'ROLE_CHANGED',
         userId: adminUserId,
         userEmail: targetUserEmail,
         success: true,
@@ -327,7 +327,7 @@ export class AuditLogger {
     userEmail: string
   ): Promise<void> {
     await this.logAuthEvent({
-      action: "SESSION_EXPIRED",
+      action: 'SESSION_EXPIRED',
       userId,
       userEmail,
       success: true,
@@ -346,7 +346,7 @@ export class AuditLogger {
   ): Promise<void> {
     await this.logAuthEvent(
       {
-        action: "SESSION_BLACKLISTED",
+        action: 'SESSION_BLACKLISTED',
         userId,
         userEmail,
         success: true,
@@ -370,13 +370,13 @@ export class AuditLogger {
   ): Promise<void> {
     await this.logAuthEvent(
       {
-        action: "SUSPICIOUS_ACTIVITY",
+        action: 'SUSPICIOUS_ACTIVITY',
         userId,
         userEmail,
         success: false,
         details: {
           description,
-          severity: "high",
+          severity: 'high',
         },
       },
       request
@@ -394,7 +394,7 @@ export class AuditLogger {
   ): Promise<void> {
     await this.logAuthEvent(
       {
-        action: "RATE_LIMIT_EXCEEDED",
+        action: 'RATE_LIMIT_EXCEEDED',
         userId,
         userEmail,
         success: false,
@@ -419,7 +419,7 @@ export class AuditLogger {
 
       return await prisma.auditLog.findMany({
         where,
-        orderBy: { created_at: "desc" },
+        orderBy: { created_at: 'desc' },
         take: limit,
         select: {
           id: true,
@@ -434,10 +434,10 @@ export class AuditLogger {
         },
       });
     } catch (error) {
-      logger.error("Failed to fetch audit events", {
+      logger.error('Failed to fetch audit events', {
         userId,
-        action: "getRecentAuthEvents",
-        tableName: "auditLog",
+        action: 'getRecentAuthEvents',
+        tableName: 'auditLog',
         error: error instanceof Error ? error.message : String(error),
       });
       return [];
@@ -456,12 +456,12 @@ export class AuditLogger {
       const since = new Date(Date.now() - hoursBack * 60 * 60 * 1000);
 
       const where: any = {
-        action: "LOGIN_FAILED",
+        action: 'LOGIN_FAILED',
         created_at: { gte: since },
       };
 
       // Only add IP address filter if it's not "unknown"
-      if (ipAddress !== "unknown") {
+      if (ipAddress !== 'unknown') {
         if (email) {
           where.OR = [{ ip_address: ipAddress }, { users: { email: email } }];
         } else {
@@ -474,8 +474,8 @@ export class AuditLogger {
 
       return await prisma.auditLog.count({ where });
     } catch (error) {
-      logger.error("Failed to count failed login attempts", {
-        userId: "unknown", // No specific user for rate limiting
+      logger.error('Failed to count failed login attempts', {
+        userId: 'unknown', // No specific user for rate limiting
         error: error instanceof Error ? error.message : String(error),
       });
       return 0;

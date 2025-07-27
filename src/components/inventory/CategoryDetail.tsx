@@ -1,20 +1,20 @@
-"use client";
+'use client';
 
-import React from "react";
-import Link from "next/link";
-import { useRouter } from "next/navigation";
-import { toast } from "sonner";
+import React from 'react';
+import Link from 'next/link';
+import { useRouter } from 'next/navigation';
+import { toast } from 'sonner';
 
 // Hooks
-import { useCategory } from "@/hooks/api/categories";
-import { Category } from "@/hooks/api/categories";
+import { useCategory } from '@/hooks/api/categories';
+import { Category } from '@/hooks/api/categories';
 
 // UI Components
-import { Button } from "@/components/ui/button";
-import { Badge } from "@/components/ui/badge";
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import { Separator } from "@/components/ui/separator";
-import { ImagePreview } from "@/components/ui/image-preview";
+import { Button } from '@/components/ui/button';
+import { Badge } from '@/components/ui/badge';
+import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
+import { Separator } from '@/components/ui/separator';
+import { ImagePreview } from '@/components/ui/image-preview';
 
 // Icons
 import {
@@ -28,7 +28,7 @@ import {
   IconClock,
   IconEye,
   IconTrash,
-} from "@tabler/icons-react";
+} from '@tabler/icons-react';
 
 interface User {
   id: string;
@@ -52,15 +52,15 @@ export default function CategoryDetail({
   const { data: categoryData, isLoading, error } = useCategory(categoryId);
 
   // Permission checks
-  const canManageCategories = ["ADMIN", "MANAGER"].includes(user.role);
-  const canDeleteCategories = user.role === "ADMIN";
+  const canManageCategories = ['ADMIN', 'MANAGER'].includes(user.role);
+  const canDeleteCategories = user.role === 'ADMIN';
 
   if (isLoading) {
     return (
-      <div className="max-w-4xl mx-auto p-6">
-        <div className="flex items-center justify-center h-64">
+      <div className="mx-auto max-w-4xl p-6">
+        <div className="flex h-64 items-center justify-center">
           <div className="text-center">
-            <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary mx-auto mb-4"></div>
+            <div className="border-primary mx-auto mb-4 h-8 w-8 animate-spin rounded-full border-b-2"></div>
             <p className="text-muted-foreground">Loading category details...</p>
           </div>
         </div>
@@ -70,14 +70,14 @@ export default function CategoryDetail({
 
   if (error || !categoryData) {
     return (
-      <div className="max-w-4xl mx-auto p-6">
+      <div className="mx-auto max-w-4xl p-6">
         <div className="text-center">
-          <IconTag className="h-12 w-12 text-gray-400 mx-auto mb-4" />
-          <h2 className="text-xl font-semibold mb-2">Category Not Found</h2>
+          <IconTag className="mx-auto mb-4 h-12 w-12 text-gray-400" />
+          <h2 className="mb-2 text-xl font-semibold">Category Not Found</h2>
           <p className="text-muted-foreground mb-4">
             The category you're looking for doesn't exist or has been deleted.
           </p>
-          <Button onClick={() => router.push("/inventory/categories")}>
+          <Button onClick={() => router.push('/inventory/categories')}>
             Back to Categories
           </Button>
         </div>
@@ -88,13 +88,13 @@ export default function CategoryDetail({
   const category = categoryData;
 
   return (
-    <div className="max-w-4xl mx-auto p-6 space-y-6">
+    <div className="mx-auto max-w-4xl space-y-6 p-6">
       {/* Header */}
       <div className="flex items-center justify-between">
         <div className="flex items-center gap-4">
           <Button
             variant="ghost"
-            onClick={() => router.push("/inventory/categories")}
+            onClick={() => router.push('/inventory/categories')}
             className="flex items-center gap-2"
           >
             <IconArrowLeft className="h-4 w-4" />
@@ -132,9 +132,9 @@ export default function CategoryDetail({
         )}
       </div>
 
-      <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
+      <div className="grid grid-cols-1 gap-6 lg:grid-cols-3">
         {/* Main Category Information */}
-        <div className="lg:col-span-2 space-y-6">
+        <div className="space-y-6 lg:col-span-2">
           {/* Category Image and Basic Info */}
           <Card>
             <CardHeader>
@@ -155,7 +155,7 @@ export default function CategoryDetail({
                       className="rounded-lg border"
                     />
                   ) : (
-                    <div className="w-32 h-32 bg-gray-100 rounded-lg flex items-center justify-center">
+                    <div className="flex h-32 w-32 items-center justify-center rounded-lg bg-gray-100">
                       <IconTag className="h-8 w-8 text-gray-400" />
                     </div>
                   )}
@@ -163,11 +163,11 @@ export default function CategoryDetail({
                 <div className="flex-1 space-y-4">
                   <div>
                     <h3 className="text-lg font-semibold">{category.name}</h3>
-                    <div className="flex items-center gap-2 mt-1">
+                    <div className="mt-1 flex items-center gap-2">
                       <Badge
-                        variant={category.isActive ? "default" : "secondary"}
+                        variant={category.isActive ? 'default' : 'secondary'}
                       >
-                        {category.isActive ? "Active" : "Inactive"}
+                        {category.isActive ? 'Active' : 'Inactive'}
                       </Badge>
                       {category.parent && (
                         <Badge
@@ -183,7 +183,7 @@ export default function CategoryDetail({
 
                   {category.description && (
                     <div>
-                      <h4 className="font-medium text-sm text-muted-foreground mb-1">
+                      <h4 className="text-muted-foreground mb-1 text-sm font-medium">
                         Description
                       </h4>
                       <p className="text-sm">{category.description}</p>
@@ -193,7 +193,7 @@ export default function CategoryDetail({
                   <div className="grid grid-cols-2 gap-4 text-sm">
                     <div>
                       <span className="text-muted-foreground">Products:</span>
-                      <div className="flex items-center gap-1 mt-1">
+                      <div className="mt-1 flex items-center gap-1">
                         <IconPackage className="h-4 w-4" />
                         <span className="font-medium">
                           {category.productCount}
@@ -204,7 +204,7 @@ export default function CategoryDetail({
                       <span className="text-muted-foreground">
                         Subcategories:
                       </span>
-                      <div className="flex items-center gap-1 mt-1">
+                      <div className="mt-1 flex items-center gap-1">
                         <IconFolder className="h-4 w-4" />
                         <span className="font-medium">
                           {category.subcategoryCount}
@@ -227,17 +227,17 @@ export default function CategoryDetail({
                 </CardTitle>
               </CardHeader>
               <CardContent>
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                <div className="grid grid-cols-1 gap-4 md:grid-cols-2">
                   {category.children.map((child: Category) => (
                     <div
                       key={child.id}
-                      className="flex items-center justify-between p-3 border rounded-lg hover:bg-gray-50 transition-colors"
+                      className="flex items-center justify-between rounded-lg border p-3 transition-colors hover:bg-gray-50"
                     >
                       <div className="flex items-center gap-3">
-                        <IconFolder className="h-4 w-4 text-muted-foreground" />
+                        <IconFolder className="text-muted-foreground h-4 w-4" />
                         <div>
                           <p className="font-medium">{child.name}</p>
-                          <p className="text-sm text-muted-foreground">
+                          <p className="text-muted-foreground text-sm">
                             {child.productCount || 0} products
                           </p>
                         </div>
@@ -263,23 +263,23 @@ export default function CategoryDetail({
               </CardTitle>
             </CardHeader>
             <CardContent>
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+              <div className="grid grid-cols-1 gap-4 md:grid-cols-2">
                 <div className="flex items-center gap-2">
-                  <IconCalendar className="h-4 w-4 text-muted-foreground" />
+                  <IconCalendar className="text-muted-foreground h-4 w-4" />
                   <div>
                     <p className="text-sm font-medium">Created</p>
-                    <p className="text-sm text-muted-foreground">
-                      {new Date(category.createdAt).toLocaleDateString()} at{" "}
+                    <p className="text-muted-foreground text-sm">
+                      {new Date(category.createdAt).toLocaleDateString()} at{' '}
                       {new Date(category.createdAt).toLocaleTimeString()}
                     </p>
                   </div>
                 </div>
                 <div className="flex items-center gap-2">
-                  <IconClock className="h-4 w-4 text-muted-foreground" />
+                  <IconClock className="text-muted-foreground h-4 w-4" />
                   <div>
                     <p className="text-sm font-medium">Last Updated</p>
-                    <p className="text-sm text-muted-foreground">
-                      {new Date(category.updatedAt).toLocaleDateString()} at{" "}
+                    <p className="text-muted-foreground text-sm">
+                      {new Date(category.updatedAt).toLocaleDateString()} at{' '}
                       {new Date(category.updatedAt).toLocaleTimeString()}
                     </p>
                   </div>
@@ -339,23 +339,23 @@ export default function CategoryDetail({
             </CardHeader>
             <CardContent className="space-y-4">
               <div className="flex items-center justify-between">
-                <span className="text-sm text-muted-foreground">
+                <span className="text-muted-foreground text-sm">
                   Total Products
                 </span>
                 <Badge variant="outline">{category.productCount}</Badge>
               </div>
               <Separator />
               <div className="flex items-center justify-between">
-                <span className="text-sm text-muted-foreground">
+                <span className="text-muted-foreground text-sm">
                   Subcategories
                 </span>
                 <Badge variant="outline">{category.subcategoryCount}</Badge>
               </div>
               <Separator />
               <div className="flex items-center justify-between">
-                <span className="text-sm text-muted-foreground">Status</span>
-                <Badge variant={category.isActive ? "default" : "secondary"}>
-                  {category.isActive ? "Active" : "Inactive"}
+                <span className="text-muted-foreground text-sm">Status</span>
+                <Badge variant={category.isActive ? 'default' : 'secondary'}>
+                  {category.isActive ? 'Active' : 'Inactive'}
                 </Badge>
               </div>
             </CardContent>
@@ -369,7 +369,7 @@ export default function CategoryDetail({
               </CardHeader>
               <CardContent>
                 <div className="space-y-3">
-                  <p className="text-sm text-muted-foreground">
+                  <p className="text-muted-foreground text-sm">
                     Once you delete a category, there is no going back. Please
                     be certain.
                   </p>
@@ -378,7 +378,7 @@ export default function CategoryDetail({
                     className="w-full justify-start"
                     onClick={() => {
                       toast.error(
-                        "Delete functionality not implemented in view mode"
+                        'Delete functionality not implemented in view mode'
                       );
                     }}
                   >

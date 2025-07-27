@@ -1,30 +1,30 @@
-"use client";
+'use client';
 
-import React, { useState } from "react";
-import { useRouter, useSearchParams } from "next/navigation";
-import { useForm } from "react-hook-form";
-import { zodResolver } from "@hookform/resolvers/zod";
-import { z } from "zod";
-import { toast } from "sonner";
+import React, { useState } from 'react';
+import { useRouter, useSearchParams } from 'next/navigation';
+import { useForm } from 'react-hook-form';
+import { zodResolver } from '@hookform/resolvers/zod';
+import { z } from 'zod';
+import { toast } from 'sonner';
 
 // Hooks
 import {
   useCreateCategory,
   useTopLevelCategories,
-} from "@/hooks/api/categories";
+} from '@/hooks/api/categories';
 
 // UI Components
-import { Button } from "@/components/ui/button";
-import { Input } from "@/components/ui/input";
-import { Textarea } from "@/components/ui/textarea";
-import { Switch } from "@/components/ui/switch";
+import { Button } from '@/components/ui/button';
+import { Input } from '@/components/ui/input';
+import { Textarea } from '@/components/ui/textarea';
+import { Switch } from '@/components/ui/switch';
 import {
   Select,
   SelectContent,
   SelectItem,
   SelectTrigger,
   SelectValue,
-} from "@/components/ui/select";
+} from '@/components/ui/select';
 import {
   Form,
   FormControl,
@@ -32,35 +32,35 @@ import {
   FormItem,
   FormLabel,
   FormMessage,
-} from "@/components/ui/form";
+} from '@/components/ui/form';
 import {
   Card,
   CardContent,
   CardHeader,
   CardTitle,
   CardDescription,
-} from "@/components/ui/card";
-import { ImageUpload } from "@/components/ui/image-upload";
-import { PageHeader } from "@/components/ui/page-header";
-import { FormLoading } from "@/components/ui/form-loading";
+} from '@/components/ui/card';
+import { ImageUpload } from '@/components/ui/image-upload';
+import { PageHeader } from '@/components/ui/page-header';
+import { FormLoading } from '@/components/ui/form-loading';
 
 // Icons
-import { ArrowLeft, Loader2 } from "lucide-react";
-import { IconFolder } from "@tabler/icons-react";
-import { logger } from "@/lib/logger";
+import { ArrowLeft, Loader2 } from 'lucide-react';
+import { IconFolder } from '@tabler/icons-react';
+import { logger } from '@/lib/logger';
 
 const createCategorySchema = z.object({
   name: z
     .string()
-    .min(1, "Category name is required")
-    .max(100, "Category name must be 100 characters or less")
+    .min(1, 'Category name is required')
+    .max(100, 'Category name must be 100 characters or less')
     .trim(),
   description: z
     .string()
-    .max(500, "Description must be 500 characters or less")
+    .max(500, 'Description must be 500 characters or less')
     .optional()
-    .or(z.literal("")),
-  image: z.string().min(1, "Category image is required"),
+    .or(z.literal('')),
+  image: z.string().min(1, 'Category image is required'),
   isActive: z.boolean(),
   parentId: z.number().nullable(),
 });
@@ -70,7 +70,7 @@ type CreateCategoryFormData = z.infer<typeof createCategorySchema>;
 export default function AddCategoryForm() {
   const router = useRouter();
   const searchParams = useSearchParams();
-  const parentIdFromUrl = searchParams.get("parentId");
+  const parentIdFromUrl = searchParams.get('parentId');
 
   const [error, setError] = useState<string | null>(null);
 
@@ -80,9 +80,9 @@ export default function AddCategoryForm() {
   const form = useForm<CreateCategoryFormData>({
     resolver: zodResolver(createCategorySchema),
     defaultValues: {
-      name: "",
-      description: "",
-      image: "",
+      name: '',
+      description: '',
+      image: '',
       isActive: true,
       parentId: parentIdFromUrl ? parseInt(parentIdFromUrl) : null,
     },
@@ -101,36 +101,36 @@ export default function AddCategoryForm() {
           parentId: data.parentId || undefined,
         },
         {
-          onSuccess: (_createdCategory) => {
+          onSuccess: _createdCategory => {
             // Debug logging removed for production
-            toast.success("Category created successfully!");
-            router.push("/inventory/categories");
+            toast.success('Category created successfully!');
+            router.push('/inventory/categories');
           },
-          onError: (error) => {
-            logger.error("Failed to create category", {
+          onError: error => {
+            logger.error('Failed to create category', {
               categoryName: data.name,
               error: error instanceof Error ? error.message : String(error),
             });
             const errorMessage =
               error instanceof Error
                 ? error.message
-                : "Failed to create category";
+                : 'Failed to create category';
             setError(errorMessage);
             toast.error(errorMessage);
           },
         }
       );
     } catch (error) {
-      logger.error("Failed to create category", {
+      logger.error('Failed to create category', {
         categoryName: data.name,
         error: error instanceof Error ? error.message : String(error),
       });
-      toast.error("Failed to create category");
+      toast.error('Failed to create category');
     }
   };
 
   const handleCancel = () => {
-    router.push("/inventory/categories");
+    router.push('/inventory/categories');
   };
 
   // Show loading state
@@ -140,14 +140,14 @@ export default function AddCategoryForm() {
         title="Add Category"
         description="Create a new product category to organize your inventory"
         backLabel="Back to Categories"
-        onBack={() => router.push("/inventory/categories")}
+        onBack={() => router.push('/inventory/categories')}
         backUrl="/inventory/categories"
       />
     );
   }
 
   return (
-    <div className="max-w-4xl mx-auto p-6 space-y-6">
+    <div className="mx-auto max-w-4xl space-y-6 p-6">
       <div className="mb-6">
         <Button
           variant="ghost"
@@ -190,7 +190,7 @@ export default function AddCategoryForm() {
                         value={field.value}
                         placeholder="Enter category name"
                         className={
-                          form.formState.errors.name ? "border-destructive" : ""
+                          form.formState.errors.name ? 'border-destructive' : ''
                         }
                         disabled={createCategoryMutation.isPending}
                       />
@@ -207,12 +207,12 @@ export default function AddCategoryForm() {
                   <FormItem>
                     <FormLabel>Parent Category</FormLabel>
                     <Select
-                      onValueChange={(value) =>
+                      onValueChange={value =>
                         field.onChange(
-                          value === "none" ? null : parseInt(value)
+                          value === 'none' ? null : parseInt(value)
                         )
                       }
-                      defaultValue={field.value?.toString() || "none"}
+                      defaultValue={field.value?.toString() || 'none'}
                       disabled={createCategoryMutation.isPending}
                     >
                       <FormControl>
@@ -227,7 +227,7 @@ export default function AddCategoryForm() {
                             <span>No parent (Top-level category)</span>
                           </div>
                         </SelectItem>
-                        {parentCategoriesData?.data?.map((category) => (
+                        {parentCategoriesData?.data?.map(category => (
                           <SelectItem
                             key={category.id}
                             value={category.id.toString()}
@@ -236,7 +236,7 @@ export default function AddCategoryForm() {
                               <IconFolder className="h-4 w-4" />
                               <span>{category.name}</span>
                               {category.subcategoryCount > 0 && (
-                                <span className="text-xs text-muted-foreground">
+                                <span className="text-muted-foreground text-xs">
                                   ({category.subcategoryCount} subcategories)
                                 </span>
                               )}
@@ -246,7 +246,7 @@ export default function AddCategoryForm() {
                       </SelectContent>
                     </Select>
                     <FormMessage />
-                    <p className="text-xs text-muted-foreground">
+                    <p className="text-muted-foreground text-xs">
                       Leave empty to create a top-level category, or select a
                       parent to create a subcategory
                     </p>
@@ -270,8 +270,8 @@ export default function AddCategoryForm() {
                         rows={3}
                         className={
                           form.formState.errors.description
-                            ? "border-destructive"
-                            : ""
+                            ? 'border-destructive'
+                            : ''
                         }
                         disabled={createCategoryMutation.isPending}
                       />
@@ -291,8 +291,8 @@ export default function AddCategoryForm() {
                       <ImageUpload
                         {...field}
                         onChange={field.onChange}
-                        onError={(error) => {
-                          console.error("Image upload error:", error);
+                        onError={error => {
+                          console.error('Image upload error:', error);
                         }}
                         label="Category Image"
                         placeholder="Upload a category image"
@@ -333,8 +333,8 @@ export default function AddCategoryForm() {
 
               {/* Error Display */}
               {error && (
-                <div className="p-4 border border-destructive bg-destructive/10 rounded-md">
-                  <p className="text-sm text-destructive">{error}</p>
+                <div className="border-destructive bg-destructive/10 rounded-md border p-4">
+                  <p className="text-destructive text-sm">{error}</p>
                 </div>
               )}
 
@@ -348,8 +348,8 @@ export default function AddCategoryForm() {
                     <Loader2 className="h-4 w-4 animate-spin" />
                   )}
                   {createCategoryMutation.isPending
-                    ? "Creating..."
-                    : "Create Category"}
+                    ? 'Creating...'
+                    : 'Create Category'}
                 </Button>
 
                 <Button

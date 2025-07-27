@@ -1,9 +1,9 @@
-"use client";
+'use client';
 
-import { useState, useEffect, useCallback } from "react";
-import { useRouter } from "next/navigation";
-import { useSession } from "next-auth/react";
-import { logger } from "@/lib/logger";
+import { useState, useEffect, useCallback } from 'react';
+import { useRouter } from 'next/navigation';
+import { useSession } from 'next-auth/react';
+import { logger } from '@/lib/logger';
 
 interface UseUserStatusValidationOptions {
   redirectOnApproved?: boolean;
@@ -48,8 +48,8 @@ export function useUserStatusValidation(
       // Use Auth.js v5 update() to trigger a fresh session fetch
       await update();
     } catch (error) {
-      logger.error("Error refreshing session", {
-        error: error instanceof Error ? error.message : "Unknown error",
+      logger.error('Error refreshing session', {
+        error: error instanceof Error ? error.message : 'Unknown error',
       });
     } finally {
       setIsRefreshing(false);
@@ -69,28 +69,28 @@ export function useUserStatusValidation(
 
   // Handle status-based routing (no API calls)
   useEffect(() => {
-    if (!userStatus || status === "loading") return;
+    if (!userStatus || status === 'loading') return;
 
     // Redirect approved users to dashboard
-    if (redirectOnApproved && userStatus === "APPROVED") {
-      router.push("/dashboard");
+    if (redirectOnApproved && userStatus === 'APPROVED') {
+      router.push('/dashboard');
       return;
     }
 
     // Keep pending users on current page
-    if (userStatus === "PENDING") {
+    if (userStatus === 'PENDING') {
       // Stay on current page
       return;
     }
 
     // Redirect rejected/suspended users to appropriate pages
-    if (userStatus === "REJECTED") {
-      router.push("/unauthorized");
+    if (userStatus === 'REJECTED') {
+      router.push('/unauthorized');
       return;
     }
 
-    if (userStatus === "SUSPENDED") {
-      router.push("/unauthorized");
+    if (userStatus === 'SUSPENDED') {
+      router.push('/unauthorized');
       return;
     }
   }, [userStatus, redirectOnApproved, router, status]);

@@ -1,14 +1,14 @@
-import React from "react";
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import { Button } from "@/components/ui/button";
-import { Input } from "@/components/ui/input";
-import { Label } from "@/components/ui/label";
-import { formatCurrency } from "@/lib/utils";
-import { IconPercentage, IconMinus } from "@tabler/icons-react";
+import React from 'react';
+import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
+import { Button } from '@/components/ui/button';
+import { Input } from '@/components/ui/input';
+import { Label } from '@/components/ui/label';
+import { formatCurrency } from '@/lib/utils';
+import { IconPercentage, IconMinus } from '@tabler/icons-react';
 
 interface DiscountStepProps {
-  discountType: "percentage" | "fixed";
-  setDiscountType: (type: "percentage" | "fixed") => void;
+  discountType: 'percentage' | 'fixed';
+  setDiscountType: (type: 'percentage' | 'fixed') => void;
   discountValue: number;
   handleDiscountChange: (value: number) => void;
   subtotal: number;
@@ -26,14 +26,14 @@ export function DiscountStep({
   const maxPercentage = 100;
   const maxFixed = subtotal;
 
-  const handleTypeChange = (newType: "percentage" | "fixed") => {
+  const handleTypeChange = (newType: 'percentage' | 'fixed') => {
     setDiscountType(newType);
     // Reset discount value when switching types
     handleDiscountChange(0);
   };
 
   const calculateDiscountAmount = () => {
-    if (discountType === "percentage") {
+    if (discountType === 'percentage') {
       return (subtotal * discountValue) / 100;
     }
     return discountValue;
@@ -65,22 +65,22 @@ export function DiscountStep({
             <div className="flex gap-2">
               <Button
                 type="button"
-                variant={discountType === "percentage" ? "default" : "outline"}
-                onClick={() => handleTypeChange("percentage")}
+                variant={discountType === 'percentage' ? 'default' : 'outline'}
+                onClick={() => handleTypeChange('percentage')}
                 disabled={processing}
                 className="flex-1"
               >
-                <IconPercentage className="h-4 w-4 mr-2" />
+                <IconPercentage className="mr-2 h-4 w-4" />
                 Percentage
               </Button>
               <Button
                 type="button"
-                variant={discountType === "fixed" ? "default" : "outline"}
-                onClick={() => handleTypeChange("fixed")}
+                variant={discountType === 'fixed' ? 'default' : 'outline'}
+                onClick={() => handleTypeChange('fixed')}
                 disabled={processing}
                 className="flex-1"
               >
-                <IconMinus className="h-4 w-4 mr-2" />
+                <IconMinus className="mr-2 h-4 w-4" />
                 Fixed Amount
               </Button>
             </div>
@@ -89,47 +89,47 @@ export function DiscountStep({
           {/* Discount Value Input */}
           <div className="space-y-3">
             <Label htmlFor="discount-value">
-              {discountType === "percentage"
-                ? "Discount Percentage"
-                : "Discount Amount"}
+              {discountType === 'percentage'
+                ? 'Discount Percentage'
+                : 'Discount Amount'}
             </Label>
             <div className="relative">
               <Input
                 id="discount-value"
                 type="number"
                 value={discountValue}
-                onChange={(e) => {
+                onChange={e => {
                   const value = parseFloat(e.target.value) || 0;
                   const max =
-                    discountType === "percentage" ? maxPercentage : maxFixed;
+                    discountType === 'percentage' ? maxPercentage : maxFixed;
                   handleDiscountChange(Math.min(value, max));
                 }}
                 placeholder={
-                  discountType === "percentage"
-                    ? "Enter percentage (0-100)"
-                    : "Enter amount"
+                  discountType === 'percentage'
+                    ? 'Enter percentage (0-100)'
+                    : 'Enter amount'
                 }
                 disabled={processing}
                 className="pr-12"
               />
-              <div className="absolute right-3 top-1/2 -translate-y-1/2 text-muted-foreground">
-                {discountType === "percentage" ? "%" : "₦"}
+              <div className="text-muted-foreground absolute top-1/2 right-3 -translate-y-1/2">
+                {discountType === 'percentage' ? '%' : '₦'}
               </div>
             </div>
-            <p className="text-sm text-muted-foreground">
-              Max:{" "}
-              {discountType === "percentage"
+            <p className="text-muted-foreground text-sm">
+              Max:{' '}
+              {discountType === 'percentage'
                 ? `${maxPercentage}%`
                 : formatCurrency(maxFixed)}
             </p>
           </div>
 
           {/* Quick Discount Buttons */}
-          {discountType === "percentage" && (
+          {discountType === 'percentage' && (
             <div className="space-y-3">
               <Label>Quick Discount</Label>
               <div className="grid grid-cols-3 gap-2">
-                {[5, 10, 15, 20, 25, 50].map((percent) => (
+                {[5, 10, 15, 20, 25, 50].map(percent => (
                   <Button
                     key={percent}
                     type="button"
@@ -146,7 +146,7 @@ export function DiscountStep({
           )}
 
           {/* Summary */}
-          <div className="border-t pt-4 space-y-2">
+          <div className="space-y-2 border-t pt-4">
             <div className="flex justify-between">
               <span className="text-muted-foreground">Subtotal:</span>
               <span>{formatCurrency(subtotal)}</span>
@@ -154,12 +154,12 @@ export function DiscountStep({
             {discountAmount > 0 && (
               <div className="flex justify-between">
                 <span className="text-muted-foreground">Discount:</span>
-                <span className="text-green-600 font-medium">
+                <span className="font-medium text-green-600">
                   -{formatCurrency(discountAmount)}
                 </span>
               </div>
             )}
-            <div className="flex justify-between text-lg font-bold border-t pt-2">
+            <div className="flex justify-between border-t pt-2 text-lg font-bold">
               <span>Final Total:</span>
               <span>{formatCurrency(finalTotal)}</span>
             </div>

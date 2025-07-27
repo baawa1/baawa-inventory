@@ -1,18 +1,18 @@
-"use client";
+'use client';
 
-import { useState } from "react";
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import { Button } from "@/components/ui/button";
-import { Badge } from "@/components/ui/badge";
-import { Input } from "@/components/ui/input";
-import { Textarea } from "@/components/ui/textarea";
+import { useState } from 'react';
+import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
+import { Button } from '@/components/ui/button';
+import { Badge } from '@/components/ui/badge';
+import { Input } from '@/components/ui/input';
+import { Textarea } from '@/components/ui/textarea';
 import {
   Select,
   SelectContent,
   SelectItem,
   SelectTrigger,
   SelectValue,
-} from "@/components/ui/select";
+} from '@/components/ui/select';
 import {
   Dialog,
   DialogContent,
@@ -20,7 +20,7 @@ import {
   DialogFooter,
   DialogHeader,
   DialogTitle,
-} from "@/components/ui/dialog";
+} from '@/components/ui/dialog';
 import {
   AlertDialog,
   AlertDialogAction,
@@ -30,7 +30,7 @@ import {
   AlertDialogFooter,
   AlertDialogHeader,
   AlertDialogTitle,
-} from "@/components/ui/alert-dialog";
+} from '@/components/ui/alert-dialog';
 import {
   IconUsers,
   IconTrash,
@@ -48,24 +48,24 @@ import {
   IconFileText,
   IconBrandTabler,
   IconX,
-} from "@tabler/icons-react";
-import { toast } from "sonner";
-import { useAdminGuard } from "@/hooks/useAdminGuard";
+} from '@tabler/icons-react';
+import { toast } from 'sonner';
+import { useAdminGuard } from '@/hooks/useAdminGuard';
 
 interface BulkOperation {
   id: string;
   title: string;
   description: string;
   icon: React.ReactNode;
-  category: "users" | "data" | "system" | "maintenance";
-  risk: "low" | "medium" | "high";
+  category: 'users' | 'data' | 'system' | 'maintenance';
+  risk: 'low' | 'medium' | 'high';
   estimatedTime: string;
   requiresConfirmation: boolean;
 }
 
 interface OperationStatus {
   id: string;
-  status: "pending" | "running" | "completed" | "failed";
+  status: 'pending' | 'running' | 'completed' | 'failed';
   progress: number;
   message: string;
   startTime?: Date;
@@ -88,148 +88,148 @@ export function BulkOperations() {
   const bulkOperations: BulkOperation[] = [
     // User Operations
     {
-      id: "bulk-approve-users",
-      title: "Bulk Approve Users",
-      description: "Approve multiple pending users at once",
+      id: 'bulk-approve-users',
+      title: 'Bulk Approve Users',
+      description: 'Approve multiple pending users at once',
       icon: <IconUserCheck className="h-5 w-5" />,
-      category: "users",
-      risk: "medium",
-      estimatedTime: "2-5 minutes",
+      category: 'users',
+      risk: 'medium',
+      estimatedTime: '2-5 minutes',
       requiresConfirmation: true,
     },
     {
-      id: "bulk-reject-users",
-      title: "Bulk Reject Users",
-      description: "Reject multiple pending users with reason",
+      id: 'bulk-reject-users',
+      title: 'Bulk Reject Users',
+      description: 'Reject multiple pending users with reason',
       icon: <IconUserX className="h-5 w-5" />,
-      category: "users",
-      risk: "high",
-      estimatedTime: "2-5 minutes",
+      category: 'users',
+      risk: 'high',
+      estimatedTime: '2-5 minutes',
       requiresConfirmation: true,
     },
     {
-      id: "bulk-deactivate-users",
-      title: "Bulk Deactivate Users",
-      description: "Deactivate multiple user accounts",
+      id: 'bulk-deactivate-users',
+      title: 'Bulk Deactivate Users',
+      description: 'Deactivate multiple user accounts',
       icon: <IconUsers className="h-5 w-5" />,
-      category: "users",
-      risk: "high",
-      estimatedTime: "1-3 minutes",
+      category: 'users',
+      risk: 'high',
+      estimatedTime: '1-3 minutes',
       requiresConfirmation: true,
     },
     {
-      id: "send-notification-emails",
-      title: "Send Notification Emails",
-      description: "Send bulk emails to selected user groups",
+      id: 'send-notification-emails',
+      title: 'Send Notification Emails',
+      description: 'Send bulk emails to selected user groups',
       icon: <IconMail className="h-5 w-5" />,
-      category: "users",
-      risk: "low",
-      estimatedTime: "5-10 minutes",
+      category: 'users',
+      risk: 'low',
+      estimatedTime: '5-10 minutes',
       requiresConfirmation: true,
     },
 
     // Data Operations
     {
-      id: "cleanup-expired-sessions",
-      title: "Cleanup Expired Sessions",
-      description: "Remove expired user sessions from database",
+      id: 'cleanup-expired-sessions',
+      title: 'Cleanup Expired Sessions',
+      description: 'Remove expired user sessions from database',
       icon: <IconTrash className="h-5 w-5" />,
-      category: "data",
-      risk: "low",
-      estimatedTime: "1-2 minutes",
+      category: 'data',
+      risk: 'low',
+      estimatedTime: '1-2 minutes',
       requiresConfirmation: false,
     },
     {
-      id: "cleanup-audit-logs",
-      title: "Cleanup Old Audit Logs",
-      description: "Archive or delete audit logs older than specified date",
+      id: 'cleanup-audit-logs',
+      title: 'Cleanup Old Audit Logs',
+      description: 'Archive or delete audit logs older than specified date',
       icon: <IconFileText className="h-5 w-5" />,
-      category: "data",
-      risk: "medium",
-      estimatedTime: "5-15 minutes",
+      category: 'data',
+      risk: 'medium',
+      estimatedTime: '5-15 minutes',
       requiresConfirmation: true,
     },
     {
-      id: "export-user-data",
-      title: "Export User Data",
-      description: "Generate comprehensive user data export",
+      id: 'export-user-data',
+      title: 'Export User Data',
+      description: 'Generate comprehensive user data export',
       icon: <IconDownload className="h-5 w-5" />,
-      category: "data",
-      risk: "low",
-      estimatedTime: "3-10 minutes",
+      category: 'data',
+      risk: 'low',
+      estimatedTime: '3-10 minutes',
       requiresConfirmation: false,
     },
 
     // System Operations
     {
-      id: "refresh-system-cache",
-      title: "Refresh System Cache",
-      description: "Clear and rebuild application cache",
+      id: 'refresh-system-cache',
+      title: 'Refresh System Cache',
+      description: 'Clear and rebuild application cache',
       icon: <IconRefresh className="h-5 w-5" />,
-      category: "system",
-      risk: "low",
-      estimatedTime: "30 seconds",
+      category: 'system',
+      risk: 'low',
+      estimatedTime: '30 seconds',
       requiresConfirmation: false,
     },
     {
-      id: "database-optimization",
-      title: "Database Optimization",
-      description: "Optimize database indexes and clean up fragmentation",
+      id: 'database-optimization',
+      title: 'Database Optimization',
+      description: 'Optimize database indexes and clean up fragmentation',
       icon: <IconDatabase className="h-5 w-5" />,
-      category: "system",
-      risk: "medium",
-      estimatedTime: "10-30 minutes",
+      category: 'system',
+      risk: 'medium',
+      estimatedTime: '10-30 minutes',
       requiresConfirmation: true,
     },
     {
-      id: "backup-database",
-      title: "Create Database Backup",
-      description: "Generate full database backup",
+      id: 'backup-database',
+      title: 'Create Database Backup',
+      description: 'Generate full database backup',
       icon: <IconCloudUpload className="h-5 w-5" />,
-      category: "maintenance",
-      risk: "low",
-      estimatedTime: "5-20 minutes",
+      category: 'maintenance',
+      risk: 'low',
+      estimatedTime: '5-20 minutes',
       requiresConfirmation: false,
     },
   ];
 
   const getRiskColor = (risk: string) => {
     switch (risk) {
-      case "low":
-        return "bg-green-100 text-green-700 border-green-200";
-      case "medium":
-        return "bg-yellow-100 text-yellow-700 border-yellow-200";
-      case "high":
-        return "bg-red-100 text-red-700 border-red-200";
+      case 'low':
+        return 'bg-green-100 text-green-700 border-green-200';
+      case 'medium':
+        return 'bg-yellow-100 text-yellow-700 border-yellow-200';
+      case 'high':
+        return 'bg-red-100 text-red-700 border-red-200';
       default:
-        return "bg-gray-100 text-gray-700 border-gray-200";
+        return 'bg-gray-100 text-gray-700 border-gray-200';
     }
   };
 
   const getCategoryColor = (category: string) => {
     switch (category) {
-      case "users":
-        return "bg-blue-100 text-blue-700";
-      case "data":
-        return "bg-purple-100 text-purple-700";
-      case "system":
-        return "bg-orange-100 text-orange-700";
-      case "maintenance":
-        return "bg-green-100 text-green-700";
+      case 'users':
+        return 'bg-blue-100 text-blue-700';
+      case 'data':
+        return 'bg-purple-100 text-purple-700';
+      case 'system':
+        return 'bg-orange-100 text-orange-700';
+      case 'maintenance':
+        return 'bg-green-100 text-green-700';
       default:
-        return "bg-gray-100 text-gray-700";
+        return 'bg-gray-100 text-gray-700';
     }
   };
 
   const getStatusIcon = (status: string) => {
     switch (status) {
-      case "pending":
+      case 'pending':
         return <IconClock className="h-4 w-4 text-yellow-600" />;
-      case "running":
-        return <IconRefresh className="h-4 w-4 text-blue-600 animate-spin" />;
-      case "completed":
+      case 'running':
+        return <IconRefresh className="h-4 w-4 animate-spin text-blue-600" />;
+      case 'completed':
         return <IconCheck className="h-4 w-4 text-green-600" />;
-      case "failed":
+      case 'failed':
         return <IconX className="h-4 w-4 text-red-600" />;
       default:
         return <IconClock className="h-4 w-4 text-gray-600" />;
@@ -256,14 +256,14 @@ export function BulkOperations() {
     if (!selectedOperation) return;
 
     const operationStatus: OperationStatus = {
-      id: selectedOperation.id + "-" + Date.now(),
-      status: "running",
+      id: selectedOperation.id + '-' + Date.now(),
+      status: 'running',
       progress: 0,
-      message: "Starting operation...",
+      message: 'Starting operation...',
       startTime: new Date(),
     };
 
-    setRunningOperations((prev) => [...prev, operationStatus]);
+    setRunningOperations(prev => [...prev, operationStatus]);
     setIsDialogOpen(false);
     setIsConfirmDialogOpen(false);
 
@@ -271,14 +271,14 @@ export function BulkOperations() {
       // Simulate operation execution
       await simulateOperation(operationStatus.id);
 
-      setRunningOperations((prev) =>
-        prev.map((op) =>
+      setRunningOperations(prev =>
+        prev.map(op =>
           op.id === operationStatus.id
             ? {
                 ...op,
-                status: "completed",
+                status: 'completed',
                 progress: 100,
-                message: "Operation completed successfully",
+                message: 'Operation completed successfully',
                 endTime: new Date(),
               }
             : op
@@ -287,14 +287,14 @@ export function BulkOperations() {
 
       toast.success(`${selectedOperation.title} completed successfully`);
     } catch (error) {
-      setRunningOperations((prev) =>
-        prev.map((op) =>
+      setRunningOperations(prev =>
+        prev.map(op =>
           op.id === operationStatus.id
             ? {
                 ...op,
-                status: "failed",
+                status: 'failed',
                 message:
-                  error instanceof Error ? error.message : "Operation failed",
+                  error instanceof Error ? error.message : 'Operation failed',
                 endTime: new Date(),
               }
             : op
@@ -310,10 +310,10 @@ export function BulkOperations() {
   const simulateOperation = async (operationId: string) => {
     const steps = 10;
     for (let i = 1; i <= steps; i++) {
-      await new Promise((resolve) => setTimeout(resolve, 500));
+      await new Promise(resolve => setTimeout(resolve, 500));
 
-      setRunningOperations((prev) =>
-        prev.map((op) =>
+      setRunningOperations(prev =>
+        prev.map(op =>
           op.id === operationId
             ? {
                 ...op,
@@ -327,7 +327,7 @@ export function BulkOperations() {
   };
 
   const removeOperation = (operationId: string) => {
-    setRunningOperations((prev) => prev.filter((op) => op.id !== operationId));
+    setRunningOperations(prev => prev.filter(op => op.id !== operationId));
   };
 
   if (!isAdmin) {
@@ -335,10 +335,10 @@ export function BulkOperations() {
   }
 
   const categoryOperations = {
-    users: bulkOperations.filter((op) => op.category === "users"),
-    data: bulkOperations.filter((op) => op.category === "data"),
-    system: bulkOperations.filter((op) => op.category === "system"),
-    maintenance: bulkOperations.filter((op) => op.category === "maintenance"),
+    users: bulkOperations.filter(op => op.category === 'users'),
+    data: bulkOperations.filter(op => op.category === 'data'),
+    system: bulkOperations.filter(op => op.category === 'system'),
+    maintenance: bulkOperations.filter(op => op.category === 'maintenance'),
   };
 
   return (
@@ -362,16 +362,16 @@ export function BulkOperations() {
           </CardHeader>
           <CardContent>
             <div className="space-y-4">
-              {runningOperations.map((operation) => (
+              {runningOperations.map(operation => (
                 <div
                   key={operation.id}
-                  className="flex items-center justify-between p-4 border rounded-lg"
+                  className="flex items-center justify-between rounded-lg border p-4"
                 >
                   <div className="flex items-center gap-3">
                     {getStatusIcon(operation.status)}
                     <div>
                       <p className="font-medium">{operation.message}</p>
-                      <p className="text-sm text-muted-foreground">
+                      <p className="text-muted-foreground text-sm">
                         {operation.startTime?.toLocaleTimeString()}
                         {operation.endTime &&
                           ` - ${operation.endTime.toLocaleTimeString()}`}
@@ -379,21 +379,21 @@ export function BulkOperations() {
                     </div>
                   </div>
                   <div className="flex items-center gap-3">
-                    {operation.status === "running" && (
+                    {operation.status === 'running' && (
                       <div className="flex items-center gap-2">
-                        <div className="w-32 h-2 bg-gray-200 rounded-full">
+                        <div className="h-2 w-32 rounded-full bg-gray-200">
                           <div
-                            className="h-full bg-blue-600 rounded-full transition-all"
+                            className="h-full rounded-full bg-blue-600 transition-all"
                             style={{ width: `${operation.progress}%` }}
                           />
                         </div>
-                        <span className="text-sm text-muted-foreground">
+                        <span className="text-muted-foreground text-sm">
                           {Math.round(operation.progress)}%
                         </span>
                       </div>
                     )}
-                    {(operation.status === "completed" ||
-                      operation.status === "failed") && (
+                    {(operation.status === 'completed' ||
+                      operation.status === 'failed') && (
                       <Button
                         variant="outline"
                         size="sm"
@@ -420,23 +420,23 @@ export function BulkOperations() {
             </CardTitle>
           </CardHeader>
           <CardContent>
-            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-              {operations.map((operation) => (
+            <div className="grid grid-cols-1 gap-4 md:grid-cols-2 lg:grid-cols-3">
+              {operations.map(operation => (
                 <div
                   key={operation.id}
-                  className="border rounded-lg p-4 hover:shadow-md transition-shadow cursor-pointer"
+                  className="cursor-pointer rounded-lg border p-4 transition-shadow hover:shadow-md"
                   onClick={() => handleOperationClick(operation)}
                 >
-                  <div className="flex items-start justify-between mb-3">
+                  <div className="mb-3 flex items-start justify-between">
                     <div className="flex items-center gap-3">
                       <div
-                        className={`p-2 rounded-lg ${getCategoryColor(operation.category)}`}
+                        className={`rounded-lg p-2 ${getCategoryColor(operation.category)}`}
                       >
                         {operation.icon}
                       </div>
                       <div>
                         <h3 className="font-medium">{operation.title}</h3>
-                        <p className="text-sm text-muted-foreground">
+                        <p className="text-muted-foreground text-sm">
                           {operation.description}
                         </p>
                       </div>
@@ -490,16 +490,16 @@ export function BulkOperations() {
               </div>
 
               {/* Operation-specific parameters */}
-              {selectedOperation.id === "bulk-reject-users" && (
+              {selectedOperation.id === 'bulk-reject-users' && (
                 <div>
                   <label className="text-sm font-medium">
                     Rejection Reason
                   </label>
                   <Textarea
                     placeholder="Enter reason for rejection..."
-                    value={operationParams.reason || ""}
-                    onChange={(e) =>
-                      setOperationParams((prev) => ({
+                    value={operationParams.reason || ''}
+                    onChange={e =>
+                      setOperationParams(prev => ({
                         ...prev,
                         reason: e.target.value,
                       }))
@@ -508,15 +508,15 @@ export function BulkOperations() {
                 </div>
               )}
 
-              {selectedOperation.id === "cleanup-audit-logs" && (
+              {selectedOperation.id === 'cleanup-audit-logs' && (
                 <div>
                   <label className="text-sm font-medium">Days to Keep</label>
                   <Input
                     type="number"
                     placeholder="90"
-                    value={operationParams.daysToKeep || ""}
-                    onChange={(e) =>
-                      setOperationParams((prev) => ({
+                    value={operationParams.daysToKeep || ''}
+                    onChange={e =>
+                      setOperationParams(prev => ({
                         ...prev,
                         daysToKeep: e.target.value,
                       }))
@@ -525,14 +525,14 @@ export function BulkOperations() {
                 </div>
               )}
 
-              {selectedOperation.id === "send-notification-emails" && (
+              {selectedOperation.id === 'send-notification-emails' && (
                 <div className="space-y-3">
                   <div>
                     <label className="text-sm font-medium">Target Group</label>
                     <Select
-                      value={operationParams.targetGroup || ""}
-                      onValueChange={(value) =>
-                        setOperationParams((prev) => ({
+                      value={operationParams.targetGroup || ''}
+                      onValueChange={value =>
+                        setOperationParams(prev => ({
                           ...prev,
                           targetGroup: value,
                         }))
@@ -554,9 +554,9 @@ export function BulkOperations() {
                     <label className="text-sm font-medium">Message</label>
                     <Textarea
                       placeholder="Enter notification message..."
-                      value={operationParams.message || ""}
-                      onChange={(e) =>
-                        setOperationParams((prev) => ({
+                      value={operationParams.message || ''}
+                      onChange={e =>
+                        setOperationParams(prev => ({
                           ...prev,
                           message: e.target.value,
                         }))
@@ -573,7 +573,7 @@ export function BulkOperations() {
               Cancel
             </Button>
             <Button onClick={handleOperationConfirm}>
-              {selectedOperation?.requiresConfirmation ? "Continue" : "Execute"}
+              {selectedOperation?.requiresConfirmation ? 'Continue' : 'Execute'}
             </Button>
           </DialogFooter>
         </DialogContent>
@@ -593,8 +593,8 @@ export function BulkOperations() {
             <AlertDialogDescription>
               This operation cannot be undone. Are you sure you want to proceed
               with "{selectedOperation?.title}"?
-              {selectedOperation?.risk === "high" && (
-                <div className="mt-2 p-2 bg-red-50 border border-red-200 rounded text-red-700 text-sm">
+              {selectedOperation?.risk === 'high' && (
+                <div className="mt-2 rounded border border-red-200 bg-red-50 p-2 text-sm text-red-700">
                   <strong>High Risk Operation:</strong> This action may have
                   significant impact on the system.
                 </div>

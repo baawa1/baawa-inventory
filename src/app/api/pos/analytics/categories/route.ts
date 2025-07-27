@@ -1,8 +1,8 @@
-import { NextResponse } from "next/server";
-import { withAuth, AuthenticatedRequest } from "@/lib/api-middleware";
-import { handleApiError } from "@/lib/api-error-handler-new";
-import { prisma } from "@/lib/db";
-import { PAYMENT_STATUS } from "@/lib/constants";
+import { NextResponse } from 'next/server';
+import { withAuth, AuthenticatedRequest } from '@/lib/api-middleware';
+import { handleApiError } from '@/lib/api-error-handler-new';
+import { prisma } from '@/lib/db';
+import { PAYMENT_STATUS } from '@/lib/constants';
 
 interface CategoryPerformance {
   id: number;
@@ -11,7 +11,7 @@ interface CategoryPerformance {
   revenue: number;
   averageOrderValue: number;
   marketShare: number;
-  trending: "up" | "down" | "stable";
+  trending: 'up' | 'down' | 'stable';
   trendPercentage: number;
   lastSaleDate: string | null;
   productCount: number;
@@ -26,13 +26,13 @@ interface CategoryPerformance {
 function getPeriodFilter(period: string): Date {
   const now = new Date();
   switch (period) {
-    case "7d":
+    case '7d':
       return new Date(now.getTime() - 7 * 24 * 60 * 60 * 1000);
-    case "30d":
+    case '30d':
       return new Date(now.getTime() - 30 * 24 * 60 * 60 * 1000);
-    case "90d":
+    case '90d':
       return new Date(now.getTime() - 90 * 24 * 60 * 60 * 1000);
-    case "1y":
+    case '1y':
       return new Date(now.getTime() - 365 * 24 * 60 * 60 * 1000);
     default:
       return new Date(now.getTime() - 30 * 24 * 60 * 60 * 1000);
@@ -42,9 +42,9 @@ function getPeriodFilter(period: string): Date {
 export const GET = withAuth(async (request: AuthenticatedRequest) => {
   try {
     const { searchParams } = new URL(request.url);
-    const period = searchParams.get("period") || "30d";
-    const fromDate = searchParams.get("fromDate");
-    const toDate = searchParams.get("toDate");
+    const period = searchParams.get('period') || '30d';
+    const fromDate = searchParams.get('fromDate');
+    const toDate = searchParams.get('toDate');
 
     // Use custom date range if provided, otherwise use period
     let periodStart: Date;
@@ -52,7 +52,7 @@ export const GET = withAuth(async (request: AuthenticatedRequest) => {
 
     if (fromDate && toDate) {
       periodStart = new Date(fromDate);
-      periodEnd = new Date(toDate + "T23:59:59"); // End of day
+      periodEnd = new Date(toDate + 'T23:59:59'); // End of day
     } else {
       periodStart = getPeriodFilter(period);
       periodEnd = new Date(); // Current date
@@ -101,7 +101,7 @@ export const GET = withAuth(async (request: AuthenticatedRequest) => {
 
     // Calculate performance metrics for each category
     const categoryPerformance: CategoryPerformance[] = categories.map(
-      (category) => {
+      category => {
         const categoryRevenue = category.products.reduce(
           (catTotal, product) => {
             return (
@@ -124,7 +124,7 @@ export const GET = withAuth(async (request: AuthenticatedRequest) => {
         }, 0);
 
         // Get top 3 products by revenue
-        const productRevenues = category.products.map((product) => {
+        const productRevenues = category.products.map(product => {
           const productRevenue = product.sales_items.reduce((total, item) => {
             return total + Number(item.total_price);
           }, 0);
@@ -144,14 +144,14 @@ export const GET = withAuth(async (request: AuthenticatedRequest) => {
           totalRevenue > 0 ? (categoryRevenue / totalRevenue) * 100 : 0;
 
         // Get last sale date
-        const allSaleDates = category.products.flatMap((product) =>
+        const allSaleDates = category.products.flatMap(product =>
           product.sales_items
-            .map((item) => item.sales_transactions?.created_at)
+            .map(item => item.sales_transactions?.created_at)
             .filter(Boolean)
         );
         const lastSaleDate =
           allSaleDates.length > 0
-            ? new Date(Math.max(...allSaleDates.map((date) => date!.getTime())))
+            ? new Date(Math.max(...allSaleDates.map(date => date!.getTime())))
             : null;
 
         // Calculate trend (for simplicity, just using a random trend for now)
@@ -165,7 +165,7 @@ export const GET = withAuth(async (request: AuthenticatedRequest) => {
               catTotal +
               product.sales_items
                 .filter(
-                  (item) =>
+                  item =>
                     item.sales_transactions?.created_at &&
                     item.sales_transactions.created_at >= previousPeriodStart &&
                     item.sales_transactions.created_at < periodStart
@@ -178,14 +178,14 @@ export const GET = withAuth(async (request: AuthenticatedRequest) => {
           0
         );
 
-        let trending: "up" | "down" | "stable" = "stable";
+        let trending: 'up' | 'down' | 'stable' = 'stable';
         let trendPercentage = 0;
 
         if (previousRevenue > 0) {
           trendPercentage =
             ((categoryRevenue - previousRevenue) / previousRevenue) * 100;
-          if (trendPercentage > 5) trending = "up";
-          else if (trendPercentage < -5) trending = "down";
+          if (trendPercentage > 5) trending = 'up';
+          else if (trendPercentage < -5) trending = 'down';
         }
 
         const averageOrderValue =

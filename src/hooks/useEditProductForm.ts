@@ -1,12 +1,12 @@
-import { useEffect } from "react";
-import { useForm } from "react-hook-form";
-import { zodResolver } from "@hookform/resolvers/zod";
-import { updateProductSchema } from "@/lib/validations/product";
-import { useProduct } from "@/hooks/api/products";
-import { useCategories } from "@/hooks/api/categories";
-import { useBrands } from "@/hooks/api/brands";
-import { useSuppliers } from "@/hooks/api/suppliers";
-import type { z } from "zod";
+import { useEffect } from 'react';
+import { useForm } from 'react-hook-form';
+import { zodResolver } from '@hookform/resolvers/zod';
+import { updateProductSchema } from '@/lib/validations/product';
+import { useProduct } from '@/hooks/api/products';
+import { useCategories } from '@/hooks/api/categories';
+import { useBrands } from '@/hooks/api/brands';
+import { useSuppliers } from '@/hooks/api/suppliers';
+import type { z } from 'zod';
 
 type UpdateProductData = z.infer<typeof updateProductSchema>;
 
@@ -52,7 +52,7 @@ interface ProductFormData {
   metaTitle?: string;
   metaDescription?: string;
   seoKeywords: string[];
-  status: "ACTIVE" | "INACTIVE" | "OUT_OF_STOCK" | "DISCONTINUED";
+  status: 'ACTIVE' | 'INACTIVE' | 'OUT_OF_STOCK' | 'DISCONTINUED';
 
   isFeatured: boolean;
   metaContent?: string;
@@ -78,10 +78,10 @@ export function useEditProductForm(
   const form = useForm<UpdateProductData>({
     resolver: zodResolver(updateProductSchema),
     defaultValues: {
-      name: "",
-      description: "",
-      sku: "",
-      barcode: "",
+      name: '',
+      description: '',
+      sku: '',
+      barcode: '',
       categoryId: undefined,
       brandId: undefined,
       supplierId: undefined,
@@ -90,16 +90,16 @@ export function useEditProductForm(
       currentStock: 0,
       minimumStock: 0,
       maximumStock: undefined,
-      status: "ACTIVE",
-      notes: "",
+      status: 'ACTIVE',
+      notes: '',
     },
   });
 
   // TanStack Query hooks for parallel data fetching
   const product = useProduct(productId);
-  const categories = useCategories({ status: "true" });
-  const brands = useBrands({ status: "true" });
-  const suppliers = useSuppliers({ status: "true" });
+  const categories = useCategories({ status: 'true' });
+  const brands = useBrands({ status: 'true' });
+  const suppliers = useSuppliers({ status: 'true' });
 
   // Combine loading states
   const isLoading =
@@ -122,9 +122,9 @@ export function useEditProductForm(
       const productData = product.data;
       form.reset({
         name: productData.name,
-        description: productData.description || "",
+        description: productData.description || '',
         sku: productData.sku,
-        barcode: productData.barcode || "",
+        barcode: productData.barcode || '',
         categoryId: productData.category?.id,
         brandId: productData.brand?.id,
         supplierId: productData.supplier?.id,
@@ -134,7 +134,7 @@ export function useEditProductForm(
         minimumStock: productData.minStock,
         maximumStock: productData.maxStock || undefined,
         status: productData.status,
-        notes: "",
+        notes: '',
       });
     }
   }, [product.data, form]);

@@ -1,23 +1,23 @@
-"use client";
+'use client';
 
-import React, { useState } from "react";
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import { Badge } from "@/components/ui/badge";
+import React, { useState } from 'react';
+import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
+import { Badge } from '@/components/ui/badge';
 import {
   Select,
   SelectContent,
   SelectItem,
   SelectTrigger,
   SelectValue,
-} from "@/components/ui/select";
+} from '@/components/ui/select';
 import {
   IconTrendingUp,
   IconTrendingDown,
   IconChartLine,
   IconChartBar,
-} from "@tabler/icons-react";
-import { useTransactionStats } from "@/hooks/api/transactions";
-import { CURRENCY, PLACEHOLDER_VALUES } from "@/lib/constants";
+} from '@tabler/icons-react';
+import { useTransactionStats } from '@/hooks/api/transactions';
+import { CURRENCY, PLACEHOLDER_VALUES } from '@/lib/constants';
 
 interface TransactionDataOverviewProps {
   dateFrom?: string;
@@ -28,9 +28,9 @@ export function TransactionDataOverview({
   dateFrom,
   dateTo,
 }: TransactionDataOverviewProps) {
-  const [dateRange, setDateRange] = useState("month-to-date");
-  const [chartType, setChartType] = useState<"line" | "bar">("line");
-  const [granularity, setGranularity] = useState("day");
+  const [dateRange, setDateRange] = useState('month-to-date');
+  const [chartType, setChartType] = useState<'line' | 'bar'>('line');
+  const [granularity, setGranularity] = useState('day');
 
   const { data: stats, isLoading } = useTransactionStats(dateFrom, dateTo);
 
@@ -40,17 +40,17 @@ export function TransactionDataOverview({
         <div className="flex items-center justify-between">
           <div className="space-y-1">
             <h3 className="text-lg font-medium">Performance</h3>
-            <p className="text-sm text-muted-foreground">
+            <p className="text-muted-foreground text-sm">
               Key metrics and performance indicators
             </p>
           </div>
         </div>
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
+        <div className="grid grid-cols-1 gap-4 md:grid-cols-2 lg:grid-cols-4">
           {[...Array(4)].map((_, i) => (
             <Card key={i} className="animate-pulse">
               <CardContent className="p-4">
-                <div className="h-4 bg-gray-200 rounded w-1/2 mb-2"></div>
-                <div className="h-8 bg-gray-200 rounded w-3/4"></div>
+                <div className="mb-2 h-4 w-1/2 rounded bg-gray-200"></div>
+                <div className="h-8 w-3/4 rounded bg-gray-200"></div>
               </CardContent>
             </Card>
           ))}
@@ -68,7 +68,7 @@ export function TransactionDataOverview({
   };
 
   const formatPercentage = (value: number) => {
-    const sign = value >= 0 ? "+" : "";
+    const sign = value >= 0 ? '+' : '';
     return `${sign}${value.toFixed(1)}%`;
   };
 
@@ -82,61 +82,61 @@ export function TransactionDataOverview({
 
   const performanceMetrics = [
     {
-      label: "Total sales",
+      label: 'Total sales',
       value: formatCurrency(stats.totalSales),
       change: stats.salesChange,
       changeLabel: formatPercentage(stats.salesChange),
     },
     {
-      label: "Net sales",
+      label: 'Net sales',
       value: formatCurrency(stats.netSales),
       change: stats.salesChange,
       changeLabel: formatPercentage(stats.salesChange),
     },
     {
-      label: "Orders",
+      label: 'Orders',
       value: stats.totalTransactions.toString(),
       change: stats.transactionsChange,
       changeLabel: formatPercentage(stats.transactionsChange),
     },
     {
-      label: "Average order value",
+      label: 'Average order value',
       value: formatCurrency(stats.averageOrderValue),
       change: stats.averageOrderValueChange,
       changeLabel: formatPercentage(stats.averageOrderValueChange),
     },
     {
-      label: "Products sold",
+      label: 'Products sold',
       value: stats.totalItems.toString(),
       change: stats.itemsChange,
       changeLabel: formatPercentage(stats.itemsChange),
     },
     {
-      label: "Discounted orders",
+      label: 'Discounted orders',
       value: PLACEHOLDER_VALUES.DISCOUNTED_ORDERS, // TODO: Add this to stats
       change: 0,
       changeLabel: PLACEHOLDER_VALUES.DISCOUNT_CHANGE,
     },
     {
-      label: "Net discount amount",
+      label: 'Net discount amount',
       value: formatCurrency(stats.totalDiscount),
       change: 0, // TODO: Add discount change to stats
       changeLabel: PLACEHOLDER_VALUES.DISCOUNT_CHANGE,
     },
     {
-      label: "Visitors",
+      label: 'Visitors',
       value: PLACEHOLDER_VALUES.VISITOR_COUNT, // TODO: Add visitor tracking
       change: 0,
       changeLabel: PLACEHOLDER_VALUES.VISITOR_CHANGE,
     },
     {
-      label: "Gross sales",
+      label: 'Gross sales',
       value: formatCurrency(stats.totalSales),
       change: stats.salesChange,
       changeLabel: formatPercentage(stats.salesChange),
     },
     {
-      label: "Views",
+      label: 'Views',
       value: PLACEHOLDER_VALUES.VIEW_COUNT, // TODO: Add view tracking
       change: 0,
       changeLabel: PLACEHOLDER_VALUES.VIEW_CHANGE,
@@ -149,7 +149,7 @@ export function TransactionDataOverview({
       <div className="flex items-center justify-between">
         <div className="space-y-1">
           <h3 className="text-lg font-medium">Performance</h3>
-          <p className="text-sm text-muted-foreground">
+          <p className="text-muted-foreground text-sm">
             Key metrics and performance indicators
           </p>
         </div>
@@ -175,20 +175,20 @@ export function TransactionDataOverview({
       </div>
 
       {/* Performance Metrics Grid */}
-      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-5 gap-4">
+      <div className="grid grid-cols-1 gap-4 md:grid-cols-2 lg:grid-cols-5">
         {performanceMetrics.map((metric, index) => (
           <Card key={index} className="relative">
             <CardContent className="p-4">
               <div className="flex items-center justify-between">
                 <div>
-                  <p className="text-sm font-medium text-muted-foreground">
+                  <p className="text-muted-foreground text-sm font-medium">
                     {metric.label}
                   </p>
                   <p className="text-2xl font-bold">{metric.value}</p>
                 </div>
                 {metric.change !== 0 && (
                   <Badge
-                    variant={metric.change >= 0 ? "default" : "destructive"}
+                    variant={metric.change >= 0 ? 'default' : 'destructive'}
                     className="flex items-center gap-1"
                   >
                     {getChangeIcon(metric.change)}
@@ -217,23 +217,23 @@ export function TransactionDataOverview({
                 <SelectItem value="month">By month</SelectItem>
               </SelectContent>
             </Select>
-            <div className="flex items-center gap-1 border rounded-md p-1">
+            <div className="flex items-center gap-1 rounded-md border p-1">
               <button
-                onClick={() => setChartType("line")}
-                className={`p-1 rounded ${
-                  chartType === "line"
-                    ? "bg-primary text-primary-foreground"
-                    : "hover:bg-muted"
+                onClick={() => setChartType('line')}
+                className={`rounded p-1 ${
+                  chartType === 'line'
+                    ? 'bg-primary text-primary-foreground'
+                    : 'hover:bg-muted'
                 }`}
               >
                 <IconChartLine className="h-4 w-4" />
               </button>
               <button
-                onClick={() => setChartType("bar")}
-                className={`p-1 rounded ${
-                  chartType === "bar"
-                    ? "bg-primary text-primary-foreground"
-                    : "hover:bg-muted"
+                onClick={() => setChartType('bar')}
+                className={`rounded p-1 ${
+                  chartType === 'bar'
+                    ? 'bg-primary text-primary-foreground'
+                    : 'hover:bg-muted'
                 }`}
               >
                 <IconChartBar className="h-4 w-4" />
@@ -243,19 +243,19 @@ export function TransactionDataOverview({
         </div>
 
         {/* Chart Placeholder */}
-        <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+        <div className="grid grid-cols-1 gap-6 lg:grid-cols-2">
           <Card>
             <CardHeader>
               <CardTitle className="text-base">Net sales</CardTitle>
             </CardHeader>
             <CardContent>
-              <div className="h-64 flex items-center justify-center bg-muted rounded-lg">
+              <div className="bg-muted flex h-64 items-center justify-center rounded-lg">
                 <div className="text-center">
-                  <IconChartBar className="h-12 w-12 mx-auto text-muted-foreground mb-2" />
-                  <p className="text-sm text-muted-foreground">
+                  <IconChartBar className="text-muted-foreground mx-auto mb-2 h-12 w-12" />
+                  <p className="text-muted-foreground text-sm">
                     Chart visualization would go here
                   </p>
-                  <p className="text-xs text-muted-foreground">
+                  <p className="text-muted-foreground text-xs">
                     Showing net sales over time
                   </p>
                 </div>
@@ -268,13 +268,13 @@ export function TransactionDataOverview({
               <CardTitle className="text-base">Orders</CardTitle>
             </CardHeader>
             <CardContent>
-              <div className="h-64 flex items-center justify-center bg-muted rounded-lg">
+              <div className="bg-muted flex h-64 items-center justify-center rounded-lg">
                 <div className="text-center">
-                  <IconChartBar className="h-12 w-12 mx-auto text-muted-foreground mb-2" />
-                  <p className="text-sm text-muted-foreground">
+                  <IconChartBar className="text-muted-foreground mx-auto mb-2 h-12 w-12" />
+                  <p className="text-muted-foreground text-sm">
                     Chart visualization would go here
                   </p>
-                  <p className="text-xs text-muted-foreground">
+                  <p className="text-muted-foreground text-xs">
                     Showing order count over time
                   </p>
                 </div>

@@ -1,18 +1,18 @@
 #!/usr/bin/env node
 
-import { execSync } from "child_process";
-import { readFileSync, writeFileSync } from "fs";
-import { glob } from "glob";
+import { execSync } from 'child_process';
+import { readFileSync, writeFileSync } from 'fs';
+import { glob } from 'glob';
 
-const sourceFiles = glob.sync("src/**/*.{ts,tsx}", {
-  ignore: ["src/**/*.d.ts", "src/**/*.test.{ts,tsx}"],
+const sourceFiles = glob.sync('src/**/*.{ts,tsx}', {
+  ignore: ['src/**/*.d.ts', 'src/**/*.test.{ts,tsx}'],
 });
 
-console.log("Fixing ESLint issues...");
+console.log('Fixing ESLint issues...');
 
 // Fix unused variables by adding underscore prefix
-sourceFiles.forEach((filePath) => {
-  let content = readFileSync(filePath, "utf8");
+sourceFiles.forEach(filePath => {
+  let content = readFileSync(filePath, 'utf8');
   let changed = false;
 
   // Common unused variable patterns - prefix with underscore
@@ -29,10 +29,10 @@ sourceFiles.forEach((filePath) => {
   content = content.replace(
     /const\s+([a-zA-Z][a-zA-Z0-9]*)\s*=/g,
     (match, varName) => {
-      if (varName.startsWith("_")) return match;
+      if (varName.startsWith('_')) return match;
 
       // Check if this variable is actually used in the code
-      const usageRegex = new RegExp(`\\b${varName}\\b`, "g");
+      const usageRegex = new RegExp(`\\b${varName}\\b`, 'g');
       const matches = content.match(usageRegex) || [];
 
       // If only declared once (not used elsewhere), prefix with underscore
@@ -49,9 +49,9 @@ sourceFiles.forEach((filePath) => {
   content = content.replace(
     /{\s*([a-zA-Z][a-zA-Z0-9]*)\s*}/g,
     (match, varName) => {
-      if (varName.startsWith("_")) return match;
+      if (varName.startsWith('_')) return match;
 
-      const usageRegex = new RegExp(`\\b${varName}\\b`, "g");
+      const usageRegex = new RegExp(`\\b${varName}\\b`, 'g');
       const matches = content.match(usageRegex) || [];
 
       if (matches.length <= 1) {
@@ -67,10 +67,10 @@ sourceFiles.forEach((filePath) => {
   content = content.replace(
     /import\s*{\s*([^}]+)\s*}\s*from/g,
     (match, imports) => {
-      const importList = imports.split(",").map((imp) => imp.trim());
-      const usedImports = importList.filter((imp) => {
-        const cleanImp = imp.replace(/\s+as\s+\w+/, "").trim();
-        const usageRegex = new RegExp(`\\b${cleanImp}\\b`, "g");
+      const importList = imports.split(',').map(imp => imp.trim());
+      const usedImports = importList.filter(imp => {
+        const cleanImp = imp.replace(/\s+as\s+\w+/, '').trim();
+        const usageRegex = new RegExp(`\\b${cleanImp}\\b`, 'g');
         const matches = content.match(usageRegex) || [];
         return matches.length > 1; // More than just the import declaration
       });
@@ -78,12 +78,12 @@ sourceFiles.forEach((filePath) => {
       if (usedImports.length !== importList.length) {
         changed = true;
         const unusedImports = importList.filter(
-          (imp) => !usedImports.includes(imp)
+          imp => !usedImports.includes(imp)
         );
-        const prefixedUnused = unusedImports.map((imp) => `_${imp}`);
+        const prefixedUnused = unusedImports.map(imp => `_${imp}`);
         return match.replace(
           imports,
-          [...usedImports, ...prefixedUnused].join(", ")
+          [...usedImports, ...prefixedUnused].join(', ')
         );
       }
 
@@ -92,16 +92,16 @@ sourceFiles.forEach((filePath) => {
   );
 
   if (changed) {
-    writeFileSync(filePath, content, "utf8");
+    writeFileSync(filePath, content, 'utf8');
     console.log(`Fixed unused variables in: ${filePath}`);
   }
 });
 
-console.log("Running ESLint with auto-fix...");
+console.log('Running ESLint with auto-fix...');
 try {
-  execSync("npx eslint src --ext .ts,.tsx --fix", { stdio: "inherit" });
+  execSync('npx eslint src --ext .ts,.tsx --fix', { stdio: 'inherit' });
 } catch (error) {
-  console.log("ESLint completed with remaining issues");
+  console.log('ESLint completed with remaining issues');
 }
 
-console.log("ESLint fixes applied!");
+console.log('ESLint fixes applied!');

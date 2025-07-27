@@ -1,12 +1,12 @@
-import { withAuth, AuthenticatedRequest } from "@/lib/api-middleware";
-import { prisma } from "@/lib/db";
-import { createApiResponse } from "@/lib/api-response";
-import { createAuditLog } from "@/lib/audit";
-import { AuditLogAction } from "@/types/audit";
-import { z } from "zod";
+import { withAuth, AuthenticatedRequest } from '@/lib/api-middleware';
+import { prisma } from '@/lib/db';
+import { createApiResponse } from '@/lib/api-response';
+import { createAuditLog } from '@/lib/audit';
+import { AuditLogAction } from '@/types/audit';
+import { z } from 'zod';
 
 const rejectTransactionSchema = z.object({
-  reason: z.string().min(1, "Rejection reason is required"),
+  reason: z.string().min(1, 'Rejection reason is required'),
 });
 
 // POST /api/finance/transactions/[id]/reject - Reject financial transaction
@@ -20,13 +20,13 @@ export const POST = withAuth(
       const transactionId = parseInt(id);
 
       if (isNaN(transactionId)) {
-        return createApiResponse.validationError("Invalid transaction ID");
+        return createApiResponse.validationError('Invalid transaction ID');
       }
 
       // Check if user has permission to reject (ADMIN or MANAGER)
-      if (!["ADMIN", "MANAGER"].includes(request.user.role)) {
+      if (!['ADMIN', 'MANAGER'].includes(request.user.role)) {
         return createApiResponse.forbidden(
-          "Insufficient permissions to reject transactions"
+          'Insufficient permissions to reject transactions'
         );
       }
 
@@ -52,20 +52,20 @@ export const POST = withAuth(
       });
 
       if (!transaction) {
-        return createApiResponse.notFound("Financial transaction not found");
+        return createApiResponse.notFound('Financial transaction not found');
       }
 
       // Check if transaction is already rejected
-      if (transaction.status === "REJECTED") {
+      if (transaction.status === 'REJECTED') {
         return createApiResponse.validationError(
-          "Transaction is already rejected"
+          'Transaction is already rejected'
         );
       }
 
       // Check if transaction is cancelled
-      if (transaction.status === "CANCELLED") {
+      if (transaction.status === 'CANCELLED') {
         return createApiResponse.validationError(
-          "Cannot reject a cancelled transaction"
+          'Cannot reject a cancelled transaction'
         );
       }
 
@@ -73,7 +73,7 @@ export const POST = withAuth(
       const updatedTransaction = await prisma.financialTransaction.update({
         where: { id: transactionId },
         data: {
-          status: "REJECTED",
+          status: 'REJECTED',
           approvedBy: parseInt(request.user.id),
           approvedAt: new Date(),
         },
@@ -103,7 +103,7 @@ export const POST = withAuth(
       await createAuditLog({
         userId: parseInt(request.user.id),
         action: AuditLogAction.SALE_VOIDED, // Using existing action for now
-        tableName: "financial_transactions",
+        tableName: 'financial_transactions',
         recordId: transactionId,
         oldValues: transaction,
         newValues: updatedTransaction,
@@ -111,14 +111,14 @@ export const POST = withAuth(
 
       return createApiResponse.success(
         updatedTransaction,
-        "Transaction rejected successfully"
+        'Transaction rejected successfully'
       );
     } catch (error) {
-      console.error("Error rejecting financial transaction:", error);
+      console.error('Error rejecting financial transaction:', error);
       if (error instanceof z.ZodError) {
-        return createApiResponse.validationError("Invalid request data");
+        return createApiResponse.validationError('Invalid request data');
       }
-      return createApiResponse.internalError("Failed to reject transaction");
+      return createApiResponse.internalError('Failed to reject transaction');
     }
   }
 );

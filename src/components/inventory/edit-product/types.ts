@@ -1,5 +1,5 @@
-import { z } from "zod";
-import { updateProductSchema } from "@/lib/validations/product";
+import { z } from 'zod';
+import { updateProductSchema } from '@/lib/validations/product';
 
 // Form data type
 export type UpdateProductFormData = z.infer<typeof updateProductSchema>;
@@ -25,7 +25,7 @@ export interface Product {
   minStock: number;
   maxStock: number | null;
   supplierId: number;
-  status: "ACTIVE" | "INACTIVE" | "OUT_OF_STOCK" | "DISCONTINUED";
+  status: 'ACTIVE' | 'INACTIVE' | 'OUT_OF_STOCK' | 'DISCONTINUED';
   images: Array<{ url: string; isPrimary: boolean }> | null;
 }
 

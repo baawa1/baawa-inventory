@@ -1,8 +1,8 @@
-import { z } from "zod";
+import { z } from 'zod';
 import {
   updateSupplierSchema,
   createSupplierSchema,
-} from "@/lib/validations/supplier";
+} from '@/lib/validations/supplier';
 
 export type SupplierFormData = z.infer<typeof updateSupplierSchema>;
 export type CreateSupplierData = z.infer<typeof createSupplierSchema>;

@@ -1,4 +1,4 @@
-import { Category } from "@/hooks/api/categories";
+import { Category } from '@/hooks/api/categories';
 
 /**
  * Formats a category name with its parent hierarchy
@@ -8,7 +8,7 @@ import { Category } from "@/hooks/api/categories";
 export function formatCategoryHierarchy(
   category: Category | null | undefined
 ): string {
-  if (!category) return "-";
+  if (!category) return '-';
 
   if (category.parent) {
     return `${category.parent.name} >> ${category.name}`;
@@ -25,7 +25,7 @@ export function formatCategoryHierarchy(
 export function formatFullCategoryHierarchy(
   category: Category | null | undefined
 ): string {
-  if (!category) return "-";
+  if (!category) return '-';
 
   const hierarchy: string[] = [];
   let currentCategory: Category | null = category;
@@ -46,7 +46,7 @@ export function formatFullCategoryHierarchy(
       : null;
   }
 
-  return hierarchy.join(" >> ");
+  return hierarchy.join(' >> ');
 }
 
 /**
@@ -62,7 +62,7 @@ export function createHierarchicalCategoryOptions(
   displayName: string;
   parentId?: number;
 }> {
-  return categories.map((category) => ({
+  return categories.map(category => ({
     id: category.id,
     name: category.name,
     displayName: formatCategoryHierarchy(category),

@@ -1,4 +1,4 @@
-import * as React from "react";
+import * as React from 'react';
 import {
   Table,
   TableBody,
@@ -6,8 +6,8 @@ import {
   TableHead,
   TableHeader,
   TableRow,
-} from "@/components/ui/table";
-import { DashboardTableColumn } from "@/components/layouts/DashboardColumnCustomizer";
+} from '@/components/ui/table';
+import { DashboardTableColumn } from '@/components/layouts/DashboardColumnCustomizer';
 
 // Improved type definitions for audit log values
 interface AuditLogValues {
@@ -28,27 +28,27 @@ export type AuditLog = {
 };
 
 export const auditLogColumns: DashboardTableColumn[] = [
-  { key: "created_at", label: "Date", required: true, defaultVisible: true },
-  { key: "users", label: "User", required: true, defaultVisible: true },
-  { key: "action", label: "Action", required: true, defaultVisible: true },
-  { key: "table_name", label: "Table", required: false, defaultVisible: true },
-  { key: "record_id", label: "Record", required: false, defaultVisible: false },
-  { key: "ip_address", label: "IP", required: false, defaultVisible: false },
+  { key: 'created_at', label: 'Date', required: true, defaultVisible: true },
+  { key: 'users', label: 'User', required: true, defaultVisible: true },
+  { key: 'action', label: 'Action', required: true, defaultVisible: true },
+  { key: 'table_name', label: 'Table', required: false, defaultVisible: true },
+  { key: 'record_id', label: 'Record', required: false, defaultVisible: false },
+  { key: 'ip_address', label: 'IP', required: false, defaultVisible: false },
   {
-    key: "user_agent",
-    label: "User Agent",
+    key: 'user_agent',
+    label: 'User Agent',
     required: false,
     defaultVisible: false,
   },
   {
-    key: "old_values",
-    label: "Old Values",
+    key: 'old_values',
+    label: 'Old Values',
     required: false,
     defaultVisible: false,
   },
   {
-    key: "new_values",
-    label: "New Values",
+    key: 'new_values',
+    label: 'New Values',
     required: false,
     defaultVisible: false,
   },
@@ -66,8 +66,8 @@ export function AuditLogTable({
       <TableHeader>
         <TableRow>
           {auditLogColumns
-            .filter((col) => visibleColumns.includes(col.key))
-            .map((col) => (
+            .filter(col => visibleColumns.includes(col.key))
+            .map(col => (
               <TableHead key={col.key}>{col.label}</TableHead>
             ))}
         </TableRow>
@@ -77,51 +77,51 @@ export function AuditLogTable({
           <TableRow>
             <TableCell
               colSpan={visibleColumns.length}
-              className="text-center text-muted-foreground"
+              className="text-muted-foreground text-center"
             >
               No audit logs found.
             </TableCell>
           </TableRow>
         ) : (
-          logs.map((log) => (
+          logs.map(log => (
             <TableRow key={log.id}>
-              {visibleColumns.includes("created_at") && (
+              {visibleColumns.includes('created_at') && (
                 <TableCell>
                   {new Date(log.created_at).toLocaleString()}
                 </TableCell>
               )}
-              {visibleColumns.includes("users") && (
+              {visibleColumns.includes('users') && (
                 <TableCell>
                   {log.users
                     ? `${log.users.firstName} ${log.users.lastName} (${log.users.email})`
-                    : "-"}
+                    : '-'}
                 </TableCell>
               )}
-              {visibleColumns.includes("action") && (
+              {visibleColumns.includes('action') && (
                 <TableCell>{log.action}</TableCell>
               )}
-              {visibleColumns.includes("table_name") && (
+              {visibleColumns.includes('table_name') && (
                 <TableCell>{log.table_name}</TableCell>
               )}
-              {visibleColumns.includes("record_id") && (
-                <TableCell>{log.record_id ?? "-"}</TableCell>
+              {visibleColumns.includes('record_id') && (
+                <TableCell>{log.record_id ?? '-'}</TableCell>
               )}
-              {visibleColumns.includes("ip_address") && (
-                <TableCell>{log.ip_address ?? "-"}</TableCell>
+              {visibleColumns.includes('ip_address') && (
+                <TableCell>{log.ip_address ?? '-'}</TableCell>
               )}
-              {visibleColumns.includes("user_agent") && (
+              {visibleColumns.includes('user_agent') && (
                 <TableCell className="max-w-xs truncate">
-                  {log.user_agent ?? "-"}
+                  {log.user_agent ?? '-'}
                 </TableCell>
               )}
-              {visibleColumns.includes("old_values") && (
+              {visibleColumns.includes('old_values') && (
                 <TableCell className="max-w-xs truncate">
-                  {log.old_values ? JSON.stringify(log.old_values) : "-"}
+                  {log.old_values ? JSON.stringify(log.old_values) : '-'}
                 </TableCell>
               )}
-              {visibleColumns.includes("new_values") && (
+              {visibleColumns.includes('new_values') && (
                 <TableCell className="max-w-xs truncate">
-                  {log.new_values ? JSON.stringify(log.new_values) : "-"}
+                  {log.new_values ? JSON.stringify(log.new_values) : '-'}
                 </TableCell>
               )}
             </TableRow>

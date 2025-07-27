@@ -1,5 +1,5 @@
-import { useMutation, useQueryClient } from "@tanstack/react-query";
-import { logger } from "@/lib/logger";
+import { useMutation, useQueryClient } from '@tanstack/react-query';
+import { logger } from '@/lib/logger';
 
 // Add Stock Mutation
 export function useAddStock() {
@@ -15,29 +15,29 @@ export function useAddStock() {
       notes?: string;
       referenceNo?: string;
     }) => {
-      const response = await fetch("/api/stock-additions", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
+      const response = await fetch('/api/stock-additions', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify(data),
       });
 
       if (!response.ok) {
         const errorData = await response.json();
         throw new Error(
-          errorData.error || errorData.message || "Failed to add stock"
+          errorData.error || errorData.message || 'Failed to add stock'
         );
       }
 
       return response.json();
     },
-    onSuccess: (_data) => {
+    onSuccess: _data => {
       // Invalidate related queries
-      queryClient.invalidateQueries({ queryKey: ["products"] });
-      queryClient.invalidateQueries({ queryKey: ["stock-additions"] });
-      queryClient.invalidateQueries({ queryKey: ["inventory"] });
+      queryClient.invalidateQueries({ queryKey: ['products'] });
+      queryClient.invalidateQueries({ queryKey: ['stock-additions'] });
+      queryClient.invalidateQueries({ queryKey: ['inventory'] });
     },
     onError: (error: Error) => {
-      logger.error("Error adding stock", {
+      logger.error('Error adding stock', {
         error: error.message,
       });
     },
@@ -64,8 +64,8 @@ export function useUpdateStockAddition() {
       };
     }) => {
       const response = await fetch(`/api/stock-additions/${id}`, {
-        method: "PUT",
-        headers: { "Content-Type": "application/json" },
+        method: 'PUT',
+        headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify(data),
       });
 
@@ -74,7 +74,7 @@ export function useUpdateStockAddition() {
         throw new Error(
           errorData.error ||
             errorData.message ||
-            "Failed to update stock addition"
+            'Failed to update stock addition'
         );
       }
 
@@ -82,12 +82,12 @@ export function useUpdateStockAddition() {
     },
     onSuccess: () => {
       // Invalidate related queries
-      queryClient.invalidateQueries({ queryKey: ["products"] });
-      queryClient.invalidateQueries({ queryKey: ["stock-additions"] });
-      queryClient.invalidateQueries({ queryKey: ["inventory"] });
+      queryClient.invalidateQueries({ queryKey: ['products'] });
+      queryClient.invalidateQueries({ queryKey: ['stock-additions'] });
+      queryClient.invalidateQueries({ queryKey: ['inventory'] });
     },
     onError: (error: Error) => {
-      logger.error("Error updating stock addition", {
+      logger.error('Error updating stock addition', {
         error: error.message,
       });
     },
@@ -101,7 +101,7 @@ export function useDeleteStockAddition() {
   return useMutation({
     mutationFn: async (id: string) => {
       const response = await fetch(`/api/stock-additions/${id}`, {
-        method: "DELETE",
+        method: 'DELETE',
       });
 
       if (!response.ok) {
@@ -109,7 +109,7 @@ export function useDeleteStockAddition() {
         throw new Error(
           errorData.error ||
             errorData.message ||
-            "Failed to delete stock addition"
+            'Failed to delete stock addition'
         );
       }
 
@@ -117,12 +117,12 @@ export function useDeleteStockAddition() {
     },
     onSuccess: () => {
       // Invalidate related queries
-      queryClient.invalidateQueries({ queryKey: ["products"] });
-      queryClient.invalidateQueries({ queryKey: ["stock-additions"] });
-      queryClient.invalidateQueries({ queryKey: ["inventory"] });
+      queryClient.invalidateQueries({ queryKey: ['products'] });
+      queryClient.invalidateQueries({ queryKey: ['stock-additions'] });
+      queryClient.invalidateQueries({ queryKey: ['inventory'] });
     },
     onError: (error: Error) => {
-      logger.error("Error deleting stock addition", {
+      logger.error('Error deleting stock addition', {
         error: error.message,
       });
     },

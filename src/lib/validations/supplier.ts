@@ -1,4 +1,4 @@
-import { z } from "zod";
+import { z } from 'zod';
 import {
   idSchema,
   paginationSchema,
@@ -6,7 +6,7 @@ import {
   emailSchema,
   phoneSchema,
   nameSchema,
-} from "./common";
+} from './common';
 
 // Base supplier schema for forms
 export const supplierFormSchema = z.object({
@@ -16,52 +16,52 @@ export const supplierFormSchema = z.object({
   phone: phoneSchema.optional().nullable(),
   address: z
     .string()
-    .max(500, "Address must be 500 characters or less")
+    .max(500, 'Address must be 500 characters or less')
     .optional()
     .nullable(),
   city: z
     .string()
-    .max(100, "City must be 100 characters or less")
+    .max(100, 'City must be 100 characters or less')
     .optional()
     .nullable(),
   state: z
     .string()
-    .max(100, "State must be 100 characters or less")
+    .max(100, 'State must be 100 characters or less')
     .optional()
     .nullable(),
   country: z
     .string()
-    .max(100, "Country must be 100 characters or less")
+    .max(100, 'Country must be 100 characters or less')
     .optional()
     .nullable(),
   postalCode: z
     .string()
-    .max(20, "Postal code must be 20 characters or less")
+    .max(20, 'Postal code must be 20 characters or less')
     .optional()
     .nullable(),
   website: z
     .string()
-    .url("Website must be a valid URL")
-    .max(255, "Website must be 255 characters or less")
+    .url('Website must be a valid URL')
+    .max(255, 'Website must be 255 characters or less')
     .optional()
     .nullable(),
   taxNumber: z
     .string()
-    .max(100, "Tax number must be 100 characters or less")
+    .max(100, 'Tax number must be 100 characters or less')
     .optional()
     .nullable(),
   paymentTerms: z
     .string()
-    .max(255, "Payment terms must be 255 characters or less")
+    .max(255, 'Payment terms must be 255 characters or less')
     .optional()
     .nullable(),
   creditLimit: z
     .union([
-      z.number().positive("Credit limit must be positive"),
-      z.string().transform((val) => {
+      z.number().positive('Credit limit must be positive'),
+      z.string().transform(val => {
         const parsed = parseFloat(val);
         if (isNaN(parsed) || parsed <= 0) {
-          throw new Error("Credit limit must be a positive number");
+          throw new Error('Credit limit must be a positive number');
         }
         return parsed;
       }),
@@ -71,7 +71,7 @@ export const supplierFormSchema = z.object({
   isActive: z.boolean().optional(),
   notes: z
     .string()
-    .max(1000, "Notes must be 1000 characters or less")
+    .max(1000, 'Notes must be 1000 characters or less')
     .optional()
     .nullable(),
 });
@@ -87,8 +87,8 @@ export const updateSupplierSchema = supplierFormSchema
   .extend({
     id: idSchema,
   })
-  .refine((data) => Object.keys(data).length > 0, {
-    message: "At least one field must be provided for update",
+  .refine(data => Object.keys(data).length > 0, {
+    message: 'At least one field must be provided for update',
   });
 
 // Type for update form data
@@ -104,10 +104,10 @@ export const supplierQuerySchema = paginationSchema.merge(searchSchema).extend({
 
 // Supplier ID parameter schema
 export const supplierIdSchema = z.object({
-  id: z.string().transform((val) => {
+  id: z.string().transform(val => {
     const parsed = parseInt(val, 10);
     if (isNaN(parsed) || parsed <= 0) {
-      throw new Error("Supplier ID must be a positive integer");
+      throw new Error('Supplier ID must be a positive integer');
     }
     return parsed;
   }),
@@ -123,6 +123,6 @@ export const supplierPerformanceQuerySchema = z.object({
 
 // Bulk supplier operations
 export const bulkUpdateSupplierStatusSchema = z.object({
-  supplierIds: z.array(idSchema).min(1, "At least one supplier ID is required"),
+  supplierIds: z.array(idSchema).min(1, 'At least one supplier ID is required'),
   isActive: z.boolean(),
 });

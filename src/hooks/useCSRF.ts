@@ -3,8 +3,8 @@
  * Manages CSRF tokens for forms and API requests
  */
 
-import { useState, useEffect } from "react";
-import { useSession } from "next-auth/react";
+import { useState, useEffect } from 'react';
+import { useSession } from 'next-auth/react';
 
 export function useCSRF() {
   const { data: session } = useSession();
@@ -15,11 +15,11 @@ export function useCSRF() {
     if (session?.user) {
       // Get CSRF token from cookie
       const getCSRFToken = () => {
-        const cookies = document.cookie.split(";");
-        const csrfCookie = cookies.find((cookie) =>
-          cookie.trim().startsWith("csrf-token=")
+        const cookies = document.cookie.split(';');
+        const csrfCookie = cookies.find(cookie =>
+          cookie.trim().startsWith('csrf-token=')
         );
-        return csrfCookie ? csrfCookie.split("=")[1] : null;
+        return csrfCookie ? csrfCookie.split('=')[1] : null;
       };
 
       const token = getCSRFToken();
@@ -35,8 +35,8 @@ export function useCSRF() {
     if (!csrfToken) return {};
 
     return {
-      "X-CSRF-Token": csrfToken,
-      "Content-Type": "application/json",
+      'X-CSRF-Token': csrfToken,
+      'Content-Type': 'application/json',
     };
   };
 

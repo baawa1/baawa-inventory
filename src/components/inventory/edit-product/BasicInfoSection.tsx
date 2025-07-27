@@ -1,16 +1,16 @@
-import React from "react";
-import { UseFormReturn } from "react-hook-form";
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import React from 'react';
+import { UseFormReturn } from 'react-hook-form';
+import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import {
   FormControl,
   FormField,
   FormItem,
   FormLabel,
   FormMessage,
-} from "@/components/ui/form";
-import { Input } from "@/components/ui/input";
-import { Textarea } from "@/components/ui/textarea";
-import { UpdateProductFormData } from "./types";
+} from '@/components/ui/form';
+import { Input } from '@/components/ui/input';
+import { Textarea } from '@/components/ui/textarea';
+import { UpdateProductFormData } from './types';
 
 interface BasicInfoSectionProps {
   form: UseFormReturn<UpdateProductFormData>;
@@ -23,7 +23,7 @@ export function BasicInfoSection({ form }: BasicInfoSectionProps) {
         <CardTitle>Basic Information</CardTitle>
       </CardHeader>
       <CardContent className="space-y-4">
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+        <div className="grid grid-cols-1 gap-4 md:grid-cols-2">
           <FormField
             control={form.control}
             name="name"
@@ -61,7 +61,7 @@ export function BasicInfoSection({ form }: BasicInfoSectionProps) {
               <FormControl>
                 <Input
                   {...field}
-                  value={field.value || ""}
+                  value={field.value || ''}
                   placeholder="Enter barcode"
                 />
               </FormControl>
@@ -79,7 +79,7 @@ export function BasicInfoSection({ form }: BasicInfoSectionProps) {
               <FormControl>
                 <Textarea
                   {...field}
-                  value={field.value || ""}
+                  value={field.value || ''}
                   placeholder="Enter product description"
                   rows={4}
                 />

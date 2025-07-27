@@ -1,10 +1,10 @@
-"use client";
+'use client';
 
-import { UseFormReturn } from "react-hook-form";
-import { useRouter } from "next/navigation";
-import { toast } from "sonner";
-import { useCreateFinancialTransaction } from "@/hooks/api/finance";
-import type { CreateIncomeData } from "./types";
+import { UseFormReturn } from 'react-hook-form';
+import { useRouter } from 'next/navigation';
+import { toast } from 'sonner';
+import { useCreateFinancialTransaction } from '@/hooks/api/finance';
+import type { CreateIncomeData } from './types';
 
 export function useIncomeSubmit(
   form: UseFormReturn<CreateIncomeData>,
@@ -23,8 +23,8 @@ export function useIncomeSubmit(
       const cleanedData = {
         ...data,
         amount: parseFloat(data.amount.toString()),
-        description: data.description?.trim() || "",
-        ...(data.type === "INCOME" && {
+        description: data.description?.trim() || '',
+        ...(data.type === 'INCOME' && {
           payerName: data.payerName?.trim() || undefined,
         }),
       };
@@ -32,17 +32,17 @@ export function useIncomeSubmit(
       const _result = await createTransaction.mutateAsync(cleanedData);
 
       // Show success notification
-      toast.success("Income transaction created successfully!");
+      toast.success('Income transaction created successfully!');
 
       // Redirect to income list
-      router.push("/finance/income");
+      router.push('/finance/income');
     } catch (error) {
-      console.error("Income form submission failed:", error);
+      console.error('Income form submission failed:', error);
 
       setSubmitError(
         error instanceof Error
           ? error.message
-          : "Failed to create income transaction"
+          : 'Failed to create income transaction'
       );
     } finally {
       setIsSubmitting(false);

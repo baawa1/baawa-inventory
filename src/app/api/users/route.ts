@@ -1,10 +1,10 @@
-import { prisma } from "@/lib/db";
-import bcrypt from "bcryptjs";
-import { createUserSchema, userQuerySchema } from "@/lib/validations";
-import { withPermission, AuthenticatedRequest } from "@/lib/api-middleware";
-import { createApiResponse } from "@/lib/api-response";
-import { USER_ROLES } from "@/lib/auth/roles";
-import { Prisma } from "@prisma/client";
+import { prisma } from '@/lib/db';
+import bcrypt from 'bcryptjs';
+import { createUserSchema, userQuerySchema } from '@/lib/validations';
+import { withPermission, AuthenticatedRequest } from '@/lib/api-middleware';
+import { createApiResponse } from '@/lib/api-response';
+import { USER_ROLES } from '@/lib/auth/roles';
+import { Prisma } from '@prisma/client';
 
 // GET /api/users - List users with optional filtering and pagination
 // Requires permission to manage users (ADMIN only)
@@ -22,7 +22,7 @@ export const GET = withPermission(
 
       if (!validation.success) {
         return createApiResponse.validationError(
-          "Invalid query parameters",
+          'Invalid query parameters',
           validation.error.issues
         );
       }
@@ -35,8 +35,8 @@ export const GET = withPermission(
         role,
         status,
         isActive,
-        sortBy = "createdAt",
-        sortOrder = "desc",
+        sortBy = 'createdAt',
+        sortOrder = 'desc',
       } = validatedData;
 
       // Enforce maximum limit as a safety check
@@ -51,9 +51,9 @@ export const GET = withPermission(
       // Apply search filter across multiple fields
       if (search) {
         where.OR = [
-          { firstName: { contains: search, mode: "insensitive" } },
-          { lastName: { contains: search, mode: "insensitive" } },
-          { email: { contains: search, mode: "insensitive" } },
+          { firstName: { contains: search, mode: 'insensitive' } },
+          { lastName: { contains: search, mode: 'insensitive' } },
+          { email: { contains: search, mode: 'insensitive' } },
         ];
       }
 
@@ -74,7 +74,7 @@ export const GET = withPermission(
 
       // Build orderBy clause
       const orderBy: Prisma.UserOrderByWithRelationInput = {};
-      if (sortBy === "createdAt") {
+      if (sortBy === 'createdAt') {
         orderBy.createdAt = sortOrder;
       } else {
         orderBy[sortBy as keyof Prisma.UserOrderByWithRelationInput] =
@@ -108,7 +108,7 @@ export const GET = withPermission(
       ]);
 
       // Transform the response to match the expected camelCase format
-      const transformedUsers = users.map((user) => ({
+      const transformedUsers = users.map(user => ({
         id: user.id,
         firstName: user.firstName,
         lastName: user.lastName,
@@ -138,8 +138,8 @@ export const GET = withPermission(
         `Retrieved ${transformedUsers.length} users`
       );
     } catch (error) {
-      console.error("Error in GET /api/users:", error);
-      return createApiResponse.internalError("Failed to retrieve users");
+      console.error('Error in GET /api/users:', error);
+      return createApiResponse.internalError('Failed to retrieve users');
     }
   }
 );
@@ -156,7 +156,7 @@ export const POST = withPermission(
       const validation = createUserSchema.safeParse(body);
       if (!validation.success) {
         return createApiResponse.validationError(
-          "Invalid user data",
+          'Invalid user data',
           validation.error.issues
         );
       }
@@ -171,7 +171,7 @@ export const POST = withPermission(
 
       if (existingUser) {
         return createApiResponse.conflict(
-          "User with this email already exists"
+          'User with this email already exists'
         );
       }
 
@@ -188,7 +188,7 @@ export const POST = withPermission(
           phone: userData.phone,
           role: userData.role,
           isActive: userData.isActive ?? true, // Default to true if not specified
-          userStatus: "APPROVED", // New users created by admin are auto-approved
+          userStatus: 'APPROVED', // New users created by admin are auto-approved
           emailVerified: true, // Admin-created users are auto-verified
           emailVerifiedAt: new Date(), // Set verification timestamp
         },
@@ -218,12 +218,12 @@ export const POST = withPermission(
 
       return createApiResponse.success(
         transformedUser,
-        "User created successfully",
+        'User created successfully',
         201
       );
     } catch (error) {
-      console.error("Error in POST /api/users:", error);
-      return createApiResponse.internalError("Internal server error");
+      console.error('Error in POST /api/users:', error);
+      return createApiResponse.internalError('Internal server error');
     }
   }
 );

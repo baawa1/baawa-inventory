@@ -1,18 +1,18 @@
-"use client";
+'use client';
 
-import { useState } from "react";
-import { zodResolver } from "@hookform/resolvers/zod";
-import { useForm } from "react-hook-form";
-import { z } from "zod";
-import { Button } from "@/components/ui/button";
+import { useState } from 'react';
+import { zodResolver } from '@hookform/resolvers/zod';
+import { useForm } from 'react-hook-form';
+import { z } from 'zod';
+import { Button } from '@/components/ui/button';
 import {
   Card,
   CardContent,
   CardDescription,
   CardHeader,
   CardTitle,
-} from "@/components/ui/card";
-import { Input } from "@/components/ui/input";
+} from '@/components/ui/card';
+import { Input } from '@/components/ui/input';
 import {
   Form,
   FormControl,
@@ -20,10 +20,10 @@ import {
   FormItem,
   FormLabel,
   FormMessage,
-} from "@/components/ui/form";
+} from '@/components/ui/form';
 
 const forgotPasswordSchema = z.object({
-  email: z.string().email("Please enter a valid email address"),
+  email: z.string().email('Please enter a valid email address'),
 });
 
 type ForgotPasswordFormData = z.infer<typeof forgotPasswordSchema>;
@@ -39,10 +39,10 @@ export function ForgotPasswordForm({ className }: ForgotPasswordFormProps) {
 
   const form = useForm<ForgotPasswordFormData>({
     resolver: zodResolver(forgotPasswordSchema),
-    mode: "onBlur",
-    reValidateMode: "onChange",
+    mode: 'onBlur',
+    reValidateMode: 'onChange',
     defaultValues: {
-      email: "",
+      email: '',
     },
   });
 
@@ -51,23 +51,23 @@ export function ForgotPasswordForm({ className }: ForgotPasswordFormProps) {
     setError(null);
 
     try {
-      const response = await fetch("/api/auth/forgot-password", {
-        method: "POST",
+      const response = await fetch('/api/auth/forgot-password', {
+        method: 'POST',
         headers: {
-          "Content-Type": "application/json",
+          'Content-Type': 'application/json',
         },
         body: JSON.stringify(data),
       });
 
       if (!response.ok) {
         const errorData = await response.json();
-        throw new Error(errorData.error || "Failed to send reset email");
+        throw new Error(errorData.error || 'Failed to send reset email');
       }
 
       setIsSubmitted(true);
     } catch (error) {
-      console.error("Forgot password error:", error);
-      setError(error instanceof Error ? error.message : "An error occurred");
+      console.error('Forgot password error:', error);
+      setError(error instanceof Error ? error.message : 'An error occurred');
     } finally {
       setIsLoading(false);
     }
@@ -86,7 +86,7 @@ export function ForgotPasswordForm({ className }: ForgotPasswordFormProps) {
           </CardHeader>
           <CardContent>
             <div className="space-y-4">
-              <p className="text-sm text-muted-foreground">
+              <p className="text-muted-foreground text-sm">
                 Check your email inbox and click the reset link to create a new
                 password. The link will expire in 1 hour.
               </p>
@@ -145,7 +145,7 @@ export function ForgotPasswordForm({ className }: ForgotPasswordFormProps) {
               />
 
               {error && (
-                <div className="text-sm text-destructive bg-destructive/10 p-3 rounded-md">
+                <div className="text-destructive bg-destructive/10 rounded-md p-3 text-sm">
                   {error}
                 </div>
               )}
@@ -156,7 +156,7 @@ export function ForgotPasswordForm({ className }: ForgotPasswordFormProps) {
                 className="w-full"
                 disabled={isLoading}
               >
-                {isLoading ? "Sending..." : "Send Reset Link"}
+                {isLoading ? 'Sending...' : 'Send Reset Link'}
               </Button>
             </form>
           </Form>

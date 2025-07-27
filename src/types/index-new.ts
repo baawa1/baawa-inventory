@@ -1,5 +1,5 @@
 // Re-export clean types from app.ts to maintain compatibility
-export * from "./app";
+export * from './app';
 
 // Additional utility types for the application
 export interface SelectOption {
@@ -16,7 +16,7 @@ export interface PaginationParams {
   page: number;
   limit: number;
   sortBy?: string;
-  sortOrder?: "asc" | "desc";
+  sortOrder?: 'asc' | 'desc';
 }
 
 export interface SearchParams {
@@ -46,7 +46,7 @@ export interface ModalState<T = Record<string, unknown>> {
 }
 
 // Toast notification types
-export type ToastType = "success" | "error" | "warning" | "info";
+export type ToastType = 'success' | 'error' | 'warning' | 'info';
 
 export interface ToastMessage {
   id: string;

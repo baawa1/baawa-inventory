@@ -1,8 +1,8 @@
-import { NextResponse } from "next/server";
-import { withAuth, AuthenticatedRequest } from "@/lib/api-middleware";
-import { handleApiError } from "@/lib/api-error-handler-new";
-import { prisma } from "@/lib/db";
-import { z } from "zod";
+import { NextResponse } from 'next/server';
+import { withAuth, AuthenticatedRequest } from '@/lib/api-middleware';
+import { handleApiError } from '@/lib/api-error-handler-new';
+import { prisma } from '@/lib/db';
+import { z } from 'zod';
 
 // Query schema for archived products
 const archivedProductsQuerySchema = z.object({
@@ -11,8 +11,8 @@ const archivedProductsQuerySchema = z.object({
   brand: z.string().optional(),
   page: z.coerce.number().int().positive().default(1),
   limit: z.coerce.number().int().positive().max(100).default(10),
-  sortBy: z.enum(["name", "updatedAt", "createdAt"]).default("updatedAt"),
-  sortOrder: z.enum(["asc", "desc"]).default("desc"),
+  sortBy: z.enum(['name', 'updatedAt', 'createdAt']).default('updatedAt'),
+  sortOrder: z.enum(['asc', 'desc']).default('desc'),
 });
 
 // GET /api/products/archived - Get archived products
@@ -22,13 +22,13 @@ export const GET = withAuth(async (request: AuthenticatedRequest) => {
 
     // Parse and validate query parameters
     const queryData = {
-      search: searchParams.get("search") || undefined,
-      category: searchParams.get("category") || undefined,
-      brand: searchParams.get("brand") || undefined,
-      page: searchParams.get("page") || "1",
-      limit: searchParams.get("limit") || "10",
-      sortBy: searchParams.get("sortBy") || "updatedAt",
-      sortOrder: searchParams.get("sortOrder") || "desc",
+      search: searchParams.get('search') || undefined,
+      category: searchParams.get('category') || undefined,
+      brand: searchParams.get('brand') || undefined,
+      page: searchParams.get('page') || '1',
+      limit: searchParams.get('limit') || '10',
+      sortBy: searchParams.get('sortBy') || 'updatedAt',
+      sortOrder: searchParams.get('sortOrder') || 'desc',
     };
 
     const validatedData = archivedProductsQuerySchema.parse(queryData);
@@ -39,8 +39,8 @@ export const GET = withAuth(async (request: AuthenticatedRequest) => {
       brand,
       page = 1,
       limit = 10,
-      sortBy = "updatedAt",
-      sortOrder = "desc",
+      sortBy = 'updatedAt',
+      sortOrder = 'desc',
     } = validatedData;
 
     // Build where clause
@@ -50,9 +50,9 @@ export const GET = withAuth(async (request: AuthenticatedRequest) => {
 
     if (search) {
       where.OR = [
-        { name: { contains: search, mode: "insensitive" } },
-        { sku: { contains: search, mode: "insensitive" } },
-        { description: { contains: search, mode: "insensitive" } },
+        { name: { contains: search, mode: 'insensitive' } },
+        { sku: { contains: search, mode: 'insensitive' } },
+        { description: { contains: search, mode: 'insensitive' } },
       ];
     }
 

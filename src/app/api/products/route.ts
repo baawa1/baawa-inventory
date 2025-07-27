@@ -2,16 +2,16 @@ import {
   withAuth,
   withPermission,
   AuthenticatedRequest,
-} from "@/lib/api-middleware";
-import { handleApiError } from "@/lib/api-error-handler-new";
-import { prisma } from "@/lib/db";
-import { createSecureResponse } from "@/lib/security-headers";
+} from '@/lib/api-middleware';
+import { handleApiError } from '@/lib/api-error-handler-new';
+import { prisma } from '@/lib/db';
+import { createSecureResponse } from '@/lib/security-headers';
 
-import { PRODUCT_STATUS } from "@/lib/constants";
-import { USER_ROLES } from "@/lib/auth/roles";
+import { PRODUCT_STATUS } from '@/lib/constants';
+import { USER_ROLES } from '@/lib/auth/roles';
 
 // Import the form validation schema
-import { createProductSchema } from "@/lib/validations/product";
+import { createProductSchema } from '@/lib/validations/product';
 
 // Use the same validation schema as the form
 const ProductCreateSchema = createProductSchema;
@@ -20,18 +20,18 @@ const ProductCreateSchema = createProductSchema;
 export const GET = withAuth(async (request: AuthenticatedRequest) => {
   try {
     const { searchParams } = new URL(request.url);
-    const page = parseInt(searchParams.get("page") || "1");
-    const limit = parseInt(searchParams.get("limit") || "10");
-    const search = searchParams.get("search") || "";
+    const page = parseInt(searchParams.get('page') || '1');
+    const limit = parseInt(searchParams.get('limit') || '10');
+    const search = searchParams.get('search') || '';
     const categoryId =
-      searchParams.get("categoryId") || searchParams.get("category");
-    const brandId = searchParams.get("brandId") || searchParams.get("brand");
-    const supplierId = searchParams.get("supplierId");
-    const lowStock = searchParams.get("lowStock") === "true";
-    const status = searchParams.get("status") || PRODUCT_STATUS.ACTIVE;
-    const sortBy = searchParams.get("sortBy") || "name";
-    const sortOrder = searchParams.get("sortOrder") || "asc";
-    const includeSync = searchParams.get("includeSync") === "true";
+      searchParams.get('categoryId') || searchParams.get('category');
+    const brandId = searchParams.get('brandId') || searchParams.get('brand');
+    const supplierId = searchParams.get('supplierId');
+    const lowStock = searchParams.get('lowStock') === 'true';
+    const status = searchParams.get('status') || PRODUCT_STATUS.ACTIVE;
+    const sortBy = searchParams.get('sortBy') || 'name';
+    const sortOrder = searchParams.get('sortOrder') || 'asc';
+    const includeSync = searchParams.get('includeSync') === 'true';
 
     // Build where clause
     const where: any = {
@@ -41,10 +41,10 @@ export const GET = withAuth(async (request: AuthenticatedRequest) => {
     // Apply filters
     if (search) {
       where.OR = [
-        { name: { contains: search, mode: "insensitive" } },
-        { sku: { contains: search, mode: "insensitive" } },
-        { barcode: { contains: search, mode: "insensitive" } },
-        { description: { contains: search, mode: "insensitive" } },
+        { name: { contains: search, mode: 'insensitive' } },
+        { sku: { contains: search, mode: 'insensitive' } },
+        { barcode: { contains: search, mode: 'insensitive' } },
+        { description: { contains: search, mode: 'insensitive' } },
       ];
     }
 
@@ -63,25 +63,25 @@ export const GET = withAuth(async (request: AuthenticatedRequest) => {
     // For low stock filtering, we'll handle this after the query
     // since Prisma doesn't support field-to-field comparison in where clause
 
-    if (status && status !== "all") {
+    if (status && status !== 'all') {
       if (status === PRODUCT_STATUS.ACTIVE) {
-        where.status = "ACTIVE";
+        where.status = 'ACTIVE';
       } else if (status === PRODUCT_STATUS.INACTIVE) {
-        where.status = "INACTIVE";
+        where.status = 'INACTIVE';
       }
     }
 
     // Build order by clause
     const orderBy: any = {};
-    if (sortBy === "price" || sortBy === "cost") {
+    if (sortBy === 'price' || sortBy === 'cost') {
       orderBy[sortBy] = sortOrder;
-    } else if (sortBy === "stock") {
+    } else if (sortBy === 'stock') {
       orderBy.stock = sortOrder;
-    } else if (sortBy === "category") {
+    } else if (sortBy === 'category') {
       orderBy.category = { name: sortOrder };
-    } else if (sortBy === "brand") {
+    } else if (sortBy === 'brand') {
       orderBy.brand = { name: sortOrder };
-    } else if (sortBy === "createdAt") {
+    } else if (sortBy === 'createdAt') {
       orderBy.createdAt = sortOrder;
     } else {
       orderBy[sortBy] = sortOrder;
@@ -141,7 +141,7 @@ export const GET = withAuth(async (request: AuthenticatedRequest) => {
       });
 
       const lowStockProducts = allProducts.filter(
-        (product) => product.stock <= (product.minStock || 0)
+        product => product.stock <= (product.minStock || 0)
       );
 
       totalCount = lowStockProducts.length;
@@ -166,7 +166,7 @@ export const GET = withAuth(async (request: AuthenticatedRequest) => {
     }
 
     // Transform response
-    const transformedProducts = products.map((product) => ({
+    const transformedProducts = products.map(product => ({
       id: product.id,
       name: product.name,
       sku: product.sku,
@@ -232,8 +232,8 @@ export const POST = withPermission(
         return createSecureResponse(
           {
             success: false,
-            message: "Product with this SKU already exists",
-            code: "CONFLICT",
+            message: 'Product with this SKU already exists',
+            code: 'CONFLICT',
           },
           409
         );
@@ -249,8 +249,8 @@ export const POST = withPermission(
           return createSecureResponse(
             {
               success: false,
-              message: "Product with this barcode already exists",
-              code: "CONFLICT",
+              message: 'Product with this barcode already exists',
+              code: 'CONFLICT',
             },
             409
           );
@@ -267,8 +267,8 @@ export const POST = withPermission(
           return createSecureResponse(
             {
               success: false,
-              message: "Category not found",
-              code: "NOT_FOUND",
+              message: 'Category not found',
+              code: 'NOT_FOUND',
             },
             404
           );
@@ -285,8 +285,8 @@ export const POST = withPermission(
           return createSecureResponse(
             {
               success: false,
-              message: "Brand not found",
-              code: "NOT_FOUND",
+              message: 'Brand not found',
+              code: 'NOT_FOUND',
             },
             404
           );
@@ -303,8 +303,8 @@ export const POST = withPermission(
           return createSecureResponse(
             {
               success: false,
-              message: "Supplier not found",
-              code: "NOT_FOUND",
+              message: 'Supplier not found',
+              code: 'NOT_FOUND',
             },
             404
           );
@@ -323,7 +323,7 @@ export const POST = withPermission(
           stock: validatedData.currentStock || 0,
           minStock: validatedData.minimumStock || 0,
           maxStock: validatedData.maximumStock || 1000,
-          unit: validatedData.unit || "piece",
+          unit: validatedData.unit || 'piece',
           status: validatedData.status,
           weight: validatedData.weight,
           dimensions: validatedData.dimensions,
@@ -362,7 +362,7 @@ export const POST = withPermission(
       return createSecureResponse(
         {
           success: true,
-          message: "Product created successfully",
+          message: 'Product created successfully',
           data: newProduct,
         },
         201

@@ -1,11 +1,11 @@
-"use client";
+'use client';
 
-import { useEffect } from "react";
-import { useForm } from "react-hook-form";
-import { zodResolver } from "@hookform/resolvers/zod";
-import { z } from "zod";
-import { format } from "date-fns";
-import { toast } from "sonner";
+import { useEffect } from 'react';
+import { useForm } from 'react-hook-form';
+import { zodResolver } from '@hookform/resolvers/zod';
+import { z } from 'zod';
+import { format } from 'date-fns';
+import { toast } from 'sonner';
 import {
   Dialog,
   DialogContent,
@@ -13,7 +13,7 @@ import {
   DialogFooter,
   DialogHeader,
   DialogTitle,
-} from "@/components/ui/dialog";
+} from '@/components/ui/dialog';
 import {
   Form,
   FormControl,
@@ -22,32 +22,32 @@ import {
   FormItem,
   FormLabel,
   FormMessage,
-} from "@/components/ui/form";
+} from '@/components/ui/form';
 import {
   Select,
   SelectContent,
   SelectItem,
   SelectTrigger,
   SelectValue,
-} from "@/components/ui/select";
+} from '@/components/ui/select';
 import {
   Popover,
   PopoverContent,
   PopoverTrigger,
-} from "@/components/ui/popover";
-import { Calendar } from "@/components/ui/calendar";
-import { Input } from "@/components/ui/input";
-import { Button } from "@/components/ui/button";
-import { Textarea } from "@/components/ui/textarea";
-import { Badge } from "@/components/ui/badge";
-import { CalendarIcon } from "lucide-react";
-import { cn, formatCurrency } from "@/lib/utils";
-import { useSupplierOptions } from "@/hooks/api/suppliers";
-import { useAddStock } from "@/hooks/api/stock-mutations";
+} from '@/components/ui/popover';
+import { Calendar } from '@/components/ui/calendar';
+import { Input } from '@/components/ui/input';
+import { Button } from '@/components/ui/button';
+import { Textarea } from '@/components/ui/textarea';
+import { Badge } from '@/components/ui/badge';
+import { CalendarIcon } from 'lucide-react';
+import { cn, formatCurrency } from '@/lib/utils';
+import { useSupplierOptions } from '@/hooks/api/suppliers';
+import { useAddStock } from '@/hooks/api/stock-mutations';
 
 const addStockSchema = z.object({
-  quantity: z.number().int().positive("Quantity must be a positive integer"),
-  costPerUnit: z.number().positive("Cost per unit must be positive"),
+  quantity: z.number().int().positive('Quantity must be a positive integer'),
+  costPerUnit: z.number().positive('Cost per unit must be positive'),
   supplierId: z.number().int().positive().optional(),
   purchaseDate: z.date().optional(),
   notes: z.string().optional(),
@@ -97,8 +97,8 @@ export function AddStockDialog({
       costPerUnit: product?.cost || 0,
       supplierId: undefined,
       purchaseDate: new Date(),
-      notes: "",
-      referenceNo: "",
+      notes: '',
+      referenceNo: '',
     },
   });
 
@@ -111,10 +111,10 @@ export function AddStockDialog({
       form.reset({
         quantity: 1,
         costPerUnit: product.cost || 0,
-        supplierId: form.getValues("supplierId"),
+        supplierId: form.getValues('supplierId'),
         purchaseDate: new Date(),
-        notes: "",
-        referenceNo: "",
+        notes: '',
+        referenceNo: '',
       });
     }
   }, [isOpen, product, form]);
@@ -129,37 +129,37 @@ export function AddStockDialog({
       supplierId:
         data.supplierId && data.supplierId > 0 ? data.supplierId : undefined,
       purchaseDate: data.purchaseDate
-        ? format(data.purchaseDate, "yyyy-MM-dd")
+        ? format(data.purchaseDate, 'yyyy-MM-dd')
         : undefined,
       notes: data.notes || undefined,
       referenceNo: data.referenceNo || undefined,
     };
 
     addStockMutation.mutate(stockData, {
-      onSuccess: (result) => {
-        toast.success(result.message || "Stock added successfully");
+      onSuccess: result => {
+        toast.success(result.message || 'Stock added successfully');
         form.reset({
           quantity: 1,
           costPerUnit: product?.cost || 0,
           supplierId: undefined,
           purchaseDate: new Date(),
-          notes: "",
-          referenceNo: "",
+          notes: '',
+          referenceNo: '',
         });
         onSuccess?.();
         onClose();
       },
       onError: (error: Error) => {
-        toast.error(error.message || "Failed to add stock");
+        toast.error(error.message || 'Failed to add stock');
       },
     });
   };
 
-  const totalCost = form.watch("quantity") * form.watch("costPerUnit");
-  const newStock = (product?.stock || 0) + form.watch("quantity");
+  const totalCost = form.watch('quantity') * form.watch('costPerUnit');
+  const newStock = (product?.stock || 0) + form.watch('quantity');
 
   return (
-    <Dialog open={isOpen} onOpenChange={(open) => !open && onClose()}>
+    <Dialog open={isOpen} onOpenChange={open => !open && onClose()}>
       <DialogContent className="sm:max-w-[500px]">
         <DialogHeader>
           <DialogTitle>Add Stock</DialogTitle>
@@ -169,16 +169,16 @@ export function AddStockDialog({
         </DialogHeader>
 
         {product && (
-          <div className="rounded-lg bg-muted p-4 mb-4">
-            <div className="flex justify-between items-center">
+          <div className="bg-muted mb-4 rounded-lg p-4">
+            <div className="flex items-center justify-between">
               <div>
                 <p className="font-medium">{product.name}</p>
-                <p className="text-sm text-muted-foreground">
+                <p className="text-muted-foreground text-sm">
                   SKU: {product.sku}
                 </p>
               </div>
               <div className="text-right">
-                <p className="text-sm text-muted-foreground">Current Stock</p>
+                <p className="text-muted-foreground text-sm">Current Stock</p>
                 <Badge variant="secondary">{product.stock} units</Badge>
               </div>
             </div>
@@ -200,7 +200,7 @@ export function AddStockDialog({
                         min="1"
                         placeholder="1"
                         {...field}
-                        onChange={(e) =>
+                        onChange={e =>
                           field.onChange(parseInt(e.target.value) || 0)
                         }
                       />
@@ -223,7 +223,7 @@ export function AddStockDialog({
                         min="0"
                         placeholder="0.00"
                         {...field}
-                        onChange={(e) =>
+                        onChange={e =>
                           field.onChange(parseFloat(e.target.value) || 0)
                         }
                       />
@@ -241,12 +241,12 @@ export function AddStockDialog({
                 <FormItem>
                   <FormLabel>Supplier (Optional)</FormLabel>
                   <Select
-                    onValueChange={(value) =>
+                    onValueChange={value =>
                       field.onChange(
-                        value && value !== "0" ? parseInt(value) : undefined
+                        value && value !== '0' ? parseInt(value) : undefined
                       )
                     }
-                    value={field.value?.toString() || "0"}
+                    value={field.value?.toString() || '0'}
                     disabled={loadingSuppliers}
                   >
                     <FormControl>
@@ -287,14 +287,14 @@ export function AddStockDialog({
                     <PopoverTrigger asChild>
                       <FormControl>
                         <Button
-                          variant={"outline"}
+                          variant={'outline'}
                           className={cn(
-                            "w-full pl-3 text-left font-normal",
-                            !field.value && "text-muted-foreground"
+                            'w-full pl-3 text-left font-normal',
+                            !field.value && 'text-muted-foreground'
                           )}
                         >
                           {field.value ? (
-                            format(field.value, "PPP")
+                            format(field.value, 'PPP')
                           ) : (
                             <span>Pick a date</span>
                           )}
@@ -307,8 +307,8 @@ export function AddStockDialog({
                         mode="single"
                         selected={field.value}
                         onSelect={field.onChange}
-                        disabled={(date) =>
-                          date > new Date() || date < new Date("1900-01-01")
+                        disabled={date =>
+                          date > new Date() || date < new Date('1900-01-01')
                         }
                       />
                     </PopoverContent>
@@ -354,8 +354,8 @@ export function AddStockDialog({
             />
 
             {/* Summary */}
-            <div className="rounded-lg border p-4 bg-muted/50">
-              <h4 className="font-medium mb-2">Summary</h4>
+            <div className="bg-muted/50 rounded-lg border p-4">
+              <h4 className="mb-2 font-medium">Summary</h4>
               <div className="space-y-1 text-sm">
                 <div className="flex justify-between">
                   <span>Total Cost:</span>
@@ -375,7 +375,7 @@ export function AddStockDialog({
                 Cancel
               </Button>
               <Button type="submit" disabled={addStockMutation.isPending}>
-                {addStockMutation.isPending ? "Adding..." : "Add Stock"}
+                {addStockMutation.isPending ? 'Adding...' : 'Add Stock'}
               </Button>
             </DialogFooter>
           </form>

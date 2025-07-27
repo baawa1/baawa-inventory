@@ -1,8 +1,8 @@
-import React from "react";
-import { DashboardPageLayout } from "./DashboardPageLayout";
-import { DashboardFiltersBar, FilterConfig } from "./DashboardFiltersBar";
-import { DashboardTable } from "./DashboardTable";
-import { DashboardTableColumn } from "./DashboardColumnCustomizer";
+import React from 'react';
+import { DashboardPageLayout } from './DashboardPageLayout';
+import { DashboardFiltersBar, FilterConfig } from './DashboardFiltersBar';
+import { DashboardTable } from './DashboardTable';
+import { DashboardTableColumn } from './DashboardColumnCustomizer';
 
 interface DashboardTableLayoutProps<T = Record<string, unknown>> {
   title: string;
@@ -54,8 +54,8 @@ export function DashboardTableLayout<T = Record<string, unknown>>({
   title,
   description,
   actions,
-  searchPlaceholder = "Search...",
-  searchValue = "",
+  searchPlaceholder = 'Search...',
+  searchValue = '',
   onSearchChange = () => {},
   isSearching = false,
   filters = [],
@@ -65,7 +65,7 @@ export function DashboardTableLayout<T = Record<string, unknown>>({
   quickFilters,
   beforeFiltersContent,
   sortOptions = [],
-  currentSort = "",
+  currentSort = '',
   onSortChange = () => {},
   tableTitle = title,
   totalCount = 0,
@@ -86,7 +86,7 @@ export function DashboardTableLayout<T = Record<string, unknown>>({
   error,
   onRetry,
   emptyStateIcon,
-  emptyStateMessage = "No items found",
+  emptyStateMessage = 'No items found',
   emptyStateAction,
   additionalContent,
 }: DashboardTableLayoutProps<T>) {

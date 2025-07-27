@@ -1,33 +1,33 @@
-import { NextRequest, NextResponse } from "next/server";
-import { auth } from "../../../../../auth";
-import { prisma } from "@/lib/db";
-import { z } from "zod";
-import { USER_ROLES, hasRole } from "@/lib/auth/roles";
+import { NextRequest, NextResponse } from 'next/server';
+import { auth } from '../../../../../auth';
+import { prisma } from '@/lib/db';
+import { z } from 'zod';
+import { USER_ROLES, hasRole } from '@/lib/auth/roles';
 
 // Schema for report query parameters
 const reportQuerySchema = z.object({
   type: z
     .enum([
-      "current_stock",
-      "low_stock",
-      "out_of_stock",
-      "high_value",
-      "slow_moving",
-      "category_analysis",
-      "supplier_analysis",
+      'current_stock',
+      'low_stock',
+      'out_of_stock',
+      'high_value',
+      'slow_moving',
+      'category_analysis',
+      'supplier_analysis',
     ])
-    .default("current_stock"),
+    .default('current_stock'),
   categoryId: z.string().transform(Number).optional(),
   brandId: z.string().transform(Number).optional(),
   supplierId: z.string().transform(Number).optional(),
   includeArchived: z
     .string()
     .optional()
-    .default("false")
-    .transform((val) => val === "true"),
-  lowStockThreshold: z.string().optional().default("10").transform(Number),
-  highValueThreshold: z.string().optional().default("10000").transform(Number),
-  days: z.string().optional().default("30").transform(Number), // For slow-moving analysis
+    .default('false')
+    .transform(val => val === 'true'),
+  lowStockThreshold: z.string().optional().default('10').transform(Number),
+  highValueThreshold: z.string().optional().default('10000').transform(Number),
+  days: z.string().optional().default('30').transform(Number), // For slow-moving analysis
 });
 
 // GET /api/inventory/reports - Generate inventory reports
@@ -37,7 +37,7 @@ export async function GET(request: NextRequest) {
 
     if (!session?.user) {
       return NextResponse.json(
-        { error: "Authentication required" },
+        { error: 'Authentication required' },
         { status: 401 }
       );
     }
@@ -51,7 +51,7 @@ export async function GET(request: NextRequest) {
       ])
     ) {
       return NextResponse.json(
-        { error: "Insufficient permissions" },
+        { error: 'Insufficient permissions' },
         { status: 403 }
       );
     }
@@ -75,8 +75,8 @@ export async function GET(request: NextRequest) {
       baseFilter.supplierId = validatedQuery.supplierId;
 
     switch (validatedQuery.type) {
-      case "current_stock":
-        reportTitle = "Current Stock Report";
+      case 'current_stock':
+        reportTitle = 'Current Stock Report';
         reportData = await prisma.product.findMany({
           where: baseFilter,
           select: {
@@ -93,12 +93,12 @@ export async function GET(request: NextRequest) {
             createdAt: true,
             updatedAt: true,
           },
-          orderBy: { name: "asc" },
+          orderBy: { name: 'asc' },
         });
         break;
 
-      case "low_stock":
-        reportTitle = "Low Stock Alert Report";
+      case 'low_stock':
+        reportTitle = 'Low Stock Alert Report';
         reportData = await prisma.product.findMany({
           where: {
             ...baseFilter,
@@ -114,12 +114,12 @@ export async function GET(request: NextRequest) {
             category: { select: { name: true } },
             supplier: { select: { name: true, email: true, phone: true } },
           },
-          orderBy: { stock: "asc" },
+          orderBy: { stock: 'asc' },
         });
         break;
 
-      case "out_of_stock":
-        reportTitle = "Out of Stock Report";
+      case 'out_of_stock':
+        reportTitle = 'Out of Stock Report';
         reportData = await prisma.product.findMany({
           where: {
             ...baseFilter,
@@ -135,12 +135,12 @@ export async function GET(request: NextRequest) {
             supplier: { select: { name: true, email: true, phone: true } },
             updatedAt: true,
           },
-          orderBy: { updatedAt: "desc" },
+          orderBy: { updatedAt: 'desc' },
         });
         break;
 
-      case "high_value":
-        reportTitle = "High Value Inventory Report";
+      case 'high_value':
+        reportTitle = 'High Value Inventory Report';
         reportData = await prisma.product.findMany({
           where: baseFilter,
           select: {
@@ -153,22 +153,20 @@ export async function GET(request: NextRequest) {
             category: { select: { name: true } },
             brand: { select: { name: true } },
           },
-          orderBy: { price: "desc" },
+          orderBy: { price: 'desc' },
         });
 
         // Calculate total value and filter high-value items
         reportData = reportData
-          .map((item) => ({
+          .map(item => ({
             ...item,
             totalValue: Number(item.stock || 0) * Number(item.price || 0),
           }))
-          .filter(
-            (item) => item.totalValue >= validatedQuery.highValueThreshold
-          );
+          .filter(item => item.totalValue >= validatedQuery.highValueThreshold);
         break;
 
-      case "category_analysis":
-        reportTitle = "Category Analysis Report";
+      case 'category_analysis':
+        reportTitle = 'Category Analysis Report';
         reportData = await prisma.category.findMany({
           select: {
             id: true,
@@ -182,11 +180,11 @@ export async function GET(request: NextRequest) {
               },
             },
           },
-          orderBy: { name: "asc" },
+          orderBy: { name: 'asc' },
         });
 
         // Calculate category totals
-        reportData = reportData.map((category) => {
+        reportData = reportData.map(category => {
           const totalProducts = category._count.products;
           const totalStock = category.products.reduce(
             (sum, p) => sum + Number(p.stock || 0),
@@ -213,8 +211,8 @@ export async function GET(request: NextRequest) {
         });
         break;
 
-      case "supplier_analysis":
-        reportTitle = "Supplier Analysis Report";
+      case 'supplier_analysis':
+        reportTitle = 'Supplier Analysis Report';
         reportData = await prisma.supplier.findMany({
           select: {
             id: true,
@@ -230,11 +228,11 @@ export async function GET(request: NextRequest) {
               },
             },
           },
-          orderBy: { name: "asc" },
+          orderBy: { name: 'asc' },
         });
 
         // Calculate supplier totals
-        reportData = reportData.map((supplier) => {
+        reportData = reportData.map(supplier => {
           const totalProducts = supplier._count.products;
           const totalStock = supplier.products.reduce(
             (sum, p) => sum + (p.stock || 0),
@@ -259,7 +257,7 @@ export async function GET(request: NextRequest) {
 
       default:
         return NextResponse.json(
-          { error: "Invalid report type" },
+          { error: 'Invalid report type' },
           { status: 400 }
         );
     }
@@ -286,16 +284,16 @@ export async function GET(request: NextRequest) {
     if (error instanceof z.ZodError) {
       return NextResponse.json(
         {
-          error: "Invalid query parameters",
+          error: 'Invalid query parameters',
           details: error.errors,
         },
         { status: 400 }
       );
     }
 
-    console.error("Error generating inventory report:", error);
+    console.error('Error generating inventory report:', error);
     return NextResponse.json(
-      { error: "Failed to generate report" },
+      { error: 'Failed to generate report' },
       { status: 500 }
     );
   }

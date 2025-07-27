@@ -1,29 +1,29 @@
-"use client";
+'use client';
 
-import React, { useState, useMemo, useCallback } from "react";
-import Link from "next/link";
-import { toast } from "sonner";
+import React, { useState, useMemo, useCallback } from 'react';
+import Link from 'next/link';
+import { toast } from 'sonner';
 
 // Hooks
-import { useDebounce } from "@/hooks/useDebounce";
+import { useDebounce } from '@/hooks/useDebounce';
 import {
   useCategories,
   useDeleteCategory,
   type Category as APICategory,
-} from "@/hooks/api/categories";
+} from '@/hooks/api/categories';
 
 // Custom Components
-import CategoryDetailPopup from "@/components/inventory/CategoryDetailPopup";
+import CategoryDetailPopup from '@/components/inventory/CategoryDetailPopup';
 
 // UI Components
-import { Button } from "@/components/ui/button";
-import { Badge } from "@/components/ui/badge";
+import { Button } from '@/components/ui/button';
+import { Badge } from '@/components/ui/badge';
 import {
   DropdownMenu,
   DropdownMenuContent,
   DropdownMenuItem,
   DropdownMenuTrigger,
-} from "@/components/ui/dropdown-menu";
+} from '@/components/ui/dropdown-menu';
 import {
   Dialog,
   DialogContent,
@@ -31,11 +31,11 @@ import {
   DialogFooter,
   DialogHeader,
   DialogTitle,
-} from "@/components/ui/dialog";
+} from '@/components/ui/dialog';
 
 // Custom Components
-import { InventoryPageLayout } from "@/components/inventory/InventoryPageLayout";
-import { ImagePreview } from "@/components/ui/image-preview";
+import { InventoryPageLayout } from '@/components/inventory/InventoryPageLayout';
+import { ImagePreview } from '@/components/ui/image-preview';
 
 // Icons
 import {
@@ -47,11 +47,11 @@ import {
   IconAlertTriangle,
   IconFolder,
   IconEye,
-} from "@tabler/icons-react";
+} from '@tabler/icons-react';
 
 // Types
-import type { FilterConfig } from "@/types/inventory";
-import type { DashboardTableColumn } from "@/components/layouts/DashboardColumnCustomizer";
+import type { FilterConfig } from '@/types/inventory';
+import type { DashboardTableColumn } from '@/components/layouts/DashboardColumnCustomizer';
 
 interface User {
   id: string;
@@ -87,32 +87,32 @@ export default function CategoryList({ user }: CategoryListProps) {
   const columns: DashboardTableColumn[] = useMemo(
     () => [
       {
-        key: "image",
-        label: "Image",
+        key: 'image',
+        label: 'Image',
         defaultVisible: true,
         required: true,
       },
       {
-        key: "name",
-        label: "Name",
+        key: 'name',
+        label: 'Name',
         sortable: true,
         defaultVisible: true,
         required: true,
       },
-      { key: "description", label: "Description", defaultVisible: true },
-      { key: "parent", label: "Parent Category", defaultVisible: true },
-      { key: "products", label: "Products", defaultVisible: true },
-      { key: "subcategories", label: "Subcategories", defaultVisible: true },
-      { key: "isActive", label: "Status", defaultVisible: true },
-      { key: "createdAt", label: "Created", defaultVisible: true },
-      { key: "updatedAt", label: "Updated", defaultVisible: false },
+      { key: 'description', label: 'Description', defaultVisible: true },
+      { key: 'parent', label: 'Parent Category', defaultVisible: true },
+      { key: 'products', label: 'Products', defaultVisible: true },
+      { key: 'subcategories', label: 'Subcategories', defaultVisible: true },
+      { key: 'isActive', label: 'Status', defaultVisible: true },
+      { key: 'createdAt', label: 'Created', defaultVisible: true },
+      { key: 'updatedAt', label: 'Updated', defaultVisible: false },
     ],
     []
   );
 
   // Initialize visibleColumns with default values to prevent hydration mismatch
   const defaultVisibleColumns = useMemo(
-    () => columns.filter((col) => col.defaultVisible).map((col) => col.key),
+    () => columns.filter(col => col.defaultVisible).map(col => col.key),
     [columns]
   );
 
@@ -122,9 +122,9 @@ export default function CategoryList({ user }: CategoryListProps) {
 
   // Filters
   const [filters, setFilters] = useState({
-    search: "",
-    isActive: "",
-    parentId: "",
+    search: '',
+    isActive: '',
+    parentId: '',
   });
 
   // Debounce search term to avoid excessive API calls
@@ -138,16 +138,16 @@ export default function CategoryList({ user }: CategoryListProps) {
     search: debouncedSearchTerm,
     status: filters.isActive,
     parentId:
-      filters.parentId === "all" || filters.parentId === ""
+      filters.parentId === 'all' || filters.parentId === ''
         ? undefined
-        : filters.parentId === "null"
+        : filters.parentId === 'null'
           ? null
-          : filters.parentId === "subcategories"
-            ? "subcategories"
+          : filters.parentId === 'subcategories'
+            ? 'subcategories'
             : parseInt(filters.parentId),
     includeChildren: true,
-    sortBy: "name",
-    sortOrder: "asc",
+    sortBy: 'name',
+    sortOrder: 'asc',
     page: pagination.page,
     limit: pagination.limit,
   });
@@ -171,31 +171,31 @@ export default function CategoryList({ user }: CategoryListProps) {
   };
 
   // Permission checks
-  const canManageCategories = ["ADMIN", "MANAGER"].includes(user.role);
-  const canDeleteCategories = user.role === "ADMIN";
+  const canManageCategories = ['ADMIN', 'MANAGER'].includes(user.role);
+  const canDeleteCategories = user.role === 'ADMIN';
 
   // Filter configurations - memoized to prevent unnecessary re-renders
   const filterConfigs: FilterConfig[] = useMemo(
     () => [
       {
-        key: "isActive",
-        label: "Status",
-        type: "select",
+        key: 'isActive',
+        label: 'Status',
+        type: 'select',
         options: [
-          { value: "true", label: "Active" },
-          { value: "false", label: "Inactive" },
+          { value: 'true', label: 'Active' },
+          { value: 'false', label: 'Inactive' },
         ],
-        placeholder: "All Status",
+        placeholder: 'All Status',
       },
       {
-        key: "parentId",
-        label: "Category Level",
-        type: "select",
+        key: 'parentId',
+        label: 'Category Level',
+        type: 'select',
         options: [
-          { value: "null", label: "Top Level Only" },
-          { value: "subcategories", label: "Subcategories Only" },
+          { value: 'null', label: 'Top Level Only' },
+          { value: 'subcategories', label: 'Subcategories Only' },
         ],
-        placeholder: "All Levels",
+        placeholder: 'All Levels',
       },
     ],
     []
@@ -203,29 +203,29 @@ export default function CategoryList({ user }: CategoryListProps) {
 
   // Handle filter changes
   const handleFilterChange = useCallback((key: string, value: any) => {
-    setFilters((prev) => {
+    setFilters(prev => {
       if (prev[key as keyof typeof prev] === value) return prev; // Prevent unnecessary updates
       return { ...prev, [key]: value };
     });
-    setPagination((prev) => ({ ...prev, page: 1 }));
+    setPagination(prev => ({ ...prev, page: 1 }));
   }, []);
 
   // Clear all filters
   const handleResetFilters = useCallback(() => {
     setFilters({
-      search: "",
-      isActive: "",
-      parentId: "",
+      search: '',
+      isActive: '',
+      parentId: '',
     });
-    setPagination((prev) => ({ ...prev, page: 1 }));
+    setPagination(prev => ({ ...prev, page: 1 }));
   }, []);
 
   const handlePageChange = useCallback((newPage: number) => {
-    setPagination((prev) => ({ ...prev, page: newPage }));
+    setPagination(prev => ({ ...prev, page: newPage }));
   }, []);
 
   const handlePageSizeChange = useCallback((newSize: number) => {
-    setPagination((prev) => ({ ...prev, limit: newSize, page: 1 }));
+    setPagination(prev => ({ ...prev, limit: newSize, page: 1 }));
   }, []);
 
   // Handle delete category
@@ -234,11 +234,11 @@ export default function CategoryList({ user }: CategoryListProps) {
 
     try {
       await deleteCategoryMutation.mutateAsync(categoryToDelete.id);
-      toast.success("Category deleted successfully");
+      toast.success('Category deleted successfully');
     } catch (error) {
-      console.error("Error deleting category:", error);
+      console.error('Error deleting category:', error);
       toast.error(
-        error instanceof Error ? error.message : "Failed to delete category"
+        error instanceof Error ? error.message : 'Failed to delete category'
       );
     } finally {
       setDeleteDialogOpen(false);
@@ -261,7 +261,7 @@ export default function CategoryList({ user }: CategoryListProps) {
       return (
         <div className="flex items-center space-x-1">
           <span className="text-muted-foreground">{category.parent.name}</span>
-          <span className="text-muted-foreground">{">>"}</span>
+          <span className="text-muted-foreground">{'>>'}</span>
           <span className="font-medium">{category.name}</span>
         </div>
       );
@@ -280,19 +280,19 @@ export default function CategoryList({ user }: CategoryListProps) {
 
     if (visibleColumns.length === 0) {
       columnsToShow = columns
-        .filter((col) => col.defaultVisible)
-        .map((col) => col.key);
+        .filter(col => col.defaultVisible)
+        .map(col => col.key);
     }
 
     // Filter out any "actions" column since it's handled automatically by the table
-    return columnsToShow.filter((col) => col !== "actions");
+    return columnsToShow.filter(col => col !== 'actions');
   }, [visibleColumns, columns]);
 
   // Render cell function
   const renderCell = useCallback(
     (category: APICategory, columnKey: string) => {
       switch (columnKey) {
-        case "image":
+        case 'image':
           return category.image ? (
             <ImagePreview
               src={category.image}
@@ -301,34 +301,34 @@ export default function CategoryList({ user }: CategoryListProps) {
               className="rounded-md"
             />
           ) : (
-            <div className="size-12 bg-gray-100 rounded-md flex items-center justify-center">
+            <div className="flex size-12 items-center justify-center rounded-md bg-gray-100">
               <IconTag className="h-4 w-4 text-gray-400" />
             </div>
           );
-        case "name":
+        case 'name':
           return getCategoryDisplayName(category);
-        case "description":
+        case 'description':
           return (
             category.description || (
               <span className="text-gray-400 italic">No description</span>
             )
           );
-        case "parent":
+        case 'parent':
           return category.parent ? (
             <div className="flex items-center space-x-2">
-              <IconFolder className="h-4 w-4 text-muted-foreground" />
+              <IconFolder className="text-muted-foreground h-4 w-4" />
               <span>{category.parent.name}</span>
             </div>
           ) : (
             <span className="text-gray-400 italic">Top Level</span>
           );
-        case "products":
+        case 'products':
           return (
             <Badge variant="outline" className="text-xs">
               {category.productCount || 0}
             </Badge>
           );
-        case "subcategories":
+        case 'subcategories':
           return category.subcategoryCount > 0 ? (
             <Badge variant="secondary" className="text-xs">
               {category.subcategoryCount}
@@ -336,11 +336,11 @@ export default function CategoryList({ user }: CategoryListProps) {
           ) : (
             <span className="text-gray-400 italic">-</span>
           );
-        case "isActive":
+        case 'isActive':
           return getStatusBadge(category.isActive);
-        case "createdAt":
+        case 'createdAt':
           return new Date(category.createdAt).toLocaleDateString();
-        case "updatedAt":
+        case 'updatedAt':
           return category.updatedAt ? (
             <span className="text-sm">
               {new Date(category.updatedAt).toLocaleDateString()}
@@ -435,7 +435,7 @@ export default function CategoryList({ user }: CategoryListProps) {
         // Filters
         searchPlaceholder="Search categories..."
         searchValue={filters.search}
-        onSearchChange={(value) => handleFilterChange("search", value)}
+        onSearchChange={value => handleFilterChange('search', value)}
         isSearching={isSearching}
         filters={filterConfigs}
         filterValues={filters}
@@ -463,15 +463,15 @@ export default function CategoryList({ user }: CategoryListProps) {
         // Empty state
         emptyStateIcon={<IconTag className="h-12 w-12 text-gray-400" />}
         emptyStateMessage={
-          debouncedSearchTerm || filters.isActive || filters.parentId !== "all"
-            ? "No categories found matching your filters."
-            : "No categories found. Get started by creating your first category."
+          debouncedSearchTerm || filters.isActive || filters.parentId !== 'all'
+            ? 'No categories found matching your filters.'
+            : 'No categories found. Get started by creating your first category.'
         }
         emptyStateAction={
           canManageCategories ? (
             <Button asChild>
               <Link href="/inventory/categories/add">
-                <IconPlus className="h-4 w-4 mr-2" />
+                <IconPlus className="mr-2 h-4 w-4" />
                 Add Category
               </Link>
             </Button>
@@ -497,13 +497,13 @@ export default function CategoryList({ user }: CategoryListProps) {
             {categoryToDelete &&
               (categoryToDelete.productCount > 0 ||
                 categoryToDelete.subcategoryCount > 0) && (
-                <div className="mt-2 text-destructive text-sm">
-                  This category has{" "}
+                <div className="text-destructive mt-2 text-sm">
+                  This category has{' '}
                   {categoryToDelete.productCount > 0 &&
                     `${categoryToDelete.productCount} associated products`}
                   {categoryToDelete.productCount > 0 &&
                     categoryToDelete.subcategoryCount > 0 &&
-                    " and "}
+                    ' and '}
                   {categoryToDelete.subcategoryCount > 0 &&
                     `${categoryToDelete.subcategoryCount} subcategories`}
                   .
@@ -512,7 +512,7 @@ export default function CategoryList({ user }: CategoryListProps) {
             {categoryToDelete &&
               (categoryToDelete.productCount > 0 ||
                 categoryToDelete.subcategoryCount > 0) && (
-                <div className="mt-2 text-destructive font-medium text-sm">
+                <div className="text-destructive mt-2 text-sm font-medium">
                   This category cannot be deleted because it has associated
                   products or subcategories.
                 </div>
@@ -546,7 +546,7 @@ export default function CategoryList({ user }: CategoryListProps) {
         user={user}
         open={detailPopupOpen}
         onOpenChange={setDetailPopupOpen}
-        onCategoryChange={(categoryId) => {
+        onCategoryChange={categoryId => {
           setSelectedCategoryId(categoryId);
         }}
       />

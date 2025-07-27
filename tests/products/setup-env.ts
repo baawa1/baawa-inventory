@@ -1,7 +1,7 @@
 // Setup environment variables for product tests
-process.env.DATABASE_URL = "postgresql://test:test@localhost:5432/test_db";
-process.env.NEXTAUTH_SECRET = "test-secret";
-process.env.NEXTAUTH_URL = "http://localhost:3000";
+process.env.DATABASE_URL = 'postgresql://test:test@localhost:5432/test_db';
+process.env.NEXTAUTH_SECRET = 'test-secret';
+process.env.NEXTAUTH_URL = 'http://localhost:3000';
 
 // Mock Web APIs for NextRequest
 global.Request = class MockRequest {} as any;
@@ -12,7 +12,7 @@ global.Headers = class MockHeaders {} as any;
 global.fetch = jest.fn();
 
 // Mock Next.js router
-jest.mock("next/navigation", () => ({
+jest.mock('next/navigation', () => ({
   useRouter: () => ({
     push: jest.fn(),
     replace: jest.fn(),
@@ -29,23 +29,23 @@ jest.mock("next/navigation", () => ({
     keys: jest.fn(),
     values: jest.fn(),
   }),
-  usePathname: () => "/test",
+  usePathname: () => '/test',
 }));
 
 // Mock Next.js image component
-jest.mock("next/image", () => ({
+jest.mock('next/image', () => ({
   __esModule: true,
   default: (props: any) => {
     const { src, alt, ...rest } = props;
     return {
-      type: "img",
-      props: { src, alt: alt || "Image", ...rest },
+      type: 'img',
+      props: { src, alt: alt || 'Image', ...rest },
     };
   },
 }));
 
 // Mock sonner toast
-jest.mock("sonner", () => ({
+jest.mock('sonner', () => ({
   toast: {
     success: jest.fn(),
     error: jest.fn(),
@@ -55,7 +55,7 @@ jest.mock("sonner", () => ({
 }));
 
 // Mock Prisma
-jest.mock("@/lib/db", () => ({
+jest.mock('@/lib/db', () => ({
   prisma: {
     product: {
       findMany: jest.fn(),
@@ -94,13 +94,13 @@ jest.mock("@/lib/db", () => ({
 }));
 
 // Mock auth
-jest.mock("@/auth", () => ({
+jest.mock('@/auth', () => ({
   auth: jest.fn(),
 }));
 
 // Mock TanStack Query
-jest.mock("@tanstack/react-query", () => ({
-  ...jest.requireActual("@tanstack/react-query"),
+jest.mock('@tanstack/react-query', () => ({
+  ...jest.requireActual('@tanstack/react-query'),
   useQuery: jest.fn(),
   useMutation: jest.fn(),
   useQueryClient: jest.fn(() => ({
@@ -111,7 +111,7 @@ jest.mock("@tanstack/react-query", () => ({
 }));
 
 // Mock custom hooks
-jest.mock("@/hooks/api/categories", () => ({
+jest.mock('@/hooks/api/categories', () => ({
   useCategories: jest.fn(() => ({
     data: [],
     isLoading: false,
@@ -159,7 +159,7 @@ jest.mock("@/hooks/api/categories", () => ({
   })),
 }));
 
-jest.mock("@/hooks/api/brands", () => ({
+jest.mock('@/hooks/api/brands', () => ({
   useBrands: jest.fn(() => ({
     data: [],
     isLoading: false,
@@ -167,7 +167,7 @@ jest.mock("@/hooks/api/brands", () => ({
   })),
 }));
 
-jest.mock("@/hooks/api/suppliers", () => ({
+jest.mock('@/hooks/api/suppliers', () => ({
   useSuppliers: jest.fn(() => ({
     data: [],
     isLoading: false,
@@ -175,7 +175,7 @@ jest.mock("@/hooks/api/suppliers", () => ({
   })),
 }));
 
-jest.mock("@/hooks/api/products", () => ({
+jest.mock('@/hooks/api/products', () => ({
   useProducts: jest.fn(() => ({
     data: [],
     isLoading: false,
@@ -203,7 +203,7 @@ jest.mock("@/hooks/api/products", () => ({
   })),
 }));
 
-jest.mock("@/hooks/api/useWebhookSync", () => ({
+jest.mock('@/hooks/api/useWebhookSync', () => ({
   useSyncEntity: jest.fn(() => ({
     mutate: jest.fn(),
     isLoading: false,
@@ -211,7 +211,7 @@ jest.mock("@/hooks/api/useWebhookSync", () => ({
   })),
 }));
 
-jest.mock("@/hooks/api/brands", () => ({
+jest.mock('@/hooks/api/brands', () => ({
   useBrands: jest.fn(() => ({
     data: [],
     isLoading: false,
@@ -249,7 +249,7 @@ jest.mock("@/hooks/api/brands", () => ({
   })),
 }));
 
-jest.mock("@/hooks/api/suppliers", () => ({
+jest.mock('@/hooks/api/suppliers', () => ({
   useSuppliers: jest.fn(() => ({
     data: [],
     isLoading: false,
@@ -292,7 +292,7 @@ global.File = class MockFile {
   constructor(bits: any[], name: string, options?: any) {
     this.name = name;
     this.size = bits.length;
-    this.type = options?.type || "text/plain";
+    this.type = options?.type || 'text/plain';
     this.lastModified = options?.lastModified || Date.now();
   }
 } as any;
@@ -307,7 +307,7 @@ global.FileReader = class MockFileReader {
   readAsDataURL(blob: Blob) {
     setTimeout(() => {
       if (this.onload) {
-        this.result = "data:text/plain;base64,dGVzdA==";
+        this.result = 'data:text/plain;base64,dGVzdA==';
         this.onload.call(this, {} as ProgressEvent<FileReader>);
       }
     }, 0);
@@ -316,7 +316,7 @@ global.FileReader = class MockFileReader {
   readAsText(blob: Blob) {
     setTimeout(() => {
       if (this.onload) {
-        this.result = "test content";
+        this.result = 'test content';
         this.onload.call(this, {} as ProgressEvent<FileReader>);
       }
     }, 0);
@@ -324,7 +324,7 @@ global.FileReader = class MockFileReader {
 } as any;
 
 // Mock URL.createObjectURL
-global.URL.createObjectURL = jest.fn(() => "mock-url");
+global.URL.createObjectURL = jest.fn(() => 'mock-url');
 global.URL.revokeObjectURL = jest.fn();
 
 // Mock ResizeObserver
@@ -342,9 +342,9 @@ global.IntersectionObserver = jest.fn().mockImplementation(() => ({
 }));
 
 // Mock matchMedia
-Object.defineProperty(window, "matchMedia", {
+Object.defineProperty(window, 'matchMedia', {
   writable: true,
-  value: jest.fn().mockImplementation((query) => ({
+  value: jest.fn().mockImplementation(query => ({
     matches: false,
     media: query,
     onchange: null,
@@ -357,7 +357,7 @@ Object.defineProperty(window, "matchMedia", {
 });
 
 // Mock window.scrollTo
-Object.defineProperty(window, "scrollTo", {
+Object.defineProperty(window, 'scrollTo', {
   writable: true,
   value: jest.fn(),
 });
@@ -369,10 +369,10 @@ const originalConsoleWarn = console.warn;
 beforeAll(() => {
   console.error = (...args: any[]) => {
     if (
-      typeof args[0] === "string" &&
-      (args[0].includes("Warning: ReactDOM.render is no longer supported") ||
-        args[0].includes("Warning: componentWillReceiveProps") ||
-        args[0].includes("Warning: componentWillUpdate"))
+      typeof args[0] === 'string' &&
+      (args[0].includes('Warning: ReactDOM.render is no longer supported') ||
+        args[0].includes('Warning: componentWillReceiveProps') ||
+        args[0].includes('Warning: componentWillUpdate'))
     ) {
       return;
     }
@@ -381,10 +381,10 @@ beforeAll(() => {
 
   console.warn = (...args: any[]) => {
     if (
-      typeof args[0] === "string" &&
-      (args[0].includes("Warning: ReactDOM.render is no longer supported") ||
-        args[0].includes("Warning: componentWillReceiveProps") ||
-        args[0].includes("Warning: componentWillUpdate"))
+      typeof args[0] === 'string' &&
+      (args[0].includes('Warning: ReactDOM.render is no longer supported') ||
+        args[0].includes('Warning: componentWillReceiveProps') ||
+        args[0].includes('Warning: componentWillUpdate'))
     ) {
       return;
     }

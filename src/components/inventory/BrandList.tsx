@@ -1,25 +1,25 @@
-"use client";
+'use client';
 
-import React, { useState, useMemo, useCallback } from "react";
-import Link from "next/link";
-import { toast } from "sonner";
-import { useDebounce } from "@/hooks/useDebounce";
+import React, { useState, useMemo, useCallback } from 'react';
+import Link from 'next/link';
+import { toast } from 'sonner';
+import { useDebounce } from '@/hooks/useDebounce';
 import {
   useBrands,
   useDeleteBrand,
   type Brand as APIBrand,
-} from "@/hooks/api/brands";
-import { InventoryPageLayout } from "@/components/inventory/InventoryPageLayout";
-import { Button } from "@/components/ui/button";
-import { Badge } from "@/components/ui/badge";
-import { ImagePreview } from "@/components/ui/image-preview";
+} from '@/hooks/api/brands';
+import { InventoryPageLayout } from '@/components/inventory/InventoryPageLayout';
+import { Button } from '@/components/ui/button';
+import { Badge } from '@/components/ui/badge';
+import { ImagePreview } from '@/components/ui/image-preview';
 
 import {
   DropdownMenu,
   DropdownMenuContent,
   DropdownMenuItem,
   DropdownMenuTrigger,
-} from "@/components/ui/dropdown-menu";
+} from '@/components/ui/dropdown-menu';
 import {
   AlertDialog,
   AlertDialogAction,
@@ -29,7 +29,7 @@ import {
   AlertDialogFooter,
   AlertDialogHeader,
   AlertDialogTitle,
-} from "@/components/ui/alert-dialog";
+} from '@/components/ui/alert-dialog';
 import {
   IconPlus,
   IconDots,
@@ -37,10 +37,10 @@ import {
   IconTrash,
   IconBrandX,
   IconAlertTriangle,
-} from "@tabler/icons-react";
-import type { FilterConfig } from "@/types/inventory";
-import type { DashboardTableColumn } from "@/components/layouts/DashboardColumnCustomizer";
-import { logger } from "@/lib/logger";
+} from '@tabler/icons-react';
+import type { FilterConfig } from '@/types/inventory';
+import type { DashboardTableColumn } from '@/components/layouts/DashboardColumnCustomizer';
+import { logger } from '@/lib/logger';
 
 interface User {
   id: string;
@@ -70,37 +70,37 @@ export default function BrandList({ user }: BrandListProps) {
   const columns: DashboardTableColumn[] = useMemo(
     () => [
       {
-        key: "image",
-        label: "Image",
+        key: 'image',
+        label: 'Image',
         sortable: false,
         defaultVisible: true,
         required: true,
       },
       {
-        key: "name",
-        label: "Name",
+        key: 'name',
+        label: 'Name',
         sortable: true,
         defaultVisible: true,
         required: true,
       },
-      { key: "description", label: "Description", defaultVisible: true },
-      { key: "website", label: "Website", defaultVisible: true },
-      { key: "isActive", label: "Status", defaultVisible: true },
+      { key: 'description', label: 'Description', defaultVisible: true },
+      { key: 'website', label: 'Website', defaultVisible: true },
+      { key: 'isActive', label: 'Status', defaultVisible: true },
       {
-        key: "productCount",
-        label: "Products",
+        key: 'productCount',
+        label: 'Products',
         defaultVisible: true,
         sortable: true,
       },
-      { key: "createdAt", label: "Created", defaultVisible: true },
-      { key: "updatedAt", label: "Updated", defaultVisible: false },
+      { key: 'createdAt', label: 'Created', defaultVisible: true },
+      { key: 'updatedAt', label: 'Updated', defaultVisible: false },
     ],
     []
   );
 
   // Initialize visibleColumns with default values to prevent hydration mismatch
   const defaultVisibleColumns = useMemo(
-    () => columns.filter((col) => col.defaultVisible).map((col) => col.key),
+    () => columns.filter(col => col.defaultVisible).map(col => col.key),
     [columns]
   );
 
@@ -110,8 +110,8 @@ export default function BrandList({ user }: BrandListProps) {
 
   // Filters
   const [filters, setFilters] = useState({
-    search: "",
-    isActive: "",
+    search: '',
+    isActive: '',
   });
 
   // Debounce search term to avoid excessive API calls
@@ -124,8 +124,8 @@ export default function BrandList({ user }: BrandListProps) {
   const brandsQuery = useBrands({
     search: debouncedSearchTerm,
     status: filters.isActive,
-    sortBy: "name",
-    sortOrder: "asc",
+    sortBy: 'name',
+    sortOrder: 'asc',
     page: pagination.page,
     limit: pagination.limit,
   });
@@ -148,21 +148,21 @@ export default function BrandList({ user }: BrandListProps) {
   };
 
   // Permission checks
-  const canManageBrands = ["ADMIN", "MANAGER"].includes(user.role);
-  const canDeleteBrands = user.role === "ADMIN";
+  const canManageBrands = ['ADMIN', 'MANAGER'].includes(user.role);
+  const canDeleteBrands = user.role === 'ADMIN';
 
   // Filter configurations - memoized to prevent unnecessary re-renders
   const filterConfigs: FilterConfig[] = useMemo(
     () => [
       {
-        key: "isActive",
-        label: "Status",
-        type: "select",
+        key: 'isActive',
+        label: 'Status',
+        type: 'select',
         options: [
-          { value: "true", label: "Active" },
-          { value: "false", label: "Inactive" },
+          { value: 'true', label: 'Active' },
+          { value: 'false', label: 'Inactive' },
         ],
-        placeholder: "All Status",
+        placeholder: 'All Status',
       },
     ],
     []
@@ -170,28 +170,28 @@ export default function BrandList({ user }: BrandListProps) {
 
   // Handle filter changes
   const handleFilterChange = useCallback((key: string, value: any) => {
-    setFilters((prev) => {
+    setFilters(prev => {
       if (prev[key as keyof typeof prev] === value) return prev; // Prevent unnecessary updates
       return { ...prev, [key]: value };
     });
-    setPagination((prev) => ({ ...prev, page: 1 }));
+    setPagination(prev => ({ ...prev, page: 1 }));
   }, []);
 
   // Clear all filters
   const handleResetFilters = useCallback(() => {
     setFilters({
-      search: "",
-      isActive: "",
+      search: '',
+      isActive: '',
     });
-    setPagination((prev) => ({ ...prev, page: 1 }));
+    setPagination(prev => ({ ...prev, page: 1 }));
   }, []);
 
   const handlePageChange = useCallback((newPage: number) => {
-    setPagination((prev) => ({ ...prev, page: newPage }));
+    setPagination(prev => ({ ...prev, page: newPage }));
   }, []);
 
   const handlePageSizeChange = useCallback((newSize: number) => {
-    setPagination((prev) => ({ ...prev, limit: newSize, page: 1 }));
+    setPagination(prev => ({ ...prev, limit: newSize, page: 1 }));
   }, []);
 
   // Handle delete brand
@@ -201,7 +201,7 @@ export default function BrandList({ user }: BrandListProps) {
     // Additional safety check - prevent deletion if brand has products
     if (brandToDelete.productCount > 0) {
       toast.error(
-        `Cannot delete brand "${brandToDelete.name}" - it has ${brandToDelete.productCount} associated product${brandToDelete.productCount === 1 ? "" : "s"}`
+        `Cannot delete brand "${brandToDelete.name}" - it has ${brandToDelete.productCount} associated product${brandToDelete.productCount === 1 ? '' : 's'}`
       );
       setDeleteDialogOpen(false);
       setBrandToDelete(null);
@@ -210,14 +210,14 @@ export default function BrandList({ user }: BrandListProps) {
 
     try {
       await deleteBrandMutation.mutateAsync(brandToDelete.id);
-      toast.success("Brand deleted successfully");
+      toast.success('Brand deleted successfully');
     } catch (error) {
-      logger.error("Failed to delete brand", {
+      logger.error('Failed to delete brand', {
         brandId: brandToDelete?.id,
         brandName: brandToDelete?.name,
         error: error instanceof Error ? error.message : String(error),
       });
-      toast.error("Failed to delete brand");
+      toast.error('Failed to delete brand');
     } finally {
       setDeleteDialogOpen(false);
       setBrandToDelete(null);
@@ -244,19 +244,19 @@ export default function BrandList({ user }: BrandListProps) {
 
     if (visibleColumns.length === 0) {
       columnsToShow = columns
-        .filter((col) => col.defaultVisible)
-        .map((col) => col.key);
+        .filter(col => col.defaultVisible)
+        .map(col => col.key);
     }
 
     // Filter out any "actions" column since it's handled automatically by the table
-    return columnsToShow.filter((col) => col !== "actions");
+    return columnsToShow.filter(col => col !== 'actions');
   }, [visibleColumns, columns]);
 
   // Render cell function
   const renderCell = useCallback(
     (brand: APIBrand, columnKey: string) => {
       switch (columnKey) {
-        case "image":
+        case 'image':
           return brand.image ? (
             <ImagePreview
               src={brand.image}
@@ -265,34 +265,34 @@ export default function BrandList({ user }: BrandListProps) {
               className="rounded-md"
             />
           ) : (
-            <div className="w-10 h-10 bg-gray-100 rounded-md flex items-center justify-center">
+            <div className="flex h-10 w-10 items-center justify-center rounded-md bg-gray-100">
               <IconBrandX className="h-4 w-4 text-gray-400" />
             </div>
           );
-        case "name":
+        case 'name':
           return <span className="font-medium">{brand.name}</span>;
-        case "description":
+        case 'description':
           return (
             brand.description || (
               <span className="text-gray-400 italic">No description</span>
             )
           );
-        case "website":
+        case 'website':
           return brand.website ? (
             <a
               href={brand.website}
               target="_blank"
               rel="noopener noreferrer"
-              className="text-blue-600 hover:text-blue-800 underline"
+              className="text-blue-600 underline hover:text-blue-800"
             >
               {brand.website}
             </a>
           ) : (
             <span className="text-gray-400 italic">No website</span>
           );
-        case "isActive":
+        case 'isActive':
           return getStatusBadge(brand.isActive);
-        case "productCount":
+        case 'productCount':
           return (
             <div className="flex items-center gap-2">
               <Badge variant="outline">{brand.productCount || 0}</Badge>
@@ -301,9 +301,9 @@ export default function BrandList({ user }: BrandListProps) {
               )}
             </div>
           );
-        case "createdAt":
+        case 'createdAt':
           return new Date(brand.createdAt).toLocaleDateString();
-        case "updatedAt":
+        case 'updatedAt':
           return brand.updatedAt ? (
             <span className="text-sm">
               {new Date(brand.updatedAt).toLocaleDateString()}
@@ -344,8 +344,8 @@ export default function BrandList({ user }: BrandListProps) {
               <DropdownMenuItem
                 className={
                   canDelete
-                    ? "text-red-600"
-                    : "text-gray-400 cursor-not-allowed"
+                    ? 'text-red-600'
+                    : 'cursor-not-allowed text-gray-400'
                 }
                 onClick={() => {
                   if (canDelete) {
@@ -388,7 +388,7 @@ export default function BrandList({ user }: BrandListProps) {
         // Filters
         searchPlaceholder="Search brands..."
         searchValue={filters.search}
-        onSearchChange={(value) => handleFilterChange("search", value)}
+        onSearchChange={value => handleFilterChange('search', value)}
         isSearching={isSearching}
         filters={filterConfigs}
         filterValues={filters}
@@ -417,14 +417,14 @@ export default function BrandList({ user }: BrandListProps) {
         emptyStateIcon={<IconBrandX className="size-12 text-gray-400" />}
         emptyStateMessage={
           debouncedSearchTerm || filters.isActive
-            ? "No brands found matching your filters."
-            : "No brands found. Get started by creating your first brand."
+            ? 'No brands found matching your filters.'
+            : 'No brands found. Get started by creating your first brand.'
         }
         emptyStateAction={
           canManageBrands ? (
             <Button asChild>
               <Link href="/inventory/brands/add">
-                <IconPlus className="h-4 w-4 mr-2" />
+                <IconPlus className="mr-2 h-4 w-4" />
                 Add Brand
               </Link>
             </Button>
@@ -448,9 +448,9 @@ export default function BrandList({ user }: BrandListProps) {
                 </>
               ) : (
                 <>
-                  Cannot delete the brand "{brandToDelete?.name}" because it has{" "}
+                  Cannot delete the brand "{brandToDelete?.name}" because it has{' '}
                   {brandToDelete?.productCount} associated product
-                  {brandToDelete?.productCount === 1 ? "" : "s"}. Please remove
+                  {brandToDelete?.productCount === 1 ? '' : 's'}. Please remove
                   or reassign all products from this brand before deleting it.
                 </>
               )}

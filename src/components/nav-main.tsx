@@ -1,22 +1,22 @@
-"use client";
+'use client';
 
 import {
   IconCirclePlusFilled,
   IconAlertTriangle,
   type Icon,
-} from "@tabler/icons-react";
+} from '@tabler/icons-react';
 
-import Link from "next/link";
-import { usePathname } from "next/navigation";
+import Link from 'next/link';
+import { usePathname } from 'next/navigation';
 
-import { Button } from "@/components/ui/button";
+import { Button } from '@/components/ui/button';
 import {
   SidebarGroup,
   SidebarGroupContent,
   SidebarMenu,
   SidebarMenuButton,
   SidebarMenuItem,
-} from "@/components/ui/sidebar";
+} from '@/components/ui/sidebar';
 
 export function NavMain({
   items,
@@ -58,15 +58,15 @@ export function NavMain({
           </SidebarMenuItem>
         </SidebarMenu>
         <SidebarMenu>
-          {items.map((item) => {
+          {items.map(item => {
             const isActive =
-              pathname === item.url || pathname.startsWith(item.url + "/");
+              pathname === item.url || pathname.startsWith(item.url + '/');
             return (
               <SidebarMenuItem key={item.title}>
                 <SidebarMenuButton
                   asChild
                   tooltip={item.title}
-                  className={isActive ? "bg-accent text-accent-foreground" : ""}
+                  className={isActive ? 'bg-accent text-accent-foreground' : ''}
                 >
                   <Link href={item.url}>
                     {item.icon && <item.icon />}

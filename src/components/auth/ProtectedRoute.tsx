@@ -1,17 +1,17 @@
-"use client";
+'use client';
 
-import React from "react";
-import { useAuth } from "@/lib/auth-rbac-client";
-import { UserRole } from "@/types/user";
+import React from 'react';
+import { useAuth } from '@/lib/auth-rbac-client';
+import { UserRole } from '@/types/user';
 import {
   Card,
   CardContent,
   CardDescription,
   CardHeader,
   CardTitle,
-} from "@/components/ui/card";
-import { Button } from "@/components/ui/button";
-import Link from "next/link";
+} from '@/components/ui/card';
+import { Button } from '@/components/ui/button';
+import Link from 'next/link';
 
 interface ProtectedRouteProps {
   children: React.ReactNode;
@@ -32,8 +32,8 @@ export function ProtectedRoute({
   // Show loading state
   if (isLoading) {
     return (
-      <div className="min-h-screen flex items-center justify-center">
-        <div className="animate-spin rounded-full h-32 w-32 border-b-2 border-primary"></div>
+      <div className="flex min-h-screen items-center justify-center">
+        <div className="border-primary h-32 w-32 animate-spin rounded-full border-b-2"></div>
       </div>
     );
   }
@@ -41,7 +41,7 @@ export function ProtectedRoute({
   // Show sign-in prompt for unauthenticated users
   if (!isAuthenticated) {
     return (
-      <div className="min-h-screen flex items-center justify-center bg-gray-50">
+      <div className="flex min-h-screen items-center justify-center bg-gray-50">
         <Card className="w-full max-w-md">
           <CardHeader className="text-center">
             <CardTitle>Authentication Required</CardTitle>
@@ -64,7 +64,7 @@ export function ProtectedRoute({
     const userRole = role as UserRole;
 
     // Admin always has access
-    if (userRole !== "ADMIN") {
+    if (userRole !== 'ADMIN') {
       const allowedRoles = Array.isArray(requiredRole)
         ? requiredRole
         : [requiredRole];
@@ -87,7 +87,7 @@ export function ProtectedRoute({
 
 function UnauthorizedFallback() {
   return (
-    <div className="min-h-screen flex items-center justify-center bg-gray-50">
+    <div className="flex min-h-screen items-center justify-center bg-gray-50">
       <Card className="w-full max-w-md">
         <CardHeader className="text-center">
           <CardTitle className="text-destructive">Access Denied</CardTitle>
@@ -153,7 +153,7 @@ export function ConditionalRender({
   // Check role-based access
   if (requiredRole) {
     // Admin always has access
-    if (userRole !== "ADMIN") {
+    if (userRole !== 'ADMIN') {
       const allowedRoles = Array.isArray(requiredRole)
         ? requiredRole
         : [requiredRole];

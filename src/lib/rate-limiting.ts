@@ -3,8 +3,8 @@
  * Provides rate limiting for API endpoints to prevent abuse
  */
 
-import { NextRequest, NextResponse } from "next/server";
-import { logger } from "./logger";
+import { NextRequest, NextResponse } from 'next/server';
+import { logger } from './logger';
 
 interface RateLimitConfig {
   windowMs: number; // Time window in milliseconds
@@ -54,10 +54,10 @@ function generateKey(request: NextRequest, config: RateLimitConfig): string {
 
   // Default: IP + User Agent
   const ip =
-    request.headers.get("x-forwarded-for") ||
-    request.headers.get("x-real-ip") ||
-    "unknown";
-  const userAgent = request.headers.get("user-agent") || "unknown";
+    request.headers.get('x-forwarded-for') ||
+    request.headers.get('x-real-ip') ||
+    'unknown';
+  const userAgent = request.headers.get('user-agent') || 'unknown';
   return `${ip}:${userAgent}`;
 }
 
@@ -133,26 +133,26 @@ export function withRateLimit(
 
       // Set rate limit headers
       const headers = {
-        "X-RateLimit-Limit": config.maxRequests.toString(),
-        "X-RateLimit-Remaining": rateLimit.remaining.toString(),
-        "X-RateLimit-Reset": Math.ceil(rateLimit.resetTime / 1000).toString(),
+        'X-RateLimit-Limit': config.maxRequests.toString(),
+        'X-RateLimit-Remaining': rateLimit.remaining.toString(),
+        'X-RateLimit-Reset': Math.ceil(rateLimit.resetTime / 1000).toString(),
       };
 
       if (!rateLimit.allowed) {
-        logger.security("Rate limit exceeded", {
+        logger.security('Rate limit exceeded', {
           key,
           limit: config.maxRequests,
           windowMs: config.windowMs,
-          userAgent: request.headers.get("user-agent"),
+          userAgent: request.headers.get('user-agent'),
           ip:
-            request.headers.get("x-forwarded-for") ||
-            request.headers.get("x-real-ip"),
+            request.headers.get('x-forwarded-for') ||
+            request.headers.get('x-real-ip'),
         });
 
         return NextResponse.json(
           {
-            error: "Too many requests",
-            message: "Rate limit exceeded. Please try again later.",
+            error: 'Too many requests',
+            message: 'Rate limit exceeded. Please try again later.',
             retryAfter: Math.ceil((rateLimit.resetTime - Date.now()) / 1000),
           },
           {
@@ -180,7 +180,7 @@ export function withRateLimit(
  */
 export function cleanupRateLimitStore(): void {
   const now = Date.now();
-  Object.keys(rateLimitStore).forEach((key) => {
+  Object.keys(rateLimitStore).forEach(key => {
     if (rateLimitStore[key].resetTime < now) {
       delete rateLimitStore[key];
     }
@@ -188,6 +188,6 @@ export function cleanupRateLimitStore(): void {
 }
 
 // Clean up expired entries every 5 minutes
-if (typeof window === "undefined") {
+if (typeof window === 'undefined') {
   setInterval(cleanupRateLimitStore, 5 * 60 * 1000);
 }

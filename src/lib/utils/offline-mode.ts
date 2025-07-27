@@ -8,8 +8,8 @@ import {
   generateTransactionId,
   OfflineTransaction,
   OfflineProduct,
-} from "./offline-storage";
-import { logger } from "@/lib/logger";
+} from './offline-storage';
+import { logger } from '@/lib/logger';
 
 export interface NetworkStatus {
   isOnline: boolean;
@@ -28,7 +28,7 @@ export interface OfflineQueueStats {
 
 class OfflineModeManager {
   private isOnline: boolean =
-    typeof navigator !== "undefined" ? navigator.onLine : true;
+    typeof navigator !== 'undefined' ? navigator.onLine : true;
   private listeners: Set<(status: NetworkStatus) => void> = new Set();
   private syncInterval: NodeJS.Timeout | null = null;
   private lastOnlineTime?: Date;
@@ -37,15 +37,15 @@ class OfflineModeManager {
 
   constructor() {
     // Only initialize in browser environment
-    if (typeof window !== "undefined") {
+    if (typeof window !== 'undefined') {
       this.init();
     }
   }
 
   private init() {
     // Listen for online/offline events
-    window.addEventListener("online", this.handleOnline.bind(this));
-    window.addEventListener("offline", this.handleOffline.bind(this));
+    window.addEventListener('online', this.handleOnline.bind(this));
+    window.addEventListener('offline', this.handleOffline.bind(this));
 
     // Monitor connection quality
     this.monitorConnectionQuality();
@@ -84,9 +84,9 @@ class OfflineModeManager {
 
       try {
         const start = Date.now();
-        const response = await fetch("/api/health", {
-          method: "HEAD",
-          cache: "no-cache",
+        const response = await fetch('/api/health', {
+          method: 'HEAD',
+          cache: 'no-cache',
         });
         const duration = Date.now() - start;
 
@@ -111,11 +111,11 @@ class OfflineModeManager {
       lastOfflineTime: this.lastOfflineTime,
     };
 
-    this.listeners.forEach((listener) => {
+    this.listeners.forEach(listener => {
       try {
         listener(status);
       } catch (error) {
-        logger.error("Offline status listener error", {
+        logger.error('Offline status listener error', {
           error: error instanceof Error ? error.message : String(error),
         });
       }
@@ -199,7 +199,7 @@ class OfflineModeManager {
     subtotal: number;
     discount: number;
     total: number;
-    paymentMethod: "cash" | "pos" | "bank_transfer" | "mobile_money";
+    paymentMethod: 'cash' | 'pos' | 'bank_transfer' | 'mobile_money';
     customerName?: string;
     customerPhone?: string;
     customerEmail?: string;
@@ -210,7 +210,7 @@ class OfflineModeManager {
       id: generateTransactionId(),
       ...transactionData,
       timestamp: new Date(),
-      status: "pending",
+      status: 'pending',
       syncAttempts: 0,
     };
 
@@ -254,7 +254,7 @@ class OfflineModeManager {
           await this.syncSingleTransaction(transaction.id);
           success++;
         } catch (error) {
-          logger.error("Failed to sync transaction", {
+          logger.error('Failed to sync transaction', {
             transactionId: transaction.id,
             error: error instanceof Error ? error.message : String(error),
           });
@@ -263,11 +263,11 @@ class OfflineModeManager {
       }
 
       // Debug logging removed for production
-      await offlineStorage.updateSyncStatus("lastSyncAttempt", new Date());
+      await offlineStorage.updateSyncStatus('lastSyncAttempt', new Date());
 
       return { success, failed };
     } catch (error) {
-      logger.error("Error during sync", {
+      logger.error('Error during sync', {
         error: error instanceof Error ? error.message : String(error),
       });
       return { success: 0, failed: 0 };
@@ -280,17 +280,15 @@ class OfflineModeManager {
   private async syncSingleTransaction(transactionId: string): Promise<void> {
     try {
       const pendingTransactions = await offlineStorage.getPendingTransactions();
-      const transaction = pendingTransactions.find(
-        (t) => t.id === transactionId
-      );
+      const transaction = pendingTransactions.find(t => t.id === transactionId);
 
       if (!transaction) {
-        throw new Error("Transaction not found");
+        throw new Error('Transaction not found');
       }
 
       // Convert offline transaction to API format
       const saleData = {
-        items: transaction.items.map((item) => ({
+        items: transaction.items.map(item => ({
           productId: item.productId,
           quantity: item.quantity,
           price: item.price,
@@ -308,31 +306,31 @@ class OfflineModeManager {
       };
 
       // Send to server
-      const response = await fetch("/api/pos/create-sale", {
-        method: "POST",
+      const response = await fetch('/api/pos/create-sale', {
+        method: 'POST',
         headers: {
-          "Content-Type": "application/json",
+          'Content-Type': 'application/json',
         },
         body: JSON.stringify(saleData),
       });
 
       if (!response.ok) {
         const errorData = await response.json();
-        throw new Error(errorData.error || "Sync failed");
+        throw new Error(errorData.error || 'Sync failed');
       }
 
       // Mark as synced
-      await offlineStorage.updateTransactionStatus(transactionId, "synced");
+      await offlineStorage.updateTransactionStatus(transactionId, 'synced');
       // Debug logging removed for production
     } catch (error) {
-      logger.error("Failed to sync transaction", {
+      logger.error('Failed to sync transaction', {
         transactionId,
         error: error instanceof Error ? error.message : String(error),
       });
       await offlineStorage.updateTransactionStatus(
         transactionId,
-        "failed",
-        error instanceof Error ? error.message : "Unknown error"
+        'failed',
+        error instanceof Error ? error.message : 'Unknown error'
       );
       throw error;
     }
@@ -350,9 +348,9 @@ class OfflineModeManager {
     try {
       // Debug logging removed for production
 
-      const response = await fetch("/api/pos/products?limit=0");
+      const response = await fetch('/api/pos/products?limit=0');
       if (!response.ok) {
-        throw new Error("Failed to fetch products");
+        throw new Error('Failed to fetch products');
       }
 
       const data = await response.json();
@@ -371,11 +369,11 @@ class OfflineModeManager {
       }));
 
       await offlineStorage.cacheProducts(products);
-      await offlineStorage.updateSyncStatus("lastProductSync", new Date());
+      await offlineStorage.updateSyncStatus('lastProductSync', new Date());
 
       // Debug logging removed for production
     } catch (error) {
-      logger.error("Failed to cache products", {
+      logger.error('Failed to cache products', {
         error: error instanceof Error ? error.message : String(error),
       });
     }
@@ -389,10 +387,10 @@ class OfflineModeManager {
       await offlineStorage.init();
       const pendingTransactions = await offlineStorage.getPendingTransactions();
       const failedTransactions = pendingTransactions.filter(
-        (t) => t.status === "failed"
+        t => t.status === 'failed'
       );
       const lastSyncAttempt =
-        await offlineStorage.getSyncStatus("lastSyncAttempt");
+        await offlineStorage.getSyncStatus('lastSyncAttempt');
 
       return {
         pendingTransactions: pendingTransactions.length,
@@ -405,7 +403,7 @@ class OfflineModeManager {
           : undefined,
       };
     } catch (error) {
-      logger.error("Failed to get queue stats", {
+      logger.error('Failed to get queue stats', {
         error: error instanceof Error ? error.message : String(error),
       });
       return {
@@ -430,16 +428,16 @@ class OfflineModeManager {
     try {
       const pendingTransactions = await offlineStorage.getPendingTransactions();
       const failedTransactions = pendingTransactions.filter(
-        (t) => t.status === "failed"
+        t => t.status === 'failed'
       );
 
       for (const transaction of failedTransactions) {
-        await offlineStorage.updateTransactionStatus(transaction.id, "synced");
+        await offlineStorage.updateTransactionStatus(transaction.id, 'synced');
       }
 
       // Debug logging removed for production
     } catch (error) {
-      logger.error("Failed to clear failed transactions", {
+      logger.error('Failed to clear failed transactions', {
         error: error instanceof Error ? error.message : String(error),
       });
     }
@@ -451,20 +449,20 @@ export const offlineModeManager = new OfflineModeManager();
 
 // Utility functions
 export const isOnline = (): boolean =>
-  typeof navigator !== "undefined" ? navigator.onLine : true;
+  typeof navigator !== 'undefined' ? navigator.onLine : true;
 
 export const waitForOnline = (): Promise<void> => {
-  return new Promise((resolve) => {
+  return new Promise(resolve => {
     if (navigator.onLine) {
       resolve();
       return;
     }
 
     const handler = () => {
-      window.removeEventListener("online", handler);
+      window.removeEventListener('online', handler);
       resolve();
     };
 
-    window.addEventListener("online", handler);
+    window.addEventListener('online', handler);
   });
 };

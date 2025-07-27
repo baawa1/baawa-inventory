@@ -1,4 +1,4 @@
-import { NextResponse } from "next/server";
+import { NextResponse } from 'next/server';
 
 /**
  * Security Headers Utility
@@ -6,11 +6,11 @@ import { NextResponse } from "next/server";
  */
 
 export function generateSecurityHeaders(): Record<string, string> {
-  const isProduction = process.env.NODE_ENV === "production";
+  const isProduction = process.env.NODE_ENV === 'production';
 
   return {
     // Content Security Policy
-    "Content-Security-Policy": [
+    'Content-Security-Policy': [
       "default-src 'self'",
       "script-src 'self' 'unsafe-eval' 'unsafe-inline'",
       "style-src 'self' 'unsafe-inline'",
@@ -22,39 +22,39 @@ export function generateSecurityHeaders(): Record<string, string> {
       "base-uri 'self'",
       "form-action 'self'",
       "frame-ancestors 'none'",
-      "upgrade-insecure-requests",
-    ].join("; "),
+      'upgrade-insecure-requests',
+    ].join('; '),
 
     // HTTP Strict Transport Security
-    "Strict-Transport-Security": isProduction
-      ? "max-age=31536000; includeSubDomains; preload"
-      : "max-age=0",
+    'Strict-Transport-Security': isProduction
+      ? 'max-age=31536000; includeSubDomains; preload'
+      : 'max-age=0',
 
     // X-Frame-Options (prevent clickjacking)
-    "X-Frame-Options": "DENY",
+    'X-Frame-Options': 'DENY',
 
     // X-Content-Type-Options (prevent MIME type sniffing)
-    "X-Content-Type-Options": "nosniff",
+    'X-Content-Type-Options': 'nosniff',
 
     // X-XSS-Protection (additional XSS protection)
-    "X-XSS-Protection": "1; mode=block",
+    'X-XSS-Protection': '1; mode=block',
 
     // Referrer Policy
-    "Referrer-Policy": "strict-origin-when-cross-origin",
+    'Referrer-Policy': 'strict-origin-when-cross-origin',
 
     // Permissions Policy
-    "Permissions-Policy": [
-      "camera=()",
-      "microphone=()",
-      "geolocation=()",
-      "payment=()",
-      "usb=()",
-    ].join(", "),
+    'Permissions-Policy': [
+      'camera=()',
+      'microphone=()',
+      'geolocation=()',
+      'payment=()',
+      'usb=()',
+    ].join(', '),
 
     // Cache Control for API responses
-    "Cache-Control": "no-store, no-cache, must-revalidate, proxy-revalidate",
-    Pragma: "no-cache",
-    Expires: "0",
+    'Cache-Control': 'no-store, no-cache, must-revalidate, proxy-revalidate',
+    Pragma: 'no-cache',
+    Expires: '0',
   };
 }
 

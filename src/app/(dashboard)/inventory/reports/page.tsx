@@ -1,4 +1,4 @@
-import { InventoryReports } from "@/components/inventory/InventoryReports";
+import { InventoryReports } from '@/components/inventory/InventoryReports';
 
 export default function InventoryReportsPage() {
   return (

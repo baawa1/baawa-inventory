@@ -1,7 +1,7 @@
-"use client";
+'use client';
 
-import * as React from "react";
-import { useSession } from "next-auth/react";
+import * as React from 'react';
+import { useSession } from 'next-auth/react';
 import {
   IconChartBar,
   IconCash,
@@ -11,14 +11,14 @@ import {
   IconSettings,
   IconShoppingCart,
   IconUsers,
-} from "@tabler/icons-react";
+} from '@tabler/icons-react';
 
-import { NavInventory } from "@/components/nav-inventory";
-import { NavMain } from "@/components/nav-main";
-import { NavPOS } from "@/components/nav-pos";
-import { NavFinance } from "@/components/nav-finance";
-import { NavSecondary } from "@/components/nav-secondary";
-import { NavUser } from "@/components/nav-user";
+import { NavInventory } from '@/components/nav-inventory';
+import { NavMain } from '@/components/nav-main';
+import { NavPOS } from '@/components/nav-pos';
+import { NavFinance } from '@/components/nav-finance';
+import { NavSecondary } from '@/components/nav-secondary';
+import { NavUser } from '@/components/nav-user';
 import {
   Sidebar,
   SidebarContent,
@@ -27,45 +27,45 @@ import {
   SidebarMenu,
   SidebarMenuButton,
   SidebarMenuItem,
-} from "@/components/ui/sidebar";
+} from '@/components/ui/sidebar';
 
 const navMain = [
   {
-    title: "Dashboard",
-    url: "/dashboard",
+    title: 'Dashboard',
+    url: '/dashboard',
     icon: IconDashboard,
   },
   {
-    title: "POS System",
-    url: "/pos",
+    title: 'POS System',
+    url: '/pos',
     icon: IconShoppingCart,
   },
   {
-    title: "Finance Manager",
-    url: "/finance",
+    title: 'Finance Manager',
+    url: '/finance',
     icon: IconCash,
   },
   {
-    title: "Reports",
-    url: "/reports",
+    title: 'Reports',
+    url: '/reports',
     icon: IconChartBar,
   },
 ];
 
 const navSecondary = [
   {
-    title: "Settings",
-    url: "/settings",
+    title: 'Settings',
+    url: '/settings',
     icon: IconSettings,
   },
   {
-    title: "Get Help",
-    url: "#",
+    title: 'Get Help',
+    url: '#',
     icon: IconHelp,
   },
   {
-    title: "Admin Panel",
-    url: "/admin",
+    title: 'Admin Panel',
+    url: '/admin',
     icon: IconUsers,
   },
 ];
@@ -77,17 +77,17 @@ export function AppSidebar({ ...props }: React.ComponentProps<typeof Sidebar>) {
   const userData = React.useMemo(() => {
     if (session?.user) {
       return {
-        name: session.user.name || session.user.email || "User",
-        email: session.user.email || "",
-        avatar: session.user.image || "",
+        name: session.user.name || session.user.email || 'User',
+        email: session.user.email || '',
+        avatar: session.user.image || '',
       };
     }
 
     // Fallback data while loading or if no session
     return {
-      name: "Loading...",
-      email: "",
-      avatar: "",
+      name: 'Loading...',
+      email: '',
+      avatar: '',
     };
   }, [session]);
 

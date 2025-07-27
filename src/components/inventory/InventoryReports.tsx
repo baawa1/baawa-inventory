@@ -1,22 +1,22 @@
-"use client";
+'use client';
 
-import { useState, useMemo, useCallback } from "react";
-import { useQuery } from "@tanstack/react-query";
-import { useSearchParams } from "next/navigation";
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import { Button } from "@/components/ui/button";
-import { Label } from "@/components/ui/label";
+import { useState, useMemo, useCallback } from 'react';
+import { useQuery } from '@tanstack/react-query';
+import { useSearchParams } from 'next/navigation';
+import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
+import { Button } from '@/components/ui/button';
+import { Label } from '@/components/ui/label';
 import {
   Select,
   SelectContent,
   SelectItem,
   SelectTrigger,
   SelectValue,
-} from "@/components/ui/select";
-import { Badge } from "@/components/ui/badge";
-import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { Switch } from "@/components/ui/switch";
-import { Skeleton } from "@/components/ui/skeleton";
+} from '@/components/ui/select';
+import { Badge } from '@/components/ui/badge';
+import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
+import { Switch } from '@/components/ui/switch';
+import { Skeleton } from '@/components/ui/skeleton';
 import {
   Download,
   Filter,
@@ -28,9 +28,9 @@ import {
   TrendingUp,
   DollarSign,
   ShoppingCart,
-} from "lucide-react";
-import { toast } from "sonner";
-import { DashboardTableLayout } from "@/components/layouts/DashboardTableLayout";
+} from 'lucide-react';
+import { toast } from 'sonner';
+import { DashboardTableLayout } from '@/components/layouts/DashboardTableLayout';
 
 interface ReportFilters {
   category?: string;
@@ -80,7 +80,7 @@ function SummaryCard({ card, isLoading }: { card: any; isLoading: boolean }) {
   return (
     <Card>
       <CardHeader className="pb-2">
-        <CardTitle className="text-sm font-medium flex items-center gap-2">
+        <CardTitle className="flex items-center gap-2 text-sm font-medium">
           <IconComponent className="h-4 w-4" />
           {card.title}
         </CardTitle>
@@ -94,19 +94,19 @@ function SummaryCard({ card, isLoading }: { card: any; isLoading: boolean }) {
 
 export function InventoryReports() {
   const searchParams = useSearchParams();
-  const urlReportType = searchParams.get("type");
+  const urlReportType = searchParams.get('type');
 
   const [reportType, setReportType] = useState<string>(() => {
     // Set initial state based on URL parameter
     if (
       urlReportType &&
-      ["current_stock", "stock_value", "low_stock", "product_summary"].includes(
+      ['current_stock', 'stock_value', 'low_stock', 'product_summary'].includes(
         urlReportType
       )
     ) {
       return urlReportType;
     }
-    return "current_stock";
+    return 'current_stock';
   });
   const [filters, setFilters] = useState<ReportFilters>({});
   const [showFilters, setShowFilters] = useState(false);
@@ -119,28 +119,28 @@ export function InventoryReports() {
 
   // Fetch categories, brands, and suppliers for filters
   const { data: categories } = useQuery({
-    queryKey: ["categories"],
+    queryKey: ['categories'],
     queryFn: async () => {
-      const response = await fetch("/api/categories");
-      if (!response.ok) throw new Error("Failed to fetch categories");
+      const response = await fetch('/api/categories');
+      if (!response.ok) throw new Error('Failed to fetch categories');
       return response.json();
     },
   });
 
   const { data: brands } = useQuery({
-    queryKey: ["brands"],
+    queryKey: ['brands'],
     queryFn: async () => {
-      const response = await fetch("/api/brands");
-      if (!response.ok) throw new Error("Failed to fetch brands");
+      const response = await fetch('/api/brands');
+      if (!response.ok) throw new Error('Failed to fetch brands');
       return response.json();
     },
   });
 
   const { data: suppliers } = useQuery({
-    queryKey: ["suppliers"],
+    queryKey: ['suppliers'],
     queryFn: async () => {
-      const response = await fetch("/api/suppliers");
-      if (!response.ok) throw new Error("Failed to fetch suppliers");
+      const response = await fetch('/api/suppliers');
+      if (!response.ok) throw new Error('Failed to fetch suppliers');
       return response.json();
     },
   });
@@ -153,7 +153,7 @@ export function InventoryReports() {
     isRefetching,
   } = useQuery({
     queryKey: [
-      "inventory-report",
+      'inventory-report',
       reportType,
       filters,
       pagination.page,
@@ -162,18 +162,18 @@ export function InventoryReports() {
     queryFn: async (): Promise<ReportData> => {
       const params = new URLSearchParams({
         type: reportType,
-        format: "json",
+        format: 'json',
         page: pagination.page.toString(),
         limit: pagination.limit.toString(),
         ...(filters.category && { category: filters.category }),
         ...(filters.brand && { brand: filters.brand }),
         ...(filters.supplier && { supplier: filters.supplier }),
-        ...(filters.lowStockOnly && { lowStockOnly: "true" }),
-        ...(filters.includeArchived && { includeArchived: "true" }),
+        ...(filters.lowStockOnly && { lowStockOnly: 'true' }),
+        ...(filters.includeArchived && { includeArchived: 'true' }),
       });
 
       const response = await fetch(`/api/reports/inventory?${params}`);
-      if (!response.ok) throw new Error("Failed to generate report");
+      if (!response.ok) throw new Error('Failed to generate report');
       return response.json();
     },
   });
@@ -182,62 +182,62 @@ export function InventoryReports() {
     try {
       const params = new URLSearchParams({
         type: reportType,
-        format: "csv",
+        format: 'csv',
         ...(filters.category && { category: filters.category }),
         ...(filters.brand && { brand: filters.brand }),
         ...(filters.supplier && { supplier: filters.supplier }),
-        ...(filters.lowStockOnly && { lowStockOnly: "true" }),
-        ...(filters.includeArchived && { includeArchived: "true" }),
+        ...(filters.lowStockOnly && { lowStockOnly: 'true' }),
+        ...(filters.includeArchived && { includeArchived: 'true' }),
       });
 
       const response = await fetch(`/api/reports/inventory?${params}`);
-      if (!response.ok) throw new Error("Failed to download report");
+      if (!response.ok) throw new Error('Failed to download report');
 
       const blob = await response.blob();
       const url = window.URL.createObjectURL(blob);
-      const a = document.createElement("a");
-      a.style.display = "none";
+      const a = document.createElement('a');
+      a.style.display = 'none';
       a.href = url;
-      a.download = `inventory-report-${reportType}-${new Date().toISOString().split("T")[0]}.csv`;
+      a.download = `inventory-report-${reportType}-${new Date().toISOString().split('T')[0]}.csv`;
       document.body.appendChild(a);
       a.click();
       window.URL.revokeObjectURL(url);
       document.body.removeChild(a);
 
-      toast.success("Report downloaded successfully");
+      toast.success('Report downloaded successfully');
     } catch (_error) {
-      toast.error("Failed to download report");
+      toast.error('Failed to download report');
     }
   };
 
   const handleFilterChange = (key: keyof ReportFilters, value: any) => {
-    setFilters((prev) => {
+    setFilters(prev => {
       if (prev[key] === value) return prev; // Prevent unnecessary updates
       return { ...prev, [key]: value };
     });
-    setPagination((prev) => ({ ...prev, page: 1 }));
+    setPagination(prev => ({ ...prev, page: 1 }));
   };
 
   const clearFilters = () => {
     setFilters({});
-    setPagination((prev) => ({ ...prev, page: 1 }));
+    setPagination(prev => ({ ...prev, page: 1 }));
   };
 
   const handlePageChange = useCallback((newPage: number) => {
-    setPagination((prev) => ({ ...prev, page: newPage }));
+    setPagination(prev => ({ ...prev, page: newPage }));
   }, []);
 
   const handlePageSizeChange = useCallback((newSize: number) => {
-    setPagination((prev) => ({ ...prev, limit: newSize, page: 1 }));
+    setPagination(prev => ({ ...prev, limit: newSize, page: 1 }));
   }, []);
 
   const formatCurrency = (amount: number) => {
     if (isNaN(amount) || !isFinite(amount)) {
-      return "₦0.00";
+      return '₦0.00';
     }
-    return new Intl.NumberFormat("en-NG", {
-      style: "currency",
-      currency: "NGN",
+    return new Intl.NumberFormat('en-NG', {
+      style: 'currency',
+      currency: 'NGN',
     }).format(amount);
   };
 
@@ -257,65 +257,65 @@ export function InventoryReports() {
     const products = getProductsArray(reportData.data);
 
     switch (reportType) {
-      case "current_stock":
+      case 'current_stock':
         return {
           tableData: products,
           tableColumns: [
             {
-              key: "name",
-              label: "Product",
+              key: 'name',
+              label: 'Product',
               sortable: true,
               defaultVisible: true,
               required: true,
             },
             {
-              key: "sku",
-              label: "SKU",
+              key: 'sku',
+              label: 'SKU',
               sortable: true,
               defaultVisible: true,
             },
             {
-              key: "category",
-              label: "Category",
+              key: 'category',
+              label: 'Category',
               sortable: true,
               defaultVisible: true,
             },
             {
-              key: "currentStock",
-              label: "Stock",
+              key: 'currentStock',
+              label: 'Stock',
               sortable: true,
               defaultVisible: true,
             },
             {
-              key: "minStock",
-              label: "Min Stock",
+              key: 'minStock',
+              label: 'Min Stock',
               sortable: true,
               defaultVisible: true,
             },
             {
-              key: "stockValue",
-              label: "Value",
+              key: 'stockValue',
+              label: 'Value',
               sortable: true,
               defaultVisible: true,
             },
             {
-              key: "status",
-              label: "Status",
+              key: 'status',
+              label: 'Status',
               sortable: false,
               defaultVisible: true,
             },
           ],
           summaryCards: [
             {
-              title: "Total Products",
+              title: 'Total Products',
               value:
                 (reportData.data as any).summary?.totalProducts ||
                 products.length,
               icon: Package,
-              color: "blue",
+              color: 'blue',
             },
             {
-              title: "Total Stock Value",
+              title: 'Total Stock Value',
               value: formatCurrency(
                 (reportData.data as any).summary?.totalValue ||
                   products.reduce(
@@ -324,171 +324,171 @@ export function InventoryReports() {
                   )
               ),
               icon: DollarSign,
-              color: "green",
+              color: 'green',
             },
             {
-              title: "Low Stock Items",
+              title: 'Low Stock Items',
               value:
                 (reportData.data as any).summary?.lowStockItems ||
                 products.filter((item: any) => item.isLowStock || false).length,
               icon: AlertTriangle,
-              color: "red",
+              color: 'red',
             },
           ],
         };
 
-      case "stock_value":
+      case 'stock_value':
         return {
           tableData: products,
           tableColumns: [
             {
-              key: "name",
-              label: "Product",
+              key: 'name',
+              label: 'Product',
               sortable: true,
               defaultVisible: true,
               required: true,
             },
             {
-              key: "sku",
-              label: "SKU",
+              key: 'sku',
+              label: 'SKU',
               sortable: true,
               defaultVisible: true,
             },
             {
-              key: "currentStock",
-              label: "Stock",
+              key: 'currentStock',
+              label: 'Stock',
               sortable: true,
               defaultVisible: true,
             },
             {
-              key: "costPrice",
-              label: "Cost Price",
+              key: 'costPrice',
+              label: 'Cost Price',
               sortable: true,
               defaultVisible: true,
             },
             {
-              key: "sellingPrice",
-              label: "Selling Price",
+              key: 'sellingPrice',
+              label: 'Selling Price',
               sortable: true,
               defaultVisible: true,
             },
             {
-              key: "stockValue",
-              label: "Stock Value",
+              key: 'stockValue',
+              label: 'Stock Value',
               sortable: true,
               defaultVisible: true,
             },
             {
-              key: "profitMargin",
-              label: "Profit Margin",
+              key: 'profitMargin',
+              label: 'Profit Margin',
               sortable: true,
               defaultVisible: true,
             },
           ],
           summaryCards: [
             {
-              title: "Total Products",
+              title: 'Total Products',
               value:
                 (reportData.data as any).summary?.totalProducts ||
                 products.length,
               icon: Package,
-              color: "blue",
+              color: 'blue',
             },
             {
-              title: "Stock Value",
+              title: 'Stock Value',
               value: formatCurrency(
                 (reportData.data as any).summary?.totalStockValue || 0
               ),
               icon: DollarSign,
-              color: "green",
+              color: 'green',
             },
             {
-              title: "Cost Value",
+              title: 'Cost Value',
               value: formatCurrency(
                 (reportData.data as any).summary?.totalCostValue || 0
               ),
               icon: ShoppingCart,
-              color: "purple",
+              color: 'purple',
             },
             {
-              title: "Potential Profit",
+              title: 'Potential Profit',
               value: formatCurrency(
                 (reportData.data as any).summary?.totalProfit || 0
               ),
               icon: TrendingUp,
-              color: "orange",
+              color: 'orange',
             },
           ],
         };
 
-      case "low_stock":
+      case 'low_stock':
         return {
           tableData: products,
           tableColumns: [
             {
-              key: "name",
-              label: "Product",
+              key: 'name',
+              label: 'Product',
               sortable: true,
               defaultVisible: true,
               required: true,
             },
             {
-              key: "sku",
-              label: "SKU",
+              key: 'sku',
+              label: 'SKU',
               sortable: true,
               defaultVisible: true,
             },
             {
-              key: "currentStock",
-              label: "Current Stock",
+              key: 'currentStock',
+              label: 'Current Stock',
               sortable: true,
               defaultVisible: true,
             },
             {
-              key: "minStock",
-              label: "Min Stock",
+              key: 'minStock',
+              label: 'Min Stock',
               sortable: true,
               defaultVisible: true,
             },
             {
-              key: "reorderQuantity",
-              label: "Reorder Qty",
+              key: 'reorderQuantity',
+              label: 'Reorder Qty',
               sortable: true,
               defaultVisible: true,
             },
             {
-              key: "reorderValue",
-              label: "Reorder Value",
+              key: 'reorderValue',
+              label: 'Reorder Value',
               sortable: true,
               defaultVisible: true,
             },
             {
-              key: "status",
-              label: "Status",
+              key: 'status',
+              label: 'Status',
               sortable: false,
               defaultVisible: true,
             },
           ],
           summaryCards: [
             {
-              title: "Low Stock Items",
+              title: 'Low Stock Items',
               value:
                 (reportData.data as any).summary?.totalLowStockItems ||
                 products.length,
               icon: AlertTriangle,
-              color: "red",
+              color: 'red',
             },
             {
-              title: "Out of Stock",
+              title: 'Out of Stock',
               value:
                 (reportData.data as any).summary?.outOfStockItems ||
                 products.filter((item: any) => (item.currentStock || 0) <= 0)
                   .length,
               icon: Package,
-              color: "orange",
+              color: 'orange',
             },
             {
-              title: "Total Reorder Value",
+              title: 'Total Reorder Value',
               value: formatCurrency(
                 (reportData.data as any).summary?.totalReorderValue ||
                   products.reduce(
@@ -497,33 +497,33 @@ export function InventoryReports() {
                   )
               ),
               icon: DollarSign,
-              color: "blue",
+              color: 'blue',
             },
           ],
         };
 
-      case "product_summary":
+      case 'product_summary':
         return {
           tableData: [], // Product summary doesn't have a table, it has tabs
           tableColumns: [],
           summaryCards: [
             {
-              title: "Total Products",
+              title: 'Total Products',
               value: (reportData.data as any).totalProducts || 0,
               icon: Package,
-              color: "blue",
+              color: 'blue',
             },
             {
-              title: "Categories",
+              title: 'Categories',
               value: (reportData.data as any).byCategory?.length || 0,
               icon: ShoppingCart,
-              color: "green",
+              color: 'green',
             },
             {
-              title: "Brands",
+              title: 'Brands',
               value: (reportData.data as any).byBrand?.length || 0,
               icon: TrendingUp,
-              color: "purple",
+              color: 'purple',
             },
           ],
         };
@@ -543,65 +543,65 @@ export function InventoryReports() {
 
   const renderCell = (item: any, columnKey: string) => {
     switch (columnKey) {
-      case "name":
+      case 'name':
         return (
           <div className="flex items-center gap-3">
             <div className="flex-1">
               <div className="font-medium">{item.name}</div>
               {item.description && (
-                <div className="text-sm text-muted-foreground truncate max-w-[200px]">
+                <div className="text-muted-foreground max-w-[200px] truncate text-sm">
                   {item.description}
                 </div>
               )}
             </div>
           </div>
         );
-      case "sku":
+      case 'sku':
         return <span className="font-mono text-sm">{item.sku}</span>;
-      case "category":
+      case 'category':
         return <span>{item.category}</span>;
-      case "currentStock":
+      case 'currentStock':
         return <span className="text-right">{item.currentStock || 0}</span>;
-      case "minStock":
+      case 'minStock':
         return <span className="text-right">{item.minStock || 0}</span>;
-      case "stockValue":
+      case 'stockValue':
         return (
           <span className="text-right font-medium">
             {formatCurrency(item.stockValue || 0)}
           </span>
         );
-      case "costPrice":
+      case 'costPrice':
         return (
           <span className="text-right">
             {formatCurrency(item.costPrice || 0)}
           </span>
         );
-      case "sellingPrice":
+      case 'sellingPrice':
         return (
           <span className="text-right font-medium">
             {formatCurrency(item.sellingPrice || 0)}
           </span>
         );
-      case "profitMargin":
+      case 'profitMargin':
         return (
           <span className="text-right">
             <Badge
-              variant={(item.profitMargin || 0) > 0 ? "default" : "secondary"}
+              variant={(item.profitMargin || 0) > 0 ? 'default' : 'secondary'}
             >
               {(item.profitMargin || 0).toFixed(2)}%
             </Badge>
           </span>
         );
-      case "reorderQuantity":
+      case 'reorderQuantity':
         return <span className="text-right">{item.reorderQuantity || 0}</span>;
-      case "reorderValue":
+      case 'reorderValue':
         return (
           <span className="text-right font-medium">
             {formatCurrency(item.reorderValue || 0)}
           </span>
         );
-      case "status":
-        if (reportType === "current_stock") {
+      case 'status':
+        if (reportType === 'current_stock') {
           return (
             <div className="text-center">
               {item.isLowStock || false ? (
@@ -611,15 +611,15 @@ export function InventoryReports() {
               )}
             </div>
           );
-        } else if (reportType === "low_stock") {
+        } else if (reportType === 'low_stock') {
           return (
             <div className="text-center">
               <Badge
                 variant={
-                  (item.currentStock || 0) <= 0 ? "destructive" : "secondary"
+                  (item.currentStock || 0) <= 0 ? 'destructive' : 'secondary'
                 }
               >
-                {(item.currentStock || 0) <= 0 ? "Out of Stock" : "Low Stock"}
+                {(item.currentStock || 0) <= 0 ? 'Out of Stock' : 'Low Stock'}
               </Badge>
             </div>
           );
@@ -631,8 +631,7 @@ export function InventoryReports() {
   };
 
   const defaultVisibleColumns = useMemo(
-    () =>
-      tableColumns.filter((col) => col.defaultVisible).map((col) => col.key),
+    () => tableColumns.filter(col => col.defaultVisible).map(col => col.key),
     [tableColumns]
   );
 
@@ -651,7 +650,7 @@ export function InventoryReports() {
             size="sm"
             onClick={() => setShowFilters(!showFilters)}
           >
-            <Filter className="h-4 w-4 mr-2" />
+            <Filter className="mr-2 h-4 w-4" />
             Filters
           </Button>
           <Button
@@ -660,7 +659,7 @@ export function InventoryReports() {
             onClick={() => refetch()}
             disabled={isLoading}
           >
-            <RefreshCw className="h-4 w-4 mr-2" />
+            <RefreshCw className="mr-2 h-4 w-4" />
             Refresh
           </Button>
           <Button
@@ -669,7 +668,7 @@ export function InventoryReports() {
             onClick={handleDownloadCSV}
             disabled={isLoading}
           >
-            <Download className="h-4 w-4 mr-2" />
+            <Download className="mr-2 h-4 w-4" />
             Download CSV
           </Button>
         </div>
@@ -681,13 +680,13 @@ export function InventoryReports() {
             <CardTitle>Report Filters</CardTitle>
           </CardHeader>
           <CardContent>
-            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+            <div className="grid grid-cols-1 gap-4 md:grid-cols-2 lg:grid-cols-3">
               <div>
                 <Label htmlFor="category">Category</Label>
                 <Select
-                  value={filters.category || ""}
-                  onValueChange={(value) =>
-                    handleFilterChange("category", value || undefined)
+                  value={filters.category || ''}
+                  onValueChange={value =>
+                    handleFilterChange('category', value || undefined)
                   }
                 >
                   <SelectTrigger>
@@ -710,9 +709,9 @@ export function InventoryReports() {
               <div>
                 <Label htmlFor="brand">Brand</Label>
                 <Select
-                  value={filters.brand || ""}
-                  onValueChange={(value) =>
-                    handleFilterChange("brand", value || undefined)
+                  value={filters.brand || ''}
+                  onValueChange={value =>
+                    handleFilterChange('brand', value || undefined)
                   }
                 >
                   <SelectTrigger>
@@ -732,9 +731,9 @@ export function InventoryReports() {
               <div>
                 <Label htmlFor="supplier">Supplier</Label>
                 <Select
-                  value={filters.supplier || ""}
-                  onValueChange={(value) =>
-                    handleFilterChange("supplier", value || undefined)
+                  value={filters.supplier || ''}
+                  onValueChange={value =>
+                    handleFilterChange('supplier', value || undefined)
                   }
                 >
                   <SelectTrigger>
@@ -758,8 +757,8 @@ export function InventoryReports() {
                 <Switch
                   id="lowStockOnly"
                   checked={filters.lowStockOnly || false}
-                  onCheckedChange={(checked) =>
-                    handleFilterChange("lowStockOnly", checked)
+                  onCheckedChange={checked =>
+                    handleFilterChange('lowStockOnly', checked)
                   }
                 />
                 <Label htmlFor="lowStockOnly">Low Stock Only</Label>
@@ -769,8 +768,8 @@ export function InventoryReports() {
                 <Switch
                   id="includeArchived"
                   checked={filters.includeArchived || false}
-                  onCheckedChange={(checked) =>
-                    handleFilterChange("includeArchived", checked)
+                  onCheckedChange={checked =>
+                    handleFilterChange('includeArchived', checked)
                   }
                 />
                 <Label htmlFor="includeArchived">Include Archived</Label>
@@ -791,7 +790,7 @@ export function InventoryReports() {
         </Card>
       )}
 
-      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4">
+      <div className="grid grid-cols-1 gap-4 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4">
         {isLoading && !reportData
           ? // Show skeleton loaders when loading for the first time
             Array.from({ length: 4 }).map((_, index) => (
@@ -834,25 +833,25 @@ export function InventoryReports() {
         </TabsList>
 
         <TabsContent value={reportType} className="mt-6">
-          {reportType === "product_summary" ? (
-            <div className="text-center py-8">
-              <FileText className="h-12 w-12 text-gray-400 mx-auto mb-4" />
+          {reportType === 'product_summary' ? (
+            <div className="py-8 text-center">
+              <FileText className="mx-auto mb-4 h-12 w-12 text-gray-400" />
               <p className="text-gray-500">
                 Product summary data is displayed in the cards above
               </p>
             </div>
           ) : (
             <DashboardTableLayout
-              title={`${reportType.replace(/_/g, " ").replace(/\b\w/g, (l) => l.toUpperCase())} Report`}
+              title={`${reportType.replace(/_/g, ' ').replace(/\b\w/g, l => l.toUpperCase())} Report`}
               description="View detailed inventory report data"
-              searchPlaceholder={`Search ${reportType.replace(/_/g, " ").toLowerCase()}...`}
+              searchPlaceholder={`Search ${reportType.replace(/_/g, ' ').toLowerCase()}...`}
               searchValue=""
               onSearchChange={() => {}}
               filters={[]}
               filterValues={{}}
               onFilterChange={() => {}}
               onResetFilters={() => {}}
-              tableTitle={`${reportType.replace(/_/g, " ").replace(/\b\w/g, (l) => l.toUpperCase())} Report`}
+              tableTitle={`${reportType.replace(/_/g, ' ').replace(/\b\w/g, l => l.toUpperCase())} Report`}
               totalCount={currentPagination.totalItems}
               currentCount={tableData.length}
               columns={tableColumns}
@@ -868,7 +867,7 @@ export function InventoryReports() {
               isRefetching={isRefetching}
               emptyStateMessage="No data available for this report"
               emptyStateIcon={
-                <FileText className="h-12 w-12 text-gray-400 mx-auto mb-4" />
+                <FileText className="mx-auto mb-4 h-12 w-12 text-gray-400" />
               }
             />
           )}

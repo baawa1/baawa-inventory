@@ -1,8 +1,8 @@
-import { notFound } from "next/navigation";
-import EditCategoryForm from "@/components/inventory/EditCategoryForm";
-import { prisma } from "@/lib/db";
-import { logger } from "@/lib/logger";
-import { toast } from "sonner";
+import { notFound } from 'next/navigation';
+import EditCategoryForm from '@/components/inventory/EditCategoryForm';
+import { prisma } from '@/lib/db';
+import { logger } from '@/lib/logger';
+import { toast } from 'sonner';
 
 interface EditCategoryPageProps {
   params: Promise<{
@@ -37,11 +37,11 @@ async function getCategory(id: string) {
       updatedAt: category.updatedAt.toISOString(),
     };
   } catch (error) {
-    logger.error("Failed to fetch category", {
+    logger.error('Failed to fetch category', {
       categoryId: id,
       error: error instanceof Error ? error.message : String(error),
     });
-    toast.error("Failed to load category");
+    toast.error('Failed to load category');
     return null;
   }
 }

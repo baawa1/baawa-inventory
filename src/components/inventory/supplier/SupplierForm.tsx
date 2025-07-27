@@ -1,14 +1,14 @@
-"use client";
+'use client';
 
-import React from "react";
-import { UseFormReturn } from "react-hook-form";
-import { updateSupplierSchema } from "@/lib/validations/supplier";
-import { z } from "zod";
-import { Button } from "@/components/ui/button";
-import { Input } from "@/components/ui/input";
-import { Textarea } from "@/components/ui/textarea";
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import { Switch } from "@/components/ui/switch";
+import React from 'react';
+import { UseFormReturn } from 'react-hook-form';
+import { updateSupplierSchema } from '@/lib/validations/supplier';
+import { z } from 'zod';
+import { Button } from '@/components/ui/button';
+import { Input } from '@/components/ui/input';
+import { Textarea } from '@/components/ui/textarea';
+import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
+import { Switch } from '@/components/ui/switch';
 import {
   Form,
   FormControl,
@@ -17,8 +17,8 @@ import {
   FormItem,
   FormLabel,
   FormMessage,
-} from "@/components/ui/form";
-import { IconLoader2, IconDeviceFloppy } from "@tabler/icons-react";
+} from '@/components/ui/form';
+import { IconLoader2, IconDeviceFloppy } from '@tabler/icons-react';
 
 type SupplierFormData = z.infer<typeof updateSupplierSchema>;
 
@@ -46,7 +46,7 @@ export function SupplierForm({
             <CardTitle>Basic Information</CardTitle>
           </CardHeader>
           <CardContent className="space-y-4">
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+            <div className="grid grid-cols-1 gap-4 md:grid-cols-2">
               <FormField
                 control={form.control}
                 name="name"
@@ -57,7 +57,7 @@ export function SupplierForm({
                       <Input
                         placeholder="Enter supplier name"
                         {...field}
-                        value={field.value || ""}
+                        value={field.value || ''}
                         disabled={isSubmitting}
                       />
                     </FormControl>
@@ -76,7 +76,7 @@ export function SupplierForm({
                       <Input
                         placeholder="Enter contact person"
                         {...field}
-                        value={field.value || ""}
+                        value={field.value || ''}
                         disabled={isSubmitting}
                       />
                     </FormControl>
@@ -86,7 +86,7 @@ export function SupplierForm({
               />
             </div>
 
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+            <div className="grid grid-cols-1 gap-4 md:grid-cols-2">
               <FormField
                 control={form.control}
                 name="email"
@@ -98,7 +98,7 @@ export function SupplierForm({
                         type="email"
                         placeholder="Enter email address"
                         {...field}
-                        value={field.value || ""}
+                        value={field.value || ''}
                         disabled={isSubmitting}
                       />
                     </FormControl>
@@ -118,7 +118,7 @@ export function SupplierForm({
                         type="tel"
                         placeholder="Enter phone number"
                         {...field}
-                        value={field.value || ""}
+                        value={field.value || ''}
                         disabled={isSubmitting}
                       />
                     </FormControl>
@@ -146,7 +146,7 @@ export function SupplierForm({
                     <Textarea
                       placeholder="Enter full address"
                       {...field}
-                      value={field.value || ""}
+                      value={field.value || ''}
                       disabled={isSubmitting}
                       rows={3}
                     />
@@ -156,7 +156,7 @@ export function SupplierForm({
               )}
             />
 
-            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+            <div className="grid grid-cols-1 gap-4 md:grid-cols-2 lg:grid-cols-3">
               <FormField
                 control={form.control}
                 name="city"
@@ -167,7 +167,7 @@ export function SupplierForm({
                       <Input
                         placeholder="Enter city"
                         {...field}
-                        value={field.value || ""}
+                        value={field.value || ''}
                         disabled={isSubmitting}
                       />
                     </FormControl>
@@ -186,7 +186,7 @@ export function SupplierForm({
                       <Input
                         placeholder="Enter state"
                         {...field}
-                        value={field.value || ""}
+                        value={field.value || ''}
                         disabled={isSubmitting}
                       />
                     </FormControl>
@@ -205,7 +205,7 @@ export function SupplierForm({
                       <Input
                         placeholder="Enter country"
                         {...field}
-                        value={field.value || ""}
+                        value={field.value || ''}
                         disabled={isSubmitting}
                       />
                     </FormControl>
@@ -225,7 +225,7 @@ export function SupplierForm({
                     <Input
                       placeholder="Enter postal code"
                       {...field}
-                      value={field.value || ""}
+                      value={field.value || ''}
                       disabled={isSubmitting}
                     />
                   </FormControl>
@@ -242,7 +242,7 @@ export function SupplierForm({
             <CardTitle>Business Information</CardTitle>
           </CardHeader>
           <CardContent className="space-y-4">
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+            <div className="grid grid-cols-1 gap-4 md:grid-cols-2">
               <FormField
                 control={form.control}
                 name="taxNumber"
@@ -253,7 +253,7 @@ export function SupplierForm({
                       <Input
                         placeholder="Enter tax number"
                         {...field}
-                        value={field.value || ""}
+                        value={field.value || ''}
                         disabled={isSubmitting}
                       />
                     </FormControl>
@@ -273,8 +273,8 @@ export function SupplierForm({
                         type="number"
                         placeholder="0.00"
                         {...field}
-                        value={field.value?.toString() || ""}
-                        onChange={(e) => {
+                        value={field.value?.toString() || ''}
+                        onChange={e => {
                           const value = e.target.value;
                           field.onChange(value ? parseFloat(value) : null);
                         }}
@@ -299,7 +299,7 @@ export function SupplierForm({
                     <Input
                       placeholder="e.g., Net 30, 2/10 Net 30"
                       {...field}
-                      value={field.value || ""}
+                      value={field.value || ''}
                       disabled={isSubmitting}
                     />
                   </FormControl>
@@ -348,7 +348,7 @@ export function SupplierForm({
                     <Textarea
                       placeholder="Enter any additional notes"
                       {...field}
-                      value={field.value || ""}
+                      value={field.value || ''}
                       disabled={isSubmitting}
                       rows={4}
                     />
@@ -361,7 +361,7 @@ export function SupplierForm({
         </Card>
 
         {/* Form Actions */}
-        <div className="flex flex-col sm:flex-row gap-3 pt-4">
+        <div className="flex flex-col gap-3 pt-4 sm:flex-row">
           <Button
             type="submit"
             disabled={isSubmitting}
@@ -374,11 +374,11 @@ export function SupplierForm({
             )}
             {isSubmitting
               ? isEditing
-                ? "Updating..."
-                : "Creating..."
+                ? 'Updating...'
+                : 'Creating...'
               : isEditing
-                ? "Update Supplier"
-                : "Create Supplier"}
+                ? 'Update Supplier'
+                : 'Create Supplier'}
           </Button>
           <Button
             type="button"

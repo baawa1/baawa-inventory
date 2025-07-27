@@ -1,7 +1,7 @@
-"use client";
+'use client';
 
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import { Badge } from "@/components/ui/badge";
+import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
+import { Badge } from '@/components/ui/badge';
 import {
   PieChart,
   Pie,
@@ -12,44 +12,44 @@ import {
   YAxis,
   CartesianGrid,
   ResponsiveContainer,
-} from "recharts";
+} from 'recharts';
 import {
   ChartContainer,
   ChartTooltip,
   ChartTooltipContent,
   ChartConfig,
-} from "@/components/ui/chart";
+} from '@/components/ui/chart';
 import {
   IconTrendingUp,
   IconTrendingDown,
   IconChartBar,
   IconTarget,
-} from "@tabler/icons-react";
-import { formatCurrency } from "@/lib/utils";
-import { CHART_COLORS } from "@/lib/constants/ui";
+} from '@tabler/icons-react';
+import { formatCurrency } from '@/lib/utils';
+import { CHART_COLORS } from '@/lib/constants/ui';
 
 const chartConfig = {
   value: {
-    label: "Value",
-    color: "hsl(var(--primary))",
+    label: 'Value',
+    color: 'hsl(var(--primary))',
   },
 } satisfies ChartConfig;
 
 // Sample performance data
 const salesByCategory = [
-  { name: "Electronics", value: 45, amount: 850000 },
-  { name: "Accessories", value: 30, amount: 560000 },
-  { name: "Watches", value: 15, amount: 280000 },
-  { name: "Jewelry", value: 10, amount: 190000 },
+  { name: 'Electronics', value: 45, amount: 850000 },
+  { name: 'Accessories', value: 30, amount: 560000 },
+  { name: 'Watches', value: 15, amount: 280000 },
+  { name: 'Jewelry', value: 10, amount: 190000 },
 ];
 
 const monthlyTargets = [
-  { month: "Jan", target: 1500000, actual: 1350000 },
-  { month: "Feb", target: 1600000, actual: 1580000 },
-  { month: "Mar", target: 1700000, actual: 1450000 },
-  { month: "Apr", target: 1800000, actual: 1920000 },
-  { month: "May", target: 1900000, actual: 1780000 },
-  { month: "Jun", target: 2000000, actual: 2150000 },
+  { month: 'Jan', target: 1500000, actual: 1350000 },
+  { month: 'Feb', target: 1600000, actual: 1580000 },
+  { month: 'Mar', target: 1700000, actual: 1450000 },
+  { month: 'Apr', target: 1800000, actual: 1920000 },
+  { month: 'May', target: 1900000, actual: 1780000 },
+  { month: 'Jun', target: 2000000, actual: 2150000 },
 ];
 
 const COLORS = CHART_COLORS;
@@ -62,7 +62,7 @@ export function PerformanceMetrics() {
     100;
 
   return (
-    <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+    <div className="grid grid-cols-1 gap-6 lg:grid-cols-2">
       {/* Sales by Category Pie Chart */}
       <Card>
         <CardHeader>
@@ -122,7 +122,7 @@ export function PerformanceMetrics() {
               >
                 <div className="flex items-center gap-2">
                   <div
-                    className="w-3 h-3 rounded-full"
+                    className="h-3 w-3 rounded-full"
                     style={{ backgroundColor: COLORS[index % COLORS.length] }}
                   ></div>
                   <span className="text-sm">{category.name}</span>
@@ -131,7 +131,7 @@ export function PerformanceMetrics() {
                   <p className="text-sm font-semibold">
                     {formatCurrency(category.amount)}
                   </p>
-                  <p className="text-xs text-muted-foreground">
+                  <p className="text-muted-foreground text-xs">
                     {category.value}%
                   </p>
                 </div>
@@ -156,7 +156,7 @@ export function PerformanceMetrics() {
                 <IconTrendingDown className="h-4 w-4 text-red-600" />
               )}
               <Badge
-                variant={targetAchievement >= 100 ? "default" : "destructive"}
+                variant={targetAchievement >= 100 ? 'default' : 'destructive'}
                 className="text-xs"
               >
                 {targetAchievement.toFixed(1)}%
@@ -174,14 +174,14 @@ export function PerformanceMetrics() {
                 <CartesianGrid strokeDasharray="3 3" />
                 <XAxis dataKey="month" />
                 <YAxis
-                  tickFormatter={(value) => `₦${(value / 1000000).toFixed(1)}M`}
+                  tickFormatter={value => `₦${(value / 1000000).toFixed(1)}M`}
                 />
                 <ChartTooltip
                   content={
                     <ChartTooltipContent
                       formatter={(value: any, name: string) => [
                         formatCurrency(value),
-                        name === "target" ? "Target" : "Actual",
+                        name === 'target' ? 'Target' : 'Actual',
                       ]}
                     />
                   }
@@ -204,7 +204,7 @@ export function PerformanceMetrics() {
                   monthlyTargets[monthlyTargets.length - 1].target
                 )}
               </p>
-              <p className="text-xs text-muted-foreground">Monthly Target</p>
+              <p className="text-muted-foreground text-xs">Monthly Target</p>
             </div>
             <div className="text-center">
               <p className="text-lg font-bold text-green-600">
@@ -212,7 +212,7 @@ export function PerformanceMetrics() {
                   monthlyTargets[monthlyTargets.length - 1].actual
                 )}
               </p>
-              <p className="text-xs text-muted-foreground">Actual Sales</p>
+              <p className="text-muted-foreground text-xs">Actual Sales</p>
             </div>
           </div>
         </CardContent>

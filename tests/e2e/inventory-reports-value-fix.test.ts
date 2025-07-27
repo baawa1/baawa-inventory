@@ -1,23 +1,23 @@
-import { test, expect } from "@playwright/test";
+import { test, expect } from '@playwright/test';
 
-test.describe("Inventory Reports Value Field Fix", () => {
-  test("should display proper currency values instead of NaN", async ({
+test.describe('Inventory Reports Value Field Fix', () => {
+  test('should display proper currency values instead of NaN', async ({
     page,
   }) => {
     // Login as admin
-    await page.goto("/test-data");
+    await page.goto('/test-data');
     await page.evaluate(() => {
-      localStorage.setItem("test-user-email", "admin@test.com");
-      localStorage.setItem("test-user-status", "APPROVED");
-      localStorage.setItem("test-user-role", "ADMIN");
+      localStorage.setItem('test-user-email', 'admin@test.com');
+      localStorage.setItem('test-user-status', 'APPROVED');
+      localStorage.setItem('test-user-role', 'ADMIN');
     });
 
     // Navigate to inventory reports
-    await page.goto("/inventory/reports");
-    await expect(page).toHaveURL("/inventory/reports");
+    await page.goto('/inventory/reports');
+    await expect(page).toHaveURL('/inventory/reports');
 
     // Wait for the page to load
-    await page.waitForSelector("text=Current Stock Report", { timeout: 10000 });
+    await page.waitForSelector('text=Current Stock Report', { timeout: 10000 });
 
     // Check that the value column doesn't contain NaN
     const valueCells = page.locator(
@@ -31,14 +31,14 @@ test.describe("Inventory Reports Value Field Fix", () => {
     const valueTexts = await valueCells.allTextContents();
 
     for (const text of valueTexts) {
-      expect(text).not.toContain("NaN");
-      expect(text).not.toContain("#NaN");
+      expect(text).not.toContain('NaN');
+      expect(text).not.toContain('#NaN');
       // Should contain currency symbol
       expect(text).toMatch(/₦[\d,]+\.?\d*/);
     }
 
     console.log(
-      "✅ Value field displays proper currency values instead of NaN"
+      '✅ Value field displays proper currency values instead of NaN'
     );
   });
 });

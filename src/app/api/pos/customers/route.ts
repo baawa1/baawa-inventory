@@ -1,16 +1,16 @@
-import { NextRequest, NextResponse } from "next/server";
-import { auth } from "../../../../../auth";
-import { prisma } from "@/lib/db";
-import { PAYMENT_STATUS } from "@/lib/constants";
-import { USER_ROLES, hasRole } from "@/lib/auth/roles";
-import { CustomerAggregation, TransformedCustomer } from "@/types/pos";
+import { NextRequest, NextResponse } from 'next/server';
+import { auth } from '../../../../../auth';
+import { prisma } from '@/lib/db';
+import { PAYMENT_STATUS } from '@/lib/constants';
+import { USER_ROLES, hasRole } from '@/lib/auth/roles';
+import { CustomerAggregation, TransformedCustomer } from '@/types/pos';
 
 export async function GET(_request: NextRequest) {
   try {
     const session = await auth();
 
     if (!session?.user) {
-      return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+      return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
     }
 
     // Check if user has permission to view customer data
@@ -21,12 +21,12 @@ export async function GET(_request: NextRequest) {
         USER_ROLES.STAFF,
       ])
     ) {
-      return NextResponse.json({ error: "Forbidden" }, { status: 403 });
+      return NextResponse.json({ error: 'Forbidden' }, { status: 403 });
     }
 
     // Aggregate customer data from sales transactions
     const customers = await prisma.salesTransaction.groupBy({
-      by: ["customer_email", "customer_name", "customer_phone"],
+      by: ['customer_email', 'customer_name', 'customer_phone'],
       where: {
         customer_email: {
           not: null,
@@ -54,9 +54,9 @@ export async function GET(_request: NextRequest) {
           totalOrders > 0 ? Number(totalSpent) / totalOrders : 0;
 
         return {
-          id: customer.customer_email || "",
-          name: customer.customer_name || "Unknown Customer",
-          email: customer.customer_email || "",
+          id: customer.customer_email || '',
+          name: customer.customer_name || 'Unknown Customer',
+          email: customer.customer_email || '',
           phone: customer.customer_phone,
           totalSpent: Number(totalSpent),
           totalOrders,
@@ -77,9 +77,9 @@ export async function GET(_request: NextRequest) {
 
     return NextResponse.json(customerData);
   } catch (error) {
-    console.error("Error fetching customers:", error);
+    console.error('Error fetching customers:', error);
     return NextResponse.json(
-      { error: "Failed to fetch customers" },
+      { error: 'Failed to fetch customers' },
       { status: 500 }
     );
   }

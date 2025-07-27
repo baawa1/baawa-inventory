@@ -3,7 +3,7 @@
  * Centralized types for Point of Sale functionality
  */
 
-import { Prisma } from "@prisma/client";
+import { Prisma } from '@prisma/client';
 
 // Database query types using Prisma
 export type SalesTransactionWithIncludes = Prisma.SalesTransactionGetPayload<{
@@ -66,14 +66,14 @@ export interface TransactionFilters {
 
 export interface TransactionWhereClause {
   OR?: Array<{
-    transaction_number?: { contains: string; mode: "insensitive" };
-    customer_name?: { contains: string; mode: "insensitive" };
-    customer_phone?: { contains: string; mode: "insensitive" };
-    customer_email?: { contains: string; mode: "insensitive" };
+    transaction_number?: { contains: string; mode: 'insensitive' };
+    customer_name?: { contains: string; mode: 'insensitive' };
+    customer_phone?: { contains: string; mode: 'insensitive' };
+    customer_email?: { contains: string; mode: 'insensitive' };
     users?: {
       OR: Array<{
-        firstName?: { contains: string; mode: "insensitive" };
-        lastName?: { contains: string; mode: "insensitive" };
+        firstName?: { contains: string; mode: 'insensitive' };
+        lastName?: { contains: string; mode: 'insensitive' };
       }>;
     };
   }>;
@@ -94,8 +94,8 @@ export interface ProductFilters {
 
 export interface ProductWhereClause {
   OR?: Array<{
-    name?: { contains: string; mode: "insensitive" };
-    sku?: { contains: string; mode: "insensitive" };
+    name?: { contains: string; mode: 'insensitive' };
+    sku?: { contains: string; mode: 'insensitive' };
   }>;
   categoryId?: number;
   status?: string;
@@ -234,7 +234,7 @@ export interface ProductPerformance {
   revenue: number;
   averageOrderValue: number;
   lastSold: string | null;
-  trending: "up" | "down" | "stable";
+  trending: 'up' | 'down' | 'stable';
   trendPercentage: number;
 }
 
@@ -245,7 +245,7 @@ export interface CategoryPerformance {
   revenue: number;
   averageOrderValue: number;
   marketShare: number;
-  trending: "up" | "down" | "stable";
+  trending: 'up' | 'down' | 'stable';
   trendPercentage: number;
   lastSaleDate: string | null;
   productCount: number;

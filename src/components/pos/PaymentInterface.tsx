@@ -1,13 +1,13 @@
-"use client";
+'use client';
 
-import React, { useState } from "react";
-import { Button } from "@/components/ui/button";
-import { Input } from "@/components/ui/input";
-import { Label } from "@/components/ui/label";
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import React, { useState } from 'react';
+import { Button } from '@/components/ui/button';
+import { Input } from '@/components/ui/input';
+import { Label } from '@/components/ui/label';
+import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 
-import { Textarea } from "@/components/ui/textarea";
-import { Separator } from "@/components/ui/separator";
+import { Textarea } from '@/components/ui/textarea';
+import { Separator } from '@/components/ui/separator';
 
 import {
   Dialog,
@@ -15,7 +15,7 @@ import {
   DialogDescription,
   DialogHeader,
   DialogTitle,
-} from "@/components/ui/dialog";
+} from '@/components/ui/dialog';
 import {
   IconCash,
   IconPercentage,
@@ -23,11 +23,11 @@ import {
   IconUser,
   IconReceipt,
   IconLoader,
-} from "@tabler/icons-react";
-import { toast } from "sonner";
-import { formatCurrency } from "@/lib/utils";
-import { PAYMENT_METHODS_UI } from "@/lib/constants/ui";
-import { logger } from "@/lib/logger";
+} from '@tabler/icons-react';
+import { toast } from 'sonner';
+import { formatCurrency } from '@/lib/utils';
+import { PAYMENT_METHODS_UI } from '@/lib/constants/ui';
+import { logger } from '@/lib/logger';
 
 export interface CartItem {
   id: number;
@@ -89,19 +89,19 @@ export function PaymentInterface({
   onDiscountChange,
   onCustomerInfoChange,
 }: PaymentInterfaceProps) {
-  const [paymentMethod, setPaymentMethod] = useState("");
-  const [discountType, setDiscountType] = useState<"percentage" | "fixed">(
-    "percentage"
+  const [paymentMethod, setPaymentMethod] = useState('');
+  const [discountType, setDiscountType] = useState<'percentage' | 'fixed'>(
+    'percentage'
   );
   const [discountValue, setDiscountValue] = useState(0);
   const [amountPaid, setAmountPaid] = useState(total);
-  const [notes, setNotes] = useState("");
+  const [notes, setNotes] = useState('');
   const [processing, setProcessing] = useState(false);
 
   // Handle discount change
   const handleDiscountChange = (value: number) => {
     setDiscountValue(value);
-    if (discountType === "percentage") {
+    if (discountType === 'percentage') {
       const calculatedDiscount = (subtotal * value) / 100;
       onDiscountChange(Math.min(calculatedDiscount, subtotal));
     } else {
@@ -112,12 +112,12 @@ export function PaymentInterface({
   // Process payment
   const handlePayment = async () => {
     if (!paymentMethod) {
-      toast.error("Please select a payment method");
+      toast.error('Please select a payment method');
       return;
     }
 
-    if (paymentMethod === "cash" && amountPaid < total) {
-      toast.error("Insufficient payment amount");
+    if (paymentMethod === 'cash' && amountPaid < total) {
+      toast.error('Insufficient payment amount');
       return;
     }
 
@@ -126,7 +126,7 @@ export function PaymentInterface({
     try {
       // Create sales transaction
       const saleData = {
-        items: items.map((item) => ({
+        items: items.map(item => ({
           productId: item.id,
           quantity: item.quantity,
           price: item.price,
@@ -143,17 +143,17 @@ export function PaymentInterface({
         notes: notes || undefined,
       };
 
-      const response = await fetch("/api/pos/create-sale", {
-        method: "POST",
+      const response = await fetch('/api/pos/create-sale', {
+        method: 'POST',
         headers: {
-          "Content-Type": "application/json",
+          'Content-Type': 'application/json',
         },
         body: JSON.stringify(saleData),
       });
 
       if (!response.ok) {
         const errorData = await response.json();
-        throw new Error(errorData.error || "Failed to process payment");
+        throw new Error(errorData.error || 'Failed to process payment');
       }
 
       const result = await response.json();
@@ -172,25 +172,25 @@ export function PaymentInterface({
         timestamp: new Date(),
       };
 
-      toast.success("Payment processed successfully!");
+      toast.success('Payment processed successfully!');
       onPaymentSuccess(sale);
     } catch (error) {
-      logger.error("Payment processing failed", {
+      logger.error('Payment processing failed', {
         paymentMethod,
         amount: total,
         error: error instanceof Error ? error.message : String(error),
       });
-      toast.error("Payment failed. Please try again.");
+      toast.error('Payment failed. Please try again.');
     } finally {
       setProcessing(false);
     }
   };
 
-  const change = paymentMethod === "cash" ? Math.max(0, amountPaid - total) : 0;
+  const change = paymentMethod === 'cash' ? Math.max(0, amountPaid - total) : 0;
 
   return (
     <Dialog open={true} onOpenChange={() => !processing && onCancel()}>
-      <DialogContent className="max-w-4xl max-h-[90vh] overflow-y-auto">
+      <DialogContent className="max-h-[90vh] max-w-4xl overflow-y-auto">
         <DialogHeader>
           <DialogTitle className="flex items-center gap-2">
             <IconReceipt className="h-5 w-5" />
@@ -198,11 +198,11 @@ export function PaymentInterface({
           </DialogTitle>
           <DialogDescription>
             Complete the payment for {items.length} item
-            {items.length !== 1 ? "s" : ""}
+            {items.length !== 1 ? 's' : ''}
           </DialogDescription>
         </DialogHeader>
 
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+        <div className="grid grid-cols-1 gap-6 md:grid-cols-2">
           {/* Left Column - Payment Details */}
           <div className="space-y-6">
             {/* Order Summary */}
@@ -212,14 +212,14 @@ export function PaymentInterface({
               </CardHeader>
               <CardContent className="space-y-4">
                 <div className="max-h-48 overflow-y-auto">
-                  {items.map((item) => (
+                  {items.map(item => (
                     <div
                       key={item.id}
-                      className="flex justify-between items-center py-2 border-b last:border-b-0"
+                      className="flex items-center justify-between border-b py-2 last:border-b-0"
                     >
                       <div className="flex-1">
                         <p className="font-medium">{item.name}</p>
-                        <p className="text-sm text-muted-foreground">
+                        <p className="text-muted-foreground text-sm">
                           {item.quantity} × {formatCurrency(item.price)}
                         </p>
                       </div>
@@ -242,7 +242,7 @@ export function PaymentInterface({
                     <span>-{formatCurrency(discount)}</span>
                   </div>
                   <Separator />
-                  <div className="flex justify-between font-bold text-lg">
+                  <div className="flex justify-between text-lg font-bold">
                     <span>Total</span>
                     <span>{formatCurrency(total)}</span>
                   </div>
@@ -253,7 +253,7 @@ export function PaymentInterface({
             {/* Discount */}
             <Card>
               <CardHeader>
-                <CardTitle className="text-lg flex items-center gap-2">
+                <CardTitle className="flex items-center gap-2 text-lg">
                   <IconPercentage className="h-5 w-5" />
                   Discount
                 </CardTitle>
@@ -262,22 +262,22 @@ export function PaymentInterface({
                 <div className="flex gap-2">
                   <Button
                     variant={
-                      discountType === "percentage" ? "default" : "outline"
+                      discountType === 'percentage' ? 'default' : 'outline'
                     }
                     size="sm"
-                    onClick={() => setDiscountType("percentage")}
+                    onClick={() => setDiscountType('percentage')}
                     disabled={processing}
                   >
-                    <IconPercentage className="h-4 w-4 mr-1" />
+                    <IconPercentage className="mr-1 h-4 w-4" />
                     Percentage
                   </Button>
                   <Button
-                    variant={discountType === "fixed" ? "default" : "outline"}
+                    variant={discountType === 'fixed' ? 'default' : 'outline'}
                     size="sm"
-                    onClick={() => setDiscountType("fixed")}
+                    onClick={() => setDiscountType('fixed')}
                     disabled={processing}
                   >
-                    <IconMinus className="h-4 w-4 mr-1" />
+                    <IconMinus className="mr-1 h-4 w-4" />
                     Fixed Amount
                   </Button>
                 </div>
@@ -285,19 +285,19 @@ export function PaymentInterface({
                 <div className="flex gap-2">
                   <Input
                     type="number"
-                    placeholder={discountType === "percentage" ? "0" : "0.00"}
-                    value={discountValue || ""}
-                    onChange={(e) =>
+                    placeholder={discountType === 'percentage' ? '0' : '0.00'}
+                    value={discountValue || ''}
+                    onChange={e =>
                       handleDiscountChange(parseFloat(e.target.value) || 0)
                     }
                     disabled={processing}
                   />
-                  <div className="flex items-center px-3 bg-muted rounded">
-                    {discountType === "percentage" ? "%" : "₦"}
+                  <div className="bg-muted flex items-center rounded px-3">
+                    {discountType === 'percentage' ? '%' : '₦'}
                   </div>
                 </div>
 
-                <div className="text-sm text-muted-foreground">
+                <div className="text-muted-foreground text-sm">
                   Current discount: {formatCurrency(discount)}
                 </div>
               </CardContent>
@@ -313,19 +313,19 @@ export function PaymentInterface({
               </CardHeader>
               <CardContent>
                 <div className="grid grid-cols-2 gap-3">
-                  {PAYMENT_METHODS.map((method) => {
+                  {PAYMENT_METHODS.map(method => {
                     const Icon = method.icon;
                     return (
                       <Button
                         key={method.value}
                         variant={
-                          paymentMethod === method.value ? "default" : "outline"
+                          paymentMethod === method.value ? 'default' : 'outline'
                         }
                         className="h-16 flex-col"
                         onClick={() => setPaymentMethod(method.value)}
                         disabled={processing}
                       >
-                        <Icon className="h-6 w-6 mb-1" />
+                        <Icon className="mb-1 h-6 w-6" />
                         <span className="text-sm">{method.label}</span>
                       </Button>
                     );
@@ -335,7 +335,7 @@ export function PaymentInterface({
             </Card>
 
             {/* Cash Payment Details */}
-            {paymentMethod === "cash" && (
+            {paymentMethod === 'cash' && (
               <Card>
                 <CardHeader>
                   <CardTitle className="text-lg">Cash Payment</CardTitle>
@@ -348,16 +348,16 @@ export function PaymentInterface({
                       type="number"
                       step="0.01"
                       value={amountPaid}
-                      onChange={(e) =>
+                      onChange={e =>
                         setAmountPaid(parseFloat(e.target.value) || 0)
                       }
                       disabled={processing}
                     />
                   </div>
 
-                  <div className="flex justify-between items-center p-3 bg-muted rounded">
+                  <div className="bg-muted flex items-center justify-between rounded p-3">
                     <span className="font-medium">Change Due:</span>
-                    <span className="font-bold text-lg">
+                    <span className="text-lg font-bold">
                       ₦{formatCurrency(change)}
                     </span>
                   </div>
@@ -368,7 +368,7 @@ export function PaymentInterface({
             {/* Customer Information */}
             <Card>
               <CardHeader>
-                <CardTitle className="text-lg flex items-center gap-2">
+                <CardTitle className="flex items-center gap-2 text-lg">
                   <IconUser className="h-5 w-5" />
                   Customer Information (Optional)
                 </CardTitle>
@@ -379,7 +379,7 @@ export function PaymentInterface({
                   <Input
                     id="customerName"
                     value={customerInfo.name}
-                    onChange={(e) =>
+                    onChange={e =>
                       onCustomerInfoChange({
                         ...customerInfo,
                         name: e.target.value,
@@ -395,7 +395,7 @@ export function PaymentInterface({
                     id="customerPhone"
                     type="tel"
                     value={customerInfo.phone}
-                    onChange={(e) =>
+                    onChange={e =>
                       onCustomerInfoChange({
                         ...customerInfo,
                         phone: e.target.value,
@@ -411,7 +411,7 @@ export function PaymentInterface({
                     id="customerEmail"
                     type="email"
                     value={customerInfo.email}
-                    onChange={(e) =>
+                    onChange={e =>
                       onCustomerInfoChange({
                         ...customerInfo,
                         email: e.target.value,
@@ -432,7 +432,7 @@ export function PaymentInterface({
                 <Textarea
                   placeholder="Additional notes for this sale..."
                   value={notes}
-                  onChange={(e) => setNotes(e.target.value)}
+                  onChange={e => setNotes(e.target.value)}
                   disabled={processing}
                   rows={3}
                 />
@@ -442,7 +442,7 @@ export function PaymentInterface({
         </div>
 
         {/* Actions */}
-        <div className="flex justify-end gap-4 pt-4 border-t">
+        <div className="flex justify-end gap-4 border-t pt-4">
           <Button variant="outline" onClick={onCancel} disabled={processing}>
             Cancel
           </Button>
@@ -453,12 +453,12 @@ export function PaymentInterface({
           >
             {processing ? (
               <>
-                <IconLoader className="h-4 w-4 mr-2 animate-spin" />
+                <IconLoader className="mr-2 h-4 w-4 animate-spin" />
                 Processing...
               </>
             ) : (
               <>
-                <IconCash className="h-4 w-4 mr-2" />
+                <IconCash className="mr-2 h-4 w-4" />
                 Complete Payment
               </>
             )}

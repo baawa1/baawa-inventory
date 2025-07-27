@@ -1,76 +1,76 @@
-import { z } from "zod";
-import { UseFormReturn } from "react-hook-form";
+import { z } from 'zod';
+import { UseFormReturn } from 'react-hook-form';
 
 // Common form field patterns
 export const commonFormFields = {
   email: z
     .string()
-    .min(1, "Email is required")
-    .email("Please enter a valid email address")
-    .max(255, "Email must be 255 characters or less"),
+    .min(1, 'Email is required')
+    .email('Please enter a valid email address')
+    .max(255, 'Email must be 255 characters or less'),
 
   password: z
     .string()
-    .min(8, "Password must be at least 8 characters")
-    .max(128, "Password must be 128 characters or less")
-    .regex(/[A-Z]/, "Password must contain at least one uppercase letter")
-    .regex(/[a-z]/, "Password must contain at least one lowercase letter")
-    .regex(/[0-9]/, "Password must contain at least one number")
+    .min(8, 'Password must be at least 8 characters')
+    .max(128, 'Password must be 128 characters or less')
+    .regex(/[A-Z]/, 'Password must contain at least one uppercase letter')
+    .regex(/[a-z]/, 'Password must contain at least one lowercase letter')
+    .regex(/[0-9]/, 'Password must contain at least one number')
     .regex(
       /[^A-Za-z0-9]/,
-      "Password must contain at least one special character"
+      'Password must contain at least one special character'
     ),
 
   name: z
     .string()
-    .min(2, "Name must be at least 2 characters")
-    .max(100, "Name must be 100 characters or less")
+    .min(2, 'Name must be at least 2 characters')
+    .max(100, 'Name must be 100 characters or less')
     .regex(
       /^[A-Za-z\s'-]+$/,
-      "Name can only contain letters, spaces, hyphens, and apostrophes"
+      'Name can only contain letters, spaces, hyphens, and apostrophes'
     ),
 
   phone: z
     .string()
     .optional()
     .refine(
-      (val) => !val || /^[\+]?[1-9][\d]{0,15}$/.test(val),
-      "Please enter a valid phone number"
+      val => !val || /^[\+]?[1-9][\d]{0,15}$/.test(val),
+      'Please enter a valid phone number'
     ),
 
   url: z
     .string()
     .optional()
     .refine(
-      (val) => !val || z.string().url().safeParse(val).success,
-      "Please enter a valid URL"
+      val => !val || z.string().url().safeParse(val).success,
+      'Please enter a valid URL'
     ),
 
   currency: z
     .number()
-    .min(0.01, "Amount must be at least ₦0.01")
-    .max(999999.99, "Amount cannot exceed ₦999,999.99"),
+    .min(0.01, 'Amount must be at least ₦0.01')
+    .max(999999.99, 'Amount cannot exceed ₦999,999.99'),
 
   percentage: z
     .number()
-    .min(0, "Percentage cannot be negative")
-    .max(100, "Percentage cannot exceed 100"),
+    .min(0, 'Percentage cannot be negative')
+    .max(100, 'Percentage cannot exceed 100'),
 
   positiveInteger: z
     .number()
-    .int("Must be a whole number")
-    .positive("Must be a positive number"),
+    .int('Must be a whole number')
+    .positive('Must be a positive number'),
 
   nonNegativeInteger: z
     .number()
-    .int("Must be a whole number")
-    .min(0, "Cannot be negative"),
+    .int('Must be a whole number')
+    .min(0, 'Cannot be negative'),
 };
 
 // Common form validation patterns
 export const validationPatterns = {
   // Create a confirmation field validator
-  createConfirmationField: (fieldLabel: string = "password") =>
+  createConfirmationField: (fieldLabel: string = 'password') =>
     z.string().min(1, `Please confirm your ${fieldLabel}`),
 
   // Create a schema with confirmation validation
@@ -78,7 +78,7 @@ export const validationPatterns = {
     schema: z.ZodObject<T>,
     originalField: keyof T,
     confirmationField: string,
-    fieldLabel: string = "password"
+    fieldLabel: string = 'password'
   ) =>
     schema
       .extend({
@@ -86,7 +86,7 @@ export const validationPatterns = {
           .string()
           .min(1, `Please confirm your ${fieldLabel}`),
       } as any)
-      .refine((data) => data[originalField] === data[confirmationField], {
+      .refine(data => data[originalField] === data[confirmationField], {
         message: `${fieldLabel.charAt(0).toUpperCase() + fieldLabel.slice(1)}s don't match`,
         path: [confirmationField],
       }),
@@ -123,11 +123,11 @@ export const formUtils = {
         const errorMessage =
           error instanceof Error
             ? error.message
-            : "An unexpected error occurred";
+            : 'An unexpected error occurred';
 
         // Set form error
-        form.setError("root", {
-          type: "manual",
+        form.setError('root', {
+          type: 'manual',
           message: errorMessage,
         });
 
@@ -156,7 +156,7 @@ export const formUtils = {
     form: UseFormReturn<T>
   ) => {
     return Object.values(form.formState.errors)
-      .map((error) => error?.message)
+      .map(error => error?.message)
       .filter(Boolean) as string[];
   },
 
@@ -189,17 +189,17 @@ export const fieldUtils = {
 
   // Format currency input
   formatCurrency: (value: number | string): string => {
-    const numValue = typeof value === "string" ? parseFloat(value) : value;
-    return new Intl.NumberFormat("en-NG", {
-      style: "currency",
-      currency: "NGN",
+    const numValue = typeof value === 'string' ? parseFloat(value) : value;
+    return new Intl.NumberFormat('en-NG', {
+      style: 'currency',
+      currency: 'NGN',
       minimumFractionDigits: 2,
     }).format(numValue || 0);
   },
 
   // Parse currency input
   parseCurrency: (value: string): number => {
-    return parseFloat(value.replace(/[₦,\s]/g, "")) || 0;
+    return parseFloat(value.replace(/[₦,\s]/g, '')) || 0;
   },
 
   // Format percentage
@@ -211,7 +211,7 @@ export const fieldUtils = {
   toTitleCase: (str: string): string => {
     return str.replace(
       /\w\S*/g,
-      (txt) => txt.charAt(0).toUpperCase() + txt.substr(1).toLowerCase()
+      txt => txt.charAt(0).toUpperCase() + txt.substr(1).toLowerCase()
     );
   },
 };
@@ -220,8 +220,8 @@ export const fieldUtils = {
 export const formConfigs = {
   // Default form options for React Hook Form
   defaultFormOptions: {
-    mode: "onBlur" as const,
-    reValidateMode: "onChange" as const,
+    mode: 'onBlur' as const,
+    reValidateMode: 'onChange' as const,
     shouldFocusError: true,
     shouldUnregister: false,
   },
@@ -229,18 +229,18 @@ export const formConfigs = {
   // Common button configurations
   submitButton: {
     loading: {
-      text: "Saving...",
+      text: 'Saving...',
       disabled: true,
     },
     default: {
-      text: "Save",
+      text: 'Save',
       disabled: false,
     },
   },
 
   cancelButton: {
-    text: "Cancel",
-    variant: "outline" as const,
+    text: 'Cancel',
+    variant: 'outline' as const,
   },
 };
 
@@ -249,9 +249,9 @@ export const validationHelpers = {
   // Check if value is empty (null, undefined, empty string, empty array)
   isEmpty: (value: unknown): boolean => {
     if (value === null || value === undefined) return true;
-    if (typeof value === "string") return value.trim() === "";
+    if (typeof value === 'string') return value.trim() === '';
     if (Array.isArray(value)) return value.length === 0;
-    if (typeof value === "object") return Object.keys(value).length === 0;
+    if (typeof value === 'object') return Object.keys(value).length === 0;
     return false;
   },
 
@@ -259,8 +259,8 @@ export const validationHelpers = {
   sanitizeString: (value: string): string => {
     return value
       .trim()
-      .replace(/\s+/g, " ") // Replace multiple spaces with single space
-      .replace(/[<>]/g, ""); // Remove angle brackets for basic XSS prevention
+      .replace(/\s+/g, ' ') // Replace multiple spaces with single space
+      .replace(/[<>]/g, ''); // Remove angle brackets for basic XSS prevention
   },
 
   // Validate file upload
@@ -274,9 +274,9 @@ export const validationHelpers = {
   ): { valid: boolean; error?: string } => {
     const maxSize = options.maxSize || 5 * 1024 * 1024; // 5MB default
     const allowedTypes = options.allowedTypes || [
-      "image/jpeg",
-      "image/png",
-      "image/webp",
+      'image/jpeg',
+      'image/png',
+      'image/webp',
     ];
 
     if (file.size > maxSize) {
@@ -289,7 +289,7 @@ export const validationHelpers = {
     if (!allowedTypes.includes(file.type)) {
       return {
         valid: false,
-        error: `File type must be one of: ${allowedTypes.join(", ")}`,
+        error: `File type must be one of: ${allowedTypes.join(', ')}`,
       };
     }
 

@@ -1,4 +1,4 @@
-import { useMutation, useQueryClient } from "@tanstack/react-query";
+import { useMutation, useQueryClient } from '@tanstack/react-query';
 
 // Types for webhook sync data
 export interface WebhookSyncResponse {
@@ -17,16 +17,16 @@ export function useSyncEntity() {
       entityType,
       entityId,
     }: {
-      entityType: "product" | "category" | "brand";
+      entityType: 'product' | 'category' | 'brand';
       entityId: number;
     }): Promise<WebhookSyncResponse> => {
-      const response = await fetch("/api/webhook/sync", {
-        method: "POST",
+      const response = await fetch('/api/webhook/sync', {
+        method: 'POST',
         headers: {
-          "Content-Type": "application/json",
+          'Content-Type': 'application/json',
         },
         body: JSON.stringify({
-          action: "sync-single",
+          action: 'sync-single',
           entityType,
           entityId,
         }),
@@ -34,7 +34,7 @@ export function useSyncEntity() {
 
       if (!response.ok) {
         const error = await response.json();
-        throw new Error(error.error || "Failed to sync entity");
+        throw new Error(error.error || 'Failed to sync entity');
       }
 
       return response.json();
@@ -47,7 +47,7 @@ export function useSyncEntity() {
 
       // Invalidate list queries
       queryClient.invalidateQueries({
-        queryKey: [variables.entityType + "s"],
+        queryKey: [variables.entityType + 's'],
       });
     },
   });
@@ -62,16 +62,16 @@ export function useBulkSyncEntities() {
       entityType,
       entityIds,
     }: {
-      entityType: "product" | "category" | "brand";
+      entityType: 'product' | 'category' | 'brand';
       entityIds: number[];
     }): Promise<WebhookSyncResponse> => {
-      const response = await fetch("/api/webhook/sync", {
-        method: "POST",
+      const response = await fetch('/api/webhook/sync', {
+        method: 'POST',
         headers: {
-          "Content-Type": "application/json",
+          'Content-Type': 'application/json',
         },
         body: JSON.stringify({
-          action: "sync-bulk",
+          action: 'sync-bulk',
           entityType,
           entityIds,
         }),
@@ -79,14 +79,14 @@ export function useBulkSyncEntities() {
 
       if (!response.ok) {
         const error = await response.json();
-        throw new Error(error.error || "Failed to sync entities");
+        throw new Error(error.error || 'Failed to sync entities');
       }
 
       return response.json();
     },
     onSuccess: (data, variables) => {
       // Invalidate relevant queries
-      variables.entityIds.forEach((entityId) => {
+      variables.entityIds.forEach(entityId => {
         queryClient.invalidateQueries({
           queryKey: [variables.entityType, entityId],
         });
@@ -94,7 +94,7 @@ export function useBulkSyncEntities() {
 
       // Invalidate list queries
       queryClient.invalidateQueries({
-        queryKey: [variables.entityType + "s"],
+        queryKey: [variables.entityType + 's'],
       });
     },
   });
@@ -106,7 +106,7 @@ export function useSyncAllEntities() {
 
   return useMutation({
     mutationFn: async (
-      entityType: "product" | "category" | "brand"
+      entityType: 'product' | 'category' | 'brand'
     ): Promise<WebhookSyncResponse> => {
       // First get all entity IDs
       const response = await fetch(`/api/${entityType}s`);
@@ -126,13 +126,13 @@ export function useSyncAllEntities() {
       }
 
       // Then sync all entities
-      const syncResponse = await fetch("/api/webhook/sync", {
-        method: "POST",
+      const syncResponse = await fetch('/api/webhook/sync', {
+        method: 'POST',
         headers: {
-          "Content-Type": "application/json",
+          'Content-Type': 'application/json',
         },
         body: JSON.stringify({
-          action: "sync-bulk",
+          action: 'sync-bulk',
           entityType,
           entityIds,
         }),
@@ -148,7 +148,7 @@ export function useSyncAllEntities() {
     onSuccess: (data, entityType) => {
       // Invalidate all queries for this entity type
       queryClient.invalidateQueries({
-        queryKey: [entityType + "s"],
+        queryKey: [entityType + 's'],
       });
 
       // Invalidate individual entity queries

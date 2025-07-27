@@ -1,9 +1,9 @@
-import { NextResponse } from "next/server";
-import { withPermission, AuthenticatedRequest } from "@/lib/api-middleware";
-import { handleApiError } from "@/lib/api-error-handler-new";
-import { prisma } from "@/lib/db";
-import { USER_ROLES } from "@/lib/auth/roles";
-import { sendReconciliationNotification } from "@/lib/notifications/stock-reconciliation";
+import { NextResponse } from 'next/server';
+import { withPermission, AuthenticatedRequest } from '@/lib/api-middleware';
+import { handleApiError } from '@/lib/api-error-handler-new';
+import { prisma } from '@/lib/db';
+import { USER_ROLES } from '@/lib/auth/roles';
+import { sendReconciliationNotification } from '@/lib/notifications/stock-reconciliation';
 
 export const POST = withPermission(
   [USER_ROLES.ADMIN],
@@ -17,7 +17,7 @@ export const POST = withPermission(
 
       if (isNaN(reconciliationId)) {
         return NextResponse.json(
-          { error: "Invalid reconciliation ID" },
+          { error: 'Invalid reconciliation ID' },
           { status: 400 }
         );
       }
@@ -26,7 +26,7 @@ export const POST = withPermission(
 
       if (!reason || reason.trim().length === 0) {
         return NextResponse.json(
-          { error: "Rejection reason is required" },
+          { error: 'Rejection reason is required' },
           { status: 400 }
         );
       }
@@ -51,15 +51,15 @@ export const POST = withPermission(
 
       if (!reconciliation) {
         return NextResponse.json(
-          { error: "Stock reconciliation not found" },
+          { error: 'Stock reconciliation not found' },
           { status: 404 }
         );
       }
 
       // Can only reject pending reconciliations
-      if (reconciliation.status !== "PENDING") {
+      if (reconciliation.status !== 'PENDING') {
         return NextResponse.json(
-          { error: "Only pending reconciliations can be rejected" },
+          { error: 'Only pending reconciliations can be rejected' },
           { status: 400 }
         );
       }
@@ -68,10 +68,10 @@ export const POST = withPermission(
       const updatedReconciliation = await prisma.stockReconciliation.update({
         where: { id: reconciliationId },
         data: {
-          status: "REJECTED",
+          status: 'REJECTED',
           approvedById: parseInt(request.user.id),
           approvedAt: new Date(),
-          notes: `REJECTED: ${reason}${notes ? `\n${notes}` : ""}`,
+          notes: `REJECTED: ${reason}${notes ? `\n${notes}` : ''}`,
         },
         include: {
           items: {
@@ -108,7 +108,7 @@ export const POST = withPermission(
       // Send notification about the rejected reconciliation
       try {
         await sendReconciliationNotification({
-          type: "RECONCILIATION_REJECTED",
+          type: 'RECONCILIATION_REJECTED',
           reconciliationId: updatedReconciliation.id,
           reconciliationTitle: updatedReconciliation.title,
           createdBy: updatedReconciliation.createdBy,
@@ -117,7 +117,7 @@ export const POST = withPermission(
         });
       } catch (notificationError) {
         console.error(
-          "Failed to send rejection notification:",
+          'Failed to send rejection notification:',
           notificationError
         );
         // Don't fail the whole operation if notification fails
@@ -125,7 +125,7 @@ export const POST = withPermission(
 
       return NextResponse.json({
         success: true,
-        message: "Stock reconciliation rejected successfully",
+        message: 'Stock reconciliation rejected successfully',
         data: updatedReconciliation,
       });
     } catch (error) {

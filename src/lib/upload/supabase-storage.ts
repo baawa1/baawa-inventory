@@ -4,8 +4,8 @@
  * Production-ready file storage solution
  */
 
-import { createClient } from "@supabase/supabase-js";
-import { logger } from "@/lib/logger";
+import { createClient } from '@supabase/supabase-js';
+import { logger } from '@/lib/logger';
 
 export interface UploadResult {
   url: string;
@@ -30,7 +30,7 @@ class SupabaseStorageService {
 
   constructor(isServer: boolean = false) {
     this.isServer = isServer;
-    this.bucketName = "product-images";
+    this.bucketName = 'product-images';
 
     if (isServer) {
       // Server-side client
@@ -38,7 +38,7 @@ class SupabaseStorageService {
       const supabaseServiceKey = process.env.SUPABASE_SERVICE_ROLE_KEY;
 
       if (!supabaseUrl || !supabaseServiceKey) {
-        throw new Error("Supabase server configuration is missing");
+        throw new Error('Supabase server configuration is missing');
       }
 
       this.supabase = createClient(supabaseUrl, supabaseServiceKey, {
@@ -53,7 +53,7 @@ class SupabaseStorageService {
       const supabaseKey = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY;
 
       if (!supabaseUrl || !supabaseKey) {
-        throw new Error("Supabase client configuration is missing");
+        throw new Error('Supabase client configuration is missing');
       }
 
       this.supabase = createClient(supabaseUrl, supabaseKey);
@@ -68,8 +68,8 @@ class SupabaseStorageService {
     options: UploadOptions = {}
   ): Promise<UploadResult> {
     const {
-      folder = "products",
-      allowedTypes = ["image/jpeg", "image/png", "image/webp"],
+      folder = 'products',
+      allowedTypes = ['image/jpeg', 'image/png', 'image/webp'],
       maxSize = 5 * 1024 * 1024, // 5MB default
       quality = 85,
     } = options;
@@ -113,9 +113,9 @@ class SupabaseStorageService {
           // File exists, create a new filename with suffix
           const nameWithoutExt = filename.substring(
             0,
-            filename.lastIndexOf(".")
+            filename.lastIndexOf('.')
           );
-          const extension = filename.substring(filename.lastIndexOf("."));
+          const extension = filename.substring(filename.lastIndexOf('.'));
           filename = `${nameWithoutExt}_${conflictCounter}${extension}`;
           storagePath = `${folder}/${filename}`;
           conflictCounter++;
@@ -134,7 +134,7 @@ class SupabaseStorageService {
       const { data, error } = await this.supabase.storage
         .from(this.bucketName)
         .upload(storagePath, optimizedFile, {
-          cacheControl: "3600",
+          cacheControl: '3600',
           upsert: false,
         });
 
@@ -156,13 +156,13 @@ class SupabaseStorageService {
         publicId: data.path,
       };
     } catch (error) {
-      logger.upload("Supabase file upload failed", {
+      logger.upload('Supabase file upload failed', {
         filename: file.name,
         size: file.size,
         error: error instanceof Error ? error.message : String(error),
       });
       throw new Error(
-        `Failed to upload file: ${error instanceof Error ? error.message : "Unknown error"}`
+        `Failed to upload file: ${error instanceof Error ? error.message : 'Unknown error'}`
       );
     }
   }
@@ -176,8 +176,8 @@ class SupabaseStorageService {
     }
 
     return new Promise((resolve, reject) => {
-      const canvas = document.createElement("canvas");
-      const ctx = canvas.getContext("2d");
+      const canvas = document.createElement('canvas');
+      const ctx = canvas.getContext('2d');
       const img = new Image();
 
       img.onload = () => {
@@ -202,7 +202,7 @@ class SupabaseStorageService {
         ctx?.drawImage(img, 0, 0, width, height);
 
         canvas.toBlob(
-          (blob) => {
+          blob => {
             if (blob) {
               const optimizedFile = new File([blob], file.name, {
                 type: file.type,
@@ -210,7 +210,7 @@ class SupabaseStorageService {
               });
               resolve(optimizedFile);
             } else {
-              reject(new Error("Failed to optimize image"));
+              reject(new Error('Failed to optimize image'));
             }
           },
           file.type,
@@ -218,7 +218,7 @@ class SupabaseStorageService {
         );
       };
 
-      img.onerror = () => reject(new Error("Failed to load image"));
+      img.onerror = () => reject(new Error('Failed to load image'));
       img.src = URL.createObjectURL(file);
     });
   }
@@ -236,12 +236,12 @@ class SupabaseStorageService {
         throw new Error(`Delete failed: ${error.message}`);
       }
     } catch (error) {
-      logger.upload("Supabase file deletion failed", {
+      logger.upload('Supabase file deletion failed', {
         storagePath,
         error: error instanceof Error ? error.message : String(error),
       });
       throw new Error(
-        `Failed to delete file: ${error instanceof Error ? error.message : "Unknown error"}`
+        `Failed to delete file: ${error instanceof Error ? error.message : 'Unknown error'}`
       );
     }
   }
@@ -282,7 +282,7 @@ class SupabaseStorageService {
       }
 
       const bucketExists = buckets.some(
-        (bucket) => bucket.name === this.bucketName
+        bucket => bucket.name === this.bucketName
       );
 
       if (!bucketExists) {
@@ -290,7 +290,7 @@ class SupabaseStorageService {
           this.bucketName,
           {
             public: true,
-            allowedMimeTypes: ["image/jpeg", "image/png", "image/webp"],
+            allowedMimeTypes: ['image/jpeg', 'image/png', 'image/webp'],
             fileSizeLimit: 5242880, // 5MB
           }
         );
@@ -300,7 +300,7 @@ class SupabaseStorageService {
         }
       }
     } catch (error) {
-      logger.upload("Supabase bucket setup failed", {
+      logger.upload('Supabase bucket setup failed', {
         bucketName: this.bucketName,
         error: error instanceof Error ? error.message : String(error),
       });

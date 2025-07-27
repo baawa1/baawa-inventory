@@ -1,25 +1,25 @@
-import React from "react";
-import { UseFormReturn } from "react-hook-form";
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import React from 'react';
+import { UseFormReturn } from 'react-hook-form';
+import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import {
   FormControl,
   FormField,
   FormItem,
   FormLabel,
   FormMessage,
-} from "@/components/ui/form";
+} from '@/components/ui/form';
 import {
   Select,
   SelectContent,
   SelectItem,
   SelectTrigger,
   SelectValue,
-} from "@/components/ui/select";
-import { Loader2 } from "lucide-react";
-import { ImagePreview } from "@/components/ui/image-preview";
-import { IconTag, IconBrandX } from "@tabler/icons-react";
-import { UpdateProductFormData, Category, Brand, Supplier } from "./types";
-import { formatCategoryHierarchy } from "@/lib/utils/category";
+} from '@/components/ui/select';
+import { Loader2 } from 'lucide-react';
+import { ImagePreview } from '@/components/ui/image-preview';
+import { IconTag, IconBrandX } from '@tabler/icons-react';
+import { UpdateProductFormData, Category, Brand, Supplier } from './types';
+import { formatCategoryHierarchy } from '@/lib/utils/category';
 
 interface CategoryBrandSupplierSectionProps {
   form: UseFormReturn<UpdateProductFormData>;
@@ -46,7 +46,7 @@ export function CategoryBrandSupplierSection({
         <CardTitle>Category, Brand & Supplier</CardTitle>
       </CardHeader>
       <CardContent className="space-y-4">
-        <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+        <div className="grid grid-cols-1 gap-4 md:grid-cols-3">
           <FormField
             control={form.control}
             name="categoryId"
@@ -54,10 +54,10 @@ export function CategoryBrandSupplierSection({
               <FormItem>
                 <FormLabel>Category</FormLabel>
                 <Select
-                  onValueChange={(value) =>
+                  onValueChange={value =>
                     field.onChange(value ? parseInt(value) : undefined)
                   }
-                  value={field.value?.toString() || ""}
+                  value={field.value?.toString() || ''}
                   disabled={loadingCategories}
                 >
                   <FormControl>
@@ -70,7 +70,7 @@ export function CategoryBrandSupplierSection({
                               Loading...
                             </div>
                           ) : (
-                            "Select category"
+                            'Select category'
                           )
                         }
                       />
@@ -78,15 +78,15 @@ export function CategoryBrandSupplierSection({
                   </FormControl>
                   <SelectContent>
                     {Array.isArray(categories) &&
-                      categories.map((category) => (
+                      categories.map(category => (
                         <SelectItem
                           key={category.id}
                           value={category.id.toString()}
                         >
                           <div className="flex items-center gap-2">
                             {category.image &&
-                            category.image.startsWith("http") &&
-                            !category.image.includes("unsplash.com") ? (
+                            category.image.startsWith('http') &&
+                            !category.image.includes('unsplash.com') ? (
                               <ImagePreview
                                 src={category.image}
                                 alt={category.name}
@@ -94,7 +94,7 @@ export function CategoryBrandSupplierSection({
                                 className="rounded"
                               />
                             ) : (
-                              <div className="w-6 h-6 bg-gray-100 rounded flex items-center justify-center">
+                              <div className="flex h-6 w-6 items-center justify-center rounded bg-gray-100">
                                 <IconTag className="h-3 w-3 text-gray-400" />
                               </div>
                             )}
@@ -116,10 +116,10 @@ export function CategoryBrandSupplierSection({
               <FormItem>
                 <FormLabel>Brand</FormLabel>
                 <Select
-                  onValueChange={(value) =>
+                  onValueChange={value =>
                     field.onChange(value ? parseInt(value) : undefined)
                   }
-                  value={field.value?.toString() || ""}
+                  value={field.value?.toString() || ''}
                   disabled={loadingBrands}
                 >
                   <FormControl>
@@ -132,7 +132,7 @@ export function CategoryBrandSupplierSection({
                               Loading...
                             </div>
                           ) : (
-                            "Select brand"
+                            'Select brand'
                           )
                         }
                       />
@@ -140,12 +140,12 @@ export function CategoryBrandSupplierSection({
                   </FormControl>
                   <SelectContent>
                     {Array.isArray(brands) &&
-                      brands.map((brand) => (
+                      brands.map(brand => (
                         <SelectItem key={brand.id} value={brand.id.toString()}>
                           <div className="flex items-center gap-2">
                             {brand.image &&
-                            brand.image.startsWith("http") &&
-                            !brand.image.includes("unsplash.com") ? (
+                            brand.image.startsWith('http') &&
+                            !brand.image.includes('unsplash.com') ? (
                               <ImagePreview
                                 src={brand.image}
                                 alt={brand.name}
@@ -153,7 +153,7 @@ export function CategoryBrandSupplierSection({
                                 className="rounded"
                               />
                             ) : (
-                              <div className="w-6 h-6 bg-gray-100 rounded flex items-center justify-center">
+                              <div className="flex h-6 w-6 items-center justify-center rounded bg-gray-100">
                                 <IconBrandX className="h-3 w-3 text-gray-400" />
                               </div>
                             )}
@@ -175,10 +175,10 @@ export function CategoryBrandSupplierSection({
               <FormItem>
                 <FormLabel>Supplier</FormLabel>
                 <Select
-                  onValueChange={(value) =>
+                  onValueChange={value =>
                     field.onChange(value ? parseInt(value) : undefined)
                   }
-                  value={field.value?.toString() || ""}
+                  value={field.value?.toString() || ''}
                   disabled={loadingSuppliers}
                 >
                   <FormControl>
@@ -191,7 +191,7 @@ export function CategoryBrandSupplierSection({
                               Loading...
                             </div>
                           ) : (
-                            "Select supplier"
+                            'Select supplier'
                           )
                         }
                       />
@@ -199,7 +199,7 @@ export function CategoryBrandSupplierSection({
                   </FormControl>
                   <SelectContent>
                     {Array.isArray(suppliers) &&
-                      suppliers.map((supplier) => (
+                      suppliers.map(supplier => (
                         <SelectItem
                           key={supplier.id}
                           value={supplier.id.toString()}

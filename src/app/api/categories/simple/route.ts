@@ -1,13 +1,13 @@
-import { withAuth, AuthenticatedRequest } from "@/lib/api-middleware";
-import { canViewLowStock } from "@/lib/auth/roles";
-import { createApiResponse } from "@/lib/api-response";
-import { prisma } from "@/lib/db";
+import { withAuth, AuthenticatedRequest } from '@/lib/api-middleware';
+import { canViewLowStock } from '@/lib/auth/roles';
+import { createApiResponse } from '@/lib/api-response';
+import { prisma } from '@/lib/db';
 
 export const GET = withAuth(async (request: AuthenticatedRequest) => {
   try {
     // Check if user has required permissions
     if (!canViewLowStock(request.user.role)) {
-      return createApiResponse.forbidden("Insufficient permissions");
+      return createApiResponse.forbidden('Insufficient permissions');
     }
 
     const categories = await prisma.category.findMany({
@@ -19,16 +19,16 @@ export const GET = withAuth(async (request: AuthenticatedRequest) => {
         name: true,
       },
       orderBy: {
-        name: "asc",
+        name: 'asc',
       },
     });
 
     return createApiResponse.success(
       categories,
-      "Categories retrieved successfully"
+      'Categories retrieved successfully'
     );
   } catch (error) {
-    console.error("Error in categories API:", error);
-    return createApiResponse.internalError("Internal server error");
+    console.error('Error in categories API:', error);
+    return createApiResponse.internalError('Internal server error');
   }
 });

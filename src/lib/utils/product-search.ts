@@ -23,27 +23,27 @@ export function formatSearchParams(params: {
   const searchParams = new URLSearchParams();
 
   if (params.search && validateSearchTerm(params.search)) {
-    searchParams.append("search", params.search);
+    searchParams.append('search', params.search);
   }
 
   if (params.page) {
-    searchParams.append("page", params.page.toString());
+    searchParams.append('page', params.page.toString());
   }
 
   if (params.limit) {
-    searchParams.append("limit", params.limit.toString());
+    searchParams.append('limit', params.limit.toString());
   }
 
   if (params.category) {
-    searchParams.append("category", params.category);
+    searchParams.append('category', params.category);
   }
 
   if (params.brand) {
-    searchParams.append("brand", params.brand);
+    searchParams.append('brand', params.brand);
   }
 
   if (params.status) {
-    searchParams.append("status", params.status);
+    searchParams.append('status', params.status);
   }
 
   return searchParams;
@@ -55,9 +55,9 @@ export function formatSearchParams(params: {
 export function sanitizeSearchTerm(searchTerm: string): string {
   // Remove special characters that could cause issues
   return searchTerm
-    .replace(/[<>]/g, "") // Remove angle brackets
-    .replace(/[{}]/g, "") // Remove curly braces
-    .replace(/[\[\]]/g, "") // Remove square brackets
+    .replace(/[<>]/g, '') // Remove angle brackets
+    .replace(/[{}]/g, '') // Remove curly braces
+    .replace(/[\[\]]/g, '') // Remove square brackets
     .trim();
 }
 
@@ -65,7 +65,7 @@ export function sanitizeSearchTerm(searchTerm: string): string {
  * Validate search result structure
  */
 export function isValidSearchResult(result: any): boolean {
-  if (!result || typeof result !== "object") {
+  if (!result || typeof result !== 'object') {
     return false;
   }
 
@@ -74,7 +74,7 @@ export function isValidSearchResult(result: any): boolean {
     return false;
   }
 
-  if (!result.pagination || typeof result.pagination !== "object") {
+  if (!result.pagination || typeof result.pagination !== 'object') {
     return false;
   }
 

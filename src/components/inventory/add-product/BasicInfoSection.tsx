@@ -1,17 +1,17 @@
-"use client";
+'use client';
 
-import { UseFormReturn } from "react-hook-form";
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { UseFormReturn } from 'react-hook-form';
+import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import {
   FormControl,
   FormField,
   FormItem,
   FormLabel,
   FormMessage,
-} from "@/components/ui/form";
-import { Input } from "@/components/ui/input";
-import { Textarea } from "@/components/ui/textarea";
-import type { CreateProductData } from "./types";
+} from '@/components/ui/form';
+import { Input } from '@/components/ui/input';
+import { Textarea } from '@/components/ui/textarea';
+import type { CreateProductData } from './types';
 
 interface BasicInfoSectionProps {
   form: UseFormReturn<CreateProductData>;
@@ -24,7 +24,7 @@ export function BasicInfoSection({ form }: BasicInfoSectionProps) {
         <CardTitle>Basic Information</CardTitle>
       </CardHeader>
       <CardContent className="space-y-4">
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+        <div className="grid grid-cols-1 gap-4 md:grid-cols-2">
           <FormField
             control={form.control}
             name="name"
@@ -66,8 +66,8 @@ export function BasicInfoSection({ form }: BasicInfoSectionProps) {
                   className="resize-none"
                   rows={4}
                   {...field}
-                  value={field.value || ""}
-                  onChange={(e) => field.onChange(e.target.value || null)}
+                  value={field.value || ''}
+                  onChange={e => field.onChange(e.target.value || null)}
                 />
               </FormControl>
               <FormMessage />
@@ -85,8 +85,8 @@ export function BasicInfoSection({ form }: BasicInfoSectionProps) {
                 <Input
                   placeholder="Enter barcode"
                   {...field}
-                  value={field.value || ""}
-                  onChange={(e) => field.onChange(e.target.value || null)}
+                  value={field.value || ''}
+                  onChange={e => field.onChange(e.target.value || null)}
                 />
               </FormControl>
               <FormMessage />
@@ -105,8 +105,8 @@ export function BasicInfoSection({ form }: BasicInfoSectionProps) {
                   placeholder="Enter image URL"
                   type="url"
                   {...field}
-                  value={field.value || ""}
-                  onChange={(e) => field.onChange(e.target.value || null)}
+                  value={field.value || ''}
+                  onChange={e => field.onChange(e.target.value || null)}
                 />
               </FormControl>
               <FormMessage />

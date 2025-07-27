@@ -1,7 +1,7 @@
-"use client";
+'use client';
 
-import { useState, useEffect } from "react";
-import { Button } from "@/components/ui/button";
+import { useState, useEffect } from 'react';
+import { Button } from '@/components/ui/button';
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -9,8 +9,8 @@ import {
   DropdownMenuTrigger,
   DropdownMenuLabel,
   DropdownMenuSeparator,
-} from "@/components/ui/dropdown-menu";
-import { IconColumns, IconEye, IconEyeOff } from "@tabler/icons-react";
+} from '@/components/ui/dropdown-menu';
+import { IconColumns, IconEye, IconEyeOff } from '@tabler/icons-react';
 
 export interface TableColumn {
   key: string;
@@ -22,79 +22,79 @@ export interface TableColumn {
 
 export const PRODUCT_COLUMNS: TableColumn[] = [
   {
-    key: "image",
-    label: "Image",
+    key: 'image',
+    label: 'Image',
     sortable: false,
     defaultVisible: true,
     required: true,
   },
   {
-    key: "name",
-    label: "Product Name",
+    key: 'name',
+    label: 'Product Name',
     sortable: true,
     defaultVisible: true,
     required: true,
   },
   {
-    key: "sku",
-    label: "SKU",
+    key: 'sku',
+    label: 'SKU',
     sortable: true,
     defaultVisible: true,
     required: true,
   },
-  { key: "category", label: "Category", sortable: true, defaultVisible: true },
-  { key: "brand", label: "Brand", sortable: true, defaultVisible: true },
-  { key: "stock", label: "Stock", sortable: true, defaultVisible: true },
-  { key: "price", label: "Price", sortable: true, defaultVisible: true },
-  { key: "status", label: "Status", sortable: true, defaultVisible: true },
-  { key: "supplier", label: "Supplier", sortable: false, defaultVisible: true },
+  { key: 'category', label: 'Category', sortable: true, defaultVisible: true },
+  { key: 'brand', label: 'Brand', sortable: true, defaultVisible: true },
+  { key: 'stock', label: 'Stock', sortable: true, defaultVisible: true },
+  { key: 'price', label: 'Price', sortable: true, defaultVisible: true },
+  { key: 'status', label: 'Status', sortable: true, defaultVisible: true },
+  { key: 'supplier', label: 'Supplier', sortable: false, defaultVisible: true },
   {
-    key: "description",
-    label: "Description",
+    key: 'description',
+    label: 'Description',
     sortable: false,
     defaultVisible: false,
   },
-  { key: "barcode", label: "Barcode", sortable: true, defaultVisible: false },
-  { key: "cost", label: "Cost Price", sortable: true, defaultVisible: false },
+  { key: 'barcode', label: 'Barcode', sortable: true, defaultVisible: false },
+  { key: 'cost', label: 'Cost Price', sortable: true, defaultVisible: false },
   {
-    key: "minStock",
-    label: "Min Stock",
+    key: 'minStock',
+    label: 'Min Stock',
     sortable: true,
     defaultVisible: false,
   },
   {
-    key: "maxStock",
-    label: "Max Stock",
+    key: 'maxStock',
+    label: 'Max Stock',
     sortable: true,
     defaultVisible: false,
   },
-  { key: "unit", label: "Unit", sortable: true, defaultVisible: false },
-  { key: "weight", label: "Weight", sortable: true, defaultVisible: false },
+  { key: 'unit', label: 'Unit', sortable: true, defaultVisible: false },
+  { key: 'weight', label: 'Weight', sortable: true, defaultVisible: false },
   {
-    key: "dimensions",
-    label: "Dimensions",
+    key: 'dimensions',
+    label: 'Dimensions',
     sortable: false,
     defaultVisible: false,
   },
-  { key: "color", label: "Color", sortable: true, defaultVisible: false },
-  { key: "size", label: "Size", sortable: true, defaultVisible: false },
-  { key: "material", label: "Material", sortable: true, defaultVisible: false },
+  { key: 'color', label: 'Color', sortable: true, defaultVisible: false },
+  { key: 'size', label: 'Size', sortable: true, defaultVisible: false },
+  { key: 'material', label: 'Material', sortable: true, defaultVisible: false },
   {
-    key: "has_variants",
-    label: "Has Variants",
+    key: 'has_variants',
+    label: 'Has Variants',
     sortable: true,
     defaultVisible: false,
   },
-  { key: "tags", label: "Tags", sortable: false, defaultVisible: false },
+  { key: 'tags', label: 'Tags', sortable: false, defaultVisible: false },
   {
-    key: "createdAt",
-    label: "Created Date",
+    key: 'createdAt',
+    label: 'Created Date',
     sortable: true,
     defaultVisible: false,
   },
   {
-    key: "updatedAt",
-    label: "Updated Date",
+    key: 'updatedAt',
+    label: 'Updated Date',
     sortable: true,
     defaultVisible: false,
   },
@@ -102,51 +102,51 @@ export const PRODUCT_COLUMNS: TableColumn[] = [
 
 export const SUPPLIER_COLUMNS: TableColumn[] = [
   {
-    key: "name",
-    label: "Name",
+    key: 'name',
+    label: 'Name',
     sortable: true,
     defaultVisible: true,
     required: true,
   },
   {
-    key: "contactPerson",
-    label: "Contact Person",
+    key: 'contactPerson',
+    label: 'Contact Person',
     sortable: false,
     defaultVisible: true,
   },
   {
-    key: "email",
-    label: "Email",
+    key: 'email',
+    label: 'Email',
     sortable: false,
     defaultVisible: true,
   },
   {
-    key: "phone",
-    label: "Phone",
+    key: 'phone',
+    label: 'Phone',
     sortable: false,
     defaultVisible: true,
   },
   {
-    key: "address",
-    label: "Address",
+    key: 'address',
+    label: 'Address',
     sortable: false,
     defaultVisible: true,
   },
   {
-    key: "status",
-    label: "Status",
+    key: 'status',
+    label: 'Status',
     sortable: true,
     defaultVisible: true,
   },
   {
-    key: "createdAt",
-    label: "Created Date",
+    key: 'createdAt',
+    label: 'Created Date',
     sortable: true,
     defaultVisible: false,
   },
   {
-    key: "updatedAt",
-    label: "Updated Date",
+    key: 'updatedAt',
+    label: 'Updated Date',
     sortable: true,
     defaultVisible: false,
   },
@@ -154,33 +154,33 @@ export const SUPPLIER_COLUMNS: TableColumn[] = [
 
 export const CATEGORY_COLUMNS: TableColumn[] = [
   {
-    key: "name",
-    label: "Name",
+    key: 'name',
+    label: 'Name',
     sortable: true,
     defaultVisible: true,
     required: true,
   },
   {
-    key: "description",
-    label: "Description",
+    key: 'description',
+    label: 'Description',
     sortable: false,
     defaultVisible: true,
   },
   {
-    key: "isActive",
-    label: "Status",
+    key: 'isActive',
+    label: 'Status',
     sortable: true,
     defaultVisible: true,
   },
   {
-    key: "createdAt",
-    label: "Created Date",
+    key: 'createdAt',
+    label: 'Created Date',
     sortable: true,
     defaultVisible: true,
   },
   {
-    key: "updatedAt",
-    label: "Updated Date",
+    key: 'updatedAt',
+    label: 'Updated Date',
     sortable: true,
     defaultVisible: false,
   },
@@ -188,46 +188,46 @@ export const CATEGORY_COLUMNS: TableColumn[] = [
 
 export const STOCK_RECONCILIATION_COLUMNS: TableColumn[] = [
   {
-    key: "title",
-    label: "Reconciliation Title",
+    key: 'title',
+    label: 'Reconciliation Title',
     sortable: true,
     defaultVisible: true,
     required: true,
   },
   {
-    key: "status",
-    label: "Status",
+    key: 'status',
+    label: 'Status',
     sortable: true,
     defaultVisible: true,
     required: true,
   },
   {
-    key: "itemCount",
-    label: "Items Count",
+    key: 'itemCount',
+    label: 'Items Count',
     sortable: true,
     defaultVisible: true,
   },
   {
-    key: "totalDiscrepancy",
-    label: "Total Discrepancy",
+    key: 'totalDiscrepancy',
+    label: 'Total Discrepancy',
     sortable: true,
     defaultVisible: true,
   },
   {
-    key: "createdBy",
-    label: "Created By",
+    key: 'createdBy',
+    label: 'Created By',
     sortable: true,
     defaultVisible: true,
   },
   {
-    key: "createdAt",
-    label: "Created Date",
+    key: 'createdAt',
+    label: 'Created Date',
     sortable: true,
     defaultVisible: true,
   },
   {
-    key: "updatedAt",
-    label: "Updated Date",
+    key: 'updatedAt',
+    label: 'Updated Date',
     sortable: true,
     defaultVisible: false,
   },
@@ -242,7 +242,7 @@ interface ColumnCustomizerProps {
 export function ColumnCustomizer({
   columns = PRODUCT_COLUMNS,
   onColumnsChange,
-  localStorageKey = "products-visible-columns",
+  localStorageKey = 'products-visible-columns',
 }: ColumnCustomizerProps) {
   const [visibleColumns, setVisibleColumns] = useState<string[]>([]);
 
@@ -254,24 +254,24 @@ export function ColumnCustomizer({
         const parsed = JSON.parse(savedColumns);
         // Ensure required columns are always included
         const requiredColumns = columns
-          .filter((col) => col.required)
-          .map((col) => col.key);
+          .filter(col => col.required)
+          .map(col => col.key);
         const mergedColumns = [...new Set([...requiredColumns, ...parsed])];
         setVisibleColumns(mergedColumns);
         onColumnsChange(mergedColumns);
       } catch {
         // Fallback to defaults if parsing fails
         const defaultColumns = columns
-          .filter((col) => col.defaultVisible)
-          .map((col) => col.key);
+          .filter(col => col.defaultVisible)
+          .map(col => col.key);
         setVisibleColumns(defaultColumns);
         onColumnsChange(defaultColumns);
       }
     } else {
       // Use default visible columns
       const defaultColumns = columns
-        .filter((col) => col.defaultVisible)
-        .map((col) => col.key);
+        .filter(col => col.defaultVisible)
+        .map(col => col.key);
       setVisibleColumns(defaultColumns);
       onColumnsChange(defaultColumns);
     }
@@ -279,14 +279,14 @@ export function ColumnCustomizer({
 
   const handleColumnToggle = (columnKey: string, checked: boolean) => {
     // Don't allow disabling required columns
-    const column = columns.find((col) => col.key === columnKey);
+    const column = columns.find(col => col.key === columnKey);
     if (!checked && column?.required) {
       return;
     }
 
     const newVisibleColumns = checked
       ? [...visibleColumns, columnKey]
-      : visibleColumns.filter((key) => key !== columnKey);
+      : visibleColumns.filter(key => key !== columnKey);
 
     setVisibleColumns(newVisibleColumns);
     onColumnsChange(newVisibleColumns);
@@ -297,8 +297,8 @@ export function ColumnCustomizer({
 
   const resetToDefaults = () => {
     const defaultColumns = columns
-      .filter((col) => col.defaultVisible)
-      .map((col) => col.key);
+      .filter(col => col.defaultVisible)
+      .map(col => col.key);
 
     setVisibleColumns(defaultColumns);
     onColumnsChange(defaultColumns);
@@ -306,7 +306,7 @@ export function ColumnCustomizer({
   };
 
   const showAllColumns = () => {
-    const allColumns = columns.map((col) => col.key);
+    const allColumns = columns.map(col => col.key);
     setVisibleColumns(allColumns);
     onColumnsChange(allColumns);
     localStorage.setItem(localStorageKey, JSON.stringify(allColumns));
@@ -314,8 +314,8 @@ export function ColumnCustomizer({
 
   const hideOptionalColumns = () => {
     const requiredColumns = columns
-      .filter((col) => col.required)
-      .map((col) => col.key);
+      .filter(col => col.required)
+      .map(col => col.key);
 
     setVisibleColumns(requiredColumns);
     onColumnsChange(requiredColumns);
@@ -331,7 +331,7 @@ export function ColumnCustomizer({
         <Button variant="outline" size="sm" className="gap-2">
           <IconColumns className="h-4 w-4" />
           Customize Columns
-          <span className="ml-1 text-xs text-muted-foreground">
+          <span className="text-muted-foreground ml-1 text-xs">
             ({visibleCount}/{totalCount})
           </span>
         </Button>
@@ -353,23 +353,23 @@ export function ColumnCustomizer({
         <DropdownMenuSeparator />
 
         <div className="p-1">
-          <div className="flex gap-1 mb-2">
+          <div className="mb-2 flex gap-1">
             <Button
               variant="ghost"
               size="sm"
               onClick={showAllColumns}
-              className="h-6 px-2 text-xs flex-1"
+              className="h-6 flex-1 px-2 text-xs"
             >
-              <IconEye className="h-3 w-3 mr-1" />
+              <IconEye className="mr-1 h-3 w-3" />
               Show All
             </Button>
             <Button
               variant="ghost"
               size="sm"
               onClick={hideOptionalColumns}
-              className="h-6 px-2 text-xs flex-1"
+              className="h-6 flex-1 px-2 text-xs"
             >
-              <IconEyeOff className="h-3 w-3 mr-1" />
+              <IconEyeOff className="mr-1 h-3 w-3" />
               Hide Optional
             </Button>
           </div>
@@ -378,20 +378,20 @@ export function ColumnCustomizer({
         <DropdownMenuSeparator />
 
         <div className="max-h-64 overflow-y-auto">
-          {columns.map((column) => (
+          {columns.map(column => (
             <DropdownMenuCheckboxItem
               key={column.key}
               checked={visibleColumns.includes(column.key)}
-              onCheckedChange={(checked) =>
+              onCheckedChange={checked =>
                 handleColumnToggle(column.key, checked)
               }
               disabled={column.required}
               className="text-sm"
             >
-              <div className="flex items-center justify-between w-full">
+              <div className="flex w-full items-center justify-between">
                 <span>{column.label}</span>
                 {column.required && (
-                  <span className="text-xs text-muted-foreground ml-2">
+                  <span className="text-muted-foreground ml-2 text-xs">
                     Required
                   </span>
                 )}

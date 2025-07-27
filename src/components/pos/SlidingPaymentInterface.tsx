@@ -1,12 +1,12 @@
-"use client";
+'use client';
 
-import React, { useState } from "react";
-import { z } from "zod";
-import { Button } from "@/components/ui/button";
-import { IconLoader, IconX } from "@tabler/icons-react";
-import { toast } from "sonner";
-import { usePOSErrorHandler } from "./POSErrorBoundary";
-import { ALL_PAYMENT_METHODS, VALIDATION_RULES } from "@/lib/constants";
+import React, { useState } from 'react';
+import { z } from 'zod';
+import { Button } from '@/components/ui/button';
+import { IconLoader, IconX } from '@tabler/icons-react';
+import { toast } from 'sonner';
+import { usePOSErrorHandler } from './POSErrorBoundary';
+import { ALL_PAYMENT_METHODS, VALIDATION_RULES } from '@/lib/constants';
 // import { OrderSummaryStep } from "./OrderSummaryStep";
 // import { DiscountStep } from "./DiscountStep";
 // import { PaymentMethodStep } from "./PaymentMethodStep";
@@ -14,7 +14,7 @@ import { ALL_PAYMENT_METHODS, VALIDATION_RULES } from "@/lib/constants";
 
 // Validation schemas
 const discountSchema = z.object({
-  type: z.enum(["percentage", "fixed"]),
+  type: z.enum(['percentage', 'fixed']),
   value: z.number().min(0).max(100),
 });
 
@@ -26,7 +26,7 @@ const customerInfoSchema = z.object({
     .email()
     .max(VALIDATION_RULES.MAX_EMAIL_LENGTH)
     .optional()
-    .or(z.literal("")),
+    .or(z.literal('')),
 });
 
 const paymentSchema = z.object({
@@ -80,10 +80,10 @@ interface SlidingPaymentInterfaceProps {
 }
 
 const STEPS = [
-  { id: "order-summary", title: "Order Summary" },
-  { id: "discount", title: "Discount" },
-  { id: "payment-method", title: "Payment Method" },
-  { id: "customer-info", title: "Customer Info" },
+  { id: 'order-summary', title: 'Order Summary' },
+  { id: 'discount', title: 'Discount' },
+  { id: 'payment-method', title: 'Payment Method' },
+  { id: 'customer-info', title: 'Customer Info' },
 ];
 
 export function SlidingPaymentInterface({
@@ -100,10 +100,10 @@ export function SlidingPaymentInterface({
 }: SlidingPaymentInterfaceProps) {
   // Temporarily disabled due to missing components
   return (
-    <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
-      <div className="bg-white rounded-lg p-6 max-w-md w-full mx-4">
-        <h2 className="text-lg font-semibold mb-4">Payment Interface</h2>
-        <p className="text-gray-600 mb-4">
+    <div className="bg-opacity-50 fixed inset-0 z-50 flex items-center justify-center bg-black">
+      <div className="mx-4 w-full max-w-md rounded-lg bg-white p-6">
+        <h2 className="mb-4 text-lg font-semibold">Payment Interface</h2>
+        <p className="mb-4 text-gray-600">
           Payment interface temporarily disabled
         </p>
         <Button onClick={onCancel} className="w-full">

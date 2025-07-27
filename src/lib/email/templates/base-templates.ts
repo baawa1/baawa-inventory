@@ -3,7 +3,7 @@ import {
   UserSuspensionData,
   UserReactivationData,
   ReceiptEmailData,
-} from "../types";
+} from '../types';
 
 /**
  * Base template wrapper with consistent styling
@@ -126,7 +126,7 @@ export const welcomeTemplate = (data: {
     <div class="content">
         <p>Hi ${data.firstName},</p>
         <p>Welcome to Baawa Accessories! We're excited to have you ${
-          data.companyName ? `and ${data.companyName}` : ""
+          data.companyName ? `and ${data.companyName}` : ''
         } on board.</p>
         
         <div class="info">
@@ -145,8 +145,8 @@ export const welcomeTemplate = (data: {
   `;
 
   return {
-    subject: "Welcome to Baawa Accessories!",
-    html: createBaseTemplate(content, "Welcome to Baawa Accessories!"),
+    subject: 'Welcome to Baawa Accessories!',
+    html: createBaseTemplate(content, 'Welcome to Baawa Accessories!'),
     text: `Hi ${data.firstName},\n\nWelcome to Baawa Accessories! Your account is pending approval. You'll receive another email once approved.\n\nBest regards,\nThe Baawa Team`,
   };
 };
@@ -182,8 +182,8 @@ export const emailVerificationTemplate = (data: {
   `;
 
   return {
-    subject: "Verify Your Email Address - Baawa Accessories",
-    html: createBaseTemplate(content, "Verify Your Email Address"),
+    subject: 'Verify Your Email Address - Baawa Accessories',
+    html: createBaseTemplate(content, 'Verify Your Email Address'),
     text: `Hi ${data.firstName},\n\nPlease verify your email address by visiting: ${data.verificationLink}\n\nThis link expires in ${data.expiresInHours} hours.\n\nBest regards,\nThe Baawa Team`,
   };
 };
@@ -219,8 +219,8 @@ export const passwordResetTemplate = (data: {
   `;
 
   return {
-    subject: "Reset Your Password - Baawa Accessories",
-    html: createBaseTemplate(content, "Reset Your Password"),
+    subject: 'Reset Your Password - Baawa Accessories',
+    html: createBaseTemplate(content, 'Reset Your Password'),
     text: `Hi ${data.firstName},\n\nReset your password by visiting: ${data.resetLink}\n\nThis link expires in ${data.expiresInHours} hours.\n\nBest regards,\nThe Baawa Team`,
   };
 };
@@ -261,8 +261,8 @@ export const userApprovalTemplate = (data: {
   `;
 
   return {
-    subject: "Your Account Has Been Approved! - Baawa Accessories",
-    html: createBaseTemplate(content, "Account Approved!"),
+    subject: 'Your Account Has Been Approved! - Baawa Accessories',
+    html: createBaseTemplate(content, 'Account Approved!'),
     text: `Hi ${data.firstName},\n\nYour account has been approved! You can now access your dashboard at: ${data.dashboardLink}\n\nRole: ${data.role}\n\nBest regards,\nThe Baawa Team`,
   };
 };
@@ -294,7 +294,7 @@ export const adminNewUserNotificationTemplate = (data: {
                 ${
                   data.userCompany
                     ? `<li>Company: <span class="highlight">${data.userCompany}</span></li>`
-                    : ""
+                    : ''
                 }
                 <li>Registration Date: <span class="highlight">${
                   data.registrationDate
@@ -319,11 +319,11 @@ export const adminNewUserNotificationTemplate = (data: {
 
   return {
     subject: `New User Registration: ${data.userFirstName} ${data.userLastName} - Approval Required`,
-    html: createBaseTemplate(content, "New User Registration Pending"),
+    html: createBaseTemplate(content, 'New User Registration Pending'),
     text: `New user registration pending approval:\n\nName: ${
       data.userFirstName
     } ${data.userLastName}\nEmail: ${data.userEmail}\n${
-      data.userCompany ? `Company: ${data.userCompany}\n` : ""
+      data.userCompany ? `Company: ${data.userCompany}\n` : ''
     }Registration Date: ${data.registrationDate}\n\nReview at: ${
       data.approvalLink
     }`,
@@ -358,8 +358,8 @@ export const passwordResetConfirmationTemplate = (data: {
   `;
 
   return {
-    subject: "Password Reset Successful - Baawa Accessories",
-    html: createBaseTemplate(content, "Password Reset Successful"),
+    subject: 'Password Reset Successful - Baawa Accessories',
+    html: createBaseTemplate(content, 'Password Reset Successful'),
     text: `Hi ${data.firstName},\n\nYour password has been successfully reset.\n\nIf you did not make this change, please contact support immediately.\n\nBest regards,\nThe Baawa Team`,
   };
 };
@@ -387,7 +387,7 @@ export const userRejectionTemplate = (data: {
             <p>${data.rejectionReason}</p>
         </div>
         `
-            : ""
+            : ''
         }
         
         <p>If you believe this decision was made in error or if you have additional information to support your application, please don't hesitate to contact our support team.</p>
@@ -403,9 +403,9 @@ export const userRejectionTemplate = (data: {
   `;
 
   return {
-    subject: "Account Application Update - Baawa Accessories",
-    html: createBaseTemplate(content, "Account Application Update"),
-    text: `Hi ${data.firstName},\n\nYour account application has not been approved at this time.${data.rejectionReason ? `\n\nReason: ${data.rejectionReason}` : ""}\n\nFor questions, contact: ${data.supportEmail}\n\nBest regards,\nThe Baawa Team`,
+    subject: 'Account Application Update - Baawa Accessories',
+    html: createBaseTemplate(content, 'Account Application Update'),
+    text: `Hi ${data.firstName},\n\nYour account application has not been approved at this time.${data.rejectionReason ? `\n\nReason: ${data.rejectionReason}` : ''}\n\nFor questions, contact: ${data.supportEmail}\n\nBest regards,\nThe Baawa Team`,
   };
 };
 
@@ -447,8 +447,8 @@ export const roleChangeTemplate = (data: {
   `;
 
   return {
-    subject: "Your Role Has Been Updated - Baawa Accessories",
-    html: createBaseTemplate(content, "Role Updated"),
+    subject: 'Your Role Has Been Updated - Baawa Accessories',
+    html: createBaseTemplate(content, 'Role Updated'),
     text: `Hi ${data.firstName},\n\nYour role has been updated from ${data.oldRole} to ${data.newRole} by ${data.changedBy}.\n\nAccess your dashboard: ${data.dashboardLink}\n\nBest regards,\nThe Baawa Team`,
   };
 };
@@ -472,7 +472,7 @@ export const adminDigestTemplate = (data: {
 }): EmailTemplate => {
   const usersListHtml = data.newUsers
     .map(
-      (user) => `
+      user => `
     <tr style="border-bottom: 1px solid #e5e7eb;">
       <td style="padding: 12px; border: 1px solid #e5e7eb;">${user.firstName} ${user.lastName}</td>
       <td style="padding: 12px; border: 1px solid #e5e7eb;">${user.email}</td>
@@ -481,7 +481,7 @@ export const adminDigestTemplate = (data: {
     </tr>
   `
     )
-    .join("");
+    .join('');
 
   const content = `
     <h1 class="title">User Registration Digest</h1>
@@ -518,7 +518,7 @@ export const adminDigestTemplate = (data: {
             </table>
         </div>
         `
-            : ""
+            : ''
         }
         
         ${
@@ -526,10 +526,10 @@ export const adminDigestTemplate = (data: {
             ? `
         <div style="background-color: #fef3c7; border: 1px solid #f59e0b; border-radius: 6px; padding: 16px; margin: 20px 0;">
             <p><strong>⚠️ Action Required:</strong></p>
-            <p>You have ${data.pendingUsersCount} user${data.pendingUsersCount === 1 ? "" : "s"} pending approval. Please review and approve or reject these registrations.</p>
+            <p>You have ${data.pendingUsersCount} user${data.pendingUsersCount === 1 ? '' : 's'} pending approval. Please review and approve or reject these registrations.</p>
         </div>
         `
-            : ""
+            : ''
         }
         
         <div style="text-align: center; margin: 30px 0;">
@@ -542,15 +542,15 @@ export const adminDigestTemplate = (data: {
 
   const usersListText = data.newUsers
     .map(
-      (user) =>
+      user =>
         `- ${user.firstName} ${user.lastName} (${user.email}) - ${user.status} - ${new Date(user.registrationDate).toLocaleDateString()}`
     )
-    .join("\n");
+    .join('\n');
 
   return {
     subject: `User Registration Digest (${data.newUsersCount} new) - Baawa Accessories`,
-    html: createBaseTemplate(content, "User Registration Digest"),
-    text: `User Registration Digest\n\nHi ${data.adminName},\n\nSummary for ${data.digestPeriod}:\n- New Registrations: ${data.newUsersCount}\n- Pending Approvals: ${data.pendingUsersCount}\n\nNew Users:\n${usersListText || "None"}\n\nReview at: ${data.dashboardLink}\n\nBest regards,\nBaawa Inventory System`,
+    html: createBaseTemplate(content, 'User Registration Digest'),
+    text: `User Registration Digest\n\nHi ${data.adminName},\n\nSummary for ${data.digestPeriod}:\n- New Registrations: ${data.newUsersCount}\n- Pending Approvals: ${data.pendingUsersCount}\n\nNew Users:\n${usersListText || 'None'}\n\nReview at: ${data.dashboardLink}\n\nBest regards,\nBaawa Inventory System`,
   };
 };
 
@@ -580,7 +580,7 @@ export const userSuspensionTemplate = (
         <p>If you believe this suspension was made in error or would like to discuss this matter, please contact our support team.</p>
         
         <div style="text-align: center; margin: 30px 0;">
-            <a href="mailto:${data.supportEmail || "support@baawa.com"}" class="button" style="background-color: #dc3545;">Contact Support</a>
+            <a href="mailto:${data.supportEmail || 'support@baawa.com'}" class="button" style="background-color: #dc3545;">Contact Support</a>
         </div>
         
         <p>Best regards,<br>Baawa Accessories Team</p>
@@ -588,9 +588,9 @@ export const userSuspensionTemplate = (
   `;
 
   return {
-    subject: "Account Suspended - Baawa Accessories",
-    html: createBaseTemplate(content, "Account Suspended"),
-    text: `Account Suspended\n\nDear ${data.firstName} ${data.lastName},\n\nYour Baawa Accessories account has been temporarily suspended.\n\nReason: ${data.reason}\n\nDuring this suspension, you cannot access your account. Contact support if needed: ${data.supportEmail || "support@baawa.com"}\n\nBest regards,\nBaawa Accessories Team`,
+    subject: 'Account Suspended - Baawa Accessories',
+    html: createBaseTemplate(content, 'Account Suspended'),
+    text: `Account Suspended\n\nDear ${data.firstName} ${data.lastName},\n\nYour Baawa Accessories account has been temporarily suspended.\n\nReason: ${data.reason}\n\nDuring this suspension, you cannot access your account. Contact support if needed: ${data.supportEmail || 'support@baawa.com'}\n\nBest regards,\nBaawa Accessories Team`,
   };
 };
 
@@ -623,7 +623,7 @@ export const userReactivationTemplate = (
         </ul>
         
         <div style="text-align: center; margin: 30px 0;">
-            <a href="${data.loginLink || "https://inventory.baawa.com/login"}" class="button">Access Your Account</a>
+            <a href="${data.loginLink || 'https://inventory.baawa.com/login'}" class="button">Access Your Account</a>
         </div>
         
         <p>If you have any questions or need assistance, please don't hesitate to contact our support team.</p>
@@ -633,9 +633,9 @@ export const userReactivationTemplate = (
   `;
 
   return {
-    subject: "Account Reactivated - Welcome Back! - Baawa Accessories",
-    html: createBaseTemplate(content, "Account Reactivated"),
-    text: `Account Reactivated\n\nDear ${data.firstName} ${data.lastName},\n\nGreat news! Your Baawa Accessories account has been reactivated.\n\nYou can now access your dashboard and use all features again.\n\nLogin at: ${data.loginLink || "https://inventory.baawa.com/login"}\n\nWelcome back!\n\nBest regards,\nBaawa Accessories Team`,
+    subject: 'Account Reactivated - Welcome Back! - Baawa Accessories',
+    html: createBaseTemplate(content, 'Account Reactivated'),
+    text: `Account Reactivated\n\nDear ${data.firstName} ${data.lastName},\n\nGreat news! Your Baawa Accessories account has been reactivated.\n\nYou can now access your dashboard and use all features again.\n\nLogin at: ${data.loginLink || 'https://inventory.baawa.com/login'}\n\nWelcome back!\n\nBest regards,\nBaawa Accessories Team`,
   };
 };
 
@@ -645,17 +645,17 @@ export const userReactivationTemplate = (
 export const createReceiptEmailTemplate = (
   data: ReceiptEmailData
 ): EmailTemplate => {
-  const formattedDate = data.timestamp.toLocaleDateString("en-US", {
-    year: "numeric",
-    month: "long",
-    day: "numeric",
-    hour: "2-digit",
-    minute: "2-digit",
+  const formattedDate = data.timestamp.toLocaleDateString('en-US', {
+    year: 'numeric',
+    month: 'long',
+    day: 'numeric',
+    hour: '2-digit',
+    minute: '2-digit',
   });
 
   const itemsHtml = data.items
     .map(
-      (item) => `
+      item => `
     <tr>
       <td style="padding: 10px; border-bottom: 1px solid #eee;">${item.name}</td>
       <td style="padding: 10px; border-bottom: 1px solid #eee; text-align: center;">${item.quantity}</td>
@@ -664,7 +664,7 @@ export const createReceiptEmailTemplate = (
     </tr>
   `
     )
-    .join("");
+    .join('');
 
   const content = `
     <div class="content">
@@ -702,7 +702,7 @@ export const createReceiptEmailTemplate = (
         <div style="border-top: 2px solid #2563eb; padding-top: 20px; margin-top: 30px;">
             <div style="text-align: right; font-size: 16px;">
                 <p><strong>Subtotal: ₦${data.subtotal.toLocaleString()}</strong></p>
-                ${data.discount > 0 ? `<p style="color: #dc2626;"><strong>Discount: -₦${data.discount.toLocaleString()}</strong></p>` : ""}
+                ${data.discount > 0 ? `<p style="color: #dc2626;"><strong>Discount: -₦${data.discount.toLocaleString()}</strong></p>` : ''}
                 <p style="font-size: 18px; color: #2563eb;"><strong>Total: ₦${data.total.toLocaleString()}</strong></p>
             </div>
         </div>
@@ -720,14 +720,14 @@ export const createReceiptEmailTemplate = (
 
   return {
     subject: `Receipt for Your Purchase - ${data.saleId} - Baawa Accessories`,
-    html: createBaseTemplate(content, "Purchase Receipt"),
+    html: createBaseTemplate(content, 'Purchase Receipt'),
     text: `Purchase Receipt\n\nDear ${data.customerName},\n\nThank you for your purchase!\n\nReceipt #: ${data.saleId}\nDate: ${formattedDate}\nPayment Method: ${data.paymentMethod}\nServed by: ${data.staffName}\n\nItems:\n${data.items
       .map(
-        (item) =>
+        item =>
           `${item.name} x${item.quantity} - ₦${item.total.toLocaleString()}`
       )
       .join(
-        "\n"
-      )}\n\nSubtotal: ₦${data.subtotal.toLocaleString()}\n${data.discount > 0 ? `Discount: -₦${data.discount.toLocaleString()}\n` : ""}Total: ₦${data.total.toLocaleString()}\n\nThank you for choosing Baawa Accessories!\n\nBest regards,\nBaawa Accessories Team`,
+        '\n'
+      )}\n\nSubtotal: ₦${data.subtotal.toLocaleString()}\n${data.discount > 0 ? `Discount: -₦${data.discount.toLocaleString()}\n` : ''}Total: ₦${data.total.toLocaleString()}\n\nThank you for choosing Baawa Accessories!\n\nBest regards,\nBaawa Accessories Team`,
   };
 };

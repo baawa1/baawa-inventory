@@ -1,4 +1,4 @@
-import React from "react";
+import React from 'react';
 
 interface DashboardPageLayoutProps {
   title: string;
@@ -16,8 +16,8 @@ export function DashboardPageLayout({
   footer,
 }: DashboardPageLayoutProps) {
   return (
-    <div className="flex flex-col min-h-screen">
-      <header className="px-4 lg:px-6 py-6">
+    <div className="flex min-h-screen flex-col">
+      <header className="px-4 py-6 lg:px-6">
         <div className="flex items-center justify-between">
           <div>
             <h1 className="text-3xl font-bold text-gray-900 dark:text-gray-100">

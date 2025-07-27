@@ -1,12 +1,12 @@
-import { NextRequest, NextResponse } from "next/server";
-import { z } from "zod";
-import { prisma } from "@/lib/db";
-import { AuditLogger } from "@/lib/utils/audit-logger";
-import { withRateLimit } from "@/lib/rate-limiting";
+import { NextRequest, NextResponse } from 'next/server';
+import { z } from 'zod';
+import { prisma } from '@/lib/db';
+import { AuditLogger } from '@/lib/utils/audit-logger';
+import { withRateLimit } from '@/lib/rate-limiting';
 
 // Validate reset token schema
 const validateTokenSchema = z.object({
-  token: z.string().min(1, "Reset token is required"),
+  token: z.string().min(1, 'Reset token is required'),
 });
 
 async function validateResetTokenHandler(request: NextRequest) {
@@ -20,7 +20,7 @@ async function validateResetTokenHandler(request: NextRequest) {
     if (!validation.success) {
       return NextResponse.json(
         {
-          error: "Invalid token format",
+          error: 'Invalid token format',
           details: validation.error.issues,
         },
         { status: 400 }
@@ -53,12 +53,12 @@ async function validateResetTokenHandler(request: NextRequest) {
       // Log failed validation attempt
       await AuditLogger.logAuthEvent(
         {
-          action: "PASSWORD_RESET_REQUEST",
+          action: 'PASSWORD_RESET_REQUEST',
           success: false,
-          errorMessage: "Invalid or expired reset token",
+          errorMessage: 'Invalid or expired reset token',
           details: {
-            action: "token_validation",
-            token: token.substring(0, 8) + "...",
+            action: 'token_validation',
+            token: token.substring(0, 8) + '...',
           },
         },
         request
@@ -67,22 +67,22 @@ async function validateResetTokenHandler(request: NextRequest) {
       return NextResponse.json(
         {
           valid: false,
-          error: "Invalid or expired reset token",
+          error: 'Invalid or expired reset token',
         },
         { status: 400 }
       );
     }
 
     // Verify user is in good standing
-    if (!user.emailVerified || user.userStatus !== "APPROVED") {
+    if (!user.emailVerified || user.userStatus !== 'APPROVED') {
       await AuditLogger.logAuthEvent(
         {
-          action: "PASSWORD_RESET_REQUEST",
+          action: 'PASSWORD_RESET_REQUEST',
           userId: user.id,
           userEmail: user.email,
           success: false,
           errorMessage: `User not eligible: verified=${user.emailVerified}, status=${user.userStatus}`,
-          details: { action: "token_validation" },
+          details: { action: 'token_validation' },
         },
         request
       );
@@ -90,7 +90,7 @@ async function validateResetTokenHandler(request: NextRequest) {
       return NextResponse.json(
         {
           valid: false,
-          error: "Account is not eligible for password reset",
+          error: 'Account is not eligible for password reset',
         },
         { status: 403 }
       );
@@ -109,12 +109,12 @@ async function validateResetTokenHandler(request: NextRequest) {
     // Log successful validation
     await AuditLogger.logAuthEvent(
       {
-        action: "PASSWORD_RESET_REQUEST",
+        action: 'PASSWORD_RESET_REQUEST',
         userId: user.id,
         userEmail: user.email,
         success: true,
         details: {
-          action: "token_validation",
+          action: 'token_validation',
           timeRemaining: `${hoursRemaining}h ${minutesRemaining}m`,
         },
       },
@@ -139,17 +139,17 @@ async function validateResetTokenHandler(request: NextRequest) {
       { status: 200 }
     );
   } catch (error) {
-    console.error("Validate reset token error:", error);
+    console.error('Validate reset token error:', error);
 
     // Log the error
     await AuditLogger.logAuthEvent(
       {
-        action: "PASSWORD_RESET_REQUEST",
+        action: 'PASSWORD_RESET_REQUEST',
         success: false,
-        errorMessage: error instanceof Error ? error.message : "Unknown error",
+        errorMessage: error instanceof Error ? error.message : 'Unknown error',
         details: {
-          action: "token_validation",
-          token: body?.token?.substring(0, 8) + "...",
+          action: 'token_validation',
+          token: body?.token?.substring(0, 8) + '...',
         },
       },
       request
@@ -158,7 +158,7 @@ async function validateResetTokenHandler(request: NextRequest) {
     return NextResponse.json(
       {
         valid: false,
-        error: "Failed to validate reset token. Please try again.",
+        error: 'Failed to validate reset token. Please try again.',
       },
       { status: 500 }
     );
@@ -169,11 +169,11 @@ async function validateResetTokenHandler(request: NextRequest) {
 export const POST = withRateLimit({
   windowMs: 60 * 60 * 1000, // 1 hour
   maxRequests: 10, // 10 requests per hour (more lenient as this is just validation)
-  keyGenerator: (request) => {
+  keyGenerator: request => {
     const ip =
-      request.headers.get("x-forwarded-for") ||
-      request.headers.get("x-real-ip") ||
-      "unknown";
+      request.headers.get('x-forwarded-for') ||
+      request.headers.get('x-real-ip') ||
+      'unknown';
     return `validate-reset-token:${ip}`;
   },
 })(validateResetTokenHandler);

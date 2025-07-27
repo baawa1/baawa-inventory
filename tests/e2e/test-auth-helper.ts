@@ -1,5 +1,5 @@
-import { test, expect, Page } from "@playwright/test";
-import { TEST_USERS } from "./test-user-helper";
+import { test, expect, Page } from '@playwright/test';
+import { TEST_USERS } from './test-user-helper';
 
 export interface TestUser {
   email: string;
@@ -18,7 +18,7 @@ export class TestAuthHelper {
    */
   static async loginUser(page: Page, user: TestUser): Promise<void> {
     // Navigate to login page
-    await page.goto("/login");
+    await page.goto('/login');
 
     // Fill in login form
     await page.fill('input[name="email"]', user.email);
@@ -28,7 +28,7 @@ export class TestAuthHelper {
     await page.click('button[type="submit"]');
 
     // Wait for the form submission to complete
-    await page.waitForLoadState("networkidle");
+    await page.waitForLoadState('networkidle');
 
     // Wait for either a redirect or an error message
     try {
@@ -40,12 +40,12 @@ export class TestAuthHelper {
         page.waitForSelector('[data-testid="login-error"]', { timeout: 15000 }),
       ]);
     } catch (error) {
-      console.log("⏰ No redirect detected, checking current URL...");
+      console.log('⏰ No redirect detected, checking current URL...');
     }
 
     // Check if login was successful
     const currentUrl = page.url();
-    if (currentUrl.includes("/login")) {
+    if (currentUrl.includes('/login')) {
       // Check for error messages
       const errorElement = page.locator('[data-testid="login-error"]');
       if (await errorElement.isVisible()) {
@@ -54,12 +54,12 @@ export class TestAuthHelper {
       }
 
       // If still on login page without error, the login might still be processing
-      console.log("⚠️ Still on login page, waiting a bit more...");
+      console.log('⚠️ Still on login page, waiting a bit more...');
       await page.waitForTimeout(2000);
 
       const finalUrl = page.url();
-      if (finalUrl.includes("/login")) {
-        throw new Error("Login failed: Still on login page after waiting");
+      if (finalUrl.includes('/login')) {
+        throw new Error('Login failed: Still on login page after waiting');
       }
     }
 
@@ -70,10 +70,10 @@ export class TestAuthHelper {
    * Log out the current user
    */
   static async logoutUser(page: Page): Promise<void> {
-    await page.goto("/logout");
+    await page.goto('/logout');
 
     // Wait for the logout page to load
-    await page.waitForLoadState("networkidle");
+    await page.waitForLoadState('networkidle');
 
     // Click the confirm logout button
     await page.click('button:has-text("Confirm Logout")');
@@ -91,26 +91,26 @@ export class TestAuthHelper {
     expectedRedirect?: string
   ): Promise<void> {
     // Try to access a protected route
-    await page.goto("/dashboard");
+    await page.goto('/dashboard');
 
     if (expectedRedirect) {
       await expect(page).toHaveURL(expectedRedirect);
     } else {
       // Determine expected redirect based on user status
       if (!user.emailVerified) {
-        await expect(page).toHaveURL("/check-email");
+        await expect(page).toHaveURL('/check-email');
       } else if (
-        user.userStatus === "PENDING" ||
-        user.userStatus === "VERIFIED"
+        user.userStatus === 'PENDING' ||
+        user.userStatus === 'VERIFIED'
       ) {
-        await expect(page).toHaveURL("/pending-approval");
+        await expect(page).toHaveURL('/pending-approval');
       } else if (
-        user.userStatus === "REJECTED" ||
-        user.userStatus === "SUSPENDED"
+        user.userStatus === 'REJECTED' ||
+        user.userStatus === 'SUSPENDED'
       ) {
-        await expect(page).toHaveURL("/unauthorized");
-      } else if (user.userStatus === "APPROVED") {
-        await expect(page).toHaveURL("/dashboard");
+        await expect(page).toHaveURL('/unauthorized');
+      } else if (user.userStatus === 'APPROVED') {
+        await expect(page).toHaveURL('/dashboard');
       }
     }
   }
@@ -131,17 +131,17 @@ export class TestAuthHelper {
     } else {
       // Should be redirected based on user status
       if (!user.emailVerified) {
-        await expect(page).toHaveURL("/check-email");
+        await expect(page).toHaveURL('/check-email');
       } else if (
-        user.userStatus === "PENDING" ||
-        user.userStatus === "VERIFIED"
+        user.userStatus === 'PENDING' ||
+        user.userStatus === 'VERIFIED'
       ) {
-        await expect(page).toHaveURL("/pending-approval");
+        await expect(page).toHaveURL('/pending-approval');
       } else if (
-        user.userStatus === "REJECTED" ||
-        user.userStatus === "SUSPENDED"
+        user.userStatus === 'REJECTED' ||
+        user.userStatus === 'SUSPENDED'
       ) {
-        await expect(page).toHaveURL("/unauthorized");
+        await expect(page).toHaveURL('/unauthorized');
       }
     }
   }
@@ -150,12 +150,12 @@ export class TestAuthHelper {
    * Test that a user can access the dashboard (for approved users)
    */
   static async testDashboardAccess(page: Page, user: TestUser): Promise<void> {
-    await page.goto("/dashboard");
+    await page.goto('/dashboard');
 
-    if (user.userStatus === "APPROVED") {
-      await expect(page).toHaveURL("/dashboard");
-      await expect(page).not.toHaveURL("/unauthorized");
-      await expect(page).not.toHaveURL("/pending-approval");
+    if (user.userStatus === 'APPROVED') {
+      await expect(page).toHaveURL('/dashboard');
+      await expect(page).not.toHaveURL('/unauthorized');
+      await expect(page).not.toHaveURL('/pending-approval');
     } else {
       // Should be redirected based on status
       this.verifyUserAccess(page, user);
@@ -169,17 +169,17 @@ export class TestAuthHelper {
     page: Page,
     user: TestUser
   ): Promise<void> {
-    await page.goto("/pending-approval");
+    await page.goto('/pending-approval');
 
-    if (user.userStatus === "APPROVED") {
-      await expect(page).toHaveURL("/dashboard");
+    if (user.userStatus === 'APPROVED') {
+      await expect(page).toHaveURL('/dashboard');
     } else if (
-      user.userStatus === "PENDING" ||
-      user.userStatus === "VERIFIED"
+      user.userStatus === 'PENDING' ||
+      user.userStatus === 'VERIFIED'
     ) {
-      await expect(page).toHaveURL("/pending-approval");
+      await expect(page).toHaveURL('/pending-approval');
     } else {
-      await expect(page).toHaveURL("/unauthorized");
+      await expect(page).toHaveURL('/unauthorized');
     }
   }
 
@@ -188,14 +188,14 @@ export class TestAuthHelper {
    */
   static async testPublicRoutes(page: Page): Promise<void> {
     const publicRoutes = [
-      "/",
-      "/login",
-      "/register",
-      "/forgot-password",
-      "/check-email",
-      "/verify-email",
-      "/pending-approval",
-      "/unauthorized",
+      '/',
+      '/login',
+      '/register',
+      '/forgot-password',
+      '/check-email',
+      '/verify-email',
+      '/pending-approval',
+      '/unauthorized',
     ];
 
     for (const route of publicRoutes) {
@@ -209,12 +209,12 @@ export class TestAuthHelper {
    * Test that protected routes redirect to login when not authenticated
    */
   static async testProtectedRoutesRedirect(page: Page): Promise<void> {
-    const protectedRoutes = ["/dashboard", "/pos", "/inventory", "/admin"];
+    const protectedRoutes = ['/dashboard', '/pos', '/inventory', '/admin'];
 
     for (const route of protectedRoutes) {
       await page.goto(route);
       await page.waitForURL(/\/login/, { timeout: 5000 });
-      expect(page.url()).toContain("/login");
+      expect(page.url()).toContain('/login');
       console.log(
         `✅ Protected route ${route} redirects to login when not authenticated`
       );

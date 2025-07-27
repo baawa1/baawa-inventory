@@ -1,10 +1,10 @@
-"use client";
+'use client';
 
-import { useState } from "react";
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import { Badge } from "@/components/ui/badge";
-import { Button } from "@/components/ui/button";
-import { Tabs, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import { useState } from 'react';
+import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
+import { Badge } from '@/components/ui/badge';
+import { Button } from '@/components/ui/button';
+import { Tabs, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import {
   IconCurrencyNaira,
   IconChartLine,
@@ -16,10 +16,10 @@ import {
   IconUsers,
   IconCategory,
   IconStar,
-} from "@tabler/icons-react";
-import { formatCurrency } from "@/lib/utils";
-import { useAnalytics } from "@/hooks/api/useAnalytics";
-import { CHART_CONFIG, DATE_RANGES } from "@/lib/constants";
+} from '@tabler/icons-react';
+import { formatCurrency } from '@/lib/utils';
+import { useAnalytics } from '@/hooks/api/useAnalytics';
+import { CHART_CONFIG, DATE_RANGES } from '@/lib/constants';
 import {
   LineChart,
   Line,
@@ -28,7 +28,7 @@ import {
   CartesianGrid,
   Tooltip,
   ResponsiveContainer,
-} from "recharts";
+} from 'recharts';
 
 interface AnalyticsDashboardProps {
   _user: {
@@ -72,46 +72,46 @@ export function AnalyticsDashboard({ _user }: AnalyticsDashboardProps) {
   // Performance metrics
   const performanceMetrics = [
     {
-      title: "Total sales",
+      title: 'Total sales',
       value: formatCurrency(transactionStats.totalSales),
       change: -100,
-      trend: "down",
+      trend: 'down',
       icon: <IconCurrencyNaira className="h-4 w-4" />,
     },
     {
-      title: "Net sales",
+      title: 'Net sales',
       value: formatCurrency(transactionStats.netSales),
       change: -100,
-      trend: "down",
+      trend: 'down',
       icon: <IconChartLine className="h-4 w-4" />,
     },
     {
-      title: "Orders",
+      title: 'Orders',
       value: transactionStats.totalTransactions,
       change: -100,
-      trend: "down",
+      trend: 'down',
       icon: <IconShoppingCart className="h-4 w-4" />,
     },
     {
-      title: "Average order value",
+      title: 'Average order value',
       value: formatCurrency(transactionStats.averageOrderValue),
       change: -100,
-      trend: "down",
+      trend: 'down',
       icon: <IconTrendingUp className="h-4 w-4" />,
     },
     {
-      title: "Products sold",
+      title: 'Products sold',
       value: transactionStats.totalItems,
       change: -50,
-      trend: "down",
+      trend: 'down',
       icon: <IconPackage className="h-4 w-4" />,
     },
   ];
 
   const getTrendBadge = (change: number, _trend: string) => {
     const isPositive = change > 0;
-    const variant = isPositive ? "default" : "destructive";
-    const icon = isPositive ? "↗" : "↘";
+    const variant = isPositive ? 'default' : 'destructive';
+    const icon = isPositive ? '↗' : '↘';
     return (
       <Badge variant={variant} className="text-xs">
         {icon} {Math.abs(change)}%
@@ -127,7 +127,7 @@ export function AnalyticsDashboard({ _user }: AnalyticsDashboardProps) {
             Analytics Dashboard
           </h2>
           <Button variant="outline" size="sm" disabled>
-            <IconRefresh className="h-4 w-4 mr-2" />
+            <IconRefresh className="mr-2 h-4 w-4" />
             Loading...
           </Button>
         </div>
@@ -138,11 +138,11 @@ export function AnalyticsDashboard({ _user }: AnalyticsDashboardProps) {
                 <CardTitle className="text-sm font-medium">
                   Loading...
                 </CardTitle>
-                <div className="h-4 w-4 bg-gray-200 rounded animate-pulse" />
+                <div className="h-4 w-4 animate-pulse rounded bg-gray-200" />
               </CardHeader>
               <CardContent>
                 <div className="text-2xl font-bold">--</div>
-                <div className="h-4 w-16 bg-gray-200 rounded animate-pulse mt-2" />
+                <div className="mt-2 h-4 w-16 animate-pulse rounded bg-gray-200" />
               </CardContent>
             </Card>
           ))}
@@ -159,13 +159,13 @@ export function AnalyticsDashboard({ _user }: AnalyticsDashboardProps) {
             Analytics Dashboard
           </h2>
           <Button variant="outline" size="sm" onClick={refreshDashboard}>
-            <IconRefresh className="h-4 w-4 mr-2" />
+            <IconRefresh className="mr-2 h-4 w-4" />
             Retry
           </Button>
         </div>
         <Card>
           <CardContent className="pt-6">
-            <div className="text-center text-muted-foreground">
+            <div className="text-muted-foreground text-center">
               Failed to load analytics data. Please try again.
             </div>
           </CardContent>
@@ -193,7 +193,7 @@ export function AnalyticsDashboard({ _user }: AnalyticsDashboardProps) {
             onClick={refreshDashboard}
             disabled={isLoading}
           >
-            <IconRefresh className="h-4 w-4 mr-2" />
+            <IconRefresh className="mr-2 h-4 w-4" />
             Refresh
           </Button>
         </div>
@@ -201,7 +201,7 @@ export function AnalyticsDashboard({ _user }: AnalyticsDashboardProps) {
 
       {/* Date Range Selector */}
       <div className="flex items-center space-x-2">
-        <IconCalendar className="h-4 w-4 text-muted-foreground" />
+        <IconCalendar className="text-muted-foreground h-4 w-4" />
         <Tabs value={dateRange} onValueChange={setDateRange} className="w-auto">
           <TabsList className="grid w-full grid-cols-3">
             <TabsTrigger value={DATE_RANGES.WEEK}>Week</TabsTrigger>
@@ -223,9 +223,9 @@ export function AnalyticsDashboard({ _user }: AnalyticsDashboardProps) {
             </CardHeader>
             <CardContent>
               <div className="text-2xl font-bold">{metric.value}</div>
-              <div className="flex items-center space-x-2 mt-2">
+              <div className="mt-2 flex items-center space-x-2">
                 {getTrendBadge(metric.change, metric.trend)}
-                <span className="text-xs text-muted-foreground">
+                <span className="text-muted-foreground text-xs">
                   vs last period
                 </span>
               </div>
@@ -250,7 +250,7 @@ export function AnalyticsDashboard({ _user }: AnalyticsDashboardProps) {
                 <Tooltip
                   formatter={(value: unknown) => [
                     formatCurrency(Number(value)),
-                    "Sales",
+                    'Sales',
                   ]}
                 />
                 <Line
@@ -268,7 +268,7 @@ export function AnalyticsDashboard({ _user }: AnalyticsDashboardProps) {
         <Card className="col-span-3">
           <CardHeader>
             <CardTitle className="flex items-center">
-              <IconCategory className="h-4 w-4 mr-2" />
+              <IconCategory className="mr-2 h-4 w-4" />
               Top Categories
             </CardTitle>
           </CardHeader>
@@ -281,7 +281,7 @@ export function AnalyticsDashboard({ _user }: AnalyticsDashboardProps) {
                 >
                   <div className="flex items-center space-x-2">
                     <div
-                      className="w-3 h-3 rounded-full"
+                      className="h-3 w-3 rounded-full"
                       style={{
                         backgroundColor:
                           CHART_CONFIG.COLORS[
@@ -295,7 +295,7 @@ export function AnalyticsDashboard({ _user }: AnalyticsDashboardProps) {
                     <div className="text-sm font-medium">
                       {formatCurrency(category.netSales)}
                     </div>
-                    <div className="text-xs text-muted-foreground">
+                    <div className="text-muted-foreground text-xs">
                       {category.itemsSold} items
                     </div>
                   </div>
@@ -312,7 +312,7 @@ export function AnalyticsDashboard({ _user }: AnalyticsDashboardProps) {
         <Card>
           <CardHeader>
             <CardTitle className="flex items-center">
-              <IconUsers className="h-4 w-4 mr-2" />
+              <IconUsers className="mr-2 h-4 w-4" />
               Top Customers
             </CardTitle>
           </CardHeader>
@@ -324,14 +324,14 @@ export function AnalyticsDashboard({ _user }: AnalyticsDashboardProps) {
                   className="flex items-center justify-between"
                 >
                   <div className="flex items-center space-x-3">
-                    <div className="flex items-center justify-center w-8 h-8 bg-primary/10 rounded-full">
-                      <span className="text-sm font-medium text-primary">
+                    <div className="bg-primary/10 flex h-8 w-8 items-center justify-center rounded-full">
+                      <span className="text-primary text-sm font-medium">
                         {index + 1}
                       </span>
                     </div>
                     <div>
                       <div className="font-medium">{customer.name}</div>
-                      <div className="text-sm text-muted-foreground">
+                      <div className="text-muted-foreground text-sm">
                         {customer.orders} orders
                       </div>
                     </div>
@@ -351,7 +351,7 @@ export function AnalyticsDashboard({ _user }: AnalyticsDashboardProps) {
         <Card>
           <CardHeader>
             <CardTitle className="flex items-center">
-              <IconStar className="h-4 w-4 mr-2" />
+              <IconStar className="mr-2 h-4 w-4" />
               Top Products
             </CardTitle>
           </CardHeader>
@@ -363,14 +363,14 @@ export function AnalyticsDashboard({ _user }: AnalyticsDashboardProps) {
                   className="flex items-center justify-between"
                 >
                   <div className="flex items-center space-x-3">
-                    <div className="flex items-center justify-center w-8 h-8 bg-primary/10 rounded-full">
-                      <span className="text-sm font-medium text-primary">
+                    <div className="bg-primary/10 flex h-8 w-8 items-center justify-center rounded-full">
+                      <span className="text-primary text-sm font-medium">
                         {index + 1}
                       </span>
                     </div>
                     <div>
                       <div className="font-medium">{product.name}</div>
-                      <div className="text-sm text-muted-foreground">
+                      <div className="text-muted-foreground text-sm">
                         {product.itemsSold} sold
                       </div>
                     </div>

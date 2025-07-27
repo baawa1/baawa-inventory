@@ -1,20 +1,20 @@
-import { NextResponse } from "next/server";
-import { emailService } from "@/lib/email";
-import { z } from "zod";
-import { withPOSAuth, AuthenticatedRequest } from "@/lib/api-auth-middleware";
+import { NextResponse } from 'next/server';
+import { emailService } from '@/lib/email';
+import { z } from 'zod';
+import { withPOSAuth, AuthenticatedRequest } from '@/lib/api-auth-middleware';
 import {
   ERROR_MESSAGES,
   SUCCESS_MESSAGES,
   VALIDATION_RULES,
-} from "@/lib/constants";
+} from '@/lib/constants';
 
 // Validation schema for email receipt
 const emailReceiptSchema = z.object({
   customerEmail: z
     .string()
-    .email("Invalid email address")
+    .email('Invalid email address')
     .max(VALIDATION_RULES.MAX_EMAIL_LENGTH),
-  saleId: z.string().min(1, "Sale ID is required"),
+  saleId: z.string().min(1, 'Sale ID is required'),
   customerName: z.string().max(VALIDATION_RULES.MAX_NAME_LENGTH).optional(),
   receiptData: z.object({
     items: z.array(
@@ -45,7 +45,7 @@ async function handleEmailReceipt(request: AuthenticatedRequest) {
     // Send email receipt
     const emailSent = await emailService.sendReceiptEmail({
       to: customerEmail,
-      customerName: customerName || "Customer",
+      customerName: customerName || 'Customer',
       saleId,
       items: receiptData.items,
       subtotal: receiptData.subtotal,
@@ -58,7 +58,7 @@ async function handleEmailReceipt(request: AuthenticatedRequest) {
 
     if (!emailSent) {
       return NextResponse.json(
-        { error: "Failed to send email receipt" },
+        { error: 'Failed to send email receipt' },
         { status: 500 }
       );
     }
@@ -70,7 +70,7 @@ async function handleEmailReceipt(request: AuthenticatedRequest) {
       customerEmail,
     });
   } catch (error) {
-    console.error("Error sending email receipt:", error);
+    console.error('Error sending email receipt:', error);
 
     if (error instanceof z.ZodError) {
       return NextResponse.json(

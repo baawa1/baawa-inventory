@@ -3,18 +3,18 @@
  * Displays both online and offline transactions with comprehensive filtering and management
  */
 
-"use client";
+'use client';
 
-import React, { useState, useMemo, useCallback, useEffect } from "react";
-import { useSession } from "next-auth/react";
-import { Button } from "@/components/ui/button";
-import { Badge } from "@/components/ui/badge";
+import React, { useState, useMemo, useCallback, useEffect } from 'react';
+import { useSession } from 'next-auth/react';
+import { Button } from '@/components/ui/button';
+import { Badge } from '@/components/ui/badge';
 import {
   Dialog,
   DialogContent,
   DialogHeader,
   DialogTitle,
-} from "@/components/ui/dialog";
+} from '@/components/ui/dialog';
 import {
   IconEye,
   IconDownload,
@@ -23,20 +23,19 @@ import {
   IconCreditCard,
   IconBuildingBank,
   IconDeviceMobile,
-  IconCheck,
-  IconX,
-  IconAlertTriangle,
-} from "@tabler/icons-react";
-import { format } from "date-fns";
-import { toast } from "sonner";
-import { useOffline } from "@/hooks/useOffline";
-import { usePOSErrorHandler } from "./POSErrorBoundary";
-import { formatCurrency } from "@/lib/utils";
-import { DashboardTableLayout } from "@/components/layouts/DashboardTableLayout";
-import type { DashboardTableColumn } from "@/components/layouts/DashboardColumnCustomizer";
-import type { FilterConfig } from "@/components/layouts/DashboardFiltersBar";
+  IconPrinter,
+} from '@tabler/icons-react';
+import { format } from 'date-fns';
+import { toast } from 'sonner';
+import { useOffline } from '@/hooks/useOffline';
+import { usePOSErrorHandler } from './POSErrorBoundary';
+import { formatCurrency } from '@/lib/utils';
+import { DashboardTableLayout } from '@/components/layouts/DashboardTableLayout';
+import type { DashboardTableColumn } from '@/components/layouts/DashboardColumnCustomizer';
+import type { FilterConfig } from '@/components/layouts/DashboardFiltersBar';
+import { ReceiptPrinter } from './ReceiptPrinter';
 
-import type { TransformedTransaction } from "@/types/pos";
+import type { TransformedTransaction } from '@/types/pos';
 
 type Transaction = TransformedTransaction;
 
@@ -47,16 +46,12 @@ const paymentMethodIcons = {
   mobile_money: IconDeviceMobile,
 };
 
-const statusIcons = {
-  pending: IconAlertTriangle,
-  synced: IconCheck,
-  failed: IconX,
-};
+// Removed unused statusIcons variable
 
 export function TransactionHistory() {
   const { data: _ } = useSession();
   const { isOnline, syncNow } = useOffline();
-  const { handleError } = usePOSErrorHandler();
+  const { handleError: _handleError } = usePOSErrorHandler();
   const [transactions, setTransactions] = useState<Transaction[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
@@ -73,64 +68,64 @@ export function TransactionHistory() {
 
   // Filters state
   const [filters, setFilters] = useState({
-    search: "",
-    paymentMethod: "all",
-    status: "all",
-    dateFrom: "",
-    dateTo: "",
-    staffName: "all",
+    search: '',
+    paymentMethod: 'all',
+    status: 'all',
+    dateFrom: '',
+    dateTo: '',
+    staffName: 'all',
   });
 
   // Column configuration
   const columns: DashboardTableColumn[] = useMemo(
     () => [
       {
-        key: "id",
-        label: "Transaction ID",
+        key: 'transactionNumber',
+        label: 'Transaction #',
         sortable: true,
         defaultVisible: true,
         required: true,
       },
       {
-        key: "timestamp",
-        label: "Date & Time",
+        key: 'timestamp',
+        label: 'Date & Time',
         sortable: true,
         defaultVisible: true,
         required: true,
       },
       {
-        key: "staffName",
-        label: "Staff",
+        key: 'staffName',
+        label: 'Staff',
         sortable: true,
         defaultVisible: true,
       },
       {
-        key: "customerName",
-        label: "Customer",
+        key: 'customerName',
+        label: 'Customer',
         sortable: true,
         defaultVisible: true,
       },
       {
-        key: "items",
-        label: "Items",
+        key: 'items',
+        label: 'Items',
         sortable: false,
         defaultVisible: true,
       },
       {
-        key: "paymentMethod",
-        label: "Payment",
+        key: 'paymentMethod',
+        label: 'Payment',
         sortable: true,
         defaultVisible: true,
       },
       {
-        key: "total",
-        label: "Total",
+        key: 'total',
+        label: 'Total',
         sortable: true,
         defaultVisible: true,
       },
       {
-        key: "status",
-        label: "Status",
+        key: 'status',
+        label: 'Status',
         sortable: true,
         defaultVisible: true,
       },
@@ -139,7 +134,7 @@ export function TransactionHistory() {
   );
 
   const [visibleColumns] = useState<string[]>(
-    columns.filter((col) => col.defaultVisible).map((col) => col.key)
+    columns.filter(col => col.defaultVisible).map(col => col.key)
   );
 
   const loadTransactions = useCallback(async () => {
@@ -149,34 +144,34 @@ export function TransactionHistory() {
 
       // Build query parameters
       const params = new URLSearchParams();
-      params.append("page", pagination.page.toString());
-      params.append("limit", pagination.limit.toString());
+      params.append('page', pagination.page.toString());
+      params.append('limit', pagination.limit.toString());
 
-      if (filters.search) params.append("search", filters.search);
-      if (filters.paymentMethod !== "all")
-        params.append("paymentMethod", filters.paymentMethod);
-      if (filters.dateFrom) params.append("dateFrom", filters.dateFrom);
-      if (filters.dateTo) params.append("dateTo", filters.dateTo);
-      if (filters.staffName !== "all")
-        params.append("staffId", filters.staffName);
+      if (filters.search) params.append('search', filters.search);
+      if (filters.paymentMethod !== 'all')
+        params.append('paymentMethod', filters.paymentMethod);
+      if (filters.dateFrom) params.append('dateFrom', filters.dateFrom);
+      if (filters.dateTo) params.append('dateTo', filters.dateTo);
+      if (filters.staffName !== 'all')
+        params.append('staffId', filters.staffName);
 
       const response = await fetch(
         `/api/pos/transactions?${params.toString()}`
       );
       if (!response.ok) {
-        throw new Error("Failed to load transactions");
+        throw new Error('Failed to load transactions');
       }
 
       const data = await response.json();
       setTransactions(data.data || []);
-      setPagination((prev) => ({
+      setPagination(prev => ({
         ...prev,
         totalItems: data.pagination?.total || 0,
         totalPages: data.pagination?.totalPages || 1,
       }));
     } catch (err) {
-      console.error("Failed to load transactions:", err);
-      setError("Failed to load transactions");
+      console.error('Failed to load transactions:', err);
+      setError('Failed to load transactions');
     } finally {
       setLoading(false);
     }
@@ -192,9 +187,7 @@ export function TransactionHistory() {
   // Get unique staff for filter
   const uniqueStaff = useMemo(
     () => [
-      ...new Set(
-        transactions.map((t) => ({ id: t.staffId, name: t.staffName }))
-      ),
+      ...new Set(transactions.map(t => ({ id: t.staffId, name: t.staffName }))),
     ],
     [transactions]
   );
@@ -203,49 +196,49 @@ export function TransactionHistory() {
   const filterConfigs: FilterConfig[] = useMemo(
     () => [
       {
-        key: "paymentMethod",
-        label: "Payment Method",
-        type: "select",
+        key: 'paymentMethod',
+        label: 'Payment Method',
+        type: 'select',
         options: [
-          { value: "cash", label: "Cash" },
-          { value: "pos", label: "POS" },
-          { value: "bank_transfer", label: "Bank Transfer" },
-          { value: "mobile_money", label: "Mobile Money" },
+          { value: 'cash', label: 'Cash' },
+          { value: 'pos', label: 'POS' },
+          { value: 'bank_transfer', label: 'Bank Transfer' },
+          { value: 'mobile_money', label: 'Mobile Money' },
         ],
-        placeholder: "All Methods",
+        placeholder: 'All Methods',
       },
       {
-        key: "status",
-        label: "Status",
-        type: "select",
+        key: 'status',
+        label: 'Status',
+        type: 'select',
         options: [
-          { value: "pending", label: "Pending" },
-          { value: "completed", label: "Completed" },
-          { value: "failed", label: "Failed" },
+          { value: 'pending', label: 'Pending' },
+          { value: 'completed', label: 'Completed' },
+          { value: 'failed', label: 'Failed' },
         ],
-        placeholder: "All Status",
+        placeholder: 'All Status',
       },
       {
-        key: "dateFrom",
-        label: "From Date",
-        type: "date",
-        placeholder: "dd/mm/yyyy",
+        key: 'dateFrom',
+        label: 'From Date',
+        type: 'date',
+        placeholder: 'dd/mm/yyyy',
       },
       {
-        key: "dateTo",
-        label: "To Date",
-        type: "date",
-        placeholder: "dd/mm/yyyy",
+        key: 'dateTo',
+        label: 'To Date',
+        type: 'date',
+        placeholder: 'dd/mm/yyyy',
       },
       {
-        key: "staffName",
-        label: "Staff",
-        type: "select",
-        options: uniqueStaff.map((staff) => ({
+        key: 'staffName',
+        label: 'Staff',
+        type: 'select',
+        options: uniqueStaff.map(staff => ({
           value: staff.id.toString(),
           label: staff.name,
         })),
-        placeholder: "All Staff",
+        placeholder: 'All Staff',
       },
     ],
     [uniqueStaff]
@@ -253,119 +246,130 @@ export function TransactionHistory() {
 
   // Handle filter changes
   const handleFilterChange = useCallback((key: string, value: unknown) => {
-    setFilters((prev) => ({
+    setFilters(prev => ({
       ...prev,
       [key]: value,
     }));
-    setPagination((prev) => ({ ...prev, page: 1 }));
+    setPagination(prev => ({ ...prev, page: 1 }));
   }, []);
 
-  // Clear all filters
+  // Handle pagination changes
+  const handlePageChange = useCallback((page: number) => {
+    setPagination(prev => ({ ...prev, page }));
+  }, []);
+
+  // Handle page size changes
+  const handlePageSizeChange = useCallback((limit: number) => {
+    setPagination(prev => ({ ...prev, limit, page: 1 }));
+  }, []);
+
+  // Handle reset filters
   const handleResetFilters = useCallback(() => {
     setFilters({
-      search: "",
-      paymentMethod: "all",
-      status: "all",
-      dateFrom: "",
-      dateTo: "",
-      staffName: "all",
+      search: '',
+      paymentMethod: 'all',
+      status: 'all',
+      dateFrom: '',
+      dateTo: '',
+      staffName: 'all',
     });
-    setPagination((prev) => ({ ...prev, page: 1 }));
+    setPagination(prev => ({ ...prev, page: 1 }));
   }, []);
 
-  const handlePageChange = useCallback((newPage: number) => {
-    setPagination((prev) => ({ ...prev, page: newPage }));
-  }, []);
-
-  const handlePageSizeChange = useCallback((newSize: number) => {
-    setPagination((prev) => ({ ...prev, limit: newSize, page: 1 }));
-  }, []);
-
-  // Handle sync retry for failed transactions
+  // Handle sync retry (placeholder for future implementation)
   const _handleSyncRetry = async () => {
-    if (!isOnline) {
-      toast.error("Cannot sync while offline");
-      return;
-    }
-
-    try {
-      const result = await syncNow();
-      toast.success(
-        `Sync completed: ${result.success} successful, ${result.failed} failed`
-      );
-      loadTransactions();
-    } catch (_err) {
-      handleError(_err as Error);
+    if (isOnline) {
+      await syncNow();
+      await loadTransactions();
     }
   };
 
+  // Export transactions to CSV
   const exportTransactions = () => {
-    try {
-      const csvContent = [
-        [
-          "Transaction ID",
-          "Date",
-          "Staff",
-          "Customer",
-          "Items",
-          "Payment",
-          "Total",
-          "Status",
-        ],
-        ...transactions.map((t) => [
-          t.transactionNumber,
-          t.timestamp ? format(t.timestamp, "yyyy-MM-dd HH:mm") : "-",
-          t.staffName,
-          t.customerName || "-",
-          t.items.length.toString(),
-          t.paymentMethod,
-          t.total.toString(),
-          t.paymentStatus || "completed",
-        ]),
-      ]
-        .map((row) => row.map((cell) => `"${cell}"`).join(","))
-        .join("\n");
+    const csvContent = [
+      [
+        'Transaction #',
+        'Date',
+        'Staff',
+        'Customer',
+        'Items',
+        'Payment Method',
+        'Total',
+        'Status',
+      ],
+      ...filteredTransactions.map(transaction => [
+        transaction.transactionNumber,
+        transaction.timestamp
+          ? format(transaction.timestamp, 'MMM dd, yyyy HH:mm:ss')
+          : '-',
+        transaction.staffName,
+        transaction.customerName || 'Walk-in Customer',
+        transaction.items.length.toString(),
+        transaction.paymentMethod.replace('_', ' '),
+        formatCurrency(transaction.total),
+        transaction.paymentStatus || 'completed',
+      ]),
+    ]
+      .map(row => row.map(cell => `"${cell}"`).join(','))
+      .join('\n');
 
-      const blob = new Blob([csvContent], { type: "text/csv" });
-      const url = window.URL.createObjectURL(blob);
-      const a = document.createElement("a");
-      a.href = url;
-      a.download = `transactions-${new Date().toISOString().split("T")[0]}.csv`;
-      document.body.appendChild(a);
-      a.click();
-      window.URL.revokeObjectURL(url);
-      document.body.removeChild(a);
-      toast.success("Transactions exported successfully");
-    } catch (_err) {
-      toast.error("Failed to export transactions");
-    }
+    const blob = new Blob([csvContent], { type: 'text/csv' });
+    const url = window.URL.createObjectURL(blob);
+    const a = document.createElement('a');
+    a.href = url;
+    a.download = `transactions-${format(new Date(), 'yyyy-MM-dd')}.csv`;
+    a.click();
+    window.URL.revokeObjectURL(url);
+    toast.success('Transactions exported successfully');
   };
 
-  // Render cell content
+  // Render cell function
   const renderCell = useCallback(
     (transaction: Transaction, columnKey: string) => {
       switch (columnKey) {
-        case "id":
+        case 'transactionNumber':
           return (
             <span className="font-mono text-sm">
               {transaction.transactionNumber}
             </span>
           );
-        case "timestamp":
-          return transaction.timestamp
-            ? format(transaction.timestamp, "MMM dd, yyyy HH:mm")
-            : "-";
-        case "staffName":
-          return transaction.staffName;
-        case "customerName":
-          return transaction.customerName || "-";
-        case "items":
+        case 'timestamp':
           return (
-            <span className="text-sm text-muted-foreground">
-              {transaction.items.length} items
+            <div className="text-sm">
+              <div>
+                {transaction.timestamp
+                  ? format(transaction.timestamp, 'MMM dd, yyyy')
+                  : '-'}
+              </div>
+              <div className="text-muted-foreground">
+                {transaction.timestamp
+                  ? format(transaction.timestamp, 'HH:mm:ss')
+                  : '-'}
+              </div>
+            </div>
+          );
+        case 'staffName':
+          return <span className="text-sm">{transaction.staffName}</span>;
+        case 'customerName':
+          return (
+            <span className="text-sm">
+              {transaction.customerName || 'Walk-in Customer'}
             </span>
           );
-        case "paymentMethod":
+        case 'items':
+          return (
+            <div className="text-sm">
+              <div>{transaction.items.length} items</div>
+              <div className="text-muted-foreground">
+                {transaction.items
+                  .slice(0, 2)
+                  .map(item => item.name)
+                  .join(', ')}
+                {transaction.items.length > 2 && '...'}
+              </div>
+            </div>
+          );
+        case 'paymentMethod':
           const PaymentIcon =
             paymentMethodIcons[
               transaction.paymentMethod as keyof typeof paymentMethodIcons
@@ -373,29 +377,28 @@ export function TransactionHistory() {
           return (
             <div className="flex items-center gap-2">
               <PaymentIcon className="h-4 w-4" />
-              <span className="capitalize">
-                {transaction.paymentMethod.replace("_", " ")}
+              <span className="text-sm capitalize">
+                {transaction.paymentMethod.replace('_', ' ')}
               </span>
             </div>
           );
-        case "total":
-          return formatCurrency(transaction.total);
-        case "status":
-          const StatusIcon =
-            statusIcons[
-              transaction.paymentStatus as keyof typeof statusIcons
-            ] || IconCheck;
+        case 'total':
+          return (
+            <span className="font-medium">
+              {formatCurrency(transaction.total)}
+            </span>
+          );
+        case 'status':
           const statusColor =
-            transaction.paymentStatus === "failed"
-              ? "destructive"
-              : transaction.paymentStatus === "pending"
-                ? "secondary"
-                : "default";
+            transaction.paymentStatus === 'pending'
+              ? 'bg-yellow-100 text-yellow-800'
+              : transaction.paymentStatus === 'failed'
+                ? 'bg-red-100 text-red-800'
+                : 'bg-green-100 text-green-800';
           return (
             <div className="flex items-center gap-2">
-              <StatusIcon className="h-4 w-4" />
-              <Badge variant={statusColor} className="capitalize">
-                {transaction.paymentStatus || "completed"}
+              <Badge variant="secondary" className={statusColor}>
+                {transaction.paymentStatus || 'completed'}
               </Badge>
             </div>
           );
@@ -417,6 +420,36 @@ export function TransactionHistory() {
         >
           <IconEye className="h-4 w-4" />
         </Button>
+        <ReceiptPrinter
+          receiptData={{
+            id: transaction.id.toString(),
+            transactionNumber: transaction.transactionNumber,
+            timestamp: transaction.timestamp || new Date(),
+            staffName: transaction.staffName,
+            customerName: transaction.customerName || '',
+            customerPhone: transaction.customerPhone || '',
+            customerEmail: transaction.customerEmail || '',
+            items: transaction.items.map(item => ({
+              id: item.id,
+              name: item.name,
+              sku: item.sku,
+              price: item.price,
+              quantity: item.quantity,
+              category: '',
+            })),
+            subtotal: transaction.subtotal,
+            discount: transaction.discount,
+            total: transaction.total,
+            paymentMethod: transaction.paymentMethod,
+          }}
+          trigger={
+            <Button variant="ghost" size="sm">
+              <IconPrinter className="h-4 w-4" />
+            </Button>
+          }
+          size="sm"
+          variant="ghost"
+        />
       </div>
     ),
     []
@@ -442,28 +475,28 @@ export function TransactionHistory() {
           <div className="grid grid-cols-2 gap-4">
             <div>
               <label className="text-sm font-medium">Date & Time</label>
-              <p className="text-sm text-muted-foreground">
+              <p className="text-muted-foreground text-sm">
                 {transaction.timestamp
-                  ? format(transaction.timestamp, "MMM dd, yyyy HH:mm:ss")
-                  : "-"}
+                  ? format(transaction.timestamp, 'MMM dd, yyyy HH:mm:ss')
+                  : '-'}
               </p>
             </div>
             <div>
               <label className="text-sm font-medium">Staff</label>
-              <p className="text-sm text-muted-foreground">
+              <p className="text-muted-foreground text-sm">
                 {transaction.staffName}
               </p>
             </div>
             <div>
               <label className="text-sm font-medium">Customer</label>
-              <p className="text-sm text-muted-foreground">
-                {transaction.customerName || "Walk-in Customer"}
+              <p className="text-muted-foreground text-sm">
+                {transaction.customerName || 'Walk-in Customer'}
               </p>
             </div>
             <div>
               <label className="text-sm font-medium">Payment Method</label>
-              <p className="text-sm text-muted-foreground capitalize">
-                {transaction.paymentMethod.replace("_", " ")}
+              <p className="text-muted-foreground text-sm capitalize">
+                {transaction.paymentMethod.replace('_', ' ')}
               </p>
             </div>
           </div>
@@ -471,7 +504,7 @@ export function TransactionHistory() {
           <div>
             <label className="text-sm font-medium">Items</label>
             <div className="mt-2 space-y-2">
-              {transaction.items.map((item) => (
+              {transaction.items.map(item => (
                 <div key={item.id} className="flex justify-between text-sm">
                   <span>
                     {item.name} (x{item.quantity})
@@ -498,6 +531,44 @@ export function TransactionHistory() {
               <span>{formatCurrency(transaction.total)}</span>
             </div>
           </div>
+
+          {/* Print Actions */}
+          <div className="border-t pt-4">
+            <div className="flex items-center gap-2">
+              <span className="text-sm font-medium">Actions:</span>
+              <ReceiptPrinter
+                receiptData={{
+                  id: transaction.id.toString(),
+                  transactionNumber: transaction.transactionNumber,
+                  timestamp: transaction.timestamp || new Date(),
+                  staffName: transaction.staffName,
+                  customerName: transaction.customerName || '',
+                  customerPhone: transaction.customerPhone || '',
+                  customerEmail: transaction.customerEmail || '',
+                  items: transaction.items.map(item => ({
+                    id: item.id,
+                    name: item.name,
+                    sku: item.sku,
+                    price: item.price,
+                    quantity: item.quantity,
+                    category: '',
+                  })),
+                  subtotal: transaction.subtotal,
+                  discount: transaction.discount,
+                  total: transaction.total,
+                  paymentMethod: transaction.paymentMethod,
+                }}
+                trigger={
+                  <Button variant="outline" size="sm">
+                    <IconPrinter className="mr-2 h-4 w-4" />
+                    Print Receipt
+                  </Button>
+                }
+                size="sm"
+                variant="outline"
+              />
+            </div>
+          </div>
         </div>
       </DialogContent>
     </Dialog>
@@ -511,18 +582,18 @@ export function TransactionHistory() {
         actions={
           <div className="flex items-center gap-2">
             <Button variant="outline" size="sm" onClick={loadTransactions}>
-              <IconRefresh className="h-4 w-4 mr-2" />
+              <IconRefresh className="mr-2 h-4 w-4" />
               Refresh
             </Button>
             <Button variant="outline" size="sm" onClick={exportTransactions}>
-              <IconDownload className="h-4 w-4 mr-2" />
+              <IconDownload className="mr-2 h-4 w-4" />
               Export CSV
             </Button>
           </div>
         }
         searchPlaceholder="Search transactions..."
         searchValue={filters.search}
-        onSearchChange={(value) => handleFilterChange("search", value)}
+        onSearchChange={value => handleFilterChange('search', value)}
         filters={filterConfigs}
         filterValues={filters}
         onFilterChange={handleFilterChange}

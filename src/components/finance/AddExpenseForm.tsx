@@ -1,30 +1,30 @@
-"use client";
+'use client';
 
-import { useRouter } from "next/navigation";
-import { useForm } from "react-hook-form";
-import { zodResolver } from "@hookform/resolvers/zod";
-import { ArrowLeft } from "lucide-react";
-import { Alert, AlertDescription } from "@/components/ui/alert";
-import { Button } from "@/components/ui/button";
+import { useRouter } from 'next/navigation';
+import { useForm } from 'react-hook-form';
+import { zodResolver } from '@hookform/resolvers/zod';
+import { ArrowLeft } from 'lucide-react';
+import { Alert, AlertDescription } from '@/components/ui/alert';
+import { Button } from '@/components/ui/button';
 import {
   Card,
   CardContent,
   CardDescription,
   CardHeader,
   CardTitle,
-} from "@/components/ui/card";
-import { Form } from "@/components/ui/form";
-import { PageHeader } from "@/components/ui/page-header";
-import { expenseTransactionSchema } from "@/lib/validations/finance";
+} from '@/components/ui/card';
+import { Form } from '@/components/ui/form';
+import { PageHeader } from '@/components/ui/page-header';
+import { expenseTransactionSchema } from '@/lib/validations/finance';
 
-import { BasicInfoSection } from "./add-expense/BasicInfoSection";
-import { ExpenseDetailsSection } from "./add-expense/ExpenseDetailsSection";
-import { AdditionalInfoSection } from "./add-expense/AdditionalInfoSection";
-import { FormActions } from "./add-expense/FormActions";
-import { useFormDataQuery } from "./add-expense/useFormDataQuery";
-import { useExpenseSubmit } from "./add-expense/useExpenseSubmit";
-import { defaultFormValues } from "./add-expense/types";
-import { AppUser } from "@/types/user";
+import { BasicInfoSection } from './add-expense/BasicInfoSection';
+import { ExpenseDetailsSection } from './add-expense/ExpenseDetailsSection';
+import { AdditionalInfoSection } from './add-expense/AdditionalInfoSection';
+import { FormActions } from './add-expense/FormActions';
+import { useFormDataQuery } from './add-expense/useFormDataQuery';
+import { useExpenseSubmit } from './add-expense/useExpenseSubmit';
+import { defaultFormValues } from './add-expense/types';
+import { AppUser } from '@/types/user';
 
 interface AddExpenseFormProps {
   user: AppUser;
@@ -49,11 +49,11 @@ export default function AddExpenseForm({ user: _user }: AddExpenseFormProps) {
   const { onSubmit } = useExpenseSubmit(form, setIsSubmitting, setSubmitError);
 
   return (
-    <div className="max-w-4xl mx-auto p-6 space-y-6">
+    <div className="mx-auto max-w-4xl space-y-6 p-6">
       <div className="mb-6">
         <Button
           variant="ghost"
-          onClick={() => router.push("/finance/expenses")}
+          onClick={() => router.push('/finance/expenses')}
           className="mb-4 px-4 lg:px-6"
         >
           <ArrowLeft className="mr-2 h-4 w-4" />
@@ -94,7 +94,7 @@ export default function AddExpenseForm({ user: _user }: AddExpenseFormProps) {
 
               <FormActions
                 isSubmitting={isSubmitting}
-                onCancelAction={() => router.push("/finance/expenses")}
+                onCancelAction={() => router.push('/finance/expenses')}
               />
             </form>
           </Form>

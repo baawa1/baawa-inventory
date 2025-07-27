@@ -1,20 +1,20 @@
-import { z } from "zod";
+import { z } from 'zod';
 
 // Base category validation schema
 export const categorySchema = z.object({
   name: z
     .string()
-    .min(1, "Category name is required")
-    .max(100, "Category name must be less than 100 characters")
+    .min(1, 'Category name is required')
+    .max(100, 'Category name must be less than 100 characters')
     .trim(),
   description: z
     .string()
-    .max(500, "Description must be less than 500 characters")
+    .max(500, 'Description must be less than 500 characters')
     .optional(),
   image: z
     .string()
-    .min(1, "Category image is required")
-    .max(500, "Image URL must be less than 500 characters"),
+    .min(1, 'Category image is required')
+    .max(500, 'Image URL must be less than 500 characters'),
   isActive: z.boolean().optional().default(true),
 });
 
@@ -22,17 +22,17 @@ export const categorySchema = z.object({
 export const createCategorySchema = z.object({
   name: z
     .string()
-    .min(1, "Category name is required")
-    .max(100, "Category name must be less than 100 characters")
+    .min(1, 'Category name is required')
+    .max(100, 'Category name must be less than 100 characters')
     .trim(),
   description: z
     .string()
-    .max(500, "Description must be less than 500 characters")
+    .max(500, 'Description must be less than 500 characters')
     .optional(),
   image: z
     .string()
-    .min(1, "Category image is required")
-    .max(500, "Image URL must be less than 500 characters"),
+    .min(1, 'Category image is required')
+    .max(500, 'Image URL must be less than 500 characters'),
   isActive: z.boolean().default(true),
 });
 
@@ -47,16 +47,16 @@ export const categoryQuerySchema = z.object({
   isActive: z.boolean().optional(),
   limit: z.number().int().min(1).max(100).default(10),
   offset: z.number().int().min(0).default(0),
-  sortBy: z.enum(["name", "createdAt", "updatedAt"]).default("name"),
-  sortOrder: z.enum(["asc", "desc"]).default("asc"),
+  sortBy: z.enum(['name', 'createdAt', 'updatedAt']).default('name'),
+  sortOrder: z.enum(['asc', 'desc']).default('asc'),
 });
 
 // Category ID validation
 export const categoryIdSchema = z.object({
-  id: z.string().transform((val) => {
+  id: z.string().transform(val => {
     const num = parseInt(val, 10);
     if (isNaN(num) || num <= 0) {
-      throw new Error("Invalid category ID");
+      throw new Error('Invalid category ID');
     }
     return num;
   }),

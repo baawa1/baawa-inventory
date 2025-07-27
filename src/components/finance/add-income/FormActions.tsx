@@ -1,7 +1,7 @@
-"use client";
+'use client';
 
-import { Loader2 } from "lucide-react";
-import { Button } from "@/components/ui/button";
+import { Loader2 } from 'lucide-react';
+import { Button } from '@/components/ui/button';
 
 interface FormActionsProps {
   isSubmitting: boolean;
@@ -13,11 +13,11 @@ interface FormActionsProps {
 export function FormActions({
   isSubmitting,
   onCancelAction,
-  submitText = "Create Income Transaction",
-  loadingText = "Creating...",
+  submitText = 'Create Income Transaction',
+  loadingText = 'Creating...',
 }: FormActionsProps) {
   return (
-    <div className="flex justify-end space-x-4 pt-6 border-t">
+    <div className="flex justify-end space-x-4 border-t pt-6">
       <Button
         type="button"
         variant="outline"

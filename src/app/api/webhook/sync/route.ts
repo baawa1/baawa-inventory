@@ -1,26 +1,26 @@
-import { NextRequest, NextResponse } from "next/server";
-import { withAuth } from "@/lib/api-middleware";
-import { prisma } from "@/lib/db";
-import { z } from "zod";
+import { NextRequest, NextResponse } from 'next/server';
+import { withAuth } from '@/lib/api-middleware';
+import { prisma } from '@/lib/db';
+import { z } from 'zod';
 
 // Validation schemas
 const syncSingleSchema = z.object({
-  entityType: z.enum(["product", "category", "brand"]),
+  entityType: z.enum(['product', 'category', 'brand']),
   entityId: z.number().int().positive(),
 });
 
 const syncBulkSchema = z.object({
-  entityType: z.enum(["product", "category", "brand"]),
+  entityType: z.enum(['product', 'category', 'brand']),
   entityIds: z.array(z.number().int().positive()).min(1).max(100),
 });
 
-const requestSchema = z.discriminatedUnion("action", [
+const requestSchema = z.discriminatedUnion('action', [
   z.object({
-    action: z.literal("sync-single"),
+    action: z.literal('sync-single'),
     ...syncSingleSchema.shape,
   }),
   z.object({
-    action: z.literal("sync-bulk"),
+    action: z.literal('sync-bulk'),
     ...syncBulkSchema.shape,
   }),
 ]);
@@ -33,28 +33,28 @@ async function handler(req: NextRequest) {
     const webhookUrl = process.env.N8N_WEBHOOK_URL;
     if (!webhookUrl) {
       return NextResponse.json(
-        { error: "Webhook URL not configured" },
+        { error: 'Webhook URL not configured' },
         { status: 500 }
       );
     }
 
     switch (validatedData.action) {
-      case "sync-single":
+      case 'sync-single':
         return await handleSyncSingle(validatedData, webhookUrl);
 
-      case "sync-bulk":
+      case 'sync-bulk':
         return await handleSyncBulk(validatedData, webhookUrl);
 
       default:
-        return NextResponse.json({ error: "Invalid action" }, { status: 400 });
+        return NextResponse.json({ error: 'Invalid action' }, { status: 400 });
     }
   } catch (error) {
     if (error instanceof z.ZodError) {
       return NextResponse.json(
         {
-          error: "Validation failed",
-          details: error.errors.map((e) => ({
-            field: e.path.join("."),
+          error: 'Validation failed',
+          details: error.errors.map(e => ({
+            field: e.path.join('.'),
             message: e.message,
           })),
         },
@@ -62,9 +62,9 @@ async function handler(req: NextRequest) {
       );
     }
 
-    console.error("Webhook sync API error:", error);
+    console.error('Webhook sync API error:', error);
     return NextResponse.json(
-      { error: "Internal server error" },
+      { error: 'Internal server error' },
       { status: 500 }
     );
   }
@@ -79,7 +79,7 @@ async function handleSyncSingle(
     let entity;
 
     switch (data.entityType) {
-      case "product":
+      case 'product':
         entity = await prisma.product.findUnique({
           where: { id: data.entityId },
           include: {
@@ -90,13 +90,13 @@ async function handleSyncSingle(
         });
         break;
 
-      case "category":
+      case 'category':
         entity = await prisma.category.findUnique({
           where: { id: data.entityId },
         });
         break;
 
-      case "brand":
+      case 'brand':
         entity = await prisma.brand.findUnique({
           where: { id: data.entityId },
         });
@@ -104,7 +104,7 @@ async function handleSyncSingle(
 
       default:
         return NextResponse.json(
-          { error: "Invalid entity type" },
+          { error: 'Invalid entity type' },
           { status: 400 }
         );
     }
@@ -126,9 +126,9 @@ async function handleSyncSingle(
 
     // Send to webhook
     const webhookResponse = await fetch(webhookUrl, {
-      method: "POST",
+      method: 'POST',
       headers: {
-        "Content-Type": "application/json",
+        'Content-Type': 'application/json',
       },
       body: JSON.stringify(payload),
     });
@@ -146,7 +146,7 @@ async function handleSyncSingle(
         },
       },
       update: {
-        sync_status: "pending",
+        sync_status: 'pending',
         last_sync_at: new Date(),
         webhook_url: webhookUrl,
         retry_count: {
@@ -156,18 +156,18 @@ async function handleSyncSingle(
       create: {
         entity_type: data.entityType,
         entity_id: data.entityId,
-        sync_status: "pending",
+        sync_status: 'pending',
         last_sync_at: new Date(),
         webhook_url: webhookUrl,
       },
     });
 
     // Also update the product sync fields if it's a product
-    if (data.entityType === "product") {
+    if (data.entityType === 'product') {
       await prisma.product.update({
         where: { id: data.entityId },
         data: {
-          syncStatus: "pending",
+          syncStatus: 'pending',
           lastSyncAt: new Date(),
         },
       });
@@ -179,9 +179,9 @@ async function handleSyncSingle(
       entityId: data.entityId,
     });
   } catch (error) {
-    console.error("Sync single error:", error);
+    console.error('Sync single error:', error);
     return NextResponse.json(
-      { error: "Failed to sync entity" },
+      { error: 'Failed to sync entity' },
       { status: 500 }
     );
   }
@@ -196,7 +196,7 @@ async function handleSyncBulk(
     let entities;
 
     switch (data.entityType) {
-      case "product":
+      case 'product':
         entities = await prisma.product.findMany({
           where: { id: { in: data.entityIds } },
           include: {
@@ -207,13 +207,13 @@ async function handleSyncBulk(
         });
         break;
 
-      case "category":
+      case 'category':
         entities = await prisma.category.findMany({
           where: { id: { in: data.entityIds } },
         });
         break;
 
-      case "brand":
+      case 'brand':
         entities = await prisma.brand.findMany({
           where: { id: { in: data.entityIds } },
         });
@@ -221,13 +221,13 @@ async function handleSyncBulk(
 
       default:
         return NextResponse.json(
-          { error: "Invalid entity type" },
+          { error: 'Invalid entity type' },
           { status: 400 }
         );
     }
 
     if (entities.length === 0) {
-      return NextResponse.json({ error: "No entities found" }, { status: 404 });
+      return NextResponse.json({ error: 'No entities found' }, { status: 404 });
     }
 
     // Prepare webhook payload
@@ -240,9 +240,9 @@ async function handleSyncBulk(
 
     // Send to webhook
     const webhookResponse = await fetch(webhookUrl, {
-      method: "POST",
+      method: 'POST',
       headers: {
-        "Content-Type": "application/json",
+        'Content-Type': 'application/json',
       },
       body: JSON.stringify(payload),
     });
@@ -253,7 +253,7 @@ async function handleSyncBulk(
 
     // Update sync status for all entities
     await Promise.all(
-      data.entityIds.map((entityId) =>
+      data.entityIds.map(entityId =>
         prisma.contentSync.upsert({
           where: {
             unique_entity_content_sync: {
@@ -262,7 +262,7 @@ async function handleSyncBulk(
             },
           },
           update: {
-            sync_status: "pending",
+            sync_status: 'pending',
             last_sync_at: new Date(),
             webhook_url: webhookUrl,
             retry_count: {
@@ -272,7 +272,7 @@ async function handleSyncBulk(
           create: {
             entity_type: data.entityType,
             entity_id: entityId,
-            sync_status: "pending",
+            sync_status: 'pending',
             last_sync_at: new Date(),
             webhook_url: webhookUrl,
           },
@@ -286,9 +286,9 @@ async function handleSyncBulk(
       entityIds: data.entityIds,
     });
   } catch (error) {
-    console.error("Sync bulk error:", error);
+    console.error('Sync bulk error:', error);
     return NextResponse.json(
-      { error: "Failed to sync entities" },
+      { error: 'Failed to sync entities' },
       { status: 500 }
     );
   }

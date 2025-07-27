@@ -1,5 +1,5 @@
-import { AuditLogAction } from "@/types/audit";
-import { prisma } from "@/lib/db";
+import { AuditLogAction } from '@/types/audit';
+import { prisma } from '@/lib/db';
 
 interface AuditLogParams {
   tx?: any; // Prisma transaction

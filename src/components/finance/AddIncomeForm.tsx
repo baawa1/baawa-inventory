@@ -1,30 +1,30 @@
-"use client";
+'use client';
 
-import { useRouter } from "next/navigation";
-import { useForm } from "react-hook-form";
-import { zodResolver } from "@hookform/resolvers/zod";
-import { ArrowLeft } from "lucide-react";
-import { Alert, AlertDescription } from "@/components/ui/alert";
-import { Button } from "@/components/ui/button";
+import { useRouter } from 'next/navigation';
+import { useForm } from 'react-hook-form';
+import { zodResolver } from '@hookform/resolvers/zod';
+import { ArrowLeft } from 'lucide-react';
+import { Alert, AlertDescription } from '@/components/ui/alert';
+import { Button } from '@/components/ui/button';
 import {
   Card,
   CardContent,
   CardDescription,
   CardHeader,
   CardTitle,
-} from "@/components/ui/card";
-import { Form } from "@/components/ui/form";
-import { PageHeader } from "@/components/ui/page-header";
-import { incomeTransactionSchema } from "@/lib/validations/finance";
+} from '@/components/ui/card';
+import { Form } from '@/components/ui/form';
+import { PageHeader } from '@/components/ui/page-header';
+import { incomeTransactionSchema } from '@/lib/validations/finance';
 
-import { BasicInfoSection } from "./add-income/BasicInfoSection";
-import { IncomeDetailsSection } from "./add-income/IncomeDetailsSection";
-import { AdditionalInfoSection } from "./add-income/AdditionalInfoSection";
-import { FormActions } from "./add-income/FormActions";
-import { useFormDataQuery } from "./add-income/useFormDataQuery";
-import { useIncomeSubmit } from "./add-income/useIncomeSubmit";
-import { defaultFormValues } from "./add-income/types";
-import { AppUser } from "@/types/user";
+import { BasicInfoSection } from './add-income/BasicInfoSection';
+import { IncomeDetailsSection } from './add-income/IncomeDetailsSection';
+import { AdditionalInfoSection } from './add-income/AdditionalInfoSection';
+import { FormActions } from './add-income/FormActions';
+import { useFormDataQuery } from './add-income/useFormDataQuery';
+import { useIncomeSubmit } from './add-income/useIncomeSubmit';
+import { defaultFormValues } from './add-income/types';
+import { AppUser } from '@/types/user';
 
 interface AddIncomeFormProps {
   user: AppUser;
@@ -49,11 +49,11 @@ export default function AddIncomeForm({ user: _user }: AddIncomeFormProps) {
   const { onSubmit } = useIncomeSubmit(form, setIsSubmitting, setSubmitError);
 
   return (
-    <div className="max-w-4xl mx-auto p-6 space-y-6">
+    <div className="mx-auto max-w-4xl space-y-6 p-6">
       <div className="mb-6">
         <Button
           variant="ghost"
-          onClick={() => router.push("/finance/income")}
+          onClick={() => router.push('/finance/income')}
           className="mb-4 px-4 lg:px-6"
         >
           <ArrowLeft className="mr-2 h-4 w-4" />
@@ -94,7 +94,7 @@ export default function AddIncomeForm({ user: _user }: AddIncomeFormProps) {
 
               <FormActions
                 isSubmitting={isSubmitting}
-                onCancelAction={() => router.push("/finance/income")}
+                onCancelAction={() => router.push('/finance/income')}
               />
             </form>
           </Form>

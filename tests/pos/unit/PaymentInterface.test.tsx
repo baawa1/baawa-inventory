@@ -1,9 +1,9 @@
-import React from "react";
-import { render, screen, fireEvent } from "@testing-library/react";
-import { PaymentInterface } from "@/components/pos/PaymentInterface";
+import React from 'react';
+import { render, screen, fireEvent } from '@testing-library/react';
+import { PaymentInterface } from '@/components/pos/PaymentInterface';
 
 // Mock the toast
-jest.mock("sonner", () => ({
+jest.mock('sonner', () => ({
   toast: {
     success: jest.fn(),
     error: jest.fn(),
@@ -13,36 +13,36 @@ jest.mock("sonner", () => ({
 const mockCartItems = [
   {
     id: 1,
-    name: "Test Product 1",
-    sku: "TEST-001",
+    name: 'Test Product 1',
+    sku: 'TEST-001',
     price: 1000,
     quantity: 2,
     stock: 10,
-    category: "Electronics",
-    brand: "Test Brand",
+    category: 'Electronics',
+    brand: 'Test Brand',
   },
   {
     id: 2,
-    name: "Test Product 2",
-    sku: "TEST-002",
+    name: 'Test Product 2',
+    sku: 'TEST-002',
     price: 2000,
     quantity: 1,
     stock: 5,
-    category: "Clothing",
-    brand: "Fashion Brand",
+    category: 'Clothing',
+    brand: 'Fashion Brand',
   },
 ];
 
 const mockOnPaymentComplete = jest.fn();
 const mockOnClose = jest.fn();
 
-describe("PaymentInterface", () => {
+describe('PaymentInterface', () => {
   beforeEach(() => {
     jest.clearAllMocks();
   });
 
-  describe("Initial Render", () => {
-    it("should render payment interface with cart items", () => {
+  describe('Initial Render', () => {
+    it('should render payment interface with cart items', () => {
       render(
         <PaymentInterface
           isOpen={true}
@@ -53,13 +53,13 @@ describe("PaymentInterface", () => {
         />
       );
 
-      expect(screen.getByText("Payment")).toBeInTheDocument();
-      expect(screen.getByText("Test Product 1")).toBeInTheDocument();
-      expect(screen.getByText("Test Product 2")).toBeInTheDocument();
-      expect(screen.getByText("₦4,000.00")).toBeInTheDocument();
+      expect(screen.getByText('Payment')).toBeInTheDocument();
+      expect(screen.getByText('Test Product 1')).toBeInTheDocument();
+      expect(screen.getByText('Test Product 2')).toBeInTheDocument();
+      expect(screen.getByText('₦4,000.00')).toBeInTheDocument();
     });
 
-    it("should not render when closed", () => {
+    it('should not render when closed', () => {
       render(
         <PaymentInterface
           isOpen={false}
@@ -70,12 +70,12 @@ describe("PaymentInterface", () => {
         />
       );
 
-      expect(screen.queryByText("Payment")).not.toBeInTheDocument();
+      expect(screen.queryByText('Payment')).not.toBeInTheDocument();
     });
   });
 
-  describe("Payment Methods", () => {
-    it("should display payment method options", () => {
+  describe('Payment Methods', () => {
+    it('should display payment method options', () => {
       render(
         <PaymentInterface
           isOpen={true}
@@ -86,12 +86,12 @@ describe("PaymentInterface", () => {
         />
       );
 
-      expect(screen.getByText("Cash")).toBeInTheDocument();
-      expect(screen.getByText("Card")).toBeInTheDocument();
-      expect(screen.getByText("Transfer")).toBeInTheDocument();
+      expect(screen.getByText('Cash')).toBeInTheDocument();
+      expect(screen.getByText('Card')).toBeInTheDocument();
+      expect(screen.getByText('Transfer')).toBeInTheDocument();
     });
 
-    it("should allow selecting payment method", () => {
+    it('should allow selecting payment method', () => {
       render(
         <PaymentInterface
           isOpen={true}
@@ -102,15 +102,15 @@ describe("PaymentInterface", () => {
         />
       );
 
-      const cashButton = screen.getByText("Cash");
+      const cashButton = screen.getByText('Cash');
       fireEvent.click(cashButton);
 
-      expect(cashButton).toHaveClass("bg-primary");
+      expect(cashButton).toHaveClass('bg-primary');
     });
   });
 
-  describe("Customer Information", () => {
-    it("should display customer information fields", () => {
+  describe('Customer Information', () => {
+    it('should display customer information fields', () => {
       render(
         <PaymentInterface
           isOpen={true}
@@ -126,7 +126,7 @@ describe("PaymentInterface", () => {
       expect(screen.getByPlaceholderText(/Email/i)).toBeInTheDocument();
     });
 
-    it("should allow entering customer information", () => {
+    it('should allow entering customer information', () => {
       render(
         <PaymentInterface
           isOpen={true}
@@ -141,18 +141,18 @@ describe("PaymentInterface", () => {
       const phoneInput = screen.getByPlaceholderText(/Phone/i);
       const emailInput = screen.getByPlaceholderText(/Email/i);
 
-      fireEvent.change(nameInput, { target: { value: "John Doe" } });
-      fireEvent.change(phoneInput, { target: { value: "+2348012345678" } });
-      fireEvent.change(emailInput, { target: { value: "john@example.com" } });
+      fireEvent.change(nameInput, { target: { value: 'John Doe' } });
+      fireEvent.change(phoneInput, { target: { value: '+2348012345678' } });
+      fireEvent.change(emailInput, { target: { value: 'john@example.com' } });
 
-      expect(nameInput).toHaveValue("John Doe");
-      expect(phoneInput).toHaveValue("+2348012345678");
-      expect(emailInput).toHaveValue("john@example.com");
+      expect(nameInput).toHaveValue('John Doe');
+      expect(phoneInput).toHaveValue('+2348012345678');
+      expect(emailInput).toHaveValue('john@example.com');
     });
   });
 
-  describe("Payment Amount", () => {
-    it("should display payment amount input", () => {
+  describe('Payment Amount', () => {
+    it('should display payment amount input', () => {
       render(
         <PaymentInterface
           isOpen={true}
@@ -166,7 +166,7 @@ describe("PaymentInterface", () => {
       expect(screen.getByPlaceholderText(/Amount paid/i)).toBeInTheDocument();
     });
 
-    it("should calculate change correctly", () => {
+    it('should calculate change correctly', () => {
       render(
         <PaymentInterface
           isOpen={true}
@@ -178,13 +178,13 @@ describe("PaymentInterface", () => {
       );
 
       const amountInput = screen.getByPlaceholderText(/Amount paid/i);
-      fireEvent.change(amountInput, { target: { value: "5000" } });
+      fireEvent.change(amountInput, { target: { value: '5000' } });
 
       // Should show change of 1000
-      expect(screen.getByText("₦1,000.00")).toBeInTheDocument();
+      expect(screen.getByText('₦1,000.00')).toBeInTheDocument();
     });
 
-    it("should show insufficient payment warning", () => {
+    it('should show insufficient payment warning', () => {
       render(
         <PaymentInterface
           isOpen={true}
@@ -196,15 +196,15 @@ describe("PaymentInterface", () => {
       );
 
       const amountInput = screen.getByPlaceholderText(/Amount paid/i);
-      fireEvent.change(amountInput, { target: { value: "2000" } });
+      fireEvent.change(amountInput, { target: { value: '2000' } });
 
       // Should show insufficient payment message
       expect(screen.getByText(/Insufficient payment/i)).toBeInTheDocument();
     });
   });
 
-  describe("Payment Completion", () => {
-    it("should complete payment with valid data", () => {
+  describe('Payment Completion', () => {
+    it('should complete payment with valid data', () => {
       render(
         <PaymentInterface
           isOpen={true}
@@ -218,20 +218,20 @@ describe("PaymentInterface", () => {
       // Fill required fields
       const nameInput = screen.getByPlaceholderText(/Customer name/i);
       const amountInput = screen.getByPlaceholderText(/Amount paid/i);
-      const cashButton = screen.getByText("Cash");
+      const cashButton = screen.getByText('Cash');
 
-      fireEvent.change(nameInput, { target: { value: "John Doe" } });
-      fireEvent.change(amountInput, { target: { value: "4000" } });
+      fireEvent.change(nameInput, { target: { value: 'John Doe' } });
+      fireEvent.change(amountInput, { target: { value: '4000' } });
       fireEvent.click(cashButton);
 
       // Complete payment
-      const completeButton = screen.getByText("Complete Sale");
+      const completeButton = screen.getByText('Complete Sale');
       fireEvent.click(completeButton);
 
       expect(mockOnPaymentComplete).toHaveBeenCalled();
     });
 
-    it("should validate required fields", () => {
+    it('should validate required fields', () => {
       render(
         <PaymentInterface
           isOpen={true}
@@ -243,7 +243,7 @@ describe("PaymentInterface", () => {
       );
 
       // Try to complete without filling required fields
-      const completeButton = screen.getByText("Complete Sale");
+      const completeButton = screen.getByText('Complete Sale');
       fireEvent.click(completeButton);
 
       // Should show validation error
@@ -253,8 +253,8 @@ describe("PaymentInterface", () => {
     });
   });
 
-  describe("Close Functionality", () => {
-    it("should call onClose when close button is clicked", () => {
+  describe('Close Functionality', () => {
+    it('should call onClose when close button is clicked', () => {
       render(
         <PaymentInterface
           isOpen={true}
@@ -265,15 +265,15 @@ describe("PaymentInterface", () => {
         />
       );
 
-      const closeButton = screen.getByRole("button", { name: /close/i });
+      const closeButton = screen.getByRole('button', { name: /close/i });
       fireEvent.click(closeButton);
 
       expect(mockOnClose).toHaveBeenCalled();
     });
   });
 
-  describe("Accessibility", () => {
-    it("should have proper form labels", () => {
+  describe('Accessibility', () => {
+    it('should have proper form labels', () => {
       render(
         <PaymentInterface
           isOpen={true}
@@ -288,12 +288,12 @@ describe("PaymentInterface", () => {
       const phoneInput = screen.getByPlaceholderText(/Phone/i);
       const emailInput = screen.getByPlaceholderText(/Email/i);
 
-      expect(nameInput).toHaveAttribute("type", "text");
-      expect(phoneInput).toHaveAttribute("type", "tel");
-      expect(emailInput).toHaveAttribute("type", "email");
+      expect(nameInput).toHaveAttribute('type', 'text');
+      expect(phoneInput).toHaveAttribute('type', 'tel');
+      expect(emailInput).toHaveAttribute('type', 'email');
     });
 
-    it("should support keyboard navigation", () => {
+    it('should support keyboard navigation', () => {
       render(
         <PaymentInterface
           isOpen={true}
@@ -311,8 +311,8 @@ describe("PaymentInterface", () => {
     });
   });
 
-  describe("Error Handling", () => {
-    it("should handle invalid amount input", () => {
+  describe('Error Handling', () => {
+    it('should handle invalid amount input', () => {
       render(
         <PaymentInterface
           isOpen={true}
@@ -324,13 +324,13 @@ describe("PaymentInterface", () => {
       );
 
       const amountInput = screen.getByPlaceholderText(/Amount paid/i);
-      fireEvent.change(amountInput, { target: { value: "invalid" } });
+      fireEvent.change(amountInput, { target: { value: 'invalid' } });
 
       // Should handle invalid input gracefully
-      expect(amountInput).toHaveValue("invalid");
+      expect(amountInput).toHaveValue('invalid');
     });
 
-    it("should handle empty cart", () => {
+    it('should handle empty cart', () => {
       render(
         <PaymentInterface
           isOpen={true}
@@ -341,7 +341,7 @@ describe("PaymentInterface", () => {
         />
       );
 
-      expect(screen.getByText("No items in cart")).toBeInTheDocument();
+      expect(screen.getByText('No items in cart')).toBeInTheDocument();
     });
   });
 });

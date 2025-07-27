@@ -1,9 +1,9 @@
-"use client";
+'use client';
 
-import { useState } from "react";
-import { useCategoriesWithHierarchy } from "@/hooks/api/categories";
-import { useBrandOptions } from "@/hooks/api/brands";
-import { useSupplierOptions } from "@/hooks/api/suppliers";
+import { useState } from 'react';
+import { useCategoriesWithHierarchy } from '@/hooks/api/categories';
+import { useBrandOptions } from '@/hooks/api/brands';
+import { useSupplierOptions } from '@/hooks/api/suppliers';
 
 export function useFormDataQuery() {
   const [isSubmitting, setIsSubmitting] = useState(false);
@@ -56,7 +56,7 @@ export function useFormDataQuery() {
     categories,
     brands,
     suppliers,
-    categoryOptions: categories.map((cat) => ({
+    categoryOptions: categories.map(cat => ({
       value: cat.id.toString(),
       label: cat.name,
     })),

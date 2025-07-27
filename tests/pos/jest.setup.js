@@ -1,13 +1,13 @@
 // Jest setup file for POS tests
 
 // Mock Next.js router
-jest.mock("next/router", () => ({
+jest.mock('next/router', () => ({
   useRouter() {
     return {
-      route: "/",
-      pathname: "/",
+      route: '/',
+      pathname: '/',
       query: {},
-      asPath: "/",
+      asPath: '/',
       push: jest.fn(),
       pop: jest.fn(),
       reload: jest.fn(),
@@ -25,7 +25,7 @@ jest.mock("next/router", () => ({
 }));
 
 // Mock Next.js navigation
-jest.mock("next/navigation", () => ({
+jest.mock('next/navigation', () => ({
   useRouter() {
     return {
       push: jest.fn(),
@@ -40,31 +40,31 @@ jest.mock("next/navigation", () => ({
     return new URLSearchParams();
   },
   usePathname() {
-    return "/";
+    return '/';
   },
 }));
 
 // Mock NextAuth
-jest.mock("next-auth/react", () => ({
+jest.mock('next-auth/react', () => ({
   useSession() {
     return {
       data: {
         user: {
-          id: "test-user-id",
-          email: "test@example.com",
-          name: "Test User",
-          firstName: "Test",
-          lastName: "User",
-          role: "STAFF",
-          status: "APPROVED",
-          userStatus: "APPROVED",
+          id: 'test-user-id',
+          email: 'test@example.com',
+          name: 'Test User',
+          firstName: 'Test',
+          lastName: 'User',
+          role: 'STAFF',
+          status: 'APPROVED',
+          userStatus: 'APPROVED',
           isEmailVerified: true,
           isActive: true,
           createdAt: new Date().toISOString(),
         },
         expires: new Date(Date.now() + 24 * 60 * 60 * 1000).toISOString(),
       },
-      status: "authenticated",
+      status: 'authenticated',
     };
   },
   signIn: jest.fn(),
@@ -73,7 +73,7 @@ jest.mock("next-auth/react", () => ({
 }));
 
 // Mock TanStack Query
-jest.mock("@tanstack/react-query", () => ({
+jest.mock('@tanstack/react-query', () => ({
   useQuery: jest.fn(),
   useMutation: jest.fn(),
   QueryClient: jest.fn(),
@@ -81,7 +81,7 @@ jest.mock("@tanstack/react-query", () => ({
 }));
 
 // Mock sonner toast
-jest.mock("sonner", () => ({
+jest.mock('sonner', () => ({
   toast: {
     success: jest.fn(),
     error: jest.fn(),
@@ -91,7 +91,7 @@ jest.mock("sonner", () => ({
 }));
 
 // Mock logger
-jest.mock("@/lib/logger", () => ({
+jest.mock('@/lib/logger', () => ({
   logger: {
     info: jest.fn(),
     error: jest.fn(),
@@ -104,9 +104,9 @@ jest.mock("@/lib/logger", () => ({
 global.fetch = jest.fn();
 
 // Mock window.matchMedia
-Object.defineProperty(window, "matchMedia", {
+Object.defineProperty(window, 'matchMedia', {
   writable: true,
-  value: jest.fn().mockImplementation((query) => ({
+  value: jest.fn().mockImplementation(query => ({
     matches: false,
     media: query,
     onchange: null,
@@ -133,9 +133,9 @@ global.IntersectionObserver = jest.fn().mockImplementation(() => ({
 }));
 
 // Mock getComputedStyle
-Object.defineProperty(window, "getComputedStyle", {
+Object.defineProperty(window, 'getComputedStyle', {
   value: () => ({
-    getPropertyValue: () => "",
+    getPropertyValue: () => '',
   }),
 });
 
@@ -168,12 +168,12 @@ global.console = {
 };
 
 // Mock crypto for UUID generation
-Object.defineProperty(global, "crypto", {
+Object.defineProperty(global, 'crypto', {
   value: {
-    randomUUID: () => "test-uuid-123",
+    randomUUID: () => 'test-uuid-123',
   },
 });
 
 // Mock Date.now for consistent timestamps
-const mockDate = new Date("2024-01-01T00:00:00.000Z");
-jest.spyOn(global, "Date").mockImplementation(() => mockDate);
+const mockDate = new Date('2024-01-01T00:00:00.000Z');
+jest.spyOn(global, 'Date').mockImplementation(() => mockDate);
