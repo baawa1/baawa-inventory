@@ -142,7 +142,6 @@ export function POSInterface() {
           staffId: parseInt(session?.user?.id || '0'),
         });
 
-        setCurrentStep('receipt');
         clearCart();
 
         toast.success('Transaction saved offline. Will sync when online.');
@@ -154,7 +153,6 @@ export function POSInterface() {
       }
     } else {
       // Online - normal flow
-      setCurrentStep('receipt');
       clearCart();
     }
   };
@@ -226,15 +224,11 @@ export function POSInterface() {
               /* Payment Interface - Slides in over cart */
               <POSErrorBoundary componentName="SlidingPaymentInterface">
                 <SlidingPaymentInterface
-                  items={cart.map(item => ({
-                    ...item,
-                    id: String(item.id),
-                    total: item.price * item.quantity,
-                  }))}
+                  items={cart}
                   subtotal={subtotal}
                   discount={discount}
                   total={total}
-                  customerInfo={{ ...customerInfo, address: '' }}
+                  customerInfo={customerInfo}
                   staffName={session.user.name || 'Staff'}
                   onPaymentSuccess={sale => {
                     // Convert SlidingPaymentInterface.Sale to POSInterface.Sale
