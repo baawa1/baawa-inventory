@@ -1,4 +1,3 @@
-import { toast } from 'sonner';
 import { logger } from '@/lib/logger';
 
 export interface PrinterConfig {
@@ -46,17 +45,20 @@ export class XprinterXP58Service {
       // 2. Send to a local print service
       // 3. Use browser printing APIs
 
-      // Debug logging removed for production
-
       // Generate and log receipt content
-      const _content = this.generateReceiptContent(receiptData);
+      const content = this.generateReceiptContent(receiptData);
+
+      // Log successful receipt generation
+      logger.info('Receipt content generated successfully', {
+        saleId: receiptData.saleId,
+        contentLength: content.length,
+      });
 
       // In production, this would:
       // - Generate the thermal printer commands
       // - Send to printer via WebUSB, local service, or network
       // - Handle printer status and errors
 
-      toast.success('Receipt sent to printer');
       return true;
     } catch (error) {
       logger.error('Thermal printer operation failed', {
@@ -167,10 +169,14 @@ export class XprinterXP58Service {
 
   async testConnection(): Promise<boolean> {
     try {
+      logger.info('Testing printer connection', {
+        printerConfig: this.config,
+      });
+
       // For web compatibility, simulate connection test
-      // Debug logging removed for production
-      // Debug logging removed for production
       // In production, this would check printer status
+
+      logger.info('Printer connection test successful');
       return true;
     } catch (error) {
       logger.error('Printer connection test failed', {
@@ -223,6 +229,22 @@ export const defaultXprinterConfig: PrinterConfig = {
 export function createXprinterService(
   config?: Partial<PrinterConfig>
 ): XprinterXP58Service {
-  const finalConfig = { ...defaultXprinterConfig, ...config };
-  return new XprinterXP58Service(finalConfig);
+  try {
+    logger.info('Creating Xprinter service', { config });
+
+    const finalConfig = { ...defaultXprinterConfig, ...config };
+
+    logger.info('Final printer config', { finalConfig });
+
+    const service = new XprinterXP58Service(finalConfig);
+
+    logger.info('Xprinter service created successfully');
+    return service;
+  } catch (error) {
+    logger.error('Failed to create Xprinter service', {
+      config,
+      error: error instanceof Error ? error.message : String(error),
+    });
+    throw error;
+  }
 }

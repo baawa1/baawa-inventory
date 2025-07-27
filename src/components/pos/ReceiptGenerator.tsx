@@ -31,6 +31,7 @@ import { toast } from 'sonner';
 import { PrinterConfig } from './PrinterConfig';
 import { formatCurrency } from '@/lib/utils';
 import { logger } from '@/lib/logger';
+import { safeToISOString } from '@/lib/utils/date-utils';
 
 export interface CartItem {
   id: number;
@@ -229,7 +230,7 @@ export function ReceiptGenerator({ sale, onClose }: ReceiptGeneratorProps) {
         },
         body: JSON.stringify({
           saleId: sale.id,
-          timestamp: sale.timestamp.toISOString(),
+          timestamp: safeToISOString(sale.timestamp),
           staffName: sale.staffName,
           customerName: sale.customerName,
           customerPhone: sale.customerPhone,

@@ -37,6 +37,7 @@ import {
   ReceiptPrinter,
   type ReceiptData,
 } from '@/components/pos/ReceiptPrinter';
+import { safeParseTimestamp } from '@/lib/utils/date-utils';
 
 interface User {
   id: string;
@@ -303,7 +304,7 @@ export function TransactionList({ user: _ }: TransactionListProps) {
       customerName: transaction.customerName || 'Walk-in Customer',
       customerEmail: transaction.customerEmail || undefined,
       staffName: transaction.staffName,
-      timestamp: new Date(transaction.createdAt),
+      timestamp: safeParseTimestamp(transaction.createdAt as any),
     };
   };
 

@@ -19,6 +19,7 @@ import { toast } from 'sonner';
 import { PrinterConfig } from './PrinterConfig';
 import { formatCurrency } from '@/lib/utils';
 import { logger } from '@/lib/logger';
+import { safeToISOString } from '@/lib/utils/date-utils';
 
 export interface ReceiptData {
   id: string;
@@ -223,7 +224,7 @@ export function ReceiptPrinter({
     try {
       const requestData = {
         saleId: receiptData.id,
-        timestamp: receiptData.timestamp.toISOString(),
+        timestamp: safeToISOString(receiptData.timestamp),
         staffName: receiptData.staffName,
         customerName: receiptData.customerName,
         customerPhone: receiptData.customerPhone,
