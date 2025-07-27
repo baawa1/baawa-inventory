@@ -18,8 +18,6 @@ import {
 } from '@/components/ui/dialog';
 import {
   IconCash,
-  IconPercentage,
-  IconMinus,
   IconUser,
   IconReceipt,
   IconLoader,
@@ -28,6 +26,7 @@ import { toast } from 'sonner';
 import { formatCurrency } from '@/lib/utils';
 import { PAYMENT_METHODS_UI } from '@/lib/constants/ui';
 import { logger } from '@/lib/logger';
+import { DiscountStep } from './payment/DiscountStep';
 
 export interface CartItem {
   id: number;
@@ -65,10 +64,10 @@ interface PaymentInterfaceProps {
     email: string;
   };
   staffName: string;
-  onPaymentSuccess: (sale: Sale) => void;
+  onPaymentSuccess: (_sale: Sale) => void;
   onCancel: () => void;
-  onDiscountChange: (discount: number) => void;
-  onCustomerInfoChange: (info: {
+  onDiscountChange: (_discount: number) => void;
+  onCustomerInfoChange: (_info: {
     name: string;
     phone: string;
     email: string;
@@ -107,6 +106,13 @@ export function PaymentInterface({
     } else {
       onDiscountChange(Math.min(value, subtotal));
     }
+  };
+
+  const handleDiscountTypeChange = (newType: 'percentage' | 'fixed') => {
+    setDiscountType(newType);
+    // Reset discount value when switching types
+    setDiscountValue(0);
+    onDiscountChange(0);
   };
 
   // Process payment
@@ -251,57 +257,14 @@ export function PaymentInterface({
             </Card>
 
             {/* Discount */}
-            <Card>
-              <CardHeader>
-                <CardTitle className="flex items-center gap-2 text-lg">
-                  <IconPercentage className="h-5 w-5" />
-                  Discount
-                </CardTitle>
-              </CardHeader>
-              <CardContent className="space-y-4">
-                <div className="flex gap-2">
-                  <Button
-                    variant={
-                      discountType === 'percentage' ? 'default' : 'outline'
-                    }
-                    size="sm"
-                    onClick={() => setDiscountType('percentage')}
-                    disabled={processing}
-                  >
-                    <IconPercentage className="mr-1 h-4 w-4" />
-                    Percentage
-                  </Button>
-                  <Button
-                    variant={discountType === 'fixed' ? 'default' : 'outline'}
-                    size="sm"
-                    onClick={() => setDiscountType('fixed')}
-                    disabled={processing}
-                  >
-                    <IconMinus className="mr-1 h-4 w-4" />
-                    Fixed Amount
-                  </Button>
-                </div>
-
-                <div className="flex gap-2">
-                  <Input
-                    type="number"
-                    placeholder={discountType === 'percentage' ? '0' : '0.00'}
-                    value={discountValue || ''}
-                    onChange={e =>
-                      handleDiscountChange(parseFloat(e.target.value) || 0)
-                    }
-                    disabled={processing}
-                  />
-                  <div className="bg-muted flex items-center rounded px-3">
-                    {discountType === 'percentage' ? '%' : '₦'}
-                  </div>
-                </div>
-
-                <div className="text-muted-foreground text-sm">
-                  Current discount: {formatCurrency(discount)}
-                </div>
-              </CardContent>
-            </Card>
+            <DiscountStep
+              discountType={discountType}
+              setDiscountType={handleDiscountTypeChange}
+              discountValue={discountValue}
+              handleDiscountChange={handleDiscountChange}
+              subtotal={subtotal}
+              processing={processing}
+            />
           </div>
 
           {/* Right Column - Payment & Customer Info */}
