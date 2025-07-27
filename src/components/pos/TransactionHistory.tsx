@@ -420,7 +420,7 @@ export function TransactionHistory() {
   }
 
   return (
-    <div className="h-full space-y-6 py-6">
+    <div className="flex h-[calc(100vh-49px)] flex-col space-y-6 p-6">
       {/* Header with Actions */}
       <div className="flex items-center justify-between">
         <div>
@@ -472,15 +472,15 @@ export function TransactionHistory() {
         </CardContent>
       </Card>
 
-      {/* Main Content */}
-      <div className="grid h-[600px] grid-cols-1 gap-6 lg:grid-cols-2">
+      {/* Main Content - Constrained height with scrollable content */}
+      <div className="flex min-h-0 flex-1 gap-6">
         {/* Left Panel - Order List */}
-        <Card className="overflow-hidden">
+        <Card className="flex w-1/2 flex-col overflow-hidden">
           <CardHeader className="pb-3">
             <CardTitle className="text-lg">Orders by Date</CardTitle>
           </CardHeader>
-          <CardContent className="p-0">
-            <div className="h-[500px] overflow-y-auto">
+          <CardContent className="min-h-0 flex-1 p-0">
+            <div className="h-full overflow-y-auto">
               {Object.entries(groupedTransactions).map(
                 ([date, dateTransactions]) => (
                   <Collapsible
@@ -508,7 +508,7 @@ export function TransactionHistory() {
                       </div>
                     </CollapsibleTrigger>
                     <CollapsibleContent>
-                      <div className="space-y-2 p-4 pt-0">
+                      <div className="space-y-2 p-4 pt-2">
                         {dateTransactions.map(renderOrderItem)}
                       </div>
                     </CollapsibleContent>
@@ -526,11 +526,11 @@ export function TransactionHistory() {
         </Card>
 
         {/* Right Panel - Order Details */}
-        <Card>
+        <Card className="flex w-1/2 flex-col overflow-hidden">
           <CardHeader>
             <CardTitle className="text-lg">Order Details</CardTitle>
           </CardHeader>
-          <CardContent className="h-[500px] overflow-y-auto">
+          <CardContent className="min-h-0 flex-1 overflow-y-auto">
             {renderOrderDetails()}
           </CardContent>
         </Card>
