@@ -28,8 +28,8 @@ export interface CartItem {
 
 interface ShoppingCartProps {
   items: CartItem[];
-  onUpdateQuantity: (productId: number, quantity: number) => void;
-  onRemoveItem: (productId: number) => void;
+  onUpdateQuantity: (_productId: number, _quantity: number) => void;
+  onRemoveItem: (_productId: number) => void;
   onClearCart: () => void;
   disabled?: boolean;
 }
@@ -60,7 +60,7 @@ export function ShoppingCart({
   return (
     <div className="flex h-full flex-col">
       {/* Cart Header - Fixed */}
-      <div className="mb-4 flex flex-shrink-0 items-center justify-between">
+      <div className="mb-4 flex flex-shrink-0 items-center justify-between px-6 pt-6">
         <div className="text-muted-foreground text-sm">
           {totalItems} item{totalItems !== 1 ? 's' : ''} •{' '}
           {formatCurrency(totalValue)}
@@ -76,8 +76,8 @@ export function ShoppingCart({
         </Button>
       </div>
 
-      {/* Cart Items - Scrollable */}
-      <div className="max-h-80 min-h-0 flex-1 space-y-3 overflow-y-auto pt-2 pr-2 pb-2">
+      {/* Cart Items - Scrollable and fills available space */}
+      <div className="min-h-0 flex-1 space-y-3 overflow-y-auto px-6 pb-6">
         {items.map(item => (
           <Card key={item.id} className="border-l-primary border-l-4">
             <CardContent className="p-4">
@@ -188,7 +188,7 @@ export function ShoppingCart({
       </div>
 
       {/* Cart Summary - Fixed at bottom */}
-      <div className="mt-auto flex-shrink-0 space-y-2 border-t pt-4">
+      <div className="flex-shrink-0 space-y-2 border-t px-6 pt-4 pb-6">
         <div className="flex justify-between text-sm">
           <span>Total Items:</span>
           <span>{totalItems}</span>

@@ -19,15 +19,9 @@ import {
 import { ProductGrid } from './ProductGrid';
 import { ShoppingCart } from './ShoppingCart';
 import { SlidingPaymentInterface } from './SlidingPaymentInterface';
-import { ReceiptGenerator } from './ReceiptGenerator';
 import { OfflineStatusIndicator } from './OfflineStatusIndicator';
 import { POSErrorBoundary } from './POSErrorBoundary';
-import {
-  IconShoppingCart,
-  IconCash,
-  IconReceipt,
-  IconTrash,
-} from '@tabler/icons-react';
+import { IconShoppingCart, IconCash, IconTrash } from '@tabler/icons-react';
 import { useOffline } from '@/hooks/useOffline';
 import { toast } from 'sonner';
 import { formatCurrency } from '@/lib/utils';
@@ -65,7 +59,6 @@ export function POSInterface() {
   const [currentStep, setCurrentStep] = useState<
     'search' | 'payment' | 'receipt'
   >('search');
-  const [completedSale, setCompletedSale] = useState<Sale | null>(null);
   const [discount, setDiscount] = useState(0);
   const [customerInfo, setCustomerInfo] = useState({
     name: '',
@@ -129,7 +122,7 @@ export function POSInterface() {
     // If offline, queue the transaction
     if (!isOnline) {
       try {
-        const transactionId = await queueTransaction({
+        await queueTransaction({
           items: cart.map(item => ({
             productId: item.id,
             name: item.name,
@@ -149,14 +142,6 @@ export function POSInterface() {
           staffId: parseInt(session?.user?.id || '0'),
         });
 
-        // Create offline sale record
-        const offlineSale: Sale = {
-          ...sale,
-          id: transactionId,
-          timestamp: new Date(),
-        };
-
-        setCompletedSale(offlineSale);
         setCurrentStep('receipt');
         clearCart();
 
@@ -169,16 +154,9 @@ export function POSInterface() {
       }
     } else {
       // Online - normal flow
-      setCompletedSale(sale);
       setCurrentStep('receipt');
       clearCart();
     }
-  };
-
-  // Start new sale
-  const startNewSale = () => {
-    setCurrentStep('search');
-    setCompletedSale(null);
   };
 
   if (!session) {
@@ -189,7 +167,7 @@ export function POSInterface() {
     <POSErrorBoundary componentName="POSInterface">
       <div
         data-testid="pos-interface"
-        className="flex h-[calc(100vh-8rem)] flex-col"
+        className="flex h-[calc(100vh-49px)] flex-col overflow-hidden"
       >
         {/* Header with Clear All Button */}
         <div className="flex flex-shrink-0 items-center justify-between border-b p-4">
@@ -231,7 +209,7 @@ export function POSInterface() {
           </div>
         </div>
 
-        <div className="grid min-h-0 flex-1 grid-cols-1 gap-6 pt-6 pb-6 lg:grid-cols-3">
+        <div className="grid min-h-0 flex-1 grid-cols-1 gap-6 p-6 lg:grid-cols-3">
           {/* Left Column - Product Search and Grid */}
           <div className="flex min-h-0 flex-col lg:col-span-2">
             <POSErrorBoundary componentName="ProductGrid">
@@ -242,8 +220,8 @@ export function POSInterface() {
             </POSErrorBoundary>
           </div>
 
-          {/* Right Column - Cart and Actions - Fixed Height */}
-          <div className="flex h-full max-h-full flex-col">
+          {/* Right Column - Cart and Actions - Full Height */}
+          <div className="flex min-h-0 flex-col lg:h-full">
             {currentStep === 'payment' ? (
               /* Payment Interface - Slides in over cart */
               <POSErrorBoundary componentName="SlidingPaymentInterface">
@@ -280,7 +258,7 @@ export function POSInterface() {
             ) : (
               /* Normal Cart View */
               <>
-                {/* Shopping Cart - Fixed height with scrollable content */}
+                {/* Shopping Cart - Full height with scrollable content */}
                 <Card className="flex min-h-0 flex-1 flex-col">
                   <CardHeader className="flex-shrink-0">
                     <CardTitle className="flex items-center justify-between">
@@ -293,7 +271,7 @@ export function POSInterface() {
                       </span>
                     </CardTitle>
                   </CardHeader>
-                  <CardContent className="max-h flex min-h-0 flex-1 flex-col">
+                  <CardContent className="flex min-h-0 flex-1 flex-col p-0">
                     <POSErrorBoundary componentName="ShoppingCart">
                       <ShoppingCart
                         items={cart}
@@ -333,40 +311,20 @@ export function POSInterface() {
                   </Card>
 
                   {/* Action Buttons */}
-                  <div className="space-y-3">
-                    {currentStep === 'search' && (
-                      <Button
-                        className="w-full"
-                        size="lg"
-                        onClick={() => setCurrentStep('payment')}
-                        disabled={cart.length === 0}
-                      >
-                        <IconCash className="mr-2 h-5 w-5" />
-                        Proceed to Payment
-                      </Button>
-                    )}
-
-                    {currentStep === 'receipt' && (
-                      <Button
-                        className="w-full"
-                        size="lg"
-                        onClick={startNewSale}
-                      >
-                        <IconReceipt className="mr-2 h-5 w-5" />
-                        Start New Sale
-                      </Button>
-                    )}
+                  <div className="flex gap-3">
+                    <Button
+                      onClick={() => setCurrentStep('payment')}
+                      disabled={cart.length === 0}
+                      className="flex-1"
+                    >
+                      <IconCash className="mr-2 h-4 w-4" />
+                      Proceed to Payment
+                    </Button>
                   </div>
                 </div>
               </>
             )}
           </div>
-          {/* Receipt Display */}
-          {currentStep === 'receipt' && completedSale && (
-            <POSErrorBoundary componentName="ReceiptGenerator">
-              <ReceiptGenerator sale={completedSale} onClose={startNewSale} />
-            </POSErrorBoundary>
-          )}
         </div>
       </div>
     </POSErrorBoundary>
