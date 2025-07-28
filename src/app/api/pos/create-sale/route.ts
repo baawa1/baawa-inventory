@@ -183,8 +183,8 @@ export const POST = withAuth(async function (request: AuthenticatedRequest) {
           );
         }
       } catch (emailError) {
-        console.error('Error sending email receipt:', emailError);
         // Don't fail the transaction if email fails
+        console.error('Error sending email receipt:', emailError);
       }
     }
 

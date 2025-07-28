@@ -73,6 +73,7 @@ export function getAvailableTemplateTypes(): EmailTemplateType[] {
     'role_changed',
     'user_suspension',
     'user_reactivation',
+    'receipt_email',
   ];
 }
 
