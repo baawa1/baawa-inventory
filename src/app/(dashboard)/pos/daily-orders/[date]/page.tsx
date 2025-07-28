@@ -11,8 +11,9 @@ export const metadata = {
 export default async function DailyOrdersPage({
   params,
 }: {
-  params: { date: string };
+  params: Promise<{ date: string }>;
 }) {
+  const { date } = await params;
   const session = await auth();
 
   if (!session?.user) {
@@ -25,10 +26,10 @@ export default async function DailyOrdersPage({
 
   return (
     <DashboardPageLayout
-      title={`Daily Orders - ${new Date(params.date).toLocaleDateString()}`}
-      description={`View all orders for ${new Date(params.date).toLocaleDateString()}`}
+      title={`Daily Orders - ${new Date(date).toLocaleDateString()}`}
+      description={`View all orders for ${new Date(date).toLocaleDateString()}`}
     >
-      <DailyOrdersDetails user={session.user} date={params.date} />
+      <DailyOrdersDetails user={session.user} date={date} />
     </DashboardPageLayout>
   );
 }
