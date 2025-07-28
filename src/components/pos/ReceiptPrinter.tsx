@@ -13,6 +13,12 @@ import { IconPrinter, IconMail, IconLoader } from '@tabler/icons-react';
 import { toast } from 'sonner';
 import { formatCurrency } from '@/lib/utils';
 import { logger } from '@/lib/logger';
+import {
+  generateThermalReceipt,
+  createRawTextPrintWindow,
+  downloadThermalReceiptAsText,
+  ThermalReceiptData,
+} from '@/lib/utils/thermal-receipt';
 
 export interface ReceiptData {
   id: string;
@@ -200,27 +206,52 @@ export function ReceiptPrinter({
     }
   };
 
-  // Thermal printer receipt (placeholder for future implementation)
+  // Thermal printer receipt (58mm thermal printer format)
   const handleThermalPrint = async () => {
     setIsProcessing(true);
     try {
-      // Placeholder for future thermal printer implementation
-      toast.info(
-        'Thermal printer functionality has been removed. Use standard print for now.'
-      );
+      // Convert ReceiptData to ThermalReceiptData format
+      const thermalData: ThermalReceiptData = {
+        id: receiptData.id,
+        transactionNumber: receiptData.transactionNumber,
+        items: receiptData.items.map(item => ({
+          name: item.name,
+          sku: item.sku,
+          price: item.price,
+          quantity: item.quantity,
+        })),
+        subtotal: receiptData.subtotal,
+        discount: receiptData.discount,
+        total: receiptData.total,
+        paymentMethod: receiptData.paymentMethod,
+        customerName: receiptData.customerName,
+        customerPhone: receiptData.customerPhone,
+        staffName: receiptData.staffName,
+        timestamp: receiptData.timestamp,
+        notes: receiptData.notes,
+      };
 
-      // For now, just show a message that thermal printing is not available
-      setTimeout(() => {
+      // Generate plain text receipt for thermal printer
+      const thermalReceipt = generateThermalReceipt(thermalData);
+
+      // Try the raw text approach first (most likely to work)
+      try {
+        createRawTextPrintWindow(thermalReceipt);
+        toast.success('Thermal receipt sent to printer');
+      } catch (_error) {
+        // Fallback: Download as text file
+        const filename = `receipt-${receiptData.transactionNumber || receiptData.id}`;
+        downloadThermalReceiptAsText(thermalReceipt, filename);
         toast.success(
-          'Thermal printer functionality removed - use standard print'
+          'Receipt downloaded as text file. Open it and print to your thermal printer.'
         );
-      }, 1000);
+      }
     } catch (error) {
       logger.error('Error with thermal print', {
         transactionId: receiptData.id,
         error: error instanceof Error ? error.message : String(error),
       });
-      toast.error('Thermal printer functionality removed');
+      toast.error('Failed to print thermal receipt');
     } finally {
       setIsProcessing(false);
     }
