@@ -124,7 +124,9 @@ export const config = {
      * - manifest.json (PWA manifest file)
      * - sw.js (service worker file)
      * - browserconfig.xml (IE/Edge config file)
+     * - logo (logo images)
+     * - icon (icon files)
      */
-    '/((?!api|_next/static|_next/image|favicon.ico|manifest.json|sw.js|browserconfig.xml).*)',
+    '/((?!api|_next/static|_next/image|favicon.ico|manifest.json|sw.js|browserconfig.xml|logo|icon).*)',
   ],
 };

@@ -7,7 +7,6 @@ import {
   IconCash,
   IconDashboard,
   IconHelp,
-  IconInnerShadowTop,
   IconSettings,
   IconShoppingCart,
   IconUsers,
@@ -19,6 +18,7 @@ import { NavPOS } from '@/components/nav-pos';
 import { NavFinance } from '@/components/nav-finance';
 import { NavSecondary } from '@/components/nav-secondary';
 import { NavUser } from '@/components/nav-user';
+import { Logo } from '@/components/ui/logo';
 import {
   Sidebar,
   SidebarContent,
@@ -101,7 +101,7 @@ export function AppSidebar({ ...props }: React.ComponentProps<typeof Sidebar>) {
               className="data-[slot=sidebar-menu-button]:!p-1.5"
             >
               <a href="#">
-                <IconInnerShadowTop className="!size-5" />
+                <Logo variant="brand" size="sm" />
                 <span className="text-base font-semibold">BaaWA Inventory</span>
               </a>
             </SidebarMenuButton>

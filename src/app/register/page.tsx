@@ -2,6 +2,7 @@ import Link from 'next/link';
 import { redirect } from 'next/navigation';
 import { auth } from '../../../auth';
 import { RegisterForm } from '@/components/auth/RegisterForm';
+import { Logo } from '@/components/ui/logo';
 
 export default async function RegisterPage() {
   const session = await auth();
@@ -14,6 +15,7 @@ export default async function RegisterPage() {
     <div className="flex min-h-screen items-center justify-center bg-gray-50 px-4 py-12 sm:px-6 lg:px-8 dark:bg-gray-900">
       <div className="w-full max-w-md space-y-6">
         <div className="text-center">
+          <Logo variant="brand" showText centered />
           <h1 className="text-3xl font-bold text-gray-900 dark:text-gray-100">
             BaaWA Inventory POS
           </h1>

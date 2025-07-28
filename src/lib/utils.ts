@@ -7,6 +7,26 @@ export function cn(...inputs: ClassValue[]) {
 }
 
 /**
+ * Get the current app base URL
+ * Uses NEXT_PUBLIC_APP_URL environment variable with fallback to localhost
+ * @returns The current app base URL
+ */
+export function getAppBaseUrl(): string {
+  // Use environment variable if available
+  if (process.env.NEXT_PUBLIC_APP_URL) {
+    return process.env.NEXT_PUBLIC_APP_URL;
+  }
+
+  // Fallback for development
+  if (process.env.NODE_ENV === 'development') {
+    return 'http://localhost:3000';
+  }
+
+  // Production fallback
+  return 'https://pos.baawa.ng';
+}
+
+/**
  * Format a number as Nigerian Naira currency with proper comma separators
  * @param amount - The amount to format
  * @param showDecimals - Whether to show decimal places (default: true)
