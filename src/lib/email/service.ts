@@ -127,14 +127,20 @@ export class EmailService {
  */
 export function createEmailService(): EmailService {
   const fromEmail =
-    process.env.RESEND_FROM_EMAIL || process.env.FROM_EMAIL || 'hello@baawa.ng';
+    process.env.RESEND_FROM_EMAIL ||
+    process.env.FROM_EMAIL ||
+    process.env.SUPPORT_EMAIL ||
+    'support@baawa.ng';
 
   const fromName =
     process.env.RESEND_FROM_NAME ||
     process.env.FROM_NAME ||
     'Baawa Accessories';
 
-  const replyToEmail = process.env.REPLY_TO_EMAIL || 'support@baawa.ng';
+  const replyToEmail =
+    process.env.REPLY_TO_EMAIL ||
+    process.env.SUPPORT_EMAIL ||
+    'support@baawa.ng';
 
   const config = EmailProviderFactory.detectProviderConfig(
     fromEmail,
