@@ -1646,6 +1646,16 @@ function ReceiptStep({ sale }: { sale: Sale | null }) {
           discount: sale.discount,
           total: sale.total,
           paymentMethod: sale.paymentMethod,
+          printerConfig: {
+            type: 'usb',
+            interface: 'USB001',
+            options: {
+              width: 32,
+              characterSet: 'SLOVENIA',
+              removeSpecialCharacters: false,
+              lineCharacter: '-',
+            },
+          },
         }),
       });
 

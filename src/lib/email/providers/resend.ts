@@ -1,6 +1,7 @@
 import { Resend } from 'resend';
 import { EmailProvider, EmailOptions } from '../types';
 import { logger } from '@/lib/logger';
+import { getLogoUrlForHeaders } from '../utils/logo-utils';
 
 /**
  * Resend Email Provider
@@ -30,6 +31,8 @@ export class ResendProvider implements EmailProvider {
 
   async sendEmailWithId(options: EmailOptions): Promise<string | undefined> {
     try {
+      const logoUrl = getLogoUrlForHeaders('brand-color');
+
       const emailData: any = {
         from: `${this.fromName} <${this.fromEmail}>`,
         to: Array.isArray(options.to) ? options.to : [options.to],
@@ -62,6 +65,19 @@ export class ResendProvider implements EmailProvider {
           contentType: attachment.type,
         }));
       }
+
+      // Add reply-to header for better email client integration
+      // Use support@baawa.ng as reply-to for better engagement
+      emailData.replyTo = 'support@baawa.ng';
+
+      // Add headers for better email client compatibility and avatar display
+      emailData.headers = {
+        'X-Entity-Ref-ID': 'baawa-accessories',
+        'X-Email-Type': 'transactional',
+        'X-Brand': 'Baawa Accessories',
+        'X-Logo-URL': logoUrl,
+        'X-Sender-Avatar': logoUrl,
+      };
 
       const result = await this.resend.emails.send(emailData);
 

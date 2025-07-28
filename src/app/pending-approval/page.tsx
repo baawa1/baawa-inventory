@@ -11,6 +11,7 @@ import {
   CardTitle,
 } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
+import { Logo } from '@/components/ui/logo';
 import { Clock, RefreshCw } from 'lucide-react';
 
 export default function PendingApprovalPage() {
@@ -109,6 +110,7 @@ export default function PendingApprovalPage() {
   return (
     <div className="flex min-h-screen items-center justify-center px-4 py-12 sm:px-6 lg:px-8">
       <div className="w-full max-w-md space-y-8">
+        <Logo variant="brand" showText centered className="mb-6" />
         <Card>
           <CardHeader className="text-center">
             <div className="mb-4 flex justify-center">{getStatusIcon()}</div>

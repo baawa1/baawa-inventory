@@ -8,6 +8,7 @@ import {
   CardTitle,
 } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
+import { Logo } from '@/components/ui/logo';
 import {
   ShoppingCart,
   Package,
@@ -29,9 +30,7 @@ export default function Home() {
       <header className="sticky top-0 z-50 border-b bg-white/80 backdrop-blur-sm dark:bg-slate-900/80">
         <div className="container mx-auto flex items-center justify-between px-4 py-4">
           <div className="flex items-center space-x-2">
-            <div className="flex h-8 w-8 items-center justify-center rounded-lg bg-blue-600">
-              <ShoppingCart className="h-5 w-5 text-white" />
-            </div>
+            <Logo variant="brand" size="md" />
             <span className="text-xl font-bold text-slate-900 dark:text-white">
               BaaWA Accessories
             </span>
@@ -50,6 +49,9 @@ export default function Home() {
       {/* Hero Section */}
       <section className="container mx-auto px-4 py-20 text-center">
         <div className="mx-auto max-w-4xl">
+          <div className="mb-6 flex justify-center">
+            <Logo variant="brand" size="xl" showText />
+          </div>
           <Badge variant="secondary" className="mb-4">
             <Zap className="mr-1 h-3 w-3" />
             Internal Business System

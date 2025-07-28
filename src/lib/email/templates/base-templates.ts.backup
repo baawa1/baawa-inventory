@@ -4,15 +4,11 @@ import {
   UserReactivationData,
   ReceiptEmailData,
 } from '../types';
-import { getFullLogoUrl, getLogoUrl } from '../utils/logo-utils';
 
 /**
  * Base template wrapper with consistent styling
  */
 const createBaseTemplate = (content: string, title: string): string => {
-  const logoUrl = getFullLogoUrl('brand-color');
-  const iconUrl = getLogoUrl('brand-color');
-
   return `
 <!DOCTYPE html>
 <html lang="en">
@@ -20,10 +16,6 @@ const createBaseTemplate = (content: string, title: string): string => {
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>${title}</title>
-    <!-- Email client avatar metadata -->
-    <meta property="og:image" content="${iconUrl}">
-    <meta name="twitter:image" content="${iconUrl}">
-    <link rel="icon" type="image/png" href="${iconUrl}">
     <style>
         body {
             font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif;
@@ -44,11 +36,22 @@ const createBaseTemplate = (content: string, title: string): string => {
             text-align: center;
             margin-bottom: 40px;
         }
-        .logo {
+        .logo-container {
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            margin-bottom: 20px;
+        }
+        .logo-svg {
+            width: 60px;
+            height: 60px;
+            margin-right: 15px;
+            object-fit: contain;
+        }
+        .logo-text {
             font-size: 24px;
             font-weight: bold;
-            color: #2563eb;
-            margin-bottom: 10px;
+            color: #ff3333;
         }
         .title {
             font-size: 28px;
@@ -63,16 +66,31 @@ const createBaseTemplate = (content: string, title: string): string => {
         }
         .button {
             display: inline-block;
-            background-color: #2563eb;
+            background-color: #ff3333;
             color: white;
             padding: 12px 24px;
             text-decoration: none;
             border-radius: 6px;
             font-weight: 600;
             margin: 20px 0;
+            text-align: center;
         }
         .button:hover {
-            background-color: #1d4ed8;
+            background-color: #e60000;
+        }
+        .button-secondary {
+            display: inline-block;
+            background-color: #0066ff;
+            color: white;
+            padding: 12px 24px;
+            text-decoration: none;
+            border-radius: 6px;
+            font-weight: 600;
+            margin: 20px 0;
+            text-align: center;
+        }
+        .button-secondary:hover {
+            background-color: #0052cc;
         }
         .footer {
             margin-top: 40px;
@@ -97,19 +115,43 @@ const createBaseTemplate = (content: string, title: string): string => {
             color: #991b1b;
         }
         .info {
-            background-color: #eff6ff;
-            border: 1px solid #bfdbfe;
+            background-color: #EEF2FF;
+            border: 1px solid #C7D2FE;
             border-radius: 6px;
             padding: 16px;
             margin: 20px 0;
-            color: #1e40af;
+            color: #3730A3;
+        }
+        .brand-accent {
+            background-color: #F0F9FF;
+            border: 1px solid #BAE6FD;
+            border-radius: 6px;
+            padding: 16px;
+            margin: 20px 0;
+            color: #0C4A6E;
+        }
+        .brand-primary {
+            color: #ff3333;
+        }
+        .brand-secondary {
+            color: #0066ff;
+        }
+        .brand-yellow {
+            color: #ffff00;
+        }
+        .button-container {
+            text-align: center;
+            margin: 30px 0;
         }
     </style>
 </head>
 <body>
     <div class="container">
         <div class="header">
-            <img src="${logoUrl}" alt="BaaWA Accessories Logo" style="max-width: 200px; height: auto; margin-bottom: 20px;">
+            <div class="logo-container">
+                <img src="https://inventory.baawa.com/logo/baawa-logo-brand-color.png" alt="Baawa Accessories Logo" class="logo-svg" onerror="this.outerHTML='<svg class=\'logo-svg\' viewBox=\'0 0 60 60\' xmlns=\'http://www.w3.org/2000/svg\'><rect width=\'60\' height=\'60\' rx=\'8\' fill=\'#ff3333\'/><text x=\'30\' y=\'38\' font-family=\'Arial, sans-serif\' font-size=\'24\' font-weight=\'bold\' text-anchor=\'middle\' fill=\'white\'>BA</text></svg>';">
+                <div class="logo-text">Baawa Accessories</div>
+            </div>
         </div>
         ${content}
         <div class="footer">
@@ -137,7 +179,7 @@ export const welcomeTemplate = (data: {
           data.companyName ? `and ${data.companyName}` : ''
         } on board.</p>
         
-        <div class="info">
+        <div class="brand-accent">
             <p><strong>What's next?</strong></p>
             <ul>
                 <li>Verify your email address</li>
@@ -147,6 +189,12 @@ export const welcomeTemplate = (data: {
         </div>
         
         <p>Your account is currently pending approval. Once approved by an administrator, you'll receive another email with access instructions.</p>
+        
+        <div class="button-container">
+            <a href="https://inventory.baawa.com/login" class="button">Access Dashboard</a>
+            <a href="mailto:support@baawa.com" class="button-secondary">Contact Support</a>
+        </div>
+        
         <p>If you have any questions while waiting, feel free to reach out to our support team.</p>
         <p>Best regards,<br>The Baawa Team</p>
     </div>
@@ -177,7 +225,7 @@ export const emailVerificationTemplate = (data: {
             <a href="${data.verificationLink}" class="button">Verify Email Address</a>
         </div>
         
-        <div class="warning">
+        <div class="brand-accent">
             <p><strong>Important:</strong> This verification link will expire in <span class="highlight">${data.expiresInHours} hours</span>.</p>
         </div>
         
@@ -248,7 +296,7 @@ export const userApprovalTemplate = (data: {
         <p>Hi ${data.firstName},</p>
         <p>Great news! Your Baawa Accessories account has been approved by ${data.adminName}.</p>
         
-        <div class="info">
+        <div class="brand-accent">
             <p><strong>Account Details:</strong></p>
             <ul>
                 <li>Role: <span class="highlight">${data.role}</span></li>
@@ -292,7 +340,7 @@ export const adminNewUserNotificationTemplate = (data: {
         <p>Hello Admin,</p>
         <p>A new user has registered for Baawa Accessories and is awaiting approval.</p>
         
-        <div class="info">
+        <div class="brand-accent">
             <p><strong>User Details:</strong></p>
             <ul>
                 <li>Name: <span class="highlight">${data.userFirstName} ${
@@ -350,7 +398,7 @@ export const passwordResetConfirmationTemplate = (data: {
         <p>Hi ${data.firstName},</p>
         <p>Your password has been successfully reset for your Baawa Accessories account.</p>
         
-        <div class="info">
+        <div class="brand-accent">
             <p>If you did not make this change, please contact our support team immediately.</p>
         </div>
         
@@ -400,7 +448,7 @@ export const userRejectionTemplate = (data: {
         
         <p>If you believe this decision was made in error or if you have additional information to support your application, please don't hesitate to contact our support team.</p>
         
-        <div class="info">
+        <div class="brand-accent">
             <p><strong>Contact Support:</strong></p>
             <p>Email: <a href="mailto:${data.supportEmail}">${data.supportEmail}</a></p>
         </div>
@@ -433,7 +481,7 @@ export const roleChangeTemplate = (data: {
         <p>Hi ${data.firstName},</p>
         <p>Your role in the Baawa Accessories system has been updated by ${data.changedBy}.</p>
         
-        <div class="info">
+        <div class="brand-accent">
             <p><strong>Role Change Details:</strong></p>
             <ul>
                 <li>Previous Role: <span class="highlight">${data.oldRole}</span></li>
@@ -497,8 +545,8 @@ export const adminDigestTemplate = (data: {
         <p>Hi ${data.adminName},</p>
         <p>Here's your ${data.digestPeriod} summary of user registration activity for Baawa Accessories:</p>
         
-        <div class="info">
-            <h3 style="color: #2563eb; margin-bottom: 16px;">Summary</h3>
+        <div class="brand-accent">
+            <h3 style="color: #ff3333; margin-bottom: 16px;">Summary</h3>
             <ul>
                 <li><strong>New Registrations:</strong> ${data.newUsersCount} users</li>
                 <li><strong>Pending Approvals:</strong> ${data.pendingUsersCount} users</li>
@@ -510,7 +558,7 @@ export const adminDigestTemplate = (data: {
           data.newUsers.length > 0
             ? `
         <div style="margin: 24px 0;">
-            <h3 style="color: #2563eb; margin-bottom: 16px;">New Registrations</h3>
+            <h3 style="color: #ff3333; margin-bottom: 16px;">New Registrations</h3>
             <table style="width: 100%; border-collapse: collapse; margin: 16px 0;">
                 <thead>
                     <tr style="background-color: #f9fafb;">
@@ -569,13 +617,16 @@ export const userSuspensionTemplate = (
   data: UserSuspensionData
 ): EmailTemplate => {
   const content = `
-    <h1 class="title">Account Suspended</h1>
-    <div class="content">
+    <div class="container">
+        <div class="header">
+            <h1>Account Suspended</h1>
+        </div>
+        
         <p>Dear ${data.firstName} ${data.lastName},</p>
         
         <p>We regret to inform you that your Baawa Accessories account has been temporarily suspended.</p>
         
-        <div class="warning">
+        <div class="warning-box">
             <h3>Suspension Reason:</h3>
             <p>${data.reason}</p>
         </div>
@@ -606,13 +657,16 @@ export const userReactivationTemplate = (
   data: UserReactivationData
 ): EmailTemplate => {
   const content = `
-    <h1 class="title">Account Reactivated</h1>
-    <div class="content">
+    <div class="container">
+        <div class="header">
+            <h1>Account Reactivated</h1>
+        </div>
+        
         <p>Dear ${data.firstName} ${data.lastName},</p>
         
         <p>Good news! Your Baawa Accessories account has been reactivated and you can now access all services again.</p>
         
-        <div class="info">
+        <div class="success-box">
             <h3>🎉 Welcome Back!</h3>
             <p>Your account suspension has been lifted and you have full access to your account.</p>
         </div>
@@ -670,7 +724,7 @@ export const createReceiptEmailTemplate = (
 
   const content = `
     <div class="content">
-        <h2 style="color: #2563eb; margin-bottom: 20px;">Thank you for your purchase!</h2>
+        <h2 style="color: #ff3333; margin-bottom: 20px;">Thank you for your purchase!</h2>
         
         <p>Dear ${data.customerName},</p>
         
@@ -701,11 +755,11 @@ export const createReceiptEmailTemplate = (
             </table>
         </div>
         
-        <div style="border-top: 2px solid #2563eb; padding-top: 20px; margin-top: 30px;">
+        <div style="border-top: 2px solid #ff3333; padding-top: 20px; margin-top: 30px;">
             <div style="text-align: right; font-size: 16px;">
                 <p><strong>Subtotal: ₦${data.subtotal.toLocaleString()}</strong></p>
                 ${data.discount > 0 ? `<p style="color: #dc2626;"><strong>Discount: -₦${data.discount.toLocaleString()}</strong></p>` : ''}
-                <p style="font-size: 18px; color: #2563eb;"><strong>Total: ₦${data.total.toLocaleString()}</strong></p>
+                <p style="font-size: 18px; color: #ff3333;"><strong>Total: ₦${data.total.toLocaleString()}</strong></p>
             </div>
         </div>
         
@@ -732,113 +786,4 @@ export const createReceiptEmailTemplate = (
         '\n'
       )}\n\nSubtotal: ₦${data.subtotal.toLocaleString()}\n${data.discount > 0 ? `Discount: -₦${data.discount.toLocaleString()}\n` : ''}Total: ₦${data.total.toLocaleString()}\n\nThank you for choosing Baawa Accessories!\n\nBest regards,\nBaawa Accessories Team`,
   };
-};
-
-/**
- * Creates a more robust email template that handles email clients that strip src attributes
- * Uses table-based layout and inline styles for better email client compatibility
- */
-export const createRobustEmailTemplate = (
-  content: string,
-  title: string,
-  logoVariant: 'brand-color' | 'black' | 'white' = 'brand-color'
-): string => {
-  const logoUrl = getFullLogoUrl(logoVariant);
-
-  return `
-    <!DOCTYPE html>
-    <html>
-    <head>
-        <meta charset="utf-8">
-        <meta name="viewport" content="width=device-width, initial-scale=1.0">
-        <title>${title}</title>
-        <style>
-            body {
-                font-family: Arial, sans-serif;
-                line-height: 1.6;
-                color: #333;
-                margin: 0;
-                padding: 0;
-                background-color: #f4f4f4;
-            }
-            .email-container {
-                max-width: 600px;
-                margin: 0 auto;
-                background-color: #ffffff;
-                border-radius: 8px;
-                overflow: hidden;
-                box-shadow: 0 2px 10px rgba(0,0,0,0.1);
-            }
-            .header {
-                background: linear-gradient(135deg, #ff3333 0%, #cc0000 100%);
-                padding: 30px 20px;
-                text-align: center;
-            }
-            .content {
-                padding: 40px 30px;
-            }
-            .footer {
-                background-color: #f8f9fa;
-                padding: 20px 30px;
-                text-align: center;
-                border-top: 1px solid #e9ecef;
-            }
-            .footer-text {
-                color: #6c757d;
-                font-size: 14px;
-                margin: 0;
-            }
-            .logo-fallback {
-                font-size: 24px;
-                font-weight: bold;
-                color: #ffffff;
-                text-decoration: none;
-            }
-            @media only screen and (max-width: 600px) {
-                .email-container {
-                    margin: 0;
-                    border-radius: 0;
-                }
-                .content {
-                    padding: 20px 15px;
-                }
-                .header {
-                    padding: 20px 15px;
-                }
-            }
-        </style>
-    </head>
-    <body>
-        <div class="email-container">
-            <div class="header">
-                <table cellpadding="0" cellspacing="0" border="0" style="width: 100%;">
-                    <tr>
-                        <td style="text-align: center;">
-                            <table cellpadding="0" cellspacing="0" border="0" style="margin: 0 auto;">
-                                <tr>
-                                    <td style="vertical-align: middle; padding-right: 15px;">
-                                        <img src="${logoUrl}" alt="BaaWA Accessories Logo" style="width: 60px; height: 60px; object-fit: contain; display: block; border: 0;">
-                                    </td>
-                                    <td style="vertical-align: middle;">
-                                        <div style="font-size: 24px; font-weight: bold; color: #ffffff;">BaaWA Accessories</div>
-                                    </td>
-                                </tr>
-                            </table>
-                        </td>
-                    </tr>
-                </table>
-            </div>
-            <div class="content">
-                ${content}
-            </div>
-            <div class="footer">
-                <p class="footer-text">
-                    © ${new Date().getFullYear()} BaaWA Accessories. All rights reserved.<br>
-                    If you have any questions, please contact us at support@baawa.ng
-                </p>
-            </div>
-        </div>
-    </body>
-    </html>
-  `;
 };

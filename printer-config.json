@@ -1,0 +1,12 @@
+{
+  "type": "usb",
+  "interface": "USB001",
+  "options": {
+    "width": 32,
+    "characterSet": "SLOVENIA",
+    "removeSpecialCharacters": false,
+    "lineCharacter": "-",
+    "ip": "192.168.1.100",
+    "port": 9100
+  }
+}
