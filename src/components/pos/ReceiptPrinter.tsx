@@ -94,16 +94,18 @@ export function ReceiptPrinter({
     ] || receiptData.paymentMethod;
 
   // Format date and time
-  const formatDate = (date: Date) => {
-    return date.toLocaleDateString('en-NG', {
+  const formatDate = (date: Date | string) => {
+    const d = typeof date === 'string' ? new Date(date) : date;
+    return d.toLocaleDateString('en-NG', {
       year: 'numeric',
       month: 'long',
       day: 'numeric',
     });
   };
 
-  const formatTime = (date: Date) => {
-    return date.toLocaleTimeString('en-NG', {
+  const formatTime = (date: Date | string) => {
+    const d = typeof date === 'string' ? new Date(date) : date;
+    return d.toLocaleTimeString('en-NG', {
       hour: '2-digit',
       minute: '2-digit',
     });

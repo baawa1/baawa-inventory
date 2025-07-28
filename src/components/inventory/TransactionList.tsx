@@ -37,7 +37,6 @@ import {
   ReceiptPrinter,
   type ReceiptData,
 } from '@/components/pos/ReceiptPrinter';
-import { safeParseTimestamp } from '@/lib/utils/date-utils';
 
 interface User {
   id: string;
@@ -287,24 +286,27 @@ export function TransactionList({ user: _ }: TransactionListProps) {
   // Convert transaction to receipt data format
   const convertToReceiptData = (transaction: Transaction): ReceiptData => {
     return {
-      id: transaction.transactionNumber,
+      id: transaction.id.toString(),
       transactionNumber: transaction.transactionNumber,
+      timestamp: transaction.createdAt
+        ? new Date(transaction.createdAt)
+        : new Date(),
+      staffName: transaction.staffName || '',
+      customerName: transaction.customerName || '',
+      customerPhone: (transaction as any).customerPhone || '',
+      customerEmail: transaction.customerEmail || '',
       items: transaction.items.map(item => ({
         id: item.productId,
         name: item.name,
         sku: item.sku,
         price: item.price,
         quantity: item.quantity,
-        category: 'N/A',
+        category: '',
       })),
       subtotal: transaction.subtotal,
       discount: transaction.discount,
       total: transaction.total,
       paymentMethod: transaction.paymentMethod,
-      customerName: transaction.customerName || 'Walk-in Customer',
-      customerEmail: transaction.customerEmail || undefined,
-      staffName: transaction.staffName,
-      timestamp: safeParseTimestamp(transaction.createdAt as any),
     };
   };
 
