@@ -80,7 +80,7 @@
 #### **Features to Add:**
 
 - Custom receipt templates
-- Print functionality (thermal printers)
+- Print functionality (standard printers)
 - Email receipt delivery
 - Receipt history and reprinting
 - Logo and business info customization
