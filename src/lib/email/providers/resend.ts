@@ -33,8 +33,35 @@ export class ResendProvider implements EmailProvider {
     try {
       const logoUrl = getLogoUrlForHeaders('brand-color');
 
+      // Get email addresses from environment variables
+      const supportEmail = process.env.SUPPORT_EMAIL || 'support@baawa.ng';
+      const adminEmail = process.env.ADMIN_EMAIL || 'admin@baawa.ng';
+      const salesEmail = process.env.SALES_EMAIL || 'sales@baawa.ng';
+
+      // Determine the appropriate sender email based on email type
+      let senderEmail = this.fromEmail;
+      let replyToEmail = supportEmail;
+
+      // Check if this is an admin notification or system email
+      if (
+        options.subject?.toLowerCase().includes('admin') ||
+        options.subject?.toLowerCase().includes('system') ||
+        options.subject?.toLowerCase().includes('digest')
+      ) {
+        senderEmail = adminEmail;
+      }
+
+      // Check if this is a sales/receipt email
+      if (
+        options.subject?.toLowerCase().includes('receipt') ||
+        options.subject?.toLowerCase().includes('purchase') ||
+        options.subject?.toLowerCase().includes('order')
+      ) {
+        senderEmail = salesEmail;
+      }
+
       const emailData: any = {
-        from: `${this.fromName} <${this.fromEmail}>`,
+        from: `${this.fromName} <${senderEmail}>`,
         to: Array.isArray(options.to) ? options.to : [options.to],
         subject: options.subject,
         html: options.html,
@@ -67,8 +94,7 @@ export class ResendProvider implements EmailProvider {
       }
 
       // Add reply-to header for better email client integration
-      // Use support@baawa.ng as reply-to for better engagement
-      emailData.replyTo = 'support@baawa.ng';
+      emailData.replyTo = replyToEmail;
 
       // Add headers for better email client compatibility and avatar display
       emailData.headers = {
@@ -77,6 +103,12 @@ export class ResendProvider implements EmailProvider {
         'X-Brand': 'Baawa Accessories',
         'X-Logo-URL': logoUrl,
         'X-Sender-Avatar': logoUrl,
+        'X-Sender-Type':
+          senderEmail === adminEmail
+            ? 'admin'
+            : senderEmail === salesEmail
+              ? 'sales'
+              : 'support',
       };
 
       const result = await this.resend.emails.send(emailData);
