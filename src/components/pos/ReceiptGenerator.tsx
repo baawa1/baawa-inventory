@@ -1,10 +1,8 @@
 'use client';
 
-import React, { useRef, useState } from 'react';
+import React, { useRef } from 'react';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent } from '@/components/ui/card';
-import { Separator } from '@/components/ui/separator';
-import { Badge } from '@/components/ui/badge';
 import {
   Dialog,
   DialogContent,
@@ -12,26 +10,17 @@ import {
   DialogHeader,
   DialogTitle,
 } from '@/components/ui/dialog';
+import { Separator } from '@/components/ui/separator';
 import {
   IconPrinter,
   IconDownload,
   IconMail,
   IconCheck,
   IconReceipt,
-  IconCalendar,
-  IconUser,
-  IconPhone,
-  IconCash,
-  IconCreditCard,
-  IconBuilding,
-  IconWallet,
-  IconSettings,
 } from '@tabler/icons-react';
 import { toast } from 'sonner';
-import { PrinterConfig } from './PrinterConfig';
 import { formatCurrency } from '@/lib/utils';
 import { logger } from '@/lib/logger';
-import { safeToISOString } from '@/lib/utils/date-utils';
 
 export interface CartItem {
   id: number;
@@ -63,42 +52,21 @@ interface ReceiptGeneratorProps {
   onClose: () => void;
 }
 
-const PAYMENT_METHOD_ICONS = {
-  cash: IconCash,
-  pos: IconCreditCard,
-  bank_transfer: IconBuilding,
-  mobile_money: IconWallet,
-};
-
 const PAYMENT_METHOD_LABELS = {
   cash: 'Cash',
   pos: 'POS Machine',
+  card: 'Card',
   bank_transfer: 'Bank Transfer',
   mobile_money: 'Mobile Money',
 };
 
 export function ReceiptGenerator({ sale, onClose }: ReceiptGeneratorProps) {
   const receiptRef = useRef<HTMLDivElement>(null);
-  const [showPrinterConfig, setShowPrinterConfig] = useState(false);
-  const [printerConfig, setPrinterConfig] = useState({
-    type: 'usb',
-    interface: 'USB001',
-    options: {
-      width: 32,
-      characterSet: 'SLOVENIA',
-      removeSpecialCharacters: false,
-      lineCharacter: '-',
-    },
-  });
 
-  const PaymentIcon =
-    PAYMENT_METHOD_ICONS[
-      sale.paymentMethod as keyof typeof PAYMENT_METHOD_ICONS
-    ] || IconCash;
   const paymentLabel =
     PAYMENT_METHOD_LABELS[
       sale.paymentMethod as keyof typeof PAYMENT_METHOD_LABELS
-    ] || 'Cash';
+    ] || sale.paymentMethod;
 
   // Format date and time
   const formatDate = (date: Date) => {
@@ -116,9 +84,10 @@ export function ReceiptGenerator({ sale, onClose }: ReceiptGeneratorProps) {
     });
   };
 
-  // Print receipt
+  // Standard print
   const handlePrint = () => {
-    if (receiptRef.current) {
+    const element = receiptRef.current;
+    if (element) {
       const printWindow = window.open('', '_blank');
       if (printWindow) {
         const receiptHTML = `
@@ -153,12 +122,11 @@ export function ReceiptGenerator({ sale, onClose }: ReceiptGeneratorProps) {
             </div>
             
             <div class="receipt-details">
-              <div><strong>Date:</strong> ${formatDate(sale.timestamp)}</div>
-              <div><strong>Time:</strong> ${formatTime(sale.timestamp)}</div>
-              <div><strong>Staff:</strong> ${sale.staffName}</div>
-              <div><strong>Payment:</strong> ${paymentLabel}</div>
-              ${sale.customerName ? `<div><strong>Customer:</strong> ${sale.customerName}</div>` : ''}
-              ${sale.customerPhone ? `<div><strong>Phone:</strong> ${sale.customerPhone}</div>` : ''}
+              <div>Date: ${formatDate(sale.timestamp)}</div>
+              <div>Time: ${formatTime(sale.timestamp)}</div>
+              <div>Staff: ${sale.staffName}</div>
+              ${sale.customerName ? `<div>Customer: ${sale.customerName}</div>` : ''}
+              ${sale.customerPhone ? `<div>Phone: ${sale.customerPhone}</div>` : ''}
             </div>
             
             <div class="items">
@@ -167,11 +135,10 @@ export function ReceiptGenerator({ sale, onClose }: ReceiptGeneratorProps) {
                   item => `
                 <div class="item">
                   <div class="item-name">${item.name}</div>
-                  <div class="item-details">SKU: ${item.sku} | ${item.category || 'N/A'}</div>
-                  <div class="total-line">
-                    <span>${item.quantity} × ${formatCurrency(item.price)}</span>
-                    <span>${formatCurrency(item.price * item.quantity)}</span>
+                  <div class="item-details">
+                    SKU: ${item.sku} | Qty: ${item.quantity} | Price: ${formatCurrency(item.price)}
                   </div>
+                  <div>Total: ${formatCurrency(item.price * item.quantity)}</div>
                 </div>
               `
                 )
@@ -183,13 +150,23 @@ export function ReceiptGenerator({ sale, onClose }: ReceiptGeneratorProps) {
                 <span>Subtotal:</span>
                 <span>${formatCurrency(sale.subtotal)}</span>
               </div>
-              <div class="total-line">
-                <span>Discount:</span>
-                <span>-${formatCurrency(sale.discount)}</span>
-              </div>
+              ${
+                sale.discount > 0
+                  ? `
+                <div class="total-line">
+                  <span>Discount:</span>
+                  <span>-${formatCurrency(sale.discount)}</span>
+                </div>
+              `
+                  : ''
+              }
               <div class="total-line grand-total">
-                <span>TOTAL:</span>
+                <span>Total:</span>
                 <span>${formatCurrency(sale.total)}</span>
+              </div>
+              <div class="total-line">
+                <span>Payment Method:</span>
+                <span>${paymentLabel}</span>
               </div>
             </div>
             
@@ -206,6 +183,7 @@ export function ReceiptGenerator({ sale, onClose }: ReceiptGeneratorProps) {
         printWindow.document.close();
         printWindow.print();
         printWindow.close();
+        toast.success('Receipt sent to printer');
       }
     }
   };
@@ -220,48 +198,26 @@ export function ReceiptGenerator({ sale, onClose }: ReceiptGeneratorProps) {
     }
   };
 
-  // Thermal printer receipt
+  // Thermal printer receipt (placeholder for future implementation)
   const handleThermalPrint = async () => {
     try {
-      const response = await fetch('/api/pos/print-receipt', {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify({
-          saleId: sale.id,
-          timestamp: safeToISOString(sale.timestamp),
-          staffName: sale.staffName,
-          customerName: sale.customerName,
-          customerPhone: sale.customerPhone,
-          items: sale.items.map(item => ({
-            name: item.name,
-            sku: item.sku,
-            quantity: item.quantity,
-            price: item.price,
-            total: item.price * item.quantity,
-            category: item.category,
-          })),
-          subtotal: sale.subtotal,
-          discount: sale.discount,
-          total: sale.total,
-          paymentMethod: sale.paymentMethod,
-          printerConfig,
-        }),
-      });
+      // Placeholder for future thermal printer implementation
+      toast.info(
+        'Thermal printer functionality has been removed. Use standard print for now.'
+      );
 
-      if (response.ok) {
-        toast.success('Receipt printed on thermal printer!');
-      } else {
-        const error = await response.json();
-        toast.error(error.error || 'Failed to print receipt');
-      }
+      // For now, just show a message that thermal printing is not available
+      setTimeout(() => {
+        toast.success(
+          'Thermal printer functionality removed - use standard print'
+        );
+      }, 1000);
     } catch (error) {
-      logger.error('Receipt printing failed', {
+      logger.error('Error with thermal print', {
         transactionId: sale.id,
         error: error instanceof Error ? error.message : String(error),
       });
-      toast.error('Failed to print receipt');
+      toast.error('Thermal printer functionality removed');
     }
   };
 
@@ -317,82 +273,63 @@ export function ReceiptGenerator({ sale, onClose }: ReceiptGeneratorProps) {
         <div className="space-y-4">
           <Card>
             <CardContent className="p-6" ref={receiptRef}>
-              {/* Store Header */}
+              {/* Header */}
               <div className="mb-6 text-center">
-                <h1 className="text-2xl font-bold">BaaWA ACCESSORIES</h1>
+                <h2 className="text-xl font-bold">BaaWA ACCESSORIES</h2>
                 <p className="text-muted-foreground">
                   Quality Accessories Store
                 </p>
-                <div className="mt-2">
-                  <Badge variant="outline">Receipt #{sale.id}</Badge>
-                </div>
+                <p className="text-muted-foreground text-sm">
+                  Receipt #{sale.id}
+                </p>
               </div>
 
-              {/* Transaction Details */}
-              <div className="mb-6 grid grid-cols-2 gap-4 text-sm">
-                <div className="space-y-2">
-                  <div className="flex items-center gap-2">
-                    <IconCalendar className="h-4 w-4" />
-                    <span>{formatDate(sale.timestamp)}</span>
-                  </div>
-                  <div className="flex items-center gap-2">
-                    <IconUser className="h-4 w-4" />
-                    <span>Staff: {sale.staffName}</span>
-                  </div>
+              {/* Receipt Details */}
+              <div className="mb-6 space-y-2">
+                <div className="flex justify-between">
+                  <span>Date:</span>
+                  <span>{formatDate(sale.timestamp)}</span>
                 </div>
-                <div className="space-y-2">
-                  <div className="flex items-center gap-2">
-                    <PaymentIcon className="h-4 w-4" />
-                    <span>{paymentLabel}</span>
-                  </div>
-                  <div className="text-muted-foreground">
-                    Time: {formatTime(sale.timestamp)}
-                  </div>
+                <div className="flex justify-between">
+                  <span>Time:</span>
+                  <span>{formatTime(sale.timestamp)}</span>
                 </div>
+                <div className="flex justify-between">
+                  <span>Staff:</span>
+                  <span>{sale.staffName}</span>
+                </div>
+                {sale.customerName && (
+                  <div className="flex justify-between">
+                    <span>Customer:</span>
+                    <span>{sale.customerName}</span>
+                  </div>
+                )}
+                {sale.customerPhone && (
+                  <div className="flex justify-between">
+                    <span>Phone:</span>
+                    <span>{sale.customerPhone}</span>
+                  </div>
+                )}
               </div>
-
-              {/* Customer Info */}
-              {(sale.customerName || sale.customerPhone) && (
-                <div className="bg-muted mb-6 rounded p-3">
-                  <h3 className="mb-2 font-semibold">Customer Information</h3>
-                  {sale.customerName && (
-                    <div className="flex items-center gap-2 text-sm">
-                      <IconUser className="h-4 w-4" />
-                      <span>{sale.customerName}</span>
-                    </div>
-                  )}
-                  {sale.customerPhone && (
-                    <div className="flex items-center gap-2 text-sm">
-                      <IconPhone className="h-4 w-4" />
-                      <span>{sale.customerPhone}</span>
-                    </div>
-                  )}
-                </div>
-              )}
 
               {/* Items */}
-              <div className="mb-6">
-                <h3 className="mb-4 font-semibold">Items Purchased</h3>
+              <div className="mb-6 space-y-4">
+                <h3 className="font-semibold">Items</h3>
                 <div className="space-y-3">
                   {sale.items.map(item => (
-                    <div
-                      key={item.id}
-                      className="border-b pb-3 last:border-b-0"
-                    >
-                      <div className="flex items-start justify-between">
-                        <div className="flex-1">
-                          <h4 className="font-medium">{item.name}</h4>
-                          <div className="text-muted-foreground text-sm">
-                            SKU: {item.sku} | {item.category || 'N/A'}
-                          </div>
+                    <div key={item.id} className="flex justify-between">
+                      <div className="flex-1">
+                        <div className="font-medium">{item.name}</div>
+                        <div className="text-muted-foreground text-sm">
+                          SKU: {item.sku} | {item.category || 'N/A'}
                         </div>
-                        <div className="text-right">
-                          <div className="font-medium">
-                            {formatCurrency(item.price * item.quantity)}
-                          </div>
-                          <div className="text-muted-foreground text-sm">
-                            {item.quantity} × {formatCurrency(item.price)}
-                          </div>
+                      </div>
+                      <div className="text-right">
+                        <div className="font-medium">
+                          {formatCurrency(item.price * item.quantity)}
+                        </div>
+                        <div className="text-muted-foreground text-sm">
+                          {item.quantity} × {formatCurrency(item.price)}
                         </div>
                       </div>
                     </div>
@@ -449,37 +386,11 @@ export function ReceiptGenerator({ sale, onClose }: ReceiptGeneratorProps) {
               </Button>
             )}
 
-            <Button
-              onClick={() => setShowPrinterConfig(true)}
-              variant="outline"
-            >
-              <IconSettings className="mr-2 h-4 w-4" />
-              Printer Config
-            </Button>
-
             <Button onClick={onClose}>
               <IconReceipt className="mr-2 h-4 w-4" />
               Start New Sale
             </Button>
           </div>
-
-          {/* Printer Configuration Dialog */}
-          {showPrinterConfig && (
-            <Dialog
-              open={showPrinterConfig}
-              onOpenChange={setShowPrinterConfig}
-            >
-              <DialogContent className="max-w-2xl">
-                <DialogHeader>
-                  <DialogTitle>Xprinter XP 58 Configuration</DialogTitle>
-                  <DialogDescription>
-                    Configure your thermal printer connection settings.
-                  </DialogDescription>
-                </DialogHeader>
-                <PrinterConfig onConfigChange={setPrinterConfig} />
-              </DialogContent>
-            </Dialog>
-          )}
         </div>
       </DialogContent>
     </Dialog>

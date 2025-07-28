@@ -9,17 +9,10 @@ import {
   DialogHeader,
   DialogTitle,
 } from '@/components/ui/dialog';
-import {
-  IconPrinter,
-  IconMail,
-  IconSettings,
-  IconLoader,
-} from '@tabler/icons-react';
+import { IconPrinter, IconMail, IconLoader } from '@tabler/icons-react';
 import { toast } from 'sonner';
-import { PrinterConfig } from './PrinterConfig';
 import { formatCurrency } from '@/lib/utils';
 import { logger } from '@/lib/logger';
-import { safeToISOString } from '@/lib/utils/date-utils';
 
 export interface ReceiptData {
   id: string;
@@ -54,10 +47,6 @@ interface ReceiptPrinterProps {
   variant?: 'default' | 'outline' | 'ghost';
 }
 
-interface ValidationDetail {
-  message: string;
-}
-
 const PAYMENT_METHOD_LABELS = {
   cash: 'Cash',
   pos: 'POS Machine',
@@ -75,18 +64,7 @@ export function ReceiptPrinter({
   variant = 'outline',
 }: ReceiptPrinterProps) {
   const [isOpen, setIsOpen] = useState(false);
-  const [showPrinterConfig, setShowPrinterConfig] = useState(false);
   const [isProcessing, setIsProcessing] = useState(false);
-  const [printerConfig, setPrinterConfig] = useState({
-    type: 'usb' as const,
-    interface: 'USB001',
-    options: {
-      width: 32,
-      characterSet: 'SLOVENIA',
-      removeSpecialCharacters: false,
-      lineCharacter: '-',
-    },
-  });
 
   const paymentLabel =
     PAYMENT_METHOD_LABELS[
@@ -147,13 +125,11 @@ export function ReceiptPrinter({
           </div>
           
           <div class="receipt-details">
-            <div><strong>Date:</strong> ${formatDate(receiptData.timestamp)}</div>
-            <div><strong>Time:</strong> ${formatTime(receiptData.timestamp)}</div>
-            <div><strong>Staff:</strong> ${receiptData.staffName}</div>
-            <div><strong>Payment:</strong> ${paymentLabel}</div>
-            
-            ${receiptData.customerName ? `<div><strong>Customer:</strong> ${receiptData.customerName}</div>` : ''}
-            ${receiptData.customerPhone ? `<div><strong>Phone:</strong> ${receiptData.customerPhone}</div>` : ''}
+            <div>Date: ${formatDate(receiptData.timestamp)}</div>
+            <div>Time: ${formatTime(receiptData.timestamp)}</div>
+            <div>Staff: ${receiptData.staffName}</div>
+            ${receiptData.customerName ? `<div>Customer: ${receiptData.customerName}</div>` : ''}
+            ${receiptData.customerPhone ? `<div>Phone: ${receiptData.customerPhone}</div>` : ''}
           </div>
           
           <div class="items">
@@ -162,11 +138,10 @@ export function ReceiptPrinter({
                 item => `
               <div class="item">
                 <div class="item-name">${item.name}</div>
-                <div class="item-details">SKU: ${item.sku} | ${item.category || 'N/A'}</div>
-                <div class="total-line">
-                  <span>${item.quantity} × ${formatCurrency(item.price)}</span>
-                  <span>${formatCurrency(item.price * item.quantity)}</span>
+                <div class="item-details">
+                  SKU: ${item.sku} | Qty: ${item.quantity} | Price: ${formatCurrency(item.price)}
                 </div>
+                <div>Total: ${formatCurrency(item.price * item.quantity)}</div>
               </div>
             `
               )
@@ -181,15 +156,20 @@ export function ReceiptPrinter({
             ${
               receiptData.discount > 0
                 ? `
-            <div class="total-line">
-              <span>Discount:</span>
-              <span>-${formatCurrency(receiptData.discount)}</span>
-            </div>`
+              <div class="total-line">
+                <span>Discount:</span>
+                <span>-${formatCurrency(receiptData.discount)}</span>
+              </div>
+            `
                 : ''
             }
             <div class="total-line grand-total">
-              <span>TOTAL:</span>
+              <span>Total:</span>
               <span>${formatCurrency(receiptData.total)}</span>
+            </div>
+            <div class="total-line">
+              <span>Payment Method:</span>
+              <span>${paymentLabel}</span>
             </div>
           </div>
           
@@ -220,74 +200,27 @@ export function ReceiptPrinter({
     }
   };
 
-  // Thermal printer receipt
+  // Thermal printer receipt (placeholder for future implementation)
   const handleThermalPrint = async () => {
     setIsProcessing(true);
     try {
-      const requestData = {
-        saleId: receiptData.id,
-        timestamp: safeToISOString(receiptData.timestamp),
-        staffName: receiptData.staffName,
-        customerName: receiptData.customerName,
-        customerPhone: receiptData.customerPhone,
-        items: receiptData.items.map(item => ({
-          name: item.name,
-          sku: item.sku || `SKU-${item.id}`, // Ensure SKU is always present
-          quantity: item.quantity,
-          price: item.price,
-          total: item.price * item.quantity,
-          category: item.category,
-        })),
-        subtotal: receiptData.subtotal,
-        discount: receiptData.discount,
-        total: receiptData.total,
-        paymentMethod: receiptData.paymentMethod,
-        printerConfig,
-      };
+      // Placeholder for future thermal printer implementation
+      toast.info(
+        'Thermal printer functionality has been removed. Use standard print for now.'
+      );
 
-      logger.info('Receipt print request', {
-        transactionId: receiptData.id,
-        customerName: receiptData.customerName,
-        totalAmount: receiptData.total,
-      });
-
-      const response = await fetch('/api/pos/print-receipt', {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify(requestData),
-      });
-
-      if (response.ok) {
-        toast.success('Receipt printed on thermal printer!');
-      } else {
-        const error = await response.json();
-        logger.error('Receipt print error', {
-          transactionId: receiptData.id,
-          error: error.error || 'Failed to print receipt',
-          details: error.details,
-        });
-
-        // Show detailed validation errors for debugging
-        if (error.details && Array.isArray(error.details)) {
-          logger.error('Receipt validation errors', {
-            transactionId: receiptData.id,
-            errors: error.details,
-          });
-          toast.error(
-            `Validation error: ${error.details.map((d: ValidationDetail) => d.message).join(', ')}`
-          );
-        } else {
-          toast.error(error.error || 'Failed to print receipt');
-        }
-      }
+      // For now, just show a message that thermal printing is not available
+      setTimeout(() => {
+        toast.success(
+          'Thermal printer functionality removed - use standard print'
+        );
+      }, 1000);
     } catch (error) {
-      logger.error('Error printing receipt', {
+      logger.error('Error with thermal print', {
         transactionId: receiptData.id,
         error: error instanceof Error ? error.message : String(error),
       });
-      toast.error('Failed to print receipt');
+      toast.error('Thermal printer functionality removed');
     } finally {
       setIsProcessing(false);
     }
@@ -319,17 +252,11 @@ export function ReceiptPrinter({
         toast.success('Receipt sent successfully!');
       } else {
         const error = await response.json();
-        logger.error('Receipt email sending failed', {
-          transactionId: receiptData.id,
-          customerEmail: receiptData.customerEmail,
-          error: error.error || 'Failed to send receipt email',
-        });
-        toast.error('Failed to send receipt');
+        toast.error(error.error || 'Failed to send receipt');
       }
     } catch (error) {
       logger.error('Error sending receipt', {
         transactionId: receiptData.id,
-        customerEmail: receiptData.customerEmail,
         error: error instanceof Error ? error.message : String(error),
       });
       toast.error('Failed to send receipt');
@@ -416,37 +343,9 @@ export function ReceiptPrinter({
                 Email to {receiptData.customerEmail}
               </Button>
             )}
-
-            {/* Printer Configuration */}
-            {showThermalOption && (
-              <Button
-                onClick={() => setShowPrinterConfig(true)}
-                className="w-full justify-start"
-                variant="outline"
-                disabled={isProcessing}
-              >
-                <IconSettings className="mr-2 h-4 w-4" />
-                Printer Settings
-              </Button>
-            )}
           </div>
         </DialogContent>
       </Dialog>
-
-      {/* Printer Configuration Dialog */}
-      {showPrinterConfig && (
-        <Dialog open={showPrinterConfig} onOpenChange={setShowPrinterConfig}>
-          <DialogContent className="max-w-2xl">
-            <DialogHeader>
-              <DialogTitle>Thermal Printer Configuration</DialogTitle>
-              <DialogDescription>
-                Configure your thermal printer connection settings.
-              </DialogDescription>
-            </DialogHeader>
-            <PrinterConfig onConfigChange={setPrinterConfig} />
-          </DialogContent>
-        </Dialog>
-      )}
     </>
   );
 }

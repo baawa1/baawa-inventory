@@ -29,7 +29,7 @@ export async function POST(
 
     // In a real implementation, this would:
     // 1. Fetch the transaction details from the database
-    // 2. Generate a receipt format (PDF, thermal printer format, etc.)
+    // 2. Generate a receipt format (PDF, web print format, etc.)
     // 3. Send to printer queue or return print data
     // 4. Log the reprint action for audit purposes
 

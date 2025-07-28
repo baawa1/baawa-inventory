@@ -1,6 +1,7 @@
 import { NextResponse } from 'next/server';
 import { prisma } from '@/lib/db';
 import { withAuth, AuthenticatedRequest } from '@/lib/api-middleware';
+import { emailService } from '@/lib/email';
 import { z } from 'zod';
 
 // Validation schema for POS sale creation
@@ -93,6 +94,12 @@ export const POST = withAuth(async function (request: AuthenticatedRequest) {
       // Create sales items and update product stock
       const salesItems = await Promise.all(
         validatedData.items.map(async item => {
+          // Get product details for email receipt
+          const product = await tx.product.findUnique({
+            where: { id: item.productId },
+            select: { name: true },
+          });
+
           // Create sales item
           const salesItem = await tx.salesItem.create({
             data: {
@@ -115,7 +122,10 @@ export const POST = withAuth(async function (request: AuthenticatedRequest) {
             },
           });
 
-          return salesItem;
+          return {
+            ...salesItem,
+            productName: product?.name || 'Unknown Product',
+          };
         })
       );
 
@@ -125,12 +135,66 @@ export const POST = withAuth(async function (request: AuthenticatedRequest) {
       };
     });
 
+    // Send email receipt if customer email is provided
+    let emailSent = false;
+    if (validatedData.customerEmail) {
+      try {
+        // Get staff user details for email
+        const staffUser = await prisma.user.findUnique({
+          where: { id: parseInt(request.user.id) },
+          select: { firstName: true, lastName: true },
+        });
+
+        const staffName = staffUser
+          ? `${staffUser.firstName} ${staffUser.lastName}`.trim()
+          : 'Staff Member';
+
+        // Prepare email data
+        const emailData = {
+          to: validatedData.customerEmail,
+          customerName: validatedData.customerName || 'Customer',
+          saleId: result.salesTransaction.id.toString(),
+          items: result.salesItems.map(item => ({
+            name: item.productName,
+            quantity: item.quantity,
+            price: Number(item.unit_price),
+            total: Number(item.total_price),
+          })),
+          subtotal: validatedData.subtotal,
+          discount: validatedData.discount,
+          total: validatedData.total,
+          paymentMethod: validatedData.paymentMethod,
+          timestamp: new Date(),
+          staffName,
+        };
+
+        // Send email receipt
+        emailSent = await emailService.sendReceiptEmail(emailData);
+
+        if (emailSent) {
+          console.log(
+            'Email receipt sent successfully to:',
+            validatedData.customerEmail
+          );
+        } else {
+          console.error(
+            'Failed to send email receipt to:',
+            validatedData.customerEmail
+          );
+        }
+      } catch (emailError) {
+        console.error('Error sending email receipt:', emailError);
+        // Don't fail the transaction if email fails
+      }
+    }
+
     // Return success response
     return NextResponse.json({
       success: true,
       saleId: result.salesTransaction.id,
       transactionNumber: result.salesTransaction.transaction_number,
       message: 'Sale created successfully',
+      emailSent,
     });
   } catch (error) {
     console.error('POS create sale error:', error);

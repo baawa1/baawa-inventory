@@ -252,7 +252,19 @@ export function SlidingPaymentInterface({
 
       setCompletedSale(sale);
       setCurrentStep(5); // Move to receipt step
-      toast.success('Payment processed successfully!');
+
+      // Show success message with email status
+      if (result.emailSent && customerInfo.email) {
+        toast.success(
+          'Payment processed successfully! Email receipt sent to customer.'
+        );
+      } else if (customerInfo.email) {
+        toast.success(
+          'Payment processed successfully! (Email receipt failed to send)'
+        );
+      } else {
+        toast.success('Payment processed successfully!');
+      }
     } catch (error) {
       const errorMessage = 'Payment processing failed';
       toast.error(errorMessage);
@@ -1620,53 +1632,22 @@ function ReceiptStep({ sale }: { sale: Sale | null }) {
     }
   };
 
-  // Thermal printer receipt
+  // Thermal printer receipt (placeholder for future implementation)
   const handleThermalPrint = async () => {
     try {
-      const response = await fetch('/api/pos/print-receipt', {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify({
-          saleId: sale.id,
-          timestamp: sale.timestamp.toISOString(),
-          staffName: sale.staffName,
-          customerName: sale.customerName,
-          customerPhone: sale.customerPhone,
-          items: sale.items.map(item => ({
-            name: item.name,
-            sku: item.sku,
-            quantity: item.quantity,
-            price: item.price,
-            total: item.price * item.quantity,
-            category: item.category,
-          })),
-          subtotal: sale.subtotal,
-          discount: sale.discount,
-          total: sale.total,
-          paymentMethod: sale.paymentMethod,
-          printerConfig: {
-            type: 'usb',
-            interface: 'USB001',
-            options: {
-              width: 32,
-              characterSet: 'SLOVENIA',
-              removeSpecialCharacters: false,
-              lineCharacter: '-',
-            },
-          },
-        }),
-      });
+      // Placeholder for future thermal printer implementation
+      toast.info(
+        'Thermal printer functionality has been removed. Use standard print for now.'
+      );
 
-      if (response.ok) {
-        toast.success('Receipt printed on thermal printer!');
-      } else {
-        const error = await response.json();
-        toast.error(error.error || 'Failed to print receipt');
-      }
+      // For now, just show a message that thermal printing is not available
+      setTimeout(() => {
+        toast.success(
+          'Thermal printer functionality removed - use standard print'
+        );
+      }, 1000);
     } catch (_error) {
-      toast.error('Failed to print receipt');
+      toast.error('Thermal printer functionality removed');
     }
   };
 
