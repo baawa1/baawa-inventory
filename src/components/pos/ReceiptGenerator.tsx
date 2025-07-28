@@ -21,6 +21,12 @@ import {
 import { toast } from 'sonner';
 import { formatCurrency } from '@/lib/utils';
 import { logger } from '@/lib/logger';
+import {
+  generateThermalReceipt,
+  createRawTextPrintWindow,
+  downloadThermalReceiptAsText,
+  ThermalReceiptData,
+} from '@/lib/utils/thermal-receipt';
 
 export interface CartItem {
   id: number;
@@ -198,26 +204,49 @@ export function ReceiptGenerator({ sale, onClose }: ReceiptGeneratorProps) {
     }
   };
 
-  // Thermal printer receipt (placeholder for future implementation)
+  // Thermal printer receipt (58mm thermal printer format)
   const handleThermalPrint = async () => {
     try {
-      // Placeholder for future thermal printer implementation
-      toast.info(
-        'Thermal printer functionality has been removed. Use standard print for now.'
-      );
+      // Convert Sale to ThermalReceiptData format
+      const thermalData: ThermalReceiptData = {
+        id: sale.id,
+        items: sale.items.map(item => ({
+          name: item.name,
+          sku: item.sku,
+          price: item.price,
+          quantity: item.quantity,
+        })),
+        subtotal: sale.subtotal,
+        discount: sale.discount,
+        total: sale.total,
+        paymentMethod: sale.paymentMethod,
+        customerName: sale.customerName,
+        customerPhone: sale.customerPhone,
+        staffName: sale.staffName,
+        timestamp: sale.timestamp,
+      };
 
-      // For now, just show a message that thermal printing is not available
-      setTimeout(() => {
+      // Generate plain text receipt for thermal printer
+      const thermalReceipt = generateThermalReceipt(thermalData);
+
+      // Try the raw text approach first (most likely to work)
+      try {
+        createRawTextPrintWindow(thermalReceipt);
+        toast.success('Thermal receipt sent to printer');
+      } catch (_error) {
+        // Fallback: Download as text file
+        const filename = `receipt-${sale.id}`;
+        downloadThermalReceiptAsText(thermalReceipt, filename);
         toast.success(
-          'Thermal printer functionality removed - use standard print'
+          'Receipt downloaded as text file. Open it and print to your thermal printer.'
         );
-      }, 1000);
+      }
     } catch (error) {
       logger.error('Error with thermal print', {
         transactionId: sale.id,
         error: error instanceof Error ? error.message : String(error),
       });
-      toast.error('Thermal printer functionality removed');
+      toast.error('Failed to print thermal receipt');
     }
   };
 
