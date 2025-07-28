@@ -242,9 +242,22 @@ export function ReceiptPrinter({
         },
         body: JSON.stringify({
           saleId: receiptData.id,
-          transactionNumber: receiptData.transactionNumber,
           customerEmail: receiptData.customerEmail,
           customerName: receiptData.customerName,
+          receiptData: {
+            items: receiptData.items.map(item => ({
+              name: item.name,
+              quantity: item.quantity,
+              price: item.price,
+              total: item.price * item.quantity,
+            })),
+            subtotal: receiptData.subtotal,
+            discount: receiptData.discount,
+            total: receiptData.total,
+            paymentMethod: receiptData.paymentMethod,
+            timestamp: receiptData.timestamp.toISOString(),
+            staffName: receiptData.staffName,
+          },
         }),
       });
 
