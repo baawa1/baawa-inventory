@@ -24,6 +24,7 @@ import { useFinancialAnalyticsSummary } from '@/hooks/api/useFinancialAnalytics'
 import { useAuditLogs } from '@/hooks/api/audit-logs';
 import { useSalesTrends } from '@/hooks/api/useSalesTrends';
 import { useTopProducts } from '@/hooks/api/useTopProducts';
+import { getAuditActionColor, getAuditActionLabel } from '@/lib/constants/audit';
 import {
   LineChart,
   Line,
@@ -349,14 +350,30 @@ export function SimpleDashboard({ user }: SimpleDashboardProps) {
                     className="flex items-center justify-between"
                   >
                     <div className="flex items-center gap-3">
-                      <div className="h-2 w-2 rounded-full bg-blue-500" />
-                      <span className="text-sm">{log.action}</span>
+                      <div
+                        className={`h-2 w-2 rounded-full ${getAuditActionColor(log.action)}`}
+                      />
+                      <div className="flex flex-col">
+                        <span className="text-sm font-medium">
+                          {getAuditActionLabel(log.action)}
+                        </span>
+                        {log.table_name && (
+                          <span className="text-muted-foreground text-xs">
+                            {log.table_name}
+                          </span>
+                        )}
+                      </div>
                     </div>
                     <span className="text-muted-foreground text-xs">
                       {new Date(log.created_at).toLocaleDateString()}
                     </span>
                   </div>
                 ))}
+                {(!auditLogs?.logs || auditLogs.logs.length === 0) && (
+                  <div className="text-muted-foreground py-4 text-center text-sm">
+                    No recent admin activities
+                  </div>
+                )}
               </div>
             )}
           </CardContent>
