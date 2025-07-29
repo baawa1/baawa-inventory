@@ -15,7 +15,6 @@ import {
   IconDownload,
   IconPrinter,
   IconTrendingDown,
-  IconCalendar,
   IconRefresh,
   IconCash,
   IconChartBar,

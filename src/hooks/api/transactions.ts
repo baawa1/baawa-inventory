@@ -105,7 +105,8 @@ const fetchTransactions = async (
       `Failed to fetch transactions: ${response.status} ${response.statusText}`
     );
   }
-  return response.json();
+  const data = await response.json();
+  return data.data || data;
 };
 
 const fetchTransactionById = async (id: number): Promise<Transaction> => {

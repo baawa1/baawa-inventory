@@ -5,29 +5,36 @@ import { prisma } from '@/lib/db';
 // GET /api/inventory/stats - Get inventory statistics
 export const GET = withAuth(async (_request: AuthenticatedRequest) => {
   try {
-    // Get total products
-    const totalProducts = await prisma.product.count({
-      where: { isArchived: false },
-    });
-
-    // Get low stock items (stock <= 10)
-    const lowStockItems = await prisma.product.count({
-      where: {
-        AND: [{ isArchived: false }, { stock: { lte: 10 } }],
-      },
-    });
-
-    // Get total stock value
-    const productsWithValue = await prisma.product.findMany({
+    // Get all products for calculations
+    const allProducts = await prisma.product.findMany({
       where: { isArchived: false },
       select: {
         stock: true,
         price: true,
+        minStock: true,
       },
     });
 
-    const totalStockValue = productsWithValue.reduce(
-      (sum, product) => sum + product.stock * Number(product.price),
+    // Get total products
+    const totalProducts = allProducts.length;
+
+    // Calculate stock levels using minStock logic
+    const lowStockItems = allProducts.filter(
+      (p: any) => (p.stock || 0) <= (p.minStock || 0) && (p.stock || 0) > 0
+    ).length;
+
+    const outOfStockItems = allProducts.filter(
+      (p: any) => (p.stock || 0) === 0
+    ).length;
+
+    const inStockItems = allProducts.filter(
+      (p: any) => (p.stock || 0) > (p.minStock || 0)
+    ).length;
+
+    // Get total stock value
+    const totalStockValue = allProducts.reduce(
+      (sum: number, product: any) =>
+        sum + (product.stock || 0) * Number(product.price || 0),
       0
     );
 
@@ -61,6 +68,8 @@ export const GET = withAuth(async (_request: AuthenticatedRequest) => {
       {
         totalProducts,
         lowStockItems,
+        outOfStockItems,
+        inStockItems,
         totalStockValue,
         activeSuppliers,
         recentSales,

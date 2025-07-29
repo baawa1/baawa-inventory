@@ -1,458 +1,402 @@
 'use client';
 
-import { useState } from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
-import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
-import {
-  Select,
-  SelectContent,
-  SelectItem,
-  SelectTrigger,
-  SelectValue,
-} from '@/components/ui/select';
+import Link from 'next/link';
 import {
   IconTrendingUp,
   IconTrendingDown,
-  IconUsers,
-  IconPackages,
   IconShoppingCart,
+  IconPackage,
   IconCurrencyNaira,
   IconChartLine,
-  IconCalendar,
-  IconRefresh,
-  IconAlertTriangle,
-  IconChartBar,
-  IconDatabase,
+  IconUsers,
+  IconArrowRight,
+  IconPlus,
+  IconSettings,
+  IconFileText,
 } from '@tabler/icons-react';
 import { formatCurrency } from '@/lib/utils';
 import { useTransactionStats } from '@/hooks/api/transactions';
-import { useActiveUsers } from '@/hooks/api/users';
-import { AnalyticsDashboard } from './AnalyticsDashboard';
+import { useInventoryStats } from '@/hooks/api/inventory';
+import { useFinancialAnalyticsSummary } from '@/hooks/api/useFinancialAnalytics';
+import { useAuditLogs } from '@/hooks/api/audit-logs';
+import { useSalesTrends } from '@/hooks/api/useSalesTrends';
+import { useTopProducts } from '@/hooks/api/useTopProducts';
+import {
+  LineChart,
+  Line,
+  XAxis,
+  YAxis,
+  CartesianGrid,
+  Tooltip,
+  ResponsiveContainer,
+  BarChart,
+  Bar,
+} from 'recharts';
 
 interface SimpleDashboardProps {
   user: any;
 }
 
 export function SimpleDashboard({ user }: SimpleDashboardProps) {
-  const [dateRange, setDateRange] = useState('30days');
-  const [refreshKey, setRefreshKey] = useState(0);
-
-  // Fetch real-time data
+  // Fetch data
   const { data: transactionStats, isLoading: isLoadingStats } =
     useTransactionStats();
-  const { data: activeUsers = [], isLoading: isLoadingUsers } =
-    useActiveUsers();
+  const { data: inventoryStats, isLoading: isLoadingInventory } =
+    useInventoryStats();
+  const { data: financeData, isLoading: isLoadingFinance } =
+    useFinancialAnalyticsSummary();
+  const { data: auditLogs, isLoading: isLoadingAudit } = useAuditLogs({
+    limit: 5,
+  });
 
-  const refreshDashboard = () => {
-    setRefreshKey(prev => prev + 1);
-  };
+  // Fetch chart data from APIs
+  const { data: salesTrends, isLoading: isLoadingSalesTrends } =
+    useSalesTrends();
+  const { data: topProductsData, isLoading: isLoadingTopProducts } =
+    useTopProducts();
 
-  const _getDateRangeFilter = () => {
-    const now = new Date();
-    switch (dateRange) {
-      case '7days':
-        const sevenDaysAgo = new Date(now.getTime() - 7 * 24 * 60 * 60 * 1000);
-        return { dateFrom: sevenDaysAgo.toISOString().split('T')[0] };
-      case '30days':
-        const thirtyDaysAgo = new Date(
-          now.getTime() - 30 * 24 * 60 * 60 * 1000
-        );
-        return { dateFrom: thirtyDaysAgo.toISOString().split('T')[0] };
-      case '90days':
-        const ninetyDaysAgo = new Date(
-          now.getTime() - 90 * 24 * 60 * 60 * 1000
-        );
-        return { dateFrom: ninetyDaysAgo.toISOString().split('T')[0] };
-      default:
-        return {};
-    }
-  };
+  const isAdmin = user.role === 'ADMIN';
 
-  // KPI Data
-  const kpiData = [
-    {
-      title: 'Total Revenue',
-      value: formatCurrency(transactionStats?.totalSales || 0),
-      change: transactionStats?.salesChange || 0,
-      trend: (transactionStats?.salesChange || 0) >= 0 ? 'up' : 'down',
-      icon: <IconCurrencyNaira className="h-5 w-5" />,
-      color: 'text-green-600',
-      bgColor: 'bg-green-100',
-    },
-    {
-      title: 'Total Transactions',
-      value: transactionStats?.totalTransactions || 0,
-      change: transactionStats?.transactionsChange || 0,
-      trend: (transactionStats?.transactionsChange || 0) >= 0 ? 'up' : 'down',
-      icon: <IconShoppingCart className="h-5 w-5" />,
-      color: 'text-blue-600',
-      bgColor: 'bg-blue-100',
-    },
-    {
-      title: 'Active Users',
-      value: activeUsers.length,
-      change: 8.2,
-      trend: 'up',
-      icon: <IconUsers className="h-5 w-5" />,
-      color: 'text-purple-600',
-      bgColor: 'bg-purple-100',
-    },
-    {
-      title: 'Average Order Value',
-      value: formatCurrency(transactionStats?.averageOrderValue || 0),
-      change: transactionStats?.averageOrderValueChange || 0,
-      trend:
-        (transactionStats?.averageOrderValueChange || 0) >= 0 ? 'up' : 'down',
-      icon: <IconPackages className="h-5 w-5" />,
-      color: 'text-orange-600',
-      bgColor: 'bg-orange-100',
-    },
-  ];
+  // Get inventory metrics from API
+  const totalProducts = inventoryStats?.totalProducts || 0;
+  const lowStockItems = inventoryStats?.lowStockItems || 0;
+  const inStockItems = inventoryStats?.inStockItems || 0;
+  const outOfStockItems = inventoryStats?.outOfStockItems || 0;
+
+  // Use real data or fallback to empty arrays
+  const salesData = salesTrends || [];
+  const topProducts = topProductsData || [];
 
   return (
-    <div className="space-y-6" key={refreshKey}>
-      {/* Header Section */}
+    <div className="space-y-6">
+      {/* Header */}
       <div className="flex flex-col items-start justify-between gap-4 sm:flex-row sm:items-center">
         <div>
-          <h1 className="text-3xl font-bold tracking-tight">
-            Dashboard Overview
-          </h1>
+          <h1 className="text-3xl font-bold tracking-tight">Dashboard</h1>
           <p className="text-muted-foreground">
-            Welcome back, {user.firstName}! Here&apos;s what&apos;s happening in
-            your business.
+            Welcome back, {user.firstName}! Here&apos;s your business overview.
           </p>
         </div>
-
-        <div className="flex items-center gap-3">
-          <Select value={dateRange} onValueChange={setDateRange}>
-            <SelectTrigger className="w-[140px]">
-              <SelectValue placeholder="Select period" />
-            </SelectTrigger>
-            <SelectContent>
-              <SelectItem value="7days">Last 7 days</SelectItem>
-              <SelectItem value="30days">Last 30 days</SelectItem>
-              <SelectItem value="90days">Last 90 days</SelectItem>
-            </SelectContent>
-          </Select>
-
-          <Button
-            variant="outline"
-            size="sm"
-            onClick={refreshDashboard}
-            className="gap-2"
-          >
-            <IconRefresh className="h-4 w-4" />
-            Refresh
-          </Button>
-
-          <Button size="sm" className="gap-2">
-            <IconCalendar className="h-4 w-4" />
-            Custom Range
-          </Button>
-        </div>
       </div>
 
-      {/* Key Performance Indicators */}
-      <div className="grid grid-cols-1 gap-4 md:grid-cols-2 lg:grid-cols-4">
-        {isLoadingStats || isLoadingUsers
-          ? Array.from({ length: 4 }).map((_, i) => (
-              <Card key={i}>
-                <CardHeader className="pb-2">
-                  <div className="bg-muted h-4 w-20 animate-pulse rounded" />
-                </CardHeader>
-                <CardContent>
-                  <div className="bg-muted mb-2 h-8 w-24 animate-pulse rounded" />
-                  <div className="bg-muted h-3 w-16 animate-pulse rounded" />
-                </CardContent>
-              </Card>
-            ))
-          : kpiData.map((kpi, index) => (
-              <Card key={index}>
-                <CardHeader className="pb-2">
-                  <CardTitle className="flex items-center justify-between text-sm font-medium">
-                    <span className="flex items-center gap-2">
-                      <div
-                        className={`rounded-lg p-2 ${kpi.bgColor} ${kpi.color}`}
-                      >
-                        {kpi.icon}
-                      </div>
-                      {kpi.title}
-                    </span>
-                    {kpi.trend === 'up' ? (
-                      <IconTrendingUp className="h-4 w-4 text-green-600" />
-                    ) : (
-                      <IconTrendingDown className="h-4 w-4 text-red-600" />
-                    )}
-                  </CardTitle>
-                </CardHeader>
-                <CardContent>
-                  <div className="space-y-2">
-                    <div className="text-2xl font-bold">{kpi.value}</div>
-                    <div className="flex items-center gap-1">
-                      <Badge
-                        variant={kpi.trend === 'up' ? 'default' : 'destructive'}
-                        className="text-xs"
-                      >
-                        {kpi.change > 0 ? '+' : ''}
-                        {kpi.change.toFixed(1)}%
-                      </Badge>
-                      <span className="text-muted-foreground text-xs">
-                        vs last period
-                      </span>
-                    </div>
+      {/* Main Overview Cards */}
+      <div className="grid grid-cols-1 gap-6 md:grid-cols-3">
+        {/* POS Card */}
+        <Link href="/pos">
+          <Card className="cursor-pointer transition-all hover:scale-[1.02] hover:shadow-lg">
+            <CardHeader className="pb-3">
+              <CardTitle className="flex items-center justify-between text-lg">
+                <span className="flex items-center gap-2">
+                  <div className="rounded-lg bg-blue-100 p-2 text-blue-600">
+                    <IconShoppingCart className="h-5 w-5" />
                   </div>
-                </CardContent>
-              </Card>
-            ))}
-      </div>
-
-      {/* Main Dashboard Tabs */}
-      <Tabs defaultValue="overview" className="space-y-6">
-        <TabsList className="grid w-full grid-cols-4">
-          <TabsTrigger value="overview" className="flex items-center gap-2">
-            <IconChartLine className="h-4 w-4" />
-            Overview
-          </TabsTrigger>
-          <TabsTrigger value="sales" className="flex items-center gap-2">
-            <IconShoppingCart className="h-4 w-4" />
-            Sales
-          </TabsTrigger>
-          <TabsTrigger value="inventory" className="flex items-center gap-2">
-            <IconPackages className="h-4 w-4" />
-            Inventory
-          </TabsTrigger>
-          <TabsTrigger value="system" className="flex items-center gap-2">
-            <IconDatabase className="h-4 w-4" />
-            System
-          </TabsTrigger>
-        </TabsList>
-
-        {/* Overview Tab */}
-        <TabsContent value="overview" className="space-y-6">
-          <AnalyticsDashboard _user={user} />
-        </TabsContent>
-
-        {/* Sales Tab */}
-        <TabsContent value="sales" className="space-y-6">
-          <div className="grid grid-cols-1 gap-6 lg:grid-cols-2">
-            <Card>
-              <CardHeader>
-                <CardTitle className="flex items-center gap-2">
-                  <IconCurrencyNaira className="h-5 w-5" />
-                  Revenue Breakdown
-                </CardTitle>
-              </CardHeader>
-              <CardContent>
-                <div className="space-y-4">
-                  <div className="flex items-center justify-between">
-                    <span className="text-sm font-medium">Total Revenue</span>
-                    <span className="text-lg font-bold text-green-600">
-                      {formatCurrency(transactionStats?.totalSales || 0)}
-                    </span>
-                  </div>
-                  <div className="flex items-center justify-between">
-                    <span className="text-sm font-medium">
-                      Total Transactions
-                    </span>
-                    <span className="text-lg font-bold">
-                      {transactionStats?.totalTransactions || 0}
-                    </span>
-                  </div>
-                  <div className="flex items-center justify-between">
-                    <span className="text-sm font-medium">
-                      Average Order Value
-                    </span>
-                    <span className="text-lg font-bold text-blue-600">
-                      {formatCurrency(transactionStats?.averageOrderValue || 0)}
-                    </span>
-                  </div>
-                </div>
-              </CardContent>
-            </Card>
-
-            <Card>
-              <CardHeader>
-                <CardTitle className="flex items-center gap-2">
-                  <IconChartBar className="h-5 w-5" />
-                  Payment Methods
-                </CardTitle>
-              </CardHeader>
-              <CardContent>
-                <div className="space-y-3">
-                  <div className="flex items-center justify-between">
-                    <span className="text-sm">Cash</span>
-                    <Badge variant="secondary">45%</Badge>
-                  </div>
-                  <div className="flex items-center justify-between">
-                    <span className="text-sm">POS</span>
-                    <Badge variant="secondary">35%</Badge>
-                  </div>
-                  <div className="flex items-center justify-between">
-                    <span className="text-sm">Transfer</span>
-                    <Badge variant="secondary">20%</Badge>
-                  </div>
-                </div>
-              </CardContent>
-            </Card>
-          </div>
-        </TabsContent>
-
-        {/* Inventory Tab */}
-        <TabsContent value="inventory" className="space-y-6">
-          <div className="grid grid-cols-1 gap-6 lg:grid-cols-2">
-            <Card>
-              <CardHeader>
-                <CardTitle className="flex items-center gap-2">
-                  <IconPackages className="h-5 w-5" />
-                  Inventory Summary
-                </CardTitle>
-              </CardHeader>
-              <CardContent>
-                <div className="space-y-4">
-                  <div className="flex items-center justify-between">
-                    <span className="text-sm font-medium">Total Products</span>
-                    <span className="text-lg font-bold">1,247</span>
-                  </div>
-                  <div className="flex items-center justify-between">
-                    <span className="text-sm font-medium">In Stock</span>
-                    <span className="text-lg font-bold text-green-600">
-                      1,215
-                    </span>
-                  </div>
-                  <div className="flex items-center justify-between">
-                    <span className="text-sm font-medium">Low Stock</span>
-                    <span className="text-lg font-bold text-yellow-600">
-                      27
-                    </span>
-                  </div>
-                  <div className="flex items-center justify-between">
-                    <span className="text-sm font-medium">Out of Stock</span>
-                    <span className="text-lg font-bold text-red-600">5</span>
-                  </div>
-                </div>
-              </CardContent>
-            </Card>
-
-            <Card>
-              <CardHeader>
-                <CardTitle className="flex items-center gap-2">
-                  <IconAlertTriangle className="h-5 w-5" />
-                  Recent Activity
-                </CardTitle>
-              </CardHeader>
-              <CardContent>
-                <div className="space-y-3">
-                  {[
-                    {
-                      action: 'Product Added',
-                      item: 'iPhone 15 Pro',
-                      time: '5 min ago',
-                    },
-                    {
-                      action: 'Stock Updated',
-                      item: 'Samsung Galaxy',
-                      time: '12 min ago',
-                    },
-                    {
-                      action: 'Low Stock Alert',
-                      item: 'AirPods Pro',
-                      time: '25 min ago',
-                    },
-                    {
-                      action: 'Sale Completed',
-                      item: 'MacBook Air',
-                      time: '1 hour ago',
-                    },
-                  ].map((activity, i) => (
-                    <div
-                      key={i}
-                      className="flex items-center justify-between border-l-2 border-blue-200 p-2 pl-3"
-                    >
-                      <div>
-                        <p className="text-sm font-medium">{activity.action}</p>
-                        <p className="text-muted-foreground text-xs">
-                          {activity.item}
-                        </p>
-                      </div>
-                      <span className="text-muted-foreground text-xs">
-                        {activity.time}
-                      </span>
-                    </div>
-                  ))}
-                </div>
-              </CardContent>
-            </Card>
-          </div>
-        </TabsContent>
-
-        {/* System Tab */}
-        <TabsContent value="system" className="space-y-6">
-          <div className="grid grid-cols-1 gap-6 lg:grid-cols-2">
-            <Card>
-              <CardHeader>
-                <CardTitle className="flex items-center gap-2">
-                  <IconDatabase className="h-5 w-5" />
-                  System Health
-                </CardTitle>
-              </CardHeader>
-              <CardContent>
-                <div className="space-y-4">
-                  <div className="flex items-center justify-between">
-                    <span className="text-sm">Database</span>
-                    <Badge className="bg-green-100 text-green-700">
-                      Healthy
-                    </Badge>
-                  </div>
-                  <div className="flex items-center justify-between">
-                    <span className="text-sm">API Server</span>
-                    <Badge className="bg-green-100 text-green-700">
-                      Online
-                    </Badge>
-                  </div>
-                  <div className="flex items-center justify-between">
-                    <span className="text-sm">Storage</span>
-                    <Badge className="bg-yellow-100 text-yellow-700">
-                      78% Full
-                    </Badge>
-                  </div>
-                  <div className="flex items-center justify-between">
-                    <span className="text-sm">Uptime</span>
-                    <Badge className="bg-green-100 text-green-700">99.9%</Badge>
-                  </div>
-                </div>
-              </CardContent>
-            </Card>
-
-            <Card>
-              <CardHeader>
-                <CardTitle>Quick Actions</CardTitle>
-              </CardHeader>
-              <CardContent>
+                  POS
+                </span>
+                <IconArrowRight className="text-muted-foreground h-4 w-4" />
+              </CardTitle>
+            </CardHeader>
+            <CardContent>
+              {isLoadingStats ? (
                 <div className="space-y-2">
-                  <Button variant="outline" size="sm" className="w-full gap-2">
-                    <IconUsers className="h-4 w-4" />
-                    Manage Users
-                  </Button>
-                  <Button variant="outline" size="sm" className="w-full gap-2">
-                    <IconPackages className="h-4 w-4" />
-                    Check Inventory
-                  </Button>
-                  <Button variant="outline" size="sm" className="w-full gap-2">
-                    <IconChartLine className="h-4 w-4" />
-                    View Reports
-                  </Button>
-                  <Button variant="outline" size="sm" className="w-full gap-2">
-                    <IconDatabase className="h-4 w-4" />
-                    System Settings
-                  </Button>
+                  <div className="bg-muted h-8 w-24 animate-pulse rounded" />
+                  <div className="bg-muted h-4 w-16 animate-pulse rounded" />
                 </div>
-              </CardContent>
-            </Card>
+              ) : (
+                <div className="space-y-3">
+                  <div className="text-2xl font-bold">
+                    {formatCurrency(transactionStats?.totalSales || 0)}
+                  </div>
+                  <div className="space-y-1">
+                    <div className="flex items-center gap-2">
+                      <Badge variant="secondary">
+                        {transactionStats?.totalTransactions || 0} transactions
+                      </Badge>
+                      {transactionStats?.salesChange && (
+                        <span className="flex items-center gap-1 text-sm">
+                          {transactionStats.salesChange >= 0 ? (
+                            <IconTrendingUp className="h-3 w-3 text-green-600" />
+                          ) : (
+                            <IconTrendingDown className="h-3 w-3 text-red-600" />
+                          )}
+                          {Math.abs(transactionStats.salesChange).toFixed(1)}%
+                        </span>
+                      )}
+                    </div>
+                    <div className="text-muted-foreground text-sm">
+                      Avg:{' '}
+                      {formatCurrency(transactionStats?.averageOrderValue || 0)}
+                    </div>
+                    <div className="text-muted-foreground text-xs">
+                      Last 30 days
+                    </div>
+                  </div>
+                </div>
+              )}
+            </CardContent>
+          </Card>
+        </Link>
+
+        {/* Inventory Card */}
+        <Link href="/inventory">
+          <Card className="cursor-pointer transition-all hover:scale-[1.02] hover:shadow-lg">
+            <CardHeader className="pb-3">
+              <CardTitle className="flex items-center justify-between text-lg">
+                <span className="flex items-center gap-2">
+                  <div className="rounded-lg bg-green-100 p-2 text-green-600">
+                    <IconPackage className="h-5 w-5" />
+                  </div>
+                  Inventory
+                </span>
+                <IconArrowRight className="text-muted-foreground h-4 w-4" />
+              </CardTitle>
+            </CardHeader>
+            <CardContent>
+              {isLoadingInventory ? (
+                <div className="space-y-2">
+                  <div className="bg-muted h-8 w-20 animate-pulse rounded" />
+                  <div className="bg-muted h-4 w-16 animate-pulse rounded" />
+                </div>
+              ) : (
+                <div className="space-y-3">
+                  <div className="text-2xl font-bold">
+                    {totalProducts.toLocaleString()}
+                  </div>
+                  <div className="space-y-1">
+                    <div className="flex items-center justify-between text-sm">
+                      <span>In Stock:</span>
+                      <span className="font-medium text-green-600">
+                        {inStockItems.toLocaleString()}
+                      </span>
+                    </div>
+                    <div className="flex items-center justify-between text-sm">
+                      <span>Low Stock:</span>
+                      <span className="font-medium text-yellow-600">
+                        {lowStockItems.toLocaleString()}
+                      </span>
+                    </div>
+                    <div className="flex items-center justify-between text-sm">
+                      <span>Out of Stock:</span>
+                      <span className="font-medium text-red-600">
+                        {outOfStockItems.toLocaleString()}
+                      </span>
+                    </div>
+                    <div className="text-muted-foreground text-xs">
+                      Current stock levels
+                    </div>
+                  </div>
+                </div>
+              )}
+            </CardContent>
+          </Card>
+        </Link>
+
+        {/* Finance Card */}
+        <Link href="/finance">
+          <Card className="cursor-pointer transition-all hover:scale-[1.02] hover:shadow-lg">
+            <CardHeader className="pb-3">
+              <CardTitle className="flex items-center justify-between text-lg">
+                <span className="flex items-center gap-2">
+                  <div className="rounded-lg bg-purple-100 p-2 text-purple-600">
+                    <IconCurrencyNaira className="h-5 w-5" />
+                  </div>
+                  Finance
+                </span>
+                <IconArrowRight className="text-muted-foreground h-4 w-4" />
+              </CardTitle>
+            </CardHeader>
+            <CardContent>
+              {isLoadingFinance ? (
+                <div className="space-y-2">
+                  <div className="bg-muted h-8 w-24 animate-pulse rounded" />
+                  <div className="bg-muted h-4 w-16 animate-pulse rounded" />
+                </div>
+              ) : (
+                <div className="space-y-3">
+                  <div className="text-2xl font-bold">
+                    {formatCurrency(financeData?.netProfit || 0)}
+                  </div>
+                  <div className="space-y-1">
+                    <div className="flex items-center justify-between text-sm">
+                      <span>Revenue:</span>
+                      <span className="font-medium text-green-600">
+                        {formatCurrency(financeData?.totalRevenue || 0)}
+                      </span>
+                    </div>
+                    <div className="flex items-center justify-between text-sm">
+                      <span>Expenses:</span>
+                      <span className="font-medium text-red-600">
+                        {formatCurrency(financeData?.totalExpenses || 0)}
+                      </span>
+                    </div>
+                    <div className="text-muted-foreground text-xs">
+                      Last 30 days
+                    </div>
+                  </div>
+                </div>
+              )}
+            </CardContent>
+          </Card>
+        </Link>
+      </div>
+
+      {/* Charts Section */}
+      <div className="grid grid-cols-1 gap-6 lg:grid-cols-2">
+        {/* Sales Trend Chart */}
+        <Card>
+          <CardHeader>
+            <CardTitle className="flex items-center gap-2">
+              <IconChartLine className="h-5 w-5" />
+              Sales Trend (Last 7 Days)
+            </CardTitle>
+          </CardHeader>
+          <CardContent>
+            {isLoadingSalesTrends ? (
+              <div className="flex h-[300px] items-center justify-center">
+                <div className="text-muted-foreground">
+                  Loading sales data...
+                </div>
+              </div>
+            ) : salesData.length > 0 ? (
+              <ResponsiveContainer width="100%" height={300}>
+                <LineChart data={salesData}>
+                  <CartesianGrid strokeDasharray="3 3" />
+                  <XAxis dataKey="day" />
+                  <YAxis />
+                  <Tooltip formatter={value => formatCurrency(Number(value))} />
+                  <Line
+                    type="monotone"
+                    dataKey="sales"
+                    stroke="#3b82f6"
+                    strokeWidth={2}
+                    dot={{ fill: '#3b82f6', strokeWidth: 2, r: 4 }}
+                  />
+                </LineChart>
+              </ResponsiveContainer>
+            ) : (
+              <div className="flex h-[300px] items-center justify-center">
+                <div className="text-muted-foreground">
+                  No sales data available
+                </div>
+              </div>
+            )}
+          </CardContent>
+        </Card>
+
+        {/* Top Products Chart */}
+        <Card>
+          <CardHeader>
+            <CardTitle className="flex items-center gap-2">
+              <IconPackage className="h-5 w-5" />
+              Top Products
+            </CardTitle>
+          </CardHeader>
+          <CardContent>
+            {isLoadingTopProducts ? (
+              <div className="flex h-[300px] items-center justify-center">
+                <div className="text-muted-foreground">
+                  Loading product data...
+                </div>
+              </div>
+            ) : topProducts.length > 0 ? (
+              <ResponsiveContainer width="100%" height={300}>
+                <BarChart data={topProducts}>
+                  <CartesianGrid strokeDasharray="3 3" />
+                  <XAxis dataKey="name" />
+                  <YAxis />
+                  <Tooltip formatter={value => [value, 'Sales']} />
+                  <Bar dataKey="sales" fill="#10b981" />
+                </BarChart>
+              </ResponsiveContainer>
+            ) : (
+              <div className="flex h-[300px] items-center justify-center">
+                <div className="text-muted-foreground">
+                  No product data available
+                </div>
+              </div>
+            )}
+          </CardContent>
+        </Card>
+      </div>
+
+      {/* Admin Activities Section */}
+      {isAdmin && (
+        <Card>
+          <CardHeader>
+            <CardTitle className="flex items-center gap-2">
+              <IconUsers className="h-5 w-5" />
+              Admin Activities
+            </CardTitle>
+          </CardHeader>
+          <CardContent>
+            {isLoadingAudit ? (
+              <div className="space-y-3">
+                {Array.from({ length: 3 }).map((_, i) => (
+                  <div key={i} className="flex items-center gap-3">
+                    <div className="bg-muted h-4 w-4 animate-pulse rounded-full" />
+                    <div className="bg-muted h-4 w-32 animate-pulse rounded" />
+                    <div className="bg-muted h-4 w-20 animate-pulse rounded" />
+                  </div>
+                ))}
+              </div>
+            ) : (
+              <div className="space-y-3">
+                {auditLogs?.logs?.slice(0, 5).map((log, index) => (
+                  <div
+                    key={index}
+                    className="flex items-center justify-between"
+                  >
+                    <div className="flex items-center gap-3">
+                      <div className="h-2 w-2 rounded-full bg-blue-500" />
+                      <span className="text-sm">{log.action}</span>
+                    </div>
+                    <span className="text-muted-foreground text-xs">
+                      {new Date(log.created_at).toLocaleDateString()}
+                    </span>
+                  </div>
+                ))}
+              </div>
+            )}
+          </CardContent>
+        </Card>
+      )}
+
+      {/* Quick Actions */}
+      <Card>
+        <CardHeader>
+          <CardTitle>Quick Actions</CardTitle>
+        </CardHeader>
+        <CardContent>
+          <div className="grid grid-cols-2 gap-3 sm:grid-cols-4">
+            <Link href="/pos">
+              <Button variant="outline" size="sm" className="w-full gap-2">
+                <IconShoppingCart className="h-4 w-4" />
+                Open POS
+              </Button>
+            </Link>
+            <Link href="/inventory/products/new">
+              <Button variant="outline" size="sm" className="w-full gap-2">
+                <IconPlus className="h-4 w-4" />
+                Add Product
+              </Button>
+            </Link>
+            <Link href="/reports">
+              <Button variant="outline" size="sm" className="w-full gap-2">
+                <IconFileText className="h-4 w-4" />
+                View Reports
+              </Button>
+            </Link>
+            <Link href="/settings">
+              <Button variant="outline" size="sm" className="w-full gap-2">
+                <IconSettings className="h-4 w-4" />
+                Settings
+              </Button>
+            </Link>
           </div>
-        </TabsContent>
-      </Tabs>
+        </CardContent>
+      </Card>
     </div>
   );
 }

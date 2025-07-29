@@ -5,6 +5,8 @@ import { queryKeys } from '@/lib/query-client';
 interface InventoryStats {
   totalProducts: number;
   lowStockItems: number;
+  outOfStockItems: number;
+  inStockItems: number;
   totalStockValue: number;
   activeSuppliers: number;
   recentSales: number;
@@ -38,7 +40,8 @@ const fetchInventoryStats = async (): Promise<InventoryStats> => {
   if (!response.ok) {
     throw new Error(`Failed to fetch inventory stats: ${response.statusText}`);
   }
-  return response.json();
+  const result = await response.json();
+  return result.data; // Extract the data from the API response
 };
 
 const fetchInventoryCharts = async (): Promise<{
@@ -49,7 +52,8 @@ const fetchInventoryCharts = async (): Promise<{
   if (!response.ok) {
     throw new Error(`Failed to fetch inventory charts: ${response.statusText}`);
   }
-  return response.json();
+  const result = await response.json();
+  return result.data || result; // Extract data if it exists, otherwise return the whole response
 };
 
 const fetchRecentActivity = async (): Promise<RecentActivityItem[]> => {
