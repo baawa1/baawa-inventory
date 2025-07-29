@@ -80,7 +80,8 @@ const fetchFinancialTransactions = async (
       `Failed to fetch financial transactions: ${response.status} ${response.statusText}`
     );
   }
-  return response.json();
+  const data = await response.json();
+  return data.data || data;
 };
 
 const fetchFinancialTransactionById = async (
@@ -133,7 +134,8 @@ export function useCreateFinancialTransaction() {
           `Failed to create financial transaction: ${response.statusText}`
         );
       }
-      return response.json();
+      const result = await response.json();
+      return result.data || result;
     },
     onSuccess: () => {
       queryClient.invalidateQueries({
@@ -161,7 +163,8 @@ export function useUpdateFinancialTransaction() {
           `Failed to update financial transaction: ${response.statusText}`
         );
       }
-      return response.json();
+      const result = await response.json();
+      return result.data || result;
     },
     onSuccess: (_, { id }) => {
       queryClient.invalidateQueries({
@@ -190,7 +193,8 @@ export function useDeleteFinancialTransaction() {
           `Failed to delete financial transaction: ${response.statusText}`
         );
       }
-      return response.json();
+      const result = await response.json();
+      return result.data || result;
     },
     onSuccess: () => {
       queryClient.invalidateQueries({

@@ -3,7 +3,6 @@
 import React, { useState } from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
-import { Badge } from '@/components/ui/badge';
 import {
   Select,
   SelectContent,
@@ -30,7 +29,7 @@ interface CashFlowReportProps {
   user: AppUser;
 }
 
-export function CashFlowReport({ user }: CashFlowReportProps) {
+export function CashFlowReport({ user: _user }: CashFlowReportProps) {
   const [dateRange, setDateRange] = useState<DateRange | undefined>({
     from: new Date(Date.now() - 30 * 24 * 60 * 60 * 1000), // Last 30 days
     to: new Date(),

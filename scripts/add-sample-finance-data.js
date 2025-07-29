@@ -40,7 +40,7 @@ async function addSampleFinanceData() {
         description: "Business loan from bank",
         transactionDate: new Date("2024-07-10"),
         paymentMethod: "BANK_TRANSFER",
-        incomeSource: "LOAN",
+        incomeSource: "OTHER",
         payerName: "First Bank Nigeria",
       },
       {
@@ -49,7 +49,7 @@ async function addSampleFinanceData() {
         description: "Commission from supplier partnerships",
         transactionDate: new Date("2024-07-15"),
         paymentMethod: "BANK_TRANSFER",
-        incomeSource: "COMMISSION",
+        incomeSource: "COMMISSIONS",
         payerName: "Supplier Partners",
       },
       {
@@ -58,7 +58,7 @@ async function addSampleFinanceData() {
         description: "Rental income from storage space",
         transactionDate: new Date("2024-07-20"),
         paymentMethod: "CASH",
-        incomeSource: "RENTAL",
+        incomeSource: "OTHER",
         payerName: "Storage Tenant",
       },
       {
@@ -67,7 +67,7 @@ async function addSampleFinanceData() {
         description: "Investment returns from business savings",
         transactionDate: new Date("2024-07-25"),
         paymentMethod: "BANK_TRANSFER",
-        incomeSource: "INVESTMENT",
+        incomeSource: "INVESTMENTS",
         payerName: "Investment Account",
       },
     ];
@@ -107,7 +107,7 @@ async function addSampleFinanceData() {
         description: "Inventory restocking - electronics",
         transactionDate: new Date("2024-07-08"),
         paymentMethod: "BANK_TRANSFER",
-        expenseType: "SUPPLIES",
+        expenseType: "INVENTORY_PURCHASES",
         vendorName: "Tech Suppliers Ltd",
       },
       {
@@ -143,7 +143,7 @@ async function addSampleFinanceData() {
         description: "Office supplies and stationery",
         transactionDate: new Date("2024-07-26"),
         paymentMethod: "CASH",
-        expenseType: "SUPPLIES",
+        expenseType: "OFFICE_SUPPLIES",
         vendorName: "Office Supplies Store",
       },
     ];

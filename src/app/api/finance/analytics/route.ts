@@ -4,10 +4,10 @@ import { createApiResponse } from '@/lib/api-response';
 import { z } from 'zod';
 
 const analyticsQuerySchema = z.object({
-  dateFrom: z.string().optional(),
-  dateTo: z.string().optional(),
+  dateFrom: z.string().nullable().optional(),
+  dateTo: z.string().nullable().optional(),
   type: z.enum(['all', 'income', 'expense']).optional().default('all'),
-  paymentMethod: z.string().optional(),
+  paymentMethod: z.string().nullable().optional(),
   groupBy: z.enum(['day', 'week', 'month']).optional().default('day'),
 });
 
@@ -16,10 +16,10 @@ export const GET = withAuth(async (request: AuthenticatedRequest) => {
   try {
     const { searchParams } = new URL(request.url);
     const queryParams = {
-      dateFrom: searchParams.get('dateFrom'),
-      dateTo: searchParams.get('dateTo'),
+      dateFrom: searchParams.get('dateFrom') || undefined,
+      dateTo: searchParams.get('dateTo') || undefined,
       type: searchParams.get('type') || 'all',
-      paymentMethod: searchParams.get('paymentMethod'),
+      paymentMethod: searchParams.get('paymentMethod') || undefined,
       groupBy: searchParams.get('groupBy') || 'day',
     };
 
@@ -28,12 +28,14 @@ export const GET = withAuth(async (request: AuthenticatedRequest) => {
     // Build where clause for date filtering
     const where: any = {};
     if (validatedQuery.dateFrom || validatedQuery.dateTo) {
-      where.created_at = {};
+      where.transactionDate = {};
       if (validatedQuery.dateFrom) {
-        where.created_at.gte = new Date(validatedQuery.dateFrom);
+        where.transactionDate.gte = new Date(validatedQuery.dateFrom);
       }
       if (validatedQuery.dateTo) {
-        where.created_at.lte = new Date(validatedQuery.dateTo + 'T23:59:59');
+        where.transactionDate.lte = new Date(
+          validatedQuery.dateTo + 'T23:59:59'
+        );
       }
     }
 
@@ -42,103 +44,122 @@ export const GET = withAuth(async (request: AuthenticatedRequest) => {
       validatedQuery.paymentMethod &&
       validatedQuery.paymentMethod !== 'all'
     ) {
-      where.payment_method = validatedQuery.paymentMethod;
+      where.paymentMethod = validatedQuery.paymentMethod;
+    }
+
+    // Add type filter
+    if (validatedQuery.type && validatedQuery.type !== 'all') {
+      where.type = validatedQuery.type.toUpperCase();
     }
 
     // Get transaction statistics
     const [
-      totalRevenue,
+      totalIncome,
       totalExpenses,
       totalTransactions,
       averageTransactionValue,
       paymentMethodStats,
       dailyStats,
     ] = await Promise.all([
-      // Total revenue (sales transactions)
-      prisma.salesTransaction.aggregate({
+      // Total income
+      prisma.financialTransaction.aggregate({
         where: {
           ...where,
-          transaction_type: 'sale',
+          type: 'INCOME',
+          status: 'COMPLETED',
         },
         _sum: {
-          total_amount: true,
+          amount: true,
         },
       }),
 
-      // Total expenses (expense transactions)
-      prisma.salesTransaction.aggregate({
+      // Total expenses
+      prisma.financialTransaction.aggregate({
         where: {
           ...where,
-          transaction_type: 'expense',
+          type: 'EXPENSE',
+          status: 'COMPLETED',
         },
         _sum: {
-          total_amount: true,
+          amount: true,
         },
       }),
 
       // Total transaction count
-      prisma.salesTransaction.count({
-        where,
+      prisma.financialTransaction.count({
+        where: {
+          ...where,
+          status: 'COMPLETED',
+        },
       }),
 
       // Average transaction value
-      prisma.salesTransaction.aggregate({
-        where,
+      prisma.financialTransaction.aggregate({
+        where: {
+          ...where,
+          status: 'COMPLETED',
+        },
         _avg: {
-          total_amount: true,
+          amount: true,
         },
       }),
 
       // Payment method distribution
-      prisma.salesTransaction.groupBy({
-        by: ['payment_method'],
-        where,
+      prisma.financialTransaction.groupBy({
+        by: ['paymentMethod'],
+        where: {
+          ...where,
+          status: 'COMPLETED',
+        },
         _count: {
-          payment_method: true,
+          paymentMethod: true,
         },
         _sum: {
-          total_amount: true,
+          amount: true,
         },
       }),
 
       // Daily statistics for charts
-      prisma.salesTransaction.groupBy({
-        by: ['created_at'],
-        where,
+      prisma.financialTransaction.groupBy({
+        by: ['transactionDate'],
+        where: {
+          ...where,
+          status: 'COMPLETED',
+        },
         _sum: {
-          total_amount: true,
+          amount: true,
         },
         _count: {
           id: true,
         },
         orderBy: {
-          created_at: 'asc',
+          transactionDate: 'asc',
         },
       }),
     ]);
 
     // Calculate net profit
-    const revenue = Number(totalRevenue._sum.total_amount) || 0;
-    const expenses = Number(totalExpenses._sum.total_amount) || 0;
-    const netProfit = revenue - expenses;
+    const income = Number(totalIncome._sum.amount) || 0;
+    const expenses = Number(totalExpenses._sum.amount) || 0;
+    const netProfit = income - expenses;
 
     // Process payment method stats
-    const paymentMethodData = paymentMethodStats.map(stat => ({
-      name: stat.payment_method,
-      value: stat._count.payment_method,
-      amount: stat._sum.total_amount || 0,
+    const paymentMethodData = paymentMethodStats.map((stat: any) => ({
+      name: stat.paymentMethod || 'Unknown',
+      value: stat._count.paymentMethod,
+      amount: stat._sum.amount || 0,
     }));
 
     // Process daily stats for charts
-    const chartData = dailyStats.map(stat => ({
-      date: stat.created_at?.toISOString().split('T')[0] || '',
-      revenue: Number(stat._sum.total_amount) || 0,
+    const chartData = dailyStats.map((stat: any) => ({
+      date: stat.transactionDate?.toISOString().split('T')[0] || '',
+      revenue: Number(stat._sum.amount) || 0,
       transactions: stat._count.id,
     }));
 
     // Get top payment method
-    const topPaymentMethod = paymentMethodData.reduce((prev, current) =>
-      prev.value > current.value ? prev : current
+    const topPaymentMethod = paymentMethodData.reduce(
+      (prev: any, current: any) => (prev.value > current.value ? prev : current)
     );
 
     // Calculate growth percentages (mock data for now)
@@ -147,12 +168,12 @@ export const GET = withAuth(async (request: AuthenticatedRequest) => {
 
     const analyticsData = {
       summary: {
-        totalRevenue: revenue,
+        totalRevenue: income,
         totalExpenses: expenses,
         netProfit,
         totalTransactions,
         averageTransactionValue:
-          Number(averageTransactionValue._avg.total_amount) || 0,
+          Number(averageTransactionValue._avg.amount) || 0,
         topPaymentMethod: topPaymentMethod?.name || 'Cash',
         revenueGrowth,
         expenseGrowth,
