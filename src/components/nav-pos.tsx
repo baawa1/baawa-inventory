@@ -33,16 +33,7 @@ const posNavItems = [
     title: 'Sales',
     url: '/pos',
     icon: IconShoppingCart,
-    items: [
-      {
-        title: 'New Sale',
-        url: '/pos',
-      },
-      {
-        title: 'Barcode Scanner',
-        url: '/pos?mode=scanner',
-      },
-    ],
+    items: [],
   },
   {
     title: 'Transaction History',
@@ -109,10 +100,11 @@ function CollapsibleNavItem({ item }: { item: (typeof posNavItems)[0] }) {
   // Check if any sub-item is active - use exact matching to avoid conflicts
   const hasActiveChild = item.items?.some(subItem => pathname === subItem.url);
 
-  // Check if the main item URL is active (only for items without sub-items)
+  // Check if the main item URL is active
   // For items with sub-items, only highlight if it's an exact match and no child is active
+  // For items without sub-items, only highlight if it's an exact match (not sub-routes)
   const isMainActive = !item.items?.length
-    ? pathname === item.url || pathname.startsWith(item.url + '/')
+    ? pathname === item.url
     : pathname === item.url && !hasActiveChild;
 
   // Auto-open dropdown if any child is active
