@@ -39,10 +39,11 @@ interface CategoryPerformance {
   marketShare: number;
   trending: 'up' | 'down' | 'stable';
   trendPercentage: number;
-  topProduct: {
+  topProducts: Array<{
+    id: number;
     name: string;
     revenue: number;
-  } | null;
+  }>;
 }
 
 interface CategoryAnalyticsProps {
@@ -68,7 +69,8 @@ async function fetchCategoryPerformance(
   if (!response.ok) {
     throw new Error('Failed to fetch category performance');
   }
-  return response.json();
+  const result = await response.json();
+  return result.data || [];
 }
 
 export function CategoryAnalytics({ user: _ }: CategoryAnalyticsProps) {
@@ -311,13 +313,16 @@ export function CategoryAnalytics({ user: _ }: CategoryAnalyticsProps) {
                           {formatCurrency(category.averageOrderValue)}
                         </TableCell>
                         <TableCell>
-                          {category.topProduct ? (
+                          {category.topProducts &&
+                          category.topProducts.length > 0 ? (
                             <div>
                               <div className="text-sm font-medium">
-                                {category.topProduct.name}
+                                {category.topProducts[0].name}
                               </div>
                               <div className="text-muted-foreground text-xs">
-                                {formatCurrency(category.topProduct.revenue)}
+                                {formatCurrency(
+                                  category.topProducts[0].revenue
+                                )}
                               </div>
                             </div>
                           ) : (

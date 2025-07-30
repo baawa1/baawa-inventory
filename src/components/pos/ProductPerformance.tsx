@@ -23,6 +23,13 @@ import {
 import { Badge } from '@/components/ui/badge';
 import { DateRangePickerWithPresets } from '@/components/ui/date-range-picker-with-presets';
 import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from '@/components/ui/select';
+import {
   IconTrendingUp,
   IconTrendingDown,
   IconMinus,
@@ -84,7 +91,8 @@ async function fetchProductAnalytics(
   search?: string,
   category?: string,
   page?: number,
-  limit?: number
+  limit?: number,
+  sortBy?: string
 ): Promise<ProductAnalyticsResponse> {
   const params = new URLSearchParams();
   params.append('period', period);
@@ -95,6 +103,7 @@ async function fetchProductAnalytics(
   if (category && category !== 'all') params.append('category', category);
   if (page) params.append('page', page.toString());
   if (limit) params.append('limit', limit.toString());
+  if (sortBy) params.append('sortBy', sortBy);
 
   const response = await fetch(`/api/pos/analytics/products?${params}`);
   if (!response.ok) {
@@ -115,6 +124,7 @@ export function ProductPerformance({ user: _ }: ProductPerformanceProps) {
     totalPages: 1,
     totalItems: 0,
   });
+  const [sortBy, setSortBy] = useState('revenue');
 
   const {
     data: analyticsData,
@@ -127,6 +137,7 @@ export function ProductPerformance({ user: _ }: ProductPerformanceProps) {
       dateRange?.to,
       pagination.page,
       pagination.limit,
+      sortBy,
     ],
     queryFn: () =>
       fetchProductAnalytics(
@@ -136,7 +147,8 @@ export function ProductPerformance({ user: _ }: ProductPerformanceProps) {
         undefined,
         undefined,
         pagination.page,
-        pagination.limit
+        pagination.limit,
+        sortBy
       ),
     enabled: !!dateRange?.from && !!dateRange?.to,
   });
@@ -236,6 +248,13 @@ export function ProductPerformance({ user: _ }: ProductPerformanceProps) {
     }
   };
 
+  const sortOptions = [
+    { value: 'revenue', label: 'Revenue' },
+    { value: 'totalSold', label: 'Items Sold' },
+    { value: 'averageOrderValue', label: 'Avg Order Value' },
+    { value: 'name', label: 'Product Name' },
+  ];
+
   return (
     <div className="container mx-auto space-y-6 p-6">
       {/* Header */}
@@ -253,6 +272,20 @@ export function ProductPerformance({ user: _ }: ProductPerformanceProps) {
             placeholder="Select date range"
             className="w-[300px]"
           />
+          <div className="flex flex-col gap-1">
+            <Select value={sortBy} onValueChange={setSortBy}>
+              <SelectTrigger className="w-[180px]">
+                <SelectValue placeholder="Sort by" />
+              </SelectTrigger>
+              <SelectContent>
+                {sortOptions.map(option => (
+                  <SelectItem key={option.value} value={option.value}>
+                    {option.label}
+                  </SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
+          </div>
           <Button variant="outline" size="sm" onClick={handleDownload}>
             <IconDownload className="mr-1 h-4 w-4" />
             Export

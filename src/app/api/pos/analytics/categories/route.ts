@@ -45,6 +45,10 @@ export const GET = withAuth(async (request: AuthenticatedRequest) => {
     const period = searchParams.get('period') || '30d';
     const fromDate = searchParams.get('fromDate');
     const toDate = searchParams.get('toDate');
+    const search = searchParams.get('search') || '';
+    const sortBy = searchParams.get('sortBy') || 'revenue';
+    const page = parseInt(searchParams.get('page') || '1');
+    const limit = parseInt(searchParams.get('limit') || '10');
 
     // Use custom date range if provided, otherwise use period
     let periodStart: Date;
@@ -58,8 +62,16 @@ export const GET = withAuth(async (request: AuthenticatedRequest) => {
       periodEnd = new Date(); // Current date
     }
 
+    // Build where clause for category filtering
+    const categoryWhere: any = {};
+
+    if (search) {
+      categoryWhere.name = { contains: search, mode: 'insensitive' };
+    }
+
     // Get all categories with their products and sales data
     const categories = await prisma.category.findMany({
+      where: categoryWhere,
       include: {
         products: {
           include: {
@@ -70,7 +82,9 @@ export const GET = withAuth(async (request: AuthenticatedRequest) => {
                     gte: periodStart,
                     ...(periodEnd && { lte: periodEnd }),
                   },
-                  payment_status: PAYMENT_STATUS.PAID,
+                  payment_status: {
+                    in: ['paid', 'completed', 'PAID'],
+                  },
                 },
               },
               include: {
@@ -168,7 +182,10 @@ export const GET = withAuth(async (request: AuthenticatedRequest) => {
                   item =>
                     item.sales_transactions?.created_at &&
                     item.sales_transactions.created_at >= previousPeriodStart &&
-                    item.sales_transactions.created_at < periodStart
+                    item.sales_transactions.created_at < periodStart &&
+                    ['paid', 'completed', 'PAID'].includes(
+                      item.sales_transactions.payment_status
+                    )
                 )
                 .reduce((prodTotal, item) => {
                   return prodTotal + Number(item.total_price);
@@ -207,14 +224,64 @@ export const GET = withAuth(async (request: AuthenticatedRequest) => {
       }
     );
 
-    // Sort by revenue descending
-    categoryPerformance.sort((a, b) => b.revenue - a.revenue);
+    // Sort based on the sortBy parameter
+    categoryPerformance.sort((a, b) => {
+      switch (sortBy) {
+        case 'revenue':
+          return b.revenue - a.revenue;
+        case 'totalSold':
+          return b.totalSold - a.totalSold;
+        case 'averageOrderValue':
+          return b.averageOrderValue - a.averageOrderValue;
+        case 'name':
+          return a.name.localeCompare(b.name);
+        case 'marketShare':
+          return b.marketShare - a.marketShare;
+        case 'productCount':
+          return b.productCount - a.productCount;
+        default:
+          return b.revenue - a.revenue;
+      }
+    });
+
+    // Apply pagination
+    const totalItems = categoryPerformance.length;
+    const totalPages = Math.ceil(totalItems / limit);
+    const skip = (page - 1) * limit;
+    const paginatedCategories = categoryPerformance.slice(skip, skip + limit);
+
+    // Calculate summary statistics
+    const totalCategories = categoryPerformance.length;
+    const summaryTotalRevenue = categoryPerformance.reduce(
+      (sum, c) => sum + c.revenue,
+      0
+    );
+    const summaryTotalSold = categoryPerformance.reduce(
+      (sum, c) => sum + c.totalSold,
+      0
+    );
+    const averageOrderValue =
+      summaryTotalSold > 0 ? summaryTotalRevenue / summaryTotalSold : 0;
 
     return NextResponse.json({
       success: true,
-      data: categoryPerformance,
-      period,
-      periodStart: periodStart.toISOString(),
+      data: {
+        categories: paginatedCategories,
+        summary: {
+          totalCategories,
+          totalRevenue: summaryTotalRevenue,
+          totalSold: summaryTotalSold,
+          averageOrderValue,
+        },
+        pagination: {
+          page,
+          limit,
+          totalPages,
+          total: totalItems,
+        },
+        period,
+        periodStart: periodStart.toISOString(),
+      },
     });
   } catch (error) {
     return handleApiError(error);
