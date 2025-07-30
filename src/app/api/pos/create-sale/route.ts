@@ -129,9 +129,29 @@ export const POST = withAuth(async function (request: AuthenticatedRequest) {
         })
       );
 
+      // Create split payments if this is a split payment transaction
+      let splitPayments = [];
+      if (
+        validatedData.paymentMethod === 'split' &&
+        validatedData.splitPayments
+      ) {
+        splitPayments = await Promise.all(
+          validatedData.splitPayments.map(async payment => {
+            return await tx.splitPayment.create({
+              data: {
+                amount: payment.amount,
+                payment_method: payment.method,
+                transaction_id: salesTransaction.id,
+              },
+            });
+          })
+        );
+      }
+
       return {
         salesTransaction,
         salesItems,
+        splitPayments,
       };
     });
 
@@ -164,6 +184,11 @@ export const POST = withAuth(async function (request: AuthenticatedRequest) {
           discount: validatedData.discount,
           total: validatedData.total,
           paymentMethod: validatedData.paymentMethod,
+          splitPayments:
+            result.splitPayments?.map(payment => ({
+              method: payment.payment_method,
+              amount: Number(payment.amount),
+            })) || [],
           timestamp: new Date(),
           staffName,
         };

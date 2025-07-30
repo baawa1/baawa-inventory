@@ -9,6 +9,14 @@ export interface CartItem {
   brand?: string;
 }
 
+/**
+ * Helper function to handle currency calculations with proper precision
+ * Rounds to 2 decimal places to avoid floating-point precision issues
+ */
+export const roundCurrency = (amount: number): number => {
+  return Math.round(amount * 100) / 100;
+};
+
 export interface OrderTotals {
   subtotal: number;
   discount: number;
@@ -22,11 +30,10 @@ export const calculateOrderTotals = (
   items: CartItem[],
   discount: number
 ): OrderTotals => {
-  const subtotal = items.reduce(
-    (sum, item) => sum + item.price * item.quantity,
-    0
+  const subtotal = roundCurrency(
+    items.reduce((sum, item) => sum + item.price * item.quantity, 0)
   );
-  const total = Math.max(0, subtotal - discount);
+  const total = roundCurrency(Math.max(0, subtotal - discount));
   return { subtotal, discount, total };
 };
 
@@ -39,9 +46,9 @@ export const calculateDiscountAmount = (
   discountType: 'percentage' | 'fixed'
 ): number => {
   if (discountType === 'percentage') {
-    return Math.min((subtotal * discountValue) / 100, subtotal);
+    return roundCurrency(Math.min((subtotal * discountValue) / 100, subtotal));
   }
-  return Math.min(discountValue, subtotal);
+  return roundCurrency(Math.min(discountValue, subtotal));
 };
 
 /**
@@ -65,7 +72,7 @@ export const validatePaymentAmount = (
  * Calculate change amount for cash payments
  */
 export const calculateChange = (amountPaid: number, total: number): number => {
-  return Math.max(0, amountPaid - total);
+  return roundCurrency(Math.max(0, amountPaid - total));
 };
 
 /**
@@ -75,9 +82,12 @@ export const validateSplitPayments = (
   splitPayments: Array<{ id: string; amount: number; method: string }>,
   total: number
 ): { isValid: boolean; error?: string } => {
-  const totalPaid = splitPayments.reduce((sum, p) => sum + p.amount, 0);
+  const totalPaid = roundCurrency(
+    splitPayments.reduce((sum, p) => sum + p.amount, 0)
+  );
+  const roundedTotal = roundCurrency(total);
 
-  if (totalPaid < total) {
+  if (totalPaid < roundedTotal) {
     return {
       isValid: false,
       error: 'Split payment total is less than the required amount',

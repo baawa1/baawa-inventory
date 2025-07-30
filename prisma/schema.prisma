@@ -238,6 +238,7 @@ model SalesTransaction {
   updated_at         DateTime?   @default(now()) @db.Timestamptz(6)
   user_id            Int
   sales_items        SalesItem[]
+  split_payments     SplitPayment[]
   users              User        @relation(fields: [user_id], references: [id], onDelete: NoAction, onUpdate: NoAction)
 
   @@index([created_at], map: "idx_sales_transactions_created_at")
@@ -265,6 +266,19 @@ model SalesItem {
   @@index([transaction_id], map: "idx_sales_items_transaction_id")
   @@index([variant_id], map: "idx_sales_items_variant_id")
   @@map("sales_items")
+}
+
+model SplitPayment {
+  id                 Int              @id @default(autoincrement())
+  amount             Decimal          @db.Decimal(10, 2)
+  payment_method     String           @db.VarChar(50)
+  transaction_id     Int
+  created_at         DateTime?        @default(now()) @db.Timestamptz(6)
+  sales_transactions SalesTransaction @relation(fields: [transaction_id], references: [id], onDelete: Cascade, onUpdate: NoAction)
+
+  @@index([transaction_id], map: "idx_split_payments_transaction_id")
+  @@index([payment_method], map: "idx_split_payments_payment_method")
+  @@map("split_payments")
 }
 
 model StockAddition {

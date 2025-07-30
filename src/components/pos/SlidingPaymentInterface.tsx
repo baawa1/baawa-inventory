@@ -58,6 +58,12 @@ export interface Sale {
   customerEmail?: string;
   staffName: string;
   timestamp: Date;
+  splitPayments?: Array<{
+    id: string;
+    amount: number;
+    method: string;
+    createdAt: Date;
+  }>;
 }
 
 interface SlidingPaymentInterfaceProps {
@@ -1623,6 +1629,27 @@ function ReceiptStep({ sale }: { sale: Sale | null }) {
               <span>TOTAL:</span>
               <span>₦${sale.total.toLocaleString()}</span>
             </div>
+            ${
+              sale.paymentMethod === 'split' &&
+              sale.splitPayments &&
+              sale.splitPayments.length > 0
+                ? `
+            <div style="margin-top: 15px; padding-top: 10px; border-top: 1px solid #ddd;">
+              <div style="font-weight: bold; margin-bottom: 8px;">Payment Details:</div>
+              ${sale.splitPayments
+                .map(
+                  payment => `
+                <div class="total-line" style="font-size: 11px;">
+                  <span>${payment.method}:</span>
+                  <span>₦${payment.amount.toLocaleString()}</span>
+                </div>
+              `
+                )
+                .join('')}
+            </div>
+            `
+                : ''
+            }
           </div>
           
           <div class="footer">
@@ -1809,6 +1836,25 @@ function ReceiptStep({ sale }: { sale: Sale | null }) {
           <span>Total:</span>
           <span>₦{sale.total.toLocaleString()}</span>
         </div>
+
+        {/* Split Payment Details */}
+        {sale.paymentMethod === 'split' &&
+          sale.splitPayments &&
+          sale.splitPayments.length > 0 && (
+            <div className="mt-4 space-y-2 rounded-lg border bg-gray-50 p-3">
+              <h4 className="text-sm font-semibold">Payment Details:</h4>
+              {sale.splitPayments.map((payment, index) => (
+                <div key={index} className="flex justify-between text-sm">
+                  <span className="text-muted-foreground">
+                    {payment.method}:
+                  </span>
+                  <span className="font-medium">
+                    ₦{payment.amount.toLocaleString()}
+                  </span>
+                </div>
+              ))}
+            </div>
+          )}
       </div>
 
       {/* Printer Actions */}
