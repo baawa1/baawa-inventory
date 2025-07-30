@@ -25,12 +25,5 @@ export default async function CustomerManagementPage() {
     redirect('/pending-approval');
   }
 
-  return (
-    <DashboardPageLayout
-      title="Customer Management"
-      description="Manage and view all customer information"
-    >
-      <CustomerList user={session.user} />
-    </DashboardPageLayout>
-  );
+  return <CustomerList user={session.user} />;
 }
