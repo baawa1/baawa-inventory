@@ -1,15 +1,8 @@
 'use client';
 
-import React, { useState, useMemo } from 'react';
+import React, { useState, useMemo, useEffect } from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
-import {
-  Select,
-  SelectContent,
-  SelectItem,
-  SelectTrigger,
-  SelectValue,
-} from '@/components/ui/select';
 import {
   Table,
   TableBody,
@@ -18,17 +11,27 @@ import {
   TableHeader,
   TableRow,
 } from '@/components/ui/table';
-import { Badge } from '@/components/ui/badge';
-import { Input } from '@/components/ui/input';
 import {
-  IconSearch,
-  IconDownload,
-  IconDots,
+  Pagination,
+  PaginationContent,
+  PaginationEllipsis,
+  PaginationItem,
+  PaginationLink,
+  PaginationNext,
+  PaginationPrevious,
+} from '@/components/ui/pagination';
+import { Badge } from '@/components/ui/badge';
+import { DateRangePickerWithPresets } from '@/components/ui/date-range-picker-with-presets';
+import {
   IconTrendingUp,
   IconTrendingDown,
   IconMinus,
+  IconDownload,
 } from '@tabler/icons-react';
 import { formatCurrency } from '@/lib/utils';
+import { useQuery } from '@tanstack/react-query';
+import { toast } from 'sonner';
+import { DateRange } from 'react-day-picker';
 
 interface User {
   id: string;
@@ -44,114 +47,150 @@ interface ProductPerformanceProps {
 }
 
 interface ProductPerformanceData {
-  id: string;
+  id: number;
   name: string;
   sku: string;
-  category: string;
-  itemsSold: number;
-  netSales: number;
-  orders: number;
-  previousItemsSold: number;
-  previousNetSales: number;
-  previousOrders: number;
+  category: string | null;
+  brand: string | null;
+  currentStock: number;
+  totalSold: number;
+  revenue: number;
+  averageOrderValue: number;
+  lastSold: string | null;
+  trending: 'up' | 'down' | 'stable';
+  trendPercentage: number;
+}
+
+interface ProductAnalyticsResponse {
+  products: ProductPerformanceData[];
+  summary: {
+    totalProducts: number;
+    totalSold: number;
+    totalRevenue: number;
+    averageOrderValue: number;
+  };
+  pagination: {
+    page: number;
+    limit: number;
+    totalPages: number;
+    total: number;
+  };
+}
+
+async function fetchProductAnalytics(
+  period: string,
+  fromDate?: string,
+  toDate?: string,
+  search?: string,
+  category?: string,
+  page?: number,
+  limit?: number
+): Promise<ProductAnalyticsResponse> {
+  const params = new URLSearchParams();
+  params.append('period', period);
+
+  if (fromDate) params.append('fromDate', fromDate);
+  if (toDate) params.append('toDate', toDate);
+  if (search) params.append('search', search);
+  if (category && category !== 'all') params.append('category', category);
+  if (page) params.append('page', page.toString());
+  if (limit) params.append('limit', limit.toString());
+
+  const response = await fetch(`/api/pos/analytics/products?${params}`);
+  if (!response.ok) {
+    throw new Error('Failed to fetch product analytics');
+  }
+  const result = await response.json();
+  return result.data;
 }
 
 export function ProductPerformance({ user: _ }: ProductPerformanceProps) {
-  const [dateRange, setDateRange] = useState('month-to-date');
-  const [showFilter, setShowFilter] = useState('all-products');
-  const [searchTerm, setSearchTerm] = useState('');
+  const [dateRange, setDateRange] = useState<DateRange | undefined>({
+    from: new Date(new Date().getTime() - 30 * 24 * 60 * 60 * 1000), // 30 days ago
+    to: new Date(), // Today
+  });
+  const [pagination, setPagination] = useState({
+    page: 1,
+    limit: 10,
+    totalPages: 1,
+    totalItems: 0,
+  });
 
-  // Mock data - replace with actual API calls
-  const mockData: ProductPerformanceData[] = [
-    {
-      id: '1',
-      name: 'Patek Philippe PP8011G Gold Mens Watch',
-      sku: 'PP8011G',
-      category: 'Wristwatches > Chain',
-      itemsSold: 2,
-      netSales: 209000,
-      orders: 2,
-      previousItemsSold: 3,
-      previousNetSales: 250000,
-      previousOrders: 3,
-    },
-    {
-      id: '2',
-      name: 'Fusili G0375 Rubber watch',
-      sku: 'G0375',
-      category: 'Wristwatches',
-      itemsSold: 2,
-      netSales: 38000,
-      orders: 2,
-      previousItemsSold: 4,
-      previousNetSales: 45000,
-      previousOrders: 4,
-    },
-  ];
+  const {
+    data: analyticsData,
+    isLoading,
+    error,
+  } = useQuery({
+    queryKey: [
+      'product-analytics',
+      dateRange?.from,
+      dateRange?.to,
+      pagination.page,
+      pagination.limit,
+    ],
+    queryFn: () =>
+      fetchProductAnalytics(
+        'custom',
+        dateRange?.from?.toISOString().split('T')[0],
+        dateRange?.to?.toISOString().split('T')[0],
+        undefined,
+        undefined,
+        pagination.page,
+        pagination.limit
+      ),
+    enabled: !!dateRange?.from && !!dateRange?.to,
+  });
 
-  const filteredData = useMemo(() => {
-    return mockData.filter(
-      product =>
-        product.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
-        product.sku.toLowerCase().includes(searchTerm.toLowerCase())
-    );
-  }, [mockData, searchTerm]);
+  if (error) {
+    toast.error('Failed to load product analytics data');
+  }
+
+  const products = useMemo(
+    () => analyticsData?.products || [],
+    [analyticsData?.products]
+  );
 
   const summaryStats = useMemo(() => {
-    const total = filteredData.reduce(
-      (acc, product) => ({
-        itemsSold: acc.itemsSold + product.itemsSold,
-        netSales: acc.netSales + product.netSales,
-        orders: acc.orders + product.orders,
-        previousItemsSold: acc.previousItemsSold + product.previousItemsSold,
-        previousNetSales: acc.previousNetSales + product.previousNetSales,
-        previousOrders: acc.previousOrders + product.previousOrders,
-      }),
-      {
-        itemsSold: 0,
-        netSales: 0,
-        orders: 0,
-        previousItemsSold: 0,
-        previousNetSales: 0,
-        previousOrders: 0,
-      }
-    );
+    if (!analyticsData?.summary) {
+      return {
+        totalProducts: 0,
+        totalSold: 0,
+        totalRevenue: 0,
+        averageOrderValue: 0,
+      };
+    }
 
-    return {
-      itemsSold: total.itemsSold,
-      netSales: total.netSales,
-      orders: total.orders,
-      itemsSoldChange:
-        total.previousItemsSold > 0
-          ? ((total.itemsSold - total.previousItemsSold) /
-              total.previousItemsSold) *
-            100
-          : 0,
-      netSalesChange:
-        total.previousNetSales > 0
-          ? ((total.netSales - total.previousNetSales) /
-              total.previousNetSales) *
-            100
-          : 0,
-      ordersChange:
-        total.previousOrders > 0
-          ? ((total.orders - total.previousOrders) / total.previousOrders) * 100
-          : 0,
-    };
-  }, [filteredData]);
+    return analyticsData.summary;
+  }, [analyticsData?.summary]);
 
-  const getChangeBadge = (change: number) => {
-    if (change > 0) {
+  // Update pagination state from API response
+  useEffect(() => {
+    if (analyticsData?.pagination) {
+      setPagination(prev => ({
+        ...prev,
+        totalPages: analyticsData.pagination.totalPages,
+        totalItems: analyticsData.pagination.total,
+      }));
+    }
+  }, [analyticsData?.pagination]);
+
+  const handlePageChange = (newPage: number) => {
+    setPagination(prev => ({ ...prev, page: newPage }));
+  };
+
+  const getTrendBadge = (trending: string, trendPercentage: number) => {
+    if (trending === 'up') {
       return (
         <Badge variant="secondary" className="bg-green-100 text-green-800">
-          <IconTrendingUp className="mr-1 h-3 w-3" />+{change.toFixed(0)}%
+          <IconTrendingUp className="mr-1 h-3 w-3" />+
+          {trendPercentage.toFixed(0)}%
         </Badge>
       );
-    } else if (change < 0) {
+    } else if (trending === 'down') {
       return (
         <Badge variant="secondary" className="bg-red-100 text-red-800">
           <IconTrendingDown className="mr-1 h-3 w-3" />
-          {change.toFixed(0)}%
+          {Math.abs(trendPercentage).toFixed(0)}%
         </Badge>
       );
     } else {
@@ -164,78 +203,96 @@ export function ProductPerformance({ user: _ }: ProductPerformanceProps) {
     }
   };
 
+  const handleDownload = async () => {
+    try {
+      const params = new URLSearchParams();
+      if (dateRange?.from) {
+        params.append('fromDate', dateRange.from.toISOString().split('T')[0]);
+      }
+      if (dateRange?.to) {
+        params.append('toDate', dateRange.to.toISOString().split('T')[0]);
+      }
+      params.append('format', 'csv');
+
+      const response = await fetch(
+        `/api/pos/analytics/products/export?${params}`
+      );
+      if (!response.ok) throw new Error('Failed to download');
+
+      const blob = await response.blob();
+      const url = window.URL.createObjectURL(blob);
+      const a = document.createElement('a');
+      a.style.display = 'none';
+      a.href = url;
+      a.download = `product-analytics-${new Date().toISOString().split('T')[0]}.csv`;
+      document.body.appendChild(a);
+      a.click();
+      window.URL.revokeObjectURL(url);
+      document.body.removeChild(a);
+
+      toast.success('Export downloaded successfully');
+    } catch (_error) {
+      toast.error('Failed to download export');
+    }
+  };
+
   return (
-    <div className="space-y-6">
-      {/* Header with Filters */}
-      <div className="flex flex-col items-start justify-between gap-4 sm:flex-row sm:items-center">
+    <div className="container mx-auto space-y-6 p-6">
+      {/* Header */}
+      <div className="flex items-center justify-between">
         <div>
-          <h2 className="text-2xl font-bold tracking-tight">Products</h2>
+          <h1 className="text-3xl font-bold">Product Performance</h1>
+          <p className="text-muted-foreground">
+            Analyze sales performance for individual products
+          </p>
         </div>
-        <div className="flex items-center gap-3">
-          <Select value={dateRange} onValueChange={setDateRange}>
-            <SelectTrigger className="w-[300px]">
-              <SelectValue placeholder="Select date range" />
-            </SelectTrigger>
-            <SelectContent>
-              <SelectItem value="today">Today</SelectItem>
-              <SelectItem value="yesterday">Yesterday</SelectItem>
-              <SelectItem value="week-to-date">Week to date</SelectItem>
-              <SelectItem value="month-to-date">
-                Month to date (Jul 1 - 26, 2025) vs. Previous year (Jul 1 - 26,
-                2024)
-              </SelectItem>
-              <SelectItem value="quarter-to-date">Quarter to date</SelectItem>
-              <SelectItem value="year-to-date">Year to date</SelectItem>
-              <SelectItem value="custom">Custom range</SelectItem>
-            </SelectContent>
-          </Select>
-          <Select value={showFilter} onValueChange={setShowFilter}>
-            <SelectTrigger className="w-[140px]">
-              <SelectValue placeholder="Show" />
-            </SelectTrigger>
-            <SelectContent>
-              <SelectItem value="all-products">All products</SelectItem>
-              <SelectItem value="top-selling">Top selling</SelectItem>
-              <SelectItem value="low-performing">Low performing</SelectItem>
-            </SelectContent>
-          </Select>
+        <div className="flex items-center gap-2">
+          <DateRangePickerWithPresets
+            date={dateRange}
+            onDateChange={setDateRange}
+            placeholder="Select date range"
+            className="w-[300px]"
+          />
+          <Button variant="outline" size="sm" onClick={handleDownload}>
+            <IconDownload className="mr-1 h-4 w-4" />
+            Export
+          </Button>
         </div>
       </div>
 
-      {/* Summary Metrics */}
-      <div className="grid grid-cols-1 gap-4 md:grid-cols-3">
+      {/* Summary Stats */}
+      <div className="grid grid-cols-1 gap-6 md:grid-cols-3">
         <Card>
           <CardHeader className="pb-2">
-            <CardTitle className="text-sm font-medium">Items sold</CardTitle>
-          </CardHeader>
-          <CardContent>
-            <div className="text-2xl font-bold">{summaryStats.itemsSold}</div>
-            <div className="mt-2 flex items-center">
-              {getChangeBadge(summaryStats.itemsSoldChange)}
-            </div>
-          </CardContent>
-        </Card>
-        <Card>
-          <CardHeader className="pb-2">
-            <CardTitle className="text-sm font-medium">Net sales</CardTitle>
+            <CardTitle className="text-sm font-medium">
+              Total Products
+            </CardTitle>
           </CardHeader>
           <CardContent>
             <div className="text-2xl font-bold">
-              {formatCurrency(summaryStats.netSales)}
+              {summaryStats.totalProducts}
             </div>
-            <div className="mt-2 flex items-center">
-              {getChangeBadge(summaryStats.netSalesChange)}
-            </div>
+            <p className="text-muted-foreground text-xs">
+              Across {products.length} products
+            </p>
           </CardContent>
         </Card>
         <Card>
           <CardHeader className="pb-2">
-            <CardTitle className="text-sm font-medium">Orders</CardTitle>
+            <CardTitle className="text-sm font-medium">Items Sold</CardTitle>
           </CardHeader>
           <CardContent>
-            <div className="text-2xl font-bold">{summaryStats.orders}</div>
-            <div className="mt-2 flex items-center">
-              {getChangeBadge(summaryStats.ordersChange)}
+            <div className="text-2xl font-bold">{summaryStats.totalSold}</div>
+            <p className="text-muted-foreground text-xs">Total units moved</p>
+          </CardContent>
+        </Card>
+        <Card>
+          <CardHeader className="pb-2">
+            <CardTitle className="text-sm font-medium">Total Revenue</CardTitle>
+          </CardHeader>
+          <CardContent>
+            <div className="text-2xl font-bold">
+              {formatCurrency(summaryStats.totalRevenue)}
             </div>
           </CardContent>
         </Card>
@@ -244,60 +301,175 @@ export function ProductPerformance({ user: _ }: ProductPerformanceProps) {
       {/* Products Table */}
       <Card>
         <CardHeader>
-          <div className="flex items-center justify-between">
-            <CardTitle>Products</CardTitle>
-            <div className="flex items-center gap-2">
-              <Button variant="outline" size="sm">
-                Compare
-              </Button>
-              <div className="relative">
-                <IconSearch className="absolute top-1/2 left-3 h-4 w-4 -translate-y-1/2 transform text-gray-400" />
-                <Input
-                  placeholder="Search products..."
-                  value={searchTerm}
-                  onChange={e => setSearchTerm(e.target.value)}
-                  className="w-64 pl-9"
-                />
-              </div>
-              <Button variant="outline" size="sm">
-                <IconDownload className="h-4 w-4" />
-              </Button>
-              <Button variant="outline" size="sm">
-                <IconDots className="h-4 w-4" />
-              </Button>
-            </div>
-          </div>
+          <CardTitle>Product Sales Data</CardTitle>
         </CardHeader>
         <CardContent>
-          <Table>
-            <TableHeader>
-              <TableRow>
-                <TableHead>Product title</TableHead>
-                <TableHead>SKU</TableHead>
-                <TableHead>Items sold</TableHead>
-                <TableHead>Net sales</TableHead>
-                <TableHead>Orders</TableHead>
-                <TableHead>Category</TableHead>
-              </TableRow>
-            </TableHeader>
-            <TableBody>
-              {filteredData.map(product => (
-                <TableRow key={product.id}>
-                  <TableCell className="font-medium">{product.name}</TableCell>
-                  <TableCell>{product.sku}</TableCell>
-                  <TableCell>{product.itemsSold}</TableCell>
-                  <TableCell>{formatCurrency(product.netSales)}</TableCell>
-                  <TableCell>{product.orders}</TableCell>
-                  <TableCell>{product.category}</TableCell>
-                </TableRow>
-              ))}
-            </TableBody>
-          </Table>
-          <div className="text-muted-foreground mt-4 text-sm">
-            {filteredData.length} Products {summaryStats.itemsSold} Items sold{' '}
-            {formatCurrency(summaryStats.netSales)} Net sales{' '}
-            {summaryStats.orders} Orders
-          </div>
+          {isLoading ? (
+            <div className="flex items-center justify-center py-8">
+              <div className="text-muted-foreground">
+                Loading product data...
+              </div>
+            </div>
+          ) : (
+            <>
+              <Table>
+                <TableHeader>
+                  <TableRow>
+                    <TableHead>Product</TableHead>
+                    <TableHead>SKU</TableHead>
+                    <TableHead>Category</TableHead>
+                    <TableHead>Items Sold</TableHead>
+                    <TableHead>Revenue</TableHead>
+                    <TableHead>Stock</TableHead>
+                    <TableHead>Trend</TableHead>
+                  </TableRow>
+                </TableHeader>
+                <TableBody>
+                  {products.map(product => (
+                    <TableRow key={product.id}>
+                      <TableCell className="font-medium">
+                        {product.name || 'Unknown Product'}
+                      </TableCell>
+                      <TableCell>{product.sku || 'N/A'}</TableCell>
+                      <TableCell>
+                        {product.category || 'Uncategorized'}
+                      </TableCell>
+                      <TableCell>{product.totalSold || 0}</TableCell>
+                      <TableCell>
+                        {formatCurrency(product.revenue || 0)}
+                      </TableCell>
+                      <TableCell>
+                        <Badge
+                          variant={
+                            (product.currentStock || 0) > 0
+                              ? 'default'
+                              : 'destructive'
+                          }
+                        >
+                          {product.currentStock || 0}
+                        </Badge>
+                      </TableCell>
+                      <TableCell>
+                        {getTrendBadge(
+                          product.trending || 'stable',
+                          product.trendPercentage || 0
+                        )}
+                      </TableCell>
+                    </TableRow>
+                  ))}
+                </TableBody>
+              </Table>
+              <div className="text-muted-foreground mt-4 text-sm">
+                {products.length} Products • {summaryStats?.totalSold || 0}{' '}
+                Items sold • {formatCurrency(summaryStats?.totalRevenue || 0)}{' '}
+                Total revenue
+              </div>
+
+              {/* Pagination - Moved to far right */}
+              {pagination.totalPages > 1 && (
+                <div className="mt-4 flex items-center justify-end">
+                  <Pagination>
+                    <PaginationContent>
+                      <PaginationItem>
+                        <PaginationPrevious
+                          onClick={() =>
+                            handlePageChange(Math.max(1, pagination.page - 1))
+                          }
+                          className={
+                            pagination.page === 1
+                              ? 'pointer-events-none opacity-50'
+                              : 'cursor-pointer'
+                          }
+                        />
+                      </PaginationItem>
+                      {pagination.page > 2 && (
+                        <>
+                          <PaginationItem>
+                            <PaginationLink
+                              onClick={() => handlePageChange(1)}
+                              className="cursor-pointer"
+                            >
+                              1
+                            </PaginationLink>
+                          </PaginationItem>
+                          {pagination.page > 3 && (
+                            <PaginationItem>
+                              <PaginationEllipsis />
+                            </PaginationItem>
+                          )}
+                        </>
+                      )}
+                      {pagination.page > 1 && (
+                        <PaginationItem>
+                          <PaginationLink
+                            onClick={() =>
+                              handlePageChange(pagination.page - 1)
+                            }
+                            className="cursor-pointer"
+                          >
+                            {pagination.page - 1}
+                          </PaginationLink>
+                        </PaginationItem>
+                      )}
+                      <PaginationItem>
+                        <PaginationLink isActive className="cursor-pointer">
+                          {pagination.page}
+                        </PaginationLink>
+                      </PaginationItem>
+                      {pagination.page < pagination.totalPages && (
+                        <PaginationItem>
+                          <PaginationLink
+                            onClick={() =>
+                              handlePageChange(pagination.page + 1)
+                            }
+                            className="cursor-pointer"
+                          >
+                            {pagination.page + 1}
+                          </PaginationLink>
+                        </PaginationItem>
+                      )}
+                      {pagination.page < pagination.totalPages - 1 && (
+                        <>
+                          {pagination.page < pagination.totalPages - 2 && (
+                            <PaginationItem>
+                              <PaginationEllipsis />
+                            </PaginationItem>
+                          )}
+                          <PaginationItem>
+                            <PaginationLink
+                              onClick={() =>
+                                handlePageChange(pagination.totalPages)
+                              }
+                              className="cursor-pointer"
+                            >
+                              {pagination.totalPages}
+                            </PaginationLink>
+                          </PaginationItem>
+                        </>
+                      )}
+                      <PaginationItem>
+                        <PaginationNext
+                          onClick={() =>
+                            handlePageChange(
+                              Math.min(
+                                pagination.totalPages,
+                                pagination.page + 1
+                              )
+                            )
+                          }
+                          className={
+                            pagination.page === pagination.totalPages
+                              ? 'pointer-events-none opacity-50'
+                              : 'cursor-pointer'
+                          }
+                        />
+                      </PaginationItem>
+                    </PaginationContent>
+                  </Pagination>
+                </div>
+              )}
+            </>
+          )}
         </CardContent>
       </Card>
     </div>

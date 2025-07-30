@@ -14,6 +14,7 @@ import {
   IconTag,
 } from '@tabler/icons-react';
 import { formatCurrency } from '@/lib/utils';
+import { calculateOrderTotals } from '@/lib/utils/calculations';
 
 export interface CartItem {
   id: number;
@@ -52,10 +53,7 @@ export function ShoppingCart({
   }
 
   const totalItems = items.reduce((sum, item) => sum + item.quantity, 0);
-  const totalValue = items.reduce(
-    (sum, item) => sum + item.price * item.quantity,
-    0
-  );
+  const { subtotal: totalValue } = calculateOrderTotals(items, 0);
 
   return (
     <div className="flex h-full flex-col">

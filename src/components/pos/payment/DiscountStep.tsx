@@ -5,6 +5,7 @@ import { Label } from '@/components/ui/label';
 import { Separator } from '@/components/ui/separator';
 import { formatCurrency } from '@/lib/utils';
 import { IconPercentage, IconMinus } from '@tabler/icons-react';
+import { calculateDiscountAmount } from '@/lib/utils/calculations';
 
 interface DiscountStepProps {
   discountType: 'percentage' | 'fixed';
@@ -32,14 +33,11 @@ export function DiscountStep({
     handleDiscountChange(0);
   };
 
-  const calculateDiscountAmount = () => {
-    if (discountType === 'percentage') {
-      return (subtotal * discountValue) / 100;
-    }
-    return discountValue;
-  };
-
-  const discountAmount = calculateDiscountAmount();
+  const discountAmount = calculateDiscountAmount(
+    subtotal,
+    discountValue,
+    discountType
+  );
   const finalTotal = subtotal - discountAmount;
 
   return (

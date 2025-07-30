@@ -4,79 +4,25 @@ import { handleApiError } from '@/lib/api-error-handler-new';
 import { prisma } from '@/lib/db';
 import { PAYMENT_STATUS } from '@/lib/constants';
 
-interface ProductPerformance {
-  id: number;
-  name: string;
-  sku: string;
-  category: string | null;
-  brand: string | null;
-  currentStock: number;
-  totalSold: number;
-  revenue: number;
-  averageOrderValue: number;
-  lastSold: string | null;
-  trending: 'up' | 'down' | 'stable';
-  trendPercentage: number;
-}
-
-// Helper function to get date filter based on period
-function getPeriodFilter(period: string): Date {
-  const now = new Date();
-  switch (period) {
-    case '7d':
-      return new Date(now.getTime() - 7 * 24 * 60 * 60 * 1000);
-    case '30d':
-      return new Date(now.getTime() - 30 * 24 * 60 * 60 * 1000);
-    case '90d':
-      return new Date(now.getTime() - 90 * 24 * 60 * 60 * 1000);
-    case '1y':
-      return new Date(now.getTime() - 365 * 24 * 60 * 60 * 1000);
-    default:
-      return new Date(now.getTime() - 30 * 24 * 60 * 60 * 1000);
-  }
-}
-
 export const GET = withAuth(async (request: AuthenticatedRequest) => {
   try {
     const { searchParams } = new URL(request.url);
-    const period = searchParams.get('period') || '30d';
     const fromDate = searchParams.get('fromDate');
     const toDate = searchParams.get('toDate');
-    const search = searchParams.get('search') || '';
-    const category = searchParams.get('category') || 'all';
-    const sortBy = searchParams.get('sortBy') || 'revenue';
-    const page = parseInt(searchParams.get('page') || '1');
-    const limit = parseInt(searchParams.get('limit') || '10');
+    const format = searchParams.get('format') || 'csv';
 
-    // Use custom date range if provided, otherwise use period
-    let periodStart: Date;
-    let periodEnd: Date | undefined;
-
-    if (fromDate && toDate) {
-      periodStart = new Date(fromDate);
-      periodEnd = new Date(toDate + 'T23:59:59'); // End of day
-    } else {
-      periodStart = getPeriodFilter(period);
-      periodEnd = new Date(); // Current date
+    if (!fromDate || !toDate) {
+      return NextResponse.json(
+        { error: 'fromDate and toDate are required' },
+        { status: 400 }
+      );
     }
 
-    // Build where clause for product filtering
-    const productWhere: any = {};
-
-    if (search) {
-      productWhere.OR = [
-        { name: { contains: search, mode: 'insensitive' } },
-        { sku: { contains: search, mode: 'insensitive' } },
-      ];
-    }
-
-    if (category !== 'all') {
-      productWhere.categoryId = parseInt(category);
-    }
+    const periodStart = new Date(fromDate);
+    const periodEnd = new Date(toDate + 'T23:59:59'); // End of day
 
     // Get products with their sales data
     const products = await prisma.product.findMany({
-      where: productWhere,
       include: {
         category: {
           select: { name: true },
@@ -89,7 +35,7 @@ export const GET = withAuth(async (request: AuthenticatedRequest) => {
             sales_transactions: {
               created_at: {
                 gte: periodStart,
-                ...(periodEnd && { lte: periodEnd }),
+                lte: periodEnd,
               },
               payment_status: PAYMENT_STATUS.PAID,
             },
@@ -106,7 +52,7 @@ export const GET = withAuth(async (request: AuthenticatedRequest) => {
     });
 
     // Transform to performance data and filter out products with no sales
-    const productPerformance: ProductPerformance[] = products
+    const productPerformance = products
       .map(product => {
         const salesItems = product.sales_items || [];
         const totalSold = salesItems.reduce(
@@ -130,7 +76,7 @@ export const GET = withAuth(async (request: AuthenticatedRequest) => {
                 )[0]
             : null;
 
-        // Calculate trend (simplified - compare current period with previous period)
+        // Calculate trend
         const halfPeriodStart = new Date(
           periodStart.getTime() + (Date.now() - periodStart.getTime()) / 2
         );
@@ -174,13 +120,13 @@ export const GET = withAuth(async (request: AuthenticatedRequest) => {
           id: product.id,
           name: product.name,
           sku: product.sku,
-          category: product.category?.name || null,
-          brand: product.brand?.name || null,
+          category: product.category?.name || 'Uncategorized',
+          brand: product.brand?.name || 'Unknown',
           currentStock: product.stock,
           totalSold,
           revenue,
           averageOrderValue,
-          lastSold: lastSold?.toISOString() || null,
+          lastSold: lastSold?.toISOString() || 'Never',
           trending,
           trendPercentage: Math.round(trendPercentage),
         };
@@ -197,42 +143,65 @@ export const GET = withAuth(async (request: AuthenticatedRequest) => {
       return b.revenue - a.revenue;
     });
 
-    // Apply pagination
-    const totalItems = productPerformance.length;
-    const totalPages = Math.ceil(totalItems / limit);
-    const skip = (page - 1) * limit;
-    const paginatedProducts = productPerformance.slice(skip, skip + limit);
+    if (format === 'csv') {
+      // Generate CSV content
+      const csvHeaders = [
+        'Product Name',
+        'SKU',
+        'Category',
+        'Brand',
+        'Current Stock',
+        'Units Sold',
+        'Revenue (₦)',
+        'Average Order Value (₦)',
+        'Last Sold',
+        'Trend',
+        'Trend Percentage (%)',
+      ];
 
-    // Calculate summary statistics
-    const totalProducts = productPerformance.length;
-    const totalRevenue = productPerformance.reduce(
-      (sum, p) => sum + p.revenue,
-      0
-    );
-    const totalSold = productPerformance.reduce(
-      (sum, p) => sum + p.totalSold,
-      0
-    );
-    const averageRevenue = totalProducts > 0 ? totalRevenue / totalProducts : 0;
+      const csvRows = productPerformance.map(product => [
+        product.name,
+        product.sku,
+        product.category,
+        product.brand,
+        product.currentStock,
+        product.totalSold,
+        product.revenue.toFixed(2),
+        product.averageOrderValue.toFixed(2),
+        product.lastSold === 'Never'
+          ? 'Never'
+          : new Date(product.lastSold).toLocaleDateString(),
+        product.trending,
+        product.trendPercentage,
+      ]);
 
+      const csvContent = [
+        csvHeaders.join(','),
+        ...csvRows.map(row => row.map(cell => `"${cell}"`).join(',')),
+      ].join('\n');
+
+      return new NextResponse(csvContent, {
+        status: 200,
+        headers: {
+          'Content-Type': 'text/csv',
+          'Content-Disposition': `attachment; filename="product-analytics-${new Date().toISOString().split('T')[0]}.csv"`,
+        },
+      });
+    }
+
+    // Default JSON response
     return NextResponse.json({
       success: true,
-      data: {
-        products: paginatedProducts,
-        summary: {
-          totalProducts,
-          totalRevenue,
-          totalSold,
-          averageRevenue,
-        },
-        pagination: {
-          page,
-          limit,
-          totalPages,
-          total: totalItems,
-        },
-        period,
-        periodStart: periodStart.toISOString(),
+      data: productPerformance,
+      summary: {
+        totalProducts: productPerformance.length,
+        totalSold: productPerformance.reduce((sum, p) => sum + p.totalSold, 0),
+        totalRevenue: productPerformance.reduce((sum, p) => sum + p.revenue, 0),
+        averageOrderValue:
+          productPerformance.length > 0
+            ? productPerformance.reduce((sum, p) => sum + p.revenue, 0) /
+              productPerformance.length
+            : 0,
       },
     });
   } catch (error) {
