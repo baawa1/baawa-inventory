@@ -1,4 +1,4 @@
-import { auth } from '../../../../../auth';
+import { auth } from '#root/auth';
 import { Metadata } from 'next';
 import { redirect } from 'next/navigation';
 import { StockHistoryList } from '@/components/inventory/StockHistoryList';

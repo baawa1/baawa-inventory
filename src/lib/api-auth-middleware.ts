@@ -4,7 +4,7 @@
  */
 
 import { NextRequest, NextResponse } from 'next/server';
-import { auth } from '../../auth';
+import { auth } from '#root/auth';
 import { hasPermission } from './auth/roles';
 import { AuditLogger } from './utils/audit-logger';
 import { USER_STATUS } from './constants';

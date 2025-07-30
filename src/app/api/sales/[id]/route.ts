@@ -1,4 +1,4 @@
-import { auth } from '../../../../../auth';
+import { auth } from '#root/auth';
 import { NextRequest, NextResponse } from 'next/server';
 import { canAccessPOS } from '@/lib/auth/roles';
 import { InventoryService } from '@/lib/inventory-service';

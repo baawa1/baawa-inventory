@@ -1,5 +1,5 @@
 import { redirect } from 'next/navigation';
-import { auth } from '../../../../../../auth';
+import { auth } from '#root/auth';
 import { CategoryPerformance } from '@/components/pos/CategoryPerformance';
 import { ALL_ROLES, UserRole } from '@/lib/auth/roles';
 

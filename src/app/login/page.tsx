@@ -1,7 +1,7 @@
 import { Suspense } from 'react';
 import Link from 'next/link';
 import { redirect } from 'next/navigation';
-import { auth } from '../../../auth';
+import { auth } from '#root/auth';
 import { LoginForm } from '@/components/auth/LoginForm';
 import { Logo } from '@/components/ui/logo';
 

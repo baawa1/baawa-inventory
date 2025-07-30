@@ -1,4 +1,4 @@
-import { auth } from '../../../../../../../auth';
+import { auth } from '#root/auth';
 import { redirect } from 'next/navigation';
 import EditProductForm from '@/components/inventory/EditProductForm';
 

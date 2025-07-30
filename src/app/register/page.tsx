@@ -1,6 +1,6 @@
 import Link from 'next/link';
 import { redirect } from 'next/navigation';
-import { auth } from '../../../auth';
+import { auth } from '#root/auth';
 import { RegisterForm } from '@/components/auth/RegisterForm';
 import { Logo } from '@/components/ui/logo';
 

@@ -1,5 +1,5 @@
 import { redirect } from 'next/navigation';
-import { auth } from '../../../../auth';
+import { auth } from '#root/auth';
 import { AdminDashboard } from '@/components/admin/AdminDashboard';
 import { USER_ROLES } from '@/lib/auth/roles';
 

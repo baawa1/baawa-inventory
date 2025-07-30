@@ -1,15 +1,15 @@
 import { redirect } from 'next/navigation';
 import { auth } from '#root/auth';
-import { CustomerAnalytics } from '@/components/pos/CustomerAnalytics';
+import { CustomerList } from '@/components/pos/CustomerList';
 import { DashboardPageLayout } from '@/components/layouts/DashboardPageLayout';
 import { ALL_ROLES, UserRole } from '@/lib/auth/roles';
 
 export const metadata = {
-  title: 'Customer Analytics - BaaWA Inventory POS',
-  description: 'Comprehensive customer insights and analytics',
+  title: 'Customer Management - BaaWA Inventory POS',
+  description: 'Manage and view all customer information',
 };
 
-export default async function CustomersPage() {
+export default async function CustomerManagementPage() {
   const session = await auth();
 
   if (!session?.user) {
@@ -27,10 +27,10 @@ export default async function CustomersPage() {
 
   return (
     <DashboardPageLayout
-      title="Customer Analytics"
-      description="Comprehensive customer insights and analytics"
+      title="Customer Management"
+      description="Manage and view all customer information"
     >
-      <CustomerAnalytics user={session.user} />
+      <CustomerList user={session.user} />
     </DashboardPageLayout>
   );
 }

@@ -5,7 +5,7 @@
 
 import { NextRequest } from 'next/server';
 import crypto from 'crypto';
-import { auth } from '../../auth';
+import { auth } from '#root/auth';
 import { logger } from '@/lib/logger';
 
 interface CSRFVerificationResult {

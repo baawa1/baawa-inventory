@@ -1,4 +1,4 @@
-import { auth } from '../../../../../auth';
+import { auth } from '#root/auth';
 import { NextRequest, NextResponse } from 'next/server';
 import { prisma } from '@/lib/db';
 import { updateStockReconciliationSchema } from '@/lib/validations/stock-management';

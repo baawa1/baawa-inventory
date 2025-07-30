@@ -1,4 +1,4 @@
-import { auth } from '../../../../../../auth';
+import { auth } from '#root/auth';
 import { NextRequest } from 'next/server';
 import { prisma } from '@/lib/db';
 import { logger } from '@/lib/logger';

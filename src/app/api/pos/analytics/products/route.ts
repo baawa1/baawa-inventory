@@ -198,7 +198,17 @@ export const GET = withAuth(async (request: AuthenticatedRequest) => {
           return b.averageOrderValue - a.averageOrderValue;
         case 'name':
           return a.name.localeCompare(b.name);
+        case 'currentStock':
+          return b.currentStock - a.currentStock;
+        case 'lastSold':
+          if (!a.lastSold && !b.lastSold) return 0;
+          if (!a.lastSold) return 1;
+          if (!b.lastSold) return -1;
+          return (
+            new Date(b.lastSold).getTime() - new Date(a.lastSold).getTime()
+          );
         default:
+          // Default to revenue sorting
           return b.revenue - a.revenue;
       }
     });
