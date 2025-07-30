@@ -11,7 +11,6 @@ import {
   IconPackage,
   IconCurrencyNaira,
   IconChartLine,
-  IconUsers,
   IconArrowRight,
   IconPlus,
   IconSettings,
@@ -21,10 +20,9 @@ import { formatCurrency } from '@/lib/utils';
 import { useTransactionStats } from '@/hooks/api/transactions';
 import { useInventoryStats } from '@/hooks/api/inventory';
 import { useFinancialAnalyticsSummary } from '@/hooks/api/useFinancialAnalytics';
-import { useAuditLogs } from '@/hooks/api/audit-logs';
 import { useSalesTrends } from '@/hooks/api/useSalesTrends';
 import { useTopProducts } from '@/hooks/api/useTopProducts';
-import { getAuditActionColor, getAuditActionLabel } from '@/lib/constants/audit';
+import { useRecentTransactions } from '@/hooks/api/useRecentTransactions';
 import {
   LineChart,
   Line,
@@ -49,17 +47,15 @@ export function SimpleDashboard({ user }: SimpleDashboardProps) {
     useInventoryStats();
   const { data: financeData, isLoading: isLoadingFinance } =
     useFinancialAnalyticsSummary();
-  const { data: auditLogs, isLoading: isLoadingAudit } = useAuditLogs({
-    limit: 5,
-  });
-
   // Fetch chart data from APIs
   const { data: salesTrends, isLoading: isLoadingSalesTrends } =
     useSalesTrends();
   const { data: topProductsData, isLoading: isLoadingTopProducts } =
     useTopProducts();
+  const { data: recentTransactions, isLoading: isLoadingTransactions } =
+    useRecentTransactions(5);
 
-  const isAdmin = user.role === 'ADMIN';
+
 
   // Get inventory metrics from API
   const totalProducts = inventoryStats?.totalProducts || 0;
@@ -322,63 +318,71 @@ export function SimpleDashboard({ user }: SimpleDashboardProps) {
         </Card>
       </div>
 
-      {/* Admin Activities Section */}
-      {isAdmin && (
-        <Card>
-          <CardHeader>
-            <CardTitle className="flex items-center gap-2">
-              <IconUsers className="h-5 w-5" />
-              Admin Activities
-            </CardTitle>
-          </CardHeader>
-          <CardContent>
-            {isLoadingAudit ? (
-              <div className="space-y-3">
-                {Array.from({ length: 3 }).map((_, i) => (
-                  <div key={i} className="flex items-center gap-3">
+      {/* Recent Transactions Section */}
+      <Card>
+        <CardHeader>
+          <CardTitle className="flex items-center justify-between">
+            <span className="flex items-center gap-2">
+              <IconShoppingCart className="h-5 w-5" />
+              Recent Transactions
+            </span>
+            <Link href="/pos/history">
+              <Button variant="outline" size="sm" className="text-xs">
+                View All
+              </Button>
+            </Link>
+          </CardTitle>
+        </CardHeader>
+        <CardContent>
+          {isLoadingTransactions ? (
+            <div className="space-y-3">
+              {Array.from({ length: 5 }).map((_, i) => (
+                <div key={i} className="flex items-center justify-between">
+                  <div className="flex items-center gap-3">
                     <div className="bg-muted h-4 w-4 animate-pulse rounded-full" />
                     <div className="bg-muted h-4 w-32 animate-pulse rounded" />
-                    <div className="bg-muted h-4 w-20 animate-pulse rounded" />
                   </div>
-                ))}
-              </div>
-            ) : (
-              <div className="space-y-3">
-                {auditLogs?.logs?.slice(0, 5).map((log, index) => (
-                  <div
-                    key={index}
-                    className="flex items-center justify-between"
-                  >
-                    <div className="flex items-center gap-3">
-                      <div
-                        className={`h-2 w-2 rounded-full ${getAuditActionColor(log.action)}`}
-                      />
-                      <div className="flex flex-col">
-                        <span className="text-sm font-medium">
-                          {getAuditActionLabel(log.action)}
-                        </span>
-                        {log.table_name && (
-                          <span className="text-muted-foreground text-xs">
-                            {log.table_name}
-                          </span>
-                        )}
-                      </div>
+                  <div className="bg-muted h-4 w-20 animate-pulse rounded" />
+                </div>
+              ))}
+            </div>
+          ) : (
+            <div className="space-y-3">
+              {recentTransactions?.slice(0, 5).map((transaction) => (
+                <div
+                  key={transaction.id}
+                  className="flex items-center justify-between"
+                >
+                  <div className="flex items-center gap-3">
+                    <div className="h-2 w-2 rounded-full bg-green-500" />
+                    <div className="flex flex-col">
+                      <span className="text-sm font-medium">
+                        {transaction.customerName}
+                      </span>
+                      <span className="text-muted-foreground text-xs">
+                        {transaction.firstItem} • {transaction.totalItems} items
+                      </span>
                     </div>
+                  </div>
+                  <div className="flex flex-col items-end">
+                    <span className="text-sm font-medium">
+                      {formatCurrency(transaction.totalAmount)}
+                    </span>
                     <span className="text-muted-foreground text-xs">
-                      {new Date(log.created_at).toLocaleDateString()}
+                      {new Date(transaction.createdAt).toLocaleDateString()}
                     </span>
                   </div>
-                ))}
-                {(!auditLogs?.logs || auditLogs.logs.length === 0) && (
-                  <div className="text-muted-foreground py-4 text-center text-sm">
-                    No recent admin activities
-                  </div>
-                )}
-              </div>
-            )}
-          </CardContent>
-        </Card>
-      )}
+                </div>
+              ))}
+              {(!recentTransactions || recentTransactions.length === 0) && (
+                <div className="text-muted-foreground py-4 text-center text-sm">
+                  No recent transactions
+                </div>
+              )}
+            </div>
+          )}
+        </CardContent>
+      </Card>
 
       {/* Quick Actions */}
       <Card>
