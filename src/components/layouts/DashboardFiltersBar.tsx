@@ -1,11 +1,11 @@
 import React, { useCallback } from 'react';
 import {
-  DashboardCard,
+  Card,
   CardHeader,
   CardTitle,
   CardDescription,
   CardContent,
-} from '@/components/dashboard/DashboardCard';
+} from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import {
@@ -124,7 +124,7 @@ export function DashboardFiltersBar({
   );
 
   return (
-    <DashboardCard className="mb-6">
+          <Card className="dark:bg-card bg-white px-4 lg:px-6 mb-6">
       <CardHeader>
         <CardTitle className="flex items-center gap-2">
           <IconFilter className="h-5 w-5" /> {title}
@@ -179,6 +179,6 @@ export function DashboardFiltersBar({
         </div>
         {quickFilters && <div className="mt-4 flex gap-2">{quickFilters}</div>}
       </CardContent>
-    </DashboardCard>
+    </Card>
   );
 }
