@@ -1,6 +1,6 @@
 'use client';
 
-import React, { useState, useMemo } from 'react';
+import React, { useState, useMemo, useEffect } from 'react';
 import { useQuery } from '@tanstack/react-query';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
@@ -54,6 +54,8 @@ export function CustomerList({ user: _ }: CustomerListProps) {
   const [searchTerm, setSearchTerm] = useState('');
   const [statusFilter, setStatusFilter] = useState('all');
   const [sortBy, setSortBy] = useState('totalSpent');
+  const [currentPage, setCurrentPage] = useState(1);
+  const [pageSize, setPageSize] = useState(10);
 
   const {
     data: customers = [],
@@ -119,6 +121,18 @@ export function CustomerList({ user: _ }: CustomerListProps) {
       }
     });
   }, [filteredCustomers, sortBy]);
+
+  // Pagination logic
+  const totalItems = sortedCustomers.length;
+  const totalPages = Math.ceil(totalItems / pageSize);
+  const startIndex = (currentPage - 1) * pageSize;
+  const endIndex = startIndex + pageSize;
+  const paginatedCustomers = sortedCustomers.slice(startIndex, endIndex);
+
+  // Reset to first page when filters change
+  useEffect(() => {
+    setCurrentPage(1);
+  }, [searchTerm, statusFilter, sortBy]);
 
   // Column configuration
   const columns: DashboardTableColumn[] = useMemo(
@@ -207,35 +221,28 @@ export function CustomerList({ user: _ }: CustomerListProps) {
     []
   );
 
-  // Pagination state
-  const [pagination, setPagination] = useState({
-    page: 1,
-    limit: 10,
-    totalPages: Math.ceil(sortedCustomers.length / 10),
-    totalItems: sortedCustomers.length,
-  });
-
   // Handle filter changes
   const handleFilterChange = (key: string, value: unknown) => {
     if (key === 'status') {
       setStatusFilter(value as string);
     }
-    setPagination(prev => ({ ...prev, page: 1 }));
+    setCurrentPage(1);
   };
 
   // Clear all filters
   const handleResetFilters = () => {
     setSearchTerm('');
     setStatusFilter('all');
-    setPagination(prev => ({ ...prev, page: 1 }));
+    setCurrentPage(1);
   };
 
   const handlePageChange = (newPage: number) => {
-    setPagination(prev => ({ ...prev, page: newPage }));
+    setCurrentPage(newPage);
   };
 
   const handlePageSizeChange = (newSize: number) => {
-    setPagination(prev => ({ ...prev, limit: newSize, page: 1 }));
+    setPageSize(newSize);
+    setCurrentPage(1); // Reset to first page when changing page size
   };
 
   const handleSortChange = (sortValue: string) => {
@@ -290,7 +297,7 @@ export function CustomerList({ user: _ }: CustomerListProps) {
   };
 
   // Render actions
-  const renderActions = (customer: Customer) => (
+  const renderActions = (_customer: Customer) => (
     <div className="flex items-center gap-2">
       <Button variant="ghost" size="sm">
         <IconEye className="h-4 w-4" />
@@ -303,6 +310,14 @@ export function CustomerList({ user: _ }: CustomerListProps) {
       </Button>
     </div>
   );
+
+  // Pagination object for DashboardTableLayout
+  const pagination = {
+    page: currentPage,
+    limit: pageSize,
+    totalPages,
+    totalItems,
+  };
 
   return (
     <DashboardTableLayout
@@ -323,15 +338,15 @@ export function CustomerList({ user: _ }: CustomerListProps) {
       onResetFilters={handleResetFilters}
       columns={columns}
       visibleColumns={visibleColumns}
-      data={sortedCustomers}
+      data={paginatedCustomers}
       renderCell={renderCell}
       renderActions={renderActions}
       pagination={pagination}
       onPageChange={handlePageChange}
       onPageSizeChange={handlePageSizeChange}
       emptyStateMessage="No customers found"
-      totalCount={sortedCustomers.length}
-      currentCount={sortedCustomers.length}
+      totalCount={totalItems}
+      currentCount={paginatedCustomers.length}
       isLoading={isLoading}
       sortOptions={[
         { value: 'totalSpent-desc', label: 'Total Spent (High to Low)' },

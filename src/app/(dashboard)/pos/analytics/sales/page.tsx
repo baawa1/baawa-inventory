@@ -25,12 +25,5 @@ export default async function SalesAnalyticsPage() {
     redirect('/pending-approval');
   }
 
-  return (
-    <DashboardPageLayout
-      title="Sales Analytics"
-      description="Analyze sales performance and business insights"
-    >
-      <SalesAnalytics user={session.user} />
-    </DashboardPageLayout>
-  );
+  return <SalesAnalytics user={session.user} />;
 }

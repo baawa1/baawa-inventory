@@ -25,12 +25,5 @@ export default async function CustomersPage() {
     redirect('/pending-approval');
   }
 
-  return (
-    <DashboardPageLayout
-      title="Customer Analytics"
-      description="Comprehensive customer insights and analytics"
-    >
-      <CustomerAnalytics user={session.user} />
-    </DashboardPageLayout>
-  );
+  return <CustomerAnalytics user={session.user} />;
 }
