@@ -187,14 +187,20 @@ export const GET = withAuth(async (request: AuthenticatedRequest) => {
       })
       .filter(product => product.totalSold > 0); // Only include products with sales
 
-    // Sort by items sold first, then by revenue
+    // Sort based on the sortBy parameter
     productPerformance.sort((a, b) => {
-      // First sort by total sold (descending)
-      if (b.totalSold !== a.totalSold) {
-        return b.totalSold - a.totalSold;
+      switch (sortBy) {
+        case 'revenue':
+          return b.revenue - a.revenue;
+        case 'totalSold':
+          return b.totalSold - a.totalSold;
+        case 'averageOrderValue':
+          return b.averageOrderValue - a.averageOrderValue;
+        case 'name':
+          return a.name.localeCompare(b.name);
+        default:
+          return b.revenue - a.revenue;
       }
-      // If items sold are equal, sort by revenue (descending)
-      return b.revenue - a.revenue;
     });
 
     // Apply pagination

@@ -1,7 +1,6 @@
 import { redirect } from 'next/navigation';
 import { auth } from '../../../../../../auth';
 import { CategoryPerformance } from '@/components/pos/CategoryPerformance';
-import { DashboardPageLayout } from '@/components/layouts/DashboardPageLayout';
 import { ALL_ROLES, UserRole } from '@/lib/auth/roles';
 
 export const metadata = {
@@ -25,12 +24,5 @@ export default async function CategoryPerformancePage() {
     redirect('/pending-approval');
   }
 
-  return (
-    <DashboardPageLayout
-      title="Category Performance"
-      description="Analyze category performance and sales metrics"
-    >
-      <CategoryPerformance user={session.user} />
-    </DashboardPageLayout>
-  );
+  return <CategoryPerformance user={session.user} />;
 }

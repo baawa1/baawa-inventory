@@ -1,8 +1,7 @@
 'use client';
 
-import React, { useState, useMemo } from 'react';
+import React, { useState, useMemo, useEffect } from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
-import { Button } from '@/components/ui/button';
 import {
   Select,
   SelectContent,
@@ -18,19 +17,30 @@ import {
   TableHeader,
   TableRow,
 } from '@/components/ui/table';
-import { Badge } from '@/components/ui/badge';
-import { Input } from '@/components/ui/input';
 import {
-  IconSearch,
-  IconDownload,
-  IconDots,
+  Pagination,
+  PaginationContent,
+  PaginationEllipsis,
+  PaginationItem,
+  PaginationLink,
+  PaginationNext,
+  PaginationPrevious,
+} from '@/components/ui/pagination';
+import { Badge } from '@/components/ui/badge';
+import { DateRangePickerWithPresets } from '@/components/ui/date-range-picker-with-presets';
+import {
   IconTrendingUp,
   IconTrendingDown,
   IconMinus,
+  IconCurrencyNaira,
+  IconShoppingCart,
+  IconPackages,
+  IconTrophy,
 } from '@tabler/icons-react';
 import { formatCurrency } from '@/lib/utils';
 import { useQuery } from '@tanstack/react-query';
 import { toast } from 'sonner';
+import { DateRange } from 'react-day-picker';
 
 interface User {
   id: string;
@@ -71,13 +81,21 @@ interface CategoryAnalyticsResponse {
     totalRevenue: number;
     averageOrderValue: number;
   };
+  pagination: {
+    page: number;
+    limit: number;
+    totalPages: number;
+    total: number;
+  };
 }
 
 async function fetchCategoryAnalytics(
   period: string,
   fromDate?: string,
   toDate?: string,
-  search?: string
+  search?: string,
+  sortBy?: string,
+  page?: number
 ): Promise<CategoryAnalyticsResponse> {
   const params = new URLSearchParams();
   params.append('period', period);
@@ -85,29 +103,57 @@ async function fetchCategoryAnalytics(
   if (fromDate) params.append('fromDate', fromDate);
   if (toDate) params.append('toDate', toDate);
   if (search) params.append('search', search);
+  if (sortBy) params.append('sortBy', sortBy);
+  if (page) params.append('page', page.toString());
 
   const response = await fetch(`/api/pos/analytics/categories?${params}`);
   if (!response.ok) {
     throw new Error('Failed to fetch category analytics');
   }
-  return response.json();
+  const result = await response.json();
+
+  // Return the API response directly since it now matches our interface
+  return result.data;
 }
 
 export function CategoryPerformance({ user: _ }: CategoryPerformanceProps) {
-  const [period, setPeriod] = useState('30d');
-  const [fromDate, setFromDate] = useState<string>('');
-  const [toDate, setToDate] = useState<string>('');
-  const [showFilter, setShowFilter] = useState('all-categories');
-  const [searchTerm, setSearchTerm] = useState('');
+  const [dateRange, setDateRange] = useState<DateRange | undefined>({
+    from: new Date(new Date().getTime() - 30 * 24 * 60 * 60 * 1000), // 30 days ago
+    to: new Date(), // Today
+  });
+  const [sortBy, setSortBy] = useState('revenue');
+  const [currentPage, setCurrentPage] = useState(1);
+  const [totalPages, setTotalPages] = useState(1);
 
   const {
     data: analyticsData,
     isLoading,
     error,
   } = useQuery({
-    queryKey: ['category-analytics', period, fromDate, toDate, searchTerm],
-    queryFn: () => fetchCategoryAnalytics(period, fromDate, toDate, searchTerm),
+    queryKey: [
+      'category-analytics',
+      dateRange?.from,
+      dateRange?.to,
+      sortBy,
+      currentPage,
+    ],
+    queryFn: () =>
+      fetchCategoryAnalytics(
+        'custom',
+        dateRange?.from?.toISOString().split('T')[0],
+        dateRange?.to?.toISOString().split('T')[0],
+        undefined,
+        sortBy,
+        currentPage
+      ),
+    enabled: !!dateRange?.from && !!dateRange?.to,
   });
+
+  useEffect(() => {
+    if (analyticsData?.pagination) {
+      setTotalPages(analyticsData.pagination.totalPages);
+    }
+  }, [analyticsData?.pagination]);
 
   if (error) {
     toast.error('Failed to load category analytics data');
@@ -117,26 +163,6 @@ export function CategoryPerformance({ user: _ }: CategoryPerformanceProps) {
     () => analyticsData?.categories || [],
     [analyticsData?.categories]
   );
-
-  const filteredData = useMemo(() => {
-    let filtered = categories;
-
-    // Apply search filter
-    if (searchTerm) {
-      filtered = filtered.filter(category =>
-        category.name.toLowerCase().includes(searchTerm.toLowerCase())
-      );
-    }
-
-    // Apply performance filter
-    if (showFilter === 'top-performing') {
-      filtered = filtered.sort((a, b) => b.revenue - a.revenue).slice(0, 10);
-    } else if (showFilter === 'low-performing') {
-      filtered = filtered.sort((a, b) => a.revenue - b.revenue).slice(0, 10);
-    }
-
-    return filtered;
-  }, [categories, searchTerm, showFilter]);
 
   const summaryStats = useMemo(() => {
     if (!analyticsData?.summary) {
@@ -176,140 +202,116 @@ export function CategoryPerformance({ user: _ }: CategoryPerformanceProps) {
     }
   };
 
-  const handlePeriodChange = (newPeriod: string) => {
-    setPeriod(newPeriod);
-    // Clear custom date range when using predefined periods
-    if (newPeriod !== 'custom') {
-      setFromDate('');
-      setToDate('');
-    }
+  const sortOptions = [
+    { value: 'revenue', label: 'Revenue' },
+    { value: 'totalSold', label: 'Units Sold' },
+    { value: 'averageOrderValue', label: 'Avg Order Value' },
+    { value: 'marketShare', label: 'Market Share' },
+    { value: 'productCount', label: 'Products' },
+    { value: 'name', label: 'Category Name' },
+  ];
+
+  const handlePageChange = (newPage: number) => {
+    setCurrentPage(newPage);
   };
 
   return (
-    <div className="space-y-6">
-      {/* Header with Filters */}
-      <div className="flex flex-col items-start justify-between gap-4 sm:flex-row sm:items-center">
+    <div className="container mx-auto space-y-6 p-6">
+      {/* Header */}
+      <div className="flex items-center justify-between">
         <div>
-          <h2 className="text-2xl font-bold tracking-tight">Categories</h2>
+          <h1 className="text-3xl font-bold">Category Performance</h1>
+          <p className="text-muted-foreground">
+            Analyze category performance and sales metrics
+          </p>
         </div>
-        <div className="flex items-center gap-3">
-          <Select value={period} onValueChange={handlePeriodChange}>
-            <SelectTrigger className="w-[300px]">
-              <SelectValue placeholder="Select date range" />
-            </SelectTrigger>
-            <SelectContent>
-              <SelectItem value="7d">Last 7 days</SelectItem>
-              <SelectItem value="30d">Last 30 days</SelectItem>
-              <SelectItem value="90d">Last 90 days</SelectItem>
-              <SelectItem value="1y">Last year</SelectItem>
-              <SelectItem value="custom">Custom range</SelectItem>
-            </SelectContent>
-          </Select>
-          <Select value={showFilter} onValueChange={setShowFilter}>
-            <SelectTrigger className="w-[140px]">
-              <SelectValue placeholder="Show" />
-            </SelectTrigger>
-            <SelectContent>
-              <SelectItem value="all-categories">All categories</SelectItem>
-              <SelectItem value="top-performing">Top performing</SelectItem>
-              <SelectItem value="low-performing">Low performing</SelectItem>
-            </SelectContent>
-          </Select>
+        <div className="flex items-center gap-2">
+          <DateRangePickerWithPresets
+            date={dateRange}
+            onDateChange={setDateRange}
+            placeholder="Select date range"
+            className="w-[300px]"
+          />
+          <div className="flex flex-col gap-1">
+            <Select value={sortBy} onValueChange={setSortBy}>
+              <SelectTrigger className="w-[180px]">
+                <SelectValue placeholder="Sort by" />
+              </SelectTrigger>
+              <SelectContent>
+                {sortOptions.map(option => (
+                  <SelectItem key={option.value} value={option.value}>
+                    {option.label}
+                  </SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
+          </div>
         </div>
       </div>
 
-      {/* Custom Date Range Inputs */}
-      {period === 'custom' && (
-        <div className="flex items-center gap-3">
-          <Input
-            type="date"
-            placeholder="From date"
-            value={fromDate}
-            onChange={e => setFromDate(e.target.value)}
-            className="w-[150px]"
-          />
-          <Input
-            type="date"
-            placeholder="To date"
-            value={toDate}
-            onChange={e => setToDate(e.target.value)}
-            className="w-[150px]"
-          />
-        </div>
-      )}
-
-      {/* Summary Metrics */}
-      <div className="grid grid-cols-1 gap-4 md:grid-cols-4">
+      {/* Summary Stats */}
+      <div className="grid grid-cols-1 gap-6 md:grid-cols-4">
         <Card>
-          <CardHeader className="pb-2">
-            <CardTitle className="text-sm font-medium">
-              Total Categories
-            </CardTitle>
-          </CardHeader>
-          <CardContent>
-            <div className="text-2xl font-bold">
-              {summaryStats.totalCategories}
-            </div>
-          </CardContent>
-        </Card>
-        <Card>
-          <CardHeader className="pb-2">
-            <CardTitle className="text-sm font-medium">Items Sold</CardTitle>
-          </CardHeader>
-          <CardContent>
-            <div className="text-2xl font-bold">{summaryStats.totalSold}</div>
-          </CardContent>
-        </Card>
-        <Card>
-          <CardHeader className="pb-2">
+          <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
             <CardTitle className="text-sm font-medium">Total Revenue</CardTitle>
+            <IconCurrencyNaira className="text-muted-foreground h-4 w-4" />
           </CardHeader>
           <CardContent>
             <div className="text-2xl font-bold">
               {formatCurrency(summaryStats.totalRevenue)}
             </div>
+            <p className="text-muted-foreground text-xs">
+              Across {summaryStats.totalCategories} categories
+            </p>
           </CardContent>
         </Card>
+
         <Card>
-          <CardHeader className="pb-2">
+          <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+            <CardTitle className="text-sm font-medium">Units Sold</CardTitle>
+            <IconShoppingCart className="text-muted-foreground h-4 w-4" />
+          </CardHeader>
+          <CardContent>
+            <div className="text-2xl font-bold">
+              {summaryStats.totalSold.toLocaleString()}
+            </div>
+            <p className="text-muted-foreground text-xs">Total units moved</p>
+          </CardContent>
+        </Card>
+
+        <Card>
+          <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+            <CardTitle className="text-sm font-medium">Categories</CardTitle>
+            <IconPackages className="text-muted-foreground h-4 w-4" />
+          </CardHeader>
+          <CardContent>
+            <div className="text-2xl font-bold">
+              {summaryStats.totalCategories}
+            </div>
+            <p className="text-muted-foreground text-xs">Active categories</p>
+          </CardContent>
+        </Card>
+
+        <Card>
+          <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
             <CardTitle className="text-sm font-medium">
               Avg Order Value
             </CardTitle>
+            <IconTrophy className="text-muted-foreground h-4 w-4" />
           </CardHeader>
           <CardContent>
             <div className="text-2xl font-bold">
               {formatCurrency(summaryStats.averageOrderValue)}
             </div>
+            <p className="text-muted-foreground text-xs">Per transaction</p>
           </CardContent>
         </Card>
       </div>
 
-      {/* Categories Table */}
+      {/* Category Performance Table */}
       <Card>
         <CardHeader>
-          <div className="flex items-center justify-between">
-            <CardTitle>Categories</CardTitle>
-            <div className="flex items-center gap-2">
-              <Button variant="outline" size="sm">
-                Compare
-              </Button>
-              <div className="relative">
-                <IconSearch className="absolute top-1/2 left-3 h-4 w-4 -translate-y-1/2 transform text-gray-400" />
-                <Input
-                  placeholder="Search categories..."
-                  value={searchTerm}
-                  onChange={e => setSearchTerm(e.target.value)}
-                  className="w-64 pl-9"
-                />
-              </div>
-              <Button variant="outline" size="sm">
-                <IconDownload className="h-4 w-4" />
-              </Button>
-              <Button variant="outline" size="sm">
-                <IconDots className="h-4 w-4" />
-              </Button>
-            </div>
-          </div>
+          <CardTitle>Category Performance Data</CardTitle>
         </CardHeader>
         <CardContent>
           {isLoading ? (
@@ -324,28 +326,46 @@ export function CategoryPerformance({ user: _ }: CategoryPerformanceProps) {
                 <TableHeader>
                   <TableRow>
                     <TableHead>Category</TableHead>
-                    <TableHead>Items Sold</TableHead>
+                    <TableHead>Products</TableHead>
+                    <TableHead>Units Sold</TableHead>
                     <TableHead>Revenue</TableHead>
                     <TableHead>Market Share</TableHead>
-                    <TableHead>Products</TableHead>
                     <TableHead>Avg Order Value</TableHead>
                     <TableHead>Trend</TableHead>
                   </TableRow>
                 </TableHeader>
                 <TableBody>
-                  {filteredData.map(category => (
+                  {categories.map(category => (
                     <TableRow key={category.id}>
-                      <TableCell className="font-medium">
-                        {category.name || 'Unknown Category'}
-                      </TableCell>
-                      <TableCell>{category.totalSold || 0}</TableCell>
                       <TableCell>
+                        <div>
+                          <div className="font-medium">
+                            {category.name || 'Unknown Category'}
+                          </div>
+                        </div>
+                      </TableCell>
+                      <TableCell>
+                        <Badge variant="outline">
+                          {category.productCount || 0}
+                        </Badge>
+                      </TableCell>
+                      <TableCell className="font-medium">
+                        {category.totalSold || 0}
+                      </TableCell>
+                      <TableCell className="font-medium">
                         {formatCurrency(category.revenue || 0)}
                       </TableCell>
                       <TableCell>
-                        {(category.marketShare || 0).toFixed(1)}%
+                        <div className="flex items-center space-x-2">
+                          <span>{(category.marketShare || 0).toFixed(1)}%</span>
+                          <div className="h-1 w-16 rounded-full bg-gray-200">
+                            <div
+                              className="bg-primary h-1 rounded-full"
+                              style={{ width: `${category.marketShare || 0}%` }}
+                            ></div>
+                          </div>
+                        </div>
                       </TableCell>
-                      <TableCell>{category.productCount || 0}</TableCell>
                       <TableCell>
                         {formatCurrency(category.averageOrderValue || 0)}
                       </TableCell>
@@ -359,11 +379,107 @@ export function CategoryPerformance({ user: _ }: CategoryPerformanceProps) {
                   ))}
                 </TableBody>
               </Table>
+
               <div className="text-muted-foreground mt-4 text-sm">
-                {filteredData.length} Categories •{' '}
-                {summaryStats?.totalSold || 0} Items sold •{' '}
-                {formatCurrency(summaryStats?.totalRevenue || 0)} Total revenue
+                {categories.length} Categories • {summaryStats?.totalSold || 0}{' '}
+                Items sold • {formatCurrency(summaryStats?.totalRevenue || 0)}{' '}
+                Total revenue
               </div>
+
+              {/* Pagination */}
+              {totalPages > 1 && (
+                <div className="mt-4 flex items-center justify-end">
+                  <Pagination>
+                    <PaginationContent>
+                      <PaginationItem>
+                        <PaginationPrevious
+                          onClick={() =>
+                            handlePageChange(Math.max(1, currentPage - 1))
+                          }
+                          className={
+                            currentPage === 1
+                              ? 'pointer-events-none opacity-50'
+                              : 'cursor-pointer'
+                          }
+                        />
+                      </PaginationItem>
+                      {currentPage > 2 && (
+                        <>
+                          <PaginationItem>
+                            <PaginationLink
+                              onClick={() => handlePageChange(1)}
+                              className="cursor-pointer"
+                            >
+                              1
+                            </PaginationLink>
+                          </PaginationItem>
+                          {currentPage > 3 && (
+                            <PaginationItem>
+                              <PaginationEllipsis />
+                            </PaginationItem>
+                          )}
+                        </>
+                      )}
+                      {currentPage > 1 && (
+                        <PaginationItem>
+                          <PaginationLink
+                            onClick={() => handlePageChange(currentPage - 1)}
+                            className="cursor-pointer"
+                          >
+                            {currentPage - 1}
+                          </PaginationLink>
+                        </PaginationItem>
+                      )}
+                      <PaginationItem>
+                        <PaginationLink isActive className="cursor-pointer">
+                          {currentPage}
+                        </PaginationLink>
+                      </PaginationItem>
+                      {currentPage < totalPages && (
+                        <PaginationItem>
+                          <PaginationLink
+                            onClick={() => handlePageChange(currentPage + 1)}
+                            className="cursor-pointer"
+                          >
+                            {currentPage + 1}
+                          </PaginationLink>
+                        </PaginationItem>
+                      )}
+                      {currentPage < totalPages - 1 && (
+                        <>
+                          {currentPage < totalPages - 2 && (
+                            <PaginationItem>
+                              <PaginationEllipsis />
+                            </PaginationItem>
+                          )}
+                          <PaginationItem>
+                            <PaginationLink
+                              onClick={() => handlePageChange(totalPages)}
+                              className="cursor-pointer"
+                            >
+                              {totalPages}
+                            </PaginationLink>
+                          </PaginationItem>
+                        </>
+                      )}
+                      <PaginationItem>
+                        <PaginationNext
+                          onClick={() =>
+                            handlePageChange(
+                              Math.min(totalPages, currentPage + 1)
+                            )
+                          }
+                          className={
+                            currentPage === totalPages
+                              ? 'pointer-events-none opacity-50'
+                              : 'cursor-pointer'
+                          }
+                        />
+                      </PaginationItem>
+                    </PaginationContent>
+                  </Pagination>
+                </div>
+              )}
             </>
           )}
         </CardContent>
