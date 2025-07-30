@@ -1,10 +1,10 @@
 import { auth } from '../../../../../auth';
 import { redirect } from 'next/navigation';
-import { SalesAnalytics } from '@/components/pos/SalesAnalytics';
+import { MainAnalytics } from '@/components/pos/MainAnalytics';
 
 export const metadata = {
-  title: 'Sales Analytics - BaaWA Inventory POS',
-  description: 'Analyze sales performance and business insights',
+  title: 'Analytics - BaaWA Inventory POS',
+  description: 'Quick insights for informed decision-making',
 };
 
 export default async function AnalyticsPage() {
@@ -18,5 +18,5 @@ export default async function AnalyticsPage() {
     redirect('/pending-approval');
   }
 
-  return <SalesAnalytics user={session.user} />;
+  return <MainAnalytics user={session.user} />;
 }

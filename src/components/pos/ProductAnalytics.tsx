@@ -30,6 +30,7 @@ import {
   IconCurrencyNaira,
   IconShoppingCart,
   IconEye,
+  IconTrophy,
 } from '@tabler/icons-react';
 import { formatCurrency } from '@/lib/utils';
 import { toast } from 'sonner';
@@ -80,7 +81,10 @@ async function fetchProductPerformance(
   if (!response.ok) {
     throw new Error('Failed to fetch product performance');
   }
-  return response.json();
+  const result = await response.json();
+  console.log('API Response:', result);
+  console.log('Products from API:', result.data?.products);
+  return result.data.products;
 }
 
 async function fetchCategories(): Promise<{ id: number; name: string }[]> {
@@ -117,6 +121,12 @@ export function ProductAnalytics({ user: _ }: ProductAnalyticsProps) {
       fetchProductPerformance(dateRange, searchTerm, selectedCategory, sortBy),
     enabled: !!dateRange?.from && !!dateRange?.to,
   });
+
+  // Debug logging
+  console.log('Products data:', products);
+  console.log('Products length:', products?.length);
+  console.log('Is loading:', isLoading);
+  console.log('Error:', error);
 
   const { data: categories = [] } = useQuery({
     queryKey: ['categories-list'],
@@ -163,6 +173,14 @@ export function ProductAnalytics({ user: _ }: ProductAnalyticsProps) {
   const averageRevenue =
     products.length > 0 ? totalRevenue / products.length : 0;
 
+  // Find top performer by revenue
+  const topProduct =
+    products.length > 0
+      ? products.reduce((top, current) =>
+          current.revenue > top.revenue ? current : top
+        )
+      : null;
+
   return (
     <div className="container mx-auto space-y-6 p-6">
       <div className="flex items-center justify-between">
@@ -175,7 +193,7 @@ export function ProductAnalytics({ user: _ }: ProductAnalyticsProps) {
       </div>
 
       {/* Summary Stats */}
-      <div className="grid grid-cols-1 gap-6 md:grid-cols-3">
+      <div className="grid grid-cols-1 gap-6 md:grid-cols-4">
         <Card>
           <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
             <CardTitle className="text-sm font-medium">Total Revenue</CardTitle>
@@ -216,6 +234,21 @@ export function ProductAnalytics({ user: _ }: ProductAnalyticsProps) {
               {formatCurrency(averageRevenue)}
             </div>
             <p className="text-muted-foreground text-xs">Per product</p>
+          </CardContent>
+        </Card>
+
+        <Card>
+          <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+            <CardTitle className="text-sm font-medium">Top Performer</CardTitle>
+            <IconTrophy className="text-muted-foreground h-4 w-4" />
+          </CardHeader>
+          <CardContent>
+            <div className="truncate text-lg font-bold">
+              {topProduct?.name || 'N/A'}
+            </div>
+            <p className="text-muted-foreground text-xs">
+              {formatCurrency(topProduct?.revenue || 0)} revenue
+            </p>
           </CardContent>
         </Card>
       </div>

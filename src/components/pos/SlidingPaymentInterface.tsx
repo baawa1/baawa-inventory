@@ -28,6 +28,12 @@ import {
 import { usePOSErrorHandler } from './POSErrorBoundary';
 import { DiscountStep } from './payment/DiscountStep';
 import { useQuery } from '@tanstack/react-query';
+import {
+  calculateDiscountAmount,
+  validatePaymentAmount,
+  validateSplitPayments,
+  calculateChange,
+} from '@/lib/utils/calculations';
 
 export interface CartItem {
   id: number;
@@ -137,7 +143,7 @@ export function SlidingPaymentInterface({
   );
   const [discountValue, setDiscountValue] = useState(discount);
   const [paymentMethod, setPaymentMethod] = useState('');
-  const [amountPaid, setAmountPaid] = useState(total - discount);
+  const [amountPaid, setAmountPaid] = useState(total);
   const [notes, setNotes] = useState('');
   const [processing, setProcessing] = useState(false);
   const [isSplitPayment, setIsSplitPayment] = useState(false);
@@ -150,12 +156,12 @@ export function SlidingPaymentInterface({
 
   const handleDiscountChange = (value: number) => {
     setDiscountValue(value);
-    if (discountType === 'percentage') {
-      const calculatedDiscount = (subtotal * value) / 100;
-      onDiscountChange(Math.min(calculatedDiscount, subtotal));
-    } else {
-      onDiscountChange(Math.min(value, subtotal));
-    }
+    const calculatedDiscount = calculateDiscountAmount(
+      subtotal,
+      value,
+      discountType
+    );
+    onDiscountChange(calculatedDiscount);
   };
 
   const handleDiscountTypeChange = (newType: 'percentage' | 'fixed') => {
@@ -167,9 +173,9 @@ export function SlidingPaymentInterface({
 
   const handlePayment = async () => {
     if (isSplitPayment) {
-      const totalPaid = splitPayments.reduce((sum, p) => sum + p.amount, 0);
-      if (totalPaid < total - discount) {
-        toast.error('Split payment total is less than the required amount');
+      const validation = validateSplitPayments(splitPayments, total);
+      if (!validation.isValid) {
+        toast.error(validation.error || 'Invalid split payment');
         return;
       }
     } else {
@@ -178,8 +184,13 @@ export function SlidingPaymentInterface({
         return;
       }
 
-      if (paymentMethod === 'cash' && amountPaid < total - discount) {
-        toast.error('Insufficient payment amount');
+      const validation = validatePaymentAmount(
+        amountPaid,
+        total,
+        paymentMethod
+      );
+      if (!validation.isValid) {
+        toast.error(validation.error || 'Invalid payment amount');
         return;
       }
     }
@@ -380,7 +391,7 @@ export function SlidingPaymentInterface({
   };
 
   const change =
-    paymentMethod === 'cash' ? Math.max(0, amountPaid - (total - discount)) : 0;
+    paymentMethod === 'cash' ? calculateChange(amountPaid, total) : 0;
 
   return (
     <div className="bg-background animate-in slide-in-from-right flex h-full flex-col rounded-lg border shadow-lg duration-300">
@@ -544,7 +555,6 @@ function PaymentMethodStep({
   amountPaid,
   setAmountPaid,
   total,
-  discount,
   change,
   processing,
   isSplitPayment,
@@ -572,7 +582,7 @@ function PaymentMethodStep({
       <div className="bg-muted mb-4 flex items-center justify-between rounded p-3">
         <span className="font-medium">Total Amount:</span>
         <span className="text-primary text-lg font-bold">
-          ₦{(total - discount).toLocaleString()}
+          ₦{total.toLocaleString()}
         </span>
       </div>
 
@@ -598,7 +608,7 @@ function PaymentMethodStep({
         <SplitPaymentInterface
           splitPayments={_splitPayments}
           setSplitPayments={_setSplitPayments}
-          total={total - discount}
+          total={total}
           processing={processing}
         />
       )}
@@ -630,13 +640,13 @@ function PaymentMethodStep({
           )}
 
           {/* Insufficient Payment Warning */}
-          {paymentMethod === 'cash' && amountPaid < total - discount && (
+          {paymentMethod === 'cash' && amountPaid < total && (
             <div className="bg-destructive/10 border-destructive/20 flex items-center justify-between rounded border p-3">
               <span className="text-destructive font-medium">
                 Insufficient Payment:
               </span>
               <span className="text-destructive text-lg font-bold">
-                ₦{(total - discount - amountPaid).toLocaleString()}
+                ₦{(total - amountPaid).toLocaleString()}
               </span>
             </div>
           )}

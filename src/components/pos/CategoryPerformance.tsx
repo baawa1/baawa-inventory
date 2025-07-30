@@ -29,6 +29,8 @@ import {
   IconMinus,
 } from '@tabler/icons-react';
 import { formatCurrency } from '@/lib/utils';
+import { useQuery } from '@tanstack/react-query';
+import { toast } from 'sonner';
 
 interface User {
   id: string;
@@ -44,117 +46,124 @@ interface CategoryPerformanceProps {
 }
 
 interface CategoryPerformanceData {
-  id: string;
+  id: number;
   name: string;
-  itemsSold: number;
-  netSales: number;
-  products: number;
-  orders: number;
-  previousItemsSold: number;
-  previousNetSales: number;
-  previousProducts: number;
-  previousOrders: number;
+  totalSold: number;
+  revenue: number;
+  averageOrderValue: number;
+  marketShare: number;
+  trending: 'up' | 'down' | 'stable';
+  trendPercentage: number;
+  lastSaleDate: string | null;
+  productCount: number;
+  topProducts: Array<{
+    id: number;
+    name: string;
+    revenue: number;
+  }>;
+}
+
+interface CategoryAnalyticsResponse {
+  categories: CategoryPerformanceData[];
+  summary: {
+    totalCategories: number;
+    totalSold: number;
+    totalRevenue: number;
+    averageOrderValue: number;
+  };
+}
+
+async function fetchCategoryAnalytics(
+  period: string,
+  fromDate?: string,
+  toDate?: string,
+  search?: string
+): Promise<CategoryAnalyticsResponse> {
+  const params = new URLSearchParams();
+  params.append('period', period);
+
+  if (fromDate) params.append('fromDate', fromDate);
+  if (toDate) params.append('toDate', toDate);
+  if (search) params.append('search', search);
+
+  const response = await fetch(`/api/pos/analytics/categories?${params}`);
+  if (!response.ok) {
+    throw new Error('Failed to fetch category analytics');
+  }
+  return response.json();
 }
 
 export function CategoryPerformance({ user: _ }: CategoryPerformanceProps) {
-  const [dateRange, setDateRange] = useState('month-to-date');
+  const [period, setPeriod] = useState('30d');
+  const [fromDate, setFromDate] = useState<string>('');
+  const [toDate, setToDate] = useState<string>('');
   const [showFilter, setShowFilter] = useState('all-categories');
   const [searchTerm, setSearchTerm] = useState('');
 
-  // Mock data - replace with actual API calls
-  const mockData: CategoryPerformanceData[] = [
-    {
-      id: '1',
-      name: 'Wristwatches',
-      itemsSold: 4,
-      netSales: 247000,
-      products: 2,
-      orders: 4,
-      previousItemsSold: 25,
-      previousNetSales: 300000,
-      previousProducts: 3,
-      previousOrders: 3,
-    },
-    {
-      id: '2',
-      name: 'Wristwatches > Chain',
-      itemsSold: 2,
-      netSales: 209000,
-      products: 1,
-      orders: 2,
-      previousItemsSold: 15,
-      previousNetSales: 200000,
-      previousProducts: 2,
-      previousOrders: 2,
-    },
-  ];
+  const {
+    data: analyticsData,
+    isLoading,
+    error,
+  } = useQuery({
+    queryKey: ['category-analytics', period, fromDate, toDate, searchTerm],
+    queryFn: () => fetchCategoryAnalytics(period, fromDate, toDate, searchTerm),
+  });
+
+  if (error) {
+    toast.error('Failed to load category analytics data');
+  }
+
+  const categories = useMemo(
+    () => analyticsData?.categories || [],
+    [analyticsData?.categories]
+  );
 
   const filteredData = useMemo(() => {
-    return mockData.filter(category =>
-      category.name.toLowerCase().includes(searchTerm.toLowerCase())
-    );
-  }, [mockData, searchTerm]);
+    let filtered = categories;
+
+    // Apply search filter
+    if (searchTerm) {
+      filtered = filtered.filter(category =>
+        category.name.toLowerCase().includes(searchTerm.toLowerCase())
+      );
+    }
+
+    // Apply performance filter
+    if (showFilter === 'top-performing') {
+      filtered = filtered.sort((a, b) => b.revenue - a.revenue).slice(0, 10);
+    } else if (showFilter === 'low-performing') {
+      filtered = filtered.sort((a, b) => a.revenue - b.revenue).slice(0, 10);
+    }
+
+    return filtered;
+  }, [categories, searchTerm, showFilter]);
 
   const summaryStats = useMemo(() => {
-    const total = filteredData.reduce(
-      (acc, category) => ({
-        itemsSold: acc.itemsSold + category.itemsSold,
-        netSales: acc.netSales + category.netSales,
-        products: acc.products + category.products,
-        orders: acc.orders + category.orders,
-        previousItemsSold: acc.previousItemsSold + category.previousItemsSold,
-        previousNetSales: acc.previousNetSales + category.previousNetSales,
-        previousProducts: acc.previousProducts + category.previousProducts,
-        previousOrders: acc.previousOrders + category.previousOrders,
-      }),
-      {
-        itemsSold: 0,
-        netSales: 0,
-        products: 0,
-        orders: 0,
-        previousItemsSold: 0,
-        previousNetSales: 0,
-        previousProducts: 0,
-        previousOrders: 0,
-      }
-    );
+    if (!analyticsData?.summary) {
+      return {
+        totalCategories: 0,
+        totalSold: 0,
+        totalRevenue: 0,
+        averageOrderValue: 0,
+      };
+    }
 
-    return {
-      itemsSold: total.itemsSold,
-      netSales: total.netSales,
-      products: total.products,
-      orders: total.orders,
-      itemsSoldChange:
-        total.previousItemsSold > 0
-          ? ((total.itemsSold - total.previousItemsSold) /
-              total.previousItemsSold) *
-            100
-          : 0,
-      netSalesChange:
-        total.previousNetSales > 0
-          ? ((total.netSales - total.previousNetSales) /
-              total.previousNetSales) *
-            100
-          : 0,
-      ordersChange:
-        total.previousOrders > 0
-          ? ((total.orders - total.previousOrders) / total.previousOrders) * 100
-          : 0,
-    };
-  }, [filteredData]);
+    return analyticsData.summary;
+  }, [analyticsData?.summary]);
 
-  const getChangeBadge = (change: number) => {
-    if (change > 0) {
+  const getTrendBadge = (trending: string, trendPercentage: number) => {
+    if (trending === 'up') {
       return (
         <Badge variant="secondary" className="bg-green-100 text-green-800">
-          <IconTrendingUp className="mr-1 h-3 w-3" />+{change.toFixed(0)}%
+          <IconTrendingUp className="mr-1 h-3 w-3" />+
+          {trendPercentage.toFixed(0)}%
         </Badge>
       );
-    } else if (change < 0) {
+    } else if (trending === 'down') {
       return (
         <Badge variant="secondary" className="bg-red-100 text-red-800">
           <IconTrendingDown className="mr-1 h-3 w-3" />
-          {change.toFixed(0)}%
+          {Math.abs(trendPercentage).toFixed(0)}%
         </Badge>
       );
     } else {
@@ -167,6 +176,15 @@ export function CategoryPerformance({ user: _ }: CategoryPerformanceProps) {
     }
   };
 
+  const handlePeriodChange = (newPeriod: string) => {
+    setPeriod(newPeriod);
+    // Clear custom date range when using predefined periods
+    if (newPeriod !== 'custom') {
+      setFromDate('');
+      setToDate('');
+    }
+  };
+
   return (
     <div className="space-y-6">
       {/* Header with Filters */}
@@ -175,20 +193,15 @@ export function CategoryPerformance({ user: _ }: CategoryPerformanceProps) {
           <h2 className="text-2xl font-bold tracking-tight">Categories</h2>
         </div>
         <div className="flex items-center gap-3">
-          <Select value={dateRange} onValueChange={setDateRange}>
+          <Select value={period} onValueChange={handlePeriodChange}>
             <SelectTrigger className="w-[300px]">
               <SelectValue placeholder="Select date range" />
             </SelectTrigger>
             <SelectContent>
-              <SelectItem value="today">Today</SelectItem>
-              <SelectItem value="yesterday">Yesterday</SelectItem>
-              <SelectItem value="week-to-date">Week to date</SelectItem>
-              <SelectItem value="month-to-date">
-                Month to date (Jul 1 - 26, 2025) vs. Previous year (Jul 1 - 26,
-                2024)
-              </SelectItem>
-              <SelectItem value="quarter-to-date">Quarter to date</SelectItem>
-              <SelectItem value="year-to-date">Year to date</SelectItem>
+              <SelectItem value="7d">Last 7 days</SelectItem>
+              <SelectItem value="30d">Last 30 days</SelectItem>
+              <SelectItem value="90d">Last 90 days</SelectItem>
+              <SelectItem value="1y">Last year</SelectItem>
               <SelectItem value="custom">Custom range</SelectItem>
             </SelectContent>
           </Select>
@@ -205,40 +218,67 @@ export function CategoryPerformance({ user: _ }: CategoryPerformanceProps) {
         </div>
       </div>
 
+      {/* Custom Date Range Inputs */}
+      {period === 'custom' && (
+        <div className="flex items-center gap-3">
+          <Input
+            type="date"
+            placeholder="From date"
+            value={fromDate}
+            onChange={e => setFromDate(e.target.value)}
+            className="w-[150px]"
+          />
+          <Input
+            type="date"
+            placeholder="To date"
+            value={toDate}
+            onChange={e => setToDate(e.target.value)}
+            className="w-[150px]"
+          />
+        </div>
+      )}
+
       {/* Summary Metrics */}
-      <div className="grid grid-cols-1 gap-4 md:grid-cols-3">
+      <div className="grid grid-cols-1 gap-4 md:grid-cols-4">
         <Card>
           <CardHeader className="pb-2">
-            <CardTitle className="text-sm font-medium">Items sold</CardTitle>
-          </CardHeader>
-          <CardContent>
-            <div className="text-2xl font-bold">{summaryStats.itemsSold}</div>
-            <div className="mt-2 flex items-center">
-              {getChangeBadge(summaryStats.itemsSoldChange)}
-            </div>
-          </CardContent>
-        </Card>
-        <Card>
-          <CardHeader className="pb-2">
-            <CardTitle className="text-sm font-medium">Net sales</CardTitle>
+            <CardTitle className="text-sm font-medium">
+              Total Categories
+            </CardTitle>
           </CardHeader>
           <CardContent>
             <div className="text-2xl font-bold">
-              {formatCurrency(summaryStats.netSales)}
-            </div>
-            <div className="mt-2 flex items-center">
-              {getChangeBadge(summaryStats.netSalesChange)}
+              {summaryStats.totalCategories}
             </div>
           </CardContent>
         </Card>
         <Card>
           <CardHeader className="pb-2">
-            <CardTitle className="text-sm font-medium">Orders</CardTitle>
+            <CardTitle className="text-sm font-medium">Items Sold</CardTitle>
           </CardHeader>
           <CardContent>
-            <div className="text-2xl font-bold">{summaryStats.orders}</div>
-            <div className="mt-2 flex items-center">
-              {getChangeBadge(summaryStats.ordersChange)}
+            <div className="text-2xl font-bold">{summaryStats.totalSold}</div>
+          </CardContent>
+        </Card>
+        <Card>
+          <CardHeader className="pb-2">
+            <CardTitle className="text-sm font-medium">Total Revenue</CardTitle>
+          </CardHeader>
+          <CardContent>
+            <div className="text-2xl font-bold">
+              {formatCurrency(summaryStats.totalRevenue)}
+            </div>
+          </CardContent>
+        </Card>
+        <Card>
+          <CardHeader className="pb-2">
+            <CardTitle className="text-sm font-medium">
+              Avg Order Value
+            </CardTitle>
+          </CardHeader>
+          <CardContent>
+            <div className="text-2xl font-bold">
+              {formatCurrency(summaryStats.averageOrderValue)}
             </div>
           </CardContent>
         </Card>
@@ -272,33 +312,60 @@ export function CategoryPerformance({ user: _ }: CategoryPerformanceProps) {
           </div>
         </CardHeader>
         <CardContent>
-          <Table>
-            <TableHeader>
-              <TableRow>
-                <TableHead>Category</TableHead>
-                <TableHead>Items sold</TableHead>
-                <TableHead>Net sales</TableHead>
-                <TableHead>Products</TableHead>
-                <TableHead>Orders</TableHead>
-              </TableRow>
-            </TableHeader>
-            <TableBody>
-              {filteredData.map(category => (
-                <TableRow key={category.id}>
-                  <TableCell className="font-medium">{category.name}</TableCell>
-                  <TableCell>{category.itemsSold}</TableCell>
-                  <TableCell>{formatCurrency(category.netSales)}</TableCell>
-                  <TableCell>{category.products}</TableCell>
-                  <TableCell>{category.orders}</TableCell>
-                </TableRow>
-              ))}
-            </TableBody>
-          </Table>
-          <div className="text-muted-foreground mt-4 text-sm">
-            {filteredData.length} Categories {summaryStats.itemsSold} Items sold{' '}
-            {formatCurrency(summaryStats.netSales)} Net sales{' '}
-            {summaryStats.orders} Orders
-          </div>
+          {isLoading ? (
+            <div className="flex items-center justify-center py-8">
+              <div className="text-muted-foreground">
+                Loading category data...
+              </div>
+            </div>
+          ) : (
+            <>
+              <Table>
+                <TableHeader>
+                  <TableRow>
+                    <TableHead>Category</TableHead>
+                    <TableHead>Items Sold</TableHead>
+                    <TableHead>Revenue</TableHead>
+                    <TableHead>Market Share</TableHead>
+                    <TableHead>Products</TableHead>
+                    <TableHead>Avg Order Value</TableHead>
+                    <TableHead>Trend</TableHead>
+                  </TableRow>
+                </TableHeader>
+                <TableBody>
+                  {filteredData.map(category => (
+                    <TableRow key={category.id}>
+                      <TableCell className="font-medium">
+                        {category.name || 'Unknown Category'}
+                      </TableCell>
+                      <TableCell>{category.totalSold || 0}</TableCell>
+                      <TableCell>
+                        {formatCurrency(category.revenue || 0)}
+                      </TableCell>
+                      <TableCell>
+                        {(category.marketShare || 0).toFixed(1)}%
+                      </TableCell>
+                      <TableCell>{category.productCount || 0}</TableCell>
+                      <TableCell>
+                        {formatCurrency(category.averageOrderValue || 0)}
+                      </TableCell>
+                      <TableCell>
+                        {getTrendBadge(
+                          category.trending || 'stable',
+                          category.trendPercentage || 0
+                        )}
+                      </TableCell>
+                    </TableRow>
+                  ))}
+                </TableBody>
+              </Table>
+              <div className="text-muted-foreground mt-4 text-sm">
+                {filteredData.length} Categories •{' '}
+                {summaryStats?.totalSold || 0} Items sold •{' '}
+                {formatCurrency(summaryStats?.totalRevenue || 0)} Total revenue
+              </div>
+            </>
+          )}
         </CardContent>
       </Card>
     </div>

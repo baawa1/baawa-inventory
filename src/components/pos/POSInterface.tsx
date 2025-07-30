@@ -26,6 +26,7 @@ import { useOffline } from '@/hooks/useOffline';
 import { toast } from 'sonner';
 import { formatCurrency } from '@/lib/utils';
 import { logger } from '@/lib/logger';
+import { calculateOrderTotals } from '@/lib/utils/calculations';
 
 export interface CartItem {
   id: number;
@@ -66,12 +67,8 @@ export function POSInterface() {
     email: '',
   });
 
-  // Calculate totals
-  const subtotal = cart.reduce(
-    (sum, item) => sum + item.price * item.quantity,
-    0
-  );
-  const total = subtotal - discount;
+  // Calculate totals using consistent utility
+  const { subtotal, total } = calculateOrderTotals(cart, discount);
 
   // Add product to cart
   const addToCart = (product: Omit<CartItem, 'quantity'>) => {

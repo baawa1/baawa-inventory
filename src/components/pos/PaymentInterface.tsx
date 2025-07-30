@@ -26,6 +26,10 @@ import { toast } from 'sonner';
 import { formatCurrency } from '@/lib/utils';
 import { PAYMENT_METHODS_UI } from '@/lib/constants/ui';
 import { logger } from '@/lib/logger';
+import {
+  calculateDiscountAmount,
+  validatePaymentAmount,
+} from '@/lib/utils/calculations';
 import { DiscountStep } from './payment/DiscountStep';
 
 export interface CartItem {
@@ -100,12 +104,12 @@ export function PaymentInterface({
   // Handle discount change
   const handleDiscountChange = (value: number) => {
     setDiscountValue(value);
-    if (discountType === 'percentage') {
-      const calculatedDiscount = (subtotal * value) / 100;
-      onDiscountChange(Math.min(calculatedDiscount, subtotal));
-    } else {
-      onDiscountChange(Math.min(value, subtotal));
-    }
+    const calculatedDiscount = calculateDiscountAmount(
+      subtotal,
+      value,
+      discountType
+    );
+    onDiscountChange(calculatedDiscount);
   };
 
   const handleDiscountTypeChange = (newType: 'percentage' | 'fixed') => {
@@ -122,8 +126,9 @@ export function PaymentInterface({
       return;
     }
 
-    if (paymentMethod === 'cash' && amountPaid < total) {
-      toast.error('Insufficient payment amount');
+    const validation = validatePaymentAmount(amountPaid, total, paymentMethod);
+    if (!validation.isValid) {
+      toast.error(validation.error || 'Invalid payment amount');
       return;
     }
 

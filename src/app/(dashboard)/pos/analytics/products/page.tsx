@@ -1,7 +1,6 @@
 import { redirect } from 'next/navigation';
 import { auth } from '../../../../../../auth';
 import { ProductPerformance } from '@/components/pos/ProductPerformance';
-import { DashboardPageLayout } from '@/components/layouts/DashboardPageLayout';
 import { ALL_ROLES, UserRole } from '@/lib/auth/roles';
 
 export const metadata = {
@@ -25,12 +24,5 @@ export default async function ProductPerformancePage() {
     redirect('/pending-approval');
   }
 
-  return (
-    <DashboardPageLayout
-      title="Product Performance"
-      description="Analyze product performance and sales metrics"
-    >
-      <ProductPerformance user={session.user} />
-    </DashboardPageLayout>
-  );
+  return <ProductPerformance user={session.user} />;
 }
