@@ -293,3 +293,116 @@ export async function GET(request: NextRequest) {
     );
   }
 }
+
+export async function POST(request: NextRequest) {
+  try {
+    const session = await auth();
+
+    if (!session?.user) {
+      return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
+    }
+
+    // Check if user has permission to create customer data
+    if (
+      !hasRole(session.user.role, [
+        USER_ROLES.ADMIN,
+        USER_ROLES.MANAGER,
+        USER_ROLES.STAFF,
+      ])
+    ) {
+      return NextResponse.json({ error: 'Forbidden' }, { status: 403 });
+    }
+
+    const body = await request.json();
+    const { name, email, phone } = body;
+
+    // Validate required fields
+    if (!name || !email) {
+      return NextResponse.json(
+        { error: 'Name and email are required' },
+        { status: 400 }
+      );
+    }
+
+    // Validate email format
+    const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+    if (!emailRegex.test(email)) {
+      return NextResponse.json(
+        { error: 'Invalid email format' },
+        { status: 400 }
+      );
+    }
+
+    // Check if customer already exists (by email)
+    const existingCustomer = await prisma.salesTransaction.findFirst({
+      where: {
+        customer_email: email.toLowerCase(),
+      },
+    });
+
+    if (existingCustomer) {
+      return NextResponse.json(
+        { error: 'Customer with this email already exists' },
+        { status: 409 }
+      );
+    }
+
+    // Create a new customer by creating a placeholder transaction
+    // This is a workaround since we don't have a separate customers table
+    const timestamp = Date.now();
+    const randomSuffix = Math.random().toString(36).substring(2, 8);
+    const transactionNumber = `CUST-${timestamp}-${randomSuffix}`;
+
+    const newCustomerTransaction = await prisma.salesTransaction.create({
+      data: {
+        transaction_number: transactionNumber,
+        customer_name: name,
+        customer_email: email.toLowerCase(),
+        customer_phone: phone || null,
+        total_amount: new Prisma.Decimal(0),
+        payment_status: 'completed',
+        payment_method: 'customer_creation',
+        created_at: new Date(),
+        updated_at: new Date(),
+        // Add other required fields with default values
+        subtotal: new Prisma.Decimal(0),
+        tax_amount: new Prisma.Decimal(0),
+        discount_amount: new Prisma.Decimal(0),
+        user_id: parseInt(session.user.id),
+        transaction_type: 'customer_creation',
+        notes: 'Customer created via management interface',
+      },
+    });
+
+    const newCustomer = {
+      id: email.toLowerCase(),
+      name,
+      email: email.toLowerCase(),
+      phone: phone || null,
+      totalSpent: 0,
+      totalOrders: 1,
+      lastPurchase: newCustomerTransaction.created_at.toISOString(),
+      averageOrderValue: 0,
+      rank: 1,
+      firstPurchase: newCustomerTransaction.created_at.toISOString(),
+      daysSinceLastPurchase: 0,
+      customerLifetimeValue: 0,
+      purchaseFrequency: 0,
+    };
+
+    return NextResponse.json({
+      success: true,
+      data: newCustomer,
+      message: 'Customer created successfully',
+    });
+  } catch (error) {
+    console.error('Error creating customer:', error);
+    return NextResponse.json(
+      {
+        error: 'Internal server error',
+        details: error instanceof Error ? error.message : 'Unknown error',
+      },
+      { status: 500 }
+    );
+  }
+}

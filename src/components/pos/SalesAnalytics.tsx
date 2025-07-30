@@ -3,7 +3,7 @@
 import React, { useState, useMemo } from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
-import { DateRangePicker } from '@/components/ui/date-range-picker';
+import { DateRangePickerWithPresets } from '@/components/ui/date-range-picker-with-presets';
 import {
   IconTrendingUp,
   IconTrendingDown,
@@ -371,7 +371,7 @@ export function SalesAnalytics({ user: _ }: SalesAnalyticsProps) {
           <h2 className="text-2xl font-bold tracking-tight">Revenue</h2>
         </div>
         <div className="flex items-center gap-3">
-          <DateRangePicker
+          <DateRangePickerWithPresets
             date={dateRange}
             onDateChange={handleDateRangeChange}
             placeholder="Select date range"

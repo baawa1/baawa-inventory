@@ -8,6 +8,8 @@ import { formatCurrency } from '@/lib/utils';
 import { DashboardTableLayout } from '@/components/layouts/DashboardTableLayout';
 import type { DashboardTableColumn } from '@/components/layouts/DashboardColumnCustomizer';
 import type { FilterConfig } from '@/components/layouts/DashboardFiltersBar';
+import { DateRangePickerWithPresets } from '@/components/ui/date-range-picker-with-presets';
+import { DateRange } from 'react-day-picker';
 
 interface User {
   id: string;
@@ -35,7 +37,10 @@ interface Coupon {
 }
 
 export function CouponList({ user: _ }: CouponListProps) {
-  const [dateRange, setDateRange] = useState('month-to-date');
+  const [dateRange, setDateRange] = useState<DateRange | undefined>({
+    from: new Date(new Date().getFullYear(), new Date().getMonth(), 1), // Start of current month
+    to: new Date(), // Today
+  });
   const [showFilter, setShowFilter] = useState('all-coupons');
   const [searchTerm, setSearchTerm] = useState('');
 
@@ -145,21 +150,6 @@ export function CouponList({ user: _ }: CouponListProps) {
   const filterConfigs: FilterConfig[] = useMemo(
     () => [
       {
-        key: 'dateRange',
-        label: 'Date Range',
-        type: 'select',
-        options: [
-          { value: 'today', label: 'Today' },
-          { value: 'yesterday', label: 'Yesterday' },
-          { value: 'week-to-date', label: 'Week to date' },
-          { value: 'month-to-date', label: 'Month to date' },
-          { value: 'quarter-to-date', label: 'Quarter to date' },
-          { value: 'year-to-date', label: 'Year to date' },
-          { value: 'custom', label: 'Custom range' },
-        ],
-        placeholder: 'Select date range',
-      },
-      {
         key: 'showFilter',
         label: 'Show',
         type: 'select',
@@ -185,9 +175,7 @@ export function CouponList({ user: _ }: CouponListProps) {
 
   // Handle filter changes
   const handleFilterChange = (key: string, value: unknown) => {
-    if (key === 'dateRange') {
-      setDateRange(value as string);
-    } else if (key === 'showFilter') {
+    if (key === 'showFilter') {
       setShowFilter(value as string);
     }
     setPagination(prev => ({ ...prev, page: 1 }));
@@ -196,7 +184,10 @@ export function CouponList({ user: _ }: CouponListProps) {
   // Clear all filters
   const handleResetFilters = () => {
     setSearchTerm('');
-    setDateRange('month-to-date');
+    setDateRange({
+      from: new Date(new Date().getFullYear(), new Date().getMonth(), 1), // Start of current month
+      to: new Date(), // Today
+    });
     setShowFilter('all-coupons');
     setPagination(prev => ({ ...prev, page: 1 }));
   };
@@ -272,6 +263,12 @@ export function CouponList({ user: _ }: CouponListProps) {
       description="Manage discount coupons and promotional codes"
       actions={
         <div className="flex items-center gap-2">
+          <DateRangePickerWithPresets
+            date={dateRange}
+            onDateChange={setDateRange}
+            placeholder="Select date range"
+            className="w-[300px]"
+          />
           <Button variant="outline" size="sm">
             Compare
           </Button>
@@ -284,7 +281,7 @@ export function CouponList({ user: _ }: CouponListProps) {
       searchValue={searchTerm}
       onSearchChange={setSearchTerm}
       filters={filterConfigs}
-      filterValues={{ dateRange, showFilter }}
+      filterValues={{ showFilter }}
       onFilterChange={handleFilterChange}
       onResetFilters={handleResetFilters}
       columns={columns}
