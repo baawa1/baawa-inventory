@@ -55,8 +55,6 @@ export function SimpleDashboard({ user }: SimpleDashboardProps) {
   const { data: recentTransactions, isLoading: isLoadingTransactions } =
     useRecentTransactions(5);
 
-
-
   // Get inventory metrics from API
   const totalProducts = inventoryStats?.totalProducts || 0;
   const lowStockItems = inventoryStats?.lowStockItems || 0;
@@ -348,7 +346,7 @@ export function SimpleDashboard({ user }: SimpleDashboardProps) {
             </div>
           ) : (
             <div className="space-y-3">
-              {recentTransactions?.slice(0, 5).map((transaction) => (
+              {recentTransactions?.slice(0, 5).map(transaction => (
                 <div
                   key={transaction.id}
                   className="flex items-center justify-between"
