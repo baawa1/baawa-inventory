@@ -1,11 +1,11 @@
 import React from 'react';
 import {
-  DashboardCard,
+  Card,
   CardHeader,
   CardTitle,
   CardDescription,
   CardContent,
-} from '@/components/dashboard/DashboardCard';
+} from '@/components/ui/card';
 import {
   Table,
   TableHeader,
@@ -91,7 +91,7 @@ export function DashboardTable<T = Record<string, unknown>>({
   emptyStateAction,
 }: DashboardTableProps<T>) {
   return (
-    <DashboardCard>
+    <Card className="dark:bg-card bg-white px-4 lg:px-6">
       <CardHeader>
         <div className="flex items-center justify-between">
           <div>
@@ -323,6 +323,6 @@ export function DashboardTable<T = Record<string, unknown>>({
           </>
         )}
       </CardContent>
-    </DashboardCard>
+    </Card>
   );
 }
