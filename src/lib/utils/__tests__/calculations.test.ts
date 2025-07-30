@@ -101,6 +101,25 @@ describe('POS Calculation Utilities', () => {
       );
     });
 
+    it('should handle floating-point precision issues', () => {
+      const splitPayments = [
+        { id: '1', amount: 200000, method: 'cash' },
+        { id: '2', amount: 200000, method: 'bank_transfer' },
+        { id: '3', amount: 56697.86, method: 'mobile_money' },
+      ];
+      const result = validateSplitPayments(splitPayments, 456697.86);
+      expect(result.isValid).toBe(true);
+    });
+
+    it('should handle edge case floating-point precision', () => {
+      const splitPayments = [
+        { id: '1', amount: 0.1, method: 'cash' },
+        { id: '2', amount: 0.2, method: 'pos' },
+      ];
+      const result = validateSplitPayments(splitPayments, 0.3);
+      expect(result.isValid).toBe(true);
+    });
+
     it('should reject payments with zero or negative amounts', () => {
       const splitPayments = [
         { id: '1', amount: 50, method: 'cash' },

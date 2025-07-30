@@ -133,6 +133,17 @@ export const GET = withAuth(async function (request: AuthenticatedRequest) {
               },
             },
           },
+          split_payments: {
+            select: {
+              id: true,
+              amount: true,
+              payment_method: true,
+              created_at: true,
+            },
+            orderBy: {
+              created_at: 'asc',
+            },
+          },
         },
       }),
       prisma.salesTransaction.count({ where }),
@@ -163,6 +174,13 @@ export const GET = withAuth(async function (request: AuthenticatedRequest) {
             quantity: item.quantity,
             total: Number(item.total_price || item.unit_price * item.quantity),
           })),
+          splitPayments:
+            transaction.split_payments?.map((payment: any) => ({
+              id: payment.id,
+              amount: Number(payment.amount),
+              method: payment.payment_method,
+              createdAt: payment.created_at,
+            })) || [],
         };
       }
     );
