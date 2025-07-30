@@ -66,7 +66,7 @@ export function SimpleDashboard({ user }: SimpleDashboardProps) {
   const topProducts = topProductsData || [];
 
   return (
-    <div className="space-y-6">
+    <div className="space-y-6 px-4 py-6 lg:px-6">
       {/* Header */}
       <div className="flex flex-col items-start justify-between gap-4 sm:flex-row sm:items-center">
         <div>
@@ -81,7 +81,7 @@ export function SimpleDashboard({ user }: SimpleDashboardProps) {
       <div className="grid grid-cols-1 gap-6 md:grid-cols-3">
         {/* POS Card */}
         <Link href="/pos">
-          <Card className="cursor-pointer transition-all hover:scale-[1.02] hover:shadow-lg">
+          <Card className="h-full cursor-pointer transition-all hover:scale-[1.02] hover:shadow-lg">
             <CardHeader className="pb-3">
               <CardTitle className="flex items-center justify-between text-lg">
                 <span className="flex items-center gap-2">
@@ -136,7 +136,7 @@ export function SimpleDashboard({ user }: SimpleDashboardProps) {
 
         {/* Inventory Card */}
         <Link href="/inventory">
-          <Card className="cursor-pointer transition-all hover:scale-[1.02] hover:shadow-lg">
+          <Card className="h-full cursor-pointer transition-all hover:scale-[1.02] hover:shadow-lg">
             <CardHeader className="pb-3">
               <CardTitle className="flex items-center justify-between text-lg">
                 <span className="flex items-center gap-2">
@@ -190,7 +190,7 @@ export function SimpleDashboard({ user }: SimpleDashboardProps) {
 
         {/* Finance Card */}
         <Link href="/finance">
-          <Card className="cursor-pointer transition-all hover:scale-[1.02] hover:shadow-lg">
+          <Card className="h-full cursor-pointer transition-all hover:scale-[1.02] hover:shadow-lg">
             <CardHeader className="pb-3">
               <CardTitle className="flex items-center justify-between text-lg">
                 <span className="flex items-center gap-2">
