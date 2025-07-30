@@ -3,7 +3,7 @@
 import React, { useState } from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
-import { DateRangePicker } from '@/components/ui/date-range-picker';
+import { DateRangePickerWithPresets } from '@/components/ui/date-range-picker-with-presets';
 import {
   IconTrendingUp,
   IconTrendingDown,
@@ -169,7 +169,7 @@ export function MainAnalytics({ user: _ }: MainAnalyticsProps) {
             Quick insights for informed decision-making
           </p>
         </div>
-        <DateRangePicker
+        <DateRangePickerWithPresets
           date={dateRange}
           onDateChange={handleDateRangeChange}
           placeholder="Select date range"
@@ -252,7 +252,7 @@ export function MainAnalytics({ user: _ }: MainAnalyticsProps) {
               Quick insights for informed decision-making
             </p>
           </div>
-          <DateRangePicker
+          <DateRangePickerWithPresets
             date={dateRange}
             onDateChange={handleDateRangeChange}
             placeholder="Select date range"
@@ -288,7 +288,7 @@ export function MainAnalytics({ user: _ }: MainAnalyticsProps) {
             Quick insights for informed decision-making
           </p>
         </div>
-        <DateRangePicker
+        <DateRangePickerWithPresets
           date={dateRange}
           onDateChange={handleDateRangeChange}
           placeholder="Select date range"
