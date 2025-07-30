@@ -1,6 +1,6 @@
 import { NextResponse } from 'next/server';
 import type { NextRequest } from 'next/server';
-import { auth } from '../auth';
+import { auth } from '#root/auth';
 import { authorizeUserForRoute } from '@/lib/auth/roles';
 import type { UserRole, UserStatus } from '@/types/user';
 import { generateSecurityHeaders } from '@/lib/security-headers';

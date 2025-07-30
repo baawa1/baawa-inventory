@@ -5,7 +5,7 @@ import { createApiResponse } from '@/lib/api-response';
 // GET /api/dashboard/top-products - Get top selling products
 export const GET = withAuth(async (request: AuthenticatedRequest) => {
   try {
-    // Get top products by revenue
+    // Get top products by sales quantity
     const topProducts = await prisma.salesItem.groupBy({
       by: ['product_id'],
       where: {
@@ -22,7 +22,7 @@ export const GET = withAuth(async (request: AuthenticatedRequest) => {
       },
       orderBy: {
         _sum: {
-          total_price: 'desc',
+          quantity: 'desc',
         },
       },
       take: 10, // Get top 10 products

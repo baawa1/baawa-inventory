@@ -66,12 +66,16 @@ const posNavItems = [
     icon: IconUsers,
     items: [
       {
-        title: 'Customer Leaderboard',
+        title: 'Customer Analytics',
         url: '/pos/customers',
       },
       {
-        title: 'Customer History',
+        title: 'Customer Management',
         url: '/pos/customers/all',
+      },
+      {
+        title: 'Customer List',
+        url: '/pos/customers/manage',
       },
     ],
   },

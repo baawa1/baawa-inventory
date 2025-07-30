@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { auth } from '../../auth';
+import { auth } from '#root/auth';
 import { hasRole, USER_ROLES } from './auth/roles';
 import { AuditLogger } from './utils/audit-logger';
 import { USER_STATUS } from './constants';

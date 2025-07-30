@@ -1,6 +1,6 @@
 import { describe, it, expect, beforeEach, jest } from '@jest/globals';
 import { NextRequest } from 'next/server';
-import { auth } from '../../../../auth';
+import { auth } from '#root/auth';
 import { prisma } from '@/lib/db';
 
 // Mock dependencies

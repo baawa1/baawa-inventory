@@ -1,4 +1,4 @@
-import { auth } from '../../../../auth';
+import { auth } from '#root/auth';
 import { NextRequest, NextResponse } from 'next/server';
 import { withPermission, AuthenticatedRequest } from '@/lib/api-middleware';
 import { USER_ROLES } from '@/lib/auth/roles';

@@ -1,5 +1,5 @@
 import { redirect } from 'next/navigation';
-import { auth } from '../../../../../auth';
+import { auth } from '#root/auth';
 import { FinanceTransactionList } from '@/components/finance/FinanceTransactionList';
 import { USER_ROLES, hasRole } from '@/lib/auth/roles';
 

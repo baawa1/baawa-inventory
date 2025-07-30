@@ -1,5 +1,5 @@
 import { redirect } from 'next/navigation';
-import { auth } from '../../../../auth';
+import { auth } from '#root/auth';
 import { POSInterface } from '@/components/pos/POSInterface';
 import { ALL_ROLES, UserRole } from '@/lib/auth/roles';
 

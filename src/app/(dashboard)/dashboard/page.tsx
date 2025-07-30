@@ -1,5 +1,5 @@
 import { redirect } from 'next/navigation';
-import { auth } from '../../../../auth';
+import { auth } from '#root/auth';
 import { SimpleDashboard } from '@/components/dashboard/SimpleDashboard';
 
 export default async function DashboardPage() {

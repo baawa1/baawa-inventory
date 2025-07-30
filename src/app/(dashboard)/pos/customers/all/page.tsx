@@ -1,14 +1,13 @@
-import { auth } from '../../../../../../auth';
+import { auth } from '#root/auth';
 import { redirect } from 'next/navigation';
-import { CustomerHistoryList } from '@/components/pos/CustomerHistoryList';
-import { DashboardPageLayout } from '@/components/layouts/DashboardPageLayout';
+import { CustomerManagement } from '@/components/pos/CustomerManagement';
 
 export const metadata = {
-  title: 'Customer History - BaaWA Inventory POS',
-  description: 'View and manage all customers and their purchase history',
+  title: 'Customer Management - BaaWA Inventory POS',
+  description: 'Manage and view all customers with detailed analytics',
 };
 
-export default async function CustomerHistoryPage() {
+export default async function CustomerManagementPage() {
   const session = await auth();
 
   if (!session?.user) {
@@ -19,12 +18,5 @@ export default async function CustomerHistoryPage() {
     redirect('/pending-approval');
   }
 
-  return (
-    <DashboardPageLayout
-      title="Customer History"
-      description="View and manage all customers and their purchase history"
-    >
-      <CustomerHistoryList user={session.user} />
-    </DashboardPageLayout>
-  );
+  return <CustomerManagement user={session.user} />;
 }

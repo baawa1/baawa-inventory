@@ -1,4 +1,4 @@
-import { auth } from '../../../../../auth';
+import { auth } from '#root/auth';
 import { redirect } from 'next/navigation';
 import { hasPermission } from '@/lib/auth-rbac';
 import { UserRole } from '@/types/user';

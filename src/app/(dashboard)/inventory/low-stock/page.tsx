@@ -1,4 +1,4 @@
-import { auth } from '../../../../../auth';
+import { auth } from '#root/auth';
 import { redirect } from 'next/navigation';
 import { canViewLowStock } from '@/lib/auth/roles';
 import { LowStockAlerts } from '@/components/inventory/LowStockAlerts';

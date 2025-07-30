@@ -1,4 +1,4 @@
-import { auth } from '../../../../../../auth';
+import { auth } from '#root/auth';
 import { Metadata } from 'next';
 import { redirect } from 'next/navigation';
 import AddProductForm from '@/components/inventory/AddProductForm';

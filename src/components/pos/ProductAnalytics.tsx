@@ -142,6 +142,8 @@ export function ProductAnalytics({ user: _ }: ProductAnalyticsProps) {
     { value: 'totalSold', label: 'Units Sold' },
     { value: 'averageOrderValue', label: 'Avg Order Value' },
     { value: 'name', label: 'Product Name' },
+    { value: 'currentStock', label: 'Current Stock' },
+    { value: 'lastSold', label: 'Last Sold Date' },
   ];
 
   const getTrendBadge = (trending: string, percentage: number) => {

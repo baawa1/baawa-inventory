@@ -1,6 +1,6 @@
 import { Metadata } from 'next';
 import CategoryDetail from '@/components/inventory/CategoryDetail';
-import { auth } from '../../../../../../auth';
+import { auth } from '#root/auth';
 
 export const metadata: Metadata = {
   title: 'Category Details | BaaWA Inventory Manager',

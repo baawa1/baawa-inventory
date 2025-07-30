@@ -1,5 +1,5 @@
 import { redirect } from 'next/navigation';
-import { auth } from '../../../../../auth';
+import { auth } from '#root/auth';
 import ProductList from '@/components/inventory/ProductList';
 import { USER_ROLES, hasRole } from '@/lib/auth/roles';
 
