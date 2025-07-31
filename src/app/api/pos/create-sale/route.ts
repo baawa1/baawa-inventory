@@ -10,6 +10,7 @@ const posSaleItemSchema = z.object({
   quantity: z.coerce.number().int().positive('Quantity must be positive'),
   price: z.coerce.number().positive('Price must be positive'),
   total: z.coerce.number().positive('Total must be positive'),
+  couponId: z.coerce.number().int().positive().optional(),
 });
 
 const posSaleSchema = z
@@ -109,6 +110,7 @@ export const POST = withAuth(async function (request: AuthenticatedRequest) {
               discount_amount: 0, // Item-level discounts handled at transaction level
               transaction_id: salesTransaction.id,
               product_id: item.productId,
+              coupon_id: item.couponId,
             },
           });
 
@@ -121,6 +123,18 @@ export const POST = withAuth(async function (request: AuthenticatedRequest) {
               },
             },
           });
+
+          // Increment coupon usage if coupon is applied
+          if (item.couponId) {
+            await tx.coupon.update({
+              where: { id: item.couponId },
+              data: {
+                currentUses: {
+                  increment: 1,
+                },
+              },
+            });
+          }
 
           return {
             ...salesItem,

@@ -111,44 +111,15 @@ export function SalesAnalytics({ user: _ }: SalesAnalyticsProps) {
 
   const salesData = analyticsData?.salesByPeriod || [];
 
-  // Add sample data for testing if no real data
-  const sampleData: SalesData[] = [
-    {
-      date: '2024-01-01',
-      orders: 5,
-      grossSales: 15000,
-      returns: 0,
-      coupons: 500,
-      netSales: 14500,
-      taxes: 725,
-      shipping: 0,
-      totalSales: 15225,
-    },
-    {
-      date: '2024-01-02',
-      orders: 8,
-      grossSales: 24000,
-      returns: 2000,
-      coupons: 1000,
-      netSales: 21000,
-      taxes: 1050,
-      shipping: 500,
-      totalSales: 22550,
-    },
-  ];
-
-  // Use sample data if no real data is available
-  const dataToUse = salesData.length > 0 ? salesData : sampleData;
-
   const filteredData = useMemo(() => {
-    console.log('Sales data:', dataToUse);
+    console.log('Sales data:', salesData);
     console.log('Search term:', searchTerm);
-    const filtered = dataToUse.filter(item =>
+    const filtered = salesData.filter(item =>
       item.date.toLowerCase().includes(searchTerm.toLowerCase())
     );
     console.log('Filtered data:', filtered);
     return filtered;
-  }, [dataToUse, searchTerm]);
+  }, [salesData, searchTerm]);
 
   // Add debugging for pagination
   const paginatedData = useMemo(() => {
@@ -181,7 +152,7 @@ export function SalesAnalytics({ user: _ }: SalesAnalyticsProps) {
       };
     }
 
-    const total = dataToUse.reduce(
+    const total = salesData.reduce(
       (acc, item) => ({
         orders: acc.orders + item.orders,
         grossSales: acc.grossSales + item.grossSales,
@@ -215,7 +186,7 @@ export function SalesAnalytics({ user: _ }: SalesAnalyticsProps) {
       shippingChange: 0,
       totalSalesChange: 0,
     };
-  }, [dataToUse, analyticsData]);
+  }, [salesData, analyticsData]);
 
   const getChangeBadge = (change: number) => {
     if (change > 0) {
