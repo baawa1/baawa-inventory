@@ -25,12 +25,5 @@ export default async function CouponsPage() {
     redirect('/pending-approval');
   }
 
-  return (
-    <DashboardPageLayout
-      title="Coupons"
-      description="Manage discount coupons and promotional codes"
-    >
-      <CouponList user={session.user} />
-    </DashboardPageLayout>
-  );
+  return <CouponList user={session.user} />;
 }

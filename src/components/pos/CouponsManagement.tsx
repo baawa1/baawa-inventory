@@ -1,7 +1,6 @@
 'use client';
 
 import React, { useState } from 'react';
-import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
@@ -45,24 +44,15 @@ import {
   IconX,
 } from '@tabler/icons-react';
 import { formatCurrency } from '@/lib/utils';
+import {
+  useCoupons,
+  useCreateCoupon,
+  useToggleCouponStatus,
+  useDeleteCoupon,
+  type Coupon,
+  type CreateCouponData,
+} from '@/hooks/api/useCoupons';
 import { toast } from 'sonner';
-
-interface Coupon {
-  id: number;
-  code: string;
-  name: string;
-  description: string;
-  type: 'percentage' | 'fixed';
-  value: number;
-  minimumAmount: number | null;
-  maxUses: number | null;
-  currentUses: number;
-  isActive: boolean;
-  validFrom: string;
-  validUntil: string;
-  createdAt: string;
-  updatedAt: string;
-}
 
 interface CouponsManagementProps {
   user: {
@@ -71,120 +61,28 @@ interface CouponsManagementProps {
   };
 }
 
-interface CreateCouponData {
-  code: string;
-  name: string;
-  description: string;
-  type: 'percentage' | 'fixed';
-  value: number;
-  minimumAmount: number | null;
-  maxUses: number | null;
-  validFrom: string;
-  validUntil: string;
-}
-
-async function fetchCoupons(search: string, status: string): Promise<Coupon[]> {
-  const params = new URLSearchParams({
-    search,
-    status,
-  });
-
-  const response = await fetch(`/api/pos/coupons?${params}`);
-  if (!response.ok) {
-    throw new Error('Failed to fetch coupons');
-  }
-  return response.json();
-}
-
-async function createCoupon(data: CreateCouponData): Promise<Coupon> {
-  const response = await fetch('/api/pos/coupons', {
-    method: 'POST',
-    headers: {
-      'Content-Type': 'application/json',
-    },
-    body: JSON.stringify(data),
-  });
-
-  if (!response.ok) {
-    throw new Error('Failed to create coupon');
-  }
-  return response.json();
-}
-
-async function toggleCouponStatus(couponId: number): Promise<void> {
-  const response = await fetch(`/api/pos/coupons/${couponId}/toggle`, {
-    method: 'PATCH',
-  });
-
-  if (!response.ok) {
-    throw new Error('Failed to toggle coupon status');
-  }
-}
-
-async function deleteCoupon(couponId: number): Promise<void> {
-  const response = await fetch(`/api/pos/coupons/${couponId}`, {
-    method: 'DELETE',
-  });
-
-  if (!response.ok) {
-    throw new Error('Failed to delete coupon');
-  }
-}
-
 export function CouponsManagement({ user }: CouponsManagementProps) {
   const [searchTerm, setSearchTerm] = useState('');
   const [selectedStatus, setSelectedStatus] = useState('all');
   const [isCreateDialogOpen, setIsCreateDialogOpen] = useState(false);
   const [selectedCoupon, setSelectedCoupon] = useState<Coupon | null>(null);
 
-  const queryClient = useQueryClient();
-
   const {
-    data: coupons = [],
+    data: couponsResponse,
     isLoading,
     error,
-  } = useQuery({
-    queryKey: ['coupons', searchTerm, selectedStatus],
-    queryFn: () => fetchCoupons(searchTerm, selectedStatus),
+  } = useCoupons({
+    search: searchTerm,
+    status: selectedStatus,
+    page: 1,
+    limit: 100, // Get more coupons for the management view
   });
 
-  const createMutation = useMutation({
-    mutationFn: createCoupon,
-    onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ['coupons'] });
-      toast.success('Coupon created successfully');
-      setIsCreateDialogOpen(false);
-    },
-    onError: () => {
-      toast.error('Failed to create coupon');
-    },
-  });
+  const coupons = couponsResponse?.data || [];
 
-  const toggleStatusMutation = useMutation({
-    mutationFn: toggleCouponStatus,
-    onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ['coupons'] });
-      toast.success('Coupon status updated');
-    },
-    onError: () => {
-      toast.error('Failed to update coupon status');
-    },
-  });
-
-  const deleteMutation = useMutation({
-    mutationFn: deleteCoupon,
-    onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ['coupons'] });
-      toast.success('Coupon deleted successfully');
-    },
-    onError: () => {
-      toast.error('Failed to delete coupon');
-    },
-  });
-
-  if (error) {
-    toast.error('Failed to load coupons');
-  }
+  const createMutation = useCreateCoupon();
+  const toggleStatusMutation = useToggleCouponStatus();
+  const deleteMutation = useDeleteCoupon();
 
   const statusOptions = [
     { value: 'all', label: 'All Coupons' },
@@ -241,20 +139,27 @@ export function CouponsManagement({ user }: CouponsManagementProps) {
     const data: CreateCouponData = {
       code: formData.get('code') as string,
       name: formData.get('name') as string,
-      description: formData.get('description') as string,
-      type: formData.get('type') as 'percentage' | 'fixed',
+      description: (formData.get('description') as string) || undefined,
+      type:
+        (formData.get('type') as 'percentage' | 'fixed') === 'percentage'
+          ? 'PERCENTAGE'
+          : 'FIXED',
       value: parseFloat(formData.get('value') as string),
       minimumAmount: formData.get('minimumAmount')
         ? parseFloat(formData.get('minimumAmount') as string)
-        : null,
+        : undefined,
       maxUses: formData.get('maxUses')
         ? parseInt(formData.get('maxUses') as string)
-        : null,
+        : undefined,
       validFrom: formData.get('validFrom') as string,
       validUntil: formData.get('validUntil') as string,
     };
 
-    createMutation.mutate(data);
+    createMutation.mutate(data, {
+      onSuccess: () => {
+        setIsCreateDialogOpen(false);
+      },
+    });
   };
 
   // Calculate summary stats
@@ -529,7 +434,6 @@ export function CouponsManagement({ user }: CouponsManagementProps) {
                   <TableHead>Usage</TableHead>
                   <TableHead>Valid Period</TableHead>
                   <TableHead>Status</TableHead>
-                  <TableHead>Actions</TableHead>
                 </TableRow>
               </TableHeader>
               <TableBody>
@@ -561,15 +465,15 @@ export function CouponsManagement({ user }: CouponsManagementProps) {
                     </TableCell>
                     <TableCell>
                       <div className="flex items-center space-x-1">
-                        {coupon.type === 'percentage' ? (
+                        {coupon.type === 'PERCENTAGE' ? (
                           <>
                             <IconPercentage className="h-4 w-4" />
-                            <span>{coupon.value}%</span>
+                            <span>{coupon.value}</span>
                           </>
                         ) : (
                           <>
                             <IconCurrencyNaira className="h-4 w-4" />
-                            <span>{formatCurrency(coupon.value)}</span>
+                            <span>{coupon.value}</span>
                           </>
                         )}
                       </div>
@@ -599,46 +503,6 @@ export function CouponsManagement({ user }: CouponsManagementProps) {
                       </div>
                     </TableCell>
                     <TableCell>{getStatusBadge(coupon)}</TableCell>
-                    <TableCell>
-                      <div className="flex items-center space-x-2">
-                        <Button
-                          variant="outline"
-                          size="sm"
-                          onClick={() => setSelectedCoupon(coupon)}
-                        >
-                          <IconEye className="mr-1 h-4 w-4" />
-                          View
-                        </Button>
-
-                        {user.role !== 'STAFF' && (
-                          <>
-                            <Button
-                              variant="outline"
-                              size="sm"
-                              onClick={() =>
-                                toggleStatusMutation.mutate(coupon.id)
-                              }
-                              disabled={toggleStatusMutation.isPending}
-                            >
-                              {coupon.isActive ? (
-                                <IconX className="h-4 w-4" />
-                              ) : (
-                                <IconCheck className="h-4 w-4" />
-                              )}
-                            </Button>
-
-                            <Button
-                              variant="outline"
-                              size="sm"
-                              onClick={() => deleteMutation.mutate(coupon.id)}
-                              disabled={deleteMutation.isPending}
-                            >
-                              <IconTrash className="h-4 w-4" />
-                            </Button>
-                          </>
-                        )}
-                      </div>
-                    </TableCell>
                   </TableRow>
                 ))}
               </TableBody>
@@ -706,7 +570,7 @@ export function CouponsManagement({ user }: CouponsManagementProps) {
                 <div>
                   <label className="text-sm font-medium">Discount</label>
                   <p className="text-sm">
-                    {selectedCoupon.type === 'percentage'
+                    {selectedCoupon.type === 'PERCENTAGE'
                       ? `${selectedCoupon.value}% off`
                       : `${formatCurrency(selectedCoupon.value)} off`}
                   </p>

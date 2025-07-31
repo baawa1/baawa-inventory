@@ -94,6 +94,11 @@ This is a modern, full-stack inventory management and POS system designed specif
 ```
 ├── prisma/
 │   └── schema.prisma          # Database schema
+├── scripts/
+│   └── migrate.js             # Custom migration script
+├── docs/
+│   ├── database-migration-workflow.md  # Migration documentation
+│   └── migration-quick-reference.md    # Quick reference guide
 ├── src/
 │   ├── app/                   # Next.js App Router
 │   │   ├── (dashboard)/       # Dashboard layout group
@@ -168,9 +173,17 @@ The system uses a comprehensive PostgreSQL database schema with the following ma
 4. **Database Setup**
 
    ```bash
+   # Generate Prisma client
    npx prisma generate
-   npx prisma db push
+   
+   # Check migration status
+   npm run db:status
+   
+   # Deploy migrations (if needed)
+   npm run db:deploy
    ```
+
+   > **Note**: We use a custom migration script to handle Supabase connection issues. Always use `npm run db:*` commands instead of direct `npx prisma migrate` commands.
 
 5. **Run the development server**
 
@@ -179,6 +192,43 @@ The system uses a comprehensive PostgreSQL database schema with the following ma
    ```
 
 6. **Open [http://localhost:3000](http://localhost:3000)**
+
+## 🗄️ Database Management
+
+### Migration Commands
+
+We use a custom migration script to handle Supabase connection issues. **Always use these commands instead of direct Prisma commands:**
+
+```bash
+# Check migration status
+npm run db:status
+
+# Deploy pending migrations
+npm run db:deploy
+
+# Create new migration
+npm run db:dev -- --name descriptive_name
+
+# Resolve failed migration
+npm run db:resolve <migration_name>
+
+# Reset migration state (use with caution)
+npm run db:reset --confirm
+```
+
+### Documentation
+
+- 📖 [Database Migration Workflow](docs/database-migration-workflow.md) - Detailed documentation
+- 📋 [Migration Quick Reference](docs/migration-quick-reference.md) - Quick commands reference
+
+### Troubleshooting
+
+If you encounter migration issues:
+
+1. Check migration status: `npm run db:status`
+2. Review the [migration workflow documentation](docs/database-migration-workflow.md)
+3. Verify your `.env` file has correct `DATABASE_URL` and `DIRECT_URL`
+4. Ensure your Supabase project is active
 
 ## 📋 Current Progress
 

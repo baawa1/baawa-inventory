@@ -1,0 +1,232 @@
+---
+description: Anytime we are working with Prisma or the database prisma/migrations supabase
+alwaysApply: false
+---
+
+# Prisma Migration Workflow Rules
+
+## Purpose
+
+To ensure consistent and reliable database migrations when working with Prisma and Supabase, avoiding connection issues and maintaining proper schema management.
+
+## Core Principle
+
+**NEVER use direct Prisma migration commands** when working with Supabase. Always use the custom migration script to handle connection pooling issues.
+
+## Forbidden Commands
+
+The following commands will fail due to Supabase's direct URL connection restrictions:
+
+```bash
+# ❌ NEVER use these commands:
+npx prisma migrate dev
+npx prisma migrate deploy
+npx prisma migrate status
+npx prisma db push
+npx prisma migrate reset
+npx prisma migrate resolve
+```
+
+## Required Commands
+
+Always use the custom migration script through npm commands:
+
+```bash
+# ✅ ALWAYS use these commands:
+npm run db:dev          # Create and apply new migration
+npm run db:deploy       # Deploy pending migrations
+npm run db:status       # Check migration status
+npm run db:resolve      # Resolve failed migrations
+npm run db:reset        # Reset migration state
+```
+
+## Command Mapping
+
+| ❌ Forbidden                 | ✅ Required                  |
+| ---------------------------- | ---------------------------- |
+| `npx prisma migrate dev`     | `npm run db:dev`             |
+| `npx prisma migrate deploy`  | `npm run db:deploy`          |
+| `npx prisma migrate status`  | `npm run db:status`          |
+| `npx prisma db push`         | `npm run db:push`            |
+| `npx prisma migrate reset`   | `npm run db:reset --confirm` |
+| `npx prisma migrate resolve` | `npm run db:resolve <name>`  |
+
+## Allowed Commands
+
+These Prisma commands work normally and can be used directly:
+
+```bash
+# ✅ These work normally:
+npx prisma generate    # Generate Prisma client
+npx prisma studio      # Open Prisma Studio GUI
+npx prisma validate    # Validate schema
+npx prisma format      # Format schema file
+```
+
+## Migration Workflow
+
+### Development Workflow
+
+1. **Make schema changes** in `prisma/schema.prisma`
+2. **Create migration**: `npm run db:dev -- --name descriptive_name`
+3. **Review migration** in `prisma/migrations/`
+4. **Test locally** to ensure it works
+5. **Commit changes** to version control
+
+### Production Deployment
+
+1. **Deploy code** to production
+2. **Run migrations**: `npm run db:deploy`
+3. **Verify status**: `npm run db:status`
+
+### Troubleshooting
+
+#### Failed Migration State
+
+```bash
+# Check what failed
+npm run db:status
+
+# If the table exists but migration failed, resolve it
+npm run db:resolve <migration_name>
+
+# Then deploy remaining migrations
+npm run db:deploy
+```
+
+#### Schema Conflicts
+
+```bash
+# Check current status
+npm run db:status
+
+# If needed, reset migration state (WARNING: destructive)
+npm run db:reset --confirm
+
+# Then redeploy all migrations
+npm run db:deploy
+```
+
+## Why This Workaround is Needed
+
+### Supabase Connection Architecture
+
+Supabase provides two connection types:
+
+1. **Pooled Connection** (`DATABASE_URL`)
+   - Accessible from anywhere
+   - Optimized for application queries
+   - **Limited functionality for schema changes**
+
+2. **Direct Connection** (`DIRECT_URL`)
+   - Required for migrations
+   - **Only accessible from within Supabase infrastructure**
+   - Blocked by network security
+
+### Prisma Migration Requirements
+
+Prisma migrations require direct database access for:
+
+- Creating/dropping tables
+- Adding/removing columns
+- Creating indexes
+- Modifying constraints
+- Running raw SQL
+
+## How the Migration Script Works
+
+The custom migration script (`scripts/migrate.js`) automatically:
+
+1. **Backs up** your current `schema.prisma`
+2. **Removes** `directUrl` temporarily
+3. **Runs** the Prisma migration command using pooled connection
+4. **Restores** the original schema with `directUrl` intact
+5. **Cleans up** backup files
+
+## Safety Features
+
+- **Automatic Backup**: Schema is always backed up before modification
+- **Guaranteed Restoration**: Schema is restored even if migration fails
+- **Process Handling**: Handles SIGINT and SIGTERM to ensure cleanup
+- **Error Recovery**: Provides clear error messages and exit codes
+
+## Environment Variables
+
+Ensure your `.env` file has both URLs:
+
+```env
+# Pooled connection (for normal operations)
+DATABASE_URL="postgresql://postgres.bhwywfigcyotkxbujivm:password@aws-0-eu-west-2.pooler.supabase.com:5432/postgres"
+
+# Direct connection (for migrations, handled by script)
+DIRECT_URL="postgresql://postgres:password@db.bhwywfigcyotkxbujivm.supabase.co:5432/postgres"
+```
+
+## Best Practices
+
+1. **Always use migration script** instead of direct Prisma commands
+2. **Test migrations locally** before deploying to production
+3. **Use descriptive migration names** that explain the change
+4. **Review migration files** before applying them
+5. **Keep migrations small and focused** on single changes
+6. **Backup your database** before major migrations
+
+## Documentation
+
+- 📖 [Database Migration Workflow](docs/database-migration-workflow.md) - Detailed documentation
+- 📋 [Migration Quick Reference](docs/migration-quick-reference.md) - Quick commands reference
+
+## Enforcement
+
+- **All code reviews** must check for proper migration command usage
+- **All team members** must use the migration script
+- **No direct Prisma migration commands** in scripts or documentation
+- **Any exceptions** must be documented and justified
+
+## Troubleshooting Common Issues
+
+### Connection Errors
+
+If you see connection errors:
+
+1. Verify your `.env` file has correct URLs
+2. Check that your Supabase project is active
+3. Ensure your IP is not blocked by Supabase
+4. Use the migration script instead of direct Prisma commands
+
+### Migration State Issues
+
+If migrations are in an inconsistent state:
+
+1. Use `npm run db:status` to check current state
+2. Use `npm run db:resolve` to fix failed migrations
+3. Use `npm run db:deploy` to apply pending migrations
+
+### Schema Conflicts
+
+If the schema doesn't match the database:
+
+1. Use `npm run db:status` to see differences
+2. Use `npm run db:reset --confirm` to reset (WARNING: destructive)
+3. Use `npm run db:deploy` to reapply all migrations
+
+## Migration Script Details
+
+The migration script (`scripts/migrate.js`) provides:
+
+- **Automatic schema backup and restoration**
+- **Safe handling of direct URL issues**
+- **Comprehensive error handling**
+- **Process interruption handling**
+- **Clear logging and feedback**
+
+This ensures that migrations work reliably regardless of the direct URL accessibility issues.
+
+## Summary
+
+**Remember**: Always use `npm run db:*` commands instead of direct `npx prisma migrate *` commands. This is not optional - it's required for the project to work properly with Supabase.
+description:
+globs:
+alwaysApply: false
+
+---

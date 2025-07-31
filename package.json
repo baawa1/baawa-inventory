@@ -41,7 +41,12 @@
     "seed:test-data:reset": "node scripts/generate-complete-test-data.js --reset",
     "setup:production": "./scripts/setup-production-env.sh",
     "deploy:vercel": "./scripts/deploy-to-vercel.sh",
-    "vercel-build": "prisma generate && prisma db push && next build"
+    "vercel-build": "prisma generate && prisma db push && next build",
+    "db:status": "node scripts/migrate.js status",
+    "db:deploy": "node scripts/migrate.js deploy",
+    "db:dev": "node scripts/migrate.js dev",
+    "db:resolve": "node scripts/migrate.js resolve",
+    "db:reset": "node scripts/migrate.js reset"
   },
   "dependencies": {
     "@dnd-kit/core": "^6.3.1",
