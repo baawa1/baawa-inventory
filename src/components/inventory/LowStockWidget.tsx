@@ -75,7 +75,7 @@ export function LowStockWidget({ limit = 5 }: LowStockWidgetProps) {
   };
 
   const handleViewAll = () => {
-    router.push('/inventory/low-stock');
+    router.push('/inventory/products?lowStock=true');
   };
 
   const handleProductClick = (productId: number) => {

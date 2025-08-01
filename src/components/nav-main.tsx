@@ -50,7 +50,7 @@ export function NavMain({
               className="size-8 group-data-[collapsible=icon]:opacity-0"
               variant="outline"
             >
-              <Link href="/inventory/low-stock">
+              <Link href="/inventory/products?lowStock=true">
                 <IconAlertTriangle />
                 <span className="sr-only">Low Stock Alerts</span>
               </Link>

@@ -138,7 +138,7 @@ test.describe('Verified but Unapproved Users - Access Control', () => {
         '/inventory/categories',
         '/inventory/brands',
         '/inventory/suppliers',
-        '/inventory/low-stock',
+        '/inventory/products?lowStock=true',
         '/inventory/reports',
         '/inventory/stock-history',
         '/inventory/stock-reconciliations',
