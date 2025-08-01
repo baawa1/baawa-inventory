@@ -330,10 +330,34 @@ export function TransactionHistory() {
               <span>{formatCurrency(transaction.subtotal)}</span>
             </div>
             {transaction.discount > 0 && (
-              <div className="flex justify-between text-sm">
-                <span>Discount:</span>
-                <span>-{formatCurrency(transaction.discount)}</span>
-              </div>
+              <>
+                <div className="flex justify-between text-sm">
+                  <span>Discount:</span>
+                  <span>-{formatCurrency(transaction.discount)}</span>
+                </div>
+                {/* Show coupon information if any items have coupons */}
+                {transaction.items.some(item => item.coupon) && (
+                  <div className="bg-muted mt-2 rounded-md p-2">
+                    <div className="text-muted-foreground mb-1 text-sm font-medium">
+                      Applied Coupon:
+                    </div>
+                    <div className="flex items-center gap-2">
+                      <Badge variant="secondary" className="text-xs">
+                        {
+                          transaction.items.find(item => item.coupon)?.coupon
+                            ?.code
+                        }
+                      </Badge>
+                      <span className="text-muted-foreground text-xs">
+                        {
+                          transaction.items.find(item => item.coupon)?.coupon
+                            ?.name
+                        }
+                      </span>
+                    </div>
+                  </div>
+                )}
+              </>
             )}
             <div className="flex justify-between border-t pt-2 text-lg font-medium">
               <span>TOTAL</span>
@@ -355,6 +379,18 @@ export function TransactionHistory() {
             </div>
           </div>
         </div>
+
+        {/* Transaction Notes */}
+        {transaction.notes && (
+          <div className="border-t pt-4">
+            <h3 className="mb-2 text-sm font-medium">Notes</h3>
+            <div className="bg-muted rounded-lg p-3">
+              <p className="text-muted-foreground text-sm">
+                {transaction.notes}
+              </p>
+            </div>
+          </div>
+        )}
 
         {/* Actions */}
         <div className="border-t pt-4">

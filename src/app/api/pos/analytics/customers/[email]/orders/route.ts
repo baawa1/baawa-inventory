@@ -28,6 +28,15 @@ export const GET = withPOSAuth(
                   price: true,
                 },
               },
+              coupon: {
+                select: {
+                  id: true,
+                  code: true,
+                  name: true,
+                  type: true,
+                  value: true,
+                },
+              },
             },
           },
           users: {
@@ -58,6 +67,7 @@ export const GET = withPOSAuth(
         subtotal: Number(order.subtotal || 0),
         discount: Number(order.discount_amount || 0),
         total: Number(order.total_amount || 0),
+        notes: order.notes,
         items: order.sales_items.map((item: any) => ({
           id: item.id,
           name: item.products?.name || 'Unknown Product',
@@ -65,6 +75,15 @@ export const GET = withPOSAuth(
           price: Number(item.unit_price || 0),
           quantity: item.quantity,
           total: Number(item.total_price || 0),
+          coupon: item.coupon
+            ? {
+                id: item.coupon.id,
+                code: item.coupon.code,
+                name: item.coupon.name,
+                type: item.coupon.type,
+                value: Number(item.coupon.value),
+              }
+            : null,
         })),
       }));
 

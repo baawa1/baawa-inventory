@@ -3,6 +3,7 @@ import { prisma } from '@/lib/db';
 import { withAuth, AuthenticatedRequest } from '@/lib/api-middleware';
 import { emailService } from '@/lib/email';
 import { z } from 'zod';
+import type { SplitPayment } from '@prisma/client';
 
 // Validation schema for POS sale creation
 const posSaleItemSchema = z.object({
@@ -145,18 +146,6 @@ export const POST = withAuth(async function (request: AuthenticatedRequest) {
             },
           });
 
-          // Increment coupon usage if coupon is applied
-          if (item.couponId) {
-            await tx.coupon.update({
-              where: { id: item.couponId },
-              data: {
-                currentUses: {
-                  increment: 1,
-                },
-              },
-            });
-          }
-
           return {
             ...salesItem,
             productName: product?.name || 'Unknown Product',
@@ -164,8 +153,26 @@ export const POST = withAuth(async function (request: AuthenticatedRequest) {
         })
       );
 
+      // Increment coupon usage only once if any item has a coupon
+      const hasCoupon = validatedData.items.some(item => item.couponId);
+      if (hasCoupon) {
+        const couponId = validatedData.items.find(
+          item => item.couponId
+        )?.couponId;
+        if (couponId) {
+          await tx.coupon.update({
+            where: { id: couponId },
+            data: {
+              currentUses: {
+                increment: 1,
+              },
+            },
+          });
+        }
+      }
+
       // Create split payments if this is a split payment transaction
-      let splitPayments = [];
+      let splitPayments: SplitPayment[] = [];
       if (
         validatedData.paymentMethod === 'split' &&
         validatedData.splitPayments

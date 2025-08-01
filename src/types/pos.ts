@@ -17,6 +17,15 @@ export type SalesTransactionWithIncludes = Prisma.SalesTransactionGetPayload<{
             barcode: true;
           };
         };
+        coupon: {
+          select: {
+            id: true;
+            code: true;
+            name: true;
+            type: true;
+            value: true;
+          };
+        };
       };
     };
     users: {
@@ -129,6 +138,13 @@ export interface TransformedTransaction {
     price: number;
     quantity: number;
     total: number;
+    coupon?: {
+      id: number;
+      code: string;
+      name: string;
+      type: string;
+      value: number;
+    } | null;
   }>;
   subtotal: number;
   discount: number;
@@ -143,6 +159,7 @@ export interface TransformedTransaction {
   timestamp: Date | null;
   createdAt: Date | null;
   updatedAt: Date | null;
+  notes: string | null;
 }
 
 export interface TransformedProduct {
