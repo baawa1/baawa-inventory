@@ -81,11 +81,7 @@ export const updateUserProfileSchema = z.object({
   firstName: nameSchema.optional(),
   lastName: nameSchema.optional(),
   phone: phoneSchema,
-  notes: z
-    .string()
-    .max(500, 'Notes must be 500 characters or less')
-    .optional()
-    .nullable(),
+  avatar_url: z.string().url().optional().nullable(),
 });
 
 // Bulk user operations

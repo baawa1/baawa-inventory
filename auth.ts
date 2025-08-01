@@ -77,6 +77,9 @@ const config: NextAuthConfig = {
               createdAt: true,
               approvedAt: true,
               approvedBy: true,
+              phone: true,
+              lastLogin: true,
+              avatar_url: true,
             },
           });
 
@@ -156,6 +159,9 @@ const config: NextAuthConfig = {
         token.isActive = Boolean((user as any).isActive);
         token.userStatus = (user as any).userStatus;
         token.createdAt = (user as any).createdAt;
+        token.phone = (user as any).phone || undefined;
+        token.lastLogin = (user as any).lastLogin || undefined;
+        token.avatar_url = (user as any).avatar_url || undefined;
 
         // Add timestamp to track when data was last fetched
         token.dataFetchedAt = Date.now();
@@ -197,6 +203,9 @@ const config: NextAuthConfig = {
               emailVerified: true,
               isActive: true,
               createdAt: true,
+              phone: true,
+              lastLogin: true,
+              avatar_url: true,
             },
           });
 
@@ -212,6 +221,9 @@ const config: NextAuthConfig = {
             token.isActive = freshUser.isActive;
             token.userStatus = freshUser.userStatus || 'PENDING';
             token.createdAt = freshUser.createdAt || new Date();
+            token.phone = freshUser.phone || undefined;
+            token.lastLogin = freshUser.lastLogin || undefined;
+            token.avatar_url = freshUser.avatar_url || undefined;
             token.dataFetchedAt = Date.now();
           } else {
             // User not found in database
@@ -234,6 +246,9 @@ const config: NextAuthConfig = {
         session.user.isActive = Boolean(token.isActive);
         session.user.userStatus = token.userStatus as any;
         session.user.createdAt = token.createdAt as string | Date;
+        session.user.phone = token.phone as string;
+        session.user.lastLogin = token.lastLogin as string | Date;
+        session.user.avatar_url = token.avatar_url as string;
 
         // Update the name field with fresh firstName and lastName
         if (token.firstName && token.lastName) {

@@ -44,6 +44,12 @@ export interface SessionUser {
   status: UserStatus | string;
   isEmailVerified?: boolean;
   image?: string;
+  firstName?: string;
+  lastName?: string;
+  phone?: string;
+  avatar_url?: string;
+  createdAt?: string | Date;
+  lastLogin?: string | Date;
 }
 
 // (Interfaces are already exported above)
