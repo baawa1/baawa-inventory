@@ -11,13 +11,22 @@ import {
 } from '@/components/ui/table';
 import { Badge } from '@/components/ui/badge';
 import { type User } from './types/user';
-import Link from 'next/link';
+import {
+  IconEdit,
+  IconTrash,
+  IconUserCheck,
+  IconUserX,
+  IconEye,
+} from '@tabler/icons-react';
 
 interface UserTableProps {
   users: User[];
-  onEditUserAction: (_user: User) => void;
-  onDeleteUserAction: (_userId: number) => void;
+  onEdit: (_user: User) => void;
+  onDelete: (_userId: number) => void;
+  onApprove?: (_userId: number) => void;
+  onReject?: (_userId: number) => void;
   isLoading?: boolean;
+  isPendingTab?: boolean;
 }
 
 const getRoleColor = (role: string) => {
@@ -52,9 +61,12 @@ const getStatusColor = (status: string) => {
 
 export function UserTable({
   users,
-  onEditUserAction,
-  onDeleteUserAction,
+  onEdit,
+  onDelete,
+  onApprove,
+  onReject,
   isLoading,
+  isPendingTab = false,
 }: UserTableProps) {
   if (isLoading) {
     return (
@@ -67,7 +79,9 @@ export function UserTable({
   if (users.length === 0) {
     return (
       <div className="flex items-center justify-center p-8">
-        <div className="text-muted-foreground">No users found.</div>
+        <div className="text-muted-foreground">
+          {isPendingTab ? 'No pending users found.' : 'No users found.'}
+        </div>
       </div>
     );
   }
@@ -80,9 +94,9 @@ export function UserTable({
           <TableHead>Email</TableHead>
           <TableHead>Role</TableHead>
           <TableHead>Status</TableHead>
-          <TableHead>Active</TableHead>
+          {!isPendingTab && <TableHead>Active</TableHead>}
           <TableHead>Created</TableHead>
-          <TableHead>Last Login</TableHead>
+          {!isPendingTab && <TableHead>Last Login</TableHead>}
           <TableHead className="text-right">Actions</TableHead>
         </TableRow>
       </TableHeader>
@@ -90,7 +104,9 @@ export function UserTable({
         {users.map(user => (
           <TableRow key={user.id}>
             <TableCell className="font-medium">
-              {user.firstName} {user.lastName}
+              {user.name ||
+                `${user.firstName || ''} ${user.lastName || ''}`.trim() ||
+                'N/A'}
             </TableCell>
             <TableCell>{user.email}</TableCell>
             <TableCell>
@@ -101,39 +117,74 @@ export function UserTable({
                 {user.userStatus}
               </Badge>
             </TableCell>
-            <TableCell>
-              <Badge variant={user.isActive ? 'default' : 'secondary'}>
-                {user.isActive ? 'Active' : 'Inactive'}
-              </Badge>
-            </TableCell>
+            {!isPendingTab && (
+              <TableCell>
+                <Badge variant={user.isActive ? 'default' : 'secondary'}>
+                  {user.isActive ? 'Active' : 'Inactive'}
+                </Badge>
+              </TableCell>
+            )}
             <TableCell>
               {new Date(user.createdAt).toLocaleDateString()}
             </TableCell>
-            <TableCell>
-              {user.lastLogin
-                ? new Date(user.lastLogin).toLocaleDateString()
-                : 'Never'}
-            </TableCell>
-            <TableCell className="space-x-2 text-right">
-              <Button
-                variant="outline"
-                size="sm"
-                onClick={() => onEditUserAction(user)}
-              >
-                Edit
-              </Button>
-              <Button
-                variant="destructive"
-                size="sm"
-                onClick={() => onDeleteUserAction(parseInt(user.id))}
-              >
-                Delete
-              </Button>
-              <Link href={`/dashboard/audit-logs?userId=${user.id}`}>
-                <Button variant="secondary" size="sm" asChild>
-                  <span>View Audit Logs</span>
-                </Button>
-              </Link>
+            {!isPendingTab && (
+              <TableCell>
+                {user.lastLogin
+                  ? new Date(user.lastLogin).toLocaleDateString()
+                  : 'Never'}
+              </TableCell>
+            )}
+            <TableCell className="text-right">
+              <div className="flex items-center justify-end gap-2">
+                {isPendingTab ? (
+                  <>
+                    <Button
+                      variant="outline"
+                      size="sm"
+                      onClick={() => onEdit(user)}
+                    >
+                      <IconEye className="h-4 w-4" />
+                    </Button>
+                    {onApprove && (
+                      <Button
+                        variant="default"
+                        size="sm"
+                        onClick={() => onApprove(parseInt(user.id))}
+                      >
+                        <IconUserCheck className="mr-1 h-4 w-4" />
+                        Approve
+                      </Button>
+                    )}
+                    {onReject && (
+                      <Button
+                        variant="destructive"
+                        size="sm"
+                        onClick={() => onReject(parseInt(user.id))}
+                      >
+                        <IconUserX className="mr-1 h-4 w-4" />
+                        Reject
+                      </Button>
+                    )}
+                  </>
+                ) : (
+                  <>
+                    <Button
+                      variant="outline"
+                      size="sm"
+                      onClick={() => onEdit(user)}
+                    >
+                      <IconEdit className="h-4 w-4" />
+                    </Button>
+                    <Button
+                      variant="destructive"
+                      size="sm"
+                      onClick={() => onDelete(parseInt(user.id))}
+                    >
+                      <IconTrash className="h-4 w-4" />
+                    </Button>
+                  </>
+                )}
+              </div>
             </TableCell>
           </TableRow>
         ))}

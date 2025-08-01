@@ -3,11 +3,12 @@ import { prisma } from '@/lib/db';
 import { withPermission, AuthenticatedRequest } from '@/lib/api-middleware';
 import { z } from 'zod';
 
-const approveUserSchema = z.object({
+const rejectUserSchema = z.object({
   userId: z.number(),
+  reason: z.string().optional(),
 });
 
-// POST /api/admin/approve-user - Approve a pending user
+// POST /api/admin/reject-user - Reject a pending user
 export const POST = withPermission(
   ['ADMIN'],
   async function (request: AuthenticatedRequest) {
@@ -15,7 +16,7 @@ export const POST = withPermission(
       const body = await request.json();
 
       // Validate request body
-      const validation = approveUserSchema.safeParse(body);
+      const validation = rejectUserSchema.safeParse(body);
       if (!validation.success) {
         return NextResponse.json(
           { error: 'Invalid request data', details: validation.error.issues },
@@ -23,7 +24,7 @@ export const POST = withPermission(
         );
       }
 
-      const { userId } = validation.data;
+      const { userId, reason } = validation.data;
 
       // Check if user exists and is pending
       const user = await prisma.user.findUnique({
@@ -41,18 +42,18 @@ export const POST = withPermission(
         );
       }
 
-      // Update user status to approved
+      // Update user status to rejected
       const updatedUser = await prisma.user.update({
         where: { id: userId },
         data: {
-          userStatus: 'APPROVED',
-          isActive: true,
+          userStatus: 'REJECTED',
+          isActive: false,
         },
       });
 
       return NextResponse.json({
         success: true,
-        message: 'User approved successfully',
+        message: 'User rejected successfully',
         user: {
           id: updatedUser.id,
           email: updatedUser.email,
@@ -60,9 +61,9 @@ export const POST = withPermission(
         },
       });
     } catch (error) {
-      console.error('Error approving user:', error);
+      console.error('Error rejecting user:', error);
       return NextResponse.json(
-        { error: 'Failed to approve user' },
+        { error: 'Failed to reject user' },
         { status: 500 }
       );
     }
