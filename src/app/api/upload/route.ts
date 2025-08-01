@@ -19,14 +19,17 @@ export const POST = withRateLimit(RATE_LIMIT_CONFIGS.UPLOAD)(async (
       return createSecureResponse({ error: 'Unauthorized' }, 401);
     }
 
-    // Check permissions - only ADMIN and MANAGER can upload
-    if (!['ADMIN', 'MANAGER'].includes(session.user.role)) {
-      return createSecureResponse({ error: 'Insufficient permissions' }, 403);
-    }
-
     const formData = await request.formData();
     const file = formData.get('file') as File;
     const folder = (formData.get('folder') as string) || 'products';
+
+    // Check permissions - allow all authenticated users to upload avatars, but restrict other uploads
+    if (
+      folder !== 'avatars' &&
+      !['ADMIN', 'MANAGER'].includes(session.user.role)
+    ) {
+      return createSecureResponse({ error: 'Insufficient permissions' }, 403);
+    }
     const quality =
       parseInt(formData.get('quality') as string) ||
       IMAGE_CONSTANTS.DEFAULT_QUALITY;

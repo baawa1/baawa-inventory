@@ -16,6 +16,9 @@ declare module "next-auth" {
       isActive: boolean;
       userStatus: UserStatus;
       createdAt: string | Date;
+      phone?: string;
+      lastLogin?: string | Date;
+      avatar_url?: string;
       image?: string;
     } & Omit<DefaultSession["user"], "name" | "email">;
   }
@@ -30,6 +33,9 @@ declare module "next-auth" {
     isActive: boolean;
     userStatus: UserStatus;
     createdAt: string | Date;
+    phone?: string;
+    lastLogin?: string | Date;
+    avatar_url?: string;
   }
 }
 
@@ -43,5 +49,8 @@ declare module "next-auth/jwt" {
     isActive: boolean;
     userStatus: UserStatus;
     createdAt: string | Date;
+    phone?: string;
+    lastLogin?: string | Date;
+    avatar_url?: string;
   }
 }
