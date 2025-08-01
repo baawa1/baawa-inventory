@@ -709,6 +709,17 @@ export const createReceiptEmailTemplate = (
             </div>
         </div>
         
+        ${
+          data.notes
+            ? `
+        <div style="background-color: #f8f9fa; padding: 20px; border-radius: 8px; margin: 20px 0;">
+            <h3 style="margin: 0 0 10px 0; color: #1f2937;">Notes</h3>
+            <p style="margin: 0; font-size: 14px; color: #4b5563;">${data.notes}</p>
+        </div>
+        `
+            : ''
+        }
+        
         <div style="background-color: #f0f9ff; padding: 20px; border-radius: 8px; margin: 30px 0;">
             <h3 style="margin: 0 0 10px 0; color: #1f2937;">Return Policy</h3>
             <p style="margin: 0; font-size: 14px;">Items can be returned within 7 days of purchase with the original receipt. Please contact us if you have any issues with your purchase.</p>
@@ -730,7 +741,7 @@ export const createReceiptEmailTemplate = (
       )
       .join(
         '\n'
-      )}\n\nSubtotal: ₦${data.subtotal.toLocaleString()}\n${data.discount > 0 ? `Discount: -₦${data.discount.toLocaleString()}\n` : ''}Total: ₦${data.total.toLocaleString()}\n\nThank you for choosing Baawa Accessories!\n\nBest regards,\nBaawa Accessories Team`,
+      )}\n\nSubtotal: ₦${data.subtotal.toLocaleString()}\n${data.discount > 0 ? `Discount: -₦${data.discount.toLocaleString()}\n` : ''}Total: ₦${data.total.toLocaleString()}\n${data.notes ? `\nNotes: ${data.notes}\n` : ''}\n\nThank you for choosing Baawa Accessories!\n\nBest regards,\nBaawa Accessories Team`,
   };
 };
 

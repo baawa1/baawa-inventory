@@ -300,6 +300,7 @@ export const emailService = {
     paymentMethod: string;
     timestamp: Date;
     staffName: string;
+    notes?: string | null;
   }): Promise<boolean> {
     try {
       const service = createEmailService();

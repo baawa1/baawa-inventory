@@ -174,6 +174,7 @@ export interface ReceiptEmailData extends Record<string, unknown> {
   paymentMethod: string;
   timestamp: Date;
   staffName: string;
+  notes?: string | null;
 }
 
 /**

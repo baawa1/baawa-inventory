@@ -60,6 +60,7 @@ export interface Sale {
   customerEmail?: string;
   staffName: string;
   timestamp: Date;
+  notes?: string | null;
   splitPayments?: Array<{
     id: string;
     amount: number;
@@ -325,6 +326,13 @@ export function SlidingPaymentInterface({
         customerEmail: customerInfo.email || undefined,
         staffName,
         timestamp: new Date(),
+        notes: notes || undefined,
+        splitPayments: isSplitPayment
+          ? splitPayments.map(payment => ({
+              ...payment,
+              createdAt: new Date(),
+            }))
+          : undefined,
       };
 
       setCompletedSale(sale);
@@ -1975,6 +1983,16 @@ function ReceiptStep({ sale }: { sale: Sale | null }) {
             </div>
           )}
       </div>
+
+      {/* Notes */}
+      {sale.notes && (
+        <div className="space-y-2">
+          <h3 className="text-lg font-semibold">Notes</h3>
+          <div className="rounded-lg border bg-gray-50 p-3">
+            <p className="text-muted-foreground text-sm">{sale.notes}</p>
+          </div>
+        </div>
+      )}
 
       {/* Printer Actions */}
       <div className="flex gap-3 pt-4">

@@ -51,6 +51,7 @@ export interface Sale {
   customerEmail?: string;
   staffName: string;
   timestamp: Date;
+  notes?: string | null;
 }
 
 interface ReceiptGeneratorProps {
@@ -401,6 +402,13 @@ export function ReceiptGenerator({ sale, onClose }: ReceiptGeneratorProps) {
                   <span>{formatCurrency(sale.total)}</span>
                 </div>
               </div>
+
+              {/* Notes */}
+              {sale.notes && (
+                <div className="text-muted-foreground mt-4 text-sm">
+                  <p>Notes: {sale.notes}</p>
+                </div>
+              )}
 
               {/* Footer */}
               <div className="text-muted-foreground mt-8 text-center text-sm">
