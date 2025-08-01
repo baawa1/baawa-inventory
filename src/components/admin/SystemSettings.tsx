@@ -1,214 +1,216 @@
 'use client';
 
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
-import { Switch } from '@/components/ui/switch';
-import { Textarea } from '@/components/ui/textarea';
-import { Separator } from '@/components/ui/separator';
 import { Badge } from '@/components/ui/badge';
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from '@/components/ui/select';
 import {
   IconSettings,
   IconShield,
   IconMail,
-  IconDatabase,
   IconDeviceFloppy,
   IconRefresh,
   IconAlertTriangle,
-  IconCheck,
-  IconGlobe,
-  IconBell,
 } from '@tabler/icons-react';
 import { toast } from 'sonner';
+import { useSystemSettings, useUpdateSystemSettings } from '@/hooks/api/admin';
 
-export function SystemSettings() {
-  const [loading, setLoading] = useState(false);
-  const [settings, setSettings] = useState({
-    // General Settings
-    appName: 'BaaWA Inventory',
-    appDescription: 'Modern inventory management system',
-    timezone: 'Africa/Lagos',
-    currency: 'NGN',
+interface SystemSettingsProps {
+  activeTab?: string;
+}
 
-    // Security Settings
-    passwordMinLength: 8,
+interface SystemConfig {
+  // User Management Settings
+  requireEmailVerification: boolean;
+  requireAdminApproval: boolean;
+  allowUserRegistration: boolean;
+  maxLoginAttempts: number;
+  sessionTimeout: number;
+
+  // Email Settings
+  smtpHost: string;
+  smtpPort: number;
+  smtpUser: string;
+  smtpPassword: string;
+  fromEmail: string;
+  fromName: string;
+
+  // System Settings
+  maintenanceMode: boolean;
+  debugMode: boolean;
+  logLevel: 'error' | 'warn' | 'info' | 'debug';
+}
+
+export function SystemSettings({ activeTab: _activeTab }: SystemSettingsProps) {
+  const { data: settingsData, isLoading: isLoadingSettings } =
+    useSystemSettings();
+  const updateSettingsMutation = useUpdateSystemSettings();
+
+  const [config, setConfig] = useState<SystemConfig>({
+    // User Management Settings
     requireEmailVerification: true,
-    enableTwoFactor: false,
-    sessionTimeout: 30,
+    requireAdminApproval: true,
+    allowUserRegistration: true,
     maxLoginAttempts: 5,
+    sessionTimeout: 24,
 
     // Email Settings
-    emailProvider: 'smtp',
     smtpHost: 'smtp.gmail.com',
     smtpPort: 587,
-    smtpUsername: '',
+    smtpUser: '',
     smtpPassword: '',
+    fromEmail: 'noreply@baawa.com',
+    fromName: 'BaaWA Inventory',
 
-    // Feature Toggles
-    enableRegistration: true,
-    enableInventoryAlerts: true,
-    enableSalesReports: true,
-    enableAuditLogs: true,
-
-    // Notification Settings
-    enableEmailNotifications: true,
-    enableLowStockAlerts: true,
-    lowStockThreshold: 10,
+    // System Settings
+    maintenanceMode: false,
+    debugMode: false,
+    logLevel: 'info',
   });
 
-  const handleSave = async () => {
-    setLoading(true);
+  // Update config when settings are loaded
+  useEffect(() => {
+    if (settingsData?.settings) {
+      setConfig(settingsData.settings);
+    }
+  }, [settingsData]);
+
+  const handleConfigChange = (key: keyof SystemConfig, value: any) => {
+    setConfig(prev => ({ ...prev, [key]: value }));
+  };
+
+  const handleSaveSettings = async () => {
     try {
-      // In a real app, this would make an API call to save settings
-      await new Promise(resolve => setTimeout(resolve, 1000));
+      await updateSettingsMutation.mutateAsync(config);
       toast.success('Settings saved successfully');
     } catch (_error) {
+      console.error('Error saving settings:', _error);
       toast.error('Failed to save settings');
-    } finally {
-      setLoading(false);
     }
   };
 
-  const handleReset = () => {
-    // Reset to default values
-    setSettings({
-      appName: 'BaaWA Inventory',
-      appDescription: 'Modern inventory management system',
-      timezone: 'Africa/Lagos',
-      currency: 'NGN',
-      passwordMinLength: 8,
-      requireEmailVerification: true,
-      enableTwoFactor: false,
-      sessionTimeout: 30,
-      maxLoginAttempts: 5,
-      emailProvider: 'smtp',
-      smtpHost: 'smtp.gmail.com',
-      smtpPort: 587,
-      smtpUsername: '',
-      smtpPassword: '',
-      enableRegistration: true,
-      enableInventoryAlerts: true,
-      enableSalesReports: true,
-      enableAuditLogs: true,
-      enableEmailNotifications: true,
-      enableLowStockAlerts: true,
-      lowStockThreshold: 10,
-    });
-    toast.info('Settings reset to defaults');
+  const handleTestEmail = async () => {
+    try {
+      const response = await fetch('/api/admin/test-email', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          smtpHost: config.smtpHost,
+          smtpPort: config.smtpPort,
+          smtpUser: config.smtpUser,
+          smtpPassword: config.smtpPassword,
+          fromEmail: config.fromEmail,
+          fromName: config.fromName,
+        }),
+      });
+
+      if (!response.ok) {
+        throw new Error('Failed to test email configuration');
+      }
+
+      toast.success('Email configuration test successful');
+    } catch (_error) {
+      toast.error('Failed to test email configuration');
+    }
   };
 
-  const updateSetting = (key: string, value: any) => {
-    setSettings(prev => ({ ...prev, [key]: value }));
-  };
+  if (isLoadingSettings) {
+    return (
+      <Card>
+        <CardContent className="flex items-center justify-center p-6">
+          <div className="text-center">
+            <div className="border-primary mx-auto h-8 w-8 animate-spin rounded-full border-b-2"></div>
+            <p className="text-muted-foreground mt-2 text-sm">
+              Loading settings...
+            </p>
+          </div>
+        </CardContent>
+      </Card>
+    );
+  }
 
   return (
     <div className="space-y-6">
-      {/* Header */}
-      <div className="flex items-center justify-between">
-        <div>
-          <h2 className="text-2xl font-bold">System Settings</h2>
-          <p className="text-muted-foreground">
-            Configure application settings, security, and system preferences
-          </p>
-        </div>
-        <div className="flex gap-2">
-          <Button variant="outline" onClick={handleReset}>
-            <IconRefresh className="mr-2 h-4 w-4" />
-            Reset to Defaults
-          </Button>
-          <Button onClick={handleSave} disabled={loading}>
-            <IconDeviceFloppy className="mr-2 h-4 w-4" />
-            {loading ? 'Saving...' : 'Save Changes'}
-          </Button>
-        </div>
-      </div>
-
-      <div className="grid grid-cols-1 gap-6 lg:grid-cols-2">
-        {/* General Settings */}
-        <Card>
-          <CardHeader>
-            <CardTitle className="flex items-center gap-2">
-              <IconSettings className="h-5 w-5" />
-              General Settings
-            </CardTitle>
-          </CardHeader>
-          <CardContent className="space-y-4">
+      {/* User Management Settings */}
+      <Card>
+        <CardHeader>
+          <CardTitle className="flex items-center gap-2">
+            <IconShield className="h-5 w-5" />
+            User Management Settings
+          </CardTitle>
+        </CardHeader>
+        <CardContent className="space-y-4">
+          <div className="grid gap-4 md:grid-cols-2">
             <div className="space-y-2">
-              <Label htmlFor="appName">Application Name</Label>
-              <Input
-                id="appName"
-                value={settings.appName}
-                onChange={e => updateSetting('appName', e.target.value)}
-              />
+              <Label htmlFor="requireEmailVerification">
+                Require Email Verification
+              </Label>
+              <Select
+                value={config.requireEmailVerification.toString()}
+                onValueChange={value =>
+                  handleConfigChange(
+                    'requireEmailVerification',
+                    value === 'true'
+                  )
+                }
+              >
+                <SelectTrigger>
+                  <SelectValue />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="true">Yes</SelectItem>
+                  <SelectItem value="false">No</SelectItem>
+                </SelectContent>
+              </Select>
             </div>
 
             <div className="space-y-2">
-              <Label htmlFor="appDescription">Description</Label>
-              <Textarea
-                id="appDescription"
-                value={settings.appDescription}
-                onChange={e => updateSetting('appDescription', e.target.value)}
-                rows={3}
-              />
+              <Label htmlFor="requireAdminApproval">
+                Require Admin Approval
+              </Label>
+              <Select
+                value={config.requireAdminApproval.toString()}
+                onValueChange={value =>
+                  handleConfigChange('requireAdminApproval', value === 'true')
+                }
+              >
+                <SelectTrigger>
+                  <SelectValue />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="true">Yes</SelectItem>
+                  <SelectItem value="false">No</SelectItem>
+                </SelectContent>
+              </Select>
             </div>
 
-            <div className="grid grid-cols-2 gap-4">
-              <div className="space-y-2">
-                <Label htmlFor="timezone">Timezone</Label>
-                <Input
-                  id="timezone"
-                  value={settings.timezone}
-                  onChange={e => updateSetting('timezone', e.target.value)}
-                />
-              </div>
-
-              <div className="space-y-2">
-                <Label htmlFor="currency">Currency</Label>
-                <Input
-                  id="currency"
-                  value={settings.currency}
-                  onChange={e => updateSetting('currency', e.target.value)}
-                />
-              </div>
-            </div>
-          </CardContent>
-        </Card>
-
-        {/* Security Settings */}
-        <Card>
-          <CardHeader>
-            <CardTitle className="flex items-center gap-2">
-              <IconShield className="h-5 w-5" />
-              Security Settings
-            </CardTitle>
-          </CardHeader>
-          <CardContent className="space-y-4">
-            <div className="grid grid-cols-2 gap-4">
-              <div className="space-y-2">
-                <Label htmlFor="passwordMinLength">Min Password Length</Label>
-                <Input
-                  id="passwordMinLength"
-                  type="number"
-                  value={settings.passwordMinLength}
-                  onChange={e =>
-                    updateSetting('passwordMinLength', parseInt(e.target.value))
-                  }
-                />
-              </div>
-
-              <div className="space-y-2">
-                <Label htmlFor="sessionTimeout">Session Timeout (min)</Label>
-                <Input
-                  id="sessionTimeout"
-                  type="number"
-                  value={settings.sessionTimeout}
-                  onChange={e =>
-                    updateSetting('sessionTimeout', parseInt(e.target.value))
-                  }
-                />
-              </div>
+            <div className="space-y-2">
+              <Label htmlFor="allowUserRegistration">
+                Allow User Registration
+              </Label>
+              <Select
+                value={config.allowUserRegistration.toString()}
+                onValueChange={value =>
+                  handleConfigChange('allowUserRegistration', value === 'true')
+                }
+              >
+                <SelectTrigger>
+                  <SelectValue />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="true">Yes</SelectItem>
+                  <SelectItem value="false">No</SelectItem>
+                </SelectContent>
+              </Select>
             </div>
 
             <div className="space-y-2">
@@ -216,87 +218,72 @@ export function SystemSettings() {
               <Input
                 id="maxLoginAttempts"
                 type="number"
-                value={settings.maxLoginAttempts}
+                value={config.maxLoginAttempts}
                 onChange={e =>
-                  updateSetting('maxLoginAttempts', parseInt(e.target.value))
+                  handleConfigChange(
+                    'maxLoginAttempts',
+                    parseInt(e.target.value)
+                  )
+                }
+                min="1"
+                max="10"
+              />
+            </div>
+
+            <div className="space-y-2">
+              <Label htmlFor="sessionTimeout">Session Timeout (hours)</Label>
+              <Input
+                id="sessionTimeout"
+                type="number"
+                value={config.sessionTimeout}
+                onChange={e =>
+                  handleConfigChange('sessionTimeout', parseInt(e.target.value))
+                }
+                min="1"
+                max="168"
+              />
+            </div>
+          </div>
+        </CardContent>
+      </Card>
+
+      {/* Email Settings */}
+      <Card>
+        <CardHeader>
+          <CardTitle className="flex items-center gap-2">
+            <IconMail className="h-5 w-5" />
+            Email Configuration
+          </CardTitle>
+        </CardHeader>
+        <CardContent className="space-y-4">
+          <div className="grid gap-4 md:grid-cols-2">
+            <div className="space-y-2">
+              <Label htmlFor="smtpHost">SMTP Host</Label>
+              <Input
+                id="smtpHost"
+                value={config.smtpHost}
+                onChange={e => handleConfigChange('smtpHost', e.target.value)}
+              />
+            </div>
+
+            <div className="space-y-2">
+              <Label htmlFor="smtpPort">SMTP Port</Label>
+              <Input
+                id="smtpPort"
+                type="number"
+                value={config.smtpPort}
+                onChange={e =>
+                  handleConfigChange('smtpPort', parseInt(e.target.value))
                 }
               />
             </div>
 
-            <Separator />
-
-            <div className="space-y-4">
-              <div className="flex items-center justify-between">
-                <div className="space-y-0.5">
-                  <Label>Email Verification Required</Label>
-                  <p className="text-muted-foreground text-sm">
-                    Require users to verify email before login
-                  </p>
-                </div>
-                <Switch
-                  checked={settings.requireEmailVerification}
-                  onCheckedChange={checked =>
-                    updateSetting('requireEmailVerification', checked)
-                  }
-                />
-              </div>
-
-              <div className="flex items-center justify-between">
-                <div className="space-y-0.5">
-                  <Label>Two-Factor Authentication</Label>
-                  <p className="text-muted-foreground text-sm">
-                    Enable 2FA for enhanced security
-                  </p>
-                </div>
-                <Switch
-                  checked={settings.enableTwoFactor}
-                  onCheckedChange={checked =>
-                    updateSetting('enableTwoFactor', checked)
-                  }
-                />
-              </div>
-            </div>
-          </CardContent>
-        </Card>
-
-        {/* Email Configuration */}
-        <Card>
-          <CardHeader>
-            <CardTitle className="flex items-center gap-2">
-              <IconMail className="h-5 w-5" />
-              Email Configuration
-            </CardTitle>
-          </CardHeader>
-          <CardContent className="space-y-4">
-            <div className="grid grid-cols-2 gap-4">
-              <div className="space-y-2">
-                <Label htmlFor="smtpHost">SMTP Host</Label>
-                <Input
-                  id="smtpHost"
-                  value={settings.smtpHost}
-                  onChange={e => updateSetting('smtpHost', e.target.value)}
-                />
-              </div>
-
-              <div className="space-y-2">
-                <Label htmlFor="smtpPort">SMTP Port</Label>
-                <Input
-                  id="smtpPort"
-                  type="number"
-                  value={settings.smtpPort}
-                  onChange={e =>
-                    updateSetting('smtpPort', parseInt(e.target.value))
-                  }
-                />
-              </div>
-            </div>
-
             <div className="space-y-2">
-              <Label htmlFor="smtpUsername">SMTP Username</Label>
+              <Label htmlFor="smtpUser">SMTP Username</Label>
               <Input
-                id="smtpUsername"
-                value={settings.smtpUsername}
-                onChange={e => updateSetting('smtpUsername', e.target.value)}
+                id="smtpUser"
+                value={config.smtpUser}
+                onChange={e => handleConfigChange('smtpUser', e.target.value)}
               />
             </div>
 
@@ -305,192 +292,130 @@ export function SystemSettings() {
               <Input
                 id="smtpPassword"
                 type="password"
-                value={settings.smtpPassword}
-                onChange={e => updateSetting('smtpPassword', e.target.value)}
-              />
-            </div>
-
-            <Button variant="outline" size="sm" className="w-full">
-              <IconMail className="mr-2 h-4 w-4" />
-              Test Email Configuration
-            </Button>
-          </CardContent>
-        </Card>
-
-        {/* Feature Toggles */}
-        <Card>
-          <CardHeader>
-            <CardTitle className="flex items-center gap-2">
-              <IconGlobe className="h-5 w-5" />
-              Feature Management
-            </CardTitle>
-          </CardHeader>
-          <CardContent className="space-y-4">
-            <div className="flex items-center justify-between">
-              <div className="space-y-0.5">
-                <Label>User Registration</Label>
-                <p className="text-muted-foreground text-sm">
-                  Allow new user registrations
-                </p>
-              </div>
-              <Switch
-                checked={settings.enableRegistration}
-                onCheckedChange={checked =>
-                  updateSetting('enableRegistration', checked)
+                value={config.smtpPassword}
+                onChange={e =>
+                  handleConfigChange('smtpPassword', e.target.value)
                 }
               />
-            </div>
-
-            <div className="flex items-center justify-between">
-              <div className="space-y-0.5">
-                <Label>Inventory Alerts</Label>
-                <p className="text-muted-foreground text-sm">
-                  Enable low stock notifications
-                </p>
-              </div>
-              <Switch
-                checked={settings.enableInventoryAlerts}
-                onCheckedChange={checked =>
-                  updateSetting('enableInventoryAlerts', checked)
-                }
-              />
-            </div>
-
-            <div className="flex items-center justify-between">
-              <div className="space-y-0.5">
-                <Label>Sales Reports</Label>
-                <p className="text-muted-foreground text-sm">
-                  Enable sales reporting features
-                </p>
-              </div>
-              <Switch
-                checked={settings.enableSalesReports}
-                onCheckedChange={checked =>
-                  updateSetting('enableSalesReports', checked)
-                }
-              />
-            </div>
-
-            <div className="flex items-center justify-between">
-              <div className="space-y-0.5">
-                <Label>Audit Logging</Label>
-                <p className="text-muted-foreground text-sm">
-                  Track user actions and changes
-                </p>
-              </div>
-              <Switch
-                checked={settings.enableAuditLogs}
-                onCheckedChange={checked =>
-                  updateSetting('enableAuditLogs', checked)
-                }
-              />
-            </div>
-          </CardContent>
-        </Card>
-      </div>
-
-      {/* Notification Settings */}
-      <Card>
-        <CardHeader>
-          <CardTitle className="flex items-center gap-2">
-            <IconBell className="h-5 w-5" />
-            Notification Settings
-          </CardTitle>
-        </CardHeader>
-        <CardContent>
-          <div className="grid grid-cols-1 gap-6 md:grid-cols-2">
-            <div className="space-y-4">
-              <div className="flex items-center justify-between">
-                <div className="space-y-0.5">
-                  <Label>Email Notifications</Label>
-                  <p className="text-muted-foreground text-sm">
-                    Send notifications via email
-                  </p>
-                </div>
-                <Switch
-                  checked={settings.enableEmailNotifications}
-                  onCheckedChange={checked =>
-                    updateSetting('enableEmailNotifications', checked)
-                  }
-                />
-              </div>
-
-              <div className="flex items-center justify-between">
-                <div className="space-y-0.5">
-                  <Label>Low Stock Alerts</Label>
-                  <p className="text-muted-foreground text-sm">
-                    Alert when stock is running low
-                  </p>
-                </div>
-                <Switch
-                  checked={settings.enableLowStockAlerts}
-                  onCheckedChange={checked =>
-                    updateSetting('enableLowStockAlerts', checked)
-                  }
-                />
-              </div>
             </div>
 
             <div className="space-y-2">
-              <Label htmlFor="lowStockThreshold">Low Stock Threshold</Label>
+              <Label htmlFor="fromEmail">From Email</Label>
               <Input
-                id="lowStockThreshold"
-                type="number"
-                value={settings.lowStockThreshold}
-                onChange={e =>
-                  updateSetting('lowStockThreshold', parseInt(e.target.value))
-                }
+                id="fromEmail"
+                type="email"
+                value={config.fromEmail}
+                onChange={e => handleConfigChange('fromEmail', e.target.value)}
               />
-              <p className="text-muted-foreground text-sm">
-                Alert when stock falls below this number
-              </p>
+            </div>
+
+            <div className="space-y-2">
+              <Label htmlFor="fromName">From Name</Label>
+              <Input
+                id="fromName"
+                value={config.fromName}
+                onChange={e => handleConfigChange('fromName', e.target.value)}
+              />
+            </div>
+          </div>
+
+          <div className="flex gap-2">
+            <Button variant="outline" onClick={handleTestEmail}>
+              <IconMail className="mr-2 h-4 w-4" />
+              Test Email Configuration
+            </Button>
+          </div>
+        </CardContent>
+      </Card>
+
+      {/* System Settings */}
+      <Card>
+        <CardHeader>
+          <CardTitle className="flex items-center gap-2">
+            <IconSettings className="h-5 w-5" />
+            System Configuration
+          </CardTitle>
+        </CardHeader>
+        <CardContent className="space-y-4">
+          <div className="grid gap-4 md:grid-cols-2">
+            <div className="space-y-2">
+              <Label htmlFor="maintenanceMode">Maintenance Mode</Label>
+              <Select
+                value={config.maintenanceMode.toString()}
+                onValueChange={value =>
+                  handleConfigChange('maintenanceMode', value === 'true')
+                }
+              >
+                <SelectTrigger>
+                  <SelectValue />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="true">Enabled</SelectItem>
+                  <SelectItem value="false">Disabled</SelectItem>
+                </SelectContent>
+              </Select>
+              {config.maintenanceMode && (
+                <Badge variant="destructive" className="mt-2">
+                  <IconAlertTriangle className="mr-1 h-3 w-3" />
+                  System will be unavailable to users
+                </Badge>
+              )}
+            </div>
+
+            <div className="space-y-2">
+              <Label htmlFor="debugMode">Debug Mode</Label>
+              <Select
+                value={config.debugMode.toString()}
+                onValueChange={value =>
+                  handleConfigChange('debugMode', value === 'true')
+                }
+              >
+                <SelectTrigger>
+                  <SelectValue />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="true">Enabled</SelectItem>
+                  <SelectItem value="false">Disabled</SelectItem>
+                </SelectContent>
+              </Select>
+            </div>
+
+            <div className="space-y-2">
+              <Label htmlFor="logLevel">Log Level</Label>
+              <Select
+                value={config.logLevel}
+                onValueChange={value => handleConfigChange('logLevel', value)}
+              >
+                <SelectTrigger>
+                  <SelectValue />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="error">Error</SelectItem>
+                  <SelectItem value="warn">Warning</SelectItem>
+                  <SelectItem value="info">Info</SelectItem>
+                  <SelectItem value="debug">Debug</SelectItem>
+                </SelectContent>
+              </Select>
             </div>
           </div>
         </CardContent>
       </Card>
 
-      {/* System Status */}
+      {/* Action Buttons */}
       <Card>
-        <CardHeader>
-          <CardTitle className="flex items-center gap-2">
-            <IconDatabase className="h-5 w-5" />
-            System Status
-          </CardTitle>
-        </CardHeader>
-        <CardContent>
-          <div className="grid grid-cols-1 gap-4 md:grid-cols-3">
-            <div className="flex items-center justify-between rounded-lg bg-green-50 p-3">
-              <div className="flex items-center gap-2">
-                <IconCheck className="h-4 w-4 text-green-600" />
-                <span className="text-sm font-medium">Database</span>
-              </div>
-              <Badge variant="default" className="bg-green-100 text-green-700">
-                Healthy
-              </Badge>
-            </div>
-
-            <div className="flex items-center justify-between rounded-lg bg-green-50 p-3">
-              <div className="flex items-center gap-2">
-                <IconCheck className="h-4 w-4 text-green-600" />
-                <span className="text-sm font-medium">Email Service</span>
-              </div>
-              <Badge variant="default" className="bg-green-100 text-green-700">
-                Connected
-              </Badge>
-            </div>
-
-            <div className="flex items-center justify-between rounded-lg bg-yellow-50 p-3">
-              <div className="flex items-center gap-2">
-                <IconAlertTriangle className="h-4 w-4 text-yellow-600" />
-                <span className="text-sm font-medium">Backup</span>
-              </div>
-              <Badge
-                variant="secondary"
-                className="bg-yellow-100 text-yellow-700"
-              >
-                Pending
-              </Badge>
-            </div>
+        <CardContent className="pt-6">
+          <div className="flex gap-2">
+            <Button
+              onClick={handleSaveSettings}
+              disabled={updateSettingsMutation.isPending}
+            >
+              <IconDeviceFloppy className="mr-2 h-4 w-4" />
+              {updateSettingsMutation.isPending ? 'Saving...' : 'Save Settings'}
+            </Button>
+            <Button variant="outline" onClick={() => window.location.reload()}>
+              <IconRefresh className="mr-2 h-4 w-4" />
+              Reset to Defaults
+            </Button>
           </div>
         </CardContent>
       </Card>
