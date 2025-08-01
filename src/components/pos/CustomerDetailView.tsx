@@ -30,6 +30,7 @@ import {
   IconShoppingBag,
   IconEye,
   IconPrinter,
+  IconTag,
 } from '@tabler/icons-react';
 import { formatCurrency } from '@/lib/utils';
 import { format } from 'date-fns';
@@ -52,11 +53,19 @@ interface CustomerPurchase {
   transactionNumber: string;
   totalAmount: number;
   createdAt: string;
+  notes?: string | null;
   items: {
     productName: string;
     quantity: number;
     unitPrice: number;
     totalPrice: number;
+    coupon?: {
+      id: number;
+      code: string;
+      name: string;
+      type: string;
+      value: number;
+    } | null;
   }[];
 }
 
@@ -391,14 +400,36 @@ function OrderDetailContent({ order }: { order: CustomerPurchase }) {
             {order.items.map((item, index) => (
               <TableRow key={index}>
                 <TableCell className="font-medium">
-                  {item.productName}
+                  <div>
+                    <div>{item.productName}</div>
+                    {item.coupon && (
+                      <div className="mt-1 flex items-center gap-2">
+                        <span className="inline-flex items-center rounded-full bg-green-100 px-2 py-1 text-xs font-medium text-green-800">
+                          <IconTag className="mr-1 h-3 w-3" />
+                          {item.coupon.code}
+                        </span>
+                        <span className="text-muted-foreground text-xs">
+                          {item.coupon.name}
+                        </span>
+                      </div>
+                    )}
+                  </div>
                 </TableCell>
                 <TableCell className="text-right">
                   {formatCurrency(item.unitPrice)}
                 </TableCell>
                 <TableCell className="text-right">{item.quantity}</TableCell>
                 <TableCell className="text-right">
-                  {formatCurrency(item.totalPrice)}
+                  <div>
+                    <div>{formatCurrency(item.totalPrice)}</div>
+                    {item.coupon && (
+                      <div className="text-xs text-green-600">
+                        {item.coupon.type === 'PERCENTAGE'
+                          ? `${item.coupon.value}% off`
+                          : `${formatCurrency(item.coupon.value)} off`}
+                      </div>
+                    )}
+                  </div>
                 </TableCell>
               </TableRow>
             ))}
@@ -414,6 +445,19 @@ function OrderDetailContent({ order }: { order: CustomerPurchase }) {
           <span>{formatCurrency(order.totalAmount)}</span>
         </div>
       </div>
+
+      {/* Transaction Notes */}
+      {order.notes && (
+        <>
+          <Separator />
+          <div>
+            <h3 className="mb-2 text-sm font-medium">Notes</h3>
+            <div className="bg-muted rounded-lg p-3">
+              <p className="text-muted-foreground text-sm">{order.notes}</p>
+            </div>
+          </div>
+        </>
+      )}
     </div>
   );
 }

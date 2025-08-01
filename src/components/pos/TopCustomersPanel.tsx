@@ -55,6 +55,7 @@ interface CustomerOrder {
   subtotal: number;
   discount: number;
   total: number;
+  notes?: string | null;
   items: {
     id: number;
     name: string;
@@ -401,6 +402,18 @@ export function TopCustomersPanel({ customers }: TopCustomersPanelProps) {
                             </div>
                           </div>
                         </div>
+
+                        {/* Transaction Notes */}
+                        {order.notes && (
+                          <div className="rounded-lg border p-3">
+                            <h4 className="mb-2 text-sm font-medium">Notes</h4>
+                            <div className="bg-muted rounded-md p-2">
+                              <p className="text-muted-foreground text-sm">
+                                {order.notes}
+                              </p>
+                            </div>
+                          </div>
+                        )}
 
                         {/* Actions */}
                         <div className="flex justify-end">

@@ -11,6 +11,13 @@ export interface TransactionItem {
   price: number;
   quantity: number;
   total: number;
+  coupon?: {
+    id: number;
+    code: string;
+    name: string;
+    type: string;
+    value: number;
+  } | null;
 }
 
 export interface Transaction {

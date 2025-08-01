@@ -31,6 +31,13 @@ export interface ReceiptData {
     quantity: number;
     category?: string;
     brand?: string;
+    coupon?: {
+      id: number;
+      code: string;
+      name: string;
+      type: string;
+      value: number;
+    } | null;
   }[];
   subtotal: number;
   discount: number;
@@ -146,8 +153,10 @@ export function ReceiptPrinter({
                 <div class="item-name">${item.name}</div>
                 <div class="item-details">
                   SKU: ${item.sku} | Qty: ${item.quantity} | Price: ${formatCurrency(item.price)}
+                  ${item.coupon ? ` | Coupon: ${item.coupon.code} (${item.coupon.name})` : ''}
                 </div>
                 <div>Total: ${formatCurrency(item.price * item.quantity)}</div>
+                ${item.coupon ? `<div style="color: #059669; font-size: 11px;">Discount: ${item.coupon.type === 'PERCENTAGE' ? `${item.coupon.value}% off` : `${formatCurrency(item.coupon.value)} off`}</div>` : ''}
               </div>
             `
               )
@@ -219,6 +228,14 @@ export function ReceiptPrinter({
           sku: item.sku,
           price: item.price,
           quantity: item.quantity,
+          coupon: item.coupon
+            ? {
+                code: item.coupon.code,
+                name: item.coupon.name,
+                type: item.coupon.type,
+                value: item.coupon.value,
+              }
+            : null,
         })),
         subtotal: receiptData.subtotal,
         discount: receiptData.discount,
@@ -281,6 +298,14 @@ export function ReceiptPrinter({
               quantity: item.quantity,
               price: item.price,
               total: item.price * item.quantity,
+              coupon: item.coupon
+                ? {
+                    code: item.coupon.code,
+                    name: item.coupon.name,
+                    type: item.coupon.type,
+                    value: item.coupon.value,
+                  }
+                : null,
             })),
             subtotal: receiptData.subtotal,
             discount: receiptData.discount,

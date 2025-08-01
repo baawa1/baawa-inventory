@@ -6,6 +6,12 @@ export interface ThermalReceiptData {
     sku: string;
     price: number;
     quantity: number;
+    coupon?: {
+      code: string;
+      name: string;
+      type: string;
+      value: number;
+    } | null;
   }[];
   subtotal: number;
   discount: number;
@@ -83,6 +89,14 @@ export const generateThermalReceipt = (data: ThermalReceiptData): string => {
     receipt += `${item.name}\n`;
     receipt += `SKU: ${item.sku}\n`;
     receipt += `Qty: ${item.quantity} × ${formatCurrency(item.price)}\n`;
+    if (item.coupon) {
+      receipt += `Coupon: ${item.coupon.code} (${item.coupon.name})\n`;
+      const discountText =
+        item.coupon.type === 'PERCENTAGE'
+          ? `${item.coupon.value}% off`
+          : `${formatCurrency(item.coupon.value)} off`;
+      receipt += `Discount: ${discountText}\n`;
+    }
     receipt += `${rightAlign(formatCurrency(item.price * item.quantity))}\n`;
     if (index < data.items.length - 1) {
       receipt += '─'.repeat(maxWidth) + '\n';

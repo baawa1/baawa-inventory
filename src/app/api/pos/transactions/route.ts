@@ -101,6 +101,15 @@ async function handleGetTransactions(request: AuthenticatedRequest) {
                   barcode: true,
                 },
               },
+              coupon: {
+                select: {
+                  id: true,
+                  code: true,
+                  name: true,
+                  type: true,
+                  value: true,
+                },
+              },
             },
           },
           users: {
@@ -133,6 +142,15 @@ async function handleGetTransactions(request: AuthenticatedRequest) {
           price: Number(item.unit_price), // Convert Decimal to number
           quantity: item.quantity,
           total: Number(item.total_price), // Convert Decimal to number
+          coupon: item.coupon
+            ? {
+                id: item.coupon.id,
+                code: item.coupon.code,
+                name: item.coupon.name,
+                type: item.coupon.type,
+                value: Number(item.coupon.value),
+              }
+            : null,
         })),
         subtotal: Number(sale.subtotal), // Convert Decimal to number
         discount: Number(sale.discount_amount), // Convert Decimal to number
@@ -147,6 +165,7 @@ async function handleGetTransactions(request: AuthenticatedRequest) {
         timestamp: sale.created_at,
         createdAt: sale.created_at,
         updatedAt: sale.updated_at,
+        notes: sale.notes,
       })
     );
 
