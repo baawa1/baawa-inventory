@@ -1,6 +1,6 @@
 'use client';
 
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
@@ -159,7 +159,7 @@ export function SlidingPaymentInterface({
     'percentage'
   );
   const [discountValue, setDiscountValue] = useState(discount);
-  const [paymentMethod, setPaymentMethod] = useState('');
+  const [paymentMethod, setPaymentMethodState] = useState('');
   const [amountPaid, setAmountPaid] = useState(total);
   const [notes, setNotes] = useState('');
   const [processing, setProcessing] = useState(false);
@@ -172,6 +172,20 @@ export function SlidingPaymentInterface({
   const [couponDiscount, setCouponDiscount] = useState(0);
 
   const { handleError } = usePOSErrorHandler();
+
+  // Custom setPaymentMethod that also updates amountPaid to the discounted total
+  const setPaymentMethod = (method: string) => {
+    setPaymentMethodState(method);
+    // Auto-fill amount paid with the discounted total when payment method is selected
+    setAmountPaid(total);
+  };
+
+  // Update amountPaid when total changes (due to discounts/coupons) if payment method is selected
+  useEffect(() => {
+    if (paymentMethod) {
+      setAmountPaid(total);
+    }
+  }, [total, paymentMethod]);
 
   const handleDiscountChange = (value: number) => {
     setDiscountValue(value);
