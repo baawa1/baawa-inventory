@@ -124,6 +124,7 @@ async function handleEmailReceipt(request: AuthenticatedRequest) {
       paymentMethod: transaction.payment_method,
       timestamp: transaction.created_at || new Date(),
       staffName,
+      notes: transaction.notes,
     };
 
     // Send email receipt
