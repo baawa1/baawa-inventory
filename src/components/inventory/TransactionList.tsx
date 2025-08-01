@@ -25,6 +25,7 @@ import {
   IconX,
   IconAlertTriangle,
   IconReceipt,
+  IconTag,
 } from '@tabler/icons-react';
 import { format } from 'date-fns';
 import { toast } from 'sonner';
@@ -55,6 +56,13 @@ interface TransactionItem {
   price: number;
   quantity: number;
   total: number;
+  coupon?: {
+    id: number;
+    code: string;
+    name: string;
+    type: string;
+    value: number;
+  } | null;
 }
 
 interface Transaction {
@@ -302,6 +310,7 @@ export function TransactionList({ user: _ }: TransactionListProps) {
         price: item.price,
         quantity: item.quantity,
         category: '',
+        coupon: item.coupon || null,
       })),
       subtotal: transaction.subtotal,
       discount: transaction.discount,
@@ -563,6 +572,17 @@ function TransactionDetailsContent({
               <div>
                 <p className="font-medium">{item.name}</p>
                 <p className="text-muted-foreground text-sm">SKU: {item.sku}</p>
+                {item.coupon && (
+                  <div className="mt-1 flex items-center gap-2">
+                    <span className="inline-flex items-center rounded-full bg-green-100 px-2 py-1 text-xs font-medium text-green-800">
+                      <IconTag className="mr-1 h-3 w-3" />
+                      {item.coupon.code}
+                    </span>
+                    <span className="text-muted-foreground text-xs">
+                      {item.coupon.name}
+                    </span>
+                  </div>
+                )}
               </div>
               <div className="text-right">
                 <p className="font-medium">
@@ -571,6 +591,13 @@ function TransactionDetailsContent({
                 <p className="text-sm font-semibold">
                   {formatCurrency(item.total)}
                 </p>
+                {item.coupon && (
+                  <p className="text-xs text-green-600">
+                    {item.coupon.type === 'PERCENTAGE'
+                      ? `${item.coupon.value}% off`
+                      : `${formatCurrency(item.coupon.value)} off`}
+                  </p>
+                )}
               </div>
             </div>
           ))}

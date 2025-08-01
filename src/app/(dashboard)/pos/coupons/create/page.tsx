@@ -1,7 +1,6 @@
 import { redirect } from 'next/navigation';
 import { auth } from '#root/auth';
 import { CreateCouponForm } from '@/components/pos/CreateCouponForm';
-import { DashboardPageLayout } from '@/components/layouts/DashboardPageLayout';
 import { ALL_ROLES, UserRole, USER_ROLES } from '@/lib/auth/roles';
 
 export const metadata = {

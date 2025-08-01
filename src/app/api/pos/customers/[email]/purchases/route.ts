@@ -8,11 +8,19 @@ interface CustomerPurchase {
   transactionNumber: string;
   totalAmount: number;
   createdAt: string;
+  notes?: string | null;
   items: {
     productName: string;
     quantity: number;
     unitPrice: number;
     totalPrice: number;
+    coupon?: {
+      id: number;
+      code: string;
+      name: string;
+      type: string;
+      value: number;
+    } | null;
   }[];
 }
 
@@ -49,6 +57,15 @@ export async function GET(
                 name: true,
               },
             },
+            coupon: {
+              select: {
+                id: true,
+                code: true,
+                name: true,
+                type: true,
+                value: true,
+              },
+            },
           },
         },
       },
@@ -65,11 +82,21 @@ export async function GET(
         totalAmount: Number(transaction.total_amount),
         createdAt:
           transaction.created_at?.toISOString() || new Date().toISOString(),
+        notes: transaction.notes,
         items: transaction.sales_items.map(item => ({
           productName: item.products?.name || 'Unknown Product',
           quantity: item.quantity,
           unitPrice: Number(item.unit_price),
           totalPrice: Number(item.total_price),
+          coupon: item.coupon
+            ? {
+                id: item.coupon.id,
+                code: item.coupon.code,
+                name: item.coupon.name,
+                type: item.coupon.type,
+                value: Number(item.coupon.value),
+              }
+            : null,
         })),
       })
     );

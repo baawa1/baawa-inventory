@@ -38,10 +38,11 @@ global.fetch = jest.fn();
 const mockTransactions = [
   {
     id: 1,
-    saleId: 'SALE-001',
+    transactionNumber: 'TXN-001',
     items: [
       {
         id: 1,
+        productId: 1,
         name: 'Test Product 1',
         sku: 'SKU001',
         price: 1000,
@@ -52,21 +53,25 @@ const mockTransactions = [
     subtotal: 2000,
     discount: 100,
     total: 1900,
-    paymentMethod: 'CASH',
+    paymentMethod: 'cash',
+    paymentStatus: 'completed',
     customerName: 'John Doe',
     customerPhone: '1234567890',
     customerEmail: 'john@example.com',
     staffName: 'Test Staff',
+    staffId: 1,
     timestamp: new Date('2024-01-01T10:00:00Z'),
-    status: 'COMPLETED',
-    isOffline: false,
+    createdAt: new Date('2024-01-01T10:00:00Z'),
+    updatedAt: new Date('2024-01-01T10:00:00Z'),
+    notes: 'Test transaction with notes',
   },
   {
     id: 2,
-    saleId: 'SALE-002',
+    transactionNumber: 'TXN-002',
     items: [
       {
         id: 2,
+        productId: 2,
         name: 'Test Product 2',
         sku: 'SKU002',
         price: 500,
@@ -77,21 +82,25 @@ const mockTransactions = [
     subtotal: 500,
     discount: 0,
     total: 500,
-    paymentMethod: 'CARD',
+    paymentMethod: 'pos',
+    paymentStatus: 'completed',
     customerName: 'Jane Smith',
     customerPhone: '0987654321',
     customerEmail: 'jane@example.com',
     staffName: 'Test Staff',
+    staffId: 1,
     timestamp: new Date('2024-01-01T11:00:00Z'),
-    status: 'COMPLETED',
-    isOffline: false,
+    createdAt: new Date('2024-01-01T11:00:00Z'),
+    updatedAt: new Date('2024-01-01T11:00:00Z'),
+    notes: null,
   },
   {
     id: 3,
-    saleId: 'SALE-003',
+    transactionNumber: 'TXN-003',
     items: [
       {
         id: 3,
+        productId: 3,
         name: 'Test Product 3',
         sku: 'SKU003',
         price: 750,
@@ -102,14 +111,17 @@ const mockTransactions = [
     subtotal: 2250,
     discount: 200,
     total: 2050,
-    paymentMethod: 'TRANSFER',
+    paymentMethod: 'bank_transfer',
+    paymentStatus: 'pending',
     customerName: 'Bob Johnson',
     customerPhone: '5555555555',
     customerEmail: 'bob@example.com',
     staffName: 'Test Staff',
+    staffId: 1,
     timestamp: new Date('2024-01-01T12:00:00Z'),
-    status: 'PENDING',
-    isOffline: true,
+    createdAt: new Date('2024-01-01T12:00:00Z'),
+    updatedAt: new Date('2024-01-01T12:00:00Z'),
+    notes: 'Another test transaction with notes',
   },
 ];
 
@@ -160,9 +172,9 @@ describe('TransactionHistory', () => {
       renderWithQueryClient(<TransactionHistory />);
 
       await waitFor(() => {
-        expect(screen.getByText('SALE-001')).toBeInTheDocument();
-        expect(screen.getByText('SALE-002')).toBeInTheDocument();
-        expect(screen.getByText('SALE-003')).toBeInTheDocument();
+        expect(screen.getByText('TXN-001')).toBeInTheDocument();
+        expect(screen.getByText('TXN-002')).toBeInTheDocument();
+        expect(screen.getByText('TXN-003')).toBeInTheDocument();
       });
     });
   });
@@ -172,7 +184,7 @@ describe('TransactionHistory', () => {
       renderWithQueryClient(<TransactionHistory />);
 
       await waitFor(() => {
-        expect(screen.getByText('SALE-001')).toBeInTheDocument();
+        expect(screen.getByText('TXN-001')).toBeInTheDocument();
         expect(screen.getByText('John Doe')).toBeInTheDocument();
         expect(screen.getByText('₦1,900')).toBeInTheDocument();
         expect(screen.getByText('Cash')).toBeInTheDocument();
@@ -184,7 +196,7 @@ describe('TransactionHistory', () => {
       renderWithQueryClient(<TransactionHistory />);
 
       await waitFor(() => {
-        expect(screen.getByText('SALE-003')).toBeInTheDocument();
+        expect(screen.getByText('TXN-003')).toBeInTheDocument();
         expect(screen.getByText('Offline')).toBeInTheDocument();
       });
     });
@@ -193,7 +205,7 @@ describe('TransactionHistory', () => {
       renderWithQueryClient(<TransactionHistory />);
 
       await waitFor(() => {
-        expect(screen.getByText('SALE-003')).toBeInTheDocument();
+        expect(screen.getByText('TXN-003')).toBeInTheDocument();
         expect(screen.getByText('Pending')).toBeInTheDocument();
       });
     });
@@ -204,16 +216,16 @@ describe('TransactionHistory', () => {
       renderWithQueryClient(<TransactionHistory />);
 
       await waitFor(() => {
-        expect(screen.getByText('SALE-001')).toBeInTheDocument();
-        expect(screen.getByText('SALE-002')).toBeInTheDocument();
+        expect(screen.getByText('TXN-001')).toBeInTheDocument();
+        expect(screen.getByText('TXN-002')).toBeInTheDocument();
       });
 
       const searchInput = screen.getByPlaceholderText('Search transactions...');
-      fireEvent.change(searchInput, { target: { value: 'SALE-001' } });
+      fireEvent.change(searchInput, { target: { value: 'TXN-001' } });
 
       await waitFor(() => {
-        expect(screen.getByText('SALE-001')).toBeInTheDocument();
-        expect(screen.queryByText('SALE-002')).not.toBeInTheDocument();
+        expect(screen.getByText('TXN-001')).toBeInTheDocument();
+        expect(screen.queryByText('TXN-002')).not.toBeInTheDocument();
       });
     });
 
@@ -257,8 +269,8 @@ describe('TransactionHistory', () => {
       renderWithQueryClient(<TransactionHistory />);
 
       await waitFor(() => {
-        expect(screen.getByText('SALE-001')).toBeInTheDocument();
-        expect(screen.getByText('SALE-003')).toBeInTheDocument();
+        expect(screen.getByText('TXN-001')).toBeInTheDocument();
+        expect(screen.getByText('TXN-003')).toBeInTheDocument();
       });
 
       const statusSelect = screen.getByText('Filter by Status');
@@ -270,8 +282,8 @@ describe('TransactionHistory', () => {
       });
 
       await waitFor(() => {
-        expect(screen.getByText('SALE-001')).toBeInTheDocument();
-        expect(screen.queryByText('SALE-003')).not.toBeInTheDocument();
+        expect(screen.getByText('TXN-001')).toBeInTheDocument();
+        expect(screen.queryByText('TXN-003')).not.toBeInTheDocument();
       });
     });
 
@@ -279,8 +291,8 @@ describe('TransactionHistory', () => {
       renderWithQueryClient(<TransactionHistory />);
 
       await waitFor(() => {
-        expect(screen.getByText('SALE-001')).toBeInTheDocument();
-        expect(screen.getByText('SALE-003')).toBeInTheDocument();
+        expect(screen.getByText('TXN-001')).toBeInTheDocument();
+        expect(screen.getByText('TXN-003')).toBeInTheDocument();
       });
 
       const statusSelect = screen.getByText('Filter by Status');
@@ -292,8 +304,8 @@ describe('TransactionHistory', () => {
       });
 
       await waitFor(() => {
-        expect(screen.queryByText('SALE-001')).not.toBeInTheDocument();
-        expect(screen.getByText('SALE-003')).toBeInTheDocument();
+        expect(screen.queryByText('TXN-001')).not.toBeInTheDocument();
+        expect(screen.getByText('TXN-003')).toBeInTheDocument();
       });
     });
   });
@@ -303,8 +315,8 @@ describe('TransactionHistory', () => {
       renderWithQueryClient(<TransactionHistory />);
 
       await waitFor(() => {
-        expect(screen.getByText('SALE-001')).toBeInTheDocument();
-        expect(screen.getByText('SALE-002')).toBeInTheDocument();
+        expect(screen.getByText('TXN-001')).toBeInTheDocument();
+        expect(screen.getByText('TXN-002')).toBeInTheDocument();
       });
 
       const paymentSelect = screen.getByText('Filter by Payment Method');
@@ -316,8 +328,8 @@ describe('TransactionHistory', () => {
       });
 
       await waitFor(() => {
-        expect(screen.getByText('SALE-001')).toBeInTheDocument();
-        expect(screen.queryByText('SALE-002')).not.toBeInTheDocument();
+        expect(screen.getByText('TXN-001')).toBeInTheDocument();
+        expect(screen.queryByText('TXN-002')).not.toBeInTheDocument();
       });
     });
 
@@ -325,8 +337,8 @@ describe('TransactionHistory', () => {
       renderWithQueryClient(<TransactionHistory />);
 
       await waitFor(() => {
-        expect(screen.getByText('SALE-001')).toBeInTheDocument();
-        expect(screen.getByText('SALE-002')).toBeInTheDocument();
+        expect(screen.getByText('TXN-001')).toBeInTheDocument();
+        expect(screen.getByText('TXN-002')).toBeInTheDocument();
       });
 
       const paymentSelect = screen.getByText('Filter by Payment Method');
@@ -338,8 +350,8 @@ describe('TransactionHistory', () => {
       });
 
       await waitFor(() => {
-        expect(screen.queryByText('SALE-001')).not.toBeInTheDocument();
-        expect(screen.getByText('SALE-002')).toBeInTheDocument();
+        expect(screen.queryByText('TXN-001')).not.toBeInTheDocument();
+        expect(screen.getByText('TXN-002')).toBeInTheDocument();
       });
     });
   });
@@ -349,7 +361,7 @@ describe('TransactionHistory', () => {
       renderWithQueryClient(<TransactionHistory />);
 
       await waitFor(() => {
-        expect(screen.getByText('SALE-001')).toBeInTheDocument();
+        expect(screen.getByText('TXN-001')).toBeInTheDocument();
       });
 
       const viewButton = screen.getByLabelText('View transaction details');
@@ -367,7 +379,7 @@ describe('TransactionHistory', () => {
       renderWithQueryClient(<TransactionHistory />);
 
       await waitFor(() => {
-        expect(screen.getByText('SALE-001')).toBeInTheDocument();
+        expect(screen.getByText('TXN-001')).toBeInTheDocument();
       });
 
       const viewButton = screen.getByLabelText('View transaction details');
@@ -399,7 +411,7 @@ describe('TransactionHistory', () => {
       renderWithQueryClient(<TransactionHistory />);
 
       await waitFor(() => {
-        expect(screen.getByText('SALE-001')).toBeInTheDocument();
+        expect(screen.getByText('TXN-001')).toBeInTheDocument();
       });
 
       const exportButton = screen.getByText('Export CSV');
@@ -432,7 +444,7 @@ describe('TransactionHistory', () => {
       renderWithQueryClient(<TransactionHistory />);
 
       await waitFor(() => {
-        expect(screen.getByText('SALE-001')).toBeInTheDocument();
+        expect(screen.getByText('TXN-001')).toBeInTheDocument();
       });
 
       const exportButton = screen.getByText('Export CSV');
@@ -451,7 +463,7 @@ describe('TransactionHistory', () => {
       renderWithQueryClient(<TransactionHistory />);
 
       await waitFor(() => {
-        expect(screen.getByText('SALE-001')).toBeInTheDocument();
+        expect(screen.getByText('TXN-001')).toBeInTheDocument();
       });
 
       const exportButton = screen.getByText('Export CSV');
@@ -470,7 +482,7 @@ describe('TransactionHistory', () => {
       renderWithQueryClient(<TransactionHistory />);
 
       await waitFor(() => {
-        expect(screen.getByText('SALE-003')).toBeInTheDocument();
+        expect(screen.getByText('TXN-003')).toBeInTheDocument();
       });
 
       const syncButton = screen.getByText('Sync Offline Transactions');
@@ -489,7 +501,7 @@ describe('TransactionHistory', () => {
       renderWithQueryClient(<TransactionHistory />);
 
       await waitFor(() => {
-        expect(screen.getByText('SALE-003')).toBeInTheDocument();
+        expect(screen.getByText('TXN-003')).toBeInTheDocument();
       });
 
       const syncButton = screen.getByText('Sync Offline Transactions');
@@ -508,8 +520,8 @@ describe('TransactionHistory', () => {
       renderWithQueryClient(<TransactionHistory />);
 
       await waitFor(() => {
-        expect(screen.getByText('SALE-001')).toBeInTheDocument();
-        expect(screen.getByText('SALE-002')).toBeInTheDocument();
+        expect(screen.getByText('TXN-001')).toBeInTheDocument();
+        expect(screen.getByText('TXN-002')).toBeInTheDocument();
       });
 
       const dateRangeSelect = screen.getByText('Date Range');
@@ -522,8 +534,8 @@ describe('TransactionHistory', () => {
 
       // Should filter transactions based on date range
       await waitFor(() => {
-        expect(screen.getByText('SALE-001')).toBeInTheDocument();
-        expect(screen.getByText('SALE-002')).toBeInTheDocument();
+        expect(screen.getByText('TXN-001')).toBeInTheDocument();
+        expect(screen.getByText('TXN-002')).toBeInTheDocument();
       });
     });
   });
@@ -575,7 +587,7 @@ describe('TransactionHistory', () => {
       renderWithQueryClient(<TransactionHistory />);
 
       await waitFor(() => {
-        expect(screen.getByText('SALE-001')).toBeInTheDocument();
+        expect(screen.getByText('TXN-001')).toBeInTheDocument();
       });
 
       const searchInput = screen.getByPlaceholderText('Search transactions...');
@@ -619,7 +631,7 @@ describe('TransactionHistory', () => {
       renderWithQueryClient(<TransactionHistory />);
 
       await waitFor(() => {
-        expect(screen.getByText('SALE-001')).toBeInTheDocument();
+        expect(screen.getByText('TXN-001')).toBeInTheDocument();
         expect(screen.getByText('N/A')).toBeInTheDocument();
       });
     });
@@ -641,6 +653,55 @@ describe('TransactionHistory', () => {
 
       await waitFor(() => {
         expect(screen.getByText('₦999,999')).toBeInTheDocument();
+      });
+    });
+
+    it('displays transaction notes when available', async () => {
+      (global.fetch as jest.Mock).mockResolvedValue({
+        ok: true,
+        json: async () => ({
+          data: [mockTransactions[0]], // Transaction with notes
+        }),
+      });
+
+      renderWithQueryClient(<TransactionHistory />);
+
+      await waitFor(() => {
+        expect(screen.getByText('TXN-001')).toBeInTheDocument();
+      });
+
+      // Click on the transaction to view details
+      const transactionButton = screen.getByText('TXN-001');
+      fireEvent.click(transactionButton);
+
+      await waitFor(() => {
+        expect(screen.getByText('Notes')).toBeInTheDocument();
+        expect(
+          screen.getByText('Test transaction with notes')
+        ).toBeInTheDocument();
+      });
+    });
+
+    it('does not display notes section when transaction has no notes', async () => {
+      (global.fetch as jest.Mock).mockResolvedValue({
+        ok: true,
+        json: async () => ({
+          data: [mockTransactions[1]], // Transaction without notes
+        }),
+      });
+
+      renderWithQueryClient(<TransactionHistory />);
+
+      await waitFor(() => {
+        expect(screen.getByText('TXN-002')).toBeInTheDocument();
+      });
+
+      // Click on the transaction to view details
+      const transactionButton = screen.getByText('TXN-002');
+      fireEvent.click(transactionButton);
+
+      await waitFor(() => {
+        expect(screen.queryByText('Notes')).not.toBeInTheDocument();
       });
     });
   });
