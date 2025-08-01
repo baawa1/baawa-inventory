@@ -76,6 +76,7 @@ interface CustomerOrder {
   subtotal: number;
   discount: number;
   total: number;
+  notes?: string | null;
   items: {
     id: number;
     name: string;
@@ -83,6 +84,13 @@ interface CustomerOrder {
     price: number;
     quantity: number;
     total: number;
+    coupon?: {
+      id: number;
+      code: string;
+      name: string;
+      type: string;
+      value: number;
+    } | null;
   }[];
 }
 
@@ -500,10 +508,37 @@ export function CustomerManagement({ user: _user }: CustomerManagementProps) {
                               <span>{formatCurrency(order.subtotal)}</span>
                             </div>
                             {order.discount > 0 && (
-                              <div className="flex justify-between text-sm">
-                                <span>Discount:</span>
-                                <span>-{formatCurrency(order.discount)}</span>
-                              </div>
+                              <>
+                                <div className="flex justify-between text-sm">
+                                  <span>Discount:</span>
+                                  <span>-{formatCurrency(order.discount)}</span>
+                                </div>
+                                {/* Show coupon information if any items have coupons */}
+                                {order.items.some(item => item.coupon) && (
+                                  <div className="bg-muted mt-2 rounded-md p-2">
+                                    <div className="text-muted-foreground mb-1 text-sm font-medium">
+                                      Applied Coupon:
+                                    </div>
+                                    <div className="flex items-center gap-2">
+                                      <Badge
+                                        variant="secondary"
+                                        className="text-xs"
+                                      >
+                                        {
+                                          order.items.find(item => item.coupon)
+                                            ?.coupon?.code
+                                        }
+                                      </Badge>
+                                      <span className="text-muted-foreground text-xs">
+                                        {
+                                          order.items.find(item => item.coupon)
+                                            ?.coupon?.name
+                                        }
+                                      </span>
+                                    </div>
+                                  </div>
+                                )}
+                              </>
                             )}
                             <div className="flex justify-between border-t pt-2 text-sm font-medium">
                               <span>TOTAL</span>
@@ -511,6 +546,18 @@ export function CustomerManagement({ user: _user }: CustomerManagementProps) {
                             </div>
                           </div>
                         </div>
+
+                        {/* Transaction Notes */}
+                        {order.notes && (
+                          <div className="rounded-lg border p-3">
+                            <h4 className="mb-2 text-sm font-medium">Notes</h4>
+                            <div className="bg-muted rounded-md p-2">
+                              <p className="text-muted-foreground text-sm">
+                                {order.notes}
+                              </p>
+                            </div>
+                          </div>
+                        )}
 
                         {/* Actions */}
                         <div className="flex justify-end">

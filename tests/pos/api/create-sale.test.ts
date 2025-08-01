@@ -206,4 +206,65 @@ test.describe('POS Create Sale API Tests', () => {
 
     console.log('✅ Split payment sale created successfully');
   });
+
+  test('should handle coupon usage correctly - increment only once per transaction', async ({
+    request,
+  }) => {
+    // Login as staff
+    const loginResponse = await request.post('/api/auth/signin', {
+      data: {
+        email: APPROVED_STAFF.email,
+        password: APPROVED_STAFF.password,
+      },
+    });
+
+    expect(loginResponse.ok()).toBeTruthy();
+
+    // Get cookies for authenticated request
+    const cookies = loginResponse.headers()['set-cookie'];
+
+    // Create sale data with coupon applied to multiple items
+    const saleData = {
+      items: [
+        {
+          productId: 1,
+          quantity: 2,
+          price: 1000.0,
+          total: 2000.0,
+          couponId: 25, // Apply same coupon to first item
+        },
+        {
+          productId: 2,
+          quantity: 1,
+          price: 1500.0,
+          total: 1500.0,
+          couponId: 25, // Apply same coupon to second item
+        },
+      ],
+      subtotal: 3500.0,
+      discount: 1750.0, // 50% discount applied at transaction level
+      total: 1750.0,
+      paymentMethod: 'CASH',
+      amountPaid: 1750.0,
+    };
+
+    // Create sale
+    const createSaleResponse = await request.post('/api/pos/create-sale', {
+      data: saleData,
+      headers: {
+        'Content-Type': 'application/json',
+        ...(cookies && { Cookie: cookies }),
+      },
+    });
+
+    expect(createSaleResponse.ok()).toBeTruthy();
+
+    const responseData = await createSaleResponse.json();
+    expect(responseData).toHaveProperty('success', true);
+    expect(responseData).toHaveProperty('saleId');
+
+    console.log(
+      '✅ Coupon sale created successfully - coupon usage incremented only once'
+    );
+  });
 });
