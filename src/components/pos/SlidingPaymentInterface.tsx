@@ -27,6 +27,7 @@ import {
 } from '@tabler/icons-react';
 import { usePOSErrorHandler } from './POSErrorBoundary';
 import { DiscountStep } from './payment/DiscountStep';
+import { CouponDisplay } from './payment/CouponDisplay';
 import { useQuery } from '@tanstack/react-query';
 import {
   calculateDiscountAmount,
@@ -34,6 +35,7 @@ import {
   validateSplitPayments,
   calculateChange,
 } from '@/lib/utils/calculations';
+import { formatCurrency } from '@/lib/utils';
 
 export interface CartItem {
   id: number;
@@ -64,6 +66,15 @@ export interface Sale {
     method: string;
     createdAt: Date;
   }>;
+}
+
+interface CouponData {
+  id: number;
+  code: string;
+  name: string;
+  type: 'PERCENTAGE' | 'FIXED';
+  value: number;
+  minimumAmount?: number;
 }
 
 interface SlidingPaymentInterfaceProps {
@@ -157,6 +168,8 @@ export function SlidingPaymentInterface({
     Array<{ id: string; amount: number; method: string }>
   >([]);
   const [completedSale, setCompletedSale] = useState<Sale | null>(null);
+  const [appliedCoupon, setAppliedCoupon] = useState<CouponData | null>(null);
+  const [couponDiscount, setCouponDiscount] = useState(0);
 
   const { handleError } = usePOSErrorHandler();
 
@@ -167,14 +180,46 @@ export function SlidingPaymentInterface({
       value,
       discountType
     );
-    onDiscountChange(calculatedDiscount);
+
+    // Only apply manual discount if no coupon is applied
+    if (!appliedCoupon) {
+      onDiscountChange(calculatedDiscount);
+    }
   };
 
   const handleDiscountTypeChange = (newType: 'percentage' | 'fixed') => {
     setDiscountType(newType);
     // Reset discount value when switching types
     setDiscountValue(0);
-    onDiscountChange(0);
+
+    // Only update discount if no coupon is applied
+    if (!appliedCoupon) {
+      onDiscountChange(0);
+    }
+  };
+
+  // Handle coupon change
+  const handleCouponChange = (
+    coupon: CouponData | null,
+    discountAmount: number
+  ) => {
+    console.log('handleCouponChange called:', { coupon, discountAmount });
+    setAppliedCoupon(coupon);
+    setCouponDiscount(discountAmount);
+
+    if (coupon) {
+      // If coupon is applied, reset manual discount and use only coupon discount
+      setDiscountValue(0);
+      onDiscountChange(discountAmount);
+    } else {
+      // If coupon is removed, reset coupon discount and restore manual discount if any
+      setCouponDiscount(0);
+      const manualDiscount =
+        discountValue > 0
+          ? calculateDiscountAmount(subtotal, discountValue, discountType)
+          : 0;
+      onDiscountChange(manualDiscount);
+    }
   };
 
   const handlePayment = async () => {
@@ -211,6 +256,7 @@ export function SlidingPaymentInterface({
           quantity: item.quantity,
           price: item.price,
           total: item.price * item.quantity,
+          couponId: appliedCoupon?.id, // Add coupon ID to all items
         })),
         subtotal,
         discount,
@@ -333,18 +379,31 @@ export function SlidingPaymentInterface({
             subtotal={subtotal}
             discount={discount}
             total={total}
+            appliedCoupon={appliedCoupon}
+            couponDiscount={couponDiscount}
           />
         );
       case 1:
         return (
-          <DiscountStep
-            discountType={discountType}
-            setDiscountType={handleDiscountTypeChange}
-            discountValue={discountValue}
-            handleDiscountChange={handleDiscountChange}
-            subtotal={subtotal}
-            processing={processing}
-          />
+          <div className="space-y-6">
+            <CouponDisplay
+              subtotal={subtotal}
+              processing={processing}
+              appliedCoupon={appliedCoupon}
+              onCouponChange={handleCouponChange}
+            />
+            <DiscountStep
+              discountType={discountType}
+              setDiscountType={handleDiscountTypeChange}
+              discountValue={discountValue}
+              handleDiscountChange={handleDiscountChange}
+              subtotal={subtotal}
+              processing={processing}
+              appliedCoupon={appliedCoupon}
+              couponDiscount={couponDiscount}
+              currentTotalDiscount={discount}
+            />
+          </div>
         );
       case 2:
         return (
@@ -387,6 +446,7 @@ export function SlidingPaymentInterface({
             processing={processing}
             isSplitPayment={isSplitPayment}
             splitPayments={splitPayments}
+            couponDiscount={couponDiscount}
           />
         );
       case 5:
@@ -511,7 +571,14 @@ export function SlidingPaymentInterface({
 }
 
 // Step Components
-function OrderSummaryStep({ items, subtotal, discount, total }: any) {
+function OrderSummaryStep({
+  items,
+  subtotal,
+  discount,
+  total,
+  _appliedCoupon,
+  couponDiscount,
+}: any) {
   return (
     <div className="space-y-4">
       <h3 className="text-lg font-semibold">Order Summary</h3>
@@ -524,11 +591,11 @@ function OrderSummaryStep({ items, subtotal, discount, total }: any) {
             <div className="flex-1">
               <p className="font-medium">{item.name}</p>
               <p className="text-muted-foreground text-sm">
-                {item.quantity} × ₦{item.price.toLocaleString()}
+                {item.quantity} × {formatCurrency(item.price)}
               </p>
             </div>
             <div className="font-medium">
-              ₦{(item.price * item.quantity).toLocaleString()}
+              {formatCurrency(item.price * item.quantity)}
             </div>
           </div>
         ))}
@@ -539,16 +606,31 @@ function OrderSummaryStep({ items, subtotal, discount, total }: any) {
       <div className="space-y-2">
         <div className="flex justify-between">
           <span>Subtotal:</span>
-          <span>₦{subtotal.toLocaleString()}</span>
+          <span>{formatCurrency(subtotal)}</span>
         </div>
-        <div className="flex justify-between text-red-600">
-          <span>Discount:</span>
-          <span>-₦{discount.toLocaleString()}</span>
-        </div>
+
+        {/* Show coupon discount if applied */}
+        {couponDiscount > 0 && (
+          <div className="flex justify-between text-green-600">
+            <span>Coupon Discount</span>
+            <span>-{formatCurrency(couponDiscount)}</span>
+          </div>
+        )}
+
+        {/* Show manual discount if there's additional discount beyond coupon */}
+        {Math.max(0, discount - couponDiscount) > 0 && (
+          <div className="flex justify-between text-blue-600">
+            <span>Manual Discount</span>
+            <span>
+              -{formatCurrency(Math.max(0, discount - couponDiscount))}
+            </span>
+          </div>
+        )}
+
         <Separator />
         <div className="flex justify-between text-lg font-bold">
           <span>Total:</span>
-          <span>₦{total.toLocaleString()}</span>
+          <span>{formatCurrency(total)}</span>
         </div>
       </div>
     </div>
@@ -1259,6 +1341,7 @@ function ReviewStep({
   processing,
   isSplitPayment,
   splitPayments,
+  couponDiscount,
 }: any) {
   return (
     <div className="space-y-4">
@@ -1275,11 +1358,11 @@ function ReviewStep({
             <div className="flex-1">
               <p className="font-medium">{item.name}</p>
               <p className="text-muted-foreground text-sm">
-                {item.quantity} × ₦{item.price.toLocaleString()}
+                {item.quantity} × {formatCurrency(item.price)}
               </p>
             </div>
             <div className="font-medium">
-              ₦{(item.price * item.quantity).toLocaleString()}
+              {formatCurrency(item.price * item.quantity)}
             </div>
           </div>
         ))}
@@ -1292,10 +1375,31 @@ function ReviewStep({
           <span>Subtotal:</span>
           <span>₦{subtotal.toLocaleString()}</span>
         </div>
-        <div className="flex justify-between text-red-600">
-          <span>Discount:</span>
-          <span>-₦{discount.toLocaleString()}</span>
-        </div>
+
+        {/* Show detailed discount breakdown */}
+        {couponDiscount > 0 && (
+          <div className="flex justify-between text-green-600">
+            <span>Coupon Discount:</span>
+            <span>-₦{couponDiscount.toLocaleString()}</span>
+          </div>
+        )}
+
+        {Math.max(0, discount - couponDiscount) > 0 && (
+          <div className="flex justify-between text-blue-600">
+            <span>Manual Discount:</span>
+            <span>
+              -₦{Math.max(0, discount - couponDiscount).toLocaleString()}
+            </span>
+          </div>
+        )}
+
+        {discount > 0 && (
+          <div className="flex justify-between text-red-600">
+            <span>Total Discount:</span>
+            <span>-₦{discount.toLocaleString()}</span>
+          </div>
+        )}
+
         <Separator />
         <div className="flex justify-between text-lg font-bold">
           <span>Total:</span>
@@ -1597,6 +1701,7 @@ function ReceiptStep({ sale }: { sale: Sale | null }) {
             
             ${sale.customerName ? `<div><strong>Customer:</strong> ${sale.customerName}</div>` : ''}
             ${sale.customerPhone ? `<div><strong>Phone:</strong> ${sale.customerPhone}</div>` : ''}
+            ${sale.customerEmail ? `<div><strong>Email:</strong> ${sale.customerEmail}</div>` : ''}
           </div>
           
           <div class="items">
@@ -1607,8 +1712,8 @@ function ReceiptStep({ sale }: { sale: Sale | null }) {
                 <div class="item-name">${item.name}</div>
                 <div class="item-details">SKU: ${item.sku} | ${item.category || 'N/A'}</div>
                 <div class="total-line">
-                  <span>${item.quantity} × ₦${item.price.toLocaleString()}</span>
-                  <span>₦${(item.price * item.quantity).toLocaleString()}</span>
+                  <span>${item.quantity} × ${formatCurrency(item.price)}</span>
+                  <span>${formatCurrency(item.price * item.quantity)}</span>
                 </div>
               </div>
             `
@@ -1619,15 +1724,15 @@ function ReceiptStep({ sale }: { sale: Sale | null }) {
           <div class="totals">
             <div class="total-line">
               <span>Subtotal:</span>
-              <span>₦${sale.subtotal.toLocaleString()}</span>
+              <span>${formatCurrency(sale.subtotal)}</span>
             </div>
             <div class="total-line">
               <span>Discount:</span>
-              <span>-₦${sale.discount.toLocaleString()}</span>
+              <span>-${formatCurrency(sale.discount)}</span>
             </div>
             <div class="total-line grand-total">
               <span>TOTAL:</span>
-              <span>₦${sale.total.toLocaleString()}</span>
+              <span>${formatCurrency(sale.total)}</span>
             </div>
             ${
               sale.paymentMethod === 'split' &&
@@ -1641,7 +1746,7 @@ function ReceiptStep({ sale }: { sale: Sale | null }) {
                   payment => `
                 <div class="total-line" style="font-size: 11px;">
                   <span>${payment.method}:</span>
-                  <span>₦${payment.amount.toLocaleString()}</span>
+                  <span>${formatCurrency(payment.amount)}</span>
                 </div>
               `
                 )
@@ -1806,12 +1911,12 @@ function ReceiptStep({ sale }: { sale: Sale | null }) {
               <div className="flex-1">
                 <p className="font-medium">{item.name}</p>
                 <p className="text-muted-foreground text-sm">
-                  {item.quantity} × ₦{item.price.toLocaleString()}
+                  {item.quantity} × {formatCurrency(item.price)}
                 </p>
               </div>
               <div className="text-right">
                 <p className="font-medium">
-                  ₦{(item.price * item.quantity).toLocaleString()}
+                  {formatCurrency(item.price * item.quantity)}
                 </p>
               </div>
             </div>
@@ -1825,16 +1930,16 @@ function ReceiptStep({ sale }: { sale: Sale | null }) {
       <div className="space-y-2">
         <div className="flex justify-between">
           <span>Subtotal:</span>
-          <span>₦{sale.subtotal.toLocaleString()}</span>
+          <span>{formatCurrency(sale.subtotal)}</span>
         </div>
         <div className="flex justify-between text-red-600">
           <span>Discount:</span>
-          <span>-₦{sale.discount.toLocaleString()}</span>
+          <span>-{formatCurrency(sale.discount)}</span>
         </div>
         <Separator />
         <div className="flex justify-between text-lg font-bold">
           <span>Total:</span>
-          <span>₦{sale.total.toLocaleString()}</span>
+          <span>{formatCurrency(sale.total)}</span>
         </div>
 
         {/* Split Payment Details */}
@@ -1849,7 +1954,7 @@ function ReceiptStep({ sale }: { sale: Sale | null }) {
                     {payment.method}:
                   </span>
                   <span className="font-medium">
-                    ₦{payment.amount.toLocaleString()}
+                    {formatCurrency(payment.amount)}
                   </span>
                 </div>
               ))}

@@ -386,10 +386,15 @@ export function ReceiptGenerator({ sale, onClose }: ReceiptGeneratorProps) {
                   <span>Subtotal</span>
                   <span>{formatCurrency(sale.subtotal)}</span>
                 </div>
-                <div className="flex justify-between text-red-600">
-                  <span>Discount</span>
-                  <span>-{formatCurrency(sale.discount)}</span>
-                </div>
+
+                {/* Show detailed discount breakdown if available */}
+                {sale.discount > 0 && (
+                  <div className="flex justify-between text-red-600">
+                    <span>Discount</span>
+                    <span>-{formatCurrency(sale.discount)}</span>
+                  </div>
+                )}
+
                 <Separator />
                 <div className="flex justify-between text-lg font-bold">
                   <span>Total</span>

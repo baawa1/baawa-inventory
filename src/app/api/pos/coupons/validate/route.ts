@@ -68,12 +68,23 @@ export const POST = withPermission(
       let discountAmount = 0;
       if (coupon.type === 'PERCENTAGE') {
         discountAmount = (totalAmount * Number(coupon.value)) / 100;
+
+        // Validate percentage discount
+        if (Number(coupon.value) > 100) {
+          return NextResponse.json(
+            { error: 'Coupon discount percentage cannot exceed 100%' },
+            { status: 400 }
+          );
+        }
       } else {
         discountAmount = Number(coupon.value);
       }
 
       // Ensure discount doesn't exceed total amount
       discountAmount = Math.min(discountAmount, totalAmount);
+
+      // Ensure discount is not negative
+      discountAmount = Math.max(0, discountAmount);
 
       return NextResponse.json({
         coupon: {
