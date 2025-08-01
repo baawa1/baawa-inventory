@@ -3,6 +3,7 @@
 import React, { useState, useEffect, useMemo } from 'react';
 import Image from 'next/image';
 import Link from 'next/link';
+import { useSearchParams } from 'next/navigation';
 import { toast } from 'sonner';
 
 // Hooks
@@ -90,6 +91,8 @@ const SORT_OPTIONS: SortOption[] = [
 ];
 
 const ProductList = ({ user }: ProductListProps) => {
+  const searchParams = useSearchParams();
+
   const [pagination, setPagination] = useState<PaginationState>({
     page: 1,
     limit: 10,
@@ -97,15 +100,19 @@ const ProductList = ({ user }: ProductListProps) => {
     totalItems: 0,
   });
   const [visibleColumns, setVisibleColumns] = useState<string[]>([]);
-  const [filters, setFilters] = useState<ProductFilters>({
-    search: '',
-    categoryId: '',
-    brandId: '',
-    status: '',
-    supplier: '',
-    lowStock: false,
-    sortBy: 'createdAt',
-    sortOrder: 'desc',
+  const [filters, setFilters] = useState<ProductFilters>(() => {
+    // Initialize filters based on URL parameters
+    const lowStockParam = searchParams.get('lowStock');
+    return {
+      search: '',
+      categoryId: '',
+      brandId: '',
+      status: '',
+      supplier: '',
+      lowStock: lowStockParam === 'true',
+      sortBy: 'createdAt',
+      sortOrder: 'desc',
+    };
   });
 
   // Dialog states

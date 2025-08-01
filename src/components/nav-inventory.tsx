@@ -44,10 +44,6 @@ const inventoryNavItems = [
         url: '/inventory/products/add',
       },
       {
-        title: 'Low Stock',
-        url: '/inventory/low-stock',
-      },
-      {
         title: 'Archived Products',
         url: '/inventory/products/archived',
       },
@@ -122,24 +118,6 @@ const inventoryNavItems = [
     title: 'Reports',
     url: '/inventory/reports',
     icon: IconChartBar,
-    items: [
-      {
-        title: 'Inventory Reports',
-        url: '/inventory/reports',
-      },
-      {
-        title: 'Current Stock',
-        url: '/inventory/reports?type=current_stock',
-      },
-      {
-        title: 'Stock Value',
-        url: '/inventory/reports?type=stock_value',
-      },
-      {
-        title: 'Low Stock',
-        url: '/inventory/reports?type=low_stock',
-      },
-    ],
   },
 ];
 
@@ -163,6 +141,25 @@ function CollapsibleNavItem({ item }: { item: (typeof inventoryNavItems)[0] }) {
     }
   }, [hasActiveChild]);
 
+  // If item has no sub-items, render as a simple link
+  if (!item.items?.length) {
+    return (
+      <SidebarMenuItem>
+        <SidebarMenuButton
+          asChild
+          tooltip={item.title}
+          className={isMainActive ? 'bg-accent text-accent-foreground' : ''}
+        >
+          <Link href={item.url}>
+            <item.icon />
+            <span>{item.title}</span>
+          </Link>
+        </SidebarMenuButton>
+      </SidebarMenuItem>
+    );
+  }
+
+  // Otherwise render as collapsible dropdown
   return (
     <SidebarMenuItem>
       <Collapsible open={isOpen} onOpenChange={setIsOpen}>
@@ -180,29 +177,27 @@ function CollapsibleNavItem({ item }: { item: (typeof inventoryNavItems)[0] }) {
             />
           </SidebarMenuButton>
         </CollapsibleTrigger>
-        {item.items?.length ? (
-          <CollapsibleContent>
-            <SidebarMenuSub>
-              {item.items?.map(subItem => {
-                const isActive = pathname === subItem.url;
-                return (
-                  <SidebarMenuSubItem key={subItem.title}>
-                    <SidebarMenuSubButton
-                      asChild
-                      className={
-                        isActive ? 'bg-accent text-accent-foreground' : ''
-                      }
-                    >
-                      <Link href={subItem.url}>
-                        <span>{subItem.title}</span>
-                      </Link>
-                    </SidebarMenuSubButton>
-                  </SidebarMenuSubItem>
-                );
-              })}
-            </SidebarMenuSub>
-          </CollapsibleContent>
-        ) : null}
+        <CollapsibleContent>
+          <SidebarMenuSub>
+            {item.items?.map(subItem => {
+              const isActive = pathname === subItem.url;
+              return (
+                <SidebarMenuSubItem key={subItem.title}>
+                  <SidebarMenuSubButton
+                    asChild
+                    className={
+                      isActive ? 'bg-accent text-accent-foreground' : ''
+                    }
+                  >
+                    <Link href={subItem.url}>
+                      <span>{subItem.title}</span>
+                    </Link>
+                  </SidebarMenuSubButton>
+                </SidebarMenuSubItem>
+              );
+            })}
+          </SidebarMenuSub>
+        </CollapsibleContent>
       </Collapsible>
     </SidebarMenuItem>
   );

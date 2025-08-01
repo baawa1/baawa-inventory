@@ -145,8 +145,8 @@ test.describe('Reports & Analytics Workflow', () => {
       }, APPROVED_MANAGER.email);
 
       // Navigate to low stock page
-      await page.goto('/inventory/low-stock');
-      await expect(page).toHaveURL('/inventory/low-stock');
+      await page.goto('/inventory/products?lowStock=true');
+      await expect(page).toHaveURL('/inventory/products?lowStock=true');
 
       // Should see low stock interface
       await expect(page.locator('text=Low Stock')).toBeVisible();
