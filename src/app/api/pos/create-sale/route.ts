@@ -49,6 +49,27 @@ const posSaleSchema = z
   )
   .refine(
     data => {
+      // Validate that discount doesn't exceed subtotal
+      const itemsTotal = data.items.reduce((sum, item) => sum + item.total, 0);
+      return data.discount <= itemsTotal;
+    },
+    {
+      message: 'Discount cannot exceed subtotal',
+      path: ['discount'],
+    }
+  )
+  .refine(
+    data => {
+      // Validate that total is not negative
+      return data.total >= 0;
+    },
+    {
+      message: 'Total cannot be negative',
+      path: ['total'],
+    }
+  )
+  .refine(
+    data => {
       // For split payments, validate that split payments have valid amounts
       if (data.paymentMethod === 'split' && data.splitPayments) {
         return data.splitPayments.every(payment => payment.amount > 0);

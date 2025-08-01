@@ -32,6 +32,15 @@ import {
 } from '@/lib/utils/calculations';
 import { DiscountStep } from './payment/DiscountStep';
 
+interface CouponData {
+  id: number;
+  code: string;
+  name: string;
+  type: 'PERCENTAGE' | 'FIXED';
+  value: number;
+  minimumAmount?: number;
+}
+
 export interface CartItem {
   id: number;
   name: string;
@@ -100,6 +109,8 @@ export function PaymentInterface({
   const [amountPaid, setAmountPaid] = useState(total);
   const [notes, setNotes] = useState('');
   const [processing, setProcessing] = useState(false);
+  const [appliedCoupon, setAppliedCoupon] = useState<CouponData | null>(null);
+  const [couponDiscount, setCouponDiscount] = useState(0);
 
   // Handle discount change
   const handleDiscountChange = (value: number) => {
@@ -109,14 +120,45 @@ export function PaymentInterface({
       value,
       discountType
     );
-    onDiscountChange(calculatedDiscount);
+
+    // Only apply manual discount if no coupon is applied
+    if (!appliedCoupon) {
+      onDiscountChange(calculatedDiscount);
+    }
   };
 
   const handleDiscountTypeChange = (newType: 'percentage' | 'fixed') => {
     setDiscountType(newType);
     // Reset discount value when switching types
     setDiscountValue(0);
-    onDiscountChange(0);
+
+    // Only update discount if no coupon is applied
+    if (!appliedCoupon) {
+      onDiscountChange(0);
+    }
+  };
+
+  // Handle coupon change
+  const handleCouponChange = (
+    coupon: CouponData | null,
+    discountAmount: number
+  ) => {
+    console.log('handleCouponChange called:', { coupon, discountAmount });
+    setAppliedCoupon(coupon);
+    setCouponDiscount(discountAmount);
+
+    if (coupon) {
+      // If coupon is applied, reset manual discount and use only coupon discount
+      setDiscountValue(0);
+      onDiscountChange(discountAmount);
+    } else {
+      // If coupon is removed, keep manual discount if any
+      const manualDiscount =
+        discountValue > 0
+          ? calculateDiscountAmount(subtotal, discountValue, discountType)
+          : 0;
+      onDiscountChange(manualDiscount);
+    }
   };
 
   // Process payment
@@ -142,6 +184,7 @@ export function PaymentInterface({
           quantity: item.quantity,
           price: item.price,
           total: item.price * item.quantity,
+          couponId: appliedCoupon?.id, // Add coupon ID to all items
         })),
         subtotal,
         discount,
@@ -260,10 +303,21 @@ export function PaymentInterface({
                     <span>Subtotal</span>
                     <span>{formatCurrency(subtotal)}</span>
                   </div>
-                  <div className="flex justify-between text-red-600">
-                    <span>Discount</span>
-                    <span>-{formatCurrency(discount)}</span>
-                  </div>
+
+                  {couponDiscount > 0 && (
+                    <div className="flex justify-between text-green-600">
+                      <span>Coupon Discount</span>
+                      <span>-{formatCurrency(couponDiscount)}</span>
+                    </div>
+                  )}
+
+                  {discount > couponDiscount && (
+                    <div className="flex justify-between text-blue-600">
+                      <span>Manual Discount</span>
+                      <span>-{formatCurrency(discount - couponDiscount)}</span>
+                    </div>
+                  )}
+
                   <Separator />
                   <div className="flex justify-between text-lg font-bold">
                     <span>Total</span>
@@ -281,6 +335,8 @@ export function PaymentInterface({
               handleDiscountChange={handleDiscountChange}
               subtotal={subtotal}
               processing={processing}
+              appliedCoupon={appliedCoupon}
+              onCouponChange={handleCouponChange}
             />
           </div>
 

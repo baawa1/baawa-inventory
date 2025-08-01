@@ -103,3 +103,37 @@ export const validateSplitPayments = (
 
   return { isValid: true };
 };
+
+/**
+ * Validate discount amount to prevent excessive discounts
+ */
+export const validateDiscountAmount = (
+  discountAmount: number,
+  subtotal: number,
+  discountType: 'percentage' | 'fixed'
+): { isValid: boolean; error?: string } => {
+  if (discountType === 'percentage') {
+    if (discountAmount > 100) {
+      return {
+        isValid: false,
+        error: 'Discount percentage cannot exceed 100%',
+      };
+    }
+  }
+
+  if (discountAmount < 0) {
+    return {
+      isValid: false,
+      error: 'Discount amount cannot be negative',
+    };
+  }
+
+  if (discountAmount > subtotal) {
+    return {
+      isValid: false,
+      error: 'Discount cannot exceed subtotal amount',
+    };
+  }
+
+  return { isValid: true };
+};

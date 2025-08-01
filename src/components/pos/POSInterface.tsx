@@ -70,6 +70,10 @@ export function POSInterface() {
   // Calculate totals using consistent utility
   const { subtotal, total } = calculateOrderTotals(cart, discount);
 
+  // Validate that total is never negative
+  const validatedTotal = Math.max(0, total);
+  const validatedDiscount = Math.min(discount, subtotal);
+
   // Add product to cart
   const addToCart = (product: Omit<CartItem, 'quantity'>) => {
     setCart(prev => {
@@ -223,8 +227,8 @@ export function POSInterface() {
                 <SlidingPaymentInterface
                   items={cart}
                   subtotal={subtotal}
-                  discount={discount}
-                  total={total}
+                  discount={validatedDiscount}
+                  total={validatedTotal}
                   customerInfo={customerInfo}
                   staffName={session.user.name || 'Staff'}
                   onPaymentSuccess={sale => {
@@ -290,12 +294,12 @@ export function POSInterface() {
                         </div>
                         <div className="flex justify-between text-red-600">
                           <span>Discount:</span>
-                          <span>-{formatCurrency(discount)}</span>
+                          <span>-{formatCurrency(validatedDiscount)}</span>
                         </div>
                         <Separator />
                         <div className="flex justify-between text-lg font-bold">
                           <span>Total:</span>
-                          <span>{formatCurrency(total)}</span>
+                          <span>{formatCurrency(validatedTotal)}</span>
                         </div>
                       </div>
                     </CardContent>
