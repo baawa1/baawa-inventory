@@ -54,16 +54,6 @@ const navMain = [
 
 const navSecondary = [
   {
-    title: 'Settings',
-    url: '/settings',
-    icon: IconSettings,
-  },
-  {
-    title: 'Get Help',
-    url: '#',
-    icon: IconHelp,
-  },
-  {
     title: 'Admin Panel',
     url: '/admin',
     icon: IconUsers,
