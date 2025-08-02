@@ -24,7 +24,7 @@ export const POST = withPermission(
         );
       }
 
-      const { userId, reason } = validation.data;
+      const { userId } = validation.data;
 
       // Check if user exists and is pending
       const user = await prisma.user.findUnique({

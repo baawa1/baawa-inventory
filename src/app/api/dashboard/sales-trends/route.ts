@@ -3,7 +3,7 @@ import { withAuth, AuthenticatedRequest } from '@/lib/api-middleware';
 import { createApiResponse } from '@/lib/api-response';
 
 // GET /api/dashboard/sales-trends - Get sales trends for the last 7 days
-export const GET = withAuth(async (request: AuthenticatedRequest) => {
+export const GET = withAuth(async (_request: AuthenticatedRequest) => {
   try {
     // Get the last 7 days
     const endDate = new Date();

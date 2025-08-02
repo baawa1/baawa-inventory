@@ -3,18 +3,7 @@
 import React from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
-import { Badge } from '@/components/ui/badge';
-import {
-  Table,
-  TableBody,
-  TableCell,
-  TableHead,
-  TableHeader,
-  TableRow,
-} from '@/components/ui/table';
-import { IconEye, IconRefresh } from '@tabler/icons-react';
-import { format } from 'date-fns';
-import { formatCurrency } from '@/lib/utils';
+import { IconRefresh } from '@tabler/icons-react';
 
 interface SimpleTransactionListProps {
   user: any;
@@ -27,7 +16,7 @@ interface SimpleTransactionListProps {
 }
 
 export function SimpleTransactionList({
-  user,
+  user: _user,
   filters = {},
 }: SimpleTransactionListProps) {
   return (

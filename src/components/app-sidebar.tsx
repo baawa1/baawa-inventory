@@ -6,8 +6,6 @@ import {
   IconChartBar,
   IconCash,
   IconDashboard,
-  IconHelp,
-  IconSettings,
   IconShoppingCart,
   IconUsers,
 } from '@tabler/icons-react';

@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { withAuth, withPermission } from '@/lib/api-middleware';
+import { withPermission } from '@/lib/api-middleware';
 import { prisma } from '@/lib/db';
 import { z } from 'zod';
 import { USER_ROLES } from '@/lib/auth/roles';
@@ -19,7 +19,7 @@ const updateCouponSchema = z.object({
 
 export const GET = withPermission(
   [USER_ROLES.ADMIN, USER_ROLES.MANAGER, USER_ROLES.STAFF],
-  async (req: NextRequest, { user }, { params }) => {
+  async (req: NextRequest, { user: _user }, { params }) => {
     try {
       const couponId = parseInt(params.id);
 
@@ -64,7 +64,7 @@ export const GET = withPermission(
 
 export const PUT = withPermission(
   [USER_ROLES.ADMIN, USER_ROLES.MANAGER],
-  async (req: NextRequest, { user }, { params }) => {
+  async (req: NextRequest, { user: _user }, { params }) => {
     try {
       const couponId = parseInt(params.id);
 
@@ -139,7 +139,7 @@ export const PUT = withPermission(
 
 export const DELETE = withPermission(
   [USER_ROLES.ADMIN, USER_ROLES.MANAGER],
-  async (req: NextRequest, { user }, { params }) => {
+  async (req: NextRequest, { user: _user }, { params }) => {
     try {
       const couponId = parseInt(params.id);
 

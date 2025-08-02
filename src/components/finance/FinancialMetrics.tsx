@@ -8,8 +8,6 @@ import {
   IconTrendingDown,
   IconCash,
   IconShoppingCart,
-  IconUsers,
-  IconPackage,
 } from '@tabler/icons-react';
 import { DateRange } from 'react-day-picker';
 import { formatCurrency } from '@/lib/utils';
