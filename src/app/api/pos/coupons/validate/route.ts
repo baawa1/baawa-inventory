@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { withAuth, withPermission } from '@/lib/api-middleware';
+import { withPermission } from '@/lib/api-middleware';
 import { prisma } from '@/lib/db';
 import { z } from 'zod';
 import { USER_ROLES } from '@/lib/auth/roles';
@@ -11,7 +11,7 @@ const validateCouponSchema = z.object({
 
 export const POST = withPermission(
   [USER_ROLES.ADMIN, USER_ROLES.MANAGER, USER_ROLES.STAFF],
-  async (req: NextRequest, { user }) => {
+  async (req: NextRequest, { user: _user }) => {
     try {
       const body = await req.json();
       const { code, totalAmount } = validateCouponSchema.parse(body);

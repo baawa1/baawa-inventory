@@ -13,7 +13,6 @@ import {
   FormMessage,
 } from '@/components/ui/form';
 import { Input } from '@/components/ui/input';
-import { Textarea } from '@/components/ui/textarea';
 import { toast } from 'sonner';
 import { updateUserProfileSchema } from '@/lib/validations/user';
 import type { SessionUser } from '@/types/user';

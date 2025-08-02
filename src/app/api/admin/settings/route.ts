@@ -1,5 +1,4 @@
 import { NextResponse } from 'next/server';
-import { prisma } from '@/lib/db';
 import { withPermission, AuthenticatedRequest } from '@/lib/api-middleware';
 import { z } from 'zod';
 
@@ -28,7 +27,7 @@ const systemConfigSchema = z.object({
 // GET /api/admin/settings - Get system settings
 export const GET = withPermission(
   ['ADMIN'],
-  async function (request: AuthenticatedRequest) {
+  async function (_request: AuthenticatedRequest) {
     try {
       // For now, return default settings
       // In a real app, these would be stored in a settings table

@@ -2,7 +2,6 @@ import { NextResponse } from 'next/server';
 import { withAuth, AuthenticatedRequest } from '@/lib/api-middleware';
 import { handleApiError } from '@/lib/api-error-handler-new';
 import { prisma } from '@/lib/db';
-import { PAYMENT_STATUS } from '@/lib/constants';
 
 interface CategoryPerformance {
   id: number;

@@ -1,7 +1,6 @@
 import { redirect } from 'next/navigation';
 import { auth } from '#root/auth';
 import { CustomerList } from '@/components/pos/CustomerList';
-import { DashboardPageLayout } from '@/components/layouts/DashboardPageLayout';
 import { ALL_ROLES, UserRole } from '@/lib/auth/roles';
 
 export const metadata = {

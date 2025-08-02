@@ -3,7 +3,7 @@ import { withAuth, AuthenticatedRequest } from '@/lib/api-middleware';
 import { createApiResponse } from '@/lib/api-response';
 
 // GET /api/dashboard/top-products - Get top selling products
-export const GET = withAuth(async (request: AuthenticatedRequest) => {
+export const GET = withAuth(async (_request: AuthenticatedRequest) => {
   try {
     // Get top products by sales quantity
     const topProducts = await prisma.salesItem.groupBy({

@@ -1,9 +1,5 @@
-import { NextRequest, NextResponse } from 'next/server';
-import {
-  withAuth,
-  withPermission,
-  AuthenticatedRequest,
-} from '@/lib/api-middleware';
+import { NextResponse } from 'next/server';
+import { withPermission, AuthenticatedRequest } from '@/lib/api-middleware';
 import { prisma } from '@/lib/db';
 import { z } from 'zod';
 import { USER_ROLES } from '@/lib/auth/roles';

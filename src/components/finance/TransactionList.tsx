@@ -21,7 +21,6 @@ import {
   SelectValue,
 } from '@/components/ui/select';
 import {
-  IconSearch,
   IconFilter,
   IconEye,
   IconDownload,
@@ -79,7 +78,10 @@ const paymentMethodLabels = {
   mobile_money: 'Mobile Money',
 };
 
-export function TransactionList({ user, filters = {} }: TransactionListProps) {
+export function TransactionList({
+  user: _user,
+  filters = {},
+}: TransactionListProps) {
   const [search, setSearch] = useState('');
   const [currentPage, setCurrentPage] = useState(1);
   const [pageSize, setPageSize] = useState(10);

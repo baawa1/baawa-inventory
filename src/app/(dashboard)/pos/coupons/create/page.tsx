@@ -1,7 +1,7 @@
 import { redirect } from 'next/navigation';
 import { auth } from '#root/auth';
 import { CreateCouponForm } from '@/components/pos/CreateCouponForm';
-import { ALL_ROLES, UserRole, USER_ROLES } from '@/lib/auth/roles';
+import { USER_ROLES } from '@/lib/auth/roles';
 
 export const metadata = {
   title: 'Create Coupon - BaaWA Inventory POS',

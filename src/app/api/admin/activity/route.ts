@@ -5,7 +5,7 @@ import { withPermission, AuthenticatedRequest } from '@/lib/api-middleware';
 // GET /api/admin/activity - Get recent admin activity
 export const GET = withPermission(
   ['ADMIN'],
-  async function (request: AuthenticatedRequest) {
+  async function (_request: AuthenticatedRequest) {
     try {
       // Get recent user registrations
       const recentRegistrations = await prisma.user.findMany({

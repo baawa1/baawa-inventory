@@ -1,11 +1,11 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { withAuth, withPermission } from '@/lib/api-middleware';
+import { withPermission } from '@/lib/api-middleware';
 import { prisma } from '@/lib/db';
 import { USER_ROLES } from '@/lib/auth/roles';
 
 export const PATCH = withPermission(
   [USER_ROLES.ADMIN, USER_ROLES.MANAGER],
-  async (req: NextRequest, { user }, { params }) => {
+  async (req: NextRequest, { user: _user }, { params }) => {
     try {
       const couponId = parseInt(params.id);
 

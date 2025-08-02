@@ -16,7 +16,7 @@ import type { SessionUser } from '@/types/user';
 
 interface AvatarUploadProps {
   user: SessionUser;
-  onAvatarChange: (avatarUrl: string | null) => void;
+  onAvatarChange: (_url: string | null) => void;
 }
 
 export function AvatarUpload({ user, onAvatarChange }: AvatarUploadProps) {
