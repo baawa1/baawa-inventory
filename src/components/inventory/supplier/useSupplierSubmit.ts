@@ -6,14 +6,14 @@ import { toast } from 'sonner';
 type SupplierFormData = z.infer<typeof updateSupplierSchema>;
 
 interface UseSupplierSubmitResult {
-  onSubmit: (data: SupplierFormData) => Promise<void>;
+  onSubmit: (_data: SupplierFormData) => Promise<void>;
 }
 
 export function useSupplierSubmit(
   form: UseFormReturn<SupplierFormData>,
   supplierId: number | null,
-  setIsSubmitting: (value: boolean) => void,
-  setSubmitError: (value: string | null) => void,
+  setIsSubmitting: (_value: boolean) => void,
+  setSubmitError: (_value: string | null) => void,
   onSuccess?: () => void,
   onClose?: () => void
 ): UseSupplierSubmitResult {

@@ -31,16 +31,16 @@ interface DashboardFiltersBarProps {
   description?: string;
   searchPlaceholder?: string;
   searchValue?: string;
-  onSearchChange?: (value: string) => void;
+  onSearchChange?: (_value: string) => void;
   isSearching?: boolean;
   filters?: FilterConfig[];
   filterValues?: Record<string, any>;
-  onFilterChange?: (key: string, value: any) => void;
+  onFilterChange?: (_key: string, _value: any) => void;
   onResetFilters?: () => void;
   quickFilters?: React.ReactNode;
   sortOptions?: Array<{ label: string; value: string }>;
   currentSort?: string;
-  onSortChange?: (value: string) => void;
+  onSortChange?: (_value: string) => void;
 }
 
 export function DashboardFiltersBar({
@@ -124,7 +124,7 @@ export function DashboardFiltersBar({
   );
 
   return (
-          <Card className="dark:bg-card bg-white px-4 lg:px-6 mb-6">
+    <Card className="dark:bg-card mb-6 bg-white px-4 lg:px-6">
       <CardHeader>
         <CardTitle className="flex items-center gap-2">
           <IconFilter className="h-5 w-5" /> {title}

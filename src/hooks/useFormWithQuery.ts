@@ -5,7 +5,7 @@ import { UseQueryResult } from '@tanstack/react-query';
 interface UseFormWithQueryOptions<TData> {
   form: UseFormReturn<any>;
   query: UseQueryResult<TData>;
-  onDataReceived?: (data: TData) => void;
+  onDataReceived?: (_data: TData) => void;
   resetOnDataChange?: boolean;
 }
 

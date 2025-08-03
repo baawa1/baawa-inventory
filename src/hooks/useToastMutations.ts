@@ -3,8 +3,8 @@ import { toast } from 'sonner';
 
 interface ToastMessages {
   loading?: string;
-  success?: string | ((data: any) => string);
-  error?: string | ((error: any) => string);
+  success?: string | ((_data: any) => string);
+  error?: string | ((_error: any) => string);
 }
 
 interface UseToastMutationOptions<TData, TError, TVariables, TContext>
@@ -13,11 +13,15 @@ interface UseToastMutationOptions<TData, TError, TVariables, TContext>
     'onSuccess' | 'onError'
   > {
   messages?: ToastMessages;
-  onSuccess?: (data: TData, variables: TVariables, context: TContext) => void;
+  onSuccess?: (
+    _data: TData,
+    _variables: TVariables,
+    _context: TContext
+  ) => void;
   onError?: (
-    error: TError,
-    variables: TVariables,
-    context: TContext | undefined
+    _error: TError,
+    _variables: TVariables,
+    _context: TContext | undefined
   ) => void;
   showToast?: boolean;
 }
@@ -76,7 +80,7 @@ export function useToastMutation<
  * Convenience hook for common mutation patterns with predefined messages
  */
 export function useCreateMutation<TData, TVariables>(
-  mutationFn: (variables: TVariables) => Promise<TData>,
+  mutationFn: (_variables: TVariables) => Promise<TData>,
   entityName: string = 'item'
 ) {
   return useToastMutation({
@@ -90,7 +94,7 @@ export function useCreateMutation<TData, TVariables>(
 }
 
 export function useUpdateMutation<TData, TVariables>(
-  mutationFn: (variables: TVariables) => Promise<TData>,
+  mutationFn: (_variables: TVariables) => Promise<TData>,
   entityName: string = 'item'
 ) {
   return useToastMutation({
@@ -104,7 +108,7 @@ export function useUpdateMutation<TData, TVariables>(
 }
 
 export function useDeleteMutation<TData, TVariables>(
-  mutationFn: (variables: TVariables) => Promise<TData>,
+  mutationFn: (_variables: TVariables) => Promise<TData>,
   entityName: string = 'item'
 ) {
   return useToastMutation({

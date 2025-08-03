@@ -45,19 +45,19 @@ interface DashboardTableProps<T = Record<string, unknown>> {
   showingText?: string;
   columns: DashboardTableColumn[];
   visibleColumns: string[];
-  onColumnsChange?: (columns: string[]) => void;
+  onColumnsChange?: (_columns: string[]) => void;
   columnCustomizerKey?: string;
   data: T[];
-  renderCell: (item: T, columnKey: string) => React.ReactNode;
-  renderActions?: (item: T) => React.ReactNode;
+  renderCell: (_item: T, _columnKey: string) => React.ReactNode;
+  renderActions?: (_item: T) => React.ReactNode;
   pagination: {
     page: number;
     limit: number;
     totalPages: number;
     totalItems: number;
   };
-  onPageChange: (page: number) => void;
-  onPageSizeChange: (size: number) => void;
+  onPageChange: (_page: number) => void;
+  onPageSizeChange: (_size: number) => void;
   isLoading?: boolean;
   isRefetching?: boolean;
   error?: string;

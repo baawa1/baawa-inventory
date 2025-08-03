@@ -24,7 +24,7 @@ type SupplierFormData = z.infer<typeof updateSupplierSchema>;
 
 interface SupplierFormProps {
   form: UseFormReturn<SupplierFormData>;
-  onSubmit: (data: SupplierFormData) => Promise<void>;
+  onSubmit: (_data: SupplierFormData) => Promise<void>;
   onCancel: () => void;
   isSubmitting: boolean;
   isEditing?: boolean;

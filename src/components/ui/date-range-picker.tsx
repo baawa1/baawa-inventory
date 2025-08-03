@@ -13,7 +13,7 @@ import {
 
 interface DateRangePickerProps {
   date?: DateRange;
-  onDateChange?: (date: DateRange | undefined) => void;
+  onDateChange?: (_date: DateRange | undefined) => void;
   className?: string;
   placeholder?: string;
 }

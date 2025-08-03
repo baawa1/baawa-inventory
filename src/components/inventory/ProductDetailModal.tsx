@@ -43,11 +43,11 @@ interface ProductDetailModalProps {
   };
   open: boolean;
   onCloseAction: () => void;
-  onAddStock?: (productId: number) => void;
+  onAddStock?: (_productId: number) => void;
 }
 
 export const ProductDetailModal: React.FC<ProductDetailModalProps> = ({
-  productId,
+  productId: _productId,
   product: productBasicInfo,
   open,
   onCloseAction,

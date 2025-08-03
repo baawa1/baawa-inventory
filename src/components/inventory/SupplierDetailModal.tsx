@@ -27,8 +27,6 @@ import {
   IconClipboardList,
   IconUser,
   IconBuilding,
-  IconX,
-  IconRefresh,
 } from '@tabler/icons-react';
 
 interface _Supplier {
@@ -58,9 +56,9 @@ interface SupplierDetailModalProps {
   supplierId: number | null;
   isOpen: boolean;
   onClose: () => void;
-  onEdit?: (id: number) => void;
-  onDeactivate?: (id: number) => void;
-  onReactivate?: (id: number) => void;
+  onEdit?: (_id: number) => void;
+  onDeactivate?: (_id: number) => void;
+  onReactivate?: (_id: number) => void;
   canEdit?: boolean;
   canDeactivate?: boolean;
 }
@@ -73,7 +71,7 @@ export default function SupplierDetailModal({
   onDeactivate,
   onReactivate,
   canEdit = false,
-  canDeactivate = false,
+  canDeactivate: _canDeactivate = false,
 }: SupplierDetailModalProps) {
   const { data: _session } = useSession();
 
@@ -94,14 +92,14 @@ export default function SupplierDetailModal({
     }
   };
 
-  const handleDeactivate = () => {
+  const _handleDeactivate = () => {
     if (supplier && onDeactivate) {
       onDeactivate(supplier.id);
       onClose();
     }
   };
 
-  const handleReactivate = () => {
+  const _handleReactivate = () => {
     if (supplier && onReactivate) {
       onReactivate(supplier.id);
       onClose();

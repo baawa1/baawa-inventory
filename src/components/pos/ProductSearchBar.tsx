@@ -26,7 +26,7 @@ import {
 } from '@/hooks/api/pos';
 
 interface ProductSearchBarProps {
-  onProductSelect: (product: {
+  onProductSelect: (_product: {
     id: number;
     name: string;
     sku: string;

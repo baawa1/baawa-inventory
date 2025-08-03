@@ -26,9 +26,12 @@ export interface AuthenticatedRequest extends NextRequest {
  * Allows ADMIN, MANAGER, and STAFF roles to access POS functionality
  */
 export function withPOSAuth<T extends unknown[]>(
-  handler: (request: AuthenticatedRequest, ...args: T) => Promise<NextResponse>
+  handler: (
+    _request: AuthenticatedRequest,
+    ..._args: T
+  ) => Promise<NextResponse>
 ) {
-  return async (request: NextRequest, ...args: T): Promise<NextResponse> => {
+  return async (_request: NextRequest, ..._args: T): Promise<NextResponse> => {
     try {
       // Get session from Auth.js
       const session = await auth();
@@ -106,7 +109,7 @@ export function withPOSAuth<T extends unknown[]>(
       }
 
       // Create authenticated request with user data
-      const authenticatedRequest = request as AuthenticatedRequest;
+      const authenticatedRequest = _request as AuthenticatedRequest;
       authenticatedRequest.user = {
         id: session.user.id,
         email: session.user.email,
@@ -115,7 +118,7 @@ export function withPOSAuth<T extends unknown[]>(
         status: session.user.status as UserStatus,
       };
 
-      return await handler(authenticatedRequest, ...args);
+      return await handler(authenticatedRequest, ..._args);
     } catch (error) {
       logger.error('POS Auth middleware error', {
         error: error instanceof Error ? error.message : 'Unknown error',

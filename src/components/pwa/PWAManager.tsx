@@ -22,7 +22,7 @@ interface BeforeInstallPromptEvent extends Event {
 }
 
 declare global {
-  interface WindowEventMap {
+  interface _WindowEventMap {
     beforeinstallprompt: BeforeInstallPromptEvent;
   }
 }

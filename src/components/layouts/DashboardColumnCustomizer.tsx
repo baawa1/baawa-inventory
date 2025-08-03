@@ -22,7 +22,7 @@ export interface DashboardTableColumn {
 
 interface DashboardColumnCustomizerProps {
   columns: DashboardTableColumn[];
-  onColumnsChange: (visibleColumns: string[]) => void;
+  onColumnsChange: (_visibleColumns: string[]) => void;
   localStorageKey: string;
 }
 

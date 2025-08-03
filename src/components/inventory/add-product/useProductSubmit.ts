@@ -8,8 +8,8 @@ import { logger } from '@/lib/logger';
 
 export function useProductSubmit(
   form: UseFormReturn<CreateProductData>,
-  setIsSubmitting: (value: boolean) => void,
-  setSubmitError: (error: string | null) => void
+  setIsSubmitting: (_value: boolean) => void,
+  setSubmitError: (_error: string | null) => void
 ) {
   const router = useRouter();
 

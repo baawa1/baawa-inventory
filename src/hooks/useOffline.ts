@@ -25,7 +25,7 @@ export interface UseOfflineReturn {
   queueStats: OfflineQueueStats;
 
   // Actions
-  queueTransaction: (transactionData: any) => Promise<string>;
+  queueTransaction: (_transactionData: any) => Promise<string>;
   syncNow: () => Promise<{ success: number; failed: number }>;
   cacheProducts: () => Promise<void>;
   clearFailedTransactions: () => Promise<void>;

@@ -233,11 +233,11 @@ export function createPaginatedResponse(
  * Middleware wrapper for consistent error handling
  */
 export function withErrorHandling<
-  T extends (...args: any[]) => Promise<NextResponse>,
+  T extends (..._args: any[]) => Promise<NextResponse>,
 >(handler: T): T {
-  return (async (...args: any[]) => {
+  return (async (..._args: any[]) => {
     try {
-      return await handler(...args);
+      return await handler(..._args);
     } catch (error) {
       return handleApiError(error);
     }

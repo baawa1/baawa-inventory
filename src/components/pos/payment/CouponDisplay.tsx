@@ -20,7 +20,10 @@ interface CouponDisplayProps {
   subtotal: number;
   processing: boolean;
   appliedCoupon?: CouponData | null;
-  onCouponChange?: (coupon: CouponData | null, discountAmount: number) => void;
+  onCouponChange?: (
+    _coupon: CouponData | null,
+    _discountAmount: number
+  ) => void;
 }
 
 export function CouponDisplay({
