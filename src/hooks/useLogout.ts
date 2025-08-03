@@ -12,7 +12,7 @@ interface LogoutOptions {
 }
 
 interface UseLogoutReturn {
-  logout: (options?: LogoutOptions) => Promise<void>;
+  logout: (_options?: LogoutOptions) => Promise<void>;
   isLoading: boolean;
 }
 
@@ -25,8 +25,8 @@ export function useLogout(): UseLogoutReturn {
   const router = useRouter();
 
   const logout = useCallback(
-    async (options: LogoutOptions = {}) => {
-      const { redirect = true, callbackUrl = '/login' } = options;
+    async (_options: LogoutOptions = {}) => {
+      const { redirect = true, callbackUrl = '/login' } = _options;
 
       setIsLoading(true);
 

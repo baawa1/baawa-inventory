@@ -14,7 +14,7 @@ interface SplitPayment {
 interface SplitPaymentInterfaceProps {
   total: number;
   splitPayments: SplitPayment[];
-  onSplitPaymentsChange: (payments: SplitPayment[]) => void;
+  onSplitPaymentsChange: (_payments: SplitPayment[]) => void;
   onBack: () => void;
   onConfirm: () => void;
   isSubmitting: boolean;
@@ -59,8 +59,8 @@ export const SplitPaymentInterface: React.FC<SplitPaymentInterfaceProps> = ({
 
   const updatePayment = (
     id: string,
-    field: keyof SplitPayment,
-    value: string | number
+    _field: keyof SplitPayment,
+    _value: string | number
   ) => {
     onSplitPaymentsChange(
       splitPayments.map(payment =>

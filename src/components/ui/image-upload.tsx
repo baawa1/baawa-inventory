@@ -11,8 +11,8 @@ import { UPLOAD_LIMITS } from '@/lib/constants';
 
 interface ImageUploadProps {
   value?: string | null;
-  onChange: (url: string | null) => void;
-  onError?: (error: string) => void;
+  onChange: (_url: string | null) => void;
+  onError?: (_error: string) => void;
   label?: string;
   placeholder?: string;
   disabled?: boolean;

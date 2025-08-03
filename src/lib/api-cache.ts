@@ -148,7 +148,7 @@ if (typeof window === 'undefined') {
  * Higher-order function to add caching to API route handlers
  */
 export function withApiCache<
-  T extends (...args: any[]) => Promise<NextResponse>,
+  T extends (..._args: any[]) => Promise<NextResponse>,
 >(
   handler: T,
   options: {
@@ -157,9 +157,9 @@ export function withApiCache<
     invalidateOn?: string[];
   } = {}
 ): T {
-  return (async (...args: Parameters<T>) => {
-    const request = args[0] as Request;
-    const context = args[1] as any; // Route context (params, etc.)
+  return (async (..._args: Parameters<T>) => {
+    const request = _args[0] as Request;
+    const context = _args[1] as any; // Route context (params, etc.)
 
     // Extract endpoint from URL
     const url = new URL(request.url);
@@ -172,7 +172,7 @@ export function withApiCache<
 
     // Only cache GET requests
     if (request.method !== 'GET') {
-      const response = await handler(...args);
+      const response = await handler(..._args);
 
       // Invalidate cache for related endpoints on mutations
       if (options.invalidateOn) {
@@ -197,7 +197,7 @@ export function withApiCache<
     }
 
     // Call original handler
-    const response = await handler(...args);
+    const response = await handler(..._args);
 
     // Cache successful responses
     if (response.status >= 200 && response.status < 300) {

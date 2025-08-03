@@ -9,7 +9,7 @@ import { cn } from '@/lib/utils';
 
 interface TagInputProps {
   value: string[];
-  onChange: (tags: string[]) => void;
+  onChange: (_tags: string[]) => void;
   placeholder?: string;
   maxTags?: number;
   disabled?: boolean;

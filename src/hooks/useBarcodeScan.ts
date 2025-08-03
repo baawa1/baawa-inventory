@@ -3,7 +3,7 @@ import { toast } from 'sonner';
 import { logger } from '@/lib/logger';
 
 interface UseBarcodeScanProps {
-  onScan: (barcode: string) => void;
+  onScan: (_barcode: string) => void;
 }
 
 export function useBarcodeScan({ onScan }: UseBarcodeScanProps) {

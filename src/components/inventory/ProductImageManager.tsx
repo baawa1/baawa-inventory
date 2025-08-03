@@ -62,7 +62,7 @@ interface ProductData {
 interface ProductImageManagerProps {
   productId: number;
   productName: string;
-  onImagesChange?: (images: ProductImage[]) => void;
+  onImagesChange?: (_images: ProductImage[]) => void;
 }
 
 interface RawImage {

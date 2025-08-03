@@ -121,7 +121,7 @@ export function CustomerList({ user: _ }: CustomerListProps) {
     email: '',
     phone: '',
   });
-  const [isUpdating, setIsUpdating] = useState(false);
+  const [_isUpdating, _setIsUpdating] = useState(false);
   const [isAddDialogOpen, setIsAddDialogOpen] = useState(false);
   const [addFormData, setAddFormData] = useState({
     name: '',
@@ -356,7 +356,7 @@ export function CustomerList({ user: _ }: CustomerListProps) {
   };
 
   const handleSortChange = (sortValue: string) => {
-    const [field, order] = sortValue.split('-');
+    const [field, _order] = sortValue.split('-');
     setSortBy(field);
   };
 

@@ -124,7 +124,7 @@ export function POSErrorBoundary({
 }: {
   children: React.ReactNode;
   componentName: string;
-  onError?: (error: Error) => void;
+  onError?: (_error: Error) => void;
 }) {
   const handleError = (error: Error, errorInfo: React.ErrorInfo) => {
     logger.error(`POS Error in ${componentName}`, {

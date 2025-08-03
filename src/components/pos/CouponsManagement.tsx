@@ -37,8 +37,6 @@ import {
   IconTicket,
   IconPercentage,
   IconCurrencyNaira,
-  IconEye,
-  IconTrash,
   IconCopy,
   IconCheck,
   IconX,
@@ -61,7 +59,7 @@ interface CouponsManagementProps {
   };
 }
 
-export function CouponsManagement({ user }: CouponsManagementProps) {
+export function CouponsManagement({ user: _user }: CouponsManagementProps) {
   const [searchTerm, setSearchTerm] = useState('');
   const [selectedStatus, setSelectedStatus] = useState('all');
   const [isCreateDialogOpen, setIsCreateDialogOpen] = useState(false);
@@ -70,7 +68,7 @@ export function CouponsManagement({ user }: CouponsManagementProps) {
   const {
     data: couponsResponse,
     isLoading,
-    error,
+    error: _error,
   } = useCoupons({
     search: searchTerm,
     status: selectedStatus,
@@ -81,8 +79,8 @@ export function CouponsManagement({ user }: CouponsManagementProps) {
   const coupons = couponsResponse?.data || [];
 
   const createMutation = useCreateCoupon();
-  const toggleStatusMutation = useToggleCouponStatus();
-  const deleteMutation = useDeleteCoupon();
+  const _toggleStatusMutation = useToggleCouponStatus();
+  const _deleteMutation = useDeleteCoupon();
 
   const statusOptions = [
     { value: 'all', label: 'All Coupons' },

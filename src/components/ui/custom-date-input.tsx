@@ -12,7 +12,7 @@ import {
 import { DateRange } from 'react-day-picker';
 
 interface CustomDateInputProps {
-  onDateRangeChange: (range: DateRange | undefined) => void;
+  onDateRangeChange: (_range: DateRange | undefined) => void;
   placeholder?: string;
   className?: string;
 }

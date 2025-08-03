@@ -38,15 +38,15 @@ export type PaymentMethod = (typeof PAYMENT_METHODS)[number]['id'];
 
 interface PaymentMethodStepProps {
   paymentMethod: PaymentMethod;
-  setPaymentMethod: (method: PaymentMethod) => void;
+  setPaymentMethod: (_method: PaymentMethod) => void;
   amountPaid: number;
-  setAmountPaid: (amount: number) => void;
+  setAmountPaid: (_amount: number) => void;
   total: number;
   discount: number;
   change: number;
   processing: boolean;
   isSplitPayment: boolean;
-  setIsSplitPayment: (split: boolean) => void;
+  setIsSplitPayment: (_split: boolean) => void;
   subtotal: number;
 }
 

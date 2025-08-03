@@ -9,7 +9,7 @@ import { toast } from 'sonner';
 import { logger } from '@/lib/logger';
 
 interface BarcodeScannerProps {
-  onScan: (result: string) => void;
+  onScan: (_result: string) => void;
   onClose: () => void;
   isOpen: boolean;
 }

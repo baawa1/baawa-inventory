@@ -29,7 +29,6 @@ import {
 import { Calendar } from '@/components/ui/calendar';
 import {
   IconArrowLeft,
-  IconTicket,
   IconPercentage,
   IconCurrencyNaira,
   IconRefresh,
@@ -48,7 +47,7 @@ interface CreateCouponFormProps {
   };
 }
 
-export function CreateCouponForm({ user }: CreateCouponFormProps) {
+export function CreateCouponForm({ user: _user }: CreateCouponFormProps) {
   const router = useRouter();
   const [formData, setFormData] = useState({
     code: '',
@@ -121,7 +120,7 @@ export function CreateCouponForm({ user }: CreateCouponFormProps) {
       await createMutation.mutateAsync(couponData);
       toast.success('Coupon created successfully!');
       router.push('/pos/coupons');
-    } catch (error) {
+    } catch (_error) {
       // Error is handled by the mutation hook
     }
   };

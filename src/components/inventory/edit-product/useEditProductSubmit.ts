@@ -4,8 +4,8 @@ import { toast } from 'sonner';
 
 export function useEditProductSubmit(
   productId: number,
-  setIsSubmitting: (loading: boolean) => void,
-  setSubmitError: (error: string | null) => void,
+  setIsSubmitting: (_loading: boolean) => void,
+  setSubmitError: (_error: string | null) => void,
   onSuccess: () => void
 ) {
   const onSubmit = async (

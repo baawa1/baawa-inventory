@@ -13,8 +13,8 @@ interface CustomerInfoStepProps {
     address: string;
   };
   onCustomerInfoChange: (
-    field: keyof CustomerInfoStepProps['customerInfo'],
-    value: string
+    _field: keyof CustomerInfoStepProps['customerInfo'],
+    _value: string
   ) => void;
   onNext: () => void;
   onBack: () => void;

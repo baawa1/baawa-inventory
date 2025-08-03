@@ -140,17 +140,20 @@ export function PaymentInterface({
 
   // Handle coupon change
   const handleCouponChange = (
-    coupon: CouponData | null,
-    discountAmount: number
+    _coupon: CouponData | null,
+    _discountAmount: number
   ) => {
-    console.log('handleCouponChange called:', { coupon, discountAmount });
-    setAppliedCoupon(coupon);
-    setCouponDiscount(discountAmount);
+    console.log('handleCouponChange called:', {
+      coupon: _coupon,
+      discountAmount: _discountAmount,
+    });
+    setAppliedCoupon(_coupon);
+    setCouponDiscount(_discountAmount);
 
-    if (coupon) {
+    if (_coupon) {
       // If coupon is applied, reset manual discount and use only coupon discount
       setDiscountValue(0);
-      onDiscountChange(discountAmount);
+      onDiscountChange(_discountAmount);
     } else {
       // If coupon is removed, keep manual discount if any
       const manualDiscount =

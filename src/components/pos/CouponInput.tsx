@@ -13,7 +13,7 @@ import type { ValidateCouponResponse } from '@/hooks/api/useCoupons';
 
 interface CouponInputProps {
   totalAmount: number;
-  onCouponApplied: (couponData: ValidateCouponResponse) => void;
+  onCouponApplied: (_couponData: ValidateCouponResponse) => void;
   onCouponRemoved: () => void;
   appliedCoupon?: ValidateCouponResponse | null;
 }
@@ -41,7 +41,7 @@ export function CouponInput({
 
       onCouponApplied(result);
       setCouponCode('');
-    } catch (error) {
+    } catch (_error) {
       // Error is handled by the mutation hook
     } finally {
       setIsValidating(false);

@@ -235,7 +235,7 @@ export const STOCK_RECONCILIATION_COLUMNS: TableColumn[] = [
 
 interface ColumnCustomizerProps {
   columns?: TableColumn[];
-  onColumnsChange: (visibleColumns: string[]) => void;
+  onColumnsChange: (_visibleColumns: string[]) => void;
   localStorageKey?: string;
 }
 

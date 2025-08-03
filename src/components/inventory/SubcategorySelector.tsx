@@ -22,7 +22,7 @@ import {
 
 interface SubcategorySelectorProps {
   value?: number | null;
-  onChange: (value: number | null) => void;
+  onChange: (_value: number | null) => void;
   placeholder?: string;
   disabled?: boolean;
   showTopLevel?: boolean;

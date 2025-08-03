@@ -19,7 +19,7 @@ interface ErrorBoundaryState {
 interface ErrorBoundaryProps {
   children: React.ReactNode;
   fallback?: React.ComponentType<ErrorFallbackProps>;
-  onError?: (error: Error, errorInfo: React.ErrorInfo) => void;
+  onError?: (_error: Error, _errorInfo: React.ErrorInfo) => void;
 }
 
 interface ErrorFallbackProps {
@@ -124,7 +124,7 @@ export function FormErrorBoundary({
 }: {
   children: React.ReactNode;
   formName: string;
-  onError?: (error: Error) => void;
+  onError?: (_error: Error) => void;
 }) {
   const handleError = (error: Error, errorInfo: React.ErrorInfo) => {
     console.error(`Form error in ${formName}:`, error, errorInfo);

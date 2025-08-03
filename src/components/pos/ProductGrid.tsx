@@ -41,7 +41,7 @@ interface Product {
 }
 
 interface ProductGridProps {
-  onProductSelect: (product: Omit<Product, 'quantity'>) => void;
+  onProductSelect: (_product: Omit<Product, 'quantity'>) => void;
   disabled?: boolean;
 }
 

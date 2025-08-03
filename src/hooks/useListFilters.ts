@@ -7,7 +7,7 @@ export interface ListFiltersState {
 
 export interface UseListFiltersOptions<T extends ListFiltersState> {
   initialFilters: T;
-  onFilterChange?: (filters: T) => void;
+  onFilterChange?: (_filters: T) => void;
 }
 
 export function useListFilters<T extends ListFiltersState>({

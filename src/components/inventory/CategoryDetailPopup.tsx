@@ -42,14 +42,14 @@ interface CategoryDetailPopupProps {
   categoryId: number | null;
   user: User;
   open: boolean;
-  onOpenChange: (open: boolean) => void;
-  onCategoryChange?: (categoryId: number) => void;
+  onOpenChange: (_open: boolean) => void;
+  onCategoryChange?: (_categoryId: number) => void;
 }
 
 export default function CategoryDetailPopup({
-  categoryId,
+  categoryId: _categoryId,
   user,
-  open,
+  open: _open,
   onOpenChange,
   onCategoryChange,
 }: CategoryDetailPopupProps) {
