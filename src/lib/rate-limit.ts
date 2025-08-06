@@ -16,7 +16,7 @@ interface RateLimitConfig {
   windowMs: number; // Time window in milliseconds
   maxRequests: number; // Maximum requests per window
   message?: string; // Custom error message
-  keyGenerator?: (req: NextRequest) => string; // Custom key generator
+  keyGenerator?: (_req: NextRequest) => string; // Custom key generator
 }
 
 // Default configurations for different endpoints
@@ -59,29 +59,29 @@ setInterval(() => {
 
 // Generate key from request
 function generateKey(
-  req: NextRequest,
-  keyGenerator?: (req: NextRequest) => string
+  _req: NextRequest,
+  keyGenerator?: (_req: NextRequest) => string
 ): string {
   if (keyGenerator) {
-    return keyGenerator(req);
+    return keyGenerator(_req);
   }
 
   // Use IP address as default key
-  const forwarded = req.headers.get('x-forwarded-for');
+  const forwarded = _req.headers.get('x-forwarded-for');
   const ip = forwarded
     ? forwarded.split(',')[0]
-    : req.headers.get('x-real-ip') || 'unknown';
-  const pathname = req.nextUrl.pathname;
+    : _req.headers.get('x-real-ip') || 'unknown';
+  const pathname = _req.nextUrl.pathname;
 
   return `${ip}:${pathname}`;
 }
 
 // Rate limiting middleware
 export function withRateLimit(config: RateLimitConfig) {
-  return function (handler: (req: NextRequest) => Promise<NextResponse>) {
-    return async (req: NextRequest): Promise<NextResponse> => {
+  return function (handler: (_req: NextRequest) => Promise<NextResponse>) {
+    return async (_req: NextRequest): Promise<NextResponse> => {
       const now = Date.now();
-      const key = generateKey(req, config.keyGenerator);
+      const key = generateKey(_req, config.keyGenerator);
 
       // Get current count for this key
       const current = store[key];
@@ -94,7 +94,7 @@ export function withRateLimit(config: RateLimitConfig) {
         };
 
         // Add rate limit headers
-        const response = await handler(req);
+        const response = await handler(_req);
         response.headers.set(
           'X-RateLimit-Limit',
           config.maxRequests.toString()
@@ -118,7 +118,7 @@ export function withRateLimit(config: RateLimitConfig) {
           count: current.count,
           limit: config.maxRequests,
           resetTime: new Date(current.resetTime).toISOString(),
-          pathname: req.nextUrl.pathname,
+          pathname: _req.nextUrl.pathname,
         });
 
         return NextResponse.json(
@@ -145,7 +145,7 @@ export function withRateLimit(config: RateLimitConfig) {
       current.count++;
 
       // Continue with request
-      const response = await handler(req);
+      const response = await handler(_req);
 
       // Add rate limit headers
       response.headers.set('X-RateLimit-Limit', config.maxRequests.toString());
@@ -172,14 +172,14 @@ export const withAdminRateLimit = withRateLimit(RATE_LIMIT_CONFIGS.ADMIN);
 // Combined middleware for authenticated endpoints
 export function withAuthAndRateLimit(
   rateLimitConfig: RateLimitConfig = RATE_LIMIT_CONFIGS.API,
-  handler: (req: NextRequest) => Promise<NextResponse>
+  handler: (_req: NextRequest) => Promise<NextResponse>
 ) {
   return withRateLimit(rateLimitConfig)(handler);
 }
 
 // User-specific rate limiting (requires authentication)
 export function withUserRateLimit(config: RateLimitConfig) {
-  return function (handler: (req: NextRequest) => Promise<NextResponse>) {
+  return function (handler: (_req: NextRequest) => Promise<NextResponse>) {
     const rateLimitedHandler = withRateLimit({
       ...config,
       keyGenerator: (req: NextRequest) => {

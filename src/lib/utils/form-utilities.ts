@@ -97,17 +97,17 @@ export const formUtils = {
   // Handle form submission with loading states and error handling
   createSubmitHandler: <T extends Record<string, unknown>>(
     form: UseFormReturn<T>,
-    onSubmit: (data: T) => Promise<void>,
+    onSubmit: (_data: T) => Promise<void>,
     options?: {
       resetOnSuccess?: boolean;
       successMessage?: string;
       onSuccess?: () => void;
-      onError?: (error: Error) => void;
+      onError?: (_error: Error) => void;
     }
   ) => {
-    return async (data: T) => {
+    return async (_data: T) => {
       try {
-        await onSubmit(data);
+        await onSubmit(_data);
 
         if (options?.resetOnSuccess) {
           form.reset();
@@ -119,10 +119,10 @@ export const formUtils = {
         }
 
         options?.onSuccess?.();
-      } catch (error) {
+      } catch (_error) {
         const errorMessage =
-          error instanceof Error
-            ? error.message
+          _error instanceof Error
+            ? _error.message
             : 'An unexpected error occurred';
 
         // Set form error
@@ -131,7 +131,7 @@ export const formUtils = {
           message: errorMessage,
         });
 
-        options?.onError?.(error as Error);
+        options?.onError?.(_error as Error);
       }
     };
   },

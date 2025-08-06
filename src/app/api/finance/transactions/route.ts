@@ -290,7 +290,7 @@ export const POST = withAuth(async (request: AuthenticatedRequest) => {
       try {
         await createAuditLog({
           userId: parseInt(request.user.id),
-          action: AuditLogAction.SALE_CREATED,
+          action: AuditLogAction._SALE_CREATED,
           tableName: 'financial_transactions',
           recordId: result.id,
           newValues: completeTransaction,

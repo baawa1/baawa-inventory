@@ -158,7 +158,7 @@ export class FileStorageService {
   /**
    * Get upload progress (for future implementation)
    */
-  onUploadProgress(callback: (progress: number) => void): void {
+  onUploadProgress(callback: (_progress: number) => void): void {
     // This can be implemented with XMLHttpRequest or fetch with progress tracking
     // For now, we'll use a simple implementation
     callback(100);

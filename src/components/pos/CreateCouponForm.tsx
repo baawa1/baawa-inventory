@@ -328,8 +328,10 @@ export function CreateCouponForm({ user: _user }: CreateCouponFormProps) {
                   <PopoverContent className="w-auto p-0" align="start">
                     <Calendar
                       mode="single"
-                      selected={formData.validFrom}
-                      onSelect={date => handleInputChange('validFrom', date)}
+                      selected={formData.validFrom || undefined}
+                      onSelect={date =>
+                        handleInputChange('validFrom', date || null)
+                      }
                       disabled={date => date < new Date()}
                       initialFocus
                     />
@@ -364,8 +366,10 @@ export function CreateCouponForm({ user: _user }: CreateCouponFormProps) {
                   <PopoverContent className="w-auto p-0" align="start">
                     <Calendar
                       mode="single"
-                      selected={formData.validUntil}
-                      onSelect={date => handleInputChange('validUntil', date)}
+                      selected={formData.validUntil || undefined}
+                      onSelect={date =>
+                        handleInputChange('validUntil', date || null)
+                      }
                       disabled={date => date < new Date()}
                       initialFocus
                     />

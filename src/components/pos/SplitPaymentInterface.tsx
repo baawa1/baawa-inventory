@@ -64,7 +64,7 @@ export const SplitPaymentInterface: React.FC<SplitPaymentInterfaceProps> = ({
   ) => {
     onSplitPaymentsChange(
       splitPayments.map(payment =>
-        payment.id === id ? { ...payment, [field]: value } : payment
+        payment.id === id ? { ...payment, [_field]: _value } : payment
       )
     );
   };

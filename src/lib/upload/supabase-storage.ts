@@ -249,7 +249,7 @@ class SupabaseStorageService {
   /**
    * Get upload progress (for future implementation)
    */
-  onUploadProgress(callback: (progress: number) => void): void {
+  onUploadProgress(callback: (_progress: number) => void): void {
     // Supabase doesn't provide upload progress in the client SDK
     // This would need to be implemented with XMLHttpRequest for progress tracking
     callback(100);

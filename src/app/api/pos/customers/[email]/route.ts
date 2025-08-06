@@ -5,8 +5,9 @@ import { USER_ROLES, hasRole } from '@/lib/auth/roles';
 
 export async function PUT(
   request: NextRequest,
-  { params }: { params: { email: string } }
+  { params }: { params: Promise<{ email: string }> }
 ) {
+  const resolvedParams = await params;
   try {
     const session = await auth();
 
@@ -25,7 +26,7 @@ export async function PUT(
       return NextResponse.json({ error: 'Forbidden' }, { status: 403 });
     }
 
-    const customerEmail = decodeURIComponent(params.email);
+    const customerEmail = decodeURIComponent(resolvedParams.email);
     const body = await request.json();
     const { name, email, phone } = body;
 
@@ -91,8 +92,9 @@ export async function PUT(
 
 export async function GET(
   request: NextRequest,
-  { params }: { params: { email: string } }
+  { params }: { params: Promise<{ email: string }> }
 ) {
+  const resolvedParams = await params;
   try {
     const session = await auth();
 
@@ -111,7 +113,7 @@ export async function GET(
       return NextResponse.json({ error: 'Forbidden' }, { status: 403 });
     }
 
-    const customerEmail = decodeURIComponent(params.email);
+    const customerEmail = decodeURIComponent(resolvedParams.email);
 
     // Get customer data from sales transactions
     const customerTransactions = await prisma.salesTransaction.findMany({
@@ -148,11 +150,14 @@ export async function GET(
       totalSpent,
       totalOrders,
       averageOrderValue,
-      lastPurchase: lastPurchase.created_at.toISOString(),
-      firstPurchase: firstPurchase.created_at.toISOString(),
-      daysSinceLastPurchase: Math.floor(
-        (Date.now() - lastPurchase.created_at.getTime()) / (1000 * 60 * 60 * 24)
-      ),
+      lastPurchase: lastPurchase.created_at?.toISOString() || null,
+      firstPurchase: firstPurchase.created_at?.toISOString() || null,
+      daysSinceLastPurchase: lastPurchase.created_at
+        ? Math.floor(
+            (Date.now() - lastPurchase.created_at.getTime()) /
+              (1000 * 60 * 60 * 24)
+          )
+        : null,
     };
 
     return NextResponse.json({

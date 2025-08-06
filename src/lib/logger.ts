@@ -8,14 +8,14 @@ interface LogContext {
 }
 
 interface Logger {
-  error(message: string, context?: LogContext): void;
-  warn(message: string, context?: LogContext): void;
-  info(message: string, context?: LogContext): void;
-  debug(message: string, context?: LogContext): void;
-  auth(message: string, context?: LogContext): void;
-  session(message: string, context?: LogContext): void;
-  security(message: string, context?: LogContext): void;
-  upload(message: string, context?: LogContext): void;
+  error(_message: string, _context?: LogContext): void;
+  warn(_message: string, _context?: LogContext): void;
+  info(_message: string, _context?: LogContext): void;
+  debug(_message: string, _context?: LogContext): void;
+  auth(_message: string, _context?: LogContext): void;
+  session(_message: string, _context?: LogContext): void;
+  security(_message: string, _context?: LogContext): void;
+  upload(_message: string, _context?: LogContext): void;
 }
 
 class StructuredLogger implements Logger {
@@ -56,38 +56,38 @@ class StructuredLogger implements Logger {
     }
   }
 
-  error(message: string, context?: LogContext): void {
-    this.log('error', message, context);
+  error(_message: string, _context?: LogContext): void {
+    this.log('error', _message, _context);
   }
 
-  warn(message: string, context?: LogContext): void {
-    this.log('warn', message, context);
+  warn(_message: string, _context?: LogContext): void {
+    this.log('warn', _message, _context);
   }
 
-  info(message: string, context?: LogContext): void {
-    this.log('info', message, context);
+  info(_message: string, _context?: LogContext): void {
+    this.log('info', _message, _context);
   }
 
-  debug(message: string, context?: LogContext): void {
+  debug(_message: string, _context?: LogContext): void {
     if (this.isDevelopment) {
-      this.log('debug', message, context);
+      this.log('debug', _message, _context);
     }
   }
 
-  auth(message: string, context?: LogContext): void {
-    this.log('auth', message, context);
+  auth(_message: string, _context?: LogContext): void {
+    this.log('auth', _message, _context);
   }
 
-  session(message: string, context?: LogContext): void {
-    this.log('session', message, context);
+  session(_message: string, _context?: LogContext): void {
+    this.log('session', _message, _context);
   }
 
-  security(message: string, context?: LogContext): void {
-    this.log('security', message, context);
+  security(_message: string, _context?: LogContext): void {
+    this.log('security', _message, _context);
   }
 
-  upload(message: string, context?: LogContext): void {
-    this.log('upload', message, context);
+  upload(_message: string, _context?: LogContext): void {
+    this.log('upload', _message, _context);
   }
 }
 

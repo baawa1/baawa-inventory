@@ -53,18 +53,22 @@ export default function CategoryDetailPopup({
   onOpenChange,
   onCategoryChange,
 }: CategoryDetailPopupProps) {
-  const { data: categoryData, isLoading, error } = useCategory(categoryId || 0);
+  const {
+    data: categoryData,
+    isLoading,
+    error,
+  } = useCategory(_categoryId || 0);
 
   // Permission checks
   const canManageCategories = ['ADMIN', 'MANAGER'].includes(user.role);
 
-  if (!categoryId) {
+  if (!_categoryId) {
     return null;
   }
 
   return (
     <>
-      <Dialog open={open} onOpenChange={onOpenChange}>
+      <Dialog open={_open} onOpenChange={onOpenChange}>
         <DialogContent className="max-h-[90vh] max-w-4xl overflow-y-auto">
           <DialogHeader>
             <DialogTitle className="flex items-center gap-2">

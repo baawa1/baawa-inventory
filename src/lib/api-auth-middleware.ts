@@ -43,7 +43,7 @@ export function withPOSAuth<T extends unknown[]>(
             success: false,
             errorMessage: 'No session found',
           },
-          request
+          _request
         );
 
         return NextResponse.json(
@@ -61,7 +61,7 @@ export function withPOSAuth<T extends unknown[]>(
             success: false,
             errorMessage: 'Invalid session data',
           },
-          request
+          _request
         );
 
         return NextResponse.json(
@@ -80,7 +80,7 @@ export function withPOSAuth<T extends unknown[]>(
             success: false,
             errorMessage: 'Insufficient permissions for POS access',
           },
-          request
+          _request
         );
 
         return NextResponse.json(
@@ -99,7 +99,7 @@ export function withPOSAuth<T extends unknown[]>(
             success: false,
             errorMessage: `User status: ${session.user.status}`,
           },
-          request
+          _request
         );
 
         return NextResponse.json(
@@ -131,7 +131,7 @@ export function withPOSAuth<T extends unknown[]>(
           errorMessage:
             error instanceof Error ? error.message : 'Unknown error',
         },
-        request
+        _request
       );
 
       return NextResponse.json(

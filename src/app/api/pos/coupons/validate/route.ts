@@ -11,7 +11,7 @@ const validateCouponSchema = z.object({
 
 export const POST = withPermission(
   [USER_ROLES.ADMIN, USER_ROLES.MANAGER, USER_ROLES.STAFF],
-  async (req: NextRequest, { user: _user }) => {
+  async (req: NextRequest) => {
     try {
       const body = await req.json();
       const { code, totalAmount } = validateCouponSchema.parse(body);

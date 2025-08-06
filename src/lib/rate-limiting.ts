@@ -9,7 +9,7 @@ import { logger } from './logger';
 interface RateLimitConfig {
   windowMs: number; // Time window in milliseconds
   maxRequests: number; // Maximum requests per window
-  keyGenerator?: (request: NextRequest) => string; // Custom key generator
+  keyGenerator?: (_request: NextRequest) => string; // Custom key generator
   skipSuccessfulRequests?: boolean; // Skip rate limiting for successful requests
   skipFailedRequests?: boolean; // Skip rate limiting for failed requests
 }
@@ -47,17 +47,17 @@ export const RATE_LIMIT_CONFIGS = {
 /**
  * Generate rate limit key for a request
  */
-function generateKey(request: NextRequest, config: RateLimitConfig): string {
+function generateKey(_request: NextRequest, config: RateLimitConfig): string {
   if (config.keyGenerator) {
-    return config.keyGenerator(request);
+    return config.keyGenerator(_request);
   }
 
   // Default: IP + User Agent
   const ip =
-    request.headers.get('x-forwarded-for') ||
-    request.headers.get('x-real-ip') ||
+    _request.headers.get('x-forwarded-for') ||
+    _request.headers.get('x-real-ip') ||
     'unknown';
-  const userAgent = request.headers.get('user-agent') || 'unknown';
+  const userAgent = _request.headers.get('user-agent') || 'unknown';
   return `${ip}:${userAgent}`;
 }
 
@@ -122,13 +122,13 @@ export function withRateLimit(
   config: RateLimitConfig = RATE_LIMIT_CONFIGS.API
 ) {
   return function <T extends any[]>(
-    handler: (request: NextRequest, ...args: T) => Promise<NextResponse>
+    handler: (_request: NextRequest, ..._args: T) => Promise<NextResponse>
   ) {
     return async function (
-      request: NextRequest,
-      ...args: T
+      _request: NextRequest,
+      ..._args: T
     ): Promise<NextResponse> {
-      const key = generateKey(request, config);
+      const key = generateKey(_request, config);
       const rateLimit = checkRateLimit(key, config);
 
       // Set rate limit headers
@@ -143,10 +143,10 @@ export function withRateLimit(
           key,
           limit: config.maxRequests,
           windowMs: config.windowMs,
-          userAgent: request.headers.get('user-agent'),
+          userAgent: _request.headers.get('user-agent'),
           ip:
-            request.headers.get('x-forwarded-for') ||
-            request.headers.get('x-real-ip'),
+            _request.headers.get('x-forwarded-for') ||
+            _request.headers.get('x-real-ip'),
         });
 
         return NextResponse.json(
@@ -163,7 +163,7 @@ export function withRateLimit(
       }
 
       // Call the original handler
-      const response = await handler(request, ...args);
+      const response = await handler(_request, ..._args);
 
       // Add rate limit headers to response
       Object.entries(headers).forEach(([key, value]) => {

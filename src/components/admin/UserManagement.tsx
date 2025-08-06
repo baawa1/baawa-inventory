@@ -82,25 +82,36 @@ const UserManagement = ({ activeTab }: UserManagementProps) => {
       if (editingUser) {
         // Update existing user
         const updateData: UpdateUserData = {
-          id: editingUser.id,
-          name: data.name,
+          firstName: data.firstName,
+          lastName: data.lastName,
           email: data.email,
           role: data.role,
           userStatus: data.userStatus,
         };
 
-        await updateUserMutation.mutateAsync(updateData);
+        await updateUserMutation.mutateAsync({
+          id: parseInt(editingUser.id),
+          ...updateData,
+        });
         toast.success('User updated successfully');
       } else {
         // Create new user
-        const createData: CreateUserData = {
-          name: data.name,
-          email: data.email,
-          role: data.role,
-          userStatus: data.userStatus,
-        };
+        if ('password' in data && 'confirmPassword' in data) {
+          const createData: CreateUserData = {
+            firstName: data.firstName,
+            lastName: data.lastName,
+            email: data.email,
+            role: data.role,
+            userStatus: data.userStatus,
+            password: data.password,
+          };
 
-        await createUserMutation.mutateAsync(createData);
+          await createUserMutation.mutateAsync(createData);
+        } else {
+          throw new Error(
+            'Password and confirm password are required for new users'
+          );
+        }
         toast.success('User created successfully');
       }
 
@@ -162,7 +173,7 @@ const UserManagement = ({ activeTab }: UserManagementProps) => {
             <IconUserX className="text-muted-foreground mx-auto mb-4 h-12 w-12" />
             <h3 className="text-lg font-semibold">Access Denied</h3>
             <p className="text-muted-foreground text-sm">
-              You don't have permission to access this page.
+              You don&apos;t have permission to access this page.
             </p>
           </div>
         </CardContent>
@@ -283,11 +294,13 @@ const UserManagement = ({ activeTab }: UserManagementProps) => {
 
       {/* User Dialog */}
       <UserDialog
-        open={isDialogOpen}
-        onOpenChange={handleDialogChange}
+        isOpen={isDialogOpen}
+        onOpenChangeAction={handleDialogChange}
         user={editingUser}
-        onSubmit={handleSubmit}
-        isLoading={createUserMutation.isPending || updateUserMutation.isPending}
+        onSubmitAction={handleSubmit}
+        isSubmitting={
+          createUserMutation.isPending || updateUserMutation.isPending
+        }
       />
     </div>
   );

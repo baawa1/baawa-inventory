@@ -5,10 +5,11 @@ import { prisma } from '@/lib/db';
 export const GET = withPOSAuth(
   async (
     request: AuthenticatedRequest,
-    { params }: { params: { email: string } }
+    { params }: { params: Promise<{ email: string }> }
   ) => {
+    const resolvedParams = await params;
     try {
-      const customerEmail = decodeURIComponent(params.email);
+      const customerEmail = decodeURIComponent(resolvedParams.email);
 
       // Get all orders for this customer
       const orders = await prisma.salesTransaction.findMany({

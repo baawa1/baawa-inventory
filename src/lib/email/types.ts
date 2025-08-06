@@ -30,17 +30,17 @@ export interface EmailProvider {
   /**
    * Send a single email
    */
-  sendEmail(options: EmailOptions): Promise<void>;
+  sendEmail(_options: EmailOptions): Promise<void>;
 
   /**
    * Optionally send a single email and return the provider email ID (for E2E)
    */
-  sendEmailWithId?(options: EmailOptions): Promise<string | undefined>;
+  sendEmailWithId?(_options: EmailOptions): Promise<string | undefined>;
 
   /**
    * Send multiple emails (batch)
    */
-  sendBulkEmails(emails: EmailOptions[]): Promise<void>;
+  sendBulkEmails(_emails: EmailOptions[]): Promise<void>;
 
   /**
    * Validate email configuration
