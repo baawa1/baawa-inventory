@@ -90,6 +90,7 @@ export const GET = withAuth(async (request: AuthenticatedRequest) => {
                 sales_transactions: {
                   select: {
                     created_at: true,
+                    payment_status: true,
                   },
                 },
               },

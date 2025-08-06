@@ -44,7 +44,7 @@ interface AnalyticsResponse {
 // Database query result interfaces
 interface SalesAggregates {
   _sum: {
-    total_amount: number | null;
+    total_amount: any; // Prisma Decimal type
   };
   _count: {
     id: number;
@@ -59,14 +59,14 @@ interface TopProductResult {
   product_id: number | null;
   _sum: {
     quantity: number | null;
-    total_price: number | null;
+    total_price: any; // Prisma Decimal type
   };
 }
 
 interface RevenueDataResult {
   created_at: Date | null;
   _sum: {
-    total_amount: number | null;
+    total_amount: any; // Prisma Decimal type
   };
 }
 
@@ -74,7 +74,7 @@ interface RecentTransactionResult {
   id: number;
   transaction_number: string;
   customer_name: string | null;
-  total_amount: number;
+  total_amount: any; // Prisma Decimal type
   created_at: Date | null;
 }
 
@@ -194,7 +194,7 @@ export const GET = withAuth(async (request: AuthenticatedRequest) => {
           },
         },
         take: 5,
-      }) as Promise<TopProductResult[]>,
+      }),
 
       // Current period revenue by day
       prisma.salesTransaction.groupBy({
@@ -212,7 +212,7 @@ export const GET = withAuth(async (request: AuthenticatedRequest) => {
         orderBy: {
           created_at: 'asc',
         },
-      }) as Promise<RevenueDataResult[]>,
+      }),
 
       // Current period recent transactions
       prisma.salesTransaction.findMany({
@@ -234,7 +234,7 @@ export const GET = withAuth(async (request: AuthenticatedRequest) => {
           created_at: 'desc',
         },
         take: 5,
-      }) as Promise<RecentTransactionResult[]>,
+      }),
     ]);
 
     // Get previous period data for comparison

@@ -252,7 +252,7 @@ export default function AddSupplierForm() {
             <CardHeader>
               <CardTitle>Basic Information</CardTitle>
               <CardDescription>
-                Enter the supplier's contact and business details.
+                Enter the supplier&apos;s contact and business details.
               </CardDescription>
             </CardHeader>
             <CardContent className="space-y-4">
@@ -395,7 +395,7 @@ export default function AddSupplierForm() {
             <CardHeader>
               <CardTitle>Address Information</CardTitle>
               <CardDescription>
-                Supplier's physical address and location details.
+                Supplier&apos;s physical address and location details.
               </CardDescription>
             </CardHeader>
             <CardContent className="space-y-4">

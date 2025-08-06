@@ -66,11 +66,11 @@ export interface InventoryPageLayoutProps {
   // Filters
   searchPlaceholder?: string;
   searchValue: string;
-  onSearchChange: (value: string) => void;
+  onSearchChange: (_value: string) => void;
   isSearching?: boolean;
   filters?: FilterConfig[];
   filterValues?: Record<string, any>;
-  onFilterChange: (key: string, value: any) => void;
+  onFilterChange: (_key: string, _value: any) => void;
   onResetFilters: () => void;
   quickFilters?: React.ReactNode;
   beforeFiltersContent?: React.ReactNode;
@@ -78,7 +78,7 @@ export interface InventoryPageLayoutProps {
   // Sort
   sortOptions?: SortOption[];
   currentSort?: string;
-  onSortChange?: (value: string) => void;
+  onSortChange?: (_value: string) => void;
 
   // Table
   tableTitle: string;
@@ -87,17 +87,17 @@ export interface InventoryPageLayoutProps {
   showingText?: string;
   columns: ColumnConfig[];
   visibleColumns: string[];
-  onColumnsChange?: (columns: string[]) => void;
+  onColumnsChange?: (_columns: string[]) => void;
   columnCustomizerKey?: string;
   columnCustomizerColumns?: import('@/components/inventory/ColumnCustomizer').TableColumn[];
   data: any[];
-  renderCell: (item: any, columnKey: string) => React.ReactNode;
-  renderActions?: (item: any) => React.ReactNode;
+  renderCell: (_item: any, _columnKey: string) => React.ReactNode;
+  renderActions?: (_item: any) => React.ReactNode;
 
   // Pagination
   pagination: PaginationState;
-  onPageChange: (page: number) => void;
-  onPageSizeChange: (size: number) => void;
+  onPageChange: (_page: number) => void;
+  onPageSizeChange: (_size: number) => void;
 
   // Loading states
   isLoading?: boolean;

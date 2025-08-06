@@ -2,13 +2,7 @@
 
 import * as React from 'react';
 import { useSession } from 'next-auth/react';
-import {
-  IconChartBar,
-  IconCash,
-  IconDashboard,
-  IconShoppingCart,
-  IconUsers,
-} from '@tabler/icons-react';
+import { IconUsers } from '@tabler/icons-react';
 
 import { NavInventory } from '@/components/nav-inventory';
 import { NavMain } from '@/components/nav-main';
@@ -26,29 +20,6 @@ import {
   SidebarMenuButton,
   SidebarMenuItem,
 } from '@/components/ui/sidebar';
-
-const navMain = [
-  {
-    title: 'Dashboard',
-    url: '/dashboard',
-    icon: IconDashboard,
-  },
-  {
-    title: 'POS System',
-    url: '/pos',
-    icon: IconShoppingCart,
-  },
-  {
-    title: 'Finance Manager',
-    url: '/finance',
-    icon: IconCash,
-  },
-  {
-    title: 'Reports',
-    url: '/reports',
-    icon: IconChartBar,
-  },
-];
 
 const navSecondary = [
   {
@@ -97,7 +68,7 @@ export function AppSidebar({ ...props }: React.ComponentProps<typeof Sidebar>) {
         </SidebarMenu>
       </SidebarHeader>
       <SidebarContent>
-        <NavMain items={navMain} />
+        <NavMain />
         <NavPOS />
         <NavInventory />
         <NavFinance />

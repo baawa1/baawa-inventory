@@ -1,4 +1,7 @@
 -- CreateEnum
+CREATE TYPE "CouponType" AS ENUM ('PERCENTAGE', 'FIXED');
+
+-- CreateEnum
 CREATE TYPE "UserRole" AS ENUM ('ADMIN', 'MANAGER', 'STAFF');
 
 -- CreateEnum
@@ -213,6 +216,7 @@ CREATE TABLE "sales_items" (
     "transaction_id" INTEGER NOT NULL,
     "unit_price" DECIMAL(10,2) NOT NULL,
     "variant_id" INTEGER,
+    "coupon_id" INTEGER,
 
     CONSTRAINT "sales_items_pkey" PRIMARY KEY ("id")
 );
@@ -431,6 +435,27 @@ CREATE TABLE "financial_reports" (
     CONSTRAINT "financial_reports_pkey" PRIMARY KEY ("id")
 );
 
+-- CreateTable
+CREATE TABLE "coupons" (
+    "id" SERIAL NOT NULL,
+    "code" VARCHAR(50) NOT NULL,
+    "name" VARCHAR(255) NOT NULL,
+    "description" TEXT,
+    "type" "CouponType" NOT NULL,
+    "value" DECIMAL(10,2) NOT NULL,
+    "minimum_amount" DECIMAL(10,2),
+    "max_uses" INTEGER,
+    "current_uses" INTEGER NOT NULL DEFAULT 0,
+    "is_active" BOOLEAN NOT NULL DEFAULT true,
+    "valid_from" TIMESTAMPTZ(6) NOT NULL,
+    "valid_until" TIMESTAMPTZ(6) NOT NULL,
+    "created_by" INTEGER NOT NULL,
+    "created_at" TIMESTAMPTZ(6) NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    "updated_at" TIMESTAMPTZ(6) NOT NULL DEFAULT CURRENT_TIMESTAMP,
+
+    CONSTRAINT "coupons_pkey" PRIMARY KEY ("id")
+);
+
 -- CreateIndex
 CREATE UNIQUE INDEX "users_email_key" ON "users"("email");
 
@@ -541,6 +566,9 @@ CREATE INDEX "idx_sales_items_transaction_id" ON "sales_items"("transaction_id")
 
 -- CreateIndex
 CREATE INDEX "idx_sales_items_variant_id" ON "sales_items"("variant_id");
+
+-- CreateIndex
+CREATE INDEX "idx_sales_items_coupon_id" ON "sales_items"("coupon_id");
 
 -- CreateIndex
 CREATE INDEX "idx_split_payments_transaction_id" ON "split_payments"("transaction_id");
@@ -677,6 +705,24 @@ CREATE INDEX "idx_financial_reports_period_start" ON "financial_reports"("period
 -- CreateIndex
 CREATE INDEX "idx_financial_reports_generated_by" ON "financial_reports"("generated_by");
 
+-- CreateIndex
+CREATE UNIQUE INDEX "coupons_code_key" ON "coupons"("code");
+
+-- CreateIndex
+CREATE INDEX "idx_coupons_code" ON "coupons"("code");
+
+-- CreateIndex
+CREATE INDEX "idx_coupons_active" ON "coupons"("is_active");
+
+-- CreateIndex
+CREATE INDEX "idx_coupons_valid_from" ON "coupons"("valid_from");
+
+-- CreateIndex
+CREATE INDEX "idx_coupons_valid_until" ON "coupons"("valid_until");
+
+-- CreateIndex
+CREATE INDEX "idx_coupons_created_by" ON "coupons"("created_by");
+
 -- AddForeignKey
 ALTER TABLE "users" ADD CONSTRAINT "users_approved_by_fkey" FOREIGN KEY ("approved_by") REFERENCES "users"("id") ON DELETE NO ACTION ON UPDATE NO ACTION;
 
@@ -706,6 +752,9 @@ ALTER TABLE "sales_items" ADD CONSTRAINT "sales_items_transaction_id_fkey" FOREI
 
 -- AddForeignKey
 ALTER TABLE "sales_items" ADD CONSTRAINT "sales_items_variant_id_fkey" FOREIGN KEY ("variant_id") REFERENCES "product_variants"("id") ON DELETE SET NULL ON UPDATE NO ACTION;
+
+-- AddForeignKey
+ALTER TABLE "sales_items" ADD CONSTRAINT "sales_items_coupon_id_fkey" FOREIGN KEY ("coupon_id") REFERENCES "coupons"("id") ON DELETE SET NULL ON UPDATE NO ACTION;
 
 -- AddForeignKey
 ALTER TABLE "split_payments" ADD CONSTRAINT "split_payments_transaction_id_fkey" FOREIGN KEY ("transaction_id") REFERENCES "sales_transactions"("id") ON DELETE CASCADE ON UPDATE NO ACTION;
@@ -775,4 +824,7 @@ ALTER TABLE "income_details" ADD CONSTRAINT "income_details_transaction_id_fkey"
 
 -- AddForeignKey
 ALTER TABLE "financial_reports" ADD CONSTRAINT "financial_reports_generated_by_fkey" FOREIGN KEY ("generated_by") REFERENCES "users"("id") ON DELETE RESTRICT ON UPDATE CASCADE;
+
+-- AddForeignKey
+ALTER TABLE "coupons" ADD CONSTRAINT "coupons_created_by_fkey" FOREIGN KEY ("created_by") REFERENCES "users"("id") ON DELETE RESTRICT ON UPDATE CASCADE;
 

@@ -67,13 +67,16 @@ export function PWAManager() {
       toast.success('App installed successfully!');
     };
 
-    window.addEventListener('beforeinstallprompt', handleBeforeInstallPrompt);
+    window.addEventListener(
+      'beforeinstallprompt',
+      handleBeforeInstallPrompt as EventListener
+    );
     window.addEventListener('appinstalled', handleAppInstalled);
 
     return () => {
       window.removeEventListener(
         'beforeinstallprompt',
-        handleBeforeInstallPrompt
+        handleBeforeInstallPrompt as EventListener
       );
       window.removeEventListener('appinstalled', handleAppInstalled);
     };

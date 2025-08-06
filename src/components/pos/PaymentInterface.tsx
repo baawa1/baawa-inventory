@@ -139,7 +139,7 @@ export function PaymentInterface({
   };
 
   // Handle coupon change
-  const handleCouponChange = (
+  const _handleCouponChange = (
     _coupon: CouponData | null,
     _discountAmount: number
   ) => {
@@ -339,7 +339,6 @@ export function PaymentInterface({
               subtotal={subtotal}
               processing={processing}
               appliedCoupon={appliedCoupon}
-              onCouponChange={handleCouponChange}
             />
           </div>
 

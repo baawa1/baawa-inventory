@@ -96,7 +96,7 @@ export const POST = withAuth(
       // Create audit log
       await createAuditLog({
         userId: parseInt(request.user.id),
-        action: AuditLogAction.SALE_CREATED, // Using existing action for now
+        action: AuditLogAction._SALE_CREATED, // Using existing action for now
         tableName: 'financial_transactions',
         recordId: transactionId,
         oldValues: transaction,

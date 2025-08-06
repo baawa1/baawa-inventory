@@ -126,10 +126,10 @@ export class CSRFProtection {
    * Middleware wrapper for CSRF protection
    */
   static withCSRF<T extends any[]>(
-    handler: (request: NextRequest, ...args: T) => Promise<Response>
+    handler: (_request: NextRequest, ..._args: T) => Promise<Response>
   ) {
-    return async (request: NextRequest, ...args: T): Promise<Response> => {
-      const verification = await this.verifyToken(request);
+    return async (_request: NextRequest, ..._args: T): Promise<Response> => {
+      const verification = await this.verifyToken(_request);
 
       if (!verification.valid) {
         return new Response(
@@ -144,7 +144,7 @@ export class CSRFProtection {
         );
       }
 
-      return await handler(request, ...args);
+      return await handler(_request, ..._args);
     };
   }
 }

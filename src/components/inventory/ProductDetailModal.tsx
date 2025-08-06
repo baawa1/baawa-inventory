@@ -58,14 +58,14 @@ export const ProductDetailModal: React.FC<ProductDetailModalProps> = ({
     isLoading,
     error,
     refetch,
-  } = useProduct(productId || 0);
+  } = useProduct(_productId || 0);
 
   // Carousel and description state
   const [currentImage, setCurrentImage] = useState(0);
   const [showFullDescription, setShowFullDescription] = useState(false);
 
   const handleRefresh = () => {
-    if (productId) {
+    if (_productId) {
       refetch();
       toast.success('Product details refreshed');
     }

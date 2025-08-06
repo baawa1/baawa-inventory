@@ -17,7 +17,6 @@ export const GET = withPermission(
         select: {
           id: true,
           email: true,
-          name: true,
           firstName: true,
           lastName: true,
           userStatus: true,
@@ -44,7 +43,6 @@ export const GET = withPermission(
         select: {
           id: true,
           email: true,
-          name: true,
           firstName: true,
           lastName: true,
           userStatus: true,
@@ -78,7 +76,11 @@ export const GET = withPermission(
           userData: user,
         })),
       ]
-        .sort((a, b) => new Date(b.time).getTime() - new Date(a.time).getTime())
+        .sort((a, b) => {
+          const timeA = a.time ? new Date(a.time).getTime() : 0;
+          const timeB = b.time ? new Date(b.time).getTime() : 0;
+          return timeB - timeA;
+        })
         .slice(0, 10);
 
       return NextResponse.json({

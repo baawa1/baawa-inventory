@@ -6,7 +6,7 @@ export interface TableColumn<T = Record<string, unknown>> {
   key: keyof T;
   label: string;
   sortable?: boolean;
-  render?: (value: unknown, row: T) => React.ReactNode;
+  render?: (_value: unknown, _row: T) => React.ReactNode;
   width?: string;
   align?: 'left' | 'center' | 'right';
   fixed?: boolean;
@@ -39,7 +39,7 @@ export const tableUtils = {
     label: string,
     options?: {
       sortable?: boolean;
-      render?: (value: unknown, row: T) => React.ReactNode;
+      render?: (_value: unknown, _row: T) => React.ReactNode;
       width?: string;
       align?: 'left' | 'center' | 'right';
     }
@@ -213,10 +213,10 @@ export const useTableState = <T extends Record<string, unknown>>(
 
   // Handle filter changes
   const updateFilter = (
-    key: string,
-    value: string | number | boolean | null
+    _key: string,
+    _value: string | number | boolean | null
   ) => {
-    setFilters(prev => ({ ...prev, [key]: value }));
+    setFilters(prev => ({ ...prev, [_key]: _value }));
     // Reset to first page when filters change
     setPagination(prev => ({ ...prev, page: 1 }));
   };

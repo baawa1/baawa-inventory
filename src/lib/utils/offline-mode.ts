@@ -29,7 +29,7 @@ export interface OfflineQueueStats {
 class OfflineModeManager {
   private isOnline: boolean =
     typeof navigator !== 'undefined' ? navigator.onLine : true;
-  private listeners: Set<(status: NetworkStatus) => void> = new Set();
+  private listeners: Set<(_status: NetworkStatus) => void> = new Set();
   private syncInterval: NodeJS.Timeout | null = null;
   private lastOnlineTime?: Date;
   private lastOfflineTime?: Date;
@@ -92,7 +92,7 @@ class OfflineModeManager {
 
         // Consider slow if takes more than 3 seconds or fails
         this.isSlowConnection = duration > 3000 || !response.ok;
-      } catch (_error) {
+      } catch (_status) {
         this.isSlowConnection = true;
       }
     };
@@ -153,7 +153,7 @@ class OfflineModeManager {
   /**
    * Add listener for network status changes
    */
-  addStatusListener(listener: (status: NetworkStatus) => void): () => void {
+  addStatusListener(listener: (_status: NetworkStatus) => void): () => void {
     this.listeners.add(listener);
 
     // Call immediately with current status

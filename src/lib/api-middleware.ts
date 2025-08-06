@@ -22,9 +22,12 @@ export interface AuthenticatedRequest extends NextRequest {
  * Authentication middleware that integrates with Auth.js v5
  */
 export function withAuth<T extends unknown[]>(
-  handler: (request: AuthenticatedRequest, ...args: T) => Promise<NextResponse>
+  handler: (
+    _request: AuthenticatedRequest,
+    ..._args: T
+  ) => Promise<NextResponse>
 ) {
-  return async (request: NextRequest, ...args: T): Promise<NextResponse> => {
+  return async (_request: NextRequest, ..._args: T): Promise<NextResponse> => {
     // const requestId = Math.random().toString(36).substring(7);
     // const startTime = Date.now();
 
@@ -91,7 +94,7 @@ export function withAuth<T extends unknown[]>(
       }
 
       // Create authenticated request with user data
-      const authenticatedRequest = request as AuthenticatedRequest;
+      const authenticatedRequest = _request as AuthenticatedRequest;
       authenticatedRequest.user = {
         id: session.user.id,
         email: session.user.email,
@@ -107,7 +110,7 @@ export function withAuth<T extends unknown[]>(
       //   userRole: authenticatedRequest.user.role,
       // });
 
-      const result = await handler(authenticatedRequest, ...args);
+      const result = await handler(authenticatedRequest, ..._args);
 
       // const endTime = Date.now();
       // const duration = endTime - startTime;
@@ -118,7 +121,7 @@ export function withAuth<T extends unknown[]>(
       // });
 
       return result;
-    } catch (error) {
+    } catch (_error) {
       // const endTime = Date.now();
       // const duration = endTime - startTime;
 
@@ -146,51 +149,54 @@ export function withAuth<T extends unknown[]>(
  */
 export function withPermission<T extends unknown[]>(
   allowedRoles: UserRole[],
-  handler: (request: AuthenticatedRequest, ...args: T) => Promise<NextResponse>
+  handler: (
+    _request: AuthenticatedRequest,
+    ..._args: T
+  ) => Promise<NextResponse>
 ) {
   return withAuth(
     async (
-      request: AuthenticatedRequest,
-      ...args: T
+      _request: AuthenticatedRequest,
+      ..._args: T
     ): Promise<NextResponse> => {
       try {
         // Check if user has required role
-        if (!hasRole(request.user.role, allowedRoles)) {
+        if (!hasRole(_request.user.role, allowedRoles)) {
           await AuditLogger.logAuthEvent(
             {
               action: 'LOGIN_FAILED',
-              userId: parseInt(request.user.id),
-              userEmail: request.user.email,
+              userId: parseInt(_request.user.id),
+              userEmail: _request.user.email,
               success: false,
-              errorMessage: `Insufficient permissions. Required: ${allowedRoles.join(', ')}, Has: ${request.user.role}`,
+              errorMessage: `Insufficient permissions. Required: ${allowedRoles.join(', ')}, Has: ${_request.user.role}`,
             },
-            request
+            _request
           );
 
           return NextResponse.json(
             {
               error: 'Insufficient permissions',
               required: allowedRoles,
-              current: request.user.role,
+              current: _request.user.role,
             },
             { status: 403 }
           );
         }
 
-        return await handler(request, ...args);
+        return await handler(_request, ..._args);
       } catch (error) {
         console.error('Permission middleware error:', error);
 
         await AuditLogger.logAuthEvent(
           {
             action: 'LOGIN_FAILED',
-            userId: parseInt(request.user.id),
-            userEmail: request.user.email,
+            userId: parseInt(_request.user.id),
+            userEmail: _request.user.email,
             success: false,
             errorMessage:
               error instanceof Error ? error.message : 'Unknown error',
           },
-          request
+          _request
         );
 
         return NextResponse.json(
@@ -206,7 +212,10 @@ export function withPermission<T extends unknown[]>(
  * Admin-only middleware
  */
 export function withAdminPermission<T extends unknown[]>(
-  handler: (request: AuthenticatedRequest, ...args: T) => Promise<NextResponse>
+  handler: (
+    _request: AuthenticatedRequest,
+    ..._args: T
+  ) => Promise<NextResponse>
 ) {
   return withPermission([USER_ROLES.ADMIN], handler);
 }
@@ -215,7 +224,10 @@ export function withAdminPermission<T extends unknown[]>(
  * Manager+ middleware (Manager and Admin)
  */
 export function withManagerPermission<T extends unknown[]>(
-  handler: (request: AuthenticatedRequest, ...args: T) => Promise<NextResponse>
+  handler: (
+    _request: AuthenticatedRequest,
+    ..._args: T
+  ) => Promise<NextResponse>
 ) {
   return withPermission([USER_ROLES.ADMIN, USER_ROLES.MANAGER], handler);
 }
@@ -224,7 +236,10 @@ export function withManagerPermission<T extends unknown[]>(
  * Any authenticated user middleware
  */
 export function withUserPermission<T extends unknown[]>(
-  handler: (request: AuthenticatedRequest, ...args: T) => Promise<NextResponse>
+  handler: (
+    _request: AuthenticatedRequest,
+    ..._args: T
+  ) => Promise<NextResponse>
 ) {
   return withPermission(
     [USER_ROLES.ADMIN, USER_ROLES.MANAGER, USER_ROLES.STAFF],

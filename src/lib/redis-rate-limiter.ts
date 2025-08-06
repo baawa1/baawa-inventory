@@ -20,7 +20,7 @@ export interface RateLimitConfig {
   windowMs: number;
   maxRequests: number;
   message?: string;
-  keyGenerator?: (req: NextRequest) => string;
+  keyGenerator?: (_req: NextRequest) => string;
   skipSuccessfulRequests?: boolean;
   skipFailedRequests?: boolean;
 }
@@ -77,17 +77,17 @@ export class RedisRateLimiter {
   /**
    * Generate rate limit key
    */
-  private generateKey(req: NextRequest, config: RateLimitConfig): string {
+  private generateKey(_req: NextRequest, config: RateLimitConfig): string {
     if (config.keyGenerator) {
-      return config.keyGenerator(req);
+      return config.keyGenerator(_req);
     }
 
     // Default key generation based on IP
-    const forwarded = req.headers.get('x-forwarded-for');
+    const forwarded = _req.headers.get('x-forwarded-for');
     const ip = forwarded
       ? forwarded.split(',')[0]
-      : req.headers.get('x-real-ip') || 'unknown';
-    const pathname = req.nextUrl.pathname;
+      : _req.headers.get('x-real-ip') || 'unknown';
+    const pathname = _req.nextUrl.pathname;
 
     return `rate_limit:${ip}:${pathname}`;
   }

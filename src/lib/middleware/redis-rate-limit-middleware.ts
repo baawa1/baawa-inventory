@@ -9,19 +9,22 @@ import { ErrorSanitizer } from '../utils/error-sanitizer';
 
 export interface RateLimitMiddlewareOptions {
   config: RateLimitConfig;
-  onRateLimitExceeded?: (req: NextRequest, result: any) => NextResponse;
+  onRateLimitExceeded?: (_req: NextRequest, _result: any) => NextResponse;
 }
 
 /**
  * Create rate limiting middleware
  */
 export function withRedisRateLimit(
-  handler: (req: NextRequest) => Promise<NextResponse>,
+  handler: (_req: NextRequest) => Promise<NextResponse>,
   options: RateLimitMiddlewareOptions
 ) {
-  return async (req: NextRequest): Promise<NextResponse> => {
+  return async (_req: NextRequest): Promise<NextResponse> => {
     try {
-      const result = await redisRateLimiter.checkRateLimit(req, options.config);
+      const result = await redisRateLimiter.checkRateLimit(
+        _req,
+        options.config
+      );
 
       // Set rate limit headers
       const headers = new Headers();
@@ -36,7 +39,7 @@ export function withRedisRateLimit(
 
         // Use custom handler if provided
         if (options.onRateLimitExceeded) {
-          return options.onRateLimitExceeded(req, result);
+          return options.onRateLimitExceeded(_req, result);
         }
 
         // Default rate limit response
@@ -53,7 +56,7 @@ export function withRedisRateLimit(
       }
 
       // Continue to handler
-      const response = await handler(req);
+      const response = await handler(_req);
 
       // Add rate limit headers to successful responses
       for (const [key, value] of headers.entries()) {
@@ -65,7 +68,7 @@ export function withRedisRateLimit(
       ErrorSanitizer.logError(error, 'Rate limit middleware error');
 
       // On error, continue to handler (fail open)
-      return handler(req);
+      return handler(_req);
     }
   };
 }
@@ -74,7 +77,7 @@ export function withRedisRateLimit(
  * Create rate limiting middleware with specific configuration
  */
 export function createRateLimitMiddleware(config: RateLimitConfig) {
-  return (handler: (req: NextRequest) => Promise<NextResponse>) =>
+  return (handler: (_req: NextRequest) => Promise<NextResponse>) =>
     withRedisRateLimit(handler, { config });
 }
 
