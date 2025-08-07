@@ -2,12 +2,9 @@ import { NextResponse } from 'next/server';
 import { withAuth, AuthenticatedRequest } from '@/lib/api-middleware';
 import { handleApiError } from '@/lib/api-error-handler-new';
 import { prisma } from '@/lib/db';
-import { SUCCESSFUL_PAYMENT_STATUSES } from '@/lib/constants';
+import { SUCCESSFUL_PAYMENT_STATUSES, isSuccessfulPaymentStatus } from '@/lib/constants';
 
-// Helper function to check if a payment status is successful
-function isSuccessfulPaymentStatus(status: string): boolean {
-  return SUCCESSFUL_PAYMENT_STATUSES.includes(status as 'PAID' | 'COMPLETED');
-}
+
 
 interface CategoryPerformance {
   id: number;
