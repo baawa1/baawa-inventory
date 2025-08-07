@@ -91,7 +91,7 @@ export function FinancialCharts({
     })) || [];
 
   return (
-    <div className="space-y-6">
+    <div className="grid grid-cols-1 gap-6 lg:grid-cols-2">
       {/* Revenue vs Transactions Trend */}
       <Card>
         <CardHeader>
@@ -149,57 +149,32 @@ export function FinancialCharts({
           <CardTitle>Payment Method Distribution</CardTitle>
         </CardHeader>
         <CardContent>
-          <div className="grid grid-cols-1 gap-6 lg:grid-cols-2">
-            <ResponsiveContainer width="100%" height={250}>
-              <PieChart>
-                <Pie
-                  data={paymentMethodData}
-                  cx="50%"
-                  cy="50%"
-                  labelLine={false}
-                  label={({ name, percent }) =>
-                    `${name} ${((percent || 0) * 100).toFixed(0)}%`
-                  }
-                  outerRadius={80}
-                  fill="#8884d8"
-                  dataKey="value"
-                >
-                  {paymentMethodData.map((entry, index) => (
-                    <Cell key={`cell-${index}`} fill={entry.color} />
-                  ))}
-                </Pie>
-                <Tooltip
-                  formatter={(value: number, name: string) => [
-                    `${value} transactions`,
-                    name,
-                  ]}
-                />
-              </PieChart>
-            </ResponsiveContainer>
-
-            <div className="space-y-4">
-              <h4 className="font-medium">Payment Method Breakdown</h4>
-              {paymentMethodData.map((method, index) => (
-                <div key={index} className="flex items-center justify-between">
-                  <div className="flex items-center gap-2">
-                    <div
-                      className="h-3 w-3 rounded-full"
-                      style={{ backgroundColor: method.color }}
-                    />
-                    <span className="text-sm">{method.name}</span>
-                  </div>
-                  <div className="text-right">
-                    <div className="text-sm font-medium">
-                      {method.value} transactions
-                    </div>
-                    <div className="text-muted-foreground text-xs">
-                      {formatCurrency(method.amount)}
-                    </div>
-                  </div>
-                </div>
-              ))}
-            </div>
-          </div>
+          <ResponsiveContainer width="100%" height={300}>
+            <PieChart>
+              <Pie
+                data={paymentMethodData}
+                cx="50%"
+                cy="50%"
+                labelLine={false}
+                label={({ name, percent }) =>
+                  `${name} ${((percent || 0) * 100).toFixed(0)}%`
+                }
+                outerRadius={100}
+                fill="#8884d8"
+                dataKey="value"
+              >
+                {paymentMethodData.map((entry, index) => (
+                  <Cell key={`cell-${index}`} fill={entry.color} />
+                ))}
+              </Pie>
+              <Tooltip
+                formatter={(value: number, name: string) => [
+                  `${value} transactions`,
+                  name,
+                ]}
+              />
+            </PieChart>
+          </ResponsiveContainer>
         </CardContent>
       </Card>
 
@@ -209,7 +184,7 @@ export function FinancialCharts({
           <CardTitle>Daily Transaction Volume</CardTitle>
         </CardHeader>
         <CardContent>
-          <ResponsiveContainer width="100%" height={250}>
+          <ResponsiveContainer width="100%" height={300}>
             <LineChart data={dailyTrendsData}>
               <CartesianGrid strokeDasharray="3 3" />
               <XAxis dataKey="date" />
@@ -238,7 +213,7 @@ export function FinancialCharts({
           <CardTitle>Daily Revenue Trend</CardTitle>
         </CardHeader>
         <CardContent>
-          <ResponsiveContainer width="100%" height={250}>
+          <ResponsiveContainer width="100%" height={300}>
             <BarChart data={dailyTrendsData}>
               <CartesianGrid strokeDasharray="3 3" />
               <XAxis dataKey="date" />
@@ -260,37 +235,6 @@ export function FinancialCharts({
               />
             </BarChart>
           </ResponsiveContainer>
-        </CardContent>
-      </Card>
-
-      {/* Chart Filters Info */}
-      <Card>
-        <CardHeader>
-          <CardTitle>Active Filters</CardTitle>
-        </CardHeader>
-        <CardContent>
-          <div className="grid grid-cols-1 gap-4 text-sm md:grid-cols-3">
-            <div>
-              <span className="font-medium">Date Range:</span>
-              <p className="text-muted-foreground">
-                {dateRange?.from && dateRange?.to
-                  ? `${dateRange.from.toLocaleDateString()} - ${dateRange.to.toLocaleDateString()}`
-                  : 'All dates'}
-              </p>
-            </div>
-            <div>
-              <span className="font-medium">Transaction Type:</span>
-              <p className="text-muted-foreground">
-                {transactionType || 'All types'}
-              </p>
-            </div>
-            <div>
-              <span className="font-medium">Payment Method:</span>
-              <p className="text-muted-foreground">
-                {paymentMethod || 'All methods'}
-              </p>
-            </div>
-          </div>
         </CardContent>
       </Card>
     </div>
