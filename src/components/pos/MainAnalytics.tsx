@@ -501,6 +501,14 @@ export function MainAnalytics({ user: _ }: MainAnalyticsProps) {
                       {formatCurrency(transaction.totalAmount)}
                     </p>
                     <p className="text-muted-foreground text-sm">
+                      {new Date(transaction.createdAt).toLocaleDateString(
+                        'en-US',
+                        {
+                          month: 'short',
+                          day: 'numeric',
+                        }
+                      )}{' '}
+                      •{' '}
                       {new Date(transaction.createdAt).toLocaleTimeString(
                         'en-US',
                         {

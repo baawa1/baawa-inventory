@@ -1,6 +1,7 @@
 import { withAuth, AuthenticatedRequest } from '@/lib/api-middleware';
 import { createApiResponse } from '@/lib/api-response';
 import { prisma } from '@/lib/db';
+import { SUCCESSFUL_PAYMENT_STATUSES } from '@/lib/constants';
 
 // GET /api/finance/summary - Get financial summary statistics with real data including sales and purchases
 export const GET = withAuth(async (_request: AuthenticatedRequest) => {
@@ -93,7 +94,7 @@ async function getPeriodStats(
         gte: startDate,
         lte: endDate,
       },
-      payment_status: 'paid',
+      payment_status: { in: SUCCESSFUL_PAYMENT_STATUSES },
     };
 
     const salesTotal = await prisma.salesTransaction.aggregate({
@@ -172,7 +173,7 @@ async function getRecentTransactions(
   // Add recent sales if requested
   if (includeSales) {
     const salesTransactions = await prisma.salesTransaction.findMany({
-      where: { payment_status: 'paid' },
+      where: { payment_status: { in: SUCCESSFUL_PAYMENT_STATUSES } },
       include: {
         users: {
           select: { firstName: true, lastName: true, email: true },

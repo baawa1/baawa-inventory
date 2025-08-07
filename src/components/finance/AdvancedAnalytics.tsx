@@ -14,14 +14,14 @@ import {
 import {
   IconTrendingUp,
   IconTrendingDown,
+  IconMinus,
+  IconChartLine,
   IconTarget,
-  IconChartBar,
   IconBrain,
-  IconCalculator,
 } from '@tabler/icons-react';
-import { DateRange } from 'react-day-picker';
 import { formatCurrency } from '@/lib/utils';
-import { useFinancialAnalytics } from '@/hooks/api/useFinancialAnalytics';
+import { DateRange } from 'react-day-picker';
+import { useAdvancedAnalytics } from '@/hooks/api/useAdvancedAnalytics';
 
 interface AdvancedAnalyticsProps {
   dateRange?: DateRange;
@@ -34,63 +34,14 @@ export function AdvancedAnalytics({
   transactionType,
   paymentMethod,
 }: AdvancedAnalyticsProps) {
-  const [analysisType, setAnalysisType] = useState('trends');
   const [metric, setMetric] = useState('revenue');
+  const [analysisType, setAnalysisType] = useState('trends');
 
-  const { data: analyticsData, isLoading } = useFinancialAnalytics({
+  const { data: advancedAnalyticsData, isLoading } = useAdvancedAnalytics({
     dateRange,
     type: transactionType as 'all' | 'income' | 'expense',
     paymentMethod: paymentMethod !== 'all' ? paymentMethod : undefined,
   });
-
-  const summary = analyticsData?.summary;
-
-  // Mock data for demonstration - replace with real API data
-  const trendAnalysis = {
-    revenue: {
-      current: summary?.totalRevenue || 0,
-      previous: (summary?.totalRevenue || 0) * 0.85,
-      change: 15.2,
-      trend: 'up',
-    },
-    expenses: {
-      current: summary?.totalExpenses || 0,
-      previous: (summary?.totalExpenses || 0) * 0.92,
-      change: 8.7,
-      trend: 'up',
-    },
-    profit: {
-      current: summary?.netProfit || 0,
-      previous: (summary?.netProfit || 0) * 0.78,
-      change: 22.1,
-      trend: 'up',
-    },
-    transactions: {
-      current: summary?.totalTransactions || 0,
-      previous: (summary?.totalTransactions || 0) * 0.88,
-      change: 12.3,
-      trend: 'up',
-    },
-  };
-
-  const performanceMetrics = {
-    profitMargin:
-      ((summary?.netProfit || 0) / (summary?.totalRevenue || 1)) * 100,
-    averageTransactionValue: summary?.averageTransactionValue || 0,
-    revenuePerTransaction:
-      (summary?.totalRevenue || 0) / (summary?.totalTransactions || 1),
-    expenseRatio:
-      ((summary?.totalExpenses || 0) / (summary?.totalRevenue || 1)) * 100,
-  };
-
-  const predictions = {
-    nextMonthRevenue: (summary?.totalRevenue || 0) * 1.08,
-    nextMonthExpenses: (summary?.totalExpenses || 0) * 1.05,
-    nextMonthProfit:
-      (summary?.totalRevenue || 0) * 1.08 -
-      (summary?.totalExpenses || 0) * 1.05,
-    growthRate: 8.2,
-  };
 
   if (isLoading) {
     return (
@@ -104,6 +55,44 @@ export function AdvancedAnalytics({
       </div>
     );
   }
+
+  if (!advancedAnalyticsData) {
+    return (
+      <div className="space-y-6">
+        <div className="py-8 text-center">
+          <p className="text-muted-foreground">
+            No advanced analytics data available
+          </p>
+        </div>
+      </div>
+    );
+  }
+
+  const { trendAnalysis, performanceMetrics, predictions } =
+    advancedAnalyticsData;
+
+  const getTrendBadge = (trend: 'up' | 'down' | 'stable', change: number) => {
+    if (trend === 'up') {
+      return (
+        <Badge className="bg-green-100 text-green-800">
+          <IconTrendingUp className="mr-1 h-3 w-3" />+{change.toFixed(1)}%
+        </Badge>
+      );
+    } else if (trend === 'down') {
+      return (
+        <Badge className="bg-red-100 text-red-800">
+          <IconTrendingDown className="mr-1 h-3 w-3" />
+          {change.toFixed(1)}%
+        </Badge>
+      );
+    }
+    return (
+      <Badge variant="outline">
+        <IconMinus className="mr-1 h-3 w-3" />
+        {change.toFixed(1)}%
+      </Badge>
+    );
+  };
 
   return (
     <div className="space-y-6">
@@ -138,12 +127,12 @@ export function AdvancedAnalytics({
       >
         <TabsList className="grid w-full grid-cols-3">
           <TabsTrigger value="trends" className="flex items-center gap-2">
-            <IconTrendingUp className="h-4 w-4" />
-            Trend Analysis
+            <IconChartLine className="h-4 w-4" />
+            Trends
           </TabsTrigger>
           <TabsTrigger value="performance" className="flex items-center gap-2">
             <IconTarget className="h-4 w-4" />
-            Performance Metrics
+            Performance
           </TabsTrigger>
           <TabsTrigger value="predictions" className="flex items-center gap-2">
             <IconBrain className="h-4 w-4" />
@@ -151,306 +140,271 @@ export function AdvancedAnalytics({
           </TabsTrigger>
         </TabsList>
 
-        {/* Trend Analysis */}
+        {/* Trends Tab */}
         <TabsContent value="trends" className="space-y-6">
-          <div className="grid grid-cols-1 gap-6 md:grid-cols-2 lg:grid-cols-4">
-            {Object.entries(trendAnalysis).map(([key, data]) => (
-              <Card key={key}>
-                <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-                  <CardTitle className="text-sm font-medium capitalize">
-                    {key} Trend
-                  </CardTitle>
-                  <Badge
-                    variant={data.trend === 'up' ? 'default' : 'destructive'}
-                    className="text-xs"
-                  >
-                    {data.trend === 'up' ? '+' : '-'}
-                    {data.change}%
-                  </Badge>
-                </CardHeader>
-                <CardContent>
-                  <div className="text-2xl font-bold">
-                    {formatCurrency(data.current)}
-                  </div>
-                  <p className="text-muted-foreground mt-1 text-xs">
-                    vs {formatCurrency(data.previous)} previous period
-                  </p>
-                  <div className="mt-2 flex items-center">
-                    {data.trend === 'up' ? (
-                      <IconTrendingUp className="mr-1 h-4 w-4 text-green-600" />
-                    ) : (
-                      <IconTrendingDown className="mr-1 h-4 w-4 text-red-600" />
-                    )}
-                    <span
-                      className={`text-xs ${data.trend === 'up' ? 'text-green-600' : 'text-red-600'}`}
-                    >
-                      {data.change}% change
+          <div className="grid grid-cols-1 gap-6 lg:grid-cols-2">
+            {/* Revenue Trends */}
+            <Card>
+              <CardHeader>
+                <CardTitle className="flex items-center justify-between">
+                  Revenue Trends
+                  {getTrendBadge(
+                    trendAnalysis.revenue.trend,
+                    trendAnalysis.revenue.change
+                  )}
+                </CardTitle>
+              </CardHeader>
+              <CardContent>
+                <div className="space-y-4">
+                  <div className="flex justify-between">
+                    <span className="text-muted-foreground text-sm">
+                      Current Period
+                    </span>
+                    <span className="font-semibold">
+                      {formatCurrency(trendAnalysis.revenue.current)}
                     </span>
                   </div>
-                </CardContent>
-              </Card>
-            ))}
-          </div>
-
-          <Card>
-            <CardHeader>
-              <CardTitle>Trend Insights</CardTitle>
-            </CardHeader>
-            <CardContent>
-              <div className="space-y-4">
-                <div className="flex items-center justify-between rounded-lg bg-green-50 p-3">
-                  <div>
-                    <h4 className="font-medium text-green-800">
-                      Revenue Growth
-                    </h4>
-                    <p className="text-sm text-green-600">
-                      Strong revenue growth of {trendAnalysis.revenue.change}%
-                      indicates healthy business expansion
-                    </p>
+                  <div className="flex justify-between">
+                    <span className="text-muted-foreground text-sm">
+                      Previous Period
+                    </span>
+                    <span className="text-sm">
+                      {formatCurrency(trendAnalysis.revenue.previous)}
+                    </span>
                   </div>
-                  <IconTrendingUp className="h-6 w-6 text-green-600" />
                 </div>
+              </CardContent>
+            </Card>
 
-                <div className="flex items-center justify-between rounded-lg bg-blue-50 p-3">
-                  <div>
-                    <h4 className="font-medium text-blue-800">
-                      Profit Improvement
-                    </h4>
-                    <p className="text-sm text-blue-600">
-                      Profit increased by {trendAnalysis.profit.change}%,
-                      showing improved efficiency
-                    </p>
-                  </div>
-                  <IconTrendingUp className="h-6 w-6 text-blue-600" />
-                </div>
-
-                <div className="flex items-center justify-between rounded-lg bg-yellow-50 p-3">
-                  <div>
-                    <h4 className="font-medium text-yellow-800">
-                      Expense Management
-                    </h4>
-                    <p className="text-sm text-yellow-600">
-                      Expenses increased by {trendAnalysis.expenses.change}%,
-                      monitor for cost control
-                    </p>
-                  </div>
-                  <IconTrendingDown className="h-6 w-6 text-yellow-600" />
-                </div>
-              </div>
-            </CardContent>
-          </Card>
-        </TabsContent>
-
-        {/* Performance Metrics */}
-        <TabsContent value="performance" className="space-y-6">
-          <div className="grid grid-cols-1 gap-6 md:grid-cols-2 lg:grid-cols-4">
+            {/* Expenses Trends */}
             <Card>
-              <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-                <CardTitle className="text-sm font-medium">
-                  Profit Margin
+              <CardHeader>
+                <CardTitle className="flex items-center justify-between">
+                  Expenses Trends
+                  {getTrendBadge(
+                    trendAnalysis.expenses.trend,
+                    trendAnalysis.expenses.change
+                  )}
                 </CardTitle>
-                <IconCalculator className="text-muted-foreground h-4 w-4" />
               </CardHeader>
               <CardContent>
-                <div className="text-2xl font-bold">
+                <div className="space-y-4">
+                  <div className="flex justify-between">
+                    <span className="text-muted-foreground text-sm">
+                      Current Period
+                    </span>
+                    <span className="font-semibold">
+                      {formatCurrency(trendAnalysis.expenses.current)}
+                    </span>
+                  </div>
+                  <div className="flex justify-between">
+                    <span className="text-muted-foreground text-sm">
+                      Previous Period
+                    </span>
+                    <span className="text-sm">
+                      {formatCurrency(trendAnalysis.expenses.previous)}
+                    </span>
+                  </div>
+                </div>
+              </CardContent>
+            </Card>
+
+            {/* Profit Trends */}
+            <Card>
+              <CardHeader>
+                <CardTitle className="flex items-center justify-between">
+                  Profit Trends
+                  {getTrendBadge(
+                    trendAnalysis.profit.trend,
+                    trendAnalysis.profit.change
+                  )}
+                </CardTitle>
+              </CardHeader>
+              <CardContent>
+                <div className="space-y-4">
+                  <div className="flex justify-between">
+                    <span className="text-muted-foreground text-sm">
+                      Current Period
+                    </span>
+                    <span className="font-semibold">
+                      {formatCurrency(trendAnalysis.profit.current)}
+                    </span>
+                  </div>
+                  <div className="flex justify-between">
+                    <span className="text-muted-foreground text-sm">
+                      Previous Period
+                    </span>
+                    <span className="text-sm">
+                      {formatCurrency(trendAnalysis.profit.previous)}
+                    </span>
+                  </div>
+                </div>
+              </CardContent>
+            </Card>
+
+            {/* Transaction Trends */}
+            <Card>
+              <CardHeader>
+                <CardTitle className="flex items-center justify-between">
+                  Transaction Trends
+                  {getTrendBadge(
+                    trendAnalysis.transactions.trend,
+                    trendAnalysis.transactions.change
+                  )}
+                </CardTitle>
+              </CardHeader>
+              <CardContent>
+                <div className="space-y-4">
+                  <div className="flex justify-between">
+                    <span className="text-muted-foreground text-sm">
+                      Current Period
+                    </span>
+                    <span className="font-semibold">
+                      {trendAnalysis.transactions.current.toLocaleString()}
+                    </span>
+                  </div>
+                  <div className="flex justify-between">
+                    <span className="text-muted-foreground text-sm">
+                      Previous Period
+                    </span>
+                    <span className="text-sm">
+                      {trendAnalysis.transactions.previous.toLocaleString()}
+                    </span>
+                  </div>
+                </div>
+              </CardContent>
+            </Card>
+          </div>
+        </TabsContent>
+
+        {/* Performance Tab */}
+        <TabsContent value="performance" className="space-y-6">
+          <div className="grid grid-cols-1 gap-6 lg:grid-cols-2">
+            {/* Profit Margin */}
+            <Card>
+              <CardHeader>
+                <CardTitle>Profit Margin</CardTitle>
+              </CardHeader>
+              <CardContent>
+                <div className="text-3xl font-bold text-green-600">
                   {performanceMetrics.profitMargin.toFixed(1)}%
                 </div>
-                <p className="text-muted-foreground mt-1 text-xs">
-                  Net profit margin
+                <p className="text-muted-foreground mt-2 text-sm">
+                  Net profit as a percentage of revenue
                 </p>
               </CardContent>
             </Card>
 
+            {/* Average Transaction Value */}
             <Card>
-              <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-                <CardTitle className="text-sm font-medium">
-                  Avg Transaction
-                </CardTitle>
-                <IconChartBar className="text-muted-foreground h-4 w-4" />
+              <CardHeader>
+                <CardTitle>Average Transaction Value</CardTitle>
               </CardHeader>
               <CardContent>
-                <div className="text-2xl font-bold">
+                <div className="text-3xl font-bold">
                   {formatCurrency(performanceMetrics.averageTransactionValue)}
                 </div>
-                <p className="text-muted-foreground mt-1 text-xs">
-                  Per transaction
+                <p className="text-muted-foreground mt-2 text-sm">
+                  Average amount per transaction
                 </p>
               </CardContent>
             </Card>
 
+            {/* Revenue Per Transaction */}
             <Card>
-              <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-                <CardTitle className="text-sm font-medium">
-                  Revenue per Transaction
-                </CardTitle>
-                <IconTrendingUp className="text-muted-foreground h-4 w-4" />
+              <CardHeader>
+                <CardTitle>Revenue Per Transaction</CardTitle>
               </CardHeader>
               <CardContent>
-                <div className="text-2xl font-bold">
+                <div className="text-3xl font-bold">
                   {formatCurrency(performanceMetrics.revenuePerTransaction)}
                 </div>
-                <p className="text-muted-foreground mt-1 text-xs">
-                  Average revenue
+                <p className="text-muted-foreground mt-2 text-sm">
+                  Revenue generated per transaction
                 </p>
               </CardContent>
             </Card>
 
+            {/* Expense Ratio */}
             <Card>
-              <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-                <CardTitle className="text-sm font-medium">
-                  Expense Ratio
-                </CardTitle>
-                <IconTrendingDown className="text-muted-foreground h-4 w-4" />
+              <CardHeader>
+                <CardTitle>Expense Ratio</CardTitle>
               </CardHeader>
               <CardContent>
-                <div className="text-2xl font-bold">
+                <div className="text-3xl font-bold text-orange-600">
                   {performanceMetrics.expenseRatio.toFixed(1)}%
                 </div>
-                <p className="text-muted-foreground mt-1 text-xs">
-                  Of total revenue
+                <p className="text-muted-foreground mt-2 text-sm">
+                  Expenses as a percentage of revenue
                 </p>
               </CardContent>
             </Card>
           </div>
-
-          <Card>
-            <CardHeader>
-              <CardTitle>Performance Analysis</CardTitle>
-            </CardHeader>
-            <CardContent>
-              <div className="space-y-4">
-                <div className="grid grid-cols-1 gap-4 md:grid-cols-2">
-                  <div className="rounded-lg border p-4">
-                    <h4 className="mb-2 font-medium">Profitability</h4>
-                    <p className="text-muted-foreground text-sm">
-                      Your profit margin of{' '}
-                      {performanceMetrics.profitMargin.toFixed(1)}% is
-                      {performanceMetrics.profitMargin > 20
-                        ? ' excellent'
-                        : performanceMetrics.profitMargin > 10
-                          ? ' good'
-                          : ' below average'}
-                      .
-                      {performanceMetrics.profitMargin < 15 &&
-                        ' Consider reviewing pricing strategy and cost management.'}
-                    </p>
-                  </div>
-
-                  <div className="rounded-lg border p-4">
-                    <h4 className="mb-2 font-medium">Transaction Efficiency</h4>
-                    <p className="text-muted-foreground text-sm">
-                      Average transaction value of{' '}
-                      {formatCurrency(
-                        performanceMetrics.averageTransactionValue
-                      )}
-                      {performanceMetrics.averageTransactionValue > 50000
-                        ? ' indicates high-value sales'
-                        : ' suggests focus on upselling opportunities'}
-                      .
-                    </p>
-                  </div>
-                </div>
-              </div>
-            </CardContent>
-          </Card>
         </TabsContent>
 
-        {/* Predictions */}
+        {/* Predictions Tab */}
         <TabsContent value="predictions" className="space-y-6">
-          <div className="grid grid-cols-1 gap-6 md:grid-cols-2 lg:grid-cols-3">
+          <div className="grid grid-cols-1 gap-6 lg:grid-cols-2">
+            {/* Next Month Revenue */}
             <Card>
               <CardHeader>
-                <CardTitle className="text-sm font-medium">
-                  Next Month Revenue
-                </CardTitle>
+                <CardTitle>Next Month Revenue</CardTitle>
               </CardHeader>
               <CardContent>
-                <div className="text-2xl font-bold text-green-600">
+                <div className="text-3xl font-bold text-green-600">
                   {formatCurrency(predictions.nextMonthRevenue)}
                 </div>
-                <p className="text-muted-foreground mt-1 text-xs">
-                  +{predictions.growthRate}% projected growth
+                <p className="text-muted-foreground mt-2 text-sm">
+                  Projected revenue based on current trends
                 </p>
               </CardContent>
             </Card>
 
+            {/* Next Month Expenses */}
             <Card>
               <CardHeader>
-                <CardTitle className="text-sm font-medium">
-                  Next Month Expenses
-                </CardTitle>
+                <CardTitle>Next Month Expenses</CardTitle>
               </CardHeader>
               <CardContent>
-                <div className="text-2xl font-bold text-red-600">
+                <div className="text-3xl font-bold text-orange-600">
                   {formatCurrency(predictions.nextMonthExpenses)}
                 </div>
-                <p className="text-muted-foreground mt-1 text-xs">
-                  +5% projected increase
+                <p className="text-muted-foreground mt-2 text-sm">
+                  Projected expenses based on current trends
                 </p>
               </CardContent>
             </Card>
 
+            {/* Next Month Profit */}
             <Card>
               <CardHeader>
-                <CardTitle className="text-sm font-medium">
-                  Next Month Profit
-                </CardTitle>
+                <CardTitle>Next Month Profit</CardTitle>
               </CardHeader>
               <CardContent>
-                <div
-                  className={`text-2xl font-bold ${predictions.nextMonthProfit >= 0 ? 'text-green-600' : 'text-red-600'}`}
-                >
+                <div className="text-3xl font-bold text-blue-600">
                   {formatCurrency(predictions.nextMonthProfit)}
                 </div>
-                <p className="text-muted-foreground mt-1 text-xs">
-                  Projected net profit
+                <p className="text-muted-foreground mt-2 text-sm">
+                  Projected net profit for next month
+                </p>
+              </CardContent>
+            </Card>
+
+            {/* Growth Rate */}
+            <Card>
+              <CardHeader>
+                <CardTitle>Growth Rate</CardTitle>
+              </CardHeader>
+              <CardContent>
+                <div className="text-3xl font-bold text-purple-600">
+                  {predictions.growthRate.toFixed(1)}%
+                </div>
+                <p className="text-muted-foreground mt-2 text-sm">
+                  Expected growth rate based on trends
                 </p>
               </CardContent>
             </Card>
           </div>
-
-          <Card>
-            <CardHeader>
-              <CardTitle>Predictive Insights</CardTitle>
-            </CardHeader>
-            <CardContent>
-              <div className="space-y-4">
-                <div className="rounded-lg bg-blue-50 p-4">
-                  <h4 className="mb-2 font-medium text-blue-800">
-                    Revenue Forecast
-                  </h4>
-                  <p className="text-sm text-blue-600">
-                    Based on current trends, revenue is expected to grow by{' '}
-                    {predictions.growthRate}% next month. This projection
-                    considers seasonal patterns and recent performance.
-                  </p>
-                </div>
-
-                <div className="rounded-lg bg-green-50 p-4">
-                  <h4 className="mb-2 font-medium text-green-800">
-                    Profit Outlook
-                  </h4>
-                  <p className="text-sm text-green-600">
-                    Projected profit of{' '}
-                    {formatCurrency(predictions.nextMonthProfit)} suggests
-                    continued profitability. Focus on maintaining current
-                    efficiency levels.
-                  </p>
-                </div>
-
-                <div className="rounded-lg bg-yellow-50 p-4">
-                  <h4 className="mb-2 font-medium text-yellow-800">
-                    Risk Factors
-                  </h4>
-                  <p className="text-sm text-yellow-600">
-                    Monitor expense growth closely. Current projections show a
-                    5% increase in expenses, which could impact profit margins
-                    if not managed effectively.
-                  </p>
-                </div>
-              </div>
-            </CardContent>
-          </Card>
         </TabsContent>
       </Tabs>
     </div>

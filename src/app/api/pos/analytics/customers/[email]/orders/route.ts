@@ -1,6 +1,7 @@
 import { NextResponse } from 'next/server';
 import { withPOSAuth, AuthenticatedRequest } from '@/lib/api-auth-middleware';
 import { prisma } from '@/lib/db';
+import { SUCCESSFUL_PAYMENT_STATUSES } from '@/lib/constants';
 
 export const GET = withPOSAuth(
   async (
@@ -16,7 +17,7 @@ export const GET = withPOSAuth(
         where: {
           customer_email: customerEmail,
           payment_status: {
-            in: ['paid', 'completed', 'PAID'], // Include all successful payment statuses
+            in: SUCCESSFUL_PAYMENT_STATUSES,
           },
         },
         include: {
