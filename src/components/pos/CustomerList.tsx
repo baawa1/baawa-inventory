@@ -557,7 +557,7 @@ export function CustomerList({ user: _ }: CustomerListProps) {
           <DialogHeader>
             <DialogTitle>Edit Customer</DialogTitle>
             <DialogDescription>
-              Update customer information. Click save when you're done.
+              Update customer information. Click save when you&apos;re done.
             </DialogDescription>
           </DialogHeader>
           <div className="grid gap-4 py-4">

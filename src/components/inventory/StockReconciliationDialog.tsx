@@ -105,7 +105,10 @@ export function StockReconciliationDialog({
   const createMutation = useCreateStockReconciliation();
   const submitMutation = useSubmitStockReconciliation();
 
-  const products = productsData?.data || [];
+  const products = useMemo(
+    () => productsData?.data || [],
+    [productsData?.data]
+  );
 
   const form = useForm<ReconciliationFormData>({
     resolver: zodResolver(reconciliationSchema),

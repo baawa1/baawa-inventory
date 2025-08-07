@@ -434,7 +434,13 @@ const SupplierList = ({ user }: SupplierListProps) => {
         </DropdownMenu>
       );
     },
-    [canManageSuppliers, canDeleteSuppliers]
+    [
+      canManageSuppliers,
+      canDeleteSuppliers,
+      handleViewSupplier,
+      handleEditSupplier,
+      handleReactivateSupplier,
+    ]
   );
 
   return (
@@ -514,10 +520,10 @@ const SupplierList = ({ user }: SupplierListProps) => {
               Deactivate Supplier
             </AlertDialogTitle>
             <AlertDialogDescription>
-              Are you sure you want to deactivate "{supplierToDelete?.name}"?
-              This will mark the supplier as inactive and they won't appear in
-              active supplier lists, but their data will be preserved for
-              historical records.
+              Are you sure you want to deactivate &quot;{supplierToDelete?.name}
+              &quot;? This will mark the supplier as inactive and they
+              won&apos;t appear in active supplier lists, but their data will be
+              preserved for historical records.
             </AlertDialogDescription>
           </AlertDialogHeader>
           <AlertDialogFooter>
@@ -564,9 +570,10 @@ const SupplierList = ({ user }: SupplierListProps) => {
               Reactivate Supplier
             </AlertDialogTitle>
             <AlertDialogDescription>
-              Are you sure you want to reactivate "{supplierToReactivate?.name}
-              "? This will mark the supplier as active and they will appear in
-              active supplier lists again.
+              Are you sure you want to reactivate &quot;
+              {supplierToReactivate?.name}
+              &quot;? This will mark the supplier as active and they will appear
+              in active supplier lists again.
             </AlertDialogDescription>
           </AlertDialogHeader>
           <AlertDialogFooter>

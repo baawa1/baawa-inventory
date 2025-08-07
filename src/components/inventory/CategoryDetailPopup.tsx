@@ -93,8 +93,8 @@ export default function CategoryDetailPopup({
               <IconTag className="mx-auto mb-4 h-12 w-12 text-gray-400" />
               <h2 className="mb-2 text-xl font-semibold">Category Not Found</h2>
               <p className="text-muted-foreground mb-4">
-                The category you're looking for doesn't exist or has been
-                deleted.
+                The category you&apos;re looking for doesn&apos;t exist or has
+                been deleted.
               </p>
             </div>
           )}

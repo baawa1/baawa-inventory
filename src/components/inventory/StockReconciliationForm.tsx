@@ -101,7 +101,10 @@ export function StockReconciliationForm() {
   const createMutation = useCreateStockReconciliation();
   const submitMutation = useSubmitStockReconciliation();
 
-  const products = productsData?.data || [];
+  const products = useMemo(
+    () => productsData?.data || [],
+    [productsData?.data]
+  );
 
   const form = useForm<ReconciliationFormData>({
     resolver: zodResolver(reconciliationSchema),
@@ -385,7 +388,7 @@ export function StockReconciliationForm() {
                         ))}
                         {products.length === 0 && searchTerm && (
                           <div className="text-muted-foreground py-4 text-center">
-                            No products found matching "{searchTerm}"
+                            No products found matching &quot;{searchTerm}&quot;
                           </div>
                         )}
                         {products.length === 0 && !searchTerm && (
@@ -546,8 +549,8 @@ export function StockReconciliationForm() {
                 </div>
               ) : (
                 <div className="text-muted-foreground py-8 text-center">
-                  No products added yet. Use the "Add Product" button to get
-                  started.
+                  No products added yet. Use the &quot;Add Product&quot; button
+                  to get started.
                 </div>
               )}
             </CardContent>

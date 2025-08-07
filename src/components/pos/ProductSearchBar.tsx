@@ -273,7 +273,7 @@ export function ProductSearchBar({
         products.length === 0 && (
           <div className="text-muted-foreground py-8 text-center">
             <IconSearch className="mx-auto mb-2 h-12 w-12 opacity-50" />
-            <p>No products found for "{debouncedSearchTerm}"</p>
+            <p>No products found for &quot;{debouncedSearchTerm}&quot;</p>
             <p className="text-sm">Try adjusting your search terms</p>
           </div>
         )}

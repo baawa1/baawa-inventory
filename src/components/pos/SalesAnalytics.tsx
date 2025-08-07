@@ -109,7 +109,10 @@ export function SalesAnalytics({ user: _ }: SalesAnalyticsProps) {
     toast.error('Failed to load sales analytics data');
   }
 
-  const salesData = analyticsData?.salesByPeriod || [];
+  const salesData = useMemo(
+    () => analyticsData?.salesByPeriod || [],
+    [analyticsData?.salesByPeriod]
+  );
 
   const filteredData = useMemo(() => {
     console.log('Sales data:', salesData);

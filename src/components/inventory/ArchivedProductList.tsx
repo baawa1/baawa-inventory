@@ -413,9 +413,9 @@ export function ArchivedProductList({ user }: ArchivedProductListProps) {
               Unarchive Product
             </AlertDialogTitle>
             <AlertDialogDescription>
-              Are you sure you want to unarchive the product "
-              {productToUnarchive?.name}"? This will restore it to your active
-              inventory.
+              Are you sure you want to unarchive the product &quot;
+              {productToUnarchive?.name}&quot;? This will restore it to your
+              active inventory.
             </AlertDialogDescription>
           </AlertDialogHeader>
           <AlertDialogFooter>

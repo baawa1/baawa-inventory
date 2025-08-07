@@ -604,8 +604,9 @@ const StockReconciliationList = ({ user }: StockReconciliationListProps) => {
               Delete Stock Reconciliation
             </AlertDialogTitle>
             <AlertDialogDescription>
-              Are you sure you want to delete the reconciliation "
-              {reconciliationToDelete?.title}"? This action cannot be undone.
+              Are you sure you want to delete the reconciliation &quot;
+              {reconciliationToDelete?.title}&quot;? This action cannot be
+              undone.
             </AlertDialogDescription>
           </AlertDialogHeader>
           <AlertDialogFooter>
@@ -629,8 +630,8 @@ const StockReconciliationList = ({ user }: StockReconciliationListProps) => {
               Reject Stock Reconciliation
             </AlertDialogTitle>
             <AlertDialogDescription>
-              Are you sure you want to reject the reconciliation "
-              {reconciliationToReject?.title}"? Please provide a reason for
+              Are you sure you want to reject the reconciliation &quot;
+              {reconciliationToReject?.title}&quot;? Please provide a reason for
               rejection.
             </AlertDialogDescription>
           </AlertDialogHeader>

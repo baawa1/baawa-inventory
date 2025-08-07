@@ -292,32 +292,35 @@ export function TransactionList({ user: _ }: TransactionListProps) {
   }, []);
 
   // Convert transaction to receipt data format
-  const convertToReceiptData = (transaction: Transaction): ReceiptData => {
-    return {
-      id: transaction.id.toString(),
-      transactionNumber: transaction.transactionNumber,
-      timestamp: transaction.createdAt
-        ? new Date(transaction.createdAt)
-        : new Date(),
-      staffName: transaction.staffName || '',
-      customerName: transaction.customerName || '',
-      customerPhone: (transaction as any).customerPhone || '',
-      customerEmail: transaction.customerEmail || '',
-      items: transaction.items.map(item => ({
-        id: item.productId,
-        name: item.name,
-        sku: item.sku,
-        price: item.price,
-        quantity: item.quantity,
-        category: '',
-        coupon: item.coupon || null,
-      })),
-      subtotal: transaction.subtotal,
-      discount: transaction.discount,
-      total: transaction.total,
-      paymentMethod: transaction.paymentMethod,
-    };
-  };
+  const convertToReceiptData = useCallback(
+    (transaction: Transaction): ReceiptData => {
+      return {
+        id: transaction.id.toString(),
+        transactionNumber: transaction.transactionNumber,
+        timestamp: transaction.createdAt
+          ? new Date(transaction.createdAt)
+          : new Date(),
+        staffName: transaction.staffName || '',
+        customerName: transaction.customerName || '',
+        customerPhone: (transaction as any).customerPhone || '',
+        customerEmail: transaction.customerEmail || '',
+        items: transaction.items.map(item => ({
+          id: item.productId,
+          name: item.name,
+          sku: item.sku,
+          price: item.price,
+          quantity: item.quantity,
+          category: '',
+          coupon: item.coupon || null,
+        })),
+        subtotal: transaction.subtotal,
+        discount: transaction.discount,
+        total: transaction.total,
+        paymentMethod: transaction.paymentMethod,
+      };
+    },
+    []
+  );
 
   // Get status badge
   const getStatusBadge = useCallback((status: string) => {

@@ -69,8 +69,8 @@ export function ProductGrid({
     staleTime: 60000, // 1 minute
   });
 
-  // Extract products from API response
-  const products = data?.data || [];
+  // Extract products from API response - memoized to prevent unnecessary re-renders
+  const products = useMemo(() => data?.data || [], [data?.data]);
 
   // Get unique categories and brands for filters
   const categories = useMemo(() => {
