@@ -13,7 +13,7 @@ interface SimpleFinancialMetricsProps {
 export function SimpleFinancialMetrics({
   transactionStats,
   isLoading,
-  dateRange,
+  dateRange: _dateRange,
 }: SimpleFinancialMetricsProps) {
   if (isLoading) {
     return (
@@ -83,21 +83,6 @@ export function SimpleFinancialMetrics({
           </CardContent>
         </Card>
       </div>
-
-      {dateRange && (
-        <Card>
-          <CardHeader>
-            <CardTitle className="text-sm font-medium">Date Range</CardTitle>
-          </CardHeader>
-          <CardContent>
-            <p className="text-muted-foreground text-sm">
-              {dateRange.from && dateRange.to
-                ? `${dateRange.from.toLocaleDateString()} - ${dateRange.to.toLocaleDateString()}`
-                : 'Custom date range selected'}
-            </p>
-          </CardContent>
-        </Card>
-      )}
     </div>
   );
 }

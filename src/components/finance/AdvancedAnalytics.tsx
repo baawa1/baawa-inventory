@@ -18,10 +18,12 @@ import {
   IconChartLine,
   IconTarget,
   IconBrain,
+  IconLoader,
 } from '@tabler/icons-react';
 import { formatCurrency } from '@/lib/utils';
 import { DateRange } from 'react-day-picker';
 import { useAdvancedAnalytics } from '@/hooks/api/useAdvancedAnalytics';
+import { DateRangePickerWithPresets } from '@/components/ui/date-range-picker-with-presets';
 
 interface AdvancedAnalyticsProps {
   dateRange?: DateRange;
@@ -36,21 +38,47 @@ export function AdvancedAnalytics({
 }: AdvancedAnalyticsProps) {
   const [metric, setMetric] = useState('revenue');
   const [analysisType, setAnalysisType] = useState('trends');
+  const [localDateRange, setLocalDateRange] = useState<DateRange | undefined>(
+    dateRange
+  );
 
   const { data: advancedAnalyticsData, isLoading } = useAdvancedAnalytics({
-    dateRange,
+    dateRange: localDateRange || dateRange,
     type: transactionType as 'all' | 'income' | 'expense',
     paymentMethod: paymentMethod !== 'all' ? paymentMethod : undefined,
   });
 
+  const handleDateRangeChange = (newDateRange: DateRange | undefined) => {
+    setLocalDateRange(newDateRange);
+  };
+
   if (isLoading) {
     return (
-      <div className="space-y-6">
-        <div className="py-8 text-center">
-          <div className="border-primary mx-auto h-8 w-8 animate-spin border-b-2"></div>
-          <p className="text-muted-foreground mt-2">
-            Loading advanced analytics...
-          </p>
+      <div className="space-y-6 p-6">
+        {/* Header */}
+        <div className="flex flex-col items-start justify-between gap-4 sm:flex-row sm:items-center">
+          <div>
+            <h1 className="text-3xl font-bold tracking-tight">
+              Advanced Analytics
+            </h1>
+            <p className="text-muted-foreground">
+              Deep insights and predictive analysis
+            </p>
+          </div>
+          <DateRangePickerWithPresets
+            date={localDateRange || dateRange}
+            onDateChange={handleDateRangeChange}
+            placeholder="Select date range"
+            className="w-[300px]"
+          />
+        </div>
+        <div className="flex items-center justify-center py-12">
+          <div className="text-center">
+            <IconLoader className="text-primary mx-auto h-8 w-8 animate-spin" />
+            <p className="text-muted-foreground mt-2 text-sm">
+              Loading advanced analytics...
+            </p>
+          </div>
         </div>
       </div>
     );
@@ -58,8 +86,25 @@ export function AdvancedAnalytics({
 
   if (!advancedAnalyticsData) {
     return (
-      <div className="space-y-6">
-        <div className="py-8 text-center">
+      <div className="space-y-6 p-6">
+        {/* Header */}
+        <div className="flex flex-col items-start justify-between gap-4 sm:flex-row sm:items-center">
+          <div>
+            <h1 className="text-3xl font-bold tracking-tight">
+              Advanced Analytics
+            </h1>
+            <p className="text-muted-foreground">
+              Deep insights and predictive analysis
+            </p>
+          </div>
+          <DateRangePickerWithPresets
+            date={localDateRange || dateRange}
+            onDateChange={handleDateRangeChange}
+            placeholder="Select date range"
+            className="w-[300px]"
+          />
+        </div>
+        <div className="flex items-center justify-center py-12">
           <p className="text-muted-foreground">
             No advanced analytics data available
           </p>
@@ -95,16 +140,24 @@ export function AdvancedAnalytics({
   };
 
   return (
-    <div className="space-y-6">
+    <div className="space-y-6 p-6">
       {/* Header */}
-      <div className="flex items-center justify-between">
+      <div className="flex flex-col items-start justify-between gap-4 sm:flex-row sm:items-center">
         <div>
-          <h2 className="text-2xl font-bold">Advanced Analytics</h2>
+          <h1 className="text-3xl font-bold tracking-tight">
+            Advanced Analytics
+          </h1>
           <p className="text-muted-foreground">
             Deep insights and predictive analysis
           </p>
         </div>
         <div className="flex items-center gap-2">
+          <DateRangePickerWithPresets
+            date={localDateRange || dateRange}
+            onDateChange={handleDateRangeChange}
+            placeholder="Select date range"
+            className="w-[300px]"
+          />
           <Select value={metric} onValueChange={setMetric}>
             <SelectTrigger className="w-40">
               <SelectValue />

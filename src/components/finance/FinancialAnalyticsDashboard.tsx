@@ -25,8 +25,7 @@ import { DateRange } from 'react-day-picker';
 import Link from 'next/link';
 
 // Import custom components
-import { DateRangePicker } from '@/components/ui/date-range-picker';
-import { CustomDateInput } from '@/components/ui/custom-date-input';
+import { DateRangePickerWithPresets } from '@/components/ui/date-range-picker-with-presets';
 import { FinancialCharts } from './FinancialCharts';
 import { TransactionList } from './TransactionList';
 import { SimpleFinancialMetrics } from './SimpleFinancialMetrics';
@@ -76,9 +75,14 @@ export function FinancialAnalyticsDashboard({
     setDateRange(newDateRange);
   };
 
-  // Handle custom date input
-  const handleCustomDateRange = (customRange: DateRange | undefined) => {
-    setDateRange(customRange);
+  // Reset filters
+  const handleResetFilters = () => {
+    setDateRange({
+      from: new Date(Date.now() - 30 * 24 * 60 * 60 * 1000), // Last 30 days
+      to: new Date(),
+    });
+    setTransactionType('all');
+    setPaymentMethod('all');
   };
 
   // Refresh data
@@ -93,9 +97,9 @@ export function FinancialAnalyticsDashboard({
   };
 
   return (
-    <div className="space-y-6">
+    <div className="space-y-6 p-6">
       {/* Header */}
-      <div className="flex items-center justify-between">
+      <div className="flex flex-col items-start justify-between gap-4 sm:flex-row sm:items-center">
         <div>
           <h1 className="text-3xl font-bold tracking-tight">
             Financial Analytics
@@ -131,29 +135,30 @@ export function FinancialAnalyticsDashboard({
       {/* Filters */}
       <Card>
         <CardHeader>
-          <CardTitle className="flex items-center gap-2">
-            <IconFilter className="h-5 w-5" />
-            Filters
+          <CardTitle className="flex items-center justify-between">
+            <div className="flex items-center gap-2">
+              <IconFilter className="h-5 w-5" />
+              Filters
+            </div>
+            <Button
+              onClick={handleResetFilters}
+              variant="outline"
+              size="sm"
+              className="text-xs"
+            >
+              Reset Filters
+            </Button>
           </CardTitle>
         </CardHeader>
         <CardContent>
-          <div className="grid grid-cols-1 gap-4 md:grid-cols-2 lg:grid-cols-4">
+          <div className="grid grid-cols-1 gap-4 md:grid-cols-3">
             {/* Date Range Picker */}
             <div className="space-y-2">
               <label className="text-sm font-medium">Date Range</label>
-              <DateRangePicker
+              <DateRangePickerWithPresets
                 date={dateRange}
                 onDateChange={handleDateRangeChange}
                 placeholder="Select date range"
-              />
-            </div>
-
-            {/* Custom Date Input */}
-            <div className="space-y-2">
-              <label className="text-sm font-medium">Custom Range</label>
-              <CustomDateInput
-                onDateRangeChange={handleCustomDateRange}
-                placeholder="e.g., 'Last 7 days'"
               />
             </div>
 
@@ -230,13 +235,11 @@ export function FinancialAnalyticsDashboard({
           />
 
           {/* Charts */}
-          <div className="grid grid-cols-1 gap-6 lg:grid-cols-2">
-            <FinancialCharts
-              dateRange={dateRange}
-              transactionType={transactionType}
-              paymentMethod={paymentMethod}
-            />
-          </div>
+          <FinancialCharts
+            dateRange={dateRange}
+            transactionType={transactionType}
+            paymentMethod={paymentMethod}
+          />
         </TabsContent>
 
         {/* Transactions Tab */}
