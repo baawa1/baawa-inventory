@@ -367,7 +367,14 @@ export const emailTestUtils = {
 
     if (isDevelopment || forceTestEmail) {
       const purpose = testPurpose || 'dev';
-      return emailTestUtils.getTestEmailFor(purpose as any);
+      return emailTestUtils.getTestEmailFor(
+        purpose as
+          | 'verification'
+          | 'password-reset'
+          | 'approval'
+          | 'welcome'
+          | 'general'
+      );
     }
 
     return originalEmail;

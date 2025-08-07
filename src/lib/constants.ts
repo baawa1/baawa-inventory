@@ -131,7 +131,9 @@ export type SuccessfulPaymentStatus =
 
 // Helper function for runtime status checking (avoids TypeScript strict typing issues)
 export function isSuccessfulPaymentStatus(status: string): boolean {
-  return SUCCESSFUL_PAYMENT_STATUSES.includes(status as SuccessfulPaymentStatus);
+  return SUCCESSFUL_PAYMENT_STATUSES.includes(
+    status as SuccessfulPaymentStatus
+  );
 }
 
 // Discount Type Constants (must match Prisma DiscountType enum exactly)
