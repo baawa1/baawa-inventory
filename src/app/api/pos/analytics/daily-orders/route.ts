@@ -2,7 +2,7 @@ import { withAuth, AuthenticatedRequest } from '@/lib/api-middleware';
 import { handleApiError } from '@/lib/api-error-handler-new';
 import { createApiResponse } from '@/lib/api-response';
 import { prisma } from '@/lib/db';
-import { PAYMENT_STATUS } from '@/lib/constants';
+import { SUCCESSFUL_PAYMENT_STATUSES } from '@/lib/constants';
 
 export const GET = withAuth(async (request: AuthenticatedRequest) => {
   try {
@@ -25,7 +25,9 @@ export const GET = withAuth(async (request: AuthenticatedRequest) => {
           gte: startDate,
           lte: endDate,
         },
-        payment_status: PAYMENT_STATUS.PAID,
+        payment_status: {
+          in: SUCCESSFUL_PAYMENT_STATUSES,
+        },
       },
       select: {
         id: true,

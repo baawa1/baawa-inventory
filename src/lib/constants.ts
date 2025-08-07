@@ -120,6 +120,15 @@ export const TRANSACTION_STATUS = {
 export type TransactionStatus =
   (typeof TRANSACTION_STATUS)[keyof typeof TRANSACTION_STATUS];
 
+// Successful Payment Statuses for Sales Transactions
+export const SUCCESSFUL_PAYMENT_STATUSES = [
+  PAYMENT_STATUS.PAID,
+  TRANSACTION_STATUS.COMPLETED,
+];
+
+export type SuccessfulPaymentStatus =
+  (typeof SUCCESSFUL_PAYMENT_STATUSES)[number];
+
 // Discount Type Constants (must match Prisma DiscountType enum exactly)
 export const DISCOUNT_TYPE = {
   AMOUNT: 'AMOUNT',
@@ -351,6 +360,95 @@ export const SUCCESS_MESSAGES = {
 } as const;
 
 // Note: User Role Constants are defined in @/lib/auth/roles.ts
+
+// ===== STATUS GROUPINGS FOR COMMON USE CASES =====
+//
+// These groupings allow you to filter by logical categories across different models:
+//
+// USAGE EXAMPLES:
+//
+// 1. Filter successful transactions (for revenue calculations):
+//    where: { payment_status: { in: SUCCESSFUL_PAYMENT_STATUSES } }
+//
+// 2. Filter pending items (for approval workflows):
+//    where: { status: { in: PENDING_STATUSES } }
+//
+// 3. Filter cancelled/rejected items (for failed transaction reports):
+//    where: { status: { in: CANCELLED_REJECTED_STATUSES } }
+//
+// 4. Filter approved items (for completed workflow reports):
+//    where: { status: { in: APPROVED_STATUSES } }
+//
+// 5. Filter draft items (for items in progress):
+//    where: { status: { in: DRAFT_STATUSES } }
+//
+// 6. Filter active/published items (for public-facing content):
+//    where: { status: { in: ACTIVE_PUBLISHED_STATUSES } }
+//
+// 7. Filter all items (for comprehensive reports):
+//    where: { status: { in: ALL_STATUSES } }
+//
+// BENEFITS:
+// - Single source of truth for status filtering
+// - Consistent behavior across all API endpoints
+// - Easy to add/remove statuses from groups
+// - Type-safe filtering with TypeScript
+// - Maintainable and scalable code
+
+// Pending Statuses (for filtering pending items)
+export const PENDING_STATUSES = [
+  PAYMENT_STATUS.PENDING,
+  TRANSACTION_STATUS.PENDING,
+  STOCK_RECONCILIATION_STATUS.PENDING,
+  STOCK_ADJUSTMENT_STATUS.PENDING,
+] as const;
+
+export type PendingStatus = (typeof PENDING_STATUSES)[number];
+
+// Cancelled/Rejected Statuses (for filtering failed/denied items)
+export const CANCELLED_REJECTED_STATUSES = [
+  PAYMENT_STATUS.CANCELLED,
+  PAYMENT_STATUS.REFUNDED,
+  TRANSACTION_STATUS.CANCELLED,
+  TRANSACTION_STATUS.REFUNDED,
+  STOCK_RECONCILIATION_STATUS.REJECTED,
+  STOCK_ADJUSTMENT_STATUS.REJECTED,
+] as const;
+
+export type CancelledRejectedStatus =
+  (typeof CANCELLED_REJECTED_STATUSES)[number];
+
+// Approved Statuses (for filtering approved items)
+export const APPROVED_STATUSES = [
+  STOCK_RECONCILIATION_STATUS.APPROVED,
+  STOCK_ADJUSTMENT_STATUS.APPROVED,
+] as const;
+
+export type ApprovedStatus = (typeof APPROVED_STATUSES)[number];
+
+// Draft Statuses (for filtering draft items)
+export const DRAFT_STATUSES = [STOCK_RECONCILIATION_STATUS.DRAFT] as const;
+
+export type DraftStatus = (typeof DRAFT_STATUSES)[number];
+
+// Active/Published Statuses (for filtering active items)
+export const ACTIVE_PUBLISHED_STATUSES = [CONTENT_STATUS.PUBLISHED] as const;
+
+export type ActivePublishedStatus = (typeof ACTIVE_PUBLISHED_STATUSES)[number];
+
+// All Statuses (for comprehensive filtering)
+export const ALL_STATUSES = [
+  ...SUCCESSFUL_PAYMENT_STATUSES,
+  ...PENDING_STATUSES,
+  ...CANCELLED_REJECTED_STATUSES,
+  ...APPROVED_STATUSES,
+  ...DRAFT_STATUSES,
+  ...ACTIVE_PUBLISHED_STATUSES,
+] as const;
+
+export type AllStatus = (typeof ALL_STATUSES)[number];
+
+// ===== END STATUS GROUPINGS =====
 
 // Default Values
 export const DEFAULTS = {

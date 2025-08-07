@@ -2,6 +2,7 @@ import { withAuth, AuthenticatedRequest } from '@/lib/api-middleware';
 import { handleApiError } from '@/lib/api-error-handler-new';
 import { createApiResponse } from '@/lib/api-response';
 import { prisma } from '@/lib/db';
+import { SUCCESSFUL_PAYMENT_STATUSES } from '@/lib/constants';
 
 interface KPIData {
   totalRevenue: number;
@@ -141,7 +142,9 @@ export const GET = withAuth(async (request: AuthenticatedRequest) => {
             gte: periodStart,
             lte: periodEnd,
           },
-          payment_status: 'paid', // Use lowercase to match database default
+          payment_status: {
+            in: SUCCESSFUL_PAYMENT_STATUSES,
+          },
         },
         _sum: {
           total_amount: true,
@@ -158,7 +161,9 @@ export const GET = withAuth(async (request: AuthenticatedRequest) => {
             gte: periodStart,
             lte: periodEnd,
           },
-          payment_status: 'paid', // Use lowercase to match database default
+          payment_status: {
+            in: SUCCESSFUL_PAYMENT_STATUSES,
+          },
           customer_email: {
             not: null,
           },
@@ -178,7 +183,9 @@ export const GET = withAuth(async (request: AuthenticatedRequest) => {
               gte: periodStart,
               lte: periodEnd,
             },
-            payment_status: 'paid', // Use lowercase to match database default
+            payment_status: {
+              in: SUCCESSFUL_PAYMENT_STATUSES,
+            },
           },
           product_id: {
             not: null,
@@ -197,22 +204,60 @@ export const GET = withAuth(async (request: AuthenticatedRequest) => {
       }),
 
       // Current period revenue by day
-      prisma.salesTransaction.groupBy({
-        by: ['created_at'],
-        where: {
-          created_at: {
-            gte: periodStart,
-            lte: periodEnd,
+      prisma.salesTransaction
+        .groupBy({
+          by: ['created_at'],
+          where: {
+            created_at: {
+              gte: periodStart,
+              lte: periodEnd,
+            },
+            payment_status: {
+              in: SUCCESSFUL_PAYMENT_STATUSES,
+            },
           },
-          payment_status: 'paid', // Use lowercase to match database default
-        },
-        _sum: {
-          total_amount: true,
-        },
-        orderBy: {
-          created_at: 'asc',
-        },
-      }),
+          _sum: {
+            total_amount: true,
+          },
+          orderBy: {
+            created_at: 'asc',
+          },
+        })
+        .then(results => {
+          // Group by date only (not time) and sum the amounts
+          const dailyTotals = new Map();
+
+          results.forEach(item => {
+            if (item.created_at) {
+              const dateKey = item.created_at.toISOString().split('T')[0];
+              const currentTotal = dailyTotals.get(dateKey) || 0;
+              dailyTotals.set(
+                dateKey,
+                currentTotal + Number(item._sum.total_amount)
+              );
+            }
+          });
+
+          // Fill in all dates in the range, even if no transactions
+          const allDates = [];
+          const currentDate = new Date(periodStart);
+          const endDate = new Date(periodEnd);
+
+          while (currentDate <= endDate) {
+            const dateKey = currentDate.toISOString().split('T')[0];
+            const total = dailyTotals.get(dateKey) || 0;
+
+            allDates.push({
+              created_at: new Date(currentDate),
+              _sum: { total_amount: total },
+            });
+
+            // Move to next day
+            currentDate.setDate(currentDate.getDate() + 1);
+          }
+
+          return allDates;
+        }),
 
       // Current period recent transactions
       prisma.salesTransaction.findMany({
@@ -221,7 +266,9 @@ export const GET = withAuth(async (request: AuthenticatedRequest) => {
             gte: periodStart,
             lte: periodEnd,
           },
-          payment_status: 'paid', // Use lowercase to match database default
+          payment_status: {
+            in: SUCCESSFUL_PAYMENT_STATUSES,
+          },
         },
         select: {
           id: true,
@@ -246,7 +293,9 @@ export const GET = withAuth(async (request: AuthenticatedRequest) => {
               gte: previousPeriodStart,
               lte: previousPeriodEnd,
             },
-            payment_status: 'paid', // Use lowercase to match database default
+            payment_status: {
+              in: SUCCESSFUL_PAYMENT_STATUSES,
+            },
           },
           _sum: {
             total_amount: true,
@@ -262,7 +311,9 @@ export const GET = withAuth(async (request: AuthenticatedRequest) => {
               gte: previousPeriodStart,
               lte: previousPeriodEnd,
             },
-            payment_status: 'paid', // Use lowercase to match database default
+            payment_status: {
+              in: SUCCESSFUL_PAYMENT_STATUSES,
+            },
             customer_email: {
               not: null,
             },

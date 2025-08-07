@@ -2,7 +2,7 @@ import { NextResponse } from 'next/server';
 import { withAuth, AuthenticatedRequest } from '@/lib/api-middleware';
 import { handleApiError } from '@/lib/api-error-handler-new';
 import { prisma } from '@/lib/db';
-import { PAYMENT_STATUS } from '@/lib/constants';
+import { SUCCESSFUL_PAYMENT_STATUSES } from '@/lib/constants';
 
 export const GET = withAuth(async (request: AuthenticatedRequest) => {
   try {
@@ -37,7 +37,9 @@ export const GET = withAuth(async (request: AuthenticatedRequest) => {
                 gte: periodStart,
                 lte: periodEnd,
               },
-              payment_status: PAYMENT_STATUS.PAID,
+              payment_status: {
+                in: SUCCESSFUL_PAYMENT_STATUSES,
+              },
             },
           },
           include: {

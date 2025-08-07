@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from 'next/server';
 import { auth } from '#root/auth';
 import { prisma } from '@/lib/db';
 import { USER_ROLES, hasRole } from '@/lib/auth/roles';
+import { SUCCESSFUL_PAYMENT_STATUSES } from '@/lib/constants';
 import { Prisma } from '@prisma/client';
 
 export async function GET(request: NextRequest) {
@@ -360,7 +361,7 @@ export async function POST(request: NextRequest) {
         customer_email: email.toLowerCase(),
         customer_phone: phone || null,
         total_amount: new Prisma.Decimal(0),
-        payment_status: 'completed',
+        payment_status: SUCCESSFUL_PAYMENT_STATUSES[1], // Use 'COMPLETED'
         payment_method: 'customer_creation',
         created_at: new Date(),
         updated_at: new Date(),

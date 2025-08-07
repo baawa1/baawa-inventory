@@ -1,6 +1,7 @@
 import { NextResponse } from 'next/server';
 import { withPOSAuth, AuthenticatedRequest } from '@/lib/api-auth-middleware';
 import { prisma } from '@/lib/db';
+import { SUCCESSFUL_PAYMENT_STATUSES } from '@/lib/constants';
 
 // Helper function to get date filter based on period
 function getPeriodFilter(period: string): Date {
@@ -89,7 +90,7 @@ export const GET = withPOSAuth(async (request: AuthenticatedRequest) => {
       by: ['customer_email'],
       where: {
         payment_status: {
-          in: ['paid', 'completed', 'PAID'], // Include all successful payment statuses
+          in: SUCCESSFUL_PAYMENT_STATUSES,
         },
         customer_email: {
           not: null,
@@ -114,7 +115,7 @@ export const GET = withPOSAuth(async (request: AuthenticatedRequest) => {
       by: ['customer_email', 'customer_name', 'customer_phone'],
       where: {
         payment_status: {
-          in: ['paid', 'completed', 'PAID'],
+          in: SUCCESSFUL_PAYMENT_STATUSES,
         },
         customer_email: {
           not: null,
@@ -129,7 +130,7 @@ export const GET = withPOSAuth(async (request: AuthenticatedRequest) => {
     const currentPeriodTransactions = await prisma.salesTransaction.findMany({
       where: {
         payment_status: {
-          in: ['paid', 'completed', 'PAID'], // Include all successful payment statuses
+          in: SUCCESSFUL_PAYMENT_STATUSES,
         },
         created_at: {
           gte: periodStart,
@@ -152,7 +153,7 @@ export const GET = withPOSAuth(async (request: AuthenticatedRequest) => {
     const previousPeriodTransactions = await prisma.salesTransaction.findMany({
       where: {
         payment_status: {
-          in: ['paid', 'completed', 'PAID'], // Include all successful payment statuses
+          in: SUCCESSFUL_PAYMENT_STATUSES,
         },
         created_at: {
           gte: previousPeriodStart,
@@ -294,7 +295,7 @@ export const GET = withPOSAuth(async (request: AuthenticatedRequest) => {
     const historicalTransactions = await prisma.salesTransaction.findMany({
       where: {
         payment_status: {
-          in: ['paid', 'completed', 'PAID'], // Include all successful payment statuses
+          in: SUCCESSFUL_PAYMENT_STATUSES,
         },
         created_at: {
           gte: historicalStartDate,

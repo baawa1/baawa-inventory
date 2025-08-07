@@ -2,6 +2,7 @@ import { withAuth, AuthenticatedRequest } from '@/lib/api-middleware';
 import { createApiResponse } from '@/lib/api-response';
 import { prisma } from '@/lib/db';
 import { INCOME_SOURCES, EXPENSE_TYPES } from '@/lib/constants/finance';
+import { SUCCESSFUL_PAYMENT_STATUSES } from '@/lib/constants';
 
 // GET /api/finance/reports - Get financial reports with real data including sales and purchases
 export const GET = withAuth(async (request: AuthenticatedRequest) => {
@@ -92,7 +93,7 @@ async function getFinancialSummary(
       if (startDate) salesWhereClause.created_at.gte = new Date(startDate);
       if (endDate) salesWhereClause.created_at.lte = new Date(endDate);
     }
-    salesWhereClause.payment_status = 'paid';
+    salesWhereClause.payment_status = { in: SUCCESSFUL_PAYMENT_STATUSES };
 
     const salesTotal = await prisma.salesTransaction.aggregate({
       where: salesWhereClause,
@@ -189,7 +190,7 @@ async function getIncomeReport(
       if (startDate) salesWhereClause.created_at.gte = new Date(startDate);
       if (endDate) salesWhereClause.created_at.lte = new Date(endDate);
     }
-    salesWhereClause.payment_status = 'paid';
+    salesWhereClause.payment_status = { in: SUCCESSFUL_PAYMENT_STATUSES };
 
     const salesTransactions = await prisma.salesTransaction.findMany({
       where: salesWhereClause,
@@ -374,7 +375,7 @@ async function getCashFlowReport(
       if (startDate) salesWhereClause.created_at.gte = new Date(startDate);
       if (endDate) salesWhereClause.created_at.lte = new Date(endDate);
     }
-    salesWhereClause.payment_status = 'paid';
+    salesWhereClause.payment_status = { in: SUCCESSFUL_PAYMENT_STATUSES };
 
     const salesTotal = await prisma.salesTransaction.aggregate({
       where: salesWhereClause,
@@ -471,7 +472,7 @@ async function getRecentTransactions(
       if (startDate) salesWhereClause.created_at.gte = new Date(startDate);
       if (endDate) salesWhereClause.created_at.lte = new Date(endDate);
     }
-    salesWhereClause.payment_status = 'paid';
+    salesWhereClause.payment_status = { in: SUCCESSFUL_PAYMENT_STATUSES };
 
     const salesTransactions = await prisma.salesTransaction.findMany({
       where: salesWhereClause,
