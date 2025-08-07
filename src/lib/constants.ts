@@ -129,6 +129,11 @@ export const SUCCESSFUL_PAYMENT_STATUSES = [
 export type SuccessfulPaymentStatus =
   (typeof SUCCESSFUL_PAYMENT_STATUSES)[number];
 
+// Helper function for runtime status checking (avoids TypeScript strict typing issues)
+export function isSuccessfulPaymentStatus(status: string): boolean {
+  return SUCCESSFUL_PAYMENT_STATUSES.includes(status as SuccessfulPaymentStatus);
+}
+
 // Discount Type Constants (must match Prisma DiscountType enum exactly)
 export const DISCOUNT_TYPE = {
   AMOUNT: 'AMOUNT',

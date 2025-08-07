@@ -3,7 +3,7 @@ import { withAuth, AuthenticatedRequest } from '@/lib/api-middleware';
 import { createApiResponse } from '@/lib/api-response';
 import {
   PRODUCT_STATUS,
-  PAYMENT_STATUS,
+  SUCCESSFUL_PAYMENT_STATUSES,
   API_LIMITS,
   STOCK_THRESHOLDS,
   DATE_RANGES,
@@ -40,7 +40,7 @@ export const GET = withAuth(async (request: AuthenticatedRequest) => {
         const totalSales = await tx.salesTransaction.aggregate({
           where: {
             created_at: { gte: startDate },
-            payment_status: PAYMENT_STATUS.PAID,
+            payment_status: { in: SUCCESSFUL_PAYMENT_STATUSES },
           },
           _sum: { total_amount: true },
         });
@@ -48,7 +48,7 @@ export const GET = withAuth(async (request: AuthenticatedRequest) => {
         const netSales = await tx.salesTransaction.aggregate({
           where: {
             created_at: { gte: startDate },
-            payment_status: PAYMENT_STATUS.PAID,
+            payment_status: { in: SUCCESSFUL_PAYMENT_STATUSES },
           },
           _sum: { subtotal: true },
         });
@@ -56,7 +56,7 @@ export const GET = withAuth(async (request: AuthenticatedRequest) => {
         const totalTransactions = await tx.salesTransaction.count({
           where: {
             created_at: { gte: startDate },
-            payment_status: PAYMENT_STATUS.PAID,
+            payment_status: { in: SUCCESSFUL_PAYMENT_STATUSES },
           },
         });
 
@@ -64,7 +64,7 @@ export const GET = withAuth(async (request: AuthenticatedRequest) => {
           where: {
             sales_transactions: {
               created_at: { gte: startDate },
-              payment_status: PAYMENT_STATUS.PAID,
+              payment_status: { in: SUCCESSFUL_PAYMENT_STATUSES },
             },
           },
           _sum: { quantity: true },
@@ -89,7 +89,7 @@ export const GET = withAuth(async (request: AuthenticatedRequest) => {
         by: ['customer_name', 'customer_email'],
         where: {
           created_at: { gte: startDate },
-          payment_status: PAYMENT_STATUS.PAID,
+          payment_status: { in: SUCCESSFUL_PAYMENT_STATUSES },
           customer_name: { not: null },
         },
         _sum: { total_amount: true },
@@ -162,7 +162,7 @@ export const GET = withAuth(async (request: AuthenticatedRequest) => {
               date.getDate() + 1
             ),
           },
-          payment_status: PAYMENT_STATUS.PAID,
+          payment_status: { in: SUCCESSFUL_PAYMENT_STATUSES },
         },
         _sum: { total_amount: true, subtotal: true },
         _count: { id: true },
