@@ -116,7 +116,7 @@ export function DailyOrdersDetails({ user: _, date }: DailyOrdersDetailsProps) {
     toast.error('Failed to load daily orders');
   }
 
-  const orders = ordersData?.orders || [];
+  const orders = useMemo(() => ordersData?.orders || [], [ordersData?.orders]);
 
   // Filter orders based on search and filters
   const filteredOrders = useMemo(() => {

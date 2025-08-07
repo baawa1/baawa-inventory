@@ -443,13 +443,14 @@ export default function BrandList({ user }: BrandListProps) {
             <AlertDialogDescription>
               {brandToDelete?.productCount === 0 ? (
                 <>
-                  Are you sure you want to delete the brand "
-                  {brandToDelete?.name}"? This action cannot be undone.
+                  Are you sure you want to delete the brand &quot;
+                  {brandToDelete?.name}&quot;? This action cannot be undone.
                 </>
               ) : (
                 <>
-                  Cannot delete the brand "{brandToDelete?.name}" because it has{' '}
-                  {brandToDelete?.productCount} associated product
+                  Cannot delete the brand &quot;{brandToDelete?.name}&quot;
+                  because it has {brandToDelete?.productCount} associated
+                  product
                   {brandToDelete?.productCount === 1 ? '' : 's'}. Please remove
                   or reassign all products from this brand before deleting it.
                 </>

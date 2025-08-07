@@ -515,7 +515,7 @@ export function StockReconciliationEditForm({
                       ))}
                       {products.length === 0 && (
                         <div className="text-muted-foreground py-4 text-center">
-                          No products found matching "{searchTerm}"
+                          No products found matching &quot;{searchTerm}&quot;
                         </div>
                       )}
                     </div>
@@ -670,8 +670,8 @@ export function StockReconciliationEditForm({
                 </div>
               ) : (
                 <div className="text-muted-foreground py-8 text-center">
-                  No products added yet. Use the "Add Product" button to get
-                  started.
+                  No products added yet. Use the &quot;Add Product&quot; button
+                  to get started.
                 </div>
               )}
             </CardContent>

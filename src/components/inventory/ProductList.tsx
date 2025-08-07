@@ -191,10 +191,19 @@ const ProductList = ({ user }: ProductListProps) => {
     syncAllEntitiesMutation.error,
   ]);
 
-  // Extract data from queries
-  const products = productsQuery.data?.data || [];
-  const brands = brandsQuery.data?.data || [];
-  const categories = categoriesQuery.data?.data || [];
+  // Extract data from queries - memoized to prevent unnecessary re-renders
+  const products = useMemo(
+    () => productsQuery.data?.data || [],
+    [productsQuery.data?.data]
+  );
+  const brands = useMemo(
+    () => brandsQuery.data?.data || [],
+    [brandsQuery.data?.data]
+  );
+  const categories = useMemo(
+    () => categoriesQuery.data?.data || [],
+    [categoriesQuery.data?.data]
+  );
 
   const canManageProducts = ['ADMIN', 'MANAGER'].includes(user.role);
   const canEditProducts = ALL_ROLES.includes(user.role as any);
@@ -219,13 +228,16 @@ const ProductList = ({ user }: ProductListProps) => {
     [brands]
   );
 
-  // Static status options (no need to memoize)
-  const statusOptions = [
-    { value: 'ACTIVE', label: 'Active' },
-    { value: 'INACTIVE', label: 'Inactive' },
-    { value: 'OUT_OF_STOCK', label: 'Out of Stock' },
-    { value: 'DISCONTINUED', label: 'Discontinued' },
-  ];
+  // Static status options - memoized to prevent unnecessary re-renders
+  const statusOptions = useMemo(
+    () => [
+      { value: 'ACTIVE', label: 'Active' },
+      { value: 'INACTIVE', label: 'Inactive' },
+      { value: 'OUT_OF_STOCK', label: 'Out of Stock' },
+      { value: 'DISCONTINUED', label: 'Discontinued' },
+    ],
+    []
+  );
 
   // Filter configurations - properly memoized to prevent unnecessary re-renders
   const filterConfigs: FilterConfig[] = useMemo(
@@ -252,7 +264,7 @@ const ProductList = ({ user }: ProductListProps) => {
         placeholder: 'All Status',
       },
     ],
-    [categoryOptions, brandOptions]
+    [categoryOptions, brandOptions, statusOptions]
   );
 
   const handleFilterChange = (key: string, value: string | boolean) => {

@@ -400,8 +400,9 @@ export function CouponList({ user }: CouponListProps) {
               Delete Coupon
             </AlertDialogTitle>
             <AlertDialogDescription>
-              Are you sure you want to delete the coupon "{couponToDelete?.code}
-              "? This action cannot be undone.
+              Are you sure you want to delete the coupon &quot;
+              {couponToDelete?.code}
+              &quot;? This action cannot be undone.
             </AlertDialogDescription>
           </AlertDialogHeader>
           <AlertDialogFooter>
