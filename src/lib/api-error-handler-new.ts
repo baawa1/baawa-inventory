@@ -2,22 +2,77 @@ import { NextResponse } from 'next/server';
 import { ZodError } from 'zod';
 import { logger } from '@/lib/logger';
 
+// ===== TYPE DEFINITIONS =====
+
 export interface ApiError {
   message: string;
   code?: string;
-  details?: any;
+  details?: unknown;
 }
+
+export interface PrismaErrorMeta {
+  target?: string[];
+  [key: string]: unknown;
+}
+
+export interface PrismaError {
+  code: string;
+  meta?: PrismaErrorMeta;
+  target?: string[];
+  message: string;
+}
+
+export interface ValidationErrorDetail {
+  field: string;
+  message: string;
+  code: string;
+}
+
+export interface ApiResponseData {
+  [key: string]: unknown;
+}
+
+export interface PaginationInfo {
+  page: number;
+  limit: number;
+  total: number;
+  totalPages: number;
+  hasNext: boolean;
+  hasPrev: boolean;
+}
+
+export interface SuccessResponse<T = ApiResponseData> {
+  success: true;
+  message?: string;
+  data: T;
+}
+
+export interface PaginatedResponse<T = ApiResponseData> {
+  success: true;
+  message?: string;
+  data: T[];
+  pagination: PaginationInfo;
+}
+
+export interface ErrorResponse {
+  error: string;
+  code: string;
+  details?: unknown;
+  stack?: string;
+}
+
+// ===== API EXCEPTION CLASS =====
 
 export class ApiException extends Error {
   public statusCode: number;
   public code?: string;
-  public details?: any;
+  public details?: unknown;
 
   constructor(
     message: string,
     statusCode: number,
     code?: string,
-    details?: any
+    details?: unknown
   ) {
     super(message);
     this.name = 'ApiException';
@@ -26,6 +81,8 @@ export class ApiException extends Error {
     this.details = details;
   }
 }
+
+// ===== HELPER FUNCTIONS =====
 
 /**
  * Helper function to get error code based on status
@@ -50,6 +107,20 @@ function getErrorCode(statusCode: number): string {
 }
 
 /**
+ * Type guard to check if error is a Prisma error
+ */
+function isPrismaError(error: unknown): error is PrismaError {
+  return (
+    error !== null &&
+    typeof error === 'object' &&
+    'code' in error &&
+    typeof (error as PrismaError).code === 'string'
+  );
+}
+
+// ===== MAIN ERROR HANDLER =====
+
+/**
  * Standardized error response handler for API routes
  */
 export function handleApiError(
@@ -58,16 +129,20 @@ export function handleApiError(
 ): NextResponse {
   // Handle validation errors (Zod)
   if (error instanceof ZodError) {
+    const validationDetails: ValidationErrorDetail[] = error.errors.map(
+      err => ({
+        field: err.path.join('.'),
+        message: err.message,
+        code: err.code,
+      })
+    );
+
     return NextResponse.json(
       {
         error: 'Validation failed',
         code: 'VALIDATION_ERROR',
-        details: error.errors.map(err => ({
-          field: err.path.join('.'),
-          message: err.message,
-          code: err.code,
-        })),
-      },
+        details: validationDetails,
+      } as ErrorResponse,
       { status: 400 }
     );
   }
@@ -77,9 +152,9 @@ export function handleApiError(
     return NextResponse.json(
       {
         error: error.message,
-        code: error.code,
+        code: error.code || getErrorCode(error.statusCode),
         details: error.details,
-      },
+      } as ErrorResponse,
       { status: error.statusCode }
     );
   }
@@ -90,23 +165,21 @@ export function handleApiError(
       {
         error: error.message,
         code: getErrorCode(statusCode),
-      },
+      } as ErrorResponse,
       { status: statusCode }
     );
   }
 
   // Handle Prisma errors
-  if (error && typeof error === 'object' && 'code' in error) {
-    const prismaError = error as any;
-
-    switch (prismaError.code) {
+  if (isPrismaError(error)) {
+    switch (error.code) {
       case 'P2002':
         return NextResponse.json(
           {
             error: 'A record with this data already exists',
             code: 'DUPLICATE_RECORD',
-            details: prismaError.meta,
-          },
+            details: error.meta,
+          } as ErrorResponse,
           { status: 409 }
         );
       case 'P2025':
@@ -114,8 +187,8 @@ export function handleApiError(
           {
             error: 'Record not found',
             code: 'NOT_FOUND',
-            details: prismaError.meta,
-          },
+            details: error.meta,
+          } as ErrorResponse,
           { status: 404 }
         );
       case 'P2003':
@@ -123,22 +196,22 @@ export function handleApiError(
           {
             error: 'Foreign key constraint failed',
             code: 'CONSTRAINT_VIOLATION',
-            details: prismaError.meta,
-          },
+            details: error.meta,
+          } as ErrorResponse,
           { status: 400 }
         );
       default:
         logger.error('Prisma database error', {
-          code: prismaError.code,
-          meta: prismaError.meta,
-          target: prismaError.target,
-          message: prismaError.message,
+          code: error.code,
+          meta: error.meta,
+          target: error.target,
+          message: error.message,
         });
         return NextResponse.json(
           {
             error: 'Database operation failed',
             code: 'DATABASE_ERROR',
-          },
+          } as ErrorResponse,
           { status: 500 }
         );
     }
@@ -159,7 +232,7 @@ export function handleApiError(
         error: isDevelopment ? error.message : 'Internal server error',
         code: 'INTERNAL_ERROR',
         ...(isDevelopment && { stack: error.stack }),
-      },
+      } as ErrorResponse,
       { status: 500 }
     );
   }
@@ -173,16 +246,18 @@ export function handleApiError(
     {
       error: 'An unexpected error occurred',
       code: 'UNKNOWN_ERROR',
-    },
+    } as ErrorResponse,
     { status: 500 }
   );
 }
 
+// ===== RESPONSE CREATORS =====
+
 /**
  * Creates a standardized API response
  */
-export function createApiResponse(
-  data: any,
+export function createApiResponse<T = ApiResponseData>(
+  data: T,
   status: number = 200
 ): NextResponse {
   return NextResponse.json(data, { status });
@@ -191,8 +266,8 @@ export function createApiResponse(
 /**
  * Creates a standardized success response
  */
-export function createSuccessResponse(
-  data: any,
+export function createSuccessResponse<T = ApiResponseData>(
+  data: T,
   message?: string,
   status: number = 200
 ): NextResponse {
@@ -201,7 +276,7 @@ export function createSuccessResponse(
       success: true,
       message,
       data,
-    },
+    } as SuccessResponse<T>,
     { status }
   );
 }
@@ -209,16 +284,9 @@ export function createSuccessResponse(
 /**
  * Creates a paginated response
  */
-export function createPaginatedResponse(
-  data: any[],
-  pagination: {
-    page: number;
-    limit: number;
-    total: number;
-    totalPages: number;
-    hasNext: boolean;
-    hasPrev: boolean;
-  },
+export function createPaginatedResponse<T = ApiResponseData>(
+  data: T[],
+  pagination: PaginationInfo,
   message?: string
 ): NextResponse {
   return NextResponse.json({
@@ -226,16 +294,18 @@ export function createPaginatedResponse(
     message,
     data,
     pagination,
-  });
+  } as PaginatedResponse<T>);
 }
+
+// ===== MIDDLEWARE WRAPPER =====
 
 /**
  * Middleware wrapper for consistent error handling
  */
 export function withErrorHandling<
-  T extends (..._args: any[]) => Promise<NextResponse>,
+  T extends (..._args: unknown[]) => Promise<NextResponse>,
 >(handler: T): T {
-  return (async (..._args: any[]) => {
+  return (async (..._args: unknown[]) => {
     try {
       return await handler(..._args);
     } catch (error) {

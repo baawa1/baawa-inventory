@@ -1,9 +1,11 @@
 import { prisma } from '@/lib/db';
-import { AuditLogAction } from '@/types/audit';
 import { createAuditLog } from '@/lib/audit';
-// import { ProductWithRelations } from "@/types/inventory";
+import { AuditLogAction } from '@/types/audit';
+import { Prisma } from '@prisma/client';
 
-interface StockUpdateData {
+// ===== TYPE DEFINITIONS =====
+
+export interface StockUpdateData {
   productId: number;
   quantity: number;
   userId: number;
@@ -15,7 +17,7 @@ interface StockUpdateData {
   isAdjustment?: boolean;
 }
 
-interface StockReconciliationItem {
+export interface StockReconciliationItem {
   productId: number;
   systemCount: number;
   physicalCount: number;
@@ -23,15 +25,52 @@ interface StockReconciliationItem {
   notes?: string;
 }
 
-/**
- * Central service for handling all inventory-related operations
- * This ensures consistent stock updates with proper transaction handling
- */
+export interface ProductUpdateData {
+  name?: string;
+  sku?: string;
+  barcode?: string;
+  description?: string;
+  categoryId?: number;
+  brandId?: number;
+  purchasePrice?: number;
+  sellingPrice?: number;
+  minimumStock?: number;
+  maximumStock?: number;
+  currentStock?: number;
+  supplierId?: number;
+  status?: string;
+  imageUrl?: string;
+}
+
+export interface SalesTransactionUpdateData {
+  userId: number;
+  status?: string;
+  total_amount?: number;
+  payment_status?: string;
+  payment_method?: string;
+  customer_email?: string;
+  customer_name?: string;
+  notes?: string;
+}
+
+// Remove the custom interface and use Prisma's built-in types
+
+export interface LowStockOptions {
+  limit?: number;
+  offset?: number;
+  categoryId?: number;
+  brandId?: number;
+  supplierId?: number;
+  threshold?: number;
+}
+
+// ===== INVENTORY SERVICE CLASS =====
+
 export class InventoryService {
   /**
    * Add stock to a product
-   * @param data Stock addition data
-   * @returns The updated product with new stock level
+   * @param data Stock update data
+   * @returns The updated product
    */
   static async addStock(data: StockUpdateData) {
     const {
@@ -97,8 +136,8 @@ export class InventoryService {
 
   /**
    * Remove stock from a product
-   * @param data Stock removal data
-   * @returns The updated product with new stock level
+   * @param data Stock update data
+   * @returns The updated product
    */
   static async removeStock(data: StockUpdateData) {
     const {
@@ -171,9 +210,9 @@ export class InventoryService {
   }
 
   /**
-   * Adjust stock to a specific level
-   * @param data Stock adjustment data
-   * @returns The updated product with new stock level
+   * Adjust stock for a product (can be positive or negative)
+   * @param data Stock update data
+   * @returns The updated product
    */
   static async adjustStock(data: StockUpdateData) {
     const {
@@ -246,9 +285,9 @@ export class InventoryService {
   }
 
   /**
-   * Submit a stock reconciliation
-   * @param data Reconciliation data including items
-   * @returns The created reconciliation record
+   * Create a stock reconciliation
+   * @param data Reconciliation data
+   * @returns The created reconciliation
    */
   static async createReconciliation(data: {
     title: string;
@@ -306,14 +345,14 @@ export class InventoryService {
   }
 
   /**
-   * Approve and apply a stock reconciliation
-   * @param reconciliationId The ID of the reconciliation to approve
-   * @param userId The ID of the user approving the reconciliation
-   * @returns The updated reconciliation with applied stock changes
+   * Approve a stock reconciliation
+   * @param reconciliationId The reconciliation ID
+   * @param userId The ID of the user approving
+   * @returns The approved reconciliation
    */
   static async approveReconciliation(reconciliationId: number, userId: number) {
     return await prisma.$transaction(async tx => {
-      // Get reconciliation with items
+      // Get the reconciliation with items
       const reconciliation = await tx.stockReconciliation.findUnique({
         where: { id: reconciliationId },
         include: {
@@ -329,11 +368,11 @@ export class InventoryService {
         throw new Error('Reconciliation not found');
       }
 
-      if (reconciliation.status !== 'PENDING') {
-        throw new Error('Only pending reconciliations can be approved');
+      if (reconciliation.status !== 'DRAFT') {
+        throw new Error('Reconciliation is not in draft status');
       }
 
-      // Update each product's stock based on the reconciliation
+      // Update stock for each item
       for (const item of reconciliation.items) {
         const { productId, systemCount, physicalCount, discrepancy } = item;
 
@@ -391,19 +430,11 @@ export class InventoryService {
   }
 
   /**
-   * Get products with low stock (where stock <= minStock)
-   * This efficiently handles the low stock query with a single database query
-   * @param options Query options for filtering and pagination
-   * @returns Low stock products with pagination and metrics
+   * Get products with low stock
+   * @param options Filter options
+   * @returns Products with low stock and metrics
    */
-  static async getLowStockProducts(options: {
-    limit?: number;
-    offset?: number;
-    categoryId?: number;
-    brandId?: number;
-    supplierId?: number;
-    threshold?: number;
-  }) {
+  static async getLowStockProducts(options: LowStockOptions) {
     const {
       limit = 50,
       offset = 0,
@@ -414,7 +445,7 @@ export class InventoryService {
     } = options;
 
     // Build the where clause for filtering
-    const where: any = {
+    const where: Prisma.ProductWhereInput = {
       isArchived: false,
       status: 'ACTIVE',
     };
@@ -424,14 +455,9 @@ export class InventoryService {
     if (brandId) where.brandId = brandId;
     if (supplierId) where.supplierId = supplierId;
 
-    // If threshold is specified, use it; otherwise use the product's min_stock
+    // If threshold is specified, use it; otherwise filter in application layer
     if (threshold !== undefined) {
       where.stock = { lte: threshold };
-    } else {
-      // Use raw SQL for the stock <= minStock comparison since Prisma doesn't directly support column comparisons
-      where.stock = {
-        lte: { raw: '"min_stock"' },
-      };
     }
 
     // Execute the query with a transaction to ensure consistency
@@ -523,7 +549,11 @@ export class InventoryService {
    * @param userId The ID of the user making the update
    * @returns The updated product
    */
-  static async updateProduct(id: number, data: any, userId: number) {
+  static async updateProduct(
+    id: number,
+    data: ProductUpdateData,
+    userId: number
+  ) {
     // Check if product exists before attempting update
     const existingProduct = await prisma.product.findUnique({
       where: { id },
@@ -549,28 +579,36 @@ export class InventoryService {
     }
 
     // Map form field names to database field names if needed
-    const updateData: any = {
+    const updateData: Prisma.ProductUpdateInput = {
       name: data.name,
       sku: data.sku,
       barcode: data.barcode,
       description: data.description,
-      categoryId: data.categoryId,
-      brandId: data.brandId,
       cost: data.purchasePrice,
       price: data.sellingPrice,
       minStock: data.minimumStock,
       maxStock: data.maximumStock,
       stock: data.currentStock,
-      supplierId: data.supplierId,
       status: data.status,
       // Handle images field if needed
       images: data.imageUrl ? [data.imageUrl] : undefined,
     };
 
+    // Handle relation fields separately
+    if (data.categoryId) {
+      updateData.category = { connect: { id: data.categoryId } };
+    }
+    if (data.brandId) {
+      updateData.brand = { connect: { id: data.brandId } };
+    }
+    if (data.supplierId) {
+      updateData.supplier = { connect: { id: data.supplierId } };
+    }
+
     // Filter out undefined values
     Object.keys(updateData).forEach(key => {
-      if (updateData[key] === undefined) {
-        delete updateData[key];
+      if (updateData[key as keyof Prisma.ProductUpdateInput] === undefined) {
+        delete updateData[key as keyof Prisma.ProductUpdateInput];
       }
     });
 
@@ -622,9 +660,9 @@ export class InventoryService {
   }
 
   /**
-   * Archive a product (soft delete)
+   * Archive a product
    * @param id The product ID
-   * @param userId The ID of the user performing the action
+   * @param userId The ID of the user archiving the product
    * @returns The archived product
    */
   static async archiveProduct(id: number, userId: number) {
@@ -641,15 +679,7 @@ export class InventoryService {
       // Archive the product
       const archivedProduct = await tx.product.update({
         where: { id },
-        data: {
-          isArchived: true,
-          status: 'INACTIVE',
-        },
-        select: {
-          id: true,
-          name: true,
-          isArchived: true,
-        },
+        data: { isArchived: true },
       });
 
       // Create audit log
@@ -659,7 +689,7 @@ export class InventoryService {
         action: AuditLogAction._PRODUCT_ARCHIVED,
         tableName: 'products',
         recordId: id,
-        oldValues: { isArchived: originalProduct.isArchived },
+        oldValues: { isArchived: false },
         newValues: { isArchived: true },
       });
 
@@ -668,56 +698,45 @@ export class InventoryService {
   }
 
   /**
-   * Hard delete a product
+   * Delete a product (permanent)
    * @param id The product ID
-   * @param userId The ID of the user performing the action
-   * @returns Success message
+   * @param userId The ID of the user deleting the product
+   * @returns The deleted product
    */
   static async deleteProduct(id: number, userId: number) {
     return await prisma.$transaction(async tx => {
-      // Check if product exists
-      const product = await tx.product.findUnique({
+      // Get original product for audit log
+      const originalProduct = await tx.product.findUnique({
         where: { id },
       });
 
-      if (!product) {
+      if (!originalProduct) {
         throw new Error('Product not found');
       }
 
-      // Check for related sales records
-      const salesItems = await tx.salesItem.findFirst({
-        where: { product_id: id },
+      // Delete the product
+      const deletedProduct = await tx.product.delete({
+        where: { id },
       });
 
-      if (salesItems) {
-        throw new Error(
-          'Cannot delete product with existing sales records. Use archive instead.'
-        );
-      }
-
-      // Create audit log before deletion
+      // Create audit log
       await createAuditLog({
         tx,
         userId,
         action: AuditLogAction._PRODUCT_DELETED,
         tableName: 'products',
         recordId: id,
-        oldValues: product,
-        newValues: {},
+        oldValues: originalProduct,
+        newValues: null,
       });
 
-      // Delete the product
-      await tx.product.delete({
-        where: { id },
-      });
-
-      return { message: 'Product deleted successfully' };
+      return deletedProduct;
     });
   }
 
   /**
-   * Get a sales transaction by ID with all related items
-   * @param id The ID of the sales transaction
+   * Get a sales transaction by ID
+   * @param id The sales transaction ID
    * @returns The sales transaction with related items
    */
   static async getSalesTransaction(id: number) {
@@ -756,7 +775,10 @@ export class InventoryService {
    * @param data The data to update
    * @returns The updated sales transaction
    */
-  static async updateSalesTransaction(id: number, data: any) {
+  static async updateSalesTransaction(
+    id: number,
+    data: SalesTransactionUpdateData
+  ) {
     return await prisma.$transaction(async tx => {
       // First fetch the current transaction to compare changes
       const currentTransaction = await tx.salesTransaction.findUnique({

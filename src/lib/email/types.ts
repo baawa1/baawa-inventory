@@ -23,7 +23,7 @@ export interface EmailOptions {
   html: string;
   text?: string;
   attachments?: EmailAttachment[];
-  templateData?: Record<string, any>;
+  templateData?: Record<string, unknown>;
 }
 
 export interface EmailProvider {

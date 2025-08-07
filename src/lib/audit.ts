@@ -1,14 +1,24 @@
 import { AuditLogAction } from '@/types/audit';
 import { prisma } from '@/lib/db';
+import { PrismaClient, Prisma } from '@prisma/client';
 
-interface AuditLogParams {
-  tx?: any; // Prisma transaction
+// ===== TYPE DEFINITIONS =====
+
+export type AuditValues = Prisma.InputJsonValue;
+
+export type AuditValuesOrNull = AuditValues | null;
+
+export interface AuditLogParams {
+  tx?: Omit<
+    PrismaClient,
+    '$connect' | '$disconnect' | '$on' | '$transaction' | '$use' | '$extends'
+  >;
   userId: number;
   action: AuditLogAction;
   tableName: string;
   recordId: number;
-  oldValues?: any;
-  newValues?: any;
+  oldValues?: AuditValuesOrNull;
+  newValues?: AuditValuesOrNull;
   ipAddress?: string;
   userAgent?: string;
 }
@@ -40,8 +50,8 @@ export async function createAuditLog(params: AuditLogParams) {
       action,
       table_name: tableName,
       record_id: recordId,
-      old_values: oldValues,
-      new_values: newValues,
+      old_values: oldValues ?? undefined,
+      new_values: newValues ?? undefined,
       ip_address: ipAddress,
       user_agent: userAgent,
     },

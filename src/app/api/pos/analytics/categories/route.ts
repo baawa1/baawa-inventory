@@ -2,9 +2,10 @@ import { NextResponse } from 'next/server';
 import { withAuth, AuthenticatedRequest } from '@/lib/api-middleware';
 import { handleApiError } from '@/lib/api-error-handler-new';
 import { prisma } from '@/lib/db';
-import { SUCCESSFUL_PAYMENT_STATUSES, isSuccessfulPaymentStatus } from '@/lib/constants';
-
-
+import {
+  SUCCESSFUL_PAYMENT_STATUSES,
+  isSuccessfulPaymentStatus,
+} from '@/lib/constants';
 
 interface CategoryPerformance {
   id: number;
@@ -186,7 +187,9 @@ export const GET = withAuth(async (request: AuthenticatedRequest) => {
                     item.sales_transactions?.created_at &&
                     item.sales_transactions.created_at >= previousPeriodStart &&
                     item.sales_transactions.created_at < periodStart &&
-                    isSuccessfulPaymentStatus(item.sales_transactions.payment_status)
+                    isSuccessfulPaymentStatus(
+                      item.sales_transactions.payment_status
+                    )
                 )
                 .reduce((prodTotal, item) => {
                   return prodTotal + Number(item.total_price);
