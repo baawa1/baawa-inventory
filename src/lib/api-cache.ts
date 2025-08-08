@@ -1,8 +1,40 @@
 import { NextResponse } from 'next/server';
 import { logger } from '@/lib/logger';
 
+// ===== TYPE DEFINITIONS =====
+
+export interface CacheData {
+  [key: string]: unknown;
+}
+
+export interface CachedResponse {
+  body: CacheData;
+  status: number;
+}
+
+export interface CacheParams {
+  [key: string]: string | number | boolean | null | undefined;
+}
+
+export interface CacheKeyData {
+  endpoint: string;
+  params: string;
+  userId: number | null;
+}
+
+export interface CacheOptions {
+  ttlMs?: number;
+  keyParams?: string[];
+  invalidateOn?: string[];
+}
+
+export interface CacheStats {
+  size: number;
+  keys: string[];
+}
+
 // Simple in-memory cache for API responses
-interface CacheEntry<T = any> {
+interface CacheEntry<T = unknown> {
   data: T;
   timestamp: number;
   expiry: number;
@@ -17,10 +49,10 @@ class APICache {
    */
   private generateKey(
     endpoint: string,
-    params?: Record<string, any>,
+    params?: CacheParams,
     userId?: number
   ): string {
-    const keyData = {
+    const keyData: CacheKeyData = {
       endpoint,
       params: params ? JSON.stringify(params) : '',
       userId: userId || null,
@@ -38,9 +70,9 @@ class APICache {
   /**
    * Get cached response if valid
    */
-  get<T = any>(
+  get<T = unknown>(
     endpoint: string,
-    params?: Record<string, any>,
+    params?: CacheParams,
     userId?: number
   ): T | null {
     const key = this.generateKey(endpoint, params, userId);
@@ -53,16 +85,16 @@ class APICache {
       return null;
     }
 
-    return entry.data;
+    return entry.data as T;
   }
 
   /**
    * Store response in cache
    */
-  set<T = any>(
+  set<T = unknown>(
     endpoint: string,
     data: T,
-    params?: Record<string, any>,
+    params?: CacheParams,
     userId?: number,
     ttlMs?: number
   ): void {
@@ -106,7 +138,7 @@ class APICache {
   /**
    * Get cache statistics
    */
-  getStats(): { size: number; keys: string[] } {
+  getStats(): CacheStats {
     return {
       size: this.cache.size,
       keys: Array.from(this.cache.keys()),
@@ -148,18 +180,11 @@ if (typeof window === 'undefined') {
  * Higher-order function to add caching to API route handlers
  */
 export function withApiCache<
-  T extends (..._args: any[]) => Promise<NextResponse>,
->(
-  handler: T,
-  options: {
-    ttlMs?: number;
-    keyParams?: string[];
-    invalidateOn?: string[];
-  } = {}
-): T {
+  T extends (..._args: unknown[]) => Promise<NextResponse>,
+>(handler: T, options: CacheOptions = {}): T {
   return (async (..._args: Parameters<T>) => {
     const request = _args[0] as Request;
-    const context = _args[1] as any; // Route context (params, etc.)
+    const context = _args[1] as { params?: Record<string, string> }; // Route context (params, etc.)
 
     // Extract endpoint from URL
     const url = new URL(request.url);
@@ -185,7 +210,7 @@ export function withApiCache<
     }
 
     // Try to get from cache
-    const cachedData = apiCache.get(endpoint, cacheParams);
+    const cachedData = apiCache.get<CachedResponse>(endpoint, cacheParams);
     if (cachedData) {
       return NextResponse.json(cachedData.body, {
         status: cachedData.status,

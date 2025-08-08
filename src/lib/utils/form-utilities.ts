@@ -79,17 +79,23 @@ export const validationPatterns = {
     originalField: keyof T,
     confirmationField: string,
     fieldLabel: string = 'password'
-  ) =>
-    schema
-      .extend({
-        [confirmationField]: z
-          .string()
-          .min(1, `Please confirm your ${fieldLabel}`),
-      } as any)
-      .refine(data => data[originalField] === data[confirmationField], {
+  ) => {
+    const extension = {
+      [confirmationField]: z
+        .string()
+        .min(1, `Please confirm your ${fieldLabel}`),
+    } as Record<string, z.ZodString>;
+
+    return schema.extend(extension).refine(
+      (data: Record<string, unknown>) => {
+        return data[originalField as string] === data[confirmationField];
+      },
+      {
         message: `${fieldLabel.charAt(0).toUpperCase() + fieldLabel.slice(1)}s don't match`,
         path: [confirmationField],
-      }),
+      }
+    );
+  },
 };
 
 // Form submission utilities

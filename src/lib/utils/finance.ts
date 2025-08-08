@@ -1,5 +1,58 @@
 import { prisma } from '@/lib/db';
 
+// ===== TYPE DEFINITIONS =====
+
+export interface FinancialTransactionData {
+  id: number;
+  type: 'INCOME' | 'EXPENSE';
+  amount: number | string;
+  transactionDate?: Date;
+  description?: string;
+  category?: {
+    name: string;
+  } | null;
+  status: string;
+}
+
+export interface FinancialSummary {
+  totalIncome: number;
+  totalExpense: number;
+  netAmount: number;
+  transactionCount: number;
+}
+
+export interface ReportPeriod {
+  start: string;
+  end: string;
+}
+
+export interface ProcessedTransactionData {
+  id: number;
+  date: Date | undefined;
+  type: 'INCOME' | 'EXPENSE';
+  amount: number;
+  description: string | undefined;
+  category: string | undefined;
+  status: string;
+}
+
+export interface ReportDataStructure {
+  reportType: string;
+  period: ReportPeriod;
+  summary: FinancialSummary;
+  transactions: ProcessedTransactionData[];
+  generatedAt: string;
+}
+
+export interface BudgetStatus {
+  status: 'on-track' | 'warning' | 'over-budget';
+  color: string;
+}
+
+export interface ExportableData {
+  [key: string]: string | number | boolean | Date | null | undefined;
+}
+
 /**
  * Generate a unique transaction number
  * Format: FIN-YYYYMMDD-XXXX (e.g., FIN-20241201-0001)
@@ -73,8 +126,8 @@ export function formatCurrency(
 /**
  * Get financial summary from transactions array
  */
-export function getFinancialSummary(transactions: any[]) {
-  const summary = {
+export function getFinancialSummary(transactions: FinancialTransactionData[]): FinancialSummary {
+  const summary: FinancialSummary = {
     totalIncome: 0,
     totalExpense: 0,
     netAmount: 0,
@@ -170,11 +223,11 @@ export function sanitizeFileUrl(url: string | null | undefined): string | null {
  * Generate financial report data structure
  */
 export function generateReportDataStructure(
-  transactions: any[],
+  transactions: FinancialTransactionData[],
   reportType: string,
   periodStart: Date,
   periodEnd: Date
-) {
+): ReportDataStructure {
   const summary = getFinancialSummary(transactions);
 
   return {
@@ -184,7 +237,7 @@ export function generateReportDataStructure(
       end: periodEnd.toISOString(),
     },
     summary,
-    transactions: transactions.map(t => ({
+    transactions: transactions.map((t): ProcessedTransactionData => ({
       id: t.id,
       date: t.transactionDate,
       type: t.type,
@@ -211,10 +264,7 @@ export function calculateBudgetUtilization(
 /**
  * Get budget status based on utilization
  */
-export function getBudgetStatus(utilizationPercentage: number): {
-  status: 'on-track' | 'warning' | 'over-budget';
-  color: string;
-} {
+export function getBudgetStatus(utilizationPercentage: number): BudgetStatus {
   if (utilizationPercentage <= 75) {
     return { status: 'on-track', color: 'green' };
   } else if (utilizationPercentage <= 100) {
@@ -263,7 +313,7 @@ export function getTypeBadgeVariant(
 /**
  * Export financial data to CSV format
  */
-export function exportToCSV(data: any[], filename: string): void {
+export function exportToCSV(data: ExportableData[], filename: string): void {
   if (!data || data.length === 0) {
     console.warn('No data to export');
     return;
@@ -307,7 +357,7 @@ export function exportToCSV(data: any[], filename: string): void {
 /**
  * Export financial data to JSON format
  */
-export function exportToJSON(data: any, filename: string): void {
+export function exportToJSON(data: unknown, filename: string): void {
   const jsonContent = JSON.stringify(data, null, 2);
   const blob = new Blob([jsonContent], {
     type: 'application/json;charset=utf-8;',
