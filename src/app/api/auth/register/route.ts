@@ -108,7 +108,7 @@ async function registerHandler(request: NextRequest) {
         role: 'STAFF', // Default role
         isActive: true,
         emailNotifications: true,
-        marketingEmails: false,
+  
       },
       select: {
         id: true,

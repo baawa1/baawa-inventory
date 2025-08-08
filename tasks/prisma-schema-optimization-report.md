@@ -68,8 +68,8 @@ This report analyzes the current Prisma schema to identify:
 - **Session Refresh Fields** (Verify necessity):
   - `sessionNeedsRefresh` - Boolean, default false
   - `sessionRefreshAt` - DateTime
-- **Marketing Fields** (Low usage probability):
-  - `marketingEmails` - Boolean, default false
+- **Marketing Fields** ✅ REMOVED:
+  - ✅ `marketingEmails` - Boolean, default false - REMOVED
 
 ### **Categories & Brands Tables**
 - **Image Fields** (Verify usage):
@@ -292,7 +292,7 @@ CREATE INDEX idx_stock_reconciliations_status_created ON stock_reconciliations(s
 
 ### **Database Impact:**
 - 🗑️ **1,000+ lines of code removed**
-- 🗑️ **12+ redundant database fields eliminated**
+- 🗑️ **13+ redundant database fields eliminated** (including marketingEmails)
 - 🗑️ **2 major feature systems completely removed**
 - ✅ **Schema is clean and optimized**
 - ✅ **No orphaned references remain**
@@ -300,8 +300,7 @@ CREATE INDEX idx_stock_reconciliations_status_created ON stock_reconciliations(s
 
 ### **Remaining Items (Optional):**
 - **Session Management Fields** - `sessionNeedsRefresh`, `sessionRefreshAt` (actively used)
-- **Marketing Emails Field** - `marketingEmails` (minimal usage)
-- **Category/Brand Image Fields** - `image` (API validation exists)
+- **Category/Brand Image Fields** - `image` (API validation exists) - *Will handle later*
 - **Index Optimization** - Potential performance improvements
 
 **Status: Database review and major cleanup completed successfully! 🚀**
