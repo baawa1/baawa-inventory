@@ -9,6 +9,7 @@ import {
   CardHeader,
   CardTitle,
 } from '@/components/ui/card';
+import { logger } from '@/lib/logger';
 
 interface ErrorBoundaryState {
   hasError: boolean;
@@ -44,7 +45,11 @@ export class ErrorBoundary extends React.Component<
   }
 
   componentDidCatch(error: Error, errorInfo: React.ErrorInfo) {
-    console.error('ErrorBoundary caught an error:', error, errorInfo);
+    logger.error('ErrorBoundary caught an error', {
+      error: error.message,
+      stack: error.stack,
+      componentStack: errorInfo.componentStack,
+    });
 
     this.setState({
       error,
@@ -127,7 +132,11 @@ export function FormErrorBoundary({
   onError?: (_error: Error) => void;
 }) {
   const handleError = (error: Error, errorInfo: React.ErrorInfo) => {
-    console.error(`Form error in ${formName}:`, error, errorInfo);
+    logger.error(`Form error in ${formName}`, {
+      error: error.message,
+      stack: error.stack,
+      componentStack: errorInfo.componentStack,
+    });
     onError?.(error);
   };
 
@@ -168,7 +177,10 @@ export function useErrorHandler() {
   }, []);
 
   const handleError = React.useCallback((error: Error) => {
-    console.error('Async error:', error);
+    logger.error('Async error', {
+      error: error.message,
+      stack: error.stack,
+    });
     setError(error);
   }, []);
 
