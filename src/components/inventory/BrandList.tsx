@@ -12,7 +12,6 @@ import {
 import { InventoryPageLayout } from '@/components/inventory/InventoryPageLayout';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
-import { ImagePreview } from '@/components/ui/image-preview';
 
 import {
   DropdownMenu,
@@ -69,13 +68,6 @@ export default function BrandList({ user }: BrandListProps) {
   // Column configuration - only showing actual brand fields
   const columns: DashboardTableColumn[] = useMemo(
     () => [
-      {
-        key: 'image',
-        label: 'Image',
-        sortable: false,
-        defaultVisible: true,
-        required: true,
-      },
       {
         key: 'name',
         label: 'Name',
@@ -256,19 +248,6 @@ export default function BrandList({ user }: BrandListProps) {
   const renderCell = useCallback(
     (brand: APIBrand, columnKey: string) => {
       switch (columnKey) {
-        case 'image':
-          return brand.image ? (
-            <ImagePreview
-              src={brand.image}
-              alt={`${brand.name} image`}
-              size="md"
-              className="rounded-md"
-            />
-          ) : (
-            <div className="flex h-10 w-10 items-center justify-center rounded-md bg-gray-100">
-              <IconBrandX className="h-4 w-4 text-gray-400" />
-            </div>
-          );
         case 'name':
           return <span className="font-medium">{brand.name}</span>;
         case 'description':

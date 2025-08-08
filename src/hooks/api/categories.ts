@@ -6,7 +6,6 @@ export interface Category {
   id: number;
   name: string;
   description?: string;
-  image?: string;
   isActive: boolean;
   parentId?: number;
   parent?: {
@@ -46,7 +45,6 @@ export interface CategoryResponse {
 export interface CreateCategoryData {
   name: string;
   description?: string;
-  image?: string;
   isActive?: boolean;
   parentId?: number;
 }

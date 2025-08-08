@@ -6,7 +6,6 @@ export type CreateProductData = z.infer<typeof createProductSchema>;
 export interface Category {
   id: number;
   name: string;
-  image?: string | undefined;
   parent?:
     | {
         id: number;
@@ -23,7 +22,6 @@ export interface Category {
 export interface Brand {
   id: number;
   name: string;
-  image?: string | null;
 }
 
 export interface Supplier {

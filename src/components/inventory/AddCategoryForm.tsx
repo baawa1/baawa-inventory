@@ -40,7 +40,7 @@ import {
   CardTitle,
   CardDescription,
 } from '@/components/ui/card';
-import { ImageUpload } from '@/components/ui/image-upload';
+
 import { PageHeader } from '@/components/ui/page-header';
 import { FormLoading } from '@/components/ui/form-loading';
 
@@ -60,7 +60,7 @@ const createCategorySchema = z.object({
     .max(500, 'Description must be 500 characters or less')
     .optional()
     .or(z.literal('')),
-  image: z.string().min(1, 'Category image is required'),
+
   isActive: z.boolean(),
   parentId: z.number().nullable(),
 });
@@ -82,7 +82,7 @@ export default function AddCategoryForm() {
     defaultValues: {
       name: '',
       description: '',
-      image: '',
+
       isActive: true,
       parentId: parentIdFromUrl ? parseInt(parentIdFromUrl) : null,
     },
@@ -96,7 +96,7 @@ export default function AddCategoryForm() {
         {
           name: data.name,
           description: data.description || undefined,
-          image: data.image,
+
           isActive: data.isActive,
           parentId: data.parentId || undefined,
         },
@@ -274,31 +274,6 @@ export default function AddCategoryForm() {
                             : ''
                         }
                         disabled={createCategoryMutation.isPending}
-                      />
-                    </FormControl>
-                    <FormMessage />
-                  </FormItem>
-                )}
-              />
-
-              <FormField
-                control={form.control}
-                name="image"
-                render={({ field }) => (
-                  <FormItem>
-                    <FormLabel>Category Image</FormLabel>
-                    <FormControl>
-                      <ImageUpload
-                        {...field}
-                        onChange={field.onChange}
-                        onError={error => {
-                          console.error('Image upload error:', error);
-                        }}
-                        label="Category Image"
-                        placeholder="Upload a category image"
-                        disabled={createCategoryMutation.isPending}
-                        folder="categories"
-                        alt="Category image"
                       />
                     </FormControl>
                     <FormMessage />

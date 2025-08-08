@@ -16,8 +16,7 @@ import {
   SelectValue,
 } from '@/components/ui/select';
 import { Loader2 } from 'lucide-react';
-import { ImagePreview } from '@/components/ui/image-preview';
-import { IconTag, IconBrandX } from '@tabler/icons-react';
+
 import { UpdateProductFormData, Category, Brand, Supplier } from './types';
 import { formatCategoryHierarchy } from '@/lib/utils/category';
 
@@ -83,23 +82,7 @@ export function CategoryBrandSupplierSection({
                           key={category.id}
                           value={category.id.toString()}
                         >
-                          <div className="flex items-center gap-2">
-                            {category.image &&
-                            category.image.startsWith('http') &&
-                            !category.image.includes('unsplash.com') ? (
-                              <ImagePreview
-                                src={category.image}
-                                alt={category.name}
-                                size="sm"
-                                className="rounded"
-                              />
-                            ) : (
-                              <div className="flex h-6 w-6 items-center justify-center rounded bg-gray-100">
-                                <IconTag className="h-3 w-3 text-gray-400" />
-                              </div>
-                            )}
-                            <span>{formatCategoryHierarchy(category)}</span>
-                          </div>
+                          <span>{formatCategoryHierarchy(category)}</span>
                         </SelectItem>
                       ))}
                   </SelectContent>
@@ -142,23 +125,7 @@ export function CategoryBrandSupplierSection({
                     {Array.isArray(brands) &&
                       brands.map(brand => (
                         <SelectItem key={brand.id} value={brand.id.toString()}>
-                          <div className="flex items-center gap-2">
-                            {brand.image &&
-                            brand.image.startsWith('http') &&
-                            !brand.image.includes('unsplash.com') ? (
-                              <ImagePreview
-                                src={brand.image}
-                                alt={brand.name}
-                                size="sm"
-                                className="rounded"
-                              />
-                            ) : (
-                              <div className="flex h-6 w-6 items-center justify-center rounded bg-gray-100">
-                                <IconBrandX className="h-3 w-3 text-gray-400" />
-                              </div>
-                            )}
-                            <span>{brand.name}</span>
-                          </div>
+                          <span>{brand.name}</span>
                         </SelectItem>
                       ))}
                   </SelectContent>

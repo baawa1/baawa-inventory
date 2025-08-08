@@ -12,7 +12,7 @@ import { z } from 'zod';
 const CategoryUpdateSchema = z.object({
   name: z.string().min(1).max(100).optional(),
   description: z.string().optional(),
-  image: z.string().max(500).optional(),
+
   isActive: z.boolean().optional(),
   parentId: z.number().optional(),
 });
@@ -72,7 +72,7 @@ export const GET = withAuth(
         id: category.id,
         name: category.name,
         description: category.description,
-        image: category.image,
+
         isActive: category.isActive,
         parentId: category.parentId,
         parent: category.parent,
@@ -216,7 +216,7 @@ export const PUT = withPermission(
         id: updatedCategory.id,
         name: updatedCategory.name,
         description: updatedCategory.description,
-        image: updatedCategory.image,
+
         isActive: updatedCategory.isActive,
         parentId: updatedCategory.parentId,
         parent: updatedCategory.parent,

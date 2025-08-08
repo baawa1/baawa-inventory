@@ -29,7 +29,6 @@ import { ArrowLeft, Loader2 } from 'lucide-react';
 import { Alert, AlertDescription } from '@/components/ui/alert';
 import { PageHeader } from '@/components/ui/page-header';
 import { FormLoading } from '@/components/ui/form-loading';
-import { ImageUpload } from '@/components/ui/image-upload';
 
 import { toast } from 'sonner';
 import { useUpdateCategory } from '@/hooks/api/categories';
@@ -39,7 +38,6 @@ interface Category {
   id: number;
   name: string;
   description: string | null;
-  image: string | null;
   isActive: boolean;
   createdAt: string;
   updatedAt: string;
@@ -60,7 +58,6 @@ const updateCategorySchema = z.object({
     .max(500, 'Description must be 500 characters or less')
     .optional()
     .or(z.literal('')),
-  image: z.string().min(1, 'Category image is required'),
   isActive: z.boolean(),
 });
 
@@ -76,7 +73,7 @@ export default function EditCategoryForm({ category }: EditCategoryFormProps) {
     defaultValues: {
       name: category.name,
       description: category.description || '',
-      image: category.image || '',
+
       isActive: category.isActive,
     },
   });
@@ -221,39 +218,6 @@ export default function EditCategoryForm({ category }: EditCategoryFormProps) {
                     <p className="text-sm text-gray-600 dark:text-gray-400">
                       Optional description to help identify the purpose of this
                       category.
-                    </p>
-                  </FormItem>
-                )}
-              />
-
-              {/* Image Upload */}
-              <FormField
-                control={form.control}
-                name="image"
-                render={({ field }) => (
-                  <FormItem>
-                    <FormLabel className="flex items-center gap-2">
-                      Category Image
-                      <Badge variant="destructive" className="text-xs">
-                        Required
-                      </Badge>
-                    </FormLabel>
-                    <FormControl>
-                      <ImageUpload
-                        value={field.value}
-                        onChange={url => field.onChange(url || '')}
-                        onError={error => {
-                          form.setError('image', { message: error });
-                        }}
-                        placeholder="Upload a category image (required)"
-                        folder="categories"
-                        alt="Category image"
-                      />
-                    </FormControl>
-                    <FormMessage />
-                    <p className="text-sm text-gray-600 dark:text-gray-400">
-                      A category image is required to help identify and organize
-                      products.
                     </p>
                   </FormItem>
                 )}

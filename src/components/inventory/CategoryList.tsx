@@ -35,7 +35,6 @@ import {
 
 // Custom Components
 import { InventoryPageLayout } from '@/components/inventory/InventoryPageLayout';
-import { ImagePreview } from '@/components/ui/image-preview';
 
 // Icons
 import {
@@ -86,12 +85,6 @@ export default function CategoryList({ user }: CategoryListProps) {
   // Column configuration
   const columns: DashboardTableColumn[] = useMemo(
     () => [
-      {
-        key: 'image',
-        label: 'Image',
-        defaultVisible: true,
-        required: true,
-      },
       {
         key: 'name',
         label: 'Name',
@@ -292,19 +285,6 @@ export default function CategoryList({ user }: CategoryListProps) {
   const renderCell = useCallback(
     (category: APICategory, columnKey: string) => {
       switch (columnKey) {
-        case 'image':
-          return category.image ? (
-            <ImagePreview
-              src={category.image}
-              alt={category.name}
-              size="md"
-              className="rounded-md"
-            />
-          ) : (
-            <div className="flex size-12 items-center justify-center rounded-md bg-gray-100">
-              <IconTag className="h-4 w-4 text-gray-400" />
-            </div>
-          );
         case 'name':
           return getCategoryDisplayName(category);
         case 'description':

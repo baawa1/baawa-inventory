@@ -12,11 +12,6 @@ const baseBrandSchema = z.object({
     .max(500, 'Description must be less than 500 characters')
     .optional()
     .nullable(),
-  image: z
-    .string()
-    .max(500, 'Image URL must be less than 500 characters')
-    .optional()
-    .nullable(),
   website: z
     .string()
     .url('Please enter a valid website URL')
@@ -36,11 +31,6 @@ const clientBrandSchema = z.object({
   description: z
     .string()
     .max(500, 'Description must be less than 500 characters')
-    .optional()
-    .nullable(),
-  image: z
-    .string()
-    .max(500, 'Image URL must be less than 500 characters')
     .optional()
     .nullable(),
   website: z

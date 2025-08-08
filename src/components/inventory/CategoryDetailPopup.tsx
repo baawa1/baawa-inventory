@@ -12,7 +12,7 @@ import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Separator } from '@/components/ui/separator';
-import { ImagePreview } from '@/components/ui/image-preview';
+
 import {
   Dialog,
   DialogContent,
@@ -141,18 +141,9 @@ export default function CategoryDetailPopup({
                       {/* Image */}
                       <div className="flex items-start gap-6">
                         <div className="flex-shrink-0">
-                          {categoryData.image ? (
-                            <ImagePreview
-                              src={categoryData.image}
-                              alt={categoryData.name}
-                              size="xl"
-                              className="rounded-lg border"
-                            />
-                          ) : (
-                            <div className="flex h-32 w-32 items-center justify-center rounded-lg bg-gray-100">
-                              <IconTag className="h-8 w-8 text-gray-400" />
-                            </div>
-                          )}
+                          <div className="flex h-32 w-32 items-center justify-center rounded-lg bg-gray-100">
+                            <IconTag className="h-8 w-8 text-gray-400" />
+                          </div>
                         </div>
                         <div className="flex-1 space-y-4">
                           <div>
