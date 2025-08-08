@@ -106,7 +106,6 @@ model Category {
   image        String?       @db.VarChar(500)
   parent       Category?     @relation("CategoryHierarchy", fields: [parentId], references: [id])
   children     Category[]    @relation("CategoryHierarchy")
-  content_sync ContentSync[]
   products     Product[]
 
   @@unique([name, parentId], name: "unique_category_name_per_parent")
@@ -123,7 +122,6 @@ model Brand {
   createdAt    DateTime?     @default(now()) @map("created_at") @db.Timestamptz(6)
   updatedAt    DateTime?     @default(now()) @updatedAt @map("updated_at") @db.Timestamptz(6)
   image        String?       @db.VarChar(500)
-  content_sync ContentSync[]
   products     Product[]
 
   @@index([isActive], map: "idx_brands_is_active")
@@ -151,30 +149,16 @@ model Product {
   hasVariants         Boolean                   @default(false) @map("has_variants")
   isArchived          Boolean                   @default(false) @map("is_archived")
   tags                String[]
-  metaTitle           String?                   @map("meta_title") @db.VarChar(255)
-  metaDescription     String?                   @map("meta_description")
-  seoKeywords         String[]                  @map("seo_keywords")
+
   createdAt           DateTime?                 @default(now()) @map("created_at") @db.Timestamptz(6)
   updatedAt           DateTime?                 @default(now()) @updatedAt @map("updated_at") @db.Timestamptz(6)
   supplierId          Int?                      @map("supplier_id")
   categoryId          Int?                      @map("category_id")
   brandId             Int?                      @map("brand_id")
   status              String                    @default("active") @db.VarChar(20)
-  isFeatured          Boolean                   @default(false) @map("is_featured")
-  metaContent         String?                   @map("meta_content")
-  metaExcerpt         String?                   @map("meta_excerpt")
-  saleEndDate         DateTime?                 @map("sale_end_date") @db.Timestamptz(6)
-  salePrice           Decimal?                  @map("sale_price") @db.Decimal(10, 2)
-  saleStartDate       DateTime?                 @map("sale_start_date") @db.Timestamptz(6)
-  sortOrder           Int?                      @map("sort_order")
-  variantAttributes   Json?                     @map("variant_attributes")
-  variantValues       Json?                     @map("variant_values")
+
   images              Json?
-  lastSyncAt          DateTime?                 @map("last_sync_at") @db.Timestamptz(6)
-  syncErrors          String?                   @map("sync_errors")
-  syncStatus          String?                   @default("pending") @map("sync_status") @db.VarChar(20)
   ai_content          AIContent[]
-  content_sync        ContentSync[]
   product_variants    ProductVariant[]
   brand               Brand?                    @relation(fields: [brandId], references: [id], onUpdate: NoAction)
   category            Category?                 @relation(fields: [categoryId], references: [id], onUpdate: NoAction)
@@ -188,8 +172,7 @@ model Product {
   @@index([status], map: "idx_products_status")
   @@index([stock], map: "idx_products_stock")
   @@index([supplierId], map: "idx_products_supplier_id")
-  @@index([isFeatured], map: "idx_products_is_featured")
-  @@index([sortOrder], map: "idx_products_sort_order")
+
   @@map("products")
 }
 
@@ -426,27 +409,7 @@ model AIContent {
   @@map("ai_content")
 }
 
-model ContentSync {
-  id           Int       @id @default(autoincrement())
-  entity_type  String    @db.VarChar(20)
-  entity_id    Int
-  sync_status  String    @default("pending") @db.VarChar(20)
-  last_sync_at DateTime? @db.Timestamptz(6)
-  sync_errors  String?
-  retry_count  Int       @default(0)
-  webhook_url  String?   @db.VarChar(500)
-  created_at   DateTime? @default(now()) @db.Timestamptz(6)
-  updated_at   DateTime? @default(now()) @db.Timestamptz(6)
-  brand        Brand     @relation(fields: [entity_id], references: [id], onDelete: Cascade, onUpdate: NoAction, map: "fk_content_sync_brand")
-  category     Category  @relation(fields: [entity_id], references: [id], onDelete: Cascade, onUpdate: NoAction, map: "fk_content_sync_category")
-  product      Product   @relation(fields: [entity_id], references: [id], onDelete: Cascade, onUpdate: NoAction, map: "fk_content_sync_product")
 
-  @@unique([entity_type, entity_id], name: "unique_entity_content_sync")
-  @@index([entity_type], map: "idx_content_sync_entity_type")
-  @@index([entity_id], map: "idx_content_sync_entity_id")
-  @@index([sync_status], map: "idx_content_sync_sync_status")
-  @@map("content_sync")
-}
 
 model RateLimit {
   id        Int      @id @default(autoincrement())

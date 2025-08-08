@@ -6,10 +6,12 @@ import { LogOut, ArrowLeft } from 'lucide-react';
 import { useLogout } from '@/hooks/useLogout';
 import Link from 'next/link';
 import { useState } from 'react';
+import { useRouter } from 'next/navigation';
 
 export default function LogoutPage() {
   const { logout, isLoading: isLoggingOut } = useLogout();
   const [error, setError] = useState<string | null>(null);
+  const router = useRouter();
 
   const handleLogout = async () => {
     try {
@@ -21,7 +23,7 @@ export default function LogoutPage() {
 
       // Force logout even if there's an error
       setTimeout(() => {
-        window.location.href = '/login';
+        router.push('/login');
       }, 2000);
     }
   };
@@ -47,7 +49,7 @@ export default function LogoutPage() {
         document.cookie = `${cookieName}=; expires=Thu, 01 Jan 1970 00:00:00 UTC; path=/; domain=${window.location.hostname};`;
       });
 
-      window.location.href = '/login';
+      router.push('/login');
     }
   };
 

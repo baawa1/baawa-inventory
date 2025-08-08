@@ -49,18 +49,7 @@ interface ProductFormData {
   hasVariants: boolean;
   isArchived: boolean;
   tags: string[];
-  metaTitle?: string;
-  metaDescription?: string;
-  seoKeywords: string[];
   status: 'ACTIVE' | 'INACTIVE' | 'OUT_OF_STOCK' | 'DISCONTINUED';
-
-  isFeatured: boolean;
-  metaContent?: string;
-  metaExcerpt?: string;
-  saleEndDate?: string;
-  salePrice?: number;
-  saleStartDate?: string;
-  sortOrder?: number;
   supplier?: { id: number; name: string };
   image?: string;
   images?: Array<{ url: string; isPrimary: boolean }>;

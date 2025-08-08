@@ -84,7 +84,7 @@ export function useLogout(): UseLogoutReturn {
           });
 
           // Force a hard redirect to ensure session is cleared
-          window.location.href = callbackUrl;
+          router.push(callbackUrl);
         } else {
           // Fallback for server-side
           router.push(callbackUrl);
