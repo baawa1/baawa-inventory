@@ -14,6 +14,7 @@ import {
   CardTitle,
 } from '@/components/ui/card';
 import { Clock, CheckCircle, XCircle, AlertCircle, Mail } from 'lucide-react';
+import { useEmailVerification } from '@/hooks/api/useEmailVerification';
 
 function VerifyEmailContent() {
   const router = useRouter();
@@ -33,6 +34,7 @@ function VerifyEmailContent() {
   const [isRedirecting, setIsRedirecting] = useState(false);
 
   const token = searchParams.get('token');
+  const emailVerificationMutation = useEmailVerification();
 
   // Handle hydration
   useEffect(() => {
@@ -81,54 +83,41 @@ function VerifyEmailContent() {
     setVerificationMessage('Verifying your email...');
 
     try {
-      const response = await fetch('/api/auth/verify-email', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ token }),
-      });
+      const data = await emailVerificationMutation.mutateAsync({ token });
 
-      const data = await response.json();
+      setVerificationStatus('success');
+      setVerificationMessage(data.message);
 
-      if (response.ok) {
-        setVerificationStatus('success');
-        setVerificationMessage(data.message);
-        // Debug logging removed for production
+      // Set flag for pending approval page
+      sessionStorage.setItem('emailJustVerified', 'true');
 
-        // Set flag for pending approval page
-        sessionStorage.setItem('emailJustVerified', 'true');
-
-        // Refresh session if user is logged in
-        if (session && data.shouldRefreshSession) {
-          try {
-            // Debug logging removed for production
-            await updateSession();
-            // Debug logging removed for production
-          } catch (error) {
-            console.error('❌ Error updating session:', error);
-          }
+      // Refresh session if user is logged in
+      if (session && data.shouldRefreshSession) {
+        try {
+          await updateSession();
+        } catch (error) {
+          console.error('❌ Error updating session:', error);
         }
-
-        // Auto-redirect after successful verification
-        setTimeout(() => {
-          if (!isRedirecting) {
-            setIsRedirecting(true);
-            // Debug logging removed for production
-            router.push('/pending-approval');
-          }
-        }, 2000);
-      } else {
-        // Handle different error cases
-        if (data.error.includes('expired')) {
-          setVerificationStatus('expired');
-        } else {
-          setVerificationStatus('error');
-        }
-        setVerificationMessage(data.error);
       }
+
+      // Auto-redirect after successful verification
+      setTimeout(() => {
+        if (!isRedirecting) {
+          setIsRedirecting(true);
+          router.push('/pending-approval');
+        }
+      }, 2000);
     } catch (error) {
       console.error('❌ Error verifying email:', error);
-      setVerificationStatus('error');
-      setVerificationMessage('An error occurred while verifying your email');
+      
+      // Handle different error cases
+      const errorMessage = error instanceof Error ? error.message : 'An error occurred';
+      if (errorMessage.includes('expired')) {
+        setVerificationStatus('expired');
+      } else {
+        setVerificationStatus('error');
+      }
+      setVerificationMessage(errorMessage);
     }
   }, [token, router, session, updateSession, isRedirecting]);
 

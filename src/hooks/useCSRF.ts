@@ -13,7 +13,7 @@ export function useCSRF() {
   // Get CSRF token from cookie - reactive function
   const getCSRFToken = useCallback(() => {
     if (typeof document === 'undefined') return null;
-    
+
     const cookies = document.cookie.split(';');
     const csrfCookie = cookies.find(cookie =>
       cookie.trim().startsWith('csrf-token=')
@@ -43,17 +43,20 @@ export function useCSRF() {
   }, [csrfToken, getCSRFToken]);
 
   // Fetch with CSRF headers
-  const fetchWithCSRF = useCallback(async (url: string, options: RequestInit = {}) => {
-    const headers = {
-      ...csrfHeaders,
-      ...(options.headers as Record<string, string>),
-    };
+  const fetchWithCSRF = useCallback(
+    async (url: string, options: RequestInit = {}) => {
+      const headers = {
+        ...csrfHeaders,
+        ...(options.headers as Record<string, string>),
+      };
 
-    return fetch(url, {
-      ...options,
-      headers,
-    });
-  }, [csrfHeaders]);
+      return fetch(url, {
+        ...options,
+        headers,
+      });
+    },
+    [csrfHeaders]
+  );
 
   // Update token on mount and when session changes
   if (session?.user && !csrfToken) {
