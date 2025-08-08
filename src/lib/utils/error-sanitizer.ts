@@ -5,6 +5,24 @@
 
 import { logger } from '../logger';
 
+// ===== TYPE DEFINITIONS =====
+
+export interface SanitizableError {
+  message?: string;
+  code?: string;
+  stack?: string;
+  name?: string;
+  [key: string]: unknown;
+}
+
+export interface ObjectWithSensitiveData {
+  [key: string]: unknown;
+}
+
+export interface LoggingContext {
+  [key: string]: unknown;
+}
+
 // List of sensitive fields that should never be logged
 const SENSITIVE_FIELDS = [
   'password',
@@ -51,14 +69,15 @@ export class ErrorSanitizer {
   /**
    * Sanitize an error object for safe logging
    */
-  static sanitizeError(error: any, _context?: string): SanitizedError {
+  static sanitizeError(error: unknown, _context?: string): SanitizedError {
     const timestamp = new Date().toISOString();
 
     // Handle different error types
     if (error instanceof Error) {
+      const sanitizableError = error as SanitizableError;
       return {
         message: this.sanitizeMessage(error.message),
-        code: (error as any).code,
+        code: sanitizableError.code,
         type: error.constructor.name,
         timestamp,
         sanitized: true,
@@ -122,7 +141,7 @@ export class ErrorSanitizer {
   /**
    * Sanitize object by removing sensitive fields
    */
-  private static sanitizeObject(obj: any): any {
+  private static sanitizeObject(obj: unknown): unknown {
     if (obj === null || typeof obj !== 'object') {
       return obj;
     }
@@ -131,9 +150,10 @@ export class ErrorSanitizer {
       return obj.map(item => this.sanitizeObject(item));
     }
 
-    const sanitized: any = {};
+    const sanitized: ObjectWithSensitiveData = {};
+    const objAsRecord = obj as Record<string, unknown>;
 
-    for (const [key, value] of Object.entries(obj)) {
+    for (const [key, value] of Object.entries(objAsRecord)) {
       // Check if field name is sensitive
       if (this.isSensitiveField(key)) {
         sanitized[key] = '[REDACTED]';
@@ -184,32 +204,36 @@ export class ErrorSanitizer {
   /**
    * Safe logging method that automatically sanitizes errors
    */
-  static logError(error: any, context?: string, additionalData?: any): void {
+  static logError(error: unknown, context?: string, additionalData?: LoggingContext): void {
     const sanitizedError = this.sanitizeError(error, context);
     const sanitizedData = additionalData
       ? this.sanitizeObject(additionalData)
-      : undefined;
+      : {};
 
-    logger.error(context || 'Error occurred', {
+    const logData = {
       error: sanitizedError,
-      ...sanitizedData,
-    });
+      ...(sanitizedData as Record<string, unknown>),
+    };
+
+    logger.error(context || 'Error occurred', logData);
   }
 
   /**
    * Safe logging for authentication errors
    */
-  static logAuthError(error: any, email?: string, additionalData?: any): void {
+  static logAuthError(error: unknown, email?: string, additionalData?: LoggingContext): void {
     const sanitizedError = this.sanitizeError(error);
     const sanitizedData = additionalData
       ? this.sanitizeObject(additionalData)
-      : undefined;
+      : {};
 
-    logger.error('Authentication error', {
+    const logData = {
       error: sanitizedError,
       email: email ? this.sanitizeEmail(email) : undefined,
-      ...sanitizedData,
-    });
+      ...(sanitizedData as Record<string, unknown>),
+    };
+
+    logger.error('Authentication error', logData);
   }
 
   /**
