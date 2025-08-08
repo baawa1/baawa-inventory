@@ -8,7 +8,7 @@ import {
   skuSchema,
   nameSchema,
 } from './common';
-import { nairaPriceSchema, costPriceSchema, salePriceSchema } from './price';
+import { nairaPriceSchema, costPriceSchema } from './price';
 
 // Product creation schema
 export const createProductSchema = z.object({
@@ -69,22 +69,7 @@ export const createProductSchema = z.object({
     .optional()
     .nullable(),
   tags: z.array(z.string()).optional(),
-  salePrice: salePriceSchema.optional().nullable(),
-  saleStartDate: z.date().optional().nullable(),
-  saleEndDate: z.date().optional().nullable(),
-  metaTitle: z
-    .string()
-    .max(255, 'Meta title must be 255 characters or less')
-    .optional()
-    .nullable(),
-  metaDescription: z
-    .string()
-    .max(500, 'Meta description must be 500 characters or less')
-    .optional()
-    .nullable(),
-  seoKeywords: z.array(z.string()).optional(),
-  isFeatured: z.boolean().optional(),
-  sortOrder: z.number().int().optional().nullable(),
+
 });
 
 // Product update schema (all fields optional except validation rules)

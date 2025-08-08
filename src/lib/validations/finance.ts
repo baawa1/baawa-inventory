@@ -158,23 +158,7 @@ export const reportFiltersSchema = z
     path: ['periodEnd'],
   });
 
-// Budget schema for future budget management
-export const budgetSchema = z
-  .object({
-    category: z.enum(Object.values(EXPENSE_TYPES) as [string, ...string[]]),
-    amount: z.number().min(0.01, 'Budget amount must be greater than 0'),
-    period: z.enum(['MONTHLY', 'QUARTERLY', 'YEARLY']),
-    startDate: z.string().min(1, 'Start date is required'),
-    endDate: z.string().min(1, 'End date is required'),
-    description: z.string().max(500, 'Description is too long').optional(),
-  })
-  .refine(data => validateDateRange(data.startDate, data.endDate), {
-    message: 'Start date must be before end date',
-    path: ['endDate'],
-  });
-
 export type CreateTransactionData = z.infer<typeof createTransactionSchema>;
 export type UpdateTransactionData = z.infer<typeof updateTransactionSchema>;
 export type TransactionFilters = z.infer<typeof transactionFiltersSchema>;
 export type ReportFilters = z.infer<typeof reportFiltersSchema>;
-export type BudgetData = z.infer<typeof budgetSchema>;

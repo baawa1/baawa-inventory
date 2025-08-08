@@ -35,14 +35,7 @@ export const costPriceSchema = z
   .max(1000000000, 'Cost cannot exceed ₦1,000,000,000')
   .multipleOf(0.01, 'Cost must have at most 2 decimal places');
 
-/**
- * Sale price schema (must be less than or equal to regular price)
- */
-export const salePriceSchema = z
-  .number()
-  .positive('Sale price must be positive')
-  .max(1000000000, 'Sale price cannot exceed ₦1,000,000,000')
-  .multipleOf(0.01, 'Sale price must have at most 2 decimal places');
+
 
 /**
  * Discount amount schema
@@ -62,23 +55,7 @@ export const percentageSchema = z
   .max(100, 'Percentage cannot exceed 100%')
   .multipleOf(0.01, 'Percentage must have at most 2 decimal places');
 
-/**
- * Validate that sale price is less than or equal to regular price
- */
-export const validateSalePrice = (
-  salePrice: number,
-  regularPrice: number
-): boolean => {
-  return salePrice <= regularPrice;
-};
 
-/**
- * Create a sale price schema that validates against regular price
- */
-export const createSalePriceSchema = (regularPrice: number) =>
-  salePriceSchema.refine(price => validateSalePrice(price, regularPrice), {
-    message: `Sale price must be less than or equal to regular price (₦${regularPrice.toLocaleString()})`,
-  });
 
 /**
  * Format price for display in Naira
@@ -125,7 +102,7 @@ export const PRICE_ERROR_MESSAGES = {
   TOO_LARGE: 'Price cannot exceed ₦1,000,000,000',
   INVALID_DECIMALS: 'Price must have at most 2 decimal places',
   NEGATIVE: 'Price cannot be negative',
-  SALE_PRICE_TOO_HIGH: 'Sale price cannot be higher than regular price',
+
   INVALID_PERCENTAGE: 'Percentage must be between 0% and 100%',
 } as const;
 

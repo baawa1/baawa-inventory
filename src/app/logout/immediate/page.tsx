@@ -5,6 +5,7 @@ import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Loader2, AlertTriangle } from 'lucide-react';
 import { useLogout } from '@/hooks/useLogout';
 import { Button } from '@/components/ui/button';
+import { useRouter } from 'next/navigation';
 
 /**
  * Immediate logout component - automatically logs out when mounted
@@ -17,6 +18,7 @@ export default function ImmediateLogoutPage() {
   const { logout, isLoading: isLoggingOut } = useLogout();
   const [error, setError] = useState<string | null>(null);
   const [hasAttempted, setHasAttempted] = useState(false);
+  const router = useRouter();
 
   const handleLogout = useCallback(async () => {
     try {
@@ -60,7 +62,7 @@ export default function ImmediateLogoutPage() {
       });
 
       setTimeout(() => {
-        window.location.href = '/login';
+        router.push('/login');
       }, 1000);
     }
   };

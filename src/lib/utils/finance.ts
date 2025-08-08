@@ -44,10 +44,7 @@ export interface ReportDataStructure {
   generatedAt: string;
 }
 
-export interface BudgetStatus {
-  status: 'on-track' | 'warning' | 'over-budget';
-  color: string;
-}
+
 
 export interface ExportableData {
   [key: string]: string | number | boolean | Date | null | undefined;
@@ -126,7 +123,9 @@ export function formatCurrency(
 /**
  * Get financial summary from transactions array
  */
-export function getFinancialSummary(transactions: FinancialTransactionData[]): FinancialSummary {
+export function getFinancialSummary(
+  transactions: FinancialTransactionData[]
+): FinancialSummary {
   const summary: FinancialSummary = {
     totalIncome: 0,
     totalExpense: 0,
@@ -237,42 +236,22 @@ export function generateReportDataStructure(
       end: periodEnd.toISOString(),
     },
     summary,
-    transactions: transactions.map((t): ProcessedTransactionData => ({
-      id: t.id,
-      date: t.transactionDate,
-      type: t.type,
-      amount: Number(t.amount),
-      description: t.description,
-      category: t.category?.name,
-      status: t.status,
-    })),
+    transactions: transactions.map(
+      (t): ProcessedTransactionData => ({
+        id: t.id,
+        date: t.transactionDate,
+        type: t.type,
+        amount: Number(t.amount),
+        description: t.description,
+        category: t.category?.name,
+        status: t.status,
+      })
+    ),
     generatedAt: new Date().toISOString(),
   };
 }
 
-/**
- * Calculate budget utilization percentage
- */
-export function calculateBudgetUtilization(
-  budgetAmount: number,
-  actualAmount: number
-): number {
-  if (budgetAmount === 0) return 0;
-  return (actualAmount / budgetAmount) * 100;
-}
 
-/**
- * Get budget status based on utilization
- */
-export function getBudgetStatus(utilizationPercentage: number): BudgetStatus {
-  if (utilizationPercentage <= 75) {
-    return { status: 'on-track', color: 'green' };
-  } else if (utilizationPercentage <= 100) {
-    return { status: 'warning', color: 'yellow' };
-  } else {
-    return { status: 'over-budget', color: 'red' };
-  }
-}
 
 /**
  * Get status badge variant for financial transactions

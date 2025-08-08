@@ -203,17 +203,7 @@ export const CONTENT_STATUS = {
 export type ContentStatus =
   (typeof CONTENT_STATUS)[keyof typeof CONTENT_STATUS];
 
-// Webflow Sync Status (must match Prisma WebflowSyncStatus enum exactly)
-export const WEBFLOW_SYNC_STATUS = {
-  PENDING: 'PENDING',
-  SYNCING: 'SYNCING',
-  SUCCESS: 'SUCCESS',
-  FAILED: 'FAILED',
-  RETRY: 'RETRY',
-} as const;
 
-export type WebflowSyncStatus =
-  (typeof WEBFLOW_SYNC_STATUS)[keyof typeof WEBFLOW_SYNC_STATUS];
 
 // API Limits and Pagination
 export const API_LIMITS = {
