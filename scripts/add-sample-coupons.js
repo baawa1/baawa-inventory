@@ -1,10 +1,11 @@
 const { PrismaClient } = require('@prisma/client');
+const logger = require('./script-logger');
 
 const prisma = new PrismaClient();
 
 async function addSampleCoupons() {
   try {
-    console.log('Adding sample coupons...');
+    logger.info('Adding sample coupons...');
 
     // Get the first admin user to use as createdBy
     const adminUser = await prisma.user.findFirst({
@@ -13,7 +14,7 @@ async function addSampleCoupons() {
     });
 
     if (!adminUser) {
-      console.error('No admin user found. Please create an admin user first.');
+      logger.error('No admin user found. Please create an admin user first.');
       return;
     }
 
@@ -123,28 +124,31 @@ async function addSampleCoupons() {
         const coupon = await prisma.coupon.create({
           data: couponData,
         });
-        console.log(`✅ Created coupon: ${coupon.code} - ${coupon.name}`);
+        logger.info(`✅ Created coupon: ${coupon.code} - ${coupon.name}`);
       } catch (error) {
         if (error.code === 'P2002') {
-          console.log(`⚠️  Coupon ${couponData.code} already exists, skipping...`);
+          logger.warn(`⚠️  Coupon ${couponData.code} already exists, skipping...`);
         } else {
-          console.error(`❌ Error creating coupon ${couponData.code}:`, error.message);
+          logger.error(`❌ Error creating coupon ${couponData.code}:`, { error: error.message });
         }
       }
     }
 
-    console.log('\n🎉 Sample coupons added successfully!');
-    console.log('\nAvailable coupon codes for testing:');
-    console.log('- SAVE10 (10% off, min ₦5,000)');
-    console.log('- FREESHIP (₦2,000 off, min ₦10,000)');
-    console.log('- WELCOME20 (20% off, min ₦2,000)');
-    console.log('- FLASH50 (50% off, min ₦1,000)');
-    console.log('- LOYALTY15 (15% off, min ₦3,000)');
-    console.log('- EXPIRED (expired coupon for testing)');
-    console.log('- INACTIVE (inactive coupon for testing)');
+    logger.info('🎉 Sample coupons added successfully!');
+    logger.info('Available coupon codes for testing:', {
+      coupons: [
+        'SAVE10 (10% off, min ₦5,000)',
+        'FREESHIP (₦2,000 off, min ₦10,000)',
+        'WELCOME20 (20% off, min ₦2,000)',
+        'FLASH50 (50% off, min ₦1,000)',
+        'LOYALTY15 (15% off, min ₦3,000)',
+        'EXPIRED (expired coupon for testing)',
+        'INACTIVE (inactive coupon for testing)'
+      ]
+    });
 
   } catch (error) {
-    console.error('Error adding sample coupons:', error);
+    logger.error('Error adding sample coupons:', { error: error.message });
   } finally {
     await prisma.$disconnect();
   }
