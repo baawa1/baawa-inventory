@@ -9,6 +9,13 @@ import { PrismaClient } from "@prisma/client";
 
 const prisma = new PrismaClient();
 
+// Product status constants (must match Prisma enum)
+const PRODUCT_STATUS = {
+  ACTIVE: "ACTIVE",
+  INACTIVE: "INACTIVE",
+  OUT_OF_STOCK: "OUT_OF_STOCK",
+  DISCONTINUED: "DISCONTINUED",
+};
 const sampleProducts = [
   {
     name: "iPhone 15 Pro Max Case - Leather Black",
@@ -20,7 +27,7 @@ const sampleProducts = [
     cost: 4500.0,
     stock: 25,
     minStock: 5,
-    status: "active",
+    status: PRODUCT_STATUS.ACTIVE,
     categoryName: "Phone Cases",
     brandName: "Premium Guard",
   },
@@ -34,7 +41,7 @@ const sampleProducts = [
     cost: 1500.0,
     stock: 50,
     minStock: 10,
-    status: "active",
+    status: PRODUCT_STATUS.ACTIVE,
     categoryName: "Screen Protectors",
     brandName: "GlassShield",
   },
@@ -48,7 +55,7 @@ const sampleProducts = [
     cost: 3200.0,
     stock: 18,
     minStock: 3,
-    status: "active",
+    status: PRODUCT_STATUS.ACTIVE,
     categoryName: "Chargers",
     brandName: "PowerTech",
   },
@@ -61,7 +68,7 @@ const sampleProducts = [
     cost: 8000.0,
     stock: 12,
     minStock: 2,
-    status: "active",
+    status: PRODUCT_STATUS.ACTIVE,
     categoryName: "Audio",
     brandName: "SoundMax",
   },
@@ -75,7 +82,7 @@ const sampleProducts = [
     cost: 1800.0,
     stock: 35,
     minStock: 8,
-    status: "active",
+    status: PRODUCT_STATUS.ACTIVE,
     categoryName: "Cables",
     brandName: "ConnectPro",
   },
@@ -89,7 +96,7 @@ const sampleProducts = [
     cost: 1200.0,
     stock: 40,
     minStock: 10,
-    status: "active",
+    status: PRODUCT_STATUS.ACTIVE,
     categoryName: "Stands & Mounts",
     brandName: "GripTech",
   },
@@ -102,7 +109,7 @@ const sampleProducts = [
     cost: 2500.0,
     stock: 22,
     minStock: 5,
-    status: "active",
+    status: PRODUCT_STATUS.ACTIVE,
     categoryName: "Watch Bands",
     brandName: "BandCraft",
   },
@@ -115,7 +122,7 @@ const sampleProducts = [
     cost: 6500.0,
     stock: 15,
     minStock: 3,
-    status: "active",
+    status: PRODUCT_STATUS.ACTIVE,
     categoryName: "Power Banks",
     brandName: "ChargeMax",
   },
@@ -221,7 +228,7 @@ async function testBarcodeQueries() {
       const product = await prisma.product.findFirst({
         where: {
           barcode: barcode,
-          status: "active",
+          status: PRODUCT_STATUS.ACTIVE,
         },
         include: {
           category: true,
@@ -250,12 +257,12 @@ async function displaySummary() {
     const categoryCount = await prisma.category.count();
     const brandCount = await prisma.brand.count();
     const activeProducts = await prisma.product.count({
-      where: { status: "active" },
+      where: { status: PRODUCT_STATUS.ACTIVE },
     });
     const productsWithBarcodes = await prisma.product.count({
       where: {
         barcode: { not: null },
-        status: "active",
+        status: PRODUCT_STATUS.ACTIVE,
       },
     });
 
@@ -267,7 +274,7 @@ async function displaySummary() {
 
     // Show total inventory value
     const inventoryValue = await prisma.product.aggregate({
-      where: { status: "active" },
+      where: { status: PRODUCT_STATUS.ACTIVE },
       _sum: {
         price: true,
       },

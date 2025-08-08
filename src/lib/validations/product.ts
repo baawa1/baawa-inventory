@@ -39,7 +39,6 @@ export const createProductSchema = z.object({
   currentStock: stockSchema,
   supplierId: idSchema.optional().nullable(),
   status: productStatusSchema,
-  imageUrl: z.string().optional().nullable(),
   notes: z
     .string()
     .max(500, 'Notes must be 500 characters or less')
@@ -69,7 +68,6 @@ export const createProductSchema = z.object({
     .optional()
     .nullable(),
   tags: z.array(z.string()).optional(),
-
 });
 
 // Product update schema (all fields optional except validation rules)

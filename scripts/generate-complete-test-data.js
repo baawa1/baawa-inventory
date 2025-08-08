@@ -635,29 +635,7 @@ async function seedProducts(categories, brands, suppliers) {
           randomElement(["Electronics", "Gaming", "Office", "Home"]),
           randomElement(["New", "Popular", "Featured"]),
         ],
-        metaTitle: `${productName} - Best Quality`,
-        metaDescription: `High-quality ${productName} with excellent features`,
-        seoKeywords: [productName.toLowerCase(), "quality", "best", "premium"],
-        status: "active",
-
-        isFeatured: Math.random() > 0.8, // 20% chance of being featured
-        metaContent: `Detailed information about ${productName}`,
-        metaExcerpt: `Premium ${productName} with advanced features`,
-        saleEndDate:
-          Math.random() > 0.8
-            ? new Date(Date.now() + randomNumber(1, 30) * 24 * 60 * 60 * 1000)
-            : null,
-        salePrice: Math.random() > 0.8 ? price * randomDecimal(0.7, 0.9) : null,
-        saleStartDate:
-          Math.random() > 0.8
-            ? new Date(Date.now() - randomNumber(1, 7) * 24 * 60 * 60 * 1000)
-            : null,
-        sortOrder: randomNumber(1, 100),
-        variantAttributes:
-          Math.random() > 0.7
-            ? { color: ["Red", "Blue", "Green"], size: ["S", "M", "L"] }
-            : null,
-        variantValues: Math.random() > 0.7 ? { color: "Red", size: "M" } : null,
+        status: PRODUCT_STATUS.ACTIVE,
         images: generateImages(),
         categoryId: randomElement(categories).id,
         brandId: randomElement(brands).id,
@@ -992,7 +970,7 @@ async function seedAuditLogs(users) {
             ? { name: "Old Value", status: "inactive" }
             : null,
         new_values:
-          Math.random() > 0.5 ? { name: "New Value", status: "active" } : null,
+          Math.random() > 0.5 ? { name: "New Value", status: PRODUCT_STATUS.ACTIVE } : null,
       },
     });
     auditLogs.push(auditLog);
@@ -1040,90 +1018,7 @@ async function seedAIContent(users, products) {
   return aiContents;
 }
 
-async function _seedContentSync(products, categories, brands) {
-  console.log("Seeding Content sync...");
 
-  const contentSyncs = [];
-  const syncStatuses = ["pending", "synced", "failed"];
-
-  // Create content sync records for products
-  for (let i = 0; i < 10; i++) {
-    const product = randomElement(products);
-    const syncStatus = randomElement(syncStatuses);
-
-    const contentSync = await prisma.contentSync.create({
-      data: {
-        entity_type: "product",
-        entity_id: product.id,
-        sync_status: syncStatus,
-        last_sync_at:
-          syncStatus === "synced"
-            ? new Date(Date.now() - randomNumber(1, 30) * 24 * 60 * 60 * 1000)
-            : null,
-        sync_errors: syncStatus === "failed" ? "Connection timeout" : null,
-        retry_count: syncStatus === "failed" ? randomNumber(1, 3) : 0,
-        webhook_url:
-          syncStatus === "synced"
-            ? `https://webhook.site/${randomNumber(10000, 99999)}`
-            : null,
-      },
-    });
-    contentSyncs.push(contentSync);
-  }
-
-  // Create content sync records for categories
-  for (let i = 0; i < 5; i++) {
-    const category = randomElement(categories);
-    const syncStatus = randomElement(syncStatuses);
-
-    const contentSync = await prisma.contentSync.create({
-      data: {
-        entity_type: "category",
-        entity_id: category.id,
-        sync_status: syncStatus,
-        last_sync_at:
-          syncStatus === "synced"
-            ? new Date(Date.now() - randomNumber(1, 30) * 24 * 60 * 60 * 1000)
-            : null,
-        sync_errors: syncStatus === "failed" ? "Connection timeout" : null,
-        retry_count: syncStatus === "failed" ? randomNumber(1, 3) : 0,
-        webhook_url:
-          syncStatus === "synced"
-            ? `https://webhook.site/${randomNumber(10000, 99999)}`
-            : null,
-      },
-    });
-    contentSyncs.push(contentSync);
-  }
-
-  // Create content sync records for brands
-  for (let i = 0; i < 5; i++) {
-    const brand = randomElement(brands);
-    const syncStatus = randomElement(syncStatuses);
-
-    const contentSync = await prisma.contentSync.create({
-      data: {
-        entity_type: "brand",
-        entity_id: brand.id,
-        sync_status: syncStatus,
-        last_sync_at:
-          syncStatus === "synced"
-            ? new Date(Date.now() - randomNumber(1, 30) * 24 * 60 * 60 * 1000)
-            : null,
-        sync_errors: syncStatus === "failed" ? "Connection timeout" : null,
-        retry_count: syncStatus === "failed" ? randomNumber(1, 3) : 0,
-        webhook_url:
-          syncStatus === "synced"
-            ? `https://webhook.site/${randomNumber(10000, 99999)}`
-            : null,
-      },
-    });
-    contentSyncs.push(contentSync);
-  }
-
-  console.log(`Created ${contentSyncs.length} Content sync records`);
-  return contentSyncs;
-}
 
 async function seedRateLimits() {
   console.log("Seeding rate limits...");

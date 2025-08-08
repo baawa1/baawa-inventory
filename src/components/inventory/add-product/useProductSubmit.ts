@@ -23,7 +23,6 @@ export function useProductSubmit(
         ...data,
         description: data.description?.trim() || null,
         barcode: data.barcode?.trim() || null,
-        imageUrl: data.imageUrl?.trim() || null,
         notes: data.notes?.trim() || null,
         maximumStock: data.maximumStock || null,
       };

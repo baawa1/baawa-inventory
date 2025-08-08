@@ -65,9 +65,9 @@ export const GET = withAuth(async (request: AuthenticatedRequest) => {
 
     if (status && status !== 'all') {
       if (status === PRODUCT_STATUS.ACTIVE) {
-        where.status = 'ACTIVE';
+        where.status = PRODUCT_STATUS.ACTIVE;
       } else if (status === PRODUCT_STATUS.INACTIVE) {
-        where.status = 'INACTIVE';
+        where.status = PRODUCT_STATUS.INACTIVE;
       }
     }
 
@@ -331,7 +331,7 @@ export const POST = withPermission(
           size: validatedData.size,
           material: validatedData.material,
           tags: validatedData.tags || [],
-          images: validatedData.imageUrl ? [validatedData.imageUrl] : [],
+          images: [],
           categoryId: validatedData.categoryId,
           brandId: validatedData.brandId,
           supplierId: validatedData.supplierId,

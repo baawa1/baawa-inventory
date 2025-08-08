@@ -19,8 +19,7 @@ import { BasicInfoSection } from './edit-product/BasicInfoSection';
 import { CategoryBrandSupplierSection } from './edit-product/CategoryBrandSupplierSection';
 import { PricingInventorySection } from './edit-product/PricingInventorySection';
 import { ProductSpecificationsSection } from './edit-product/ProductSpecificationsSection';
-import { PricingPromotionsSection } from './edit-product/PricingPromotionsSection';
-import { SEOMarketingSection } from './edit-product/SEOMarketingSection';
+
 import { Skeleton } from '@/components/ui/skeleton';
 import { PageHeader } from '../ui/page-header';
 
@@ -162,10 +161,6 @@ export default function EditProductForm({ productId }: EditProductFormProps) {
               <PricingInventorySection form={form} />
 
               <ProductSpecificationsSection form={form} />
-
-              <PricingPromotionsSection form={form} />
-
-              <SEOMarketingSection form={form} />
 
               {/* Form Actions */}
               <div className="flex justify-end space-x-4 border-t pt-6">

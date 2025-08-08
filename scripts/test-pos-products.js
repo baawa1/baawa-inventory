@@ -9,6 +9,13 @@ import { PrismaClient } from "@prisma/client";
 
 const prisma = new PrismaClient();
 
+// Product status constants (must match Prisma enum)
+const PRODUCT_STATUS = {
+  ACTIVE: "ACTIVE",
+  INACTIVE: "INACTIVE",
+  OUT_OF_STOCK: "OUT_OF_STOCK",
+  DISCONTINUED: "DISCONTINUED",
+};
 async function testPOSProducts() {
   console.log("🔍 Testing POS Products API...\n");
 
@@ -16,7 +23,7 @@ async function testPOSProducts() {
     // First, check if products exist in the database
     const productsCount = await prisma.product.count({
       where: {
-        status: "active",
+        status: PRODUCT_STATUS.ACTIVE,
         stock: {
           gt: 0,
         },
@@ -28,7 +35,7 @@ async function testPOSProducts() {
     // Get a sample of products to verify structure
     const sampleProducts = await prisma.product.findMany({
       where: {
-        status: "active",
+        status: PRODUCT_STATUS.ACTIVE,
         stock: {
           gt: 0,
         },
@@ -91,7 +98,7 @@ async function testPOSProducts() {
           select: {
             products: {
               where: {
-                status: "active",
+                status: PRODUCT_STATUS.ACTIVE,
                 stock: {
                   gt: 0,
                 },
@@ -109,7 +116,7 @@ async function testPOSProducts() {
           select: {
             products: {
               where: {
-                status: "active",
+                status: PRODUCT_STATUS.ACTIVE,
                 stock: {
                   gt: 0,
                 },

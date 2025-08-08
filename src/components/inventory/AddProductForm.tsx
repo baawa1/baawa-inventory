@@ -21,6 +21,7 @@ import { createProductSchema } from '@/lib/validations/product';
 import { BasicInfoSection } from './add-product/BasicInfoSection';
 import { CategoryBrandSection } from './add-product/CategoryBrandSection';
 import { PricingInventorySection } from './add-product/PricingInventorySection';
+import { ProductSpecificationsSection } from './add-product/ProductSpecificationsSection';
 import { AdditionalInfoSection } from './add-product/AdditionalInfoSection';
 import { FormActions } from './add-product/FormActions';
 import { useFormDataQuery } from './add-product/useFormDataQuery';
@@ -129,6 +130,8 @@ export default function AddProductForm() {
               />
 
               <PricingInventorySection form={form} />
+
+              <ProductSpecificationsSection form={form} />
 
               <AdditionalInfoSection form={form} />
 

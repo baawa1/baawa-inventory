@@ -74,7 +74,6 @@ export interface CreateProductRequest {
   maxStock?: number;
   unit: string;
   status: 'ACTIVE' | 'INACTIVE' | 'OUT_OF_STOCK' | 'DISCONTINUED';
-  imageUrl?: string;
   categoryId?: number;
   brandId?: number;
   supplierId?: number;

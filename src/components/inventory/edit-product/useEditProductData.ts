@@ -34,14 +34,6 @@ export function useEditProductData(productId: number) {
       size: '',
       material: '',
       tags: [],
-      salePrice: undefined,
-      saleStartDate: undefined,
-      saleEndDate: undefined,
-      metaTitle: '',
-      metaDescription: '',
-      seoKeywords: [],
-      isFeatured: false,
-      sortOrder: undefined,
     },
   });
 
@@ -49,7 +41,7 @@ export function useEditProductData(productId: number) {
   const product = useProduct(productId);
   const categories = useCategoriesWithHierarchy();
   const brands = useBrands({ status: 'true' });
-  const suppliers = useSuppliers({ status: 'true' });
+  const suppliers = useSuppliers({ isActive: true, limit: 1000 });
 
   // Combine loading states
   const loading =
@@ -107,18 +99,6 @@ export function useEditProductData(productId: number) {
           size: productData.size || '',
           material: productData.material || '',
           tags: productData.tags || [],
-          salePrice: productData.salePrice || undefined,
-          saleStartDate: productData.saleStartDate
-            ? new Date(productData.saleStartDate)
-            : undefined,
-          saleEndDate: productData.saleEndDate
-            ? new Date(productData.saleEndDate)
-            : undefined,
-          metaTitle: productData.metaTitle || '',
-          metaDescription: productData.metaDescription || '',
-          seoKeywords: productData.seoKeywords || [],
-          isFeatured: productData.isFeatured || false,
-          sortOrder: productData.sortOrder || undefined,
         });
       }, 0);
     }

@@ -9,6 +9,13 @@ import { PrismaClient } from "@prisma/client";
 
 const prisma = new PrismaClient();
 
+// Product status constants (must match Prisma enum)
+const PRODUCT_STATUS = {
+  ACTIVE: "ACTIVE",
+  INACTIVE: "INACTIVE",
+  OUT_OF_STOCK: "OUT_OF_STOCK",
+  DISCONTINUED: "DISCONTINUED",
+};
 const lowStockProducts = [
   {
     name: "iPhone 15 Pro Max Case - Out of Stock",
@@ -19,7 +26,7 @@ const lowStockProducts = [
     cost: 4500.0,
     stock: 0, // Out of stock
     minStock: 5,
-    status: "active",
+    status: PRODUCT_STATUS.ACTIVE,
     categoryName: "Phone Cases",
     brandName: "Premium Guard",
   },
@@ -32,7 +39,7 @@ const lowStockProducts = [
     cost: 1500.0,
     stock: 1, // Critical stock (below 50% of minStock)
     minStock: 10,
-    status: "active",
+    status: PRODUCT_STATUS.ACTIVE,
     categoryName: "Screen Protectors",
     brandName: "GlassShield",
   },
@@ -45,7 +52,7 @@ const lowStockProducts = [
     cost: 3200.0,
     stock: 2, // Low stock (at minStock level)
     minStock: 3,
-    status: "active",
+    status: PRODUCT_STATUS.ACTIVE,
     categoryName: "Chargers",
     brandName: "PowerTech",
   },
@@ -58,7 +65,7 @@ const lowStockProducts = [
     cost: 8000.0,
     stock: 0, // Out of stock
     minStock: 2,
-    status: "active",
+    status: PRODUCT_STATUS.ACTIVE,
     categoryName: "Audio",
     brandName: "SoundMax",
   },
@@ -71,7 +78,7 @@ const lowStockProducts = [
     cost: 1800.0,
     stock: 4, // Low stock (below minStock)
     minStock: 8,
-    status: "active",
+    status: PRODUCT_STATUS.ACTIVE,
     categoryName: "Cables",
     brandName: "ConnectPro",
   },
