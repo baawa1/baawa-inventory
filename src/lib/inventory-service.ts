@@ -2,6 +2,7 @@ import { prisma } from '@/lib/db';
 import { createAuditLog } from '@/lib/audit';
 import { AuditLogAction } from '@/types/audit';
 import { Prisma } from '@prisma/client';
+import { ProductStatus } from '@/lib/constants';
 
 // ===== TYPE DEFINITIONS =====
 
@@ -38,7 +39,7 @@ export interface ProductUpdateData {
   maximumStock?: number;
   currentStock?: number;
   supplierId?: number;
-  status?: string;
+  status?: ProductStatus;
 }
 
 export interface SalesTransactionUpdateData {
