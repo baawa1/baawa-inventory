@@ -22,6 +22,7 @@ import {
   FormLabel,
   FormMessage,
 } from '@/components/ui/form';
+import { useTokenValidation } from '@/hooks/api/useTokenValidation';
 
 const resetPasswordSchema = z
   .object({
@@ -72,6 +73,8 @@ function ResetPasswordFormContent({ className }: ResetPasswordFormProps) {
     },
   });
 
+  const tokenValidationMutation = useTokenValidation();
+
   useEffect(() => {
     const validateToken = async () => {
       if (!token) {
@@ -80,15 +83,8 @@ function ResetPasswordFormContent({ className }: ResetPasswordFormProps) {
       }
 
       try {
-        const response = await fetch('/api/auth/validate-reset-token', {
-          method: 'POST',
-          headers: {
-            'Content-Type': 'application/json',
-          },
-          body: JSON.stringify({ token }),
-        });
-
-        setIsValidToken(response.ok);
+        const result = await tokenValidationMutation.mutateAsync({ token });
+        setIsValidToken(result.valid);
       } catch (error) {
         console.error('Token validation error:', error);
         setIsValidToken(false);
@@ -96,7 +92,7 @@ function ResetPasswordFormContent({ className }: ResetPasswordFormProps) {
     };
 
     validateToken();
-  }, [token]);
+  }, [token, tokenValidationMutation]);
 
   const onSubmit = async (data: ResetPasswordFormData) => {
     if (!token) {
