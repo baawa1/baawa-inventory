@@ -1,53 +1,58 @@
 const { PrismaClient } = require("@prisma/client");
+const logger = require("./script-logger");
 
 const prisma = new PrismaClient();
 
 async function testImageFields() {
   try {
-    console.log("🧪 Testing image fields in database...");
+    logger.info("🧪 Testing database fields...");
 
-    // Test creating a category with image
+    // Test creating a category
     const testCategory = await prisma.category.create({
       data: {
-        name: "Test Category with Image",
-        description: "Testing image field functionality",
-        image: "https://example.com/test-category-image.jpg",
+        name: "Test Category",
+        description: "Testing field functionality",
       },
     });
 
-    console.log("✅ Created category with image:", {
+    logger.info("✅ Created category:", {
       id: testCategory.id,
       name: testCategory.name,
-    
     });
 
-    // Test creating a brand with image
+    // Test creating a brand
     const testBrand = await prisma.brand.create({
       data: {
-        name: "Test Brand with Image",
-        description: "Testing image field functionality",
+        name: "Test Brand",
+        description: "Testing field functionality",
         website: "https://testbrand.com",
-        image: "https://example.com/test-brand-image.jpg",
       },
     });
 
-    console.log("✅ Created brand with image:", {
+    logger.info("✅ Created brand:", {
       id: testBrand.id,
       name: testBrand.name,
-    
     });
 
-    // Test updating image fields
+    // Test updating fields
     const updatedCategory = await prisma.category.update({
       where: { id: testCategory.id },
-      data: { image: "https://example.com/updated-category-image.jpg" },
+      data: { description: "Updated description" },
     });
 
-  
+    logger.info("✅ Updated category:", {
+      id: updatedCategory.id,
+      description: updatedCategory.description,
+    });
 
     const updatedBrand = await prisma.brand.update({
       where: { id: testBrand.id },
-      data: { image: "https://example.com/updated-brand-image.jpg" },
+      data: { description: "Updated description" },
+    });
+
+    logger.info("✅ Updated brand:", {
+      id: updatedBrand.id,
+      description: updatedBrand.description,
     });
 
   
@@ -56,10 +61,10 @@ async function testImageFields() {
     await prisma.category.delete({ where: { id: testCategory.id } });
     await prisma.brand.delete({ where: { id: testBrand.id } });
 
-    console.log("🧹 Cleaned up test data");
-    console.log("🎉 Image fields are working correctly!");
+    logger.info("🧹 Cleaned up test data");
+    logger.info("🎉 Database fields are working correctly!");
   } catch (error) {
-    console.error("❌ Error testing image fields:", error);
+    logger.error("❌ Error testing database fields:", { error: error.message });
   } finally {
     await prisma.$disconnect();
   }
