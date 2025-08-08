@@ -12,7 +12,9 @@ interface EmailVerificationResponse {
   error?: string;
 }
 
-const verifyEmail = async (request: EmailVerificationRequest): Promise<EmailVerificationResponse> => {
+const verifyEmail = async (
+  request: EmailVerificationRequest
+): Promise<EmailVerificationResponse> => {
   const response = await fetch('/api/auth/verify-email', {
     method: 'POST',
     headers: { 'Content-Type': 'application/json' },
@@ -36,7 +38,7 @@ export const useEmailVerification = () => {
         error: error.message,
       });
     },
-    onSuccess: (data) => {
+    onSuccess: data => {
       logger.info('Email verification completed', {
         success: data.success,
         shouldRefreshSession: data.shouldRefreshSession,

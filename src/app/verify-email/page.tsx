@@ -109,9 +109,10 @@ function VerifyEmailContent() {
       }, 2000);
     } catch (error) {
       console.error('❌ Error verifying email:', error);
-      
+
       // Handle different error cases
-      const errorMessage = error instanceof Error ? error.message : 'An error occurred';
+      const errorMessage =
+        error instanceof Error ? error.message : 'An error occurred';
       if (errorMessage.includes('expired')) {
         setVerificationStatus('expired');
       } else {

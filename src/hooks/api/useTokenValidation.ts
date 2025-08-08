@@ -11,7 +11,9 @@ interface TokenValidationResponse {
   error?: string;
 }
 
-const validateToken = async (request: TokenValidationRequest): Promise<TokenValidationResponse> => {
+const validateToken = async (
+  request: TokenValidationRequest
+): Promise<TokenValidationResponse> => {
   const response = await fetch('/api/auth/validate-reset-token', {
     method: 'POST',
     headers: {
@@ -21,7 +23,9 @@ const validateToken = async (request: TokenValidationRequest): Promise<TokenVali
   });
 
   if (!response.ok) {
-    const errorData = await response.json().catch(() => ({ error: 'Failed to validate token' }));
+    const errorData = await response
+      .json()
+      .catch(() => ({ error: 'Failed to validate token' }));
     throw new Error(errorData.error || `HTTP ${response.status}`);
   }
 
@@ -36,7 +40,7 @@ export const useTokenValidation = () => {
         error: error.message,
       });
     },
-    onSuccess: (data) => {
+    onSuccess: data => {
       logger.info('Token validation completed', {
         valid: data.valid,
       });
