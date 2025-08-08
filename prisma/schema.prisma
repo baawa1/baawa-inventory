@@ -28,7 +28,7 @@ model User {
   approvedAt                                             DateTime?              @map("approved_at") @db.Timestamptz(6)
   rejectionReason                                        String?                @map("rejection_reason")
   emailNotifications                                     Boolean?               @default(true) @map("email_notifications")
-  marketingEmails                                        Boolean?               @default(false) @map("marketing_emails")
+
   createdAt                                              DateTime?              @default(now()) @map("created_at") @db.Timestamptz(6)
   updatedAt                                              DateTime?              @default(now()) @updatedAt @map("updated_at") @db.Timestamptz(6)
   avatar_url                                             String?
