@@ -238,15 +238,7 @@ describe('AddProductForm', () => {
           size: '',
           material: '',
           tags: [],
-          salePrice: null,
-          saleStartDate: null,
-          saleEndDate: null,
-          metaTitle: '',
-          metaDescription: '',
-          seoKeywords: [],
-          isFeatured: false,
-          sortOrder: null,
-          imageUrl: null,
+
           notes: null,
         }),
       });
@@ -401,15 +393,8 @@ describe('AddProductForm', () => {
           size: '',
           material: '',
           tags: [],
-          salePrice: null,
-          saleStartDate: null,
-          saleEndDate: null,
-          metaTitle: '',
-          metaDescription: '',
-          seoKeywords: [],
-          isFeatured: false,
+
           sortOrder: null,
-          imageUrl: null,
           notes: null,
         }),
       });

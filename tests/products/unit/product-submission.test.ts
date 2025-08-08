@@ -85,7 +85,6 @@ describe('Product Submission Hooks', () => {
           status: 'ACTIVE',
           description: null,
           barcode: null,
-          imageUrl: null,
           notes: null,
           maximumStock: null,
         }),
@@ -190,7 +189,6 @@ describe('Product Submission Hooks', () => {
         sku: 'TEST-001',
         description: '   ', // Whitespace
         barcode: '   ', // Whitespace
-        imageUrl: '   ', // Whitespace
         notes: '   ', // Whitespace
         purchasePrice: 10.5,
         sellingPrice: 15.99,
@@ -210,7 +208,6 @@ describe('Product Submission Hooks', () => {
           sku: 'TEST-001',
           description: null,
           barcode: null,
-          imageUrl: null,
           notes: null,
           purchasePrice: 10.5,
           sellingPrice: 15.99,

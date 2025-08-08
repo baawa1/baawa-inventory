@@ -60,9 +60,7 @@ export interface Product {
   isArchived: boolean;
   images?: string[];
   tags: string[];
-  metaTitle?: string;
-  metaDescription?: string;
-  seoKeywords: string[];
+
   supplierId?: string;
   createdAt: Date;
   updatedAt: Date;
@@ -89,9 +87,6 @@ export interface ProductFormData {
   supplierId?: string;
   images?: string[];
   tags?: string[];
-  metaTitle?: string;
-  metaDescription?: string;
-  seoKeywords?: string[];
 }
 
 // User types are now defined in src/types/user.ts

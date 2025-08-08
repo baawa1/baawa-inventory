@@ -59,9 +59,9 @@ async function addSampleSalesAndPurchaseData() {
             ...productData,
             description: `Sample ${productData.name}`,
             minStock: 5,
-            status: "active",
+            status: PRODUCT_STATUS.ACTIVE,
             tags: [],
-            seoKeywords: [],
+
           },
         });
       }

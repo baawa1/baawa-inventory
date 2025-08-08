@@ -44,8 +44,6 @@ export interface ReportDataStructure {
   generatedAt: string;
 }
 
-
-
 export interface ExportableData {
   [key: string]: string | number | boolean | Date | null | undefined;
 }
@@ -250,8 +248,6 @@ export function generateReportDataStructure(
     generatedAt: new Date().toISOString(),
   };
 }
-
-
 
 /**
  * Get status badge variant for financial transactions

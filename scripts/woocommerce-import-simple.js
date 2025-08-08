@@ -4,6 +4,14 @@ const fs = require("fs");
 
 const prisma = new PrismaClient();
 
+// Product status constants (must match Prisma enum)
+const PRODUCT_STATUS = {
+  ACTIVE: 'ACTIVE',
+  INACTIVE: 'INACTIVE',
+  OUT_OF_STOCK: 'OUT_OF_STOCK',
+  DISCONTINUED: 'DISCONTINUED',
+};
+
 // Helper function to parse WooCommerce categories
 function parseCategories(categoryString) {
   if (!categoryString) return null;
@@ -179,15 +187,7 @@ async function importWooCommerceProducts(csvFilePath) {
             barcode: product.SKU, // Use SKU as barcode if no specific barcode
             cost: parseFloat(product["Meta: _wc_cog_cost"]) || 0,
             price: parseFloat(product["Regular price"]) || 0,
-            salePrice: product["Sale price"]
-              ? parseFloat(product["Sale price"])
-              : null,
-            saleStartDate: product["Date sale price starts"]
-              ? new Date(product["Date sale price starts"])
-              : null,
-            saleEndDate: product["Date sale price ends"]
-              ? new Date(product["Date sale price ends"])
-              : null,
+
             stock: parseInt(product.Stock) || 0,
             minStock: parseInt(product["Low stock amount"]) || 0,
             weight: product["Weight (kg)"]
@@ -199,23 +199,9 @@ async function importWooCommerceProducts(csvFilePath) {
               product["Height (cm)"]
                 ? `${product["Length (cm)"]}x${product["Width (cm)"]}x${product["Height (cm)"]}cm`
                 : null,
-            status: product.Published === "1" ? "active" : "inactive",
-            isFeatured: product["Is featured?"] === "1",
-
-            sortOrder: product.Position ? parseInt(product.Position) : null,
+            status: product.Published === "1" ? PRODUCT_STATUS.ACTIVE : PRODUCT_STATUS.INACTIVE,
             images: imageUrls,
             tags: parseTags(product.Tags),
-            metaTitle: product["Meta: post_title"] || product.Name,
-            metaDescription:
-              product["Meta: post_excerpt"] ||
-              product["Short description"] ||
-              "",
-            metaExcerpt: product["Meta: post_excerpt"] || "",
-            metaContent:
-              product["Meta: post_content"] || product.Description || "",
-            seoKeywords: parseTags(product.Tags),
-            variantAttributes: variantAttributes,
-            variantValues: variantAttributes,
             brandId: brandId,
             categoryId: categoryId,
           },

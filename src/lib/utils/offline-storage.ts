@@ -3,6 +3,8 @@
  * Handles IndexedDB operations for offline transaction storage
  */
 
+import { PRODUCT_STATUS } from '@/lib/constants';
+
 export interface OfflineTransaction {
   id: string;
   items: Array<{
@@ -251,12 +253,13 @@ class OfflineStorageManager {
   async searchCachedProducts(searchTerm: string): Promise<OfflineProduct[]> {
     const products = await this.getCachedProducts();
 
-    if (!searchTerm) return products.filter(p => p.status === 'ACTIVE');
+    if (!searchTerm)
+      return products.filter(p => p.status === PRODUCT_STATUS.ACTIVE);
 
     const term = searchTerm.toLowerCase();
     return products.filter(
       product =>
-        product.status === 'ACTIVE' &&
+        product.status === PRODUCT_STATUS.ACTIVE &&
         (product.name.toLowerCase().includes(term) ||
           product.sku.toLowerCase().includes(term) ||
           product.barcode?.toLowerCase().includes(term) ||

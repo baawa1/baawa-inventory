@@ -46,82 +46,65 @@ export function AdditionalInfoSection({ form }: AdditionalInfoSectionProps) {
         <CardTitle>Additional Information</CardTitle>
       </CardHeader>
       <CardContent className="space-y-4">
-        <div className="grid grid-cols-1 gap-4 md:grid-cols-2">
-          <FormField
-            control={form.control}
-            name="status"
-            render={({ field }) => (
-              <FormItem>
-                <FormLabel>Status</FormLabel>
-                <Select
-                  onValueChange={field.onChange}
-                  defaultValue={field.value}
-                >
-                  <FormControl>
-                    <SelectTrigger>
-                      <SelectValue placeholder="Select status" />
-                    </SelectTrigger>
-                  </FormControl>
-                  <SelectContent>
-                    <SelectItem value="ACTIVE">
-                      <div className="flex items-center gap-2">
-                        <Badge
-                          variant="outline"
-                          className={getStatusColor('ACTIVE')}
-                        >
-                          Active
-                        </Badge>
-                      </div>
-                    </SelectItem>
-                    <SelectItem value="INACTIVE">
-                      <div className="flex items-center gap-2">
-                        <Badge
-                          variant="outline"
-                          className={getStatusColor('INACTIVE')}
-                        >
-                          Inactive
-                        </Badge>
-                      </div>
-                    </SelectItem>
-                    <SelectItem value="OUT_OF_STOCK">
-                      <div className="flex items-center gap-2">
-                        <Badge
-                          variant="outline"
-                          className={getStatusColor('OUT_OF_STOCK')}
-                        >
-                          Out of Stock
-                        </Badge>
-                      </div>
-                    </SelectItem>
-                    <SelectItem value="DISCONTINUED">
-                      <div className="flex items-center gap-2">
-                        <Badge
-                          variant="outline"
-                          className={getStatusColor('DISCONTINUED')}
-                        >
-                          Discontinued
-                        </Badge>
-                      </div>
-                    </SelectItem>
-                  </SelectContent>
-                </Select>
-                <FormMessage />
-              </FormItem>
-            )}
-          />
-
-          <div className="flex items-center">
-            <div className="text-muted-foreground text-sm">
-              Current Status:
-              <Badge
-                variant="outline"
-                className={`ml-2 ${getStatusColor(form.watch('status'))}`}
-              >
-                {form.watch('status') || 'ACTIVE'}
-              </Badge>
-            </div>
-          </div>
-        </div>
+        <FormField
+          control={form.control}
+          name="status"
+          render={({ field }) => (
+            <FormItem>
+              <FormLabel>Status</FormLabel>
+              <Select onValueChange={field.onChange} defaultValue={field.value}>
+                <FormControl>
+                  <SelectTrigger>
+                    <SelectValue placeholder="Select status" />
+                  </SelectTrigger>
+                </FormControl>
+                <SelectContent>
+                  <SelectItem value="ACTIVE">
+                    <div className="flex items-center gap-2">
+                      <Badge
+                        variant="outline"
+                        className={getStatusColor('ACTIVE')}
+                      >
+                        Active
+                      </Badge>
+                    </div>
+                  </SelectItem>
+                  <SelectItem value="INACTIVE">
+                    <div className="flex items-center gap-2">
+                      <Badge
+                        variant="outline"
+                        className={getStatusColor('INACTIVE')}
+                      >
+                        Inactive
+                      </Badge>
+                    </div>
+                  </SelectItem>
+                  <SelectItem value="OUT_OF_STOCK">
+                    <div className="flex items-center gap-2">
+                      <Badge
+                        variant="outline"
+                        className={getStatusColor('OUT_OF_STOCK')}
+                      >
+                        Out of Stock
+                      </Badge>
+                    </div>
+                  </SelectItem>
+                  <SelectItem value="DISCONTINUED">
+                    <div className="flex items-center gap-2">
+                      <Badge
+                        variant="outline"
+                        className={getStatusColor('DISCONTINUED')}
+                      >
+                        Discontinued
+                      </Badge>
+                    </div>
+                  </SelectItem>
+                </SelectContent>
+              </Select>
+              <FormMessage />
+            </FormItem>
+          )}
+        />
 
         <FormField
           control={form.control}

@@ -39,7 +39,6 @@ export interface ProductUpdateData {
   currentStock?: number;
   supplierId?: number;
   status?: string;
-  imageUrl?: string;
 }
 
 export interface SalesTransactionUpdateData {
@@ -590,8 +589,6 @@ export class InventoryService {
       maxStock: data.maximumStock,
       stock: data.currentStock,
       status: data.status,
-      // Handle images field if needed
-      images: data.imageUrl ? [data.imageUrl] : undefined,
     };
 
     // Handle relation fields separately

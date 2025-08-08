@@ -1,11 +1,8 @@
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { queryKeys } from '@/lib/query-client';
-import { CACHE_DURATIONS } from '@/lib/constants';
+import { CACHE_DURATIONS, PRODUCT_STATUS } from '@/lib/constants';
 
 // Improved type definitions
-interface ProductVariantAttributes {
-  [attributeName: string]: string | number | boolean;
-}
 
 interface ProductImage {
   id: string;
@@ -47,20 +44,7 @@ export interface Product {
   hasVariants: boolean;
   isArchived: boolean;
   tags: string[];
-  metaTitle?: string;
-  metaDescription?: string;
-  seoKeywords: string[];
   status: 'ACTIVE' | 'INACTIVE' | 'OUT_OF_STOCK' | 'DISCONTINUED';
-
-  isFeatured: boolean;
-  metaContent?: string;
-  metaExcerpt?: string;
-  saleEndDate?: string;
-  salePrice?: number;
-  saleStartDate?: string;
-  sortOrder?: number;
-  variantAttributes?: ProductVariantAttributes;
-  variantValues?: ProductVariantAttributes;
   supplier?: {
     id: number;
     name: string;
@@ -399,7 +383,9 @@ export const useProductOptions = () => {
   return useQuery({
     queryKey: [...queryKeys.products.all, 'options'] as const,
     queryFn: async () => {
-      const response = await fetch('/api/products?status=active');
+      const response = await fetch(
+        `/api/products?status=${PRODUCT_STATUS.ACTIVE}`
+      );
       if (!response.ok) {
         throw new Error(
           `Failed to fetch product options: ${response.statusText}`

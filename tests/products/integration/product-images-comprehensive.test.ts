@@ -86,14 +86,6 @@ const mockProduct = {
   weight: null,
   dimensions: null,
   tags: [],
-  salePrice: null,
-  saleStartDate: null,
-  saleEndDate: null,
-  metaTitle: null,
-  metaDescription: null,
-  seoKeywords: [],
-  isFeatured: false,
-  sortOrder: null,
 };
 
 // Mock image utilities

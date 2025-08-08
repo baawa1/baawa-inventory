@@ -57,6 +57,5 @@ export const defaultFormValues: CreateProductData = {
   maximumStock: null,
   supplierId: null,
   status: 'ACTIVE',
-  imageUrl: null,
   notes: null,
 };

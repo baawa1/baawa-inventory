@@ -93,26 +93,6 @@ export function BasicInfoSection({ form }: BasicInfoSectionProps) {
             </FormItem>
           )}
         />
-
-        <FormField
-          control={form.control}
-          name="imageUrl"
-          render={({ field }) => (
-            <FormItem>
-              <FormLabel>Image URL</FormLabel>
-              <FormControl>
-                <Input
-                  placeholder="Enter image URL"
-                  type="url"
-                  {...field}
-                  value={field.value || ''}
-                  onChange={e => field.onChange(e.target.value || null)}
-                />
-              </FormControl>
-              <FormMessage />
-            </FormItem>
-          )}
-        />
       </CardContent>
     </Card>
   );

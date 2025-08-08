@@ -8,6 +8,7 @@ import {
   getStockStatusInfo,
   STATUS_COLORS,
 } from '@/lib/constants/ui';
+import { PRODUCT_STATUS } from '@/lib/constants';
 
 export interface BadgeVariant {
   variant: 'default' | 'secondary' | 'destructive' | 'outline';
@@ -60,8 +61,8 @@ export function getUserStatusBadgeConfig(status: string): BadgeConfig {
  * Get product status badge configuration
  */
 export function getProductStatusBadgeConfig(status: string): BadgeConfig {
-  const variant = status === 'ACTIVE' ? 'default' : 'secondary';
-  const label = status === 'ACTIVE' ? 'Active' : 'Inactive';
+  const variant = status === PRODUCT_STATUS.ACTIVE ? 'default' : 'secondary';
+  const label = status === PRODUCT_STATUS.ACTIVE ? 'Active' : 'Inactive';
 
   return { variant, label };
 }

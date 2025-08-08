@@ -24,7 +24,10 @@ export interface Product {
   stock: number;
   minStock: number;
   maxStock: number | null;
-  supplierId: number;
+  supplier?: {
+    id: number;
+    name: string;
+  };
   status: 'ACTIVE' | 'INACTIVE' | 'OUT_OF_STOCK' | 'DISCONTINUED';
   images: Array<{ url: string; isPrimary: boolean }> | null;
 }

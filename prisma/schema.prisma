@@ -5,7 +5,6 @@ generator client {
 datasource db {
   provider = "postgresql"
   url      = env("DATABASE_URL")
-
 }
 
 model User {
@@ -40,6 +39,7 @@ model User {
   sessionRefreshAt                                       DateTime?              @map("session_refresh_at") @db.Timestamptz(6)
   ai_content                                             AIContent[]
   audit_logs                                             AuditLog[]
+  coupons                                                Coupon[]               @relation("CouponCreator")
   generatedReports                                       FinancialReport[]      @relation("ReportGenerator")
   approvedTransactions                                   FinancialTransaction[] @relation("TransactionApprover")
   createdTransactions                                    FinancialTransaction[] @relation("TransactionCreator")
@@ -51,7 +51,6 @@ model User {
   createdReconciliations                                 StockReconciliation[]  @relation("ReconciliationCreator")
   approver                                               User?                  @relation("UserApproval", fields: [approvedBy], references: [id], onDelete: NoAction, onUpdate: NoAction)
   approvedUsers                                          User[]                 @relation("UserApproval")
-  coupons                                                Coupon[]               @relation("CouponCreator")
 
   @@index([approvedBy], map: "idx_users_approved_by")
   @@index([email], map: "idx_users_email")
@@ -96,16 +95,16 @@ model Supplier {
 }
 
 model Category {
-  id           Int           @id @default(autoincrement())
-  name         String        @db.VarChar(100)
+  id           Int            @id @default(autoincrement())
+  name         String         @db.VarChar(100)
   description  String?
-  isActive     Boolean       @default(true) @map("is_active")
-  createdAt    DateTime      @default(now()) @map("created_at") @db.Timestamptz(6)
-  updatedAt    DateTime      @default(now()) @updatedAt @map("updated_at") @db.Timestamptz(6)
-  parentId     Int?          @map("parent_id")
-  image        String?       @db.VarChar(500)
-  parent       Category?     @relation("CategoryHierarchy", fields: [parentId], references: [id])
-  children     Category[]    @relation("CategoryHierarchy")
+  isActive     Boolean        @default(true) @map("is_active")
+  createdAt    DateTime       @default(now()) @map("created_at") @db.Timestamptz(6)
+  updatedAt    DateTime       @default(now()) @updatedAt @map("updated_at") @db.Timestamptz(6)
+  parentId     Int?           @map("parent_id")
+  image        String?        @db.VarChar(500)
+  parent       Category?      @relation("CategoryHierarchy", fields: [parentId], references: [id])
+  children     Category[]     @relation("CategoryHierarchy")
   products     Product[]
 
   @@unique([name, parentId], name: "unique_category_name_per_parent")
@@ -114,14 +113,14 @@ model Category {
 }
 
 model Brand {
-  id           Int           @id @default(autoincrement())
-  name         String        @unique @db.VarChar(100)
+  id           Int            @id @default(autoincrement())
+  name         String         @unique @db.VarChar(100)
   description  String?
-  website      String?       @db.VarChar(255)
-  isActive     Boolean?      @default(true) @map("is_active")
-  createdAt    DateTime?     @default(now()) @map("created_at") @db.Timestamptz(6)
-  updatedAt    DateTime?     @default(now()) @updatedAt @map("updated_at") @db.Timestamptz(6)
-  image        String?       @db.VarChar(500)
+  website      String?        @db.VarChar(255)
+  isActive     Boolean?       @default(true) @map("is_active")
+  createdAt    DateTime?      @default(now()) @map("created_at") @db.Timestamptz(6)
+  updatedAt    DateTime?      @default(now()) @updatedAt @map("updated_at") @db.Timestamptz(6)
+  image        String?        @db.VarChar(500)
   products     Product[]
 
   @@index([isActive], map: "idx_brands_is_active")
@@ -155,8 +154,7 @@ model Product {
   supplierId          Int?                      @map("supplier_id")
   categoryId          Int?                      @map("category_id")
   brandId             Int?                      @map("brand_id")
-  status              String                    @default("active") @db.VarChar(20)
-
+  status              ProductStatus             @default(ACTIVE)
   images              Json?
   ai_content          AIContent[]
   product_variants    ProductVariant[]
@@ -205,25 +203,25 @@ model ProductVariant {
 }
 
 model SalesTransaction {
-  id                 Int         @id @default(autoincrement())
-  subtotal           Decimal     @db.Decimal(10, 2)
+  id                 Int            @id @default(autoincrement())
+  subtotal           Decimal        @db.Decimal(10, 2)
   notes              String?
-  created_at         DateTime?   @default(now()) @db.Timestamptz(6)
-  customer_email     String?     @db.VarChar(255)
-  customer_name      String?     @db.VarChar(255)
-  customer_phone     String?     @db.VarChar(20)
-  discount_amount    Decimal     @default(0) @db.Decimal(10, 2)
-  payment_method     String      @db.VarChar(50)
-  payment_status     String      @default("pending") @db.VarChar(20)
-  tax_amount         Decimal     @default(0) @db.Decimal(10, 2)
-  total_amount       Decimal     @db.Decimal(10, 2)
-  transaction_number String      @unique @db.VarChar(50)
-  transaction_type   String      @default("sale") @db.VarChar(20)
-  updated_at         DateTime?   @default(now()) @db.Timestamptz(6)
+  created_at         DateTime?      @default(now()) @db.Timestamptz(6)
+  customer_email     String?        @db.VarChar(255)
+  customer_name      String?        @db.VarChar(255)
+  customer_phone     String?        @db.VarChar(20)
+  discount_amount    Decimal        @default(0) @db.Decimal(10, 2)
+  payment_method     String         @db.VarChar(50)
+  payment_status     String         @default("pending") @db.VarChar(20)
+  tax_amount         Decimal        @default(0) @db.Decimal(10, 2)
+  total_amount       Decimal        @db.Decimal(10, 2)
+  transaction_number String         @unique @db.VarChar(50)
+  transaction_type   String         @default("sale") @db.VarChar(20)
+  updated_at         DateTime?      @default(now()) @db.Timestamptz(6)
   user_id            Int
   sales_items        SalesItem[]
+  users              User           @relation(fields: [user_id], references: [id], onDelete: NoAction, onUpdate: NoAction)
   split_payments     SplitPayment[]
-  users              User        @relation(fields: [user_id], references: [id], onDelete: NoAction, onUpdate: NoAction)
 
   @@index([created_at], map: "idx_sales_transactions_created_at")
   @@index([payment_status], map: "idx_sales_transactions_payment_status")
@@ -243,10 +241,10 @@ model SalesItem {
   unit_price         Decimal          @db.Decimal(10, 2)
   variant_id         Int?
   coupon_id          Int?
+  coupon             Coupon?          @relation(fields: [coupon_id], references: [id], onUpdate: NoAction)
   products           Product?         @relation(fields: [product_id], references: [id], onUpdate: NoAction)
   sales_transactions SalesTransaction @relation(fields: [transaction_id], references: [id], onDelete: Cascade, onUpdate: NoAction)
   product_variants   ProductVariant?  @relation(fields: [variant_id], references: [id], onUpdate: NoAction)
-  coupon             Coupon?          @relation(fields: [coupon_id], references: [id], onUpdate: NoAction)
 
   @@index([product_id], map: "idx_sales_items_product_id")
   @@index([transaction_id], map: "idx_sales_items_transaction_id")
@@ -409,8 +407,6 @@ model AIContent {
   @@map("ai_content")
 }
 
-
-
 model RateLimit {
   id        Int      @id @default(autoincrement())
   key       String   @db.VarChar(255)
@@ -444,13 +440,13 @@ model FinancialTransaction {
   amount            Decimal         @db.Decimal(15, 2)
   description       String?
   transactionDate   DateTime        @map("transaction_date") @db.Date
-  paymentMethod     PaymentMethod?
   status            FinancialStatus @default(COMPLETED)
   approvedBy        Int?            @map("approved_by")
   approvedAt        DateTime?       @map("approved_at") @db.Timestamptz(6)
   createdBy         Int             @map("created_by")
   createdAt         DateTime        @default(now()) @map("created_at") @db.Timestamptz(6)
   updatedAt         DateTime        @default(now()) @updatedAt @map("updated_at") @db.Timestamptz(6)
+  paymentMethod     PaymentMethod?
   expenseDetails    ExpenseDetail?
   approvedByUser    User?           @relation("TransactionApprover", fields: [approvedBy], references: [id])
   createdByUser     User            @relation("TransactionCreator", fields: [createdBy], references: [id])
@@ -466,9 +462,9 @@ model FinancialTransaction {
 model ExpenseDetail {
   id            Int                  @id @default(autoincrement())
   transactionId Int                  @unique @map("transaction_id")
-  expenseType   ExpenseType
   vendorName    String?              @map("vendor_name") @db.VarChar(255)
   createdAt     DateTime             @default(now()) @map("created_at") @db.Timestamptz(6)
+  expenseType   ExpenseType
   transaction   FinancialTransaction @relation(fields: [transactionId], references: [id], onDelete: Cascade)
 
   @@map("expense_details")
@@ -477,9 +473,9 @@ model ExpenseDetail {
 model IncomeDetail {
   id            Int                  @id @default(autoincrement())
   transactionId Int                  @unique @map("transaction_id")
-  incomeSource  IncomeSource
   payerName     String?              @map("payer_name") @db.VarChar(255)
   createdAt     DateTime             @default(now()) @map("created_at") @db.Timestamptz(6)
+  incomeSource  IncomeSource
   transaction   FinancialTransaction @relation(fields: [transactionId], references: [id], onDelete: Cascade)
 
   @@map("income_details")
@@ -504,22 +500,22 @@ model FinancialReport {
 }
 
 model Coupon {
-  id            Int        @id @default(autoincrement())
-  code          String     @unique @db.VarChar(50)
-  name          String     @db.VarChar(255)
+  id            Int         @id @default(autoincrement())
+  code          String      @unique @db.VarChar(50)
+  name          String      @db.VarChar(255)
   description   String?
   type          CouponType
-  value         Decimal    @db.Decimal(10, 2)
-  minimumAmount Decimal?   @map("minimum_amount") @db.Decimal(10, 2)
-  maxUses       Int?       @map("max_uses")
-  currentUses   Int        @default(0) @map("current_uses")
-  isActive      Boolean    @default(true) @map("is_active")
-  validFrom     DateTime   @map("valid_from") @db.Timestamptz(6)
-  validUntil    DateTime   @map("valid_until") @db.Timestamptz(6)
-  createdBy     Int        @map("created_by")
-  createdAt     DateTime   @default(now()) @map("created_at") @db.Timestamptz(6)
-  updatedAt     DateTime   @default(now()) @updatedAt @map("updated_at") @db.Timestamptz(6)
-  createdByUser User       @relation("CouponCreator", fields: [createdBy], references: [id])
+  value         Decimal     @db.Decimal(10, 2)
+  minimumAmount Decimal?    @map("minimum_amount") @db.Decimal(10, 2)
+  maxUses       Int?        @map("max_uses")
+  currentUses   Int         @default(0) @map("current_uses")
+  isActive      Boolean     @default(true) @map("is_active")
+  validFrom     DateTime    @map("valid_from") @db.Timestamptz(6)
+  validUntil    DateTime    @map("valid_until") @db.Timestamptz(6)
+  createdBy     Int         @map("created_by")
+  createdAt     DateTime    @default(now()) @map("created_at") @db.Timestamptz(6)
+  updatedAt     DateTime    @default(now()) @updatedAt @map("updated_at") @db.Timestamptz(6)
+  createdByUser User        @relation("CouponCreator", fields: [createdBy], references: [id])
   salesItems    SalesItem[]
 
   @@index([code], map: "idx_coupons_code")
@@ -529,6 +525,8 @@ model Coupon {
   @@index([createdBy], map: "idx_coupons_created_by")
   @@map("coupons")
 }
+
+
 
 enum CouponType {
   PERCENTAGE
@@ -575,6 +573,13 @@ enum PaymentMethod {
   POS_MACHINE
   CREDIT_CARD
   MOBILE_MONEY
+}
+
+enum ProductStatus {
+  ACTIVE
+  INACTIVE
+  OUT_OF_STOCK
+  DISCONTINUED
 }
 
 enum ExpenseType {

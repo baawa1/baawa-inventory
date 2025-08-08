@@ -40,14 +40,7 @@ const ProductUpdateSchema = z.object({
   size: z.string().max(50).optional().nullable(),
   material: z.string().max(100).optional().nullable(),
   tags: z.array(z.string()).optional(),
-  salePrice: z.number().min(0).optional().nullable(),
-  saleStartDate: z.string().datetime().optional().nullable(),
-  saleEndDate: z.string().datetime().optional().nullable(),
-  metaTitle: z.string().max(255).optional().nullable(),
-  metaDescription: z.string().max(500).optional().nullable(),
-  seoKeywords: z.array(z.string()).optional(),
-  isFeatured: z.boolean().optional(),
-  sortOrder: z.number().int().optional().nullable(),
+
   // Note: images field is handled separately via /api/products/[id]/images endpoint
 });
 
@@ -205,7 +198,7 @@ export const PUT = withPermission(
 
       // Handle status mapping
       if (validatedData.status !== undefined) {
-        updateData.status = validatedData.status.toLowerCase();
+        updateData.status = validatedData.status;
       }
 
       // Check for SKU conflicts if SKU is being updated

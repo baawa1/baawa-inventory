@@ -4,6 +4,14 @@ const fs = require("fs");
 
 const prisma = new PrismaClient();
 
+// Product status constants (must match Prisma enum)
+const PRODUCT_STATUS = {
+  ACTIVE: 'ACTIVE',
+  INACTIVE: 'INACTIVE',
+  OUT_OF_STOCK: 'OUT_OF_STOCK',
+  DISCONTINUED: 'DISCONTINUED',
+};
+
 // Common luxury brands to detect
 const knownBrands = [
   "Audemars Piguet",
@@ -184,7 +192,7 @@ async function freshImport(csvFilePath) {
     const descriptionIndex = headers.indexOf("Description");
     const shortDescIndex = headers.indexOf("Short description");
     const priceIndex = headers.indexOf("Regular price");
-    const salePriceIndex = headers.indexOf("Sale price");
+
     const stockIndex = headers.indexOf("Stock");
     const categoryIndex = headers.indexOf("Categories");
     const tagsIndex = headers.indexOf("Tags");
@@ -231,7 +239,7 @@ async function freshImport(csvFilePath) {
         const shortDescription =
           record[shortDescIndex]?.replace(/"/g, "").trim() || null;
         const priceStr = record[priceIndex]?.replace(/"/g, "").trim();
-        const salePriceStr = record[salePriceIndex]?.replace(/"/g, "").trim();
+
         const stockStr = record[stockIndex]?.replace(/"/g, "").trim();
         const categoryStr = record[categoryIndex]?.replace(/"/g, "").trim();
         const tagsStr = record[tagsIndex]?.replace(/"/g, "").trim();
@@ -244,10 +252,7 @@ async function freshImport(csvFilePath) {
           priceStr && !isNaN(parseFloat(priceStr))
             ? parseFloat(priceStr)
             : 100.0;
-        const salePrice =
-          salePriceStr && !isNaN(parseFloat(salePriceStr))
-            ? parseFloat(salePriceStr)
-            : null;
+
         const stock =
           stockStr && !isNaN(parseInt(stockStr)) ? parseInt(stockStr) : 0;
         const weight =
@@ -315,19 +320,15 @@ async function freshImport(csvFilePath) {
           description: description,
           sku: sku,
           price: price,
-          salePrice: salePrice,
           cost: price * 0.7, // Assume 30% markup
           stock: stock,
           minStock: stock > 0 ? Math.max(1, Math.floor(stock * 0.1)) : 0,
           unit: "piece",
           weight: weight,
-          status: inStock ? "active" : "inactive",
+                      status: inStock ? PRODUCT_STATUS.ACTIVE : PRODUCT_STATUS.INACTIVE,
           images: images,
           tags: tags,
-          metaTitle: name,
-          metaDescription: shortDescription || description?.substring(0, 160),
           isArchived: false,
-          isFeatured: false,
         };
 
         // Add brand relationship if exists

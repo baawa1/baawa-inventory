@@ -137,7 +137,6 @@ describe('Product Validation Schemas', () => {
         currentStock: 10,
         supplierId: null,
         status: 'ACTIVE',
-        imageUrl: null,
         notes: null,
         unit: 'piece',
         weight: null,

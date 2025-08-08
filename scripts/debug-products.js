@@ -9,6 +9,13 @@ import { PrismaClient } from "@prisma/client";
 
 const prisma = new PrismaClient();
 
+// Product status constants (must match Prisma enum)
+const PRODUCT_STATUS = {
+  ACTIVE: "ACTIVE",
+  INACTIVE: "INACTIVE",
+  OUT_OF_STOCK: "OUT_OF_STOCK",
+  DISCONTINUED: "DISCONTINUED",
+};
 async function checkProducts() {
   console.log("🔍 Checking Products in Database...\n");
 
@@ -73,7 +80,7 @@ async function checkProducts() {
     // Check active products specifically
     const activeProducts = await prisma.product.count({
       where: {
-        status: "active",
+        status: PRODUCT_STATUS.ACTIVE,
       },
     });
 
@@ -137,7 +144,7 @@ async function addSampleProducts() {
         stock: 25,
         minStock: 5,
         unit: "piece",
-        status: "active",
+        status: PRODUCT_STATUS.ACTIVE,
         categoryId: category.id,
         brandId: brand.id,
       },
@@ -151,7 +158,7 @@ async function addSampleProducts() {
         stock: 30,
         minStock: 10,
         unit: "piece",
-        status: "active",
+        status: PRODUCT_STATUS.ACTIVE,
         categoryId: category.id,
         brandId: brand.id,
       },
@@ -165,7 +172,7 @@ async function addSampleProducts() {
         stock: 10,
         minStock: 2,
         unit: "piece",
-        status: "active",
+        status: PRODUCT_STATUS.ACTIVE,
         categoryId: category.id,
         brandId: brand.id,
       },

@@ -45,16 +45,6 @@ export function useEditProductSubmit(
         size: data.size || null,
         material: data.material || null,
         tags: data.tags || [],
-        salePrice: data.salePrice || null,
-        saleStartDate: data.saleStartDate
-          ? data.saleStartDate.toISOString()
-          : null,
-        saleEndDate: data.saleEndDate ? data.saleEndDate.toISOString() : null,
-        metaTitle: data.metaTitle || null,
-        metaDescription: data.metaDescription || null,
-        seoKeywords: data.seoKeywords || [],
-        isFeatured: data.isFeatured || false,
-        sortOrder: data.sortOrder || null,
       };
 
       const response = await fetch(`/api/products/${productId}`, {

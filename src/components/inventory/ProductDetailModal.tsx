@@ -25,6 +25,7 @@ import {
 } from '@tabler/icons-react';
 import { toast } from 'sonner';
 import { formatCurrency, formatDate } from '@/lib/utils';
+import { PRODUCT_STATUS } from '@/lib/constants';
 import Link from 'next/link';
 import Image from 'next/image';
 
@@ -123,10 +124,14 @@ export const ProductDetailModal: React.FC<ProductDetailModalProps> = ({
               <div className="mt-2 flex items-center gap-2">
                 <Badge
                   variant={
-                    product?.status === 'ACTIVE' ? 'default' : 'secondary'
+                    product?.status === PRODUCT_STATUS.ACTIVE
+                      ? 'default'
+                      : 'secondary'
                   }
                 >
-                  {product?.status === 'ACTIVE' ? 'Active' : 'Inactive'}
+                  {product?.status === PRODUCT_STATUS.ACTIVE
+                    ? 'Active'
+                    : 'Inactive'}
                 </Badge>
                 <Badge
                   variant={
@@ -332,32 +337,6 @@ export const ProductDetailModal: React.FC<ProductDetailModalProps> = ({
                       {formatCurrency(product.price || 0)}
                     </p>
                   </div>
-                  {product.salePrice && (
-                    <div>
-                      <label className="text-muted-foreground text-sm font-medium">
-                        Sale Price
-                      </label>
-                      <p className="text-sm font-semibold text-green-600">
-                        {formatCurrency(product.salePrice)}
-                      </p>
-                    </div>
-                  )}
-                  {product.saleStartDate && product.saleEndDate && (
-                    <div>
-                      <label className="text-muted-foreground text-sm font-medium">
-                        Sale Period
-                      </label>
-                      <p className="text-sm">
-                        {formatDate(product.saleStartDate, {
-                          includeTime: false,
-                        })}{' '}
-                        -{' '}
-                        {formatDate(product.saleEndDate, {
-                          includeTime: false,
-                        })}
-                      </p>
-                    </div>
-                  )}
                 </CardContent>
               </Card>
 
@@ -499,17 +478,7 @@ export const ProductDetailModal: React.FC<ProductDetailModalProps> = ({
                         : 'N/A'}
                     </p>
                   </div>
-                  {product.isFeatured && (
-                    <div>
-                      <label className="text-muted-foreground text-sm font-medium">
-                        Featured
-                      </label>
-                      <br />
-                      <Badge variant="default" className="bg-yellow-500">
-                        Featured Product
-                      </Badge>
-                    </div>
-                  )}
+
                   {product.hasVariants && (
                     <div>
                       <label className="text-muted-foreground text-sm font-medium">
