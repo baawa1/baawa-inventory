@@ -3,45 +3,47 @@
  * Manages CSRF tokens for forms and API requests
  */
 
-import { useState, useEffect } from 'react';
+import { useState, useCallback, useMemo } from 'react';
 import { useSession } from 'next-auth/react';
 
 export function useCSRF() {
   const { data: session } = useSession();
   const [csrfToken, setCsrfToken] = useState<string | null>(null);
-  const [isLoading, setIsLoading] = useState(true);
 
-  useEffect(() => {
+  // Get CSRF token from cookie - reactive function
+  const getCSRFToken = useCallback(() => {
+    if (typeof document === 'undefined') return null;
+    
+    const cookies = document.cookie.split(';');
+    const csrfCookie = cookies.find(cookie =>
+      cookie.trim().startsWith('csrf-token=')
+    );
+    return csrfCookie ? csrfCookie.split('=')[1] : null;
+  }, []);
+
+  // Update token when session changes
+  const updateToken = useCallback(() => {
     if (session?.user) {
-      // Get CSRF token from cookie
-      const getCSRFToken = () => {
-        const cookies = document.cookie.split(';');
-        const csrfCookie = cookies.find(cookie =>
-          cookie.trim().startsWith('csrf-token=')
-        );
-        return csrfCookie ? csrfCookie.split('=')[1] : null;
-      };
-
       const token = getCSRFToken();
       setCsrfToken(token);
-      setIsLoading(false);
     } else {
       setCsrfToken(null);
-      setIsLoading(false);
     }
-  }, [session]);
+  }, [session?.user, getCSRFToken]);
 
-  const getCSRFHeaders = (): Record<string, string> => {
-    if (!csrfToken) return {};
+  // Memoized headers to avoid unnecessary re-renders
+  const csrfHeaders = useMemo((): Record<string, string> => {
+    const token = csrfToken || getCSRFToken();
+    if (!token) return {};
 
     return {
-      'X-CSRF-Token': csrfToken,
+      'X-CSRF-Token': token,
       'Content-Type': 'application/json',
     };
-  };
+  }, [csrfToken, getCSRFToken]);
 
-  const fetchWithCSRF = async (url: string, options: RequestInit = {}) => {
-    const csrfHeaders = getCSRFHeaders();
+  // Fetch with CSRF headers
+  const fetchWithCSRF = useCallback(async (url: string, options: RequestInit = {}) => {
     const headers = {
       ...csrfHeaders,
       ...(options.headers as Record<string, string>),
@@ -51,12 +53,20 @@ export function useCSRF() {
       ...options,
       headers,
     });
-  };
+  }, [csrfHeaders]);
+
+  // Update token on mount and when session changes
+  if (session?.user && !csrfToken) {
+    updateToken();
+  } else if (!session?.user && csrfToken) {
+    updateToken();
+  }
 
   return {
-    csrfToken,
-    isLoading,
-    getCSRFHeaders,
+    csrfToken: csrfToken || getCSRFToken(),
+    isLoading: false, // No longer need loading state since we read synchronously
+    getCSRFHeaders: () => csrfHeaders,
     fetchWithCSRF,
+    refreshToken: updateToken,
   };
 }
