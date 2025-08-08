@@ -40,7 +40,7 @@ export const GET = withAuth(
         id: brand.id,
         name: brand.name,
         description: brand.description,
-        image: brand.image,
+
         website: brand.website,
         isActive: brand.isActive,
         productCount: brand._count.products,
@@ -121,7 +121,7 @@ export const PUT = withPermission(
         id: updatedBrand.id,
         name: updatedBrand.name,
         description: updatedBrand.description,
-        image: updatedBrand.image,
+
         website: updatedBrand.website,
         isActive: updatedBrand.isActive,
         productCount: updatedBrand._count.products,

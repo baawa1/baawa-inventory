@@ -102,7 +102,6 @@ model Category {
   createdAt    DateTime       @default(now()) @map("created_at") @db.Timestamptz(6)
   updatedAt    DateTime       @default(now()) @updatedAt @map("updated_at") @db.Timestamptz(6)
   parentId     Int?           @map("parent_id")
-  image        String?        @db.VarChar(500)
   parent       Category?      @relation("CategoryHierarchy", fields: [parentId], references: [id])
   children     Category[]     @relation("CategoryHierarchy")
   products     Product[]
@@ -120,7 +119,6 @@ model Brand {
   isActive     Boolean?       @default(true) @map("is_active")
   createdAt    DateTime?      @default(now()) @map("created_at") @db.Timestamptz(6)
   updatedAt    DateTime?      @default(now()) @updatedAt @map("updated_at") @db.Timestamptz(6)
-  image        String?        @db.VarChar(500)
   products     Product[]
 
   @@index([isActive], map: "idx_brands_is_active")

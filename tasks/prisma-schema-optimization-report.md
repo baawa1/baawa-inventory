@@ -72,8 +72,8 @@ This report analyzes the current Prisma schema to identify:
   - ✅ `marketingEmails` - Boolean, default false - REMOVED
 
 ### **Categories & Brands Tables**
-- **Image Fields** (Verify usage):
-  - `image` - String (500 chars)
+- **Image Fields** ✅ REMOVED:
+  - ✅ `image` - String (500 chars) - REMOVED
   - *Added in migration but usage unclear*
 
 ---
@@ -292,7 +292,7 @@ CREATE INDEX idx_stock_reconciliations_status_created ON stock_reconciliations(s
 
 ### **Database Impact:**
 - 🗑️ **1,000+ lines of code removed**
-- 🗑️ **13+ redundant database fields eliminated** (including marketingEmails)
+- 🗑️ **15+ redundant database fields eliminated** (including marketingEmails and image fields)
 - 🗑️ **2 major feature systems completely removed**
 - ✅ **Schema is clean and optimized**
 - ✅ **No orphaned references remain**
@@ -300,7 +300,6 @@ CREATE INDEX idx_stock_reconciliations_status_created ON stock_reconciliations(s
 
 ### **Remaining Items (Optional):**
 - **Session Management Fields** - `sessionNeedsRefresh`, `sessionRefreshAt` (actively used)
-- **Category/Brand Image Fields** - `image` (API validation exists) - *Will handle later*
 - **Index Optimization** - Potential performance improvements
 
 **Status: Database review and major cleanup completed successfully! 🚀**

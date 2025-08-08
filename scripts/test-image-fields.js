@@ -18,7 +18,7 @@ async function testImageFields() {
     console.log("✅ Created category with image:", {
       id: testCategory.id,
       name: testCategory.name,
-      image: testCategory.image,
+    
     });
 
     // Test creating a brand with image
@@ -34,7 +34,7 @@ async function testImageFields() {
     console.log("✅ Created brand with image:", {
       id: testBrand.id,
       name: testBrand.name,
-      image: testBrand.image,
+    
     });
 
     // Test updating image fields
@@ -43,14 +43,14 @@ async function testImageFields() {
       data: { image: "https://example.com/updated-category-image.jpg" },
     });
 
-    console.log("✅ Updated category image:", updatedCategory.image);
+  
 
     const updatedBrand = await prisma.brand.update({
       where: { id: testBrand.id },
       data: { image: "https://example.com/updated-brand-image.jpg" },
     });
 
-    console.log("✅ Updated brand image:", updatedBrand.image);
+  
 
     // Clean up test data
     await prisma.category.delete({ where: { id: testCategory.id } });

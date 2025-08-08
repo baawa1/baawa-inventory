@@ -119,7 +119,6 @@ export function DashboardTable<T = Record<string, unknown>>({
                 key={i}
                 className="flex animate-pulse items-center space-x-4"
               >
-                <div className="h-12 w-12 rounded bg-gray-200"></div>
                 <div className="flex-1 space-y-2">
                   <div className="h-4 w-1/4 rounded bg-gray-200"></div>
                   <div className="h-3 w-1/2 rounded bg-gray-200"></div>

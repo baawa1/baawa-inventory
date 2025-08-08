@@ -23,7 +23,7 @@ import {
 import { ArrowLeft, Loader2 } from 'lucide-react';
 import { PageHeader } from '@/components/ui/page-header';
 import { FormLoading } from '@/components/ui/form-loading';
-import { ImageUpload } from '@/components/ui/image-upload';
+
 import { toast } from 'sonner';
 import { useBrandById, useUpdateBrand } from '@/hooks/api/brands';
 import { logger } from '@/lib/logger';
@@ -55,7 +55,7 @@ export default function EditBrandForm({ brandId }: EditBrandFormProps) {
           id: brand.id,
           name: brand.name,
           description: brand.description,
-          image: brand.image,
+
           website: brand.website,
           isActive: brand.isActive,
         }
@@ -78,7 +78,7 @@ export default function EditBrandForm({ brandId }: EditBrandFormProps) {
         id: data.id,
         name: data.name,
         description: data.description || undefined,
-        image: data.image || undefined,
+
         website: data.website || undefined,
         isActive: data.isActive,
       };
@@ -184,28 +184,6 @@ export default function EditBrandForm({ brandId }: EditBrandFormProps) {
                 </p>
               )}
             </div>
-
-            <ImageUpload
-              value={watch('image')}
-              onChange={url => setValue('image', url)}
-              onError={(error: unknown) => {
-                // Handle error in form validation
-                logger.error('Brand image upload failed', {
-                  brandId: brand.id,
-                  brandName: watch('name'),
-                  error: error instanceof Error ? error.message : String(error),
-                });
-                toast.error('Failed to upload image');
-              }}
-              label="Brand Image"
-              placeholder="Upload a brand image"
-              disabled={updateBrandMutation.isPending}
-              folder="brands"
-              alt="Brand image"
-            />
-            {errors.image && (
-              <p className="text-destructive text-sm">{errors.image.message}</p>
-            )}
 
             <div className="space-y-2">
               <Label htmlFor="website">Website URL</Label>

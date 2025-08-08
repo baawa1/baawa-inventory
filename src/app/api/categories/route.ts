@@ -14,7 +14,7 @@ import { Prisma } from '@prisma/client';
 const CategoryCreateSchema = z.object({
   name: z.string().min(1).max(100),
   description: z.string().optional(),
-  image: z.string().max(500).optional(),
+
   isActive: z.boolean().optional(),
   parentId: z.number().optional(),
 });
@@ -107,7 +107,7 @@ export const GET = withAuth(async (request: AuthenticatedRequest) => {
       id: category.id,
       name: category.name,
       description: category.description,
-      image: category.image,
+
       isActive: category.isActive,
       parentId: category.parentId,
       parent: category.parent,
@@ -175,7 +175,7 @@ export const POST = withPermission(
         data: {
           name: validatedData.name,
           description: validatedData.description,
-          image: validatedData.image,
+
           isActive: validatedData.isActive,
           parentId: validatedData.parentId,
         },
@@ -199,7 +199,7 @@ export const POST = withPermission(
         id: newCategory.id,
         name: newCategory.name,
         description: newCategory.description,
-        image: newCategory.image,
+
         isActive: newCategory.isActive,
         parentId: newCategory.parentId,
         parent: newCategory.parent,

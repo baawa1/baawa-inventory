@@ -77,7 +77,7 @@ export const GET = withAuth(async (request: AuthenticatedRequest) => {
       name: brand.name,
       description: brand.description,
       website: brand.website,
-      image: brand.image,
+
       isActive: brand.isActive,
       productCount: brand._count.products,
       createdAt: brand.createdAt,
@@ -143,7 +143,7 @@ export const POST = withPermission(
           name: validatedData.name,
           description: validatedData.description,
           website: validatedData.website,
-          image: validatedData.image,
+
           isActive: validatedData.isActive ?? true,
         },
         include: {
@@ -161,7 +161,7 @@ export const POST = withPermission(
         name: newBrand.name,
         description: newBrand.description,
         website: newBrand.website,
-        image: newBrand.image,
+
         isActive: newBrand.isActive,
         productCount: newBrand._count.products,
         createdAt: newBrand.createdAt,
