@@ -20,27 +20,7 @@ export default function ImmediateLogoutPage() {
   const [hasAttempted, setHasAttempted] = useState(false);
   const router = useRouter();
 
-  const handleLogout = useCallback(async () => {
-    try {
-      await logout();
-    } catch (err) {
-      console.error('Immediate logout failed:', err);
-      setError('Logout failed. Forcing logout...');
-
-      // Force logout even if there's an error
-      forceLogout();
-    }
-  }, [logout]);
-
-  useEffect(() => {
-    // Only trigger logout once and if not already logging out
-    if (!isLoggingOut && !hasAttempted) {
-      setHasAttempted(true);
-      handleLogout();
-    }
-  }, [isLoggingOut, hasAttempted, handleLogout]);
-
-  const forceLogout = () => {
+  const forceLogout = useCallback(() => {
     // Clear everything and redirect
     if (typeof window !== 'undefined') {
       localStorage.clear();
@@ -65,7 +45,27 @@ export default function ImmediateLogoutPage() {
         router.push('/login');
       }, 1000);
     }
-  };
+  }, [router]);
+
+  const handleLogout = useCallback(async () => {
+    try {
+      await logout();
+    } catch (err) {
+      console.error('Immediate logout failed:', err);
+      setError('Logout failed. Forcing logout...');
+
+      // Force logout even if there's an error
+      forceLogout();
+    }
+  }, [logout, forceLogout]);
+
+  useEffect(() => {
+    // Only trigger logout once and if not already logging out
+    if (!isLoggingOut && !hasAttempted) {
+      setHasAttempted(true);
+      handleLogout();
+    }
+  }, [isLoggingOut, hasAttempted, handleLogout]);
 
   return (
     <div className="flex min-h-screen items-center justify-center bg-gray-50 dark:bg-gray-900">
