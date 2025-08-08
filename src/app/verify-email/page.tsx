@@ -120,7 +120,14 @@ function VerifyEmailContent() {
       }
       setVerificationMessage(errorMessage);
     }
-  }, [token, router, session, updateSession, isRedirecting]);
+  }, [
+    token,
+    router,
+    session,
+    updateSession,
+    isRedirecting,
+    emailVerificationMutation,
+  ]);
 
   const handleResendVerification = async (e: React.FormEvent) => {
     e.preventDefault();
