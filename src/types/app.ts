@@ -33,7 +33,7 @@ export type ContentStatus =
   | 'PUBLISHED'
   | 'REJECTED';
 
-export type ContentSyncStatus = 'pending' | 'synced' | 'failed';
+
 
 // Product types
 export interface Product {
@@ -218,16 +218,7 @@ export interface AIContentRequest {
 }
 
 // Content Sync types
-export interface ContentSyncData {
-  productId: string;
-  name: string;
-  description?: string;
-  price: number;
-  images?: string[];
-  category: string;
-  inStock: boolean;
-  sku: string;
-}
+
 
 // Form validation types
 export interface FormErrors {
