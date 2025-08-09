@@ -53,7 +53,7 @@ interface SalesAggregates {
 }
 
 interface UniqueCustomer {
-  customer_email: string;
+  customer_id: number;
 }
 
 interface TopProductResult {
@@ -74,7 +74,6 @@ interface RevenueDataResult {
 interface RecentTransactionResult {
   id: number;
   transaction_number: string;
-  customer_name: string | null;
   total_amount: any; // Prisma Decimal type
   created_at: Date | null;
 }
@@ -164,14 +163,14 @@ export const GET = withAuth(async (request: AuthenticatedRequest) => {
           payment_status: {
             in: SUCCESSFUL_PAYMENT_STATUSES,
           },
-          customer_email: {
+          customer_id: {
             not: null,
           },
         },
         select: {
-          customer_email: true,
+          customer_id: true,
         },
-        distinct: ['customer_email'],
+        distinct: ['customer_id'],
       }) as Promise<UniqueCustomer[]>,
 
       // Current period top products
@@ -273,7 +272,6 @@ export const GET = withAuth(async (request: AuthenticatedRequest) => {
         select: {
           id: true,
           transaction_number: true,
-          customer_name: true,
           total_amount: true,
           created_at: true,
         },
@@ -314,14 +312,14 @@ export const GET = withAuth(async (request: AuthenticatedRequest) => {
             payment_status: {
               in: SUCCESSFUL_PAYMENT_STATUSES,
             },
-            customer_email: {
+            customer_id: {
               not: null,
             },
           },
           select: {
-            customer_email: true,
+            customer_id: true,
           },
-          distinct: ['customer_email'],
+          distinct: ['customer_id'],
         }) as Promise<UniqueCustomer[]>,
       ]);
 
@@ -386,7 +384,7 @@ export const GET = withAuth(async (request: AuthenticatedRequest) => {
       currentRecentTransactions.map((transaction: RecentTransactionResult) => ({
         id: transaction.id,
         transactionNumber: transaction.transaction_number,
-        customerName: transaction.customer_name,
+        customerName: null, // Customer data not included in overview for performance
         totalAmount: Number(transaction.total_amount),
         createdAt:
           transaction.created_at?.toISOString() || new Date().toISOString(),

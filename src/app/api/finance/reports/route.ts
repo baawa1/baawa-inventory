@@ -352,7 +352,7 @@ async function getCashFlowReport(
     )
     .reduce((sum, t) => sum - Number(t.amount), 0);
 
-  let financingCashFlow = transactions
+  const financingCashFlow = transactions
     .filter(
       t =>
         (t.type === 'INCOME' &&
@@ -480,6 +480,9 @@ async function getRecentTransactions(
         users: {
           select: { firstName: true, lastName: true, email: true },
         },
+        customer: {
+          select: { id: true, name: true, email: true },
+        },
       },
       orderBy: { created_at: 'desc' },
       take: 5,
@@ -491,7 +494,7 @@ async function getRecentTransactions(
         transactionNumber: s.transaction_number,
         type: 'INCOME',
         amount: s.total_amount,
-        description: `POS Sale - ${s.customer_name || s.customer_email || 'Walk-in Customer'}`,
+        description: `POS Sale - ${s.customer?.name || s.customer?.email || 'Walk-in Customer'}`,
         transactionDate: s.created_at,
         paymentMethod: s.payment_method,
         createdBy: s.users,

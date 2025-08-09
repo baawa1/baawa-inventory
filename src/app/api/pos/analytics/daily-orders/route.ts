@@ -32,11 +32,27 @@ export const GET = withAuth(async (request: AuthenticatedRequest) => {
       select: {
         id: true,
         transaction_number: true,
-        customer_name: true,
-        customer_email: true,
+
+        customer_id: true,
         total_amount: true,
         payment_method: true,
         created_at: true,
+        customer: {
+          select: {
+            id: true,
+            name: true,
+            city: true,
+            state: true,
+            customerType: true,
+          },
+        },
+        transaction_fees: {
+          select: {
+            feeType: true,
+            description: true,
+            amount: true,
+          },
+        },
         sales_items: {
           select: {
             quantity: true,
@@ -49,18 +65,34 @@ export const GET = withAuth(async (request: AuthenticatedRequest) => {
     });
 
     // Format the response
-    const formattedOrders = orders.map(order => {
+    const formattedOrders = orders.map((order: any) => {
       const itemCount = order.sales_items.reduce(
-        (total, item) => total + item.quantity,
+        (total: number, item: any) => total + item.quantity,
         0
       );
+
+      const feesTotal =
+        order.transaction_fees?.reduce(
+          (total: number, fee: any) => total + Number(fee.amount),
+          0
+        ) || 0;
 
       return {
         id: order.id,
         transactionNumber: order.transaction_number,
-        customerName: order.customer_name,
+        customerName: order.customer?.name || order.customer_name,
         customerEmail: order.customer_email,
+        customerCity: order.customer?.city,
+        customerState: order.customer?.state,
+        customerType: order.customer?.customerType,
         totalAmount: Number(order.total_amount),
+        feesTotal,
+        fees:
+          order.transaction_fees?.map((fee: any) => ({
+            type: fee.feeType,
+            description: fee.description,
+            amount: Number(fee.amount),
+          })) || [],
         paymentMethod: order.payment_method,
         createdAt: order.created_at?.toISOString(),
         itemCount,

@@ -570,6 +570,12 @@ export function CustomerManagement({ user: _user }: CustomerManagementProps) {
                               customerName: order.customerName,
                               customerPhone: order.customerPhone || '',
                               customerEmail: order.customerEmail,
+                              customerAddress:
+                                (order as any).customer?.billingAddress || '',
+                              customerCity: (order as any).customer?.city || '',
+                              customerState:
+                                (order as any).customer?.state || '',
+                              fees: (order as any).fees || [],
                               items: order.items.map(item => ({
                                 id: item.id,
                                 name: item.name,

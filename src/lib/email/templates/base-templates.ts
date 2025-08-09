@@ -705,6 +705,9 @@ export const createReceiptEmailTemplate = (
             <div style="text-align: right; font-size: 16px;">
                 <p><strong>Subtotal: ₦${data.subtotal.toLocaleString()}</strong></p>
                 ${data.discount > 0 ? `<p style="color: #dc2626;"><strong>Discount: -₦${data.discount.toLocaleString()}</strong></p>` : ''}
+                ${data.fees && data.fees.length > 0 ? data.fees.map(fee => 
+                  `<p style="color: #059669;"><strong>${fee.type}${fee.description ? ` (${fee.description})` : ''}: ₦${fee.amount.toLocaleString()}</strong></p>`
+                ).join('') : ''}
                 <p style="font-size: 18px; color: #2563eb;"><strong>Total: ₦${data.total.toLocaleString()}</strong></p>
             </div>
         </div>

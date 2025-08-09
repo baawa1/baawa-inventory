@@ -15,12 +15,22 @@ export const GET = withPOSAuth(
       // Get all orders for this customer
       const orders = await prisma.salesTransaction.findMany({
         where: {
-          customer_email: customerEmail,
+          customer: {
+            email: customerEmail,
+          },
           payment_status: {
             in: SUCCESSFUL_PAYMENT_STATUSES,
           },
         },
         include: {
+          customer: {
+            select: {
+              id: true,
+              name: true,
+              email: true,
+              phone: true,
+            },
+          },
           sales_items: {
             include: {
               products: {
@@ -58,9 +68,9 @@ export const GET = withPOSAuth(
         id: order.id,
         transactionNumber: order.transaction_number || `TXN-${order.id}`,
         timestamp: order.created_at,
-        customerName: order.customer_name || 'Unknown Customer',
-        customerEmail: order.customer_email,
-        customerPhone: order.customer_phone,
+        customerName: order.customer?.name || 'Unknown Customer',
+        customerEmail: order.customer?.email || null,
+        customerPhone: order.customer?.phone || null,
         staffName: order.users
           ? `${order.users.firstName} ${order.users.lastName}`
           : 'Unknown Staff',

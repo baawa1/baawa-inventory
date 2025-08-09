@@ -46,7 +46,9 @@ export async function GET(
     // Fetch all transactions for this customer with their items
     const transactions = await prisma.salesTransaction.findMany({
       where: {
-        customer_email: customerEmail,
+        customer: {
+          email: customerEmail,
+        },
         payment_status: { in: SUCCESSFUL_PAYMENT_STATUSES },
       },
       include: {

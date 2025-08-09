@@ -170,6 +170,11 @@ export interface ReceiptEmailData extends Record<string, unknown> {
   }>;
   subtotal: number;
   discount: number;
+  fees?: Array<{
+    type: string;
+    description?: string;
+    amount: number;
+  }>;
   total: number;
   paymentMethod: string;
   timestamp: Date;

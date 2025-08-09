@@ -147,7 +147,6 @@ model Product {
   hasVariants         Boolean                   @default(false) @map("has_variants")
   isArchived          Boolean                   @default(false) @map("is_archived")
   tags                String[]
-  syncStats           Boolean                   @default(false) @map("sync_stats")
   createdAt           DateTime?                 @default(now()) @map("created_at") @db.Timestamptz(6)
   updatedAt           DateTime?                 @default(now()) @updatedAt @map("updated_at") @db.Timestamptz(6)
   supplierId          Int?                      @map("supplier_id")
@@ -155,6 +154,8 @@ model Product {
   brandId             Int?                      @map("brand_id")
   images              Json?
   status              ProductStatus             @default(ACTIVE)
+  syncStats           Boolean                   @default(false) @map("sync_stats")
+  isService           Boolean                   @default(false) @map("is_service")
   ai_content          AIContent[]
   product_variants    ProductVariant[]
   brand               Brand?                    @relation(fields: [brandId], references: [id], onUpdate: NoAction)
@@ -169,6 +170,7 @@ model Product {
   @@index([status], map: "idx_products_status")
   @@index([stock], map: "idx_products_stock")
   @@index([supplierId], map: "idx_products_supplier_id")
+  @@index([isService], map: "idx_products_is_service")
   @@map("products")
 }
 
@@ -201,30 +203,31 @@ model ProductVariant {
 }
 
 model SalesTransaction {
-  id                 Int            @id @default(autoincrement())
-  subtotal           Decimal        @db.Decimal(10, 2)
+  id                 Int              @id @default(autoincrement())
+  subtotal           Decimal          @db.Decimal(10, 2)
   notes              String?
-  created_at         DateTime?      @default(now()) @db.Timestamptz(6)
-  customer_email     String?        @db.VarChar(255)
-  customer_name      String?        @db.VarChar(255)
-  customer_phone     String?        @db.VarChar(20)
-  discount_amount    Decimal        @default(0) @db.Decimal(10, 2)
-  payment_method     String         @db.VarChar(50)
-  payment_status     String         @default("pending") @db.VarChar(20)
-  tax_amount         Decimal        @default(0) @db.Decimal(10, 2)
-  total_amount       Decimal        @db.Decimal(10, 2)
-  transaction_number String         @unique @db.VarChar(50)
-  transaction_type   String         @default("sale") @db.VarChar(20)
-  updated_at         DateTime?      @default(now()) @db.Timestamptz(6)
+  created_at         DateTime?        @default(now()) @db.Timestamptz(6)
+  discount_amount    Decimal          @default(0) @db.Decimal(10, 2)
+  payment_method     String           @db.VarChar(50)
+  payment_status     String           @default("pending") @db.VarChar(20)
+  tax_amount         Decimal          @default(0) @db.Decimal(10, 2)
+  total_amount       Decimal          @db.Decimal(10, 2)
+  transaction_number String           @unique @db.VarChar(50)
+  transaction_type   String           @default("sale") @db.VarChar(20)
+  updated_at         DateTime?        @default(now()) @db.Timestamptz(6)
   user_id            Int
+  customer_id        Int?
   sales_items        SalesItem[]
-  users              User           @relation(fields: [user_id], references: [id], onDelete: NoAction, onUpdate: NoAction)
+  customer           Customer?        @relation(fields: [customer_id], references: [id])
+  users              User             @relation(fields: [user_id], references: [id], onDelete: NoAction, onUpdate: NoAction)
   split_payments     SplitPayment[]
+  transaction_fees   TransactionFee[]
 
   @@index([created_at], map: "idx_sales_transactions_created_at")
   @@index([payment_status], map: "idx_sales_transactions_payment_status")
   @@index([transaction_number], map: "idx_sales_transactions_transaction_number")
   @@index([user_id], map: "idx_sales_transactions_user_id")
+  @@index([customer_id], map: "idx_sales_transactions_customer_id")
   @@map("sales_transactions")
 }
 
@@ -522,6 +525,46 @@ model Coupon {
   @@index([validUntil], map: "idx_coupons_valid_until")
   @@index([createdBy], map: "idx_coupons_created_by")
   @@map("coupons")
+}
+
+model Customer {
+  id                Int                @id @default(autoincrement())
+  name              String?            @db.VarChar(255)
+  email             String?            @unique @db.VarChar(255)
+  phone             String?            @db.VarChar(20)
+  billingAddress    String?            @map("billing_address")
+  shippingAddress   String?            @map("shipping_address")
+  city              String?            @db.VarChar(100)
+  state             String?            @db.VarChar(100)
+  postalCode        String?            @map("postal_code") @db.VarChar(20)
+  country           String?            @default("Nigeria") @db.VarChar(100)
+  customerType      String?            @default("individual") @map("customer_type") @db.VarChar(50)
+  notes             String?
+  isActive          Boolean            @default(true) @map("is_active")
+  createdAt         DateTime           @default(now()) @map("created_at") @db.Timestamptz(6)
+  updatedAt         DateTime           @default(now()) @updatedAt @map("updated_at") @db.Timestamptz(6)
+  salesTransactions SalesTransaction[]
+
+  @@index([phone], map: "idx_customers_phone")
+  @@index([state], map: "idx_customers_state")
+  @@index([city], map: "idx_customers_city")
+  @@index([customerType], map: "idx_customers_customer_type")
+  @@index([isActive], map: "idx_customers_is_active")
+  @@map("customers")
+}
+
+model TransactionFee {
+  id            Int              @id @default(autoincrement())
+  transactionId Int              @map("transaction_id")
+  feeType       String           @map("fee_type") @db.VarChar(50)
+  description   String?          @db.VarChar(255)
+  amount        Decimal          @db.Decimal(10, 2)
+  createdAt     DateTime?        @default(now()) @map("created_at") @db.Timestamptz(6)
+  transaction   SalesTransaction @relation(fields: [transactionId], references: [id], onDelete: Cascade)
+
+  @@index([transactionId], map: "idx_transaction_fees_transaction_id")
+  @@index([feeType], map: "idx_transaction_fees_fee_type")
+  @@map("transaction_fees")
 }
 
 enum CouponType {

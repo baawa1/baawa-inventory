@@ -92,6 +92,9 @@ async function handleEmailReceipt(request: AuthenticatedRequest) {
         users: {
           select: { firstName: true, lastName: true },
         },
+        customer: {
+          select: { name: true },
+        },
       },
     });
 
@@ -110,7 +113,7 @@ async function handleEmailReceipt(request: AuthenticatedRequest) {
     // Prepare email data
     const emailData = {
       to: customerEmail,
-      customerName: customerName || transaction.customer_name || 'Customer',
+      customerName: customerName || transaction.customer?.name || 'Customer',
       saleId: transaction.id.toString(),
       items: transaction.sales_items.map(item => ({
         name: item.products?.name || 'Unknown Product',

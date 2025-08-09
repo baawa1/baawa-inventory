@@ -3,6 +3,48 @@ import { withPOSAuth, AuthenticatedRequest } from '@/lib/api-auth-middleware';
 import { prisma } from '@/lib/db';
 import { SUCCESSFUL_PAYMENT_STATUSES } from '@/lib/constants';
 
+import { Decimal } from '@prisma/client/runtime/library';
+
+// Type-safe customer client access
+const customerClient = prisma as any;
+
+interface CustomerWithTransactions {
+  id: number;
+  name: string | null;
+  email: string | null;
+  phone: string | null;
+  _count: {
+    salesTransactions: number;
+  };
+  salesTransactions: Array<{
+    total_amount: Decimal;
+    created_at: Date | null;
+  }>;
+}
+
+interface ProcessedCustomer {
+  id: string;
+  name: string;
+  email: string;
+  phone: string | null;
+  totalSpent: number;
+  totalOrders: number;
+  lastPurchase: string;
+  firstPurchase: string;
+  averageOrderValue: number;
+  daysSinceLastPurchase: number;
+  customerLifetimeValue: number;
+  purchaseFrequency: number;
+  rank: number;
+}
+
+interface CustomerInfo {
+  id: number;
+  email: string | null;
+  name?: string | null;
+  phone?: string | null;
+}
+
 // Helper function to get date filter based on period
 function getPeriodFilter(period: string): Date {
   const now = new Date();
@@ -21,7 +63,7 @@ function getPeriodFilter(period: string): Date {
 }
 
 // Helper function to calculate customer segments
-function calculateCustomerSegments(customers: any[]) {
+function calculateCustomerSegments(customers: ProcessedCustomer[]) {
   const totalCustomers = customers.length;
   if (totalCustomers === 0) {
     return { vip: 0, regular: 0, occasional: 0, inactive: 0 };
@@ -85,125 +127,117 @@ export const GET = withPOSAuth(async (request: AuthenticatedRequest) => {
     );
     const previousPeriodEnd = new Date(periodStart.getTime() - 1); // One day before current period
 
-    // Get all customers with their transaction data - group only by email to avoid duplicates
-    const customerTransactions = await prisma.salesTransaction.groupBy({
-      by: ['customer_email'],
-      where: {
-        payment_status: {
-          in: SUCCESSFUL_PAYMENT_STATUSES,
+    // Get all customers from Customer table with their transaction aggregates
+    const customerTransactions: CustomerWithTransactions[] =
+      await customerClient.customer.findMany({
+        where: {
+          isActive: true,
+          salesTransactions: {
+            some: {
+              payment_status: {
+                in: SUCCESSFUL_PAYMENT_STATUSES,
+              },
+            },
+          },
         },
-        customer_email: {
-          not: null,
+        include: {
+          _count: {
+            select: {
+              salesTransactions: {
+                where: {
+                  payment_status: {
+                    in: SUCCESSFUL_PAYMENT_STATUSES,
+                  },
+                },
+              },
+            },
+          },
+          salesTransactions: {
+            where: {
+              payment_status: {
+                in: SUCCESSFUL_PAYMENT_STATUSES,
+              },
+            },
+            select: {
+              total_amount: true,
+              created_at: true,
+            },
+            orderBy: {
+              created_at: 'desc',
+            },
+          },
         },
-      },
-      _sum: {
-        total_amount: true,
-      },
-      _count: {
-        id: true,
-      },
-      _max: {
-        created_at: true,
-      },
-      _min: {
-        created_at: true,
-      },
-    });
-
-    // Get customer details (name and phone) for each email
-    const customerDetails = await prisma.salesTransaction.groupBy({
-      by: ['customer_email', 'customer_name', 'customer_phone'],
-      where: {
-        payment_status: {
-          in: SUCCESSFUL_PAYMENT_STATUSES,
-        },
-        customer_email: {
-          not: null,
-        },
-      },
-      _max: {
-        created_at: true, // Get the most recent transaction for each combination
-      },
-    });
+      });
 
     // Get current period transactions for new customer calculation
-    const currentPeriodTransactions = await prisma.salesTransaction.findMany({
-      where: {
-        payment_status: {
-          in: SUCCESSFUL_PAYMENT_STATUSES,
+    const currentPeriodCustomers: CustomerInfo[] =
+      await customerClient.customer.findMany({
+        where: {
+          isActive: true,
+          salesTransactions: {
+            some: {
+              payment_status: {
+                in: SUCCESSFUL_PAYMENT_STATUSES,
+              },
+              created_at: {
+                gte: periodStart,
+                lte: periodEnd,
+              },
+            },
+          },
         },
-        created_at: {
-          gte: periodStart,
-          lte: periodEnd,
+        select: {
+          id: true,
+          email: true,
+          name: true,
+          phone: true,
         },
-        customer_email: {
-          not: null,
-        },
-      },
-      select: {
-        customer_email: true,
-        customer_name: true,
-        customer_phone: true,
-        total_amount: true,
-        created_at: true,
-      },
-    });
+      });
 
-    // Get previous period transactions for comparison
-    const previousPeriodTransactions = await prisma.salesTransaction.findMany({
-      where: {
-        payment_status: {
-          in: SUCCESSFUL_PAYMENT_STATUSES,
+    // Get previous period customers for comparison
+    const previousPeriodCustomers: CustomerInfo[] =
+      await customerClient.customer.findMany({
+        where: {
+          isActive: true,
+          salesTransactions: {
+            some: {
+              payment_status: {
+                in: SUCCESSFUL_PAYMENT_STATUSES,
+              },
+              created_at: {
+                gte: previousPeriodStart,
+                lte: previousPeriodEnd,
+              },
+            },
+          },
         },
-        created_at: {
-          gte: previousPeriodStart,
-          lte: previousPeriodEnd,
+        select: {
+          id: true,
+          email: true,
         },
-        customer_email: {
-          not: null,
-        },
-      },
-      select: {
-        customer_email: true,
-        total_amount: true,
-      },
-    });
+      });
 
-    // Create a map of customer details by email (most recent name and phone)
-    const customerDetailsMap = new Map();
-    customerDetails.forEach(detail => {
-      const email = detail.customer_email;
-      if (
-        !customerDetailsMap.has(email) ||
-        (detail._max.created_at &&
-          customerDetailsMap.get(email)._max.created_at &&
-          detail._max.created_at >
-            customerDetailsMap.get(email)._max.created_at)
-      ) {
-        customerDetailsMap.set(email, detail);
-      }
-    });
-
-    // Process customer data
-    const customers = customerTransactions
-      .filter(customer => customer.customer_email) // Only include customers with email
-      .map(customer => {
-        const totalSpent = Number(customer._sum.total_amount || 0);
-        const totalOrders = customer._count.id;
-        const lastPurchase = customer._max.created_at;
-        const firstPurchase = customer._min.created_at;
+    // Process customer data from Customer table
+    const customers: ProcessedCustomer[] = customerTransactions.map(
+      customer => {
+        const transactions = customer.salesTransactions || [];
+        const totalSpent = transactions.reduce(
+          (sum: number, t) => sum + Number(t.total_amount || 0),
+          0
+        );
+        const totalOrders = customer._count?.salesTransactions || 0;
+        const lastPurchase = transactions[0]?.created_at;
+        const firstPurchase = transactions[transactions.length - 1]?.created_at;
         const averageOrderValue =
           totalOrders > 0 ? totalSpent / totalOrders : 0;
 
-        // Get the most recent customer details
-        const details = customerDetailsMap.get(customer.customer_email);
-        const customerName = details?.customer_name || 'Unknown Customer';
-        const customerPhone = details?.customer_phone;
+        const customerName = customer.name || 'Unknown Customer';
+        const customerPhone = customer.phone;
 
         // Calculate days since last purchase
         const daysSinceLastPurchase = lastPurchase
           ? Math.floor(
-              (new Date().getTime() - lastPurchase.getTime()) /
+              (new Date().getTime() - new Date(lastPurchase).getTime()) /
                 (1000 * 60 * 60 * 24)
             )
           : 0;
@@ -212,30 +246,33 @@ export const GET = withPOSAuth(async (request: AuthenticatedRequest) => {
         const purchaseFrequency =
           totalOrders > 1 && firstPurchase && lastPurchase
             ? Math.floor(
-                (lastPurchase.getTime() - firstPurchase.getTime()) /
+                (new Date(lastPurchase).getTime() -
+                  new Date(firstPurchase).getTime()) /
                   (1000 * 60 * 60 * 24)
               ) /
               (totalOrders - 1)
             : 0;
 
         return {
-          id: customer.customer_email,
+          id: customer.email || `customer-${customer.id}`,
           name: customerName,
-          email: customer.customer_email,
+          email: customer.email || '',
           phone: customerPhone,
           totalSpent,
           totalOrders,
-          lastPurchase: lastPurchase?.toISOString() || new Date().toISOString(),
-          firstPurchase:
-            firstPurchase?.toISOString() || new Date().toISOString(),
+          lastPurchase: lastPurchase?.toString() || new Date().toISOString(),
+          firstPurchase: firstPurchase?.toString() || new Date().toISOString(),
           averageOrderValue,
           daysSinceLastPurchase,
           customerLifetimeValue: totalSpent, // For now, same as total spent
           purchaseFrequency,
           rank: 0, // Will be calculated later
         };
-      })
-      .sort((a, b) => b.totalSpent - a.totalSpent);
+      }
+    );
+
+    // Sort customers by total spent
+    customers.sort((a, b) => b.totalSpent - a.totalSpent);
 
     // Calculate ranks
     customers.forEach((customer, index) => {
@@ -255,10 +292,10 @@ export const GET = withPOSAuth(async (request: AuthenticatedRequest) => {
 
     // Calculate new customers in current period
     const currentPeriodEmails = new Set(
-      currentPeriodTransactions.map(t => t.customer_email)
+      currentPeriodCustomers.map(c => c.email).filter(Boolean)
     );
     const previousPeriodEmails = new Set(
-      previousPeriodTransactions.map(t => t.customer_email)
+      previousPeriodCustomers.map(c => c.email).filter(Boolean)
     );
 
     const newCustomers = Array.from(currentPeriodEmails).filter(
@@ -292,38 +329,60 @@ export const GET = withPOSAuth(async (request: AuthenticatedRequest) => {
     const historicalStartDate = new Date();
     historicalStartDate.setDate(historicalStartDate.getDate() - trendDays);
 
-    const historicalTransactions = await prisma.salesTransaction.findMany({
-      where: {
-        payment_status: {
-          in: SUCCESSFUL_PAYMENT_STATUSES,
-        },
-        created_at: {
-          gte: historicalStartDate,
-          lte: new Date(),
-        },
-        customer_email: {
-          not: null,
-        },
-      },
-      select: {
-        customer_email: true,
-        created_at: true,
-      },
-      orderBy: {
-        created_at: 'asc',
-      },
-    });
+    // For historical trends, we'll use a simpler approach with just customer counts from the Customer table
+    const transactionsByDate = new Map<string, Set<string>>();
 
-    // Group transactions by date
-    const transactionsByDate = new Map();
-    historicalTransactions.forEach(transaction => {
-      if (transaction.created_at) {
-        const dateStr = transaction.created_at.toISOString().split('T')[0];
-        if (!transactionsByDate.has(dateStr)) {
-          transactionsByDate.set(dateStr, new Set());
-        }
-        transactionsByDate.get(dateStr).add(transaction.customer_email);
+    // Get all customers and their transaction dates for trends
+    const allCustomersWithTransactions = await customerClient.customer.findMany(
+      {
+        where: {
+          isActive: true,
+          salesTransactions: {
+            some: {
+              payment_status: {
+                in: SUCCESSFUL_PAYMENT_STATUSES,
+              },
+              created_at: {
+                gte: historicalStartDate,
+                lte: new Date(),
+              },
+            },
+          },
+        },
+        select: {
+          email: true,
+          salesTransactions: {
+            where: {
+              payment_status: {
+                in: SUCCESSFUL_PAYMENT_STATUSES,
+              },
+              created_at: {
+                gte: historicalStartDate,
+                lte: new Date(),
+              },
+            },
+            select: {
+              created_at: true,
+            },
+            orderBy: {
+              created_at: 'asc',
+            },
+          },
+        },
       }
+    );
+
+    // Group transactions by date with customer emails
+    allCustomersWithTransactions.forEach((customer: any) => {
+      customer.salesTransactions.forEach((transaction: any) => {
+        if (transaction.created_at && customer.email) {
+          const dateStr = transaction.created_at.toISOString().split('T')[0];
+          if (!transactionsByDate.has(dateStr)) {
+            transactionsByDate.set(dateStr, new Set());
+          }
+          transactionsByDate.get(dateStr)!.add(customer.email);
+        }
+      });
     });
 
     // Track new customers (first time purchasers)

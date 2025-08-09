@@ -24,9 +24,12 @@ import {
   IconSearch,
   IconMail,
   IconPrinter,
+  IconCoins,
 } from '@tabler/icons-react';
 import { usePOSErrorHandler } from './POSErrorBoundary';
 import { DiscountStep } from './payment/DiscountStep';
+import { CustomFeesStep } from './payment/CustomFeesStep';
+import { EnhancedCustomerInfoStep } from './payment/EnhancedCustomerInfoStep';
 import { CouponDisplay } from './payment/CouponDisplay';
 import { useQuery } from '@tanstack/react-query';
 import {
@@ -53,6 +56,11 @@ export interface Sale {
   items: CartItem[];
   subtotal: number;
   discount: number;
+  fees?: Array<{
+    type: string;
+    description?: string;
+    amount: number;
+  }>;
   total: number;
   paymentMethod: string;
   customerName?: string;
@@ -82,20 +90,58 @@ interface SlidingPaymentInterfaceProps {
   items: CartItem[];
   subtotal: number;
   discount: number;
+  fees: Array<{
+    feeType: string;
+    description?: string;
+    amount: number;
+  }>;
   total: number;
   customerInfo: {
     name: string;
     phone: string;
     email: string;
+    billingAddress?: string;
+    shippingAddress?: string;
+    city?: string;
+    state?: string;
+    postalCode?: string;
+    country?: string;
+    customerType?: 'individual' | 'business';
+    notes?: string;
+    useBillingAsShipping?: boolean;
+    shippingCity?: string;
+    shippingState?: string;
+    shippingPostalCode?: string;
+    shippingCountry?: string;
   };
   staffName: string;
   onPaymentSuccess: (_sale: Sale) => void;
   onCancel: () => void;
   onDiscountChange: (_discount: number) => void;
+  onFeesChange: (
+    _fees: Array<{
+      feeType: string;
+      description?: string;
+      amount: number;
+    }>
+  ) => void;
   onCustomerInfoChange: (_info: {
     name: string;
     phone: string;
     email: string;
+    billingAddress?: string;
+    shippingAddress?: string;
+    city?: string;
+    state?: string;
+    postalCode?: string;
+    country?: string;
+    customerType?: 'individual' | 'business';
+    notes?: string;
+    useBillingAsShipping?: boolean;
+    shippingCity?: string;
+    shippingState?: string;
+    shippingPostalCode?: string;
+    shippingCountry?: string;
   }) => void;
 }
 
@@ -109,6 +155,7 @@ const PAYMENT_METHODS = [
 const STEPS = [
   { id: 'order-summary', title: 'Order Summary', icon: IconReceipt },
   { id: 'discount', title: 'Discount', icon: IconPercentage },
+  { id: 'custom-fees', title: 'Custom Fees', icon: IconCoins },
   { id: 'payment-method', title: 'Payment Method', icon: IconCreditCard },
   { id: 'customer-info', title: 'Customer Info', icon: IconUser },
   { id: 'review', title: 'Review & Complete', icon: IconCheck },
@@ -147,12 +194,14 @@ export function SlidingPaymentInterface({
   items,
   subtotal,
   discount,
+  fees,
   total,
   customerInfo,
   staffName,
   onPaymentSuccess,
   onCancel,
   onDiscountChange,
+  onFeesChange,
   onCustomerInfoChange,
 }: SlidingPaymentInterfaceProps) {
   const [currentStep, setCurrentStep] = useState(0);
@@ -171,6 +220,7 @@ export function SlidingPaymentInterface({
   const [completedSale, setCompletedSale] = useState<Sale | null>(null);
   const [appliedCoupon, setAppliedCoupon] = useState<CouponData | null>(null);
   const [couponDiscount, setCouponDiscount] = useState(0);
+  const [localFees, setLocalFees] = useState(fees);
 
   const { handleError } = usePOSErrorHandler();
 
@@ -278,6 +328,7 @@ export function SlidingPaymentInterface({
         })),
         subtotal,
         discount,
+        fees: localFees, // Include fees in the sale data
         total,
         paymentMethod: isSplitPayment ? 'split' : paymentMethod,
         customerName: customerInfo.name || undefined,
@@ -322,6 +373,11 @@ export function SlidingPaymentInterface({
         items,
         subtotal,
         discount,
+        fees: localFees.map(fee => ({
+          type: fee.feeType,
+          description: fee.description,
+          amount: fee.amount,
+        })),
         total,
         paymentMethod: isSplitPayment ? 'split' : paymentMethod,
         customerName: customerInfo.name || undefined,
@@ -339,7 +395,7 @@ export function SlidingPaymentInterface({
       };
 
       setCompletedSale(sale);
-      setCurrentStep(5); // Move to receipt step
+      setCurrentStep(6); // Move to receipt step
 
       // Show success message with email status
       if (result.emailSent && customerInfo.email) {
@@ -378,17 +434,19 @@ export function SlidingPaymentInterface({
         return true;
       case 1: // Discount - always can proceed
         return true;
-      case 2: // Payment Method
+      case 2: // Custom Fees - always can proceed
+        return true;
+      case 3: // Payment Method
         if (isSplitPayment) {
           const totalPaid = splitPayments.reduce((sum, p) => sum + p.amount, 0);
           return splitPayments.length > 0 && totalPaid > 0;
         }
         return paymentMethod !== '';
-      case 3: // Customer Info - always can proceed
+      case 4: // Customer Info - always can proceed
         return true;
-      case 4: // Review - always can proceed
+      case 5: // Review - always can proceed
         return true;
-      case 5: // Receipt - always can proceed
+      case 6: // Receipt - always can proceed
         return true;
       default:
         return false;
@@ -403,6 +461,7 @@ export function SlidingPaymentInterface({
             items={items}
             subtotal={subtotal}
             discount={discount}
+            fees={localFees}
             total={total}
             appliedCoupon={appliedCoupon}
             couponDiscount={couponDiscount}
@@ -432,6 +491,18 @@ export function SlidingPaymentInterface({
         );
       case 2:
         return (
+          <CustomFeesStep
+            fees={localFees}
+            onFeesChange={updatedFees => {
+              setLocalFees(updatedFees);
+              onFeesChange(updatedFees);
+            }}
+            processing={processing}
+            subtotal={subtotal - discount - couponDiscount}
+          />
+        );
+      case 3:
+        return (
           <PaymentMethodStep
             paymentMethod={paymentMethod}
             setPaymentMethod={setPaymentMethod}
@@ -447,20 +518,21 @@ export function SlidingPaymentInterface({
             _setSplitPayments={setSplitPayments}
           />
         );
-      case 3:
+      case 4:
         return (
-          <CustomerInfoStep
+          <EnhancedCustomerInfoStep
             customerInfo={customerInfo}
             onCustomerInfoChange={onCustomerInfoChange}
             processing={processing}
           />
         );
-      case 4:
+      case 5:
         return (
           <ReviewStep
             items={items}
             subtotal={subtotal}
             discount={discount}
+            fees={localFees}
             total={total}
             paymentMethod={paymentMethod}
             customerInfo={customerInfo}
@@ -474,7 +546,7 @@ export function SlidingPaymentInterface({
             couponDiscount={couponDiscount}
           />
         );
-      case 5:
+      case 6:
         return <ReceiptStep sale={completedSale} />;
       default:
         return null;
@@ -514,20 +586,20 @@ export function SlidingPaymentInterface({
             <button
               key={step.id}
               onClick={() => {
-                // Prevent clicking on receipt step (index 5) unless we're already there
-                if (index === 5 && currentStep !== 5) {
+                // Prevent clicking on receipt step (index 6) unless we're already there
+                if (index === 6 && currentStep !== 6) {
                   return;
                 }
                 // Prevent clicking on any step when we're on receipt step
-                if (currentStep === 5) {
+                if (currentStep === 6) {
                   return;
                 }
                 setCurrentStep(index);
               }}
-              disabled={currentStep === 5 || (index === 5 && currentStep !== 5)}
+              disabled={currentStep === 6 || (index === 6 && currentStep !== 6)}
               className={`h-2 flex-1 rounded-full transition-colors ${
                 index <= currentStep ? 'bg-primary' : 'bg-muted'
-              } ${currentStep === 5 || (index === 5 && currentStep !== 5) ? 'cursor-not-allowed' : 'cursor-pointer'}`}
+              } ${currentStep === 6 || (index === 6 && currentStep !== 6) ? 'cursor-not-allowed' : 'cursor-pointer'}`}
             />
           ))}
         </div>
@@ -549,7 +621,7 @@ export function SlidingPaymentInterface({
           </Button>
         )}
 
-        {currentStep === 4 ? (
+        {currentStep === 5 ? (
           <Button
             onClick={handlePayment}
             disabled={!canProceed() || processing}
@@ -567,7 +639,7 @@ export function SlidingPaymentInterface({
               </>
             )}
           </Button>
-        ) : currentStep === 5 ? (
+        ) : currentStep === 6 ? (
           <div className="ml-auto flex gap-3">
             <Button variant="outline" onClick={onCancel} className="min-w-32">
               <IconX className="mr-2 h-4 w-4" />
@@ -600,6 +672,7 @@ function OrderSummaryStep({
   items,
   subtotal,
   discount,
+  fees,
   total,
   _appliedCoupon,
   couponDiscount,
@@ -650,6 +723,21 @@ function OrderSummaryStep({
               -{formatCurrency(Math.max(0, discount - couponDiscount))}
             </span>
           </div>
+        )}
+
+        {/* Custom Fees */}
+        {fees && fees.length > 0 && (
+          <>
+            {fees.map((fee: any, index: number) => (
+              <div key={index} className="flex justify-between text-orange-600">
+                <span>
+                  {fee.feeType}
+                  {fee.description ? ` (${fee.description})` : ''}:
+                </span>
+                <span>+{formatCurrency(fee.amount)}</span>
+              </div>
+            ))}
+          </>
         )}
 
         <Separator />
@@ -1356,6 +1444,7 @@ function ReviewStep({
   items,
   subtotal,
   discount,
+  fees,
   total,
   paymentMethod,
   customerInfo,
@@ -1423,6 +1512,21 @@ function ReviewStep({
             <span>Total Discount:</span>
             <span>-₦{discount.toLocaleString()}</span>
           </div>
+        )}
+
+        {/* Custom Fees */}
+        {fees && fees.length > 0 && (
+          <>
+            {fees.map((fee: any, index: number) => (
+              <div key={index} className="flex justify-between text-orange-600">
+                <span>
+                  {fee.feeType}
+                  {fee.description ? ` (${fee.description})` : ''}:
+                </span>
+                <span>+₦{fee.amount.toLocaleString()}</span>
+              </div>
+            ))}
+          </>
         )}
 
         <Separator />
@@ -1957,10 +2061,28 @@ function ReceiptStep({ sale }: { sale: Sale | null }) {
           <span>Subtotal:</span>
           <span>{formatCurrency(sale.subtotal)}</span>
         </div>
-        <div className="flex justify-between text-red-600">
-          <span>Discount:</span>
-          <span>-{formatCurrency(sale.discount)}</span>
-        </div>
+        {sale.discount > 0 && (
+          <div className="flex justify-between text-red-600">
+            <span>Discount:</span>
+            <span>-{formatCurrency(sale.discount)}</span>
+          </div>
+        )}
+
+        {/* Custom Fees */}
+        {sale.fees && sale.fees.length > 0 && (
+          <>
+            {sale.fees.map((fee: any, index: number) => (
+              <div key={index} className="flex justify-between text-orange-600">
+                <span>
+                  {fee.type}
+                  {fee.description ? ` (${fee.description})` : ''}:
+                </span>
+                <span>+{formatCurrency(fee.amount)}</span>
+              </div>
+            ))}
+          </>
+        )}
+
         <Separator />
         <div className="flex justify-between text-lg font-bold">
           <span>Total:</span>

@@ -68,6 +68,13 @@ export const GET = withAuth(
               lastName: true,
             },
           },
+          customer: {
+            select: {
+              id: true,
+              name: true,
+              email: true,
+            },
+          },
         },
       });
 
@@ -115,7 +122,7 @@ export const GET = withAuth(
             transactionNumber: sale.transaction_number,
             paymentMethod: sale.payment_method,
             paymentStatus: sale.payment_status,
-            customerName: sale.customer_name,
+            customerName: sale.customer?.name || 'Walk-in Customer',
           },
         })),
       ];

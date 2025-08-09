@@ -1,0 +1,22 @@
+# Production Environment Setup
+# Copy this to .env.production and fill in your actual values
+
+# Database Configuration
+DATABASE_URL="postgresql://username:password@hostname:port/database_name"
+
+# Optional: If using connection pooling
+# DIRECT_URL="postgresql://username:password@hostname:port/database_name"
+
+# For Supabase (if using Supabase storage)
+NEXT_PUBLIC_SUPABASE_URL="your_supabase_url"
+SUPABASE_SERVICE_ROLE_KEY="your_service_role_key"
+
+# Auth Configuration
+NEXTAUTH_SECRET="your_nextauth_secret"
+NEXTAUTH_URL="your_production_url"
+
+# Email Configuration (if using Resend)
+RESEND_API_KEY="your_resend_api_key"
+
+# Note: This is a template file. 
+# Create .env.production with your actual production values.
