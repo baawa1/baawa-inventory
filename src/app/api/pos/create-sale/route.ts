@@ -67,7 +67,32 @@ const posSaleSchema = z
       const feesTotal =
         data.fees?.reduce((sum, fee) => sum + fee.amount, 0) || 0;
       const expectedTotal = itemsTotal - data.discount + feesTotal;
-      return Math.abs(data.total - expectedTotal) < 0.01; // Allow for small rounding differences
+
+      // Also validate against subtotal-based calculation for compatibility
+      const subtotalBasedTotal = data.subtotal - data.discount + feesTotal;
+
+      // Allow for small rounding differences (1 cent)
+      const tolerance = 0.01;
+      const isValidItemsTotal =
+        Math.abs(data.total - expectedTotal) < tolerance;
+      const isValidSubtotalTotal =
+        Math.abs(data.total - subtotalBasedTotal) < tolerance;
+
+      if (!isValidItemsTotal && !isValidSubtotalTotal) {
+        // Log detailed calculation info for debugging
+        console.error('Total validation failed:', {
+          subtotal: data.subtotal,
+          discount: data.discount,
+          feesTotal,
+          expectedFromItems: expectedTotal,
+          expectedFromSubtotal: subtotalBasedTotal,
+          actualTotal: data.total,
+          itemsCalculation: `${itemsTotal} - ${data.discount} + ${feesTotal} = ${expectedTotal}`,
+          subtotalCalculation: `${data.subtotal} - ${data.discount} + ${feesTotal} = ${subtotalBasedTotal}`,
+        });
+      }
+
+      return isValidItemsTotal || isValidSubtotalTotal;
     },
     {
       message: 'Total does not match items total minus discount plus fees',
