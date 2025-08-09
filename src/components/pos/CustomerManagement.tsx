@@ -92,6 +92,13 @@ interface CustomerOrder {
       value: number;
     } | null;
   }[];
+  fees?: {
+    id: number;
+    type: string;
+    description?: string;
+    amount: number;
+    createdAt: string;
+  }[];
 }
 
 interface CustomerManagementProps {
@@ -540,6 +547,25 @@ export function CustomerManagement({ user: _user }: CustomerManagementProps) {
                                 )}
                               </>
                             )}
+                            
+                            {/* Transaction Fees */}
+                            {order.fees && order.fees.length > 0 && (
+                              <>
+                                {order.fees.map(fee => (
+                                  <div key={fee.id} className="flex justify-between text-sm">
+                                    <span className="flex items-center gap-2">
+                                      <span>{fee.type}</span>
+                                      {fee.description && (
+                                        <span className="text-muted-foreground text-xs">
+                                          ({fee.description})
+                                        </span>
+                                      )}
+                                    </span>
+                                    <span>{formatCurrency(fee.amount)}</span>
+                                  </div>
+                                ))}
+                              </>
+                            )}
                             <div className="flex justify-between border-t pt-2 text-sm font-medium">
                               <span>TOTAL</span>
                               <span>{formatCurrency(order.total)}</span>
@@ -575,7 +601,7 @@ export function CustomerManagement({ user: _user }: CustomerManagementProps) {
                               customerCity: (order as any).customer?.city || '',
                               customerState:
                                 (order as any).customer?.state || '',
-                              fees: (order as any).fees || [],
+                              fees: order.fees || [],
                               items: order.items.map(item => ({
                                 id: item.id,
                                 name: item.name,
