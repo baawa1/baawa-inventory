@@ -51,6 +51,18 @@ export const GET = withPOSAuth(
               },
             },
           },
+          transaction_fees: {
+            select: {
+              id: true,
+              feeType: true,
+              description: true,
+              amount: true,
+              createdAt: true,
+            },
+            orderBy: {
+              createdAt: 'asc',
+            },
+          },
           users: {
             select: {
               firstName: true,
@@ -97,6 +109,13 @@ export const GET = withPOSAuth(
               }
             : null,
         })),
+        fees: order.transaction_fees?.map((fee: any) => ({
+          id: fee.id,
+          type: fee.feeType,
+          description: fee.description,
+          amount: Number(fee.amount),
+          createdAt: fee.createdAt,
+        })) || [],
       }));
 
       return NextResponse.json({

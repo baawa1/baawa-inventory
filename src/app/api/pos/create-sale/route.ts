@@ -160,6 +160,17 @@ export const POST = withAuth(async function (request: AuthenticatedRequest) {
         email: validatedData.customerEmail || validatedData.customerInfo?.email,
       };
 
+      // Debug logging for customer processing
+      logger.info('Customer processing debug', {
+        hasCustomerInfo: !!validatedData.customerInfo,
+        customerInfo: validatedData.customerInfo,
+        legacyFields: {
+          name: validatedData.customerName,
+          phone: validatedData.customerPhone,
+          email: validatedData.customerEmail,
+        },
+      });
+
       if (
         validatedData.customerInfo &&
         (validatedData.customerInfo.email || validatedData.customerInfo.phone)
@@ -211,6 +222,12 @@ export const POST = withAuth(async function (request: AuthenticatedRequest) {
             phone: updatedCustomer.phone || undefined,
             email: updatedCustomer.email || undefined,
           };
+
+          logger.info('Updated existing customer', {
+            customerId: updatedCustomer.id,
+            customerName: updatedCustomer.name,
+            customerEmail: updatedCustomer.email,
+          });
         } else {
           // Create new customer
           const newCustomer = await (tx as any).customer.create({
@@ -234,8 +251,21 @@ export const POST = withAuth(async function (request: AuthenticatedRequest) {
             phone: newCustomer.phone || undefined,
             email: newCustomer.email || undefined,
           };
+
+          logger.info('Created new customer', {
+            customerId: newCustomer.id,
+            customerName: newCustomer.name,
+            customerEmail: newCustomer.email,
+          });
         }
       }
+
+      // Log customer processing result
+      logger.info('Customer processing result', {
+        customerId,
+        customerData,
+        willCreateTransaction: true,
+      });
 
       // Create sales transaction
       const salesTransaction = await tx.salesTransaction.create({

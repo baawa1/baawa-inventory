@@ -64,6 +64,13 @@ interface CustomerOrder {
     quantity: number;
     total: number;
   }[];
+  fees?: {
+    id: number;
+    type: string;
+    description?: string;
+    amount: number;
+    createdAt: string;
+  }[];
 }
 
 interface TopCustomersPanelProps {
@@ -395,6 +402,24 @@ export function TopCustomersPanel({ customers }: TopCustomersPanelProps) {
                                 <span>Discount:</span>
                                 <span>-{formatCurrency(order.discount)}</span>
                               </div>
+                            )}
+                            {/* Transaction Fees */}
+                            {order.fees && order.fees.length > 0 && (
+                              <>
+                                {order.fees.map((fee) => (
+                                  <div key={fee.id} className="flex justify-between text-sm">
+                                    <span className="flex items-center gap-2">
+                                      <span>{fee.type}</span>
+                                      {fee.description && (
+                                        <span className="text-muted-foreground text-xs">
+                                          ({fee.description})
+                                        </span>
+                                      )}
+                                    </span>
+                                    <span>{formatCurrency(fee.amount)}</span>
+                                  </div>
+                                ))}
+                              </>
                             )}
                             <div className="flex justify-between border-t pt-2 text-sm font-medium">
                               <span>TOTAL</span>

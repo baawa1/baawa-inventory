@@ -67,6 +67,13 @@ interface CustomerPurchase {
       value: number;
     } | null;
   }[];
+  fees?: {
+    id: number;
+    type: string;
+    description?: string;
+    amount: number;
+    createdAt: string;
+  }[];
 }
 
 interface User {
@@ -436,6 +443,30 @@ function OrderDetailContent({ order }: { order: CustomerPurchase }) {
           </TableBody>
         </Table>
       </div>
+
+      <Separator />
+
+      {/* Transaction Fees */}
+      {order.fees && order.fees.length > 0 && (
+        <div>
+          <h3 className="mb-3 font-medium">Fees</h3>
+          <div className="space-y-2">
+            {order.fees.map((fee, index) => (
+              <div key={fee.id} className="flex justify-between text-sm">
+                <span className="flex items-center gap-2">
+                  <span>{fee.type}</span>
+                  {fee.description && (
+                    <span className="text-muted-foreground text-xs">
+                      ({fee.description})
+                    </span>
+                  )}
+                </span>
+                <span>{formatCurrency(fee.amount)}</span>
+              </div>
+            ))}
+          </div>
+        </div>
+      )}
 
       <Separator />
 

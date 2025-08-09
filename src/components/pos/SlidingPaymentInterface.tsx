@@ -331,6 +331,24 @@ export function SlidingPaymentInterface({
         fees: localFees, // Include fees in the sale data
         total,
         paymentMethod: isSplitPayment ? 'split' : paymentMethod,
+        // Send customerInfo object for proper customer processing
+        customerInfo:
+          customerInfo.name || customerInfo.email || customerInfo.phone
+            ? {
+                name: customerInfo.name,
+                email: customerInfo.email,
+                phone: customerInfo.phone,
+                billingAddress: customerInfo.billingAddress,
+                shippingAddress: customerInfo.shippingAddress,
+                city: customerInfo.city,
+                state: customerInfo.state,
+                postalCode: customerInfo.postalCode,
+                country: customerInfo.country,
+                customerType: customerInfo.customerType,
+                notes: customerInfo.notes,
+              }
+            : undefined,
+        // Legacy fields for backward compatibility
         customerName: customerInfo.name || undefined,
         customerPhone: customerInfo.phone || undefined,
         customerEmail: customerInfo.email || undefined,
