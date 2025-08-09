@@ -28,7 +28,19 @@ export async function PUT(
 
     const customerEmail = decodeURIComponent(resolvedParams.email);
     const body = await request.json();
-    const { name, email, phone } = body;
+    const {
+      name,
+      email,
+      phone,
+      city,
+      state,
+      postalCode,
+      country,
+      customerType,
+      billingAddress,
+      shippingAddress,
+      notes,
+    } = body;
 
     // Validate required fields
     if (!name || !email) {
@@ -70,6 +82,14 @@ export async function PUT(
         name,
         email: email.toLowerCase(),
         phone: phone || null,
+        city: city || null,
+        state: state || null,
+        postalCode: postalCode || null,
+        country: country || 'Nigeria',
+        customerType: customerType || 'individual',
+        billingAddress: billingAddress || null,
+        shippingAddress: shippingAddress || null,
+        notes: notes || null,
       },
     });
 

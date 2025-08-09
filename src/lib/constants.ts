@@ -121,13 +121,15 @@ export type TransactionStatus =
   (typeof TRANSACTION_STATUS)[keyof typeof TRANSACTION_STATUS];
 
 // Successful Payment Statuses for Sales Transactions
-export const SUCCESSFUL_PAYMENT_STATUSES = [
-  PAYMENT_STATUS.PAID,
-  TRANSACTION_STATUS.COMPLETED,
+// Based on actual database values: 'completed' (147), 'PAID' (4), 'COMPLETED' (1)
+export const SUCCESSFUL_PAYMENT_STATUSES: string[] = [
+  'completed', // Primary status used in database (147 transactions)
+  'COMPLETED', // Legacy uppercase variant (1 transaction)
+  'PAID', // Legacy uppercase variant (4 transactions)
+  'paid', // Potential lowercase variant
 ];
 
-export type SuccessfulPaymentStatus =
-  (typeof SUCCESSFUL_PAYMENT_STATUSES)[number];
+export type SuccessfulPaymentStatus = 'completed' | 'COMPLETED' | 'PAID' | 'paid';
 
 // Helper function for runtime status checking (avoids TypeScript strict typing issues)
 export function isSuccessfulPaymentStatus(status: string): boolean {
@@ -202,8 +204,6 @@ export const CONTENT_STATUS = {
 
 export type ContentStatus =
   (typeof CONTENT_STATUS)[keyof typeof CONTENT_STATUS];
-
-
 
 // API Limits and Pagination
 export const API_LIMITS = {
@@ -434,14 +434,14 @@ export const ACTIVE_PUBLISHED_STATUSES = [CONTENT_STATUS.PUBLISHED] as const;
 export type ActivePublishedStatus = (typeof ACTIVE_PUBLISHED_STATUSES)[number];
 
 // All Statuses (for comprehensive filtering)
-export const ALL_STATUSES = [
+export const ALL_STATUSES: string[] = [
   ...SUCCESSFUL_PAYMENT_STATUSES,
   ...PENDING_STATUSES,
   ...CANCELLED_REJECTED_STATUSES,
   ...APPROVED_STATUSES,
   ...DRAFT_STATUSES,
   ...ACTIVE_PUBLISHED_STATUSES,
-] as const;
+];
 
 export type AllStatus = (typeof ALL_STATUSES)[number];
 

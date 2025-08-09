@@ -567,6 +567,7 @@ model TransactionFee {
   @@map("transaction_fees")
 }
 
+
 enum CouponType {
   PERCENTAGE
   FIXED

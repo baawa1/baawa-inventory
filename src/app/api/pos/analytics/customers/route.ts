@@ -5,8 +5,7 @@ import { SUCCESSFUL_PAYMENT_STATUSES } from '@/lib/constants';
 
 import { Decimal } from '@prisma/client/runtime/library';
 
-// Type-safe customer client access
-const customerClient = prisma as any;
+// Use prisma client for customer access
 
 interface CustomerWithTransactions {
   id: number;
@@ -129,16 +128,9 @@ export const GET = withPOSAuth(async (request: AuthenticatedRequest) => {
 
     // Get all customers from Customer table with their transaction aggregates
     const customerTransactions: CustomerWithTransactions[] =
-      await customerClient.customer.findMany({
+      await prisma.customer.findMany({
         where: {
           isActive: true,
-          salesTransactions: {
-            some: {
-              payment_status: {
-                in: SUCCESSFUL_PAYMENT_STATUSES,
-              },
-            },
-          },
         },
         include: {
           _count: {
@@ -171,19 +163,12 @@ export const GET = withPOSAuth(async (request: AuthenticatedRequest) => {
 
     // Get current period transactions for new customer calculation
     const currentPeriodCustomers: CustomerInfo[] =
-      await customerClient.customer.findMany({
+      await prisma.customer.findMany({
         where: {
           isActive: true,
-          salesTransactions: {
-            some: {
-              payment_status: {
-                in: SUCCESSFUL_PAYMENT_STATUSES,
-              },
-              created_at: {
-                gte: periodStart,
-                lte: periodEnd,
-              },
-            },
+          createdAt: {
+            gte: periodStart,
+            lte: periodEnd,
           },
         },
         select: {
@@ -196,19 +181,12 @@ export const GET = withPOSAuth(async (request: AuthenticatedRequest) => {
 
     // Get previous period customers for comparison
     const previousPeriodCustomers: CustomerInfo[] =
-      await customerClient.customer.findMany({
+      await prisma.customer.findMany({
         where: {
           isActive: true,
-          salesTransactions: {
-            some: {
-              payment_status: {
-                in: SUCCESSFUL_PAYMENT_STATUSES,
-              },
-              created_at: {
-                gte: previousPeriodStart,
-                lte: previousPeriodEnd,
-              },
-            },
+          createdAt: {
+            gte: previousPeriodStart,
+            lte: previousPeriodEnd,
           },
         },
         select: {
@@ -333,44 +311,42 @@ export const GET = withPOSAuth(async (request: AuthenticatedRequest) => {
     const transactionsByDate = new Map<string, Set<string>>();
 
     // Get all customers and their transaction dates for trends
-    const allCustomersWithTransactions = await customerClient.customer.findMany(
-      {
-        where: {
-          isActive: true,
-          salesTransactions: {
-            some: {
-              payment_status: {
-                in: SUCCESSFUL_PAYMENT_STATUSES,
-              },
-              created_at: {
-                gte: historicalStartDate,
-                lte: new Date(),
-              },
+    const allCustomersWithTransactions = await prisma.customer.findMany({
+      where: {
+        isActive: true,
+        salesTransactions: {
+          some: {
+            payment_status: {
+              in: SUCCESSFUL_PAYMENT_STATUSES,
+            },
+            created_at: {
+              gte: historicalStartDate,
+              lte: new Date(),
             },
           },
         },
-        select: {
-          email: true,
-          salesTransactions: {
-            where: {
-              payment_status: {
-                in: SUCCESSFUL_PAYMENT_STATUSES,
-              },
-              created_at: {
-                gte: historicalStartDate,
-                lte: new Date(),
-              },
+      },
+      select: {
+        email: true,
+        salesTransactions: {
+          where: {
+            payment_status: {
+              in: SUCCESSFUL_PAYMENT_STATUSES,
             },
-            select: {
-              created_at: true,
-            },
-            orderBy: {
-              created_at: 'asc',
+            created_at: {
+              gte: historicalStartDate,
+              lte: new Date(),
             },
           },
+          select: {
+            created_at: true,
+          },
+          orderBy: {
+            created_at: 'asc',
+          },
         },
-      }
-    );
+      },
+    });
 
     // Group transactions by date with customer emails
     allCustomersWithTransactions.forEach((customer: any) => {

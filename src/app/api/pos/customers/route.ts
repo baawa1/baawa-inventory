@@ -4,9 +4,7 @@ import { prisma } from '@/lib/db';
 import { USER_ROLES, hasRole } from '@/lib/auth/roles';
 import { Prisma } from '@prisma/client';
 import { logger } from '@/lib/logger';
-
-// Direct prisma client access for Customer table
-const customerClient = prisma;
+import { SUCCESSFUL_PAYMENT_STATUSES } from '@/lib/constants';
 
 export async function GET(request: NextRequest) {
   try {
@@ -30,11 +28,101 @@ export async function GET(request: NextRequest) {
     // Get search query from URL parameters
     const { searchParams } = new URL(request.url);
     const searchQuery = searchParams.get('search')?.trim();
-    const limit = parseInt(searchParams.get('limit') || '10');
+    const limit = parseInt(searchParams.get('limit') || '100');
 
-    // If no search query, return empty results
+    // If no search query, return all active customers (limited by limit)
     if (!searchQuery) {
-      return NextResponse.json([]);
+      try {
+        const customers = await prisma.customer.findMany({
+          where: {
+            isActive: true,
+          },
+          select: {
+            id: true,
+            name: true,
+            email: true,
+            phone: true,
+            city: true,
+            state: true,
+            postalCode: true,
+            country: true,
+            customerType: true,
+            billingAddress: true,
+            shippingAddress: true,
+            notes: true,
+            createdAt: true,
+            salesTransactions: {
+              where: {
+                payment_status: {
+                  in: SUCCESSFUL_PAYMENT_STATUSES,
+                },
+              },
+              select: {
+                id: true,
+                total_amount: true,
+                created_at: true,
+                payment_status: true,
+              },
+              orderBy: {
+                created_at: 'desc',
+              },
+            },
+          },
+          take: limit,
+          orderBy: {
+            createdAt: 'desc',
+          },
+        });
+
+        // Transform customer data with proper calculations
+        const allCustomers = customers.map((customer: any, index: number) => {
+          const successfulTransactions = customer.salesTransactions || [];
+          const totalSpent = successfulTransactions.reduce(
+            (sum: number, t: any) => sum + Number(t.total_amount || 0),
+            0
+          );
+          const totalOrders = successfulTransactions.length;
+          const averageOrderValue =
+            totalOrders > 0 ? totalSpent / totalOrders : 0;
+          const lastPurchase =
+            successfulTransactions[0]?.created_at || customer.createdAt;
+
+          return {
+            id: customer.id.toString(),
+            name: customer.name || 'Unknown Customer',
+            email: customer.email || '',
+            phone: customer.phone || '',
+            city: customer.city || '',
+            state: customer.state || '',
+            postalCode: customer.postalCode || '',
+            country: customer.country || 'Nigeria',
+            customerType: customer.customerType || 'individual',
+            billingAddress: customer.billingAddress || '',
+            shippingAddress: customer.shippingAddress || '',
+            notes: customer.notes || '',
+            source: 'customer_table',
+            lastPurchase: lastPurchase,
+            lastAmount: successfulTransactions[0]
+              ? Number(successfulTransactions[0].total_amount)
+              : undefined,
+            priority: 1,
+            totalSpent: totalSpent,
+            totalOrders: totalOrders,
+            averageOrderValue: averageOrderValue,
+            rank: index + 1,
+          };
+        });
+
+        return NextResponse.json(allCustomers);
+      } catch (error) {
+        logger.error('Error fetching all customers', {
+          error: error instanceof Error ? error.message : String(error),
+        });
+        return NextResponse.json(
+          { error: 'Failed to fetch customers' },
+          { status: 500 }
+        );
+      }
     }
 
     // Check if search query looks like a phone number or email
@@ -49,7 +137,12 @@ export async function GET(request: NextRequest) {
       phone?: string;
       city?: string;
       state?: string;
+      postalCode?: string;
+      country?: string;
       customerType?: string;
+      billingAddress?: string;
+      shippingAddress?: string;
+      notes?: string;
       source?: string;
       lastPurchase?: Date | string;
       lastAmount?: number;
@@ -129,7 +222,7 @@ export async function GET(request: NextRequest) {
 
       // Search in Customer table
       try {
-        const customers = await customerClient.customer.findMany({
+        const customers = await prisma.customer.findMany({
           where: {
             AND: [
               { isActive: true },
@@ -145,18 +238,28 @@ export async function GET(request: NextRequest) {
             phone: true,
             city: true,
             state: true,
+            postalCode: true,
+            country: true,
             customerType: true,
+            billingAddress: true,
+            shippingAddress: true,
+            notes: true,
             createdAt: true,
             salesTransactions: {
+              where: {
+                payment_status: {
+                  in: SUCCESSFUL_PAYMENT_STATUSES,
+                },
+              },
               select: {
                 id: true,
                 total_amount: true,
                 created_at: true,
+                payment_status: true,
               },
               orderBy: {
                 created_at: 'desc',
               },
-              take: 1, // Get latest transaction for stats
             },
           },
           take: limit,
@@ -165,23 +268,41 @@ export async function GET(request: NextRequest) {
           },
         });
 
-        // Transform customer data
-        customers.forEach(customer => {
-          const latestTransaction = customer.salesTransactions[0];
+        // Transform customer data with proper calculations
+        customers.forEach((customer: any) => {
+          const successfulTransactions = customer.salesTransactions || [];
+          const totalSpent = successfulTransactions.reduce(
+            (sum: number, t: any) => sum + Number(t.total_amount || 0),
+            0
+          );
+          const totalOrders = successfulTransactions.length;
+          const averageOrderValue =
+            totalOrders > 0 ? totalSpent / totalOrders : 0;
+          const lastPurchase =
+            successfulTransactions[0]?.created_at || customer.createdAt;
+
           results.push({
             id: customer.id.toString(),
             name: customer.name || 'Unknown Customer',
             email: customer.email || '',
-            phone: customer.phone || undefined,
-            city: customer.city || undefined,
-            state: customer.state || undefined,
-            customerType: customer.customerType || undefined,
+            phone: customer.phone || '',
+            city: customer.city || '',
+            state: customer.state || '',
+            postalCode: customer.postalCode || '',
+            country: customer.country || 'Nigeria',
+            customerType: customer.customerType || 'individual',
+            billingAddress: customer.billingAddress || '',
+            shippingAddress: customer.shippingAddress || '',
+            notes: customer.notes || '',
             source: 'customer_table',
-            lastPurchase: latestTransaction?.created_at || undefined,
-            lastAmount: latestTransaction
-              ? Number(latestTransaction.total_amount)
+            lastPurchase: lastPurchase,
+            lastAmount: successfulTransactions[0]
+              ? Number(successfulTransactions[0].total_amount)
               : undefined,
             priority: 1, // Higher priority for dedicated customer records
+            totalSpent: totalSpent,
+            totalOrders: totalOrders,
+            averageOrderValue: averageOrderValue,
           });
         });
       } catch (error) {
@@ -280,6 +401,14 @@ export async function GET(request: NextRequest) {
         name: `${user.firstName} ${user.lastName}`.trim(),
         email: user.email,
         phone: user.phone || '',
+        city: '',
+        state: '',
+        postalCode: '',
+        country: 'Nigeria',
+        customerType: 'individual',
+        billingAddress: '',
+        shippingAddress: '',
+        notes: '',
         totalSpent: 0, // Users don't have spending data
         totalOrders: 0, // Users don't have order data
         lastPurchase: user.createdAt?.toISOString() || new Date().toISOString(),
@@ -362,7 +491,19 @@ export async function POST(request: NextRequest) {
     }
 
     const body = await request.json();
-    const { name, email, phone } = body;
+    const {
+      name,
+      email,
+      phone,
+      city,
+      state,
+      postalCode,
+      country,
+      customerType,
+      billingAddress,
+      shippingAddress,
+      notes,
+    } = body;
 
     // Validate required fields
     if (!name || !email) {
@@ -382,7 +523,7 @@ export async function POST(request: NextRequest) {
     }
 
     // Check if customer already exists (by email)
-    const existingCustomer = await customerClient.customer.findFirst({
+    const existingCustomer = await prisma.customer.findFirst({
       where: {
         email: email.toLowerCase(),
       },
@@ -396,13 +537,19 @@ export async function POST(request: NextRequest) {
     }
 
     // Create a new customer in the dedicated Customer table
-    const newCustomerRecord = await customerClient.customer.create({
+    const newCustomerRecord = await prisma.customer.create({
       data: {
         name,
         email: email.toLowerCase(),
         phone: phone || null,
-        country: 'Nigeria',
-        customerType: 'individual',
+        city: city || null,
+        state: state || null,
+        postalCode: postalCode || null,
+        country: country || 'Nigeria',
+        customerType: customerType || 'individual',
+        billingAddress: billingAddress || null,
+        shippingAddress: shippingAddress || null,
+        notes: notes || null,
         isActive: true,
       },
     });

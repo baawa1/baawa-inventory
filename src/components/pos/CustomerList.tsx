@@ -20,6 +20,14 @@ import {
 } from '@/components/ui/dialog';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
+import { Textarea } from '@/components/ui/textarea';
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from '@/components/ui/select';
 
 interface User {
   id: string;
@@ -39,6 +47,14 @@ interface Customer {
   name: string;
   email: string;
   phone?: string;
+  city?: string;
+  state?: string;
+  postalCode?: string;
+  country?: string;
+  customerType?: string;
+  billingAddress?: string;
+  shippingAddress?: string;
+  notes?: string;
   totalSpent: number;
   totalOrders: number;
   lastPurchase: string;
@@ -52,18 +68,30 @@ interface Customer {
 
 // API function to fetch customers
 async function fetchCustomers(): Promise<Customer[]> {
-  const response = await fetch('/api/pos/analytics/customers');
+  const response = await fetch('/api/pos/customers');
   if (!response.ok) {
     throw new Error('Failed to fetch customers');
   }
   const result = await response.json();
-  return result.data?.customers || [];
+  return result || [];
 }
 
 // API function to update customer
 async function updateCustomer(
   customerEmail: string,
-  data: { name: string; email: string; phone: string }
+  data: {
+    name: string;
+    email: string;
+    phone: string;
+    city: string;
+    state: string;
+    postalCode: string;
+    country: string;
+    customerType: string;
+    billingAddress: string;
+    shippingAddress: string;
+    notes: string;
+  }
 ): Promise<Customer> {
   // Encode the email for URL safety
   const encodedEmail = encodeURIComponent(customerEmail);
@@ -89,6 +117,14 @@ async function createCustomer(data: {
   name: string;
   email: string;
   phone: string;
+  city: string;
+  state: string;
+  postalCode: string;
+  country: string;
+  customerType: string;
+  billingAddress: string;
+  shippingAddress: string;
+  notes: string;
 }): Promise<Customer> {
   const response = await fetch('/api/pos/customers', {
     method: 'POST',
@@ -111,7 +147,7 @@ export function CustomerList({ user: _ }: CustomerListProps) {
   const queryClient = useQueryClient();
   const [searchTerm, setSearchTerm] = useState('');
   const [statusFilter, setStatusFilter] = useState('all');
-  const [sortBy, setSortBy] = useState('totalSpent');
+  const [sortBy, setSortBy] = useState('totalSpent-desc');
   const [currentPage, setCurrentPage] = useState(1);
   const [pageSize, setPageSize] = useState(10);
   const [isEditDialogOpen, setIsEditDialogOpen] = useState(false);
@@ -120,6 +156,14 @@ export function CustomerList({ user: _ }: CustomerListProps) {
     name: '',
     email: '',
     phone: '',
+    city: '',
+    state: '',
+    postalCode: '',
+    country: 'Nigeria',
+    customerType: 'individual',
+    billingAddress: '',
+    shippingAddress: '',
+    notes: '',
   });
   const [_isUpdating, _setIsUpdating] = useState(false);
   const [isAddDialogOpen, setIsAddDialogOpen] = useState(false);
@@ -127,6 +171,14 @@ export function CustomerList({ user: _ }: CustomerListProps) {
     name: '',
     email: '',
     phone: '',
+    city: '',
+    state: '',
+    postalCode: '',
+    country: 'Nigeria',
+    customerType: 'individual',
+    billingAddress: '',
+    shippingAddress: '',
+    notes: '',
   });
 
   const {
@@ -145,14 +197,38 @@ export function CustomerList({ user: _ }: CustomerListProps) {
       data,
     }: {
       customerEmail: string;
-      data: { name: string; email: string; phone: string };
+      data: {
+        name: string;
+        email: string;
+        phone: string;
+        city: string;
+        state: string;
+        postalCode: string;
+        country: string;
+        customerType: string;
+        billingAddress: string;
+        shippingAddress: string;
+        notes: string;
+      };
     }) => updateCustomer(customerEmail, data),
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['customers-list'] });
       toast.success('Customer updated successfully');
       setIsEditDialogOpen(false);
       setEditingCustomer(null);
-      setEditFormData({ name: '', email: '', phone: '' });
+      setEditFormData({
+        name: '',
+        email: '',
+        phone: '',
+        city: '',
+        state: '',
+        postalCode: '',
+        country: 'Nigeria',
+        customerType: 'individual',
+        billingAddress: '',
+        shippingAddress: '',
+        notes: '',
+      });
     },
     onError: error => {
       toast.error('Failed to update customer');
@@ -162,13 +238,36 @@ export function CustomerList({ user: _ }: CustomerListProps) {
 
   // Create customer mutation
   const createCustomerMutation = useMutation({
-    mutationFn: (data: { name: string; email: string; phone: string }) =>
-      createCustomer(data),
+    mutationFn: (data: {
+      name: string;
+      email: string;
+      phone: string;
+      city: string;
+      state: string;
+      postalCode: string;
+      country: string;
+      customerType: string;
+      billingAddress: string;
+      shippingAddress: string;
+      notes: string;
+    }) => createCustomer(data),
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['customers-list'] });
       toast.success('Customer created successfully');
       setIsAddDialogOpen(false);
-      setAddFormData({ name: '', email: '', phone: '' });
+      setAddFormData({
+        name: '',
+        email: '',
+        phone: '',
+        city: '',
+        state: '',
+        postalCode: '',
+        country: 'Nigeria',
+        customerType: 'individual',
+        billingAddress: '',
+        shippingAddress: '',
+        notes: '',
+      });
     },
     onError: error => {
       toast.error('Failed to create customer');
@@ -212,23 +311,33 @@ export function CustomerList({ user: _ }: CustomerListProps) {
 
   const sortedCustomers = useMemo(() => {
     return [...filteredCustomers].sort((a, b) => {
-      switch (sortBy) {
+      const [field, order] = sortBy.split('-');
+      const isAsc = order === 'asc';
+      let result = 0;
+
+      switch (field) {
         case 'name':
-          return a.name.localeCompare(b.name);
+          result = a.name.localeCompare(b.name);
+          break;
         case 'totalSpent':
-          return b.totalSpent - a.totalSpent;
+          result = a.totalSpent - b.totalSpent;
+          break;
         case 'totalOrders':
-          return b.totalOrders - a.totalOrders;
+          result = a.totalOrders - b.totalOrders;
+          break;
         case 'lastPurchase':
-          return (
-            new Date(b.lastPurchase).getTime() -
-            new Date(a.lastPurchase).getTime()
-          );
+          result =
+            new Date(a.lastPurchase).getTime() -
+            new Date(b.lastPurchase).getTime();
+          break;
         case 'averageOrderValue':
-          return b.averageOrderValue - a.averageOrderValue;
+          result = a.averageOrderValue - b.averageOrderValue;
+          break;
         default:
           return 0;
       }
+
+      return isAsc ? result : -result;
     });
   }, [filteredCustomers, sortBy]);
 
@@ -343,6 +452,7 @@ export function CustomerList({ user: _ }: CustomerListProps) {
   const handleResetFilters = () => {
     setSearchTerm('');
     setStatusFilter('all');
+    setSortBy('totalSpent-desc'); // Reset to default sort
     setCurrentPage(1);
   };
 
@@ -356,17 +466,24 @@ export function CustomerList({ user: _ }: CustomerListProps) {
   };
 
   const handleSortChange = (sortValue: string) => {
-    const [field, _order] = sortValue.split('-');
-    setSortBy(field);
+    setSortBy(sortValue); // Store the complete sort value (field-direction)
   };
 
   // Edit customer handlers
   const handleEditClick = (customer: Customer) => {
     setEditingCustomer(customer);
     setEditFormData({
-      name: customer.name,
-      email: customer.email,
+      name: customer.name || '',
+      email: customer.email || '',
       phone: customer.phone || '',
+      city: customer.city || '',
+      state: customer.state || '',
+      postalCode: customer.postalCode || '',
+      country: customer.country || 'Nigeria',
+      customerType: customer.customerType || 'individual',
+      billingAddress: customer.billingAddress || '',
+      shippingAddress: customer.shippingAddress || '',
+      notes: customer.notes || '',
     });
     setIsEditDialogOpen(true);
   };
@@ -393,6 +510,14 @@ export function CustomerList({ user: _ }: CustomerListProps) {
         name: editFormData.name.trim(),
         email: editFormData.email.trim(),
         phone: editFormData.phone.trim(),
+        city: editFormData.city.trim(),
+        state: editFormData.state.trim(),
+        postalCode: editFormData.postalCode.trim(),
+        country: editFormData.country.trim(),
+        customerType: editFormData.customerType,
+        billingAddress: editFormData.billingAddress.trim(),
+        shippingAddress: editFormData.shippingAddress.trim(),
+        notes: editFormData.notes.trim(),
       },
     });
   };
@@ -400,13 +525,37 @@ export function CustomerList({ user: _ }: CustomerListProps) {
   const handleEditCancel = () => {
     setIsEditDialogOpen(false);
     setEditingCustomer(null);
-    setEditFormData({ name: '', email: '', phone: '' });
+    setEditFormData({
+      name: '',
+      email: '',
+      phone: '',
+      city: '',
+      state: '',
+      postalCode: '',
+      country: 'Nigeria',
+      customerType: 'individual',
+      billingAddress: '',
+      shippingAddress: '',
+      notes: '',
+    });
   };
 
   // Add customer handlers
   const handleAddClick = () => {
     setIsAddDialogOpen(true);
-    setAddFormData({ name: '', email: '', phone: '' });
+    setAddFormData({
+      name: '',
+      email: '',
+      phone: '',
+      city: '',
+      state: '',
+      postalCode: '',
+      country: 'Nigeria',
+      customerType: 'individual',
+      billingAddress: '',
+      shippingAddress: '',
+      notes: '',
+    });
   };
 
   const handleAddSave = async () => {
@@ -427,12 +576,32 @@ export function CustomerList({ user: _ }: CustomerListProps) {
       name: addFormData.name.trim(),
       email: addFormData.email.trim(),
       phone: addFormData.phone.trim(),
+      city: addFormData.city.trim(),
+      state: addFormData.state.trim(),
+      postalCode: addFormData.postalCode.trim(),
+      country: addFormData.country.trim(),
+      customerType: addFormData.customerType,
+      billingAddress: addFormData.billingAddress.trim(),
+      shippingAddress: addFormData.shippingAddress.trim(),
+      notes: addFormData.notes.trim(),
     });
   };
 
   const handleAddCancel = () => {
     setIsAddDialogOpen(false);
-    setAddFormData({ name: '', email: '', phone: '' });
+    setAddFormData({
+      name: '',
+      email: '',
+      phone: '',
+      city: '',
+      state: '',
+      postalCode: '',
+      country: 'Nigeria',
+      customerType: 'individual',
+      billingAddress: '',
+      shippingAddress: '',
+      notes: '',
+    });
   };
 
   // Render cell content
@@ -547,13 +716,13 @@ export function CustomerList({ user: _ }: CustomerListProps) {
           { value: 'name-asc', label: 'Name (A-Z)' },
           { value: 'name-desc', label: 'Name (Z-A)' },
         ]}
-        currentSort={`${sortBy}-desc`}
+        currentSort={sortBy}
         onSortChange={handleSortChange}
       />
 
       {/* Edit Customer Dialog */}
       <Dialog open={isEditDialogOpen} onOpenChange={setIsEditDialogOpen}>
-        <DialogContent className="sm:max-w-[425px]">
+        <DialogContent className="max-h-[80vh] overflow-y-auto sm:max-w-[600px]">
           <DialogHeader>
             <DialogTitle>Edit Customer</DialogTitle>
             <DialogDescription>
@@ -605,6 +774,144 @@ export function CustomerList({ user: _ }: CustomerListProps) {
                 disabled={updateCustomerMutation.isPending}
               />
             </div>
+
+            <div className="grid grid-cols-4 items-center gap-4">
+              <Label htmlFor="customerType" className="text-right">
+                Type
+              </Label>
+              <Select
+                value={editFormData.customerType}
+                onValueChange={value =>
+                  setEditFormData({ ...editFormData, customerType: value })
+                }
+                disabled={updateCustomerMutation.isPending}
+              >
+                <SelectTrigger className="col-span-3">
+                  <SelectValue placeholder="Select customer type" />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="individual">Individual</SelectItem>
+                  <SelectItem value="business">Business</SelectItem>
+                </SelectContent>
+              </Select>
+            </div>
+
+            <div className="grid grid-cols-4 items-center gap-4">
+              <Label htmlFor="city" className="text-right">
+                City
+              </Label>
+              <Input
+                id="city"
+                value={editFormData.city}
+                onChange={e =>
+                  setEditFormData({ ...editFormData, city: e.target.value })
+                }
+                className="col-span-3"
+                disabled={updateCustomerMutation.isPending}
+              />
+            </div>
+
+            <div className="grid grid-cols-4 items-center gap-4">
+              <Label htmlFor="state" className="text-right">
+                State
+              </Label>
+              <Input
+                id="state"
+                value={editFormData.state}
+                onChange={e =>
+                  setEditFormData({ ...editFormData, state: e.target.value })
+                }
+                className="col-span-3"
+                disabled={updateCustomerMutation.isPending}
+              />
+            </div>
+
+            <div className="grid grid-cols-4 items-center gap-4">
+              <Label htmlFor="postalCode" className="text-right">
+                Postal Code
+              </Label>
+              <Input
+                id="postalCode"
+                value={editFormData.postalCode}
+                onChange={e =>
+                  setEditFormData({
+                    ...editFormData,
+                    postalCode: e.target.value,
+                  })
+                }
+                className="col-span-3"
+                disabled={updateCustomerMutation.isPending}
+              />
+            </div>
+
+            <div className="grid grid-cols-4 items-center gap-4">
+              <Label htmlFor="country" className="text-right">
+                Country
+              </Label>
+              <Input
+                id="country"
+                value={editFormData.country}
+                onChange={e =>
+                  setEditFormData({ ...editFormData, country: e.target.value })
+                }
+                className="col-span-3"
+                disabled={updateCustomerMutation.isPending}
+              />
+            </div>
+
+            <div className="grid grid-cols-4 items-center gap-4">
+              <Label htmlFor="billingAddress" className="text-right">
+                Billing Address
+              </Label>
+              <Textarea
+                id="billingAddress"
+                value={editFormData.billingAddress}
+                onChange={e =>
+                  setEditFormData({
+                    ...editFormData,
+                    billingAddress: e.target.value,
+                  })
+                }
+                className="col-span-3"
+                disabled={updateCustomerMutation.isPending}
+                rows={2}
+              />
+            </div>
+
+            <div className="grid grid-cols-4 items-center gap-4">
+              <Label htmlFor="shippingAddress" className="text-right">
+                Shipping Address
+              </Label>
+              <Textarea
+                id="shippingAddress"
+                value={editFormData.shippingAddress}
+                onChange={e =>
+                  setEditFormData({
+                    ...editFormData,
+                    shippingAddress: e.target.value,
+                  })
+                }
+                className="col-span-3"
+                disabled={updateCustomerMutation.isPending}
+                rows={2}
+              />
+            </div>
+
+            <div className="grid grid-cols-4 items-center gap-4">
+              <Label htmlFor="notes" className="text-right">
+                Notes
+              </Label>
+              <Textarea
+                id="notes"
+                value={editFormData.notes}
+                onChange={e =>
+                  setEditFormData({ ...editFormData, notes: e.target.value })
+                }
+                className="col-span-3"
+                disabled={updateCustomerMutation.isPending}
+                rows={3}
+              />
+            </div>
           </div>
           <DialogFooter>
             <Button
@@ -633,7 +940,7 @@ export function CustomerList({ user: _ }: CustomerListProps) {
 
       {/* Add Customer Dialog */}
       <Dialog open={isAddDialogOpen} onOpenChange={setIsAddDialogOpen}>
-        <DialogContent className="sm:max-w-[425px]">
+        <DialogContent className="max-h-[80vh] overflow-y-auto sm:max-w-[600px]">
           <DialogHeader>
             <DialogTitle>Add New Customer</DialogTitle>
             <DialogDescription>
@@ -686,6 +993,148 @@ export function CustomerList({ user: _ }: CustomerListProps) {
                 className="col-span-3"
                 disabled={createCustomerMutation.isPending}
                 placeholder="Enter phone number (optional)"
+              />
+            </div>
+
+            <div className="grid grid-cols-4 items-center gap-4">
+              <Label htmlFor="add-customerType" className="text-right">
+                Type
+              </Label>
+              <Select
+                value={addFormData.customerType}
+                onValueChange={value =>
+                  setAddFormData({ ...addFormData, customerType: value })
+                }
+                disabled={createCustomerMutation.isPending}
+              >
+                <SelectTrigger className="col-span-3">
+                  <SelectValue placeholder="Select customer type" />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="individual">Individual</SelectItem>
+                  <SelectItem value="business">Business</SelectItem>
+                </SelectContent>
+              </Select>
+            </div>
+
+            <div className="grid grid-cols-4 items-center gap-4">
+              <Label htmlFor="add-city" className="text-right">
+                City
+              </Label>
+              <Input
+                id="add-city"
+                value={addFormData.city}
+                onChange={e =>
+                  setAddFormData({ ...addFormData, city: e.target.value })
+                }
+                className="col-span-3"
+                disabled={createCustomerMutation.isPending}
+                placeholder="Enter city (optional)"
+              />
+            </div>
+
+            <div className="grid grid-cols-4 items-center gap-4">
+              <Label htmlFor="add-state" className="text-right">
+                State
+              </Label>
+              <Input
+                id="add-state"
+                value={addFormData.state}
+                onChange={e =>
+                  setAddFormData({ ...addFormData, state: e.target.value })
+                }
+                className="col-span-3"
+                disabled={createCustomerMutation.isPending}
+                placeholder="Enter state (optional)"
+              />
+            </div>
+
+            <div className="grid grid-cols-4 items-center gap-4">
+              <Label htmlFor="add-postalCode" className="text-right">
+                Postal Code
+              </Label>
+              <Input
+                id="add-postalCode"
+                value={addFormData.postalCode}
+                onChange={e =>
+                  setAddFormData({ ...addFormData, postalCode: e.target.value })
+                }
+                className="col-span-3"
+                disabled={createCustomerMutation.isPending}
+                placeholder="Enter postal code (optional)"
+              />
+            </div>
+
+            <div className="grid grid-cols-4 items-center gap-4">
+              <Label htmlFor="add-country" className="text-right">
+                Country
+              </Label>
+              <Input
+                id="add-country"
+                value={addFormData.country}
+                onChange={e =>
+                  setAddFormData({ ...addFormData, country: e.target.value })
+                }
+                className="col-span-3"
+                disabled={createCustomerMutation.isPending}
+                placeholder="Enter country"
+              />
+            </div>
+
+            <div className="grid grid-cols-4 items-center gap-4">
+              <Label htmlFor="add-billingAddress" className="text-right">
+                Billing Address
+              </Label>
+              <Textarea
+                id="add-billingAddress"
+                value={addFormData.billingAddress}
+                onChange={e =>
+                  setAddFormData({
+                    ...addFormData,
+                    billingAddress: e.target.value,
+                  })
+                }
+                className="col-span-3"
+                disabled={createCustomerMutation.isPending}
+                placeholder="Enter billing address (optional)"
+                rows={2}
+              />
+            </div>
+
+            <div className="grid grid-cols-4 items-center gap-4">
+              <Label htmlFor="add-shippingAddress" className="text-right">
+                Shipping Address
+              </Label>
+              <Textarea
+                id="add-shippingAddress"
+                value={addFormData.shippingAddress}
+                onChange={e =>
+                  setAddFormData({
+                    ...addFormData,
+                    shippingAddress: e.target.value,
+                  })
+                }
+                className="col-span-3"
+                disabled={createCustomerMutation.isPending}
+                placeholder="Enter shipping address (optional)"
+                rows={2}
+              />
+            </div>
+
+            <div className="grid grid-cols-4 items-center gap-4">
+              <Label htmlFor="add-notes" className="text-right">
+                Notes
+              </Label>
+              <Textarea
+                id="add-notes"
+                value={addFormData.notes}
+                onChange={e =>
+                  setAddFormData({ ...addFormData, notes: e.target.value })
+                }
+                className="col-span-3"
+                disabled={createCustomerMutation.isPending}
+                placeholder="Enter any additional notes (optional)"
+                rows={3}
               />
             </div>
           </div>
