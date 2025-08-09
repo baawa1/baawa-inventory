@@ -47,38 +47,48 @@ export async function PUT(
       );
     }
 
-    // Update all sales transactions for this customer
-    const updateResult = await prisma.salesTransaction.updateMany({
+    // First check if customer exists
+    const existingCustomer = await prisma.customer.findFirst({
       where: {
-        customer_email: customerEmail,
-      },
-      data: {
-        customer_name: name,
-        customer_email: email.toLowerCase(),
-        customer_phone: phone || null,
+        email: customerEmail,
       },
     });
 
-    if (updateResult.count === 0) {
+    if (!existingCustomer) {
       return NextResponse.json(
         { error: 'Customer not found' },
         { status: 404 }
       );
     }
 
-    // Return the updated customer data
-    const updatedCustomer = {
-      id: customerEmail, // Using email as ID for consistency
-      name,
-      email: email.toLowerCase(),
-      phone: phone || null,
-      // Note: We can't return the full customer analytics data here
-      // as it's calculated from multiple transactions
-    };
+    // Update customer in the Customer table
+    const updatedCustomer = await prisma.customer.update({
+      where: {
+        id: existingCustomer.id,
+      },
+      data: {
+        name,
+        email: email.toLowerCase(),
+        phone: phone || null,
+      },
+    });
 
     return NextResponse.json({
       success: true,
-      data: updatedCustomer,
+      data: {
+        id: updatedCustomer.id.toString(),
+        name: updatedCustomer.name,
+        email: updatedCustomer.email,
+        phone: updatedCustomer.phone,
+        city: updatedCustomer.city,
+        state: updatedCustomer.state,
+        postalCode: updatedCustomer.postalCode,
+        country: updatedCustomer.country,
+        customerType: updatedCustomer.customerType,
+        billingAddress: updatedCustomer.billingAddress,
+        shippingAddress: updatedCustomer.shippingAddress,
+        notes: updatedCustomer.notes,
+      },
       message: 'Customer updated successfully',
     });
   } catch (error) {
@@ -115,44 +125,57 @@ export async function GET(
 
     const customerEmail = decodeURIComponent(resolvedParams.email);
 
-    // Get customer data from sales transactions
-    const customerTransactions = await prisma.salesTransaction.findMany({
+    // Get customer data from Customer table
+    const customer = await prisma.customer.findFirst({
       where: {
-        customer_email: customerEmail,
+        email: customerEmail,
       },
-      orderBy: {
-        created_at: 'desc',
+      include: {
+        salesTransactions: {
+          orderBy: {
+            created_at: 'desc',
+          },
+        },
       },
     });
 
-    if (customerTransactions.length === 0) {
+    if (!customer) {
       return NextResponse.json(
         { error: 'Customer not found' },
         { status: 404 }
       );
     }
 
-    // Calculate customer analytics
+    // Calculate customer analytics from sales transactions
+    const customerTransactions = customer.salesTransactions;
     const totalSpent = customerTransactions.reduce(
       (sum, transaction) => sum + Number(transaction.total_amount),
       0
     );
     const totalOrders = customerTransactions.length;
-    const averageOrderValue = totalSpent / totalOrders;
+    const averageOrderValue = totalOrders > 0 ? totalSpent / totalOrders : 0;
     const firstPurchase = customerTransactions[customerTransactions.length - 1];
     const lastPurchase = customerTransactions[0];
 
     const customerData = {
-      id: customerEmail,
-      name: lastPurchase.customer_name,
-      email: lastPurchase.customer_email,
-      phone: lastPurchase.customer_phone,
+      id: customer.id.toString(),
+      name: customer.name,
+      email: customer.email,
+      phone: customer.phone,
+      city: customer.city,
+      state: customer.state,
+      postalCode: customer.postalCode,
+      country: customer.country,
+      customerType: customer.customerType,
+      billingAddress: customer.billingAddress,
+      shippingAddress: customer.shippingAddress,
+      notes: customer.notes,
       totalSpent,
       totalOrders,
       averageOrderValue,
-      lastPurchase: lastPurchase.created_at?.toISOString() || null,
-      firstPurchase: firstPurchase.created_at?.toISOString() || null,
-      daysSinceLastPurchase: lastPurchase.created_at
+      lastPurchase: lastPurchase?.created_at?.toISOString() || null,
+      firstPurchase: firstPurchase?.created_at?.toISOString() || null,
+      daysSinceLastPurchase: lastPurchase?.created_at
         ? Math.floor(
             (Date.now() - lastPurchase.created_at.getTime()) /
               (1000 * 60 * 60 * 24)

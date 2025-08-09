@@ -15,10 +15,19 @@ export interface ThermalReceiptData {
   }[];
   subtotal: number;
   discount: number;
+  fees?: Array<{
+    type: string;
+    description?: string;
+    amount: number;
+  }>;
   total: number;
   paymentMethod: string;
   customerName?: string;
   customerPhone?: string;
+  customerEmail?: string;
+  customerAddress?: string;
+  customerCity?: string;
+  customerState?: string;
   staffName: string;
   timestamp: Date;
   notes?: string;
@@ -78,8 +87,17 @@ export const generateThermalReceipt = (data: ThermalReceiptData): string => {
   if (data.customerName) {
     receipt += `Customer: ${data.customerName}\n`;
   }
+  if (data.customerEmail) {
+    receipt += `Email: ${data.customerEmail}\n`;
+  }
   if (data.customerPhone) {
     receipt += `Phone: ${data.customerPhone}\n`;
+  }
+  if (data.customerAddress) {
+    receipt += `Address: ${data.customerAddress}\n`;
+  }
+  if (data.customerCity && data.customerState) {
+    receipt += `Location: ${data.customerCity}, ${data.customerState}\n`;
   }
   receipt += '\n';
 
@@ -109,6 +127,17 @@ export const generateThermalReceipt = (data: ThermalReceiptData): string => {
   if (data.discount > 0) {
     receipt += `Discount:${rightAlign(`-${formatCurrency(data.discount)}`)}\n`;
   }
+
+  // Add fees if present
+  if (data.fees && data.fees.length > 0) {
+    data.fees.forEach(fee => {
+      const feeLabel = fee.description
+        ? `${fee.type} (${fee.description})`
+        : fee.type;
+      receipt += `${feeLabel}:${rightAlign(formatCurrency(fee.amount))}\n`;
+    });
+  }
+
   receipt += `TOTAL:${rightAlign(formatCurrency(data.total))}\n`;
   receipt += `Payment: ${data.paymentMethod}\n`;
   receipt += '\n';

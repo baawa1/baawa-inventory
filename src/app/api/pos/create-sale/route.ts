@@ -4,6 +4,7 @@ import { withAuth, AuthenticatedRequest } from '@/lib/api-middleware';
 import { emailService } from '@/lib/email';
 import { z } from 'zod';
 import type { SplitPayment } from '@prisma/client';
+import { logger } from '@/lib/logger';
 
 // Validation schema for POS sale creation
 const posSaleItemSchema = z.object({
@@ -14,13 +15,36 @@ const posSaleItemSchema = z.object({
   couponId: z.coerce.number().int().positive().optional(),
 });
 
+const transactionFeeSchema = z.object({
+  feeType: z.string().min(1, 'Fee type is required'),
+  description: z.string().optional(),
+  amount: z.coerce.number().positive('Fee amount must be positive'),
+});
+
+const customerInfoSchema = z.object({
+  name: z.string().optional(),
+  email: z.string().email('Invalid email format').optional(),
+  phone: z.string().optional(),
+  billingAddress: z.string().optional(),
+  shippingAddress: z.string().optional(),
+  city: z.string().optional(),
+  state: z.string().optional(),
+  postalCode: z.string().optional(),
+  country: z.string().default('Nigeria'),
+  customerType: z.enum(['individual', 'business']).default('individual'),
+  notes: z.string().optional(),
+});
+
 const posSaleSchema = z
   .object({
     items: z.array(posSaleItemSchema).min(1, 'At least one item is required'),
     subtotal: z.coerce.number().positive('Subtotal must be positive'),
     discount: z.coerce.number().min(0, 'Discount cannot be negative'),
+    fees: z.array(transactionFeeSchema).optional().default([]),
     total: z.coerce.number().positive('Total must be positive'),
     paymentMethod: z.string().min(1, 'Payment method is required'),
+    customerInfo: customerInfoSchema.optional(),
+    // Legacy fields for backward compatibility
     customerName: z.string().optional(),
     customerPhone: z.string().optional(),
     customerEmail: z.string().email('Invalid email format').optional(),
@@ -38,13 +62,15 @@ const posSaleSchema = z
   })
   .refine(
     data => {
-      // Validate that total matches items total minus discount
+      // Validate that total matches items total minus discount plus fees
       const itemsTotal = data.items.reduce((sum, item) => sum + item.total, 0);
-      const expectedTotal = itemsTotal - data.discount;
+      const feesTotal =
+        data.fees?.reduce((sum, fee) => sum + fee.amount, 0) || 0;
+      const expectedTotal = itemsTotal - data.discount + feesTotal;
       return Math.abs(data.total - expectedTotal) < 0.01; // Allow for small rounding differences
     },
     {
-      message: 'Total does not match items total minus discount',
+      message: 'Total does not match items total minus discount plus fees',
       path: ['total'],
     }
   )
@@ -87,7 +113,12 @@ export const POST = withAuth(async function (request: AuthenticatedRequest) {
   try {
     // Parse and validate request body
     const body = await request.json();
-    console.log('Received sale data:', body);
+    logger.info('POS sale request received', {
+      userId: request.user.id,
+      itemCount: body.items?.length || 0,
+      total: body.total,
+      paymentMethod: body.paymentMethod,
+    });
 
     const validatedData = posSaleSchema.parse(body);
 
@@ -96,6 +127,91 @@ export const POST = withAuth(async function (request: AuthenticatedRequest) {
 
     // Start database transaction
     const result = await prisma.$transaction(async tx => {
+      // Handle customer information - create or find customer if enhanced info provided
+      let customerId: number | null = null;
+      let customerData = {
+        name: validatedData.customerName || validatedData.customerInfo?.name,
+        phone: validatedData.customerPhone || validatedData.customerInfo?.phone,
+        email: validatedData.customerEmail || validatedData.customerInfo?.email,
+      };
+
+      if (
+        validatedData.customerInfo &&
+        (validatedData.customerInfo.email || validatedData.customerInfo.phone)
+      ) {
+        // Check if customer already exists
+        let existingCustomer = null;
+
+        if (validatedData.customerInfo.email) {
+          existingCustomer = await (tx as any).customer.findUnique({
+            where: { email: validatedData.customerInfo.email },
+          });
+        }
+
+        if (!existingCustomer && validatedData.customerInfo.phone) {
+          existingCustomer = await (tx as any).customer.findFirst({
+            where: { phone: validatedData.customerInfo.phone },
+          });
+        }
+
+        if (existingCustomer) {
+          // Update existing customer with new information
+          const updatedCustomer = await (tx as any).customer.update({
+            where: { id: existingCustomer.id },
+            data: {
+              name: validatedData.customerInfo.name || existingCustomer.name,
+              billingAddress:
+                validatedData.customerInfo.billingAddress ||
+                existingCustomer.billingAddress,
+              shippingAddress:
+                validatedData.customerInfo.shippingAddress ||
+                existingCustomer.shippingAddress,
+              city: validatedData.customerInfo.city || existingCustomer.city,
+              state: validatedData.customerInfo.state || existingCustomer.state,
+              postalCode:
+                validatedData.customerInfo.postalCode ||
+                existingCustomer.postalCode,
+              country:
+                validatedData.customerInfo.country || existingCustomer.country,
+              customerType:
+                validatedData.customerInfo.customerType ||
+                existingCustomer.customerType,
+              notes: validatedData.customerInfo.notes || existingCustomer.notes,
+              updatedAt: new Date(),
+            },
+          });
+          customerId = updatedCustomer.id;
+          customerData = {
+            name: updatedCustomer.name || undefined,
+            phone: updatedCustomer.phone || undefined,
+            email: updatedCustomer.email || undefined,
+          };
+        } else {
+          // Create new customer
+          const newCustomer = await (tx as any).customer.create({
+            data: {
+              name: validatedData.customerInfo.name,
+              email: validatedData.customerInfo.email,
+              phone: validatedData.customerInfo.phone,
+              billingAddress: validatedData.customerInfo.billingAddress,
+              shippingAddress: validatedData.customerInfo.shippingAddress,
+              city: validatedData.customerInfo.city,
+              state: validatedData.customerInfo.state,
+              postalCode: validatedData.customerInfo.postalCode,
+              country: validatedData.customerInfo.country,
+              customerType: validatedData.customerInfo.customerType,
+              notes: validatedData.customerInfo.notes,
+            },
+          });
+          customerId = newCustomer.id;
+          customerData = {
+            name: newCustomer.name || undefined,
+            phone: newCustomer.phone || undefined,
+            email: newCustomer.email || undefined,
+          };
+        }
+      }
+
       // Create sales transaction
       const salesTransaction = await tx.salesTransaction.create({
         data: {
@@ -106,9 +222,7 @@ export const POST = withAuth(async function (request: AuthenticatedRequest) {
           payment_status: 'PAID', // POS sales are typically paid immediately
           transaction_number: transactionNumber,
           transaction_type: 'sale',
-          customer_name: validatedData.customerName,
-          customer_phone: validatedData.customerPhone,
-          customer_email: validatedData.customerEmail,
+          ...(customerId && { customer_id: customerId }),
           notes: validatedData.notes,
           user_id: parseInt(request.user.id),
         },
@@ -190,16 +304,33 @@ export const POST = withAuth(async function (request: AuthenticatedRequest) {
         );
       }
 
+      // Create transaction fees if any
+      const transactionFees = await Promise.all(
+        (validatedData.fees || []).map(async (fee: any) => {
+          return await (tx as any).transactionFee.create({
+            data: {
+              transactionId: salesTransaction.id,
+              feeType: fee.feeType,
+              description: fee.description,
+              amount: fee.amount,
+            },
+          });
+        })
+      );
+
       return {
         salesTransaction,
         salesItems,
         splitPayments,
+        transactionFees,
       };
     });
 
     // Send email receipt if customer email is provided
     let emailSent = false;
-    if (validatedData.customerEmail) {
+    const customerEmail =
+      validatedData.customerEmail || validatedData.customerInfo?.email;
+    if (customerEmail) {
       try {
         // Get staff user details for email
         const staffUser = await prisma.user.findUnique({
@@ -212,9 +343,13 @@ export const POST = withAuth(async function (request: AuthenticatedRequest) {
           : 'Staff Member';
 
         // Prepare email data
+        const customerName =
+          validatedData.customerName ||
+          validatedData.customerInfo?.name ||
+          'Customer';
         const emailData = {
-          to: validatedData.customerEmail,
-          customerName: validatedData.customerName || 'Customer',
+          to: customerEmail,
+          customerName,
           saleId: result.salesTransaction.id.toString(),
           items: result.salesItems.map(item => ({
             name: item.productName,
@@ -224,6 +359,12 @@ export const POST = withAuth(async function (request: AuthenticatedRequest) {
           })),
           subtotal: validatedData.subtotal,
           discount: validatedData.discount,
+          fees:
+            result.transactionFees?.map(fee => ({
+              type: fee.feeType,
+              description: fee.description || undefined,
+              amount: Number(fee.amount),
+            })) || [],
           total: validatedData.total,
           paymentMethod: validatedData.paymentMethod,
           splitPayments:
@@ -239,19 +380,29 @@ export const POST = withAuth(async function (request: AuthenticatedRequest) {
         emailSent = await emailService.sendReceiptEmail(emailData);
 
         if (emailSent) {
-          console.log(
-            'Email receipt sent successfully to:',
-            validatedData.customerEmail
-          );
+          logger.info('Email receipt sent successfully', {
+            customerEmail,
+            saleId: result.salesTransaction.id,
+            userId: request.user.id,
+          });
         } else {
-          console.error(
-            'Failed to send email receipt to:',
-            validatedData.customerEmail
-          );
+          logger.warn('Failed to send email receipt', {
+            customerEmail,
+            saleId: result.salesTransaction.id,
+            userId: request.user.id,
+          });
         }
       } catch (emailError) {
         // Don't fail the transaction if email fails
-        console.error('Error sending email receipt:', emailError);
+        logger.error('Error sending email receipt', {
+          error:
+            emailError instanceof Error
+              ? emailError.message
+              : String(emailError),
+          customerEmail,
+          saleId: result.salesTransaction.id,
+          userId: request.user.id,
+        });
       }
     }
 
@@ -264,7 +415,11 @@ export const POST = withAuth(async function (request: AuthenticatedRequest) {
       emailSent,
     });
   } catch (error) {
-    console.error('POS create sale error:', error);
+    logger.error('POS create sale error', {
+      error: error instanceof Error ? error.message : String(error),
+      userId: request.user?.id,
+      stack: error instanceof Error ? error.stack : undefined,
+    });
 
     if (error instanceof z.ZodError) {
       return NextResponse.json(

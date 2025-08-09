@@ -86,11 +86,11 @@ export const GET = withAuth(async (request: AuthenticatedRequest) => {
 
       // Top customers
       prisma.salesTransaction.groupBy({
-        by: ['customer_name', 'customer_email'],
+        by: ['customer_id'],
         where: {
           created_at: { gte: startDate },
           payment_status: { in: SUCCESSFUL_PAYMENT_STATUSES },
-          customer_name: { not: null },
+          customer_id: { not: null },
         },
         _sum: { total_amount: true },
         _count: { id: true },
@@ -113,13 +113,22 @@ export const GET = withAuth(async (request: AuthenticatedRequest) => {
       }),
     ]);
 
-    // Transform top customers data
-    const transformedTopCustomers = topCustomers.map((customer, index) => ({
-      id: index + 1,
-      name: customer.customer_name || 'Unknown Customer',
-      orders: customer._count.id,
-      totalSpend: Number(customer._sum.total_amount || 0),
-    }));
+    // Transform top customers data - fetch customer details
+    const transformedTopCustomers = await Promise.all(
+      topCustomers.map(async (customerData, index) => {
+        const customer = await prisma.customer.findUnique({
+          where: { id: customerData.customer_id! },
+          select: { id: true, name: true, email: true },
+        });
+
+        return {
+          id: index + 1,
+          name: customer?.name || 'Unknown Customer',
+          orders: customerData._count.id,
+          totalSpend: Number(customerData._sum.total_amount || 0),
+        };
+      })
+    );
 
     // Transform low stock items data
     const transformedLowStockItems = lowStockItems.map(item => ({

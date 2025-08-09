@@ -76,6 +76,11 @@ interface Transaction {
   items: TransactionItem[];
   subtotal: number;
   discount: number;
+  fees?: Array<{
+    type: string;
+    description?: string;
+    amount: number;
+  }>;
   total: number;
   paymentMethod: string;
   paymentStatus: string;
@@ -304,6 +309,10 @@ export function TransactionList({ user: _ }: TransactionListProps) {
         customerName: transaction.customerName || '',
         customerPhone: (transaction as any).customerPhone || '',
         customerEmail: transaction.customerEmail || '',
+        customerAddress: (transaction as any).customer?.billingAddress || '',
+        customerCity: (transaction as any).customer?.city || '',
+        customerState: (transaction as any).customer?.state || '',
+        fees: (transaction as any).fees || [],
         items: transaction.items.map(item => ({
           id: item.productId,
           name: item.name,
@@ -621,7 +630,22 @@ function TransactionDetailsContent({
             <span>-{formatCurrency(transaction.discount)}</span>
           </div>
         )}
-        {/* Tax information not available in current API response */}
+
+        {/* Custom Fees */}
+        {transaction.fees && transaction.fees.length > 0 && (
+          <>
+            {transaction.fees.map((fee: any, index: number) => (
+              <div key={index} className="flex justify-between text-orange-600">
+                <span>
+                  {fee.type}
+                  {fee.description ? ` (${fee.description})` : ''}:
+                </span>
+                <span>{formatCurrency(fee.amount)}</span>
+              </div>
+            ))}
+          </>
+        )}
+
         <Separator />
         <div className="flex justify-between text-lg font-semibold">
           <span>Total:</span>

@@ -35,6 +35,17 @@ export type SalesTransactionWithIncludes = Prisma.SalesTransactionGetPayload<{
         lastName: true;
       };
     };
+    customer: {
+      select: {
+        id: true;
+        name: true;
+        email: true;
+        phone: true;
+        city: true;
+        state: true;
+      };
+    };
+    transaction_fees: true;
   };
 }>;
 
@@ -76,9 +87,13 @@ export interface TransactionFilters {
 export interface TransactionWhereClause {
   OR?: Array<{
     transaction_number?: { contains: string; mode: 'insensitive' };
-    customer_name?: { contains: string; mode: 'insensitive' };
-    customer_phone?: { contains: string; mode: 'insensitive' };
-    customer_email?: { contains: string; mode: 'insensitive' };
+    customer?: {
+      OR: Array<{
+        name?: { contains: string; mode: 'insensitive' };
+        email?: { contains: string; mode: 'insensitive' };
+        phone?: { contains: string; mode: 'insensitive' };
+      }>;
+    };
     users?: {
       OR: Array<{
         firstName?: { contains: string; mode: 'insensitive' };
@@ -112,9 +127,13 @@ export interface ProductWhereClause {
 
 // Customer aggregation types
 export interface CustomerAggregation {
-  customer_email: string | null;
-  customer_name: string | null;
-  customer_phone: string | null;
+  customer_id: number | null;
+  customer: {
+    id: number;
+    name: string | null;
+    email: string | null;
+    phone: string | null;
+  } | null;
   _sum: {
     total_amount: Prisma.Decimal | null;
   };
@@ -151,9 +170,14 @@ export interface TransformedTransaction {
   total: number;
   paymentMethod: string;
   paymentStatus: string;
-  customerName: string | null;
-  customerPhone: string | null;
-  customerEmail: string | null;
+  customer: {
+    id: number;
+    name: string | null;
+    email: string | null;
+    phone: string | null;
+    city: string | null;
+    state: string | null;
+  } | null;
   staffName: string;
   staffId: number;
   timestamp: Date | null;
@@ -218,9 +242,24 @@ export interface CreateSaleRequest {
   discount: number;
   total: number;
   paymentMethod: string;
-  customerName?: string;
-  customerPhone?: string;
-  customerEmail?: string;
+  customerInfo?: {
+    name?: string;
+    phone?: string;
+    email?: string;
+    billingAddress?: string;
+    shippingAddress?: string;
+    city?: string;
+    state?: string;
+    postalCode?: string;
+    country?: string;
+    customerType?: 'individual' | 'business';
+    notes?: string;
+  };
+  fees?: Array<{
+    feeType: string;
+    description?: string;
+    amount: number;
+  }>;
   amountPaid?: number;
   notes?: string;
 }
@@ -232,9 +271,19 @@ export interface SaleResponse {
   discount: number;
   total: number;
   paymentMethod: string;
-  customerName?: string;
-  customerPhone?: string;
-  customerEmail?: string;
+  customer?: {
+    id: number;
+    name: string | null;
+    email: string | null;
+    phone: string | null;
+    city: string | null;
+    state: string | null;
+  } | null;
+  fees?: Array<{
+    type: string;
+    description?: string;
+    amount: number;
+  }>;
   staffName: string;
   timestamp: Date;
 }

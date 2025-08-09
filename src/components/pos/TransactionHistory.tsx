@@ -169,7 +169,7 @@ export function TransactionHistory() {
           ? format(transaction.timestamp, 'MMM dd, yyyy HH:mm:ss')
           : '-',
         transaction.staffName,
-        transaction.customerName || 'Walk-in Customer',
+        transaction.customer?.name || 'Walk-in Customer',
         transaction.items.length.toString(),
         transaction.paymentMethod.replace('_', ' '),
         formatCurrency(transaction.total),
@@ -227,7 +227,7 @@ export function TransactionHistory() {
         </div>
 
         <div className="text-muted-foreground mb-2 text-sm">
-          Customer: {transaction.customerName || 'Walk-in Customer'}
+          Customer: {transaction.customer?.name || 'Walk-in Customer'}
         </div>
 
         <div className="flex items-center justify-between">
@@ -287,7 +287,7 @@ export function TransactionHistory() {
           </div>
 
           <div className="text-sm">
-            Customer: {transaction.customerName || 'Walk-in Customer'}
+            Customer: {transaction.customer?.name || 'Walk-in Customer'}
           </div>
         </div>
 
@@ -401,9 +401,9 @@ export function TransactionHistory() {
                 transactionNumber: transaction.transactionNumber,
                 timestamp: transaction.timestamp || new Date(),
                 staffName: transaction.staffName,
-                customerName: transaction.customerName || '',
-                customerPhone: transaction.customerPhone || '',
-                customerEmail: transaction.customerEmail || '',
+                customerName: transaction.customer?.name || '',
+                customerPhone: transaction.customer?.phone || '',
+                customerEmail: transaction.customer?.email || '',
                 items: transaction.items.map(item => ({
                   id: item.id,
                   name: item.name,

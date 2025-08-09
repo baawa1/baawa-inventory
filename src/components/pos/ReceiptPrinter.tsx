@@ -41,11 +41,19 @@ export interface ReceiptData {
   }[];
   subtotal: number;
   discount: number;
+  fees?: Array<{
+    type: string;
+    description?: string;
+    amount: number;
+  }>;
   total: number;
   paymentMethod: string;
   customerName?: string;
   customerPhone?: string;
   customerEmail?: string;
+  customerAddress?: string;
+  customerCity?: string;
+  customerState?: string;
   staffName: string;
   timestamp: Date;
   notes?: string;
@@ -142,7 +150,10 @@ export function ReceiptPrinter({
             <div>Time: ${formatTime(receiptData.timestamp)}</div>
             <div>Staff: ${receiptData.staffName}</div>
             ${receiptData.customerName ? `<div>Customer: ${receiptData.customerName}</div>` : ''}
+            ${receiptData.customerEmail ? `<div>Email: ${receiptData.customerEmail}</div>` : ''}
             ${receiptData.customerPhone ? `<div>Phone: ${receiptData.customerPhone}</div>` : ''}
+            ${receiptData.customerAddress ? `<div>Address: ${receiptData.customerAddress}</div>` : ''}
+            ${receiptData.customerCity && receiptData.customerState ? `<div>Location: ${receiptData.customerCity}, ${receiptData.customerState}</div>` : ''}
           </div>
           
           <div class="items">
@@ -176,6 +187,20 @@ export function ReceiptPrinter({
                 <span>-${formatCurrency(receiptData.discount)}</span>
               </div>
             `
+                : ''
+            }
+            ${
+              receiptData.fees && receiptData.fees.length > 0
+                ? receiptData.fees
+                    .map(
+                      fee => `
+              <div class="total-line">
+                <span>${fee.type}${fee.description ? ` (${fee.description})` : ''}:</span>
+                <span>${formatCurrency(fee.amount)}</span>
+              </div>
+            `
+                    )
+                    .join('')
                 : ''
             }
             <div class="total-line grand-total">

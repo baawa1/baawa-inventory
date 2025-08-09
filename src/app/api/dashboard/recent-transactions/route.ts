@@ -17,15 +17,14 @@ export const GET = withAuth(async (request: AuthenticatedRequest) => {
         created_at: 'desc',
       },
       take: limit,
-      select: {
-        id: true,
-        transaction_number: true,
-        total_amount: true,
-        payment_method: true,
-        payment_status: true,
-        customer_name: true,
-        customer_email: true,
-        created_at: true,
+      include: {
+        customer: {
+          select: {
+            id: true,
+            name: true,
+            email: true,
+          },
+        },
         sales_items: {
           select: {
             quantity: true,
@@ -46,11 +45,14 @@ export const GET = withAuth(async (request: AuthenticatedRequest) => {
       totalAmount: Number(transaction.total_amount),
       paymentMethod: transaction.payment_method,
       paymentStatus: transaction.payment_status,
-      customerName: transaction.customer_name || 'Walk-in Customer',
-      customerEmail: transaction.customer_email,
+      customerName: transaction.customer?.name || 'Walk-in Customer',
+      customerEmail: transaction.customer?.email,
       createdAt: transaction.created_at,
       itemCount: transaction.sales_items.length,
-      totalItems: transaction.sales_items.reduce((sum, item) => sum + item.quantity, 0),
+      totalItems: transaction.sales_items.reduce(
+        (sum, item) => sum + item.quantity,
+        0
+      ),
       firstItem: transaction.sales_items[0]?.products?.name || 'Product',
     }));
 
@@ -66,4 +68,4 @@ export const GET = withAuth(async (request: AuthenticatedRequest) => {
       error
     );
   }
-}); 
+});

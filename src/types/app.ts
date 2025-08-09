@@ -232,3 +232,76 @@ export interface TableColumn<T = Record<string, unknown>> {
   sortable?: boolean;
   render?: (_value: unknown, _row: T) => React.ReactNode;
 }
+
+// Enhanced POS Types for New Features
+
+export type FeeType = 
+  | 'shipping' 
+  | 'service' 
+  | 'processing' 
+  | 'delivery' 
+  | 'installation' 
+  | 'custom';
+
+export type CustomerType = 'individual' | 'business';
+
+export interface TransactionFee {
+  id?: number;
+  feeType: FeeType;
+  description?: string;
+  amount: number;
+  createdAt?: Date;
+}
+
+export interface Customer {
+  id: number;
+  name?: string;
+  email?: string;
+  phone?: string;
+  billingAddress?: string;
+  shippingAddress?: string;
+  city?: string;
+  state?: string;
+  postalCode?: string;
+  country?: string;
+  customerType?: CustomerType;
+  notes?: string;
+  isActive?: boolean;
+  createdAt?: Date;
+  updatedAt?: Date;
+}
+
+export interface EnhancedCustomerInfo {
+  name?: string;
+  email?: string;
+  phone?: string;
+  billingAddress?: string;
+  shippingAddress?: string;
+  city?: string;
+  state?: string;
+  postalCode?: string;
+  country?: string;
+  customerType?: CustomerType;
+  notes?: string;
+  useBillingAsShipping?: boolean;
+  shippingCity?: string;
+  shippingState?: string;
+  shippingPostalCode?: string;
+  shippingCountry?: string;
+}
+
+export interface EnhancedSalesTransactionData extends SalesTransactionData {
+  customerId?: number;
+  customer?: Customer;
+  fees?: TransactionFee[];
+  customerInfo?: EnhancedCustomerInfo;
+}
+
+export interface CreateEnhancedSalesTransactionData extends CreateSalesTransactionData {
+  fees?: Array<{
+    feeType: FeeType;
+    description?: string;
+    amount: number;
+  }>;
+  customerInfo?: EnhancedCustomerInfo;
+}

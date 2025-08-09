@@ -106,9 +106,7 @@ export const GET = withAuth(async function (request: AuthenticatedRequest) {
         select: {
           id: true,
           transaction_number: true,
-          customer_name: true,
-          customer_phone: true,
-          customer_email: true,
+          customer_id: true,
           subtotal: true,
           discount_amount: true,
           tax_amount: true,
@@ -121,6 +119,17 @@ export const GET = withAuth(async function (request: AuthenticatedRequest) {
           users: {
             select: { id: true, firstName: true, lastName: true, email: true },
           },
+          customer: {
+            select: {
+              id: true,
+              name: true,
+              email: true,
+              phone: true,
+              city: true,
+              state: true,
+              customerType: true,
+            },
+          },
           sales_items: {
             select: {
               id: true,
@@ -131,6 +140,18 @@ export const GET = withAuth(async function (request: AuthenticatedRequest) {
               products: {
                 select: { id: true, name: true, sku: true },
               },
+            },
+          },
+          transaction_fees: {
+            select: {
+              id: true,
+              feeType: true,
+              description: true,
+              amount: true,
+              createdAt: true,
+            },
+            orderBy: {
+              createdAt: 'asc',
             },
           },
           split_payments: {
@@ -165,6 +186,18 @@ export const GET = withAuth(async function (request: AuthenticatedRequest) {
             `${transaction.users.firstName} ${transaction.users.lastName}`.trim(),
           staffId: transaction.users.id,
           timestamp: transaction.created_at,
+          // Enhanced customer information
+          customer: transaction.customer
+            ? {
+                id: transaction.customer.id,
+                name: transaction.customer.name,
+                email: transaction.customer.email,
+                phone: transaction.customer.phone,
+                city: transaction.customer.city,
+                state: transaction.customer.state,
+                customerType: transaction.customer.customerType,
+              }
+            : null,
           items: transaction.sales_items.map((item: any) => ({
             id: item.id,
             productId: item.products?.id,
@@ -174,6 +207,15 @@ export const GET = withAuth(async function (request: AuthenticatedRequest) {
             quantity: item.quantity,
             total: Number(item.total_price || item.unit_price * item.quantity),
           })),
+          // Transaction fees
+          fees:
+            transaction.transaction_fees?.map((fee: any) => ({
+              id: fee.id,
+              feeType: fee.feeType,
+              description: fee.description,
+              amount: Number(fee.amount),
+              createdAt: fee.createdAt,
+            })) || [],
           splitPayments:
             transaction.split_payments?.map((payment: any) => ({
               id: payment.id,
@@ -280,9 +322,7 @@ export const POST = withAuth(async function (request: AuthenticatedRequest) {
           total_amount: total,
           payment_method: validatedData.paymentMethod,
           payment_status: validatedData.paymentStatus,
-          customer_name: body.customerName,
-          customer_email: body.customerEmail,
-          customer_phone: body.customerPhone,
+          customer_id: body.customerId || null,
           notes: validatedData.notes,
         },
       });

@@ -36,23 +36,24 @@ export async function POST(request: NextRequest) {
     let exactMatches = 0;
     let partialMatches = 0;
 
-    // 1. Check sales transactions (customers)
+    // 1. Check Customer table
     if (email || phone) {
       const whereClause: any = {
         OR: [],
+        isActive: true,
       };
 
       if (email) {
         const cleanEmail = email.trim().toLowerCase();
         whereClause.OR.push(
           {
-            customer_email: {
+            email: {
               equals: cleanEmail,
               mode: 'insensitive',
             },
           },
           {
-            customer_email: {
+            email: {
               contains: cleanEmail,
               mode: 'insensitive',
             },
@@ -65,12 +66,12 @@ export async function POST(request: NextRequest) {
         const digitsOnly = cleanPhone.replace(/\D/g, '');
         whereClause.OR.push(
           {
-            customer_phone: {
+            phone: {
               equals: cleanPhone,
             },
           },
           {
-            customer_phone: {
+            phone: {
               contains: digitsOnly,
             },
           }
@@ -78,39 +79,44 @@ export async function POST(request: NextRequest) {
       }
 
       // Check for existing customers
-      const existingCustomers = await prisma.salesTransaction.groupBy({
-        by: ['customer_email', 'customer_name', 'customer_phone'],
+      const existingCustomers = await prisma.customer.findMany({
         where: whereClause,
-        _sum: {
-          total_amount: true,
-        },
-        _count: {
-          id: true,
-        },
-        _max: {
-          created_at: true,
+        include: {
+          salesTransactions: {
+            select: {
+              total_amount: true,
+              created_at: true,
+            },
+            orderBy: {
+              created_at: 'desc',
+            },
+          },
         },
       });
 
       // Transform the results
-      const customers = existingCustomers
-        .filter(
-          customer =>
-            customer.customer_email ||
-            customer.customer_name ||
-            customer.customer_phone
-        )
-        .map(customer => ({
-          id: `customer-${customer.customer_email || customer.customer_phone}`,
-          name: customer.customer_name || 'Unknown',
-          email: customer.customer_email || '',
-          phone: customer.customer_phone || '',
-          totalOrders: customer._count.id,
-          totalSpent: Number(customer._sum.total_amount || 0),
+      const customers = existingCustomers.map(customer => {
+        const totalOrders = customer.salesTransactions.length;
+        const totalSpent = customer.salesTransactions.reduce(
+          (sum, transaction) => sum + Number(transaction.total_amount),
+          0
+        );
+        const lastPurchase = customer.salesTransactions[0];
+
+        return {
+          id: `customer-${customer.id}`,
+          name: customer.name || 'Unknown',
+          email: customer.email || '',
+          phone: customer.phone || '',
+          totalOrders,
+          totalSpent,
           lastPurchase:
-            customer._max.created_at?.toISOString() || new Date().toISOString(),
+            lastPurchase?.created_at?.toISOString() ||
+            customer.createdAt?.toISOString() ||
+            new Date().toISOString(),
           type: 'customer',
-        }));
+        };
+      });
 
       allResults.push(...customers);
 

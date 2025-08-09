@@ -61,14 +61,38 @@ export function POSInterface() {
     'search' | 'payment' | 'receipt'
   >('search');
   const [discount, setDiscount] = useState(0);
+  const [fees, setFees] = useState<
+    Array<{
+      feeType: string;
+      description?: string;
+      amount: number;
+    }>
+  >([]);
   const [customerInfo, setCustomerInfo] = useState({
     name: '',
     phone: '',
     email: '',
+    billingAddress: '',
+    shippingAddress: '',
+    city: '',
+    state: '',
+    postalCode: '',
+    country: 'Nigeria',
+    customerType: 'individual' as 'individual' | 'business',
+    notes: '',
+    useBillingAsShipping: true,
+    shippingCity: '',
+    shippingState: '',
+    shippingPostalCode: '',
+    shippingCountry: 'Nigeria',
   });
 
   // Calculate totals using consistent utility
-  const { subtotal, total } = calculateOrderTotals(cart, discount);
+  const { subtotal, total: baseTotal } = calculateOrderTotals(cart, discount);
+
+  // Add fees to total
+  const feesTotal = fees.reduce((sum, fee) => sum + fee.amount, 0);
+  const total = baseTotal + feesTotal;
 
   // Validate that total is never negative
   const validatedTotal = Math.max(0, total);
@@ -114,7 +138,25 @@ export function POSInterface() {
   const clearCart = () => {
     setCart([]);
     setDiscount(0);
-    setCustomerInfo({ name: '', phone: '', email: '' });
+    setFees([]);
+    setCustomerInfo({
+      name: '',
+      phone: '',
+      email: '',
+      billingAddress: '',
+      shippingAddress: '',
+      city: '',
+      state: '',
+      postalCode: '',
+      country: 'Nigeria',
+      customerType: 'individual' as 'individual' | 'business',
+      notes: '',
+      useBillingAsShipping: true,
+      shippingCity: '',
+      shippingState: '',
+      shippingPostalCode: '',
+      shippingCountry: 'Nigeria',
+    });
     toast.success('Shopping cart cleared');
   };
 
@@ -228,6 +270,7 @@ export function POSInterface() {
                   items={cart}
                   subtotal={subtotal}
                   discount={validatedDiscount}
+                  fees={fees}
                   total={validatedTotal}
                   customerInfo={customerInfo}
                   staffName={session.user.name || 'Staff'}
@@ -247,7 +290,10 @@ export function POSInterface() {
                   }}
                   onCancel={() => setCurrentStep('search')}
                   onDiscountChange={setDiscount}
-                  onCustomerInfoChange={setCustomerInfo}
+                  onFeesChange={setFees}
+                  onCustomerInfoChange={info =>
+                    setCustomerInfo(prev => ({ ...prev, ...info }))
+                  }
                 />
               </POSErrorBoundary>
             ) : (

@@ -2,8 +2,11 @@ import { NextRequest, NextResponse } from 'next/server';
 import { auth } from '#root/auth';
 import { prisma } from '@/lib/db';
 import { USER_ROLES, hasRole } from '@/lib/auth/roles';
-import { SUCCESSFUL_PAYMENT_STATUSES } from '@/lib/constants';
 import { Prisma } from '@prisma/client';
+import { logger } from '@/lib/logger';
+
+// Direct prisma client access for Customer table
+const customerClient = prisma;
 
 export async function GET(request: NextRequest) {
   try {
@@ -39,23 +42,46 @@ export async function GET(request: NextRequest) {
     const isPhoneSearch = digitsOnly.length >= 5 && digitsOnly.length <= 15;
     const isEmailSearch = searchQuery.includes('@') && searchQuery.length >= 5;
 
-    const results: any[] = [];
+    const results: Array<{
+      id: string;
+      name: string;
+      email: string;
+      phone?: string;
+      city?: string;
+      state?: string;
+      customerType?: string;
+      source?: string;
+      lastPurchase?: Date | string;
+      lastAmount?: number;
+      priority?: number;
+      totalSpent?: number;
+      totalOrders?: number;
+      averageOrderValue?: number;
+      rank?: number;
+      type?: string;
+      role?: string;
+    }> = [];
 
-    // 1. Search in sales transactions (existing customers)
+    // 1. Search in Customer table first (prioritize dedicated customer records)
     if (searchQuery) {
-      const searchConditions: Prisma.SalesTransactionWhereInput[] = [];
+      interface CustomerSearchCondition {
+        phone?: { equals?: string; contains?: string; mode?: 'insensitive' };
+        email?: { equals?: string; contains?: string; mode?: 'insensitive' };
+        name?: { contains?: string; mode?: 'insensitive' };
+      }
+      const customerSearchConditions: CustomerSearchCondition[] = [];
 
       if (isPhoneSearch) {
         // For phone searches, try exact match first, then partial match
-        searchConditions.push(
+        customerSearchConditions.push(
           {
-            customer_phone: {
+            phone: {
               equals: searchQuery,
               mode: 'insensitive' as const,
             },
           },
           {
-            customer_phone: {
+            phone: {
               contains: digitsOnly,
               mode: 'insensitive' as const,
             },
@@ -63,15 +89,15 @@ export async function GET(request: NextRequest) {
         );
       } else if (isEmailSearch) {
         // For email searches, try exact match first, then partial match
-        searchConditions.push(
+        customerSearchConditions.push(
           {
-            customer_email: {
+            email: {
               equals: searchQuery.toLowerCase(),
               mode: 'insensitive' as const,
             },
           },
           {
-            customer_email: {
+            email: {
               contains: searchQuery,
               mode: 'insensitive' as const,
             },
@@ -79,21 +105,21 @@ export async function GET(request: NextRequest) {
         );
       } else {
         // For general searches, search across all fields
-        searchConditions.push(
+        customerSearchConditions.push(
           {
-            customer_email: {
+            email: {
               contains: searchQuery,
               mode: 'insensitive' as const,
             },
           },
           {
-            customer_name: {
+            name: {
               contains: searchQuery,
               mode: 'insensitive' as const,
             },
           },
           {
-            customer_phone: {
+            phone: {
               contains: searchQuery,
               mode: 'insensitive' as const,
             },
@@ -101,57 +127,75 @@ export async function GET(request: NextRequest) {
         );
       }
 
-      // Aggregate customer data from sales transactions
-      const customers = await prisma.salesTransaction.groupBy({
-        by: ['customer_email', 'customer_name', 'customer_phone'],
-        where: {
-          OR: searchConditions,
-        },
-        _sum: {
-          total_amount: true,
-        },
-        _count: {
-          id: true,
-        },
-        _max: {
-          created_at: true,
-        },
-      });
-
-      // Transform the customer data
-      const customerData = customers
-        .filter(
-          customer =>
-            customer.customer_email ||
-            customer.customer_name ||
-            customer.customer_phone
-        )
-        .map((customer, index) => {
-          const totalSpent = customer._sum.total_amount || 0;
-          const totalOrders = customer._count.id;
-          const averageOrderValue =
-            totalOrders > 0 ? Number(totalSpent) / totalOrders : 0;
-
-          return {
-            id: `customer-${customer.customer_email || customer.customer_phone || index}`,
-            name: customer.customer_name || 'Unknown Customer',
-            email: customer.customer_email || '',
-            phone: customer.customer_phone || '',
-            totalSpent: Number(totalSpent),
-            totalOrders,
-            lastPurchase:
-              customer._max.created_at?.toISOString() ||
-              new Date().toISOString(),
-            averageOrderValue,
-            rank: index + 1,
-            type: 'customer', // Mark as customer
-          };
+      // Search in Customer table
+      try {
+        const customers = await customerClient.customer.findMany({
+          where: {
+            AND: [
+              { isActive: true },
+              {
+                OR: customerSearchConditions,
+              },
+            ],
+          },
+          select: {
+            id: true,
+            name: true,
+            email: true,
+            phone: true,
+            city: true,
+            state: true,
+            customerType: true,
+            createdAt: true,
+            salesTransactions: {
+              select: {
+                id: true,
+                total_amount: true,
+                created_at: true,
+              },
+              orderBy: {
+                created_at: 'desc',
+              },
+              take: 1, // Get latest transaction for stats
+            },
+          },
+          take: limit,
+          orderBy: {
+            createdAt: 'desc',
+          },
         });
 
-      results.push(...customerData);
+        // Transform customer data
+        customers.forEach(customer => {
+          const latestTransaction = customer.salesTransactions[0];
+          results.push({
+            id: customer.id.toString(),
+            name: customer.name || 'Unknown Customer',
+            email: customer.email || '',
+            phone: customer.phone || undefined,
+            city: customer.city || undefined,
+            state: customer.state || undefined,
+            customerType: customer.customerType || undefined,
+            source: 'customer_table',
+            lastPurchase: latestTransaction?.created_at || undefined,
+            lastAmount: latestTransaction
+              ? Number(latestTransaction.total_amount)
+              : undefined,
+            priority: 1, // Higher priority for dedicated customer records
+          });
+        });
+      } catch (error) {
+        logger.error('Error searching customers table', {
+          error: error instanceof Error ? error.message : String(error),
+          searchQuery,
+        });
+      }
     }
 
-    // 2. Search in users table (staff/employees)
+    // 2. Search in users table (staff/employees) - removed sales transaction legacy search
+    // as customer fields have been moved to dedicated Customer table
+
+    // 3. Search in users table (staff/employees)
     if (searchQuery) {
       const userSearchConditions: Prisma.UserWhereInput[] = [];
 
@@ -274,7 +318,7 @@ export async function GET(request: NextRequest) {
       if (a.type === 'customer' && b.type === 'user') return 1;
 
       // Then sort by rank
-      return a.rank - b.rank;
+      return (a.rank || 0) - (b.rank || 0);
     });
 
     // Apply limit and update final ranks
@@ -287,7 +331,10 @@ export async function GET(request: NextRequest) {
 
     return NextResponse.json(limitedResults);
   } catch (error) {
-    console.error('Error fetching customers:', error);
+    logger.error('Error fetching customers', {
+      error: error instanceof Error ? error.message : String(error),
+      stack: error instanceof Error ? error.stack : undefined,
+    });
     return NextResponse.json(
       { error: 'Failed to fetch customers' },
       { status: 500 }
@@ -335,9 +382,9 @@ export async function POST(request: NextRequest) {
     }
 
     // Check if customer already exists (by email)
-    const existingCustomer = await prisma.salesTransaction.findFirst({
+    const existingCustomer = await customerClient.customer.findFirst({
       where: {
-        customer_email: email.toLowerCase(),
+        email: email.toLowerCase(),
       },
     });
 
@@ -348,47 +395,36 @@ export async function POST(request: NextRequest) {
       );
     }
 
-    // Create a new customer by creating a placeholder transaction
-    // This is a workaround since we don't have a separate customers table
-    const timestamp = Date.now();
-    const randomSuffix = Math.random().toString(36).substring(2, 8);
-    const transactionNumber = `CUST-${timestamp}-${randomSuffix}`;
-
-    const newCustomerTransaction = await prisma.salesTransaction.create({
+    // Create a new customer in the dedicated Customer table
+    const newCustomerRecord = await customerClient.customer.create({
       data: {
-        transaction_number: transactionNumber,
-        customer_name: name,
-        customer_email: email.toLowerCase(),
-        customer_phone: phone || null,
-        total_amount: new Prisma.Decimal(0),
-        payment_status: SUCCESSFUL_PAYMENT_STATUSES[1], // Use 'COMPLETED'
-        payment_method: 'customer_creation',
-        created_at: new Date(),
-        updated_at: new Date(),
-        // Add other required fields with default values
-        subtotal: new Prisma.Decimal(0),
-        tax_amount: new Prisma.Decimal(0),
-        discount_amount: new Prisma.Decimal(0),
-        user_id: parseInt(session.user.id),
-        transaction_type: 'customer_creation',
-        notes: 'Customer created via management interface',
+        name,
+        email: email.toLowerCase(),
+        phone: phone || null,
+        country: 'Nigeria',
+        customerType: 'individual',
+        isActive: true,
       },
     });
 
     const newCustomer = {
-      id: email.toLowerCase(),
-      name,
-      email: email.toLowerCase(),
-      phone: phone || null,
+      id: newCustomerRecord.id.toString(),
+      name: newCustomerRecord.name,
+      email: newCustomerRecord.email,
+      phone: newCustomerRecord.phone,
+      city: newCustomerRecord.city,
+      state: newCustomerRecord.state,
+      postalCode: newCustomerRecord.postalCode,
+      country: newCustomerRecord.country,
+      customerType: newCustomerRecord.customerType,
+      billingAddress: newCustomerRecord.billingAddress,
+      shippingAddress: newCustomerRecord.shippingAddress,
+      notes: newCustomerRecord.notes,
       totalSpent: 0,
-      totalOrders: 1,
-      lastPurchase: newCustomerTransaction.created_at?.toISOString() || null,
+      totalOrders: 0,
+      lastPurchase: newCustomerRecord.createdAt?.toISOString() || null,
       averageOrderValue: 0,
       rank: 1,
-      firstPurchase: newCustomerTransaction.created_at?.toISOString() || null,
-      daysSinceLastPurchase: 0,
-      customerLifetimeValue: 0,
-      purchaseFrequency: 0,
     };
 
     return NextResponse.json({
@@ -397,7 +433,10 @@ export async function POST(request: NextRequest) {
       message: 'Customer created successfully',
     });
   } catch (error) {
-    console.error('Error creating customer:', error);
+    logger.error('Error creating customer', {
+      error: error instanceof Error ? error.message : String(error),
+      stack: error instanceof Error ? error.stack : undefined,
+    });
     return NextResponse.json(
       {
         error: 'Internal server error',

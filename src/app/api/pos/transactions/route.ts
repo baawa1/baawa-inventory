@@ -16,11 +16,8 @@ import {
   ERROR_MESSAGES,
 } from '@/lib/constants';
 import { createApiResponse } from '@/lib/api-response';
-import {
-  TransactionWhereClause,
-  SalesTransactionWithIncludes,
-  TransformedTransaction,
-} from '@/types/pos';
+import { TransactionWhereClause, TransformedTransaction } from '@/types/pos';
+import { logger } from '@/lib/logger';
 
 const querySchema = z.object({
   page: z.string().optional().default('1'),
@@ -55,9 +52,15 @@ async function handleGetTransactions(request: AuthenticatedRequest) {
     if (search) {
       where.OR = [
         { transaction_number: { contains: search, mode: 'insensitive' } },
-        { customer_name: { contains: search, mode: 'insensitive' } },
-        { customer_phone: { contains: search, mode: 'insensitive' } },
-        { customer_email: { contains: search, mode: 'insensitive' } },
+        {
+          customer: {
+            OR: [
+              { name: { contains: search, mode: 'insensitive' } },
+              { email: { contains: search, mode: 'insensitive' } },
+              { phone: { contains: search, mode: 'insensitive' } },
+            ],
+          },
+        },
         {
           users: {
             OR: [
@@ -112,6 +115,26 @@ async function handleGetTransactions(request: AuthenticatedRequest) {
               },
             },
           },
+          customer: {
+            select: {
+              id: true,
+              name: true,
+              email: true,
+              phone: true,
+              city: true,
+              state: true,
+              customerType: true,
+            },
+          },
+          transaction_fees: {
+            select: {
+              id: true,
+              feeType: true,
+              description: true,
+              amount: true,
+              createdAt: true,
+            },
+          },
           users: {
             select: {
               id: true,
@@ -131,10 +154,10 @@ async function handleGetTransactions(request: AuthenticatedRequest) {
 
     // Transform data for frontend with proper typing
     const transformedTransactions: TransformedTransaction[] = transactions.map(
-      (sale: SalesTransactionWithIncludes) => ({
+      (sale: any) => ({
         id: sale.id,
         transactionNumber: sale.transaction_number,
-        items: sale.sales_items.map(item => ({
+        items: sale.sales_items.map((item: any) => ({
           id: item.id,
           productId: item.product_id || 0, // Handle null case
           name: item.products?.name || 'Unknown Product',
@@ -157,6 +180,27 @@ async function handleGetTransactions(request: AuthenticatedRequest) {
         total: Number(sale.total_amount), // Convert Decimal to number
         paymentMethod: sale.payment_method,
         paymentStatus: sale.payment_status,
+        // Enhanced customer information
+        customer: sale.customer
+          ? {
+              id: sale.customer.id,
+              name: sale.customer.name,
+              email: sale.customer.email,
+              phone: sale.customer.phone,
+              city: sale.customer.city,
+              state: sale.customer.state,
+              customerType: sale.customer.customerType,
+            }
+          : null,
+        // Transaction fees
+        fees:
+          sale.transaction_fees?.map((fee: any) => ({
+            id: fee.id,
+            type: fee.feeType,
+            description: fee.description,
+            amount: Number(fee.amount),
+            createdAt: fee.createdAt,
+          })) || [],
         customerName: sale.customer_name,
         customerPhone: sale.customer_phone,
         customerEmail: sale.customer_email,
@@ -182,7 +226,10 @@ async function handleGetTransactions(request: AuthenticatedRequest) {
       `Retrieved ${transformedTransactions.length} of ${totalCount} transactions`
     );
   } catch (error) {
-    console.error('Error fetching transactions:', error);
+    logger.error('Error fetching transactions', {
+      error: error instanceof Error ? error.message : String(error),
+      stack: error instanceof Error ? error.stack : undefined,
+    });
 
     if (error instanceof z.ZodError) {
       return createApiResponse.validationError(
