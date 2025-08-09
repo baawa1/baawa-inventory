@@ -359,6 +359,17 @@ export function TransactionHistory() {
                 )}
               </>
             )}
+            {/* Display Fees */}
+            {transaction.fees && transaction.fees.length > 0 && (
+              <>
+                {transaction.fees.map((fee, index: number) => (
+                  <div key={index} className="flex justify-between text-sm">
+                    <span>{fee.description || fee.type}:</span>
+                    <span>+{formatCurrency(fee.amount)}</span>
+                  </div>
+                ))}
+              </>
+            )}
             <div className="flex justify-between border-t pt-2 text-lg font-medium">
               <span>TOTAL</span>
               <span className="text-primary">

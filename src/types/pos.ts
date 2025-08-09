@@ -178,6 +178,13 @@ export interface TransformedTransaction {
     city: string | null;
     state: string | null;
   } | null;
+  fees?: Array<{
+    id: number;
+    type: string;
+    description: string | null;
+    amount: number;
+    createdAt: Date | null;
+  }>;
   staffName: string;
   staffId: number;
   timestamp: Date | null;
