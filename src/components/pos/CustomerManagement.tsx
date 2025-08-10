@@ -547,12 +547,15 @@ export function CustomerManagement({ user: _user }: CustomerManagementProps) {
                                 )}
                               </>
                             )}
-                            
+
                             {/* Transaction Fees */}
                             {order.fees && order.fees.length > 0 && (
                               <>
                                 {order.fees.map(fee => (
-                                  <div key={fee.id} className="flex justify-between text-sm">
+                                  <div
+                                    key={fee.id}
+                                    className="flex justify-between text-sm"
+                                  >
                                     <span className="flex items-center gap-2">
                                       <span>{fee.type}</span>
                                       {fee.description && (
