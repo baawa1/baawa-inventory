@@ -3,228 +3,9 @@
  * Centralized types for Point of Sale functionality
  */
 
-import { Prisma } from '@prisma/client';
+import type { Prisma } from '@prisma/client';
 
-// Database query types using Prisma
-export type SalesTransactionWithIncludes = Prisma.SalesTransactionGetPayload<{
-  include: {
-    sales_items: {
-      include: {
-        products: {
-          select: {
-            name: true;
-            sku: true;
-            barcode: true;
-          };
-        };
-        coupon: {
-          select: {
-            id: true;
-            code: true;
-            name: true;
-            type: true;
-            value: true;
-          };
-        };
-      };
-    };
-    users: {
-      select: {
-        id: true;
-        firstName: true;
-        lastName: true;
-      };
-    };
-    customer: {
-      select: {
-        id: true;
-        name: true;
-        email: true;
-        phone: true;
-        city: true;
-        state: true;
-      };
-    };
-    transaction_fees: true;
-  };
-}>;
-
-export type ProductWithIncludes = Prisma.ProductGetPayload<{
-  include: {
-    category: {
-      select: {
-        id: true;
-        name: true;
-      };
-    };
-    brand: {
-      select: {
-        id: true;
-        name: true;
-      };
-    };
-    sales_items: {
-      include: {
-        sales_transactions: {
-          select: {
-            created_at: true;
-          };
-        };
-      };
-    };
-  };
-}>;
-
-// Transaction filter types
-export interface TransactionFilters {
-  search?: string;
-  paymentMethod?: string;
-  dateFrom?: string;
-  dateTo?: string;
-  staffId?: string;
-}
-
-export interface TransactionWhereClause {
-  OR?: Array<{
-    transaction_number?: { contains: string; mode: 'insensitive' };
-    customer?: {
-      OR: Array<{
-        name?: { contains: string; mode: 'insensitive' };
-        email?: { contains: string; mode: 'insensitive' };
-        phone?: { contains: string; mode: 'insensitive' };
-      }>;
-    };
-    users?: {
-      OR: Array<{
-        firstName?: { contains: string; mode: 'insensitive' };
-        lastName?: { contains: string; mode: 'insensitive' };
-      }>;
-    };
-  }>;
-  payment_method?: string;
-  created_at?: {
-    gte?: Date;
-    lte?: Date;
-  };
-  user_id?: number;
-}
-
-// Product filter types
-export interface ProductFilters {
-  search?: string;
-  categoryId?: number;
-  status?: string;
-}
-
-export interface ProductWhereClause {
-  OR?: Array<{
-    name?: { contains: string; mode: 'insensitive' };
-    sku?: { contains: string; mode: 'insensitive' };
-  }>;
-  categoryId?: number;
-  status?: string;
-}
-
-// Customer aggregation types
-export interface CustomerAggregation {
-  customer_id: number | null;
-  customer: {
-    id: number;
-    name: string | null;
-    email: string | null;
-    phone: string | null;
-  } | null;
-  _sum: {
-    total_amount: Prisma.Decimal | null;
-  };
-  _count: {
-    id: number;
-  };
-  _max: {
-    created_at: Date | null;
-  };
-}
-
-// Transformed response types
-export interface TransformedTransaction {
-  id: number;
-  transactionNumber: string;
-  items: Array<{
-    id: number;
-    productId: number;
-    name: string;
-    sku: string;
-    price: number;
-    quantity: number;
-    total: number;
-    coupon?: {
-      id: number;
-      code: string;
-      name: string;
-      type: string;
-      value: number;
-    } | null;
-  }>;
-  subtotal: number;
-  discount: number;
-  total: number;
-  paymentMethod: string;
-  paymentStatus: string;
-  customer: {
-    id: number;
-    name: string | null;
-    email: string | null;
-    phone: string | null;
-    city: string | null;
-    state: string | null;
-  } | null;
-  fees?: Array<{
-    id: number;
-    type: string;
-    description: string | null;
-    amount: number;
-    createdAt: Date | null;
-  }>;
-  staffName: string;
-  staffId: number;
-  timestamp: Date | null;
-  createdAt: Date | null;
-  updatedAt: Date | null;
-  notes: string | null;
-}
-
-export interface TransformedProduct {
-  id: number;
-  name: string;
-  sku: string;
-  barcode: string | null;
-  price: number;
-  stock: number;
-  status: string;
-  category: {
-    id: number;
-    name: string;
-  } | null;
-  brand: {
-    id: number;
-    name: string;
-  } | null;
-  description: string | null;
-}
-
-export interface TransformedCustomer {
-  id: string;
-  name: string;
-  email: string;
-  phone: string | null;
-  totalSpent: number;
-  totalOrders: number;
-  lastPurchase: string;
-  averageOrderValue: number;
-  rank: number;
-}
-
-// Cart and Sale types
+// Base POS Types
 export interface CartItem {
   id: number;
   name: string;
@@ -236,95 +17,286 @@ export interface CartItem {
   brand?: string;
 }
 
-export interface SaleItem {
-  productId: number;
-  quantity: number;
-  price: number;
-  total: number;
-}
-
-export interface CreateSaleRequest {
-  items: SaleItem[];
-  subtotal: number;
-  discount: number;
-  total: number;
-  paymentMethod: string;
-  customerInfo?: {
-    name?: string;
-    phone?: string;
-    email?: string;
-    billingAddress?: string;
-    shippingAddress?: string;
-    city?: string;
-    state?: string;
-    postalCode?: string;
-    country?: string;
-    customerType?: 'individual' | 'business';
-    notes?: string;
-  };
-  fees?: Array<{
-    feeType: string;
-    description?: string;
-    amount: number;
-  }>;
-  amountPaid?: number;
-  notes?: string;
-}
-
-export interface SaleResponse {
+export interface Sale {
   id: string;
   items: CartItem[];
   subtotal: number;
   discount: number;
-  total: number;
-  paymentMethod: string;
-  customer?: {
-    id: number;
-    name: string | null;
-    email: string | null;
-    phone: string | null;
-    city: string | null;
-    state: string | null;
-  } | null;
   fees?: Array<{
     type: string;
     description?: string;
     amount: number;
   }>;
+  total: number;
+  paymentMethod: string;
+  customerName?: string;
+  customerPhone?: string;
+  customerEmail?: string;
   staffName: string;
   timestamp: Date;
-}
-
-// Analytics types
-export interface ProductPerformance {
-  id: number;
-  name: string;
-  sku: string;
-  category: string | null;
-  brand: string | null;
-  currentStock: number;
-  totalSold: number;
-  revenue: number;
-  averageOrderValue: number;
-  lastSold: string | null;
-  trending: 'up' | 'down' | 'stable';
-  trendPercentage: number;
-}
-
-export interface CategoryPerformance {
-  id: number;
-  name: string;
-  totalSold: number;
-  revenue: number;
-  averageOrderValue: number;
-  marketShare: number;
-  trending: 'up' | 'down' | 'stable';
-  trendPercentage: number;
-  lastSaleDate: string | null;
-  productCount: number;
-  topProducts: Array<{
-    id: number;
-    name: string;
-    revenue: number;
+  notes?: string | null;
+  splitPayments?: Array<{
+    id: string;
+    amount: number;
+    method: string;
+    createdAt: Date;
   }>;
+}
+
+export interface CouponData {
+  id: number;
+  code: string;
+  name: string;
+  type: 'PERCENTAGE' | 'FIXED';
+  value: number;
+  minimumAmount?: number;
+}
+
+export interface CustomerInfo {
+  name: string;
+  phone: string;
+  email: string;
+  billingAddress?: string;
+  shippingAddress?: string;
+  city?: string;
+  state?: string;
+  postalCode?: string;
+  country?: string;
+  customerType?: 'individual' | 'business';
+  notes?: string;
+  useBillingAsShipping?: boolean;
+  shippingCity?: string;
+  shippingState?: string;
+  shippingPostalCode?: string;
+  shippingCountry?: string;
+}
+
+export interface TransactionFee {
+  feeType: string;
+  description?: string;
+  amount: number;
+}
+
+export interface SplitPayment {
+  id: string;
+  amount: number;
+  method: string;
+}
+
+// Customer API Types
+export interface Customer {
+  id: string | number;
+  name: string;
+  email: string;
+  phone?: string;
+  city?: string;
+  state?: string;
+  postalCode?: string;
+  country?: string;
+  customerType?: string;
+  billingAddress?: string;
+  shippingAddress?: string;
+  notes?: string;
+  source?: string;
+  lastPurchase?: Date | string;
+  lastAmount?: number;
+  priority?: number;
+  totalSpent?: number;
+  totalOrders?: number;
+  averageOrderValue?: number;
+  rank?: number;
+  type?: string;
+  role?: string;
+  isActive?: boolean;
+  createdAt?: Date;
+  updatedAt?: Date;
+}
+
+export interface CustomerSearchResult {
+  customers: Customer[];
+  total: number;
+}
+
+// Payment Step Types
+export interface OrderSummaryStepProps {
+  items: CartItem[];
+  subtotal: number;
+  discount: number;
+  fees: TransactionFee[];
+  total: number;
+  _appliedCoupon: CouponData | null;
+  couponDiscount: number;
+}
+
+export interface PaymentMethodStepProps {
+  paymentMethod: string;
+  setPaymentMethod: (method: string) => void;
+  amountPaid: number;
+  setAmountPaid: React.Dispatch<React.SetStateAction<number>>;
+  total: number;
+  discount: number;
+  change: number;
+  processing: boolean;
+  isSplitPayment: boolean;
+  setIsSplitPayment: (isSplit: boolean) => void;
+  _splitPayments: SplitPayment[];
+  _setSplitPayments: React.Dispatch<React.SetStateAction<SplitPayment[]>>;
+}
+
+export interface CustomerInfoStepProps {
+  customerInfo: CustomerInfo;
+  onCustomerInfoChange: (info: CustomerInfo) => void;
+  processing: boolean;
+}
+
+export interface ReviewStepProps {
+  items: CartItem[];
+  subtotal: number;
+  discount: number;
+  fees: TransactionFee[];
+  total: number;
+  paymentMethod: string;
+  customerInfo: CustomerInfo;
+  amountPaid: number;
+  change: number;
+  notes: string;
+  setNotes: (notes: string) => void;
+  processing: boolean;
+  isSplitPayment: boolean;
+  splitPayments: SplitPayment[];
+  couponDiscount: number;
+}
+
+export interface SplitPaymentInterfaceProps {
+  splitPayments: SplitPayment[];
+  setSplitPayments: (payments: SplitPayment[]) => void;
+  total: number;
+  processing: boolean;
+}
+
+// API Response Types
+export interface CustomerApiResponse {
+  data: Customer[];
+  total: number;
+  page: number;
+  limit: number;
+  totalPages: number;
+  hasNextPage: boolean;
+  hasPreviousPage: boolean;
+}
+
+export interface SaleApiResponse {
+  success: boolean;
+  saleId: number;
+  transactionNumber: string;
+  message: string;
+  emailSent: boolean;
+}
+
+// Error Types
+export interface ApiError {
+  field: string;
+  message: string;
+}
+
+export interface ValidationError {
+  error: string;
+  details: ApiError[];
+}
+
+// Prisma Types
+export type SalesTransactionWithIncludes = Prisma.SalesTransactionGetPayload<{
+  include: {
+    sales_items: {
+      include: {
+        products: true;
+        product_variants: true;
+        coupon: true;
+      };
+    };
+    customer: true;
+    split_payments: true;
+    transaction_fees: true;
+    users: {
+      select: {
+        id: true;
+        firstName: true;
+        lastName: true;
+        email: true;
+      };
+    };
+  };
+}>;
+
+export type SalesItemWithIncludes = Prisma.SalesItemGetPayload<{
+  include: {
+    products: true;
+    product_variants: true;
+    coupon: true;
+  };
+}>;
+
+export type CustomerWithIncludes = Prisma.CustomerGetPayload<{
+  include: {
+    salesTransactions: {
+      include: {
+        sales_items: true;
+      };
+    };
+  };
+}>;
+
+// Utility Types
+export type PaymentMethod =
+  | 'cash'
+  | 'pos'
+  | 'bank_transfer'
+  | 'mobile_money'
+  | 'split';
+
+export type DiscountType = 'percentage' | 'fixed';
+
+export type StepId =
+  | 'order-summary'
+  | 'payment-method'
+  | 'customer-info'
+  | 'review'
+  | 'receipt';
+
+// Step Configuration
+export interface StepConfig {
+  id: StepId;
+  title: string;
+  icon: React.ComponentType<{ className?: string }>;
+}
+
+// Auto-search Types
+export interface AutoSearchResult {
+  customers: Customer[];
+  loading: boolean;
+  error: string | null;
+}
+
+// Receipt Types
+export interface ReceiptData {
+  sale: Sale | null;
+  printData?: {
+    items: Array<{
+      name: string;
+      quantity: number;
+      price: number;
+      total: number;
+    }>;
+    summary: {
+      subtotal: number;
+      discount: number;
+      fees: TransactionFee[];
+      total: number;
+      change: number;
+    };
+    customer: CustomerInfo;
+    staff: string;
+    timestamp: Date;
+    transactionNumber: string;
+  };
 }

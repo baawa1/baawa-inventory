@@ -36,9 +36,9 @@ import { formatCurrency } from '@/lib/utils';
 import { ReceiptPrinter } from './ReceiptPrinter';
 import { DateRangePickerWithPresets } from '@/components/ui/date-range-picker-with-presets';
 import { DateRange } from 'react-day-picker';
-import type { TransformedTransaction } from '@/types/pos';
+import type { Sale } from '@/types/pos';
 
-type Transaction = TransformedTransaction;
+type Transaction = any;
 
 const paymentMethodIcons = {
   cash: IconCash,
@@ -164,7 +164,7 @@ export function TransactionHistory() {
         'Status',
       ],
       ...transactions.map(transaction => [
-        transaction.transactionNumber,
+        transaction.id,
         transaction.timestamp
           ? format(transaction.timestamp, 'MMM dd, yyyy HH:mm:ss')
           : '-',
@@ -195,7 +195,7 @@ export function TransactionHistory() {
 
     return (
       <div
-        key={`${transaction.id}-${transaction.transactionNumber}`}
+        key={`${transaction.id}-${transaction.id}`}
         className={`cursor-pointer rounded-lg border p-3 transition-colors ${
           isSelected
             ? 'bg-primary/10 border-primary'
@@ -206,7 +206,7 @@ export function TransactionHistory() {
         <div className="mb-2 flex items-center justify-between">
           <div className="flex items-center gap-2">
             <span className="font-mono text-sm font-medium">
-              #{transaction.transactionNumber}
+              #{transaction.id}
             </span>
             <Badge
               variant="secondary"
@@ -295,7 +295,7 @@ export function TransactionHistory() {
         <div>
           <h3 className="mb-3 font-medium">Items in Order</h3>
           <div className="space-y-3">
-            {transaction.items.map(item => (
+            {transaction.items.map((item: any) => (
               <div
                 key={`${item.id}-${item.sku}`}
                 className="flex items-center gap-3 rounded-lg border p-3"
@@ -336,7 +336,7 @@ export function TransactionHistory() {
                   <span>-{formatCurrency(transaction.discount)}</span>
                 </div>
                 {/* Show coupon information if any items have coupons */}
-                {transaction.items.some(item => item.coupon) && (
+                {transaction.items.some((item: any) => item.coupon) && (
                   <div className="bg-muted mt-2 rounded-md p-2">
                     <div className="text-muted-foreground mb-1 text-sm font-medium">
                       Applied Coupon:
@@ -344,14 +344,14 @@ export function TransactionHistory() {
                     <div className="flex items-center gap-2">
                       <Badge variant="secondary" className="text-xs">
                         {
-                          transaction.items.find(item => item.coupon)?.coupon
-                            ?.code
+                          transaction.items.find((item: any) => item.coupon)
+                            ?.coupon?.code
                         }
                       </Badge>
                       <span className="text-muted-foreground text-xs">
                         {
-                          transaction.items.find(item => item.coupon)?.coupon
-                            ?.name
+                          transaction.items.find((item: any) => item.coupon)
+                            ?.coupon?.name
                         }
                       </span>
                     </div>
@@ -362,7 +362,7 @@ export function TransactionHistory() {
             {/* Display Fees */}
             {transaction.fees && transaction.fees.length > 0 && (
               <>
-                {transaction.fees.map((fee, index: number) => (
+                {transaction.fees.map((fee: any, index: number) => (
                   <div key={index} className="flex justify-between text-sm">
                     <span>{fee.description || fee.type}:</span>
                     <span>+{formatCurrency(fee.amount)}</span>
@@ -415,7 +415,7 @@ export function TransactionHistory() {
                 customerName: transaction.customer?.name || '',
                 customerPhone: transaction.customer?.phone || '',
                 customerEmail: transaction.customer?.email || '',
-                items: transaction.items.map(item => ({
+                items: transaction.items.map((item: any) => ({
                   id: item.id,
                   name: item.name,
                   sku: item.sku,

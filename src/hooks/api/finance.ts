@@ -1,5 +1,6 @@
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { queryKeys } from '@/lib/query-client';
+import { logger } from '@/lib/logger';
 
 // Types
 export interface FinancialTransaction {
@@ -115,6 +116,48 @@ export function useFinancialTransaction(id: number) {
     queryFn: () => fetchFinancialTransactionById(id),
     enabled: !!id,
     staleTime: 2 * 60 * 1000, // 2 minutes
+  });
+}
+
+// Hook for fetching financial reports
+export function useFinancialReports(params: {
+  period?: 'weekly' | 'monthly' | 'quarterly' | 'yearly';
+  type?: 'all' | 'income' | 'expense';
+  paymentMethod?: string;
+  dateFrom?: string;
+  dateTo?: string;
+}) {
+  return useQuery({
+    queryKey: ['financial-reports', params],
+    queryFn: async () => {
+      const searchParams = new URLSearchParams();
+
+      if (params.period) searchParams.append('period', params.period);
+      if (params.type) searchParams.append('type', params.type);
+      if (params.paymentMethod)
+        searchParams.append('paymentMethod', params.paymentMethod);
+      if (params.dateFrom) searchParams.append('dateFrom', params.dateFrom);
+      if (params.dateTo) searchParams.append('dateTo', params.dateTo);
+
+      const response = await fetch(
+        `/api/finance/reports?${searchParams.toString()}`
+      );
+
+      if (!response.ok) {
+        const errorData = await response.json().catch(() => ({}));
+        logger.error('Failed to fetch financial reports', {
+          status: response.status,
+          error: errorData,
+        });
+        throw new Error(
+          errorData.message || 'Failed to fetch financial reports'
+        );
+      }
+
+      return response.json();
+    },
+    staleTime: 5 * 60 * 1000, // 5 minutes
+    gcTime: 10 * 60 * 1000, // 10 minutes
   });
 }
 

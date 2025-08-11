@@ -5,6 +5,10 @@ import { emailService } from '@/lib/email';
 import { z } from 'zod';
 import type { SplitPayment } from '@prisma/client';
 import { logger } from '@/lib/logger';
+import {
+  normalizeNigerianPhone,
+  getPhoneSearchPatterns,
+} from '@/lib/utils/phone-utils';
 
 // Validation schema for POS sale creation
 const posSaleItemSchema = z.object({
@@ -185,17 +189,31 @@ export const POST = withAuth(async function (request: AuthenticatedRequest) {
         }
 
         if (!existingCustomer && validatedData.customerInfo.phone) {
+          // Normalize phone number and search for all possible formats
+          const phonePatterns = getPhoneSearchPatterns(
+            validatedData.customerInfo.phone
+          );
+
           existingCustomer = await (tx as any).customer.findFirst({
-            where: { phone: validatedData.customerInfo.phone },
+            where: {
+              OR: phonePatterns.map(pattern => ({ phone: pattern })),
+            },
           });
         }
 
         if (existingCustomer) {
           // Update existing customer with new information
+          // Normalize phone number if provided
+          const normalizedPhone = validatedData.customerInfo.phone
+            ? normalizeNigerianPhone(validatedData.customerInfo.phone)
+                .normalized
+            : existingCustomer.phone;
+
           const updatedCustomer = await (tx as any).customer.update({
             where: { id: existingCustomer.id },
             data: {
               name: validatedData.customerInfo.name || existingCustomer.name,
+              phone: normalizedPhone,
               billingAddress:
                 validatedData.customerInfo.billingAddress ||
                 existingCustomer.billingAddress,
@@ -230,11 +248,17 @@ export const POST = withAuth(async function (request: AuthenticatedRequest) {
           });
         } else {
           // Create new customer
+          // Normalize phone number before storing
+          const normalizedPhone = validatedData.customerInfo.phone
+            ? normalizeNigerianPhone(validatedData.customerInfo.phone)
+                .normalized
+            : null;
+
           const newCustomer = await (tx as any).customer.create({
             data: {
               name: validatedData.customerInfo.name,
               email: validatedData.customerInfo.email,
-              phone: validatedData.customerInfo.phone,
+              phone: normalizedPhone,
               billingAddress: validatedData.customerInfo.billingAddress,
               shippingAddress: validatedData.customerInfo.shippingAddress,
               city: validatedData.customerInfo.city,

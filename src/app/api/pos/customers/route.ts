@@ -5,6 +5,9 @@ import { USER_ROLES, hasRole } from '@/lib/auth/roles';
 import { Prisma } from '@prisma/client';
 import { logger } from '@/lib/logger';
 import { SUCCESSFUL_PAYMENT_STATUSES } from '@/lib/constants';
+import {
+  getPhoneSearchPatterns,
+} from '@/lib/utils/phone-utils';
 
 export async function GET(request: NextRequest) {
   try {
@@ -165,21 +168,26 @@ export async function GET(request: NextRequest) {
       const customerSearchConditions: CustomerSearchCondition[] = [];
 
       if (isPhoneSearch) {
-        // For phone searches, try exact match first, then partial match
-        customerSearchConditions.push(
-          {
+        // For phone searches, use normalized phone patterns
+        const phonePatterns = getPhoneSearchPatterns(searchQuery);
+
+        // Add exact matches for all phone patterns
+        phonePatterns.forEach(pattern => {
+          customerSearchConditions.push({
             phone: {
-              equals: searchQuery,
+              equals: pattern,
               mode: 'insensitive' as const,
             },
+          });
+        });
+
+        // Add partial match using digits only
+        customerSearchConditions.push({
+          phone: {
+            contains: digitsOnly,
+            mode: 'insensitive' as const,
           },
-          {
-            phone: {
-              contains: digitsOnly,
-              mode: 'insensitive' as const,
-            },
-          }
-        );
+        });
       } else if (isEmailSearch) {
         // For email searches, try exact match first, then partial match
         customerSearchConditions.push(

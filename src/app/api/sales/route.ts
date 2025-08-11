@@ -5,6 +5,16 @@ import {
   createApiResponse,
   transformDatabaseResponse,
 } from '@/lib/api-response';
+import { logger } from '@/lib/logger';
+import type {
+  SalesFilters,
+  SalesWhereClause,
+  SalesOrderByClause,
+  SalesSelectClause,
+  SalesTransactionWithIncludes,
+  PaginatedResponse,
+  ApiResponse,
+} from '@/types/api';
 
 // GET /api/sales - List sales transactions with optional filtering and pagination
 export const GET = withAuth(async function (request: AuthenticatedRequest) {
@@ -55,7 +65,7 @@ export const GET = withAuth(async function (request: AuthenticatedRequest) {
     const offset = (page - 1) * safeLimit;
 
     // Build where clause for Prisma
-    const where: any = {};
+    const where: SalesWhereClause = {};
 
     // Apply filters
     if (search) {
@@ -85,7 +95,7 @@ export const GET = withAuth(async function (request: AuthenticatedRequest) {
     }
 
     // Build orderBy clause
-    const orderBy: any = {};
+    const orderBy: SalesOrderByClause = {};
     if (sortBy === 'createdAt') {
       orderBy.created_at = sortOrder;
     } else if (sortBy === 'total') {
@@ -240,11 +250,10 @@ export const GET = withAuth(async function (request: AuthenticatedRequest) {
       `Retrieved ${transformedTransactions.length} sales transactions`
     );
   } catch (error) {
-    console.error('Error in GET /api/sales:', error);
-    console.error(
-      'Error stack:',
-      error instanceof Error ? error.stack : 'No stack trace'
-    );
+    logger.error('Error in GET /api/sales', {
+      error: error instanceof Error ? error.message : String(error),
+      stack: error instanceof Error ? error.stack : undefined,
+    });
     return createApiResponse.internalError(
       'Internal server error',
       error instanceof Error ? error.message : 'Unknown error'

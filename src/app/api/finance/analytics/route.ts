@@ -1,6 +1,7 @@
 import { prisma } from '@/lib/db';
 import { withAuth, AuthenticatedRequest } from '@/lib/api-middleware';
 import { createApiResponse } from '@/lib/api-response';
+import { logger } from '@/lib/logger';
 import { z } from 'zod';
 
 const analyticsQuerySchema = z.object({
@@ -144,27 +145,83 @@ export const GET = withAuth(async (request: AuthenticatedRequest) => {
     const netProfit = income - expenses;
 
     // Process payment method stats
-    const paymentMethodData = paymentMethodStats.map((stat: any) => ({
+    const paymentMethodData = paymentMethodStats.map(stat => ({
       name: stat.paymentMethod || 'Unknown',
       value: stat._count.paymentMethod,
-      amount: stat._sum.amount || 0,
+      amount: Number(stat._sum.amount) || 0,
     }));
 
     // Process daily stats for charts
-    const chartData = dailyStats.map((stat: any) => ({
+    const chartData = dailyStats.map(stat => ({
       date: stat.transactionDate?.toISOString().split('T')[0] || '',
       revenue: Number(stat._sum.amount) || 0,
       transactions: stat._count.id,
     }));
 
     // Get top payment method
-    const topPaymentMethod = paymentMethodData.reduce(
-      (prev: any, current: any) => (prev.value > current.value ? prev : current)
+    const topPaymentMethod = paymentMethodData.reduce((prev, current) =>
+      prev.value > current.value ? prev : current
     );
 
-    // Calculate growth percentages (mock data for now)
-    const revenueGrowth = 12.5; // Mock growth percentage
-    const expenseGrowth = 8.2; // Mock growth percentage
+    // Calculate real growth percentages by comparing with previous period
+    const previousPeriodStart = new Date(validatedQuery.dateFrom || new Date());
+    const previousPeriodEnd = new Date(validatedQuery.dateTo || new Date());
+    const currentPeriodDays = Math.ceil(
+      (previousPeriodEnd.getTime() - previousPeriodStart.getTime()) /
+        (1000 * 60 * 60 * 24)
+    );
+
+    // Calculate previous period dates
+    previousPeriodStart.setDate(
+      previousPeriodStart.getDate() - currentPeriodDays
+    );
+    previousPeriodEnd.setDate(previousPeriodEnd.getDate() - currentPeriodDays);
+
+    // Get previous period data
+    const [previousIncome, previousExpenses] = await Promise.all([
+      prisma.financialTransaction.aggregate({
+        where: {
+          ...where,
+          type: 'INCOME',
+          status: 'COMPLETED',
+          transactionDate: {
+            gte: previousPeriodStart,
+            lte: previousPeriodEnd,
+          },
+        },
+        _sum: { amount: true },
+      }),
+      prisma.financialTransaction.aggregate({
+        where: {
+          ...where,
+          type: 'EXPENSE',
+          status: 'COMPLETED',
+          transactionDate: {
+            gte: previousPeriodStart,
+            lte: previousPeriodEnd,
+          },
+        },
+        _sum: { amount: true },
+      }),
+    ]);
+
+    const previousIncomeAmount = Number(previousIncome._sum.amount) || 0;
+    const previousExpenseAmount = Number(previousExpenses._sum.amount) || 0;
+
+    // Calculate growth percentages
+    const revenueGrowth =
+      previousIncomeAmount > 0
+        ? ((income - previousIncomeAmount) / previousIncomeAmount) * 100
+        : income > 0
+          ? 100
+          : 0;
+
+    const expenseGrowth =
+      previousExpenseAmount > 0
+        ? ((expenses - previousExpenseAmount) / previousExpenseAmount) * 100
+        : expenses > 0
+          ? 100
+          : 0;
 
     const analyticsData = {
       summary: {
@@ -196,7 +253,9 @@ export const GET = withAuth(async (request: AuthenticatedRequest) => {
       'Analytics data retrieved successfully'
     );
   } catch (error) {
-    console.error('Error fetching analytics data:', error);
+    logger.error('Error fetching analytics data', {
+      error: error instanceof Error ? error.message : String(error),
+    });
     return createApiResponse.error(
       'Failed to fetch analytics data',
       500,

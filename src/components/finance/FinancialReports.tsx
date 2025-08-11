@@ -20,7 +20,8 @@ import {
 } from '@tabler/icons-react';
 import { DateRange } from 'react-day-picker';
 import { formatCurrency } from '@/lib/utils';
-import { useFinancialAnalytics } from '@/hooks/api/useFinancialAnalytics';
+import { logger } from '@/lib/logger';
+import { useFinancialReports } from '@/hooks/api/finance';
 
 interface FinancialReportsProps {
   dateRange?: DateRange;
@@ -36,58 +37,57 @@ export function FinancialReports({
   const [reportType, setReportType] = useState('profit-loss');
   const [period, setPeriod] = useState('monthly');
 
-  const { data: analyticsData, isLoading } = useFinancialAnalytics({
-    dateRange,
+  const { data: reportsData, isLoading: reportsLoading } = useFinancialReports({
+    period: period as 'weekly' | 'monthly' | 'quarterly' | 'yearly',
     type: transactionType as 'all' | 'income' | 'expense',
     paymentMethod: paymentMethod !== 'all' ? paymentMethod : undefined,
   });
 
-  const summary = analyticsData?.summary;
+  const isLoading = reportsLoading;
 
-  // Mock data for demonstration - replace with real API data
-  const profitLossData = {
+  // Use real API data instead of mock data
+  const profitLossData = reportsData?.data?.profitLoss || {
     revenue: {
-      sales: summary?.totalRevenue || 0,
-      otherIncome: 50000,
-      totalRevenue: (summary?.totalRevenue || 0) + 50000,
+      sales: 0,
+      otherIncome: 0,
+      totalRevenue: 0,
     },
     expenses: {
-      costOfGoods: (summary?.totalExpenses || 0) * 0.6,
-      operatingExpenses: (summary?.totalExpenses || 0) * 0.4,
-      totalExpenses: summary?.totalExpenses || 0,
+      costOfGoods: 0,
+      operatingExpenses: 0,
+      totalExpenses: 0,
     },
-    grossProfit:
-      (summary?.totalRevenue || 0) - (summary?.totalExpenses || 0) * 0.6,
-    netProfit: summary?.netProfit || 0,
+    grossProfit: 0,
+    netProfit: 0,
   };
 
-  const cashFlowData = {
+  const cashFlowData = reportsData?.data?.cashFlow || {
     operatingActivities: {
-      netIncome: summary?.netProfit || 0,
-      depreciation: 15000,
-      changesInWorkingCapital: -25000,
-      netOperatingCashFlow: (summary?.netProfit || 0) + 15000 - 25000,
+      netIncome: 0,
+      depreciation: 0,
+      changesInWorkingCapital: 0,
+      netOperatingCashFlow: 0,
     },
     investingActivities: {
-      capitalExpenditures: -50000,
-      investments: -30000,
-      netInvestingCashFlow: -80000,
+      capitalExpenditures: 0,
+      investments: 0,
+      netInvestingCashFlow: 0,
     },
     financingActivities: {
-      loans: 100000,
-      repayments: -20000,
-      netFinancingCashFlow: 80000,
+      loans: 0,
+      repayments: 0,
+      netFinancingCashFlow: 0,
     },
   };
 
   const handleExportReport = (type: string) => {
     // Implementation for exporting reports
-    console.log(`Exporting ${type} report...`);
+    logger.info('Exporting financial report', { type });
   };
 
   const handlePrintReport = (type: string) => {
     // Implementation for printing reports
-    console.log(`Printing ${type} report...`);
+    logger.info('Printing financial report', { type });
   };
 
   if (isLoading) {
@@ -408,10 +408,10 @@ export function FinancialReports({
               </CardHeader>
               <CardContent>
                 <div className="text-2xl font-bold text-green-600">
-                  {formatCurrency(summary?.totalRevenue || 0)}
+                  {formatCurrency(profitLossData.revenue.totalRevenue)}
                 </div>
                 <p className="text-muted-foreground mt-1 text-xs">
-                  +{summary?.revenueGrowth || 0}% from last period
+                  +0% from last period
                 </p>
               </CardContent>
             </Card>
@@ -424,10 +424,10 @@ export function FinancialReports({
               </CardHeader>
               <CardContent>
                 <div className="text-2xl font-bold text-red-600">
-                  {formatCurrency(summary?.totalExpenses || 0)}
+                  {formatCurrency(profitLossData.expenses.totalExpenses)}
                 </div>
                 <p className="text-muted-foreground mt-1 text-xs">
-                  +{summary?.expenseGrowth || 0}% from last period
+                  +0% from last period
                 </p>
               </CardContent>
             </Card>
@@ -440,12 +440,12 @@ export function FinancialReports({
               </CardHeader>
               <CardContent>
                 <div
-                  className={`text-2xl font-bold ${(summary?.netProfit || 0) >= 0 ? 'text-green-600' : 'text-red-600'}`}
+                  className={`text-2xl font-bold ${profitLossData.netProfit >= 0 ? 'text-green-600' : 'text-red-600'}`}
                 >
-                  {formatCurrency(summary?.netProfit || 0)}
+                  {formatCurrency(profitLossData.netProfit)}
                 </div>
                 <p className="text-muted-foreground mt-1 text-xs">
-                  {(summary?.netProfit || 0) >= 0 ? 'Profit' : 'Loss'}
+                  {profitLossData.netProfit >= 0 ? 'Profit' : 'Loss'}
                 </p>
               </CardContent>
             </Card>
@@ -457,12 +457,9 @@ export function FinancialReports({
                 </CardTitle>
               </CardHeader>
               <CardContent>
-                <div className="text-2xl font-bold">
-                  {(summary?.totalTransactions || 0).toLocaleString()}
-                </div>
+                <div className="text-2xl font-bold">{0}</div>
                 <p className="text-muted-foreground mt-1 text-xs">
-                  Average:{' '}
-                  {formatCurrency(summary?.averageTransactionValue || 0)}
+                  Average: {formatCurrency(0)}
                 </p>
               </CardContent>
             </Card>
@@ -474,9 +471,7 @@ export function FinancialReports({
                 </CardTitle>
               </CardHeader>
               <CardContent>
-                <div className="text-2xl font-bold capitalize">
-                  {summary?.topPaymentMethod || 'Cash'}
-                </div>
+                <div className="text-2xl font-bold capitalize">Cash</div>
                 <p className="text-muted-foreground mt-1 text-xs">
                   Most used payment method
                 </p>

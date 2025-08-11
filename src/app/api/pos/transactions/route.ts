@@ -16,7 +16,7 @@ import {
   ERROR_MESSAGES,
 } from '@/lib/constants';
 import { createApiResponse } from '@/lib/api-response';
-import { TransactionWhereClause, TransformedTransaction } from '@/types/pos';
+import { SalesTransactionWithIncludes } from '@/types/pos';
 import { logger } from '@/lib/logger';
 
 const querySchema = z.object({
@@ -47,7 +47,7 @@ async function handleGetTransactions(request: AuthenticatedRequest) {
     const offset = (pageNum - 1) * limitNum;
 
     // Build where clause with proper typing
-    const where: TransactionWhereClause = {};
+    const where: any = {};
 
     if (search) {
       where.OR = [
@@ -104,35 +104,6 @@ async function handleGetTransactions(request: AuthenticatedRequest) {
                   barcode: true,
                 },
               },
-              coupon: {
-                select: {
-                  id: true,
-                  code: true,
-                  name: true,
-                  type: true,
-                  value: true,
-                },
-              },
-            },
-          },
-          customer: {
-            select: {
-              id: true,
-              name: true,
-              email: true,
-              phone: true,
-              city: true,
-              state: true,
-              customerType: true,
-            },
-          },
-          transaction_fees: {
-            select: {
-              id: true,
-              feeType: true,
-              description: true,
-              amount: true,
-              createdAt: true,
             },
           },
           users: {
@@ -153,65 +124,63 @@ async function handleGetTransactions(request: AuthenticatedRequest) {
     ]);
 
     // Transform data for frontend with proper typing
-    const transformedTransactions: TransformedTransaction[] = transactions.map(
-      (sale: any) => ({
-        id: sale.id,
-        transactionNumber: sale.transaction_number,
-        items: sale.sales_items.map((item: any) => ({
-          id: item.id,
-          productId: item.product_id || 0, // Handle null case
-          name: item.products?.name || 'Unknown Product',
-          sku: item.products?.sku || '',
-          price: Number(item.unit_price), // Convert Decimal to number
-          quantity: item.quantity,
-          total: Number(item.total_price), // Convert Decimal to number
-          coupon: item.coupon
-            ? {
-                id: item.coupon.id,
-                code: item.coupon.code,
-                name: item.coupon.name,
-                type: item.coupon.type,
-                value: Number(item.coupon.value),
-              }
-            : null,
-        })),
-        subtotal: Number(sale.subtotal), // Convert Decimal to number
-        discount: Number(sale.discount_amount), // Convert Decimal to number
-        total: Number(sale.total_amount), // Convert Decimal to number
-        paymentMethod: sale.payment_method,
-        paymentStatus: sale.payment_status,
-        // Enhanced customer information
-        customer: sale.customer
+    const transformedTransactions: any[] = transactions.map((sale: any) => ({
+      id: sale.id,
+      transactionNumber: sale.transaction_number,
+      items: sale.sales_items.map((item: any) => ({
+        id: item.id,
+        productId: item.product_id || 0, // Handle null case
+        name: item.products?.name || 'Unknown Product',
+        sku: item.products?.sku || '',
+        price: Number(item.unit_price), // Convert Decimal to number
+        quantity: item.quantity,
+        total: Number(item.total_price), // Convert Decimal to number
+        coupon: item.coupon
           ? {
-              id: sale.customer.id,
-              name: sale.customer.name,
-              email: sale.customer.email,
-              phone: sale.customer.phone,
-              city: sale.customer.city,
-              state: sale.customer.state,
-              customerType: sale.customer.customerType,
+              id: item.coupon.id,
+              code: item.coupon.code,
+              name: item.coupon.name,
+              type: item.coupon.type,
+              value: Number(item.coupon.value),
             }
           : null,
-        // Transaction fees
-        fees:
-          sale.transaction_fees?.map((fee: any) => ({
-            id: fee.id,
-            type: fee.feeType,
-            description: fee.description,
-            amount: Number(fee.amount),
-            createdAt: fee.createdAt,
-          })) || [],
-        customerName: sale.customer_name,
-        customerPhone: sale.customer_phone,
-        customerEmail: sale.customer_email,
-        staffName: `${sale.users.firstName} ${sale.users.lastName}`.trim(),
-        staffId: sale.user_id,
-        timestamp: sale.created_at,
-        createdAt: sale.created_at,
-        updatedAt: sale.updated_at,
-        notes: sale.notes,
-      })
-    );
+      })),
+      subtotal: Number(sale.subtotal), // Convert Decimal to number
+      discount: Number(sale.discount_amount), // Convert Decimal to number
+      total: Number(sale.total_amount), // Convert Decimal to number
+      paymentMethod: sale.payment_method,
+      paymentStatus: sale.payment_status,
+      // Enhanced customer information
+      customer: sale.customer
+        ? {
+            id: sale.customer.id,
+            name: sale.customer.name,
+            email: sale.customer.email,
+            phone: sale.customer.phone,
+            city: sale.customer.city,
+            state: sale.customer.state,
+            customerType: sale.customer.customerType,
+          }
+        : null,
+      // Transaction fees
+      fees:
+        sale.transaction_fees?.map((fee: any) => ({
+          id: fee.id,
+          type: fee.feeType,
+          description: fee.description,
+          amount: Number(fee.amount),
+          createdAt: fee.createdAt,
+        })) || [],
+      customerName: sale.customer_name,
+      customerPhone: sale.customer_phone,
+      customerEmail: sale.customer_email,
+      staffName: `${sale.users.firstName} ${sale.users.lastName}`.trim(),
+      staffId: sale.user_id,
+      timestamp: sale.created_at,
+      createdAt: sale.created_at,
+      updatedAt: sale.updated_at,
+      notes: sale.notes,
+    }));
 
     return createApiResponse.successWithPagination(
       transformedTransactions,

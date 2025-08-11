@@ -39,110 +39,39 @@ import {
   calculateChange,
 } from '@/lib/utils/calculations';
 import { formatCurrency } from '@/lib/utils';
-
-export interface CartItem {
-  id: number;
-  name: string;
-  sku: string;
-  price: number;
-  quantity: number;
-  stock: number;
-  category?: string;
-  brand?: string;
-}
-
-export interface Sale {
-  id: string;
-  items: CartItem[];
-  subtotal: number;
-  discount: number;
-  fees?: Array<{
-    type: string;
-    description?: string;
-    amount: number;
-  }>;
-  total: number;
-  paymentMethod: string;
-  customerName?: string;
-  customerPhone?: string;
-  customerEmail?: string;
-  staffName: string;
-  timestamp: Date;
-  notes?: string | null;
-  splitPayments?: Array<{
-    id: string;
-    amount: number;
-    method: string;
-    createdAt: Date;
-  }>;
-}
-
-interface CouponData {
-  id: number;
-  code: string;
-  name: string;
-  type: 'PERCENTAGE' | 'FIXED';
-  value: number;
-  minimumAmount?: number;
-}
+import { logger } from '@/lib/logger';
+import type {
+  CartItem,
+  Sale,
+  CouponData,
+  CustomerInfo,
+  TransactionFee,
+  SplitPayment,
+  Customer,
+  CustomerApiResponse,
+  SaleApiResponse,
+  OrderSummaryStepProps,
+  PaymentMethodStepProps,
+  CustomerInfoStepProps,
+  ReviewStepProps,
+  SplitPaymentInterfaceProps,
+  ApiError,
+  ValidationError,
+} from '@/types/pos';
 
 interface SlidingPaymentInterfaceProps {
   items: CartItem[];
   subtotal: number;
   discount: number;
-  fees: Array<{
-    feeType: string;
-    description?: string;
-    amount: number;
-  }>;
+  fees: TransactionFee[];
   total: number;
-  customerInfo: {
-    name: string;
-    phone: string;
-    email: string;
-    billingAddress?: string;
-    shippingAddress?: string;
-    city?: string;
-    state?: string;
-    postalCode?: string;
-    country?: string;
-    customerType?: 'individual' | 'business';
-    notes?: string;
-    useBillingAsShipping?: boolean;
-    shippingCity?: string;
-    shippingState?: string;
-    shippingPostalCode?: string;
-    shippingCountry?: string;
-  };
+  customerInfo: CustomerInfo;
   staffName: string;
   onPaymentSuccess: (_sale: Sale) => void;
   onCancel: () => void;
   onDiscountChange: (_discount: number) => void;
-  onFeesChange: (
-    _fees: Array<{
-      feeType: string;
-      description?: string;
-      amount: number;
-    }>
-  ) => void;
-  onCustomerInfoChange: (_info: {
-    name: string;
-    phone: string;
-    email: string;
-    billingAddress?: string;
-    shippingAddress?: string;
-    city?: string;
-    state?: string;
-    postalCode?: string;
-    country?: string;
-    customerType?: 'individual' | 'business';
-    notes?: string;
-    useBillingAsShipping?: boolean;
-    shippingCity?: string;
-    shippingState?: string;
-    shippingPostalCode?: string;
-    shippingCountry?: string;
-  }) => void;
+  onFeesChange: (_fees: TransactionFee[]) => void;
+  onCustomerInfoChange: (_info: CustomerInfo) => void;
 }
 
 const PAYMENT_METHODS = [
@@ -167,7 +96,7 @@ async function fetchCustomers({
   queryKey,
 }: {
   queryKey: string[];
-}): Promise<any[]> {
+}): Promise<Customer[]> {
   const searchQuery = queryKey[1]; // The search term is the second element in the query key
   const url = searchQuery
     ? `/api/pos/customers?search=${encodeURIComponent(searchQuery)}`
@@ -176,7 +105,8 @@ async function fetchCustomers({
   if (!response.ok) {
     throw new Error('Failed to fetch customers');
   }
-  return response.json();
+  const data: CustomerApiResponse = await response.json();
+  return data.data || [];
 }
 
 // Helper function to check if we should search for phone
@@ -268,8 +198,9 @@ export function SlidingPaymentInterface({
     _coupon: CouponData | null,
     _discountAmount: number
   ) => {
-    console.log('handleCouponChange called:', {
-      coupon: _coupon,
+    // Log coupon change for debugging
+    logger.info('Coupon change processed', {
+      couponId: _coupon?.id,
       discountAmount: _discountAmount,
     });
     setAppliedCoupon(_coupon);
@@ -360,7 +291,11 @@ export function SlidingPaymentInterface({
       };
 
       // Debug logging
-      console.log('Sale data being sent:', saleData);
+      logger.info('Sale data being sent', {
+        itemCount: saleData.items.length,
+        total: saleData.total,
+        paymentMethod: saleData.paymentMethod,
+      });
 
       const response = await fetch('/api/pos/create-sale', {
         method: 'POST',
@@ -481,7 +416,7 @@ export function SlidingPaymentInterface({
             discount={discount}
             fees={localFees}
             total={total}
-            appliedCoupon={appliedCoupon}
+            _appliedCoupon={appliedCoupon}
             couponDiscount={couponDiscount}
           />
         );
@@ -694,7 +629,7 @@ function OrderSummaryStep({
   total,
   _appliedCoupon,
   couponDiscount,
-}: any) {
+}: OrderSummaryStepProps) {
   return (
     <div className="space-y-4">
       <h3 className="text-lg font-semibold">Order Summary</h3>
@@ -746,7 +681,7 @@ function OrderSummaryStep({
         {/* Custom Fees */}
         {fees && fees.length > 0 && (
           <>
-            {fees.map((fee: any, index: number) => (
+            {fees.map((fee: TransactionFee, index: number) => (
               <div key={index} className="flex justify-between text-orange-600">
                 <span>
                   {fee.feeType}
@@ -780,7 +715,7 @@ function PaymentMethodStep({
   setIsSplitPayment,
   _splitPayments,
   _setSplitPayments,
-}: any) {
+}: PaymentMethodStepProps) {
   return (
     <div className="space-y-4">
       <h3 className="text-lg font-semibold">Payment Method</h3>
@@ -879,7 +814,7 @@ function CustomerInfoStep({
   customerInfo,
   onCustomerInfoChange,
   processing,
-}: any) {
+}: CustomerInfoStepProps) {
   const [showCustomerSearch, setShowCustomerSearch] = useState(false);
   const [searchTerm, setSearchTerm] = useState('');
   const [selectedCustomer, setSelectedCustomer] = useState<any>(null);
@@ -950,7 +885,7 @@ function CustomerInfoStep({
     }
   };
 
-  const selectCustomer = (customer: any) => {
+  const selectCustomer = (customer: Customer) => {
     setSelectedCustomer(customer);
     // Update the parent component with the selected customer info
     onCustomerInfoChange({
@@ -1185,7 +1120,7 @@ function CustomerInfoStep({
                         <div className="text-muted-foreground text-xs">
                           {isStaff
                             ? `Staff Member • ${customer.role}`
-                            : `${customer.totalOrders} orders • ${customer.totalSpent.toLocaleString()} spent`}
+                            : `${customer.totalOrders || 0} orders • ${(customer.totalSpent || 0).toLocaleString()} spent`}
                         </div>
                       </div>
                       <Button size="sm" variant="ghost">
@@ -1474,7 +1409,7 @@ function ReviewStep({
   isSplitPayment,
   splitPayments,
   couponDiscount,
-}: any) {
+}: ReviewStepProps) {
   return (
     <div className="space-y-4">
       <h3 className="text-lg font-semibold">Review & Complete</h3>
@@ -1535,7 +1470,7 @@ function ReviewStep({
         {/* Custom Fees */}
         {fees && fees.length > 0 && (
           <>
-            {fees.map((fee: any, index: number) => (
+            {fees.map((fee: TransactionFee, index: number) => (
               <div key={index} className="flex justify-between text-orange-600">
                 <span>
                   {fee.feeType}
@@ -1578,7 +1513,7 @@ function ReviewStep({
           )}
           {isSplitPayment && (
             <div className="space-y-2">
-              {splitPayments.map((payment: any) => (
+              {splitPayments.map((payment: SplitPayment) => (
                 <div key={payment.id} className="flex justify-between">
                   <span>{payment.method}:</span>
                   <span>₦{payment.amount.toLocaleString()}</span>
@@ -1635,14 +1570,7 @@ function SplitPaymentInterface({
   setSplitPayments,
   total,
   processing,
-}: {
-  splitPayments: Array<{ id: string; amount: number; method: string }>;
-  setSplitPayments: (
-    _payments: Array<{ id: string; amount: number; method: string }>
-  ) => void;
-  total: number;
-  processing: boolean;
-}) {
+}: SplitPaymentInterfaceProps) {
   const addPayment = () => {
     const newPayment = {
       id: Date.now().toString(),
@@ -2089,7 +2017,7 @@ function ReceiptStep({ sale }: { sale: Sale | null }) {
         {/* Custom Fees */}
         {sale.fees && sale.fees.length > 0 && (
           <>
-            {sale.fees.map((fee: any, index: number) => (
+            {sale.fees.map((fee, index: number) => (
               <div key={index} className="flex justify-between text-orange-600">
                 <span>
                   {fee.type}

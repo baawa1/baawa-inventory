@@ -1,6 +1,7 @@
 import { prisma } from '@/lib/db';
 import { withAuth, AuthenticatedRequest } from '@/lib/api-middleware';
 import { createApiResponse } from '@/lib/api-response';
+import { logger } from '@/lib/logger';
 import {
   PRODUCT_STATUS,
   SUCCESSFUL_PAYMENT_STATUSES,
@@ -210,7 +211,9 @@ export const GET = withAuth(async (request: AuthenticatedRequest) => {
       'Analytics data retrieved successfully'
     );
   } catch (error) {
-    console.error('Error fetching analytics data:', error);
+    logger.error('Error fetching analytics data', {
+      error: error instanceof Error ? error.message : String(error),
+    });
     return createApiResponse.internalError('Failed to fetch analytics data');
   }
 });

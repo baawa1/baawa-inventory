@@ -6,12 +6,22 @@ import {
 import { handleApiError } from '@/lib/api-error-handler-new';
 import { prisma } from '@/lib/db';
 import { createSecureResponse } from '@/lib/security-headers';
+import { logger } from '@/lib/logger';
 
 import { PRODUCT_STATUS } from '@/lib/constants';
 import { USER_ROLES } from '@/lib/auth/roles';
 
 // Import the form validation schema
 import { createProductSchema } from '@/lib/validations/product';
+import type {
+  ProductFilters,
+  ProductWhereClause,
+  ProductIncludeClause,
+  ProductWithIncludes,
+  ProductUpdateData,
+  PaginatedResponse,
+  ApiResponse,
+} from '@/types/api';
 
 // Use the same validation schema as the form
 const ProductCreateSchema = createProductSchema;
@@ -91,7 +101,7 @@ export const GET = withAuth(async (request: AuthenticatedRequest) => {
     const skip = (page - 1) * limit;
 
     // Build include clause
-    const include: any = {
+    const include: ProductIncludeClause = {
       category: {
         select: {
           id: true,
@@ -108,14 +118,13 @@ export const GET = withAuth(async (request: AuthenticatedRequest) => {
         select: {
           id: true,
           name: true,
-          email: true,
         },
       },
     };
 
     // Conditionally include content sync data
     if (includeSync) {
-      include.content_sync = {
+      (include as any).content_sync = {
         select: {
           id: true,
           sync_status: true,
@@ -189,7 +198,7 @@ export const GET = withAuth(async (request: AuthenticatedRequest) => {
       supplierId: product.supplierId,
       createdAt: product.createdAt,
       updatedAt: product.updatedAt,
-      ...(includeSync && { content_sync: product.content_sync }),
+      ...(includeSync && { content_sync: (product as any).content_sync }),
     }));
 
     return createSecureResponse(

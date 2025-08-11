@@ -1,6 +1,8 @@
 import { withAuth, AuthenticatedRequest } from '@/lib/api-middleware';
 import { createApiResponse } from '@/lib/api-response';
 import { prisma } from '@/lib/db';
+import { logger } from '@/lib/logger';
+import type { ProductWithIncludes } from '@/types/api';
 
 // GET /api/inventory/stats - Get inventory statistics
 export const GET = withAuth(async (_request: AuthenticatedRequest) => {
@@ -20,20 +22,20 @@ export const GET = withAuth(async (_request: AuthenticatedRequest) => {
 
     // Calculate stock levels using minStock logic
     const lowStockItems = allProducts.filter(
-      (p: any) => (p.stock || 0) <= (p.minStock || 0) && (p.stock || 0) > 0
+      p => (p.stock || 0) <= (p.minStock || 0) && (p.stock || 0) > 0
     ).length;
 
     const outOfStockItems = allProducts.filter(
-      (p: any) => (p.stock || 0) === 0
+      p => (p.stock || 0) === 0
     ).length;
 
     const inStockItems = allProducts.filter(
-      (p: any) => (p.stock || 0) > (p.minStock || 0)
+      p => (p.stock || 0) > (p.minStock || 0)
     ).length;
 
     // Get total stock value
     const totalStockValue = allProducts.reduce(
-      (sum: number, product: any) =>
+      (sum: number, product) =>
         sum + (product.stock || 0) * Number(product.price || 0),
       0
     );
@@ -78,7 +80,9 @@ export const GET = withAuth(async (_request: AuthenticatedRequest) => {
       'Inventory statistics retrieved successfully'
     );
   } catch (error) {
-    console.error('Error fetching inventory stats:', error);
+    logger.error('Error fetching inventory stats', {
+      error: error instanceof Error ? error.message : String(error),
+    });
     return createApiResponse.internalError('Failed to fetch inventory stats');
   }
 });
