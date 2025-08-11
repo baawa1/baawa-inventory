@@ -5,9 +5,7 @@ import { USER_ROLES, hasRole } from '@/lib/auth/roles';
 import { Prisma } from '@prisma/client';
 import { logger } from '@/lib/logger';
 import { SUCCESSFUL_PAYMENT_STATUSES } from '@/lib/constants';
-import {
-  getPhoneSearchPatterns,
-} from '@/lib/utils/phone-utils';
+import { getPhoneSearchPatterns } from '@/lib/utils/phone-utils';
 
 export async function GET(request: NextRequest) {
   try {
