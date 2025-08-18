@@ -160,7 +160,6 @@ test.describe('Products E2E Workflow', () => {
 
     // Fill in required fields
     await page.fill('input[name="name"]', 'New Test Product');
-    await page.fill('input[name="sku"]', 'NEW-TEST-001');
     await page.fill('input[name="purchasePrice"]', '12.50');
     await page.fill('input[name="sellingPrice"]', '19.99');
     await page.fill('input[name="currentStock"]', '15');

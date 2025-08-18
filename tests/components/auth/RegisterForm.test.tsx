@@ -1,6 +1,7 @@
-import { render, screen, fireEvent, waitFor } from '@testing-library/react';
+import { fireEvent } from '@testing-library/react';
 import { RegisterForm } from '@/components/auth/RegisterForm';
 import { UserRole } from '@/types/user';
+import { renderWithProviders, screen, waitFor } from '../../utils/test-providers';
 
 // Mock fetch for API calls
 const mockFetch = jest.fn();
@@ -20,7 +21,7 @@ describe('RegisterForm', () => {
   });
 
   it('renders registration form correctly', () => {
-    render(<RegisterForm />);
+    renderWithProviders(<RegisterForm />);
 
     // Check for the title specifically in the header
     expect(
@@ -40,7 +41,7 @@ describe('RegisterForm', () => {
   });
 
   it('shows validation errors for invalid inputs', async () => {
-    render(<RegisterForm />);
+    renderWithProviders(<RegisterForm />);
 
     const submitButton = screen.getByRole('button', { name: 'Create Account' });
 
@@ -79,7 +80,7 @@ describe('RegisterForm', () => {
   });
 
   it('shows error when passwords do not match', async () => {
-    render(<RegisterForm />);
+    renderWithProviders(<RegisterForm />);
 
     const firstNameInput = screen.getByLabelText('First Name');
     const lastNameInput = screen.getByLabelText('Last Name');
@@ -115,7 +116,7 @@ describe('RegisterForm', () => {
       }),
     } as Response);
 
-    render(<RegisterForm />);
+    renderWithProviders(<RegisterForm />);
 
     const firstNameInput = screen.getByLabelText('First Name');
     const lastNameInput = screen.getByLabelText('Last Name');
@@ -161,7 +162,7 @@ describe('RegisterForm', () => {
       }),
     } as Response);
 
-    render(<RegisterForm />);
+    renderWithProviders(<RegisterForm />);
 
     const firstNameInput = screen.getByLabelText('First Name');
     const lastNameInput = screen.getByLabelText('Last Name');
@@ -195,7 +196,7 @@ describe('RegisterForm', () => {
       json: async () => ({ message: 'Email already exists' }),
     } as Response);
 
-    render(<RegisterForm />);
+    renderWithProviders(<RegisterForm />);
 
     const firstNameInput = screen.getByLabelText('First Name');
     const lastNameInput = screen.getByLabelText('Last Name');

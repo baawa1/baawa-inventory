@@ -1,22 +1,15 @@
+// Import integration setup FIRST to ensure proper mocking
+import '../../integration-setup';
+import { createPrismaMock, createMockSession } from '../../integration-setup';
+
+// Create Prisma mock
+createPrismaMock();
+
 import { describe, it, expect, beforeEach, afterEach } from '@jest/globals';
 import { NextRequest } from 'next/server';
 import { GET, POST } from '@/app/api/suppliers/route';
 import { GET as GET_BY_ID, PUT, DELETE } from '@/app/api/suppliers/[id]/route';
 import { prisma } from '@/lib/db';
-// Mock utility functions
-const createMockSession = () => ({
-  user: {
-    id: '1',
-    email: 'test@example.com',
-    role: 'ADMIN',
-    status: 'APPROVED',
-  },
-});
-
-// Mock authentication
-jest.mock('../../../../auth', () => ({
-  auth: jest.fn(),
-}));
 
 // Mock permissions
 jest.mock('@/lib/auth/roles', () => ({

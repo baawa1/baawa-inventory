@@ -43,7 +43,6 @@ export interface FormState {
 // Default form values that match the schema
 export const defaultFormValues: CreateProductData = {
   name: '',
-  sku: '',
   barcode: null,
   description: null,
   categoryId: null,

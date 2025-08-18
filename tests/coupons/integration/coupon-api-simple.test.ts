@@ -3,6 +3,7 @@ import { GET as GET_COUPON } from '@/app/api/pos/coupons/[id]/route';
 import { PATCH as TOGGLE_COUPON } from '@/app/api/pos/coupons/[id]/toggle/route';
 import { POST as VALIDATE_COUPON } from '@/app/api/pos/coupons/validate/route';
 import { USER_ROLES } from '@/lib/auth/roles';
+import { prisma } from '@/lib/db';
 
 // Mock the middleware
 jest.mock('@/lib/api-middleware', () => ({
@@ -11,34 +12,37 @@ jest.mock('@/lib/api-middleware', () => ({
 }));
 
 // Mock Prisma
-const mockPrisma = {
-  coupon: {
-    findMany: jest.fn(),
-    findUnique: jest.fn(),
-    findFirst: jest.fn(),
-    create: jest.fn(),
-    update: jest.fn(),
-    delete: jest.fn(),
-  },
-  salesItem: {
-    findFirst: jest.fn(),
-  },
-  user: {
-    findUnique: jest.fn(),
-  },
-};
-
 jest.mock('@/lib/db', () => ({
-  prisma: mockPrisma,
+  prisma: {
+    coupon: {
+      findMany: jest.fn(),
+      findUnique: jest.fn(),
+      findFirst: jest.fn(),
+      create: jest.fn(),
+      update: jest.fn(),
+      delete: jest.fn(),
+      count: jest.fn(),
+    },
+    salesItem: {
+      findFirst: jest.fn(),
+    },
+    user: {
+      findUnique: jest.fn(),
+    },
+  },
 }));
 
+// Get the mocked prisma for use in tests
+const mockPrisma = prisma as jest.Mocked<typeof prisma>;
+
 // Mock NextRequest
-const createMockRequest = (url: string, method: string = 'GET', body?: any) => {
+const createMockRequest = (url: string, method: string = 'GET', body?: any, user?: any) => {
   return {
     url,
     method,
     json: jest.fn().mockResolvedValue(body),
     nextUrl: new URL(url),
+    user: user || { id: '1', role: USER_ROLES.ADMIN, status: 'APPROVED' },
   } as any;
 };
 
@@ -76,19 +80,17 @@ describe('Coupon API Integration', () => {
       ];
 
       mockPrisma.coupon.findMany.mockResolvedValue(mockCoupons);
+      mockPrisma.coupon.count.mockResolvedValue(1);
 
       const request = createMockRequest(
         'http://localhost:3000/api/pos/coupons?search=SAVE&status=active'
       );
-      const response = await GET(
-        request,
-        { user: { id: '1', role: USER_ROLES.ADMIN } },
-        {}
-      );
+      const response = await GET(request);
 
       expect(response.status).toBe(200);
       const data = await response.json();
-      expect(data).toEqual(mockCoupons);
+      expect(data.data).toEqual(mockCoupons);
+      expect(data.pagination).toBeDefined();
     });
   });
 

@@ -8,9 +8,9 @@ import {
 import { PATCH as TOGGLE_COUPON } from '@/app/api/pos/coupons/[id]/toggle/route';
 import { POST as VALIDATE_COUPON } from '@/app/api/pos/coupons/validate/route';
 import { USER_ROLES } from '@/lib/auth/roles';
+import { prisma } from '@/lib/db';
 
-// Mock NextRequest
-global.Request = NextRequest as any;
+// Mock NextRequest (removed global assignment as it's read-only)
 
 // Mock the middleware
 jest.mock('@/lib/api-middleware', () => ({
@@ -19,25 +19,27 @@ jest.mock('@/lib/api-middleware', () => ({
 }));
 
 // Mock Prisma
-const mockPrisma = {
-  coupon: {
-    findMany: jest.fn(),
-    findUnique: jest.fn(),
-    create: jest.fn(),
-    update: jest.fn(),
-    delete: jest.fn(),
-  },
-  salesItem: {
-    findFirst: jest.fn(),
-  },
-  user: {
-    findUnique: jest.fn(),
-  },
-};
-
 jest.mock('@/lib/db', () => ({
-  prisma: mockPrisma,
+  prisma: {
+    coupon: {
+      findMany: jest.fn(),
+      findUnique: jest.fn(),
+      create: jest.fn(),
+      update: jest.fn(),
+      delete: jest.fn(),
+      count: jest.fn(),
+    },
+    salesItem: {
+      findFirst: jest.fn(),
+    },
+    user: {
+      findUnique: jest.fn(),
+    },
+  },
 }));
+
+// Get the mocked prisma for use in tests
+const mockPrisma = prisma as jest.Mocked<typeof prisma>;
 
 describe('Coupon API', () => {
   beforeEach(() => {

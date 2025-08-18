@@ -1,7 +1,8 @@
-import { render, screen, fireEvent, waitFor } from '@testing-library/react';
+import { fireEvent } from '@testing-library/react';
 import { signIn } from 'next-auth/react';
 import { useRouter } from 'next/navigation';
 import { LoginForm } from '@/components/auth/LoginForm';
+import { renderWithProviders, screen, waitFor } from '../../utils/test-providers';
 
 // Mock NextAuth
 jest.mock('next-auth/react', () => ({
@@ -29,7 +30,7 @@ describe('LoginForm', () => {
   });
 
   it('renders login form correctly', () => {
-    render(<LoginForm />);
+    renderWithProviders(<LoginForm />);
 
     // Check for the correct title and description text
     expect(
@@ -41,7 +42,7 @@ describe('LoginForm', () => {
   });
 
   it('prevents form submission when fields are empty', async () => {
-    render(<LoginForm />);
+    renderWithProviders(<LoginForm />);
 
     const submitButton = screen.getByRole('button', { name: 'Sign in' });
 
@@ -59,7 +60,7 @@ describe('LoginForm', () => {
   it('submits form with valid credentials', async () => {
     mockSignIn.mockResolvedValue({ ok: true, error: null } as any);
 
-    render(<LoginForm />);
+    renderWithProviders(<LoginForm />);
 
     const emailInput = screen.getByLabelText('Email');
     const passwordInput = screen.getByLabelText('Password');
@@ -89,7 +90,7 @@ describe('LoginForm', () => {
       error: 'Invalid credentials',
     } as any);
 
-    render(<LoginForm />);
+    renderWithProviders(<LoginForm />);
 
     const emailInput = screen.getByLabelText('Email');
     const passwordInput = screen.getByLabelText('Password');
@@ -109,7 +110,7 @@ describe('LoginForm', () => {
   it('uses callback URL when provided', async () => {
     mockSignIn.mockResolvedValue({ ok: true, error: null } as any);
 
-    render(<LoginForm callbackUrl="/admin/dashboard" />);
+    renderWithProviders(<LoginForm callbackUrl="/admin/dashboard" />);
 
     const emailInput = screen.getByLabelText('Email');
     const passwordInput = screen.getByLabelText('Password');
@@ -132,7 +133,7 @@ describe('LoginForm', () => {
         )
     );
 
-    render(<LoginForm />);
+    renderWithProviders(<LoginForm />);
 
     const emailInput = screen.getByLabelText('Email');
     const passwordInput = screen.getByLabelText('Password');

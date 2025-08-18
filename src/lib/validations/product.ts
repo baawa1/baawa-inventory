@@ -13,7 +13,7 @@ import { nairaPriceSchema, costPriceSchema } from './price';
 // Product creation schema
 export const createProductSchema = z.object({
   name: nameSchema,
-  sku: skuSchema,
+  sku: skuSchema.optional(), // Made optional since it will be auto-generated
   barcode: z.string().optional().nullable(),
   description: z
     .string()

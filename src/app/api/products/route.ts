@@ -10,6 +10,7 @@ import { logger } from '@/lib/logger';
 
 import { PRODUCT_STATUS } from '@/lib/constants';
 import { USER_ROLES } from '@/lib/auth/roles';
+import { generateSKU } from '@/lib/utils/product-utils';
 
 // Import the form validation schema
 import { createProductSchema } from '@/lib/validations/product';
@@ -232,20 +233,72 @@ export const POST = withPermission(
       // Validate input data
       const validatedData = ProductCreateSchema.parse(body);
 
-      // Check if SKU already exists
-      const existingSKU = await prisma.product.findUnique({
-        where: { sku: validatedData.sku },
-      });
+      // Auto-generate SKU if not provided
+      let finalSku = validatedData.sku;
+      if (!finalSku) {
+        // Fetch category and brand names for SKU generation
+        let categoryName: string | undefined;
+        let brandName: string | undefined;
 
-      if (existingSKU) {
-        return createSecureResponse(
-          {
-            success: false,
-            message: 'Product with this SKU already exists',
-            code: 'CONFLICT',
-          },
-          409
-        );
+        if (validatedData.categoryId) {
+          const category = await prisma.category.findUnique({
+            where: { id: validatedData.categoryId },
+            select: { name: true },
+          });
+          categoryName = category?.name;
+        }
+
+        if (validatedData.brandId) {
+          const brand = await prisma.brand.findUnique({
+            where: { id: validatedData.brandId },
+            select: { name: true },
+          });
+          brandName = brand?.name;
+        }
+
+        // Generate unique SKU with retry logic
+        let attempts = 0;
+        const maxAttempts = 10;
+
+        do {
+          finalSku = generateSKU(validatedData.name, categoryName, brandName);
+          attempts++;
+
+          // Check if SKU already exists
+          const existingSKU = await prisma.product.findUnique({
+            where: { sku: finalSku },
+            select: { id: true },
+          });
+
+          if (!existingSKU) break;
+        } while (attempts < maxAttempts);
+
+        if (attempts >= maxAttempts) {
+          return createSecureResponse(
+            {
+              success: false,
+              message: 'Failed to generate unique SKU after multiple attempts',
+              code: 'INTERNAL_ERROR',
+            },
+            500
+          );
+        }
+      } else {
+        // Check if provided SKU already exists
+        const existingSKU = await prisma.product.findUnique({
+          where: { sku: finalSku },
+        });
+
+        if (existingSKU) {
+          return createSecureResponse(
+            {
+              success: false,
+              message: 'Product with this SKU already exists',
+              code: 'CONFLICT',
+            },
+            409
+          );
+        }
       }
 
       // Check if barcode already exists (if provided)
@@ -324,7 +377,7 @@ export const POST = withPermission(
       const newProduct = await prisma.product.create({
         data: {
           name: validatedData.name,
-          sku: validatedData.sku,
+          sku: finalSku,
           barcode: validatedData.barcode,
           description: validatedData.description,
           price: validatedData.sellingPrice,

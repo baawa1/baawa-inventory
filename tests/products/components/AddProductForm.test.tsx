@@ -180,7 +180,6 @@ describe('AddProductForm', () => {
 
     // Fill in required fields
     await user.type(screen.getByLabelText(/product name/i), 'Test Product');
-    await user.type(screen.getByLabelText(/sku/i), 'TEST-001');
     await user.type(screen.getByLabelText(/purchase price/i), '10.50');
     await user.type(screen.getByLabelText(/selling price/i), '15.99');
     await user.type(screen.getByLabelText(/current stock/i), '10');
@@ -209,6 +208,7 @@ describe('AddProductForm', () => {
     const submitButton = screen.getByRole('button', {
       name: /create product/i,
     });
+
     await user.click(submitButton);
 
     await waitFor(() => {
@@ -219,7 +219,6 @@ describe('AddProductForm', () => {
         },
         body: JSON.stringify({
           name: 'Test Product',
-          sku: 'TEST-001',
           barcode: '1234567890123',
           description: 'A test product',
           categoryId: 1,
@@ -238,7 +237,6 @@ describe('AddProductForm', () => {
           size: '',
           material: '',
           tags: [],
-
           notes: null,
         }),
       });
@@ -258,7 +256,6 @@ describe('AddProductForm', () => {
 
     // Fill in required fields
     await user.type(screen.getByLabelText(/product name/i), 'Test Product');
-    await user.type(screen.getByLabelText(/sku/i), 'TEST-001');
     await user.type(screen.getByLabelText(/purchase price/i), '10.50');
     await user.type(screen.getByLabelText(/selling price/i), '15.99');
     await user.type(screen.getByLabelText(/current stock/i), '10');

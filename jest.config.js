@@ -17,6 +17,8 @@ const customJestConfig = {
   moduleNameMapper: {
     "^@/(.*)$": "<rootDir>/src/$1",
     "^@/tests/(.*)$": "<rootDir>/tests/$1",
+    "^#root/auth$": "<rootDir>/__mocks__/auth.ts",
+    "^@/auth$": "<rootDir>/__mocks__/auth.ts",
   },
 
   // Test file patterns
@@ -63,7 +65,9 @@ const customJestConfig = {
   },
 
   // Transform ignore patterns for ES modules
-  transformIgnorePatterns: ["node_modules/(?!(node-fetch)/)"],
+  transformIgnorePatterns: [
+    "node_modules/(?!(next-auth|@auth/core|oauth4webapi|preact-render-to-string|preact|node-fetch)/)"
+  ],
 
   // Clear mocks between tests
   clearMocks: true,

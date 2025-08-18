@@ -36,8 +36,8 @@ export function formatCurrency(
   amount: number,
   showDecimals: boolean = true
 ): string {
-  // Handle NaN, null, or undefined values
-  if (amount === null || amount === undefined || isNaN(amount)) {
+  // Handle NaN, null, undefined, Infinity, or -Infinity values
+  if (amount === null || amount === undefined || isNaN(amount) || !isFinite(amount)) {
     return '₦0.00';
   }
 

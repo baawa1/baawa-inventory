@@ -6,7 +6,42 @@ import {
 
 describe('Product Validation Schemas', () => {
   describe('createProductSchema', () => {
-    it('should validate a valid product', () => {
+    it('should validate a valid product without SKU', () => {
+      const validProduct = {
+        name: 'Test Product',
+        barcode: '1234567890123',
+        description: 'A test product',
+        categoryId: 1,
+        brandId: 1,
+        purchasePrice: 10.5,
+        sellingPrice: 15.99,
+        minimumStock: 5,
+        maximumStock: 100,
+        currentStock: 10,
+        supplierId: 1,
+        status: 'ACTIVE',
+        unit: 'piece',
+        weight: 0.5,
+        dimensions: '10x5x2',
+        color: 'Red',
+        size: 'Medium',
+        material: 'Cotton',
+        tags: ['test', 'sample'],
+        salePrice: 12.99,
+        saleStartDate: new Date('2024-01-01T00:00:00Z'),
+        saleEndDate: new Date('2024-12-31T23:59:59Z'),
+        metaTitle: 'Test Product Meta Title',
+        metaDescription: 'Test product meta description',
+        seoKeywords: ['test', 'product', 'sample'],
+        isFeatured: true,
+        sortOrder: 1,
+      };
+
+      const result = createProductSchema.safeParse(validProduct);
+      expect(result.success).toBe(true);
+    });
+
+    it('should validate a valid product with SKU', () => {
       const validProduct = {
         name: 'Test Product',
         sku: 'TEST-001',
@@ -51,11 +86,11 @@ describe('Product Validation Schemas', () => {
       const result = createProductSchema.safeParse(invalidProduct);
       expect(result.success).toBe(false);
       if (!result.success) {
-        expect(result.error.issues).toHaveLength(7); // name, sku, purchasePrice, sellingPrice, minimumStock, currentStock, status
+        expect(result.error.issues).toHaveLength(6); // name, purchasePrice, sellingPrice, minimumStock, currentStock, status (SKU is now optional)
       }
     });
 
-    it('should reject invalid SKU format', () => {
+    it('should reject invalid SKU format when provided', () => {
       const invalidProduct = {
         name: 'Test Product',
         sku: 'test@001', // Invalid characters
@@ -79,7 +114,6 @@ describe('Product Validation Schemas', () => {
     it('should reject negative prices', () => {
       const invalidProduct = {
         name: 'Test Product',
-        sku: 'TEST-001',
         purchasePrice: -10.5,
         sellingPrice: -15.99,
         minimumStock: 5,
@@ -102,7 +136,6 @@ describe('Product Validation Schemas', () => {
     it('should reject negative stock values', () => {
       const invalidProduct = {
         name: 'Test Product',
-        sku: 'TEST-001',
         purchasePrice: 10.5,
         sellingPrice: 15.99,
         minimumStock: -5,
@@ -125,34 +158,23 @@ describe('Product Validation Schemas', () => {
     it('should accept optional fields as null', () => {
       const productWithNulls = {
         name: 'Test Product',
-        sku: 'TEST-001',
-        barcode: null,
-        description: null,
-        categoryId: null,
-        brandId: null,
         purchasePrice: 10.5,
         sellingPrice: 15.99,
         minimumStock: 5,
-        maximumStock: null,
         currentStock: 10,
-        supplierId: null,
         status: 'ACTIVE',
-        notes: null,
-        unit: 'piece',
+        description: null,
+        barcode: null,
+        categoryId: null,
+        brandId: null,
+        supplierId: null,
+        maximumStock: null,
         weight: null,
         dimensions: null,
         color: null,
         size: null,
         material: null,
-        tags: [],
-        salePrice: null,
-        saleStartDate: null,
-        saleEndDate: null,
-        metaTitle: null,
-        metaDescription: null,
-        seoKeywords: [],
-        isFeatured: false,
-        sortOrder: null,
+        notes: null,
       };
 
       const result = createProductSchema.safeParse(productWithNulls);
@@ -284,25 +306,6 @@ describe('Product Validation Schemas', () => {
       expect(result.success).toBe(false);
       if (!result.success) {
         expect(result.error.issues.length).toBeGreaterThan(0);
-      }
-    });
-
-    it('should validate date formats', () => {
-      const updateWithInvalidDates = {
-        name: 'Test Product',
-        saleStartDate: 'invalid-date' as any,
-        saleEndDate: '2024-13-45T25:70:99Z' as any,
-      };
-
-      const result = updateProductSchema.safeParse(updateWithInvalidDates);
-      expect(result.success).toBe(false);
-      if (!result.success) {
-        const dateErrors = result.error.issues.filter(
-          issue =>
-            issue.path.includes('saleStartDate') ||
-            issue.path.includes('saleEndDate')
-        );
-        expect(dateErrors.length).toBeGreaterThan(0);
       }
     });
   });

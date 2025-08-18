@@ -1,7 +1,7 @@
-import { render, screen, waitFor, act } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import { useRouter, useSearchParams } from 'next/navigation';
 import { ResetPasswordForm } from '@/components/auth/ResetPasswordForm';
+import { renderWithProviders, screen, waitFor, act } from '../../utils/test-providers';
 
 // Mock Next.js navigation
 jest.mock('next/navigation', () => ({
@@ -28,7 +28,7 @@ describe('ResetPasswordForm', () => {
     it('renders loading state when validating token', () => {
       mockSearchParams.get.mockReturnValue('valid-token');
 
-      render(<ResetPasswordForm />);
+      renderWithProviders(<ResetPasswordForm />);
 
       expect(screen.getByText('Loading...')).toBeInTheDocument();
       expect(
@@ -39,7 +39,7 @@ describe('ResetPasswordForm', () => {
     it('shows invalid token message for missing token', async () => {
       mockSearchParams.get.mockReturnValue(null);
 
-      render(<ResetPasswordForm />);
+      renderWithProviders(<ResetPasswordForm />);
 
       await waitFor(() => {
         expect(screen.getByText('Invalid Reset Link')).toBeInTheDocument();
@@ -56,7 +56,7 @@ describe('ResetPasswordForm', () => {
       });
 
       await act(async () => {
-        render(<ResetPasswordForm />);
+        renderWithProviders(<ResetPasswordForm />);
       });
 
       await waitFor(() => {
@@ -72,7 +72,7 @@ describe('ResetPasswordForm', () => {
       });
 
       await act(async () => {
-        render(<ResetPasswordForm />);
+        renderWithProviders(<ResetPasswordForm />);
       });
 
       await waitFor(() => {
@@ -96,7 +96,7 @@ describe('ResetPasswordForm', () => {
       );
 
       await act(async () => {
-        render(<ResetPasswordForm />);
+        renderWithProviders(<ResetPasswordForm />);
       });
 
       await waitFor(() => {
@@ -111,7 +111,7 @@ describe('ResetPasswordForm', () => {
       (global.fetch as jest.Mock).mockResolvedValueOnce({ ok: true });
 
       await act(async () => {
-        render(<ResetPasswordForm />);
+        renderWithProviders(<ResetPasswordForm />);
       });
 
       await waitFor(() => {
@@ -202,7 +202,7 @@ describe('ResetPasswordForm', () => {
       (global.fetch as jest.Mock).mockResolvedValueOnce({ ok: true });
 
       await act(async () => {
-        render(<ResetPasswordForm />);
+        renderWithProviders(<ResetPasswordForm />);
       });
 
       await waitFor(() => {
@@ -348,7 +348,7 @@ describe('ResetPasswordForm', () => {
         ); // Slow response
 
       await act(async () => {
-        render(<ResetPasswordForm />);
+        renderWithProviders(<ResetPasswordForm />);
       });
 
       await waitFor(() => {
@@ -374,7 +374,7 @@ describe('ResetPasswordForm', () => {
     it('navigates to forgot password page from invalid token state', async () => {
       mockSearchParams.get.mockReturnValue(null);
 
-      render(<ResetPasswordForm />);
+      renderWithProviders(<ResetPasswordForm />);
 
       await waitFor(() => {
         expect(screen.getByText('Invalid Reset Link')).toBeInTheDocument();
@@ -393,7 +393,7 @@ describe('ResetPasswordForm', () => {
       (global.fetch as jest.Mock).mockResolvedValueOnce({ ok: true });
 
       await act(async () => {
-        render(<ResetPasswordForm />);
+        renderWithProviders(<ResetPasswordForm />);
       });
 
       await waitFor(() => {

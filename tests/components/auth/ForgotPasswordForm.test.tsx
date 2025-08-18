@@ -1,6 +1,7 @@
-import { render, screen, fireEvent, waitFor } from '@testing-library/react';
+import { fireEvent } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import { ForgotPasswordForm } from '@/components/auth/ForgotPasswordForm';
+import { renderWithProviders, screen, waitFor } from '../../utils/test-providers';
 
 // Mock fetch
 global.fetch = jest.fn();
@@ -11,7 +12,7 @@ describe('ForgotPasswordForm', () => {
   });
 
   it('renders the forgot password form', () => {
-    render(<ForgotPasswordForm />);
+    renderWithProviders(<ForgotPasswordForm />);
 
     expect(screen.getByText('Reset Password')).toBeInTheDocument();
     expect(
@@ -27,7 +28,7 @@ describe('ForgotPasswordForm', () => {
 
   it('validates email input', async () => {
     const user = userEvent.setup();
-    render(<ForgotPasswordForm />);
+    renderWithProviders(<ForgotPasswordForm />);
 
     const emailInput = screen.getByPlaceholderText('Enter your email');
     const submitButton = screen.getByRole('button', {
@@ -56,7 +57,7 @@ describe('ForgotPasswordForm', () => {
       json: async () => ({ message: 'Reset email sent' }),
     });
 
-    render(<ForgotPasswordForm />);
+    renderWithProviders(<ForgotPasswordForm />);
 
     const emailInput = screen.getByPlaceholderText('Enter your email');
     const submitButton = screen.getByRole('button', {
@@ -84,7 +85,7 @@ describe('ForgotPasswordForm', () => {
       json: async () => ({ message: 'Reset email sent' }),
     });
 
-    render(<ForgotPasswordForm />);
+    renderWithProviders(<ForgotPasswordForm />);
 
     const emailInput = screen.getByPlaceholderText('Enter your email');
     const submitButton = screen.getByRole('button', {
@@ -109,7 +110,7 @@ describe('ForgotPasswordForm', () => {
       json: async () => ({ error: 'Server error' }),
     });
 
-    render(<ForgotPasswordForm />);
+    renderWithProviders(<ForgotPasswordForm />);
 
     const emailInput = screen.getByPlaceholderText('Enter your email');
     const submitButton = screen.getByRole('button', {
@@ -131,7 +132,7 @@ describe('ForgotPasswordForm', () => {
       json: async () => ({ message: 'Reset email sent' }),
     });
 
-    render(<ForgotPasswordForm />);
+    renderWithProviders(<ForgotPasswordForm />);
 
     const emailInput = screen.getByPlaceholderText('Enter your email');
     const submitButton = screen.getByRole('button', {

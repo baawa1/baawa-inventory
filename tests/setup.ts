@@ -15,6 +15,58 @@ jest.mock('next/navigation', () => ({
   }),
 }));
 
+// Auth module is mocked via moduleNameMapper in jest.config.js
+
+// Mock Web APIs for Node environment
+Object.defineProperty(global, 'Request', {
+  value: class Request {
+    constructor(public url: string, public init?: RequestInit) {
+      this.method = init?.method || 'GET';
+    }
+    headers = new Map();
+    method = 'GET';
+    body = null;
+    json = jest.fn();
+    text = jest.fn();
+  },
+});
+
+Object.defineProperty(global, 'Response', {
+  value: class Response {
+    constructor(public body?: any, public init?: ResponseInit) {
+      this.status = init?.status || 200;
+    }
+    status = 200;
+    headers = new Map();
+    json = jest.fn();
+    text = jest.fn();
+    
+    static json(data: any, init?: ResponseInit) {
+      return new Response(JSON.stringify(data), {
+        ...init,
+        headers: {
+          'Content-Type': 'application/json',
+          ...init?.headers,
+        },
+      });
+    }
+  },
+});
+
+// Mock NextResponse specifically  
+jest.mock('next/server', () => ({
+  NextRequest: jest.fn(),
+  NextResponse: {
+    json: jest.fn((data, init) => ({
+      status: init?.status || 200,
+      headers: new Map([['Content-Type', 'application/json']]),
+      json: () => Promise.resolve(data),
+      text: () => Promise.resolve(JSON.stringify(data)),
+    })),
+    redirect: jest.fn(),
+  },
+}));
+
 // Mock fetch globally
 global.fetch = jest.fn();
 

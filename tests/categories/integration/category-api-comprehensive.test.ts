@@ -1,3 +1,10 @@
+// Import integration setup FIRST to ensure proper mocking
+import '../../integration-setup';
+import { createPrismaMock } from '../../integration-setup';
+
+// Create Prisma mock with category-specific methods
+createPrismaMock();
+
 import { NextRequest, NextResponse } from 'next/server';
 import { auth } from '#root/auth';
 import { prisma } from '@/lib/db';
@@ -5,10 +12,6 @@ import {
   createCategorySchema,
   updateCategorySchema,
 } from '@/lib/validations/category';
-
-// Mock dependencies
-jest.mock('@/auth');
-jest.mock('@/lib/db');
 
 const mockAuth = auth as jest.MockedFunction<typeof auth>;
 const mockPrisma = prisma as jest.Mocked<typeof prisma>;

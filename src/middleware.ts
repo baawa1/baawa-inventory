@@ -120,13 +120,15 @@ export const config = {
      * - api (API routes)
      * - _next/static (static files)
      * - _next/image (image optimization files)
-     * - favicon.ico (favicon file)
+     * - favicon.png (favicon file)
      * - manifest.json (PWA manifest file)
      * - sw.js (service worker file)
      * - browserconfig.xml (IE/Edge config file)
      * - logo (logo images)
      * - icon (icon files)
+     * - apple-touch-icon.png (Apple touch icon)
+     * - *.svg (SVG files)
      */
-    '/((?!api|_next/static|_next/image|favicon.ico|manifest.json|sw.js|browserconfig.xml|logo|icon).*)',
+    '/((?!api|_next/static|_next/image|favicon.png|manifest.json|sw.js|browserconfig.xml|logo|icon|apple-touch-icon.png|.*\.svg).*)',
   ],
 };
