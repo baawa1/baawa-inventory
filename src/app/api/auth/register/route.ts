@@ -11,6 +11,7 @@ import {
 } from '@/lib/validations/common';
 import { randomBytes } from 'crypto';
 import { withRateLimit } from '@/lib/rate-limiting';
+import { getAppBaseUrl } from '@/lib/utils';
 
 // Registration validation schema
 const registerSchema = z
@@ -74,7 +75,7 @@ async function registerHandler(request: NextRequest) {
         // Send verification email
         await emailService.sendVerificationEmail(email, {
           firstName,
-          verificationLink: `${process.env.NEXTAUTH_URL || 'http://localhost:3000'}/verify-email?token=${verificationToken}`,
+          verificationLink: `${getAppBaseUrl()}/verify-email?token=${verificationToken}`,
           expiresInHours: 24,
         });
 
@@ -108,7 +109,6 @@ async function registerHandler(request: NextRequest) {
         role: 'STAFF', // Default role
         isActive: true,
         emailNotifications: true,
-  
       },
       select: {
         id: true,
@@ -133,13 +133,13 @@ async function registerHandler(request: NextRequest) {
       ) {
         emailId = await emailService.sendVerificationEmailWithId(email, {
           firstName,
-          verificationLink: `${process.env.NEXTAUTH_URL || 'http://localhost:3000'}/verify-email?token=${verificationToken}`,
+          verificationLink: `${getAppBaseUrl()}/verify-email?token=${verificationToken}`,
           expiresInHours: 24,
         });
       } else {
         await emailService.sendVerificationEmail(email, {
           firstName,
-          verificationLink: `${process.env.NEXTAUTH_URL || 'http://localhost:3000'}/verify-email?token=${verificationToken}`,
+          verificationLink: `${getAppBaseUrl()}/verify-email?token=${verificationToken}`,
           expiresInHours: 24,
         });
       }
@@ -163,7 +163,7 @@ async function registerHandler(request: NextRequest) {
             userFirstName: firstName,
             userLastName: lastName,
             userEmail: email,
-            approvalLink: `${process.env.NEXTAUTH_URL || 'http://localhost:3000'}/admin/users`,
+            approvalLink: `${getAppBaseUrl()}/admin/users`,
             registrationDate: new Date().toISOString(),
           }
         );

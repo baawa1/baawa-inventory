@@ -3,6 +3,7 @@ import { prisma } from '@/lib/db';
 import { emailService } from '@/lib/email/service';
 import { AuditLogger } from '@/lib/utils/audit-logger';
 import { randomBytes } from 'crypto';
+import { getAppBaseUrl } from '@/lib/utils';
 
 export async function POST(request: NextRequest) {
   try {
@@ -163,7 +164,7 @@ export async function PUT(request: NextRequest) {
 
     // Send new verification email
     try {
-      const verificationLink = `${process.env.NEXTAUTH_URL || 'http://localhost:3000'}/verify-email?token=${verificationToken}`;
+      const verificationLink = `${getAppBaseUrl()}/verify-email?token=${verificationToken}`;
 
       await emailService.sendVerificationEmail(email, {
         firstName: user.firstName,

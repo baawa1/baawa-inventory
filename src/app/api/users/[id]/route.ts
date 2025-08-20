@@ -3,6 +3,7 @@ import { withPermission, AuthenticatedRequest } from '@/lib/api-middleware';
 import { prisma } from '@/lib/db';
 import bcrypt from 'bcryptjs';
 import { emailService } from '@/lib/email';
+import { getAppBaseUrl } from '@/lib/utils';
 
 interface RouteParams {
   params: Promise<{ id: string }>;
@@ -199,8 +200,7 @@ export async function PUT(request: NextRequest, { params }: RouteParams) {
         if (body.role && body.role !== existingUser.role) {
           try {
             const adminName = authRequest.user?.name || 'Administrator';
-            const dashboardUrl =
-              process.env.NEXTAUTH_URL || 'http://localhost:3000';
+            const dashboardUrl = getAppBaseUrl();
 
             await emailService.sendRoleChangeEmail(user.email, {
               firstName: user.firstName,

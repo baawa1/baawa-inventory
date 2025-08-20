@@ -5,6 +5,7 @@ import { prisma } from '@/lib/db';
 import { emailService } from '@/lib/email/service';
 import { AuditLogger } from '@/lib/utils/audit-logger';
 import { passwordSchema } from '@/lib/validations/common';
+import { getAppBaseUrl } from '@/lib/utils';
 import { withRateLimit } from '@/lib/rate-limiting';
 
 // Reset password validation schema
@@ -116,7 +117,7 @@ async function resetPasswordHandler(request: NextRequest) {
     // Send confirmation email
     await emailService.sendPasswordResetEmail(user.email, {
       firstName: user.firstName,
-      resetLink: `${process.env.NEXTAUTH_URL || 'http://localhost:3000'}/login`,
+      resetLink: `${getAppBaseUrl()}/login`,
       expiresInHours: 0, // This is a confirmation, not a reset link
     });
 

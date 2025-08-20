@@ -6,6 +6,7 @@ import { AuditLogger } from '@/lib/utils/audit-logger';
 import { emailSchema } from '@/lib/validations/common';
 import { randomBytes } from 'crypto';
 import { withRateLimit } from '@/lib/rate-limiting';
+import { getAppBaseUrl } from '@/lib/utils';
 
 // Forgot password validation schema
 const forgotPasswordSchema = z.object({
@@ -70,7 +71,7 @@ async function forgotPasswordHandler(request: NextRequest) {
       // Send password reset email
       await emailService.sendPasswordResetEmail(user.email, {
         firstName: user.firstName,
-        resetLink: `${process.env.NEXTAUTH_URL || 'http://localhost:3000'}/reset-password?token=${resetToken}`,
+        resetLink: `${getAppBaseUrl()}/reset-password?token=${resetToken}`,
         expiresInHours: 2,
       });
 
