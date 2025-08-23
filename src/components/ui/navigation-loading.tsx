@@ -60,23 +60,19 @@ export function NavigationLoading() {
   if (!isLoading) return null;
 
   return (
-    <div className="fixed top-0 right-0 left-0 z-50">
-      <div className="relative h-1 overflow-hidden bg-gradient-to-r from-primary via-accent to-secondary">
-        <div
+    <div className="fixed top-0 left-0 right-0 z-50">
+      <div className="h-1 bg-gradient-to-r from-chart-1 via-chart-3 to-chart-4 relative overflow-hidden">
+        <div 
           className="absolute top-0 left-0 h-full w-1/3 bg-primary-foreground opacity-75 shadow-lg"
-          style={{
-            animation: 'loading 1.2s ease-in-out infinite',
-          }}
+          style={{ 
+            animation: 'loading 1.2s ease-in-out infinite'
+          }} 
         />
       </div>
       <style jsx>{`
         @keyframes loading {
-          0% {
-            transform: translateX(-100%);
-          }
-          100% {
-            transform: translateX(400%);
-          }
+          0% { transform: translateX(-100%); }
+          100% { transform: translateX(400%); }
         }
       `}</style>
     </div>
