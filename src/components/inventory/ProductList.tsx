@@ -239,6 +239,20 @@ const ProductList = ({ user }: ProductListProps) => {
     []
   );
 
+  // Check permissions for cost data access
+  const canViewCost = hasPermission(user.role, 'PRODUCT_COST_READ');
+
+  // Filter available columns based on permissions
+  const availableColumns = useMemo(() => {
+    return PRODUCT_COLUMNS.filter(column => {
+      // Hide cost column if user doesn't have cost permissions
+      if (column.key === 'cost' && !canViewCost) {
+        return false;
+      }
+      return true;
+    });
+  }, [canViewCost]);
+
   // Filter configurations - properly memoized to prevent unnecessary re-renders
   const filterConfigs: FilterConfig[] = useMemo(
     () => [
@@ -407,9 +421,6 @@ const ProductList = ({ user }: ProductListProps) => {
   };
 
   const renderCell = (product: APIProduct, columnKey: string) => {
-    // Check permissions for sensitive data
-    const canViewPrice = hasPermission(user.role, 'PRODUCT_PRICE_READ');
-    const canViewCost = hasPermission(user.role, 'PRODUCT_COST_READ');
     
     switch (columnKey) {
       case 'image':
@@ -473,11 +484,7 @@ const ProductList = ({ user }: ProductListProps) => {
           </div>
         );
       case 'cost':
-        return canViewCost ? (
-          <span className="text-sm">{formatCurrency(product.cost)}</span>
-        ) : (
-          <span className="text-muted-foreground">-</span>
-        );
+        return <span className="text-sm">{formatCurrency(product.cost)}</span>;
       case 'status':
         return getStatusBadge(product.status);
       case 'supplier':
@@ -684,7 +691,7 @@ const ProductList = ({ user }: ProductListProps) => {
         tableTitle="Products"
         totalCount={pagination.totalItems}
         currentCount={products.length}
-        columns={PRODUCT_COLUMNS}
+        columns={availableColumns}
         visibleColumns={visibleColumns}
         onColumnsChange={setVisibleColumns}
         columnCustomizerKey="products-visible-columns"
