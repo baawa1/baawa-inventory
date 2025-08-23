@@ -100,6 +100,9 @@ const ProductList = ({ user }: ProductListProps) => {
     totalItems: 0,
   });
   const [visibleColumns, setVisibleColumns] = useState<string[]>([]);
+  
+  // Check permissions for cost data access
+  const canViewCost = hasPermission(user.role, 'PRODUCT_COST_READ');
   const [filters, setFilters] = useState<ProductFilters>(() => {
     // Initialize filters based on URL parameters
     const lowStockParam = searchParams.get('lowStock');
@@ -239,9 +242,6 @@ const ProductList = ({ user }: ProductListProps) => {
     []
   );
 
-  // Check permissions for cost data access
-  const canViewCost = hasPermission(user.role, 'PRODUCT_COST_READ');
-
   // Filter available columns based on permissions
   const availableColumns = useMemo(() => {
     return PRODUCT_COLUMNS.filter(column => {
@@ -252,6 +252,16 @@ const ProductList = ({ user }: ProductListProps) => {
       return true;
     });
   }, [canViewCost]);
+
+  // Effect to clean up visible columns when permissions change
+  useEffect(() => {
+    if (!canViewCost && visibleColumns.includes('cost')) {
+      const updatedColumns = visibleColumns.filter(col => col !== 'cost');
+      setVisibleColumns(updatedColumns);
+      // Also update localStorage to prevent the cost column from reappearing
+      localStorage.setItem('products-visible-columns', JSON.stringify(updatedColumns));
+    }
+  }, [canViewCost, visibleColumns]);
 
   // Filter configurations - properly memoized to prevent unnecessary re-renders
   const filterConfigs: FilterConfig[] = useMemo(

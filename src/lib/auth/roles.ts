@@ -245,23 +245,25 @@ export const canDeleteFinance = (
 
 /**
  * Determine if a user has access to a specific route based on their role
+ * Optimized for performance with early returns
  */
 export const authorizeUserForRoute = (
   userRole: string | undefined | null,
   route: string
 ): boolean => {
+  // Early return for invalid user role
   if (!userRole) return false;
 
-  // Admin has access to all routes
+  // Admin has access to all routes - fastest path
   if (userRole === USER_ROLES.ADMIN) return true;
 
-  // Route-based authorization
+  // Route-based authorization with early returns
   if (route.startsWith('/admin')) {
-    return userRole === USER_ROLES.ADMIN;
+    return false; // Only admin can access admin routes
   }
 
   if (route.startsWith('/reports') || route.startsWith('/settings')) {
-    return userRole === USER_ROLES.ADMIN || userRole === USER_ROLES.MANAGER;
+    return userRole === USER_ROLES.MANAGER; // Only admin and manager
   }
 
   if (route.startsWith('/pos')) {

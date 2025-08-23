@@ -9,7 +9,7 @@ export default auth((req: NextRequest & { auth: any }) => {
   const token = req.auth;
   const { pathname } = req.nextUrl;
 
-  // Public routes that don't require authentication
+  // Public routes that don't require authentication - check first for fastest response
   const publicRoutes = [
     '/',
     '/login',
@@ -23,7 +23,7 @@ export default auth((req: NextRequest & { auth: any }) => {
     '/unauthorized',
   ];
 
-  // Allow public routes without any checks
+  // Allow public routes without any checks - fastest path
   if (publicRoutes.includes(pathname)) {
     const response = NextResponse.next();
     const securityHeaders = generateSecurityHeaders();
@@ -35,19 +35,17 @@ export default auth((req: NextRequest & { auth: any }) => {
     return response;
   }
 
-  // If no token, redirect to login
+  // If no token, redirect to login immediately
   if (!token?.user) {
     return NextResponse.redirect(new URL('/login', req.url));
   }
 
-  // Extract user information from token
+  // Extract user information from token once
   const userRole = token.user?.role || (token.role as UserRole);
   const userStatus = token.user?.status || (token.status as UserStatus);
   const isEmailVerified = Boolean(
     token.user?.isEmailVerified || token.isEmailVerified
   );
-
-  // Debug logging removed for production
 
   // Helper function to safely redirect and prevent loops
   const safeRedirect = (targetPath: string, _reason: string) => {
@@ -55,36 +53,19 @@ export default auth((req: NextRequest & { auth: any }) => {
       // Already on target path, allow access to prevent redirect loops
       return NextResponse.next();
     }
-    // Debug logging removed for production
     return NextResponse.redirect(new URL(targetPath, req.url));
   };
 
-  // Authentication Flow Logic:
-  // 1. PENDING users → check-email page (if email not verified) or pending-approval page
-  // 2. VERIFIED users → pending-approval page (email verified, awaiting admin approval)
-  // 3. APPROVED users → dashboard (full access)
-  // 4. REJECTED/SUSPENDED users → unauthorized page
-
-  // Check user status first, then handle email verification for PENDING users
+  // Check user status with early returns for fastest processing
   if (userStatus === 'PENDING') {
-    // PENDING users need email verification first
     if (!isEmailVerified) {
       return safeRedirect('/check-email', 'Email not verified');
-    } else {
-      // Email verified but still pending admin approval
-      return safeRedirect(
-        '/pending-approval',
-        'User status is PENDING (needs admin approval)'
-      );
     }
+    return safeRedirect('/pending-approval', 'User status is PENDING (needs admin approval)');
   }
 
   if (userStatus === 'VERIFIED') {
-    // Email verified but not yet approved by admin
-    return safeRedirect(
-      '/pending-approval',
-      'User status is VERIFIED (needs admin approval)'
-    );
+    return safeRedirect('/pending-approval', 'User status is VERIFIED (needs admin approval)');
   }
 
   if (userStatus === 'REJECTED' || userStatus === 'SUSPENDED') {
@@ -97,7 +78,7 @@ export default auth((req: NextRequest & { auth: any }) => {
   }
 
   // Check role-based access for protected routes
-  const isAuthorized = authorizeUserForRoute(pathname, userRole);
+  const isAuthorized = authorizeUserForRoute(userRole, pathname);
   if (!isAuthorized) {
     return safeRedirect('/unauthorized', 'Insufficient permissions');
   }
