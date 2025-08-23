@@ -92,8 +92,6 @@ function ResetPasswordFormContent({ className }: ResetPasswordFormProps) {
         const result = await tokenValidationMutation.mutateAsync({ token });
         setIsValidToken(result.valid);
       } catch (error) {
-        console.error('Token validation error:', error);
-
         // Handle specific error types
         if (error instanceof Error) {
           const errorMessage = error.message.toLowerCase();
@@ -152,7 +150,6 @@ function ResetPasswordFormContent({ className }: ResetPasswordFormProps) {
       // Redirect to login with success message
       router.push('/login?message=password-reset-success');
     } catch (error) {
-      console.error('Reset password error:', error);
       setError(error instanceof Error ? error.message : 'An error occurred');
     } finally {
       setIsLoading(false);
