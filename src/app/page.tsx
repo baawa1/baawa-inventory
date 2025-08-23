@@ -36,10 +36,10 @@ export default function Home() {
             </span>
           </div>
           <div className="flex items-center space-x-4">
-            <Link href="/login">
+            <Link href="/login" prefetch={true}>
               <Button variant="ghost">Sign In</Button>
             </Link>
-            <Link href="/register">
+            <Link href="/register" prefetch={true}>
               <Button>Register</Button>
             </Link>
           </div>
@@ -69,13 +69,13 @@ export default function Home() {
             operations with our integrated solution.
           </p>
           <div className="flex flex-col justify-center gap-4 sm:flex-row">
-            <Link href="/login">
+            <Link href="/login" prefetch={true}>
               <Button size="lg" className="px-8 py-6 text-lg">
                 Access System
                 <ArrowRight className="ml-2 h-5 w-5" />
               </Button>
             </Link>
-            <Link href="/register">
+            <Link href="/register" prefetch={true}>
               <Button variant="outline" size="lg" className="px-8 py-6 text-lg">
                 Create Account
               </Button>
@@ -371,6 +371,7 @@ export default function Home() {
                   <Link
                     href="/login"
                     className="transition-colors hover:text-white"
+                    prefetch={true}
                   >
                     Sign In
                   </Link>
@@ -379,6 +380,7 @@ export default function Home() {
                   <Link
                     href="/register"
                     className="transition-colors hover:text-white"
+                    prefetch={true}
                   >
                     Register
                   </Link>
@@ -387,6 +389,7 @@ export default function Home() {
                   <Link
                     href="/forgot-password"
                     className="transition-colors hover:text-white"
+                    prefetch={true}
                   >
                     Reset Password
                   </Link>

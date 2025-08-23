@@ -38,7 +38,7 @@ export function NavSecondary({
                   asChild
                   className={isActive ? 'bg-accent text-accent-foreground' : ''}
                 >
-                  <Link href={item.url}>
+                  <Link href={item.url} prefetch={true}>
                     <item.icon />
                     <span>{item.title}</span>
                   </Link>

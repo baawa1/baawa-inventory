@@ -25,7 +25,7 @@ export function PageHeader({ title, description, action }: PageHeaderProps) {
         </div>
         {action && (
           <Button asChild>
-            <Link href={action.href} className="flex items-center gap-2">
+            <Link href={action.href} className="flex items-center gap-2" prefetch={true}>
               {action.icon}
               {action.label}
             </Link>

@@ -127,7 +127,7 @@ function CollapsibleNavItem({ item }: { item: (typeof posNavItems)[0] }) {
           tooltip={item.title}
           className={isMainActive ? 'bg-accent text-accent-foreground' : ''}
         >
-          <Link href={item.url}>
+          <Link href={item.url} prefetch={true}>
             <item.icon />
             <span>{item.title}</span>
           </Link>
@@ -166,7 +166,7 @@ function CollapsibleNavItem({ item }: { item: (typeof posNavItems)[0] }) {
                         isActive ? 'bg-accent text-accent-foreground' : ''
                       }
                     >
-                      <Link href={subItem.url}>
+                      <Link href={subItem.url} prefetch={true}>
                         <span>{subItem.title}</span>
                       </Link>
                     </SidebarMenuSubButton>

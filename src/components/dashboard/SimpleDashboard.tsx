@@ -80,7 +80,7 @@ export function SimpleDashboard({ user }: SimpleDashboardProps) {
       {/* Main Overview Cards */}
       <div className="grid grid-cols-1 gap-6 md:grid-cols-3">
         {/* POS Card */}
-        <Link href="/pos">
+        <Link href="/pos" prefetch={true}>
           <Card className="h-full cursor-pointer transition-all hover:scale-[1.02] hover:shadow-lg">
             <CardHeader className="pb-3">
               <CardTitle className="flex items-center justify-between text-lg">
@@ -135,7 +135,7 @@ export function SimpleDashboard({ user }: SimpleDashboardProps) {
         </Link>
 
         {/* Inventory Card */}
-        <Link href="/inventory">
+        <Link href="/inventory" prefetch={true}>
           <Card className="h-full cursor-pointer transition-all hover:scale-[1.02] hover:shadow-lg">
             <CardHeader className="pb-3">
               <CardTitle className="flex items-center justify-between text-lg">
@@ -189,7 +189,7 @@ export function SimpleDashboard({ user }: SimpleDashboardProps) {
         </Link>
 
         {/* Finance Card */}
-        <Link href="/finance">
+        <Link href="/finance" prefetch={true}>
           <Card className="h-full cursor-pointer transition-all hover:scale-[1.02] hover:shadow-lg">
             <CardHeader className="pb-3">
               <CardTitle className="flex items-center justify-between text-lg">
