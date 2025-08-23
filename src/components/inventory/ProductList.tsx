@@ -14,7 +14,7 @@ import { useCategoriesWithHierarchy } from '@/hooks/api/categories';
 import { useSyncEntity, useSyncAllEntities } from '@/hooks/api/useWebhookSync';
 
 // Constants
-import { ALL_ROLES } from '@/lib/auth/roles';
+import { ALL_ROLES, hasPermission } from '@/lib/auth/roles';
 
 // UI Components
 import { Button } from '@/components/ui/button';
@@ -407,6 +407,10 @@ const ProductList = ({ user }: ProductListProps) => {
   };
 
   const renderCell = (product: APIProduct, columnKey: string) => {
+    // Check permissions for sensitive data
+    const canViewPrice = hasPermission(user.role, 'PRODUCT_PRICE_READ');
+    const canViewCost = hasPermission(user.role, 'PRODUCT_COST_READ');
+    
     switch (columnKey) {
       case 'image':
         const productImage = getProductImage(product);
@@ -463,13 +467,19 @@ const ProductList = ({ user }: ProductListProps) => {
           </div>
         );
       case 'price':
-        return (
+        return canViewPrice ? (
           <div>
             <div className="font-medium">{formatCurrency(product.price)}</div>
           </div>
+        ) : (
+          <span className="text-muted-foreground">-</span>
         );
       case 'cost':
-        return <span className="text-sm">{formatCurrency(product.cost)}</span>;
+        return canViewCost ? (
+          <span className="text-sm">{formatCurrency(product.cost)}</span>
+        ) : (
+          <span className="text-muted-foreground">-</span>
+        );
       case 'status':
         return getStatusBadge(product.status);
       case 'supplier':

@@ -18,10 +18,10 @@ export const POST = withAuth(
         return createApiResponse.validationError('Invalid transaction ID');
       }
 
-      // Check if user has permission to approve (ADMIN or MANAGER)
-      if (!['ADMIN', 'MANAGER'].includes(request.user.role)) {
+      // Check if user has permission to approve (ADMIN only)
+      if (request.user.role !== 'ADMIN') {
         return createApiResponse.forbidden(
-          'Insufficient permissions to approve transactions'
+          'Only administrators can approve financial transactions'
         );
       }
 

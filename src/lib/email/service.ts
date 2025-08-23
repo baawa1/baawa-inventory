@@ -202,6 +202,17 @@ export const emailService = {
   },
 
   /**
+   * Send password reset confirmation email
+   */
+  sendPasswordResetConfirmationEmail: async (
+    to: string,
+    data: { firstName: string }
+  ) => {
+    const service = createEmailService();
+    return service.sendTemplatedEmail('password_reset_confirmation', to, data);
+  },
+
+  /**
    * Send user approval notification
    */
   sendUserApprovalEmail: async (to: string, data: UserApprovalData) => {

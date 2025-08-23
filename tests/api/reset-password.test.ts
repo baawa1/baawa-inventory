@@ -6,6 +6,7 @@ const mockFindFirst = jest.fn();
 const mockUpdate = jest.fn();
 const mockHash = jest.fn();
 const mockSendPasswordResetEmail = jest.fn();
+const mockSendPasswordResetConfirmationEmail = jest.fn();
 const mockLogAuthEvent = jest.fn();
 const mockLogPasswordResetSuccess = jest.fn();
 
@@ -21,6 +22,7 @@ jest.mock('@/lib/db', () => ({
 jest.mock('@/lib/email/service', () => ({
   emailService: {
     sendPasswordResetEmail: mockSendPasswordResetEmail,
+    sendPasswordResetConfirmationEmail: mockSendPasswordResetConfirmationEmail,
   },
 }));
 
@@ -215,7 +217,7 @@ describe('POST /api/auth/reset-password', () => {
       mockFindFirst.mockResolvedValue(mockUser);
       mockUpdate.mockResolvedValue(mockUser);
       mockHash.mockResolvedValue('hashed-password');
-      mockSendPasswordResetEmail.mockResolvedValue(undefined);
+      mockSendPasswordResetConfirmationEmail.mockResolvedValue(undefined);
       mockLogPasswordResetSuccess.mockResolvedValue(undefined);
 
       const request = createRequest({
@@ -255,12 +257,10 @@ describe('POST /api/auth/reset-password', () => {
       );
 
       // Verify email was sent
-      expect(mockSendPasswordResetEmail).toHaveBeenCalledWith(
+      expect(mockSendPasswordResetConfirmationEmail).toHaveBeenCalledWith(
         'test@example.com',
         {
           firstName: 'Test',
-          resetLink: expect.stringContaining('/login'),
-          expiresInHours: 0,
         }
       );
     });
@@ -351,7 +351,7 @@ describe('POST /api/auth/reset-password', () => {
       mockFindFirst.mockResolvedValue(mockUser);
       mockUpdate.mockResolvedValue(mockUser);
       mockHash.mockResolvedValue('hashed-password');
-      mockSendPasswordResetEmail.mockResolvedValue(undefined);
+      mockSendPasswordResetConfirmationEmail.mockResolvedValue(undefined);
       mockLogPasswordResetSuccess.mockResolvedValue(undefined);
 
       const request = createRequest({

@@ -115,10 +115,8 @@ async function resetPasswordHandler(request: NextRequest) {
     await AuditLogger.logPasswordResetSuccess(user.id, user.email, request);
 
     // Send confirmation email
-    await emailService.sendPasswordResetEmail(user.email, {
+    await emailService.sendPasswordResetConfirmationEmail(user.email, {
       firstName: user.firstName,
-      resetLink: `${getAppBaseUrl()}/login`,
-      expiresInHours: 0, // This is a confirmation, not a reset link
     });
 
     return NextResponse.json(

@@ -6,7 +6,7 @@ import {
 } from '@/lib/api-middleware';
 import { handleApiError } from '@/lib/api-error-handler-new';
 import { prisma } from '@/lib/db';
-import { USER_ROLES } from '@/lib/auth/roles';
+import { USER_ROLES, hasPermission } from '@/lib/auth/roles';
 import { z } from 'zod';
 
 // Input validation schemas
@@ -94,9 +94,22 @@ export const GET = withAuth(
         );
       }
 
+      // Check user permissions for different data types
+      const canViewCost = hasPermission(request.user.role, 'PRODUCT_COST_READ');
+      const canViewPrice = hasPermission(request.user.role, 'PRODUCT_PRICE_READ');
+
+      // Filter sensitive data based on permissions
+      const filteredProduct: any = { ...product };
+      if (!canViewCost) {
+        delete filteredProduct.cost;
+      }
+      if (!canViewPrice) {
+        delete filteredProduct.price;
+      }
+
       return NextResponse.json({
         success: true,
-        data: product,
+        data: filteredProduct,
       });
     } catch (error) {
       return handleApiError(error);
@@ -117,6 +130,32 @@ export const PUT = withPermission(
       const body = await request.json();
 
       const validatedData = ProductUpdateSchema.parse(body);
+
+      // Check permissions for price field updates
+      const canUpdateCost = hasPermission(request.user.role, 'PRODUCT_COST_READ');
+      const canUpdatePrice = hasPermission(request.user.role, 'PRODUCT_PRICE_READ');
+      
+      if (
+        (validatedData.purchasePrice !== undefined ||
+          validatedData.cost !== undefined) &&
+        !canUpdateCost
+      ) {
+        return NextResponse.json(
+          { error: 'Insufficient permissions to update product cost price' },
+          { status: 403 }
+        );
+      }
+
+      if (
+        (validatedData.sellingPrice !== undefined ||
+          validatedData.price !== undefined) &&
+        !canUpdatePrice
+      ) {
+        return NextResponse.json(
+          { error: 'Insufficient permissions to update product selling price' },
+          { status: 403 }
+        );
+      }
 
       if (isNaN(productId)) {
         return NextResponse.json(
@@ -173,9 +212,9 @@ export const PUT = withPermission(
         updateData.isArchived = validatedData.isArchived;
 
       // Frontend to database field mappings
-      if (validatedData.purchasePrice !== undefined)
+      if (validatedData.purchasePrice !== undefined && canUpdateCost)
         updateData.cost = validatedData.purchasePrice;
-      if (validatedData.sellingPrice !== undefined)
+      if (validatedData.sellingPrice !== undefined && canUpdatePrice)
         updateData.price = validatedData.sellingPrice;
       if (validatedData.currentStock !== undefined)
         updateData.stock = validatedData.currentStock;
@@ -185,9 +224,9 @@ export const PUT = withPermission(
         updateData.maxStock = validatedData.maximumStock;
 
       // Direct database fields (fallback if frontend fields not provided)
-      if (validatedData.cost !== undefined)
+      if (validatedData.cost !== undefined && canUpdateCost)
         updateData.cost = validatedData.cost;
-      if (validatedData.price !== undefined)
+      if (validatedData.price !== undefined && canUpdatePrice)
         updateData.price = validatedData.price;
       if (validatedData.stock !== undefined)
         updateData.stock = validatedData.stock;

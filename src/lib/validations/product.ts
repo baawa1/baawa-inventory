@@ -32,8 +32,8 @@ export const createProductSchema = z.object({
     .positive('Brand must be a valid ID')
     .optional()
     .nullable(),
-  purchasePrice: costPriceSchema,
-  sellingPrice: nairaPriceSchema,
+  purchasePrice: costPriceSchema.optional(),
+  sellingPrice: nairaPriceSchema.optional(),
   minimumStock: stockSchema,
   maximumStock: stockSchema.optional().nullable(),
   currentStock: stockSchema,

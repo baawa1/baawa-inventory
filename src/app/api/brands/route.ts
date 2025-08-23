@@ -72,7 +72,7 @@ export const GET = withAuth(async (request: AuthenticatedRequest) => {
     ]);
 
     // Transform brands to include product count
-    let transformedBrands = brands.map(brand => ({
+    const transformedBrands = brands.map(brand => ({
       id: brand.id,
       name: brand.name,
       description: brand.description,

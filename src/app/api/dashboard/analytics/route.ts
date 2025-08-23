@@ -2,6 +2,7 @@ import { prisma } from '@/lib/db';
 import { withAuth, AuthenticatedRequest } from '@/lib/api-middleware';
 import { createApiResponse } from '@/lib/api-response';
 import { logger } from '@/lib/logger';
+import { hasPermission } from '@/lib/auth/roles';
 import {
   PRODUCT_STATUS,
   SUCCESSFUL_PAYMENT_STATUSES,
@@ -34,26 +35,15 @@ export const GET = withAuth(async (request: AuthenticatedRequest) => {
         startDate = new Date(now.getFullYear(), now.getMonth(), 1);
     }
 
-    // Fetch transaction statistics
+    // Check user permissions for different data types
+    const canViewRevenue = hasPermission(request.user.role, 'REVENUE_READ');
+    const canViewFinancialAnalytics = hasPermission(request.user.role, 'FINANCIAL_ANALYTICS');
+    const canViewCustomerAnalytics = hasPermission(request.user.role, 'CUSTOMER_ANALYTICS');
+
+    // Fetch transaction statistics with role-based filtering
     const [transactionStats, topCustomers, lowStockItems] = await Promise.all([
-      // Transaction statistics
+      // Transaction statistics - filtered by permissions
       prisma.$transaction(async tx => {
-        const totalSales = await tx.salesTransaction.aggregate({
-          where: {
-            created_at: { gte: startDate },
-            payment_status: { in: SUCCESSFUL_PAYMENT_STATUSES },
-          },
-          _sum: { total_amount: true },
-        });
-
-        const netSales = await tx.salesTransaction.aggregate({
-          where: {
-            created_at: { gte: startDate },
-            payment_status: { in: SUCCESSFUL_PAYMENT_STATUSES },
-          },
-          _sum: { subtotal: true },
-        });
-
         const totalTransactions = await tx.salesTransaction.count({
           where: {
             created_at: { gte: startDate },
@@ -71,33 +61,57 @@ export const GET = withAuth(async (request: AuthenticatedRequest) => {
           _sum: { quantity: true },
         });
 
-        const averageOrderValue =
-          totalTransactions > 0
-            ? Number(totalSales._sum.total_amount || 0) / totalTransactions
-            : 0;
+        // Only include financial data if user has permission
+        let totalSales = null;
+        let netSales = null;
+        let averageOrderValue = null;
+
+        if (canViewRevenue) {
+          const salesResult = await tx.salesTransaction.aggregate({
+            where: {
+              created_at: { gte: startDate },
+              payment_status: { in: SUCCESSFUL_PAYMENT_STATUSES },
+            },
+            _sum: { total_amount: true },
+          });
+
+          const netSalesResult = await tx.salesTransaction.aggregate({
+            where: {
+              created_at: { gte: startDate },
+              payment_status: { in: SUCCESSFUL_PAYMENT_STATUSES },
+            },
+            _sum: { subtotal: true },
+          });
+
+          totalSales = Number(salesResult._sum.total_amount || 0);
+          netSales = Number(netSalesResult._sum.subtotal || 0);
+          averageOrderValue = totalTransactions > 0 ? totalSales / totalTransactions : 0;
+        }
 
         return {
-          totalSales: Number(totalSales._sum.total_amount || 0),
-          netSales: Number(netSales._sum.subtotal || 0),
+          totalSales: canViewRevenue ? totalSales : null,
+          netSales: canViewRevenue ? netSales : null,
           totalTransactions,
           totalItems: Number(totalItems._sum.quantity || 0),
-          averageOrderValue,
+          averageOrderValue: canViewRevenue ? averageOrderValue : null,
         };
       }),
 
-      // Top customers
-      prisma.salesTransaction.groupBy({
-        by: ['customer_id'],
-        where: {
-          created_at: { gte: startDate },
-          payment_status: { in: SUCCESSFUL_PAYMENT_STATUSES },
-          customer_id: { not: null },
-        },
-        _sum: { total_amount: true },
-        _count: { id: true },
-        orderBy: { _sum: { total_amount: 'desc' } },
-        take: API_LIMITS.TOP_CUSTOMERS_LIMIT,
-      }),
+      // Top customers - only if user has customer analytics permission
+      canViewCustomerAnalytics
+        ? prisma.salesTransaction.groupBy({
+            by: ['customer_id'],
+            where: {
+              created_at: { gte: startDate },
+              payment_status: { in: SUCCESSFUL_PAYMENT_STATUSES },
+              customer_id: { not: null },
+            },
+            _sum: { total_amount: true },
+            _count: { id: true },
+            orderBy: { _sum: { total_amount: 'desc' } },
+            take: API_LIMITS.TOP_CUSTOMERS_LIMIT,
+          })
+        : [],
 
       // Low stock items - simplified query
       prisma.product.findMany({
@@ -114,22 +128,24 @@ export const GET = withAuth(async (request: AuthenticatedRequest) => {
       }),
     ]);
 
-    // Transform top customers data - fetch customer details
-    const transformedTopCustomers = await Promise.all(
-      topCustomers.map(async (customerData, index) => {
-        const customer = await prisma.customer.findUnique({
-          where: { id: customerData.customer_id! },
-          select: { id: true, name: true, email: true },
-        });
+    // Transform top customers data - only if user has permissions
+    const transformedTopCustomers = canViewCustomerAnalytics
+      ? await Promise.all(
+          topCustomers.map(async (customerData, index) => {
+            const customer = await prisma.customer.findUnique({
+              where: { id: customerData.customer_id! },
+              select: { id: true, name: true, email: true },
+            });
 
-        return {
-          id: index + 1,
-          name: customer?.name || 'Unknown Customer',
-          orders: customerData._count.id,
-          totalSpend: Number(customerData._sum.total_amount || 0),
-        };
-      })
-    );
+            return {
+              id: index + 1,
+              name: customer?.name || 'Unknown Customer',
+              orders: customerData._count.id,
+              totalSpend: canViewRevenue ? Number(customerData._sum.total_amount || 0) : null,
+            };
+          })
+        )
+      : [];
 
     // Transform low stock items data
     const transformedLowStockItems = lowStockItems.map(item => ({
@@ -151,7 +167,7 @@ export const GET = withAuth(async (request: AuthenticatedRequest) => {
             : 'normal',
     }));
 
-    // Generate sales data for charts (last 30 days)
+    // Generate sales data for charts (last 30 days) - with role-based filtering
     const salesData = [];
     const daysToShow = API_LIMITS.SALES_CHART_DAYS;
 
@@ -174,30 +190,42 @@ export const GET = withAuth(async (request: AuthenticatedRequest) => {
           },
           payment_status: { in: SUCCESSFUL_PAYMENT_STATUSES },
         },
-        _sum: { total_amount: true, subtotal: true },
+        _sum: canViewRevenue ? { total_amount: true, subtotal: true } : undefined,
         _count: { id: true },
       });
 
       salesData.push({
         date: dateStr,
-        sales: Number(daySales._sum.total_amount || 0),
+        sales: canViewRevenue ? Number(daySales._sum?.total_amount || 0) : null,
         orders: daySales._count.id,
-        netSales: Number(daySales._sum.subtotal || 0),
+        netSales: canViewRevenue ? Number(daySales._sum?.subtotal || 0) : null,
       });
     }
 
-    // For now, return sample data for categories and products until we fix the complex queries
-    const topCategories = [
-      { id: 1, name: 'Electronics', itemsSold: 15, netSales: 450000 },
-      { id: 2, name: 'Wristwatches', itemsSold: 8, netSales: 320000 },
-      { id: 3, name: 'Accessories', itemsSold: 12, netSales: 180000 },
-    ];
+    // Sample data for categories and products - filtered by permissions
+    const topCategories = canViewFinancialAnalytics
+      ? [
+          { id: 1, name: 'Electronics', itemsSold: 15, netSales: 450000 },
+          { id: 2, name: 'Wristwatches', itemsSold: 8, netSales: 320000 },
+          { id: 3, name: 'Accessories', itemsSold: 12, netSales: 180000 },
+        ]
+      : [
+          { id: 1, name: 'Electronics', itemsSold: 15, netSales: null },
+          { id: 2, name: 'Wristwatches', itemsSold: 8, netSales: null },
+          { id: 3, name: 'Accessories', itemsSold: 12, netSales: null },
+        ];
 
-    const topProducts = [
-      { id: 1, name: 'Apple Watch Series 9', itemsSold: 5, netSales: 425000 },
-      { id: 2, name: 'Wireless Earbuds Pro', itemsSold: 8, netSales: 200000 },
-      { id: 3, name: 'Smart Fitness Tracker', itemsSold: 3, netSales: 105000 },
-    ];
+    const topProducts = canViewFinancialAnalytics
+      ? [
+          { id: 1, name: 'Apple Watch Series 9', itemsSold: 5, netSales: 425000 },
+          { id: 2, name: 'Wireless Earbuds Pro', itemsSold: 8, netSales: 200000 },
+          { id: 3, name: 'Smart Fitness Tracker', itemsSold: 3, netSales: 105000 },
+        ]
+      : [
+          { id: 1, name: 'Apple Watch Series 9', itemsSold: 5, netSales: null },
+          { id: 2, name: 'Wireless Earbuds Pro', itemsSold: 8, netSales: null },
+          { id: 3, name: 'Smart Fitness Tracker', itemsSold: 3, netSales: null },
+        ];
 
     return createApiResponse.success(
       {

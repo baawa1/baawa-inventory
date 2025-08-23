@@ -7,6 +7,7 @@ import { handleApiError } from '@/lib/api-error-handler-new';
 import { prisma } from '@/lib/db';
 import { createSecureResponse } from '@/lib/security-headers';
 import { logger } from '@/lib/logger';
+import { hasPermission } from '@/lib/auth/roles';
 
 import { PRODUCT_STATUS } from '@/lib/constants';
 import { USER_ROLES } from '@/lib/auth/roles';
@@ -175,32 +176,52 @@ export const GET = withAuth(async (request: AuthenticatedRequest) => {
       totalCount = normalTotalCount;
     }
 
-    // Transform response
-    const transformedProducts = products.map(product => ({
-      id: product.id,
-      name: product.name,
-      sku: product.sku,
-      barcode: product.barcode,
-      description: product.description,
-      price: product.price,
-      cost: product.cost,
-      stock: product.stock,
-      minStock: product.minStock,
-      maxStock: product.maxStock,
-      status: product.status,
-      isArchived: product.isArchived,
-      images: product.images,
-      tags: product.tags,
-      category: product.category,
-      brand: product.brand,
-      supplier: product.supplier,
-      categoryId: product.categoryId,
-      brandId: product.brandId,
-      supplierId: product.supplierId,
-      createdAt: product.createdAt,
-      updatedAt: product.updatedAt,
-      ...(includeSync && { content_sync: (product as any).content_sync }),
-    }));
+    // Check user permissions for different data types
+    const canViewCost = hasPermission(request.user.role, 'PRODUCT_COST_READ');
+    const canViewPrice = hasPermission(request.user.role, 'PRODUCT_PRICE_READ');
+
+    // Transform response with role-based field filtering
+    const transformedProducts = products.map(product => {
+      const baseProduct = {
+        id: product.id,
+        name: product.name,
+        sku: product.sku,
+        barcode: product.barcode,
+        description: product.description,
+        stock: product.stock,
+        minStock: product.minStock,
+        maxStock: product.maxStock,
+        status: product.status,
+        isArchived: product.isArchived,
+        images: product.images,
+        tags: product.tags,
+        category: product.category,
+        brand: product.brand,
+        supplier: product.supplier,
+        categoryId: product.categoryId,
+        brandId: product.brandId,
+        supplierId: product.supplierId,
+        createdAt: product.createdAt,
+        updatedAt: product.updatedAt,
+        ...(includeSync && { content_sync: (product as any).content_sync }),
+      };
+
+      // Conditionally add price field based on permissions
+      if (canViewPrice) {
+        (baseProduct as any).price = product.price;
+      }
+
+      // Conditionally add cost-sensitive fields based on permissions
+      if (canViewCost) {
+        (baseProduct as any).cost = product.cost;
+        // Calculate profit margin if both cost and price are available and user can see both
+        if (product.cost && product.price && canViewPrice) {
+          (baseProduct as any).profitMargin = ((Number(product.price) - Number(product.cost)) / Number(product.price) * 100).toFixed(2);
+        }
+      }
+
+      return baseProduct;
+    });
 
     return createSecureResponse(
       {
@@ -232,6 +253,30 @@ export const POST = withPermission(
 
       // Validate input data
       const validatedData = ProductCreateSchema.parse(body);
+
+      // Check permissions for price fields
+      const canSetCost = hasPermission(request.user.role, 'PRODUCT_COST_READ');
+      const canSetPrice = hasPermission(request.user.role, 'PRODUCT_PRICE_READ');
+      
+      if (validatedData.purchasePrice !== undefined && !canSetCost) {
+        return createSecureResponse(
+          {
+            success: false,
+            error: 'Insufficient permissions to set product cost price',
+          },
+          403
+        );
+      }
+
+      if (validatedData.sellingPrice !== undefined && !canSetPrice) {
+        return createSecureResponse(
+          {
+            success: false,
+            error: 'Insufficient permissions to set product selling price',
+          },
+          403
+        );
+      }
 
       // Auto-generate SKU if not provided
       let finalSku = validatedData.sku;
@@ -374,30 +419,47 @@ export const POST = withPermission(
       }
 
       // Create the product
+      // Prepare product data with conditional price fields
+      const productData: any = {
+        name: validatedData.name,
+        sku: finalSku,
+        barcode: validatedData.barcode,
+        description: validatedData.description,
+        stock: validatedData.currentStock || 0,
+        minStock: validatedData.minimumStock || 0,
+        maxStock: validatedData.maximumStock || 1000,
+        unit: validatedData.unit || 'piece',
+        status: validatedData.status,
+        weight: validatedData.weight,
+        dimensions: validatedData.dimensions,
+        color: validatedData.color,
+        size: validatedData.size,
+        material: validatedData.material,
+        tags: validatedData.tags || [],
+        images: [],
+        categoryId: validatedData.categoryId,
+        brandId: validatedData.brandId,
+        supplierId: validatedData.supplierId,
+      };
+
+      // Handle price field - required in database schema
+      if (canSetPrice && validatedData.sellingPrice !== undefined) {
+        productData.price = validatedData.sellingPrice;
+      } else {
+        // Set price to 0 if user doesn't have permission or doesn't provide it
+        productData.price = 0;
+      }
+
+      // Handle cost field - required in database schema
+      if (canSetCost && validatedData.purchasePrice !== undefined) {
+        productData.cost = validatedData.purchasePrice;
+      } else {
+        // Set cost to 0 if user doesn't have permission or doesn't provide it
+        productData.cost = 0;
+      }
+
       const newProduct = await prisma.product.create({
-        data: {
-          name: validatedData.name,
-          sku: finalSku,
-          barcode: validatedData.barcode,
-          description: validatedData.description,
-          price: validatedData.sellingPrice,
-          cost: validatedData.purchasePrice,
-          stock: validatedData.currentStock || 0,
-          minStock: validatedData.minimumStock || 0,
-          maxStock: validatedData.maximumStock || 1000,
-          unit: validatedData.unit || 'piece',
-          status: validatedData.status,
-          weight: validatedData.weight,
-          dimensions: validatedData.dimensions,
-          color: validatedData.color,
-          size: validatedData.size,
-          material: validatedData.material,
-          tags: validatedData.tags || [],
-          images: [],
-          categoryId: validatedData.categoryId,
-          brandId: validatedData.brandId,
-          supplierId: validatedData.supplierId,
-        },
+        data: productData,
         include: {
           category: {
             select: {

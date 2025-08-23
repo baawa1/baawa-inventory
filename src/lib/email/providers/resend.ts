@@ -40,7 +40,7 @@ export class ResendProvider implements EmailProvider {
 
       // Determine the appropriate sender email based on email type
       let senderEmail = this.fromEmail;
-      let replyToEmail = supportEmail;
+      const replyToEmail = supportEmail;
 
       // Check if this is an admin notification or system email
       if (

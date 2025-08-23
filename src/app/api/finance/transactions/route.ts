@@ -1,4 +1,5 @@
 import { withAuth, AuthenticatedRequest } from '@/lib/api-middleware';
+import { hasPermission } from '@/lib/auth/roles';
 import { prisma } from '@/lib/db';
 import {
   createTransactionSchema,
@@ -17,6 +18,13 @@ import { logger } from '@/lib/logger';
 // GET /api/finance/transactions - List financial transactions with filtering
 export const GET = withAuth(async (request: AuthenticatedRequest) => {
   try {
+    // Check if user has permission to read financial transactions
+    if (!hasPermission(request.user.role, 'FINANCE_TRANSACTIONS_READ')) {
+      return createApiResponse.forbidden(
+        'Insufficient permissions to view financial transactions'
+      );
+    }
+
     const { searchParams } = new URL(request.url);
 
     // Parse and validate query parameters
@@ -48,6 +56,12 @@ export const GET = withAuth(async (request: AuthenticatedRequest) => {
 
     // Build where clause
     const where: any = {};
+
+    // Role-based filtering: Manager can only see their own transactions
+    if (request.user.role === 'MANAGER') {
+      where.createdBy = parseInt(request.user.id);
+    }
+    // Admin can see all transactions (no additional filtering)
 
     if (search) {
       where.OR = [
@@ -147,6 +161,12 @@ export const POST = withAuth(async (request: AuthenticatedRequest) => {
   });
 
   try {
+    // Check if user has permission to create financial transactions
+    if (!hasPermission(request.user.role, 'FINANCE_TRANSACTIONS_CREATE')) {
+      return createApiResponse.forbidden(
+        'Insufficient permissions to create financial transactions'
+      );
+    }
     // Parse JSON body
     let body;
     try {

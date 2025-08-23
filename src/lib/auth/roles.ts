@@ -61,17 +61,41 @@ export const ROLE_PERMISSIONS = {
 
   // Reports permissions
   REPORTS_READ: [USER_ROLES.ADMIN, USER_ROLES.MANAGER],
-  REPORTS_ADVANCED: [USER_ROLES.ADMIN, USER_ROLES.MANAGER],
+  REPORTS_ADVANCED: [USER_ROLES.ADMIN], // Removed MANAGER - financial reports only for Admin
+  INVENTORY_REPORTS: [USER_ROLES.ADMIN, USER_ROLES.MANAGER], // Non-financial inventory reports
+  SALES_VOLUME_REPORTS: [USER_ROLES.ADMIN, USER_ROLES.MANAGER], // Volume only, not profit
 
   // Settings permissions
   SETTINGS_ACCESS: [USER_ROLES.ADMIN, USER_ROLES.MANAGER],
   SETTINGS_ADVANCED: [USER_ROLES.ADMIN],
 
-  // Finance permissions
-  FINANCE_READ: [USER_ROLES.ADMIN, USER_ROLES.MANAGER, USER_ROLES.STAFF],
-  FINANCE_WRITE: [USER_ROLES.ADMIN, USER_ROLES.MANAGER],
-  FINANCE_APPROVE: [USER_ROLES.ADMIN, USER_ROLES.MANAGER],
-  FINANCE_DELETE: [USER_ROLES.ADMIN],
+  // Finance permissions - GRANULAR CONTROL
+  FINANCE_TRANSACTIONS_CREATE: [USER_ROLES.ADMIN, USER_ROLES.MANAGER], // Can record income/expenses
+  FINANCE_TRANSACTIONS_READ: [USER_ROLES.ADMIN, USER_ROLES.MANAGER], // Can view their own transactions
+  FINANCE_APPROVE: [USER_ROLES.ADMIN], // Only Admin can approve
+  FINANCE_DELETE: [USER_ROLES.ADMIN], // Only Admin can delete
+
+  // Financial analytics and strategic data - ADMIN ONLY
+  FINANCIAL_ANALYTICS: [USER_ROLES.ADMIN], // Profit margins, ROI, financial strength
+  FINANCIAL_REPORTS: [USER_ROLES.ADMIN], // Income statements, cash flow, P&L
+  PRODUCT_COST_READ: [USER_ROLES.ADMIN], // Cost prices, profit margins per product
+  PRODUCT_PRICE_READ: [USER_ROLES.ADMIN], // Selling prices and pricing information
+  REVENUE_READ: [USER_ROLES.ADMIN], // Total sales revenue and financial totals
+  FINANCIAL_AGGREGATES: [USER_ROLES.ADMIN], // Total business financial data
+  
+  // Customer data permissions
+  CUSTOMER_PERSONAL_DATA: [USER_ROLES.ADMIN, USER_ROLES.MANAGER], // Contact details, history
+  CUSTOMER_ANALYTICS: [USER_ROLES.ADMIN], // Spending patterns, lifetime value
+
+  // Business intelligence permissions
+  SUPPLIER_CONTRACTS: [USER_ROLES.ADMIN], // Supplier pricing and terms
+  BUSINESS_ANALYTICS: [USER_ROLES.ADMIN], // Strategic business metrics
+  COMPETITIVE_DATA: [USER_ROLES.ADMIN], // Market positioning data
+
+  // System security permissions
+  AUDIT_LOGS: [USER_ROLES.ADMIN], // System audit trails
+  SYSTEM_CONFIG: [USER_ROLES.ADMIN], // System configuration
+  USER_ACTIVITY: [USER_ROLES.ADMIN], // User activity monitoring
 };
 
 /**
@@ -184,21 +208,21 @@ export const canViewLowStock = (
 };
 
 /**
- * Check if a user can read finance data
+ * Check if a user can read financial transaction data
  */
 export const canReadFinance = (
   userRole: string | undefined | null
 ): boolean => {
-  return hasPermission(userRole, 'FINANCE_READ');
+  return hasPermission(userRole, 'FINANCE_TRANSACTIONS_READ');
 };
 
 /**
- * Check if a user can write finance data
+ * Check if a user can write financial transaction data
  */
 export const canWriteFinance = (
   userRole: string | undefined | null
 ): boolean => {
-  return hasPermission(userRole, 'FINANCE_WRITE');
+  return hasPermission(userRole, 'FINANCE_TRANSACTIONS_CREATE');
 };
 
 /**
