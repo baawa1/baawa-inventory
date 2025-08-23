@@ -79,7 +79,7 @@ export const ROLE_PERMISSIONS = {
   FINANCIAL_ANALYTICS: [USER_ROLES.ADMIN], // Profit margins, ROI, financial strength
   FINANCIAL_REPORTS: [USER_ROLES.ADMIN], // Income statements, cash flow, P&L
   PRODUCT_COST_READ: [USER_ROLES.ADMIN], // Cost prices, profit margins per product
-  PRODUCT_PRICE_READ: [USER_ROLES.ADMIN], // Selling prices and pricing information
+  PRODUCT_PRICE_READ: [USER_ROLES.ADMIN, USER_ROLES.MANAGER], // Selling prices - Manager can access
   REVENUE_READ: [USER_ROLES.ADMIN], // Total sales revenue and financial totals
   FINANCIAL_AGGREGATES: [USER_ROLES.ADMIN], // Total business financial data
   

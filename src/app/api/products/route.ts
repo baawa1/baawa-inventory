@@ -206,16 +206,14 @@ export const GET = withAuth(async (request: AuthenticatedRequest) => {
         ...(includeSync && { content_sync: (product as any).content_sync }),
       };
 
-      // Conditionally add price field based on permissions
-      if (canViewPrice) {
-        (baseProduct as any).price = product.price;
-      }
+      // Always include price field - Manager needs to see selling prices
+      (baseProduct as any).price = product.price;
 
       // Conditionally add cost-sensitive fields based on permissions
       if (canViewCost) {
         (baseProduct as any).cost = product.cost;
-        // Calculate profit margin if both cost and price are available and user can see both
-        if (product.cost && product.price && canViewPrice) {
+        // Calculate profit margin if both cost and price are available (user can already see cost if we're here)
+        if (product.cost && product.price) {
           (baseProduct as any).profitMargin = ((Number(product.price) - Number(product.cost)) / Number(product.price) * 100).toFixed(2);
         }
       }
@@ -268,15 +266,7 @@ export const POST = withPermission(
         );
       }
 
-      if (validatedData.sellingPrice !== undefined && !canSetPrice) {
-        return createSecureResponse(
-          {
-            success: false,
-            error: 'Insufficient permissions to set product selling price',
-          },
-          403
-        );
-      }
+      // Manager can set selling prices, so no restriction needed
 
       // Auto-generate SKU if not provided
       let finalSku = validatedData.sku;
@@ -442,13 +432,9 @@ export const POST = withPermission(
         supplierId: validatedData.supplierId,
       };
 
-      // Handle price field - required in database schema
-      if (canSetPrice && validatedData.sellingPrice !== undefined) {
-        productData.price = validatedData.sellingPrice;
-      } else {
-        // Set price to 0 if user doesn't have permission or doesn't provide it
-        productData.price = 0;
-      }
+      // Handle price field - required in database schema  
+      // Manager can set selling prices, so use the provided value or 0 as default
+      productData.price = validatedData.sellingPrice || 0;
 
       // Handle cost field - required in database schema
       if (canSetCost && validatedData.purchasePrice !== undefined) {

@@ -467,12 +467,10 @@ const ProductList = ({ user }: ProductListProps) => {
           </div>
         );
       case 'price':
-        return canViewPrice ? (
+        return (
           <div>
             <div className="font-medium">{formatCurrency(product.price)}</div>
           </div>
-        ) : (
-          <span className="text-muted-foreground">-</span>
         );
       case 'cost':
         return canViewCost ? (

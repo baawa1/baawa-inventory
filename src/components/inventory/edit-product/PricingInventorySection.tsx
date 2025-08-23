@@ -50,64 +50,61 @@ export function PricingInventorySection({
         <CardTitle>Pricing & Inventory</CardTitle>
       </CardHeader>
       <CardContent className="space-y-4">
-        {/* Only show pricing fields if user has permissions */}
-        {(canViewCost || canViewPrice) && (
-          <div className="grid grid-cols-1 gap-4 md:grid-cols-2">
-            {canViewCost && (
-              <FormField
-                control={form.control}
-                name="purchasePrice"
-                render={({ field }) => (
-                  <FormItem>
-                    <FormLabel>Purchase Price *</FormLabel>
-                    <FormControl>
-                      <Input
-                        {...field}
-                        type="number"
-                        step="0.01"
-                        min="0"
-                        placeholder="0.00"
-                        onChange={e => {
-                          const value = e.target.value;
-                          field.onChange(value ? parseFloat(value) : undefined);
-                        }}
-                        value={field.value?.toString() || ''}
-                      />
-                    </FormControl>
-                    <FormMessage />
-                  </FormItem>
-                )}
-              />
-            )}
+        <div className="grid grid-cols-1 gap-4 md:grid-cols-2">
+          {/* Only show purchase price if user has cost permissions */}
+          {canViewCost && (
+            <FormField
+              control={form.control}
+              name="purchasePrice"
+              render={({ field }) => (
+                <FormItem>
+                  <FormLabel>Purchase Price</FormLabel>
+                  <FormControl>
+                    <Input
+                      {...field}
+                      type="number"
+                      step="0.01"
+                      min="0"
+                      placeholder="0.00"
+                      onChange={e => {
+                        const value = e.target.value;
+                        field.onChange(value ? parseFloat(value) : undefined);
+                      }}
+                      value={field.value?.toString() || ''}
+                    />
+                  </FormControl>
+                  <FormMessage />
+                </FormItem>
+              )}
+            />
+          )}
 
-            {canViewPrice && (
-              <FormField
-                control={form.control}
-                name="sellingPrice"
-                render={({ field }) => (
-                  <FormItem>
-                    <FormLabel>Selling Price *</FormLabel>
-                    <FormControl>
-                      <Input
-                        {...field}
-                        type="number"
-                        step="0.01"
-                        min="0"
-                        placeholder="0.00"
-                        onChange={e => {
-                          const value = e.target.value;
-                          field.onChange(value ? parseFloat(value) : undefined);
-                        }}
-                        value={field.value?.toString() || ''}
-                      />
-                    </FormControl>
-                    <FormMessage />
-                  </FormItem>
-                )}
-              />
+          {/* Always show selling price - Manager needs this */}
+          <FormField
+            control={form.control}
+            name="sellingPrice"
+            render={({ field }) => (
+              <FormItem>
+                <FormLabel>Selling Price *</FormLabel>
+                <FormControl>
+                  <Input
+                    {...field}
+                    type="number"
+                    step="0.01"
+                    min="0"
+                    placeholder="0.00"
+                    onChange={e => {
+                      const value = e.target.value;
+                      field.onChange(value ? parseFloat(value) : undefined);
+                    }}
+                    value={field.value?.toString() || ''}
+                  />
+                </FormControl>
+                <FormMessage />
+              </FormItem>
             )}
-          </div>
-        )}
+          />
+        </div>
 
         {/* Profit Calculations - Only show if user can see both cost and price */}
         {canViewCost && canViewPrice && purchasePrice && sellingPrice && (

@@ -33,7 +33,7 @@ export const createProductSchema = z.object({
     .optional()
     .nullable(),
   purchasePrice: costPriceSchema.optional(),
-  sellingPrice: nairaPriceSchema.optional(),
+  sellingPrice: nairaPriceSchema,
   minimumStock: stockSchema,
   maximumStock: stockSchema.optional().nullable(),
   currentStock: stockSchema,

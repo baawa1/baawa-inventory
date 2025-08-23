@@ -98,13 +98,11 @@ export const GET = withAuth(
       const canViewCost = hasPermission(request.user.role, 'PRODUCT_COST_READ');
       const canViewPrice = hasPermission(request.user.role, 'PRODUCT_PRICE_READ');
 
-      // Filter sensitive data based on permissions
+      // Filter sensitive data based on permissions  
+      // Only hide cost data - Manager can see selling prices
       const filteredProduct: any = { ...product };
       if (!canViewCost) {
         delete filteredProduct.cost;
-      }
-      if (!canViewPrice) {
-        delete filteredProduct.price;
       }
 
       return NextResponse.json({
@@ -146,16 +144,7 @@ export const PUT = withPermission(
         );
       }
 
-      if (
-        (validatedData.sellingPrice !== undefined ||
-          validatedData.price !== undefined) &&
-        !canUpdatePrice
-      ) {
-        return NextResponse.json(
-          { error: 'Insufficient permissions to update product selling price' },
-          { status: 403 }
-        );
-      }
+      // Manager can update selling prices, so no restriction needed for price fields
 
       if (isNaN(productId)) {
         return NextResponse.json(
@@ -214,7 +203,8 @@ export const PUT = withPermission(
       // Frontend to database field mappings
       if (validatedData.purchasePrice !== undefined && canUpdateCost)
         updateData.cost = validatedData.purchasePrice;
-      if (validatedData.sellingPrice !== undefined && canUpdatePrice)
+      // Manager can update selling prices
+      if (validatedData.sellingPrice !== undefined)
         updateData.price = validatedData.sellingPrice;
       if (validatedData.currentStock !== undefined)
         updateData.stock = validatedData.currentStock;
@@ -226,7 +216,8 @@ export const PUT = withPermission(
       // Direct database fields (fallback if frontend fields not provided)
       if (validatedData.cost !== undefined && canUpdateCost)
         updateData.cost = validatedData.cost;
-      if (validatedData.price !== undefined && canUpdatePrice)
+      // Manager can update prices directly too
+      if (validatedData.price !== undefined)
         updateData.price = validatedData.price;
       if (validatedData.stock !== undefined)
         updateData.stock = validatedData.stock;
