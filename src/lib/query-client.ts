@@ -24,15 +24,30 @@ export const queryClient = new QueryClient({
           ) {
             return false;
           }
+          // Don't retry on rate limiting errors
+          if (
+            errorMessage.includes('429') ||
+            errorMessage.includes('rate limit') ||
+            errorMessage.includes('too many requests')
+          ) {
+            return false;
+          }
+          // Don't retry on network errors after first attempt
+          if (
+            errorMessage.includes('failed to fetch') ||
+            errorMessage.includes('network error')
+          ) {
+            return failureCount < 1;
+          }
         }
-        return failureCount < 3;
+        return failureCount < 2; // Reduced from 3 to 2
       },
       refetchOnWindowFocus: false,
       refetchOnReconnect: true,
       retryDelay: attemptIndex => Math.min(1000 * 2 ** attemptIndex, 30000),
     },
     mutations: {
-      retry: 1,
+      retry: 0, // Disable retries for mutations by default
       onError: error => {
         logger.error('TanStack Query mutation failed', {
           error: error instanceof Error ? error.message : String(error),

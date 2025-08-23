@@ -35,6 +35,7 @@ const validateToken = async (
 export const useTokenValidation = () => {
   return useMutation({
     mutationFn: validateToken,
+    retry: false, // Disable retries for token validation to avoid rate limiting
     onError: (error: Error) => {
       logger.error('Error validating token', {
         error: error.message,

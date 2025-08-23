@@ -59,6 +59,8 @@ function ResetPasswordFormContent({ className }: ResetPasswordFormProps) {
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [isValidToken, setIsValidToken] = useState<boolean | null>(null);
+  const [hasValidatedToken, setHasValidatedToken] = useState(false);
+  const [isValidatingToken, setIsValidatingToken] = useState(false);
   const router = useRouter();
   const searchParams = useSearchParams();
   const token = searchParams.get('token');
@@ -77,22 +79,48 @@ function ResetPasswordFormContent({ className }: ResetPasswordFormProps) {
 
   useEffect(() => {
     const validateToken = async () => {
-      if (!token) {
-        setIsValidToken(false);
+      if (!token || hasValidatedToken || isValidatingToken) {
+        if (!token) {
+          setIsValidToken(false);
+        }
         return;
       }
 
       try {
+        setIsValidatingToken(true);
+        setHasValidatedToken(true);
         const result = await tokenValidationMutation.mutateAsync({ token });
         setIsValidToken(result.valid);
       } catch (error) {
         console.error('Token validation error:', error);
+
+        // Handle specific error types
+        if (error instanceof Error) {
+          const errorMessage = error.message.toLowerCase();
+          if (
+            errorMessage.includes('429') ||
+            errorMessage.includes('rate limit')
+          ) {
+            setError(
+              'Too many validation attempts. Please wait a moment and try again.'
+            );
+          } else if (errorMessage.includes('failed to fetch')) {
+            setError(
+              'Network error. Please check your connection and try again.'
+            );
+          } else {
+            setError('Token validation failed. Please try again.');
+          }
+        }
+
         setIsValidToken(false);
+      } finally {
+        setIsValidatingToken(false);
       }
     };
 
     validateToken();
-  }, [token, tokenValidationMutation]);
+  }, [token, hasValidatedToken, isValidatingToken]); // Removed tokenValidationMutation from dependencies
 
   const onSubmit = async (data: ResetPasswordFormData) => {
     if (!token) {
@@ -131,7 +159,7 @@ function ResetPasswordFormContent({ className }: ResetPasswordFormProps) {
     }
   };
 
-  if (isValidToken === null) {
+  if (isValidToken === null || isValidatingToken) {
     return (
       <div className={className}>
         <Card className="mx-auto max-w-sm">
