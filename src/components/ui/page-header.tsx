@@ -1,4 +1,5 @@
 import { Button } from '@/components/ui/button';
+import Link from 'next/link';
 
 interface PageHeaderProps {
   title: string;
@@ -24,10 +25,10 @@ export function PageHeader({ title, description, action }: PageHeaderProps) {
         </div>
         {action && (
           <Button asChild>
-            <a href={action.href} className="flex items-center gap-2">
+            <Link href={action.href} className="flex items-center gap-2">
               {action.icon}
               {action.label}
-            </a>
+            </Link>
           </Button>
         )}
       </div>

@@ -3,6 +3,7 @@
 import * as React from 'react';
 import { type Icon } from '@tabler/icons-react';
 import { usePathname } from 'next/navigation';
+import Link from 'next/link';
 
 import {
   SidebarGroup,
@@ -37,10 +38,10 @@ export function NavSecondary({
                   asChild
                   className={isActive ? 'bg-accent text-accent-foreground' : ''}
                 >
-                  <a href={item.url}>
+                  <Link href={item.url}>
                     <item.icon />
                     <span>{item.title}</span>
-                  </a>
+                  </Link>
                 </SidebarMenuButton>
               </SidebarMenuItem>
             );
