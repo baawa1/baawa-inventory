@@ -6,7 +6,7 @@ import {
 } from '@/lib/api-middleware';
 import { handleApiError } from '@/lib/api-error-handler-new';
 import { prisma } from '@/lib/db';
-import { USER_ROLES } from '@/lib/auth/roles';
+import { USER_ROLES, hasPermission } from '@/lib/auth/roles';
 import {
   supplierIdSchema,
   updateSupplierSchema,
@@ -41,8 +41,12 @@ export const GET = withAuth(
         );
       }
 
-      // Transform response to include product count
-      const transformedSupplier = {
+      // Check user permissions for supplier data access
+      const canViewFullSupplier = hasPermission(request.user.role, 'SUPPLIER_READ');
+
+      // Transform response based on user permissions
+      const transformedSupplier = canViewFullSupplier ? {
+        // Admin gets full supplier details
         id: supplier.id,
         name: supplier.name,
         contactPerson: supplier.contactPerson,
@@ -60,6 +64,10 @@ export const GET = withAuth(
         productCount: supplier._count.products,
         createdAt: supplier.createdAt,
         updatedAt: supplier.updatedAt,
+      } : {
+        // Manager/Staff get only name and id
+        id: supplier.id,
+        name: supplier.name,
       };
 
       return NextResponse.json({
@@ -72,9 +80,9 @@ export const GET = withAuth(
   }
 );
 
-// PUT /api/suppliers/[id] - Update a supplier
+// PUT /api/suppliers/[id] - Update a supplier (Admin only)
 export const PUT = withPermission(
-  [USER_ROLES.ADMIN, USER_ROLES.MANAGER],
+  [USER_ROLES.ADMIN],
   async (
     request: AuthenticatedRequest,
     { params }: { params: Promise<{ id: string }> }
@@ -238,9 +246,9 @@ export const DELETE = withPermission(
   }
 );
 
-// PATCH /api/suppliers/[id] - Update supplier status or other fields
+// PATCH /api/suppliers/[id] - Update supplier status or other fields (Admin only)
 export const PATCH = withPermission(
-  [USER_ROLES.ADMIN, USER_ROLES.MANAGER],
+  [USER_ROLES.ADMIN],
   async (
     request: AuthenticatedRequest,
     { params }: { params: Promise<{ id: string }> }

@@ -87,6 +87,11 @@ export const ROLE_PERMISSIONS = {
   CUSTOMER_PERSONAL_DATA: [USER_ROLES.ADMIN, USER_ROLES.MANAGER], // Contact details, history
   CUSTOMER_ANALYTICS: [USER_ROLES.ADMIN], // Spending patterns, lifetime value
 
+  // Supplier management permissions
+  SUPPLIER_READ: [USER_ROLES.ADMIN], // Full supplier details access
+  SUPPLIER_WRITE: [USER_ROLES.ADMIN], // Add, edit, delete suppliers
+  SUPPLIER_NAME_ONLY: [USER_ROLES.ADMIN, USER_ROLES.MANAGER, USER_ROLES.STAFF], // Only supplier name in forms/lists
+
   // Business intelligence permissions
   SUPPLIER_CONTRACTS: [USER_ROLES.ADMIN], // Supplier pricing and terms
   BUSINESS_ANALYTICS: [USER_ROLES.ADMIN], // Strategic business metrics

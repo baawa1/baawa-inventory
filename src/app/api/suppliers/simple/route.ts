@@ -1,12 +1,12 @@
 import { withAuth, AuthenticatedRequest } from '@/lib/api-middleware';
-import { canViewLowStock } from '@/lib/auth/roles';
+import { hasPermission } from '@/lib/auth/roles';
 import { createApiResponse } from '@/lib/api-response';
 import { prisma } from '@/lib/db';
 
 export const GET = withAuth(async (request: AuthenticatedRequest) => {
   try {
-    // Check if user has required permissions
-    if (!canViewLowStock(request.user.role)) {
+    // Check if user has permission to see supplier names (all authorized users)
+    if (!hasPermission(request.user.role, 'SUPPLIER_NAME_ONLY')) {
       return createApiResponse.forbidden('Insufficient permissions');
     }
 

@@ -4,7 +4,7 @@ import {
   AuthenticatedRequest,
 } from '@/lib/api-middleware';
 import { prisma } from '@/lib/db';
-import { USER_ROLES } from '@/lib/auth/roles';
+import { USER_ROLES, hasPermission } from '@/lib/auth/roles';
 import {
   createSupplierSchema,
   supplierQuerySchema,
@@ -81,21 +81,35 @@ export const GET = withAuth(async (request: AuthenticatedRequest) => {
       prisma.supplier.count({ where }),
     ]);
 
-    // Transform response to include product count
-    const transformedSuppliers = suppliers.map(supplier => ({
-      id: supplier.id,
-      name: supplier.name,
-      contactPerson: supplier.contactPerson,
-      email: supplier.email,
-      phone: supplier.phone,
-      address: supplier.address,
-      isActive: supplier.isActive,
-      createdAt: supplier.createdAt,
-      updatedAt: supplier.updatedAt,
-      _count: {
-        products: supplier._count.products,
-      },
-    }));
+    // Check user permissions for supplier data access
+    const canViewFullSupplier = hasPermission(request.user.role, 'SUPPLIER_READ');
+
+    // Transform response based on user permissions
+    const transformedSuppliers = suppliers.map(supplier => {
+      if (canViewFullSupplier) {
+        // Admin gets full supplier details
+        return {
+          id: supplier.id,
+          name: supplier.name,
+          contactPerson: supplier.contactPerson,
+          email: supplier.email,
+          phone: supplier.phone,
+          address: supplier.address,
+          isActive: supplier.isActive,
+          createdAt: supplier.createdAt,
+          updatedAt: supplier.updatedAt,
+          _count: {
+            products: supplier._count.products,
+          },
+        };
+      } else {
+        // Manager/Staff get only name and id for selection purposes
+        return {
+          id: supplier.id,
+          name: supplier.name,
+        };
+      }
+    });
 
     return createApiResponse({
       success: true,
@@ -113,9 +127,9 @@ export const GET = withAuth(async (request: AuthenticatedRequest) => {
   }
 });
 
-// POST /api/suppliers - Create a new supplier
+// POST /api/suppliers - Create a new supplier (Admin only)
 export const POST = withPermission(
-  [USER_ROLES.ADMIN, USER_ROLES.MANAGER],
+  [USER_ROLES.ADMIN],
   async (request: AuthenticatedRequest) => {
     try {
       const body = await request.json();

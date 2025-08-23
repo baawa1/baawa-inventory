@@ -9,6 +9,7 @@ import { ThemeProvider } from '@/components/theme-provider';
 import { Toaster } from '@/components/ui/sonner';
 import { PWAManager } from '@/components/pwa/PWAManager';
 import { NavigationLoading } from '@/components/ui/navigation-loading';
+import { RoutePreloader } from '@/components/providers/RoutePreloader';
 
 const oxanium = Oxanium({
   variable: '--font-sans',
@@ -109,6 +110,7 @@ export default function RootLayout({
             <QueryProvider>
               {/* <SessionMonitor /> */}
               <NavigationLoading />
+              <RoutePreloader />
               {children}
               <PWAManager />
               <Toaster />
