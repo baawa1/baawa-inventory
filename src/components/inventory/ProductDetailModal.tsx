@@ -26,6 +26,8 @@ import {
 import { toast } from 'sonner';
 import { formatCurrency, formatDate } from '@/lib/utils';
 import { PRODUCT_STATUS } from '@/lib/constants';
+import { hasPermission } from '@/lib/auth/roles';
+import { useSession } from 'next-auth/react';
 import Link from 'next/link';
 import Image from 'next/image';
 
@@ -54,6 +56,7 @@ export const ProductDetailModal: React.FC<ProductDetailModalProps> = ({
   onCloseAction,
   onAddStock,
 }) => {
+  const { data: session } = useSession();
   const {
     data: product,
     isLoading,
@@ -64,6 +67,9 @@ export const ProductDetailModal: React.FC<ProductDetailModalProps> = ({
   // Carousel and description state
   const [currentImage, setCurrentImage] = useState(0);
   const [showFullDescription, setShowFullDescription] = useState(false);
+
+  // Check permissions for cost data access
+  const canViewCost = hasPermission(session?.user?.role, 'PRODUCT_COST_READ');
 
   const handleRefresh = () => {
     if (_productId) {
@@ -321,14 +327,17 @@ export const ProductDetailModal: React.FC<ProductDetailModalProps> = ({
                   </CardTitle>
                 </CardHeader>
                 <CardContent className="space-y-2">
-                  <div>
-                    <label className="text-muted-foreground text-sm font-medium">
-                      Cost Price
-                    </label>
-                    <p className="text-sm">
-                      {formatCurrency(product.cost || 0)}
-                    </p>
-                  </div>
+                  {/* Only show cost price if user has cost permissions */}
+                  {canViewCost && (
+                    <div>
+                      <label className="text-muted-foreground text-sm font-medium">
+                        Cost Price
+                      </label>
+                      <p className="text-sm">
+                        {formatCurrency(product.cost || 0)}
+                      </p>
+                    </div>
+                  )}
                   <div>
                     <label className="text-muted-foreground text-sm font-medium">
                       Selling Price
