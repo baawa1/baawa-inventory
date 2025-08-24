@@ -34,6 +34,7 @@ import { InventoryPageLayout } from '@/components/inventory/InventoryPageLayout'
 import { AddStockDialog } from '@/components/inventory/AddStockDialog';
 import { ProductDetailModal } from '@/components/inventory/ProductDetailModal';
 import { PRODUCT_COLUMNS } from '@/components/inventory/ColumnCustomizer';
+import { InlinePriceEditor } from '@/components/inventory/InlinePriceEditor';
 
 // Icons
 import {
@@ -488,6 +489,19 @@ const ProductList = ({ user }: ProductListProps) => {
             <span className={stockStatus.color}>{product.stock}</span>
             <span className="text-gray-400">/ {product.minStock} min</span>
           </div>
+        );
+      case 'pricing':
+        return (
+          <InlinePriceEditor
+            product={{
+              id: product.id,
+              name: product.name,
+              cost: product.cost,
+              price: product.price
+            }}
+            canEdit={canViewCost && canEditProducts}
+            showProfitMargin={canViewCost}
+          />
         );
       case 'price':
         return (

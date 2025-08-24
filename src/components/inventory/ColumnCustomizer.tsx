@@ -45,7 +45,8 @@ export const PRODUCT_COLUMNS: TableColumn[] = [
   { key: 'category', label: 'Category', sortable: true, defaultVisible: true },
   { key: 'brand', label: 'Brand', sortable: true, defaultVisible: true },
   { key: 'stock', label: 'Stock', sortable: true, defaultVisible: true },
-  { key: 'price', label: 'Price', sortable: true, defaultVisible: true },
+  { key: 'pricing', label: 'Pricing & Margin', sortable: true, defaultVisible: true },
+  { key: 'price', label: 'Selling Price', sortable: true, defaultVisible: false },
   { key: 'status', label: 'Status', sortable: true, defaultVisible: true },
   { key: 'supplier', label: 'Supplier', sortable: false, defaultVisible: true },
   {
