@@ -4,6 +4,8 @@ import * as React from 'react';
 import { ChevronDown } from 'lucide-react';
 import Link from 'next/link';
 import { usePathname } from 'next/navigation';
+import { useSession } from 'next-auth/react';
+import { hasPermission } from '@/lib/auth/roles';
 import {
   IconPackages,
   IconTag,
@@ -204,11 +206,22 @@ function CollapsibleNavItem({ item }: { item: (typeof inventoryNavItems)[0] }) {
 }
 
 export function NavInventory() {
+  const { data: session } = useSession();
+
+  // Filter inventory items based on user permissions
+  const filteredItems = inventoryNavItems.filter(item => {
+    // Hide supplier management for non-Admin users
+    if (item.title === 'Suppliers' && !hasPermission(session?.user?.role, 'SUPPLIER_READ')) {
+      return false;
+    }
+    return true;
+  });
+
   return (
     <SidebarGroup>
       <SidebarGroupLabel>Inventory Management</SidebarGroupLabel>
       <SidebarMenu>
-        {inventoryNavItems.map(item => (
+        {filteredItems.map(item => (
           <CollapsibleNavItem key={item.title} item={item} />
         ))}
       </SidebarMenu>

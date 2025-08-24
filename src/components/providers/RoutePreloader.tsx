@@ -5,12 +5,7 @@ import { useRouter } from 'next/navigation';
 import { useSession } from 'next-auth/react';
 
 // Critical routes that should be preloaded for instant navigation
-const CRITICAL_ROUTES = [
-  '/dashboard',
-  '/pos',
-  '/inventory',
-  '/finance',
-];
+const CRITICAL_ROUTES = ['/dashboard', '/pos', '/inventory', '/finance'];
 
 // Role-specific routes to preload
 const ROLE_ROUTES = {
@@ -28,10 +23,7 @@ const ROLE_ROUTES = {
     '/finance/transactions',
     '/inventory/reports',
   ],
-  STAFF: [
-    '/pos',
-    '/inventory/products',
-  ],
+  STAFF: ['/pos', '/inventory/products'],
 };
 
 export function RoutePreloader() {
@@ -48,7 +40,8 @@ export function RoutePreloader() {
 
       // Preload role-specific routes if user is authenticated
       if (session?.user?.role) {
-        const roleRoutes = ROLE_ROUTES[session.user.role as keyof typeof ROLE_ROUTES] || [];
+        const roleRoutes =
+          ROLE_ROUTES[session.user.role as keyof typeof ROLE_ROUTES] || [];
         roleRoutes.forEach(route => {
           router.prefetch(route);
         });
