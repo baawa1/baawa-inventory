@@ -130,7 +130,7 @@ export default function UnauthorizedPage() {
 
           <div className="flex flex-col gap-2">
             <Button asChild variant="ghost" className="w-full">
-              <Link href="/">Go Home</Link>
+              <Link href="/dashboard">Go Home</Link>
             </Button>
             <Button
               variant="outline"
