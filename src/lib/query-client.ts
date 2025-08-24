@@ -58,6 +58,26 @@ export const queryClient = new QueryClient({
   },
 });
 
+// Prefetch function for better performance
+export const prefetchQuery = async ({
+  queryKey,
+  queryFn,
+}: {
+  queryKey: readonly unknown[];
+  queryFn: () => Promise<unknown>;
+}) => {
+  try {
+    await queryClient.prefetchQuery({
+      queryKey,
+      queryFn,
+      staleTime: 5 * 60 * 1000, // 5 minutes
+    });
+  } catch (error) {
+    // Silently fail prefetch to avoid blocking the UI
+    console.warn('Prefetch failed:', error);
+  }
+};
+
 // Query key factory for consistent query keys
 export const queryKeys = {
   // Products

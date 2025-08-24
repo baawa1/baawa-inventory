@@ -51,6 +51,9 @@ export function FinanceOverview({ user: _user }: FinanceOverviewProps) {
     queryKey: queryKeys.finance.summary(),
     queryFn: fetchFinancialSummary,
     staleTime: 5 * 60 * 1000, // 5 minutes
+    gcTime: 10 * 60 * 1000, // 10 minutes
+    refetchOnWindowFocus: false,
+    retry: 2,
   });
 
   if (isLoading) {
@@ -60,22 +63,74 @@ export function FinanceOverview({ user: _user }: FinanceOverviewProps) {
           title="Finance Overview"
           description="Track your business finances and financial performance"
         />
+
+        {/* Summary Cards Skeleton */}
         <div className="grid gap-6 md:grid-cols-2 lg:grid-cols-4">
-          {[...Array(4)].map((_, i) => (
-            <Card key={i}>
+          {[
+            {
+              title: 'Total Income',
+              icon: TrendingUp,
+              color: 'text-green-600',
+            },
+            {
+              title: 'Total Expenses',
+              icon: TrendingDown,
+              color: 'text-red-600',
+            },
+            { title: 'Net Income', icon: DollarSign, color: 'text-blue-600' },
+            { title: 'Transactions', icon: Activity, color: 'text-purple-600' },
+          ].map(({ title, icon: Icon, color }, i) => (
+            <Card key={i} className="animate-pulse">
               <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-                <CardTitle className="text-sm font-medium">
-                  Loading...
+                <CardTitle className="text-sm font-medium text-gray-400">
+                  {title}
                 </CardTitle>
-                <div className="h-4 w-4 animate-pulse rounded bg-gray-200" />
+                <Icon className={`h-4 w-4 ${color} opacity-50`} />
               </CardHeader>
               <CardContent>
-                <div className="text-2xl font-bold">--</div>
-                <p className="text-muted-foreground text-xs">Loading...</p>
+                <div className="mb-2 h-8 w-24 animate-pulse rounded bg-gray-200" />
+                <div className="h-3 w-32 animate-pulse rounded bg-gray-200" />
               </CardContent>
             </Card>
           ))}
         </div>
+
+        {/* Recent Transactions Skeleton */}
+        <Card>
+          <CardHeader>
+            <div className="flex items-center justify-between">
+              <div>
+                <CardTitle>Recent Transactions</CardTitle>
+                <CardDescription>
+                  Latest financial transactions across all sources
+                </CardDescription>
+              </div>
+              <div className="h-9 w-20 animate-pulse rounded bg-gray-200" />
+            </div>
+          </CardHeader>
+          <CardContent>
+            <div className="space-y-4">
+              {[...Array(3)].map((_, i) => (
+                <div
+                  key={i}
+                  className="flex items-center justify-between rounded-lg border p-4"
+                >
+                  <div className="flex items-center space-x-4">
+                    <div className="h-6 w-16 animate-pulse rounded bg-gray-200" />
+                    <div>
+                      <div className="mb-2 h-4 w-32 animate-pulse rounded bg-gray-200" />
+                      <div className="h-3 w-24 animate-pulse rounded bg-gray-200" />
+                    </div>
+                  </div>
+                  <div className="text-right">
+                    <div className="mb-2 h-4 w-20 animate-pulse rounded bg-gray-200" />
+                    <div className="h-3 w-16 animate-pulse rounded bg-gray-200" />
+                  </div>
+                </div>
+              ))}
+            </div>
+          </CardContent>
+        </Card>
       </div>
     );
   }

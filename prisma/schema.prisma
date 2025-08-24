@@ -228,6 +228,7 @@ model SalesTransaction {
   @@index([transaction_number], map: "idx_sales_transactions_transaction_number")
   @@index([user_id], map: "idx_sales_transactions_user_id")
   @@index([customer_id], map: "idx_sales_transactions_customer_id")
+  @@index([payment_status, created_at], map: "idx_sales_transactions_payment_status_created_at")
   @@map("sales_transactions")
 }
 
@@ -288,6 +289,7 @@ model StockAddition {
   @@index([productId], map: "idx_stock_additions_product_id")
   @@index([purchaseDate], map: "idx_stock_additions_purchase_date")
   @@index([supplierId], map: "idx_stock_additions_supplier_id")
+  @@index([purchaseDate, totalCost], map: "idx_stock_additions_purchase_date_total_cost")
   @@map("stock_additions")
 }
 
@@ -457,6 +459,8 @@ model FinancialTransaction {
   @@index([transactionDate], map: "idx_financial_transactions_date")
   @@index([status], map: "idx_financial_transactions_status")
   @@index([createdBy], map: "idx_financial_transactions_created_by")
+  @@index([type, transactionDate], map: "idx_financial_transactions_type_date")
+  @@index([status, transactionDate], map: "idx_financial_transactions_status_date")
   @@map("financial_transactions")
 }
 

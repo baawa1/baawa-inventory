@@ -4,6 +4,8 @@ import * as React from 'react';
 import { ChevronDown } from 'lucide-react';
 import Link from 'next/link';
 import { usePathname } from 'next/navigation';
+import { useSession } from 'next-auth/react';
+import { hasPermission } from '@/lib/auth/roles';
 import {
   IconCash,
   IconChartBar,
@@ -185,11 +187,62 @@ function CollapsibleNavItem({ item }: { item: (typeof financeNavItems)[0] }) {
 }
 
 export function NavFinance() {
+  const { data: session } = useSession();
+
+  // Filter navigation items based on user permissions
+  const filteredItems = React.useMemo(() => {
+    if (!session?.user?.role) return [];
+
+    const canViewFinancialReports = hasPermission(session.user.role, 'FINANCIAL_REPORTS');
+    const canCreateTransactions = hasPermission(session.user.role, 'FINANCE_TRANSACTIONS_CREATE');
+
+    return financeNavItems.filter(item => {
+      // Always hide Finance Overview from Manager/Staff - contains business intelligence
+      if (item.title === 'Finance Overview' && !canViewFinancialReports) {
+        return false;
+      }
+      
+      // Hide Reports & Analytics completely from Manager/Staff
+      if (item.title === 'Reports & Analytics' && !canViewFinancialReports) {
+        return false;
+      }
+
+      // Show Income/Expense Management only if user can create transactions
+      if ((item.title === 'Income Management' || item.title === 'Expense Management') && !canCreateTransactions) {
+        return false;
+      }
+
+      // Show Transactions only if user can create transactions
+      if (item.title === 'Transactions' && !canCreateTransactions) {
+        return false;
+      }
+
+      return true;
+    }).map(item => {
+      // For remaining items, filter sub-items based on permissions
+      if (item.items && item.items.length > 0) {
+        const filteredSubItems = item.items.filter(subItem => {
+          // For Manager: only show Add Income/Expense and their own transaction view
+          // Hide complex analytics and company-wide views
+          return true; // We'll handle sub-item filtering in route protection
+        });
+
+        return { ...item, items: filteredSubItems };
+      }
+      return item;
+    });
+  }, [session?.user?.role]);
+
+  // Don't render the finance section if no items are available
+  if (filteredItems.length === 0) {
+    return null;
+  }
+
   return (
     <SidebarGroup>
       <SidebarGroupLabel>Finance Manager</SidebarGroupLabel>
       <SidebarMenu>
-        {financeNavItems.map(item => (
+        {filteredItems.map(item => (
           <CollapsibleNavItem key={item.title} item={item} />
         ))}
       </SidebarMenu>

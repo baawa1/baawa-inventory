@@ -1,7 +1,7 @@
 import { redirect } from 'next/navigation';
 import { auth } from '#root/auth';
 import { FinanceTransactionList } from '@/components/finance/FinanceTransactionList';
-import { USER_ROLES, hasRole } from '@/lib/auth/roles';
+import { hasPermission } from '@/lib/auth/roles';
 
 export const metadata = {
   title: 'Financial Transactions - BaaWA Inventory POS',
@@ -16,8 +16,8 @@ export default async function FinanceTransactionsPage() {
     redirect('/login');
   }
 
-  // Check role permissions - only admin and manager can access finance
-  if (!hasRole(session.user.role, [USER_ROLES.ADMIN, USER_ROLES.MANAGER])) {
+  // Check if user has permission to access financial reports (Admin only)
+  if (!hasPermission(session.user.role, 'FINANCIAL_REPORTS')) {
     redirect('/unauthorized');
   }
 

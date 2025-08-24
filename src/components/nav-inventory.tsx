@@ -211,7 +211,10 @@ export function NavInventory() {
   // Filter inventory items based on user permissions
   const filteredItems = inventoryNavItems.filter(item => {
     // Hide supplier management for non-Admin users
-    if (item.title === 'Suppliers' && !hasPermission(session?.user?.role, 'SUPPLIER_READ')) {
+    if (
+      item.title === 'Suppliers' &&
+      !hasPermission(session?.user?.role, 'SUPPLIER_READ')
+    ) {
       return false;
     }
     return true;
