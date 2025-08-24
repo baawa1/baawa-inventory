@@ -1,6 +1,7 @@
 import { NextResponse } from 'next/server';
 import { prisma } from '@/lib/db';
 import { withAuth, AuthenticatedRequest } from '@/lib/api-middleware';
+import { hasPermission } from '@/lib/auth/roles';
 import { z } from 'zod';
 import { logger } from '@/lib/logger';
 import { createApiResponse } from '@/lib/api-response';
@@ -19,6 +20,11 @@ const reportParamsSchema = z.object({
 
 export const GET = withAuth(async function (request: AuthenticatedRequest) {
   try {
+    // Check if user has permission to access financial reports (Admin only)
+    if (!hasPermission(request.user.role, 'FINANCIAL_REPORTS')) {
+      return createApiResponse.forbidden('Insufficient permissions to access financial reports');
+    }
+
     // Parse and validate query parameters
     const { searchParams } = new URL(request.url);
     const validatedParams = reportParamsSchema.parse({

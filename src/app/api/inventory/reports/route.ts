@@ -2,7 +2,7 @@ import { NextRequest, NextResponse } from 'next/server';
 import { auth } from '#root/auth';
 import { prisma } from '@/lib/db';
 import { z } from 'zod';
-import { USER_ROLES, hasRole } from '@/lib/auth/roles';
+import { USER_ROLES, hasRole, hasPermission } from '@/lib/auth/roles';
 
 // Schema for report query parameters
 const reportQuerySchema = z.object({
@@ -60,6 +60,30 @@ export async function GET(request: NextRequest) {
     const query = Object.fromEntries(searchParams.entries());
     const validatedQuery = reportQuerySchema.parse(query);
 
+    // Check permissions for financial data access
+    const canViewCost = hasPermission(session.user.role, 'PRODUCT_COST_READ');
+    const canViewFinancialReports = hasPermission(session.user.role, 'FINANCIAL_REPORTS');
+
+    // Create base select object with conditional cost field
+    const createProductSelect = (includePrice: boolean = true) => ({
+      id: true,
+      name: true,
+      sku: true,
+      stock: true,
+      minStock: true,
+      ...(includePrice && { price: true }),
+      ...(canViewCost && { cost: true }),
+      category: { select: { name: true } },
+      brand: { select: { name: true } },
+      supplier: { 
+        select: canViewFinancialReports 
+          ? { name: true, email: true, phone: true } 
+          : { name: true }
+      },
+      createdAt: true,
+      updatedAt: true,
+    });
+
     let reportData;
     let reportTitle;
 
@@ -74,25 +98,25 @@ export async function GET(request: NextRequest) {
     if (validatedQuery.supplierId)
       baseFilter.supplierId = validatedQuery.supplierId;
 
+    // Restrict certain reports to Admin only
+    if (
+      (validatedQuery.type === 'high_value' || 
+       validatedQuery.type === 'category_analysis' ||
+       validatedQuery.type === 'supplier_analysis') && 
+      !canViewFinancialReports
+    ) {
+      return NextResponse.json(
+        { error: 'Insufficient permissions to access this report type' },
+        { status: 403 }
+      );
+    }
+
     switch (validatedQuery.type) {
       case 'current_stock':
         reportTitle = 'Current Stock Report';
         reportData = await prisma.product.findMany({
           where: baseFilter,
-          select: {
-            id: true,
-            name: true,
-            sku: true,
-            stock: true,
-            minStock: true,
-            price: true,
-            cost: true,
-            category: { select: { name: true } },
-            brand: { select: { name: true } },
-            supplier: { select: { name: true } },
-            createdAt: true,
-            updatedAt: true,
-          },
+          select: createProductSelect(),
           orderBy: { name: 'asc' },
         });
         break;
@@ -104,16 +128,7 @@ export async function GET(request: NextRequest) {
             ...baseFilter,
             stock: { lte: validatedQuery.lowStockThreshold },
           },
-          select: {
-            id: true,
-            name: true,
-            sku: true,
-            stock: true,
-            minStock: true,
-            price: true,
-            category: { select: { name: true } },
-            supplier: { select: { name: true, email: true, phone: true } },
-          },
+          select: createProductSelect(),
           orderBy: { stock: 'asc' },
         });
         break;
@@ -125,16 +140,7 @@ export async function GET(request: NextRequest) {
             ...baseFilter,
             stock: { lte: 0 },
           },
-          select: {
-            id: true,
-            name: true,
-            sku: true,
-            stock: true,
-            price: true,
-            category: { select: { name: true } },
-            supplier: { select: { name: true, email: true, phone: true } },
-            updatedAt: true,
-          },
+          select: createProductSelect(),
           orderBy: { updatedAt: 'desc' },
         });
         break;
