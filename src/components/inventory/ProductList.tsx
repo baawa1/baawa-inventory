@@ -100,7 +100,7 @@ const ProductList = ({ user }: ProductListProps) => {
     totalItems: 0,
   });
   const [visibleColumns, setVisibleColumns] = useState<string[]>([]);
-  
+
   // Check permissions for cost data access
   const canViewCost = hasPermission(user.role, 'PRODUCT_COST_READ');
   const [filters, setFilters] = useState<ProductFilters>(() => {
@@ -259,7 +259,10 @@ const ProductList = ({ user }: ProductListProps) => {
       const updatedColumns = visibleColumns.filter(col => col !== 'cost');
       setVisibleColumns(updatedColumns);
       // Also update localStorage to prevent the cost column from reappearing
-      localStorage.setItem('products-visible-columns', JSON.stringify(updatedColumns));
+      localStorage.setItem(
+        'products-visible-columns',
+        JSON.stringify(updatedColumns)
+      );
     }
   }, [canViewCost, visibleColumns]);
 
@@ -431,7 +434,6 @@ const ProductList = ({ user }: ProductListProps) => {
   };
 
   const renderCell = (product: APIProduct, columnKey: string) => {
-    
     switch (columnKey) {
       case 'image':
         const productImage = getProductImage(product);
