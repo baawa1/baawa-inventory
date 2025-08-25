@@ -10,8 +10,7 @@ import {
 } from '@/components/ui/form';
 import { Input } from '@/components/ui/input';
 import { formatCurrency } from '@/lib/utils';
-import { hasPermission } from '@/lib/auth/roles';
-import { useSession } from 'next-auth/react';
+import { usePermissions } from '@/hooks/usePermissions';
 import { UpdateProductFormData } from './types';
 
 interface PricingInventorySectionProps {
@@ -21,9 +20,8 @@ interface PricingInventorySectionProps {
 export function PricingInventorySection({
   form,
 }: PricingInventorySectionProps) {
-  const { data: session } = useSession();
-  const canViewCost = hasPermission(session?.user?.role, 'PRODUCT_COST_READ');
-  const canViewPrice = hasPermission(session?.user?.role, 'PRODUCT_PRICE_READ');
+  const permissions = usePermissions();
+  const { canViewCost, canViewPrice } = permissions;
   
   const purchasePrice = form.watch('purchasePrice');
   const sellingPrice = form.watch('sellingPrice');

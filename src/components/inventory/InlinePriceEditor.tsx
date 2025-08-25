@@ -1,6 +1,6 @@
 'use client';
 
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useMemo, useCallback, memo } from 'react';
 import { toast } from 'sonner';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -33,11 +33,11 @@ interface InlinePriceEditorProps {
   showProfitMargin?: boolean;
 }
 
-export function InlinePriceEditor({ 
+const InlinePriceEditor = memo<InlinePriceEditorProps>(function InlinePriceEditor({ 
   product, 
   canEdit, 
   showProfitMargin = true 
-}: InlinePriceEditorProps) {
+}) {
   const [isEditing, setIsEditing] = useState(false);
   const [editingField, setEditingField] = useState<'cost' | 'price' | null>(null);
   const [tempCost, setTempCost] = useState(product.cost.toString());
@@ -45,10 +45,18 @@ export function InlinePriceEditor({
 
   const updateProductMutation = useUpdateProduct();
 
-  // Calculate profit margin and markup
-  const profitAmount = product.price - product.cost;
-  const profitMargin = product.cost > 0 ? ((profitAmount / product.price) * 100) : 0;
-  const markupPercentage = product.cost > 0 ? ((profitAmount / product.cost) * 100) : 0;
+  // Memoize profit calculations to prevent unnecessary recalculations
+  const profitMetrics = useMemo(() => {
+    const profitAmount = product.price - product.cost;
+    const profitMargin = product.cost > 0 ? ((profitAmount / product.price) * 100) : 0;
+    const markupPercentage = product.cost > 0 ? ((profitAmount / product.cost) * 100) : 0;
+
+    return {
+      profitAmount,
+      profitMargin,
+      markupPercentage,
+    };
+  }, [product.cost, product.price]);
 
   // Reset temp values when product changes
   useEffect(() => {
@@ -56,7 +64,8 @@ export function InlinePriceEditor({
     setTempPrice(product.price.toString());
   }, [product.cost, product.price]);
 
-  const handleSave = async (field: 'cost' | 'price') => {
+  // Memoize handlers to prevent unnecessary re-renders
+  const handleSave = useCallback(async (field: 'cost' | 'price') => {
     const value = field === 'cost' ? tempCost : tempPrice;
     const numericValue = parseFloat(value);
 
@@ -83,21 +92,22 @@ export function InlinePriceEditor({
         setTempPrice(product.price.toString());
       }
     }
-  };
+  }, [product.id, tempCost, tempPrice, updateProductMutation]);
 
-  const handleCancel = () => {
+  const handleCancel = useCallback(() => {
     setTempCost(product.cost.toString());
     setTempPrice(product.price.toString());
     setIsEditing(false);
     setEditingField(null);
-  };
+  }, [product.cost, product.price]);
 
-  const getProfitColor = (margin: number) => {
+  // Memoize color calculation function
+  const getProfitColor = useCallback((margin: number) => {
     if (margin < 0) return 'text-red-600 bg-red-50';
     if (margin < 10) return 'text-orange-600 bg-orange-50';
     if (margin < 25) return 'text-yellow-600 bg-yellow-50';
     return 'text-green-600 bg-green-50';
-  };
+  }, []);
 
   if (!canEdit) {
     return (
@@ -112,9 +122,9 @@ export function InlinePriceEditor({
             <IconTrendingUp className="h-3 w-3 text-gray-400" />
             <Badge 
               variant="secondary" 
-              className={`text-xs px-1.5 py-0.5 ${getProfitColor(profitMargin)}`}
+              className={`text-xs px-1.5 py-0.5 ${getProfitColor(profitMetrics.profitMargin)}`}
             >
-              {profitMargin.toFixed(1)}% margin
+              {profitMetrics.profitMargin.toFixed(1)}% margin
             </Badge>
           </div>
         )}
@@ -241,9 +251,9 @@ export function InlinePriceEditor({
                 <IconCalculator className="h-3 w-3 text-gray-400" />
                 <Badge 
                   variant="secondary" 
-                  className={`text-xs px-1.5 py-0.5 ${getProfitColor(profitMargin)}`}
+                  className={`text-xs px-1.5 py-0.5 ${getProfitColor(profitMetrics.profitMargin)}`}
                 >
-                  {profitMargin.toFixed(1)}%
+                  {profitMetrics.profitMargin.toFixed(1)}%
                 </Badge>
               </button>
             </PopoverTrigger>
@@ -261,20 +271,20 @@ export function InlinePriceEditor({
                   </div>
                   <div className="border-t pt-1 flex justify-between">
                     <span>Profit Amount:</span>
-                    <span className={`font-medium ${profitAmount >= 0 ? 'text-green-600' : 'text-red-600'}`}>
-                      {formatCurrency(profitAmount)}
+                    <span className={`font-medium ${profitMetrics.profitAmount >= 0 ? 'text-green-600' : 'text-red-600'}`}>
+                      {formatCurrency(profitMetrics.profitAmount)}
                     </span>
                   </div>
                   <div className="flex justify-between">
                     <span>Profit Margin:</span>
-                    <span className={`font-medium ${profitMargin >= 0 ? 'text-green-600' : 'text-red-600'}`}>
-                      {profitMargin.toFixed(1)}%
+                    <span className={`font-medium ${profitMetrics.profitMargin >= 0 ? 'text-green-600' : 'text-red-600'}`}>
+                      {profitMetrics.profitMargin.toFixed(1)}%
                     </span>
                   </div>
                   <div className="flex justify-between">
                     <span>Markup:</span>
-                    <span className={`font-medium ${markupPercentage >= 0 ? 'text-green-600' : 'text-red-600'}`}>
-                      {markupPercentage.toFixed(1)}%
+                    <span className={`font-medium ${profitMetrics.markupPercentage >= 0 ? 'text-green-600' : 'text-red-600'}`}>
+                      {profitMetrics.markupPercentage.toFixed(1)}%
                     </span>
                   </div>
                 </div>
@@ -293,4 +303,6 @@ export function InlinePriceEditor({
       )}
     </div>
   );
-}
+});
+
+export { InlinePriceEditor };

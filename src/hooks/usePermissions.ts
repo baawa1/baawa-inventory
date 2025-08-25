@@ -1,319 +1,189 @@
 import { useMemo } from 'react';
+import { useSession } from 'next-auth/react';
+import { hasPermission } from '@/lib/auth/roles';
+import type { UserRole } from '@/lib/auth/roles';
 
-export type UserRole = 'ADMIN' | 'MANAGER' | 'STAFF';
+/**
+ * Custom hook that provides a centralized way to check user permissions
+ * Eliminates duplicate permission checking logic across components
+ * Automatically memoizes permission checks for better performance
+ */
+export function usePermissions() {
+  const { data: session } = useSession();
+  const userRole = session?.user?.role as UserRole;
 
-export interface User {
-  id: string;
-  email?: string | null;
-  name?: string | null;
-  role: UserRole;
-  status: string;
-  isEmailVerified: boolean;
-}
-
-export interface PermissionSet {
-  // Product permissions
-  canViewProducts: boolean;
-  canCreateProducts: boolean;
-  canEditProducts: boolean;
-  canDeleteProducts: boolean;
-  canArchiveProducts: boolean;
-  canManageProductImages: boolean;
-
-  // Category permissions
-  canViewCategories: boolean;
-  canCreateCategories: boolean;
-  canEditCategories: boolean;
-  canDeleteCategories: boolean;
-
-  // Supplier permissions
-  canViewSuppliers: boolean;
-  canCreateSuppliers: boolean;
-  canEditSuppliers: boolean;
-  canDeleteSuppliers: boolean;
-  canDeactivateSuppliers: boolean;
-
-  // Stock permissions
-  canViewStock: boolean;
-  canAdjustStock: boolean;
-  canReconcileStock: boolean;
-  canApproveStockChanges: boolean;
-
-  // User management permissions
-  canViewUsers: boolean;
-  canCreateUsers: boolean;
-  canEditUsers: boolean;
-  canDeleteUsers: boolean;
-  canApproveUsers: boolean;
-  canManageUserRoles: boolean;
-
-  // Report permissions
-  canViewReports: boolean;
-  canExportReports: boolean;
-  canViewSalesReports: boolean;
-  canViewInventoryReports: boolean;
-
-  // System permissions
-  canAccessAdmin: boolean;
-  canManageSettings: boolean;
-  canViewAuditLogs: boolean;
-}
-
-const ROLE_PERMISSIONS: Record<UserRole, PermissionSet> = {
-  ADMIN: {
-    // Product permissions
-    canViewProducts: true,
-    canCreateProducts: true,
-    canEditProducts: true,
-    canDeleteProducts: true,
-    canArchiveProducts: true,
-    canManageProductImages: true,
-
-    // Category permissions
-    canViewCategories: true,
-    canCreateCategories: true,
-    canEditCategories: true,
-    canDeleteCategories: true,
-
-    // Supplier permissions
-    canViewSuppliers: true,
-    canCreateSuppliers: true,
-    canEditSuppliers: true,
-    canDeleteSuppliers: true,
-    canDeactivateSuppliers: true,
-
-    // Stock permissions
-    canViewStock: true,
-    canAdjustStock: true,
-    canReconcileStock: true,
-    canApproveStockChanges: true,
-
-    // User management permissions
-    canViewUsers: true,
-    canCreateUsers: true,
-    canEditUsers: true,
-    canDeleteUsers: true,
-    canApproveUsers: true,
-    canManageUserRoles: true,
-
-    // Report permissions
-    canViewReports: true,
-    canExportReports: true,
-    canViewSalesReports: true,
-    canViewInventoryReports: true,
-
-    // System permissions
-    canAccessAdmin: true,
-    canManageSettings: true,
-    canViewAuditLogs: true,
-  },
-
-  MANAGER: {
-    // Product permissions
-    canViewProducts: true,
-    canCreateProducts: true,
-    canEditProducts: true,
-    canDeleteProducts: false,
-    canArchiveProducts: true,
-    canManageProductImages: true,
-
-    // Category permissions
-    canViewCategories: true,
-    canCreateCategories: true,
-    canEditCategories: true,
-    canDeleteCategories: false,
-
-    // Supplier permissions
-    canViewSuppliers: true,
-    canCreateSuppliers: true,
-    canEditSuppliers: true,
-    canDeleteSuppliers: false,
-    canDeactivateSuppliers: false,
-
-    // Stock permissions
-    canViewStock: true,
-    canAdjustStock: true,
-    canReconcileStock: true,
-    canApproveStockChanges: false,
-
-    // User management permissions
-    canViewUsers: true,
-    canCreateUsers: false,
-    canEditUsers: false,
-    canDeleteUsers: false,
-    canApproveUsers: false,
-    canManageUserRoles: false,
-
-    // Report permissions
-    canViewReports: true,
-    canExportReports: true,
-    canViewSalesReports: true,
-    canViewInventoryReports: true,
-
-    // System permissions
-    canAccessAdmin: false,
-    canManageSettings: false,
-    canViewAuditLogs: false,
-  },
-
-  STAFF: {
-    // Product permissions
-    canViewProducts: true,
-    canCreateProducts: false,
-    canEditProducts: true,
-    canDeleteProducts: false,
-    canArchiveProducts: false,
-    canManageProductImages: false,
-
-    // Category permissions
-    canViewCategories: true,
-    canCreateCategories: false,
-    canEditCategories: false,
-    canDeleteCategories: false,
-
-    // Supplier permissions
-    canViewSuppliers: true,
-    canCreateSuppliers: false,
-    canEditSuppliers: false,
-    canDeleteSuppliers: false,
-    canDeactivateSuppliers: false,
-
-    // Stock permissions
-    canViewStock: true,
-    canAdjustStock: false,
-    canReconcileStock: false,
-    canApproveStockChanges: false,
-
-    // User management permissions
-    canViewUsers: false,
-    canCreateUsers: false,
-    canEditUsers: false,
-    canDeleteUsers: false,
-    canApproveUsers: false,
-    canManageUserRoles: false,
-
-    // Report permissions
-    canViewReports: false,
-    canExportReports: false,
-    canViewSalesReports: false,
-    canViewInventoryReports: false,
-
-    // System permissions
-    canAccessAdmin: false,
-    canManageSettings: false,
-    canViewAuditLogs: false,
-  },
-};
-
-// Default permission set for unauthenticated users
-const DEFAULT_PERMISSIONS: PermissionSet = {
-  // Product permissions
-  canViewProducts: false,
-  canCreateProducts: false,
-  canEditProducts: false,
-  canDeleteProducts: false,
-  canArchiveProducts: false,
-  canManageProductImages: false,
-
-  // Category permissions
-  canViewCategories: false,
-  canCreateCategories: false,
-  canEditCategories: false,
-  canDeleteCategories: false,
-
-  // Supplier permissions
-  canViewSuppliers: false,
-  canCreateSuppliers: false,
-  canEditSuppliers: false,
-  canDeleteSuppliers: false,
-  canDeactivateSuppliers: false,
-
-  // Stock permissions
-  canViewStock: false,
-  canAdjustStock: false,
-  canReconcileStock: false,
-  canApproveStockChanges: false,
-
-  // User management permissions
-  canViewUsers: false,
-  canCreateUsers: false,
-  canEditUsers: false,
-  canDeleteUsers: false,
-  canApproveUsers: false,
-  canManageUserRoles: false,
-
-  // Report permissions
-  canViewReports: false,
-  canExportReports: false,
-  canViewSalesReports: false,
-  canViewInventoryReports: false,
-
-  // System permissions
-  canAccessAdmin: false,
-  canManageSettings: false,
-  canViewAuditLogs: false,
-};
-
-export function usePermissions(user: User | null): PermissionSet {
   return useMemo(() => {
-    if (!user || !user.role) {
-      // Return no permissions for unauthenticated users
-      return DEFAULT_PERMISSIONS;
+    if (!userRole) {
+      // Return all false permissions if no user role
+      return {
+        // Inventory permissions
+        canReadInventory: false,
+        canWriteInventory: false,
+        canDeleteInventory: false,
+        canViewLowStock: false,
+
+        // Product pricing permissions
+        canViewCost: false,
+        canViewPrice: false,
+
+        // Finance permissions
+        canCreateTransactions: false,
+        canReadTransactions: false,
+        canApproveFinance: false,
+        canDeleteFinance: false,
+        canAccessFinancialReports: false,
+        canViewFinancialAnalytics: false,
+        canViewRevenue: false,
+        canViewFinancialAggregates: false,
+
+        // Supplier permissions
+        canReadSupplier: false,
+        canWriteSupplier: false,
+        canViewSupplierNameOnly: false,
+
+        // User management permissions
+        canManageUsers: false,
+        canApproveUsers: false,
+
+        // Sales permissions
+        canReadSales: false,
+        canWriteSales: false,
+
+        // POS permissions
+        canAccessPOS: false,
+
+        // Reports permissions
+        canReadReports: false,
+        canViewAdvancedReports: false,
+        canViewInventoryReports: false,
+        canViewSalesVolumeReports: false,
+
+        // Settings permissions
+        canAccessSettings: false,
+        canAccessAdvancedSettings: false,
+
+        // Customer permissions
+        canViewCustomerPersonalData: false,
+        canViewCustomerAnalytics: false,
+
+        // Business intelligence permissions
+        canViewSupplierContracts: false,
+        canViewBusinessAnalytics: false,
+        canViewCompetitiveData: false,
+
+        // System permissions
+        canViewAuditLogs: false,
+        canConfigureSystem: false,
+        canViewUserActivity: false,
+
+        // Convenience computed permissions
+        isAdmin: false,
+        isManager: false,
+        isStaff: false,
+        canManageProducts: false,
+        canEditProducts: false,
+      };
     }
 
-    return ROLE_PERMISSIONS[user.role] || ROLE_PERMISSIONS.STAFF;
-  }, [user]);
+    // Calculate all permissions for the current user role
+    return {
+      // Inventory permissions
+      canReadInventory: hasPermission(userRole, 'INVENTORY_READ'),
+      canWriteInventory: hasPermission(userRole, 'INVENTORY_WRITE'),
+      canDeleteInventory: hasPermission(userRole, 'INVENTORY_DELETE'),
+      canViewLowStock: hasPermission(userRole, 'INVENTORY_LOW_STOCK'),
+
+      // Product pricing permissions
+      canViewCost: hasPermission(userRole, 'PRODUCT_COST_READ'),
+      canViewPrice: hasPermission(userRole, 'PRODUCT_PRICE_READ'),
+
+      // Finance permissions
+      canCreateTransactions: hasPermission(userRole, 'FINANCE_TRANSACTIONS_CREATE'),
+      canReadTransactions: hasPermission(userRole, 'FINANCE_TRANSACTIONS_READ'),
+      canApproveFinance: hasPermission(userRole, 'FINANCE_APPROVE'),
+      canDeleteFinance: hasPermission(userRole, 'FINANCE_DELETE'),
+      canAccessFinancialReports: hasPermission(userRole, 'FINANCIAL_REPORTS'),
+      canViewFinancialAnalytics: hasPermission(userRole, 'FINANCIAL_ANALYTICS'),
+      canViewRevenue: hasPermission(userRole, 'REVENUE_READ'),
+      canViewFinancialAggregates: hasPermission(userRole, 'FINANCIAL_AGGREGATES'),
+
+      // Supplier permissions
+      canReadSupplier: hasPermission(userRole, 'SUPPLIER_READ'),
+      canWriteSupplier: hasPermission(userRole, 'SUPPLIER_WRITE'),
+      canViewSupplierNameOnly: hasPermission(userRole, 'SUPPLIER_NAME_ONLY'),
+
+      // User management permissions
+      canManageUsers: hasPermission(userRole, 'USER_MANAGEMENT'),
+      canApproveUsers: hasPermission(userRole, 'USER_APPROVAL'),
+
+      // Sales permissions
+      canReadSales: hasPermission(userRole, 'SALES_READ'),
+      canWriteSales: hasPermission(userRole, 'SALES_WRITE'),
+
+      // POS permissions
+      canAccessPOS: hasPermission(userRole, 'POS_ACCESS'),
+
+      // Reports permissions
+      canReadReports: hasPermission(userRole, 'REPORTS_READ'),
+      canViewAdvancedReports: hasPermission(userRole, 'REPORTS_ADVANCED'),
+      canViewInventoryReports: hasPermission(userRole, 'INVENTORY_REPORTS'),
+      canViewSalesVolumeReports: hasPermission(userRole, 'SALES_VOLUME_REPORTS'),
+
+      // Settings permissions
+      canAccessSettings: hasPermission(userRole, 'SETTINGS_ACCESS'),
+      canAccessAdvancedSettings: hasPermission(userRole, 'SETTINGS_ADVANCED'),
+
+      // Customer permissions
+      canViewCustomerPersonalData: hasPermission(userRole, 'CUSTOMER_PERSONAL_DATA'),
+      canViewCustomerAnalytics: hasPermission(userRole, 'CUSTOMER_ANALYTICS'),
+
+      // Business intelligence permissions
+      canViewSupplierContracts: hasPermission(userRole, 'SUPPLIER_CONTRACTS'),
+      canViewBusinessAnalytics: hasPermission(userRole, 'BUSINESS_ANALYTICS'),
+      canViewCompetitiveData: hasPermission(userRole, 'COMPETITIVE_DATA'),
+
+      // System permissions
+      canViewAuditLogs: hasPermission(userRole, 'AUDIT_LOGS'),
+      canConfigureSystem: hasPermission(userRole, 'SYSTEM_CONFIG'),
+      canViewUserActivity: hasPermission(userRole, 'USER_ACTIVITY'),
+
+      // Convenience computed permissions (commonly used combinations)
+      isAdmin: userRole === 'ADMIN',
+      isManager: userRole === 'MANAGER',
+      isStaff: userRole === 'STAFF',
+      canManageProducts: hasPermission(userRole, 'INVENTORY_WRITE'),
+      canEditProducts: hasPermission(userRole, 'INVENTORY_READ'), // Any role that can read can also "edit" (view edit forms)
+    };
+  }, [userRole]);
 }
 
-// Utility functions for common permission checks
-export const checkPermission = (
-  user: User | null,
-  permission: keyof PermissionSet
-): boolean => {
-  if (!user) return false;
-  const permissions = ROLE_PERMISSIONS[user.role] || ROLE_PERMISSIONS.STAFF;
-  return permissions[permission];
-};
+/**
+ * Hook variant that provides session data along with permissions
+ * Useful when you need both user data and permissions in the same component
+ */
+export function usePermissionsWithSession() {
+  const { data: session, ...sessionState } = useSession();
+  const permissions = usePermissions();
 
-export const hasAnyPermission = (
-  user: User | null,
-  permissions: Array<keyof PermissionSet>
-): boolean => {
-  return permissions.some(permission => checkPermission(user, permission));
-};
+  return {
+    session,
+    permissions,
+    ...sessionState,
+  };
+}
 
-export const hasAllPermissions = (
-  user: User | null,
-  permissions: Array<keyof PermissionSet>
-): boolean => {
-  return permissions.every(permission => checkPermission(user, permission));
-};
-
-// Legacy permission helpers (for backward compatibility)
-export const canManageProducts = (user: User | null): boolean => {
-  return (
-    checkPermission(user, 'canCreateProducts') ||
-    checkPermission(user, 'canEditProducts')
-  );
-};
-
-export const canManageCategories = (user: User | null): boolean => {
-  return (
-    checkPermission(user, 'canCreateCategories') ||
-    checkPermission(user, 'canEditCategories')
-  );
-};
-
-export const canManageSuppliers = (user: User | null): boolean => {
-  return (
-    checkPermission(user, 'canCreateSuppliers') ||
-    checkPermission(user, 'canEditSuppliers')
-  );
-};
-
-export const canManageStock = (user: User | null): boolean => {
-  return (
-    checkPermission(user, 'canAdjustStock') ||
-    checkPermission(user, 'canReconcileStock')
-  );
-};
+/**
+ * Hook to check specific permission dynamically
+ * Useful for runtime permission checks with dynamic permission names
+ * 
+ * @param permission - The permission key to check
+ * @returns boolean indicating if user has the permission
+ */
+export function useHasPermission(permission: keyof typeof import('@/lib/auth/roles').ROLE_PERMISSIONS) {
+  const { data: session } = useSession();
+  
+  return useMemo(() => {
+    if (!session?.user?.role) return false;
+    return hasPermission(session.user.role as UserRole, permission);
+  }, [session?.user?.role, permission]);
+}

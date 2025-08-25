@@ -26,8 +26,7 @@ import {
 import { toast } from 'sonner';
 import { formatCurrency, formatDate } from '@/lib/utils';
 import { PRODUCT_STATUS } from '@/lib/constants';
-import { hasPermission } from '@/lib/auth/roles';
-import { useSession } from 'next-auth/react';
+import { usePermissions } from '@/hooks/usePermissions';
 import Link from 'next/link';
 import Image from 'next/image';
 
@@ -56,7 +55,6 @@ export const ProductDetailModal: React.FC<ProductDetailModalProps> = ({
   onCloseAction,
   onAddStock,
 }) => {
-  const { data: session } = useSession();
   const {
     data: product,
     isLoading,
@@ -68,8 +66,9 @@ export const ProductDetailModal: React.FC<ProductDetailModalProps> = ({
   const [currentImage, setCurrentImage] = useState(0);
   const [showFullDescription, setShowFullDescription] = useState(false);
 
-  // Check permissions for cost data access
-  const canViewCost = hasPermission(session?.user?.role, 'PRODUCT_COST_READ');
+  // Get permissions using centralized hook
+  const permissions = usePermissions();
+  const { canViewCost } = permissions;
 
   const handleRefresh = () => {
     if (_productId) {

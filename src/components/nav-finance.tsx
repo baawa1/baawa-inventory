@@ -4,8 +4,7 @@ import * as React from 'react';
 import { ChevronDown } from 'lucide-react';
 import Link from 'next/link';
 import { usePathname } from 'next/navigation';
-import { useSession } from 'next-auth/react';
-import { hasPermission } from '@/lib/auth/roles';
+import { usePermissions } from '@/hooks/usePermissions';
 import {
   IconCash,
   IconChartBar,
@@ -187,23 +186,20 @@ function CollapsibleNavItem({ item }: { item: (typeof financeNavItems)[0] }) {
 }
 
 export function NavFinance() {
-  const { data: session } = useSession();
+  const permissions = usePermissions();
 
   // Filter navigation items based on user permissions
   const filteredItems = React.useMemo(() => {
-    if (!session?.user?.role) return [];
-
-    const canViewFinancialReports = hasPermission(session.user.role, 'FINANCIAL_REPORTS');
-    const canCreateTransactions = hasPermission(session.user.role, 'FINANCE_TRANSACTIONS_CREATE');
+    const { canAccessFinancialReports, canCreateTransactions } = permissions;
 
     return financeNavItems.filter(item => {
       // Always hide Finance Overview from Manager/Staff - contains business intelligence
-      if (item.title === 'Finance Overview' && !canViewFinancialReports) {
+      if (item.title === 'Finance Overview' && !canAccessFinancialReports) {
         return false;
       }
       
       // Hide Reports & Analytics completely from Manager/Staff
-      if (item.title === 'Reports & Analytics' && !canViewFinancialReports) {
+      if (item.title === 'Reports & Analytics' && !canAccessFinancialReports) {
         return false;
       }
 
@@ -231,7 +227,7 @@ export function NavFinance() {
       }
       return item;
     });
-  }, [session?.user?.role]);
+  }, [permissions]);
 
   // Don't render the finance section if no items are available
   if (filteredItems.length === 0) {

@@ -13,8 +13,8 @@ import { useBrands } from '@/hooks/api/brands';
 import { useCategoriesWithHierarchy } from '@/hooks/api/categories';
 import { useSyncEntity, useSyncAllEntities } from '@/hooks/api/useWebhookSync';
 
-// Constants
-import { ALL_ROLES, hasPermission } from '@/lib/auth/roles';
+// Permissions
+import { usePermissions } from '@/hooks/usePermissions';
 
 // UI Components
 import { Button } from '@/components/ui/button';
@@ -102,8 +102,9 @@ const ProductList = ({ user }: ProductListProps) => {
   });
   const [visibleColumns, setVisibleColumns] = useState<string[]>([]);
 
-  // Check permissions for cost data access
-  const canViewCost = hasPermission(user.role, 'PRODUCT_COST_READ');
+  // Get permissions using centralized hook
+  const permissions = usePermissions();
+  const { canViewCost, canManageProducts, canEditProducts } = permissions;
   const [filters, setFilters] = useState<ProductFilters>(() => {
     // Initialize filters based on URL parameters
     const lowStockParam = searchParams.get('lowStock');
@@ -209,8 +210,7 @@ const ProductList = ({ user }: ProductListProps) => {
     [categoriesQuery.data?.data]
   );
 
-  const canManageProducts = ['ADMIN', 'MANAGER'].includes(user.role);
-  const canEditProducts = ALL_ROLES.includes(user.role as any);
+  // Permissions are now handled by the centralized hook above
 
   // Memoize category options to prevent unnecessary re-renders
   const categoryOptions = useMemo(
