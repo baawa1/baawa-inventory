@@ -84,7 +84,12 @@ export default function BrandList({ user }: BrandListProps) {
         defaultVisible: true,
         sortable: true,
       },
-      { key: 'wordpress_id', label: 'WordPress ID', sortable: true, defaultVisible: false },
+      {
+        key: 'wordpress_id',
+        label: 'WordPress ID',
+        sortable: true,
+        defaultVisible: false,
+      },
       { key: 'createdAt', label: 'Created', defaultVisible: true },
       { key: 'updatedAt', label: 'Updated', defaultVisible: false },
     ],
@@ -251,12 +256,16 @@ export default function BrandList({ user }: BrandListProps) {
       switch (columnKey) {
         case 'name':
           return <span className="font-medium">{brand.name}</span>;
-        case 'description':
-          return (
-            brand.description || (
-              <span className="text-gray-400 italic">No description</span>
-            )
+        case 'description': {
+          const desc = brand.description || '';
+          return desc ? (
+            <span title={desc}>
+              {desc.length > 20 ? `${desc.slice(0, 20)}…` : desc}
+            </span>
+          ) : (
+            <span className="text-gray-400 italic">No description</span>
           );
+        }
         case 'website':
           return brand.website ? (
             <a
@@ -293,7 +302,7 @@ export default function BrandList({ user }: BrandListProps) {
           );
         case 'wordpress_id':
           return brand.wordpress_id ? (
-            <span className="text-sm font-mono">{brand.wordpress_id}</span>
+            <span className="font-mono text-sm">{brand.wordpress_id}</span>
           ) : (
             <span className="text-gray-400 italic">-</span>
           );

@@ -497,7 +497,7 @@ const ProductList = ({ user }: ProductListProps) => {
               id: product.id,
               name: product.name,
               cost: product.cost,
-              price: product.price
+              price: product.price,
             }}
             canEdit={canViewCost && canEditProducts}
             showProfitMargin={canViewCost}
@@ -515,12 +515,16 @@ const ProductList = ({ user }: ProductListProps) => {
         return getStatusBadge(product.status);
       case 'supplier':
         return product.supplier?.name || '-';
-      case 'description':
-        return (
-          <div className="max-w-xs truncate text-sm">
-            {product.description || '-'}
-          </div>
+      case 'description': {
+        const desc = product.description || '';
+        return desc ? (
+          <span className="max-w-xs truncate text-sm" title={desc}>
+            {desc.length > 20 ? `${desc.slice(0, 20)}…` : desc}
+          </span>
+        ) : (
+          <span className="text-sm text-gray-400">-</span>
         );
+      }
       case 'barcode':
         return (
           <span className="font-mono text-sm">{product.barcode || '-'}</span>

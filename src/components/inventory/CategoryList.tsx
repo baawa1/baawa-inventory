@@ -97,7 +97,12 @@ export default function CategoryList({ user }: CategoryListProps) {
       { key: 'products', label: 'Products', defaultVisible: true },
       { key: 'subcategories', label: 'Subcategories', defaultVisible: true },
       { key: 'isActive', label: 'Status', defaultVisible: true },
-      { key: 'wordpress_id', label: 'WordPress ID', sortable: true, defaultVisible: false },
+      {
+        key: 'wordpress_id',
+        label: 'WordPress ID',
+        sortable: true,
+        defaultVisible: false,
+      },
       { key: 'createdAt', label: 'Created', defaultVisible: true },
       { key: 'updatedAt', label: 'Updated', defaultVisible: false },
     ],
@@ -279,12 +284,16 @@ export default function CategoryList({ user }: CategoryListProps) {
       switch (columnKey) {
         case 'name':
           return getCategoryDisplayName(category);
-        case 'description':
-          return (
-            category.description || (
-              <span className="text-gray-400 italic">No description</span>
-            )
+        case 'description': {
+          const desc = category.description || '';
+          return desc ? (
+            <span title={desc}>
+              {desc.length > 20 ? `${desc.slice(0, 20)}…` : desc}
+            </span>
+          ) : (
+            <span className="text-gray-400 italic">No description</span>
           );
+        }
         case 'parent':
           return category.parent ? (
             <div className="flex items-center space-x-2">
@@ -322,7 +331,7 @@ export default function CategoryList({ user }: CategoryListProps) {
           );
         case 'wordpress_id':
           return category.wordpress_id ? (
-            <span className="text-sm font-mono">{category.wordpress_id}</span>
+            <span className="font-mono text-sm">{category.wordpress_id}</span>
           ) : (
             <span className="text-gray-400 italic">-</span>
           );
