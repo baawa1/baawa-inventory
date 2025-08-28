@@ -1,23 +1,15 @@
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { queryKeys } from '@/lib/query-client';
+import { 
+  type ApiSupplier, 
+  type CreateSupplierFormData, 
+  type UpdateSupplierFormData 
+} from '@/lib/validations/supplier';
 
-// Types
-export interface Supplier {
-  id: number;
-  name: string;
-  email?: string;
-  phone?: string;
-  address?: string;
-  contactPerson?: string;
-  isActive: boolean;
-  createdAt: string;
-  updatedAt: string;
-  wordpress_id?: number | null;
-  city?: string;
-  state?: string;
-  country?: string;
-  postalCode?: string;
-}
+// Use the centralized types
+export type Supplier = ApiSupplier;
+export type CreateSupplierData = CreateSupplierFormData;
+export type UpdateSupplierData = Omit<UpdateSupplierFormData, 'id'>;
 
 export interface SupplierFilters {
   search: string;
@@ -41,17 +33,6 @@ export interface SupplierResponse {
   pagination: SupplierPagination;
 }
 
-export interface CreateSupplierData {
-  name: string;
-  email?: string;
-  phone?: string;
-  address?: string;
-  contactPerson?: string;
-}
-
-export interface UpdateSupplierData extends Partial<CreateSupplierData> {
-  isActive?: boolean;
-}
 
 // API Functions
 const fetchSuppliers = async (

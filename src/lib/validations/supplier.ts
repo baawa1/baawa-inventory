@@ -56,8 +56,35 @@ export const updateSupplierSchema = supplierFormSchema
     message: 'At least one field must be provided for update',
   });
 
-// Type for update form data
+// Inferred types from schemas
+export type SupplierFormData = z.infer<typeof supplierFormSchema>;
+export type CreateSupplierFormData = z.infer<typeof createSupplierSchema>;
 export type UpdateSupplierFormData = z.infer<typeof updateSupplierSchema>;
+
+// Database supplier interface (matches Prisma schema)
+export interface Supplier {
+  id: number;
+  name: string;
+  contactPerson: string | null;
+  email: string | null;
+  phone: string | null;
+  address: string | null;
+  city: string | null;
+  state: string | null;
+  website: string | null;
+  notes: string | null;
+  createdAt: Date | null;
+  updatedAt: Date | null;
+}
+
+// API response type for suppliers
+export interface ApiSupplier extends Omit<Supplier, 'createdAt' | 'updatedAt'> {
+  createdAt: string;
+  updatedAt: string | null;
+  _count?: {
+    products: number;
+  };
+}
 
 // Supplier query parameters schema
 export const supplierQuerySchema = paginationSchema.merge(searchSchema).extend({

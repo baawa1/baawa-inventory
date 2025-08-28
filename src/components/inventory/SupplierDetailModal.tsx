@@ -3,6 +3,7 @@
 import React from 'react';
 import { useSession } from 'next-auth/react';
 import { useSupplier } from '@/hooks/api/suppliers';
+import { type ApiSupplier } from '@/lib/validations/supplier';
 import {
   Dialog,
   DialogContent,
@@ -20,37 +21,13 @@ import {
   IconMail,
   IconMapPin,
   IconEdit,
-  IconCreditCard,
   IconCalendar,
-  IconFileText,
   IconPackage,
   IconClipboardList,
   IconUser,
-  IconBuilding,
 } from '@tabler/icons-react';
 
-interface _Supplier {
-  id: number;
-  name: string;
-  contactPerson?: string;
-  email?: string;
-  phone?: string;
-  address?: string;
-  city?: string;
-  state?: string;
-  country?: string;
-  postalCode?: string;
-  taxId?: string;
-  paymentTerms?: string;
-  creditLimit?: number;
-  isActive: boolean;
-  notes?: string;
-  createdAt: string;
-  updatedAt: string;
-  _count?: {
-    products: number;
-  };
-}
+// Using ApiSupplier type from validation file
 
 interface SupplierDetailModalProps {
   supplierId: number | null;
@@ -81,7 +58,12 @@ export default function SupplierDetailModal({
     isLoading: loading,
     error,
     isError,
-  } = useSupplier(supplierId || 0);
+  } = useSupplier(supplierId || 0) as {
+    data: ApiSupplier | undefined;
+    isLoading: boolean;
+    error: unknown;
+    isError: boolean;
+  };
 
   const errorMessage = isError && error ? (error as Error).message : null;
 
@@ -113,8 +95,6 @@ export default function SupplierDetailModal({
       supplier.address,
       supplier.city,
       supplier.state,
-      supplier.country,
-      supplier.postalCode,
     ].filter(Boolean);
 
     return addressParts.length > 0 ? addressParts.join(', ') : null;
@@ -128,12 +108,6 @@ export default function SupplierDetailModal({
     });
   };
 
-  const formatCurrency = (amount: number) => {
-    return new Intl.NumberFormat('en-US', {
-      style: 'currency',
-      currency: 'USD',
-    }).format(amount);
-  };
 
   return (
     <Dialog open={isOpen} onOpenChange={onClose}>
@@ -169,12 +143,6 @@ export default function SupplierDetailModal({
                 <h2 className="text-2xl font-bold break-words">
                   {supplier.name}
                 </h2>
-                <Badge
-                  variant={supplier.isActive ? 'default' : 'secondary'}
-                  className="w-fit"
-                >
-                  {supplier.isActive ? 'Active' : 'Inactive'}
-                </Badge>
               </div>
               <div className="flex flex-wrap items-center gap-2">
                 {canEdit && (
@@ -272,60 +240,6 @@ export default function SupplierDetailModal({
                 </CardContent>
               </Card>
 
-              {/* Business Information */}
-              <Card>
-                <CardHeader>
-                  <CardTitle className="flex items-center gap-2">
-                    <IconBuilding className="h-4 w-4" />
-                    Business Information
-                  </CardTitle>
-                </CardHeader>
-                <CardContent className="space-y-4">
-                  {supplier.taxId && (
-                    <div className="flex items-center gap-3">
-                      <IconFileText className="text-muted-foreground h-4 w-4" />
-                      <div>
-                        <p className="text-sm font-medium">Tax ID</p>
-                        <p className="text-muted-foreground text-sm">
-                          {supplier.taxId}
-                        </p>
-                      </div>
-                    </div>
-                  )}
-
-                  {supplier.paymentTerms && (
-                    <div className="flex items-center gap-3">
-                      <IconCreditCard className="text-muted-foreground h-4 w-4" />
-                      <div>
-                        <p className="text-sm font-medium">Payment Terms</p>
-                        <p className="text-muted-foreground text-sm">
-                          {supplier.paymentTerms}
-                        </p>
-                      </div>
-                    </div>
-                  )}
-
-                  {supplier.creditLimit && (
-                    <div className="flex items-center gap-3">
-                      <IconCreditCard className="text-muted-foreground h-4 w-4" />
-                      <div>
-                        <p className="text-sm font-medium">Credit Limit</p>
-                        <p className="text-muted-foreground text-sm">
-                          {formatCurrency(supplier.creditLimit)}
-                        </p>
-                      </div>
-                    </div>
-                  )}
-
-                  {!supplier.taxId &&
-                    !supplier.paymentTerms &&
-                    !supplier.creditLimit && (
-                      <p className="text-muted-foreground text-sm">
-                        No business information available
-                      </p>
-                    )}
-                </CardContent>
-              </Card>
 
               {/* Statistics */}
               <Card>

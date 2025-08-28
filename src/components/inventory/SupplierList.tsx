@@ -14,7 +14,6 @@ import {
 import { InventoryPageLayout } from '@/components/inventory/InventoryPageLayout';
 import SupplierDetailModal from '@/components/inventory/SupplierDetailModal';
 import { Button } from '@/components/ui/button';
-import { Badge } from '@/components/ui/badge';
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -42,10 +41,13 @@ import {
   IconX,
   IconRefresh,
   IconAlertTriangle,
+  IconWorld,
 } from '@tabler/icons-react';
 import type { FilterConfig } from '@/types/inventory';
 import type { DashboardTableColumn } from '@/components/layouts/DashboardColumnCustomizer';
 import { logger } from '@/lib/logger';
+import { SUPPLIER_COLUMNS } from '@/components/inventory/ColumnCustomizer';
+import { type ApiSupplier } from '@/lib/validations/supplier';
 
 interface User {
   id: string;
@@ -83,23 +85,15 @@ const SupplierList = ({ user }: SupplierListProps) => {
     totalItems: 0,
   });
 
-  // Column configuration - only showing actual supplier fields
+  // Use centralized column definitions from ColumnCustomizer
   const columns: DashboardTableColumn[] = useMemo(
-    () => [
-      {
-        key: 'name',
-        label: 'Name',
-        sortable: true,
-        defaultVisible: true,
-        required: true,
-      },
-      { key: 'contactPerson', label: 'Contact Person', defaultVisible: true },
-      { key: 'email', label: 'Email', defaultVisible: true },
-      { key: 'phone', label: 'Phone', defaultVisible: true },
-      { key: 'address', label: 'Address', defaultVisible: true },
-      { key: 'createdAt', label: 'Created', defaultVisible: true },
-      { key: 'updatedAt', label: 'Updated', defaultVisible: false },
-    ],
+    () => SUPPLIER_COLUMNS.map(col => ({
+      key: col.key,
+      label: col.label,
+      sortable: col.sortable ?? true,
+      defaultVisible: col.defaultVisible,
+      required: col.required,
+    })),
     []
   );
 
@@ -284,14 +278,6 @@ const SupplierList = ({ user }: SupplierListProps) => {
     }
   }, [supplierToReactivate, updateSupplierMutation]);
 
-  // Get status badge
-  const getStatusBadge = useCallback((isActive: boolean) => {
-    if (isActive) {
-      return <Badge variant="default">Active</Badge>;
-    } else {
-      return <Badge variant="secondary">Inactive</Badge>;
-    }
-  }, []);
 
   // Add actions column if user has permissions
   const columnsWithActions = useMemo(() => {
@@ -313,7 +299,7 @@ const SupplierList = ({ user }: SupplierListProps) => {
   }, [visibleColumns, columns]);
 
   // Render cell function
-  const renderCell = useCallback((supplier: APISupplier, columnKey: string) => {
+  const renderCell = useCallback((supplier: ApiSupplier, columnKey: string) => {
     switch (columnKey) {
       case 'name':
         return <span className="font-medium">{supplier.name}</span>;
@@ -359,9 +345,39 @@ const SupplierList = ({ user }: SupplierListProps) => {
         ) : (
           <span className="text-gray-400 italic">-</span>
         );
-      case 'wordpress_id':
-        return supplier.wordpress_id ? (
-          <span className="font-mono text-sm">{supplier.wordpress_id}</span>
+      case 'city':
+        return supplier.city ? (
+          <span>{supplier.city}</span>
+        ) : (
+          <span className="text-gray-400 italic">-</span>
+        );
+      case 'state':
+        return supplier.state ? (
+          <span>{supplier.state}</span>
+        ) : (
+          <span className="text-gray-400 italic">-</span>
+        );
+      case 'website':
+        return supplier.website ? (
+          <a 
+            href={supplier.website} 
+            target="_blank" 
+            rel="noopener noreferrer"
+            className="text-blue-600 hover:underline"
+          >
+            <div className="flex items-center text-sm">
+              <IconWorld className="mr-1 h-3 w-3" />
+              {supplier.website}
+            </div>
+          </a>
+        ) : (
+          <span className="text-gray-400 italic">-</span>
+        );
+      case 'notes':
+        return supplier.notes ? (
+          <div className="max-w-xs truncate" title={supplier.notes}>
+            {supplier.notes}
+          </div>
         ) : (
           <span className="text-gray-400 italic">-</span>
         );
@@ -372,7 +388,7 @@ const SupplierList = ({ user }: SupplierListProps) => {
 
   // Render actions
   const renderActions = useCallback(
-    (supplier: APISupplier) => {
+    (supplier: ApiSupplier) => {
       if (!canManageSuppliers) return null;
 
       return (

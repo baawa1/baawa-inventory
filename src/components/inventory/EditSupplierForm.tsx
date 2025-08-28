@@ -33,97 +33,16 @@ import { FormLoading } from '@/components/ui/form-loading';
 import { toast } from 'sonner';
 import { useSupplier, useUpdateSupplier } from '@/hooks/api/suppliers';
 import { logger } from '@/lib/logger';
+import {
+  updateSupplierSchema,
+  type UpdateSupplierFormData,
+  type ApiSupplier,
+} from '@/lib/validations/supplier';
 
 interface EditSupplierFormProps {
   supplierId: number;
 }
 
-const updateSupplierSchema = z.object({
-  name: z
-    .string()
-    .min(1, 'Supplier name is required')
-    .max(100, 'Supplier name must be 100 characters or less')
-    .trim(),
-  contactPerson: z
-    .string()
-    .max(100, 'Contact person must be 100 characters or less')
-    .optional()
-    .or(z.literal('')),
-  email: z
-    .string()
-    .email('Please enter a valid email address')
-    .max(255, 'Email must be 255 characters or less')
-    .optional()
-    .or(z.literal('')),
-  phone: z
-    .string()
-    .max(20, 'Phone number must be 20 characters or less')
-    .optional()
-    .or(z.literal('')),
-  address: z
-    .string()
-    .max(500, 'Address must be 500 characters or less')
-    .optional()
-    .or(z.literal('')),
-  city: z
-    .string()
-    .max(100, 'City must be 100 characters or less')
-    .optional()
-    .or(z.literal('')),
-  state: z
-    .string()
-    .max(100, 'State must be 100 characters or less')
-    .optional()
-    .or(z.literal('')),
-  country: z
-    .string()
-    .max(100, 'Country must be 100 characters or less')
-    .optional()
-    .or(z.literal('')),
-  postalCode: z
-    .string()
-    .max(20, 'Postal code must be 20 characters or less')
-    .optional()
-    .or(z.literal('')),
-  website: z
-    .string()
-    .url('Please enter a valid website URL')
-    .max(255, 'Website must be 255 characters or less')
-    .optional()
-    .or(z.literal('')),
-  taxNumber: z
-    .string()
-    .max(100, 'Tax number must be 100 characters or less')
-    .optional()
-    .or(z.literal('')),
-  paymentTerms: z
-    .string()
-    .max(255, 'Payment terms must be 255 characters or less')
-    .optional()
-    .or(z.literal('')),
-  creditLimit: z
-    .union([
-      z.number().positive('Credit limit must be positive'),
-      z.string().transform(val => {
-        if (!val || val.trim() === '') return null;
-        const parsed = parseFloat(val);
-        if (isNaN(parsed) || parsed <= 0) {
-          throw new Error('Credit limit must be a positive number');
-        }
-        return parsed;
-      }),
-    ])
-    .optional()
-    .nullable(),
-  notes: z
-    .string()
-    .max(1000, 'Notes must be 1000 characters or less')
-    .optional()
-    .or(z.literal('')),
-  isActive: z.boolean(),
-});
-
-type UpdateSupplierFormData = z.infer<typeof updateSupplierSchema>;
 
 export default function EditSupplierForm({
   supplierId,
@@ -135,8 +54,20 @@ export default function EditSupplierForm({
   const { data: supplier, isLoading, error: fetchError } = useSupplier(supplierId);
 
   const form = useForm<UpdateSupplierFormData>({
-    resolver: zodResolver(updateSupplierSchema) as any,
-    values: supplier as any,
+    resolver: zodResolver(updateSupplierSchema),
+    values: supplier
+      ? {
+          name: supplier.name,
+          contactPerson: supplier.contactPerson || undefined,
+          email: supplier.email || undefined,
+          phone: supplier.phone || undefined,
+          address: supplier.address || undefined,
+          city: supplier.city || undefined,
+          state: supplier.state || undefined,
+          website: supplier.website || undefined,
+          notes: supplier.notes || undefined,
+        }
+      : undefined,
   });
 
   const onSubmit = async (data: UpdateSupplierFormData) => {
