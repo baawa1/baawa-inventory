@@ -77,7 +77,7 @@ export const GET = withAuth(async (request: AuthenticatedRequest) => {
       name: brand.name,
       description: brand.description,
       website: brand.website,
-
+      wordpress_id: (brand as any).wordpress_id ?? null,
       isActive: brand.isActive,
       productCount: brand._count.products,
       createdAt: brand.createdAt,
@@ -143,8 +143,8 @@ export const POST = withPermission(
           name: validatedData.name,
           description: validatedData.description,
           website: validatedData.website,
-
           isActive: validatedData.isActive ?? true,
+          wordpress_id: (validatedData as any).wordpress_id ?? null,
         },
         include: {
           _count: {
@@ -161,7 +161,7 @@ export const POST = withPermission(
         name: newBrand.name,
         description: newBrand.description,
         website: newBrand.website,
-
+        wordpress_id: (newBrand as any).wordpress_id ?? null,
         isActive: newBrand.isActive,
         productCount: newBrand._count.products,
         createdAt: newBrand.createdAt,

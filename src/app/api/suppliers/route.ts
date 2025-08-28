@@ -22,16 +22,13 @@ export const GET = withAuth(async (request: AuthenticatedRequest) => {
       page: Math.max(parseInt(searchParams.get('page') || '1'), 1),
       limit: Math.min(parseInt(searchParams.get('limit') || '10'), 100),
       search: searchParams.get('search') || undefined,
-      isActive: searchParams.get('isActive')
-        ? searchParams.get('isActive') === 'true'
-        : undefined,
       sortBy: searchParams.get('sortBy') || 'createdAt',
       sortOrder: searchParams.get('sortOrder') || 'desc',
     };
 
     // Validate query parameters
     const validatedQuery = supplierQuerySchema.parse(queryParams);
-    const { page, limit, search, isActive, sortBy, sortOrder } = validatedQuery;
+    const { page, limit, search, sortBy, sortOrder } = validatedQuery;
 
     // Calculate offset for pagination
     const offset = (page - 1) * limit;
@@ -49,18 +46,14 @@ export const GET = withAuth(async (request: AuthenticatedRequest) => {
       ];
     }
 
-    if (isActive !== undefined) {
-      where.isActive = isActive;
-    }
 
     // Build orderBy clause - handle nested fields
     const orderBy: Prisma.SupplierOrderByWithRelationInput = {};
     if (sortBy === 'productCount') {
       // Handle special case for product count sorting
-      orderBy.products = { _count: sortOrder };
+      orderBy.products = { _count: sortOrder } as any;
     } else {
-      orderBy[sortBy as keyof Prisma.SupplierOrderByWithRelationInput] =
-        sortOrder;
+      (orderBy as any)[sortBy] = sortOrder;
     }
 
     // Get suppliers and total count in parallel
@@ -82,7 +75,10 @@ export const GET = withAuth(async (request: AuthenticatedRequest) => {
     ]);
 
     // Check user permissions for supplier data access
-    const canViewFullSupplier = hasPermission(request.user.role, 'SUPPLIER_READ');
+    const canViewFullSupplier = hasPermission(
+      request.user.role,
+      'SUPPLIER_READ'
+    );
 
     // Transform response based on user permissions
     const transformedSuppliers = suppliers.map(supplier => {
@@ -95,7 +91,10 @@ export const GET = withAuth(async (request: AuthenticatedRequest) => {
           email: supplier.email,
           phone: supplier.phone,
           address: supplier.address,
-          isActive: supplier.isActive,
+          city: supplier.city,
+          state: supplier.state,
+          website: supplier.website,
+          notes: supplier.notes,
           createdAt: supplier.createdAt,
           updatedAt: supplier.updatedAt,
           _count: {
@@ -150,7 +149,7 @@ export const POST = withPermission(
 
       // Create the supplier
       const newSupplier = await prisma.supplier.create({
-        data: validatedData,
+        data: { ...validatedData },
         include: {
           _count: {
             select: {
@@ -168,7 +167,10 @@ export const POST = withPermission(
         email: newSupplier.email,
         phone: newSupplier.phone,
         address: newSupplier.address,
-        isActive: newSupplier.isActive,
+        city: newSupplier.city,
+        state: newSupplier.state,
+        website: newSupplier.website,
+        notes: newSupplier.notes,
         createdAt: newSupplier.createdAt,
         updatedAt: newSupplier.updatedAt,
         _count: {

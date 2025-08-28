@@ -23,6 +23,7 @@ export interface Coupon {
     lastName: string;
     email: string;
   };
+  wordpress_id?: number | null;
 }
 
 export interface CouponFilters {

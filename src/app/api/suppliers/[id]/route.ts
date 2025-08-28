@@ -55,12 +55,8 @@ export const GET = withAuth(
         address: supplier.address,
         city: supplier.city,
         state: supplier.state,
-        country: supplier.country,
-        postalCode: supplier.postalCode,
-        taxId: supplier.taxNumber,
-        paymentTerms: supplier.paymentTerms,
-        creditLimit: supplier.creditLimit ? Number(supplier.creditLimit) : null,
-        isActive: supplier.isActive,
+        website: supplier.website,
+        notes: supplier.notes,
         productCount: supplier._count.products,
         createdAt: supplier.createdAt,
         updatedAt: supplier.updatedAt,
@@ -140,12 +136,8 @@ export const PUT = withPermission(
           address: validatedData.address,
           city: validatedData.city,
           state: validatedData.state,
-          country: validatedData.country,
-          postalCode: validatedData.postalCode,
-          taxNumber: validatedData.taxNumber,
-          paymentTerms: validatedData.paymentTerms,
-          creditLimit: validatedData.creditLimit,
-          isActive: validatedData.isActive,
+          website: validatedData.website,
+          notes: validatedData.notes,
         },
         include: {
           _count: {
@@ -166,14 +158,8 @@ export const PUT = withPermission(
         address: updatedSupplier.address,
         city: updatedSupplier.city,
         state: updatedSupplier.state,
-        country: updatedSupplier.country,
-        postalCode: updatedSupplier.postalCode,
-        taxId: updatedSupplier.taxNumber,
-        paymentTerms: updatedSupplier.paymentTerms,
-        creditLimit: updatedSupplier.creditLimit
-          ? Number(updatedSupplier.creditLimit)
-          : null,
-        isActive: updatedSupplier.isActive,
+        website: updatedSupplier.website,
+        notes: updatedSupplier.notes,
         productCount: updatedSupplier._count.products,
         createdAt: updatedSupplier.createdAt,
         updatedAt: updatedSupplier.updatedAt,
@@ -261,21 +247,6 @@ export const PATCH = withPermission(
       // Parse request body
       const body = await request.json();
 
-      // Check if this is a status update (reactivation/deactivation)
-      if (body.hasOwnProperty('isActive')) {
-        const supplier = await prisma.supplier.update({
-          where: { id },
-          data: { isActive: body.isActive },
-          select: { id: true, name: true, isActive: true },
-        });
-
-        const action = body.isActive ? 'reactivated' : 'deactivated';
-        return NextResponse.json({
-          success: true,
-          message: `Supplier ${action} successfully`,
-          data: supplier,
-        });
-      }
 
       // Handle other patch operations (can be extended later)
       return NextResponse.json(

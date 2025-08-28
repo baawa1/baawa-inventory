@@ -203,18 +203,23 @@ export const GET = withAuth(async (request: AuthenticatedRequest) => {
         supplierId: product.supplierId,
         createdAt: product.createdAt,
         updatedAt: product.updatedAt,
+        wordpress_id: (product as any).wordpress_id ?? null,
         ...(includeSync && { content_sync: (product as any).content_sync }),
-      };
+      } as any;
 
       // Always include price field - Manager needs to see selling prices
-      (baseProduct as any).price = product.price;
+      baseProduct.price = product.price;
 
       // Conditionally add cost-sensitive fields based on permissions
       if (canViewCost) {
-        (baseProduct as any).cost = product.cost;
+        baseProduct.cost = product.cost;
         // Calculate profit margin if both cost and price are available (user can already see cost if we're here)
         if (product.cost && product.price) {
-          (baseProduct as any).profitMargin = ((Number(product.price) - Number(product.cost)) / Number(product.price) * 100).toFixed(2);
+          baseProduct.profitMargin = (
+            ((Number(product.price) - Number(product.cost)) /
+              Number(product.price)) *
+            100
+          ).toFixed(2);
         }
       }
 
@@ -254,8 +259,11 @@ export const POST = withPermission(
 
       // Check permissions for price fields
       const canSetCost = hasPermission(request.user.role, 'PRODUCT_COST_READ');
-      const canSetPrice = hasPermission(request.user.role, 'PRODUCT_PRICE_READ');
-      
+      const canSetPrice = hasPermission(
+        request.user.role,
+        'PRODUCT_PRICE_READ'
+      );
+
       if (validatedData.purchasePrice !== undefined && !canSetCost) {
         return createSecureResponse(
           {
@@ -430,9 +438,10 @@ export const POST = withPermission(
         categoryId: validatedData.categoryId,
         brandId: validatedData.brandId,
         supplierId: validatedData.supplierId,
+        wordpress_id: validatedData.wordpress_id,
       };
 
-      // Handle price field - required in database schema  
+      // Handle price field - required in database schema
       // Manager can set selling prices, so use the provided value or 0 as default
       productData.price = validatedData.sellingPrice || 0;
 

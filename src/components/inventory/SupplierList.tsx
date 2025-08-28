@@ -97,7 +97,6 @@ const SupplierList = ({ user }: SupplierListProps) => {
       { key: 'email', label: 'Email', defaultVisible: true },
       { key: 'phone', label: 'Phone', defaultVisible: true },
       { key: 'address', label: 'Address', defaultVisible: true },
-      { key: 'isActive', label: 'Status', defaultVisible: true },
       { key: 'createdAt', label: 'Created', defaultVisible: true },
       { key: 'updatedAt', label: 'Updated', defaultVisible: false },
     ],
@@ -136,9 +135,8 @@ const SupplierList = ({ user }: SupplierListProps) => {
   }, []); // Empty dependency array - run once on mount
 
   // Filters
-  const [filters, setFilters] = useState({
+  const [filters, setFilters] = useState<{ search: string }>({
     search: '',
-    isActive: '',
   });
 
   // Debounce search term to avoid excessive API calls
@@ -150,7 +148,6 @@ const SupplierList = ({ user }: SupplierListProps) => {
   // TanStack Query hooks for data fetching
   const suppliersQuery = useSuppliers({
     search: debouncedSearchTerm,
-    status: filters.isActive,
     sortBy: 'name',
     sortOrder: 'asc',
     page: pagination.page,
@@ -179,22 +176,8 @@ const SupplierList = ({ user }: SupplierListProps) => {
   const canManageSuppliers = ['ADMIN', 'MANAGER'].includes(user.role);
   const canDeleteSuppliers = user.role === 'ADMIN';
 
-  // Filter configurations - memoized to prevent unnecessary re-renders
-  const filterConfigs: FilterConfig[] = useMemo(
-    () => [
-      {
-        key: 'isActive',
-        label: 'Status',
-        type: 'select',
-        options: [
-          { value: 'true', label: 'Active' },
-          { value: 'false', label: 'Inactive' },
-        ],
-        placeholder: 'All Status',
-      },
-    ],
-    []
-  );
+  // Filter configurations - none for now
+  const filterConfigs: FilterConfig[] = useMemo(() => [], []);
 
   // Handle filter changes
   const handleFilterChange = useCallback((key: string, value: string) => {
@@ -209,7 +192,6 @@ const SupplierList = ({ user }: SupplierListProps) => {
   const handleResetFilters = useCallback(() => {
     setFilters({
       search: '',
-      isActive: '',
     });
     setPagination(prev => ({ ...prev, page: 1 }));
   }, []);
@@ -331,61 +313,62 @@ const SupplierList = ({ user }: SupplierListProps) => {
   }, [visibleColumns, columns]);
 
   // Render cell function
-  const renderCell = useCallback(
-    (supplier: APISupplier, columnKey: string) => {
-      switch (columnKey) {
-        case 'name':
-          return <span className="font-medium">{supplier.name}</span>;
-        case 'contactPerson':
-          return (
-            supplier.contactPerson || (
-              <span className="text-gray-400 italic">No contact</span>
-            )
-          );
-        case 'email':
-          return supplier.email ? (
-            <div className="flex items-center text-sm">
-              <IconMail className="mr-1 h-3 w-3" />
-              {supplier.email}
-            </div>
-          ) : (
-            <span className="text-gray-400 italic">No email</span>
-          );
-        case 'phone':
-          return supplier.phone ? (
-            <div className="flex items-center text-sm">
-              <IconPhone className="mr-1 h-3 w-3" />
-              {supplier.phone}
-            </div>
-          ) : (
-            <span className="text-gray-400 italic">No phone</span>
-          );
-        case 'address':
-          return supplier.address ? (
-            <div className="max-w-xs truncate" title={supplier.address}>
-              {supplier.address}
-            </div>
-          ) : (
-            <span className="text-gray-400 italic">No address</span>
-          );
-        case 'isActive':
-          return getStatusBadge(supplier.isActive);
-        case 'createdAt':
-          return new Date(supplier.createdAt).toLocaleDateString();
-        case 'updatedAt':
-          return supplier.updatedAt ? (
-            <span className="text-sm">
-              {new Date(supplier.updatedAt).toLocaleDateString()}
-            </span>
-          ) : (
-            <span className="text-gray-400 italic">-</span>
-          );
-        default:
-          return null;
-      }
-    },
-    [getStatusBadge]
-  );
+  const renderCell = useCallback((supplier: APISupplier, columnKey: string) => {
+    switch (columnKey) {
+      case 'name':
+        return <span className="font-medium">{supplier.name}</span>;
+      case 'contactPerson':
+        return (
+          supplier.contactPerson || (
+            <span className="text-gray-400 italic">No contact</span>
+          )
+        );
+      case 'email':
+        return supplier.email ? (
+          <div className="flex items-center text-sm">
+            <IconMail className="mr-1 h-3 w-3" />
+            {supplier.email}
+          </div>
+        ) : (
+          <span className="text-gray-400 italic">No email</span>
+        );
+      case 'phone':
+        return supplier.phone ? (
+          <div className="flex items-center text-sm">
+            <IconPhone className="mr-1 h-3 w-3" />
+            {supplier.phone}
+          </div>
+        ) : (
+          <span className="text-gray-400 italic">No phone</span>
+        );
+      case 'address':
+        return supplier.address ? (
+          <div className="max-w-xs truncate" title={supplier.address}>
+            {supplier.address}
+          </div>
+        ) : (
+          <span className="text-gray-400 italic">No address</span>
+        );
+      case 'createdAt':
+        return new Date(supplier.createdAt).toLocaleDateString();
+      case 'updatedAt':
+        return supplier.updatedAt ? (
+          <span className="text-sm">
+            {new Date(supplier.updatedAt).toLocaleDateString()}
+          </span>
+        ) : (
+          <span className="text-gray-400 italic">-</span>
+        );
+      case 'wordpress_id':
+        return supplier.wordpress_id ? (
+          <span className="font-mono text-sm">{supplier.wordpress_id}</span>
+        ) : (
+          <span className="text-gray-400 italic">-</span>
+        );
+      default:
+        return null;
+    }
+  }, []);
 
   // Render actions
   const renderActions = useCallback(
@@ -409,7 +392,7 @@ const SupplierList = ({ user }: SupplierListProps) => {
               <IconEdit className="mr-2 h-4 w-4" />
               Edit
             </DropdownMenuItem>
-            {canDeleteSuppliers && supplier.isActive && (
+            {canDeleteSuppliers && (
               <DropdownMenuItem
                 className="text-red-600"
                 onSelect={() => {
@@ -421,7 +404,7 @@ const SupplierList = ({ user }: SupplierListProps) => {
                 Deactivate
               </DropdownMenuItem>
             )}
-            {canDeleteSuppliers && !supplier.isActive && (
+            {canDeleteSuppliers && (
               <DropdownMenuItem
                 className="text-green-600"
                 onSelect={() => handleReactivateSupplier(supplier.id)}
@@ -495,7 +478,7 @@ const SupplierList = ({ user }: SupplierListProps) => {
         // Empty state
         emptyStateIcon={<IconTruck className="h-12 w-12 text-gray-400" />}
         emptyStateMessage={
-          debouncedSearchTerm || filters.isActive
+          debouncedSearchTerm
             ? 'No suppliers found matching your filters.'
             : 'No suppliers found. Add your first supplier to get started.'
         }

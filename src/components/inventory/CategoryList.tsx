@@ -97,6 +97,7 @@ export default function CategoryList({ user }: CategoryListProps) {
       { key: 'products', label: 'Products', defaultVisible: true },
       { key: 'subcategories', label: 'Subcategories', defaultVisible: true },
       { key: 'isActive', label: 'Status', defaultVisible: true },
+      { key: 'wordpress_id', label: 'WordPress ID', sortable: true, defaultVisible: false },
       { key: 'createdAt', label: 'Created', defaultVisible: true },
       { key: 'updatedAt', label: 'Updated', defaultVisible: false },
     ],
@@ -139,8 +140,8 @@ export default function CategoryList({ user }: CategoryListProps) {
             ? 'subcategories'
             : parseInt(filters.parentId),
     includeChildren: true,
-    sortBy: 'name',
-    sortOrder: 'asc',
+    sortBy: 'createdAt',
+    sortOrder: 'desc',
     page: pagination.page,
     limit: pagination.limit,
   });
@@ -248,17 +249,8 @@ export default function CategoryList({ user }: CategoryListProps) {
     }
   }, []);
 
-  // Get category display name with hierarchy
+  // Get category display name (just the name, parent is shown in separate column)
   const getCategoryDisplayName = useCallback((category: APICategory) => {
-    if (category.parent) {
-      return (
-        <div className="flex items-center space-x-1">
-          <span className="text-muted-foreground">{category.parent.name}</span>
-          <span className="text-muted-foreground">{'>>'}</span>
-          <span className="font-medium">{category.name}</span>
-        </div>
-      );
-    }
     return <span className="font-medium">{category.name}</span>;
   }, []);
 
@@ -325,6 +317,12 @@ export default function CategoryList({ user }: CategoryListProps) {
             <span className="text-sm">
               {new Date(category.updatedAt).toLocaleDateString()}
             </span>
+          ) : (
+            <span className="text-gray-400 italic">-</span>
+          );
+        case 'wordpress_id':
+          return category.wordpress_id ? (
+            <span className="text-sm font-mono">{category.wordpress_id}</span>
           ) : (
             <span className="text-gray-400 italic">-</span>
           );

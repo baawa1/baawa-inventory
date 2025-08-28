@@ -535,6 +535,8 @@ const ProductList = ({ user }: ProductListProps) => {
         return new Date(product.createdAt).toLocaleDateString();
       case 'updatedAt':
         return new Date(product.updatedAt).toLocaleDateString();
+      case 'wordpress_id':
+        return product.wordpress_id || '-';
       default:
         return '-';
     }

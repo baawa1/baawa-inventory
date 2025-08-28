@@ -34,6 +34,7 @@ export function useEditProductData(productId: number) {
       size: '',
       material: '',
       tags: [],
+      wordpress_id: undefined,
     },
   });
 
@@ -99,6 +100,10 @@ export function useEditProductData(productId: number) {
           size: productData.size || '',
           material: productData.material || '',
           tags: productData.tags || [],
+          wordpress_id:
+            (productData as any).wordpress_id !== undefined
+              ? (productData as any).wordpress_id
+              : undefined,
         });
       }, 0);
     }

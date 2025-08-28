@@ -84,6 +84,7 @@ export default function BrandList({ user }: BrandListProps) {
         defaultVisible: true,
         sortable: true,
       },
+      { key: 'wordpress_id', label: 'WordPress ID', sortable: true, defaultVisible: false },
       { key: 'createdAt', label: 'Created', defaultVisible: true },
       { key: 'updatedAt', label: 'Updated', defaultVisible: false },
     ],
@@ -116,8 +117,8 @@ export default function BrandList({ user }: BrandListProps) {
   const brandsQuery = useBrands({
     search: debouncedSearchTerm,
     status: filters.isActive,
-    sortBy: 'name',
-    sortOrder: 'asc',
+    sortBy: 'createdAt',
+    sortOrder: 'desc',
     page: pagination.page,
     limit: pagination.limit,
   });
@@ -287,6 +288,12 @@ export default function BrandList({ user }: BrandListProps) {
             <span className="text-sm">
               {new Date(brand.updatedAt).toLocaleDateString()}
             </span>
+          ) : (
+            <span className="text-gray-400 italic">-</span>
+          );
+        case 'wordpress_id':
+          return brand.wordpress_id ? (
+            <span className="text-sm font-mono">{brand.wordpress_id}</span>
           ) : (
             <span className="text-gray-400 italic">-</span>
           );

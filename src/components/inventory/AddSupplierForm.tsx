@@ -15,7 +15,6 @@ import {
   CardTitle,
   CardDescription,
 } from '@/components/ui/card';
-import { Switch } from '@/components/ui/switch';
 import {
   Form,
   FormControl,
@@ -57,25 +56,7 @@ const supplierFormSchema = z.object({
     .optional(),
   city: z.string().max(100, 'City must be 100 characters or less').optional(),
   state: z.string().max(100, 'State must be 100 characters or less').optional(),
-  country: z
-    .string()
-    .max(100, 'Country must be 100 characters or less')
-    .optional(),
-  postalCode: z
-    .string()
-    .max(20, 'Postal code must be 20 characters or less')
-    .optional(),
   website: z.string().url('Invalid URL format').optional().or(z.literal('')),
-  taxNumber: z
-    .string()
-    .max(100, 'Tax number must be 100 characters or less')
-    .optional(),
-  paymentTerms: z
-    .string()
-    .max(255, 'Payment terms must be 255 characters or less')
-    .optional(),
-  creditLimit: z.string().optional(),
-  isActive: z.boolean(),
   notes: z
     .string()
     .max(1000, 'Notes must be 1000 characters or less')
@@ -98,30 +79,12 @@ export default function AddSupplierForm() {
       address: '',
       city: '',
       state: '',
-      country: '',
-      postalCode: '',
       website: '',
-      taxNumber: '',
-      paymentTerms: '',
-      creditLimit: '',
-      isActive: true,
       notes: '',
     },
   });
 
   const onSubmit = async (data: SupplierFormData) => {
-    // Validate credit limit if provided
-    if (data.creditLimit && data.creditLimit.trim()) {
-      const creditLimitValue = parseFloat(data.creditLimit);
-      if (isNaN(creditLimitValue) || creditLimitValue <= 0) {
-        form.setError('creditLimit', {
-          type: 'manual',
-          message: 'Credit limit must be a positive number',
-        });
-        toast.error('Please fix the validation errors below');
-        return;
-      }
-    }
 
     // Validate phone number if provided
     if (data.phone && data.phone.trim()) {
@@ -146,13 +109,7 @@ export default function AddSupplierForm() {
       address: data.address || undefined,
       city: data.city || undefined,
       state: data.state || undefined,
-      country: data.country || undefined,
-      postalCode: data.postalCode || undefined,
       website: data.website || undefined,
-      taxNumber: data.taxNumber || undefined,
-      paymentTerms: data.paymentTerms || undefined,
-      creditLimit: data.creditLimit ? parseFloat(data.creditLimit) : undefined,
-      isActive: data.isActive,
       notes: data.notes || undefined,
     };
 
@@ -455,137 +412,10 @@ export default function AddSupplierForm() {
                   )}
                 />
 
-                <FormField
-                  control={form.control}
-                  name="country"
-                  render={({ field }) => (
-                    <FormItem>
-                      <FormLabel>Country</FormLabel>
-                      <FormControl>
-                        <Input
-                          placeholder="Enter country"
-                          {...field}
-                          disabled={createSupplierMutation.isPending}
-                        />
-                      </FormControl>
-                      <FormMessage />
-                    </FormItem>
-                  )}
-                />
-
-                <FormField
-                  control={form.control}
-                  name="postalCode"
-                  render={({ field }) => (
-                    <FormItem>
-                      <FormLabel>Postal Code</FormLabel>
-                      <FormControl>
-                        <Input
-                          placeholder="Enter postal code"
-                          {...field}
-                          disabled={createSupplierMutation.isPending}
-                        />
-                      </FormControl>
-                      <FormMessage />
-                    </FormItem>
-                  )}
-                />
               </div>
             </CardContent>
           </Card>
 
-          {/* Business Information */}
-          <Card>
-            <CardHeader>
-              <CardTitle>Business Information</CardTitle>
-              <CardDescription>
-                Financial and business-related details for the supplier.
-              </CardDescription>
-            </CardHeader>
-            <CardContent className="space-y-4">
-              <FormField
-                control={form.control}
-                name="taxNumber"
-                render={({ field }) => (
-                  <FormItem>
-                    <FormLabel>Tax Number</FormLabel>
-                    <FormControl>
-                      <Input
-                        placeholder="Enter tax number"
-                        {...field}
-                        disabled={createSupplierMutation.isPending}
-                      />
-                    </FormControl>
-                    <FormMessage />
-                  </FormItem>
-                )}
-              />
-
-              <FormField
-                control={form.control}
-                name="paymentTerms"
-                render={({ field }) => (
-                  <FormItem>
-                    <FormLabel>Payment Terms</FormLabel>
-                    <FormControl>
-                      <Input
-                        placeholder="e.g., Net 30, Due on receipt"
-                        {...field}
-                        disabled={createSupplierMutation.isPending}
-                      />
-                    </FormControl>
-                    <FormMessage />
-                  </FormItem>
-                )}
-              />
-
-              <FormField
-                control={form.control}
-                name="creditLimit"
-                render={({ field }) => (
-                  <FormItem>
-                    <FormLabel>Credit Limit</FormLabel>
-                    <FormControl>
-                      <Input
-                        type="number"
-                        step="0.01"
-                        min="0"
-                        placeholder="Enter credit limit"
-                        {...field}
-                        disabled={createSupplierMutation.isPending}
-                      />
-                    </FormControl>
-                    <FormDescription>
-                      Maximum credit amount for this supplier
-                    </FormDescription>
-                    <FormMessage />
-                  </FormItem>
-                )}
-              />
-
-              <FormField
-                control={form.control}
-                name="isActive"
-                render={({ field }) => (
-                  <FormItem className="flex flex-row items-center justify-between rounded-lg border p-4">
-                    <div className="space-y-0.5">
-                      <FormLabel className="text-base">Active Status</FormLabel>
-                      <FormDescription>
-                        Enable or disable this supplier
-                      </FormDescription>
-                    </div>
-                    <FormControl>
-                      <Switch
-                        checked={field.value}
-                        onCheckedChange={field.onChange}
-                        disabled={createSupplierMutation.isPending}
-                      />
-                    </FormControl>
-                  </FormItem>
-                )}
-              />
-            </CardContent>
-          </Card>
 
           {/* Additional Information */}
           <Card>
@@ -595,7 +425,8 @@ export default function AddSupplierForm() {
                 Any additional notes or comments about this supplier.
               </CardDescription>
             </CardHeader>
-            <CardContent>
+            <CardContent className="space-y-4">
+
               <FormField
                 control={form.control}
                 name="notes"

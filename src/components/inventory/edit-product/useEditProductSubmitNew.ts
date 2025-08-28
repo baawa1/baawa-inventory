@@ -45,6 +45,10 @@ export function useEditProductSubmit(
         size: data.size || null,
         material: data.material || null,
         tags: data.tags || [],
+        wordpress_id:
+          data.wordpress_id === undefined || data.wordpress_id === null
+            ? null
+            : data.wordpress_id,
       };
 
       const response = await fetch(`/api/products/${productId}`, {
@@ -57,30 +61,25 @@ export function useEditProductSubmit(
 
       if (!response.ok) {
         const errorData = await response.json();
+        setSubmitError(errorData.message || 'Failed to update product');
         throw new Error(errorData.message || 'Failed to update product');
       }
 
-      toast.success('Product updated successfully');
+      await response.json();
 
-      // Invalidate and refetch related queries
-      queryClient.invalidateQueries({ queryKey: ['products'] });
-      queryClient.invalidateQueries({ queryKey: ['product', productId] });
-      queryClient.invalidateQueries({ queryKey: ['inventory-metrics'] });
+      toast.success('Product updated successfully!');
+
+      // Invalidate product queries to refresh data
+      queryClient.invalidateQueries();
 
       router.push('/inventory/products');
     } catch (error) {
-      const errorMessage =
-        error instanceof Error ? error.message : 'An unexpected error occurred';
-      setSubmitError(errorMessage);
-      toast.error(errorMessage);
+      // Keep submitError as set above
+      if (!submitError) setSubmitError('Failed to update product');
     } finally {
       setIsSubmitting(false);
     }
   };
 
-  return {
-    isSubmitting,
-    submitError,
-    onSubmit,
-  };
+  return { isSubmitting, submitError, onSubmit };
 }

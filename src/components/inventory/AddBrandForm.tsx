@@ -42,9 +42,9 @@ export default function AddBrandForm() {
     defaultValues: {
       name: '',
       description: null,
-
       website: null,
       isActive: true,
+      wordpress_id: null,
     },
   });
 
@@ -55,9 +55,9 @@ export default function AddBrandForm() {
     const brandData = {
       name: data.name,
       description: data.description || undefined,
-
       website: data.website || undefined,
       isActive: data.isActive,
+      wordpress_id: data.wordpress_id || undefined,
     };
 
     try {
@@ -168,6 +168,22 @@ export default function AddBrandForm() {
               {errors.website && (
                 <p className="text-destructive text-sm">
                   {errors.website.message}
+                </p>
+              )}
+            </div>
+
+            <div className="space-y-2">
+              <Label htmlFor="wordpress_id">WordPress ID</Label>
+              <Input
+                id="wordpress_id"
+                type="number"
+                {...register('wordpress_id', { valueAsNumber: true })}
+                placeholder="WordPress brand ID (optional)"
+                disabled={createBrandMutation.isPending}
+              />
+              {errors.wordpress_id && (
+                <p className="text-destructive text-sm">
+                  {errors.wordpress_id.message}
                 </p>
               )}
             </div>

@@ -31,7 +31,7 @@ async function getCategory(id: string) {
       id: category.id,
       name: category.name,
       description: category.description,
-
+      wordpress_id: category.wordpress_id,
       isActive: category.isActive,
       createdAt: category.createdAt.toISOString(),
       updatedAt: category.updatedAt.toISOString(),

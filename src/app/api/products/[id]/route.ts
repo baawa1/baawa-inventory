@@ -40,6 +40,7 @@ const ProductUpdateSchema = z.object({
   size: z.string().max(50).optional().nullable(),
   material: z.string().max(100).optional().nullable(),
   tags: z.array(z.string()).optional(),
+  wordpress_id: z.number().int().positive().optional().nullable(),
 
   // Note: images field is handled separately via /api/products/[id]/images endpoint
 });
@@ -199,6 +200,8 @@ export const PUT = withPermission(
         updateData.tags = validatedData.tags;
       if (validatedData.isArchived !== undefined)
         updateData.isArchived = validatedData.isArchived;
+      if (validatedData.wordpress_id !== undefined)
+        updateData.wordpress_id = validatedData.wordpress_id;
 
       // Frontend to database field mappings
       if (validatedData.purchasePrice !== undefined && canUpdateCost)

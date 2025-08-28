@@ -49,7 +49,7 @@ import { ArrowLeft, Loader2 } from 'lucide-react';
 import { IconFolder } from '@tabler/icons-react';
 import { logger } from '@/lib/logger';
 
-const createCategorySchema = z.object({
+const formSchema = z.object({
   name: z
     .string()
     .min(1, 'Category name is required')
@@ -60,12 +60,12 @@ const createCategorySchema = z.object({
     .max(500, 'Description must be 500 characters or less')
     .optional()
     .or(z.literal('')),
-
   isActive: z.boolean(),
-  parentId: z.number().nullable(),
+  parentId: z.number().nullable().optional(),
+  wordpress_id: z.number().int().positive('WordPress ID must be a positive integer').nullable().optional(),
 });
 
-type CreateCategoryFormData = z.infer<typeof createCategorySchema>;
+type CreateCategoryFormData = z.infer<typeof formSchema>;
 
 export default function AddCategoryForm() {
   const router = useRouter();
@@ -78,15 +78,21 @@ export default function AddCategoryForm() {
   const { data: parentCategoriesData } = useTopLevelCategories();
 
   const form = useForm<CreateCategoryFormData>({
-    resolver: zodResolver(createCategorySchema),
+    resolver: zodResolver(formSchema),
     defaultValues: {
       name: '',
       description: '',
-
       isActive: true,
-      parentId: parentIdFromUrl ? parseInt(parentIdFromUrl) : null,
+      wordpress_id: null,
     },
   });
+
+  // Set parentId from URL params after form initialization
+  React.useEffect(() => {
+    if (parentIdFromUrl) {
+      form.setValue('parentId', parseInt(parentIdFromUrl));
+    }
+  }, [parentIdFromUrl, form]);
 
   const onSubmit = async (data: CreateCategoryFormData) => {
     setError(null);
@@ -96,10 +102,9 @@ export default function AddCategoryForm() {
         {
           name: data.name,
           description: data.description || undefined,
-
           isActive: data.isActive,
-          parentId: data.parentId || undefined,
-        },
+          wordpress_id: data.wordpress_id || undefined,
+        } as any,
         {
           onSuccess: _createdCategory => {
             // Debug logging removed for production
@@ -273,6 +278,28 @@ export default function AddCategoryForm() {
                             ? 'border-destructive'
                             : ''
                         }
+                        disabled={createCategoryMutation.isPending}
+                      />
+                    </FormControl>
+                    <FormMessage />
+                  </FormItem>
+                )}
+              />
+
+              <FormField
+                control={form.control}
+                name="wordpress_id"
+                render={({ field }) => (
+                  <FormItem>
+                    <FormLabel>WordPress ID</FormLabel>
+                    <FormControl>
+                      <Input
+                        {...field}
+                        type="number"
+                        onChange={e => field.onChange(e.target.value ? parseInt(e.target.value) : null)}
+                        onBlur={field.onBlur}
+                        value={field.value || ''}
+                        placeholder="WordPress category ID (optional)"
                         disabled={createCategoryMutation.isPending}
                       />
                     </FormControl>

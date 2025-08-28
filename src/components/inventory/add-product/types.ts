@@ -55,4 +55,5 @@ export const defaultFormValues: CreateProductData = {
   supplierId: null,
   status: 'ACTIVE',
   notes: null,
+  wordpress_id: null,
 };

@@ -41,6 +41,7 @@ interface Category {
   isActive: boolean;
   createdAt: string;
   updatedAt: string;
+  wordpress_id?: number | null;
 }
 
 interface EditCategoryFormProps {
@@ -59,6 +60,7 @@ const updateCategorySchema = z.object({
     .optional()
     .or(z.literal('')),
   isActive: z.boolean(),
+  wordpress_id: z.number().int().positive('WordPress ID must be a positive integer').nullable().optional(),
 });
 
 type UpdateCategoryFormData = z.infer<typeof updateCategorySchema>;
@@ -73,8 +75,8 @@ export default function EditCategoryForm({ category }: EditCategoryFormProps) {
     defaultValues: {
       name: category.name,
       description: category.description || '',
-
       isActive: category.isActive,
+      wordpress_id: category.wordpress_id,
     },
   });
 
@@ -83,7 +85,7 @@ export default function EditCategoryForm({ category }: EditCategoryFormProps) {
 
     try {
       updateCategoryMutation.mutate(
-        { id: category.id, data },
+        { id: category.id, data: data as any },
         {
           onSuccess: _updatedCategory => {
             // Debug logging removed for production
@@ -218,6 +220,31 @@ export default function EditCategoryForm({ category }: EditCategoryFormProps) {
                     <p className="text-sm text-gray-600 dark:text-gray-400">
                       Optional description to help identify the purpose of this
                       category.
+                    </p>
+                  </FormItem>
+                )}
+              />
+
+              {/* WordPress ID */}
+              <FormField
+                control={form.control}
+                name="wordpress_id"
+                render={({ field }) => (
+                  <FormItem>
+                    <FormLabel>WordPress ID</FormLabel>
+                    <FormControl>
+                      <Input
+                        {...field}
+                        type="number"
+                        onChange={e => field.onChange(e.target.value ? parseInt(e.target.value) : null)}
+                        onBlur={field.onBlur}
+                        value={field.value || ''}
+                        placeholder="WordPress category ID (optional)"
+                      />
+                    </FormControl>
+                    <FormMessage />
+                    <p className="text-sm text-gray-600 dark:text-gray-400">
+                      Optional WordPress category ID for synchronization.
                     </p>
                   </FormItem>
                 )}

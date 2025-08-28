@@ -12,6 +12,7 @@ export const categorySchema = z.object({
     .max(500, 'Description must be less than 500 characters')
     .optional(),
   isActive: z.boolean().optional().default(true),
+  wordpress_id: z.number().int().positive('WordPress ID must be a positive integer').max(2147483647, 'WordPress ID must be less than 2,147,483,647').optional().nullable(),
 });
 
 // Create category schema
@@ -26,6 +27,7 @@ export const createCategorySchema = z.object({
     .max(500, 'Description must be less than 500 characters')
     .optional(),
   isActive: z.boolean().default(true),
+  wordpress_id: z.number().int().positive('WordPress ID must be a positive integer').max(2147483647, 'WordPress ID must be less than 2,147,483,647').optional().nullable(),
 });
 
 // Update category schema (partial for flexibility)

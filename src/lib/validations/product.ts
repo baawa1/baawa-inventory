@@ -68,6 +68,11 @@ export const createProductSchema = z.object({
     .optional()
     .nullable(),
   tags: z.array(z.string()).optional(),
+  wordpress_id: z.union([
+    z.number().int().positive('WordPress ID must be a positive integer').max(2147483647, 'WordPress ID must be less than 2,147,483,647'),
+    z.null(),
+    z.undefined()
+  ]).optional(),
 });
 
 // Product update schema (all fields optional except validation rules)

@@ -19,6 +19,7 @@ const baseBrandSchema = z.object({
     .nullable()
     .or(z.literal('')),
   isActive: z.boolean().optional().default(true),
+  wordpress_id: z.number().int().positive('WordPress ID must be a positive integer').max(2147483647, 'WordPress ID must be less than 2,147,483,647').optional().nullable(),
 });
 
 // Client-side form schema (uses isActive consistently with Prisma model)
@@ -40,6 +41,7 @@ const clientBrandSchema = z.object({
     .nullable()
     .or(z.literal('')),
   isActive: z.boolean(),
+  wordpress_id: z.number().int().positive('WordPress ID must be a positive integer').max(2147483647, 'WordPress ID must be less than 2,147,483,647').optional().nullable(),
 });
 
 // Create brand schema

@@ -55,9 +55,9 @@ export default function EditBrandForm({ brandId }: EditBrandFormProps) {
           id: brand.id,
           name: brand.name,
           description: brand.description,
-
           website: brand.website,
           isActive: brand.isActive,
+          wordpress_id: brand.wordpress_id,
         }
       : undefined,
   });
@@ -78,9 +78,9 @@ export default function EditBrandForm({ brandId }: EditBrandFormProps) {
         id: data.id,
         name: data.name,
         description: data.description || undefined,
-
         website: data.website || undefined,
         isActive: data.isActive,
+        wordpress_id: data.wordpress_id || undefined,
       };
 
       await updateBrandMutation.mutateAsync({ id: data.id, data: apiData });
@@ -197,6 +197,22 @@ export default function EditBrandForm({ brandId }: EditBrandFormProps) {
               {errors.website && (
                 <p className="text-destructive text-sm">
                   {errors.website.message}
+                </p>
+              )}
+            </div>
+
+            <div className="space-y-2">
+              <Label htmlFor="wordpress_id">WordPress ID</Label>
+              <Input
+                id="wordpress_id"
+                type="number"
+                {...register('wordpress_id', { valueAsNumber: true })}
+                placeholder="WordPress brand ID (optional)"
+                disabled={updateBrandMutation.isPending}
+              />
+              {errors.wordpress_id && (
+                <p className="text-destructive text-sm">
+                  {errors.wordpress_id.message}
                 </p>
               )}
             </div>

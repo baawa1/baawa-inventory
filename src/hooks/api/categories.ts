@@ -17,6 +17,7 @@ export interface Category {
   subcategoryCount: number;
   createdAt: string;
   updatedAt: string;
+  wordpress_id?: number | null;
 }
 
 export interface CategoryFilters {

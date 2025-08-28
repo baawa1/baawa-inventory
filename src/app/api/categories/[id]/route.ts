@@ -12,9 +12,9 @@ import { z } from 'zod';
 const CategoryUpdateSchema = z.object({
   name: z.string().min(1).max(100).optional(),
   description: z.string().optional(),
-
   isActive: z.boolean().optional(),
   parentId: z.number().optional(),
+  wordpress_id: z.number().int().positive().max(2147483647, 'WordPress ID must be less than 2,147,483,647').optional().nullable(),
 });
 
 // GET /api/categories/[id] - Get category by ID

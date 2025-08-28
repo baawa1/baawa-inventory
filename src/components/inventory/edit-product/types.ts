@@ -30,6 +30,7 @@ export interface Product {
   };
   status: 'ACTIVE' | 'INACTIVE' | 'OUT_OF_STOCK' | 'DISCONTINUED';
   images: Array<{ url: string; isPrimary: boolean }> | null;
+  wordpress_id?: number | null;
 }
 
 // Reference data types

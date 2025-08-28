@@ -182,6 +182,27 @@ export function ProductSpecificationsSection({
             )}
           />
         </div>
+
+        <FormField
+          control={form.control}
+          name="wordpress_id"
+          render={({ field }) => (
+            <FormItem>
+              <FormLabel>WordPress ID</FormLabel>
+              <FormControl>
+                <Input
+                  {...field}
+                  type="number"
+                  onChange={e => field.onChange(e.target.value ? parseInt(e.target.value) : null)}
+                  onBlur={field.onBlur}
+                  value={field.value || ''}
+                  placeholder="WordPress product ID (optional)"
+                />
+              </FormControl>
+              <FormMessage />
+            </FormItem>
+          )}
+        />
       </CardContent>
     </Card>
   );

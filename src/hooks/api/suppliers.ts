@@ -12,6 +12,11 @@ export interface Supplier {
   isActive: boolean;
   createdAt: string;
   updatedAt: string;
+  wordpress_id?: number | null;
+  city?: string;
+  state?: string;
+  country?: string;
+  postalCode?: string;
 }
 
 export interface SupplierFilters {

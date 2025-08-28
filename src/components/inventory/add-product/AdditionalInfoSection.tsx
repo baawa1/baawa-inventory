@@ -17,6 +17,7 @@ import {
   SelectValue,
 } from '@/components/ui/select';
 import { Textarea } from '@/components/ui/textarea';
+import { Input } from '@/components/ui/input';
 import { Badge } from '@/components/ui/badge';
 import type { CreateProductData } from './types';
 
@@ -101,6 +102,27 @@ export function AdditionalInfoSection({ form }: AdditionalInfoSectionProps) {
                   </SelectItem>
                 </SelectContent>
               </Select>
+              <FormMessage />
+            </FormItem>
+          )}
+        />
+
+        <FormField
+          control={form.control}
+          name="wordpress_id"
+          render={({ field }) => (
+            <FormItem>
+              <FormLabel>WordPress ID</FormLabel>
+              <FormControl>
+                <Input
+                  {...field}
+                  type="number"
+                  onChange={e => field.onChange(e.target.value ? parseInt(e.target.value) : null)}
+                  onBlur={field.onBlur}
+                  value={field.value || ''}
+                  placeholder="WordPress product ID (optional)"
+                />
+              </FormControl>
               <FormMessage />
             </FormItem>
           )}

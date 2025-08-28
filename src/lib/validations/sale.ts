@@ -38,6 +38,7 @@ export const createSaleSchema = z
       .max(500, 'Notes must be 500 characters or less')
       .optional()
       .nullable(),
+    wordpress_id: z.number().int().positive('WordPress ID must be a positive integer').optional().nullable(),
   })
   .refine(
     data => {

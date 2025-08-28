@@ -11,9 +11,6 @@ export const GET = withAuth(async (request: AuthenticatedRequest) => {
     }
 
     const suppliers = await prisma.supplier.findMany({
-      where: {
-        isActive: true,
-      },
       select: {
         id: true,
         name: true,

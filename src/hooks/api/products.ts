@@ -53,6 +53,7 @@ export interface Product {
   images?: ProductImage[];
   createdAt: string;
   updatedAt: string;
+  wordpress_id?: number | null;
 }
 
 export interface ProductFilters {

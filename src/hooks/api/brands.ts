@@ -12,6 +12,7 @@ export interface Brand {
   productCount: number;
   createdAt: string;
   updatedAt: string;
+  wordpress_id?: number | null;
 }
 
 export interface BrandFilters {

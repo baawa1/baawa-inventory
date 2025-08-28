@@ -122,7 +122,7 @@ export async function PUT(
     if (validatedData.supplierId) {
       const supplier = await prisma.supplier.findUnique({
         where: { id: validatedData.supplierId },
-        select: { id: true, isActive: true },
+        select: { id: true },
       });
 
       if (!supplier) {
@@ -132,12 +132,6 @@ export async function PUT(
         );
       }
 
-      if (!supplier.isActive) {
-        return NextResponse.json(
-          { error: 'Supplier is inactive' },
-          { status: 400 }
-        );
-      }
     }
 
     // Update in transaction to handle stock quantity changes

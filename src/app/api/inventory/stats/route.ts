@@ -40,10 +40,8 @@ export const GET = withAuth(async (_request: AuthenticatedRequest) => {
       0
     );
 
-    // Get active suppliers
-    const activeSuppliers = await prisma.supplier.count({
-      where: { isActive: true },
-    });
+    // Get suppliers count
+    const activeSuppliers = await prisma.supplier.count();
 
     // Get recent sales (last 7 days)
     const sevenDaysAgo = new Date();

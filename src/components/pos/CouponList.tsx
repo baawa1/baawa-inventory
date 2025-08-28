@@ -322,6 +322,12 @@ export function CouponList({ user }: CouponListProps) {
         return new Date(coupon.createdAt).toLocaleDateString();
       case 'updatedAt':
         return new Date(coupon.updatedAt).toLocaleDateString();
+      case 'wordpress_id':
+        return coupon.wordpress_id ? (
+          <span className="text-sm font-mono">{coupon.wordpress_id}</span>
+        ) : (
+          <span className="text-gray-400 italic">-</span>
+        );
       default:
         return null;
     }

@@ -99,6 +99,12 @@ export const PRODUCT_COLUMNS: TableColumn[] = [
     sortable: true,
     defaultVisible: false,
   },
+  {
+    key: 'wordpress_id',
+    label: 'WordPress ID',
+    sortable: true,
+    defaultVisible: false,
+  },
 ];
 
 export const SUPPLIER_COLUMNS: TableColumn[] = [
@@ -134,10 +140,28 @@ export const SUPPLIER_COLUMNS: TableColumn[] = [
     defaultVisible: true,
   },
   {
-    key: 'status',
-    label: 'Status',
+    key: 'city',
+    label: 'City',
     sortable: true,
-    defaultVisible: true,
+    defaultVisible: false,
+  },
+  {
+    key: 'state',
+    label: 'State',
+    sortable: true,
+    defaultVisible: false,
+  },
+  {
+    key: 'website',
+    label: 'Website',
+    sortable: false,
+    defaultVisible: false,
+  },
+  {
+    key: 'notes',
+    label: 'Notes',
+    sortable: false,
+    defaultVisible: false,
   },
   {
     key: 'createdAt',
@@ -182,6 +206,134 @@ export const CATEGORY_COLUMNS: TableColumn[] = [
   {
     key: 'updatedAt',
     label: 'Updated Date',
+    sortable: true,
+    defaultVisible: false,
+  },
+  {
+    key: 'wordpress_id',
+    label: 'WordPress ID',
+    sortable: true,
+    defaultVisible: false,
+  },
+];
+
+export const COUPON_COLUMNS: TableColumn[] = [
+  {
+    key: 'code',
+    label: 'Coupon Code',
+    sortable: true,
+    defaultVisible: true,
+    required: true,
+  },
+  {
+    key: 'name',
+    label: 'Name',
+    sortable: true,
+    defaultVisible: true,
+  },
+  {
+    key: 'description',
+    label: 'Description',
+    sortable: false,
+    defaultVisible: true,
+  },
+  {
+    key: 'type',
+    label: 'Type',
+    sortable: true,
+    defaultVisible: true,
+  },
+  {
+    key: 'value',
+    label: 'Value',
+    sortable: true,
+    defaultVisible: true,
+  },
+  {
+    key: 'status',
+    label: 'Status',
+    sortable: true,
+    defaultVisible: true,
+  },
+  {
+    key: 'createdAt',
+    label: 'Created Date',
+    sortable: true,
+    defaultVisible: false,
+  },
+  {
+    key: 'updatedAt',
+    label: 'Updated Date',
+    sortable: true,
+    defaultVisible: false,
+  },
+  {
+    key: 'wordpress_id',
+    label: 'WordPress ID',
+    sortable: true,
+    defaultVisible: false,
+  },
+];
+
+export const CUSTOMER_COLUMNS: TableColumn[] = [
+  {
+    key: 'name',
+    label: 'Name',
+    sortable: true,
+    defaultVisible: true,
+    required: true,
+  },
+  {
+    key: 'email',
+    label: 'Email',
+    sortable: true,
+    defaultVisible: true,
+  },
+  {
+    key: 'phone',
+    label: 'Phone',
+    sortable: false,
+    defaultVisible: true,
+  },
+  {
+    key: 'city',
+    label: 'City',
+    sortable: true,
+    defaultVisible: false,
+  },
+  {
+    key: 'country',
+    label: 'Country',
+    sortable: true,
+    defaultVisible: false,
+  },
+  {
+    key: 'customerType',
+    label: 'Type',
+    sortable: true,
+    defaultVisible: false,
+  },
+  {
+    key: 'isActive',
+    label: 'Status',
+    sortable: true,
+    defaultVisible: true,
+  },
+  {
+    key: 'createdAt',
+    label: 'Created Date',
+    sortable: true,
+    defaultVisible: false,
+  },
+  {
+    key: 'updatedAt',
+    label: 'Updated Date',
+    sortable: true,
+    defaultVisible: false,
+  },
+  {
+    key: 'wordpress_id',
+    label: 'WordPress ID',
     sortable: true,
     defaultVisible: false,
   },

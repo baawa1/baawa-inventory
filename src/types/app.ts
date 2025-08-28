@@ -269,6 +269,7 @@ export interface Customer {
   isActive?: boolean;
   createdAt?: Date;
   updatedAt?: Date;
+  wordpress_id?: number | null;
 }
 
 export interface EnhancedCustomerInfo {
