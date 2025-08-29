@@ -8,7 +8,6 @@ import { useDebounce } from '@/hooks/useDebounce';
 import {
   useSuppliers,
   useDeleteSupplier,
-  useUpdateSupplier,
   type Supplier as APISupplier,
 } from '@/hooks/api/suppliers';
 import { InventoryPageLayout } from '@/components/inventory/InventoryPageLayout';
@@ -39,7 +38,6 @@ import {
   IconMail,
   IconTruck,
   IconX,
-  IconRefresh,
   IconAlertTriangle,
   IconWorld,
 } from '@tabler/icons-react';
@@ -68,9 +66,6 @@ const SupplierList = ({ user }: SupplierListProps) => {
   const [supplierToDelete, setSupplierToDelete] = useState<APISupplier | null>(
     null
   );
-  const [reactivateDialogOpen, setReactivateDialogOpen] = useState(false);
-  const [supplierToReactivate, setSupplierToReactivate] =
-    useState<APISupplier | null>(null);
 
   // Modal state
   const [supplierDetailModalOpen, setSupplierDetailModalOpen] = useState(false);
@@ -87,13 +82,14 @@ const SupplierList = ({ user }: SupplierListProps) => {
 
   // Use centralized column definitions from ColumnCustomizer
   const columns: DashboardTableColumn[] = useMemo(
-    () => SUPPLIER_COLUMNS.map(col => ({
-      key: col.key,
-      label: col.label,
-      sortable: col.sortable ?? true,
-      defaultVisible: col.defaultVisible,
-      required: col.required,
-    })),
+    () =>
+      SUPPLIER_COLUMNS.map(col => ({
+        key: col.key,
+        label: col.label,
+        sortable: col.sortable ?? true,
+        defaultVisible: col.defaultVisible,
+        required: col.required,
+      })),
     []
   );
 
@@ -149,7 +145,6 @@ const SupplierList = ({ user }: SupplierListProps) => {
   });
 
   const deleteSupplierMutation = useDeleteSupplier();
-  const updateSupplierMutation = useUpdateSupplier();
 
   // Extract data from queries
   const suppliers = suppliersQuery.data?.data || [];
@@ -217,67 +212,8 @@ const SupplierList = ({ user }: SupplierListProps) => {
     [router]
   );
 
-  const handleDeactivateSupplier = useCallback(
-    async (supplierId: number) => {
-      try {
-        await updateSupplierMutation.mutateAsync({
-          id: supplierId,
-          data: { isActive: false },
-        });
-        toast.success('Supplier deactivated successfully');
-      } catch (error) {
-        logger.error('Failed to deactivate supplier', {
-          supplierId,
-          error: error instanceof Error ? error.message : String(error),
-        });
-        toast.error('Failed to deactivate supplier');
-      }
-    },
-    [updateSupplierMutation]
-  );
-
-  const handleReactivateSupplier = useCallback(
-    async (supplierId: number) => {
-      try {
-        await updateSupplierMutation.mutateAsync({
-          id: supplierId,
-          data: { isActive: true },
-        });
-        toast.success('Supplier reactivated successfully');
-      } catch (error) {
-        logger.error('Failed to reactivate supplier', {
-          supplierId,
-          error: error instanceof Error ? error.message : String(error),
-        });
-        toast.error('Failed to reactivate supplier');
-      }
-    },
-    [updateSupplierMutation]
-  );
-
-  // Handle reactivate supplier from dialog
-  const handleReactivateSupplierFromDialog = useCallback(async () => {
-    if (!supplierToReactivate) return;
-
-    try {
-      await updateSupplierMutation.mutateAsync({
-        id: supplierToReactivate.id,
-        data: { isActive: true },
-      });
-      toast.success('Supplier reactivated successfully');
-    } catch (error) {
-      logger.error('Failed to reactivate supplier', {
-        supplierId: supplierToReactivate.id,
-        supplierName: supplierToReactivate.name,
-        error: error instanceof Error ? error.message : String(error),
-      });
-      toast.error('Failed to reactivate supplier');
-    } finally {
-      setReactivateDialogOpen(false);
-      setSupplierToReactivate(null);
-    }
-  }, [supplierToReactivate, updateSupplierMutation]);
-
+  // Note: Supplier activation/deactivation functionality has been removed
+  // as the isActive field is no longer part of the supplier schema
 
   // Add actions column if user has permissions
   const columnsWithActions = useMemo(() => {
@@ -359,9 +295,9 @@ const SupplierList = ({ user }: SupplierListProps) => {
         );
       case 'website':
         return supplier.website ? (
-          <a 
-            href={supplier.website} 
-            target="_blank" 
+          <a
+            href={supplier.website}
+            target="_blank"
             rel="noopener noreferrer"
             className="text-blue-600 hover:underline"
           >
@@ -420,15 +356,6 @@ const SupplierList = ({ user }: SupplierListProps) => {
                 Deactivate
               </DropdownMenuItem>
             )}
-            {canDeleteSuppliers && (
-              <DropdownMenuItem
-                className="text-green-600"
-                onSelect={() => handleReactivateSupplier(supplier.id)}
-              >
-                <IconRefresh className="mr-2 h-4 w-4" />
-                Reactivate
-              </DropdownMenuItem>
-            )}
           </DropdownMenuContent>
         </DropdownMenu>
       );
@@ -438,7 +365,6 @@ const SupplierList = ({ user }: SupplierListProps) => {
       canDeleteSuppliers,
       handleViewSupplier,
       handleEditSupplier,
-      handleReactivateSupplier,
     ]
   );
 
@@ -557,46 +483,13 @@ const SupplierList = ({ user }: SupplierListProps) => {
         </AlertDialogContent>
       </AlertDialog>
 
-      {/* Reactivate Confirmation Dialog */}
-      <AlertDialog
-        open={reactivateDialogOpen}
-        onOpenChange={setReactivateDialogOpen}
-      >
-        <AlertDialogContent>
-          <AlertDialogHeader>
-            <AlertDialogTitle className="flex items-center gap-2">
-              <IconRefresh className="h-5 w-5 text-green-500" />
-              Reactivate Supplier
-            </AlertDialogTitle>
-            <AlertDialogDescription>
-              Are you sure you want to reactivate &quot;
-              {supplierToReactivate?.name}
-              &quot;? This will mark the supplier as active and they will appear
-              in active supplier lists again.
-            </AlertDialogDescription>
-          </AlertDialogHeader>
-          <AlertDialogFooter>
-            <AlertDialogCancel>Cancel</AlertDialogCancel>
-            <AlertDialogAction
-              onClick={handleReactivateSupplierFromDialog}
-              className="bg-green-600 hover:bg-green-700"
-            >
-              Reactivate
-            </AlertDialogAction>
-          </AlertDialogFooter>
-        </AlertDialogContent>
-      </AlertDialog>
-
       {/* Supplier Detail Modal */}
       <SupplierDetailModal
         supplierId={selectedSupplierId}
         isOpen={supplierDetailModalOpen}
         onClose={handleCloseSupplierModal}
         onEdit={handleEditSupplier}
-        onDeactivate={handleDeactivateSupplier}
-        onReactivate={handleReactivateSupplier}
         canEdit={canManageSuppliers}
-        canDeactivate={canDeleteSuppliers}
       />
     </>
   );

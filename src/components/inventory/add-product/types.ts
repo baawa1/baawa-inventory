@@ -27,8 +27,8 @@ export interface Brand {
 export interface Supplier {
   id: number;
   name: string;
-  email?: string;
-  phone?: string;
+  email: string | null;
+  phone: string | null;
 }
 
 export interface FormState {

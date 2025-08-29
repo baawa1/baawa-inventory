@@ -17,7 +17,8 @@ export default async function CreateCouponPage() {
 
   // Check role permissions - only ADMIN and MANAGER can create coupons
   if (
-    ![USER_ROLES.ADMIN, USER_ROLES.MANAGER].includes(session.user.role as any)
+    session.user.role !== USER_ROLES.ADMIN &&
+    session.user.role !== USER_ROLES.MANAGER
   ) {
     redirect('/unauthorized');
   }

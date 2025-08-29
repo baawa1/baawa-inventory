@@ -73,6 +73,12 @@ interface Transaction {
   customerId?: number;
   customerName?: string;
   customerEmail: string | null;
+  customerPhone?: string;
+  customer?: {
+    billingAddress?: string;
+    city?: string;
+    state?: string;
+  };
   items: TransactionItem[];
   subtotal: number;
   discount: number;
@@ -269,7 +275,7 @@ export function TransactionList({ user: _ }: TransactionListProps) {
   );
 
   // Handle filter changes
-  const handleFilterChange = useCallback((key: string, value: any) => {
+  const handleFilterChange = useCallback((key: string, value: string) => {
     setFilters(prev => {
       if (prev[key as keyof typeof prev] === value) return prev;
       return { ...prev, [key]: value };
@@ -307,12 +313,12 @@ export function TransactionList({ user: _ }: TransactionListProps) {
           : new Date(),
         staffName: transaction.staffName || '',
         customerName: transaction.customerName || '',
-        customerPhone: (transaction as any).customerPhone || '',
+        customerPhone: transaction.customerPhone || '',
         customerEmail: transaction.customerEmail || '',
-        customerAddress: (transaction as any).customer?.billingAddress || '',
-        customerCity: (transaction as any).customer?.city || '',
-        customerState: (transaction as any).customer?.state || '',
-        fees: (transaction as any).fees || [],
+        customerAddress: transaction.customer?.billingAddress || '',
+        customerCity: transaction.customer?.city || '',
+        customerState: transaction.customer?.state || '',
+        fees: transaction.fees || [],
         items: transaction.items.map(item => ({
           id: item.productId,
           name: item.name,
@@ -634,7 +640,7 @@ function TransactionDetailsContent({
         {/* Custom Fees */}
         {transaction.fees && transaction.fees.length > 0 && (
           <>
-            {transaction.fees.map((fee: any, index: number) => (
+            {transaction.fees.map((fee, index: number) => (
               <div key={index} className="flex justify-between text-orange-600">
                 <span>
                   {fee.type}

@@ -13,7 +13,7 @@ import {
 } from '@/components/ui/dialog';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
-import { Badge } from '@/components/ui/badge';
+
 import { Separator } from '@/components/ui/separator';
 import {
   IconTruck,
@@ -25,6 +25,7 @@ import {
   IconPackage,
   IconClipboardList,
   IconUser,
+  IconFileText,
 } from '@tabler/icons-react';
 
 // Using ApiSupplier type from validation file
@@ -34,10 +35,7 @@ interface SupplierDetailModalProps {
   isOpen: boolean;
   onClose: () => void;
   onEdit?: (_id: number) => void;
-  onDeactivate?: (_id: number) => void;
-  onReactivate?: (_id: number) => void;
   canEdit?: boolean;
-  canDeactivate?: boolean;
 }
 
 export default function SupplierDetailModal({
@@ -45,10 +43,7 @@ export default function SupplierDetailModal({
   isOpen,
   onClose,
   onEdit,
-  onDeactivate,
-  onReactivate,
   canEdit = false,
-  canDeactivate: _canDeactivate = false,
 }: SupplierDetailModalProps) {
   const { data: _session } = useSession();
 
@@ -74,20 +69,6 @@ export default function SupplierDetailModal({
     }
   };
 
-  const _handleDeactivate = () => {
-    if (supplier && onDeactivate) {
-      onDeactivate(supplier.id);
-      onClose();
-    }
-  };
-
-  const _handleReactivate = () => {
-    if (supplier && onReactivate) {
-      onReactivate(supplier.id);
-      onClose();
-    }
-  };
-
   const formatAddress = () => {
     if (!supplier) return null;
 
@@ -107,7 +88,6 @@ export default function SupplierDetailModal({
       day: 'numeric',
     });
   };
-
 
   return (
     <Dialog open={isOpen} onOpenChange={onClose}>
@@ -240,7 +220,6 @@ export default function SupplierDetailModal({
                 </CardContent>
               </Card>
 
-
               {/* Statistics */}
               <Card>
                 <CardHeader>
@@ -265,7 +244,9 @@ export default function SupplierDetailModal({
                     <div>
                       <p className="text-sm font-medium">Created</p>
                       <p className="text-muted-foreground text-sm">
-                        {formatDate(supplier.createdAt)}
+                        {supplier.createdAt
+                          ? formatDate(supplier.createdAt)
+                          : 'Not available'}
                       </p>
                     </div>
                   </div>
@@ -275,7 +256,9 @@ export default function SupplierDetailModal({
                     <div>
                       <p className="text-sm font-medium">Last Updated</p>
                       <p className="text-muted-foreground text-sm">
-                        {formatDate(supplier.updatedAt)}
+                        {supplier.updatedAt
+                          ? formatDate(supplier.updatedAt)
+                          : 'Not available'}
                       </p>
                     </div>
                   </div>

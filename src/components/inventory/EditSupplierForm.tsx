@@ -4,7 +4,7 @@ import { useState } from 'react';
 import { useRouter } from 'next/navigation';
 import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
-import { z } from 'zod';
+
 import { Button } from '@/components/ui/button';
 import {
   Card,
@@ -15,8 +15,8 @@ import {
 } from '@/components/ui/card';
 import { Input } from '@/components/ui/input';
 import { Textarea } from '@/components/ui/textarea';
-import { Switch } from '@/components/ui/switch';
 import { Badge } from '@/components/ui/badge';
+
 import {
   Form,
   FormControl,
@@ -36,13 +36,11 @@ import { logger } from '@/lib/logger';
 import {
   updateSupplierSchema,
   type UpdateSupplierFormData,
-  type ApiSupplier,
 } from '@/lib/validations/supplier';
 
 interface EditSupplierFormProps {
   supplierId: number;
 }
-
 
 export default function EditSupplierForm({
   supplierId,
@@ -51,12 +49,17 @@ export default function EditSupplierForm({
   const updateSupplierMutation = useUpdateSupplier();
   const [error, setError] = useState<string | null>(null);
 
-  const { data: supplier, isLoading, error: fetchError } = useSupplier(supplierId);
+  const {
+    data: supplier,
+    isLoading,
+    error: fetchError,
+  } = useSupplier(supplierId);
 
   const form = useForm<UpdateSupplierFormData>({
     resolver: zodResolver(updateSupplierSchema),
     values: supplier
       ? {
+          id: supplier.id,
           name: supplier.name,
           contactPerson: supplier.contactPerson || undefined,
           email: supplier.email || undefined,
@@ -181,7 +184,8 @@ export default function EditSupplierForm({
           <CardContent className="pt-6">
             <Alert>
               <AlertDescription>
-                Supplier not found. It may have been deleted or you don't have permission to view it.
+                Supplier not found. It may have been deleted or you don't have
+                permission to view it.
               </AlertDescription>
             </Alert>
           </CardContent>
@@ -227,7 +231,7 @@ export default function EditSupplierForm({
               {/* Basic Information Section */}
               <div className="space-y-4">
                 <h3 className="text-lg font-medium">Basic Information</h3>
-                
+
                 {/* Supplier Name */}
                 <FormField
                   control={form.control}
@@ -265,6 +269,7 @@ export default function EditSupplierForm({
                         <Input
                           placeholder="Primary contact person name"
                           {...field}
+                          value={field.value || ''}
                         />
                       </FormControl>
                       <FormMessage />
@@ -284,6 +289,7 @@ export default function EditSupplierForm({
                           type="email"
                           placeholder="supplier@example.com"
                           {...field}
+                          value={field.value || ''}
                         />
                       </FormControl>
                       <FormMessage />
@@ -302,6 +308,7 @@ export default function EditSupplierForm({
                         <Input
                           placeholder="e.g., +1 (555) 123-4567"
                           {...field}
+                          value={field.value || ''}
                         />
                       </FormControl>
                       <FormMessage />
@@ -313,7 +320,7 @@ export default function EditSupplierForm({
               {/* Address Information Section */}
               <div className="space-y-4">
                 <h3 className="text-lg font-medium">Address Information</h3>
-                
+
                 {/* Address */}
                 <FormField
                   control={form.control}
@@ -326,6 +333,7 @@ export default function EditSupplierForm({
                           placeholder="Complete address including street, building number"
                           className="min-h-[80px]"
                           {...field}
+                          value={field.value || ''}
                         />
                       </FormControl>
                       <FormMessage />
@@ -333,7 +341,7 @@ export default function EditSupplierForm({
                   )}
                 />
 
-                <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+                <div className="grid grid-cols-1 gap-4 md:grid-cols-3">
                   {/* City */}
                   <FormField
                     control={form.control}
@@ -342,7 +350,11 @@ export default function EditSupplierForm({
                       <FormItem>
                         <FormLabel>City</FormLabel>
                         <FormControl>
-                          <Input placeholder="City name" {...field} />
+                          <Input
+                            placeholder="City name"
+                            {...field}
+                            value={field.value || ''}
+                          />
                         </FormControl>
                         <FormMessage />
                       </FormItem>
@@ -357,13 +369,16 @@ export default function EditSupplierForm({
                       <FormItem>
                         <FormLabel>State/Province</FormLabel>
                         <FormControl>
-                          <Input placeholder="State or province" {...field} />
+                          <Input
+                            placeholder="State or province"
+                            {...field}
+                            value={field.value || ''}
+                          />
                         </FormControl>
                         <FormMessage />
                       </FormItem>
                     )}
                   />
-
                 </div>
               </div>
 
@@ -383,14 +398,13 @@ export default function EditSupplierForm({
                           type="url"
                           placeholder="https://supplier-website.com"
                           {...field}
+                          value={field.value || ''}
                         />
                       </FormControl>
                       <FormMessage />
                     </FormItem>
                   )}
                 />
-
-
               </div>
 
               {/* Additional Information Section */}
@@ -409,13 +423,13 @@ export default function EditSupplierForm({
                           placeholder="Additional notes about this supplier"
                           className="min-h-[100px]"
                           {...field}
+                          value={field.value || ''}
                         />
                       </FormControl>
                       <FormMessage />
                     </FormItem>
                   )}
                 />
-
               </div>
 
               {/* Form Actions */}
