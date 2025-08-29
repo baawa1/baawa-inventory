@@ -275,10 +275,10 @@ export function TransactionList({ user: _ }: TransactionListProps) {
   );
 
   // Handle filter changes
-  const handleFilterChange = useCallback((key: string, value: string) => {
+  const handleFilterChange = useCallback((key: string, value: unknown) => {
     setFilters(prev => {
       if (prev[key as keyof typeof prev] === value) return prev;
-      return { ...prev, [key]: value };
+      return { ...prev, [key]: value as string };
     });
     setPagination(prev => ({ ...prev, page: 1 }));
   }, []);
