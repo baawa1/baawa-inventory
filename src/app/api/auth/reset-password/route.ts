@@ -5,8 +5,8 @@ import { prisma } from '@/lib/db';
 import { emailService } from '@/lib/email/service';
 import { AuditLogger } from '@/lib/utils/audit-logger';
 import { passwordSchema } from '@/lib/validations/common';
-import { getAppBaseUrl } from '@/lib/utils';
 import { withRateLimit } from '@/lib/rate-limiting';
+import { logger } from '@/lib/logger';
 
 // Reset password validation schema
 const resetPasswordSchema = z
@@ -128,7 +128,11 @@ async function resetPasswordHandler(request: NextRequest) {
       { status: 200 }
     );
   } catch (error) {
-    console.error('Reset password error:', error);
+    logger.error('Reset password error', { 
+      error,
+      hasToken: !!body?.token,
+      userAgent: request.headers.get('user-agent')
+    });
 
     // Log the error
     await AuditLogger.logAuthEvent(

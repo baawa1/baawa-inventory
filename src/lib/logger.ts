@@ -3,6 +3,8 @@
  * Provides consistent logging across the application with proper levels and context
  */
 
+import { envConfig } from '@/lib/config/env-validation';
+
 interface LogContext {
   [key: string]: unknown;
 }
@@ -19,7 +21,7 @@ interface Logger {
 }
 
 class StructuredLogger implements Logger {
-  private isDevelopment = process.env.NODE_ENV === 'development';
+  private isDevelopment = envConfig.isDevelopment;
 
   private formatMessage(
     level: string,

@@ -1,6 +1,7 @@
 import { NextResponse } from 'next/server';
 import { ZodError } from 'zod';
 import { logger } from '@/lib/logger';
+import { envConfig } from '@/lib/config/env-validation';
 
 // ===== TYPE DEFINITIONS =====
 
@@ -225,7 +226,7 @@ export function handleApiError(
     });
 
     // Don't expose internal error messages in production
-    const isDevelopment = process.env.NODE_ENV === 'development';
+    const isDevelopment = envConfig.isDevelopment;
 
     return NextResponse.json(
       {

@@ -18,6 +18,7 @@ import {
 import { EmailProviderFactory } from './providers/factory';
 import { getEmailTemplate } from './templates';
 import { logger } from '@/lib/logger';
+import { envConfig } from '@/lib/config/env-validation';
 
 /**
  * Main Email Service
@@ -126,21 +127,10 @@ export class EmailService {
  * Uses the factory to auto-detect the best available provider
  */
 export function createEmailService(): EmailService {
-  const fromEmail =
-    process.env.RESEND_FROM_EMAIL ||
-    process.env.FROM_EMAIL ||
-    process.env.SUPPORT_EMAIL ||
-    'support@baawa.ng';
-
-  const fromName =
-    process.env.RESEND_FROM_NAME ||
-    process.env.FROM_NAME ||
-    'Baawa Accessories';
-
-  const replyToEmail =
-    process.env.REPLY_TO_EMAIL ||
-    process.env.SUPPORT_EMAIL ||
-    'support@baawa.ng';
+  // Use secure environment configuration with proper fallbacks
+  const fromEmail = envConfig.resendFromEmail || envConfig.supportEmail || 'support@baawa.ng';
+  const fromName = envConfig.resendFromName || 'Baawa Accessories';
+  const replyToEmail = envConfig.supportEmail || 'support@baawa.ng';
 
   const config = EmailProviderFactory.detectProviderConfig(
     fromEmail,
@@ -378,8 +368,8 @@ export const emailTestUtils = {
    * In development, redirects emails to baawapay test addresses
    */
   getEmailAddress: (originalEmail: string, testPurpose?: string): string => {
-    const isDevelopment = process.env.NODE_ENV === 'development';
-    const forceTestEmail = process.env.FORCE_TEST_EMAIL === 'true';
+    const isDevelopment = envConfig.isDevelopment;
+    const forceTestEmail = envConfig.getOptionalString('FORCE_TEST_EMAIL') === 'true';
 
     if (isDevelopment || forceTestEmail) {
       const purpose = testPurpose || 'dev';

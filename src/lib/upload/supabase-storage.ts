@@ -6,6 +6,7 @@
 
 import { createClient } from '@supabase/supabase-js';
 import { logger } from '@/lib/logger';
+import { envConfig } from '@/lib/config/env-validation';
 
 export interface UploadResult {
   url: string;
@@ -34,8 +35,8 @@ class SupabaseStorageService {
 
     if (isServer) {
       // Server-side client
-      const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL;
-      const supabaseServiceKey = process.env.SUPABASE_SERVICE_ROLE_KEY;
+      const supabaseUrl = envConfig.supabaseUrl;
+      const supabaseServiceKey = envConfig.supabaseServiceKey;
 
       if (!supabaseUrl || !supabaseServiceKey) {
         throw new Error('Supabase server configuration is missing');
@@ -49,8 +50,8 @@ class SupabaseStorageService {
       });
     } else {
       // Client-side client
-      const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL;
-      const supabaseKey = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY;
+      const supabaseUrl = envConfig.supabaseUrl;
+      const supabaseKey = envConfig.supabaseAnonKey;
 
       if (!supabaseUrl || !supabaseKey) {
         throw new Error('Supabase client configuration is missing');

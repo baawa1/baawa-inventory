@@ -1,7 +1,13 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { auth } from '#root/auth';
+import { envConfig } from '@/lib/config/env-validation';
 
 export async function GET(_req: NextRequest) {
+  // Only allow test endpoints in development
+  if (!envConfig.isDevelopment) {
+    return NextResponse.json({ error: 'Not found' }, { status: 404 });
+  }
+
   try {
     const token = await auth();
 
@@ -43,8 +49,6 @@ export async function GET(_req: NextRequest) {
     const userRole = (token as any).role;
     const userStatus = (token as any).status;
     const isEmailVerified = Boolean((token as any).isEmailVerified);
-
-    // Debug logging removed for production
 
     // Authentication Flow Logic:
     // 1. Unverified users → verify-email page
@@ -102,13 +106,15 @@ export async function GET(_req: NextRequest) {
 
     return NextResponse.json({
       result: 'access_granted',
-      message: 'User is approved and can access dashboard',
+      message: 'User is approved and can access dashboard (development only)',
       userStatus,
       isEmailVerified,
       userRole,
     });
   } catch (error) {
-    console.error('Test middleware error:', error);
+    // Use existing logger - will only show in development
+    const { logger } = await import('@/lib/logger');
+    logger.error('Test middleware error', { error });
     return NextResponse.json(
       {
         success: false,

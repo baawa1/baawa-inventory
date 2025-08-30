@@ -7,6 +7,7 @@ import { Redis } from 'ioredis';
 import { NextRequest } from 'next/server';
 import { logger } from './logger';
 import { ErrorSanitizer } from './utils/error-sanitizer';
+import { envConfig } from '@/lib/config/env-validation';
 
 export interface RateLimitResult {
   success: boolean;
@@ -37,7 +38,7 @@ export class RedisRateLimiter {
 
   private async initializeRedis(): Promise<void> {
     try {
-      const redisUrl = process.env.REDIS_URL;
+      const redisUrl = envConfig.redisUrl;
       if (!redisUrl) {
         logger.warn(
           'Redis URL not configured, falling back to in-memory rate limiting'

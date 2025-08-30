@@ -1,4 +1,5 @@
 import { NextResponse } from 'next/server';
+import { envConfig } from '@/lib/config/env-validation';
 
 /**
  * Security Headers Utility
@@ -6,24 +7,26 @@ import { NextResponse } from 'next/server';
  */
 
 export function generateSecurityHeaders(): Record<string, string> {
-  const isProduction = process.env.NODE_ENV === 'production';
+  const isProduction = envConfig.isProduction;
 
   return {
-    // Content Security Policy
+    // Content Security Policy - More secure in production
     'Content-Security-Policy': [
       "default-src 'self'",
-      "script-src 'self' 'unsafe-eval' 'unsafe-inline'",
-      "style-src 'self' 'unsafe-inline'",
+      isProduction 
+        ? "script-src 'self' 'unsafe-inline'" // Remove unsafe-eval in production
+        : "script-src 'self' 'unsafe-eval' 'unsafe-inline'", // Keep for development
+      "style-src 'self' 'unsafe-inline' https://fonts.googleapis.com",
       "img-src 'self' data: https: blob:",
-      "font-src 'self' data:",
+      "font-src 'self' data: https://fonts.gstatic.com",
       "connect-src 'self' https:",
       "media-src 'self'",
       "object-src 'none'",
       "base-uri 'self'",
       "form-action 'self'",
       "frame-ancestors 'none'",
-      'upgrade-insecure-requests',
-    ].join('; '),
+      isProduction ? 'upgrade-insecure-requests' : '',
+    ].filter(Boolean).join('; '),
 
     // HTTP Strict Transport Security
     'Strict-Transport-Security': isProduction
@@ -49,12 +52,21 @@ export function generateSecurityHeaders(): Record<string, string> {
       'geolocation=()',
       'payment=()',
       'usb=()',
+      'accelerometer=()',
+      'gyroscope=()',
+      'magnetometer=()',
+      'fullscreen=(self)',
     ].join(', '),
 
     // Cache Control for API responses
     'Cache-Control': 'no-store, no-cache, must-revalidate, proxy-revalidate',
     Pragma: 'no-cache',
     Expires: '0',
+
+    // Additional security headers
+    'Cross-Origin-Opener-Policy': 'same-origin',
+    'Cross-Origin-Resource-Policy': 'same-origin',
+    'Cross-Origin-Embedder-Policy': 'require-corp',
   };
 }
 

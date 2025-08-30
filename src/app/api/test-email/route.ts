@@ -1,9 +1,17 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { emailService } from '@/lib/email/service';
+import { envConfig } from '@/lib/config/env-validation';
 
 export async function POST(_request: NextRequest) {
+  // Only allow test endpoints in development
+  if (!envConfig.isDevelopment) {
+    return NextResponse.json({ error: 'Not found' }, { status: 404 });
+  }
+
   try {
-    console.log('🚀 Sending test emails with updated brand colors and logo...');
+    // Use existing logger - will only show in development
+    const { logger } = await import('@/lib/logger');
+    logger.debug('Sending test emails with updated brand colors and logo');
 
     // Test data for welcome email
     const testData = {
@@ -18,18 +26,13 @@ export async function POST(_request: NextRequest) {
     // await new Promise(resolve => setTimeout(resolve, 600)); // 600ms delay
     await emailService.sendWelcomeEmail('baawaaccessories@gmail.com', testData);
 
-    console.log('✅ Test emails sent successfully!');
-    console.log('📧 Email template includes:');
-    console.log('   - Baawa Accessories Logo');
-    console.log('   - Primary Red: #ff3333');
-    console.log('   - Secondary Blue: #0066ff');
-    console.log('   - Action Buttons (Dashboard & Support)');
-    console.log('   - Professional Layout');
+    logger.debug('Test emails sent successfully');
+    logger.debug('Email template includes: Logo, Color scheme, Action buttons');
 
     return NextResponse.json({
       success: true,
       message:
-        'Test emails sent successfully to bmdebell32@gmail.com and baawaaccessories@gmail.com',
+        'Test emails sent successfully (development only)',
       recipients: ['bmdebell32@gmail.com', 'baawaaccessories@gmail.com'],
       features: {
         logo: 'Baawa Accessories Logo included',
@@ -43,7 +46,8 @@ export async function POST(_request: NextRequest) {
       },
     });
   } catch (error) {
-    console.error('❌ Failed to send test emails:', error);
+    const { logger } = await import('@/lib/logger');
+    logger.error('Failed to send test emails', { error });
 
     return NextResponse.json(
       {

@@ -1,7 +1,16 @@
 import { NextResponse } from 'next/server';
 import { prisma } from '@/lib/db';
+import { withAuth, AuthenticatedRequest } from '@/lib/api-middleware';
+import { handleApiError } from '@/lib/api-error-handler-new';
+import { envConfig } from '@/lib/config/env-validation';
 
-export async function GET() {
+// Require authentication even in development
+export const GET = withAuth(async (req: AuthenticatedRequest) => {
+  // Only allow test data endpoints in development
+  if (!envConfig.isDevelopment) {
+    return NextResponse.json({ error: 'Not found' }, { status: 404 });
+  }
+
   try {
     // Test categories
     const categoriesData = await prisma.category.findMany({
@@ -20,13 +29,9 @@ export async function GET() {
     return NextResponse.json({
       categories: { data: categoriesData || [] },
       brands: { data: brandsData || [] },
-      message: 'Test data fetched successfully',
+      message: 'Test data fetched successfully (development only)',
     });
   } catch (error) {
-    console.error('Test data error:', error);
-    return NextResponse.json(
-      { error: 'Internal server error', details: error },
-      { status: 500 }
-    );
+    return handleApiError(error);
   }
-}
+});

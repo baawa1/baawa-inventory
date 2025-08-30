@@ -109,15 +109,8 @@ export const passwordSchema = z
     return !commonPasswords.includes(password.toLowerCase());
   }, 'Password is too common. Please choose a more secure password.');
 
-// Legacy simple password schema - for backwards compatibility only
-// DEPRECATED: Use passwordSchema for new implementations
-export const simplePasswordSchema = z
-  .string()
-  .min(8, 'Password must be at least 8 characters')
-  .regex(
-    /^(?=.*[a-z])(?=.*[A-Z])(?=.*\d)/,
-    'Password must contain at least one lowercase letter, one uppercase letter, and one number'
-  );
+// Legacy simple password schema removed for security
+// All password validation now uses the stronger passwordSchema above
 
 export const currentPasswordSchema = z
   .string()
