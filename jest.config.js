@@ -19,6 +19,7 @@ const customJestConfig = {
     "^@/tests/(.*)$": "<rootDir>/tests/$1",
     "^#root/auth$": "<rootDir>/__mocks__/auth.ts",
     "^@/auth$": "<rootDir>/__mocks__/auth.ts",
+    "^@/lib/config/env-validation$": "<rootDir>/__mocks__/env-validation.ts",
   },
 
   // Test file patterns
@@ -32,7 +33,10 @@ const customJestConfig = {
     "<rootDir>/.next/",
     "<rootDir>/node_modules/",
     "<rootDir>/tests/e2e/", // Exclude E2E tests from Jest
-    "<rootDir>/tests/api/", // Exclude server-side API tests
+    "<rootDir>/tests/brands/e2e/", // Exclude brand E2E tests
+    "<rootDir>/tests/categories/e2e/", // Exclude category E2E tests
+    "<rootDir>/tests/pos/integration/", // Exclude POS integration tests (Playwright)
+    "<rootDir>/tests/pos/api/", // Exclude POS API tests (Playwright)
   ],
 
   // Coverage configuration
@@ -66,7 +70,7 @@ const customJestConfig = {
 
   // Transform ignore patterns for ES modules
   transformIgnorePatterns: [
-    "node_modules/(?!(next-auth|@auth/core|oauth4webapi|preact-render-to-string|preact|node-fetch)/)"
+    "node_modules/(?!(next-auth|@auth|@auth/core|oauth4webapi|preact-render-to-string|preact|node-fetch|jose|openid-client)/)"
   ],
 
   // Clear mocks between tests

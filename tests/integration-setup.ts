@@ -1,6 +1,9 @@
 // Shared setup for integration tests
 // This must be imported BEFORE any imports that might import auth.ts
 
+// Mock environment configuration first
+jest.mock('@/lib/config/env-validation');
+
 // Mock NextAuth before any other imports
 jest.mock('#root/auth', () => ({
   auth: jest.fn(),
@@ -15,7 +18,37 @@ jest.mock('#root/auth', () => ({
 // Mock API middleware
 jest.mock('@/lib/api-middleware', () => ({
   withPermission: (roles: string[], handler: Function) => handler,
-  withAuth: (handler: Function) => handler,
+  withAuth: (handler: Function) => (req: any, params?: any) => {
+    // Add mock user to request for tests
+    req.user = {
+      id: 1,
+      email: 'test@example.com',
+      role: 'ADMIN',
+      status: 'APPROVED',
+      isEmailVerified: true,
+    };
+    return handler(req, params);
+  },
+}));
+
+// Mock logger to prevent console output in tests
+jest.mock('@/lib/logger', () => ({
+  logger: {
+    info: jest.fn(),
+    warn: jest.fn(),
+    error: jest.fn(),
+    debug: jest.fn(),
+  },
+}));
+
+// Mock security headers
+jest.mock('@/lib/security-headers', () => ({
+  generateSecurityHeaders: jest.fn(() => ({
+    'X-Frame-Options': 'DENY',
+    'X-Content-Type-Options': 'nosniff',
+    'Content-Security-Policy': "default-src 'self'",
+  })),
+  applySecurityHeaders: jest.fn((response) => response),
 }));
 
 // Standard Prisma mock for integration tests
