@@ -21,7 +21,17 @@ interface Logger {
 }
 
 class StructuredLogger implements Logger {
-  private isDevelopment = envConfig.isDevelopment;
+  private isDevelopment: boolean;
+
+  constructor() {
+    // Safely get development status without triggering server-side validation
+    try {
+      this.isDevelopment = envConfig.isDevelopment;
+    } catch (error) {
+      // Fallback to checking NODE_ENV directly if envConfig fails
+      this.isDevelopment = process.env.NODE_ENV === 'development';
+    }
+  }
 
   private formatMessage(
     level: string,
