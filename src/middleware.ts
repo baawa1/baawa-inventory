@@ -34,6 +34,29 @@ export default auth((req: NextRequest & { auth: any }) => {
     '/api/auth/validate-reset-token',
   ];
 
+  // NextAuth API routes that should not be blocked by middleware
+  const nextAuthApiRoutes = [
+    '/api/auth/session',
+    '/api/auth/signin',
+    '/api/auth/signout',
+    '/api/auth/error',
+    '/api/auth/csrf',
+    '/api/auth/providers',
+    '/api/auth/callback',
+    '/api/auth/refresh-session',
+  ];
+
+  // Development/Debug API routes that should be accessible
+  const debugApiRoutes = [
+    '/api/debug/session',
+    '/api/debug-token',
+    '/api/test-env',
+    '/api/test-auth',
+    '/api/test-middleware',
+    '/api/test-email',
+    '/api/test-data',
+  ];
+
   // Check if this is an API route
   const isApiRoute = pathname.startsWith('/api/');
   
@@ -48,6 +71,16 @@ export default auth((req: NextRequest & { auth: any }) => {
 
   // Handle public routes (pages and API)
   if (publicRoutes.includes(pathname) || publicApiRoutes.includes(pathname)) {
+    return applySecurityHeaders(NextResponse.next());
+  }
+
+  // Allow NextAuth API routes to pass through without authentication checks
+  if (nextAuthApiRoutes.some(route => pathname.startsWith(route))) {
+    return applySecurityHeaders(NextResponse.next());
+  }
+
+  // Allow debug/development routes in development mode
+  if (process.env.NODE_ENV === 'development' && debugApiRoutes.includes(pathname)) {
     return applySecurityHeaders(NextResponse.next());
   }
 
