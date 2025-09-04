@@ -23,8 +23,8 @@ import { formatCurrency } from '@/lib/utils';
 interface Product {
   id: number;
   name: string;
-  cost: number;
-  price: number;
+  cost?: number;
+  price?: number;
 }
 
 interface InlinePriceEditorProps {
@@ -40,16 +40,18 @@ const InlinePriceEditor = memo<InlinePriceEditorProps>(function InlinePriceEdito
 }) {
   const [isEditing, setIsEditing] = useState(false);
   const [editingField, setEditingField] = useState<'cost' | 'price' | null>(null);
-  const [tempCost, setTempCost] = useState(product.cost.toString());
-  const [tempPrice, setTempPrice] = useState(product.price.toString());
+  const [tempCost, setTempCost] = useState((product.cost || 0).toString());
+  const [tempPrice, setTempPrice] = useState((product.price || 0).toString());
 
   const updateProductMutation = useUpdateProduct();
 
   // Memoize profit calculations to prevent unnecessary recalculations
   const profitMetrics = useMemo(() => {
-    const profitAmount = product.price - product.cost;
-    const profitMargin = product.cost > 0 ? ((profitAmount / product.price) * 100) : 0;
-    const markupPercentage = product.cost > 0 ? ((profitAmount / product.cost) * 100) : 0;
+    const cost = product.cost || 0;
+    const price = product.price || 0;
+    const profitAmount = price - cost;
+    const profitMargin = cost > 0 ? ((profitAmount / price) * 100) : 0;
+    const markupPercentage = cost > 0 ? ((profitAmount / cost) * 100) : 0;
 
     return {
       profitAmount,
@@ -60,8 +62,8 @@ const InlinePriceEditor = memo<InlinePriceEditorProps>(function InlinePriceEdito
 
   // Reset temp values when product changes
   useEffect(() => {
-    setTempCost(product.cost.toString());
-    setTempPrice(product.price.toString());
+    setTempCost((product.cost || 0).toString());
+    setTempPrice((product.price || 0).toString());
   }, [product.cost, product.price]);
 
   // Memoize handlers to prevent unnecessary re-renders
@@ -87,16 +89,16 @@ const InlinePriceEditor = memo<InlinePriceEditorProps>(function InlinePriceEdito
       toast.error(`Failed to update ${field}: ${error instanceof Error ? error.message : 'Unknown error'}`);
       // Reset to original values
       if (field === 'cost') {
-        setTempCost(product.cost.toString());
+        setTempCost((product.cost || 0).toString());
       } else {
-        setTempPrice(product.price.toString());
+        setTempPrice((product.price || 0).toString());
       }
     }
   }, [product.id, tempCost, tempPrice, updateProductMutation]);
 
   const handleCancel = useCallback(() => {
-    setTempCost(product.cost.toString());
-    setTempPrice(product.price.toString());
+    setTempCost((product.cost || 0).toString());
+    setTempPrice((product.price || 0).toString());
     setIsEditing(false);
     setEditingField(null);
   }, [product.cost, product.price]);
@@ -114,7 +116,7 @@ const InlinePriceEditor = memo<InlinePriceEditorProps>(function InlinePriceEdito
       <div className="space-y-1">
         <div className="flex items-center gap-2">
           <div className="text-sm font-medium">
-            {formatCurrency(product.price)}
+            {formatCurrency(product.price || 0)}
           </div>
         </div>
         {showProfitMargin && (
@@ -182,7 +184,7 @@ const InlinePriceEditor = memo<InlinePriceEditorProps>(function InlinePriceEdito
             className="flex items-center gap-1 text-xs text-gray-600 hover:text-blue-600 hover:bg-blue-50 px-1 py-0.5 rounded"
             disabled={editingField !== null}
           >
-            <span>Cost: {formatCurrency(product.cost)}</span>
+            <span>Cost: {formatCurrency(product.cost || 0)}</span>
             <IconEdit className="h-3 w-3" />
           </button>
         )}
@@ -236,7 +238,7 @@ const InlinePriceEditor = memo<InlinePriceEditorProps>(function InlinePriceEdito
             className="flex items-center gap-1 text-sm font-medium hover:text-blue-600 hover:bg-blue-50 px-1 py-0.5 rounded"
             disabled={editingField !== null}
           >
-            <span>{formatCurrency(product.price)}</span>
+            <span>{formatCurrency(product.price || 0)}</span>
             <IconEdit className="h-3 w-3" />
           </button>
         )}
@@ -263,11 +265,11 @@ const InlinePriceEditor = memo<InlinePriceEditorProps>(function InlinePriceEdito
                 <div className="space-y-1 text-xs">
                   <div className="flex justify-between">
                     <span>Selling Price:</span>
-                    <span className="font-medium">{formatCurrency(product.price)}</span>
+                    <span className="font-medium">{formatCurrency(product.price || 0)}</span>
                   </div>
                   <div className="flex justify-between">
                     <span>Cost Price:</span>
-                    <span className="font-medium">{formatCurrency(product.cost)}</span>
+                    <span className="font-medium">{formatCurrency(product.cost || 0)}</span>
                   </div>
                   <div className="border-t pt-1 flex justify-between">
                     <span>Profit Amount:</span>

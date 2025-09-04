@@ -18,6 +18,12 @@ export interface TableColumn {
   sortable?: boolean;
   defaultVisible?: boolean;
   required?: boolean; // Can't be hidden
+  className?: string;
+  headerClassName?: string;
+  // Mobile-specific properties
+  mobileLabel?: string;
+  hideOnMobile?: boolean;
+  mobileOrder?: number;
 }
 
 export const PRODUCT_COLUMNS: TableColumn[] = [
@@ -27,6 +33,8 @@ export const PRODUCT_COLUMNS: TableColumn[] = [
     sortable: false,
     defaultVisible: true,
     required: true,
+    hideOnMobile: false,
+    mobileOrder: 0,
   },
   {
     key: 'name',
@@ -34,6 +42,8 @@ export const PRODUCT_COLUMNS: TableColumn[] = [
     sortable: true,
     defaultVisible: true,
     required: true,
+    mobileLabel: 'Product',
+    mobileOrder: 1,
   },
   {
     key: 'sku',
@@ -41,14 +51,59 @@ export const PRODUCT_COLUMNS: TableColumn[] = [
     sortable: true,
     defaultVisible: true,
     required: true,
+    mobileOrder: 2,
   },
-  { key: 'category', label: 'Category', sortable: true, defaultVisible: true },
-  { key: 'brand', label: 'Brand', sortable: true, defaultVisible: true },
-  { key: 'stock', label: 'Stock', sortable: true, defaultVisible: true },
-  { key: 'pricing', label: 'Pricing & Margin', sortable: true, defaultVisible: true },
-  { key: 'price', label: 'Selling Price', sortable: true, defaultVisible: false },
-  { key: 'status', label: 'Status', sortable: true, defaultVisible: true },
-  { key: 'supplier', label: 'Supplier', sortable: false, defaultVisible: true },
+  { 
+    key: 'category', 
+    label: 'Category', 
+    sortable: true, 
+    defaultVisible: true,
+    mobileOrder: 4,
+  },
+  { 
+    key: 'brand', 
+    label: 'Brand', 
+    sortable: true, 
+    defaultVisible: true,
+    mobileOrder: 5,
+  },
+  { 
+    key: 'stock', 
+    label: 'Stock', 
+    sortable: true, 
+    defaultVisible: true,
+    mobileOrder: 3,
+  },
+  { 
+    key: 'pricing', 
+    label: 'Pricing & Margin', 
+    sortable: true, 
+    defaultVisible: true,
+    mobileLabel: 'Price',
+    mobileOrder: 6,
+  },
+  { 
+    key: 'price', 
+    label: 'Selling Price', 
+    sortable: true, 
+    defaultVisible: false,
+    mobileLabel: 'Price',
+    mobileOrder: 7,
+  },
+  { 
+    key: 'status', 
+    label: 'Status', 
+    sortable: true, 
+    defaultVisible: true,
+    mobileOrder: 8,
+  },
+  { 
+    key: 'supplier', 
+    label: 'Supplier', 
+    sortable: false, 
+    defaultVisible: true,
+    mobileOrder: 9,
+  },
   {
     key: 'description',
     label: 'Description',

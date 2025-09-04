@@ -1,2 +1,2 @@
-// DEPRECATED: Use DashboardTableLayout from '@/components/layouts/DashboardTableLayout' instead.
+// Re-export DashboardTableLayout as InventoryPageLayout for backward compatibility
 export { DashboardTableLayout as InventoryPageLayout } from '@/components/layouts/DashboardTableLayout';

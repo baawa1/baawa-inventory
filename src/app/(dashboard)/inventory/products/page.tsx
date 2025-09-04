@@ -1,6 +1,6 @@
 import { redirect } from 'next/navigation';
 import { auth } from '#root/auth';
-import ProductList from '@/components/inventory/ProductList';
+import MobileProductList from '@/components/inventory/MobileProductList';
 import { USER_ROLES, hasRole } from '@/lib/auth/roles';
 
 export const metadata = {
@@ -27,5 +27,5 @@ export default async function ProductsPage() {
     redirect('/unauthorized');
   }
 
-  return <ProductList user={session.user} />;
+  return <MobileProductList user={session.user} />;
 }

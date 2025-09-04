@@ -1,0 +1,230 @@
+'use client';
+
+import * as React from 'react';
+import { Card, CardContent } from '@/components/ui/card';
+import { Badge } from '@/components/ui/badge';
+import { Button } from '@/components/ui/button';
+import { Separator } from '@/components/ui/separator';
+import {
+  Table,
+  TableBody,
+  TableCell,
+  TableHead,
+  TableHeader,
+  TableRow,
+} from '@/components/ui/table';
+import { cn } from '@/lib/utils';
+
+export interface Column<T> {
+  key: string;
+  label: string;
+  render?: (item: T) => React.ReactNode;
+  className?: string;
+  headerClassName?: string;
+  mobileLabel?: string; // Custom label for mobile cards
+  mobileRender?: (item: T) => React.ReactNode; // Custom render for mobile cards
+  hideOnMobile?: boolean;
+  mobileOrder?: number; // Order in mobile card view
+}
+
+interface ResponsiveTableProps<T> {
+  data: T[];
+  columns: Column<T>[];
+  loading?: boolean;
+  emptyMessage?: string;
+  className?: string;
+  onRowClick?: (item: T) => void;
+  renderActions?: (item: T) => React.ReactNode;
+  keyExtractor: (item: T) => string | number;
+  mobileCardTitle?: (item: T) => React.ReactNode;
+  mobileCardSubtitle?: (item: T) => React.ReactNode;
+}
+
+export function ResponsiveTable<T>({
+  data,
+  columns,
+  loading = false,
+  emptyMessage = 'No data available',
+  className,
+  onRowClick,
+  renderActions,
+  keyExtractor,
+  mobileCardTitle,
+  mobileCardSubtitle,
+}: ResponsiveTableProps<T>) {
+  // Filter columns for mobile view
+  const mobileColumns = columns.filter(col => !col.hideOnMobile);
+  const visibleDesktopColumns = columns;
+
+  if (loading) {
+    return (
+      <div className="space-y-4">
+        {/* Desktop skeleton */}
+        <div className="hidden md:block">
+          <div className="rounded-md border">
+            <Table>
+              <TableHeader>
+                <TableRow>
+                  {visibleDesktopColumns.map(column => (
+                    <TableHead key={column.key} className={column.headerClassName}>
+                      <div className="h-4 bg-muted animate-pulse rounded" />
+                    </TableHead>
+                  ))}
+                  {renderActions && <TableHead className="w-10" />}
+                </TableRow>
+              </TableHeader>
+              <TableBody>
+                {Array.from({ length: 5 }).map((_, index) => (
+                  <TableRow key={index}>
+                    {visibleDesktopColumns.map(column => (
+                      <TableCell key={column.key} className={column.className}>
+                        <div className="h-4 bg-muted animate-pulse rounded" />
+                      </TableCell>
+                    ))}
+                    {renderActions && (
+                      <TableCell>
+                        <div className="h-8 w-8 bg-muted animate-pulse rounded" />
+                      </TableCell>
+                    )}
+                  </TableRow>
+                ))}
+              </TableBody>
+            </Table>
+          </div>
+        </div>
+        
+        {/* Mobile skeleton */}
+        <div className="md:hidden space-y-3">
+          {Array.from({ length: 3 }).map((_, index) => (
+            <Card key={index}>
+              <CardContent className="p-4 space-y-2">
+                <div className="h-5 bg-muted animate-pulse rounded w-3/4" />
+                <div className="h-4 bg-muted animate-pulse rounded w-1/2" />
+                <Separator className="my-3" />
+                <div className="space-y-2">
+                  <div className="h-3 bg-muted animate-pulse rounded w-full" />
+                  <div className="h-3 bg-muted animate-pulse rounded w-2/3" />
+                </div>
+              </CardContent>
+            </Card>
+          ))}
+        </div>
+      </div>
+    );
+  }
+
+  if (!data || data.length === 0) {
+    return (
+      <div className="text-center py-8">
+        <p className="text-muted-foreground">{emptyMessage}</p>
+      </div>
+    );
+  }
+
+  return (
+    <div className={cn('space-y-4', className)}>
+      {/* Desktop Table View */}
+      <div className="hidden md:block">
+        <Table>
+          <TableHeader>
+            <TableRow>
+              {visibleDesktopColumns.map(column => (
+                <TableHead key={column.key} className={column.headerClassName}>
+                  {column.label}
+                </TableHead>
+              ))}
+              {renderActions && <TableHead className="w-10">Actions</TableHead>}
+            </TableRow>
+          </TableHeader>
+          <TableBody>
+            {data.map(item => (
+              <TableRow
+                key={keyExtractor(item)}
+                className={onRowClick ? 'cursor-pointer hover:bg-muted/50' : ''}
+                onClick={() => onRowClick?.(item)}
+              >
+                {visibleDesktopColumns.map(column => (
+                  <TableCell key={column.key} className={column.className}>
+                    {column.render ? column.render(item) : String((item as any)[column.key] || '-')}
+                  </TableCell>
+                ))}
+                {renderActions && (
+                  <TableCell>
+                    <div onClick={(e) => e.stopPropagation()}>
+                      {renderActions(item)}
+                    </div>
+                  </TableCell>
+                )}
+              </TableRow>
+            ))}
+          </TableBody>
+        </Table>
+      </div>
+
+      {/* Mobile Card View */}
+      <div className="md:hidden space-y-3">
+        {data.map(item => (
+          <Card
+            key={keyExtractor(item)}
+            className={cn(
+              'transition-colors',
+              onRowClick && 'cursor-pointer hover:bg-muted/50'
+            )}
+            onClick={() => onRowClick?.(item)}
+          >
+            <CardContent className="p-4">
+              {/* Card Header */}
+              <div className="flex items-start justify-between mb-3">
+                <div className="flex-1 min-w-0">
+                  {mobileCardTitle && (
+                    <div className="font-semibold text-base mb-1 truncate">
+                      {mobileCardTitle(item)}
+                    </div>
+                  )}
+                  {mobileCardSubtitle && (
+                    <div className="text-sm text-muted-foreground truncate">
+                      {mobileCardSubtitle(item)}
+                    </div>
+                  )}
+                </div>
+                {renderActions && (
+                  <div className="ml-3 flex-shrink-0" onClick={(e) => e.stopPropagation()}>
+                    {renderActions(item)}
+                  </div>
+                )}
+              </div>
+
+              {/* Card Content */}
+              <Separator className="mb-3" />
+              
+              <div className="grid grid-cols-1 gap-3">
+                {mobileColumns
+                  .sort((a, b) => (a.mobileOrder || 999) - (b.mobileOrder || 999))
+                  .map(column => {
+                    const value = column.mobileRender 
+                      ? column.mobileRender(item)
+                      : column.render 
+                      ? column.render(item) 
+                      : String((item as any)[column.key] || '-');
+
+                    return (
+                      <div key={column.key} className="flex justify-between items-center">
+                        <span className="text-sm font-medium text-muted-foreground">
+                          {column.mobileLabel || column.label}:
+                        </span>
+                        <div className="text-sm font-medium text-right max-w-[60%] truncate">
+                          {value}
+                        </div>
+                      </div>
+                    );
+                  })}
+              </div>
+            </CardContent>
+          </Card>
+        ))}
+      </div>
+    </div>
+  );
+}
+
+export default ResponsiveTable;

@@ -18,6 +18,13 @@ export interface DashboardTableColumn {
   sortable?: boolean;
   defaultVisible?: boolean;
   required?: boolean; // Can't be hidden
+  className?: string;
+  headerClassName?: string;
+  // Mobile-specific properties
+  mobileLabel?: string; // Custom label for mobile cards
+  mobileRender?: (item: any, columnKey: string) => React.ReactNode; // Custom render for mobile cards
+  hideOnMobile?: boolean;
+  mobileOrder?: number; // Order in mobile card view
 }
 
 interface DashboardColumnCustomizerProps {
