@@ -403,16 +403,34 @@ const config: NextAuthConfig = {
     newUser: '/register',
   },
   // Enhanced security settings
-  useSecureCookies: process.env.NODE_ENV === 'production',
+  useSecureCookies: process.env.NEXTAUTH_URL?.startsWith('https://') || process.env.NODE_ENV === 'production',
   secret: process.env.NEXTAUTH_SECRET,
-  // Enhanced JWT options
+  
+  // Enhanced JWT options with security considerations
   jwt: {
     maxAge: 24 * 60 * 60, // 24 hours
+    // NextAuth handles encryption automatically based on secret strength
   },
-  // Enhanced debug logging in development
-  debug: false, // Disabled to reduce console noise in development
-  // Trust host for deployment
-  trustHost: true,
+  
+  // Cookie security configuration
+  cookies: {
+    sessionToken: {
+      name: `${process.env.NODE_ENV === 'production' ? '__Secure-' : ''}next-auth.session-token`,
+      options: {
+        httpOnly: true,
+        sameSite: 'lax',
+        path: '/',
+        secure: process.env.NODE_ENV === 'production' || process.env.NEXTAUTH_URL?.startsWith('https://'),
+        domain: process.env.NODE_ENV === 'production' ? process.env.NEXTAUTH_DOMAIN : undefined,
+      },
+    },
+  },
+  
+  // Enhanced debug logging in development only
+  debug: process.env.NODE_ENV === 'development' && process.env.NEXTAUTH_DEBUG === 'true',
+  
+  // Conditional trust host - more secure
+  trustHost: process.env.VERCEL === '1' || process.env.NODE_ENV === 'development',
 };
 
 export const { auth, handlers, signIn, signOut } = NextAuth(config);

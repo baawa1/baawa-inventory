@@ -5,62 +5,70 @@ import { authorizeUserForRoute } from '@/lib/auth/roles';
 import type { UserRole, UserStatus } from '@/types/user';
 import { generateSecurityHeaders } from '@/lib/security-headers';
 
+// Pre-compile route sets for O(1) lookup performance
+const PUBLIC_ROUTES = new Set([
+  '/',
+  '/login',
+  '/logout', 
+  '/register',
+  '/forgot-password',
+  '/reset-password',
+  '/check-email',
+  '/verify-email',
+  '/pending-approval',
+  '/unauthorized',
+]);
+
+const PUBLIC_API_ROUTES = new Set([
+  '/api/health',
+  '/api/auth/register',
+  '/api/auth/login',
+  '/api/auth/forgot-password',
+  '/api/auth/reset-password',
+  '/api/auth/verify-email',
+  '/api/auth/validate-reset-token',
+]);
+
+const NEXTAUTH_API_ROUTES = new Set([
+  '/api/auth/session',
+  '/api/auth/signin',
+  '/api/auth/signout',
+  '/api/auth/error',
+  '/api/auth/csrf',
+  '/api/auth/providers',
+  '/api/auth/callback',
+  '/api/auth/refresh-session',
+]);
+
+const DEBUG_API_ROUTES = new Set([
+  '/api/debug/session',
+  '/api/debug-token',
+  '/api/test-env',
+  '/api/test-auth',
+  '/api/test-middleware',
+  '/api/test-email',
+  '/api/test-data',
+]);
+
+// Route checking functions for better performance and readability
+const isPublicRoute = (pathname: string): boolean => PUBLIC_ROUTES.has(pathname);
+const isPublicApiRoute = (pathname: string): boolean => PUBLIC_API_ROUTES.has(pathname);
+const isNextAuthApiRoute = (pathname: string): boolean => {
+  // Exact match first for performance
+  if (NEXTAUTH_API_ROUTES.has(pathname)) return true;
+  // Check for callback patterns like /api/auth/callback/credentials
+  return pathname.startsWith('/api/auth/callback/');
+};
+const isDebugApiRoute = (pathname: string): boolean => DEBUG_API_ROUTES.has(pathname);
+
 export default auth((req: NextRequest & { auth: any }) => {
   const token = req.auth;
   const { pathname } = req.nextUrl;
 
-  // Public routes that don't require authentication
-  const publicRoutes = [
-    '/',
-    '/login',
-    '/logout',
-    '/register',
-    '/forgot-password',
-    '/reset-password',
-    '/check-email',
-    '/verify-email',
-    '/pending-approval',
-    '/unauthorized',
-  ];
-
-  // Public API routes that don't require authentication
-  const publicApiRoutes = [
-    '/api/health',
-    '/api/auth/register',
-    '/api/auth/login',
-    '/api/auth/forgot-password',
-    '/api/auth/reset-password',
-    '/api/auth/verify-email',
-    '/api/auth/validate-reset-token',
-  ];
-
-  // NextAuth API routes that should not be blocked by middleware
-  const nextAuthApiRoutes = [
-    '/api/auth/session',
-    '/api/auth/signin',
-    '/api/auth/signout',
-    '/api/auth/error',
-    '/api/auth/csrf',
-    '/api/auth/providers',
-    '/api/auth/callback',
-    '/api/auth/refresh-session',
-  ];
-
-  // Development/Debug API routes that should be accessible
-  const debugApiRoutes = [
-    '/api/debug/session',
-    '/api/debug-token',
-    '/api/test-env',
-    '/api/test-auth',
-    '/api/test-middleware',
-    '/api/test-email',
-    '/api/test-data',
-  ];
-
-  // Check if this is an API route
+  // Check if this is an API route - early determination for performance
   const isApiRoute = pathname.startsWith('/api/');
   
-  // Apply security headers to all responses
+  // Apply security headers to all responses - optimized function
   const applySecurityHeaders = (response: NextResponse) => {
     const securityHeaders = generateSecurityHeaders();
     Object.entries(securityHeaders).forEach(([key, value]) => {
@@ -69,18 +77,19 @@ export default auth((req: NextRequest & { auth: any }) => {
     return response;
   };
 
-  // Handle public routes (pages and API)
-  if (publicRoutes.includes(pathname) || publicApiRoutes.includes(pathname)) {
+  // Fast route checking with early returns for performance
+  // Handle public routes (pages and API) - O(1) lookup
+  if (isPublicRoute(pathname) || isPublicApiRoute(pathname)) {
     return applySecurityHeaders(NextResponse.next());
   }
 
-  // Allow NextAuth API routes to pass through without authentication checks
-  if (nextAuthApiRoutes.some(route => pathname.startsWith(route))) {
+  // Allow NextAuth API routes to pass through - optimized pattern matching
+  if (isNextAuthApiRoute(pathname)) {
     return applySecurityHeaders(NextResponse.next());
   }
 
-  // Allow debug/development routes in development mode
-  if (process.env.NODE_ENV === 'development' && debugApiRoutes.includes(pathname)) {
+  // Allow debug/development routes in development mode - O(1) lookup
+  if (process.env.NODE_ENV === 'development' && isDebugApiRoute(pathname)) {
     return applySecurityHeaders(NextResponse.next());
   }
 
@@ -164,21 +173,15 @@ export default auth((req: NextRequest & { auth: any }) => {
 export const config = {
   matcher: [
     /*
-     * Match all request paths except for the ones starting with:
-     * - _next/static (static files)
-     * - _next/image (image optimization files)
-     * - favicon.png (favicon file)
-     * - manifest.json (PWA manifest file)
-     * - sw.js (service worker file)
-     * - browserconfig.xml (IE/Edge config file)
-     * - logo (logo images)
-     * - icon (icon files)
-     * - apple-touch-icon.png (Apple touch icon)
-     * - *.svg (SVG files)
+     * Optimized matcher: exclude static assets and let middleware handle route logic
+     * This reduces the regex complexity and improves performance
      * 
-     * SECURITY: API routes are now protected by middleware
-     * Only exclude public API routes that don't need authentication
+     * Excluded patterns:
+     * - _next/static (static files)
+     * - _next/image (image optimization) 
+     * - Common static files (favicon, manifest, etc.)
+     * - Image files (*.svg, *.png, *.ico, etc.)
      */
-    '/((?!_next/static|_next/image|favicon.png|manifest.json|sw.js|browserconfig.xml|logo|icon|apple-touch-icon.png|.*\\.svg|api/health|api/auth/register|api/auth/login|api/auth/forgot-password|api/auth/reset-password|api/auth/verify-email|api/auth/validate-reset-token).*)',
+    '/((?!_next/static|_next/image|favicon|manifest|sw\\.|.*\\.(?:ico|png|jpg|jpeg|gif|svg|webp)).*)',
   ],
 };
