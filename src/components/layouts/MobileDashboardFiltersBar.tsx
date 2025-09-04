@@ -53,7 +53,7 @@ export function MobileDashboardFiltersBar({
 }: MobileDashboardFiltersBarProps) {
   return (
     <Card className="dark:bg-card bg-white">
-      <CardContent className="p-4 lg:p-6">
+      <CardContent className="p-2 md:p-4 lg:p-6">
         {/* Desktop Layout - Hidden on mobile */}
         <div className="hidden md:block">
           <div className="flex flex-col gap-4">

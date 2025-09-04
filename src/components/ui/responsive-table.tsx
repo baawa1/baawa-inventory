@@ -163,65 +163,81 @@ export function ResponsiveTable<T>({
 
       {/* Mobile Card View */}
       <div className="md:hidden space-y-3">
-        {data.map(item => (
-          <Card
-            key={keyExtractor(item)}
-            className={cn(
-              'transition-colors',
-              onRowClick && 'cursor-pointer hover:bg-muted/50'
-            )}
-            onClick={() => onRowClick?.(item)}
-          >
-            <CardContent className="p-4">
-              {/* Card Header */}
-              <div className="flex items-start justify-between mb-3">
-                <div className="flex-1 min-w-0">
-                  {mobileCardTitle && (
-                    <div className="font-semibold text-base mb-1 truncate">
-                      {mobileCardTitle(item)}
+        {data.map(item => {
+          const [isExpanded, setIsExpanded] = React.useState(false);
+          
+          return (
+            <Card
+              key={keyExtractor(item)}
+              className="transition-colors"
+            >
+              <CardContent className="px-3 py-2">
+                {/* Card Header - Always Visible */}
+                <div className="flex items-start justify-between">
+                  <div 
+                    className="flex-1 min-w-0 cursor-pointer"
+                    onClick={() => setIsExpanded(!isExpanded)}
+                  >
+                    {mobileCardTitle && (
+                      <div className="font-semibold text-base mb-1 truncate">
+                        {mobileCardTitle(item)}
+                      </div>
+                    )}
+                    {mobileCardSubtitle && (
+                      <div className="text-sm text-muted-foreground truncate">
+                        {mobileCardSubtitle(item)}
+                      </div>
+                    )}
+                    {/* Tap to expand indicator */}
+                    <div className="flex items-center gap-1 mt-2 text-xs text-muted-foreground">
+                      <span>{isExpanded ? 'Tap to collapse' : 'Tap to expand'}</span>
+                      <span className={cn(
+                        'transition-transform duration-200',
+                        isExpanded ? 'rotate-180' : 'rotate-0'
+                      )}>
+                        ▼
+                      </span>
                     </div>
-                  )}
-                  {mobileCardSubtitle && (
-                    <div className="text-sm text-muted-foreground truncate">
-                      {mobileCardSubtitle(item)}
+                  </div>
+                  {renderActions && (
+                    <div className="ml-3 flex-shrink-0">
+                      {renderActions(item)}
                     </div>
                   )}
                 </div>
-                {renderActions && (
-                  <div className="ml-3 flex-shrink-0" onClick={(e) => e.stopPropagation()}>
-                    {renderActions(item)}
-                  </div>
+
+                {/* Expandable Card Content */}
+                {isExpanded && (
+                  <>
+                    <Separator className="my-3" />
+                    <div className="grid grid-cols-1 gap-3">
+                      {mobileColumns
+                        .sort((a, b) => (a.mobileOrder || 999) - (b.mobileOrder || 999))
+                        .map(column => {
+                          const value = column.mobileRender 
+                            ? column.mobileRender(item)
+                            : column.render 
+                            ? column.render(item) 
+                            : String((item as any)[column.key] || '-');
+
+                          return (
+                            <div key={column.key} className="flex justify-between items-center">
+                              <span className="text-sm font-medium text-muted-foreground">
+                                {column.mobileLabel || column.label}:
+                              </span>
+                              <div className="text-sm font-medium text-right max-w-[60%] truncate">
+                                {value}
+                              </div>
+                            </div>
+                          );
+                        })}
+                    </div>
+                  </>
                 )}
-              </div>
-
-              {/* Card Content */}
-              <Separator className="mb-3" />
-              
-              <div className="grid grid-cols-1 gap-3">
-                {mobileColumns
-                  .sort((a, b) => (a.mobileOrder || 999) - (b.mobileOrder || 999))
-                  .map(column => {
-                    const value = column.mobileRender 
-                      ? column.mobileRender(item)
-                      : column.render 
-                      ? column.render(item) 
-                      : String((item as any)[column.key] || '-');
-
-                    return (
-                      <div key={column.key} className="flex justify-between items-center">
-                        <span className="text-sm font-medium text-muted-foreground">
-                          {column.mobileLabel || column.label}:
-                        </span>
-                        <div className="text-sm font-medium text-right max-w-[60%] truncate">
-                          {value}
-                        </div>
-                      </div>
-                    );
-                  })}
-              </div>
-            </CardContent>
-          </Card>
-        ))}
+              </CardContent>
+            </Card>
+          );
+        })}
       </div>
     </div>
   );

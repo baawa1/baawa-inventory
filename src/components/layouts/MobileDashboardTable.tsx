@@ -103,7 +103,7 @@ export function MobileDashboardTable<T = Record<string, unknown>>({
 
   return (
     <Card className="dark:bg-card bg-white">
-      <CardHeader className="px-4 lg:px-6">
+      <CardHeader className="px-2 md:px-4 lg:px-6">
         <div className="flex items-center justify-between">
           <div className="min-w-0 flex-1">
             <CardTitle className="text-lg font-semibold truncate">
@@ -136,7 +136,7 @@ export function MobileDashboardTable<T = Record<string, unknown>>({
         </div>
       </CardHeader>
 
-      <CardContent className="px-4 lg:px-6 pb-6">
+      <CardContent className="px-2 md:px-4 lg:px-6 pb-3 md:pb-6">
         <div className="space-y-6">
           {/* Loading State */}
           {isLoading ? (
@@ -157,7 +157,7 @@ export function MobileDashboardTable<T = Record<string, unknown>>({
               <div className="md:hidden space-y-3">
                 {[...Array(3)].map((_, i) => (
                   <Card key={i}>
-                    <CardContent className="p-4">
+                    <CardContent className="px-3 py-2">
                       <div className="animate-pulse">
                         {/* Card header with image placeholder */}
                         <div className="flex items-center gap-3 mb-3">
@@ -168,20 +168,10 @@ export function MobileDashboardTable<T = Record<string, unknown>>({
                           </div>
                         </div>
                         
-                        {/* Card content lines */}
-                        <div className="space-y-2">
-                          <div className="flex justify-between">
-                            <div className="h-3 bg-gray-200 rounded w-20"></div>
-                            <div className="h-3 bg-gray-200 rounded w-16"></div>
-                          </div>
-                          <div className="flex justify-between">
-                            <div className="h-3 bg-gray-200 rounded w-24"></div>
-                            <div className="h-3 bg-gray-200 rounded w-20"></div>
-                          </div>
-                          <div className="flex justify-between">
-                            <div className="h-3 bg-gray-200 rounded w-16"></div>
-                            <div className="h-3 bg-gray-200 rounded w-12"></div>
-                          </div>
+                        {/* Tap to expand indicator */}
+                        <div className="flex items-center gap-1 mt-2">
+                          <div className="h-3 bg-gray-200 rounded w-24"></div>
+                          <div className="h-3 w-3 bg-gray-200 rounded"></div>
                         </div>
                       </div>
                     </CardContent>
