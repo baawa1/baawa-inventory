@@ -138,17 +138,82 @@ export function MobileDashboardTable<T = Record<string, unknown>>({
 
       <CardContent className="px-4 lg:px-6 pb-6">
         <div className="space-y-6">
-          {/* Responsive Table */}
-          <ResponsiveTable
-            data={data}
-            columns={responsiveColumns}
-            loading={isLoading}
-            emptyMessage={emptyStateMessage}
-            renderActions={renderActions}
-            keyExtractor={keyExtractor}
-            mobileCardTitle={mobileCardTitle}
-            mobileCardSubtitle={mobileCardSubtitle}
-          />
+          {/* Loading State */}
+          {isLoading ? (
+            <div className="space-y-4">
+              {/* Desktop skeleton */}
+              <div className="hidden md:block">
+                {[...Array(5)].map((_, i) => (
+                  <div key={i} className="flex animate-pulse items-center space-x-4">
+                    <div className="flex-1 space-y-2">
+                      <div className="h-4 w-1/4 rounded bg-gray-200"></div>
+                      <div className="h-3 w-1/2 rounded bg-gray-200"></div>
+                    </div>
+                  </div>
+                ))}
+              </div>
+              
+              {/* Mobile card skeletons */}
+              <div className="md:hidden space-y-3">
+                {[...Array(3)].map((_, i) => (
+                  <Card key={i}>
+                    <CardContent className="p-4">
+                      <div className="animate-pulse">
+                        {/* Card header with image placeholder */}
+                        <div className="flex items-center gap-3 mb-3">
+                          <div className="h-10 w-10 bg-gray-200 rounded-md flex-shrink-0"></div>
+                          <div className="flex-1 space-y-2">
+                            <div className="h-4 bg-gray-200 rounded w-3/4"></div>
+                            <div className="h-3 bg-gray-200 rounded w-1/2"></div>
+                          </div>
+                        </div>
+                        
+                        {/* Card content lines */}
+                        <div className="space-y-2">
+                          <div className="flex justify-between">
+                            <div className="h-3 bg-gray-200 rounded w-20"></div>
+                            <div className="h-3 bg-gray-200 rounded w-16"></div>
+                          </div>
+                          <div className="flex justify-between">
+                            <div className="h-3 bg-gray-200 rounded w-24"></div>
+                            <div className="h-3 bg-gray-200 rounded w-20"></div>
+                          </div>
+                          <div className="flex justify-between">
+                            <div className="h-3 bg-gray-200 rounded w-16"></div>
+                            <div className="h-3 bg-gray-200 rounded w-12"></div>
+                          </div>
+                        </div>
+                      </div>
+                    </CardContent>
+                  </Card>
+                ))}
+              </div>
+            </div>
+          ) : (
+            <>
+              {/* Responsive Table with Refetch Overlay */}
+              <div className="relative">
+                {isRefetching && (
+                  <div className="absolute inset-0 z-10 flex items-center justify-center rounded-md bg-white/80 backdrop-blur-sm">
+                    <div className="flex items-center gap-2 rounded-lg border bg-white px-4 py-2 shadow-sm">
+                      <Loader2 className="h-4 w-4 animate-spin text-blue-600" />
+                      <span className="text-sm text-gray-600">Loading...</span>
+                    </div>
+                  </div>
+                )}
+                <ResponsiveTable
+                  data={data}
+                  columns={responsiveColumns}
+                  loading={false}
+                  emptyMessage={emptyStateMessage}
+                  renderActions={renderActions}
+                  keyExtractor={keyExtractor}
+                  mobileCardTitle={mobileCardTitle}
+                  mobileCardSubtitle={mobileCardSubtitle}
+                />
+              </div>
+            </>
+          )}
 
           {/* Empty State */}
           {!isLoading && data.length === 0 && !error && (

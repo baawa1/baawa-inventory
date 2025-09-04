@@ -11,6 +11,7 @@ import {
   SelectValue,
 } from '@/components/ui/select';
 import { IconArrowsSort, IconSearch } from '@tabler/icons-react';
+import { Loader2 } from 'lucide-react';
 
 export interface FilterConfig {
   key: string;
@@ -71,7 +72,7 @@ export function MobileDashboardFiltersBar({
                   />
                   {isSearching && (
                     <div className="absolute right-3 top-1/2 transform -translate-y-1/2">
-                      <div className="animate-spin rounded-full h-4 w-4 border-2 border-primary border-t-transparent" />
+                      <Loader2 className="h-4 w-4 animate-spin text-blue-600" />
                     </div>
                   )}
                 </div>
