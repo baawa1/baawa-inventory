@@ -107,47 +107,47 @@ export const ROLE_PERMISSIONS = {
  * Check if a user role is included in the allowed roles
  */
 export const hasRole = (
-  userRole: string | undefined | null,
+  userRole: UserRole | undefined | null,
   allowedRoles: UserRole[]
 ): boolean => {
   if (!userRole) return false;
 
-  // Safe type check
-  return allowedRoles.some(role => role === userRole);
+  // Type-safe check with proper UserRole type
+  return allowedRoles.includes(userRole);
 };
 
 /**
  * Check if a user has a specific permission
  */
 export const hasPermission = (
-  userRole: string | undefined | null,
+  userRole: UserRole | undefined | null,
   permission: keyof typeof ROLE_PERMISSIONS
 ): boolean => {
   if (!userRole) return false;
+  
+  // Type guard ensures userRole is UserRole at this point
   const allowedRoles = ROLE_PERMISSIONS[permission];
-
-  // Safe type check
-  return allowedRoles.some(role => role === userRole);
+  return (allowedRoles as readonly string[]).includes(userRole);
 };
 
 /**
  * Check if a user has the Admin role
  */
-export const isAdmin = (userRole: string | undefined | null): boolean => {
+export const isAdmin = (userRole: UserRole | undefined | null): boolean => {
   return userRole === USER_ROLES.ADMIN;
 };
 
 /**
  * Check if a user has the Manager role
  */
-export const isManager = (userRole: string | undefined | null): boolean => {
+export const isManager = (userRole: UserRole | undefined | null): boolean => {
   return userRole === USER_ROLES.MANAGER;
 };
 
 /**
  * Check if a user has the Staff role
  */
-export const isStaff = (userRole: string | undefined | null): boolean => {
+export const isStaff = (userRole: UserRole | undefined | null): boolean => {
   return userRole === USER_ROLES.STAFF;
 };
 
@@ -155,7 +155,7 @@ export const isStaff = (userRole: string | undefined | null): boolean => {
  * Check if a user can manage inventory
  */
 export const canManageInventory = (
-  userRole: string | undefined | null
+  userRole: UserRole | undefined | null
 ): boolean => {
   return hasPermission(userRole, 'INVENTORY_WRITE');
 };
@@ -164,7 +164,7 @@ export const canManageInventory = (
  * Check if a user can delete inventory items
  */
 export const canDeleteInventory = (
-  userRole: string | undefined | null
+  userRole: UserRole | undefined | null
 ): boolean => {
   return hasPermission(userRole, 'INVENTORY_DELETE');
 };
@@ -173,7 +173,7 @@ export const canDeleteInventory = (
  * Check if a user can manage other users
  */
 export const canManageUsers = (
-  userRole: string | undefined | null
+  userRole: UserRole | undefined | null
 ): boolean => {
   return hasPermission(userRole, 'USER_MANAGEMENT');
 };
@@ -181,7 +181,7 @@ export const canManageUsers = (
 /**
  * Check if a user can access the POS system
  */
-export const canAccessPOS = (userRole: string | undefined | null): boolean => {
+export const canAccessPOS = (userRole: UserRole | undefined | null): boolean => {
   return hasPermission(userRole, 'POS_ACCESS');
 };
 
@@ -189,7 +189,7 @@ export const canAccessPOS = (userRole: string | undefined | null): boolean => {
  * Check if a user can access reports
  */
 export const canAccessReports = (
-  userRole: string | undefined | null
+  userRole: UserRole | undefined | null
 ): boolean => {
   return hasPermission(userRole, 'REPORTS_READ');
 };
@@ -198,7 +198,7 @@ export const canAccessReports = (
  * Check if a user can access settings
  */
 export const canAccessSettings = (
-  userRole: string | undefined | null
+  userRole: UserRole | undefined | null
 ): boolean => {
   return hasPermission(userRole, 'SETTINGS_ACCESS');
 };
@@ -207,7 +207,7 @@ export const canAccessSettings = (
  * Check if a user can view low stock products
  */
 export const canViewLowStock = (
-  userRole: string | undefined | null
+  userRole: UserRole | undefined | null
 ): boolean => {
   return hasPermission(userRole, 'INVENTORY_LOW_STOCK');
 };
@@ -216,7 +216,7 @@ export const canViewLowStock = (
  * Check if a user can read financial transaction data
  */
 export const canReadFinance = (
-  userRole: string | undefined | null
+  userRole: UserRole | undefined | null
 ): boolean => {
   return hasPermission(userRole, 'FINANCE_TRANSACTIONS_READ');
 };
@@ -225,7 +225,7 @@ export const canReadFinance = (
  * Check if a user can write financial transaction data
  */
 export const canWriteFinance = (
-  userRole: string | undefined | null
+  userRole: UserRole | undefined | null
 ): boolean => {
   return hasPermission(userRole, 'FINANCE_TRANSACTIONS_CREATE');
 };
@@ -234,7 +234,7 @@ export const canWriteFinance = (
  * Check if a user can approve finance transactions
  */
 export const canApproveFinance = (
-  userRole: string | undefined | null
+  userRole: UserRole | undefined | null
 ): boolean => {
   return hasPermission(userRole, 'FINANCE_APPROVE');
 };
@@ -243,7 +243,7 @@ export const canApproveFinance = (
  * Check if a user can delete finance transactions
  */
 export const canDeleteFinance = (
-  userRole: string | undefined | null
+  userRole: UserRole | undefined | null
 ): boolean => {
   return hasPermission(userRole, 'FINANCE_DELETE');
 };
@@ -253,7 +253,7 @@ export const canDeleteFinance = (
  * Optimized for performance with early returns
  */
 export const authorizeUserForRoute = (
-  userRole: string | undefined | null,
+  userRole: UserRole | undefined | null,
   route: string
 ): boolean => {
   // Early return for invalid user role

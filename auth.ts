@@ -5,6 +5,75 @@ import { prisma } from './src/lib/db';
 import * as bcrypt from 'bcryptjs';
 import { AccountLockout } from './src/lib/utils/account-lockout';
 import { AuditLogger } from './src/lib/utils/audit-logger';
+import type { UserRole, UserStatus } from './src/types/user';
+
+// Extend NextAuth types for better type safety
+declare module "next-auth" {
+  interface User {
+    id: string;
+    email: string;
+    name: string;
+    role: UserRole;
+    status: UserStatus;
+    isEmailVerified: boolean;
+    firstName: string;
+    lastName: string;
+    isActive: boolean;
+    userStatus: UserStatus;
+    createdAt: Date | string;
+    phone?: string;
+    lastLogin?: Date | string;
+    avatar_url?: string;
+    image?: string | null; // Allow NextAuth's default null handling
+  }
+
+  interface Session {
+    user: User & {
+      id: string;
+      image?: string | null; // Match NextAuth's default type
+    };
+  }
+}
+
+declare module "next-auth/jwt" {
+  interface JWT {
+    role: UserRole;
+    status: UserStatus;
+    isEmailVerified: boolean;
+    firstName: string;
+    lastName: string;
+    isActive: boolean;
+    userStatus: UserStatus;
+    createdAt: Date | string;
+    phone?: string;
+    lastLogin?: Date | string;
+    avatar_url?: string;
+    dataFetchedAt?: number;
+  }
+}
+
+/**
+ * Comprehensive edge runtime detection to prevent database calls during middleware
+ */
+function isRunningInEdgeRuntime(): boolean {
+  return (
+    process.env.NEXT_RUNTIME === 'edge' ||
+    typeof (globalThis as any).EdgeRuntime !== 'undefined' ||
+    (typeof (globalThis as any).navigator !== 'undefined' && 
+     (globalThis as any).navigator.userAgent?.includes?.('Next.js Middleware')) ||
+    // Check if we're in middleware context by checking for specific globals
+    (typeof (globalThis as any).Request !== 'undefined' && 
+     typeof (globalThis as any).crypto !== 'undefined' &&
+     typeof process.versions?.node === 'undefined') // Edge runtime doesn't have Node.js
+  );
+}
+
+/**
+ * Check if database operations are safe to perform
+ */
+function isDatabaseSafe(): boolean {
+  return !isRunningInEdgeRuntime() && typeof prisma?.user?.findUnique === 'function';
+}
 
 const config: NextAuthConfig = {
   providers: [
@@ -150,18 +219,18 @@ const config: NextAuthConfig = {
       // Only fetch fresh data from database on initial sign-in or when explicitly triggered
       if (user) {
         // Debug logging removed for production
-
-        token.role = (user as any).role;
-        token.status = (user as any).status;
-        token.isEmailVerified = Boolean((user as any).isEmailVerified);
-        token.firstName = (user as any).firstName;
-        token.lastName = (user as any).lastName;
-        token.isActive = Boolean((user as any).isActive);
-        token.userStatus = (user as any).userStatus;
-        token.createdAt = (user as any).createdAt;
-        token.phone = (user as any).phone || undefined;
-        token.lastLogin = (user as any).lastLogin || undefined;
-        token.avatar_url = (user as any).avatar_url || undefined;
+        // Type-safe assignment using the extended User interface
+        token.role = user.role;
+        token.status = user.status;
+        token.isEmailVerified = Boolean(user.isEmailVerified);
+        token.firstName = user.firstName;
+        token.lastName = user.lastName;
+        token.isActive = Boolean(user.isActive);
+        token.userStatus = user.userStatus;
+        token.createdAt = user.createdAt;
+        token.phone = user.phone;
+        token.lastLogin = user.lastLogin;
+        token.avatar_url = user.avatar_url;
 
         // Add timestamp to track when data was last fetched
         token.dataFetchedAt = Date.now();
@@ -178,16 +247,12 @@ const config: NextAuthConfig = {
             ? 15 * 60 * 1000
             : 5 * 60 * 1000); // 15 minutes in dev, 5 minutes in prod
 
-      // Check if we're in Edge Runtime (middleware) - if so, skip database calls
-      const isEdgeRuntime =
-        process.env.NEXT_RUNTIME === 'edge' ||
-        typeof (globalThis as any).EdgeRuntime !== 'undefined';
-
+      // Only perform database operations if we're in a safe runtime environment
       if (
         token.sub &&
         shouldFetchFreshData &&
         typeof window === 'undefined' &&
-        !isEdgeRuntime
+        isDatabaseSafe()
       ) {
         try {
           // Fetch fresh user data from database
@@ -237,18 +302,19 @@ const config: NextAuthConfig = {
     },
     async session({ session, token }) {
       if (token && session.user) {
+        // Type-safe assignment using the extended Session interface
         session.user.id = token.sub!;
-        session.user.role = token.role as any;
-        session.user.status = token.status as any;
+        session.user.role = token.role;
+        session.user.status = token.status;
         session.user.isEmailVerified = Boolean(token.isEmailVerified);
-        session.user.firstName = token.firstName as string;
-        session.user.lastName = token.lastName as string;
+        session.user.firstName = token.firstName;
+        session.user.lastName = token.lastName;
         session.user.isActive = Boolean(token.isActive);
-        session.user.userStatus = token.userStatus as any;
-        session.user.createdAt = token.createdAt as string | Date;
-        session.user.phone = token.phone as string;
-        session.user.lastLogin = token.lastLogin as string | Date;
-        session.user.avatar_url = token.avatar_url as string;
+        session.user.userStatus = token.userStatus;
+        session.user.createdAt = token.createdAt;
+        session.user.phone = token.phone;
+        session.user.lastLogin = token.lastLogin;
+        session.user.avatar_url = token.avatar_url;
 
         // Update the name field with fresh firstName and lastName
         if (token.firstName && token.lastName) {
@@ -267,16 +333,20 @@ const config: NextAuthConfig = {
   },
   events: {
     async signIn(message) {
-      if (message.user) {
-        // Log successful sign-in
-        await AuditLogger.logLoginSuccess(
-          parseInt(message.user.id),
-          message.user.email || 'unknown'
-        );
+      if (message.user && isDatabaseSafe()) {
+        // Log successful sign-in (skip in edge runtime)
+        try {
+          await AuditLogger.logLoginSuccess(
+            parseInt(message.user.id),
+            message.user.email || 'unknown'
+          );
+        } catch (error) {
+          // Silently fail in edge runtime
+        }
       }
     },
     async signOut(message) {
-      if ('token' in message && message.token?.sub) {
+      if ('token' in message && message.token?.sub && isDatabaseSafe()) {
         const userId = parseInt(message.token.sub);
         const userEmail = message.token.email as string;
 
@@ -296,16 +366,14 @@ const config: NextAuthConfig = {
 
             // Log logout event
             await AuditLogger.logLogout(userId, userEmail || 'unknown');
-          } else {
-            // User not found during signOut event
           }
         } catch (_error) {
-          // Error during signOut event
+          // Error during signOut event - silently fail
         }
       }
     },
     async session(message) {
-      if ('token' in message && message.token?.sub) {
+      if ('token' in message && message.token?.sub && isDatabaseSafe()) {
         const userId = parseInt(message.token.sub);
 
         try {
@@ -321,11 +389,9 @@ const config: NextAuthConfig = {
               where: { id: userId },
               data: { lastActivity: new Date() },
             });
-          } else {
-            // User not found during session event
           }
         } catch (_error) {
-          // Error during session event
+          // Error during session event - silently fail
         }
       }
     },

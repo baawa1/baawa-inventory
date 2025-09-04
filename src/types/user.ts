@@ -35,7 +35,7 @@ export interface AppUser extends AuthUser {
   rejectionReason?: string;
 }
 
-// Session user type (for NextAuth session)
+// Session user type (for NextAuth session) - compatible with NextAuth's User type
 export interface SessionUser {
   id: string;
   email: string;
@@ -43,13 +43,15 @@ export interface SessionUser {
   role: UserRole;
   status: UserStatus | string;
   isEmailVerified?: boolean;
-  image?: string;
+  image?: string | null; // Allow null to match NextAuth default
   firstName?: string;
   lastName?: string;
   phone?: string;
   avatar_url?: string;
   createdAt?: string | Date;
   lastLogin?: string | Date;
+  userStatus?: UserStatus | string; // Add for compatibility
+  isActive?: boolean; // Add for compatibility
 }
 
 // (Interfaces are already exported above)
