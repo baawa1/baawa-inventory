@@ -100,7 +100,6 @@ export function ProductImage({
         onLoad={handleImageLoad}
         // Remove problematic properties that might cause issues
         priority={false}
-        unoptimized={true}
       />
     </div>
   );

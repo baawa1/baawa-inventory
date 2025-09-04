@@ -33,7 +33,7 @@ export const PRODUCT_COLUMNS: TableColumn[] = [
     sortable: false,
     defaultVisible: true,
     required: true,
-    hideOnMobile: false,
+    hideOnMobile: true,
     mobileOrder: 0,
   },
   {
