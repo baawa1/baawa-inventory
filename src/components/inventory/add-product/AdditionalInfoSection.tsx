@@ -43,10 +43,10 @@ export function AdditionalInfoSection({ form }: AdditionalInfoSectionProps) {
 
   return (
     <Card>
-      <CardHeader>
-        <CardTitle>Additional Information</CardTitle>
+      <CardHeader className="pb-3 sm:pb-6">
+        <CardTitle className="text-base sm:text-lg">Additional Information</CardTitle>
       </CardHeader>
-      <CardContent className="space-y-4">
+      <CardContent className="space-y-3 sm:space-y-4">
         <FormField
           control={form.control}
           name="status"

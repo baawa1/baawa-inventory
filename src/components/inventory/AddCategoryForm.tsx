@@ -152,12 +152,12 @@ export default function AddCategoryForm() {
   }
 
   return (
-    <div className="mx-auto max-w-4xl space-y-6 p-6">
-      <div className="mb-6">
+    <div className="mx-auto max-w-4xl space-y-4 p-3 sm:space-y-6 sm:p-6">
+      <div className="mb-4 sm:mb-6">
         <Button
           variant="ghost"
           onClick={handleCancel}
-          className="mb-4 px-4 lg:px-6"
+          className="mb-3 px-3 sm:mb-4 sm:px-4 lg:px-6"
         >
           <ArrowLeft className="mr-2 h-4 w-4" />
           Back to Categories
@@ -169,16 +169,16 @@ export default function AddCategoryForm() {
       </div>
 
       <Card>
-        <CardHeader>
-          <CardTitle>Category Information</CardTitle>
-          <CardDescription>
+        <CardHeader className="pb-4 sm:pb-6">
+          <CardTitle className="text-lg sm:text-xl">Category Information</CardTitle>
+          <CardDescription className="text-sm">
             Enter the details for the new category. Required fields are marked
             with an asterisk (*).
           </CardDescription>
         </CardHeader>
-        <CardContent className="space-y-6">
+        <CardContent className="space-y-4 sm:space-y-6">
           <Form {...form}>
-            <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-6">
+            <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-4 sm:space-y-6">
               <FormField
                 control={form.control}
                 name="name"

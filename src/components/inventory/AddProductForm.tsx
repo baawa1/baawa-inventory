@@ -57,12 +57,12 @@ export default function AddProductForm() {
 
   if (loading) {
     return (
-      <div className="mx-auto max-w-4xl space-y-6 p-6">
-        <div className="mb-6">
+      <div className="mx-auto max-w-4xl space-y-4 p-3 sm:space-y-6 sm:p-6">
+        <div className="mb-4 sm:mb-6">
           <Button
             variant="outline"
             onClick={() => router.push('/inventory/products')}
-            className="mb-4 px-4 lg:px-6"
+            className="mb-3 px-3 sm:mb-4 sm:px-4 lg:px-6"
           >
             <ArrowLeft className="mr-2 h-4 w-4" />
             Back to Products
@@ -74,9 +74,9 @@ export default function AddProductForm() {
         </div>
 
         <Card>
-          <CardContent className="p-6">
-            <div className="flex items-center justify-center py-12">
-              <Loader2 className="mr-3 h-8 w-8 animate-spin" />
+          <CardContent className="p-4 sm:p-6">
+            <div className="flex items-center justify-center py-8 sm:py-12">
+              <Loader2 className="mr-3 h-6 w-6 sm:h-8 sm:w-8 animate-spin" />
               <span>Loading form...</span>
             </div>
           </CardContent>
@@ -86,12 +86,12 @@ export default function AddProductForm() {
   }
 
   return (
-    <div className="mx-auto max-w-4xl space-y-6 p-6">
-      <div className="mb-6">
+    <div className="mx-auto max-w-4xl space-y-4 p-3 sm:space-y-6 sm:p-6">
+      <div className="mb-4 sm:mb-6">
         <Button
           variant="ghost"
           onClick={() => router.push('/inventory/products')}
-          className="mb-4 px-4 lg:px-6"
+          className="mb-3 px-3 sm:mb-4 sm:px-4 lg:px-6"
         >
           <ArrowLeft className="mr-2 h-4 w-4" />
           Back to Products
@@ -103,16 +103,16 @@ export default function AddProductForm() {
       </div>
 
       <Card>
-        <CardHeader>
-          <CardTitle>Product Information</CardTitle>
-          <CardDescription>
+        <CardHeader className="pb-4 sm:pb-6">
+          <CardTitle className="text-lg sm:text-xl">Product Information</CardTitle>
+          <CardDescription className="text-sm">
             Enter the details for your new product. Required fields are marked
             with an asterisk (*).
           </CardDescription>
         </CardHeader>
-        <CardContent className="space-y-6">
+        <CardContent className="space-y-4 sm:space-y-6">
           <Form {...form}>
-            <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-6">
+            <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-4 sm:space-y-6">
               {submitError && (
                 <Alert variant="destructive">
                   <AlertDescription>{submitError}</AlertDescription>

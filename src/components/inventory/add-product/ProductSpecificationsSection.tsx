@@ -46,11 +46,11 @@ export function ProductSpecificationsSection({
 }: ProductSpecificationsSectionProps) {
   return (
     <Card>
-      <CardHeader>
-        <CardTitle>Product Specifications</CardTitle>
+      <CardHeader className="pb-3 sm:pb-6">
+        <CardTitle className="text-base sm:text-lg">Product Specifications</CardTitle>
       </CardHeader>
-      <CardContent className="space-y-4">
-        <div className="grid grid-cols-1 gap-4 md:grid-cols-2">
+      <CardContent className="space-y-3 sm:space-y-4">
+        <div className="grid grid-cols-1 gap-3 sm:gap-4 md:grid-cols-2">
           <FormField
             control={form.control}
             name="unit"
