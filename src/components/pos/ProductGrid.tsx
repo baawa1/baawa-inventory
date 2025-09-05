@@ -426,7 +426,7 @@ export function ProductGrid({
         <div className="grid grid-cols-1 gap-3 p-3 sm:grid-cols-2 sm:gap-4 sm:p-4 lg:grid-cols-3">
           {isLoading ? (
             Array.from({ length: 8 }).map((_, i) => (
-              <Card key={i} className="overflow-hidden">
+              <Card key={i} className="overflow-hidden pt-0 pb-2">
                 <CardContent className="p-0">
                   <Skeleton className="h-32 w-full" />
                   <div className="p-4">
@@ -445,7 +445,7 @@ export function ProductGrid({
             filteredProducts.map((product: Product) => (
               <Card
                 key={product.id}
-                className={`cursor-pointer overflow-hidden transition-all hover:scale-[1.02] hover:shadow-lg ${
+                className={`cursor-pointer overflow-hidden pt-0 pb-1 transition-all hover:scale-[1.02] hover:shadow-lg ${
                   disabled ? 'cursor-not-allowed opacity-50' : ''
                 } ${product.stock <= 0 ? 'opacity-60' : ''}`}
                 onClick={() => handleProductClick(product)}
@@ -538,7 +538,7 @@ export function ProductGrid({
                           e.stopPropagation();
                           handleProductClick(product);
                         }}
-                        className="h-8 px-3 sm:h-auto sm:px-4"
+                        className="h-8 px-3 sm:px-4"
                       >
                         <IconPlus className="mr-1 h-3 w-3" />
                         Add

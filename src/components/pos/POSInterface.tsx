@@ -328,7 +328,7 @@ export function POSInterface() {
                 </Card>
 
                 {/* Order Summary and Actions - Fixed at bottom */}
-                <div className="mt-3 flex flex-shrink-0 flex-col gap-2 py-3 sm:mt-6 sm:gap-3 md:py-6">
+                <div className="mt-3 flex flex-shrink-0 flex-col gap-2 py-3 sm:mt-6 sm:gap-3 sm:py-0">
                   {/* Order Summary */}
                   <Card className="py-0 md:py-6">
                     <CardHeader className="hidden pb-2 sm:block sm:pb-3">
