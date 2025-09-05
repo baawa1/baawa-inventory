@@ -510,30 +510,31 @@ export function SlidingPaymentInterface({
     paymentMethod === 'cash' ? calculateChange(amountPaid, total) : 0;
 
   return (
-    <div className="bg-background animate-in slide-in-from-right flex h-full flex-col rounded-lg border shadow-lg duration-300">
+    <div className="bg-background animate-in slide-in-from-right flex h-full flex-col rounded-lg border shadow-lg duration-300 lg:rounded-lg lg:border lg:shadow-lg">
       {/* Header */}
-      <div className="flex items-center justify-between border-b p-4">
-        <div className="flex items-center gap-4">
+      <div className="flex items-center justify-between border-b p-3 sm:p-4">
+        <div className="flex items-center gap-2 sm:gap-4">
           <Button
             variant="ghost"
             size="sm"
             onClick={onCancel}
             disabled={processing}
+            className="h-8 w-8 p-0 sm:h-auto sm:w-auto sm:p-2"
           >
-            <IconX className="h-4 w-4" />
+            <IconX className="h-5 w-5 sm:h-4 sm:w-4" />
           </Button>
           <div>
-            <h2 className="text-lg font-semibold">Payment Processing</h2>
-            <p className="text-muted-foreground text-sm">
+            <h2 className="text-base sm:text-lg font-semibold">Payment Processing</h2>
+            <p className="text-muted-foreground text-xs sm:text-sm">
               Step {currentStep + 1} of {STEPS.length}:{' '}
-              {STEPS[currentStep].title}
+              <span className="hidden xs:inline">{STEPS[currentStep].title}</span>
             </p>
           </div>
         </div>
       </div>
 
       {/* Progress Bar */}
-      <div className="border-b px-4 py-2">
+      <div className="border-b px-3 py-2 sm:px-4">
         <div className="flex gap-1">
           {STEPS.map((step, index) => (
             <button
@@ -550,7 +551,7 @@ export function SlidingPaymentInterface({
                 setCurrentStep(index);
               }}
               disabled={currentStep === 6 || (index === 6 && currentStep !== 6)}
-              className={`h-2 flex-1 rounded-full transition-colors ${
+              className={`h-2 sm:h-2 flex-1 rounded-full transition-colors ${
                 index <= currentStep ? 'bg-primary' : 'bg-muted'
               } ${currentStep === 6 || (index === 6 && currentStep !== 6) ? 'cursor-not-allowed' : 'cursor-pointer'}`}
             />
@@ -559,18 +560,19 @@ export function SlidingPaymentInterface({
       </div>
 
       {/* Step Content */}
-      <div className="flex-1 overflow-y-auto p-4">{renderStepContent()}</div>
+      <div className="flex-1 overflow-y-auto p-3 sm:p-4">{renderStepContent()}</div>
 
       {/* Navigation */}
-      <div className="flex justify-between border-t p-4">
+      <div className="flex justify-between border-t p-3 sm:p-4">
         {currentStep !== 5 && (
           <Button
             variant="outline"
             onClick={prevStep}
             disabled={currentStep === 0 || processing}
+            className="h-11 sm:h-10"
           >
-            <IconArrowLeft className="mr-2 h-4 w-4" />
-            Previous
+            <IconArrowLeft className="mr-1 sm:mr-2 h-4 w-4" />
+            <span className="hidden xs:inline">Previous</span>
           </Button>
         )}
 
@@ -578,41 +580,48 @@ export function SlidingPaymentInterface({
           <Button
             onClick={handlePayment}
             disabled={!canProceed() || processing}
-            className="min-w-32"
+            className="min-w-24 sm:min-w-32 h-11 sm:h-10 flex-1 sm:flex-none ml-2 sm:ml-0"
           >
             {processing ? (
               <>
-                <IconLoader className="mr-2 h-4 w-4 animate-spin" />
-                Processing...
+                <IconLoader className="mr-1 sm:mr-2 h-4 w-4 animate-spin" />
+                <span className="hidden xs:inline">Processing...</span>
+                <span className="xs:hidden">...</span>
               </>
             ) : (
               <>
-                <IconCheck className="mr-2 h-4 w-4" />
-                Complete Payment
+                <IconCheck className="mr-1 sm:mr-2 h-4 w-4" />
+                <span className="hidden xs:inline">Complete Payment</span>
+                <span className="xs:hidden">Pay</span>
               </>
             )}
           </Button>
         ) : currentStep === 6 ? (
-          <div className="ml-auto flex gap-3">
-            <Button variant="outline" onClick={onCancel} className="min-w-32">
-              <IconX className="mr-2 h-4 w-4" />
-              Close
+          <div className="ml-auto flex gap-2 sm:gap-3 w-full sm:w-auto">
+            <Button variant="outline" onClick={onCancel} className="min-w-16 sm:min-w-32 flex-1 sm:flex-none h-11 sm:h-10">
+              <IconX className="mr-1 sm:mr-2 h-4 w-4" />
+              <span className="hidden xs:inline">Close</span>
             </Button>
             <Button
               onClick={() => {
                 onPaymentSuccess(completedSale!);
                 onCancel();
               }}
-              className="min-w-32"
+              className="min-w-16 sm:min-w-32 flex-1 sm:flex-none h-11 sm:h-10"
             >
-              <IconCash className="mr-2 h-4 w-4" />
-              New Sale
+              <IconCash className="mr-1 sm:mr-2 h-4 w-4" />
+              <span className="hidden xs:inline">New Sale</span>
+              <span className="xs:hidden">New</span>
             </Button>
           </div>
         ) : (
-          <Button onClick={nextStep} disabled={!canProceed() || processing}>
-            Next
-            <IconArrowRight className="ml-2 h-4 w-4" />
+          <Button 
+            onClick={nextStep} 
+            disabled={!canProceed() || processing}
+            className="h-11 sm:h-10 flex-1 sm:flex-none ml-2 sm:ml-0"
+          >
+            <span className="hidden xs:inline">Next</span>
+            <IconArrowRight className="ml-1 sm:ml-2 h-4 w-4" />
           </Button>
         )}
       </div>

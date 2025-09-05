@@ -8,6 +8,14 @@ import { Skeleton } from '@/components/ui/skeleton';
 import { Input } from '@/components/ui/input';
 import { ScrollArea } from '@/components/ui/scroll-area';
 import {
+  Sheet,
+  SheetContent,
+  SheetDescription,
+  SheetHeader,
+  SheetTitle,
+  SheetTrigger,
+} from '@/components/ui/sheet';
+import {
   Select,
   SelectContent,
   SelectItem,
@@ -20,6 +28,7 @@ import {
   IconScan,
   IconCamera,
   IconX,
+  IconFilter,
 } from '@tabler/icons-react';
 import { useQuery } from '@tanstack/react-query';
 import { toast } from 'sonner';
@@ -223,16 +232,16 @@ export function ProductGrid({
   return (
     <div className="flex h-full min-h-0 flex-col">
       {/* Search and Filter Controls */}
-      <div className="bg-background mb-4 flex-shrink-0 space-y-4">
+      <div className="bg-background mb-3 flex-shrink-0 space-y-3 sm:mb-4 sm:space-y-4">
         {/* Search Bar */}
         <div className="flex gap-2">
           <div className="relative flex-1">
             <IconSearch className="text-muted-foreground absolute top-3 left-3 h-4 w-4" />
             <Input
-              placeholder="Search products by name, SKU, or barcode..."
+              placeholder="Search products..."
               value={searchTerm}
               onChange={e => setSearchTerm(e.target.value)}
-              className="pl-10"
+              className="h-10 pl-10"
               onKeyPress={e => {
                 if (e.key === 'Enter' && searchTerm.trim()) {
                   // Try barcode search if it looks like a barcode
@@ -243,11 +252,87 @@ export function ProductGrid({
               }}
             />
           </div>
+
+          {/* Mobile Filter Sheet */}
+          <Sheet>
+            <SheetTrigger asChild>
+              <Button variant="outline" size="icon" className="sm:hidden">
+                <IconFilter className="h-4 w-4" />
+              </Button>
+            </SheetTrigger>
+            <SheetContent side="right" className="w-[300px]">
+              <SheetHeader className="py-4">
+                <SheetTitle>Filters</SheetTitle>
+                <SheetDescription>
+                  Filter products by category and brand
+                </SheetDescription>
+              </SheetHeader>
+              <div className="mt-6 space-y-4 px-4">
+                <div className="space-y-2">
+                  <label className="text-sm font-medium">Category</label>
+                  <Select
+                    value={selectedCategory}
+                    onValueChange={setSelectedCategory}
+                  >
+                    <SelectTrigger className="w-full">
+                      <SelectValue placeholder="All Categories" />
+                    </SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="all">All Categories</SelectItem>
+                      {categories.map(category => (
+                        <SelectItem key={category} value={category}>
+                          {category}
+                        </SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
+                </div>
+                <div className="space-y-2">
+                  <label className="text-sm font-medium">Brand</label>
+                  <Select
+                    value={selectedBrand}
+                    onValueChange={setSelectedBrand}
+                  >
+                    <SelectTrigger className="w-full">
+                      <SelectValue placeholder="All Brands" />
+                    </SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="all">All Brands</SelectItem>
+                      {brands.map(brand => (
+                        <SelectItem key={brand} value={brand}>
+                          {brand}
+                        </SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
+                </div>
+                {hasActiveFilters && (
+                  <Button
+                    variant="outline"
+                    onClick={clearFilters}
+                    className="w-full"
+                  >
+                    <IconX className="mr-2 h-4 w-4" />
+                    Clear Filters
+                  </Button>
+                )}
+                <div className="pt-2">
+                  <p className="text-muted-foreground text-sm">
+                    {isLoading
+                      ? 'Loading...'
+                      : `${filteredProducts.length} products found`}
+                  </p>
+                </div>
+              </div>
+            </SheetContent>
+          </Sheet>
+
           <Button
             variant="outline"
             size="icon"
             onClick={startCamera}
             disabled={isCameraOpen}
+            className="hidden sm:flex"
           >
             <IconScan className="h-4 w-4" />
           </Button>
@@ -256,13 +341,14 @@ export function ProductGrid({
             size="icon"
             onClick={startCamera}
             disabled={isCameraOpen}
+            className="hidden sm:flex"
           >
             <IconCamera className="h-4 w-4" />
           </Button>
         </div>
 
-        {/* Filters */}
-        <div className="flex flex-col gap-4 sm:flex-row">
+        {/* Desktop Filters */}
+        <div className="hidden flex-col gap-4 sm:flex sm:flex-row">
           <Select value={selectedCategory} onValueChange={setSelectedCategory}>
             <SelectTrigger className="w-full sm:w-[200px]">
               <SelectValue placeholder="All Categories" />
@@ -302,8 +388,8 @@ export function ProductGrid({
           )}
         </div>
 
-        {/* Results Summary */}
-        <div className="flex items-center justify-between">
+        {/* Desktop Results Summary */}
+        <div className="hidden items-center justify-between sm:flex">
           <p className="text-muted-foreground text-sm">
             {isLoading
               ? 'Loading...'
@@ -337,7 +423,7 @@ export function ProductGrid({
 
       {/* Product Grid - Scrollable */}
       <ScrollArea className="h-full min-h-0 flex-1 rounded-md border">
-        <div className="grid grid-cols-1 gap-4 p-4 pr-4 pb-4 sm:grid-cols-2 lg:grid-cols-3">
+        <div className="grid grid-cols-1 gap-3 p-3 sm:grid-cols-2 sm:gap-4 sm:p-4 lg:grid-cols-3">
           {isLoading ? (
             Array.from({ length: 8 }).map((_, i) => (
               <Card key={i} className="overflow-hidden">
@@ -366,7 +452,7 @@ export function ProductGrid({
               >
                 <CardContent className="p-0">
                   {/* Product Image Background */}
-                  <div className="relative flex h-32 items-center justify-center overflow-hidden bg-gradient-to-br from-gray-100 to-gray-200">
+                  <div className="relative flex h-40 items-center justify-center overflow-hidden bg-gradient-to-br from-gray-100 to-gray-200 sm:h-32">
                     {getProductImage(product) ? (
                       <Image
                         src={getProductImage(product)!}
@@ -432,8 +518,8 @@ export function ProductGrid({
                   </div>
 
                   {/* Product Info */}
-                  <div className="space-y-2 p-4">
-                    <h3 className="line-clamp-2 text-sm leading-tight font-semibold">
+                  <div className="space-y-2 p-3 sm:p-4">
+                    <h3 className="line-clamp-2 text-sm leading-tight font-semibold sm:text-sm">
                       {product.name}
                     </h3>
 
@@ -442,7 +528,7 @@ export function ProductGrid({
                     </div>
 
                     <div className="flex items-center justify-between">
-                      <span className="text-primary text-lg font-bold">
+                      <span className="text-primary text-base font-bold sm:text-lg">
                         {formatCurrency(product.price)}
                       </span>
                       <Button
@@ -452,6 +538,7 @@ export function ProductGrid({
                           e.stopPropagation();
                           handleProductClick(product);
                         }}
+                        className="h-8 px-3 sm:h-auto sm:px-4"
                       >
                         <IconPlus className="mr-1 h-3 w-3" />
                         Add

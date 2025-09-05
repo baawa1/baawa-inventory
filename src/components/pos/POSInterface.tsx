@@ -211,19 +211,19 @@ export function POSInterface() {
         className="flex h-[calc(100vh-49px)] flex-col overflow-hidden"
       >
         {/* Header with Clear All Button */}
-        <div className="flex flex-shrink-0 items-center justify-between border-b p-4">
-          <h1 className="text-2xl font-bold">Point of Sale</h1>
-          <div className="flex items-center gap-4">
+        <div className="flex flex-shrink-0 items-center justify-between border-b p-3 sm:p-4">
+          <h1 className="text-xl font-bold sm:text-2xl">Point of Sale</h1>
+          <div className="flex items-center gap-2 sm:gap-4">
             {cart.length > 0 && currentStep === 'search' && (
               <AlertDialog>
                 <AlertDialogTrigger asChild>
                   <Button
                     variant="outline"
                     size="sm"
-                    className="flex items-center gap-2"
+                    className="flex items-center gap-1 sm:gap-2"
                   >
                     <IconTrash className="h-4 w-4" />
-                    Clear All
+                    <span className="hidden sm:inline">Clear All</span>
                   </Button>
                 </AlertDialogTrigger>
                 <AlertDialogContent>
@@ -250,7 +250,7 @@ export function POSInterface() {
           </div>
         </div>
 
-        <div className="grid min-h-0 flex-1 grid-cols-1 gap-6 p-6 lg:grid-cols-3">
+        <div className="grid min-h-0 flex-1 grid-cols-1 gap-6 p-3 sm:p-6 lg:grid-cols-3">
           {/* Left Column - Product Search and Grid */}
           <div className="flex min-h-0 flex-col lg:col-span-2">
             <POSErrorBoundary componentName="ProductGrid">
@@ -266,41 +266,43 @@ export function POSInterface() {
             {currentStep === 'payment' ? (
               /* Payment Interface - Slides in over cart */
               <POSErrorBoundary componentName="SlidingPaymentInterface">
-                <SlidingPaymentInterface
-                  items={cart}
-                  subtotal={subtotal}
-                  discount={validatedDiscount}
-                  fees={fees}
-                  total={validatedTotal}
-                  customerInfo={customerInfo}
-                  staffName={session.user.name || 'Staff'}
-                  onPaymentSuccess={sale => {
-                    // Convert SlidingPaymentInterface.Sale to POSInterface.Sale
-                    handlePaymentSuccess({
-                      ...sale,
-                      items: sale.items.map(item => ({
-                        ...item,
-                        id: Number(item.id),
-                        sku: '',
-                        stock: 0,
-                        category: undefined,
-                        brand: undefined,
-                      })),
-                    });
-                  }}
-                  onCancel={() => setCurrentStep('search')}
-                  onDiscountChange={setDiscount}
-                  onFeesChange={setFees}
-                  onCustomerInfoChange={info =>
-                    setCustomerInfo(prev => ({ ...prev, ...info }))
-                  }
-                />
+                <div className="bg-background fixed inset-0 z-50 lg:static lg:z-auto lg:bg-transparent">
+                  <SlidingPaymentInterface
+                    items={cart}
+                    subtotal={subtotal}
+                    discount={validatedDiscount}
+                    fees={fees}
+                    total={validatedTotal}
+                    customerInfo={customerInfo}
+                    staffName={session.user.name || 'Staff'}
+                    onPaymentSuccess={sale => {
+                      // Convert SlidingPaymentInterface.Sale to POSInterface.Sale
+                      handlePaymentSuccess({
+                        ...sale,
+                        items: sale.items.map(item => ({
+                          ...item,
+                          id: Number(item.id),
+                          sku: '',
+                          stock: 0,
+                          category: undefined,
+                          brand: undefined,
+                        })),
+                      });
+                    }}
+                    onCancel={() => setCurrentStep('search')}
+                    onDiscountChange={setDiscount}
+                    onFeesChange={setFees}
+                    onCustomerInfoChange={info =>
+                      setCustomerInfo(prev => ({ ...prev, ...info }))
+                    }
+                  />
+                </div>
               </POSErrorBoundary>
             ) : (
               /* Normal Cart View */
               <>
                 {/* Shopping Cart - Full height with scrollable content */}
-                <Card className="flex min-h-0 flex-1 flex-col">
+                <Card className="flex min-h-0 flex-1 flex-col gap-1 py-3 md:gap-6 md:py-6">
                   <CardHeader className="flex-shrink-0">
                     <CardTitle className="flex items-center justify-between">
                       <span className="flex items-center gap-2">
@@ -326,24 +328,28 @@ export function POSInterface() {
                 </Card>
 
                 {/* Order Summary and Actions - Fixed at bottom */}
-                <div className="mt-6 flex flex-shrink-0 flex-col gap-3">
+                <div className="mt-3 flex flex-shrink-0 flex-col gap-2 py-3 sm:mt-6 sm:gap-3 md:py-6">
                   {/* Order Summary */}
-                  <Card>
-                    <CardHeader>
-                      <CardTitle>Order Summary</CardTitle>
+                  <Card className="py-0 md:py-6">
+                    <CardHeader className="hidden pb-2 sm:block sm:pb-3">
+                      <CardTitle className="text-base sm:text-lg">
+                        Order Summary
+                      </CardTitle>
                     </CardHeader>
-                    <CardContent>
-                      <div className="space-y-2">
-                        <div className="flex justify-between">
+                    <CardContent className="pt-3 pb-3 sm:pt-0 sm:pb-6">
+                      <div className="space-y-1 sm:space-y-2">
+                        <div className="hidden justify-between text-sm sm:flex sm:text-base">
                           <span>Subtotal:</span>
                           <span>{formatCurrency(subtotal)}</span>
                         </div>
-                        <div className="flex justify-between text-red-600">
-                          <span>Discount:</span>
-                          <span>-{formatCurrency(validatedDiscount)}</span>
-                        </div>
-                        <Separator />
-                        <div className="flex justify-between text-lg font-bold">
+                        {validatedDiscount > 0 && (
+                          <div className="hidden justify-between text-sm text-red-600 sm:flex sm:text-base">
+                            <span>Discount:</span>
+                            <span>-{formatCurrency(validatedDiscount)}</span>
+                          </div>
+                        )}
+                        <Separator className="hidden sm:block" />
+                        <div className="flex justify-between text-base font-bold sm:text-lg">
                           <span>Total:</span>
                           <span>{formatCurrency(validatedTotal)}</span>
                         </div>
@@ -356,10 +362,11 @@ export function POSInterface() {
                     <Button
                       onClick={() => setCurrentStep('payment')}
                       disabled={cart.length === 0}
-                      className="flex-1"
+                      className="h-12 flex-1 text-base sm:h-10 sm:text-sm"
                     >
-                      <IconCash className="mr-2 h-4 w-4" />
-                      Proceed to Payment
+                      <IconCash className="mr-2 h-5 w-5 sm:h-4 sm:w-4" />
+                      <span className="xs:inline hidden">Proceed to </span>
+                      Payment
                     </Button>
                   </div>
                 </div>

@@ -58,8 +58,8 @@ export function ShoppingCart({
   return (
     <div className="flex h-full flex-col">
       {/* Cart Header - Fixed */}
-      <div className="mb-4 flex flex-shrink-0 items-center justify-between px-6 pt-6">
-        <div className="text-muted-foreground text-sm">
+      <div className="mb-2 flex flex-shrink-0 items-center justify-between px-3 pt-0 sm:mb-4 sm:px-6 sm:pt-6 md:pt-3">
+        <div className="text-muted-foreground text-xs sm:text-sm">
           {totalItems} item{totalItems !== 1 ? 's' : ''} •{' '}
           {formatCurrency(totalValue)}
         </div>
@@ -68,34 +68,40 @@ export function ShoppingCart({
           size="sm"
           onClick={onClearCart}
           disabled={disabled}
+          className="h-8 px-3 sm:h-auto sm:px-4"
         >
           <IconTrash className="mr-1 h-4 w-4" />
-          Clear
+          <span className="xs:inline hidden">Clear</span>
         </Button>
       </div>
 
       {/* Cart Items - Scrollable and fills available space */}
-      <div className="min-h-0 flex-1 space-y-3 overflow-y-auto px-6 pb-6">
+      <div className="min-h-0 flex-1 space-y-2 overflow-y-auto px-3 pb-2 sm:space-y-3 sm:px-6 sm:pb-6">
         {items.map(item => (
-          <Card key={item.id} className="border-l-primary border-l-4">
-            <CardContent className="p-4">
-              <div className="space-y-3">
+          <Card
+            key={item.id}
+            className="border-l-primary border-l-4 py-3 md:py-6"
+          >
+            <CardContent className="px-3 sm:p-4">
+              <div className="space-y-2 sm:space-y-3">
                 {/* Product Info */}
                 <div className="flex items-start justify-between">
                   <div className="flex-1">
-                    <h3 className="font-semibold">{item.name}</h3>
-                    <div className="mt-1 flex items-center gap-2">
+                    <h3 className="text-sm font-semibold sm:text-base">
+                      {item.name}
+                    </h3>
+                    <div className="mt-1 flex flex-wrap items-center gap-1 sm:gap-2">
                       <Badge variant="outline" className="text-xs">
                         {item.sku}
                       </Badge>
                       {item.category && (
-                        <span className="text-muted-foreground flex items-center gap-1 text-xs">
+                        <span className="text-muted-foreground hidden items-center gap-1 text-xs sm:flex">
                           <IconTag className="h-3 w-3" />
                           {item.category}
                         </span>
                       )}
                       {item.brand && (
-                        <span className="text-muted-foreground flex items-center gap-1 text-xs">
+                        <span className="text-muted-foreground hidden items-center gap-1 text-xs sm:flex">
                           <IconPackage className="h-3 w-3" />
                           {item.brand}
                         </span>
@@ -107,6 +113,7 @@ export function ShoppingCart({
                     size="sm"
                     onClick={() => onRemoveItem(item.id)}
                     disabled={disabled}
+                    className="h-8 w-8 p-0 sm:h-auto sm:w-auto sm:p-2"
                   >
                     <IconTrash className="h-4 w-4" />
                   </Button>
@@ -114,7 +121,7 @@ export function ShoppingCart({
 
                 {/* Quantity Controls */}
                 <div className="flex items-center justify-between">
-                  <div className="flex items-center gap-2">
+                  <div className="flex items-center gap-1 sm:gap-2">
                     <Button
                       variant="outline"
                       size="sm"
@@ -122,6 +129,7 @@ export function ShoppingCart({
                         onUpdateQuantity(item.id, item.quantity - 1)
                       }
                       disabled={disabled || item.quantity <= 1}
+                      className="h-8 w-8 p-0 sm:h-auto sm:w-auto sm:p-2"
                     >
                       <IconMinus className="h-4 w-4" />
                     </Button>
@@ -135,7 +143,7 @@ export function ShoppingCart({
                           onUpdateQuantity(item.id, newQuantity);
                         }
                       }}
-                      className="w-16 text-center"
+                      className="h-8 w-12 text-center sm:h-auto sm:w-16"
                       min="1"
                       max={item.stock}
                       disabled={disabled}
@@ -148,16 +156,17 @@ export function ShoppingCart({
                         onUpdateQuantity(item.id, item.quantity + 1)
                       }
                       disabled={disabled || item.quantity >= item.stock}
+                      className="h-8 w-8 p-0 sm:h-auto sm:w-auto sm:p-2"
                     >
                       <IconPlus className="h-4 w-4" />
                     </Button>
                   </div>
 
                   <div className="text-right">
-                    <div className="text-muted-foreground text-sm">
+                    <div className="text-muted-foreground text-xs sm:text-sm">
                       {formatCurrency(item.price)} each
                     </div>
-                    <div className="font-semibold">
+                    <div className="text-sm font-semibold sm:text-base">
                       {formatCurrency(item.price * item.quantity)}
                     </div>
                   </div>
@@ -172,7 +181,10 @@ export function ShoppingCart({
 
                 {/* Stock Info */}
                 <div className="text-muted-foreground flex items-center justify-between text-xs">
-                  <span>{item.stock} available in stock</span>
+                  <span className="hidden sm:inline">
+                    {item.stock} available in stock
+                  </span>
+                  <span className="sm:hidden">{item.stock} in stock</span>
                   {item.stock <= 5 && (
                     <Badge variant="destructive" className="text-xs">
                       Low Stock
@@ -186,7 +198,7 @@ export function ShoppingCart({
       </div>
 
       {/* Cart Summary - Fixed at bottom */}
-      <div className="flex-shrink-0 space-y-2 border-t px-6 pt-4 pb-6">
+      <div className="flex-shrink-0 space-y-2 border-t px-6 pt-2 pb-0 md:pt-4 md:pb-6">
         <div className="flex justify-between text-sm">
           <span>Total Items:</span>
           <span>{totalItems}</span>
