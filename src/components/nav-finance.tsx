@@ -27,6 +27,7 @@ import {
   SidebarMenuSub,
   SidebarMenuSubButton,
   SidebarMenuSubItem,
+  useSidebar,
 } from '@/components/ui/sidebar';
 
 const financeNavItems = [
@@ -105,6 +106,7 @@ const financeNavItems = [
 function CollapsibleNavItem({ item }: { item: (typeof financeNavItems)[0] }) {
   const pathname = usePathname();
   const [isOpen, setIsOpen] = React.useState(false);
+  const { setOpenMobile, isMobile } = useSidebar();
 
   // Check if any sub-item is active - use exact matching to avoid conflicts
   const hasActiveChild = item.items?.some(subItem => pathname === subItem.url);
@@ -131,7 +133,15 @@ function CollapsibleNavItem({ item }: { item: (typeof financeNavItems)[0] }) {
           tooltip={item.title}
           className={isMainActive ? 'bg-accent text-accent-foreground' : ''}
         >
-          <Link href={item.url} prefetch={true}>
+          <Link 
+            href={item.url} 
+            prefetch={true}
+            onClick={() => {
+              if (isMobile) {
+                setOpenMobile(false);
+              }
+            }}
+          >
             <item.icon />
             <span>{item.title}</span>
           </Link>
@@ -170,7 +180,15 @@ function CollapsibleNavItem({ item }: { item: (typeof financeNavItems)[0] }) {
                         isActive ? 'bg-accent text-accent-foreground' : ''
                       }
                     >
-                      <Link href={subItem.url} prefetch={true}>
+                      <Link 
+                        href={subItem.url} 
+                        prefetch={true}
+                        onClick={() => {
+                          if (isMobile) {
+                            setOpenMobile(false);
+                          }
+                        }}
+                      >
                         <span>{subItem.title}</span>
                       </Link>
                     </SidebarMenuSubButton>

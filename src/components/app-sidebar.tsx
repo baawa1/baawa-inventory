@@ -19,6 +19,7 @@ import {
   SidebarMenu,
   SidebarMenuButton,
   SidebarMenuItem,
+  useSidebar,
 } from '@/components/ui/sidebar';
 import Link from 'next/link';
 
@@ -32,6 +33,7 @@ const navSecondary = [
 
 export function AppSidebar({ ...props }: React.ComponentProps<typeof Sidebar>) {
   const { data: session } = useSession();
+  const { setOpenMobile, isMobile } = useSidebar();
 
   // Create dynamic user data from session
   const userData = React.useMemo(() => {
@@ -60,7 +62,15 @@ export function AppSidebar({ ...props }: React.ComponentProps<typeof Sidebar>) {
               asChild
               className="data-[slot=sidebar-menu-button]:!p-1.5"
             >
-              <Link href="/dashboard" prefetch={true}>
+              <Link 
+                href="/dashboard" 
+                prefetch={true}
+                onClick={() => {
+                  if (isMobile) {
+                    setOpenMobile(false);
+                  }
+                }}
+              >
                 <Logo variant="brand" size="sm" />
                 <span className="text-base font-semibold">BaaWA Inventory</span>
               </Link>

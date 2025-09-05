@@ -11,6 +11,7 @@ import {
   SidebarMenu,
   SidebarMenuButton,
   SidebarMenuItem,
+  useSidebar,
 } from '@/components/ui/sidebar';
 
 export function NavSecondary({
@@ -24,6 +25,7 @@ export function NavSecondary({
   }[];
 } & React.ComponentPropsWithoutRef<typeof SidebarGroup>) {
   const pathname = usePathname();
+  const { setOpenMobile, isMobile } = useSidebar();
 
   return (
     <SidebarGroup {...props}>
@@ -38,7 +40,15 @@ export function NavSecondary({
                   asChild
                   className={isActive ? 'bg-accent text-accent-foreground' : ''}
                 >
-                  <Link href={item.url} prefetch={true}>
+                  <Link 
+                    href={item.url} 
+                    prefetch={true}
+                    onClick={() => {
+                      if (isMobile) {
+                        setOpenMobile(false);
+                      }
+                    }}
+                  >
                     <item.icon />
                     <span>{item.title}</span>
                   </Link>
