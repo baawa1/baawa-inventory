@@ -55,6 +55,9 @@ export function ResponsiveTable<T>({
   // Filter columns for mobile view
   const mobileColumns = columns.filter(col => !col.hideOnMobile);
   const visibleDesktopColumns = columns;
+  
+  // Track expanded state for mobile cards
+  const [expandedItems, setExpandedItems] = React.useState<Set<string | number>>(new Set());
 
   if (loading) {
     return (
@@ -164,11 +167,24 @@ export function ResponsiveTable<T>({
       {/* Mobile Card View */}
       <div className="md:hidden space-y-3">
         {data.map(item => {
-          const [isExpanded, setIsExpanded] = React.useState(false);
+          const itemKey = keyExtractor(item);
+          const isExpanded = expandedItems.has(itemKey);
+          
+          const toggleExpanded = () => {
+            setExpandedItems(prev => {
+              const newSet = new Set(prev);
+              if (newSet.has(itemKey)) {
+                newSet.delete(itemKey);
+              } else {
+                newSet.add(itemKey);
+              }
+              return newSet;
+            });
+          };
           
           return (
             <Card
-              key={keyExtractor(item)}
+              key={itemKey}
               className="transition-colors"
             >
               <CardContent className="px-3 py-2">
@@ -176,7 +192,7 @@ export function ResponsiveTable<T>({
                 <div className="flex items-start justify-between">
                   <div 
                     className="flex-1 min-w-0 cursor-pointer"
-                    onClick={() => setIsExpanded(!isExpanded)}
+                    onClick={toggleExpanded}
                   >
                     {mobileCardTitle && (
                       <div className="font-semibold text-base mb-1 truncate">

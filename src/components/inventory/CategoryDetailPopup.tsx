@@ -62,14 +62,20 @@ export default function CategoryDetailPopup({
   // Permission checks
   const canManageCategories = ['ADMIN', 'MANAGER'].includes(user.role);
 
-  if (!_categoryId) {
-    return null;
-  }
+  const handleClose = (open: boolean) => {
+    onOpenChange(open);
+    // Force focus back to document body when closing
+    if (!open) {
+      setTimeout(() => {
+        document.body.focus();
+      }, 0);
+    }
+  };
 
   return (
     <>
-      <Dialog open={_open} onOpenChange={onOpenChange}>
-        <DialogContent className="max-h-[90vh] max-w-4xl overflow-y-auto">
+      <Dialog open={_open} onOpenChange={handleClose}>
+        <DialogContent className="max-h-[90vh] max-w-4xl sm:max-w-2xl md:max-w-3xl lg:max-w-4xl overflow-y-auto">
           <DialogHeader>
             <DialogTitle className="flex items-center gap-2">
               <IconTag className="h-5 w-5" />
@@ -183,7 +189,7 @@ export default function CategoryDetailPopup({
                             </div>
                           )}
 
-                          <div className="grid grid-cols-2 gap-4 text-sm">
+                          <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 text-sm">
                             <div>
                               <span className="text-muted-foreground">
                                 Products:
@@ -223,7 +229,7 @@ export default function CategoryDetailPopup({
                           </CardTitle>
                         </CardHeader>
                         <CardContent>
-                          <div className="grid grid-cols-1 gap-4 md:grid-cols-2">
+                          <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                             {categoryData.children.map((child: Category) => (
                               <div
                                 key={child.id}

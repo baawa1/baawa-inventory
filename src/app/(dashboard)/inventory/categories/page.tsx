@@ -1,6 +1,6 @@
 import { auth } from '#root/auth';
 import { redirect } from 'next/navigation';
-import CategoryList from '@/components/inventory/CategoryList';
+import MobileCategoryList from '@/components/inventory/MobileCategoryList';
 
 export const metadata = {
   title: 'Categories - BaaWA Inventory POS',
@@ -19,5 +19,5 @@ export default async function CategoriesPage() {
     redirect('/pending-approval');
   }
 
-  return <CategoryList user={session.user} />;
+  return <MobileCategoryList user={session.user} />;
 }

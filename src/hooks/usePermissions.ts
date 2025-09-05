@@ -26,6 +26,18 @@ export function usePermissions() {
         canViewCost: false,
         canViewPrice: false,
 
+        // Category permissions
+        canManageCategories: false,
+        canDeleteCategories: false,
+        
+        // Brand permissions
+        canManageBrands: false,
+        canDeleteBrands: false,
+
+        // Supplier permissions
+        canManageSuppliers: false,
+        canDeleteSuppliers: false,
+
         // Finance permissions
         canCreateTransactions: false,
         canReadTransactions: false,
@@ -107,7 +119,17 @@ export function usePermissions() {
       canViewRevenue: hasPermission(userRole, 'REVENUE_READ'),
       canViewFinancialAggregates: hasPermission(userRole, 'FINANCIAL_AGGREGATES'),
 
+      // Category permissions
+      canManageCategories: hasPermission(userRole, 'INVENTORY_WRITE'),
+      canDeleteCategories: hasPermission(userRole, 'INVENTORY_DELETE'),
+      
+      // Brand permissions  
+      canManageBrands: hasPermission(userRole, 'INVENTORY_WRITE'),
+      canDeleteBrands: hasPermission(userRole, 'INVENTORY_DELETE'),
+
       // Supplier permissions
+      canManageSuppliers: hasPermission(userRole, 'SUPPLIER_WRITE'),
+      canDeleteSuppliers: hasPermission(userRole, 'SUPPLIER_WRITE'),
       canReadSupplier: hasPermission(userRole, 'SUPPLIER_READ'),
       canWriteSupplier: hasPermission(userRole, 'SUPPLIER_WRITE'),
       canViewSupplierNameOnly: hasPermission(userRole, 'SUPPLIER_NAME_ONLY'),

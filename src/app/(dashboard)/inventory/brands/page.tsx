@@ -1,6 +1,6 @@
 import { auth } from '#root/auth';
 import { redirect } from 'next/navigation';
-import BrandList from '@/components/inventory/BrandList';
+import MobileBrandList from '@/components/inventory/MobileBrandList';
 
 export const metadata = {
   title: 'Brands - BaaWA Inventory POS',
@@ -19,5 +19,5 @@ export default async function BrandsPage() {
     redirect('/pending-approval');
   }
 
-  return <BrandList user={session.user} />;
+  return <MobileBrandList user={session.user} />;
 }

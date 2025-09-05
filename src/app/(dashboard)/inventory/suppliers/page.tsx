@@ -1,7 +1,7 @@
 import { auth } from '#root/auth';
 import { redirect } from 'next/navigation';
 import { hasPermission } from '@/lib/auth/roles';
-import SupplierList from '@/components/inventory/SupplierList';
+import MobileSupplierList from '@/components/inventory/MobileSupplierList';
 
 export const metadata = {
   title: 'Suppliers Management | BaaWA Inventory',
@@ -20,5 +20,5 @@ export default async function SuppliersPage() {
     redirect('/unauthorized');
   }
 
-  return <SupplierList user={session.user} />;
+  return <MobileSupplierList user={session.user} />;
 }
