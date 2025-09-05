@@ -15,6 +15,9 @@ import { generateSKU } from '@/lib/utils/product-utils';
 
 // Import the form validation schema
 import { createProductSchema } from '@/lib/validations/product';
+
+// Force Node.js runtime to ensure database connectivity and NextAuth compatibility
+export const runtime = 'nodejs';
 import type {
   ProductFilters,
   ProductWhereClause,

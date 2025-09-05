@@ -6,6 +6,9 @@ import { createApiResponse } from '@/lib/api-response';
 import { USER_ROLES } from '@/lib/auth/roles';
 import { Prisma } from '@prisma/client';
 
+// Force Node.js runtime to ensure database connectivity and NextAuth compatibility
+export const runtime = 'nodejs';
+
 // GET /api/users - List users with optional filtering and pagination
 // Requires permission to manage users (ADMIN only)
 export const GET = withPermission(
