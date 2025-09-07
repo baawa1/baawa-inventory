@@ -64,6 +64,12 @@ const nextConfig: NextConfig = {
       },
       {
         protocol: "https",
+        hostname: "euzanxxdjyfbhzxlepkc.supabase.co",
+        port: "",
+        pathname: "/**",
+      },
+      {
+        protocol: "https",
         hostname: "pos.baawa.ng",
         port: "",
         pathname: "/**",

@@ -4,6 +4,7 @@ import React, { useState } from 'react';
 import Image from 'next/image';
 import { IconPackages, IconPhoto } from '@tabler/icons-react';
 import { cn } from '@/lib/utils';
+import { normalizeImageUrl } from '@/lib/utils/image';
 
 interface ProductImageProps {
   src?: string | null;
@@ -35,13 +36,15 @@ export function ProductImage({
   const [imageError, setImageError] = useState(false);
   const [imageLoading, setImageLoading] = useState(true);
 
+  // Normalize the image URL to handle Supabase storage paths
+  const normalizedSrc = normalizeImageUrl(src);
 
   // Check if we have a valid image source
   // Handle cases where src is the string "undefined", "null", or actually undefined/null
-  const hasValidSrc = src && 
-                      src.trim() !== '' && 
-                      src !== 'undefined' && 
-                      src !== 'null' && 
+  const hasValidSrc = normalizedSrc && 
+                      normalizedSrc.trim() !== '' && 
+                      normalizedSrc !== 'undefined' && 
+                      normalizedSrc !== 'null' && 
                       !imageError;
 
   const handleImageError = (e: React.SyntheticEvent<HTMLImageElement>) => {
@@ -88,7 +91,7 @@ export function ProductImage({
       )}
       
       <Image
-        src={src}
+        src={normalizedSrc}
         alt={alt}
         fill
         className={cn(
