@@ -121,6 +121,25 @@ export function formatRelativeTime(date: string | Date | number): string {
 }
 
 /**
+ * Truncate a product name to a specified length with ellipsis
+ * @param name - The product name to truncate
+ * @param maxLength - Maximum length (default: 30)
+ * @returns Truncated product name with ellipsis if needed
+ */
+export function truncateProductName(name: string, maxLength: number = 30): string {
+  if (!name || typeof name !== 'string') {
+    return '';
+  }
+  
+  const trimmedName = name.trim();
+  if (trimmedName.length <= maxLength) {
+    return trimmedName;
+  }
+  
+  return `${trimmedName.substring(0, maxLength - 3)}...`;
+}
+
+/**
  * Generate a unique transaction number
  * Format: FIN-YYYYMMDD-XXXX (e.g., FIN-20241201-0001)
  */
