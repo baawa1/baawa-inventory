@@ -23,7 +23,10 @@ import {
 
 // Mobile-optimized components
 import { DashboardPageLayout } from '@/components/layouts/DashboardPageLayout';
-import { MobileDashboardFiltersBar, FilterConfig } from '@/components/layouts/MobileDashboardFiltersBar';
+import {
+  MobileDashboardFiltersBar,
+  FilterConfig,
+} from '@/components/layouts/MobileDashboardFiltersBar';
 import { MobileDashboardTable } from '@/components/layouts/MobileDashboardTable';
 
 // Icons
@@ -126,9 +129,8 @@ export function MobileFinanceTransactionList({
     search: debouncedSearchTerm,
     type: filters.type !== 'all' ? filters.type : undefined,
     status: filters.status !== 'all' ? filters.status : undefined,
-    paymentMethod: filters.paymentMethod !== 'all' ? filters.paymentMethod : undefined,
-    page: pagination.page,
-    limit: pagination.limit,
+    paymentMethod:
+      filters.paymentMethod !== 'all' ? filters.paymentMethod : undefined,
   });
 
   // Extract transactions array from API response
@@ -140,7 +142,7 @@ export function MobileFinanceTransactionList({
     page: apiPagination?.page || pagination.page,
     limit: apiPagination?.limit || pagination.limit,
     totalPages: apiPagination?.totalPages || pagination.totalPages,
-    totalItems: apiPagination?.total || 0,
+    totalItems: apiPagination?.totalItems || 0,
   };
 
   if (error) {
@@ -306,17 +308,46 @@ export function MobileFinanceTransactionList({
   const getStatusBadge = useCallback((status: string) => {
     switch (status) {
       case 'COMPLETED':
-        return <Badge className="bg-green-100 text-green-700 text-xs"><IconCheck className="h-3 w-3 mr-1" />Completed</Badge>;
+        return (
+          <Badge className="bg-green-100 text-xs text-green-700">
+            <IconCheck className="mr-1 h-3 w-3" />
+            Completed
+          </Badge>
+        );
       case 'PENDING':
-        return <Badge className="bg-yellow-100 text-yellow-700 text-xs"><IconClock className="h-3 w-3 mr-1" />Pending</Badge>;
+        return (
+          <Badge className="bg-yellow-100 text-xs text-yellow-700">
+            <IconClock className="mr-1 h-3 w-3" />
+            Pending
+          </Badge>
+        );
       case 'APPROVED':
-        return <Badge className="bg-blue-100 text-blue-700 text-xs"><IconCheck className="h-3 w-3 mr-1" />Approved</Badge>;
+        return (
+          <Badge className="bg-blue-100 text-xs text-blue-700">
+            <IconCheck className="mr-1 h-3 w-3" />
+            Approved
+          </Badge>
+        );
       case 'REJECTED':
-        return <Badge variant="destructive" className="text-xs"><IconX className="h-3 w-3 mr-1" />Rejected</Badge>;
+        return (
+          <Badge variant="destructive" className="text-xs">
+            <IconX className="mr-1 h-3 w-3" />
+            Rejected
+          </Badge>
+        );
       case 'CANCELLED':
-        return <Badge variant="destructive" className="text-xs"><IconX className="h-3 w-3 mr-1" />Cancelled</Badge>;
+        return (
+          <Badge variant="destructive" className="text-xs">
+            <IconX className="mr-1 h-3 w-3" />
+            Cancelled
+          </Badge>
+        );
       default:
-        return <Badge variant="secondary" className="text-xs">{status}</Badge>;
+        return (
+          <Badge variant="secondary" className="text-xs">
+            {status}
+          </Badge>
+        );
     }
   }, []);
 
@@ -325,21 +356,35 @@ export function MobileFinanceTransactionList({
     switch (type) {
       case 'INCOME':
         return {
-          badge: <Badge className="bg-green-100 text-green-700 text-xs"><IconTrendingUp className="h-3 w-3 mr-1" />Income</Badge>,
+          badge: (
+            <Badge className="bg-green-100 text-xs text-green-700">
+              <IconTrendingUp className="mr-1 h-3 w-3" />
+              Income
+            </Badge>
+          ),
           icon: <IconTrendingUp className="h-5 w-5 text-green-600" />,
-          bgColor: 'bg-green-100'
+          bgColor: 'bg-green-100',
         };
       case 'EXPENSE':
         return {
-          badge: <Badge className="bg-red-100 text-red-700 text-xs"><IconTrendingDown className="h-3 w-3 mr-1" />Expense</Badge>,
+          badge: (
+            <Badge className="bg-red-100 text-xs text-red-700">
+              <IconTrendingDown className="mr-1 h-3 w-3" />
+              Expense
+            </Badge>
+          ),
           icon: <IconTrendingDown className="h-5 w-5 text-red-600" />,
-          bgColor: 'bg-red-100'
+          bgColor: 'bg-red-100',
         };
       default:
         return {
-          badge: <Badge variant="secondary" className="text-xs">{type}</Badge>,
+          badge: (
+            <Badge variant="secondary" className="text-xs">
+              {type}
+            </Badge>
+          ),
           icon: <IconReceipt className="h-5 w-5 text-gray-600" />,
-          bgColor: 'bg-gray-100'
+          bgColor: 'bg-gray-100',
         };
     }
   }, []);
@@ -359,32 +404,37 @@ export function MobileFinanceTransactionList({
         case 'description':
           return (
             <div className="min-w-0">
-              <div className="font-medium text-xs sm:text-sm truncate">
+              <div className="truncate text-xs font-medium sm:text-sm">
                 {transaction.description || 'No description'}
               </div>
-              {transaction.type === 'EXPENSE' && transaction.expenseDetails?.vendorName && (
-                <div className="text-muted-foreground text-xs truncate">
-                  Vendor: {transaction.expenseDetails.vendorName}
-                </div>
-              )}
-              {transaction.type === 'INCOME' && transaction.incomeDetails?.payerName && (
-                <div className="text-muted-foreground text-xs truncate">
-                  Payer: {transaction.incomeDetails.payerName}
-                </div>
-              )}
+              {transaction.type === 'EXPENSE' &&
+                transaction.expenseDetails?.vendorName && (
+                  <div className="text-muted-foreground truncate text-xs">
+                    Vendor: {transaction.expenseDetails.vendorName}
+                  </div>
+                )}
+              {transaction.type === 'INCOME' &&
+                transaction.incomeDetails?.payerName && (
+                  <div className="text-muted-foreground truncate text-xs">
+                    Payer: {transaction.incomeDetails.payerName}
+                  </div>
+                )}
             </div>
           );
         case 'amount':
           const isIncome = transaction.type === 'INCOME';
           return (
-            <span className={`font-semibold text-xs sm:text-sm ${isIncome ? 'text-green-600' : 'text-red-600'}`}>
-              {isIncome ? '+' : '-'}{formatCurrency(transaction.amount)}
+            <span
+              className={`text-xs font-semibold sm:text-sm ${isIncome ? 'text-green-600' : 'text-red-600'}`}
+            >
+              {isIncome ? '+' : '-'}
+              {formatCurrency(transaction.amount)}
             </span>
           );
         case 'transactionDate':
           return (
             <div>
-              <div className="font-medium text-xs sm:text-sm">
+              <div className="text-xs font-medium sm:text-sm">
                 {format(new Date(transaction.transactionDate), 'MMM dd, yyyy')}
               </div>
               <div className="text-muted-foreground text-xs">
@@ -396,7 +446,7 @@ export function MobileFinanceTransactionList({
           return (
             <div className="flex items-center gap-1 sm:gap-2">
               {getPaymentMethodIcon(transaction.paymentMethod)}
-              <span className="capitalize text-xs sm:text-sm">
+              <span className="text-xs capitalize sm:text-sm">
                 {transaction.paymentMethod?.replace('_', ' ') || 'N/A'}
               </span>
             </div>
@@ -405,7 +455,7 @@ export function MobileFinanceTransactionList({
           return getStatusBadge(transaction.status);
         case 'createdByName':
           return (
-            <span className="text-xs sm:text-sm truncate">
+            <span className="truncate text-xs sm:text-sm">
               {transaction.createdByName}
             </span>
           );
@@ -430,7 +480,7 @@ export function MobileFinanceTransactionList({
           <Dialog>
             <DialogTrigger asChild>
               <DropdownMenuItem
-                onSelect={(e) => e.preventDefault()}
+                onSelect={e => e.preventDefault()}
                 onClick={() => setSelectedTransaction(transaction)}
                 className="flex items-center gap-2"
               >
@@ -445,7 +495,9 @@ export function MobileFinanceTransactionList({
                 </DialogTitle>
               </DialogHeader>
               {selectedTransaction && (
-                <FinancialTransactionDetailsContent transaction={selectedTransaction} />
+                <FinancialTransactionDetailsContent
+                  transaction={selectedTransaction}
+                />
               )}
             </DialogContent>
           </Dialog>
@@ -460,26 +512,34 @@ export function MobileFinanceTransactionList({
     const typeInfo = getTransactionTypeInfo(transaction.type);
     return (
       <div className="flex items-center gap-3">
-        <div className={`flex-shrink-0 h-10 w-10 ${typeInfo.bgColor} rounded-full flex items-center justify-center`}>
+        <div
+          className={`h-10 w-10 flex-shrink-0 ${typeInfo.bgColor} flex items-center justify-center rounded-full`}
+        >
           {typeInfo.icon}
         </div>
-        <span className="text-sm font-semibold flex-1 min-w-0 truncate">
-          {transaction.description || `${transaction.type} #${transaction.transactionNumber}`}
+        <span className="min-w-0 flex-1 truncate text-sm font-semibold">
+          {transaction.description ||
+            `${transaction.type} #${transaction.transactionNumber}`}
         </span>
       </div>
     );
   };
 
   const mobileCardSubtitle = (transaction: FinancialTransaction) => (
-    <div className="flex items-center gap-2 text-xs text-muted-foreground">
+    <div className="text-muted-foreground flex items-center gap-2 text-xs">
       <IconCalendar className="h-3 w-3" />
-      <span>{format(new Date(transaction.transactionDate), 'MMM dd, yyyy')}</span>
+      <span>
+        {format(new Date(transaction.transactionDate), 'MMM dd, yyyy')}
+      </span>
       <span>•</span>
       <IconUser className="h-3 w-3" />
       <span className="truncate">{transaction.createdByName}</span>
       <span>•</span>
-      <span className={`font-semibold ${transaction.type === 'INCOME' ? 'text-green-600' : 'text-red-600'}`}>
-        {transaction.type === 'INCOME' ? '+' : '-'}{formatCurrency(transaction.amount)}
+      <span
+        className={`font-semibold ${transaction.type === 'INCOME' ? 'text-green-600' : 'text-red-600'}`}
+      >
+        {transaction.type === 'INCOME' ? '+' : '-'}
+        {formatCurrency(transaction.amount)}
       </span>
     </div>
   );
@@ -546,11 +606,11 @@ function FinancialTransactionDetailsContent({
   transaction: FinancialTransaction;
 }) {
   const isIncome = transaction.type === 'INCOME';
-  
+
   return (
     <div className="space-y-4">
       {/* Basic Info */}
-      <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+      <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
         <div>
           <h4 className="mb-2 text-sm font-medium">Transaction Details</h4>
           <div className="space-y-2 text-sm">
@@ -560,12 +620,17 @@ function FinancialTransactionDetailsContent({
             </div>
             <div className="flex justify-between">
               <span className="text-muted-foreground">Type:</span>
-              <span className="capitalize">{transaction.type.toLowerCase()}</span>
+              <span className="capitalize">
+                {transaction.type.toLowerCase()}
+              </span>
             </div>
             <div className="flex justify-between">
               <span className="text-muted-foreground">Amount:</span>
-              <span className={`font-semibold ${isIncome ? 'text-green-600' : 'text-red-600'}`}>
-                {isIncome ? '+' : '-'}{formatCurrency(transaction.amount)}
+              <span
+                className={`font-semibold ${isIncome ? 'text-green-600' : 'text-red-600'}`}
+              >
+                {isIncome ? '+' : '-'}
+                {formatCurrency(transaction.amount)}
               </span>
             </div>
             <div className="flex justify-between">
@@ -576,7 +641,9 @@ function FinancialTransactionDetailsContent({
             </div>
             <div className="flex justify-between">
               <span className="text-muted-foreground">Status:</span>
-              <span className="capitalize">{transaction.status.toLowerCase()}</span>
+              <span className="capitalize">
+                {transaction.status.toLowerCase()}
+              </span>
             </div>
           </div>
         </div>
@@ -602,7 +669,9 @@ function FinancialTransactionDetailsContent({
           <div className="space-y-2 text-sm">
             <div className="flex justify-between">
               <span className="text-muted-foreground">Source:</span>
-              <span className="capitalize">{transaction.incomeDetails.incomeSource}</span>
+              <span className="capitalize">
+                {transaction.incomeDetails.incomeSource}
+              </span>
             </div>
             {transaction.incomeDetails.payerName && (
               <div className="flex justify-between">
@@ -618,7 +687,9 @@ function FinancialTransactionDetailsContent({
           <div className="space-y-2 text-sm">
             <div className="flex justify-between">
               <span className="text-muted-foreground">Type:</span>
-              <span className="capitalize">{transaction.expenseDetails.expenseType}</span>
+              <span className="capitalize">
+                {transaction.expenseDetails.expenseType}
+              </span>
             </div>
             {transaction.expenseDetails.vendorName && (
               <div className="flex justify-between">
@@ -628,7 +699,7 @@ function FinancialTransactionDetailsContent({
             )}
           </div>
         </div>
-      )}
+      ) : null}
 
       <Separator />
 

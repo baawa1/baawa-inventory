@@ -1,6 +1,6 @@
 'use client';
 
-import React from 'react';
+import React, { useState, useMemo, useCallback } from 'react';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import {
@@ -94,6 +94,13 @@ export function MobileUserTable({
 }: MobileUserTableProps) {
   const [visibleColumns, setVisibleColumns] = React.useState<string[]>([]);
 
+  const [pagination, setPagination] = useState({
+    page: 1,
+    limit: 10,
+    totalPages: 1,
+    totalItems: 0,
+  });
+
   // Filter columns based on pending tab
   const availableColumns = React.useMemo(() => {
     if (isPendingTab) {
@@ -101,6 +108,36 @@ export function MobileUserTable({
     }
     return USER_COLUMNS;
   }, [isPendingTab]);
+
+  // Paginate users
+  const paginatedUsers = useMemo(() => {
+    const startIndex = (pagination.page - 1) * pagination.limit;
+    const endIndex = startIndex + pagination.limit;
+    return users.slice(startIndex, endIndex);
+  }, [users, pagination.page, pagination.limit]);
+
+  // Update pagination when users data changes
+  React.useEffect(() => {
+    const totalPages = Math.ceil(users.length / pagination.limit);
+    setPagination(prev => ({
+      ...prev,
+      totalPages,
+      totalItems: users.length,
+    }));
+  }, [users.length, pagination.limit]);
+
+  // Handle pagination
+  const handlePageChange = useCallback((newPage: number) => {
+    setPagination(prev => ({ ...prev, page: newPage }));
+  }, []);
+
+  const handlePageSizeChange = useCallback((newPageSize: number) => {
+    setPagination(prev => ({
+      ...prev,
+      limit: newPageSize,
+      page: 1,
+    }));
+  }, []);
 
   const renderCell = (user: User, columnKey: string) => {
     switch (columnKey) {
@@ -250,15 +287,18 @@ export function MobileUserTable({
   return (
     <MobileDashboardTable
       tableTitle={isPendingTab ? "Pending Users" : "Users"}
-      totalCount={totalCount || users.length}
-      currentCount={currentCount || users.length}
+      totalCount={totalCount || pagination.totalItems}
+      currentCount={currentCount || paginatedUsers.length}
       columns={availableColumns}
       visibleColumns={visibleColumns}
       onColumnsChange={setVisibleColumns}
       columnCustomizerKey={isPendingTab ? "pending-users-columns" : "users-columns"}
-      data={users}
+      data={paginatedUsers}
       renderCell={renderCell}
       renderActions={renderActions}
+      pagination={pagination}
+      onPageChange={handlePageChange}
+      onPageSizeChange={handlePageSizeChange}
       isLoading={isLoading}
       emptyStateIcon={
         <IconUser className="mx-auto mb-4 h-12 w-12 text-gray-400" />

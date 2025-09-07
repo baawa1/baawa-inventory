@@ -334,8 +334,8 @@ export function MobileArchivedProductList({ user }: MobileArchivedProductListPro
           return (
             <div>
               <div className="text-xs sm:text-sm">
-                {product.archivedAt
-                  ? new Date(product.archivedAt).toLocaleDateString()
+                {product.updatedAt
+                  ? new Date(product.updatedAt).toLocaleDateString()
                   : 'Unknown'}
               </div>
             </div>
@@ -413,7 +413,7 @@ export function MobileArchivedProductList({ user }: MobileArchivedProductListPro
       <span>•</span>
       <IconCalendar className="h-3 w-3" />
       <span>
-        Archived {product.archivedAt ? new Date(product.archivedAt).toLocaleDateString() : 'Unknown'}
+        Archived {product.updatedAt ? new Date(product.updatedAt).toLocaleDateString() : 'Unknown'}
       </span>
     </div>
   );
