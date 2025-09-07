@@ -35,6 +35,7 @@ import { toast } from 'sonner';
 import { usePOSErrorHandler } from './POSErrorBoundary';
 import { formatCurrency } from '@/lib/utils';
 import Image from 'next/image';
+import { normalizeImageUrl } from '@/lib/utils/image';
 
 interface Product {
   id: number;
@@ -455,7 +456,7 @@ export function ProductGrid({
                   <div className="relative flex h-40 items-center justify-center overflow-hidden bg-gradient-to-br from-gray-100 to-gray-200 sm:h-32">
                     {getProductImage(product) ? (
                       <Image
-                        src={getProductImage(product)!}
+                        src={normalizeImageUrl(getProductImage(product))!}
                         alt={product.name}
                         fill
                         className="object-cover"

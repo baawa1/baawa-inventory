@@ -55,6 +55,7 @@ import { formatCurrency } from '@/lib/utils';
 import { formatCategoryHierarchy } from '@/lib/utils/category';
 import { ErrorHandlers } from '@/lib/utils/error-handling';
 import { FilterConfig, SortOption, PaginationState } from '@/types/inventory';
+import { normalizeImageUrl } from '@/lib/utils/image';
 
 interface User {
   id: string;
@@ -441,12 +442,10 @@ const ProductList = ({ user }: ProductListProps) => {
 
         return (
           <div className="flex items-center justify-start">
-            {productImage &&
-            productImage.trim() !== '' &&
-            isValidUrl(productImage.trim()) ? (
+            {productImage && productImage.trim() !== '' ? (
               <div className="relative h-12 w-12 overflow-hidden rounded-md border">
                 <Image
-                  src={productImage}
+                  src={normalizeImageUrl(productImage)!}
                   alt={product.name}
                   fill
                   className="object-cover"
