@@ -62,6 +62,12 @@ const nextConfig: NextConfig = {
         port: "",
         pathname: "/**",
       },
+      {
+        protocol: "https",
+        hostname: "pos.baawa.ng",
+        port: "",
+        pathname: "/**",
+      },
     ],
     unoptimized: false,
   },
