@@ -19,6 +19,7 @@ import {
   ensureUniqueImages,
   sortImages,
 } from '@/lib/utils/image-utils';
+import { normalizeImageUrl } from '@/lib/utils/image';
 
 export const GET = withRateLimit(RATE_LIMIT_CONFIGS.API)(async (
   request: NextRequest,
@@ -73,8 +74,11 @@ export const GET = withRateLimit(RATE_LIMIT_CONFIGS.API)(async (
       }
     }
 
-    // Sort images and ensure uniqueness
-    const sortedImages = sortImages(ensureUniqueImages(images));
+    // Sort, ensure uniqueness, and normalize URLs to full public paths
+    const sortedImages = sortImages(ensureUniqueImages(images)).map(img => ({
+      ...img,
+      url: normalizeImageUrl(img.url) || img.url,
+    }));
 
     logger.info('Product images fetched successfully', {
       productId: product.id,

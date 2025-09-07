@@ -44,6 +44,7 @@ import {
   sortImages,
 } from '@/lib/utils/image-utils';
 import { logger } from '@/lib/logger';
+import { normalizeImageUrl } from '@/lib/utils/image';
 
 interface ProductData {
   id: number;
@@ -515,7 +516,7 @@ export function ProductImageManager({
                         <div className="relative aspect-square">
                           {image.url ? (
                             <Image
-                              src={image.url}
+                              src={normalizeImageUrl(image.url)!}
                               alt={
                                 image.alt || image.filename || 'Product image'
                               }
@@ -562,7 +563,7 @@ export function ProductImageManager({
                                 </DialogHeader>
                                 <div className="space-y-4">
                                   <Image
-                                    src={image.url}
+                                    src={normalizeImageUrl(image.url)!}
                                     alt={image.alt || image.filename}
                                     width={600}
                                     height={400}
@@ -684,7 +685,7 @@ export function ProductImageManager({
                 <div className="space-y-4">
                   <div>
                     <Image
-                      src={editingImage.url}
+                      src={normalizeImageUrl(editingImage.url)!}
                       alt={editingImage.alt || editingImage.filename}
                       width={300}
                       height={300}
