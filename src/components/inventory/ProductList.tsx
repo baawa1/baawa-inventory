@@ -524,16 +524,8 @@ const ProductList = ({ user }: ProductListProps) => {
           <span className="text-sm text-gray-400">-</span>
         );
       }
-      case 'barcode':
-        return (
-          <span className="font-mono text-sm">{product.barcode || '-'}</span>
-        );
       case 'minStock':
         return product.minStock;
-      case 'maxStock':
-        return product.maxStock || '-';
-      case 'unit':
-        return product.unit;
       case 'createdAt':
         return new Date(product.createdAt).toLocaleDateString();
       case 'updatedAt':

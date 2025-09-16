@@ -21,7 +21,6 @@ export interface Product {
   name: string;
   description?: string;
   sku: string;
-  barcode?: string;
   category?: {
     id: number;
     name: string;
@@ -34,13 +33,6 @@ export interface Product {
   price: number;
   stock: number;
   minStock: number;
-  maxStock?: number;
-  unit: string;
-  weight?: number;
-  dimensions?: string;
-  color?: string;
-  size?: string;
-  material?: string;
   hasVariants: boolean;
   isArchived: boolean;
   tags: string[];

@@ -280,14 +280,6 @@ export const ProductDetailModal: React.FC<ProductDetailModalProps> = ({
                     </label>
                     <p className="font-mono text-sm">{headerSKU}</p>
                   </div>
-                  {product.barcode && (
-                    <div>
-                      <label className="text-muted-foreground text-sm font-medium">
-                        Barcode
-                      </label>
-                      <p className="font-mono text-sm">{product.barcode}</p>
-                    </div>
-                  )}
                   <div>
                     <label className="text-muted-foreground text-sm font-medium">
                       Category
@@ -369,90 +361,35 @@ export const ProductDetailModal: React.FC<ProductDetailModalProps> = ({
                     </label>
                     <p className="text-sm">{product.minStock || 0}</p>
                   </div>
-                  {product.maxStock && (
-                    <div>
-                      <label className="text-muted-foreground text-sm font-medium">
-                        Maximum Stock Level
-                      </label>
-                      <p className="text-sm">{product.maxStock}</p>
-                    </div>
-                  )}
                 </CardContent>
               </Card>
 
-              {/* Product Specifications Card */}
-              {(product.weight ||
-                product.dimensions ||
-                product.color ||
-                product.size ||
-                product.material ||
-                (product.tags && product.tags.length > 0)) && (
+              {/* Product Tags Card */}
+              {product.tags && product.tags.length > 0 && (
                 <Card>
                   <CardHeader>
                     <CardTitle className="flex items-center gap-2">
                       <IconRuler className="h-5 w-5" />
-                      Product Specifications
+                      Product Tags
                     </CardTitle>
                   </CardHeader>
                   <CardContent className="space-y-2">
-                    {product.weight && (
-                      <div>
-                        <label className="text-muted-foreground text-sm font-medium">
-                          Weight
-                        </label>
-                        <p className="text-sm">{product.weight} kg</p>
+                    <div>
+                      <label className="text-muted-foreground text-sm font-medium">
+                        Tags
+                      </label>
+                      <div className="mt-1 flex flex-wrap gap-1">
+                        {product.tags.map((tag, index) => (
+                          <Badge
+                            key={index}
+                            variant="outline"
+                            className="text-xs"
+                          >
+                            {tag}
+                          </Badge>
+                        ))}
                       </div>
-                    )}
-                    {product.dimensions && (
-                      <div>
-                        <label className="text-muted-foreground text-sm font-medium">
-                          Dimensions
-                        </label>
-                        <p className="text-sm">{product.dimensions}</p>
-                      </div>
-                    )}
-                    {product.color && (
-                      <div>
-                        <label className="text-muted-foreground text-sm font-medium">
-                          Color
-                        </label>
-                        <p className="text-sm">{product.color}</p>
-                      </div>
-                    )}
-                    {product.size && (
-                      <div>
-                        <label className="text-muted-foreground text-sm font-medium">
-                          Size
-                        </label>
-                        <p className="text-sm">{product.size}</p>
-                      </div>
-                    )}
-                    {product.material && (
-                      <div>
-                        <label className="text-muted-foreground text-sm font-medium">
-                          Material
-                        </label>
-                        <p className="text-sm">{product.material}</p>
-                      </div>
-                    )}
-                    {product.tags && product.tags.length > 0 && (
-                      <div>
-                        <label className="text-muted-foreground text-sm font-medium">
-                          Tags
-                        </label>
-                        <div className="mt-1 flex flex-wrap gap-1">
-                          {product.tags.map((tag, index) => (
-                            <Badge
-                              key={index}
-                              variant="outline"
-                              className="text-xs"
-                            >
-                              {tag}
-                            </Badge>
-                          ))}
-                        </div>
-                      </div>
-                    )}
+                    </div>
                   </CardContent>
                 </Card>
               )}

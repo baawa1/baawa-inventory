@@ -110,7 +110,6 @@ export const PRODUCT_COLUMNS: TableColumn[] = [
     sortable: false,
     defaultVisible: false,
   },
-  { key: 'barcode', label: 'Barcode', sortable: true, defaultVisible: false },
   { key: 'cost', label: 'Cost Price', sortable: true, defaultVisible: false },
   {
     key: 'minStock',
@@ -118,23 +117,6 @@ export const PRODUCT_COLUMNS: TableColumn[] = [
     sortable: true,
     defaultVisible: false,
   },
-  {
-    key: 'maxStock',
-    label: 'Max Stock',
-    sortable: true,
-    defaultVisible: false,
-  },
-  { key: 'unit', label: 'Unit', sortable: true, defaultVisible: false },
-  { key: 'weight', label: 'Weight', sortable: true, defaultVisible: false },
-  {
-    key: 'dimensions',
-    label: 'Dimensions',
-    sortable: false,
-    defaultVisible: false,
-  },
-  { key: 'color', label: 'Color', sortable: true, defaultVisible: false },
-  { key: 'size', label: 'Size', sortable: true, defaultVisible: false },
-  { key: 'material', label: 'Material', sortable: true, defaultVisible: false },
   {
     key: 'has_variants',
     label: 'Has Variants',

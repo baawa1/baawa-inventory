@@ -23,22 +23,13 @@ const ProductUpdateSchema = z.object({
   sellingPrice: z.number().min(0).optional(),
   currentStock: z.number().min(0).optional(),
   minimumStock: z.number().min(0).optional(),
-  maximumStock: z.number().min(0).optional().nullable(),
   status: z.string().optional(),
   // Database field names (direct mapping)
   cost: z.number().min(0).optional(),
   price: z.number().min(0).optional(),
   stock: z.number().min(0).optional(),
   minStock: z.number().min(0).optional(),
-  maxStock: z.number().min(0).optional().nullable(),
   isArchived: z.boolean().optional(),
-  // New fields
-  unit: z.string().max(20).optional(),
-  weight: z.number().positive().optional().nullable(),
-  dimensions: z.string().max(100).optional().nullable(),
-  color: z.string().max(50).optional().nullable(),
-  size: z.string().max(50).optional().nullable(),
-  material: z.string().max(100).optional().nullable(),
   tags: z.array(z.string()).optional(),
   wordpress_id: z.number().int().positive().optional().nullable(),
 
@@ -184,18 +175,6 @@ export const PUT = withPermission(
         updateData.brandId = validatedData.brandId;
       if (validatedData.supplierId !== undefined)
         updateData.supplierId = validatedData.supplierId;
-      if (validatedData.unit !== undefined)
-        updateData.unit = validatedData.unit;
-      if (validatedData.weight !== undefined)
-        updateData.weight = validatedData.weight;
-      if (validatedData.dimensions !== undefined)
-        updateData.dimensions = validatedData.dimensions;
-      if (validatedData.color !== undefined)
-        updateData.color = validatedData.color;
-      if (validatedData.size !== undefined)
-        updateData.size = validatedData.size;
-      if (validatedData.material !== undefined)
-        updateData.material = validatedData.material;
       if (validatedData.tags !== undefined)
         updateData.tags = validatedData.tags;
       if (validatedData.isArchived !== undefined)
@@ -213,9 +192,6 @@ export const PUT = withPermission(
         updateData.stock = validatedData.currentStock;
       if (validatedData.minimumStock !== undefined)
         updateData.minStock = validatedData.minimumStock;
-      if (validatedData.maximumStock !== undefined)
-        updateData.maxStock = validatedData.maximumStock;
-
       // Direct database fields (fallback if frontend fields not provided)
       if (validatedData.cost !== undefined && canUpdateCost)
         updateData.cost = validatedData.cost;
@@ -226,8 +202,6 @@ export const PUT = withPermission(
         updateData.stock = validatedData.stock;
       if (validatedData.minStock !== undefined)
         updateData.minStock = validatedData.minStock;
-      if (validatedData.maxStock !== undefined)
-        updateData.maxStock = validatedData.maxStock;
 
       // Handle status mapping
       if (validatedData.status !== undefined) {
