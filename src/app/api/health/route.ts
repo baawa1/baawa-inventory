@@ -3,17 +3,9 @@ import { prisma, cleanupConnection } from '@/lib/db';
 
 export async function GET() {
   try {
-    // Clear any potential prepared statement conflicts
-    if (process.env.NODE_ENV === 'production') {
-      try {
-        await cleanupConnection();
-      } catch (cleanupError) {
-        console.warn('Cleanup warning:', cleanupError);
-      }
-    }
-
-    // Test database connection with a simple query that doesn't use prepared statements
-    const result = await prisma.$queryRaw`SELECT NOW() as current_time`;
+    // Use a simple count query instead of $queryRaw to avoid prepared statement conflicts
+    // This tests the connection without creating problematic prepared statements
+    await prisma.user.count();
 
     return NextResponse.json(
       {
@@ -27,13 +19,6 @@ export async function GET() {
     );
   } catch (error) {
     console.error('Health check failed:', error);
-
-    // Attempt cleanup on error
-    try {
-      await cleanupConnection();
-    } catch (cleanupError) {
-      console.error('Cleanup failed:', cleanupError);
-    }
 
     return NextResponse.json(
       {

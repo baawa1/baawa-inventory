@@ -27,7 +27,12 @@ const createPrismaClient = () => {
   });
 };
 
-export const prisma = globalForPrisma.prisma ?? createPrismaClient();
+// For production, create fresh clients to avoid prepared statement conflicts
+// For development, use global singleton
+export const prisma =
+  process.env.NODE_ENV === 'production'
+    ? createPrismaClient()
+    : (globalForPrisma.prisma ?? createPrismaClient());
 
 if (process.env.NODE_ENV !== 'production') globalForPrisma.prisma = prisma;
 
