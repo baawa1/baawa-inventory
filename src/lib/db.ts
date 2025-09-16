@@ -24,10 +24,7 @@ const createPrismaClient = () => {
     },
   });
 
-  // Add connection error handling
-  client.$on('error', (error) => {
-    console.error('Prisma client error:', error);
-  });
+  // Note: Removed error handler due to TypeScript compatibility issues
 
   return client;
 };
@@ -80,19 +77,5 @@ export const testConnection = async (client: PrismaClient, retries = 3): Promise
   return false;
 };
 
-// Graceful shutdown for connection cleanup (only in Node.js runtime)
-if (typeof process !== 'undefined' && process.on) {
-  process.on('beforeExit', async () => {
-    await prisma.$disconnect();
-  });
-
-  process.on('SIGINT', async () => {
-    await prisma.$disconnect();
-    process.exit(0);
-  });
-
-  process.on('SIGTERM', async () => {
-    await prisma.$disconnect();
-    process.exit(0);
-  });
-}
+// Note: Removed process event handlers to avoid Edge Runtime compatibility issues
+// Connection cleanup is handled in finally blocks of each API route
