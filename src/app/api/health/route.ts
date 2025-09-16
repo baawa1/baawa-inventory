@@ -1,22 +1,37 @@
 import { NextResponse } from 'next/server';
-import { prisma, cleanupConnection } from '@/lib/db';
+import { createFreshPrismaClient, testConnection } from '@/lib/db';
 
 export async function GET() {
-  try {
-    // Use a simple count query instead of $queryRaw to avoid prepared statement conflicts
-    // This tests the connection without creating problematic prepared statements
-    await prisma.user.count();
+  const prisma = createFreshPrismaClient();
 
-    return NextResponse.json(
-      {
-        status: 'healthy',
-        database: 'connected',
-        timestamp: new Date().toISOString(),
-        uptime: process.uptime(),
-        environment: process.env.NODE_ENV,
-      },
-      { status: 200 }
-    );
+  try {
+    // Test database connection with retry mechanism
+    const isConnected = await testConnection(prisma, 2); // Only 2 retries for health check
+
+    if (isConnected) {
+      return NextResponse.json(
+        {
+          status: 'healthy',
+          database: 'connected',
+          timestamp: new Date().toISOString(),
+          uptime: process.uptime(),
+          environment: process.env.NODE_ENV,
+        },
+        { status: 200 }
+      );
+    } else {
+      return NextResponse.json(
+        {
+          status: 'unhealthy',
+          database: 'disconnected',
+          error: 'Database connection failed after retries',
+          timestamp: new Date().toISOString(),
+          uptime: process.uptime(),
+          environment: process.env.NODE_ENV,
+        },
+        { status: 503 }
+      );
+    }
   } catch (error) {
     console.error('Health check failed:', error);
 
@@ -31,6 +46,15 @@ export async function GET() {
       },
       { status: 500 }
     );
+  } finally {
+    // Always cleanup the connection in production
+    if (process.env.NODE_ENV === 'production') {
+      try {
+        await prisma.$disconnect();
+      } catch (cleanupError) {
+        console.error('Error during health check cleanup:', cleanupError);
+      }
+    }
   }
 }
 

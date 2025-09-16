@@ -3,7 +3,7 @@ import {
   withPermission,
   AuthenticatedRequest,
 } from '@/lib/api-middleware';
-import { prisma } from '@/lib/db';
+import { createFreshPrismaClient } from '@/lib/db';
 import { USER_ROLES, hasPermission } from '@/lib/auth/roles';
 import {
   createSupplierSchema,
@@ -14,6 +14,7 @@ import { Prisma } from '@prisma/client';
 
 // GET /api/suppliers - List suppliers with optional filtering and pagination
 export const GET = withAuth(async (request: AuthenticatedRequest) => {
+  const prisma = createFreshPrismaClient();
   try {
     const { searchParams } = new URL(request.url);
 
@@ -123,6 +124,10 @@ export const GET = withAuth(async (request: AuthenticatedRequest) => {
     });
   } catch (error) {
     return handleApiError(error);
+  } finally {
+    if (process.env.NODE_ENV === 'production') {
+      await prisma.$disconnect();
+    }
   }
 });
 
@@ -130,6 +135,7 @@ export const GET = withAuth(async (request: AuthenticatedRequest) => {
 export const POST = withPermission(
   [USER_ROLES.ADMIN],
   async (request: AuthenticatedRequest) => {
+    const prisma = createFreshPrismaClient();
     try {
       const body = await request.json();
       const validatedData = createSupplierSchema.parse(body);
@@ -188,6 +194,10 @@ export const POST = withPermission(
       );
     } catch (error) {
       return handleApiError(error);
+    } finally {
+      if (process.env.NODE_ENV === 'production') {
+        await prisma.$disconnect();
+      }
     }
   }
 );

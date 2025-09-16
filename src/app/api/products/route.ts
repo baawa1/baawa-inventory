@@ -4,7 +4,7 @@ import {
   AuthenticatedRequest,
 } from '@/lib/api-middleware';
 import { handleApiError } from '@/lib/api-error-handler-new';
-import { prisma } from '@/lib/db';
+import { createFreshPrismaClient } from '@/lib/db';
 import { createSecureResponse } from '@/lib/security-headers';
 import { logger } from '@/lib/logger';
 import { hasPermission } from '@/lib/auth/roles';
@@ -33,6 +33,7 @@ const ProductCreateSchema = createProductSchema;
 
 // GET /api/products - List products with filtering
 export const GET = withAuth(async (request: AuthenticatedRequest) => {
+  const prisma = createFreshPrismaClient();
   try {
     const { searchParams } = new URL(request.url);
     const page = parseInt(searchParams.get('page') || '1');
@@ -244,6 +245,10 @@ export const GET = withAuth(async (request: AuthenticatedRequest) => {
     );
   } catch (error) {
     return handleApiError(error);
+  } finally {
+    if (process.env.NODE_ENV === 'production') {
+      await prisma.$disconnect();
+    }
   }
 });
 
@@ -251,6 +256,7 @@ export const GET = withAuth(async (request: AuthenticatedRequest) => {
 export const POST = withPermission(
   [USER_ROLES.ADMIN, USER_ROLES.MANAGER],
   async (request: AuthenticatedRequest) => {
+    const prisma = createFreshPrismaClient();
     try {
       const body = await request.json();
 
@@ -463,6 +469,10 @@ export const POST = withPermission(
       );
     } catch (error) {
       return handleApiError(error);
+    } finally {
+      if (process.env.NODE_ENV === 'production') {
+        await prisma.$disconnect();
+      }
     }
   }
 );
