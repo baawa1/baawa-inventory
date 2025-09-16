@@ -33,6 +33,7 @@ export function useEditProductSubmit(
         minimumStock: data.minimumStock || undefined,
         status: data.status,
         tags: data.tags || [],
+        images: data.images || [],
         wordpress_id:
           data.wordpress_id === undefined || data.wordpress_id === null
             ? null

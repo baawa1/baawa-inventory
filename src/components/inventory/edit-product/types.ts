@@ -10,7 +10,6 @@ export interface Product {
   name: string;
   description: string | null;
   sku: string;
-  barcode: string | null;
   category?: {
     id: number;
     name: string;
@@ -23,7 +22,6 @@ export interface Product {
   price: number;
   stock: number;
   minStock: number;
-  maxStock: number | null;
   supplier?: {
     id: number;
     name: string;

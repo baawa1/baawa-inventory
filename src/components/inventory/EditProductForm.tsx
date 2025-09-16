@@ -1,5 +1,6 @@
 'use client';
 
+import { useState, useEffect } from 'react';
 import { Button } from '@/components/ui/button';
 import { useRouter } from 'next/navigation';
 import Link from 'next/link';
@@ -18,6 +19,7 @@ import { useEditProductSubmit } from './edit-product/useEditProductSubmitNew';
 import { BasicInfoSection } from './edit-product/BasicInfoSection';
 import { CategoryBrandSupplierSection } from './edit-product/CategoryBrandSupplierSection';
 import { PricingInventorySection } from './edit-product/PricingInventorySection';
+import { ProductImageSection } from './add-product/ProductImageSection';
 
 import { Skeleton } from '@/components/ui/skeleton';
 import { PageHeader } from '../ui/page-header';
@@ -69,6 +71,8 @@ function LoadingSkeleton() {
 
 export default function EditProductForm({ productId }: EditProductFormProps) {
   const router = useRouter();
+  const [images, setImages] = useState<any[]>([]);
+
   const {
     form,
     product,
@@ -85,6 +89,30 @@ export default function EditProductForm({ productId }: EditProductFormProps) {
     productId,
     form
   );
+
+  // Initialize images from product data when available
+  useEffect(() => {
+    if (product?.images) {
+      // Convert product images to the format expected by ProductImageSection
+      const formattedImages = product.images.map((img: any) => ({
+        url: img.url || img,
+        filename: img.filename || 'product-image.jpg',
+        mimeType: img.mimeType || 'image/jpeg',
+        alt: img.alt || product.name,
+        isPrimary: img.isPrimary || false,
+        uploadedAt: img.uploadedAt || new Date().toISOString(),
+        size: img.size || 0,
+      }));
+      setImages(formattedImages);
+    }
+  }, [product]);
+
+  // Update form images when local images state changes
+  useEffect(() => {
+    if (form) {
+      form.setValue('images', images);
+    }
+  }, [images, form]);
 
   if (loading) {
     return <LoadingSkeleton />;
@@ -158,6 +186,12 @@ export default function EditProductForm({ productId }: EditProductFormProps) {
               />
 
               <PricingInventorySection form={form} />
+
+              <ProductImageSection
+                form={form}
+                images={images}
+                onImagesChange={setImages}
+              />
 
               {/* Form Actions */}
               <div className="flex justify-end space-x-4 border-t pt-6">

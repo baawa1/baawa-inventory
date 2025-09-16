@@ -32,8 +32,16 @@ const ProductUpdateSchema = z.object({
   isArchived: z.boolean().optional(),
   tags: z.array(z.string()).optional(),
   wordpress_id: z.number().int().positive().optional().nullable(),
-
-  // Note: images field is handled separately via /api/products/[id]/images endpoint
+  // Images support for consolidated form
+  images: z.array(z.object({
+    url: z.string().url('Image URL must be valid'),
+    filename: z.string().min(1, 'Filename is required'),
+    mimeType: z.string().min(1, 'MIME type is required'),
+    alt: z.string().optional(),
+    isPrimary: z.boolean(),
+    uploadedAt: z.string(),
+    size: z.number(),
+  })).optional(),
 });
 
 // GET /api/products/[id] - Get single product
@@ -181,6 +189,8 @@ export const PUT = withPermission(
         updateData.isArchived = validatedData.isArchived;
       if (validatedData.wordpress_id !== undefined)
         updateData.wordpress_id = validatedData.wordpress_id;
+      if (validatedData.images !== undefined)
+        updateData.images = validatedData.images;
 
       // Frontend to database field mappings
       if (validatedData.purchasePrice !== undefined && canUpdateCost)
