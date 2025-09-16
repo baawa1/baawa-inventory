@@ -38,6 +38,7 @@
     "test:e2e:codegen": "playwright codegen",
     "seed:test-data": "node scripts/generate-complete-test-data.js",
     "seed:test-data:reset": "node scripts/generate-complete-test-data.js --reset",
+    "db:seed": "npx tsx prisma/seed.ts",
     "vercel-build": "prisma generate && prisma db push && next build",
     "db:status": "node scripts/migrate.js status",
     "db:deploy": "node scripts/migrate.js deploy",

@@ -97,55 +97,63 @@ const lastNames = [
 
 // Company names are now included in supplierNames
 
-const productNames = [
-  "Wireless Bluetooth Headphones",
-  "Smart Fitness Watch",
-  "Portable Power Bank",
-  "USB-C Laptop Charger",
-  "Wireless Mouse",
-  "Mechanical Keyboard",
-  "Gaming Headset",
-  "Webcam HD 1080p",
-  "External SSD 1TB",
-  "Wireless Earbuds",
-  "Tablet Stand",
-  "Phone Mount",
-  "Cable Organizer",
-  "Desk Lamp LED",
-  "Monitor Stand",
-  "Laptop Cooling Pad",
-  "Wireless Charger",
-  "Bluetooth Speaker",
-  "USB Hub",
-  "Screen Protector",
-  "Laptop Sleeve",
-  "Wireless Keyboard",
-  "Gaming Mouse",
-  "Microphone USB",
-  "Graphics Tablet",
-  "Printer Wireless",
-  "Scanner Document",
-  "Projector Portable",
-  "Speaker Bluetooth",
-  "Headphones Noise Cancelling",
-];
+// Product names organized by category
+const productNames = {
+  "Wristwatches": [
+    "Rolex Submariner",
+    "Casio G-Shock DW-5600",
+    "Citizen Eco-Drive",
+    "Omega Seamaster",
+    "Tag Heuer Formula 1",
+    "Seiko 5 Sports",
+    "Apple Watch Series 9",
+    "Samsung Galaxy Watch",
+    "Fossil Grant Chronograph",
+    "Timex Weekender"
+  ],
+  "Glasses": [
+    "Ray-Ban Aviator Classic",
+    "Oakley Holbrook",
+    "Gucci Square Frame",
+    "Prada Cat Eye",
+    "Versace Medusa Charm",
+    "Tom Ford Blue Light",
+    "Persol Steve McQueen",
+    "Maui Jim Peahi",
+    "Warby Parker Felix",
+    "Police Lewis Hamilton"
+  ],
+  "Wall Clocks": [
+    "Seiko Pendulum Clock",
+    "Howard Miller Gallery",
+    "Rhythm Musical Clock",
+    "Hermle Mechanical Clock",
+    "Bulova Frank Lloyd Wright",
+    "La Crosse Technology Atomic",
+    "Infinity Instruments Modern",
+    "Sterling & Noble Farmhouse",
+    "Acurite Weather Station Clock",
+    "Chaney Instrument AcuRite"
+  ],
+  "Accessories": [
+    "Pandora Charm Bracelet",
+    "Tiffany & Co. Necklace",
+    "Michael Kors Watch Band",
+    "Louis Vuitton Key Holder",
+    "Hermès Silk Scarf",
+    "Coach Leather Wallet",
+    "Cartier Cufflinks",
+    "Bulgari Ring",
+    "Van Cleef & Arpels Earrings",
+    "David Yurman Cable Bracelet"
+  ]
+};
 
 const categoryNames = [
-  "Electronics",
-  "Computers",
-  "Mobile Devices",
-  "Audio Equipment",
-  "Gaming",
-  "Office Supplies",
-  "Home & Garden",
-  "Sports & Fitness",
-  "Fashion",
-  "Beauty & Health",
-  "Books & Media",
-  "Toys & Games",
-  "Automotive",
-  "Tools & Hardware",
-  "Kitchen & Dining",
+  "Accessories",
+  "Wristwatches",
+  "Glasses",
+  "Wall Clocks"
 ];
 
 const subcategoryNames = [
@@ -172,55 +180,34 @@ const subcategoryNames = [
 ];
 
 const brandNames = [
-  "Apple",
-  "Samsung",
-  "Sony",
-  "LG",
-  "Dell",
-  "HP",
-  "Lenovo",
-  "Asus",
-  "Acer",
-  "Microsoft",
-  "Google",
-  "Xiaomi",
-  "Huawei",
-  "OnePlus",
-  "Bose",
-  "JBL",
-  "Beats",
-  "Sennheiser",
-  "Logitech",
-  "Razer",
-  "Corsair",
-  "SteelSeries",
-  "Nintendo",
-  "PlayStation",
-  "Xbox",
-  "Canon",
-  "Nikon",
-  "GoPro",
-  "DJI",
-  "Philips",
-  "IKEA",
+  "Rolex",
+  "Casio",
+  "Citizen",
+  "Ray-Ban",
+  "Oakley",
+  "Gucci",
+  "Seiko",
+  "Howard Miller",
+  "Pandora",
+  "Tiffany & Co.",
+  "Omega",
+  "Tag Heuer",
+  "Prada",
+  "Versace",
+  "Tom Ford",
+  "Louis Vuitton",
+  "Hermès",
+  "Coach",
+  "Cartier",
+  "Bulgari"
 ];
 
 const supplierNames = [
-  "TechSupply Pro",
-  "Global Electronics",
-  "Digital Wholesale",
-  "Innovation Distributors",
-  "Premium Tech Solutions",
-  "Elite Suppliers",
-  "Quality Electronics Co",
-  "Professional Systems Ltd",
-  "Advanced Tech Supply",
-  "Modern Solutions Inc",
-  "Expert Electronics",
-  "Master Distributors",
-  "Creative Tech Supply",
-  "Future Electronics",
-  "Smart Solutions Co",
+  "Premium Watch Co.",
+  "Fashion Glasses Ltd",
+  "Clock Masters Nigeria",
+  "Luxury Accessories Hub",
+  "Global Timepieces"
 ];
 
 const cities = [
@@ -288,6 +275,21 @@ const randomDecimal = (min, max, decimals = 2) => {
   return parseFloat(num.toFixed(decimals));
 };
 
+// Generate random date in 2025 (Jan 1 to today)
+const getRandomDate2025 = () => {
+  const start = new Date('2025-01-01');
+  const end = new Date(); // Today
+  return new Date(start.getTime() + Math.random() * (end.getTime() - start.getTime()));
+};
+
+// Generate random date in last 30 days
+const getRecentDate = () => {
+  const end = new Date();
+  const start = new Date();
+  start.setDate(end.getDate() - 30);
+  return new Date(start.getTime() + Math.random() * (end.getTime() - start.getTime()));
+};
+
 const generateSKU = (prefix) =>
   `${prefix}${Date.now()}${randomNumber(100, 999)}`;
 const generateBarcode = () =>
@@ -301,7 +303,7 @@ const generatePhone = () => {
 };
 
 const generateEmail = (firstName, lastName) => {
-  return `baawapay+${firstName.toLowerCase()}.${lastName.toLowerCase()}@gmail.com`;
+  return `baawapay+${firstName.toLowerCase()}${lastName.toLowerCase()}@gmail.com`;
 };
 
 const generateAddress = () => {
@@ -357,105 +359,59 @@ async function seedUsers() {
   const users = [];
   const hashedPassword = await bcrypt.hash("password123", 12);
 
-  // Check if admin user already exists
-  let adminUser = await prisma.user.findUnique({
-    where: { email: "baawapay+admin.user@gmail.com" },
-  });
+  // Create exactly 10 users with specific roles
+  const userRoles = [
+    { role: "ADMIN", count: 2 },
+    { role: "MANAGER", count: 3 },
+    { role: "STAFF", count: 5 }
+  ];
 
-  if (!adminUser) {
-    // Create admin user
-    adminUser = await prisma.user.create({
-      data: {
-        firstName: "Admin",
-        lastName: "User",
-        email: "baawapay+admin.user@gmail.com",
-        password: hashedPassword,
-        phone: generatePhone(),
-        role: "ADMIN",
-        userStatus: "APPROVED",
-        emailVerified: true,
-        emailVerifiedAt: new Date(),
-        isActive: true,
-        permissions: [
-          "USER_MANAGEMENT",
-          "SYSTEM_CONFIGURATION",
-          "AUDIT_LOGS",
-          "INVENTORY_MANAGEMENT",
-          "SALES_MANAGEMENT",
-          "REPORTS_ACCESS",
-          "POS_ACCESS",
-        ],
-      },
-    });
-  }
-  users.push(adminUser);
+  let userCounter = 0;
 
-  // Create manager users
-  for (let i = 0; i < 3; i++) {
-    const firstName = randomElement(firstNames);
-    const lastName = randomElement(lastNames);
-    const email = generateEmail(firstName, lastName);
+  for (const roleGroup of userRoles) {
+    for (let i = 0; i < roleGroup.count; i++) {
+      userCounter++;
+      const firstName = randomElement(firstNames);
+      const lastName = randomElement(lastNames);
 
-    // Check if user already exists
-    let user = await prisma.user.findUnique({
-      where: { email },
-    });
+      // Generate unique email with counter to avoid duplicates
+      const email = `baawapay+${firstName.toLowerCase()}${lastName.toLowerCase()}${userCounter}@gmail.com`;
 
-    if (!user) {
-      user = await prisma.user.create({
-        data: {
-          firstName,
-          lastName,
-          email: email,
-          password: hashedPassword,
-          phone: generatePhone(),
-          role: "MANAGER",
-          userStatus: "APPROVED",
-          emailVerified: true,
-          emailVerifiedAt: new Date(),
-          isActive: true,
-          permissions: [
-            "INVENTORY_MANAGEMENT",
-            "SALES_MANAGEMENT",
-            "REPORTS_ACCESS",
-            "POS_ACCESS",
-            "RECONCILIATION_APPROVAL",
-          ],
-        },
+      // Check if user already exists
+      let user = await prisma.user.findUnique({
+        where: { email },
       });
+
+      if (!user) {
+        const permissions = roleGroup.role === "ADMIN" ?
+          ["USER_MANAGEMENT", "SYSTEM_CONFIGURATION", "AUDIT_LOGS", "INVENTORY_MANAGEMENT", "SALES_MANAGEMENT", "REPORTS_ACCESS", "POS_ACCESS"] :
+          roleGroup.role === "MANAGER" ?
+          ["INVENTORY_MANAGEMENT", "SALES_MANAGEMENT", "REPORTS_ACCESS", "POS_ACCESS", "RECONCILIATION_APPROVAL"] :
+          ["POS_ACCESS", "INVENTORY_VIEW", "SALES_CREATION"];
+
+        user = await prisma.user.create({
+          data: {
+            firstName,
+            lastName,
+            email: email,
+            password: hashedPassword,
+            phone: generatePhone(),
+            role: roleGroup.role,
+            userStatus: userCounter === 10 ? "PENDING" : "APPROVED", // Last user pending
+            emailVerified: userCounter !== 8, // One user unverified
+            emailVerifiedAt: userCounter !== 8 ? getRecentDate() : null,
+            isActive: true,
+            permissions: permissions,
+            createdAt: getRandomDate2025(),
+            updatedAt: getRandomDate2025(),
+            lastLogin: userCounter !== 10 ? getRecentDate() : null,
+            lastActivity: userCounter !== 10 ? getRecentDate() : null,
+            approvedAt: userCounter !== 10 ? getRandomDate2025() : null,
+          },
+        });
+      }
+      users.push(user);
     }
-    users.push(user);
-  }
-
-  // Create staff users
-  for (let i = 0; i < 10; i++) {
-    const firstName = randomElement(firstNames);
-    const lastName = randomElement(lastNames);
-    const email = generateEmail(firstName, lastName);
-
-    // Check if user already exists
-    let user = await prisma.user.findUnique({
-      where: { email },
-    });
-
-    if (!user) {
-      user = await prisma.user.create({
-        data: {
-          firstName,
-          lastName,
-          email: email,
-          password: hashedPassword,
-          phone: generatePhone(),
-          role: "STAFF",
-          userStatus: "APPROVED",
-          emailVerified: true,
-          emailVerifiedAt: new Date(),
-          isActive: true,
-          permissions: ["POS_ACCESS", "INVENTORY_VIEW", "SALES_CREATION"],
-        },
-      });
-    }
-    users.push(user);
   }
 
   console.log(`Processed ${users.length} users`);
@@ -466,8 +422,7 @@ async function seedSuppliers() {
   console.log("Seeding suppliers...");
 
   const suppliers = [];
-  for (let i = 0; i < 15; i++) {
-    const supplierName = randomElement(supplierNames);
+  for (const supplierName of supplierNames) {
 
     // Check if supplier already exists
     let supplier = await prisma.supplier.findFirst({
@@ -479,27 +434,15 @@ async function seedSuppliers() {
         data: {
           name: supplierName,
           contactPerson: `${randomElement(firstNames)} ${randomElement(lastNames)}`,
-          email: generateEmail(
-            randomElement(firstNames),
-            randomElement(lastNames)
-          ),
+          email: `baawapay+supplier${suppliers.length + 1}@gmail.com`,
           phone: generatePhone(),
           address: generateAddress(),
           city: randomElement(cities),
           state: randomElement(states),
-          postalCode: randomNumber(100000, 999999).toString(),
-          country: "Nigeria",
           website: `https://www.${supplierName.toLowerCase().replace(/\s+/g, "")}.com`,
-          taxNumber: `TAX${randomNumber(100000, 999999)}`,
-          paymentTerms: randomElement([
-            "Net 30",
-            "Net 60",
-            "Net 90",
-            "Cash on Delivery",
-          ]),
-          creditLimit: randomDecimal(10000, 1000000),
           notes: "Reliable supplier with good track record",
-          isActive: true,
+          createdAt: getRandomDate2025(),
+          updatedAt: getRandomDate2025(),
         },
       });
     }
@@ -589,60 +532,104 @@ async function seedBrands() {
   return brands;
 }
 
+async function seedCustomers() {
+  console.log("Seeding customers...");
+
+  const customers = [];
+  const customerNames = [
+    "Adebayo Johnson", "Chioma Okafor", "Fashion Hub Ltd", "Musa Ibrahim", "Sarah Ahmed",
+    "Kemi Adebayo", "Tunde Ogundimu", "Luxury Store Inc", "Fatima Yusuf", "Emeka Nwosu"
+  ];
+
+  for (let i = 0; i < customerNames.length; i++) {
+    const name = customerNames[i];
+    const isCompany = name.includes("Ltd") || name.includes("Inc");
+    const email = `baawapay+customer${i + 1}@gmail.com`;
+
+    // Check if customer already exists
+    let customer = await prisma.customer.findUnique({
+      where: { email },
+    });
+
+    if (!customer) {
+      customer = await prisma.customer.create({
+        data: {
+          name: name,
+          email: email,
+          phone: generatePhone(),
+          billingAddress: generateAddress(),
+          shippingAddress: generateAddress(),
+          city: randomElement(cities),
+          state: randomElement(states),
+          postalCode: randomNumber(100000, 999999).toString(),
+          customerType: isCompany ? "business" : "individual",
+          notes: isCompany ? "Wholesale customer - bulk discounts apply" : null,
+          createdAt: getRandomDate2025(),
+          updatedAt: getRandomDate2025(),
+        }
+      });
+    }
+    customers.push(customer);
+  }
+
+  console.log(`Created ${customers.length} customers`);
+  return customers;
+}
+
 async function seedProducts(categories, brands, suppliers) {
   console.log("Seeding products...");
 
   const products = [];
-  for (let i = 0; i < 50; i++) {
-    const productName = randomElement(productNames);
-    const cost = randomDecimal(1000, 50000);
-    const price = cost * randomDecimal(1.2, 2.5); // 20% to 150% markup
-    const stock = randomNumber(0, 1000);
 
-    const product = await prisma.product.create({
-      data: {
-        name: productName,
-        description: generateProductDescription(productName),
-        sku: generateSKU("PROD"),
-        barcode: generateBarcode(),
-        cost: cost,
-        price: price,
-        stock: stock,
-        minStock: randomNumber(5, 50),
-        maxStock: randomNumber(200, 2000),
-        unit: randomElement(["piece", "box", "pack", "set", "pair"]),
-        weight: randomDecimal(0.1, 10),
-        dimensions: `${randomNumber(5, 50)}x${randomNumber(5, 50)}x${randomNumber(1, 20)}cm`,
-        color: randomElement([
-          "Black",
-          "White",
-          "Silver",
-          "Blue",
-          "Red",
-          "Green",
-        ]),
-        size: randomElement(["Small", "Medium", "Large", "XL", "XXL"]),
-        material: randomElement([
-          "Plastic",
-          "Metal",
-          "Wood",
-          "Fabric",
-          "Glass",
-        ]),
-        hasVariants: Math.random() > 0.7, // 30% chance of having variants
-        isArchived: false,
-        tags: [
-          randomElement(["Electronics", "Gaming", "Office", "Home"]),
-          randomElement(["New", "Popular", "Featured"]),
-        ],
-        status: PRODUCT_STATUS.ACTIVE,
-        images: generateImages(),
-        categoryId: randomElement(categories).id,
-        brandId: randomElement(brands).id,
-        supplierId: randomElement(suppliers).id,
-      },
-    });
-    products.push(product);
+  // Create products for each category
+  for (const category of categories) {
+    const categoryProducts = productNames[category.name] || [];
+
+    for (const productName of categoryProducts) {
+      // Set realistic pricing based on category
+      let cost, price, stock;
+
+      if (category.name === "Wristwatches") {
+        cost = randomDecimal(15000, 800000);
+        price = cost * randomDecimal(1.3, 2.0);
+        stock = randomNumber(5, 50);
+      } else if (category.name === "Glasses") {
+        cost = randomDecimal(28000, 85000);
+        price = cost * randomDecimal(1.4, 1.8);
+        stock = randomNumber(15, 40);
+      } else if (category.name === "Wall Clocks") {
+        cost = randomDecimal(18000, 25000);
+        price = cost * randomDecimal(1.5, 2.2);
+        stock = randomNumber(20, 35);
+      } else { // Accessories
+        cost = randomDecimal(35000, 125000);
+        price = cost * randomDecimal(1.4, 1.7);
+        stock = randomNumber(12, 45);
+      }
+
+      const product = await prisma.product.create({
+        data: {
+          name: productName,
+          description: generateProductDescription(productName),
+          sku: generateSKU("PROD"),
+          cost: cost,
+          price: price,
+          stock: stock,
+          minStock: randomNumber(2, 8),
+          hasVariants: Math.random() > 0.8, // 20% chance of having variants
+          isArchived: false,
+          tags: [category.name.toLowerCase(), randomElement(["premium", "popular", "new", "featured"])],
+          status: "ACTIVE",
+          images: generateImages(),
+          categoryId: category.id,
+          brandId: randomElement(brands).id,
+          supplierId: randomElement(suppliers).id,
+          createdAt: getRandomDate2025(),
+          updatedAt: getRandomDate2025(),
+        },
+      });
+      products.push(product);
+    }
   }
 
   console.log(`Created ${products.length} products`);
@@ -693,16 +680,17 @@ async function seedProductVariants(products) {
   return variants;
 }
 
-async function seedSalesTransactions(users, _products, _variants) {
+async function seedSalesTransactions(users, _products, _variants, customers) {
   console.log("Seeding sales transactions...");
 
   const transactions = [];
-  for (let i = 0; i < 100; i++) {
+  for (let i = 0; i < 50; i++) {
     const user = randomElement(users);
+    const customer = Math.random() > 0.3 ? randomElement(customers) : null; // 70% chance of having a customer
     const transactionNumber = generateTransactionNumber();
-    const subtotal = randomDecimal(1000, 50000);
+    const subtotal = randomDecimal(10000, 200000);
     const taxAmount = subtotal * 0.075; // 7.5% tax
-    const discountAmount = subtotal * randomDecimal(0, 0.2); // 0-20% discount
+    const discountAmount = subtotal * randomDecimal(0, 0.15); // 0-15% discount
     const totalAmount = subtotal + taxAmount - discountAmount;
 
     const transaction = await prisma.salesTransaction.create({
@@ -715,15 +703,11 @@ async function seedSalesTransactions(users, _products, _variants) {
         payment_method: randomElement(paymentMethods),
         payment_status: randomElement(paymentStatuses),
         transaction_type: randomElement(transactionTypes),
-        customer_name: `${randomElement(firstNames)} ${randomElement(lastNames)}`,
-        customer_email: generateEmail(
-          randomElement(firstNames),
-          randomElement(lastNames)
-        ),
-        customer_phone: generatePhone(),
-        notes:
-          Math.random() > 0.7 ? "Customer requested special handling" : null,
+        customer_id: customer?.id,
+        notes: Math.random() > 0.7 ? "Customer requested special handling" : null,
         user_id: user.id,
+        created_at: getRandomDate2025(),
+        updated_at: getRandomDate2025(),
       },
     });
     transactions.push(transaction);
@@ -762,6 +746,7 @@ async function seedSalesItems(transactions, products, variants) {
           transaction_id: transaction.id,
           product_id: product.id,
           variant_id: variant ? variant.id : null,
+          created_at: getRandomDate2025(),
         },
       });
       salesItems.push(salesItem);
@@ -778,7 +763,7 @@ async function seedStockAdditions(users, products, suppliers) {
   const stockAdditions = [];
   for (let i = 0; i < 50; i++) {
     const product = randomElement(products);
-    const quantity = randomNumber(10, 500);
+    const quantity = randomNumber(1, 20); // Reduce quantity to avoid overflow
     const costPerUnit = parseFloat(product.cost);
     const totalCost = costPerUnit * quantity;
 
@@ -787,9 +772,7 @@ async function seedStockAdditions(users, products, suppliers) {
         quantity: quantity,
         costPerUnit: costPerUnit,
         totalCost: totalCost,
-        purchaseDate: new Date(
-          Date.now() - randomNumber(1, 365) * 24 * 60 * 60 * 1000
-        ),
+        purchaseDate: getRandomDate2025(),
         notes: `Bulk purchase of ${product.name}`,
         referenceNo: `REF${randomNumber(100000, 999999)}`,
         productId: product.id,
@@ -1137,9 +1120,7 @@ async function seedFinancialTransactions(users) {
             "Royalty payment",
           ]
         )}`,
-        transactionDate: new Date(
-          Date.now() - randomNumber(1, 90) * 24 * 60 * 60 * 1000
-        ),
+        transactionDate: getRandomDate2025(),
         paymentMethod: paymentMethod,
         status: status,
         approvedBy: approver?.id || null,
@@ -1194,9 +1175,7 @@ async function seedFinancialTransactions(users) {
             "Business cost",
           ]
         )}`,
-        transactionDate: new Date(
-          Date.now() - randomNumber(1, 90) * 24 * 60 * 60 * 1000
-        ),
+        transactionDate: getRandomDate2025(),
         paymentMethod: paymentMethod,
         status: status,
         approvedBy: approver?.id || null,
@@ -1314,9 +1293,10 @@ async function main() {
     const suppliers = await seedSuppliers();
     const categories = await seedCategories();
     const brands = await seedBrands();
+    const customers = await seedCustomers();
     const products = await seedProducts(categories, brands, suppliers);
     const variants = await seedProductVariants(products);
-    const transactions = await seedSalesTransactions(users, products, variants);
+    const transactions = await seedSalesTransactions(users, products, variants, customers);
     const salesItems = await seedSalesItems(transactions, products, variants);
     const stockAdditions = await seedStockAdditions(users, products, suppliers);
 

@@ -793,3 +793,29 @@ globs: **/components/**/_.tsx, **/app/**/_.tsx, **/pages/**/\*.tsx
 - Maintain consistent code formatting and structure
 - Use meaningful component and variable names
 - Implement proper error handling and loading states
+
+
+## Database Safety Rules
+
+  ### CRITICAL: Database Reset Protection
+  - **NEVER run `npx prisma migrate reset` without 
+  explicit user confirmation**
+  - **NEVER reset, drop, or destroy database data 
+  without asking the user 3 separate times**
+  - **ALWAYS ask for permission before any destructive 
+  database operations**
+  - **ALWAYS suggest alternatives to database resets**
+  (backups, db push, manual fixes)
+  - **ALWAYS warn about data loss risks before any 
+  schema changes**
+
+  Examples of operations that require 3x confirmation:
+  - `npx prisma migrate reset`
+  - `npx prisma db push --force-reset`
+  - Any command that drops tables or databases
+  - Any operation that mentions "All data will be lost"
+
+  Approved alternatives that don't require confirmation:
+  - `npx prisma migrate dev` (creates new migrations)
+  - `npx prisma db push` (syncs schema without reset)
+  - `npx prisma generate` (regenerates client)
