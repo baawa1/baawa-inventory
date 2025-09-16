@@ -1,6 +1,6 @@
 'use client';
 
-import { useEffect } from 'react';
+import { useEffect, useState } from 'react';
 import { useRouter } from 'next/navigation';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { useForm } from 'react-hook-form';
@@ -21,15 +21,20 @@ import { createProductSchema } from '@/lib/validations/product';
 import { BasicInfoSection } from './add-product/BasicInfoSection';
 import { CategoryBrandSection } from './add-product/CategoryBrandSection';
 import { PricingInventorySection } from './add-product/PricingInventorySection';
-import { ProductSpecificationsSection } from './add-product/ProductSpecificationsSection';
 import { AdditionalInfoSection } from './add-product/AdditionalInfoSection';
+import { ProductImageSection } from './add-product/ProductImageSection';
 import { FormActions } from './add-product/FormActions';
 import { useFormDataQuery } from './add-product/useFormDataQuery';
 import { useProductSubmit } from './add-product/useProductSubmit';
 import { defaultFormValues } from './add-product/types';
+import { z } from 'zod';
+
+type CreateProductData = z.infer<typeof createProductSchema>;
 
 export default function AddProductForm() {
   const router = useRouter();
+  const [images, setImages] = useState<CreateProductData['images']>([]);
+
   const {
     loading,
     isSubmitting,
@@ -47,6 +52,11 @@ export default function AddProductForm() {
   });
 
   const { onSubmit } = useProductSubmit(form, setIsSubmitting, setSubmitError);
+
+  // Update form images when local images state changes
+  useEffect(() => {
+    form.setValue('images', images);
+  }, [images, form]);
 
   // Set first supplier as default when suppliers load
   useEffect(() => {
@@ -131,9 +141,13 @@ export default function AddProductForm() {
 
               <PricingInventorySection form={form} />
 
-              <ProductSpecificationsSection form={form} />
-
               <AdditionalInfoSection form={form} />
+
+              <ProductImageSection
+                form={form}
+                images={images}
+                onImagesChange={setImages}
+              />
 
               <FormActions
                 isSubmitting={isSubmitting}

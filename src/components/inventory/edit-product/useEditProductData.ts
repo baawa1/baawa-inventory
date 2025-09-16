@@ -15,7 +15,6 @@ export function useEditProductData(productId: number) {
       name: '',
       description: '',
       sku: '',
-      barcode: '',
       categoryId: undefined,
       brandId: undefined,
       supplierId: undefined,
@@ -23,16 +22,7 @@ export function useEditProductData(productId: number) {
       sellingPrice: 0,
       currentStock: 0,
       minimumStock: 0,
-      maximumStock: undefined,
       status: 'ACTIVE',
-      notes: '',
-      // New fields
-      unit: 'piece',
-      weight: undefined,
-      dimensions: '',
-      color: '',
-      size: '',
-      material: '',
       tags: [],
       wordpress_id: undefined,
     },
@@ -74,7 +64,6 @@ export function useEditProductData(productId: number) {
           name: productData.name,
           description: productData.description || '',
           sku: productData.sku,
-          barcode: productData.barcode || '',
           categoryId: productData.category?.id || undefined,
           brandId: productData.brand?.id || undefined,
           supplierId: productData.supplier?.id || undefined,
@@ -82,23 +71,11 @@ export function useEditProductData(productId: number) {
           sellingPrice: Number(productData.price),
           currentStock: productData.stock,
           minimumStock: productData.minStock,
-          maximumStock: productData.maxStock || undefined,
           status: productData.status?.toUpperCase() as
             | 'ACTIVE'
             | 'INACTIVE'
             | 'OUT_OF_STOCK'
             | 'DISCONTINUED',
-          notes: '',
-          // New fields
-          unit: productData.unit || 'piece',
-          weight:
-            productData.weight !== null && productData.weight !== undefined
-              ? Number(productData.weight)
-              : undefined,
-          dimensions: productData.dimensions || '',
-          color: productData.color || '',
-          size: productData.size || '',
-          material: productData.material || '',
           tags: productData.tags || [],
           wordpress_id:
             (productData as any).wordpress_id !== undefined

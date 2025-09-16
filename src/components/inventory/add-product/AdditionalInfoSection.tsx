@@ -128,26 +128,6 @@ export function AdditionalInfoSection({ form }: AdditionalInfoSectionProps) {
           )}
         />
 
-        <FormField
-          control={form.control}
-          name="notes"
-          render={({ field }) => (
-            <FormItem>
-              <FormLabel>Notes</FormLabel>
-              <FormControl>
-                <Textarea
-                  placeholder="Additional notes about this product"
-                  className="resize-none"
-                  rows={3}
-                  {...field}
-                  value={field.value || ''}
-                  onChange={e => field.onChange(e.target.value || null)}
-                />
-              </FormControl>
-              <FormMessage />
-            </FormItem>
-          )}
-        />
       </CardContent>
     </Card>
   );

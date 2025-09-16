@@ -70,7 +70,6 @@ export function useEditProductForm(
       name: '',
       description: '',
       sku: '',
-      barcode: '',
       categoryId: undefined,
       brandId: undefined,
       supplierId: undefined,
@@ -78,9 +77,9 @@ export function useEditProductForm(
       sellingPrice: 0,
       currentStock: 0,
       minimumStock: 0,
-      maximumStock: undefined,
       status: 'ACTIVE',
-      notes: '',
+      tags: [],
+      wordpress_id: undefined,
     },
   });
 
@@ -113,7 +112,6 @@ export function useEditProductForm(
         name: productData.name,
         description: productData.description || '',
         sku: productData.sku,
-        barcode: productData.barcode || '',
         categoryId: productData.category?.id,
         brandId: productData.brand?.id,
         supplierId: productData.supplier?.id,
@@ -121,9 +119,9 @@ export function useEditProductForm(
         sellingPrice: Number(productData.price),
         currentStock: productData.stock,
         minimumStock: productData.minStock,
-        maximumStock: productData.maxStock || undefined,
         status: productData.status,
-        notes: '',
+        tags: productData.tags || [],
+        wordpress_id: (productData as any).wordpress_id || undefined,
       });
     }
   }, [product.data, form]);

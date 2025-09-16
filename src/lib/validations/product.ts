@@ -14,7 +14,6 @@ import { nairaPriceSchema, costPriceSchema } from './price';
 export const createProductSchema = z.object({
   name: nameSchema,
   sku: skuSchema.optional(), // Made optional since it will be auto-generated
-  barcode: z.string().optional().nullable(),
   description: z
     .string()
     .max(1000, 'Description must be 1000 characters or less')
@@ -35,44 +34,25 @@ export const createProductSchema = z.object({
   purchasePrice: costPriceSchema.optional(),
   sellingPrice: nairaPriceSchema,
   minimumStock: stockSchema,
-  maximumStock: stockSchema.optional().nullable(),
   currentStock: stockSchema,
   supplierId: idSchema.optional().nullable(),
   status: productStatusSchema,
-  notes: z
-    .string()
-    .max(500, 'Notes must be 500 characters or less')
-    .optional()
-    .nullable(),
-  // New fields
-  unit: z.string().max(20, 'Unit must be 20 characters or less').optional(),
-  weight: z.number().positive('Weight must be positive').optional().nullable(),
-  dimensions: z
-    .string()
-    .max(100, 'Dimensions must be 100 characters or less')
-    .optional()
-    .nullable(),
-  color: z
-    .string()
-    .max(50, 'Color must be 50 characters or less')
-    .optional()
-    .nullable(),
-  size: z
-    .string()
-    .max(50, 'Size must be 50 characters or less')
-    .optional()
-    .nullable(),
-  material: z
-    .string()
-    .max(100, 'Material must be 100 characters or less')
-    .optional()
-    .nullable(),
   tags: z.array(z.string()).optional(),
   wordpress_id: z.union([
     z.number().int().positive('WordPress ID must be a positive integer').max(2147483647, 'WordPress ID must be less than 2,147,483,647'),
     z.null(),
     z.undefined()
   ]).optional(),
+  // Image support
+  images: z.array(z.object({
+    url: z.string().url('Image URL must be valid'),
+    filename: z.string().min(1, 'Filename is required'),
+    mimeType: z.string().min(1, 'MIME type is required'),
+    alt: z.string().optional(),
+    isPrimary: z.boolean(),
+    uploadedAt: z.string(),
+    size: z.number(),
+  })),
 });
 
 // Product update schema (all fields optional except validation rules)

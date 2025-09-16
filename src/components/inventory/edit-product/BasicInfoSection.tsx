@@ -52,23 +52,6 @@ export function BasicInfoSection({ form }: BasicInfoSectionProps) {
           />
         </div>
 
-        <FormField
-          control={form.control}
-          name="barcode"
-          render={({ field }) => (
-            <FormItem>
-              <FormLabel>Barcode</FormLabel>
-              <FormControl>
-                <Input
-                  {...field}
-                  value={field.value || ''}
-                  placeholder="Enter barcode"
-                />
-              </FormControl>
-              <FormMessage />
-            </FormItem>
-          )}
-        />
 
         <FormField
           control={form.control}

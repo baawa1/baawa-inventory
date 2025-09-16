@@ -124,7 +124,7 @@ export function PricingInventorySection({
           </div>
         )}
 
-        <div className="grid grid-cols-1 gap-4 md:grid-cols-3">
+        <div className="grid grid-cols-1 gap-4 md:grid-cols-2">
           <FormField
             control={form.control}
             name="currentStock"
@@ -173,29 +173,6 @@ export function PricingInventorySection({
             )}
           />
 
-          <FormField
-            control={form.control}
-            name="maximumStock"
-            render={({ field }) => (
-              <FormItem>
-                <FormLabel>Maximum Stock</FormLabel>
-                <FormControl>
-                  <Input
-                    {...field}
-                    type="number"
-                    min="0"
-                    placeholder="0"
-                    onChange={e => {
-                      const value = e.target.value;
-                      field.onChange(value ? parseInt(value) : null);
-                    }}
-                    value={field.value?.toString() || ''}
-                  />
-                </FormControl>
-                <FormMessage />
-              </FormItem>
-            )}
-          />
         </div>
       </CardContent>
     </Card>

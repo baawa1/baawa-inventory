@@ -25,9 +25,6 @@ export function useProductSubmit(
       const cleanedData = {
         ...data,
         description: data.description?.trim() || null,
-        barcode: data.barcode?.trim() || null,
-        notes: data.notes?.trim() || null,
-        maximumStock: data.maximumStock || null,
         wordpress_id: data.wordpress_id ?? null,
       };
 

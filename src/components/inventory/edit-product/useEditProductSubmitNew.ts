@@ -24,7 +24,6 @@ export function useEditProductSubmit(
         name: data.name,
         description: data.description || null,
         sku: data.sku,
-        barcode: data.barcode || null,
         categoryId: data.categoryId || null,
         brandId: data.brandId || null,
         supplierId: data.supplierId || null,
@@ -32,18 +31,7 @@ export function useEditProductSubmit(
         sellingPrice: data.sellingPrice || undefined,
         currentStock: data.currentStock || undefined,
         minimumStock: data.minimumStock || undefined,
-        maximumStock: data.maximumStock || null,
         status: data.status,
-        // New fields
-        unit: data.unit || 'piece',
-        weight:
-          data.weight !== undefined && data.weight !== null
-            ? Number(data.weight)
-            : null,
-        dimensions: data.dimensions || null,
-        color: data.color || null,
-        size: data.size || null,
-        material: data.material || null,
         tags: data.tags || [],
         wordpress_id:
           data.wordpress_id === undefined || data.wordpress_id === null

@@ -21,7 +21,6 @@ export function useEditProductSubmit(
         name: data.name,
         description: data.description || null,
         sku: data.sku,
-        barcode: data.barcode || null,
         categoryId: data.categoryId || null,
         brandId: data.brandId || null,
         supplierId: data.supplierId || null,
@@ -29,9 +28,7 @@ export function useEditProductSubmit(
         sellingPrice: data.sellingPrice || undefined,
         currentStock: data.currentStock || undefined,
         minimumStock: data.minimumStock || undefined,
-        maximumStock: data.maximumStock || null,
         status: data.status,
-        notes: data.notes || null,
       };
 
       const response = await fetch(`/api/products/${productId}`, {

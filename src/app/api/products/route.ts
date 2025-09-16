@@ -58,7 +58,6 @@ export const GET = withAuth(async (request: AuthenticatedRequest) => {
       where.OR = [
         { name: { contains: search, mode: 'insensitive' } },
         { sku: { contains: search, mode: 'insensitive' } },
-        { barcode: { contains: search, mode: 'insensitive' } },
         { description: { contains: search, mode: 'insensitive' } },
       ];
     }
@@ -189,11 +188,9 @@ export const GET = withAuth(async (request: AuthenticatedRequest) => {
         id: product.id,
         name: product.name,
         sku: product.sku,
-        barcode: product.barcode,
         description: product.description,
         stock: product.stock,
         minStock: product.minStock,
-        maxStock: product.maxStock,
         status: product.status,
         isArchived: product.isArchived,
         images: product.images,
@@ -347,23 +344,6 @@ export const POST = withPermission(
         }
       }
 
-      // Check if barcode already exists (if provided)
-      if (validatedData.barcode) {
-        const existingBarcode = await prisma.product.findFirst({
-          where: { barcode: validatedData.barcode },
-        });
-
-        if (existingBarcode) {
-          return createSecureResponse(
-            {
-              success: false,
-              message: 'Product with this barcode already exists',
-              code: 'CONFLICT',
-            },
-            409
-          );
-        }
-      }
 
       // Verify category exists
       if (validatedData.categoryId) {
@@ -424,20 +404,12 @@ export const POST = withPermission(
       const productData: any = {
         name: validatedData.name,
         sku: finalSku,
-        barcode: validatedData.barcode,
         description: validatedData.description,
         stock: validatedData.currentStock || 0,
         minStock: validatedData.minimumStock || 0,
-        maxStock: validatedData.maximumStock || 1000,
-        unit: validatedData.unit || 'piece',
         status: validatedData.status,
-        weight: validatedData.weight,
-        dimensions: validatedData.dimensions,
-        color: validatedData.color,
-        size: validatedData.size,
-        material: validatedData.material,
         tags: validatedData.tags || [],
-        images: [],
+        images: validatedData.images || [],
         categoryId: validatedData.categoryId,
         brandId: validatedData.brandId,
         supplierId: validatedData.supplierId,

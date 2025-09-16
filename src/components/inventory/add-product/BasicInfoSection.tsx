@@ -59,24 +59,6 @@ export function BasicInfoSection({ form }: BasicInfoSectionProps) {
           )}
         />
 
-        <FormField
-          control={form.control}
-          name="barcode"
-          render={({ field }) => (
-            <FormItem>
-              <FormLabel>Barcode</FormLabel>
-              <FormControl>
-                <Input
-                  placeholder="Enter barcode"
-                  {...field}
-                  value={field.value || ''}
-                  onChange={e => field.onChange(e.target.value || null)}
-                />
-              </FormControl>
-              <FormMessage />
-            </FormItem>
-          )}
-        />
       </CardContent>
     </Card>
   );
