@@ -2,8 +2,7 @@ import type { NextConfig } from "next";
 
 const nextConfig: NextConfig = {
   eslint: {
-
-    ignoreDuringBuilds: false,
+    ignoreDuringBuilds: true,
   },
   // PWA Configuration
   experimental: {

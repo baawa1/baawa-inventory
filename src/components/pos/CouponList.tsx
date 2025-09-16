@@ -3,17 +3,20 @@
 import React, { useState, useMemo, useCallback } from 'react';
 import Link from 'next/link';
 
-import { useDebounce } from '@/hooks/useDebounce';
+// Hooks
 import {
   useCoupons,
   useDeleteCoupon,
   type Coupon as APICoupon,
 } from '@/hooks/api/useCoupons';
-import { DashboardTableLayout } from '@/components/layouts/DashboardTableLayout';
+import { useTableState, type CouponFilters } from '@/hooks/useTableState';
+
+// Permissions
+import { usePermissions } from '@/hooks/usePermissions';
+
+// UI Components
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
-import { USER_ROLES } from '@/lib/auth/roles';
-
 import {
   AlertDialog,
   AlertDialogAction,
@@ -24,16 +27,34 @@ import {
   AlertDialogHeader,
   AlertDialogTitle,
 } from '@/components/ui/alert-dialog';
+
+// Mobile-optimized components
+import { DashboardPageLayout } from '@/components/layouts/DashboardPageLayout';
+import { MobileDashboardFiltersBar, FilterConfig } from '@/components/layouts/MobileDashboardFiltersBar';
+import { MobileDashboardTable } from '@/components/layouts/MobileDashboardTable';
+
+// Shared utilities
+import { getCouponStatusBadge } from '@/lib/utils/status-badges';
+import { TruncatedDescription } from '@/lib/utils/text-utils';
+import { MobileCardTitle, CouponIconWrapper, MobileCardSubtitle } from '@/components/ui/mobile-card-templates';
+import { TableActionMenu, buildCouponActions } from '@/components/ui/table-actions';
+
+// Column configurations
+import { COUPON_COLUMNS } from '@/lib/table-columns/coupon-columns';
+
+// Icons
 import {
   IconPlus,
   IconTicket,
   IconAlertTriangle,
   IconPercentage,
   IconCurrencyNaira,
+  IconEdit,
+  IconTrash,
 } from '@tabler/icons-react';
-import type { FilterConfig } from '@/types/inventory';
 import type { DashboardTableColumn } from '@/components/layouts/DashboardColumnCustomizer';
 import { formatCurrency } from '@/lib/utils';
+import { SortOption } from '@/types/inventory';
 
 interface User {
   id: string;
@@ -48,125 +69,64 @@ interface CouponListProps {
   user: User;
 }
 
+const SORT_OPTIONS: SortOption[] = [
+  { value: 'createdAt-desc', label: 'Newest First' },
+  { value: 'createdAt-asc', label: 'Oldest First' },
+  { value: 'code-asc', label: 'Code (A-Z)' },
+  { value: 'code-desc', label: 'Code (Z-A)' },
+  { value: 'validUntil-asc', label: 'Expiring Soon' },
+  { value: 'validUntil-desc', label: 'Expiring Last' },
+];
+
 export function CouponList({ user }: CouponListProps) {
   const [deleteDialogOpen, setDeleteDialogOpen] = useState(false);
   const [couponToDelete, setCouponToDelete] = useState<APICoupon | null>(null);
 
-  const [pagination, setPagination] = useState({
-    page: 1,
-    limit: 10,
-    totalPages: 1,
-    totalItems: 0,
+  // Get permissions using centralized hook
+  const permissions = usePermissions();
+  const { canManageProducts } = permissions;
+
+  // Use unified table state hook
+  const {
+    filters,
+    apiFilters,
+    pagination,
+    visibleColumns,
+    isSearching,
+    currentSort,
+    handleFilterChange,
+    handleResetFilters,
+    handleSortChange,
+    handlePageChange,
+    handlePageSizeChange,
+    updatePaginationFromAPI,
+    setVisibleColumns,
+  } = useTableState<CouponFilters>({
+    initialFilters: {
+      search: '',
+      status: '',
+      sortBy: 'createdAt',
+      sortOrder: 'desc',
+    },
+    initialVisibleColumns: ['code', 'name', 'type', 'value', 'status', 'validUntil'],
   });
 
-  // Column configuration
-  const columns: DashboardTableColumn[] = useMemo(
-    () => [
-      {
-        key: 'code',
-        label: 'Coupon Code',
-        sortable: true,
-        defaultVisible: true,
-        required: true,
-      },
-      {
-        key: 'name',
-        label: 'Name',
-        sortable: true,
-        defaultVisible: true,
-        required: true,
-      },
-      {
-        key: 'description',
-        label: 'Description',
-        defaultVisible: true,
-      },
-      {
-        key: 'type',
-        label: 'Type',
-        sortable: true,
-        defaultVisible: true,
-      },
-      {
-        key: 'value',
-        label: 'Value',
-        sortable: true,
-        defaultVisible: true,
-      },
-      {
-        key: 'minimumAmount',
-        label: 'Min Amount',
-        sortable: true,
-        defaultVisible: true,
-      },
-      {
-        key: 'currentUses',
-        label: 'Uses',
-        sortable: true,
-        defaultVisible: true,
-      },
-      {
-        key: 'validFrom',
-        label: 'Valid From',
-        sortable: true,
-        defaultVisible: true,
-      },
-      {
-        key: 'validUntil',
-        label: 'Valid Until',
-        sortable: true,
-        defaultVisible: true,
-      },
-      {
-        key: 'status',
-        label: 'Status',
-        sortable: true,
-        defaultVisible: true,
-      },
-      {
-        key: 'createdAt',
-        label: 'Created',
-        sortable: true,
-        defaultVisible: false,
-      },
-      {
-        key: 'updatedAt',
-        label: 'Updated',
-        sortable: true,
-        defaultVisible: false,
-      },
-    ],
-    []
-  );
+  // Column configuration using unified columns
+  const columns = COUPON_COLUMNS;
 
-  // Initialize visibleColumns with default values to prevent hydration mismatch
-  const defaultVisibleColumns = useMemo(
-    () => columns.filter(col => col.defaultVisible).map(col => col.key),
-    [columns]
-  );
-
-  const [visibleColumns, setVisibleColumns] = useState<string[]>(
-    defaultVisibleColumns
-  );
-
-  // Filters
-  const [filters, setFilters] = useState({
-    search: '',
-    status: '',
-  });
-
-  // Debounce search term to avoid excessive API calls
-  const debouncedSearchTerm = useDebounce(filters.search, 500);
-
-  // Show search loading when user is typing but search hasn't been triggered yet
-  const isSearching = filters.search !== debouncedSearchTerm;
+  // Filter available columns based on permissions
+  const availableColumns = useMemo(() => {
+    return columns.filter(column => {
+      return true; // No special permission filtering needed for coupons
+    });
+  }, [columns]);
 
   // TanStack Query hooks for data fetching
   const couponsQuery = useCoupons({
-    search: debouncedSearchTerm,
-    status: filters.status,
-    sortBy: 'createdAt',
-    sortOrder: 'desc',
+    search: apiFilters.search,
+    status: apiFilters.status,
+    sortBy: apiFilters.sortBy,
+    sortOrder: apiFilters.sortOrder,
     page: pagination.page,
     limit: pagination.limit,
   });
@@ -174,24 +134,17 @@ export function CouponList({ user }: CouponListProps) {
   const deleteCouponMutation = useDeleteCoupon();
 
   // Extract data from queries
-  const coupons = couponsQuery.data?.data || [];
-  const loading = couponsQuery.isLoading;
-  const total = couponsQuery.data?.pagination?.total || 0;
-  const apiPagination = couponsQuery.data?.pagination;
-
-  // Update pagination state from API response
-  const currentPagination = {
-    page: apiPagination?.page || pagination.page,
-    limit: apiPagination?.limit || pagination.limit,
-    totalPages:
-      apiPagination?.totalPages || Math.ceil(total / pagination.limit),
-    totalItems: total,
-  };
-
-  // Permission checks
-  const canManageCoupons = [USER_ROLES.ADMIN, USER_ROLES.MANAGER].includes(
-    user.role as any
+  const coupons = useMemo(
+    () => couponsQuery.data?.data || [],
+    [couponsQuery.data?.data]
   );
+
+  // Update pagination state when API response changes
+  React.useEffect(() => {
+    if (couponsQuery.data?.pagination) {
+      updatePaginationFromAPI(couponsQuery.data.pagination);
+    }
+  }, [couponsQuery.data?.pagination, updatePaginationFromAPI]);
 
   // Filter configurations
   const filterConfigs: FilterConfig[] = useMemo(
@@ -211,32 +164,6 @@ export function CouponList({ user }: CouponListProps) {
     []
   );
 
-  // Handle filter changes
-  const handleFilterChange = useCallback((key: string, value: any) => {
-    setFilters(prev => {
-      if (prev[key as keyof typeof prev] === value) return prev;
-      return { ...prev, [key]: value };
-    });
-    setPagination(prev => ({ ...prev, page: 1 }));
-  }, []);
-
-  // Clear all filters
-  const handleResetFilters = useCallback(() => {
-    setFilters({
-      search: '',
-      status: '',
-    });
-    setPagination(prev => ({ ...prev, page: 1 }));
-  }, []);
-
-  const handlePageChange = useCallback((newPage: number) => {
-    setPagination(prev => ({ ...prev, page: newPage }));
-  }, []);
-
-  const handlePageSizeChange = useCallback((newSize: number) => {
-    setPagination(prev => ({ ...prev, limit: newSize, page: 1 }));
-  }, []);
-
   // Handle delete coupon
   const handleDeleteCoupon = useCallback(async () => {
     if (!couponToDelete) return;
@@ -245,32 +172,53 @@ export function CouponList({ user }: CouponListProps) {
       await deleteCouponMutation.mutateAsync(couponToDelete.id);
       setDeleteDialogOpen(false);
       setCouponToDelete(null);
+      couponsQuery.refetch();
     } catch (_error) {
       // Error is handled by the mutation
     }
-  }, [couponToDelete, deleteCouponMutation]);
+  }, [couponToDelete, deleteCouponMutation, couponsQuery]);
 
-  // Use columns directly without actions
-  const columnsWithActions = useMemo(() => columns, [columns]);
+  // Calculate coupon status
+  const getCouponStatus = useCallback((coupon: APICoupon): string => {
+    const now = new Date();
+    const validUntil = new Date(coupon.validUntil);
+    const isExpired = validUntil < now;
+    const isMaxUsesReached = coupon.maxUses && coupon.currentUses >= coupon.maxUses;
 
-  // Use visible columns directly
-  const effectiveVisibleColumns = useMemo(
-    () => visibleColumns,
-    [visibleColumns]
-  );
+    if (isExpired) return 'expired';
+    if (isMaxUsesReached) return 'used up';
+    if (!coupon.isActive) return 'inactive';
+    return 'active';
+  }, []);
 
   // Render cell content
   const renderCell = useCallback((coupon: APICoupon, columnKey: string) => {
     switch (columnKey) {
       case 'code':
-        return <span className="font-mono font-medium">{coupon.code}</span>;
+        return <span className="font-mono font-medium text-xs sm:text-sm">{coupon.code}</span>;
       case 'name':
-        return coupon.name;
+        return (
+          <div className="min-w-0">
+            <div className="font-medium truncate text-xs sm:text-sm">{coupon.name}</div>
+            {coupon.description && (
+              <TruncatedDescription 
+                description={coupon.description} 
+                maxLength={30}
+                className="text-xs text-muted-foreground truncate mt-0.5"
+              />
+            )}
+          </div>
+        );
       case 'description':
-        return coupon.description || '-';
+        return (
+          <TruncatedDescription 
+            description={coupon.description} 
+            maxLength={50}
+          />
+        );
       case 'type':
         return (
-          <Badge variant="outline" className="capitalize">
+          <Badge variant="outline" className="capitalize text-xs">
             {coupon.type.toLowerCase()}
           </Badge>
         );
@@ -278,124 +226,192 @@ export function CouponList({ user }: CouponListProps) {
         return coupon.type === 'PERCENTAGE' ? (
           <div className="flex items-center gap-1">
             <IconPercentage className="h-3 w-3" />
-            <span>{coupon.value}</span>
+            <span className="text-xs sm:text-sm font-medium">{coupon.value}%</span>
           </div>
         ) : (
           <div className="flex items-center gap-1">
             <IconCurrencyNaira className="h-3 w-3" />
-            <span>{coupon.value}</span>
+            <span className="text-xs sm:text-sm font-medium">{formatCurrency(coupon.value)}</span>
           </div>
         );
       case 'minimumAmount':
-        return coupon.minimumAmount
-          ? formatCurrency(coupon.minimumAmount)
-          : 'No minimum';
-      case 'currentUses':
-        return `${coupon.currentUses}${coupon.maxUses ? `/${coupon.maxUses}` : ''}`;
-      case 'validFrom':
-        return new Date(coupon.validFrom).toLocaleDateString();
-      case 'validUntil':
-        return new Date(coupon.validUntil).toLocaleDateString();
-      case 'status':
-        const now = new Date();
-        const validUntil = new Date(coupon.validUntil);
-        const isExpired = validUntil < now;
-        const isMaxUsesReached =
-          coupon.maxUses && coupon.currentUses >= coupon.maxUses;
-
-        let status = 'active';
-        let statusClass = 'bg-green-100 text-green-800';
-
-        if (isExpired) {
-          status = 'expired';
-          statusClass = 'bg-red-100 text-red-800';
-        } else if (isMaxUsesReached) {
-          status = 'used up';
-          statusClass = 'bg-orange-100 text-orange-800';
-        } else if (!coupon.isActive) {
-          status = 'inactive';
-          statusClass = 'bg-gray-100 text-gray-800';
-        }
-
-        return <Badge className={statusClass}>{status.toUpperCase()}</Badge>;
-      case 'createdAt':
-        return new Date(coupon.createdAt).toLocaleDateString();
-      case 'updatedAt':
-        return new Date(coupon.updatedAt).toLocaleDateString();
-      case 'wordpress_id':
-        return coupon.wordpress_id ? (
-          <span className="text-sm font-mono">{coupon.wordpress_id}</span>
-        ) : (
-          <span className="text-gray-400 italic">-</span>
+        return (
+          <span className="text-xs sm:text-sm">
+            {coupon.minimumAmount ? formatCurrency(coupon.minimumAmount) : 'No minimum'}
+          </span>
         );
+      case 'currentUses':
+        return (
+          <span className="text-xs sm:text-sm font-medium">
+            {coupon.currentUses}{coupon.maxUses ? `/${coupon.maxUses}` : ''}
+          </span>
+        );
+      case 'validFrom':
+        return <span className="text-xs sm:text-sm">{new Date(coupon.validFrom).toLocaleDateString()}</span>;
+      case 'validUntil':
+        return <span className="text-xs sm:text-sm">{new Date(coupon.validUntil).toLocaleDateString()}</span>;
+      case 'status':
+        return getCouponStatusBadge(getCouponStatus(coupon), 'text-xs');
+      case 'createdAt':
+        return <span className="text-xs sm:text-sm">{new Date(coupon.createdAt).toLocaleDateString()}</span>;
+      case 'updatedAt':
+        return <span className="text-xs sm:text-sm">{new Date(coupon.updatedAt).toLocaleDateString()}</span>;
       default:
-        return null;
+        return <span className="text-xs sm:text-sm">-</span>;
     }
+  }, [getCouponStatus]);
+
+  const renderActions = useCallback((coupon: APICoupon) => {
+    const actions = buildCouponActions({
+      coupon,
+      canEdit: canManageProducts,
+      canDelete: canManageProducts,
+      onDelete: () => {
+        setCouponToDelete(coupon);
+        setDeleteDialogOpen(true);
+      },
+    });
+
+    // Update action icons
+    const actionsWithIcons = actions.map(action => ({
+      ...action,
+      icon: action.key === 'edit' ? <IconEdit className="h-4 w-4" /> : 
+            action.key === 'delete' ? <IconTrash className="h-4 w-4" /> : 
+            action.icon,
+    }));
+
+    return <TableActionMenu actions={actionsWithIcons} />;
+  }, [canManageProducts]);
+
+  // Mobile card title and subtitle
+  const mobileCardTitle = useCallback((coupon: APICoupon) => (
+    <MobileCardTitle
+      icon={
+        <CouponIconWrapper>
+          <IconTicket className="w-5 h-5" />
+        </CouponIconWrapper>
+      }
+      title={coupon.name}
+      subtitle={`Code: ${coupon.code}`}
+    >
+      <div className="flex items-center gap-2 mt-1">
+        {getCouponStatusBadge(getCouponStatus(coupon), 'text-xs')}
+        <span className="text-xs font-medium text-green-600">
+          {coupon.type === 'PERCENTAGE' 
+            ? `${coupon.value}% off`
+            : `${formatCurrency(coupon.value)} off`
+          }
+        </span>
+      </div>
+    </MobileCardTitle>
+  ), [getCouponStatus]);
+
+  const mobileCardSubtitle = useCallback((coupon: APICoupon) => {
+    const items = [
+      {
+        label: 'Uses',
+        value: `${coupon.currentUses}${coupon.maxUses ? `/${coupon.maxUses}` : ''}`,
+      },
+      {
+        label: 'Expires',
+        value: new Date(coupon.validUntil).toLocaleDateString(),
+      },
+    ];
+
+    if (coupon.minimumAmount) {
+      items.push({
+        label: 'Min amount',
+        value: formatCurrency(coupon.minimumAmount),
+      });
+    }
+
+    return (
+      <MobileCardSubtitle items={items} />
+    );
   }, []);
 
   return (
     <>
-      <DashboardTableLayout
+      <DashboardPageLayout
         title="Coupons"
         description="Manage discount coupons and promotional codes"
         actions={
-          canManageCoupons ? (
-            <Button asChild>
-              <Link
-                href="/pos/coupons/create"
-                className="flex items-center gap-2"
-              >
-                <IconPlus className="h-4 w-4" />
-                Create Coupon
-              </Link>
-            </Button>
+          canManageProducts ? (
+            <div className="flex flex-row items-center gap-2">
+              <Button asChild>
+                <Link
+                  href="/pos/coupons/create"
+                  className="flex items-center gap-2"
+                >
+                  <IconPlus className="h-4 w-4" />
+                  <span className="hidden sm:inline">Create Coupon</span>
+                  <span className="sm:hidden">Create</span>
+                </Link>
+              </Button>
+            </div>
           ) : undefined
         }
-        // Filters
-        searchPlaceholder="Search coupons..."
-        searchValue={filters.search}
-        onSearchChange={value => handleFilterChange('search', value)}
-        isSearching={isSearching}
-        filters={filterConfigs}
-        filterValues={filters}
-        onFilterChange={handleFilterChange}
-        onResetFilters={handleResetFilters}
-        // Table
-        tableTitle="Coupons"
-        totalCount={total}
-        currentCount={coupons.length}
-        columns={columnsWithActions}
-        visibleColumns={effectiveVisibleColumns}
-        onColumnsChange={setVisibleColumns}
-        columnCustomizerKey="coupons-visible-columns"
-        data={coupons}
-        renderCell={renderCell}
-        // Pagination
-        pagination={currentPagination}
-        onPageChange={handlePageChange}
-        onPageSizeChange={handlePageSizeChange}
-        // Loading states
-        isLoading={loading}
-        isRefetching={couponsQuery.isFetching && !loading}
-        error={couponsQuery.error?.message}
-        // Empty state
-        emptyStateIcon={<IconTicket className="size-12 text-gray-400" />}
-        emptyStateMessage={
-          debouncedSearchTerm || filters.status
-            ? 'No coupons found matching your filters.'
-            : 'No coupons found. Get started by creating your first coupon.'
-        }
-        emptyStateAction={
-          canManageCoupons ? (
-            <Button asChild>
-              <Link href="/pos/coupons/create">
-                <IconPlus className="mr-2 h-4 w-4" />
-                Create Coupon
-              </Link>
-            </Button>
-          ) : undefined
-        }
-      />
+      >
+        <div className="space-y-6">
+          {/* Mobile-optimized Filters */}
+          <MobileDashboardFiltersBar
+            searchPlaceholder="Search coupons..."
+            searchValue={filters.search}
+            onSearchChange={value => handleFilterChange('search', value)}
+            isSearching={isSearching}
+            filters={filterConfigs}
+            filterValues={filters as unknown as Record<string, unknown>}
+            onFilterChange={(key: string, value: unknown) =>
+              handleFilterChange(key, value as string | boolean)
+            }
+            onResetFilters={handleResetFilters}
+            sortOptions={SORT_OPTIONS}
+            currentSort={currentSort}
+            onSortChange={handleSortChange}
+          />
+
+          {/* Mobile-optimized Table */}
+          <MobileDashboardTable
+            tableTitle="Coupons"
+            totalCount={pagination.totalItems}
+            currentCount={coupons.length}
+            columns={availableColumns}
+            visibleColumns={visibleColumns}
+            onColumnsChange={setVisibleColumns}
+            columnCustomizerKey="coupons-visible-columns"
+            data={coupons}
+            renderCell={renderCell}
+            renderActions={renderActions}
+            pagination={pagination}
+            onPageChange={handlePageChange}
+            onPageSizeChange={handlePageSizeChange}
+            isLoading={couponsQuery.isLoading}
+            isRefetching={couponsQuery.isFetching && !couponsQuery.isLoading}
+            error={couponsQuery.error?.message}
+            onRetry={() => couponsQuery.refetch()}
+            emptyStateIcon={
+              <IconTicket className="mx-auto mb-4 h-12 w-12 text-gray-400" />
+            }
+            emptyStateMessage={
+              apiFilters.search || filters.status
+                ? 'No coupons found matching your filters.'
+                : 'No coupons found. Get started by creating your first coupon.'
+            }
+            emptyStateAction={
+              canManageProducts ? (
+                <Button asChild>
+                  <Link href="/pos/coupons/create">
+                    Create Your First Coupon
+                  </Link>
+                </Button>
+              ) : undefined
+            }
+            mobileCardTitle={mobileCardTitle}
+            mobileCardSubtitle={mobileCardSubtitle}
+            keyExtractor={coupon => coupon.id}
+          />
+        </div>
+      </DashboardPageLayout>
 
       {/* Delete Confirmation Dialog */}
       <AlertDialog open={deleteDialogOpen} onOpenChange={setDeleteDialogOpen}>

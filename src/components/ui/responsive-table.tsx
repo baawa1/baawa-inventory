@@ -5,6 +5,7 @@ import { Card, CardContent } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { Separator } from '@/components/ui/separator';
+import { SwipeableCard, TouchButton } from '@/components/ui/touch-enhanced';
 import {
   Table,
   TableBody,
@@ -183,33 +184,46 @@ export function ResponsiveTable<T>({
           };
           
           return (
-            <Card
+            <SwipeableCard
               key={itemKey}
-              className="transition-colors"
+              onTap={toggleExpanded}
+              onLongPress={() => {
+                // Optional: Add long press actions here
+              }}
+              leftAction={{
+                label: 'Edit',
+                color: 'bg-blue-500',
+                icon: <span>✏️</span>,
+              }}
+              rightAction={{
+                label: 'Delete', 
+                color: 'bg-red-500',
+                icon: <span>🗑️</span>,
+              }}
+              className="rounded-xl border border-gray-200 shadow-sm hover:shadow-md transition-all duration-200"
             >
-              <CardContent className="px-3 py-2">
+              <CardContent className="px-4 py-3">
                 {/* Card Header - Always Visible */}
                 <div className="flex items-start justify-between">
-                  <div 
-                    className="flex-1 min-w-0 cursor-pointer"
-                    onClick={toggleExpanded}
-                  >
+                  <div className="flex-1 min-w-0">
                     {mobileCardTitle && (
                       <div className="font-semibold text-base mb-1 truncate">
                         {mobileCardTitle(item)}
                       </div>
                     )}
                     {mobileCardSubtitle && (
-                      <div className="text-sm text-muted-foreground truncate">
+                      <div className="text-sm text-muted-foreground truncate mb-2">
                         {mobileCardSubtitle(item)}
                       </div>
                     )}
-                    {/* Tap to expand indicator */}
-                    <div className="flex items-center gap-1 mt-2 text-xs text-muted-foreground">
-                      <span>{isExpanded ? 'Tap to collapse' : 'Tap to expand'}</span>
+                    {/* Enhanced tap indicator */}
+                    <div className="flex items-center gap-2 mt-2 text-xs text-muted-foreground">
+                      <span className="font-medium">
+                        {isExpanded ? 'Tap to collapse' : 'Tap to expand details'}
+                      </span>
                       <span className={cn(
-                        'transition-transform duration-200',
-                        isExpanded ? 'rotate-180' : 'rotate-0'
+                        'transition-all duration-300 text-blue-500',
+                        isExpanded ? 'rotate-180 scale-110' : 'rotate-0'
                       )}>
                         ▼
                       </span>
@@ -217,7 +231,9 @@ export function ResponsiveTable<T>({
                   </div>
                   {renderActions && (
                     <div className="ml-3 flex-shrink-0">
-                      {renderActions(item)}
+                      <div className="flex items-center gap-1">
+                        {renderActions(item)}
+                      </div>
                     </div>
                   )}
                 </div>
@@ -251,7 +267,7 @@ export function ResponsiveTable<T>({
                   </>
                 )}
               </CardContent>
-            </Card>
+            </SwipeableCard>
           );
         })}
       </div>

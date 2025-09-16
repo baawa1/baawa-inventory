@@ -1,13 +1,6 @@
 'use client';
 
-import {
-  Table,
-  TableBody,
-  TableCell,
-  TableHead,
-  TableHeader,
-  TableRow,
-} from '@/components/ui/table';
+import React, { useMemo, useCallback } from 'react';
 import { Badge } from '@/components/ui/badge';
 import {
   Card,
@@ -16,7 +9,15 @@ import {
   CardHeader,
   CardTitle,
 } from '@/components/ui/card';
-import { IconPackage } from '@tabler/icons-react';
+import { IconPackage, IconTrendingUp, IconTrendingDown, IconMinus } from '@tabler/icons-react';
+
+// Mobile-optimized components
+import { ResponsiveTable } from '@/components/ui/responsive-table';
+
+// Shared utilities
+import { MobileCardTitle, ProductIconWrapper, MobileCardSubtitle } from '@/components/ui/mobile-card-templates';
+import { TruncatedText } from '@/lib/utils/text-utils';
+
 import { formatCurrency } from '@/lib/utils';
 import type { StockReconciliationItem } from '@/hooks/api/stock-management';
 import { DISCREPANCY_REASONS } from '@/lib/constants/stock-reconciliation';
@@ -29,11 +30,168 @@ export function ReconciliationItemsTable({
   items,
 }: ReconciliationItemsTableProps) {
   // Helper function to get human-readable discrepancy reason
-  const getDiscrepancyReasonLabel = (reason: string | null | undefined) => {
+  const getDiscrepancyReasonLabel = useCallback((reason: string | null | undefined) => {
     if (!reason) return '-';
     const found = DISCREPANCY_REASONS.find(r => r.value === reason);
     return found ? found.label : reason;
-  };
+  }, []);
+
+  // Helper function to get discrepancy badge
+  const getDiscrepancyBadge = useCallback((discrepancy: number) => {
+    const variant = discrepancy === 0 ? 'secondary' : discrepancy > 0 ? 'default' : 'destructive';
+    const icon = discrepancy === 0 ? <IconMinus className="w-3 h-3" /> : 
+                 discrepancy > 0 ? <IconTrendingUp className="w-3 h-3" /> : 
+                 <IconTrendingDown className="w-3 h-3" />;
+    
+    return (
+      <Badge variant={variant} className="text-xs flex items-center gap-1">
+        {icon}
+        {discrepancy > 0 ? '+' : ''}{discrepancy}
+      </Badge>
+    );
+  }, []);
+
+  // Column configuration
+  const columns = useMemo(() => [
+    {
+      key: 'product',
+      label: 'Product',
+      render: (item: StockReconciliationItem) => (
+        <div>
+          <div className="font-medium text-sm">{item.product.name}</div>
+          <div className="text-muted-foreground text-xs">SKU: {item.product.sku}</div>
+        </div>
+      ),
+      mobileOrder: 1,
+    },
+    {
+      key: 'systemCount',
+      label: 'System Count',
+      render: (item: StockReconciliationItem) => (
+        <span className="font-medium text-sm">{item.systemCount}</span>
+      ),
+      className: 'text-right',
+      mobileOrder: 2,
+    },
+    {
+      key: 'physicalCount',
+      label: 'Physical Count',
+      render: (item: StockReconciliationItem) => (
+        <span className="font-medium text-sm">{item.physicalCount}</span>
+      ),
+      className: 'text-right',
+      mobileOrder: 3,
+    },
+    {
+      key: 'discrepancy',
+      label: 'Discrepancy',
+      render: (item: StockReconciliationItem) => getDiscrepancyBadge(item.discrepancy),
+      className: 'text-right',
+      mobileOrder: 4,
+    },
+    {
+      key: 'impact',
+      label: 'Impact',
+      render: (item: StockReconciliationItem) => (
+        item.estimatedImpact ? (
+          <span className="font-medium text-sm">{formatCurrency(item.estimatedImpact)}</span>
+        ) : (
+          <span className="text-muted-foreground text-sm">-</span>
+        )
+      ),
+      className: 'text-right',
+      hideOnMobile: true,
+      mobileOrder: 5,
+    },
+    {
+      key: 'reason',
+      label: 'Reason',
+      render: (item: StockReconciliationItem) => (
+        <span className="text-sm">{getDiscrepancyReasonLabel(item.discrepancyReason)}</span>
+      ),
+      hideOnMobile: true,
+      mobileOrder: 6,
+    },
+    {
+      key: 'notes',
+      label: 'Notes',
+      render: (item: StockReconciliationItem) => (
+        item.notes ? (
+          <TruncatedText text={item.notes} maxLength={30} className="text-muted-foreground text-sm" />
+        ) : (
+          <span className="text-muted-foreground text-sm">-</span>
+        )
+      ),
+      hideOnMobile: true,
+      mobileOrder: 7,
+    },
+  ], [getDiscrepancyBadge, getDiscrepancyReasonLabel]);
+
+  // Mobile card title and subtitle
+  const mobileCardTitle = useCallback((item: StockReconciliationItem) => (
+    <MobileCardTitle
+      icon={
+        <ProductIconWrapper>
+          <IconPackage className="w-5 h-5" />
+        </ProductIconWrapper>
+      }
+      title={item.product.name}
+      subtitle={`SKU: ${item.product.sku}`}
+    >
+      <div className="flex items-center gap-2 mt-1">
+        {getDiscrepancyBadge(item.discrepancy)}
+        {item.estimatedImpact && (
+          <span className="text-xs font-medium text-orange-600">
+            Impact: {formatCurrency(item.estimatedImpact)}
+          </span>
+        )}
+      </div>
+    </MobileCardTitle>
+  ), [getDiscrepancyBadge]);
+
+  const mobileCardSubtitle = useCallback((item: StockReconciliationItem) => {
+    const subtitleItems = [
+      { label: 'System', value: item.systemCount },
+      { label: 'Physical', value: item.physicalCount },
+    ];
+
+    if (item.discrepancyReason) {
+      subtitleItems.push({
+        label: 'Reason',
+        value: getDiscrepancyReasonLabel(item.discrepancyReason),
+      } as any);
+    }
+
+    return (
+      <MobileCardSubtitle
+        items={subtitleItems.map(item => ({
+          label: item.label,
+          value: item.value,
+        }))}
+      />
+    );
+  }, [getDiscrepancyReasonLabel]);
+
+  if (!items || items.length === 0) {
+    return (
+      <Card>
+        <CardHeader>
+          <CardTitle className="flex items-center gap-2">
+            <IconPackage className="h-5 w-5" />
+            Reconciliation Items
+          </CardTitle>
+          <CardDescription>
+            Products and their physical vs system count discrepancies
+          </CardDescription>
+        </CardHeader>
+        <CardContent>
+          <div className="text-center py-8 text-muted-foreground">
+            No items found for this reconciliation.
+          </div>
+        </CardContent>
+      </Card>
+    );
+  }
 
   return (
     <Card>
@@ -47,78 +205,14 @@ export function ReconciliationItemsTable({
         </CardDescription>
       </CardHeader>
       <CardContent>
-        <div className="overflow-hidden rounded-lg border">
-          <Table>
-            <TableHeader>
-              <TableRow>
-                <TableHead>Product</TableHead>
-                <TableHead className="text-right">System Count</TableHead>
-                <TableHead className="text-right">Physical Count</TableHead>
-                <TableHead className="text-right">Discrepancy</TableHead>
-                <TableHead className="text-right">Impact</TableHead>
-                <TableHead>Reason</TableHead>
-                <TableHead>Notes</TableHead>
-              </TableRow>
-            </TableHeader>
-            <TableBody>
-              {items.map(item => (
-                <TableRow key={item.id}>
-                  <TableCell>
-                    <div>
-                      <div className="font-medium">{item.product.name}</div>
-                      <div className="text-muted-foreground text-sm">
-                        SKU: {item.product.sku}
-                      </div>
-                    </div>
-                  </TableCell>
-                  <TableCell className="text-right">
-                    <span className="font-medium">{item.systemCount}</span>
-                  </TableCell>
-                  <TableCell className="text-right">
-                    <span className="font-medium">{item.physicalCount}</span>
-                  </TableCell>
-                  <TableCell className="text-right">
-                    <Badge
-                      variant={
-                        item.discrepancy === 0
-                          ? 'secondary'
-                          : item.discrepancy > 0
-                            ? 'default'
-                            : 'destructive'
-                      }
-                    >
-                      {item.discrepancy > 0 ? '+' : ''}
-                      {item.discrepancy}
-                    </Badge>
-                  </TableCell>
-                  <TableCell className="text-right">
-                    {item.estimatedImpact ? (
-                      <span className="font-medium">
-                        {formatCurrency(item.estimatedImpact)}
-                      </span>
-                    ) : (
-                      <span className="text-muted-foreground">-</span>
-                    )}
-                  </TableCell>
-                  <TableCell>
-                    <span className="text-sm">
-                      {getDiscrepancyReasonLabel(item.discrepancyReason)}
-                    </span>
-                  </TableCell>
-                  <TableCell>
-                    {item.notes ? (
-                      <span className="text-muted-foreground text-sm">
-                        {item.notes}
-                      </span>
-                    ) : (
-                      <span className="text-muted-foreground">-</span>
-                    )}
-                  </TableCell>
-                </TableRow>
-              ))}
-            </TableBody>
-          </Table>
-        </div>
+        <ResponsiveTable
+          data={items}
+          columns={columns}
+          keyExtractor={(item) => item.id.toString()}
+          mobileCardTitle={mobileCardTitle}
+          mobileCardSubtitle={mobileCardSubtitle}
+          emptyMessage="No reconciliation items found"
+        />
       </CardContent>
     </Card>
   );

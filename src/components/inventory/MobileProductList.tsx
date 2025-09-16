@@ -40,6 +40,18 @@ import { PRODUCT_COLUMNS } from '@/components/inventory/ColumnCustomizer';
 import { InlinePriceEditor } from '@/components/inventory/InlinePriceEditor';
 import { ProductImage } from '@/components/ui/product-image';
 
+// Enhanced mobile card templates
+import { 
+  MobileCardTitle, 
+  ProductIconWrapper, 
+  MobileCardSubtitle, 
+  MobileCardHighlight,
+  MobileCardContent 
+} from '@/components/ui/mobile-card-templates';
+
+// Utils
+import { formatCurrency } from '@/lib/utils';
+
 // Icons
 import {
   IconPlus,
@@ -53,7 +65,6 @@ import {
 } from '@tabler/icons-react';
 
 // Utils and Types
-import { formatCurrency } from '@/lib/utils';
 import { formatCategoryHierarchy } from '@/lib/utils/category';
 import { ErrorHandlers } from '@/lib/utils/error-handling';
 import { SortOption, PaginationState } from '@/types/inventory';
@@ -554,34 +565,78 @@ const MobileProductList = ({ user }: MobileProductListProps) => {
     </DropdownMenu>
   );
 
-  // Mobile card title and subtitle
-  const mobileCardTitle = (product: APIProduct) => (
-    <div className="flex items-center gap-3">
-      {/* Product Image */}
-      <div className="flex-shrink-0">
-        <ProductImage
-          src={getProductImage(product)}
-          alt={product.name}
-          size="md"
-          className="h-10 w-10"
-        />
-      </div>
-      {/* Product Name */}
-      <span className="text-sm font-semibold flex-1 min-w-0 truncate">{product.name}</span>
-    </div>
-  );
+  // Enhanced mobile card title and subtitle
+  const mobileCardTitle = (product: APIProduct) => {
+    const highlights = [
+      <MobileCardHighlight
+        key="stock"
+        label="Stock"
+        value={product.stock || 0}
+        variant={product.stock === 0 ? 'danger' : product.stock <= 10 ? 'warning' : 'success'}
+      />,
+      <MobileCardHighlight
+        key="price"
+        label="Price"
+        value={formatCurrency(product.price)}
+        variant="default"
+      />
+    ];
 
-  const mobileCardSubtitle = (product: APIProduct) => (
-    <div className="flex items-center gap-2 text-xs text-muted-foreground">
-      <span>{product.sku}</span>
-      {product.brand && (
-        <>
-          <span>•</span>
-          <span>{product.brand.name}</span>
-        </>
-      )}
-    </div>
-  );
+    return (
+      <MobileCardContent
+        title={
+          <MobileCardTitle
+            icon={
+              <div className="relative">
+                <ProductImage
+                  src={getProductImage(product)}
+                  alt={product.name}
+                  size="md"
+                  className="h-11 w-11 rounded-lg"
+                />
+              </div>
+            }
+            title={product.name}
+            subtitle={`SKU: ${product.sku}`}
+          />
+        }
+        highlights={highlights}
+        actions={
+          canEditProducts && (
+            <div className="flex items-center gap-1">
+              <Button
+                variant="ghost"
+                size="sm"
+                onClick={(e) => {
+                  e.stopPropagation();
+                  // Add edit functionality
+                }}
+                className="h-8 w-8 p-0"
+              >
+                <IconEdit className="h-4 w-4" />
+              </Button>
+            </div>
+          )
+        }
+      />
+    );
+  };
+
+  const mobileCardSubtitle = (product: APIProduct) => {
+    const items = [
+      { label: 'Category', value: product.category?.name || 'No Category' },
+    ];
+
+    if (product.brand) {
+      items.push({ label: 'Brand', value: product.brand.name });
+    }
+
+    if (product.supplier) {
+      items.push({ label: 'Supplier', value: product.supplier.name });
+    }
+
+    return <MobileCardSubtitle items={items} maxItems={3} />;
+  };
 
   // Update pagination state when API response changes
   useEffect(() => {
