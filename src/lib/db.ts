@@ -17,10 +17,10 @@ export const prisma =
       },
     },
     errorFormat: 'minimal',
-    // Connection pool and timeout configuration for Supabase
+    // Connection pool and timeout configuration for Nigeria's slow network
     transactionOptions: {
-      maxWait: 5000, // 5 seconds
-      timeout: 10000, // 10 seconds
+      maxWait: 30000, // 30 seconds - increased for slow networks
+      timeout: 60000, // 60 seconds - generous timeout for Nigeria
     },
   });
 
