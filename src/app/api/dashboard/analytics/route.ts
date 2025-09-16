@@ -154,7 +154,6 @@ export const GET = withAuth(async (request: AuthenticatedRequest) => {
       sku: item.sku,
       currentStock: item.stock,
       minStock: item.minStock,
-      maxStock: item.maxStock,
       price: Number(item.price),
       category: 'Uncategorized', // Will be fetched separately if needed
       supplier: 'Unknown Supplier', // Will be fetched separately if needed

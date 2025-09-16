@@ -101,7 +101,6 @@ async function handleGetTransactions(request: AuthenticatedRequest) {
                 select: {
                   name: true,
                   sku: true,
-                  barcode: true,
                 },
               },
             },

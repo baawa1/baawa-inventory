@@ -127,18 +127,10 @@ model Product {
   name                String                    @db.VarChar(255)
   description         String?
   sku                 String                    @unique @db.VarChar(100)
-  barcode             String?                   @db.VarChar(100)
   cost                Decimal                   @db.Decimal(10, 2)
   price               Decimal                   @db.Decimal(10, 2)
   stock               Int                       @default(0)
   minStock            Int                       @default(0) @map("min_stock")
-  maxStock            Int?                      @map("max_stock")
-  unit                String                    @default("piece") @db.VarChar(20)
-  weight              Decimal?                  @db.Decimal(8, 3)
-  dimensions          String?                   @db.VarChar(100)
-  color               String?                   @db.VarChar(50)
-  size                String?                   @db.VarChar(50)
-  material            String?                   @db.VarChar(100)
   hasVariants         Boolean                   @default(false) @map("has_variants")
   isArchived          Boolean                   @default(false) @map("is_archived")
   tags                String[]

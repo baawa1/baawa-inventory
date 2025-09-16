@@ -29,7 +29,6 @@ export interface StockReconciliationItem {
 export interface ProductUpdateData {
   name?: string;
   sku?: string;
-  barcode?: string;
   description?: string;
   categoryId?: number;
   brandId?: number;
@@ -582,12 +581,10 @@ export class InventoryService {
     const updateData: Prisma.ProductUpdateInput = {
       name: data.name,
       sku: data.sku,
-      barcode: data.barcode,
       description: data.description,
       cost: data.purchasePrice,
       price: data.sellingPrice,
       minStock: data.minimumStock,
-      maxStock: data.maximumStock,
       stock: data.currentStock,
       status: data.status,
     };
@@ -758,7 +755,6 @@ export class InventoryService {
                 sku: true,
                 category: true,
                 brand: true,
-                unit: true,
               },
             },
           },

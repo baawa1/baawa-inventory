@@ -74,7 +74,6 @@ async function handleGetProducts(request: AuthenticatedRequest) {
       id: product.id,
       name: product.name,
       sku: product.sku,
-      barcode: product.barcode,
       price: product.price,
       stock: product.stock,
       status: product.status,

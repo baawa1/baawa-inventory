@@ -14,7 +14,6 @@ const ProductUpdateSchema = z.object({
   name: z.string().min(1).max(255).optional(),
   description: z.string().optional().nullable(),
   sku: z.string().min(1).max(100).optional(),
-  barcode: z.string().max(100).optional().nullable(),
   categoryId: z.number().int().positive().optional().nullable(),
   brandId: z.number().int().positive().optional().nullable(),
   supplierId: z.number().int().positive().optional().nullable(),
@@ -156,7 +155,7 @@ export const PUT = withPermission(
       // Check if product exists
       const existingProduct = await prisma.product.findUnique({
         where: { id: productId },
-        select: { id: true, sku: true, barcode: true },
+        select: { id: true, sku: true },
       });
 
       if (!existingProduct) {
@@ -175,8 +174,6 @@ export const PUT = withPermission(
       if (validatedData.description !== undefined)
         updateData.description = validatedData.description;
       if (validatedData.sku !== undefined) updateData.sku = validatedData.sku;
-      if (validatedData.barcode !== undefined)
-        updateData.barcode = validatedData.barcode;
       if (validatedData.categoryId !== undefined)
         updateData.categoryId = validatedData.categoryId;
       if (validatedData.brandId !== undefined)
@@ -236,26 +233,6 @@ export const PUT = withPermission(
         }
       }
 
-      // Check for barcode conflicts if barcode is being updated
-      if (
-        validatedData.barcode &&
-        validatedData.barcode !== existingProduct.barcode
-      ) {
-        const barcodeConflict = await prisma.product.findFirst({
-          where: {
-            barcode: validatedData.barcode,
-            id: { not: productId },
-          },
-          select: { id: true },
-        });
-
-        if (barcodeConflict) {
-          return NextResponse.json(
-            { error: 'Product with this barcode already exists' },
-            { status: 409 }
-          );
-        }
-      }
 
       // Validate relationships if provided
       if (validatedData.categoryId) {
