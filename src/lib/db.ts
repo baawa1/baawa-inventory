@@ -4,9 +4,9 @@ const globalForPrisma = globalThis as unknown as {
   prisma: PrismaClient | undefined;
 };
 
-export const prisma =
-  globalForPrisma.prisma ??
-  new PrismaClient({
+// Enhanced database connection with prepared statement conflict prevention
+const createPrismaClient = () => {
+  return new PrismaClient({
     log:
       process.env.NODE_ENV === 'development'
         ? ['query', 'info', 'warn', 'error']
@@ -25,8 +25,20 @@ export const prisma =
       timeout: 60000, // 60 seconds - generous timeout for Nigeria
     },
   });
+};
+
+export const prisma = globalForPrisma.prisma ?? createPrismaClient();
 
 if (process.env.NODE_ENV !== 'production') globalForPrisma.prisma = prisma;
+
+// Enhanced connection cleanup for serverless environments
+export const cleanupConnection = async () => {
+  try {
+    await prisma.$disconnect();
+  } catch (error) {
+    console.error('Error during connection cleanup:', error);
+  }
+};
 
 // Graceful shutdown for connection cleanup (only in Node.js runtime)
 if (typeof process !== 'undefined' && process.on) {
