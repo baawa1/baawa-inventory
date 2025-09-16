@@ -16,9 +16,12 @@ export const prisma =
         url: process.env.DATABASE_URL,
       },
     },
-    // Connection pool configuration for better performance
     errorFormat: 'minimal',
-    // These settings help with concurrent requests and performance
+    // Connection pool and timeout configuration for Supabase
+    transactionOptions: {
+      maxWait: 5000, // 5 seconds
+      timeout: 10000, // 10 seconds
+    },
   });
 
 if (process.env.NODE_ENV !== 'production') globalForPrisma.prisma = prisma;
