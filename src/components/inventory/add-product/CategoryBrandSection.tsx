@@ -36,9 +36,11 @@ export function CategoryBrandSection({
   loading,
 }: CategoryBrandSectionProps) {
   return (
-    <Card>
+    <Card className="gap-0">
       <CardHeader className="pb-3 sm:pb-6">
-        <CardTitle className="text-base sm:text-lg">Category, Brand & Supplier</CardTitle>
+        <CardTitle className="text-base sm:text-lg">
+          Category, Brand & Supplier
+        </CardTitle>
       </CardHeader>
       <CardContent className="space-y-3 sm:space-y-4">
         <div className="grid grid-cols-1 gap-3 sm:gap-4 md:grid-cols-3">

@@ -86,7 +86,7 @@ export default function AddProductForm() {
         <Card>
           <CardContent className="p-4 sm:p-6">
             <div className="flex items-center justify-center py-8 sm:py-12">
-              <Loader2 className="mr-3 h-6 w-6 sm:h-8 sm:w-8 animate-spin" />
+              <Loader2 className="mr-3 h-6 w-6 animate-spin sm:h-8 sm:w-8" />
               <span>Loading form...</span>
             </div>
           </CardContent>
@@ -112,9 +112,11 @@ export default function AddProductForm() {
         />
       </div>
 
-      <Card>
+      <Card className="gap-0">
         <CardHeader className="pb-4 sm:pb-6">
-          <CardTitle className="text-lg sm:text-xl">Product Information</CardTitle>
+          <CardTitle className="text-lg sm:text-xl">
+            Product Information
+          </CardTitle>
           <CardDescription className="text-sm">
             Enter the details for your new product. Required fields are marked
             with an asterisk (*).
@@ -122,7 +124,10 @@ export default function AddProductForm() {
         </CardHeader>
         <CardContent className="space-y-4 sm:space-y-6">
           <Form {...form}>
-            <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-4 sm:space-y-6">
+            <form
+              onSubmit={form.handleSubmit(onSubmit)}
+              className="space-y-4 sm:space-y-6"
+            >
               {submitError && (
                 <Alert variant="destructive">
                   <AlertDescription>{submitError}</AlertDescription>
