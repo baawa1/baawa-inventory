@@ -52,12 +52,14 @@ interface ProductImageSectionProps {
   form: UseFormReturn<any>;
   images: CreateProductData['images'];
   onImagesChange: (images: CreateProductData['images']) => void;
+  onUploadingChange?: (isUploading: boolean) => void;
 }
 
 export function ProductImageSection({
   form,
   images,
   onImagesChange,
+  onUploadingChange,
 }: ProductImageSectionProps) {
   const [dragOver, setDragOver] = useState(false);
   const [uploading, setUploading] = useState(false);
@@ -90,6 +92,7 @@ export function ProductImageSection({
 
   const uploadImages = async (files: File[]) => {
     setUploading(true);
+    onUploadingChange?.(true);
     const newImages: ProductImageType[] = [];
 
     try {
@@ -161,6 +164,7 @@ export function ProductImageSection({
       );
     } finally {
       setUploading(false);
+      onUploadingChange?.(false);
     }
   };
 

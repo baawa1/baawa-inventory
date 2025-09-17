@@ -34,6 +34,7 @@ type CreateProductData = z.infer<typeof createProductSchema>;
 export default function AddProductForm() {
   const router = useRouter();
   const [images, setImages] = useState<CreateProductData['images']>([]);
+  const [isImageUploading, setIsImageUploading] = useState(false);
 
   const {
     loading,
@@ -152,10 +153,12 @@ export default function AddProductForm() {
                 form={form}
                 images={images}
                 onImagesChange={setImages}
+                onUploadingChange={setIsImageUploading}
               />
 
               <FormActions
                 isSubmitting={isSubmitting}
+                isImageUploading={isImageUploading}
                 onCancelAction={() => router.push('/inventory/products')}
               />
             </form>
