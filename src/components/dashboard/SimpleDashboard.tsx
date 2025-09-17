@@ -395,19 +395,19 @@ export function SimpleDashboard({ user }: SimpleDashboardProps) {
                 Open POS
               </Button>
             </Link>
-            <Link href="/inventory/products/new">
+            <Link href="/inventory/products/add">
               <Button variant="outline" size="sm" className="w-full gap-2">
                 <IconPlus className="h-4 w-4" />
                 Add Product
               </Button>
             </Link>
-            <Link href="/reports">
+            <Link href="/finance/reports">
               <Button variant="outline" size="sm" className="w-full gap-2">
                 <IconFileText className="h-4 w-4" />
                 View Reports
               </Button>
             </Link>
-            <Link href="/settings">
+            <Link href="/admin">
               <Button variant="outline" size="sm" className="w-full gap-2">
                 <IconSettings className="h-4 w-4" />
                 Settings
