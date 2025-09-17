@@ -570,7 +570,7 @@ export function SlidingPaymentInterface({
 
       {/* Navigation - Fixed at bottom with compact sizing */}
       <div className="bg-background flex flex-shrink-0 justify-between border-t p-2 sm:p-4">
-        {currentStep !== 5 && (
+        {currentStep !== 5 && currentStep !== 6 && (
           <Button
             variant="outline"
             onClick={prevStep}
@@ -604,14 +604,6 @@ export function SlidingPaymentInterface({
           </Button>
         ) : currentStep === 6 ? (
           <div className="ml-auto flex w-full gap-2 sm:w-auto sm:gap-3">
-            <Button
-              variant="outline"
-              onClick={onCancel}
-              className="h-9 min-w-14 flex-1 sm:h-10 sm:min-w-32 sm:flex-none"
-            >
-              <IconX className="mr-1 h-4 w-4 sm:mr-2" />
-              <span className="xs:inline hidden">Close</span>
-            </Button>
             <Button
               onClick={() => {
                 onPaymentSuccess(completedSale!);
@@ -2093,14 +2085,6 @@ function ReceiptStep({ sale }: { sale: Sale | null }) {
         <Button onClick={handlePrint} variant="outline" className="flex-1">
           <IconPrinter className="mr-2 h-4 w-4" />
           Print
-        </Button>
-        <Button
-          onClick={handleThermalPrint}
-          variant="outline"
-          className="flex-1"
-        >
-          <IconPrinter className="mr-2 h-4 w-4" />
-          Thermal Printer
         </Button>
         {sale.customerEmail && (
           <Button
