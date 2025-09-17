@@ -7,6 +7,7 @@ import type { CreateProductData } from './types';
 import { logger } from '@/lib/logger';
 import { useQueryClient } from '@tanstack/react-query';
 import { queryKeys } from '@/lib/query-client';
+import { usePermissions } from '@/hooks/usePermissions';
 
 export function useProductSubmit(
   form: UseFormReturn<CreateProductData>,
@@ -15,6 +16,7 @@ export function useProductSubmit(
 ) {
   const router = useRouter();
   const queryClient = useQueryClient();
+  const permissions = usePermissions();
 
   const onSubmit = async (data: CreateProductData) => {
     setIsSubmitting(true);
@@ -27,6 +29,11 @@ export function useProductSubmit(
         description: data.description?.trim() || null,
         wordpress_id: data.wordpress_id ?? null,
       };
+
+      // Remove purchasePrice if user doesn't have cost permissions
+      if (!permissions.canViewCost) {
+        delete cleanedData.purchasePrice;
+      }
 
       const response = await fetch('/api/products', {
         method: 'POST',

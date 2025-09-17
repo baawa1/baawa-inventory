@@ -27,6 +27,7 @@ import { FormActions } from './add-product/FormActions';
 import { useFormDataQuery } from './add-product/useFormDataQuery';
 import { useProductSubmit } from './add-product/useProductSubmit';
 import { defaultFormValues } from './add-product/types';
+import { usePermissions } from '@/hooks/usePermissions';
 import { z } from 'zod';
 
 type CreateProductData = z.infer<typeof createProductSchema>;
@@ -35,6 +36,7 @@ export default function AddProductForm() {
   const router = useRouter();
   const [images, setImages] = useState<CreateProductData['images']>([]);
   const [isImageUploading, setIsImageUploading] = useState(false);
+  const permissions = usePermissions();
 
   const {
     loading,
@@ -47,9 +49,15 @@ export default function AddProductForm() {
     setSubmitError,
   } = useFormDataQuery();
 
+  // Create form default values based on user permissions
+  const formDefaultValues = {
+    ...defaultFormValues,
+    ...(permissions.canViewCost ? {} : { purchasePrice: undefined }),
+  };
+
   const form = useForm({
     resolver: zodResolver(createProductSchema),
-    defaultValues: defaultFormValues,
+    defaultValues: formDefaultValues,
   });
 
   const { onSubmit } = useProductSubmit(form, setIsSubmitting, setSubmitError);
