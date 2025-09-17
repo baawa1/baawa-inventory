@@ -1,4 +1,4 @@
-import { prisma } from '@/lib/db';
+import { createFreshPrismaClient } from '@/lib/db';
 import { withAuth, AuthenticatedRequest } from '@/lib/api-middleware';
 import { createApiResponse } from '@/lib/api-response';
 import { logger } from '@/lib/logger';
@@ -14,6 +14,7 @@ const analyticsQuerySchema = z.object({
 
 // GET /api/finance/analytics - Get financial analytics data
 export const GET = withAuth(async (request: AuthenticatedRequest) => {
+  const prisma = createFreshPrismaClient();
   try {
     const { searchParams } = new URL(request.url);
     const queryParams = {
@@ -261,5 +262,9 @@ export const GET = withAuth(async (request: AuthenticatedRequest) => {
       500,
       error
     );
+  } finally {
+    if (process.env.NODE_ENV === 'production') {
+      await prisma.$disconnect();
+    }
   }
 });
