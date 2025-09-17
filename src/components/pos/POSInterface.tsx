@@ -250,7 +250,7 @@ export function POSInterface() {
           </div>
         </div>
 
-        <div className="grid min-h-0 flex-1 grid-cols-1 gap-6 p-3 sm:p-6 lg:grid-cols-3">
+        <div className="grid min-h-0 flex-1 grid-cols-1 gap-3 p-3 sm:gap-6 sm:p-6 lg:grid-cols-3">
           {/* Left Column - Product Search and Grid */}
           <div className="flex min-h-0 flex-col lg:col-span-2">
             <POSErrorBoundary componentName="ProductGrid">
@@ -261,12 +261,12 @@ export function POSInterface() {
             </POSErrorBoundary>
           </div>
 
-          {/* Right Column - Cart and Actions - Full Height */}
-          <div className="flex min-h-0 flex-col lg:h-full">
+          {/* Right Column - Cart and Actions - Optimized Height */}
+          <div className="flex min-h-0 flex-col lg:h-full lg:max-h-[calc(100vh-120px)]">
             {currentStep === 'payment' ? (
               /* Payment Interface - Slides in over cart */
               <POSErrorBoundary componentName="SlidingPaymentInterface">
-                <div className="bg-background fixed inset-0 z-50 lg:static lg:z-auto lg:bg-transparent">
+                <div className="bg-background fixed inset-0 z-50 h-full lg:static lg:z-auto lg:bg-transparent">
                   <SlidingPaymentInterface
                     items={cart}
                     subtotal={subtotal}
@@ -301,20 +301,20 @@ export function POSInterface() {
             ) : (
               /* Normal Cart View */
               <>
-                {/* Shopping Cart - Full height with scrollable content */}
-                <Card className="flex min-h-0 flex-1 flex-col gap-1 py-3 md:gap-6 md:py-6">
-                  <CardHeader className="flex-shrink-0">
-                    <CardTitle className="flex items-center justify-between">
-                      <span className="flex items-center gap-2">
-                        <IconShoppingCart className="h-5 w-5" />
-                        Shopping Cart
+                {/* Shopping Cart - Optimized for smaller screens */}
+                <Card className="flex min-h-0 flex-1 flex-col gap-0 py-4">
+                  <CardHeader className="flex-shrink-0 px-4">
+                    <CardTitle className="flex items-center justify-between text-sm sm:text-base">
+                      <span className="flex items-center gap-1 sm:gap-2">
+                        <IconShoppingCart className="h-4 w-4 sm:h-5 sm:w-5" />
+                        Cart
                       </span>
-                      <span className="text-muted-foreground text-sm font-normal">
+                      <span className="text-muted-foreground text-xs font-normal sm:text-sm">
                         {cart.length} items
                       </span>
                     </CardTitle>
                   </CardHeader>
-                  <CardContent className="flex min-h-0 flex-1 flex-col p-0">
+                  <CardContent className="flex min-h-0 flex-1 flex-col overflow-hidden p-0">
                     <POSErrorBoundary componentName="ShoppingCart">
                       <ShoppingCart
                         items={cart}
@@ -327,16 +327,16 @@ export function POSInterface() {
                   </CardContent>
                 </Card>
 
-                {/* Order Summary and Actions - Fixed at bottom */}
-                <div className="mt-3 flex flex-shrink-0 flex-col gap-2 py-3 sm:mt-6 sm:gap-3 sm:py-0">
+                {/* Order Summary and Actions - Compact for small screens */}
+                <div className="mt-2 flex flex-shrink-0 flex-col gap-2 sm:mt-4 sm:gap-3">
                   {/* Order Summary */}
-                  <Card className="py-0 md:py-6">
-                    <CardHeader className="hidden pb-2 sm:block sm:pb-3">
+                  <Card className="gap-0 py-0 sm:py-3">
+                    <CardHeader className="hidden pb-2 sm:block md:pb-0 2xl:pb-4">
                       <CardTitle className="text-base sm:text-lg">
                         Order Summary
                       </CardTitle>
                     </CardHeader>
-                    <CardContent className="pt-3 pb-3 sm:pt-0 sm:pb-6">
+                    <CardContent className="pt-2 sm:pt-3">
                       <div className="space-y-1 sm:space-y-2">
                         <div className="hidden justify-between text-sm sm:flex sm:text-base">
                           <span>Subtotal:</span>

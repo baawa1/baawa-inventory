@@ -255,7 +255,7 @@ export function SlidingPaymentInterface({
           quantity: item.quantity,
           price: item.price,
           total: item.price * item.quantity,
-          couponId: appliedCoupon?.id, // Add coupon ID to all items
+          ...(appliedCoupon?.id && { couponId: appliedCoupon.id }), // Only add couponId if it exists
         })),
         subtotal,
         discount,
@@ -510,9 +510,9 @@ export function SlidingPaymentInterface({
     paymentMethod === 'cash' ? calculateChange(amountPaid, total) : 0;
 
   return (
-    <div className="bg-background animate-in slide-in-from-right flex h-full flex-col rounded-lg border shadow-lg duration-300 lg:rounded-lg lg:border lg:shadow-lg">
+    <div className="bg-background animate-in slide-in-from-right flex h-full max-h-screen flex-col overflow-hidden rounded-lg border shadow-lg duration-300 lg:max-h-[calc(100vh-8rem)] lg:rounded-lg lg:border lg:shadow-lg">
       {/* Header */}
-      <div className="flex items-center justify-between border-b p-3 sm:p-4">
+      <div className="flex items-center justify-between border-b p-2 sm:p-4">
         <div className="flex items-center gap-2 sm:gap-4">
           <Button
             variant="ghost"
@@ -521,20 +521,24 @@ export function SlidingPaymentInterface({
             disabled={processing}
             className="h-8 w-8 p-0 sm:h-auto sm:w-auto sm:p-2"
           >
-            <IconX className="h-5 w-5 sm:h-4 sm:w-4" />
+            <IconX className="h-4 w-4 sm:h-5 sm:w-5" />
           </Button>
           <div>
-            <h2 className="text-base sm:text-lg font-semibold">Payment Processing</h2>
+            <h2 className="text-sm font-semibold sm:text-base">
+              Payment Processing
+            </h2>
             <p className="text-muted-foreground text-xs sm:text-sm">
               Step {currentStep + 1} of {STEPS.length}:{' '}
-              <span className="hidden xs:inline">{STEPS[currentStep].title}</span>
+              <span className="xs:inline hidden">
+                {STEPS[currentStep].title}
+              </span>
             </p>
           </div>
         </div>
       </div>
 
       {/* Progress Bar */}
-      <div className="border-b px-3 py-2 sm:px-4">
+      <div className="border-b px-2 py-1 sm:px-4 sm:py-2">
         <div className="flex gap-1">
           {STEPS.map((step, index) => (
             <button
@@ -551,7 +555,7 @@ export function SlidingPaymentInterface({
                 setCurrentStep(index);
               }}
               disabled={currentStep === 6 || (index === 6 && currentStep !== 6)}
-              className={`h-2 sm:h-2 flex-1 rounded-full transition-colors ${
+              className={`h-1.5 flex-1 rounded-full transition-colors sm:h-2 ${
                 index <= currentStep ? 'bg-primary' : 'bg-muted'
               } ${currentStep === 6 || (index === 6 && currentStep !== 6) ? 'cursor-not-allowed' : 'cursor-pointer'}`}
             />
@@ -559,20 +563,22 @@ export function SlidingPaymentInterface({
         </div>
       </div>
 
-      {/* Step Content */}
-      <div className="flex-1 overflow-y-auto p-3 sm:p-4">{renderStepContent()}</div>
+      {/* Step Content - Scrollable with proper height constraints */}
+      <div className="max-h-[calc(100vh-200px)] min-h-0 flex-1 overflow-y-auto p-2 sm:max-h-none sm:p-4">
+        {renderStepContent()}
+      </div>
 
-      {/* Navigation */}
-      <div className="flex justify-between border-t p-3 sm:p-4">
+      {/* Navigation - Fixed at bottom with compact sizing */}
+      <div className="bg-background flex flex-shrink-0 justify-between border-t p-2 sm:p-4">
         {currentStep !== 5 && (
           <Button
             variant="outline"
             onClick={prevStep}
             disabled={currentStep === 0 || processing}
-            className="h-11 sm:h-10"
+            className="h-9 sm:h-10"
           >
-            <IconArrowLeft className="mr-1 sm:mr-2 h-4 w-4" />
-            <span className="hidden xs:inline">Previous</span>
+            <IconArrowLeft className="mr-1 h-4 w-4 sm:mr-2" />
+            <span className="xs:inline hidden">Previous</span>
           </Button>
         )}
 
@@ -580,48 +586,52 @@ export function SlidingPaymentInterface({
           <Button
             onClick={handlePayment}
             disabled={!canProceed() || processing}
-            className="min-w-24 sm:min-w-32 h-11 sm:h-10 flex-1 sm:flex-none ml-2 sm:ml-0"
+            className="ml-2 h-9 min-w-20 flex-1 sm:ml-0 sm:h-10 sm:min-w-32 sm:flex-none"
           >
             {processing ? (
               <>
-                <IconLoader className="mr-1 sm:mr-2 h-4 w-4 animate-spin" />
-                <span className="hidden xs:inline">Processing...</span>
+                <IconLoader className="mr-1 h-4 w-4 animate-spin sm:mr-2" />
+                <span className="xs:inline hidden">Processing...</span>
                 <span className="xs:hidden">...</span>
               </>
             ) : (
               <>
-                <IconCheck className="mr-1 sm:mr-2 h-4 w-4" />
-                <span className="hidden xs:inline">Complete Payment</span>
+                <IconCheck className="mr-1 h-4 w-4 sm:mr-2" />
+                <span className="xs:inline hidden">Complete Payment</span>
                 <span className="xs:hidden">Pay</span>
               </>
             )}
           </Button>
         ) : currentStep === 6 ? (
-          <div className="ml-auto flex gap-2 sm:gap-3 w-full sm:w-auto">
-            <Button variant="outline" onClick={onCancel} className="min-w-16 sm:min-w-32 flex-1 sm:flex-none h-11 sm:h-10">
-              <IconX className="mr-1 sm:mr-2 h-4 w-4" />
-              <span className="hidden xs:inline">Close</span>
+          <div className="ml-auto flex w-full gap-2 sm:w-auto sm:gap-3">
+            <Button
+              variant="outline"
+              onClick={onCancel}
+              className="h-9 min-w-14 flex-1 sm:h-10 sm:min-w-32 sm:flex-none"
+            >
+              <IconX className="mr-1 h-4 w-4 sm:mr-2" />
+              <span className="xs:inline hidden">Close</span>
             </Button>
             <Button
               onClick={() => {
                 onPaymentSuccess(completedSale!);
                 onCancel();
               }}
-              className="min-w-16 sm:min-w-32 flex-1 sm:flex-none h-11 sm:h-10"
+              className="h-9 min-w-14 flex-1 sm:h-10 sm:min-w-32 sm:flex-none"
             >
-              <IconCash className="mr-1 sm:mr-2 h-4 w-4" />
-              <span className="hidden xs:inline">New Sale</span>
+              <IconCash className="mr-1 h-4 w-4 sm:mr-2" />
+              <span className="xs:inline hidden">New Sale</span>
               <span className="xs:hidden">New</span>
             </Button>
           </div>
         ) : (
-          <Button 
-            onClick={nextStep} 
+          <Button
+            onClick={nextStep}
             disabled={!canProceed() || processing}
-            className="h-11 sm:h-10 flex-1 sm:flex-none ml-2 sm:ml-0"
+            className="ml-2 h-9 flex-1 sm:ml-0 sm:h-10 sm:flex-none"
           >
-            <span className="hidden xs:inline">Next</span>
-            <IconArrowRight className="ml-1 sm:ml-2 h-4 w-4" />
+            <span className="xs:inline hidden">Next</span>
+            <IconArrowRight className="ml-1 h-4 w-4 sm:ml-2" />
           </Button>
         )}
       </div>
@@ -1614,11 +1624,13 @@ function SplitPaymentInterface({
 
       <div className="space-y-3">
         {splitPayments.map(payment => (
-          <Card key={payment.id}>
-            <CardContent className="p-4">
+          <Card key={payment.id} className="py-4">
+            <CardContent className="px-4">
               <div className="flex items-center gap-3">
                 <div className="flex-1">
-                  <Label htmlFor={`amount-${payment.id}`}>Amount (₦)</Label>
+                  <Label className="pb-3" htmlFor={`amount-${payment.id}`}>
+                    Amount (₦)
+                  </Label>
                   <Input
                     id={`amount-${payment.id}`}
                     type="number"
@@ -1635,7 +1647,9 @@ function SplitPaymentInterface({
                   />
                 </div>
                 <div className="flex-1">
-                  <Label htmlFor={`method-${payment.id}`}>Method</Label>
+                  <Label className="pb-3" htmlFor={`method-${payment.id}`}>
+                    Method
+                  </Label>
                   <select
                     id={`method-${payment.id}`}
                     value={payment.method}

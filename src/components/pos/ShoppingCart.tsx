@@ -56,9 +56,9 @@ export function ShoppingCart({
   const { subtotal: totalValue } = calculateOrderTotals(items, 0);
 
   return (
-    <div className="flex h-full flex-col">
+    <div className="flex h-full min-h-0 flex-col">
       {/* Cart Header - Fixed */}
-      <div className="mb-2 flex flex-shrink-0 items-center justify-between px-3 pt-0 sm:mb-4 sm:px-6 sm:pt-6 md:pt-3">
+      <div className="mb-1 flex flex-shrink-0 items-center justify-between px-2 pt-0 sm:mb-3 sm:px-4 sm:pt-0 2xl:pt-3">
         <div className="text-muted-foreground text-xs sm:text-sm">
           {totalItems} item{totalItems !== 1 ? 's' : ''} •{' '}
           {formatCurrency(totalValue)}
@@ -68,22 +68,22 @@ export function ShoppingCart({
           size="sm"
           onClick={onClearCart}
           disabled={disabled}
-          className="h-8 px-3 sm:h-auto sm:px-4"
+          className="h-7 px-2 text-xs sm:h-8 sm:px-3 sm:text-sm"
         >
-          <IconTrash className="mr-1 h-4 w-4" />
+          <IconTrash className="mr-1 h-3 w-3 sm:h-4 sm:w-4" />
           <span className="xs:inline hidden">Clear</span>
         </Button>
       </div>
 
-      {/* Cart Items - Scrollable and fills available space */}
-      <div className="min-h-0 flex-1 space-y-2 overflow-y-auto px-3 pb-2 sm:space-y-3 sm:px-6 sm:pb-6">
+      {/* Cart Items - Optimized scrollable area */}
+      <div className="max-h-[300px] min-h-0 flex-1 space-y-1 overflow-y-auto px-2 pb-1 sm:max-h-none sm:space-y-2 sm:px-4 sm:pb-3">
         {items.map(item => (
           <Card
             key={item.id}
-            className="border-l-primary border-l-4 py-3 md:py-6"
+            className="border-l-primary border-l-2 py-2 sm:border-l-4 sm:py-3"
           >
-            <CardContent className="px-3 sm:p-4">
-              <div className="space-y-2 sm:space-y-3">
+            <CardContent className="px-2 sm:px-3">
+              <div className="space-y-1 sm:space-y-2">
                 {/* Product Info */}
                 <div className="flex items-start justify-between">
                   <div className="flex-1">
@@ -197,13 +197,13 @@ export function ShoppingCart({
         ))}
       </div>
 
-      {/* Cart Summary - Fixed at bottom */}
-      <div className="flex-shrink-0 space-y-2 border-t px-6 pt-2 pb-0 md:pt-4 md:pb-6">
-        <div className="flex justify-between text-sm">
-          <span>Total Items:</span>
+      {/* Cart Summary - Compact fixed bottom */}
+      <div className="flex-shrink-0 space-y-1 border-t px-2 pt-1 pb-1 sm:space-y-2 sm:px-4 sm:pt-2 sm:pb-0">
+        <div className="flex justify-between text-xs sm:text-sm">
+          <span>Items:</span>
           <span>{totalItems}</span>
         </div>
-        <div className="flex justify-between text-lg font-semibold">
+        <div className="flex justify-between text-sm font-semibold sm:text-base">
           <span>Subtotal:</span>
           <span>{formatCurrency(totalValue)}</span>
         </div>

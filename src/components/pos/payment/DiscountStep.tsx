@@ -59,8 +59,8 @@ export function DiscountStep({
   const finalTotal = subtotal - currentTotalDiscount;
 
   return (
-    <div className="space-y-4">
-      <h3 className="text-lg font-semibold">Discount</h3>
+    <div className="space-y-3 sm:space-y-4">
+      <h3 className="text-base font-semibold sm:text-lg">Discount</h3>
 
       {/* Discount Type Selection */}
       <div className="space-y-2">
@@ -150,8 +150,8 @@ export function DiscountStep({
       {/* Quick Discount Buttons */}
       {discountType === 'percentage' && !appliedCoupon && (
         <div className="space-y-2">
-          <Label>Quick Discount</Label>
-          <div className="grid grid-cols-3 gap-2">
+          <Label className="text-sm">Quick Discount</Label>
+          <div className="grid grid-cols-3 gap-1 sm:gap-2">
             {[5, 10, 15, 20, 25, 50].map(percent => (
               <Button
                 key={percent}
@@ -160,6 +160,7 @@ export function DiscountStep({
                 size="sm"
                 onClick={() => handleDiscountChange(percent)}
                 disabled={processing}
+                className="h-auto py-0.5 text-xs sm:text-sm"
               >
                 {percent}%
               </Button>
