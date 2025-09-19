@@ -57,7 +57,8 @@ class APICache {
       params: params ? JSON.stringify(params) : '',
       userId: userId || null,
     };
-    return btoa(JSON.stringify(keyData));
+    const keyJson = JSON.stringify(keyData);
+    return Buffer.from(keyJson, 'utf8').toString('base64');
   }
 
   /**
@@ -116,7 +117,9 @@ class APICache {
 
     for (const [key] of this.cache) {
       try {
-        const decoded = JSON.parse(atob(key));
+        const decoded = JSON.parse(
+          Buffer.from(key, 'base64').toString('utf8')
+        );
         if (decoded.endpoint.includes(pattern)) {
           keysToDelete.push(key);
         }
@@ -165,15 +168,24 @@ class APICache {
 // Singleton instance
 export const apiCache = new APICache();
 
+let cleanupInterval: ReturnType<typeof setInterval> | null = null;
+
 // Cleanup expired entries every 10 minutes
 if (typeof window === 'undefined') {
   // Only run on server
-  setInterval(
+  cleanupInterval = setInterval(
     () => {
       apiCache.cleanup();
     },
     10 * 60 * 1000
   );
+}
+
+export function stopApiCacheCleanup(): void {
+  if (cleanupInterval) {
+    clearInterval(cleanupInterval);
+    cleanupInterval = null;
+  }
 }
 
 /**
