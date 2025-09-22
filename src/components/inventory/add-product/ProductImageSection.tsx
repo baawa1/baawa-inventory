@@ -41,6 +41,7 @@ import {
   generateAltText,
   ensureUniqueImages,
   sortImages,
+  buildProductImageFolder,
 } from '@/lib/utils/image-utils';
 import { logger } from '@/lib/logger';
 import { normalizeImageUrl } from '@/lib/utils/image';
@@ -66,6 +67,7 @@ export function ProductImageSection({
   const fileInputRef = useRef<HTMLInputElement>(null);
 
   const productName = form.watch('name') || 'Product';
+  const productSku = form.watch('sku');
   const categoryName = form.watch('categoryId') ? 'Category' : undefined;
   const brandName = form.watch('brandId') ? 'Brand' : undefined;
 
@@ -96,6 +98,9 @@ export function ProductImageSection({
     const newImages: ProductImageType[] = [];
 
     try {
+      const folder = productSku
+        ? buildProductImageFolder(productSku)
+        : 'products';
       for (let i = 0; i < files.length; i++) {
         const file = files[i];
         const imageIndex = images.length + i;
@@ -118,7 +123,7 @@ export function ProductImageSection({
         // Upload file using the new storage system
         const formData = new FormData();
         formData.append('file', renamedFile);
-        formData.append('folder', 'products');
+        formData.append('folder', folder);
         formData.append('quality', '85');
 
         const response = await fetch('/api/upload', {
@@ -156,12 +161,12 @@ export function ProductImageSection({
       onImagesChange(uniqueUpdatedImages);
       toast.success(`${newImages.length} image(s) uploaded successfully`);
     } catch (error) {
+      const errorMessage =
+        error instanceof Error ? error.message : 'Failed to upload images';
+      toast.error(errorMessage);
       logger.error('Product image upload failed', {
-        error: error instanceof Error ? error.message : String(error),
+        error: errorMessage,
       });
-      toast.error(
-        error instanceof Error ? error.message : 'Failed to upload images'
-      );
     } finally {
       setUploading(false);
       onUploadingChange?.(false);

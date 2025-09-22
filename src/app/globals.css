@@ -36,9 +36,9 @@
   --sidebar-accent-foreground: oklch(1 0 0);
   --sidebar-border: oklch(0 0 0);
   --sidebar-ring: oklch(0.6489 0.237 26.9728);
-  --font-sans: Oxanium, sans-serif;
-  --font-serif: Plus Jakarta Sans, sans-serif;
-  --font-mono: Roboto, sans-serif;
+  --font-sans: 'Inter', 'Segoe UI', system-ui, -apple-system, BlinkMacSystemFont, sans-serif;
+  --font-serif: 'Plus Jakarta Sans', 'Segoe UI', system-ui, -apple-system, BlinkMacSystemFont, sans-serif;
+  --font-mono: 'Roboto', 'Segoe UI', system-ui, -apple-system, BlinkMacSystemFont, sans-serif;
   --radius: 0.5rem;
   --shadow-2xs: 4px 4px 0px 0px hsl(0 0% 0% / 0.5);
   --shadow-xs: 4px 4px 0px 0px hsl(0 0% 0% / 0.5);
@@ -89,9 +89,9 @@
   --sidebar-accent-foreground: oklch(0 0 0);
   --sidebar-border: oklch(1 0 0);
   --sidebar-ring: oklch(0.7044 0.1872 23.1858);
-  --font-sans: Oxanium, sans-serif;
-  --font-serif: Plus Jakarta Sans, sans-serif;
-  --font-mono: Roboto, sans-serif;
+  --font-sans: 'Inter', 'Segoe UI', system-ui, -apple-system, BlinkMacSystemFont, sans-serif;
+  --font-serif: 'Plus Jakarta Sans', 'Segoe UI', system-ui, -apple-system, BlinkMacSystemFont, sans-serif;
+  --font-mono: 'Roboto', 'Segoe UI', system-ui, -apple-system, BlinkMacSystemFont, sans-serif;
   --radius: 0.5rem;
   --shadow-2xs: 4px 4px 0px 0px hsl(0 0% 0% / 0.5);
   --shadow-xs: 4px 4px 0px 0px hsl(0 0% 0% / 0.5);

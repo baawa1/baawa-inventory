@@ -42,6 +42,7 @@ import {
   generateAltText,
   ensureUniqueImages,
   sortImages,
+  buildProductImageFolder,
 } from '@/lib/utils/image-utils';
 import { logger } from '@/lib/logger';
 import { normalizeImageUrl } from '@/lib/utils/image';
@@ -307,6 +308,10 @@ export function ProductImageManager({
     const newImages: ProductImage[] = [];
 
     try {
+      const folder = product.sku
+        ? buildProductImageFolder(product.sku)
+        : 'products';
+
       for (let i = 0; i < files.length; i++) {
         const file = files[i];
         const imageIndex = images.length + i;
@@ -329,7 +334,7 @@ export function ProductImageManager({
         // Upload file using the new storage system
         const formData = new FormData();
         formData.append('file', renamedFile);
-        formData.append('folder', 'products');
+        formData.append('folder', folder);
         formData.append('quality', '85');
 
         const response = await fetch('/api/upload', {
@@ -368,13 +373,13 @@ export function ProductImageManager({
       updateImagesMutation.mutate(uniqueUpdatedImages);
       onImagesChange?.(uniqueUpdatedImages);
     } catch (error) {
+      const errorMessage =
+        error instanceof Error ? error.message : 'Failed to upload images';
+      toast.error(errorMessage);
       logger.error('Product image upload failed', {
         productId,
-        error: error instanceof Error ? error.message : String(error),
+        error: errorMessage,
       });
-      toast.error(
-        error instanceof Error ? error.message : 'Failed to upload images'
-      );
     } finally {
       setUploading(false);
     }

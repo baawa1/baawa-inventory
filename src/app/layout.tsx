@@ -1,5 +1,4 @@
 import type { Metadata, Viewport } from 'next';
-import { Oxanium, Plus_Jakarta_Sans, Roboto } from 'next/font/google';
 import './globals.css';
 
 import { QueryProvider } from '@/components/providers/QueryProvider';
@@ -10,22 +9,6 @@ import { Toaster } from '@/components/ui/sonner';
 import { PWAManager } from '@/components/pwa/PWAManager';
 import { NavigationLoading } from '@/components/ui/navigation-loading';
 import { RoutePreloader } from '@/components/providers/RoutePreloader';
-
-const oxanium = Oxanium({
-  variable: '--font-sans',
-  subsets: ['latin'],
-});
-
-const plusJakartaSans = Plus_Jakarta_Sans({
-  variable: '--font-serif',
-  subsets: ['latin'],
-});
-
-const roboto = Roboto({
-  variable: '--font-mono',
-  subsets: ['latin'],
-  weight: ['300', '400', '500', '700'],
-});
 
 export const metadata: Metadata = {
   title: 'BaaWA Inventory & POS',
@@ -84,9 +67,7 @@ export default function RootLayout({
       <head>
         <link rel="apple-touch-icon" href="/apple-touch-icon.png" />
       </head>
-      <body
-        className={`${oxanium.variable} ${plusJakartaSans.variable} ${roboto.variable} antialiased`}
-      >
+      <body className="antialiased font-sans">
         <ThemeProvider
           attribute="class"
           defaultTheme="system"

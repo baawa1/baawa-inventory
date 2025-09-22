@@ -7,6 +7,7 @@ import { handleApiError } from '@/lib/api-error-handler-new';
 import { createFreshPrismaClient } from '@/lib/db';
 import { createSecureResponse } from '@/lib/security-headers';
 import { logger } from '@/lib/logger';
+import { promoteProductImagesToSkuFolder } from '@/lib/services/product-image-service';
 import { hasPermission } from '@/lib/auth/roles';
 
 import { PRODUCT_STATUS } from '@/lib/constants';
@@ -434,36 +435,55 @@ export const POST = withPermission(
         productData.cost = 0;
       }
 
-      const newProduct = await prisma.product.create({
-        data: productData,
-        include: {
-          category: {
-            select: {
-              id: true,
-              name: true,
-            },
-          },
-          brand: {
-            select: {
-              id: true,
-              name: true,
-            },
-          },
-          supplier: {
-            select: {
-              id: true,
-              name: true,
-              email: true,
-            },
+      const includeRelations = {
+        category: {
+          select: {
+            id: true,
+            name: true,
           },
         },
+        brand: {
+          select: {
+            id: true,
+            name: true,
+          },
+        },
+        supplier: {
+          select: {
+            id: true,
+            name: true,
+            email: true,
+          },
+        },
+      } as const;
+
+      const newProduct = await prisma.product.create({
+        data: productData,
+        include: includeRelations,
+      });
+
+      try {
+        await promoteProductImagesToSkuFolder(prisma, newProduct.id);
+      } catch (promotionError) {
+        logger.warn('Failed to normalize product images after creation', {
+          productId: newProduct.id,
+          error:
+            promotionError instanceof Error
+              ? promotionError.message
+              : String(promotionError),
+        });
+      }
+
+      const refreshedProduct = await prisma.product.findUnique({
+        where: { id: newProduct.id },
+        include: includeRelations,
       });
 
       return createSecureResponse(
         {
           success: true,
           message: 'Product created successfully',
-          data: newProduct,
+          data: refreshedProduct ?? newProduct,
         },
         201
       );

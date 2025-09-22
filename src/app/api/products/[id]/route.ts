@@ -7,6 +7,8 @@ import {
 import { handleApiError } from '@/lib/api-error-handler-new';
 import { prisma } from '@/lib/db';
 import { USER_ROLES, hasPermission } from '@/lib/auth/roles';
+import { logger } from '@/lib/logger';
+import { promoteProductImagesToSkuFolder } from '@/lib/services/product-image-service';
 import { z } from 'zod';
 
 // Input validation schemas
@@ -275,37 +277,67 @@ export const PUT = withPermission(
       }
 
       // Update the product
+      const includeRelations = {
+        category: {
+          select: {
+            id: true,
+            name: true,
+          },
+        },
+        brand: {
+          select: {
+            id: true,
+            name: true,
+          },
+        },
+        supplier: {
+          select: {
+            id: true,
+            name: true,
+            email: true,
+            phone: true,
+          },
+        },
+      } as const;
+
       const updatedProduct = await prisma.product.update({
         where: { id: productId },
         data: updateData,
-        include: {
-          category: {
-            select: {
-              id: true,
-              name: true,
-            },
-          },
-          brand: {
-            select: {
-              id: true,
-              name: true,
-            },
-          },
-          supplier: {
-            select: {
-              id: true,
-              name: true,
-              email: true,
-              phone: true,
-            },
-          },
-        },
+        include: includeRelations,
       });
+
+      let responseProduct = updatedProduct;
+
+      try {
+        const promotionApplied = await promoteProductImagesToSkuFolder(
+          prisma,
+          productId
+        );
+
+        if (promotionApplied) {
+          const refreshedProduct = await prisma.product.findUnique({
+            where: { id: productId },
+            include: includeRelations,
+          });
+
+          if (refreshedProduct) {
+            responseProduct = refreshedProduct;
+          }
+        }
+      } catch (promotionError) {
+        logger.warn('Failed to normalize product images after update', {
+          productId,
+          error:
+            promotionError instanceof Error
+              ? promotionError.message
+              : String(promotionError),
+        });
+      }
 
       return NextResponse.json({
         success: true,
         message: 'Product updated successfully',
-        data: updatedProduct,
+        data: responseProduct,
       });
     } catch (error) {
       return handleApiError(error);

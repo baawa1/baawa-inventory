@@ -87,42 +87,48 @@ export function generateMeaningfulFilename(
   originalFilename: string,
   index: number,
   productName: string,
-  brandName?: string,
-  categoryName?: string
+  _brandName?: string,
+  _categoryName?: string
 ): string {
-  // Clean product name: remove special chars, convert to lowercase, replace spaces with hyphens
-  const cleanName = productName
-    .replace(/[^a-zA-Z0-9\s]/g, '')
-    .replace(/\s+/g, '-')
-    .toLowerCase()
-    .substring(0, 60); // Limit length
-
-  // Clean brand name
-  const cleanBrandName = brandName
-    ? brandName
-        .replace(/[^a-zA-Z0-9\s]/g, '')
-        .replace(/\s+/g, '-')
-        .toLowerCase()
-        .substring(0, 30)
-    : 'no-brand';
-
-  // Clean category name
-  const cleanCategoryName = categoryName
-    ? categoryName
-        .replace(/[^a-zA-Z0-9\s]/g, '')
-        .replace(/\s+/g, '-')
-        .toLowerCase()
-        .substring(0, 30)
-    : 'uncategorized';
-
-  // Get file extension from original filename
+  const sanitizedName = sanitizePathSegment(productName || 'product', 60);
+  const increment = String(index + 1).padStart(2, '0');
   const extension = originalFilename.split('.').pop()?.toLowerCase() || 'jpg';
 
-  // Generate increment (01, 02, 03, etc.)
-  const increment = String(index + 1).padStart(2, '0');
+  return `${sanitizedName}-${increment}.${extension}`;
+}
 
-  // Combine all parts
-  return `${cleanName}-${cleanBrandName}-${cleanCategoryName}-${increment}.${extension}`;
+/**
+ * Build the storage folder path for a product using its SKU
+ */
+export function buildProductImageFolder(sku?: string | null): string {
+  const sanitizedSku = sanitizePathSegment(sku ?? '', 60, { lowercase: false });
+
+  if (!sanitizedSku) {
+    throw new Error('SKU is required to determine the product image folder');
+  }
+
+  return `products/${sanitizedSku}`;
+}
+
+/**
+ * Sanitize a string so it is safe to use as part of a storage path
+ */
+export function sanitizePathSegment(
+  value: string,
+  maxLength: number,
+  options: { lowercase?: boolean } = {}
+): string {
+  const shouldLowercase = options.lowercase ?? true;
+
+  let sanitized = value
+    .trim()
+    .replace(/[^a-zA-Z0-9_\-\s]+/g, '')
+    .replace(/\s+/g, '-')
+    .replace(/-+/g, '-')
+    .substring(0, maxLength)
+    .replace(/^-+|-+$/g, '');
+
+  return shouldLowercase ? sanitized.toLowerCase() : sanitized;
 }
 
 /**
@@ -172,8 +178,15 @@ export function extractStoragePath(url: string): string | null {
   }
 
   try {
-    const urlParts = url.split('/');
-    return urlParts.slice(-2).join('/'); // Get folder/filename
+    const { pathname } = new URL(url);
+    const segments = pathname.split('/').filter(Boolean);
+    const bucketIndex = segments.indexOf('product-images');
+
+    if (bucketIndex === -1 || bucketIndex === segments.length - 1) {
+      return null;
+    }
+
+    return segments.slice(bucketIndex + 1).join('/');
   } catch {
     return null;
   }

@@ -279,17 +279,3 @@ export function useComputationCache<T, R>(
     return result;
   }, [_data, computation, ...dependencies]);
 }
-
-// Bundle splitting utility for code splitting
-export const loadComponent = (componentPath: string) => {
-  return React.lazy(() => 
-    import(componentPath).catch(error => {
-      console.error(`Failed to load component: ${componentPath}`, error);
-      // Return fallback component
-      return { 
-        default: () => React.createElement('div', null, 'Failed to load component')
-      };
-    })
-  );
-};
-

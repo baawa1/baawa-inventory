@@ -248,6 +248,45 @@ class SupabaseStorageService {
   }
 
   /**
+   * Move/Rename a file within Supabase Storage
+   */
+  async moveFile(fromPath: string, toPath: string): Promise<void> {
+    try {
+      if (fromPath === toPath) {
+        return;
+      }
+
+      const { error } = await this.supabase.storage
+        .from(this.bucketName)
+        .move(fromPath, toPath);
+
+      if (error) {
+        throw new Error(`Move failed: ${error.message}`);
+      }
+    } catch (error) {
+      logger.upload('Supabase file move failed', {
+        fromPath,
+        toPath,
+        error: error instanceof Error ? error.message : String(error),
+      });
+      throw new Error(
+        `Failed to move file: ${error instanceof Error ? error.message : 'Unknown error'}`
+      );
+    }
+  }
+
+  /**
+   * Retrieve the public URL for a storage object
+   */
+  getPublicUrl(path: string): string {
+    const { data } = this.supabase.storage
+      .from(this.bucketName)
+      .getPublicUrl(path);
+
+    return data.publicUrl;
+  }
+
+  /**
    * Get upload progress (for future implementation)
    */
   onUploadProgress(callback: (_progress: number) => void): void {
