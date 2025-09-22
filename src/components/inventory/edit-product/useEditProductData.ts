@@ -18,7 +18,7 @@ export function useEditProductData(productId: number) {
       categoryId: undefined,
       brandId: undefined,
       supplierId: undefined,
-      purchasePrice: 0,
+      purchasePrice: undefined,
       sellingPrice: 0,
       currentStock: 0,
       minimumStock: 0,
@@ -67,7 +67,10 @@ export function useEditProductData(productId: number) {
           categoryId: productData.category?.id || undefined,
           brandId: productData.brand?.id || undefined,
           supplierId: productData.supplier?.id || undefined,
-          purchasePrice: Number(productData.cost),
+          purchasePrice:
+            productData.cost !== undefined && productData.cost !== null
+              ? Number(productData.cost)
+              : undefined,
           sellingPrice: Number(productData.price),
           currentStock: productData.stock,
           minimumStock: productData.minStock,

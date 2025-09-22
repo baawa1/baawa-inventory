@@ -4,6 +4,7 @@ import { UpdateProductFormData } from './types';
 import { toast } from 'sonner';
 import { useRouter } from 'next/navigation';
 import { useQueryClient } from '@tanstack/react-query';
+import { usePermissions } from '@/hooks/usePermissions';
 
 export function useEditProductSubmit(
   productId: number,
@@ -13,6 +14,7 @@ export function useEditProductSubmit(
   const [submitError, setSubmitError] = useState<string | null>(null);
   const router = useRouter();
   const queryClient = useQueryClient();
+  const { canViewCost } = usePermissions();
 
   const onSubmit = async (data: UpdateProductFormData) => {
     setIsSubmitting(true);
@@ -20,25 +22,31 @@ export function useEditProductSubmit(
 
     try {
       // Prepare data for submission
-      const submitData = {
+      const submitData: Record<string, unknown> = {
         name: data.name,
         description: data.description || null,
         sku: data.sku,
         categoryId: data.categoryId || null,
         brandId: data.brandId || null,
         supplierId: data.supplierId || null,
-        purchasePrice: data.purchasePrice || undefined,
         sellingPrice: data.sellingPrice || undefined,
         currentStock: data.currentStock || undefined,
         minimumStock: data.minimumStock || undefined,
         status: data.status,
         tags: data.tags || [],
-        images: data.images || [],
         wordpress_id:
           data.wordpress_id === undefined || data.wordpress_id === null
             ? null
             : data.wordpress_id,
       };
+
+      if (canViewCost && data.purchasePrice !== undefined) {
+        submitData.purchasePrice = data.purchasePrice;
+      }
+
+      if (Array.isArray(data.images) && data.images.length > 0) {
+        submitData.images = data.images;
+      }
 
       const response = await fetch(`/api/products/${productId}`, {
         method: 'PUT',
@@ -62,7 +70,7 @@ export function useEditProductSubmit(
       queryClient.invalidateQueries();
 
       router.push('/inventory/products');
-    } catch (error) {
+    } catch (_error) {
       // Keep submitError as set above
       if (!submitError) setSubmitError('Failed to update product');
     } finally {

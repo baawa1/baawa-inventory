@@ -20,6 +20,7 @@ import { BasicInfoSection } from './edit-product/BasicInfoSection';
 import { CategoryBrandSupplierSection } from './edit-product/CategoryBrandSupplierSection';
 import { PricingInventorySection } from './edit-product/PricingInventorySection';
 import { ProductImageSection } from './add-product/ProductImageSection';
+import { toast } from 'sonner';
 
 import { Skeleton } from '@/components/ui/skeleton';
 import { PageHeader } from '../ui/page-header';
@@ -71,7 +72,17 @@ function LoadingSkeleton() {
 
 export default function EditProductForm({ productId }: EditProductFormProps) {
   const router = useRouter();
-  const [images, setImages] = useState<any[]>([]);
+  type ImageFormValue = {
+    url: string;
+    filename: string;
+    mimeType: string;
+    alt?: string;
+    isPrimary: boolean;
+    uploadedAt: string;
+    size: number;
+  };
+
+  const [images, setImages] = useState<ImageFormValue[]>([]);
 
   const {
     form,
@@ -94,15 +105,40 @@ export default function EditProductForm({ productId }: EditProductFormProps) {
   useEffect(() => {
     if (product?.images) {
       // Convert product images to the format expected by ProductImageSection
-      const formattedImages = product.images.map((img: any) => ({
-        url: img.url || img,
-        filename: img.filename || 'product-image.jpg',
-        mimeType: img.mimeType || 'image/jpeg',
-        alt: img.alt || product.name,
-        isPrimary: img.isPrimary || false,
-        uploadedAt: img.uploadedAt || new Date().toISOString(),
-        size: img.size || 0,
-      }));
+      type ProductImageInput =
+        | string
+        | {
+            url?: string;
+            filename?: string;
+            mimeType?: string;
+            alt?: string;
+            isPrimary?: boolean;
+            uploadedAt?: string;
+            size?: number;
+          };
+
+      const formattedImages = (product.images as ProductImageInput[]).map(
+        image => {
+          const url = typeof image === 'string' ? image : image.url ?? '';
+
+          return {
+            url,
+            filename:
+              typeof image === 'string'
+                ? image.split('/').pop() || 'product-image.jpg'
+                : image.filename || 'product-image.jpg',
+            mimeType:
+              typeof image === 'string' ? 'image/jpeg' : image.mimeType || 'image/jpeg',
+            alt: typeof image === 'string' ? product.name : image.alt || product.name,
+            isPrimary: typeof image === 'string' ? false : Boolean(image.isPrimary),
+            uploadedAt:
+              typeof image === 'string'
+                ? new Date().toISOString()
+                : image.uploadedAt || new Date().toISOString(),
+            size: typeof image === 'string' ? 0 : image.size || 0,
+          };
+        }
+      );
       setImages(formattedImages);
     }
   }, [product]);
@@ -110,7 +146,10 @@ export default function EditProductForm({ productId }: EditProductFormProps) {
   // Update form images when local images state changes
   useEffect(() => {
     if (form) {
-      form.setValue('images', images);
+      form.setValue('images', images, {
+        shouldDirty: false,
+        shouldTouch: false,
+      });
     }
   }, [images, form]);
 
@@ -172,7 +211,21 @@ export default function EditProductForm({ productId }: EditProductFormProps) {
         </CardHeader>
         <CardContent className="space-y-4 sm:space-y-6">
           <Form {...form}>
-            <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-4 sm:space-y-6">
+            <form
+              onSubmit={form.handleSubmit(
+                onSubmit,
+                errors => {
+                  const firstError = Object.values(errors)[0];
+                  const message =
+                    typeof firstError === 'object' && firstError && 'message' in firstError
+                      ? String(firstError.message)
+                      : 'Please fix the highlighted fields.';
+                  toast.error(message);
+                  console.error('Product update validation failed', errors);
+                }
+              )}
+              className="space-y-4 sm:space-y-6"
+            >
               <BasicInfoSection form={form} />
 
               <CategoryBrandSupplierSection

@@ -1,6 +1,7 @@
 import { UseFormReturn } from 'react-hook-form';
 import { UpdateProductFormData } from './types';
 import { toast } from 'sonner';
+import { usePermissions } from '@/hooks/usePermissions';
 
 export function useEditProductSubmit(
   productId: number,
@@ -8,6 +9,8 @@ export function useEditProductSubmit(
   setSubmitError: (_error: string | null) => void,
   onSuccess: () => void
 ) {
+  const { canViewCost } = usePermissions();
+
   const onSubmit = async (
     data: UpdateProductFormData,
     _form: UseFormReturn<UpdateProductFormData>
@@ -17,19 +20,26 @@ export function useEditProductSubmit(
 
     try {
       // Prepare data for submission
-      const submitData = {
+      const submitData: Record<string, unknown> = {
         name: data.name,
         description: data.description || null,
         sku: data.sku,
         categoryId: data.categoryId || null,
         brandId: data.brandId || null,
         supplierId: data.supplierId || null,
-        purchasePrice: data.purchasePrice || undefined,
         sellingPrice: data.sellingPrice || undefined,
         currentStock: data.currentStock || undefined,
         minimumStock: data.minimumStock || undefined,
         status: data.status,
       };
+
+      if (canViewCost && data.purchasePrice !== undefined) {
+        submitData.purchasePrice = data.purchasePrice;
+      }
+
+      if (Array.isArray(data.images) && data.images.length > 0) {
+        submitData.images = data.images;
+      }
 
       const response = await fetch(`/api/products/${productId}`, {
         method: 'PUT',
