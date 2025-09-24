@@ -437,6 +437,14 @@ const MobileProductList = ({ user }: MobileProductListProps) => {
     };
   };
 
+  const truncateText = (text: string, maxChars: number) => {
+    const graphemes = Array.from(text);
+    if (graphemes.length <= maxChars) {
+      return text;
+    }
+    return `${graphemes.slice(0, maxChars).join('').trimEnd()}…`;
+  };
+
   const renderCell = (product: APIProduct, columnKey: string) => {
     switch (columnKey) {
       case 'image':
@@ -451,13 +459,14 @@ const MobileProductList = ({ user }: MobileProductListProps) => {
           </div>
         );
       case 'name':
+        const truncatedName = truncateText(product.name, 25);
         return (
           <div className="min-w-0">
             <div
-              className="font-medium whitespace-normal break-words"
+              className="font-medium truncate"
               title={product.name}
             >
-              {product.name}
+              {truncatedName}
             </div>
             {product.brand && (
               <div className="text-xs sm:text-sm text-muted-foreground truncate">
@@ -581,6 +590,7 @@ const MobileProductList = ({ user }: MobileProductListProps) => {
 
   // Enhanced mobile card title and subtitle
   const mobileCardTitle = (product: APIProduct) => {
+    const truncatedName = truncateText(product.name, 25);
     const highlights = [
       <MobileCardHighlight
         key="stock"
@@ -610,7 +620,7 @@ const MobileProductList = ({ user }: MobileProductListProps) => {
                 />
               </div>
             }
-            title={product.name}
+            title={truncatedName}
             subtitle={`SKU: ${product.sku}`}
           />
         }
