@@ -207,12 +207,12 @@ export function ResponsiveTable<T>({
                 <div className="flex items-start justify-between">
                   <div className="flex-1 min-w-0">
                     {mobileCardTitle && (
-                      <div className="font-semibold text-base mb-1 truncate">
+                      <div className="text-base mb-1 whitespace-normal break-words line-clamp-2">
                         {mobileCardTitle(item)}
                       </div>
                     )}
                     {mobileCardSubtitle && (
-                      <div className="text-sm text-muted-foreground truncate mb-2">
+                      <div className="text-sm text-muted-foreground mb-2 whitespace-normal break-words line-clamp-2">
                         {mobileCardSubtitle(item)}
                       </div>
                     )}
