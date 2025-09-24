@@ -444,7 +444,12 @@ const MobileProductList = ({ user }: MobileProductListProps) => {
       case 'name':
         return (
           <div className="min-w-0">
-            <div className="font-medium truncate">{product.name}</div>
+            <div
+              className="font-medium whitespace-normal break-words"
+              title={product.name}
+            >
+              {product.name}
+            </div>
             {product.brand && (
               <div className="text-xs sm:text-sm text-muted-foreground truncate">
                 {product.brand.name}

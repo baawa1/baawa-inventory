@@ -460,9 +460,19 @@ const ProductList = ({ user }: ProductListProps) => {
           </div>
         );
       case 'name':
+        const MAX_NAME_LENGTH = 25;
+        const truncatedName =
+          product.name.length > MAX_NAME_LENGTH
+            ? `${product.name.slice(0, MAX_NAME_LENGTH).trimEnd()}...`
+            : product.name;
         return (
           <div>
-            <div className="font-medium">{product.name}</div>
+            <div
+              className="font-medium max-w-[240px] truncate"
+              title={product.name}
+            >
+              {truncatedName}
+            </div>
             {product.brand && (
               <div className="text-sm">{product.brand.name}</div>
             )}
