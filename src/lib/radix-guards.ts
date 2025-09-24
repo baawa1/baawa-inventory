@@ -10,12 +10,21 @@ export function clearRadixGuards() {
       if ('inert' in element) {
         (element as HTMLElement & { inert?: boolean }).inert = false;
       }
+      if (
+        element instanceof HTMLElement &&
+        element.style.pointerEvents === 'none'
+      ) {
+        element.style.pointerEvents = '';
+      }
     });
 
   document.body?.removeAttribute('aria-hidden');
   document.body?.removeAttribute('inert');
   if ('inert' in document.body) {
     (document.body as HTMLElement & { inert?: boolean }).inert = false;
+  }
+  if (document.body?.style.pointerEvents === 'none') {
+    document.body.style.pointerEvents = '';
   }
 
   const htmlElement = document.documentElement as HTMLElement & {
@@ -25,6 +34,9 @@ export function clearRadixGuards() {
   htmlElement.removeAttribute('inert');
   if ('inert' in htmlElement) {
     htmlElement.inert = false;
+  }
+  if (htmlElement.style.pointerEvents === 'none') {
+    htmlElement.style.pointerEvents = '';
   }
 }
 

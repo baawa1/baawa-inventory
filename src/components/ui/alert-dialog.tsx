@@ -5,6 +5,18 @@ import * as AlertDialogPrimitive from '@radix-ui/react-alert-dialog';
 
 import { cn } from '@/lib/utils';
 import { buttonVariants } from '@/components/ui/button';
+import { markRadixLayerClosed, markRadixLayerOpen } from '@/lib/radix-guards';
+
+function AlertDialogLayerTracker() {
+  React.useEffect(() => {
+    markRadixLayerOpen();
+    return () => {
+      markRadixLayerClosed();
+    };
+  }, []);
+
+  return null;
+}
 
 function AlertDialog({
   ...props
@@ -46,6 +58,7 @@ function AlertDialogOverlay({
 
 function AlertDialogContent({
   className,
+  children,
   ...props
 }: React.ComponentProps<typeof AlertDialogPrimitive.Content>) {
   return (
@@ -58,7 +71,10 @@ function AlertDialogContent({
           className
         )}
         {...props}
-      />
+      >
+        <AlertDialogLayerTracker />
+        {children}
+      </AlertDialogPrimitive.Content>
     </AlertDialogPortal>
   );
 }

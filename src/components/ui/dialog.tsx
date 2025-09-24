@@ -5,6 +5,18 @@ import * as DialogPrimitive from '@radix-ui/react-dialog';
 import { XIcon } from 'lucide-react';
 
 import { cn } from '@/lib/utils';
+import { markRadixLayerClosed, markRadixLayerOpen } from '@/lib/radix-guards';
+
+function DialogLayerTracker() {
+  React.useEffect(() => {
+    markRadixLayerOpen();
+    return () => {
+      markRadixLayerClosed();
+    };
+  }, []);
+
+  return null;
+}
 
 function Dialog({
   ...props
@@ -65,6 +77,7 @@ function DialogContent({
         )}
         {...props}
       >
+        <DialogLayerTracker />
         {children}
         {showCloseButton && (
           <DialogPrimitive.Close
