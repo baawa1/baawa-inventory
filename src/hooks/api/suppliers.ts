@@ -200,17 +200,50 @@ export const useSupplierOptions = () => {
   return useQuery({
     queryKey: [...queryKeys.suppliers.all, 'options'] as const,
     queryFn: async () => {
-      const response = await fetch('/api/suppliers?isActive=true');
-      if (!response.ok) {
-        throw new Error(
-          `Failed to fetch supplier options: ${response.statusText}`
+      const perPage = 100;
+      let page = 1;
+      let totalPages = 1;
+      const suppliers: { value: string; label: string }[] = [];
+
+      while (page <= totalPages) {
+        const params = new URLSearchParams({
+          page: page.toString(),
+          limit: perPage.toString(),
+          sortBy: 'name',
+          sortOrder: 'asc',
+        });
+
+        const response = await fetch(`/api/suppliers?${params.toString()}`);
+        if (!response.ok) {
+          throw new Error(
+            `Failed to fetch supplier options: ${response.statusText}`
+          );
+        }
+
+        const result: {
+          data?: Supplier[];
+          pagination?: { totalPages?: number };
+        } = await response.json();
+
+        const pageSuppliers = Array.isArray(result.data) ? result.data : [];
+        suppliers.push(
+          ...pageSuppliers.map(supplier => ({
+            value: supplier.id.toString(),
+            label: supplier.name,
+          }))
         );
+
+        const apiTotalPages = Number(result.pagination?.totalPages);
+        totalPages = Number.isFinite(apiTotalPages) && apiTotalPages > 0 ? apiTotalPages : 1;
+
+        if (page >= totalPages || pageSuppliers.length === 0) {
+          break;
+        }
+
+        page += 1;
       }
-      const result = await response.json();
-      return result.data.map((supplier: Supplier) => ({
-        value: supplier.id.toString(),
-        label: supplier.name,
-      }));
+
+      return suppliers;
     },
     staleTime: 10 * 60 * 1000, // 10 minutes for options
   });
