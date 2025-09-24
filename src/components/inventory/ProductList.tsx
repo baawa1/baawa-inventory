@@ -444,6 +444,14 @@ const ProductList = ({ user }: ProductListProps) => {
     );
   };
 
+  const truncateText = (text: string, maxChars: number) => {
+    const graphemes = Array.from(text);
+    if (graphemes.length <= maxChars) {
+      return text;
+    }
+    return `${graphemes.slice(0, maxChars).join('').trimEnd()}…`;
+  };
+
   const renderCell = (product: APIProduct, columnKey: string) => {
     switch (columnKey) {
       case 'image':
@@ -469,15 +477,11 @@ const ProductList = ({ user }: ProductListProps) => {
           </div>
         );
       case 'name':
-        const MAX_NAME_LENGTH = 25;
-        const truncatedName =
-          product.name.length > MAX_NAME_LENGTH
-            ? `${product.name.slice(0, MAX_NAME_LENGTH).trimEnd()}...`
-            : product.name;
+        const truncatedName = truncateText(product.name, 25);
         return (
           <div>
             <div
-              className="font-medium max-w-[240px] truncate"
+              className="font-medium min-w-0 max-w-[240px] truncate"
               title={product.name}
             >
               {truncatedName}

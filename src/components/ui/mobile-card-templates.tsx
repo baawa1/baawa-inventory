@@ -24,7 +24,10 @@ export const MobileCardTitle: React.FC<MobileCardTitleProps> = ({
         </div>
       )}
       <div className="flex-1 min-w-0">
-        <h3 className="font-semibold text-base leading-tight mb-1 text-gray-900 break-words whitespace-normal line-clamp-2">
+        <h3
+          className="font-semibold text-base leading-tight mb-1 text-gray-900 break-words whitespace-normal line-clamp-2"
+          title={title}
+        >
           {title}
         </h3>
         {subtitle && (
