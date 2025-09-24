@@ -10,6 +10,7 @@ import { useDebounce } from '@/hooks/useDebounce';
 import { useProducts, type Product as APIProduct } from '@/hooks/api/products';
 import { useBrands } from '@/hooks/api/brands';
 import { useCategoriesWithHierarchy } from '@/hooks/api/categories';
+import { useSupplierOptions } from '@/hooks/api/suppliers';
 import { useSyncEntity, useSyncAllEntities } from '@/hooks/api/useWebhookSync';
 
 // Permissions
@@ -167,6 +168,7 @@ const MobileProductList = ({ user }: MobileProductListProps) => {
 
   const brandsQuery = useBrands({ status: 'true' });
   const categoriesQuery = useCategoriesWithHierarchy();
+  const { data: supplierOptions = [] } = useSupplierOptions();
 
   // Sync hooks
   const syncEntityMutation = useSyncEntity();
@@ -284,6 +286,13 @@ const MobileProductList = ({ user }: MobileProductListProps) => {
         placeholder: 'All Brands',
       },
       {
+        key: 'supplier',
+        label: 'Suppliers',
+        type: 'select',
+        options: supplierOptions,
+        placeholder: 'All Suppliers',
+      },
+      {
         key: 'status',
         label: 'Status',
         type: 'select',
@@ -291,7 +300,7 @@ const MobileProductList = ({ user }: MobileProductListProps) => {
         placeholder: 'All Status',
       },
     ],
-    [categoryOptions, brandOptions, statusOptions]
+    [categoryOptions, brandOptions, supplierOptions, statusOptions]
   );
 
   const handleFilterChange = (key: string, value: string | boolean) => {
