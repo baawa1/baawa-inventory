@@ -42,6 +42,8 @@ export function useFormDataQuery() {
     (option: { value: string; label: string }) => ({
       id: parseInt(option.value),
       name: option.label,
+      email: null,
+      phone: null,
     })
   );
 
