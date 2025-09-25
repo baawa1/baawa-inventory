@@ -116,6 +116,7 @@ interface Product {
 export function StockReconciliationForm() {
   const [searchTerm, setSearchTerm] = useState('');
   const [showProductSearch, setShowProductSearch] = useState(false);
+  const [itemSearch, setItemSearch] = useState('');
   const [selectedCategoryIds, setSelectedCategoryIds] = useState<number[]>([]);
   const [snapshotParams, setSnapshotParams] =
     useState<Partial<InventorySnapshotRequest>>({});
@@ -263,6 +264,27 @@ export function StockReconciliationForm() {
     return calculateDiscrepancyMetrics(itemsForMetrics);
   }, [watchedItems, costLookup]);
 
+  const filteredItemEntries = useMemo(() => {
+    const query = itemSearch.trim().toLowerCase();
+    if (!query) {
+      return fields.map((item, index) => ({ item, index }));
+    }
+
+    return fields
+      .map((item, index) => ({ item, index }))
+      .filter(({ item }) => {
+        const nameMatch = item.productName?.toLowerCase().includes(query);
+        const skuMatch = item.productSku?.toLowerCase().includes(query);
+        return Boolean(nameMatch || skuMatch);
+      });
+  }, [fields, itemSearch]);
+
+  const hasActiveFilter = Boolean(itemSearch.trim());
+
+  const productCountLabel = hasActiveFilter
+    ? `${filteredItemEntries.length} / ${fields.length}`
+    : `${fields.length}`;
+
   const toggleCategory = useCallback((categoryId: number) => {
     setSelectedCategoryIds(previous => {
       if (previous.includes(categoryId)) {
@@ -278,6 +300,7 @@ export function StockReconciliationForm() {
     setSnapshotProductMap({});
     prefillRequestedRef.current = false;
     setIsCategoryPopoverOpen(false);
+    setItemSearch('');
   }, []);
 
   const handleLoadProducts = useCallback(() => {
@@ -289,6 +312,7 @@ export function StockReconciliationForm() {
     prefillRequestedRef.current = true;
     setIsCategoryPopoverOpen(false);
     setShowProductSearch(false);
+    setItemSearch('');
     setSnapshotParams({
       categoryIds: resolvedCategoryIds,
       includeZero: true,
@@ -378,6 +402,8 @@ export function StockReconciliationForm() {
       });
       return map;
     });
+
+    setItemSearch('');
 
     if (items.length === 0) {
       toast.info('No products found for the selected categories');
@@ -671,9 +697,14 @@ export function StockReconciliationForm() {
 
           {/* Product Selection */}
           <Card>
-            <CardHeader>
-              <CardTitle className="flex items-center justify-between">
-                <span>Products ({fields.length})</span>
+            <CardHeader className="space-y-4">
+              <div className="flex flex-col gap-3 md:flex-row md:items-center md:justify-between">
+                <div>
+                  <CardTitle>Products ({fields.length})</CardTitle>
+                  <CardDescription>
+                    Add products to reconcile and enter their physical counts.
+                  </CardDescription>
+                </div>
                 <Button
                   type="button"
                   variant="outline"
@@ -683,10 +714,34 @@ export function StockReconciliationForm() {
                   <IconPlus className="mr-2 h-4 w-4" />
                   Add Product
                 </Button>
-              </CardTitle>
-              <CardDescription>
-                Add products to reconcile and enter their physical counts.
-              </CardDescription>
+              </div>
+
+              {fields.length > 0 && (
+                <div className="flex flex-col gap-2 md:flex-row md:items-center md:justify-between">
+                  <div className="relative w-full md:max-w-sm">
+                    <IconSearch className="text-muted-foreground pointer-events-none absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2" />
+                    {itemSearch && (
+                      <button
+                        type="button"
+                        onClick={() => setItemSearch('')}
+                        aria-label="Clear product filter"
+                        className="text-muted-foreground absolute right-2 top-1/2 flex h-7 w-7 -translate-y-1/2 items-center justify-center rounded-md transition hover:text-foreground"
+                      >
+                        <IconX className="h-4 w-4" />
+                      </button>
+                    )}
+                    <Input
+                      value={itemSearch}
+                      onChange={event => setItemSearch(event.target.value)}
+                      placeholder="Search added products by name or SKU..."
+                      className="pl-9 pr-9"
+                    />
+                  </div>
+                  <span className="text-sm text-muted-foreground md:text-right">
+                    Showing {productCountLabel} products
+                  </span>
+                </div>
+              )}
             </CardHeader>
             <CardContent>
               {/* Product Search */}
@@ -754,7 +809,13 @@ export function StockReconciliationForm() {
               {/* Products List */}
               {fields.length > 0 ? (
                 <>
-                  <div className="hidden md:block">
+                  {filteredItemEntries.length === 0 ? (
+                    <div className="text-muted-foreground py-8 text-center">
+                      No products match your filter.
+                    </div>
+                  ) : (
+                    <>
+                      <div className="hidden md:block">
                     <div className="overflow-x-auto rounded-md border">
                       <Table className="min-w-[960px]">
                         <TableHeader>
@@ -770,7 +831,7 @@ export function StockReconciliationForm() {
                           </TableRow>
                         </TableHeader>
                         <TableBody>
-                          {fields.map((item, index) => {
+                          {filteredItemEntries.map(({ item, index }) => {
                             const itemValues = watchedItems[index];
                             const systemCount = Number(itemValues?.systemCount ?? 0);
                             const physicalCount = Number(itemValues?.physicalCount ?? 0);
@@ -894,7 +955,7 @@ export function StockReconciliationForm() {
                   </div>
 
                   <div className="space-y-4 md:hidden">
-                    {fields.map((item, index) => {
+                    {filteredItemEntries.map(({ item, index }) => {
                       const itemValues = watchedItems[index];
                       const systemCount = Number(itemValues?.systemCount ?? 0);
                       const physicalCount = Number(itemValues?.physicalCount ?? 0);
@@ -1033,7 +1094,7 @@ export function StockReconciliationForm() {
                               <Button
                                 type="button"
                                 variant="ghost"
-                                size="sm"
+                                size="icon"
                                 onClick={() => remove(index)}
                                 className="text-muted-foreground hover:text-destructive"
                               >
@@ -1046,6 +1107,8 @@ export function StockReconciliationForm() {
                       );
                     })}
                   </div>
+                    </>
+                  )}
                 </>
               ) : (
                 <div className="text-muted-foreground py-8 text-center">
