@@ -150,6 +150,8 @@ export const queryKeys = {
           id,
         ] as const,
     },
+    stockSnapshot: (filters: Record<string, any>) =>
+      [...queryKeys.inventory.all, 'snapshot', filters] as const,
   },
 
   // Users

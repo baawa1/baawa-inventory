@@ -1,7 +1,7 @@
 'use client';
 
-import { useState, useMemo } from 'react';
-import { useForm, useFieldArray } from 'react-hook-form';
+import { useState, useMemo, useCallback, useEffect, useRef } from 'react';
+import { useForm, useFieldArray, useWatch } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { z } from 'zod';
 import { toast } from 'sonner';
@@ -22,14 +22,6 @@ import {
   FormLabel,
   FormMessage,
 } from '@/components/ui/form';
-import {
-  Table,
-  TableBody,
-  TableCell,
-  TableHead,
-  TableHeader,
-  TableRow,
-} from '@/components/ui/table';
 import { Input } from '@/components/ui/input';
 import { Button } from '@/components/ui/button';
 import { Textarea } from '@/components/ui/textarea';
@@ -47,15 +39,43 @@ import {
   IconTrash,
   IconSearch,
   IconCalculator,
+  IconFilter,
+  IconLoader2,
+  IconX,
+  IconChevronDown,
 } from '@tabler/icons-react';
 import { formatCurrency } from '@/lib/utils';
 import { useProductSearch } from '@/hooks/useProductSearch';
 import {
   useCreateStockReconciliation,
   useSubmitStockReconciliation,
+  useInventorySnapshot,
+  type InventorySnapshotRequest,
+  type InventorySnapshotItem,
 } from '@/hooks/api/stock-management';
+import { useCategoriesWithHierarchy } from '@/hooks/api/categories';
 import { DISCREPANCY_REASONS } from '@/lib/constants/stock-reconciliation';
 import { getDiscrepancyBadgeConfig } from '@/lib/utils/badge-helpers';
+import type { CreateStockReconciliationData } from '@/lib/validations/stock-management';
+import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover';
+import {
+  Command,
+  CommandEmpty,
+  CommandGroup,
+  CommandInput,
+  CommandList,
+  CommandItem,
+} from '@/components/ui/command';
+import { Checkbox } from '@/components/ui/checkbox';
+import type { Category } from '@/hooks/api/categories';
+import {
+  Table,
+  TableBody,
+  TableCell,
+  TableHead,
+  TableHeader,
+  TableRow,
+} from '@/components/ui/table';
 
 const reconciliationItemSchema = z.object({
   productId: z.number().int().positive(),
@@ -98,10 +118,21 @@ export function StockReconciliationDialog({
   onSuccess,
 }: StockReconciliationDialogProps) {
   const [searchTerm, setSearchTerm] = useState('');
+  const [selectedCategoryIds, setSelectedCategoryIds] = useState<number[]>([]);
+  const [snapshotParams, setSnapshotParams] =
+    useState<Partial<InventorySnapshotRequest>>({});
+  const [snapshotProductMap, setSnapshotProductMap] = useState<
+    Record<number, InventorySnapshotItem>
+  >({});
+  const [isCategoryPopoverOpen, setIsCategoryPopoverOpen] = useState(false);
+  const prefillRequestedRef = useRef(false);
 
   // TanStack Query hooks
   const { data: productsData, isLoading: _loadingProducts } =
     useProductSearch(searchTerm);
+  const { data: categoriesResponse, isLoading: categoriesLoading } =
+    useCategoriesWithHierarchy();
+  const snapshotQuery = useInventorySnapshot(snapshotParams);
   const createMutation = useCreateStockReconciliation();
   const submitMutation = useSubmitStockReconciliation();
 
@@ -109,6 +140,79 @@ export function StockReconciliationDialog({
     () => productsData?.data || [],
     [productsData?.data]
   );
+
+  const categories: Category[] = useMemo(
+    () => categoriesResponse?.data || [],
+    [categoriesResponse?.data]
+  );
+
+  const categoryMap = useMemo(() => {
+    const map = new Map<number, Category>();
+    const traverse = (items: Category[] | undefined) => {
+      if (!items) return;
+      items.forEach(category => {
+        map.set(category.id, category);
+        traverse(category.children);
+      });
+    };
+    traverse(categories);
+    return map;
+  }, [categories]);
+
+  const flatCategoryOptions = useMemo(() => {
+    const options: Array<{ id: number; label: string }> = [];
+    const seen = new Set<number>();
+
+    const traverse = (items: Category[] | undefined, depth = 0) => {
+      if (!items) return;
+      items.forEach(category => {
+        if (seen.has(category.id)) {
+          return;
+        }
+        seen.add(category.id);
+        options.push({
+          id: category.id,
+          label: `${'— '.repeat(depth)}${category.name}`,
+        });
+        traverse(category.children, depth + 1);
+      });
+    };
+
+    traverse(categories);
+    return options;
+  }, [categories]);
+
+  const categoryLabelMap = useMemo(() => {
+    const map = new Map<number, string>();
+    flatCategoryOptions.forEach(option => {
+      map.set(option.id, option.label.trim());
+    });
+    return map;
+  }, [flatCategoryOptions]);
+
+  const resolvedCategoryIds = useMemo(() => {
+    if (selectedCategoryIds.length === 0) {
+      return [] as number[];
+    }
+
+    const result = new Set<number>();
+
+    const traverse = (category: Category | undefined) => {
+      if (!category || result.has(category.id)) return;
+      result.add(category.id);
+      category.children?.forEach(child => traverse(child));
+    };
+
+    selectedCategoryIds.forEach(categoryId => {
+      const category = categoryMap.get(categoryId);
+      traverse(category);
+    });
+
+    return Array.from(result);
+  }, [selectedCategoryIds, categoryMap]);
+
+  const snapshotItems = snapshotQuery.data?.data || [];
+  const snapshotPagination = snapshotQuery.data?.pagination;
 
   const form = useForm<ReconciliationFormData>({
     resolver: zodResolver(reconciliationSchema),
@@ -125,9 +229,55 @@ export function StockReconciliationDialog({
     name: 'items',
   });
 
+  const rawWatchedItems = useWatch({
+    control: form.control,
+    name: 'items',
+  }) as ReconciliationFormData['items'] | undefined;
+
+  const watchedItems = useMemo(
+    () => rawWatchedItems ?? [],
+    [rawWatchedItems]
+  );
+
   const handleSearchProducts = (search: string) => {
     setSearchTerm(search);
   };
+
+  const toggleCategory = useCallback(
+    (categoryId: number) => {
+      setSelectedCategoryIds(previous => {
+        if (previous.includes(categoryId)) {
+          return previous.filter(id => id !== categoryId);
+        }
+        return [...previous, categoryId];
+      });
+    },
+    [setSelectedCategoryIds]
+  );
+
+  const handleClearCategories = useCallback(() => {
+    setSelectedCategoryIds([]);
+    setSnapshotParams({});
+    setSnapshotProductMap({});
+    prefillRequestedRef.current = false;
+    setIsCategoryPopoverOpen(false);
+  }, []);
+
+  const handleLoadProducts = useCallback(() => {
+    if (selectedCategoryIds.length === 0) {
+      toast.error('Select at least one category to load');
+      return;
+    }
+
+    prefillRequestedRef.current = true;
+    setIsCategoryPopoverOpen(false);
+    setSnapshotParams({
+      categoryIds: resolvedCategoryIds,
+      includeZero: true,
+      status: 'ACTIVE',
+      limit: 1000,
+    });
+  }, [selectedCategoryIds, resolvedCategoryIds]);
 
   const addProduct = (product: Product) => {
     // Check if product is already added
@@ -146,36 +296,121 @@ export function StockReconciliationDialog({
       discrepancyReason: '',
       notes: '',
     });
+
+    setSnapshotProductMap(previous => ({
+      ...previous,
+      [product.id]: {
+        id: product.id,
+        name: product.name,
+        sku: product.sku,
+        systemCount: product.stock,
+        physicalCount: product.stock,
+        cost: product.cost,
+        minStock: 0,
+        category: null,
+      },
+    }));
   };
 
   const calculateDiscrepancy = (systemCount: number, physicalCount: number) => {
     return physicalCount - systemCount;
   };
 
-  // Watch all form values to trigger recalculations
-  const watchedValues = form.watch('items');
-
   const totalDiscrepancy = useMemo(() => {
-    return fields.reduce((total, item, index) => {
-      const systemCount = watchedValues?.[index]?.systemCount || 0;
-      const physicalCount = watchedValues?.[index]?.physicalCount || 0;
-      const discrepancy = calculateDiscrepancy(systemCount, physicalCount);
-      return total + discrepancy;
+    if (!watchedItems.length) return 0;
+    return watchedItems.reduce((total, item) => {
+      const systemCount = Number(item?.systemCount ?? 0);
+      const physicalCount = Number(item?.physicalCount ?? 0);
+      return total + calculateDiscrepancy(systemCount, physicalCount);
     }, 0);
-  }, [fields, watchedValues]);
+  }, [watchedItems]);
 
   const estimatedImpact = useMemo(() => {
-    return fields.reduce((total, item, index) => {
-      const systemCount = watchedValues?.[index]?.systemCount || 0;
-      const physicalCount = watchedValues?.[index]?.physicalCount || 0;
+    if (!watchedItems.length) return 0;
+    return watchedItems.reduce((total, item) => {
+      const productId = item?.productId;
+      const systemCount = Number(item?.systemCount ?? 0);
+      const physicalCount = Number(item?.physicalCount ?? 0);
       const discrepancy = calculateDiscrepancy(systemCount, physicalCount);
-      const product = products.find((p: Product) => p.id === item.productId);
-      if (product) {
-        return total + discrepancy * product.cost;
-      }
-      return total;
+      const cost =
+        products.find((p: Product) => p.id === productId)?.cost ??
+        snapshotProductMap[productId]?.cost ??
+        0;
+      return total + discrepancy * cost;
     }, 0);
-  }, [fields, watchedValues, products]);
+  }, [watchedItems, products, snapshotProductMap]);
+
+  useEffect(() => {
+    if (!prefillRequestedRef.current) {
+      return;
+    }
+
+    if (snapshotQuery.isFetching) {
+      return;
+    }
+
+    if (snapshotQuery.isError) {
+      prefillRequestedRef.current = false;
+      toast.error('Failed to load inventory snapshot');
+      return;
+    }
+
+    const items: InventorySnapshotItem[] | undefined = snapshotQuery.data?.data;
+
+    if (!items) {
+      prefillRequestedRef.current = false;
+      return;
+    }
+
+    const currentValues = form.getValues();
+    form.reset({
+      ...currentValues,
+      items: items.map(item => ({
+        productId: item.id,
+        productName: item.name,
+        productSku: item.sku,
+        systemCount: item.systemCount,
+        physicalCount: item.physicalCount,
+        discrepancyReason: '',
+        notes: '',
+      })),
+    });
+
+    setSnapshotProductMap(() => {
+      const map: Record<number, InventorySnapshotItem> = {};
+      items.forEach(item => {
+        map[item.id] = item;
+      });
+      return map;
+    });
+
+    if (items.length === 0) {
+      toast.info('No products found for the selected categories');
+    } else {
+      toast.success(
+        `Loaded ${items.length} products for the selected categories`
+      );
+    }
+
+    prefillRequestedRef.current = false;
+  }, [form, snapshotQuery.data, snapshotQuery.isError, snapshotQuery.isFetching]);
+
+  useEffect(() => {
+    if (!isOpen) {
+      form.reset({
+        title: '',
+        description: '',
+        notes: '',
+        items: [],
+      });
+      setSearchTerm('');
+      setSelectedCategoryIds([]);
+      setSnapshotParams({});
+      setSnapshotProductMap({});
+      prefillRequestedRef.current = false;
+      setIsCategoryPopoverOpen(false);
+    }
+  }, [form, isOpen]);
 
   const onSubmit = async (data: ReconciliationFormData, saveAsDraft = true) => {
     try {
@@ -185,8 +420,11 @@ export function StockReconciliationDialog({
           item.systemCount,
           item.physicalCount
         );
-        const product = products.find((p: Product) => p.id === item.productId);
-        const estimatedImpact = product ? discrepancy * product.cost : 0;
+        const cost =
+          products.find((p: Product) => p.id === item.productId)?.cost ??
+          snapshotProductMap[item.productId]?.cost ??
+          0;
+        const estimatedImpact = discrepancy * cost;
 
         return {
           productId: item.productId,
@@ -198,12 +436,12 @@ export function StockReconciliationDialog({
         };
       });
 
-      const reconciliationData = {
+      const reconciliationData: CreateStockReconciliationData = {
         title: data.title,
         description: data.description,
         notes: data.notes,
         items: itemsWithCalculations,
-      } as any; // Type assertion to work with the API
+      };
 
       const result = await createMutation.mutateAsync(reconciliationData);
 
@@ -283,6 +521,139 @@ export function StockReconciliationDialog({
               />
             </div>
 
+            {/* Category Selection */}
+            <Card>
+              <CardHeader>
+                <CardTitle className="flex items-center gap-2">
+                  <IconFilter className="h-5 w-5" />
+                  Select Categories to Prefill
+                </CardTitle>
+              </CardHeader>
+              <CardContent>
+                <div className="space-y-4">
+                  <div className="flex flex-col gap-3 md:flex-row md:items-end">
+                    <div className="flex-1">
+                      <p className="text-sm font-medium text-muted-foreground">
+                        Choose the categories you are counting right now.
+                      </p>
+                      <Popover
+                        open={isCategoryPopoverOpen}
+                        onOpenChange={setIsCategoryPopoverOpen}
+                      >
+                        <PopoverTrigger asChild>
+                          <Button
+                            variant="outline"
+                            type="button"
+                            className="mt-2 w-full justify-between"
+                          >
+                            <span>
+                              {selectedCategoryIds.length > 0
+                                ? `${selectedCategoryIds.length} categor${
+                                    selectedCategoryIds.length === 1
+                                      ? 'y'
+                                      : 'ies'
+                                  } selected`
+                                : 'Select categories'}
+                            </span>
+                            <IconChevronDown className="h-4 w-4 opacity-60" />
+                          </Button>
+                        </PopoverTrigger>
+                        <PopoverContent className="w-[320px] p-0" align="start">
+                          <Command>
+                            <CommandInput placeholder="Search categories..." />
+                            <CommandList>
+                              <CommandEmpty>
+                                {categoriesLoading
+                                  ? 'Loading categories...'
+                                  : 'No categories found'}
+                              </CommandEmpty>
+                              <CommandGroup heading="Categories">
+                                {flatCategoryOptions.map(option => {
+                                  const isSelected =
+                                    selectedCategoryIds.includes(option.id);
+
+                                  return (
+                                    <CommandItem
+                                      key={option.id}
+                                      value={option.id.toString()}
+                                      onSelect={() => toggleCategory(option.id)}
+                                    >
+                                      <Checkbox
+                                        checked={isSelected}
+                                        className="pointer-events-none mr-2"
+                                        tabIndex={-1}
+                                      />
+                                      <span className="truncate">
+                                        {option.label}
+                                      </span>
+                                    </CommandItem>
+                                  );
+                                })}
+                              </CommandGroup>
+                            </CommandList>
+                          </Command>
+                        </PopoverContent>
+                      </Popover>
+                    </div>
+                    <div className="flex gap-2">
+                      <Button
+                        type="button"
+                        variant="outline"
+                        onClick={handleClearCategories}
+                        disabled={
+                          selectedCategoryIds.length === 0 &&
+                          snapshotItems.length === 0
+                        }
+                      >
+                        Clear
+                      </Button>
+                      <Button
+                        type="button"
+                        onClick={handleLoadProducts}
+                        disabled={
+                          selectedCategoryIds.length === 0 ||
+                          snapshotQuery.isFetching ||
+                          categoriesLoading
+                        }
+                      >
+                        {snapshotQuery.isFetching && (
+                          <IconLoader2 className="mr-2 h-4 w-4 animate-spin" />
+                        )}
+                        {snapshotQuery.isFetching ? 'Loading…' : 'Load products'}
+                      </Button>
+                    </div>
+                  </div>
+
+                  {selectedCategoryIds.length > 0 && (
+                    <div className="flex flex-wrap gap-2">
+                      {selectedCategoryIds.map(categoryId => (
+                        <Badge key={categoryId} variant="secondary">
+                          <span className="mr-2">
+                            {categoryLabelMap.get(categoryId) ||
+                              `Category #${categoryId}`}
+                          </span>
+                          <button
+                            type="button"
+                            onClick={() => toggleCategory(categoryId)}
+                            className="text-muted-foreground transition hover:text-foreground"
+                          >
+                            <IconX className="h-3 w-3" />
+                          </button>
+                        </Badge>
+                      ))}
+                    </div>
+                  )}
+
+                  {snapshotPagination?.nextCursor && (
+                    <p className="text-sm text-muted-foreground">
+                      Showing the first {snapshotItems.length} products. Use
+                      narrower categories to keep the list manageable.
+                    </p>
+                  )}
+                </div>
+              </CardContent>
+            </Card>
+
             {/* Product Search and Add */}
             <Card>
               <CardHeader>
@@ -346,48 +717,184 @@ export function StockReconciliationDialog({
                   </CardTitle>
                 </CardHeader>
                 <CardContent>
-                  <div className="overflow-x-auto">
-                    <Table>
-                      <TableHeader>
-                        <TableRow>
-                          <TableHead>Product</TableHead>
-                          <TableHead>System Count</TableHead>
-                          <TableHead>Physical Count</TableHead>
-                          <TableHead>Discrepancy</TableHead>
-                          <TableHead>Reason</TableHead>
-                          <TableHead>Notes</TableHead>
-                          <TableHead>Actions</TableHead>
-                        </TableRow>
-                      </TableHeader>
-                      <TableBody>
+                  {fields.length > 0 && (
+                    <>
+                      <div className="hidden md:block">
+                        <div className="overflow-x-auto rounded-md border">
+                          <Table className="min-w-[960px]">
+                            <TableHeader>
+                              <TableRow>
+                                <TableHead>Product</TableHead>
+                                <TableHead>SKU</TableHead>
+                                <TableHead className="text-center">System</TableHead>
+                                <TableHead className="text-center">Physical</TableHead>
+                                <TableHead className="text-center">Discrepancy</TableHead>
+                                <TableHead>Reason</TableHead>
+                                <TableHead>Notes</TableHead>
+                                <TableHead className="w-12">Actions</TableHead>
+                              </TableRow>
+                            </TableHeader>
+                            <TableBody>
+                              {fields.map((item, index) => {
+                                const itemValues = watchedItems[index];
+                                const discrepancy = calculateDiscrepancy(
+                                  Number(itemValues?.systemCount ?? 0),
+                                  Number(itemValues?.physicalCount ?? 0)
+                                );
+                                const badgeConfig =
+                                  getDiscrepancyBadgeConfig(discrepancy);
+
+                                return (
+                                  <TableRow key={item.id} className="align-top">
+                                    <TableCell className="max-w-xs whitespace-normal break-words">
+                                      <p className="font-medium leading-snug">
+                                        {item.productName}
+                                      </p>
+                                    </TableCell>
+                                    <TableCell className="font-mono text-sm text-muted-foreground">
+                                      {item.productSku}
+                                    </TableCell>
+                                    <TableCell className="w-24">
+                                      <FormField
+                                        control={form.control}
+                                        name={`items.${index}.systemCount`}
+                                        render={({ field }) => (
+                                          <Input
+                                            type="number"
+                                            min="0"
+                                            disabled
+                                            className="text-center"
+                                            {...field}
+                                            onChange={e =>
+                                              field.onChange(
+                                                parseInt(e.target.value) || 0
+                                              )
+                                            }
+                                          />
+                                        )}
+                                      />
+                                    </TableCell>
+                                    <TableCell className="w-24">
+                                      <FormField
+                                        control={form.control}
+                                        name={`items.${index}.physicalCount`}
+                                        render={({ field }) => (
+                                          <Input
+                                            type="number"
+                                            min="0"
+                                            className="text-center"
+                                            {...field}
+                                            onChange={e =>
+                                              field.onChange(
+                                                parseInt(e.target.value) || 0
+                                              )
+                                            }
+                                          />
+                                        )}
+                                      />
+                                    </TableCell>
+                                    <TableCell className="text-center">
+                                      <Badge variant={badgeConfig.variant}>
+                                        {badgeConfig.label}
+                                      </Badge>
+                                    </TableCell>
+                                    <TableCell className="w-56">
+                                      <FormField
+                                        control={form.control}
+                                        name={`items.${index}.discrepancyReason`}
+                                        render={({ field }) => (
+                                          <Select
+                                            onValueChange={field.onChange}
+                                            value={field.value}
+                                          >
+                                            <SelectTrigger>
+                                              <SelectValue placeholder="Select reason" />
+                                            </SelectTrigger>
+                                            <SelectContent>
+                                              {DISCREPANCY_REASONS.map(reason => (
+                                                <SelectItem
+                                                  key={reason.value}
+                                                  value={reason.value}
+                                                >
+                                                  {reason.label}
+                                                </SelectItem>
+                                              ))}
+                                            </SelectContent>
+                                          </Select>
+                                        )}
+                                      />
+                                    </TableCell>
+                                    <TableCell className="w-64">
+                                      <FormField
+                                        control={form.control}
+                                        name={`items.${index}.notes`}
+                                        render={({ field }) => (
+                                          <Textarea
+                                            rows={2}
+                                            placeholder="Add optional context..."
+                                            {...field}
+                                          />
+                                        )}
+                                      />
+                                    </TableCell>
+                                    <TableCell className="text-right">
+                                      <Button
+                                        type="button"
+                                        variant="ghost"
+                                        size="icon"
+                                        onClick={() => remove(index)}
+                                        className="text-muted-foreground hover:text-destructive"
+                                      >
+                                        <IconTrash className="h-4 w-4" />
+                                      </Button>
+                                    </TableCell>
+                                  </TableRow>
+                                );
+                              })}
+                            </TableBody>
+                          </Table>
+                        </div>
+                      </div>
+
+                      <div className="space-y-4 md:hidden">
                         {fields.map((item, index) => {
+                          const itemValues = watchedItems[index];
                           const discrepancy = calculateDiscrepancy(
-                            item.systemCount,
-                            item.physicalCount
+                            Number(itemValues?.systemCount ?? 0),
+                            Number(itemValues?.physicalCount ?? 0)
                           );
+                          const badgeConfig =
+                            getDiscrepancyBadgeConfig(discrepancy);
+
                           return (
-                            <TableRow key={item.id}>
-                              <TableCell>
+                            <div
+                              key={`mobile-${item.id}`}
+                              className="rounded-lg border bg-card p-4 shadow-sm"
+                            >
+                              <div className="space-y-3">
                                 <div>
-                                  <p className="font-medium">
+                                  <p className="font-medium leading-snug break-words">
                                     {item.productName}
                                   </p>
-                                  <p className="text-muted-foreground text-sm">
-                                    {item.productSku}
+                                  <p className="text-xs text-muted-foreground">
+                                    SKU: {item.productSku}
                                   </p>
                                 </div>
-                              </TableCell>
-                              <TableCell>
-                                <FormField
-                                  control={form.control}
-                                  name={`items.${index}.systemCount`}
-                                  render={({ field }) => (
-                                    <FormItem>
-                                      <FormControl>
+
+                                <div className="grid grid-cols-2 gap-3">
+                                  <div>
+                                    <span className="text-xs font-medium text-muted-foreground">
+                                      System
+                                    </span>
+                                    <FormField
+                                      control={form.control}
+                                      name={`items.${index}.systemCount`}
+                                      render={({ field }) => (
                                         <Input
                                           type="number"
                                           min="0"
                                           disabled
+                                          className="mt-1 text-center"
                                           {...field}
                                           onChange={e =>
                                             field.onChange(
@@ -395,21 +902,21 @@ export function StockReconciliationDialog({
                                             )
                                           }
                                         />
-                                      </FormControl>
-                                    </FormItem>
-                                  )}
-                                />
-                              </TableCell>
-                              <TableCell>
-                                <FormField
-                                  control={form.control}
-                                  name={`items.${index}.physicalCount`}
-                                  render={({ field }) => (
-                                    <FormItem>
-                                      <FormControl>
+                                      )}
+                                    />
+                                  </div>
+                                  <div>
+                                    <span className="text-xs font-medium text-muted-foreground">
+                                      Physical
+                                    </span>
+                                    <FormField
+                                      control={form.control}
+                                      name={`items.${index}.physicalCount`}
+                                      render={({ field }) => (
                                         <Input
                                           type="number"
                                           min="0"
+                                          className="mt-1 text-center"
                                           {...field}
                                           onChange={e =>
                                             field.onChange(
@@ -417,35 +924,37 @@ export function StockReconciliationDialog({
                                             )
                                           }
                                         />
-                                      </FormControl>
-                                    </FormItem>
-                                  )}
-                                />
-                              </TableCell>
-                              <TableCell>
-                                {(() => {
-                                  const badgeConfig =
-                                    getDiscrepancyBadgeConfig(discrepancy);
-                                  return (
-                                    <Badge variant={badgeConfig.variant}>
+                                      )}
+                                    />
+                                  </div>
+                                </div>
+
+                                <div className="grid grid-cols-2 items-end gap-3">
+                                  <div>
+                                    <span className="text-xs font-medium text-muted-foreground">
+                                      Discrepancy
+                                    </span>
+                                    <Badge
+                                      variant={badgeConfig.variant}
+                                      className="mt-1 justify-center"
+                                    >
                                       {badgeConfig.label}
                                     </Badge>
-                                  );
-                                })()}
-                              </TableCell>
-                              <TableCell>
-                                <FormField
-                                  control={form.control}
-                                  name={`items.${index}.discrepancyReason`}
-                                  render={({ field }) => (
-                                    <FormItem>
-                                      <FormControl>
+                                  </div>
+                                  <div>
+                                    <span className="text-xs font-medium text-muted-foreground">
+                                      Reason
+                                    </span>
+                                    <FormField
+                                      control={form.control}
+                                      name={`items.${index}.discrepancyReason`}
+                                      render={({ field }) => (
                                         <Select
                                           onValueChange={field.onChange}
                                           value={field.value}
                                         >
-                                          <SelectTrigger>
-                                            <SelectValue placeholder="Select reason..." />
+                                          <SelectTrigger className="mt-1">
+                                            <SelectValue placeholder="Select reason" />
                                           </SelectTrigger>
                                           <SelectContent>
                                             {DISCREPANCY_REASONS.map(reason => (
@@ -458,43 +967,48 @@ export function StockReconciliationDialog({
                                             ))}
                                           </SelectContent>
                                         </Select>
-                                      </FormControl>
-                                    </FormItem>
-                                  )}
-                                />
-                              </TableCell>
-                              <TableCell>
+                                      )}
+                                    />
+                                  </div>
+                                </div>
+
                                 <FormField
                                   control={form.control}
                                   name={`items.${index}.notes`}
                                   render={({ field }) => (
-                                    <FormItem>
-                                      <FormControl>
-                                        <Input
-                                          placeholder="Additional notes"
-                                          {...field}
-                                        />
-                                      </FormControl>
-                                    </FormItem>
+                                    <div>
+                                      <span className="text-xs font-medium text-muted-foreground">
+                                        Notes
+                                      </span>
+                                      <Textarea
+                                        rows={2}
+                                        placeholder="Add optional context..."
+                                        className="mt-1"
+                                        {...field}
+                                      />
+                                    </div>
                                   )}
                                 />
-                              </TableCell>
-                              <TableCell>
-                                <Button
-                                  type="button"
-                                  variant="ghost"
-                                  size="sm"
-                                  onClick={() => remove(index)}
-                                >
-                                  <IconTrash className="h-4 w-4" />
-                                </Button>
-                              </TableCell>
-                            </TableRow>
+
+                                <div className="flex justify-end">
+                                  <Button
+                                    type="button"
+                                    variant="ghost"
+                                    size="sm"
+                                    onClick={() => remove(index)}
+                                    className="text-muted-foreground hover:text-destructive"
+                                  >
+                                    <IconTrash className="h-4 w-4" />
+                                    <span className="sr-only">Remove</span>
+                                  </Button>
+                                </div>
+                              </div>
+                            </div>
                           );
                         })}
-                      </TableBody>
-                    </Table>
-                  </div>
+                      </div>
+                    </>
+                  )}
 
                   {/* Summary */}
                   <div className="bg-muted mt-4 rounded-lg p-4">
@@ -504,7 +1018,7 @@ export function StockReconciliationDialog({
                         <span className="text-muted-foreground">
                           Total Products:
                         </span>
-                        <p className="font-medium">{fields.length}</p>
+                        <p className="font-medium">{watchedItems.length}</p>
                       </div>
                       <div>
                         <span className="text-muted-foreground">
@@ -559,7 +1073,7 @@ export function StockReconciliationDialog({
               )}
             />
 
-            <DialogFooter className="space-x-2">
+            <DialogFooter className="flex flex-col items-stretch gap-2 sm:flex-row sm:items-center sm:justify-end">
               <Button type="button" variant="outline" onClick={onClose}>
                 Cancel
               </Button>
@@ -567,14 +1081,16 @@ export function StockReconciliationDialog({
                 type="button"
                 variant="secondary"
                 onClick={handleSaveDraft}
-                disabled={isLoading || fields.length === 0}
+                disabled={isLoading || !watchedItems.length}
+                className="sm:w-auto"
               >
                 {isLoading ? 'Saving...' : 'Save Draft'}
               </Button>
               <Button
                 type="button"
                 onClick={handleSubmitForApproval}
-                disabled={isLoading || fields.length === 0}
+                disabled={isLoading || !watchedItems.length}
+                className="sm:w-auto"
               >
                 {isLoading ? 'Submitting...' : 'Submit for Approval'}
               </Button>
