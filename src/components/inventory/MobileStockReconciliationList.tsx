@@ -1,6 +1,6 @@
 'use client';
 
-import React, { useState, useMemo, useCallback } from 'react';
+import React, { useState, useMemo, useCallback, useEffect } from 'react';
 import Link from 'next/link';
 import { toast } from 'sonner';
 import { useDebounce } from '@/hooks/useDebounce';
@@ -53,7 +53,6 @@ import {
   IconTrash,
   IconSend,
   IconClipboard,
-  IconAlertTriangle,
   IconCalendar,
   IconUser,
   IconPackages,
@@ -61,6 +60,10 @@ import {
 
 import { format } from 'date-fns';
 import { logger } from '@/lib/logger';
+import {
+  calculateDiscrepancyMetrics,
+  formatSignedUnits,
+} from '@/lib/utils/stock-reconciliation';
 
 interface User {
   id: string;
@@ -142,8 +145,20 @@ const MobileStockReconciliationList = ({ user }: MobileStockReconciliationListPr
         className: 'font-bold'
       },
       {
-        key: 'totalDiscrepancy',
-        label: 'Total Discrepancy',
+        key: 'netDiscrepancy',
+        label: 'Net',
+        defaultVisible: true,
+        className: 'font-bold',
+      },
+      {
+        key: 'overageDiscrepancy',
+        label: 'Overages',
+        defaultVisible: true,
+        className: 'font-bold',
+      },
+      {
+        key: 'shortageDiscrepancy',
+        label: 'Shortages',
         defaultVisible: true,
         className: 'font-bold',
       },
@@ -178,6 +193,36 @@ const MobileStockReconciliationList = ({ user }: MobileStockReconciliationListPr
   const [visibleColumns, setVisibleColumns] = useState<string[]>(
     columns.filter(col => col.defaultVisible).map(col => col.key)
   );
+
+  useEffect(() => {
+    const storageKey = 'stock-reconciliations-visible-columns';
+    const stored = localStorage.getItem(storageKey);
+    if (!stored) return;
+
+    try {
+      const parsed = JSON.parse(stored);
+      if (!Array.isArray(parsed)) {
+        localStorage.removeItem(storageKey);
+        return;
+      }
+
+      let updated = parsed;
+      if (updated.includes('totalDiscrepancy')) {
+        updated = updated.filter((col: string) => col !== 'totalDiscrepancy');
+        ['netDiscrepancy', 'overageDiscrepancy', 'shortageDiscrepancy'].forEach(
+          key => {
+            if (!updated.includes(key)) {
+              updated.push(key);
+            }
+          }
+        );
+        localStorage.setItem(storageKey, JSON.stringify(updated));
+      }
+      setVisibleColumns(updated.filter((col: string) => col !== 'actions'));
+    } catch (_error) {
+      localStorage.removeItem(storageKey);
+    }
+  }, [columns]);
 
   // Filter configurations
   const filterConfigs: FilterConfig[] = useMemo(
@@ -249,24 +294,29 @@ const MobileStockReconciliationList = ({ user }: MobileStockReconciliationListPr
         toast.success('Stock reconciliation submitted for approval');
         reconciliationsQuery.refetch();
       },
-      onError: (error: any) => {
-        logger.error('Failed to submit stock reconciliation', error);
-        toast.error(error.message || 'Failed to submit reconciliation');
+      onError: (error: unknown) => {
+        const message = error instanceof Error ? error.message : String(error);
+        logger.error('Failed to submit stock reconciliation', { error: message });
+        toast.error(message || 'Failed to submit reconciliation');
       },
     });
   }, [submitMutation, reconciliationsQuery]);
 
   const handleApprove = useCallback((reconciliation: APIStockReconciliation) => {
-    approveMutation.mutate({ id: reconciliation.id }, {
-      onSuccess: () => {
-        toast.success('Stock reconciliation approved');
-        reconciliationsQuery.refetch();
-      },
-      onError: (error: any) => {
-        logger.error('Failed to approve stock reconciliation', error);
-        toast.error(error.message || 'Failed to approve reconciliation');
-      },
-    });
+    approveMutation.mutate(
+      { id: reconciliation.id },
+      {
+        onSuccess: () => {
+          toast.success('Stock reconciliation approved');
+          reconciliationsQuery.refetch();
+        },
+        onError: (error: unknown) => {
+        const message = error instanceof Error ? error.message : String(error);
+        logger.error('Failed to approve stock reconciliation', { error: message });
+          toast.error(message || 'Failed to approve reconciliation');
+        },
+      }
+    );
   }, [approveMutation, reconciliationsQuery]);
 
   const handleReject = useCallback(() => {
@@ -282,9 +332,10 @@ const MobileStockReconciliationList = ({ user }: MobileStockReconciliationListPr
           setReconciliationToReject(null);
           setRejectReason('');
         },
-        onError: (error: any) => {
-          logger.error('Failed to reject stock reconciliation', error);
-          toast.error(error.message || 'Failed to reject reconciliation');
+        onError: (error: unknown) => {
+          const message = error instanceof Error ? error.message : String(error);
+          logger.error('Failed to reject stock reconciliation', { error: message });
+          toast.error(message || 'Failed to reject reconciliation');
         },
       }
     );
@@ -300,9 +351,10 @@ const MobileStockReconciliationList = ({ user }: MobileStockReconciliationListPr
         setDeleteDialogOpen(false);
         setReconciliationToDelete(null);
       },
-      onError: (error: any) => {
-        logger.error('Failed to delete stock reconciliation', error);
-        toast.error(error.message || 'Failed to delete reconciliation');
+      onError: (error: unknown) => {
+        const message = error instanceof Error ? error.message : String(error);
+        logger.error('Failed to delete stock reconciliation', { error: message });
+        toast.error(message || 'Failed to delete reconciliation');
       },
     });
   }, [reconciliationToDelete, deleteMutation, reconciliationsQuery]);
@@ -310,6 +362,25 @@ const MobileStockReconciliationList = ({ user }: MobileStockReconciliationListPr
   // Render cell function
   const renderCell = useCallback(
     (reconciliation: APIStockReconciliation, columnKey: string) => {
+      const metrics = calculateDiscrepancyMetrics(
+        reconciliation.items.map(item => {
+          let impact = 0;
+          if (item.estimatedImpact !== null && item.estimatedImpact !== undefined) {
+            impact =
+              typeof item.estimatedImpact === 'string'
+                ? parseFloat(item.estimatedImpact)
+                : Number(item.estimatedImpact);
+            if (Number.isNaN(impact)) {
+              impact = 0;
+            }
+          }
+
+          return {
+            discrepancy: Number(item.discrepancy || 0),
+            impact,
+          };
+        })
+      );
       switch (columnKey) {
         case 'title':
           return (
@@ -332,12 +403,22 @@ const MobileStockReconciliationList = ({ user }: MobileStockReconciliationListPr
               {reconciliation.items?.length || 0} items
             </span>
           );
-        case 'totalDiscrepancy':
-          const total = reconciliation.items?.reduce((sum, item) => 
-            sum + Math.abs(item.discrepancy || 0), 0) || 0;
+        case 'netDiscrepancy':
           return (
-            <span className="text-xs sm:text-sm font-medium">
-              {total > 0 ? `±${total}` : '0'}
+            <span className="text-xs sm:text-sm font-semibold">
+              {formatSignedUnits(metrics.netUnits)}
+            </span>
+          );
+        case 'overageDiscrepancy':
+          return (
+            <span className="text-xs sm:text-sm font-semibold text-green-700">
+              {formatSignedUnits(metrics.overageUnits)}
+            </span>
+          );
+        case 'shortageDiscrepancy':
+          return (
+            <span className="text-xs sm:text-sm font-semibold text-red-700">
+              {formatSignedUnits(-metrics.shortageUnits)}
             </span>
           );
         case 'createdBy':
@@ -622,8 +703,7 @@ const MobileStockReconciliationList = ({ user }: MobileStockReconciliationListPr
               Delete Reconciliation
             </AlertDialogTitle>
             <AlertDialogDescription>
-              Are you sure you want to delete "{reconciliationToDelete?.title}"? 
-              This action cannot be undone.
+              Are you sure you want to delete “{reconciliationToDelete?.title}”? This action cannot be undone.
             </AlertDialogDescription>
           </AlertDialogHeader>
           <AlertDialogFooter>

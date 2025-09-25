@@ -17,6 +17,8 @@ import {
 } from '@tabler/icons-react';
 import { formatCurrency } from '@/lib/utils';
 import type { StockReconciliationItem } from '@/hooks/api/stock-management';
+import type { DiscrepancyMetrics } from '@/lib/utils/stock-reconciliation';
+import { formatSignedUnits } from '@/lib/utils/stock-reconciliation';
 
 interface ReconciliationHeaderProps {
   reconciliation: {
@@ -42,8 +44,7 @@ interface ReconciliationHeaderProps {
     };
     items: StockReconciliationItem[];
   };
-  totalDiscrepancy: number;
-  totalImpact: number;
+  metrics: DiscrepancyMetrics;
 }
 
 const statusConfig = {
@@ -71,8 +72,7 @@ const statusConfig = {
 
 export function ReconciliationHeader({
   reconciliation,
-  totalDiscrepancy,
-  totalImpact,
+  metrics,
 }: ReconciliationHeaderProps) {
   const currentStatus = reconciliation.status as keyof typeof statusConfig;
   const statusInfo = statusConfig[currentStatus];
@@ -94,7 +94,7 @@ export function ReconciliationHeader({
       </CardHeader>
       <CardContent className="space-y-6">
         {/* Summary Stats */}
-        <div className="grid grid-cols-1 gap-4 md:grid-cols-3">
+        <div className="grid grid-cols-1 gap-4 md:grid-cols-4">
           <div className="bg-muted rounded-lg p-4 text-center">
             <div className="text-2xl font-bold">
               {reconciliation.items.length}
@@ -102,17 +102,30 @@ export function ReconciliationHeader({
             <div className="text-muted-foreground text-sm">Items</div>
           </div>
           <div className="bg-muted rounded-lg p-4 text-center">
-            <div className="text-2xl font-bold">{totalDiscrepancy}</div>
-            <div className="text-muted-foreground text-sm">
-              Total Discrepancy
+            <div className="text-muted-foreground text-sm">Net Discrepancy</div>
+            <div className="text-2xl font-bold">
+              {formatSignedUnits(metrics.netUnits)}
+            </div>
+            <div className="text-muted-foreground text-xs">
+              {formatCurrency(metrics.netImpact)}
             </div>
           </div>
           <div className="bg-muted rounded-lg p-4 text-center">
-            <div className="text-2xl font-bold">
-              {formatCurrency(totalImpact)}
+            <div className="text-green-700 text-sm font-medium">Overages</div>
+            <div className="text-2xl font-bold text-green-700">
+              {formatSignedUnits(metrics.overageUnits)}
             </div>
-            <div className="text-muted-foreground text-sm">
-              Estimated Impact
+            <div className="text-green-700 text-xs">
+              {formatCurrency(metrics.overageImpact)}
+            </div>
+          </div>
+          <div className="bg-muted rounded-lg p-4 text-center">
+            <div className="text-red-700 text-sm font-medium">Shortages</div>
+            <div className="text-2xl font-bold text-red-700">
+              {formatSignedUnits(-metrics.shortageUnits)}
+            </div>
+            <div className="text-red-700 text-xs">
+              {formatCurrency(-metrics.shortageImpact)}
             </div>
           </div>
         </div>

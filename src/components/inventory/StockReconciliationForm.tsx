@@ -79,6 +79,10 @@ import {
   TableHeader,
   TableRow,
 } from '@/components/ui/table';
+import {
+  calculateDiscrepancyMetrics,
+  formatSignedUnits,
+} from '@/lib/utils/stock-reconciliation';
 
 const reconciliationItemSchema = z.object({
   productId: z.number().int().positive(),
@@ -234,6 +238,31 @@ export function StockReconciliationForm() {
     [rawWatchedItems]
   );
 
+  const costLookup = useMemo(() => {
+    const map = new Map<number, number>();
+    products.forEach((product: Product) => {
+      map.set(product.id, Number(product.cost) || 0);
+    });
+    Object.values(snapshotProductMap).forEach((item: InventorySnapshotItem) => {
+      map.set(item.id, Number(item.cost) || 0);
+    });
+    return map;
+  }, [products, snapshotProductMap]);
+
+  const discrepancyMetrics = useMemo(() => {
+    const itemsForMetrics = watchedItems.map(item => {
+      const systemCount = Number(item?.systemCount ?? 0);
+      const physicalCount = Number(item?.physicalCount ?? 0);
+      const discrepancy = physicalCount - systemCount;
+      const cost = costLookup.get(item.productId) ?? 0;
+      return {
+        discrepancy,
+        impact: discrepancy * cost,
+      };
+    });
+    return calculateDiscrepancyMetrics(itemsForMetrics);
+  }, [watchedItems, costLookup]);
+
   const toggleCategory = useCallback((categoryId: number) => {
     setSelectedCategoryIds(previous => {
       if (previous.includes(categoryId)) {
@@ -306,30 +335,6 @@ export function StockReconciliationForm() {
   const calculateDiscrepancy = (systemCount: number, physicalCount: number) => {
     return physicalCount - systemCount;
   };
-
-  const totalDiscrepancy = useMemo(() => {
-    if (!watchedItems.length) return 0;
-    return watchedItems.reduce((total, item) => {
-      const systemCount = Number(item?.systemCount ?? 0);
-      const physicalCount = Number(item?.physicalCount ?? 0);
-      return total + calculateDiscrepancy(systemCount, physicalCount);
-    }, 0);
-  }, [watchedItems]);
-
-  const estimatedImpact = useMemo(() => {
-    if (!watchedItems.length) return 0;
-    return watchedItems.reduce((total, item) => {
-      const productId = item?.productId;
-      const systemCount = Number(item?.systemCount ?? 0);
-      const physicalCount = Number(item?.physicalCount ?? 0);
-      const discrepancy = calculateDiscrepancy(systemCount, physicalCount);
-      const cost =
-        products.find((p: Product) => p.id === productId)?.cost ??
-        snapshotProductMap[productId]?.cost ??
-        0;
-      return total + discrepancy * cost;
-    }, 0);
-  }, [watchedItems, products, snapshotProductMap]);
 
   useEffect(() => {
     if (!prefillRequestedRef.current) {
@@ -749,7 +754,6 @@ export function StockReconciliationForm() {
               {/* Products List */}
               {fields.length > 0 ? (
                 <>
-                  {/* Desktop table */}
                   <div className="hidden md:block">
                     <div className="overflow-x-auto rounded-md border">
                       <Table className="min-w-[960px]">
@@ -768,9 +772,11 @@ export function StockReconciliationForm() {
                         <TableBody>
                           {fields.map((item, index) => {
                             const itemValues = watchedItems[index];
+                            const systemCount = Number(itemValues?.systemCount ?? 0);
+                            const physicalCount = Number(itemValues?.physicalCount ?? 0);
                             const discrepancy = calculateDiscrepancy(
-                              Number(itemValues?.systemCount ?? 0),
-                              Number(itemValues?.physicalCount ?? 0)
+                              systemCount,
+                              physicalCount
                             );
                             const badgeConfig =
                               getDiscrepancyBadgeConfig(discrepancy);
@@ -887,13 +893,14 @@ export function StockReconciliationForm() {
                     </div>
                   </div>
 
-                  {/* Mobile cards */}
                   <div className="space-y-4 md:hidden">
                     {fields.map((item, index) => {
                       const itemValues = watchedItems[index];
+                      const systemCount = Number(itemValues?.systemCount ?? 0);
+                      const physicalCount = Number(itemValues?.physicalCount ?? 0);
                       const discrepancy = calculateDiscrepancy(
-                        Number(itemValues?.systemCount ?? 0),
-                        Number(itemValues?.physicalCount ?? 0)
+                        systemCount,
+                        physicalCount
                       );
                       const badgeConfig =
                         getDiscrepancyBadgeConfig(discrepancy);
@@ -1062,24 +1069,46 @@ export function StockReconciliationForm() {
                 </CardDescription>
               </CardHeader>
               <CardContent>
-                <div className="grid grid-cols-1 gap-4 md:grid-cols-3">
-                  <div>
-                    <div className="text-sm font-medium">Total Products</div>
+                <div className="grid grid-cols-1 gap-4 md:grid-cols-4">
+                  <div className="rounded-lg border bg-muted/40 p-4">
+                    <div className="text-sm font-medium text-muted-foreground">
+                      Total Products
+                    </div>
                     <div className="text-2xl font-bold">
                       {watchedItems.length}
                     </div>
                   </div>
-                  <div>
-                    <div className="text-sm font-medium">Total Discrepancy</div>
+                  <div className="rounded-lg border bg-muted/40 p-4">
+                    <div className="text-sm font-medium text-muted-foreground">
+                      Net Discrepancy
+                    </div>
                     <div className="text-2xl font-bold">
-                      {totalDiscrepancy > 0 ? '+' : ''}
-                      {totalDiscrepancy}
+                      {formatSignedUnits(discrepancyMetrics.netUnits)}
+                    </div>
+                    <div className="text-muted-foreground text-xs">
+                      {formatCurrency(discrepancyMetrics.netImpact)}
                     </div>
                   </div>
-                  <div>
-                    <div className="text-sm font-medium">Estimated Impact</div>
-                    <div className="text-2xl font-bold">
-                      {formatCurrency(estimatedImpact)}
+                  <div className="rounded-lg border bg-green-50 p-4">
+                    <div className="text-sm font-medium text-green-700">
+                      Overages
+                    </div>
+                    <div className="text-2xl font-bold text-green-700">
+                      {formatSignedUnits(discrepancyMetrics.overageUnits)}
+                    </div>
+                    <div className="text-green-700 text-xs">
+                      {formatCurrency(discrepancyMetrics.overageImpact)}
+                    </div>
+                  </div>
+                  <div className="rounded-lg border bg-red-50 p-4">
+                    <div className="text-sm font-medium text-red-700">
+                      Shortages
+                    </div>
+                    <div className="text-2xl font-bold text-red-700">
+                      {formatSignedUnits(-discrepancyMetrics.shortageUnits)}
+                    </div>
+                    <div className="text-red-700 text-xs">
+                      {formatCurrency(-discrepancyMetrics.shortageImpact)}
                     </div>
                   </div>
                 </div>

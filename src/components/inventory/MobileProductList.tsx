@@ -52,6 +52,7 @@ import {
 
 // Utils
 import { formatCurrency } from '@/lib/utils';
+import { useMobileScrollAnchor } from '@/lib/utils/performance';
 
 // Icons
 import {
@@ -115,6 +116,9 @@ const MobileProductList = ({ user }: MobileProductListProps) => {
     totalItems: 0,
   });
   const [visibleColumns, setVisibleColumns] = useState<string[]>([]);
+
+  const { anchorRef: pageTopRef, scrollToAnchor: scrollToTopIfMobile } =
+    useMobileScrollAnchor();
 
   // Get permissions using centralized hook
   const permissions = usePermissions();
@@ -336,15 +340,19 @@ const MobileProductList = ({ user }: MobileProductListProps) => {
   };
 
   const handlePageChange = (newPage: number) => {
+    if (pagination.page === newPage) return;
     setPagination(prev => ({ ...prev, page: newPage }));
+    scrollToTopIfMobile();
   };
 
   const handlePageSizeChange = (newPageSize: number) => {
+    if (pagination.limit === newPageSize && pagination.page === 1) return;
     setPagination(prev => ({
       ...prev,
       limit: newPageSize,
       page: 1,
     }));
+    scrollToTopIfMobile();
   };
 
   // Helper function to get product image - moved outside render for better performance
@@ -678,132 +686,134 @@ const MobileProductList = ({ user }: MobileProductListProps) => {
 
   return (
     <ErrorBoundary>
-      <DashboardPageLayout
-        title="Products"
-        description="Manage your product inventory and stock levels"
-        actions={
-          canManageProducts ? (
-            <div className="flex flex-row items-center gap-2">
-              <Button
-                asChild
-                variant="outline"
-                className="hidden sm:flex items-center gap-2"
-              >
-                <Link href="/inventory/products/archived">
-                  <IconArchive className="h-4 w-4" />
-                  <span className="hidden md:inline">View Archived</span>
-                </Link>
-              </Button>
-              <Button asChild>
-                <Link
-                  href="/inventory/products/add"
-                  className="flex items-center gap-2"
+      <div ref={pageTopRef}>
+        <DashboardPageLayout
+          title="Products"
+          description="Manage your product inventory and stock levels"
+          actions={
+            canManageProducts ? (
+              <div className="flex flex-row items-center gap-2">
+                <Button
+                  asChild
+                  variant="outline"
+                  className="hidden sm:flex items-center gap-2"
                 >
-                  <IconPlus className="h-4 w-4" />
-                  <span className="hidden sm:inline">Add Product</span>
-                  <span className="sm:hidden">Add</span>
-                </Link>
-              </Button>
-            </div>
-          ) : undefined
-        }
-      >
-        <div className="space-y-6">
-          {/* Mobile-optimized Filters */}
-          <MobileDashboardFiltersBar
-            searchPlaceholder="Search products..."
-            searchValue={filters.search}
-            onSearchChange={value => handleFilterChange('search', value)}
-            isSearching={isSearching}
-            filters={filterConfigs}
-            filterValues={filters as unknown as Record<string, unknown>}
-            onFilterChange={(key: string, value: unknown) =>
-              handleFilterChange(key, value as string | boolean)
-            }
-            onResetFilters={handleResetFilters}
-            quickFilters={
-              <Button
-                variant={filters.lowStock ? 'default' : 'outline'}
-                size="sm"
-                onClick={() => handleFilterChange('lowStock', !filters.lowStock)}
-                className="text-xs"
-              >
-                <IconAlertTriangle className="mr-1 h-3 w-3 sm:h-4 sm:w-4" />
-                <span className="hidden sm:inline">Low Stock</span>
-                <span className="sm:hidden">Low</span>
-              </Button>
-            }
-            sortOptions={SORT_OPTIONS}
-            currentSort={`${filters.sortBy}-${filters.sortOrder}`}
-            onSortChange={handleSortChange}
-          />
-
-          {/* Mobile-optimized Table */}
-          <MobileDashboardTable
-            tableTitle="Products"
-            totalCount={pagination.totalItems}
-            currentCount={products.length}
-            columns={availableColumns}
-            visibleColumns={visibleColumns}
-            onColumnsChange={setVisibleColumns}
-            columnCustomizerKey="products-visible-columns"
-            data={products}
-            renderCell={renderCell}
-            renderActions={renderActions}
-            pagination={pagination}
-            onPageChange={handlePageChange}
-            onPageSizeChange={handlePageSizeChange}
-            isLoading={productsQuery.isLoading}
-            isRefetching={productsQuery.isFetching && !productsQuery.isLoading}
-            error={productsQuery.error?.message}
-            onRetry={() => productsQuery.refetch()}
-            emptyStateIcon={
-              <IconPackages className="mx-auto mb-4 h-12 w-12 text-gray-400" />
-            }
-            emptyStateMessage="No products found"
-            emptyStateAction={
-              canManageProducts ? (
-                <Button asChild>
-                  <Link href="/inventory/products/add">Add Your First Product</Link>
+                  <Link href="/inventory/products/archived">
+                    <IconArchive className="h-4 w-4" />
+                    <span className="hidden md:inline">View Archived</span>
+                  </Link>
                 </Button>
-              ) : undefined
-            }
-            mobileCardTitle={mobileCardTitle}
-            mobileCardSubtitle={mobileCardSubtitle}
-            keyExtractor={product => product.id}
-          />
-        </div>
+                <Button asChild>
+                  <Link
+                    href="/inventory/products/add"
+                    className="flex items-center gap-2"
+                  >
+                    <IconPlus className="h-4 w-4" />
+                    <span className="hidden sm:inline">Add Product</span>
+                    <span className="sm:hidden">Add</span>
+                  </Link>
+                </Button>
+              </div>
+            ) : undefined
+          }
+        >
+          <div className="space-y-6">
+            {/* Mobile-optimized Filters */}
+            <MobileDashboardFiltersBar
+              searchPlaceholder="Search products..."
+              searchValue={filters.search}
+              onSearchChange={value => handleFilterChange('search', value)}
+              isSearching={isSearching}
+              filters={filterConfigs}
+              filterValues={filters as unknown as Record<string, unknown>}
+              onFilterChange={(key: string, value: unknown) =>
+                handleFilterChange(key, value as string | boolean)
+              }
+              onResetFilters={handleResetFilters}
+              quickFilters={
+                <Button
+                  variant={filters.lowStock ? 'default' : 'outline'}
+                  size="sm"
+                  onClick={() => handleFilterChange('lowStock', !filters.lowStock)}
+                  className="text-xs"
+                >
+                  <IconAlertTriangle className="mr-1 h-3 w-3 sm:h-4 sm:w-4" />
+                  <span className="hidden sm:inline">Low Stock</span>
+                  <span className="sm:hidden">Low</span>
+                </Button>
+              }
+              sortOptions={SORT_OPTIONS}
+              currentSort={`${filters.sortBy}-${filters.sortOrder}`}
+              onSortChange={handleSortChange}
+            />
 
-        {/* Dialogs */}
-        <AddStockDialog
-          isOpen={addStockDialogOpen}
-          onClose={() => {
-            setAddStockDialogOpen(false);
-            setSelectedProductForStock(null);
-          }}
-          product={selectedProductForStock}
-          onSuccess={() => {
-            productsQuery.refetch();
-          }}
-        />
-        <ProductDetailModal
-          productId={selectedProductForDetail}
-          open={productDetailModalOpen}
-          onCloseAction={() => {
-            setProductDetailModalOpen(false);
-            setSelectedProductForDetail(null);
-          }}
-          onAddStock={productId => {
-            const product = products?.find(p => p.id === productId);
-            if (product) {
-              setSelectedProductForStock(product);
-              setAddStockDialogOpen(true);
+            {/* Mobile-optimized Table */}
+            <MobileDashboardTable
+              tableTitle="Products"
+              totalCount={pagination.totalItems}
+              currentCount={products.length}
+              columns={availableColumns}
+              visibleColumns={visibleColumns}
+              onColumnsChange={setVisibleColumns}
+              columnCustomizerKey="products-visible-columns"
+              data={products}
+              renderCell={renderCell}
+              renderActions={renderActions}
+              pagination={pagination}
+              onPageChange={handlePageChange}
+              onPageSizeChange={handlePageSizeChange}
+              isLoading={productsQuery.isLoading}
+              isRefetching={productsQuery.isFetching && !productsQuery.isLoading}
+              error={productsQuery.error?.message}
+              onRetry={() => productsQuery.refetch()}
+              emptyStateIcon={
+                <IconPackages className="mx-auto mb-4 h-12 w-12 text-gray-400" />
+              }
+              emptyStateMessage="No products found"
+              emptyStateAction={
+                canManageProducts ? (
+                  <Button asChild>
+                    <Link href="/inventory/products/add">Add Your First Product</Link>
+                  </Button>
+                ) : undefined
+              }
+              mobileCardTitle={mobileCardTitle}
+              mobileCardSubtitle={mobileCardSubtitle}
+              keyExtractor={product => product.id}
+            />
+          </div>
+
+          {/* Dialogs */}
+          <AddStockDialog
+            isOpen={addStockDialogOpen}
+            onClose={() => {
+              setAddStockDialogOpen(false);
+              setSelectedProductForStock(null);
+            }}
+            product={selectedProductForStock}
+            onSuccess={() => {
+              productsQuery.refetch();
+            }}
+          />
+          <ProductDetailModal
+            productId={selectedProductForDetail}
+            open={productDetailModalOpen}
+            onCloseAction={() => {
               setProductDetailModalOpen(false);
               setSelectedProductForDetail(null);
-            }
-          }}
-        />
-      </DashboardPageLayout>
+            }}
+            onAddStock={productId => {
+              const product = products?.find(p => p.id === productId);
+              if (product) {
+                setSelectedProductForStock(product);
+                setAddStockDialogOpen(true);
+                setProductDetailModalOpen(false);
+                setSelectedProductForDetail(null);
+              }
+            }}
+          />
+        </DashboardPageLayout>
+      </div>
     </ErrorBoundary>
   );
 };

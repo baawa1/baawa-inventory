@@ -76,6 +76,10 @@ import {
   TableHeader,
   TableRow,
 } from '@/components/ui/table';
+import {
+  calculateDiscrepancyMetrics,
+  formatSignedUnits,
+} from '@/lib/utils/stock-reconciliation';
 
 const reconciliationItemSchema = z.object({
   productId: z.number().int().positive(),
@@ -239,6 +243,31 @@ export function StockReconciliationDialog({
     [rawWatchedItems]
   );
 
+  const costLookup = useMemo(() => {
+    const map = new Map<number, number>();
+    products.forEach((product: Product) => {
+      map.set(product.id, Number(product.cost) || 0);
+    });
+    Object.values(snapshotProductMap).forEach((item: InventorySnapshotItem) => {
+      map.set(item.id, Number(item.cost) || 0);
+    });
+    return map;
+  }, [products, snapshotProductMap]);
+
+  const discrepancyMetrics = useMemo(() => {
+    const inputs = watchedItems.map(item => {
+      const systemCount = Number(item?.systemCount ?? 0);
+      const physicalCount = Number(item?.physicalCount ?? 0);
+      const discrepancy = physicalCount - systemCount;
+      const cost = costLookup.get(item.productId) ?? 0;
+      return {
+        discrepancy,
+        impact: discrepancy * cost,
+      };
+    });
+    return calculateDiscrepancyMetrics(inputs);
+  }, [watchedItems, costLookup]);
+
   const handleSearchProducts = (search: string) => {
     setSearchTerm(search);
   };
@@ -315,30 +344,6 @@ export function StockReconciliationDialog({
   const calculateDiscrepancy = (systemCount: number, physicalCount: number) => {
     return physicalCount - systemCount;
   };
-
-  const totalDiscrepancy = useMemo(() => {
-    if (!watchedItems.length) return 0;
-    return watchedItems.reduce((total, item) => {
-      const systemCount = Number(item?.systemCount ?? 0);
-      const physicalCount = Number(item?.physicalCount ?? 0);
-      return total + calculateDiscrepancy(systemCount, physicalCount);
-    }, 0);
-  }, [watchedItems]);
-
-  const estimatedImpact = useMemo(() => {
-    if (!watchedItems.length) return 0;
-    return watchedItems.reduce((total, item) => {
-      const productId = item?.productId;
-      const systemCount = Number(item?.systemCount ?? 0);
-      const physicalCount = Number(item?.physicalCount ?? 0);
-      const discrepancy = calculateDiscrepancy(systemCount, physicalCount);
-      const cost =
-        products.find((p: Product) => p.id === productId)?.cost ??
-        snapshotProductMap[productId]?.cost ??
-        0;
-      return total + discrepancy * cost;
-    }, 0);
-  }, [watchedItems, products, snapshotProductMap]);
 
   useEffect(() => {
     if (!prefillRequestedRef.current) {
@@ -717,333 +722,333 @@ export function StockReconciliationDialog({
                   </CardTitle>
                 </CardHeader>
                 <CardContent>
-                  {fields.length > 0 && (
-                    <>
-                      <div className="hidden md:block">
-                        <div className="overflow-x-auto rounded-md border">
-                          <Table className="min-w-[960px]">
-                            <TableHeader>
-                              <TableRow>
-                                <TableHead>Product</TableHead>
-                                <TableHead>SKU</TableHead>
-                                <TableHead className="text-center">System</TableHead>
-                                <TableHead className="text-center">Physical</TableHead>
-                                <TableHead className="text-center">Discrepancy</TableHead>
-                                <TableHead>Reason</TableHead>
-                                <TableHead>Notes</TableHead>
-                                <TableHead className="w-12">Actions</TableHead>
-                              </TableRow>
-                            </TableHeader>
-                            <TableBody>
-                              {fields.map((item, index) => {
-                                const itemValues = watchedItems[index];
-                                const discrepancy = calculateDiscrepancy(
-                                  Number(itemValues?.systemCount ?? 0),
-                                  Number(itemValues?.physicalCount ?? 0)
-                                );
-                                const badgeConfig =
-                                  getDiscrepancyBadgeConfig(discrepancy);
+                  <div className="hidden md:block">
+                    <div className="overflow-x-auto rounded-md border">
+                      <Table className="min-w-[960px]">
+                        <TableHeader>
+                          <TableRow>
+                            <TableHead>Product</TableHead>
+                            <TableHead>SKU</TableHead>
+                            <TableHead className="text-center">System</TableHead>
+                            <TableHead className="text-center">Physical</TableHead>
+                            <TableHead className="text-center">Discrepancy</TableHead>
+                            <TableHead>Reason</TableHead>
+                            <TableHead>Notes</TableHead>
+                            <TableHead className="w-12">Actions</TableHead>
+                          </TableRow>
+                        </TableHeader>
+                        <TableBody>
+                          {fields.map((item, index) => {
+                            const itemValues = watchedItems[index];
+                            const systemCount = Number(itemValues?.systemCount ?? 0);
+                            const physicalCount = Number(itemValues?.physicalCount ?? 0);
+                            const discrepancy = calculateDiscrepancy(
+                              systemCount,
+                              physicalCount
+                            );
+                            const badgeConfig =
+                              getDiscrepancyBadgeConfig(discrepancy);
 
-                                return (
-                                  <TableRow key={item.id} className="align-top">
-                                    <TableCell className="max-w-xs whitespace-normal break-words">
-                                      <p className="font-medium leading-snug">
-                                        {item.productName}
-                                      </p>
-                                    </TableCell>
-                                    <TableCell className="font-mono text-sm text-muted-foreground">
-                                      {item.productSku}
-                                    </TableCell>
-                                    <TableCell className="w-24">
-                                      <FormField
-                                        control={form.control}
-                                        name={`items.${index}.systemCount`}
-                                        render={({ field }) => (
-                                          <Input
-                                            type="number"
-                                            min="0"
-                                            disabled
-                                            className="text-center"
-                                            {...field}
-                                            onChange={e =>
-                                              field.onChange(
-                                                parseInt(e.target.value) || 0
-                                              )
-                                            }
-                                          />
-                                        )}
-                                      />
-                                    </TableCell>
-                                    <TableCell className="w-24">
-                                      <FormField
-                                        control={form.control}
-                                        name={`items.${index}.physicalCount`}
-                                        render={({ field }) => (
-                                          <Input
-                                            type="number"
-                                            min="0"
-                                            className="text-center"
-                                            {...field}
-                                            onChange={e =>
-                                              field.onChange(
-                                                parseInt(e.target.value) || 0
-                                              )
-                                            }
-                                          />
-                                        )}
-                                      />
-                                    </TableCell>
-                                    <TableCell className="text-center">
-                                      <Badge variant={badgeConfig.variant}>
-                                        {badgeConfig.label}
-                                      </Badge>
-                                    </TableCell>
-                                    <TableCell className="w-56">
-                                      <FormField
-                                        control={form.control}
-                                        name={`items.${index}.discrepancyReason`}
-                                        render={({ field }) => (
-                                          <Select
-                                            onValueChange={field.onChange}
-                                            value={field.value}
-                                          >
-                                            <SelectTrigger>
-                                              <SelectValue placeholder="Select reason" />
-                                            </SelectTrigger>
-                                            <SelectContent>
-                                              {DISCREPANCY_REASONS.map(reason => (
-                                                <SelectItem
-                                                  key={reason.value}
-                                                  value={reason.value}
-                                                >
-                                                  {reason.label}
-                                                </SelectItem>
-                                              ))}
-                                            </SelectContent>
-                                          </Select>
-                                        )}
-                                      />
-                                    </TableCell>
-                                    <TableCell className="w-64">
-                                      <FormField
-                                        control={form.control}
-                                        name={`items.${index}.notes`}
-                                        render={({ field }) => (
-                                          <Textarea
-                                            rows={2}
-                                            placeholder="Add optional context..."
-                                            {...field}
-                                          />
-                                        )}
-                                      />
-                                    </TableCell>
-                                    <TableCell className="text-right">
-                                      <Button
-                                        type="button"
-                                        variant="ghost"
-                                        size="icon"
-                                        onClick={() => remove(index)}
-                                        className="text-muted-foreground hover:text-destructive"
-                                      >
-                                        <IconTrash className="h-4 w-4" />
-                                      </Button>
-                                    </TableCell>
-                                  </TableRow>
-                                );
-                              })}
-                            </TableBody>
-                          </Table>
-                        </div>
-                      </div>
-
-                      <div className="space-y-4 md:hidden">
-                        {fields.map((item, index) => {
-                          const itemValues = watchedItems[index];
-                          const discrepancy = calculateDiscrepancy(
-                            Number(itemValues?.systemCount ?? 0),
-                            Number(itemValues?.physicalCount ?? 0)
-                          );
-                          const badgeConfig =
-                            getDiscrepancyBadgeConfig(discrepancy);
-
-                          return (
-                            <div
-                              key={`mobile-${item.id}`}
-                              className="rounded-lg border bg-card p-4 shadow-sm"
-                            >
-                              <div className="space-y-3">
-                                <div>
-                                  <p className="font-medium leading-snug break-words">
+                            return (
+                              <TableRow key={item.id} className="align-top">
+                                <TableCell className="max-w-xs whitespace-normal break-words">
+                                  <p className="font-medium leading-snug">
                                     {item.productName}
                                   </p>
-                                  <p className="text-xs text-muted-foreground">
-                                    SKU: {item.productSku}
-                                  </p>
-                                </div>
-
-                                <div className="grid grid-cols-2 gap-3">
-                                  <div>
-                                    <span className="text-xs font-medium text-muted-foreground">
-                                      System
-                                    </span>
-                                    <FormField
-                                      control={form.control}
-                                      name={`items.${index}.systemCount`}
-                                      render={({ field }) => (
-                                        <Input
-                                          type="number"
-                                          min="0"
-                                          disabled
-                                          className="mt-1 text-center"
-                                          {...field}
-                                          onChange={e =>
-                                            field.onChange(
-                                              parseInt(e.target.value) || 0
-                                            )
-                                          }
-                                        />
-                                      )}
-                                    />
-                                  </div>
-                                  <div>
-                                    <span className="text-xs font-medium text-muted-foreground">
-                                      Physical
-                                    </span>
-                                    <FormField
-                                      control={form.control}
-                                      name={`items.${index}.physicalCount`}
-                                      render={({ field }) => (
-                                        <Input
-                                          type="number"
-                                          min="0"
-                                          className="mt-1 text-center"
-                                          {...field}
-                                          onChange={e =>
-                                            field.onChange(
-                                              parseInt(e.target.value) || 0
-                                            )
-                                          }
-                                        />
-                                      )}
-                                    />
-                                  </div>
-                                </div>
-
-                                <div className="grid grid-cols-2 items-end gap-3">
-                                  <div>
-                                    <span className="text-xs font-medium text-muted-foreground">
-                                      Discrepancy
-                                    </span>
-                                    <Badge
-                                      variant={badgeConfig.variant}
-                                      className="mt-1 justify-center"
-                                    >
-                                      {badgeConfig.label}
-                                    </Badge>
-                                  </div>
-                                  <div>
-                                    <span className="text-xs font-medium text-muted-foreground">
-                                      Reason
-                                    </span>
-                                    <FormField
-                                      control={form.control}
-                                      name={`items.${index}.discrepancyReason`}
-                                      render={({ field }) => (
-                                        <Select
-                                          onValueChange={field.onChange}
-                                          value={field.value}
-                                        >
-                                          <SelectTrigger className="mt-1">
-                                            <SelectValue placeholder="Select reason" />
-                                          </SelectTrigger>
-                                          <SelectContent>
-                                            {DISCREPANCY_REASONS.map(reason => (
-                                              <SelectItem
-                                                key={reason.value}
-                                                value={reason.value}
-                                              >
-                                                {reason.label}
-                                              </SelectItem>
-                                            ))}
-                                          </SelectContent>
-                                        </Select>
-                                      )}
-                                    />
-                                  </div>
-                                </div>
-
-                                <FormField
-                                  control={form.control}
-                                  name={`items.${index}.notes`}
-                                  render={({ field }) => (
-                                    <div>
-                                      <span className="text-xs font-medium text-muted-foreground">
-                                        Notes
-                                      </span>
+                                </TableCell>
+                                <TableCell className="font-mono text-sm text-muted-foreground">
+                                  {item.productSku}
+                                </TableCell>
+                                <TableCell className="w-24">
+                                  <FormField
+                                    control={form.control}
+                                    name={`items.${index}.systemCount`}
+                                    render={({ field }) => (
+                                      <Input
+                                        type="number"
+                                        min="0"
+                                        disabled
+                                        className="text-center"
+                                        {...field}
+                                        onChange={e =>
+                                          field.onChange(
+                                            parseInt(e.target.value) || 0
+                                          )
+                                        }
+                                      />
+                                    )}
+                                  />
+                                </TableCell>
+                                <TableCell className="w-24">
+                                  <FormField
+                                    control={form.control}
+                                    name={`items.${index}.physicalCount`}
+                                    render={({ field }) => (
+                                      <Input
+                                        type="number"
+                                        min="0"
+                                        className="text-center"
+                                        {...field}
+                                        onChange={e =>
+                                          field.onChange(
+                                            parseInt(e.target.value) || 0
+                                          )
+                                        }
+                                      />
+                                    )}
+                                  />
+                                </TableCell>
+                                <TableCell className="text-center">
+                                  <Badge variant={badgeConfig.variant}>
+                                    {badgeConfig.label}
+                                  </Badge>
+                                </TableCell>
+                                <TableCell className="w-56">
+                                  <FormField
+                                    control={form.control}
+                                    name={`items.${index}.discrepancyReason`}
+                                    render={({ field }) => (
+                                      <Select
+                                        onValueChange={field.onChange}
+                                        value={field.value}
+                                      >
+                                        <SelectTrigger>
+                                          <SelectValue placeholder="Select reason" />
+                                        </SelectTrigger>
+                                        <SelectContent>
+                                          {DISCREPANCY_REASONS.map(reason => (
+                                            <SelectItem
+                                              key={reason.value}
+                                              value={reason.value}
+                                            >
+                                              {reason.label}
+                                            </SelectItem>
+                                          ))}
+                                        </SelectContent>
+                                      </Select>
+                                    )}
+                                  />
+                                </TableCell>
+                                <TableCell className="w-64">
+                                  <FormField
+                                    control={form.control}
+                                    name={`items.${index}.notes`}
+                                    render={({ field }) => (
                                       <Textarea
                                         rows={2}
                                         placeholder="Add optional context..."
-                                        className="mt-1"
                                         {...field}
                                       />
-                                    </div>
-                                  )}
-                                />
-
-                                <div className="flex justify-end">
+                                    )}
+                                  />
+                                </TableCell>
+                                <TableCell className="text-right">
                                   <Button
                                     type="button"
                                     variant="ghost"
-                                    size="sm"
+                                    size="icon"
                                     onClick={() => remove(index)}
                                     className="text-muted-foreground hover:text-destructive"
                                   >
                                     <IconTrash className="h-4 w-4" />
-                                    <span className="sr-only">Remove</span>
                                   </Button>
-                                </div>
+                                </TableCell>
+                              </TableRow>
+                            );
+                          })}
+                        </TableBody>
+                      </Table>
+                    </div>
+                  </div>
+
+                  <div className="space-y-4 md:hidden">
+                    {fields.map((item, index) => {
+                      const itemValues = watchedItems[index];
+                      const systemCount = Number(itemValues?.systemCount ?? 0);
+                      const physicalCount = Number(itemValues?.physicalCount ?? 0);
+                      const discrepancy = calculateDiscrepancy(
+                        systemCount,
+                        physicalCount
+                      );
+                      const badgeConfig =
+                        getDiscrepancyBadgeConfig(discrepancy);
+
+                      return (
+                        <div
+                          key={`mobile-${item.id}`}
+                          className="rounded-lg border bg-card p-4 shadow-sm"
+                        >
+                          <div className="space-y-3">
+                            <div>
+                              <p className="font-medium leading-snug break-words">
+                                {item.productName}
+                              </p>
+                              <p className="text-xs text-muted-foreground">
+                                SKU: {item.productSku}
+                              </p>
+                            </div>
+
+                            <div className="grid grid-cols-2 gap-3">
+                              <div>
+                                <span className="text-xs font-medium text-muted-foreground">
+                                  System
+                                </span>
+                                <FormField
+                                  control={form.control}
+                                  name={`items.${index}.systemCount`}
+                                  render={({ field }) => (
+                                    <Input
+                                      type="number"
+                                      min="0"
+                                      disabled
+                                      className="mt-1 text-center"
+                                      {...field}
+                                      onChange={e =>
+                                        field.onChange(
+                                          parseInt(e.target.value) || 0
+                                        )
+                                      }
+                                    />
+                                  )}
+                                />
+                              </div>
+                              <div>
+                                <span className="text-xs font-medium text-muted-foreground">
+                                  Physical
+                                </span>
+                                <FormField
+                                  control={form.control}
+                                  name={`items.${index}.physicalCount`}
+                                  render={({ field }) => (
+                                    <Input
+                                      type="number"
+                                      min="0"
+                                      className="mt-1 text-center"
+                                      {...field}
+                                      onChange={e =>
+                                        field.onChange(
+                                          parseInt(e.target.value) || 0
+                                        )
+                                      }
+                                    />
+                                  )}
+                                />
                               </div>
                             </div>
-                          );
-                        })}
-                      </div>
-                    </>
-                  )}
+
+                            <div className="grid grid-cols-2 items-end gap-3">
+                              <div>
+                                <span className="text-xs font-medium text-muted-foreground">
+                                  Discrepancy
+                                </span>
+                                <Badge
+                                  variant={badgeConfig.variant}
+                                  className="mt-1 justify-center"
+                                >
+                                  {badgeConfig.label}
+                                </Badge>
+                              </div>
+                              <div>
+                                <span className="text-xs font-medium text-muted-foreground">
+                                  Reason
+                                </span>
+                                <FormField
+                                  control={form.control}
+                                  name={`items.${index}.discrepancyReason`}
+                                  render={({ field }) => (
+                                    <Select
+                                      onValueChange={field.onChange}
+                                      value={field.value}
+                                    >
+                                      <SelectTrigger className="mt-1">
+                                        <SelectValue placeholder="Select reason" />
+                                      </SelectTrigger>
+                                      <SelectContent>
+                                        {DISCREPANCY_REASONS.map(reason => (
+                                          <SelectItem
+                                            key={reason.value}
+                                            value={reason.value}
+                                          >
+                                            {reason.label}
+                                          </SelectItem>
+                                        ))}
+                                      </SelectContent>
+                                    </Select>
+                                  )}
+                                />
+                              </div>
+                            </div>
+
+                            <FormField
+                              control={form.control}
+                              name={`items.${index}.notes`}
+                              render={({ field }) => (
+                                <div>
+                                  <span className="text-xs font-medium text-muted-foreground">
+                                    Notes
+                                  </span>
+                                  <Textarea
+                                    rows={2}
+                                    placeholder="Add optional context..."
+                                    className="mt-1"
+                                    {...field}
+                                  />
+                                </div>
+                              )}
+                            />
+
+                            <div className="flex justify-end">
+                              <Button
+                                type="button"
+                                variant="ghost"
+                                size="sm"
+                                onClick={() => remove(index)}
+                                className="text-muted-foreground hover:text-destructive"
+                              >
+                                <IconTrash className="h-4 w-4" />
+                                <span className="sr-only">Remove</span>
+                              </Button>
+                            </div>
+                          </div>
+                        </div>
+                      );
+                    })}
+                  </div>
 
                   {/* Summary */}
                   <div className="bg-muted mt-4 rounded-lg p-4">
                     <h4 className="mb-2 font-medium">Reconciliation Summary</h4>
-                    <div className="grid grid-cols-2 gap-4 text-sm md:grid-cols-4">
+                    <div className="grid grid-cols-1 gap-3 text-sm md:grid-cols-4">
                       <div>
-                        <span className="text-muted-foreground">
-                          Total Products:
-                        </span>
-                        <p className="font-medium">{watchedItems.length}</p>
+                        <span className="text-muted-foreground">Total Products:</span>
+                        <p className="font-semibold">{watchedItems.length}</p>
                       </div>
                       <div>
-                        <span className="text-muted-foreground">
-                          Total Discrepancy:
-                        </span>
-                        <p
-                          className={`font-medium ${totalDiscrepancy === 0 ? 'text-green-600' : totalDiscrepancy > 0 ? 'text-blue-600' : 'text-red-600'}`}
-                        >
-                          {totalDiscrepancy > 0 ? '+' : ''}
-                          {totalDiscrepancy} units
+                        <span className="text-muted-foreground">Net Discrepancy:</span>
+                        <p className="font-semibold">
+                          {formatSignedUnits(discrepancyMetrics.netUnits)} units
+                        </p>
+                        <p className="text-xs text-muted-foreground">
+                          {formatCurrency(discrepancyMetrics.netImpact)}
                         </p>
                       </div>
                       <div>
-                        <span className="text-muted-foreground">
-                          Estimated Impact:
-                        </span>
-                        <p
-                          className={`font-medium ${estimatedImpact === 0 ? 'text-green-600' : estimatedImpact > 0 ? 'text-blue-600' : 'text-red-600'}`}
-                        >
-                          {formatCurrency(Math.abs(estimatedImpact))}
+                        <span className="text-green-700">Overages:</span>
+                        <p className="font-semibold text-green-700">
+                          {formatSignedUnits(discrepancyMetrics.overageUnits)} units
+                        </p>
+                        <p className="text-xs text-green-700">
+                          {formatCurrency(discrepancyMetrics.overageImpact)}
                         </p>
                       </div>
                       <div>
-                        <span className="text-muted-foreground">Status:</span>
-                        <Badge variant="secondary">Draft</Badge>
+                        <span className="text-red-700">Shortages:</span>
+                        <p className="font-semibold text-red-700">
+                          {formatSignedUnits(-discrepancyMetrics.shortageUnits)} units
+                        </p>
+                        <p className="text-xs text-red-700">
+                          {formatCurrency(-discrepancyMetrics.shortageImpact)}
+                        </p>
                       </div>
                     </div>
                   </div>

@@ -1,6 +1,7 @@
 'use client';
 
 import { Card, CardContent } from '@/components/ui/card';
+import { useMemo } from 'react';
 import {
   useStockReconciliation,
   type StockReconciliationItem,
@@ -8,6 +9,7 @@ import {
 import { ReconciliationHeader } from './stock-reconciliation/ReconciliationHeader';
 import { ReconciliationItemsTable } from './stock-reconciliation/ReconciliationItemsTable';
 import { ReconciliationActions } from './stock-reconciliation/ReconciliationActions';
+import { calculateDiscrepancyMetrics } from '@/lib/utils/stock-reconciliation';
 
 interface StockReconciliationDetailProps {
   reconciliationId: number;
@@ -32,6 +34,30 @@ export function StockReconciliationDetail({
   } = useStockReconciliation(reconciliationId.toString());
 
   const reconciliation = reconciliationData?.data;
+
+  const discrepancyMetrics = useMemo(() => {
+    const items = reconciliation?.items ?? [];
+    const inputs = items.map((item: StockReconciliationItem) => {
+      let impact = 0;
+      if (item.estimatedImpact !== null && item.estimatedImpact !== undefined) {
+        impact =
+          typeof item.estimatedImpact === 'string'
+            ? parseFloat(item.estimatedImpact)
+            : Number(item.estimatedImpact);
+
+        if (Number.isNaN(impact)) {
+          impact = 0;
+        }
+      }
+
+      return {
+        discrepancy: Number(item.discrepancy || 0),
+        impact,
+      };
+    });
+
+    return calculateDiscrepancyMetrics(inputs);
+  }, [reconciliation?.items]);
 
   if (isLoading) {
     return (
@@ -75,37 +101,11 @@ export function StockReconciliationDetail({
     (isAdmin || reconciliation.createdBy.id === userId);
   const canApprove = reconciliation.status === 'PENDING' && isAdmin;
 
-  const totalDiscrepancy = reconciliation.items.reduce(
-    (total: number, item: StockReconciliationItem) => total + item.discrepancy,
-    0
-  );
-  const totalImpact = reconciliation.items.reduce(
-    (total: number, item: StockReconciliationItem) => {
-      // Handle different types that might come from the database
-      let impact = 0;
-      if (item.estimatedImpact !== null && item.estimatedImpact !== undefined) {
-        // Convert to number if it's a string, or use as is if it's already a number
-        impact =
-          typeof item.estimatedImpact === 'string'
-            ? parseFloat(item.estimatedImpact)
-            : Number(item.estimatedImpact);
-
-        // Check if the conversion resulted in a valid number
-        if (isNaN(impact)) {
-          impact = 0;
-        }
-      }
-      return total + impact;
-    },
-    0
-  );
-
   return (
     <>
       <ReconciliationHeader
         reconciliation={reconciliation}
-        totalDiscrepancy={totalDiscrepancy}
-        totalImpact={totalImpact}
+        metrics={discrepancyMetrics}
       />
 
       <ReconciliationItemsTable items={reconciliation.items} />

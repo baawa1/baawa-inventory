@@ -48,6 +48,7 @@ export interface CreateCategoryData {
   description?: string;
   isActive?: boolean;
   parentId?: number;
+  wordpress_id?: number | null;
 }
 
 export interface UpdateCategoryData extends Partial<CreateCategoryData> {

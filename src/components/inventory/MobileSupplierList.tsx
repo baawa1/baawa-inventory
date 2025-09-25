@@ -233,12 +233,18 @@ const MobileSupplierList = ({ user }: MobileSupplierListProps) => {
         return (
           <div className="min-w-0">
             <div className="font-medium truncate">{supplier.name}</div>
-            {supplier.contactPerson && (
+            {supplier.contactPerson && !visibleColumns.includes('contactPerson') && (
               <div className="text-xs sm:text-sm text-muted-foreground truncate">
                 Contact: {supplier.contactPerson}
               </div>
             )}
           </div>
+        );
+      case 'contactPerson':
+        return supplier.contactPerson ? (
+          <span className="text-xs sm:text-sm">{supplier.contactPerson}</span>
+        ) : (
+          <span className="text-xs sm:text-sm text-muted-foreground">-</span>
         );
       case 'contact':
         return (

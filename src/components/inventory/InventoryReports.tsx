@@ -16,6 +16,7 @@ import {
   ShoppingCart,
   Layers,
   Tag,
+  type LucideIcon,
 } from 'lucide-react';
 import { DateRange } from 'react-day-picker';
 
@@ -52,7 +53,7 @@ function SummaryCard({
 }: {
   title: string;
   value: string | number;
-  icon: any;
+  icon: LucideIcon;
   isLoading: boolean;
   trend?: 'up' | 'down' | 'neutral';
   trendValue?: string;

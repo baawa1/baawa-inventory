@@ -49,6 +49,10 @@ import {
 import type { FilterConfig } from '@/types/inventory';
 import type { DashboardTableColumn } from '@/components/layouts/DashboardColumnCustomizer';
 import { logger } from '@/lib/logger';
+import {
+  calculateDiscrepancyMetrics,
+  formatSignedUnits,
+} from '@/lib/utils/stock-reconciliation';
 
 interface User {
   id: string;
@@ -91,11 +95,9 @@ const StockReconciliationList = ({ user }: StockReconciliationListProps) => {
       },
       { key: 'status', label: 'Status', defaultVisible: true },
       { key: 'itemCount', label: 'Items', defaultVisible: true },
-      {
-        key: 'totalDiscrepancy',
-        label: 'Total Discrepancy',
-        defaultVisible: true,
-      },
+      { key: 'netDiscrepancy', label: 'Net', defaultVisible: true },
+      { key: 'overageDiscrepancy', label: 'Overages', defaultVisible: true },
+      { key: 'shortageDiscrepancy', label: 'Shortages', defaultVisible: true },
       { key: 'createdBy', label: 'Created By', defaultVisible: true },
       { key: 'createdAt', label: 'Created', defaultVisible: true },
       { key: 'updatedAt', label: 'Updated', defaultVisible: false },
@@ -115,24 +117,36 @@ const StockReconciliationList = ({ user }: StockReconciliationListProps) => {
 
   // Clean up any "actions" column from localStorage and state - run once on mount
   React.useEffect(() => {
-    // Clean up localStorage if it contains "actions"
     const storageKey = 'stock-reconciliations-visible-columns';
     const storedColumns = localStorage.getItem(storageKey);
-    if (storedColumns) {
-      try {
-        const parsed = JSON.parse(storedColumns);
-        if (Array.isArray(parsed) && parsed.includes('actions')) {
-          const cleaned = parsed.filter((col: string) => col !== 'actions');
-          localStorage.setItem(storageKey, JSON.stringify(cleaned));
-          // Also update the visible columns state
-          setVisibleColumns(prev => prev.filter(col => col !== 'actions'));
-        }
-      } catch (_error) {
-        // If parsing fails, remove the item
+    if (!storedColumns) return;
+
+    try {
+      const parsed = JSON.parse(storedColumns);
+      if (!Array.isArray(parsed)) {
         localStorage.removeItem(storageKey);
+        return;
       }
+
+      let updated = parsed.filter((col: string) => col !== 'actions');
+
+      if (updated.includes('totalDiscrepancy')) {
+        updated = updated.filter((col: string) => col !== 'totalDiscrepancy');
+        ['netDiscrepancy', 'overageDiscrepancy', 'shortageDiscrepancy'].forEach(
+          key => {
+            if (!updated.includes(key)) {
+              updated.push(key);
+            }
+          }
+        );
+      }
+
+      localStorage.setItem(storageKey, JSON.stringify(updated));
+      setVisibleColumns(updated);
+    } catch (_error) {
+      localStorage.removeItem(storageKey);
     }
-  }, []); // Empty dependency array - run once on mount
+  }, []);
 
   // Filters
   const [filters, setFilters] = useState({
@@ -340,16 +354,28 @@ const StockReconciliationList = ({ user }: StockReconciliationListProps) => {
     }
   }, []);
 
-  // Calculate total discrepancy
-  const calculateTotalDiscrepancy = useCallback(
-    (reconciliation: APIStockReconciliation) => {
-      return reconciliation.items.reduce(
-        (total, item) => total + Math.abs(item.discrepancy),
-        0
-      );
-    },
-    []
-  );
+  const calculateMetrics = useCallback((reconciliation: APIStockReconciliation) => {
+    const inputs = reconciliation.items.map(item => {
+      let impact = 0;
+      if (item.estimatedImpact !== null && item.estimatedImpact !== undefined) {
+        impact =
+          typeof item.estimatedImpact === 'string'
+            ? parseFloat(item.estimatedImpact)
+            : Number(item.estimatedImpact);
+
+        if (Number.isNaN(impact)) {
+          impact = 0;
+        }
+      }
+
+      return {
+        discrepancy: Number(item.discrepancy || 0),
+        impact,
+      };
+    });
+
+    return calculateDiscrepancyMetrics(inputs);
+  }, []);
 
   // Add actions column if user has permissions
   const columnsWithActions = useMemo(() => {
@@ -373,6 +399,7 @@ const StockReconciliationList = ({ user }: StockReconciliationListProps) => {
   // Render cell function
   const renderCell = useCallback(
     (reconciliation: APIStockReconciliation, columnKey: string) => {
+      const metrics = calculateMetrics(reconciliation);
       switch (columnKey) {
         case 'title':
           return (
@@ -393,16 +420,25 @@ const StockReconciliationList = ({ user }: StockReconciliationListProps) => {
               <span className="font-mono">{reconciliation.items.length}</span>
             </div>
           );
-        case 'totalDiscrepancy':
-          const totalDiscrepancy = calculateTotalDiscrepancy(reconciliation);
+        case 'netDiscrepancy':
           return (
-            <div>
-              <span
-                className={`font-mono ${totalDiscrepancy > 0 ? 'text-red-600' : 'text-green-600'}`}
-              >
-                {totalDiscrepancy}
-              </span>
-            </div>
+            <span
+              className={`font-mono ${metrics.netUnits > 0 ? 'text-green-700' : metrics.netUnits < 0 ? 'text-red-700' : 'text-muted-foreground'}`}
+            >
+              {formatSignedUnits(metrics.netUnits)}
+            </span>
+          );
+        case 'overageDiscrepancy':
+          return (
+            <span className="font-mono text-green-700">
+              {formatSignedUnits(metrics.overageUnits)}
+            </span>
+          );
+        case 'shortageDiscrepancy':
+          return (
+            <span className="font-mono text-red-700">
+              {formatSignedUnits(-metrics.shortageUnits)}
+            </span>
           );
         case 'createdBy':
           return (
@@ -427,7 +463,7 @@ const StockReconciliationList = ({ user }: StockReconciliationListProps) => {
           return null;
       }
     },
-    [getStatusBadge, calculateTotalDiscrepancy]
+    [getStatusBadge, calculateMetrics]
   );
 
   // Render actions

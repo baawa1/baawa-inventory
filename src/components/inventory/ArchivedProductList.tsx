@@ -39,6 +39,9 @@ import {
 import type { FilterConfig } from '@/types/inventory';
 import type { DashboardTableColumn } from '@/components/layouts/DashboardColumnCustomizer';
 
+const ARCHIVED_FILTER_KEYS = ['search', 'categoryId', 'brandId'] as const;
+type FilterKey = (typeof ARCHIVED_FILTER_KEYS)[number];
+
 interface User {
   id: string;
   email?: string | null;
@@ -90,7 +93,7 @@ export function ArchivedProductList({ user }: ArchivedProductListProps) {
   }, [visibleColumns]);
 
   // Filters
-  const [filters, setFilters] = useState({
+  const [filters, setFilters] = useState<Record<FilterKey, string>>({
     search: '',
     categoryId: '',
     brandId: '',
@@ -159,13 +162,28 @@ export function ArchivedProductList({ user }: ArchivedProductListProps) {
   );
 
   // Handle filter changes
-  const handleFilterChange = useCallback((key: string, value: any) => {
-    setFilters(prev => {
-      if (prev[key as keyof typeof prev] === value) return prev; // Prevent unnecessary updates
-      return { ...prev, [key]: value };
-    });
-    setPagination(prev => ({ ...prev, page: 1 }));
-  }, []);
+  const handleFilterChange = useCallback(
+    (key: FilterKey, value: string) => {
+      setFilters(prev => {
+        if (prev[key] === value) return prev; // Prevent unnecessary updates
+        return { ...prev, [key]: value };
+      });
+      setPagination(prev => ({ ...prev, page: 1 }));
+    },
+    []
+  );
+
+  const handleFilterChangeWrapper = useCallback(
+    (key: string, value: unknown) => {
+      if (ARCHIVED_FILTER_KEYS.includes(key as FilterKey)) {
+        handleFilterChange(
+          key as FilterKey,
+          typeof value === 'string' ? value : String(value ?? '')
+        );
+      }
+    },
+    [handleFilterChange]
+  );
 
   // Clear all filters
   const handleResetFilters = useCallback(() => {
@@ -371,7 +389,7 @@ export function ArchivedProductList({ user }: ArchivedProductListProps) {
         isSearching={isSearching}
         filters={filterConfigs}
         filterValues={filters}
-        onFilterChange={handleFilterChange}
+        onFilterChange={handleFilterChangeWrapper}
         onResetFilters={handleResetFilters}
         // Table
         tableTitle="Archived Products"
