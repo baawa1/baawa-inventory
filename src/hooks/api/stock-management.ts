@@ -5,6 +5,7 @@
 
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { queryKeys } from '@/lib/query-client';
+import type { CreateStockReconciliationData } from '@/lib/validations/stock-management';
 
 // Types
 export interface User {
@@ -42,6 +43,36 @@ export interface StockReconciliationItem {
     name: string;
     sku: string;
     stock: number;
+  };
+}
+
+export interface InventorySnapshotRequest {
+  categoryIds?: number[];
+  status?: 'ACTIVE' | 'INACTIVE' | 'ALL';
+  includeZero?: boolean;
+  limit?: number;
+  cursor?: number;
+}
+
+export interface InventorySnapshotItem {
+  id: number;
+  name: string;
+  sku: string;
+  systemCount: number;
+  physicalCount: number;
+  cost: number;
+  minStock: number;
+  category: {
+    id: number;
+    name: string;
+  } | null;
+}
+
+export interface InventorySnapshotResponse {
+  data: InventorySnapshotItem[];
+  pagination: {
+    limit: number;
+    nextCursor: number | null;
   };
 }
 
@@ -90,7 +121,7 @@ const fetchStockReconciliation = async (id: string) => {
 };
 
 const createStockReconciliation = async (
-  data: Partial<StockReconciliation>
+  data: CreateStockReconciliationData
 ) => {
   const response = await fetch('/api/stock-reconciliations', {
     method: 'POST',
@@ -183,6 +214,44 @@ const deleteStockReconciliation = async (id: string) => {
       `Failed to delete stock reconciliation: ${response.statusText}`
     );
   }
+  return response.json();
+};
+
+const fetchInventorySnapshot = async (
+  filters: Partial<InventorySnapshotRequest> = {}
+): Promise<InventorySnapshotResponse> => {
+  const searchParams = new URLSearchParams();
+
+  if (filters.categoryIds && filters.categoryIds.length > 0) {
+    searchParams.set('categoryIds', filters.categoryIds.join(','));
+  }
+
+  if (filters.status) {
+    searchParams.set('status', filters.status);
+  }
+
+  if (filters.includeZero !== undefined) {
+    searchParams.set('includeZero', String(filters.includeZero));
+  }
+
+  if (filters.limit) {
+    searchParams.set('limit', String(filters.limit));
+  }
+
+  if (filters.cursor) {
+    searchParams.set('cursor', String(filters.cursor));
+  }
+
+  const response = await fetch(
+    `/api/inventory/snapshot?${searchParams.toString()}`
+  );
+
+  if (!response.ok) {
+    throw new Error(
+      `Failed to load inventory snapshot: ${response.statusText}`
+    );
+  }
+
   return response.json();
 };
 
@@ -304,5 +373,16 @@ export const useDeleteStockReconciliation = () => {
         queryKey: queryKeys.inventory.stockReconciliations.detail(id),
       });
     },
+  });
+};
+
+export const useInventorySnapshot = (
+  filters: Partial<InventorySnapshotRequest> = {}
+) => {
+  return useQuery({
+    queryKey: queryKeys.inventory.stockSnapshot(filters),
+    queryFn: () => fetchInventorySnapshot(filters),
+    enabled: Boolean(filters.categoryIds && filters.categoryIds.length > 0),
+    staleTime: 5 * 60 * 1000,
   });
 };
