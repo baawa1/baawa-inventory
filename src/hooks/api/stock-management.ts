@@ -38,6 +38,7 @@ export interface StockReconciliationItem {
   discrepancyReason?: string;
   estimatedImpact?: number;
   notes?: string;
+  verified: boolean;
   product: {
     id: number;
     name: string;

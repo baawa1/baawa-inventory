@@ -84,11 +84,29 @@ export function ReconciliationItemsTable({
       mobileOrder: 3,
     },
     {
+      key: 'verified',
+      label: 'Verified',
+      render: (item: StockReconciliationItem) => (
+        <Badge
+          variant={item.verified ? 'default' : 'secondary'}
+          className={
+            item.verified
+              ? 'bg-green-100 text-green-800 border-green-200 text-xs'
+              : 'text-xs'
+          }
+        >
+          {item.verified ? 'Checked' : 'Pending'}
+        </Badge>
+      ),
+      className: 'text-center',
+      mobileOrder: 4,
+    },
+    {
       key: 'discrepancy',
       label: 'Discrepancy',
       render: (item: StockReconciliationItem) => getDiscrepancyBadge(item.discrepancy),
       className: 'text-right',
-      mobileOrder: 4,
+      mobileOrder: 5,
     },
     {
       key: 'impact',
@@ -172,6 +190,7 @@ export function ReconciliationItemsTable({
     const subtitleItems: Array<{ label: string; value: string | number }> = [
       { label: 'System', value: item.systemCount },
       { label: 'Physical', value: item.physicalCount },
+      { label: 'Verified', value: item.verified ? 'Yes' : 'No' },
     ];
 
     if (item.discrepancyReason) {

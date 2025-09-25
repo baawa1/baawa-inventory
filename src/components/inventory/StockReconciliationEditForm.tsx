@@ -1,7 +1,7 @@
 'use client';
 
-import { useState, useEffect } from 'react';
-import { useForm, useFieldArray } from 'react-hook-form';
+import { useState, useEffect, useMemo } from 'react';
+import { useForm, useFieldArray, useWatch } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { z } from 'zod';
 import { toast } from 'sonner';
@@ -42,6 +42,7 @@ import {
   IconCalculator,
   IconDeviceFloppy,
   IconSend,
+  IconX,
 } from '@tabler/icons-react';
 import { ArrowLeft } from 'lucide-react';
 import { PageHeader } from '@/components/ui/page-header';
@@ -55,6 +56,11 @@ import {
 } from '@/hooks/api/stock-management';
 import { DISCREPANCY_REASONS } from '@/lib/constants/stock-reconciliation';
 import { getDiscrepancyBadgeConfig } from '@/lib/utils/badge-helpers';
+import { Checkbox } from '@/components/ui/checkbox';
+import {
+  calculateDiscrepancyMetrics,
+  formatSignedUnits,
+} from '@/lib/utils/stock-reconciliation';
 
 const reconciliationItemSchema = z.object({
   productId: z.number().int().positive(),
@@ -62,6 +68,7 @@ const reconciliationItemSchema = z.object({
   productSku: z.string(),
   systemCount: z.number().int().min(0),
   physicalCount: z.number().int().min(0),
+  verified: z.boolean(),
   discrepancyReason: z.string().optional(),
   notes: z.string().optional(),
 });
@@ -93,6 +100,7 @@ interface ReconciliationItem {
   };
   systemCount: number;
   physicalCount: number;
+  verified?: boolean;
   discrepancyReason?: string;
   notes?: string;
 }
@@ -106,6 +114,7 @@ export function StockReconciliationEditForm({
 }: StockReconciliationEditFormProps) {
   const [searchTerm, setSearchTerm] = useState('');
   const [showProductSearch, setShowProductSearch] = useState(false);
+  const [itemSearch, setItemSearch] = useState('');
   const router = useRouter();
 
   // TanStack Query hooks
@@ -134,6 +143,72 @@ export function StockReconciliationEditForm({
     name: 'items',
   });
 
+  const rawWatchedItems = useWatch({
+    control: form.control,
+    name: 'items',
+  }) as ReconciliationFormData['items'] | undefined;
+
+  const watchedItems = useMemo(
+    () => rawWatchedItems ?? [],
+    [rawWatchedItems]
+  );
+
+  const filteredItemEntries = useMemo(() => {
+    const query = itemSearch.trim().toLowerCase();
+    if (!query) {
+      return fields.map((item, index) => ({ item, index }));
+    }
+
+    return fields
+      .map((item, index) => ({ item, index }))
+      .filter(({ item }) => {
+        const nameMatch = item.productName?.toLowerCase().includes(query);
+        const skuMatch = item.productSku?.toLowerCase().includes(query);
+        return Boolean(nameMatch || skuMatch);
+      });
+  }, [fields, itemSearch]);
+
+  const hasActiveFilter = Boolean(itemSearch.trim());
+
+  const productCountLabel = hasActiveFilter
+    ? `${filteredItemEntries.length} / ${fields.length}`
+    : `${fields.length}`;
+
+  const totalPhysicalUnits = useMemo(() => {
+    return watchedItems.reduce((total, item) => {
+      return total + Number(item?.physicalCount ?? 0);
+    }, 0);
+  }, [watchedItems]);
+
+  const discrepancyMetrics = useMemo(() => {
+    const itemsForMetrics = watchedItems.map(item => {
+      const systemCount = Number(item?.systemCount ?? 0);
+      const physicalCount = Number(item?.physicalCount ?? 0);
+      const discrepancy = physicalCount - systemCount;
+      const product = products.find((p: Product) => p.id === item?.productId);
+      const cost = product?.cost ? Number(product.cost) : 0;
+      return {
+        discrepancy,
+        impact: discrepancy * cost,
+      };
+    });
+
+    return calculateDiscrepancyMetrics(itemsForMetrics);
+  }, [watchedItems, products]);
+
+  const verifiedSummary = useMemo(() => {
+    return watchedItems.reduce(
+      (acc, item) => {
+        if (item?.verified) {
+          acc.units += Number(item.physicalCount ?? 0);
+          acc.items += 1;
+        }
+        return acc;
+      },
+      { units: 0, items: 0 }
+    );
+  }, [watchedItems]);
+
   // Load reconciliation data into form
   useEffect(() => {
     if (reconciliation) {
@@ -147,11 +222,13 @@ export function StockReconciliationEditForm({
         productSku: item.product.sku,
         systemCount: item.systemCount,
         physicalCount: item.physicalCount,
+        verified: Boolean((item as any)?.verified),
         discrepancyReason: item.discrepancyReason || '',
         notes: item.notes || '',
       }));
 
       replace(items);
+      setItemSearch('');
     }
   }, [reconciliation, form, replace]);
 
@@ -171,6 +248,7 @@ export function StockReconciliationEditForm({
       productSku: product.sku,
       systemCount: product.stock,
       physicalCount: product.stock,
+      verified: false,
       discrepancyReason: '',
       notes: '',
     });
@@ -183,29 +261,22 @@ export function StockReconciliationEditForm({
     return physicalCount - systemCount;
   };
 
-  const calculateTotalDiscrepancy = () => {
-    return fields.reduce((total, item) => {
-      const discrepancy = calculateDiscrepancy(
-        item.systemCount,
-        item.physicalCount
-      );
-      return total + discrepancy;
-    }, 0);
-  };
+  useEffect(() => {
+    watchedItems.forEach((item, index) => {
+      if (!item) return;
 
-  const calculateEstimatedImpact = () => {
-    return fields.reduce((total, item) => {
-      const discrepancy = calculateDiscrepancy(
-        item.systemCount,
-        item.physicalCount
-      );
-      const product = products.find((p: Product) => p.id === item.productId);
-      if (product) {
-        return total + discrepancy * product.cost;
+      const systemCount = Number(item.systemCount ?? 0);
+      const physicalCount = Number(item.physicalCount ?? 0);
+      const hasDiscrepancy = physicalCount !== systemCount;
+
+      if (hasDiscrepancy && !item.verified) {
+        form.setValue(`items.${index}.verified`, true, {
+          shouldDirty: true,
+          shouldTouch: false,
+        });
       }
-      return total;
-    }, 0);
-  };
+    });
+  }, [watchedItems, form]);
 
   const onSubmit = async (
     data: ReconciliationFormData,
@@ -226,6 +297,7 @@ export function StockReconciliationEditForm({
           systemCount: item.systemCount,
           physicalCount: item.physicalCount,
           discrepancyReason: item.discrepancyReason,
+          verified: item.verified ?? false,
           estimatedImpact,
           notes: item.notes,
         };
@@ -458,9 +530,9 @@ export function StockReconciliationEditForm({
 
           {/* Product Selection */}
           <Card>
-            <CardHeader>
-              <CardTitle className="flex items-center justify-between">
-                <span>Products ({fields.length})</span>
+            <CardHeader className="space-y-4">
+              <div className="flex flex-col gap-3 md:flex-row md:items-center md:justify-between">
+                <CardTitle>Products ({fields.length})</CardTitle>
                 <Button
                   type="button"
                   variant="outline"
@@ -470,7 +542,34 @@ export function StockReconciliationEditForm({
                   <IconPlus className="mr-2 h-4 w-4" />
                   Add Product
                 </Button>
-              </CardTitle>
+              </div>
+
+              {fields.length > 0 && (
+                <div className="flex flex-col gap-2 md:flex-row md:items-center md:justify-between">
+                  <div className="relative w-full md:max-w-sm">
+                    <IconSearch className="text-muted-foreground pointer-events-none absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2" />
+                    {itemSearch && (
+                      <button
+                        type="button"
+                        onClick={() => setItemSearch('')}
+                        aria-label="Clear product filter"
+                        className="text-muted-foreground absolute right-2 top-1/2 flex h-7 w-7 -translate-y-1/2 items-center justify-center rounded-md transition hover:text-foreground"
+                      >
+                        <IconX className="h-4 w-4" />
+                      </button>
+                    )}
+                    <Input
+                      value={itemSearch}
+                      onChange={event => setItemSearch(event.target.value)}
+                      placeholder="Search added products by name or SKU..."
+                      className="pl-9 pr-9"
+                    />
+                  </div>
+                  <span className="text-sm text-muted-foreground md:text-right">
+                    Showing {productCountLabel} products
+                  </span>
+                </div>
+              )}
             </CardHeader>
             <CardContent>
               {/* Product Search */}
@@ -525,149 +624,358 @@ export function StockReconciliationEditForm({
 
               {/* Products Table */}
               {fields.length > 0 ? (
-                <div className="rounded-md border">
-                  <Table>
-                    <TableHeader>
-                      <TableRow>
-                        <TableHead>Product</TableHead>
-                        <TableHead>SKU</TableHead>
-                        <TableHead className="text-center">System</TableHead>
-                        <TableHead className="text-center">Physical</TableHead>
-                        <TableHead className="text-center">
-                          Discrepancy
-                        </TableHead>
-                        <TableHead>Reason</TableHead>
-                        <TableHead className="w-20"></TableHead>
-                      </TableRow>
-                    </TableHeader>
-                    <TableBody>
-                      {fields.map((item, index) => {
-                        const systemCount = form.watch(
-                          `items.${index}.systemCount`
-                        );
-                        const physicalCount = form.watch(
-                          `items.${index}.physicalCount`
-                        );
-                        const discrepancy = calculateDiscrepancy(
-                          systemCount,
-                          physicalCount
-                        );
+                <>
+                  {filteredItemEntries.length === 0 ? (
+                    <div className="text-muted-foreground py-8 text-center">
+                      No products match your filter.
+                    </div>
+                  ) : (
+                    <>
+                      <div className="hidden md:block">
+                        <div className="overflow-x-auto rounded-md border">
+                          <Table className="min-w-[960px]">
+                            <TableHeader>
+                              <TableRow>
+                                <TableHead>Product</TableHead>
+                                <TableHead>SKU</TableHead>
+                                <TableHead className="text-center">System</TableHead>
+                                <TableHead className="text-center">Physical</TableHead>
+                                <TableHead className="text-center">Verified</TableHead>
+                                <TableHead className="text-center">Discrepancy</TableHead>
+                                <TableHead>Reason</TableHead>
+                                <TableHead>Notes</TableHead>
+                                <TableHead className="w-12">Actions</TableHead>
+                              </TableRow>
+                            </TableHeader>
+                            <TableBody>
+                              {filteredItemEntries.map(({ item, index }) => {
+                                const itemValues = watchedItems[index];
+                                const systemCount = Number(itemValues?.systemCount ?? 0);
+                                const physicalCount = Number(itemValues?.physicalCount ?? 0);
+                                const discrepancy = calculateDiscrepancy(
+                                  systemCount,
+                                  physicalCount
+                                );
+                                const badgeConfig =
+                                  getDiscrepancyBadgeConfig(discrepancy);
 
-                        return (
-                          <TableRow key={item.id}>
-                            <TableCell>
-                              <div>
-                                <div className="font-medium">
-                                  {item.productName}
+                                return (
+                                  <TableRow key={item.id} className="align-top">
+                                    <TableCell className="max-w-xs whitespace-normal break-words">
+                                      <p className="font-medium leading-snug">
+                                        {item.productName}
+                                      </p>
+                                    </TableCell>
+                                    <TableCell className="font-mono text-sm text-muted-foreground">
+                                      {item.productSku}
+                                    </TableCell>
+                                    <TableCell className="w-24">
+                                      <FormField
+                                        control={form.control}
+                                        name={`items.${index}.systemCount`}
+                                        render={({ field }) => (
+                                          <Input
+                                            type="number"
+                                            min="0"
+                                            disabled
+                                            className="text-center"
+                                            {...field}
+                                            onChange={e =>
+                                              field.onChange(
+                                                parseInt(e.target.value) || 0
+                                              )
+                                            }
+                                          />
+                                        )}
+                                      />
+                                    </TableCell>
+                                    <TableCell className="w-24">
+                                      <FormField
+                                        control={form.control}
+                                        name={`items.${index}.physicalCount`}
+                                        render={({ field }) => (
+                                          <Input
+                                            type="number"
+                                            min="0"
+                                            className="text-center"
+                                            {...field}
+                                            onChange={e =>
+                                              field.onChange(
+                                                parseInt(e.target.value) || 0
+                                              )
+                                            }
+                                          />
+                                        )}
+                                      />
+                                    </TableCell>
+                                    <TableCell className="text-center">
+                                      <FormField
+                                        control={form.control}
+                                        name={`items.${index}.verified`}
+                                        render={({ field }) => {
+                                          const isDiscrepancy = discrepancy !== 0;
+                                          const checked = isDiscrepancy
+                                            ? true
+                                            : Boolean(field.value);
+                                          return (
+                                            <Checkbox
+                                              checked={checked}
+                                              onCheckedChange={value =>
+                                                field.onChange(Boolean(value))
+                                              }
+                                              disabled={isDiscrepancy}
+                                              aria-label="Mark product as verified"
+                                              className="mx-auto"
+                                            />
+                                          );
+                                        }}
+                                      />
+                                    </TableCell>
+                                    <TableCell className="text-center">
+                                      <Badge variant={badgeConfig.variant}>
+                                        {badgeConfig.label}
+                                      </Badge>
+                                    </TableCell>
+                                    <TableCell className="w-56">
+                                      <FormField
+                                        control={form.control}
+                                        name={`items.${index}.discrepancyReason`}
+                                        render={({ field }) => (
+                                          <Select
+                                            onValueChange={field.onChange}
+                                            value={field.value}
+                                          >
+                                            <SelectTrigger>
+                                              <SelectValue placeholder="Select reason" />
+                                            </SelectTrigger>
+                                            <SelectContent>
+                                              {DISCREPANCY_REASONS.map(reason => (
+                                                <SelectItem
+                                                  key={reason.value}
+                                                  value={reason.value}
+                                                >
+                                                  {reason.label}
+                                                </SelectItem>
+                                              ))}
+                                            </SelectContent>
+                                          </Select>
+                                        )}
+                                      />
+                                    </TableCell>
+                                    <TableCell className="w-64">
+                                      <FormField
+                                        control={form.control}
+                                        name={`items.${index}.notes`}
+                                        render={({ field }) => (
+                                          <Textarea
+                                            rows={2}
+                                            placeholder="Add optional context..."
+                                            {...field}
+                                          />
+                                        )}
+                                      />
+                                    </TableCell>
+                                    <TableCell className="text-right">
+                                      <Button
+                                        type="button"
+                                        variant="ghost"
+                                        size="icon"
+                                        onClick={() => remove(index)}
+                                        className="text-muted-foreground hover:text-destructive"
+                                      >
+                                        <IconTrash className="h-4 w-4" />
+                                      </Button>
+                                    </TableCell>
+                                  </TableRow>
+                                );
+                              })}
+                            </TableBody>
+                          </Table>
+                        </div>
+                      </div>
+
+                      <div className="space-y-4 md:hidden">
+                        {filteredItemEntries.map(({ item, index }) => {
+                          const itemValues = watchedItems[index];
+                          const systemCount = Number(itemValues?.systemCount ?? 0);
+                          const physicalCount = Number(itemValues?.physicalCount ?? 0);
+                          const discrepancy = calculateDiscrepancy(
+                            systemCount,
+                            physicalCount
+                          );
+                          const badgeConfig =
+                            getDiscrepancyBadgeConfig(discrepancy);
+
+                          return (
+                            <div
+                              key={`mobile-${item.id}`}
+                              className="rounded-lg border bg-card p-4 shadow-sm"
+                            >
+                              <div className="space-y-3">
+                                <div>
+                                  <p className="font-medium leading-snug break-words">
+                                    {item.productName}
+                                  </p>
+                                  <p className="text-xs text-muted-foreground">
+                                    SKU: {item.productSku}
+                                  </p>
                                 </div>
+
+                                <div className="grid grid-cols-2 gap-3">
+                                  <div>
+                                    <span className="text-xs font-medium text-muted-foreground">
+                                      System
+                                    </span>
+                                    <FormField
+                                      control={form.control}
+                                      name={`items.${index}.systemCount`}
+                                      render={({ field }) => (
+                                        <Input
+                                          type="number"
+                                          min="0"
+                                          disabled
+                                          className="mt-1 text-center"
+                                          {...field}
+                                          onChange={e =>
+                                            field.onChange(
+                                              parseInt(e.target.value) || 0
+                                            )
+                                          }
+                                        />
+                                      )}
+                                    />
+                                  </div>
+                                  <div>
+                                    <span className="text-xs font-medium text-muted-foreground">
+                                      Physical
+                                    </span>
+                                    <FormField
+                                      control={form.control}
+                                      name={`items.${index}.physicalCount`}
+                                      render={({ field }) => (
+                                        <Input
+                                          type="number"
+                                          min="0"
+                                          className="mt-1 text-center"
+                                          {...field}
+                                          onChange={e =>
+                                            field.onChange(
+                                              parseInt(e.target.value) || 0
+                                            )
+                                          }
+                                        />
+                                      )}
+                                    />
+                                  </div>
+                                </div>
+
+                                <FormField
+                                  control={form.control}
+                                  name={`items.${index}.verified`}
+                                  render={({ field }) => {
+                                    const isDiscrepancy = discrepancy !== 0;
+                                    const checked = isDiscrepancy
+                                      ? true
+                                      : Boolean(field.value);
+
+                                    return (
+                                      <div className="flex items-center justify-between">
+                                        <span className="text-xs font-medium text-muted-foreground">
+                                          Verified
+                                        </span>
+                                        <Checkbox
+                                          checked={checked}
+                                          onCheckedChange={value =>
+                                            field.onChange(Boolean(value))
+                                          }
+                                          disabled={isDiscrepancy}
+                                          aria-label="Mark product as verified"
+                                        />
+                                      </div>
+                                    );
+                                  }}
+                                />
+
+                                <div className="grid grid-cols-2 items-end gap-3">
+                                  <div>
+                                    <span className="text-xs font-medium text-muted-foreground">
+                                      Discrepancy
+                                    </span>
+                                    <Badge
+                                      variant={badgeConfig.variant}
+                                      className="mt-1 justify-center"
+                                    >
+                                      {badgeConfig.label}
+                                    </Badge>
+                                  </div>
+                                  <div>
+                                    <span className="text-xs font-medium text-muted-foreground">
+                                      Reason
+                                    </span>
+                                    <FormField
+                                      control={form.control}
+                                      name={`items.${index}.discrepancyReason`}
+                                      render={({ field }) => (
+                                        <Select
+                                          onValueChange={field.onChange}
+                                          value={field.value}
+                                        >
+                                          <SelectTrigger className="mt-1">
+                                            <SelectValue placeholder="Select reason" />
+                                          </SelectTrigger>
+                                          <SelectContent>
+                                            {DISCREPANCY_REASONS.map(reason => (
+                                              <SelectItem
+                                                key={reason.value}
+                                                value={reason.value}
+                                              >
+                                                {reason.label}
+                                              </SelectItem>
+                                            ))}
+                                          </SelectContent>
+                                        </Select>
+                                      )}
+                                    />
+                                  </div>
+                                </div>
+
                                 <FormField
                                   control={form.control}
                                   name={`items.${index}.notes`}
                                   render={({ field }) => (
-                                    <Input
-                                      placeholder="Notes..."
-                                      {...field}
-                                      className="mt-1 text-xs"
-                                    />
+                                    <div>
+                                      <span className="text-xs font-medium text-muted-foreground">
+                                        Notes
+                                      </span>
+                                      <Textarea
+                                        rows={2}
+                                        placeholder="Add optional context..."
+                                        className="mt-1"
+                                        {...field}
+                                      />
+                                    </div>
                                   )}
                                 />
-                              </div>
-                            </TableCell>
-                            <TableCell className="font-mono text-sm">
-                              {item.productSku}
-                            </TableCell>
-                            <TableCell>
-                              <FormField
-                                control={form.control}
-                                name={`items.${index}.systemCount`}
-                                render={({ field }) => (
-                                  <Input
-                                    type="number"
-                                    min="0"
-                                    className="w-20 text-center"
-                                    disabled
-                                    {...field}
-                                    onChange={e =>
-                                      field.onChange(
-                                        parseInt(e.target.value) || 0
-                                      )
-                                    }
-                                  />
-                                )}
-                              />
-                            </TableCell>
-                            <TableCell>
-                              <FormField
-                                control={form.control}
-                                name={`items.${index}.physicalCount`}
-                                render={({ field }) => (
-                                  <Input
-                                    type="number"
-                                    min="0"
-                                    className="w-20 text-center"
-                                    {...field}
-                                    onChange={e =>
-                                      field.onChange(
-                                        parseInt(e.target.value) || 0
-                                      )
-                                    }
-                                  />
-                                )}
-                              />
-                            </TableCell>
-                            <TableCell className="text-center">
-                              {(() => {
-                                const badgeConfig =
-                                  getDiscrepancyBadgeConfig(discrepancy);
-                                return (
-                                  <Badge variant={badgeConfig.variant}>
-                                    {badgeConfig.label}
-                                  </Badge>
-                                );
-                              })()}
-                            </TableCell>
-                            <TableCell>
-                              <FormField
-                                control={form.control}
-                                name={`items.${index}.discrepancyReason`}
-                                render={({ field }) => (
-                                  <Select
-                                    onValueChange={field.onChange}
-                                    value={field.value}
+
+                                <div className="flex justify-end">
+                                  <Button
+                                    type="button"
+                                    variant="ghost"
+                                    size="sm"
+                                    onClick={() => remove(index)}
+                                    className="text-muted-foreground hover:text-destructive"
                                   >
-                                    <SelectTrigger className="min-w-48">
-                                      <SelectValue placeholder="Select reason..." />
-                                    </SelectTrigger>
-                                    <SelectContent>
-                                      {DISCREPANCY_REASONS.map(reason => (
-                                        <SelectItem
-                                          key={reason.value}
-                                          value={reason.value}
-                                        >
-                                          {reason.label}
-                                        </SelectItem>
-                                      ))}
-                                    </SelectContent>
-                                  </Select>
-                                )}
-                              />
-                            </TableCell>
-                            <TableCell>
-                              <Button
-                                type="button"
-                                variant="ghost"
-                                size="sm"
-                                onClick={() => remove(index)}
-                              >
-                                <IconTrash className="h-4 w-4" />
-                              </Button>
-                            </TableCell>
-                          </TableRow>
-                        );
-                      })}
-                    </TableBody>
-                  </Table>
-                </div>
+                                    <IconTrash className="h-4 w-4" />
+                                  </Button>
+                                </div>
+                              </div>
+                            </div>
+                          );
+                        })}
+                      </div>
+                    </>
+                  )}
+                </>
               ) : (
                 <div className="text-muted-foreground py-8 text-center">
                   No products added yet. Use the &quot;Add Product&quot; button
@@ -687,22 +995,53 @@ export function StockReconciliationEditForm({
                 </CardTitle>
               </CardHeader>
               <CardContent>
-                <div className="grid grid-cols-2 gap-4">
-                  <div>
-                    <div className="text-sm font-medium">Total Products</div>
+                <div className="grid grid-cols-1 gap-4 md:grid-cols-4">
+                  <div className="rounded-lg border bg-muted/40 p-4">
+                    <div className="text-sm font-medium text-muted-foreground">
+                      Total Products
+                    </div>
                     <div className="text-2xl font-bold">{fields.length}</div>
-                  </div>
-                  <div>
-                    <div className="text-sm font-medium">Total Discrepancy</div>
-                    <div className="text-2xl font-bold">
-                      {calculateTotalDiscrepancy() > 0 ? '+' : ''}
-                      {calculateTotalDiscrepancy()}
+                    <div className="text-muted-foreground text-xs">
+                      {totalPhysicalUnits.toLocaleString()} units counted
+                    </div>
+                    <div className="text-muted-foreground text-xs">
+                      {verifiedSummary.units.toLocaleString()} units verified
+                    </div>
+                    <div className="text-muted-foreground text-xs">
+                      {verifiedSummary.items} / {watchedItems.length} items verified
                     </div>
                   </div>
-                  <div>
-                    <div className="text-sm font-medium">Estimated Impact</div>
+                  <div className="rounded-lg border bg-muted/40 p-4">
+                    <div className="text-sm font-medium text-muted-foreground">
+                      Net Discrepancy
+                    </div>
                     <div className="text-2xl font-bold">
-                      {formatCurrency(calculateEstimatedImpact())}
+                      {formatSignedUnits(discrepancyMetrics.netUnits)}
+                    </div>
+                    <div className="text-muted-foreground text-xs">
+                      {formatCurrency(discrepancyMetrics.netImpact)}
+                    </div>
+                  </div>
+                  <div className="rounded-lg border bg-green-50 p-4">
+                    <div className="text-sm font-medium text-green-700">
+                      Overages
+                    </div>
+                    <div className="text-2xl font-bold text-green-700">
+                      {formatSignedUnits(discrepancyMetrics.overageUnits)}
+                    </div>
+                    <div className="text-green-700 text-xs">
+                      {formatCurrency(discrepancyMetrics.overageImpact)}
+                    </div>
+                  </div>
+                  <div className="rounded-lg border bg-red-50 p-4">
+                    <div className="text-sm font-medium text-red-700">
+                      Shortages
+                    </div>
+                    <div className="text-2xl font-bold text-red-700">
+                      {formatSignedUnits(-discrepancyMetrics.shortageUnits)}
+                    </div>
+                    <div className="text-red-700 text-xs">
+                      {formatCurrency(-discrepancyMetrics.shortageImpact)}
                     </div>
                   </div>
                 </div>
@@ -745,6 +1084,22 @@ export function StockReconciliationEditForm({
           </div>
         </form>
       </Form>
+
+      {watchedItems.length > 0 && (
+        <div className="pointer-events-none fixed bottom-24 right-4 z-50 w-60 sm:bottom-10 sm:right-10">
+          <div className="bg-background/95 text-foreground rounded-xl border p-4 shadow-lg">
+            <p className="text-xs font-medium uppercase tracking-wide text-muted-foreground">
+              Verified Progress
+            </p>
+            <p className="mt-1 text-2xl font-bold">
+              {verifiedSummary.units.toLocaleString()}
+            </p>
+            <p className="text-xs text-muted-foreground">
+              Units verified • {verifiedSummary.items} / {watchedItems.length} items
+            </p>
+          </div>
+        </div>
+      )}
     </div>
   );
 }
