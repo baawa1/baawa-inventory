@@ -94,7 +94,7 @@ const InlinePriceEditor = memo<InlinePriceEditorProps>(function InlinePriceEdito
         setTempPrice((product.price || 0).toString());
       }
     }
-  }, [product.id, tempCost, tempPrice, updateProductMutation]);
+  }, [product.cost, product.id, product.price, tempCost, tempPrice, updateProductMutation]);
 
   const handleCancel = useCallback(() => {
     setTempCost((product.cost || 0).toString());

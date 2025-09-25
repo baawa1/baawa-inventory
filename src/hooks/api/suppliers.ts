@@ -1,15 +1,15 @@
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { queryKeys } from '@/lib/query-client';
-import { 
-  type ApiSupplier, 
-  type CreateSupplierFormData, 
-  type UpdateSupplierFormData 
+import {
+  type ApiSupplier,
+  type CreateSupplierFormData,
+  type UpdateSupplierBodyData,
 } from '@/lib/validations/supplier';
 
 // Use the centralized types
 export type Supplier = ApiSupplier;
 export type CreateSupplierData = CreateSupplierFormData;
-export type UpdateSupplierData = Omit<UpdateSupplierFormData, 'id'>;
+export type UpdateSupplierData = UpdateSupplierBodyData;
 
 export interface SupplierFilters {
   search: string;

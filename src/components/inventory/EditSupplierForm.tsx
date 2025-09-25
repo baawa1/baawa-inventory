@@ -1,6 +1,6 @@
 'use client';
 
-import { useState } from 'react';
+import { useEffect, useState } from 'react';
 import { useRouter } from 'next/navigation';
 import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
@@ -57,21 +57,36 @@ export default function EditSupplierForm({
 
   const form = useForm<UpdateSupplierFormData>({
     resolver: zodResolver(updateSupplierSchema),
-    values: supplier
-      ? {
-          id: supplier.id,
-          name: supplier.name,
-          contactPerson: supplier.contactPerson || undefined,
-          email: supplier.email || undefined,
-          phone: supplier.phone || undefined,
-          address: supplier.address || undefined,
-          city: supplier.city || undefined,
-          state: supplier.state || undefined,
-          website: supplier.website || undefined,
-          notes: supplier.notes || undefined,
-        }
-      : undefined,
+    defaultValues: {
+      id: supplierId,
+      name: '',
+      contactPerson: '',
+      email: '',
+      phone: '',
+      address: '',
+      city: '',
+      state: '',
+      website: '',
+      notes: '',
+    },
   });
+
+  useEffect(() => {
+    if (supplier) {
+      form.reset({
+        id: supplier.id,
+        name: supplier.name,
+        contactPerson: supplier.contactPerson ?? '',
+        email: supplier.email ?? '',
+        phone: supplier.phone ?? '',
+        address: supplier.address ?? '',
+        city: supplier.city ?? '',
+        state: supplier.state ?? '',
+        website: supplier.website ?? '',
+        notes: supplier.notes ?? '',
+      });
+    }
+  }, [supplier, form]);
 
   const onSubmit = async (data: UpdateSupplierFormData) => {
     setError(null);
@@ -184,7 +199,7 @@ export default function EditSupplierForm({
           <CardContent className="pt-6">
             <Alert>
               <AlertDescription>
-                Supplier not found. It may have been deleted or you don't have
+                Supplier not found. It may have been deleted or you don&apos;t have
                 permission to view it.
               </AlertDescription>
             </Alert>

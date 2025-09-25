@@ -19,6 +19,36 @@ export function useDebounce<T>(value: T, delay: number): T {
   return debouncedValue;
 }
 
+// Scroll helper that only runs on mobile-sized viewports
+export function useMobileScrollAnchor(breakpoint: number = 1024) {
+  const anchorRef = useRef<HTMLDivElement | null>(null);
+
+  const scrollToAnchor = useCallback(() => {
+    if (typeof window === 'undefined') return;
+
+    const isSmallScreen = typeof window.matchMedia === 'function'
+      ? window.matchMedia(`(max-width: ${breakpoint - 1}px)`).matches
+      : window.innerWidth < breakpoint;
+
+    if (!isSmallScreen || !anchorRef.current) return;
+
+    const scroll = () => {
+      anchorRef.current?.scrollIntoView({ behavior: 'smooth', block: 'start' });
+    };
+
+    if (typeof window.requestAnimationFrame === 'function') {
+      window.requestAnimationFrame(scroll);
+    } else {
+      scroll();
+    }
+  }, [breakpoint]);
+
+  return {
+    anchorRef,
+    scrollToAnchor,
+  };
+}
+
 // Throttle hook for scroll and resize events
 export function useThrottle<T>(value: T, limit: number): T {
   const [throttledValue, setThrottledValue] = useState(value);
@@ -41,11 +71,9 @@ export function useThrottle<T>(value: T, limit: number): T {
 }
 
 // Memoized table row component to prevent unnecessary re-renders
-export const createMemoizedTableRow = <T extends Record<string, unknown>>(
-  renderRow: (item: T, index: number) => React.ReactNode,
-  keyExtractor: (item: T) => string | number,
-  dependencies: unknown[] = []
-) => {
+export function useMemoizedTableRow<T extends Record<string, unknown>>(
+  renderRow: (_item: T, _index: number) => React.ReactNode
+) {
   return useMemo(() => {
     const MemoizedRow = React.memo<{ item: T; index: number }>(({ item, index }) =>
       renderRow(item, index) as React.ReactElement
@@ -53,8 +81,10 @@ export const createMemoizedTableRow = <T extends Record<string, unknown>>(
     MemoizedRow.displayName = 'MemoizedTableRow';
 
     return MemoizedRow;
-  }, [renderRow, ...dependencies]);
-};
+  }, [renderRow]);
+}
+
+export const createMemoizedTableRow = useMemoizedTableRow;
 
 // Virtual scrolling hook for large datasets
 export interface VirtualScrollOptions {
@@ -100,7 +130,7 @@ export function useVirtualScroll<T>(
 
 // Intersection Observer hook for lazy loading
 export function useIntersectionObserver(
-  callback: (entries: IntersectionObserverEntry[]) => void,
+  callback: (_entries: IntersectionObserverEntry[]) => void,
   options: IntersectionObserverInit = {}
 ) {
   const observer = useRef<IntersectionObserver | null>(null);
@@ -228,7 +258,7 @@ export function usePerformanceMonitor(componentName: string) {
 export function useOptimizedFilter<T>(
   items: T[],
   searchTerm: string,
-  filterFn: (item: T, _term: string) => boolean,
+  filterFn: (_item: T, _term: string) => boolean,
   debounceMs: number = 300
 ) {
   const debouncedSearchTerm = useDebounce(searchTerm, debounceMs);
@@ -253,8 +283,8 @@ export function useOptimizedFilter<T>(
 // Cache hook for expensive computations
 export function useComputationCache<T, R>(
   _data: T,
-  computation: (data: T) => R,
-  dependencies: unknown[] = []
+  computation: (_input: T) => R,
+  dependencies: React.DependencyList = []
 ): R {
   const cache = useRef<Map<string, R>>(new Map());
 
@@ -277,5 +307,5 @@ export function useComputationCache<T, R>(
     }
 
     return result;
-  }, [_data, computation, ...dependencies]);
+  }, [_data, computation, dependencies]);
 }

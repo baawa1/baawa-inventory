@@ -11,6 +11,7 @@ import { toast } from 'sonner';
 import {
   useCreateCategory,
   useTopLevelCategories,
+  type CreateCategoryData,
 } from '@/hooks/api/categories';
 
 // UI Components
@@ -98,13 +99,16 @@ export default function AddCategoryForm() {
     setError(null);
 
     try {
+      const payload = {
+        name: data.name,
+        description: data.description?.trim() ? data.description : undefined,
+        isActive: data.isActive,
+        parentId: data.parentId ?? undefined,
+        wordpress_id: data.wordpress_id ?? undefined,
+      } satisfies CreateCategoryData;
+
       createCategoryMutation.mutate(
-        {
-          name: data.name,
-          description: data.description || undefined,
-          isActive: data.isActive,
-          wordpress_id: data.wordpress_id || undefined,
-        } as any,
+        payload,
         {
           onSuccess: _createdCategory => {
             // Debug logging removed for production
