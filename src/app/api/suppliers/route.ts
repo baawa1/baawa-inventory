@@ -4,7 +4,7 @@ import {
   AuthenticatedRequest,
 } from '@/lib/api-middleware';
 import { createFreshPrismaClient } from '@/lib/db';
-import { USER_ROLES, hasPermission } from '@/lib/auth/roles';
+import { USER_ROLES } from '@/lib/auth/roles';
 import {
   createSupplierSchema,
   supplierQuerySchema,
@@ -76,10 +76,7 @@ export const GET = withAuth(async (request: AuthenticatedRequest) => {
     ]);
 
     // Check user permissions for supplier data access
-    const canViewFullSupplier = hasPermission(
-      request.user.role,
-      'SUPPLIER_READ'
-    );
+    const canViewFullSupplier = request.user.role === USER_ROLES.ADMIN;
 
     // Transform response based on user permissions
     const transformedSuppliers = suppliers.map(supplier => {

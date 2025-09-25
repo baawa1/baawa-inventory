@@ -57,6 +57,7 @@ import { formatCategoryHierarchy } from '@/lib/utils/category';
 import { ErrorHandlers } from '@/lib/utils/error-handling';
 import { FilterConfig, SortOption, PaginationState } from '@/types/inventory';
 import { normalizeImageUrl } from '@/lib/utils/image';
+import { useMobileScrollAnchor } from '@/lib/utils/performance';
 
 interface User {
   id: string;
@@ -103,6 +104,9 @@ const ProductList = ({ user }: ProductListProps) => {
     totalItems: 0,
   });
   const [visibleColumns, setVisibleColumns] = useState<string[]>([]);
+
+  const { anchorRef: pageTopRef, scrollToAnchor: scrollToTopIfMobile } =
+    useMobileScrollAnchor();
 
   // Get permissions using centralized hook
   const permissions = usePermissions();
@@ -338,15 +342,19 @@ const ProductList = ({ user }: ProductListProps) => {
   };
 
   const handlePageChange = (newPage: number) => {
+    if (pagination.page === newPage) return;
     setPagination(prev => ({ ...prev, page: newPage }));
+    scrollToTopIfMobile();
   };
 
   const handlePageSizeChange = (newPageSize: number) => {
+    if (pagination.limit === newPageSize && pagination.page === 1) return;
     setPagination(prev => ({
       ...prev,
       limit: newPageSize,
       page: 1,
     }));
+    scrollToTopIfMobile();
   };
 
   // Archive product handler
@@ -656,151 +664,153 @@ const ProductList = ({ user }: ProductListProps) => {
 
   return (
     <ErrorBoundary>
-      <InventoryPageLayout
-        // Header
-        title="Products"
-        description="Manage your product inventory and stock levels"
-        actions={
-          canManageProducts ? (
-            <div className="flex flex-row items-center gap-2">
-              <Button
-                asChild
-                variant="outline"
-                className="flex items-center gap-2"
-              >
-                <Link href="/inventory/products/archived">
-                  <IconArchive className="h-4 w-4" />
-                  View Archived
-                </Link>
-              </Button>
-              <Button
-                asChild
-                variant="outline"
-                className="flex items-center gap-2"
-              >
-                <Link href="/inventory/stock-reconciliations/add">
-                  <IconAdjustments className="h-4 w-4" />
-                  Reconcile Stock
-                </Link>
-              </Button>
-              <Button
-                variant="outline"
-                className="flex items-center gap-2"
-                onClick={() => {
-                  syncAllEntitiesMutation.mutate('product');
-                }}
-                disabled={syncAllEntitiesMutation.isPending}
-              >
-                <IconPackages className="h-4 w-4" />
-                {syncAllEntitiesMutation.isPending
-                  ? 'Syncing All...'
-                  : 'Sync All'}
-              </Button>
-              <Button asChild>
-                <Link
-                  href="/inventory/products/add"
+      <div ref={pageTopRef}>
+        <InventoryPageLayout
+          // Header
+          title="Products"
+          description="Manage your product inventory and stock levels"
+          actions={
+            canManageProducts ? (
+              <div className="flex flex-row items-center gap-2">
+                <Button
+                  asChild
+                  variant="outline"
                   className="flex items-center gap-2"
                 >
-                  <IconPlus className="h-4 w-4" />
-                  Add Product
-                </Link>
-              </Button>
-            </div>
-          ) : undefined
-        }
-        // Filters
-        searchPlaceholder="Search products..."
-        searchValue={filters.search}
-        onSearchChange={value => handleFilterChange('search', value)}
-        isSearching={isSearching}
-        filters={filterConfigs}
-        filterValues={filters as unknown as Record<string, unknown>}
-        onFilterChange={(key: string, value: unknown) =>
-          handleFilterChange(key, value as string | boolean)
-        }
-        onResetFilters={handleResetFilters}
-        quickFilters={
-          <Button
-            variant={filters.lowStock ? 'default' : 'outline'}
-            size="sm"
-            onClick={() => handleFilterChange('lowStock', !filters.lowStock)}
-          >
-            <IconAlertTriangle className="mr-1 h-4 w-4" />
-            Low Stock Only
-          </Button>
-        }
-        // Sort
-        sortOptions={SORT_OPTIONS}
-        currentSort={`${filters.sortBy}-${filters.sortOrder}`}
-        onSortChange={handleSortChange}
-        // Table
-        tableTitle="Products"
-        totalCount={pagination.totalItems}
-        currentCount={products.length}
-        columns={availableColumns}
-        visibleColumns={visibleColumns}
-        onColumnsChange={setVisibleColumns}
-        columnCustomizerKey="products-visible-columns"
-        data={products}
-        renderCell={renderCell}
-        renderActions={renderActions}
-        // Pagination
-        pagination={pagination}
-        onPageChange={handlePageChange}
-        onPageSizeChange={handlePageSizeChange}
-        // Loading states
-        isLoading={productsQuery.isLoading}
-        isRefetching={productsQuery.isFetching && !productsQuery.isLoading}
-        error={productsQuery.error?.message}
-        onRetry={() => productsQuery.refetch()}
-        // Empty state
-        emptyStateIcon={
-          <IconPackages className="mx-auto mb-4 h-12 w-12 text-gray-400" />
-        }
-        emptyStateMessage="No products found"
-        emptyStateAction={
-          canManageProducts ? (
-            <Button asChild>
-              <Link href="/inventory/products/add">Add Your First Product</Link>
+                  <Link href="/inventory/products/archived">
+                    <IconArchive className="h-4 w-4" />
+                    View Archived
+                  </Link>
+                </Button>
+                <Button
+                  asChild
+                  variant="outline"
+                  className="flex items-center gap-2"
+                >
+                  <Link href="/inventory/stock-reconciliations/add">
+                    <IconAdjustments className="h-4 w-4" />
+                    Reconcile Stock
+                  </Link>
+                </Button>
+                <Button
+                  variant="outline"
+                  className="flex items-center gap-2"
+                  onClick={() => {
+                    syncAllEntitiesMutation.mutate('product');
+                  }}
+                  disabled={syncAllEntitiesMutation.isPending}
+                >
+                  <IconPackages className="h-4 w-4" />
+                  {syncAllEntitiesMutation.isPending
+                    ? 'Syncing All...'
+                    : 'Sync All'}
+                </Button>
+                <Button asChild>
+                  <Link
+                    href="/inventory/products/add"
+                    className="flex items-center gap-2"
+                  >
+                    <IconPlus className="h-4 w-4" />
+                    Add Product
+                  </Link>
+                </Button>
+              </div>
+            ) : undefined
+          }
+          // Filters
+          searchPlaceholder="Search products..."
+          searchValue={filters.search}
+          onSearchChange={value => handleFilterChange('search', value)}
+          isSearching={isSearching}
+          filters={filterConfigs}
+          filterValues={filters as unknown as Record<string, unknown>}
+          onFilterChange={(key: string, value: unknown) =>
+            handleFilterChange(key, value as string | boolean)
+          }
+          onResetFilters={handleResetFilters}
+          quickFilters={
+            <Button
+              variant={filters.lowStock ? 'default' : 'outline'}
+              size="sm"
+              onClick={() => handleFilterChange('lowStock', !filters.lowStock)}
+            >
+              <IconAlertTriangle className="mr-1 h-4 w-4" />
+              Low Stock Only
             </Button>
-          ) : undefined
-        }
-        // Additional content
-        additionalContent={
-          <>
-            <AddStockDialog
-              isOpen={addStockDialogOpen}
-              onClose={() => {
-                setAddStockDialogOpen(false);
-                setSelectedProductForStock(null);
-              }}
-              product={selectedProductForStock}
-              onSuccess={() => {
-                productsQuery.refetch();
-              }}
-            />
-            <ProductDetailModal
-              productId={selectedProductForDetail}
-              open={productDetailModalOpen}
-              onCloseAction={() => {
-                setProductDetailModalOpen(false);
-                setSelectedProductForDetail(null);
-              }}
-              onAddStock={productId => {
-                // Find the product and set it for the AddStockDialog
-                const product = products?.find(p => p.id === productId);
-                if (product) {
-                  setSelectedProductForStock(product);
-                  setAddStockDialogOpen(true);
-                  // Close the detail modal
+          }
+          // Sort
+          sortOptions={SORT_OPTIONS}
+          currentSort={`${filters.sortBy}-${filters.sortOrder}`}
+          onSortChange={handleSortChange}
+          // Table
+          tableTitle="Products"
+          totalCount={pagination.totalItems}
+          currentCount={products.length}
+          columns={availableColumns}
+          visibleColumns={visibleColumns}
+          onColumnsChange={setVisibleColumns}
+          columnCustomizerKey="products-visible-columns"
+          data={products}
+          renderCell={renderCell}
+          renderActions={renderActions}
+          // Pagination
+          pagination={pagination}
+          onPageChange={handlePageChange}
+          onPageSizeChange={handlePageSizeChange}
+          // Loading states
+          isLoading={productsQuery.isLoading}
+          isRefetching={productsQuery.isFetching && !productsQuery.isLoading}
+          error={productsQuery.error?.message}
+          onRetry={() => productsQuery.refetch()}
+          // Empty state
+          emptyStateIcon={
+            <IconPackages className="mx-auto mb-4 h-12 w-12 text-gray-400" />
+          }
+          emptyStateMessage="No products found"
+          emptyStateAction={
+            canManageProducts ? (
+              <Button asChild>
+                <Link href="/inventory/products/add">Add Your First Product</Link>
+              </Button>
+            ) : undefined
+          }
+          // Additional content
+          additionalContent={
+            <>
+              <AddStockDialog
+                isOpen={addStockDialogOpen}
+                onClose={() => {
+                  setAddStockDialogOpen(false);
+                  setSelectedProductForStock(null);
+                }}
+                product={selectedProductForStock}
+                onSuccess={() => {
+                  productsQuery.refetch();
+                }}
+              />
+              <ProductDetailModal
+                productId={selectedProductForDetail}
+                open={productDetailModalOpen}
+                onCloseAction={() => {
                   setProductDetailModalOpen(false);
                   setSelectedProductForDetail(null);
-                }
-              }}
-            />
-          </>
-        }
-      />
+                }}
+                onAddStock={productId => {
+                  // Find the product and set it for the AddStockDialog
+                  const product = products?.find(p => p.id === productId);
+                  if (product) {
+                    setSelectedProductForStock(product);
+                    setAddStockDialogOpen(true);
+                    // Close the detail modal
+                    setProductDetailModalOpen(false);
+                    setSelectedProductForDetail(null);
+                  }
+                }}
+              />
+            </>
+          }
+        />
+      </div>
     </ErrorBoundary>
   );
 };

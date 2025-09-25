@@ -31,7 +31,7 @@ import { PageHeader } from '@/components/ui/page-header';
 import { FormLoading } from '@/components/ui/form-loading';
 
 import { toast } from 'sonner';
-import { useUpdateCategory } from '@/hooks/api/categories';
+import { useUpdateCategory, type UpdateCategoryData } from '@/hooks/api/categories';
 import { logger } from '@/lib/logger';
 
 interface Category {
@@ -84,8 +84,15 @@ export default function EditCategoryForm({ category }: EditCategoryFormProps) {
     setError(null);
 
     try {
+      const payload: UpdateCategoryData = {
+        name: data.name,
+        description: data.description?.trim() ? data.description : undefined,
+        isActive: data.isActive,
+        wordpress_id: data.wordpress_id ?? undefined,
+      };
+
       updateCategoryMutation.mutate(
-        { id: category.id, data: data as any },
+        { id: category.id, data: payload },
         {
           onSuccess: _updatedCategory => {
             // Debug logging removed for production

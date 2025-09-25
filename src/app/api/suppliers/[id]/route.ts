@@ -6,7 +6,7 @@ import {
 } from '@/lib/api-middleware';
 import { handleApiError } from '@/lib/api-error-handler-new';
 import { prisma } from '@/lib/db';
-import { USER_ROLES, hasPermission } from '@/lib/auth/roles';
+import { USER_ROLES } from '@/lib/auth/roles';
 import {
   supplierIdSchema,
   updateSupplierBodySchema,
@@ -42,7 +42,7 @@ export const GET = withAuth(
       }
 
       // Check user permissions for supplier data access
-      const canViewFullSupplier = hasPermission(request.user.role, 'SUPPLIER_READ');
+      const canViewFullSupplier = request.user.role === USER_ROLES.ADMIN;
 
       // Transform response based on user permissions
       const transformedSupplier = canViewFullSupplier ? {

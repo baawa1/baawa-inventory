@@ -398,8 +398,20 @@ export const STOCK_RECONCILIATION_COLUMNS: TableColumn[] = [
     defaultVisible: true,
   },
   {
-    key: 'totalDiscrepancy',
-    label: 'Total Discrepancy',
+    key: 'netDiscrepancy',
+    label: 'Net Discrepancy',
+    sortable: true,
+    defaultVisible: true,
+  },
+  {
+    key: 'overageDiscrepancy',
+    label: 'Overages',
+    sortable: true,
+    defaultVisible: true,
+  },
+  {
+    key: 'shortageDiscrepancy',
+    label: 'Shortages',
     sortable: true,
     defaultVisible: true,
   },

@@ -195,8 +195,8 @@ export function MobileReconciliationItemsTable({
       <span>Physical: {item.physicalCount}</span>
       <span>•</span>
       {getDiscrepancyBadge(item.discrepancy)}
-    </div>
-  );
+  </div>
+);
 
   return (
     <Card>

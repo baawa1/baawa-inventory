@@ -21,6 +21,7 @@ import { TruncatedText } from '@/lib/utils/text-utils';
 import { formatCurrency } from '@/lib/utils';
 import type { StockReconciliationItem } from '@/hooks/api/stock-management';
 import { DISCREPANCY_REASONS } from '@/lib/constants/stock-reconciliation';
+import { formatSignedUnits } from '@/lib/utils/stock-reconciliation';
 
 interface ReconciliationItemsTableProps {
   items: StockReconciliationItem[];
@@ -92,16 +93,28 @@ export function ReconciliationItemsTable({
     {
       key: 'impact',
       label: 'Impact',
-      render: (item: StockReconciliationItem) => (
-        item.estimatedImpact ? (
-          <span className="font-medium text-sm">{formatCurrency(item.estimatedImpact)}</span>
-        ) : (
-          <span className="text-muted-foreground text-sm">-</span>
-        )
-      ),
+      render: (item: StockReconciliationItem) => {
+        if (item.estimatedImpact === null || item.estimatedImpact === undefined) {
+          return <span className="text-muted-foreground text-sm">-</span>;
+        }
+        const impact =
+          typeof item.estimatedImpact === 'string'
+            ? parseFloat(item.estimatedImpact)
+            : Number(item.estimatedImpact);
+        if (Number.isNaN(impact)) {
+          return <span className="text-muted-foreground text-sm">-</span>;
+        }
+        return (
+          <span
+            className={`font-medium text-sm ${impact === 0 ? 'text-muted-foreground' : impact > 0 ? 'text-green-700' : 'text-red-700'}`}
+          >
+            {formatCurrency(impact)}
+          </span>
+        );
+      },
       className: 'text-right',
       hideOnMobile: true,
-      mobileOrder: 5,
+      mobileOrder: 7,
     },
     {
       key: 'reason',
@@ -110,7 +123,7 @@ export function ReconciliationItemsTable({
         <span className="text-sm">{getDiscrepancyReasonLabel(item.discrepancyReason)}</span>
       ),
       hideOnMobile: true,
-      mobileOrder: 6,
+      mobileOrder: 8,
     },
     {
       key: 'notes',
@@ -123,7 +136,7 @@ export function ReconciliationItemsTable({
         )
       ),
       hideOnMobile: true,
-      mobileOrder: 7,
+      mobileOrder: 9,
     },
   ], [getDiscrepancyBadge, getDiscrepancyReasonLabel]);
 
@@ -140,6 +153,12 @@ export function ReconciliationItemsTable({
     >
       <div className="flex items-center gap-2 mt-1">
         {getDiscrepancyBadge(item.discrepancy)}
+        <span className="text-xs font-medium text-green-700">
+          {formatSignedUnits(Math.max(0, item.discrepancy))}
+        </span>
+        <span className="text-xs font-medium text-red-700">
+          {formatSignedUnits(-Math.max(0, -item.discrepancy))}
+        </span>
         {item.estimatedImpact && (
           <span className="text-xs font-medium text-orange-600">
             Impact: {formatCurrency(item.estimatedImpact)}
@@ -150,7 +169,7 @@ export function ReconciliationItemsTable({
   ), [getDiscrepancyBadge]);
 
   const mobileCardSubtitle = useCallback((item: StockReconciliationItem) => {
-    const subtitleItems = [
+    const subtitleItems: Array<{ label: string; value: string | number }> = [
       { label: 'System', value: item.systemCount },
       { label: 'Physical', value: item.physicalCount },
     ];
@@ -159,7 +178,7 @@ export function ReconciliationItemsTable({
       subtitleItems.push({
         label: 'Reason',
         value: getDiscrepancyReasonLabel(item.discrepancyReason),
-      } as any);
+      });
     }
 
     return (
