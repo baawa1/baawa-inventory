@@ -90,6 +90,7 @@ const reconciliationItemSchema = z.object({
   productSku: z.string(),
   systemCount: z.number().int().min(0),
   physicalCount: z.number().int().min(0),
+  verified: z.boolean(),
   discrepancyReason: z.string().optional(),
   notes: z.string().optional(),
 });
@@ -285,6 +286,12 @@ export function StockReconciliationForm() {
     ? `${filteredItemEntries.length} / ${fields.length}`
     : `${fields.length}`;
 
+  const totalPhysicalUnits = useMemo(() => {
+    return watchedItems.reduce((total, item) => {
+      return total + Number(item?.physicalCount ?? 0);
+    }, 0);
+  }, [watchedItems]);
+
   const toggleCategory = useCallback((categoryId: number) => {
     setSelectedCategoryIds(previous => {
       if (previous.includes(categoryId)) {
@@ -334,6 +341,7 @@ export function StockReconciliationForm() {
       productSku: product.sku,
       systemCount: product.stock,
       physicalCount: product.stock,
+      verified: false,
       discrepancyReason: '',
       notes: '',
     });
@@ -359,6 +367,25 @@ export function StockReconciliationForm() {
   const calculateDiscrepancy = (systemCount: number, physicalCount: number) => {
     return physicalCount - systemCount;
   };
+
+  useEffect(() => {
+    watchedItems.forEach((item, index) => {
+      if (!item) {
+        return;
+      }
+
+      const systemCount = Number(item.systemCount ?? 0);
+      const physicalCount = Number(item.physicalCount ?? 0);
+      const hasDiscrepancy = physicalCount !== systemCount;
+
+      if (hasDiscrepancy && !item.verified) {
+        form.setValue(`items.${index}.verified`, true, {
+          shouldDirty: true,
+          shouldTouch: false,
+        });
+      }
+    });
+  }, [watchedItems, form]);
 
   useEffect(() => {
     if (!prefillRequestedRef.current) {
@@ -390,6 +417,7 @@ export function StockReconciliationForm() {
         productSku: item.sku,
         systemCount: item.systemCount,
         physicalCount: item.physicalCount,
+        verified: false,
         discrepancyReason: '',
         notes: '',
       })),
@@ -433,6 +461,7 @@ export function StockReconciliationForm() {
           systemCount: item.systemCount,
           physicalCount: item.physicalCount,
           discrepancyReason: item.discrepancyReason,
+          verified: item.verified ?? false,
           estimatedImpact,
           notes: item.notes,
         };
@@ -824,6 +853,7 @@ export function StockReconciliationForm() {
                             <TableHead>SKU</TableHead>
                             <TableHead className="text-center">System</TableHead>
                             <TableHead className="text-center">Physical</TableHead>
+                            <TableHead className="text-center">Verified</TableHead>
                             <TableHead className="text-center">Discrepancy</TableHead>
                             <TableHead>Reason</TableHead>
                             <TableHead>Notes</TableHead>
@@ -889,6 +919,29 @@ export function StockReconciliationForm() {
                                         }
                                       />
                                     )}
+                                  />
+                                </TableCell>
+                                <TableCell className="text-center">
+                                  <FormField
+                                    control={form.control}
+                                    name={`items.${index}.verified`}
+                                    render={({ field }) => {
+                                      const isDiscrepancy = discrepancy !== 0;
+                                      const checked = isDiscrepancy
+                                        ? true
+                                        : Boolean(field.value);
+                                      return (
+                                        <Checkbox
+                                          checked={checked}
+                                          onCheckedChange={value =>
+                                            field.onChange(Boolean(value))
+                                          }
+                                          disabled={isDiscrepancy}
+                                          aria-label="Mark product as verified"
+                                          className="mx-auto"
+                                        />
+                                      );
+                                    }}
                                   />
                                 </TableCell>
                                 <TableCell className="text-center">
@@ -1029,6 +1082,33 @@ export function StockReconciliationForm() {
                               </div>
                             </div>
 
+                            <FormField
+                              control={form.control}
+                              name={`items.${index}.verified`}
+                              render={({ field }) => {
+                                const isDiscrepancy = discrepancy !== 0;
+                                const checked = isDiscrepancy
+                                  ? true
+                                  : Boolean(field.value);
+
+                                return (
+                                  <div className="flex items-center justify-between">
+                                    <span className="text-xs font-medium text-muted-foreground">
+                                      Verified
+                                    </span>
+                                    <Checkbox
+                                      checked={checked}
+                                      onCheckedChange={value =>
+                                        field.onChange(Boolean(value))
+                                      }
+                                      disabled={isDiscrepancy}
+                                      aria-label="Mark product as verified"
+                                    />
+                                  </div>
+                                );
+                              }}
+                            />
+
                             <div className="grid grid-cols-2 items-end gap-3">
                               <div>
                                 <span className="text-xs font-medium text-muted-foreground">
@@ -1139,6 +1219,9 @@ export function StockReconciliationForm() {
                     </div>
                     <div className="text-2xl font-bold">
                       {watchedItems.length}
+                    </div>
+                    <div className="text-muted-foreground text-xs">
+                      {totalPhysicalUnits.toLocaleString()} units counted
                     </div>
                   </div>
                   <div className="rounded-lg border bg-muted/40 p-4">
