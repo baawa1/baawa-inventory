@@ -8,39 +8,52 @@ import {
   nameSchema,
 } from './common';
 
+const normalizeOptionalField = <T extends z.ZodTypeAny>(schema: T) =>
+  z.preprocess(
+    value => (typeof value === 'string' && value.trim() === '' ? undefined : value),
+    schema.optional().nullable()
+  );
+
 // Base supplier schema for forms
 export const supplierFormSchema = z.object({
   name: nameSchema.optional(),
-  contactPerson: z.string().optional().nullable(),
-  email: emailSchema.optional().nullable(),
-  phone: phoneSchema.optional().nullable(),
-  address: z
-    .string()
-    .max(500, 'Address must be 500 characters or less')
-    .optional()
-    .nullable(),
-  city: z
-    .string()
-    .max(100, 'City must be 100 characters or less')
-    .optional()
-    .nullable(),
-  state: z
-    .string()
-    .max(100, 'State must be 100 characters or less')
-    .optional()
-    .nullable(),
-  website: z
-    .string()
-    .url('Website must be a valid URL')
-    .max(255, 'Website must be 255 characters or less')
-    .optional()
-    .nullable(),
-  notes: z
-    .string()
-    .max(1000, 'Notes must be 1000 characters or less')
-    .optional()
-    .nullable(),
+  contactPerson: normalizeOptionalField(z.string()),
+  email: normalizeOptionalField(emailSchema),
+  phone: normalizeOptionalField(phoneSchema),
+  address: normalizeOptionalField(
+    z.string().max(500, 'Address must be 500 characters or less')
+  ),
+  city: normalizeOptionalField(
+    z.string().max(100, 'City must be 100 characters or less')
+  ),
+  state: normalizeOptionalField(
+    z.string().max(100, 'State must be 100 characters or less')
+  ),
+  website: normalizeOptionalField(
+    z.string().url('Website must be a valid URL').max(255, 'Website must be 255 characters or less')
+  ),
+  notes: normalizeOptionalField(
+    z.string().max(1000, 'Notes must be 1000 characters or less')
+  ),
 });
+
+const applyUpdateFieldRequirement = <T extends z.ZodTypeAny>(schema: T) =>
+  schema.superRefine((data, ctx) => {
+  const hasAtLeastOneField = Object.entries(data).some(([, value]) => {
+    if (Array.isArray(value)) {
+      return value.length > 0;
+    }
+    return value !== undefined && value !== null && value !== '';
+  });
+
+  if (!hasAtLeastOneField) {
+    ctx.addIssue({
+      code: z.ZodIssueCode.custom,
+      message: 'At least one field must be provided for update',
+      path: [],
+    });
+  }
+  });
 
 // Supplier creation schema (requires name)
 export const createSupplierSchema = supplierFormSchema.extend({
@@ -48,18 +61,21 @@ export const createSupplierSchema = supplierFormSchema.extend({
 });
 
 // Supplier update schema (all fields optional except validation rules)
-export const updateSupplierSchema = supplierFormSchema
-  .extend({
+export const updateSupplierBodySchema = applyUpdateFieldRequirement(
+  supplierFormSchema
+);
+
+export const updateSupplierSchema = applyUpdateFieldRequirement(
+  supplierFormSchema.extend({
     id: idSchema,
   })
-  .refine(data => Object.keys(data).length > 0, {
-    message: 'At least one field must be provided for update',
-  });
+);
 
 // Inferred types from schemas
 export type SupplierFormData = z.infer<typeof supplierFormSchema>;
 export type CreateSupplierFormData = z.infer<typeof createSupplierSchema>;
 export type UpdateSupplierFormData = z.infer<typeof updateSupplierSchema>;
+export type UpdateSupplierBodyData = z.infer<typeof updateSupplierBodySchema>;
 
 // Database supplier interface (matches Prisma schema)
 export interface Supplier {

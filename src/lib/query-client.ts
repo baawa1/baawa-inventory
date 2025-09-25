@@ -1,5 +1,10 @@
-import { QueryClient } from '@tanstack/react-query';
+import { QueryClient, type QueryKey } from '@tanstack/react-query';
 import { logger } from '@/lib/logger';
+
+type QueryFilter<T extends object = Record<string, unknown>> = Readonly<T>;
+
+const withDefaultFilters = <T extends object>(filters?: T) =>
+  (filters ?? {}) as QueryFilter<T> | {};
 
 export const queryClient = new QueryClient({
   defaultOptions: {
@@ -63,7 +68,7 @@ export const prefetchQuery = async ({
   queryKey,
   queryFn,
 }: {
-  queryKey: readonly unknown[];
+  queryKey: QueryKey;
   queryFn: () => Promise<unknown>;
 }) => {
   try {
@@ -84,19 +89,19 @@ export const queryKeys = {
   products: {
     all: ['products'] as const,
     lists: () => [...queryKeys.products.all, 'list'] as const,
-    list: (filters: Record<string, any>) =>
+    list: <T extends object>(filters: QueryFilter<T>) =>
       [...queryKeys.products.lists(), filters] as const,
     details: () => [...queryKeys.products.all, 'detail'] as const,
     detail: (id: number) => [...queryKeys.products.details(), id] as const,
-    archived: (filters?: Record<string, any>) =>
-      [...queryKeys.products.all, 'archived', filters || {}] as const,
+    archived: <T extends object>(filters?: QueryFilter<T>) =>
+      [...queryKeys.products.all, 'archived', withDefaultFilters(filters)] as const,
   },
 
   // Suppliers
   suppliers: {
     all: ['suppliers'] as const,
     lists: () => [...queryKeys.suppliers.all, 'list'] as const,
-    list: (filters: Record<string, any>) =>
+    list: <T extends object>(filters: QueryFilter<T>) =>
       [...queryKeys.suppliers.lists(), filters] as const,
     details: () => [...queryKeys.suppliers.all, 'detail'] as const,
     detail: (id: number) => [...queryKeys.suppliers.details(), id] as const,
@@ -106,7 +111,7 @@ export const queryKeys = {
   brands: {
     all: ['brands'] as const,
     lists: () => [...queryKeys.brands.all, 'list'] as const,
-    list: (filters: Record<string, any>) =>
+    list: <T extends object>(filters: QueryFilter<T>) =>
       [...queryKeys.brands.lists(), filters] as const,
     details: () => [...queryKeys.brands.all, 'detail'] as const,
     detail: (id: number) => [...queryKeys.brands.details(), id] as const,
@@ -116,7 +121,7 @@ export const queryKeys = {
   categories: {
     all: ['categories'] as const,
     lists: () => [...queryKeys.categories.all, 'list'] as const,
-    list: (filters: Record<string, any>) =>
+    list: <T extends object>(filters: QueryFilter<T>) =>
       [...queryKeys.categories.lists(), filters] as const,
     details: () => [...queryKeys.categories.all, 'detail'] as const,
     detail: (id: number) => [...queryKeys.categories.details(), id] as const,
@@ -137,7 +142,7 @@ export const queryKeys = {
     activity: () => [...queryKeys.inventory.all, 'activity'] as const,
     stockReconciliations: {
       all: () => [...queryKeys.inventory.all, 'stock-reconciliations'] as const,
-      list: (filters: Record<string, any>) =>
+      list: <T extends object>(filters: QueryFilter<T>) =>
         [
           ...queryKeys.inventory.stockReconciliations.all(),
           'list',
@@ -150,7 +155,7 @@ export const queryKeys = {
           id,
         ] as const,
     },
-    stockSnapshot: (filters: Record<string, any>) =>
+    stockSnapshot: <T extends object>(filters: QueryFilter<T>) =>
       [...queryKeys.inventory.all, 'snapshot', filters] as const,
   },
 
@@ -158,7 +163,7 @@ export const queryKeys = {
   users: {
     all: ['users'] as const,
     lists: () => [...queryKeys.users.all, 'list'] as const,
-    list: (filters: Record<string, any>) =>
+    list: <T extends object>(filters: QueryFilter<T>) =>
       [...queryKeys.users.lists(), filters] as const,
     details: () => [...queryKeys.users.all, 'detail'] as const,
     detail: (id: string) => [...queryKeys.users.details(), id] as const,
@@ -171,7 +176,7 @@ export const queryKeys = {
   transactions: {
     all: ['transactions'] as const,
     lists: () => [...queryKeys.transactions.all, 'list'] as const,
-    list: (filters: Record<string, any>) =>
+    list: <T extends object>(filters: QueryFilter<T>) =>
       [...queryKeys.transactions.lists(), filters] as const,
     details: () => [...queryKeys.transactions.all, 'detail'] as const,
     detail: (id: number) => [...queryKeys.transactions.details(), id] as const,
@@ -185,14 +190,14 @@ export const queryKeys = {
     summary: () => [...queryKeys.finance.all, 'summary'] as const,
     transactions: {
       all: () => [...queryKeys.finance.all, 'transactions'] as const,
-      list: (filters: Record<string, any>) =>
+      list: <T extends object>(filters: QueryFilter<T>) =>
         [...queryKeys.finance.transactions.all(), 'list', filters] as const,
       detail: (id: number) =>
         [...queryKeys.finance.transactions.all(), 'detail', id] as const,
     },
     reports: {
       all: () => [...queryKeys.finance.all, 'reports'] as const,
-      list: (filters: Record<string, any>) =>
+      list: <T extends object>(filters: QueryFilter<T>) =>
         [...queryKeys.finance.reports.all(), 'list', filters] as const,
       detail: (id: number) =>
         [...queryKeys.finance.reports.all(), 'detail', id] as const,

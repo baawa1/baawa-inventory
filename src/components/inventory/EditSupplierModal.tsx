@@ -7,9 +7,10 @@ import {
   CardHeader,
   CardTitle,
 } from '@/components/ui/card';
+import type { Supplier } from '@/hooks/api/suppliers';
 
 interface EditSupplierModalProps {
-  supplier: any;
+  supplier: Supplier | null;
   isOpen: boolean;
   onClose: () => void;
 }

@@ -9,7 +9,7 @@ import { prisma } from '@/lib/db';
 import { USER_ROLES, hasPermission } from '@/lib/auth/roles';
 import {
   supplierIdSchema,
-  updateSupplierSchema,
+  updateSupplierBodySchema,
 } from '@/lib/validations/supplier';
 
 // GET /api/suppliers/[id] - Get a specific supplier
@@ -89,7 +89,7 @@ export const PUT = withPermission(
       const { id } = supplierIdSchema.parse(resolvedParams);
 
       const body = await request.json();
-      const validatedData = updateSupplierSchema.parse(body);
+      const validatedData = updateSupplierBodySchema.parse(body);
 
       // Check if supplier exists
       const existingSupplier = await prisma.supplier.findUnique({
@@ -246,6 +246,8 @@ export const PATCH = withPermission(
 
       // Parse request body
       const body = await request.json();
+      void id;
+      void body;
 
 
       // Handle other patch operations (can be extended later)
