@@ -901,6 +901,7 @@ async function seedStockReconciliationItems(reconciliations, products) {
               : null,
           reconciliationId: reconciliation.id,
           productId: product.id,
+          verified: discrepancy !== 0,
         },
       });
       reconciliationItems.push(reconciliationItem);

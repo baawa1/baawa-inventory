@@ -54,6 +54,7 @@ export const reconciliationItemSchema = z.object({
   productId: z.number().int().positive(),
   systemCount: z.number().int().min(0),
   physicalCount: z.number().int().min(0),
+  verified: z.boolean().optional(),
   discrepancyReason: z.string().optional(),
   estimatedImpact: z.number().optional(),
   notes: z.string().optional(),

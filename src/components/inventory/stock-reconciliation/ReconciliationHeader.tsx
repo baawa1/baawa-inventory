@@ -1,5 +1,6 @@
 'use client';
 
+import { useMemo } from 'react';
 import { Badge } from '@/components/ui/badge';
 import {
   Card,
@@ -76,6 +77,17 @@ export function ReconciliationHeader({
 }: ReconciliationHeaderProps) {
   const currentStatus = reconciliation.status as keyof typeof statusConfig;
   const statusInfo = statusConfig[currentStatus];
+  const totalPhysicalUnits = useMemo(() => {
+    return reconciliation.items.reduce((total, item) => {
+      return total + Number(item.physicalCount ?? 0);
+    }, 0);
+  }, [reconciliation.items]);
+
+  const verifiedUnits = useMemo(() => {
+    return reconciliation.items.reduce((total, item) => {
+      return item.verified ? total + Number(item.physicalCount ?? 0) : total;
+    }, 0);
+  }, [reconciliation.items]);
 
   return (
     <Card>
@@ -96,10 +108,18 @@ export function ReconciliationHeader({
         {/* Summary Stats */}
         <div className="grid grid-cols-1 gap-4 md:grid-cols-4">
           <div className="bg-muted rounded-lg p-4 text-center">
+            <div className="text-muted-foreground text-sm">
+              Product Totals
+            </div>
             <div className="text-2xl font-bold">
               {reconciliation.items.length}
             </div>
-            <div className="text-muted-foreground text-sm">Items</div>
+            <div className="text-muted-foreground text-xs">
+              {totalPhysicalUnits.toLocaleString()} units counted
+            </div>
+            <div className="text-muted-foreground text-xs">
+              {verifiedUnits.toLocaleString()} units verified
+            </div>
           </div>
           <div className="bg-muted rounded-lg p-4 text-center">
             <div className="text-muted-foreground text-sm">Net Discrepancy</div>

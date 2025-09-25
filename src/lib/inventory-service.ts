@@ -22,6 +22,7 @@ export interface StockReconciliationItem {
   productId: number;
   systemCount: number;
   physicalCount: number;
+  verified?: boolean;
   discrepancyReason?: string;
   notes?: string;
 }

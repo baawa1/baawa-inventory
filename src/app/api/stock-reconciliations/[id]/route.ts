@@ -207,6 +207,7 @@ export async function PUT(
                 discrepancy,
                 discrepancyReason: item.discrepancyReason,
                 estimatedImpact,
+                verified: item.verified ?? false,
                 notes: item.notes,
               };
             }),

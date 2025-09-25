@@ -292,6 +292,19 @@ export function StockReconciliationForm() {
     }, 0);
   }, [watchedItems]);
 
+  const verifiedSummary = useMemo(() => {
+    return watchedItems.reduce(
+      (acc, item) => {
+        if (item?.verified) {
+          acc.units += Number(item.physicalCount ?? 0);
+          acc.items += 1;
+        }
+        return acc;
+      },
+      { units: 0, items: 0 }
+    );
+  }, [watchedItems]);
+
   const toggleCategory = useCallback((categoryId: number) => {
     setSelectedCategoryIds(previous => {
       if (previous.includes(categoryId)) {
@@ -1223,6 +1236,12 @@ export function StockReconciliationForm() {
                     <div className="text-muted-foreground text-xs">
                       {totalPhysicalUnits.toLocaleString()} units counted
                     </div>
+                    <div className="text-muted-foreground text-xs">
+                      {verifiedSummary.units.toLocaleString()} units verified
+                    </div>
+                    <div className="text-muted-foreground text-xs">
+                      {verifiedSummary.items} / {watchedItems.length} items verified
+                    </div>
                   </div>
                   <div className="rounded-lg border bg-muted/40 p-4">
                     <div className="text-sm font-medium text-muted-foreground">
@@ -1312,6 +1331,22 @@ export function StockReconciliationForm() {
           </div>
         </form>
       </Form>
+
+      {watchedItems.length > 0 && (
+        <div className="pointer-events-none fixed bottom-24 right-4 z-50 w-60 sm:bottom-10 sm:right-10">
+          <div className="bg-background/95 text-foreground rounded-xl border p-4 shadow-lg">
+            <p className="text-xs font-medium uppercase tracking-wide text-muted-foreground">
+              Verified Progress
+            </p>
+            <p className="mt-1 text-2xl font-bold">
+              {verifiedSummary.units.toLocaleString()}
+            </p>
+            <p className="text-xs text-muted-foreground">
+              Units verified • {verifiedSummary.items} / {watchedItems.length} items
+            </p>
+          </div>
+        </div>
+      )}
     </div>
   );
 }
