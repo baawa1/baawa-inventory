@@ -48,34 +48,62 @@ export interface UpdateBrandData extends Partial<CreateBrandData> {
 }
 
 // API Functions
+const DEFAULT_LIMIT = 50;
+const BULK_FETCH_LIMIT = 200;
+
 const fetchBrands = async (
   filters: Partial<BrandFilters> = {}
 ): Promise<BrandResponse> => {
-  const searchParams = new URLSearchParams({
+  const hasExplicitPagination =
+    filters.page !== undefined || filters.limit !== undefined;
+  const effectiveLimit = filters.limit ??
+    (hasExplicitPagination ? DEFAULT_LIMIT : BULK_FETCH_LIMIT);
+
+  const baseParams = new URLSearchParams({
     page: String(filters.page || 1),
-    limit: String(filters.limit || 50),
+    limit: String(effectiveLimit),
     sortBy: filters.sortBy || 'name',
     sortOrder: filters.sortOrder || 'asc',
   });
 
-  if (filters.search) searchParams.set('search', filters.search);
-  if (filters.status) searchParams.set('isActive', filters.status);
+  if (filters.search) baseParams.set('search', filters.search);
+  if (filters.status) baseParams.set('isActive', filters.status);
 
-  const response = await fetch(`/api/brands?${searchParams.toString()}`);
+  const response = await fetch(`/api/brands?${baseParams.toString()}`);
 
   if (!response.ok) {
     throw new Error(`Failed to fetch brands: ${response.statusText}`);
   }
 
   const data = await response.json();
+
+  const pagination = {
+    page: data.pagination?.page || 1,
+    limit: data.pagination?.limit || effectiveLimit,
+    totalPages: data.pagination?.totalPages || 1,
+    totalBrands: data.pagination?.total || 0,
+  };
+
+  let brands = data.data || [];
+
+  if (!hasExplicitPagination && pagination.totalPages > 1) {
+    for (let page = 2; page <= pagination.totalPages; page++) {
+      const pageParams = new URLSearchParams(baseParams);
+      pageParams.set('page', String(page));
+      const pageResponse = await fetch(`/api/brands?${pageParams.toString()}`);
+
+      if (!pageResponse.ok) {
+        throw new Error(`Failed to fetch brands: ${pageResponse.statusText}`);
+      }
+
+      const pageData = await pageResponse.json();
+      brands = brands.concat(pageData.data || []);
+    }
+  }
+
   return {
-    data: data.data || [],
-    pagination: {
-      page: data.pagination?.page || 1,
-      limit: data.pagination?.limit || 50,
-      totalPages: data.pagination?.totalPages || 1,
-      totalBrands: data.pagination?.total || 0,
-    },
+    data: brands,
+    pagination,
   };
 };
 
@@ -224,14 +252,8 @@ export const useBrandOptions = () => {
   return useQuery({
     queryKey: [...queryKeys.brands.all, 'options'] as const,
     queryFn: async () => {
-      const response = await fetch('/api/brands?isActive=true&limit=1000');
-      if (!response.ok) {
-        throw new Error(
-          `Failed to fetch brand options: ${response.statusText}`
-        );
-      }
-      const result = await response.json();
-      return result.data.map((brand: Brand) => ({
+      const { data } = await fetchBrands({ status: 'true' });
+      return data.map(brand => ({
         value: brand.id.toString(),
         label: brand.name,
       }));
