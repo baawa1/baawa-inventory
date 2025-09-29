@@ -16,6 +16,7 @@ import {
   SelectValue,
 } from '@/components/ui/select';
 import { Loader2 } from 'lucide-react';
+import { SearchableSelect } from '@/components/ui/searchable-select';
 
 import { UpdateProductFormData, Category, Brand, Supplier } from './types';
 import { formatCategoryHierarchy } from '@/lib/utils/category';
@@ -98,38 +99,28 @@ export function CategoryBrandSupplierSection({
             render={({ field }) => (
               <FormItem>
                 <FormLabel>Brand</FormLabel>
-                <Select
-                  onValueChange={value =>
+                <SearchableSelect
+                  value={field.value?.toString() || ''}
+                  onChange={value =>
                     field.onChange(value ? parseInt(value) : undefined)
                   }
-                  value={field.value?.toString() || ''}
+                  options={Array.isArray(brands)
+                    ? brands.map(brand => ({
+                        value: brand.id.toString(),
+                        label: brand.name,
+                      }))
+                    : []}
+                  placeholder={
+                    loadingBrands ? 'Loading brands...' : 'Select brand'
+                  }
+                  searchPlaceholder="Search brands..."
+                  emptyMessage="No brands found"
+                  emptySelectionLabel="No brand"
                   disabled={loadingBrands}
-                >
-                  <FormControl>
-                    <SelectTrigger>
-                      <SelectValue
-                        placeholder={
-                          loadingBrands ? (
-                            <div className="flex items-center">
-                              <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-                              Loading...
-                            </div>
-                          ) : (
-                            'Select brand'
-                          )
-                        }
-                      />
-                    </SelectTrigger>
-                  </FormControl>
-                  <SelectContent>
-                    {Array.isArray(brands) &&
-                      brands.map(brand => (
-                        <SelectItem key={brand.id} value={brand.id.toString()}>
-                          <span>{brand.name}</span>
-                        </SelectItem>
-                      ))}
-                  </SelectContent>
-                </Select>
+                  triggerClassName={
+                    loadingBrands ? 'opacity-75 pointer-events-none' : undefined
+                  }
+                />
                 <FormMessage />
               </FormItem>
             )}

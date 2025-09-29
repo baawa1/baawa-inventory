@@ -36,6 +36,10 @@ export interface FilterConfig {
   type: 'select' | 'boolean' | 'text' | 'date';
   options?: FilterOption[];
   placeholder?: string;
+  searchable?: boolean;
+  searchPlaceholder?: string;
+  emptyMessage?: string;
+  emptyLabel?: string;
 }
 
 export interface SortOption {
