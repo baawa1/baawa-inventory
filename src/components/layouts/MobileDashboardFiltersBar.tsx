@@ -3,6 +3,9 @@ import { Card, CardContent } from '@/components/ui/card';
 import { MobileFilters } from '@/components/ui/mobile-filters';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
+import { IconArrowsSort, IconSearch } from '@tabler/icons-react';
+import { Loader2 } from 'lucide-react';
+import { SearchableSelect } from '@/components/ui/searchable-select';
 import {
   Select,
   SelectContent,
@@ -10,8 +13,6 @@ import {
   SelectTrigger,
   SelectValue,
 } from '@/components/ui/select';
-import { IconArrowsSort, IconSearch } from '@tabler/icons-react';
-import { Loader2 } from 'lucide-react';
 
 export interface FilterConfig {
   key: string;
@@ -19,6 +20,10 @@ export interface FilterConfig {
   type: 'select' | 'text' | 'boolean' | 'date';
   options?: Array<{ value: string; label: string }>;
   placeholder?: string;
+  searchable?: boolean;
+  searchPlaceholder?: string;
+  emptyMessage?: string;
+  emptyLabel?: string;
 }
 
 interface MobileDashboardFiltersBarProps {
@@ -109,21 +114,42 @@ export function MobileDashboardFiltersBar({
                 {filters.map((filter) => (
                   <div key={filter.key} className="min-w-[150px]">
                     {filter.type === 'select' && (
-                      <Select
-                        value={filterValues[filter.key] || ''}
-                        onValueChange={(value) => onFilterChange(filter.key, value)}
-                      >
-                        <SelectTrigger>
-                          <SelectValue placeholder={filter.placeholder} />
-                        </SelectTrigger>
-                        <SelectContent>
-                          {filter.options?.map((option) => (
-                            <SelectItem key={option.value} value={option.value}>
-                              {option.label}
-                            </SelectItem>
-                          ))}
-                        </SelectContent>
-                      </Select>
+                      filter.searchable ? (
+                        <SearchableSelect
+                          value={filterValues[filter.key] || ''}
+                          onChange={(value) => onFilterChange(filter.key, value)}
+                          options={filter.options || []}
+                          placeholder={filter.placeholder || filter.label}
+                          searchPlaceholder={
+                            filter.searchPlaceholder || `Search ${filter.label}...`
+                          }
+                          emptyMessage={
+                            filter.emptyMessage ||
+                            `No ${filter.label.toLowerCase()} found`
+                          }
+                          emptySelectionLabel={
+                            filter.emptyLabel || `All ${filter.label}`
+                          }
+                        />
+                      ) : (
+                        <Select
+                          value={filterValues[filter.key] || ''}
+                          onValueChange={(value) =>
+                            onFilterChange(filter.key, value)
+                          }
+                        >
+                          <SelectTrigger>
+                            <SelectValue placeholder={filter.placeholder} />
+                          </SelectTrigger>
+                          <SelectContent>
+                            {filter.options?.map(option => (
+                              <SelectItem key={option.value} value={option.value}>
+                                {option.label}
+                              </SelectItem>
+                            ))}
+                          </SelectContent>
+                        </Select>
+                      )
                     )}
                   </div>
                 ))}

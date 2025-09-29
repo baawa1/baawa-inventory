@@ -16,6 +16,7 @@ import {
   SelectTrigger,
   SelectValue,
 } from '@/components/ui/select';
+import { SearchableSelect } from '@/components/ui/searchable-select';
 
 import type { CreateProductData, Category, Brand, Supplier } from './types';
 import { formatCategoryHierarchy } from '@/lib/utils/category';
@@ -82,28 +83,21 @@ export function CategoryBrandSection({
             render={({ field }) => (
               <FormItem>
                 <FormLabel>Brand</FormLabel>
-                <Select
-                  disabled={loading}
-                  onValueChange={value =>
-                    field.onChange(
-                      value === 'none' ? undefined : parseInt(value)
-                    )
+                <SearchableSelect
+                  value={field.value?.toString() || ''}
+                  onChange={value =>
+                    field.onChange(value ? parseInt(value) : undefined)
                   }
-                  value={field.value?.toString() || 'none'}
-                >
-                  <FormControl>
-                    <SelectTrigger>
-                      <SelectValue placeholder="Select brand" />
-                    </SelectTrigger>
-                  </FormControl>
-                  <SelectContent>
-                    {brands.map(brand => (
-                      <SelectItem key={brand.id} value={brand.id.toString()}>
-                        <span>{brand.name}</span>
-                      </SelectItem>
-                    ))}
-                  </SelectContent>
-                </Select>
+                  options={brands.map(brand => ({
+                    value: brand.id.toString(),
+                    label: brand.name,
+                  }))}
+                  placeholder="Select brand"
+                  searchPlaceholder="Search brands..."
+                  emptyMessage="No brands found"
+                  emptySelectionLabel="No brand"
+                  disabled={loading}
+                />
                 <FormMessage />
               </FormItem>
             )}

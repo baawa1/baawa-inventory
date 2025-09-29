@@ -8,6 +8,9 @@ import {
 } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
+import { IconSearch, IconFilter } from '@tabler/icons-react';
+import { Loader2 } from 'lucide-react';
+import { SearchableSelect } from '@/components/ui/searchable-select';
 import {
   Select,
   SelectContent,
@@ -15,8 +18,6 @@ import {
   SelectTrigger,
   SelectValue,
 } from '@/components/ui/select';
-import { IconSearch, IconFilter } from '@tabler/icons-react';
-import { Loader2 } from 'lucide-react';
 
 export interface FilterConfig {
   key: string;
@@ -24,6 +25,10 @@ export interface FilterConfig {
   type: 'select' | 'boolean' | 'text' | 'date';
   options?: Array<{ label: string; value: string }>;
   placeholder?: string;
+  searchable?: boolean;
+  searchPlaceholder?: string;
+  emptyMessage?: string;
+  emptyLabel?: string;
 }
 
 interface DashboardFiltersBarProps {
@@ -64,6 +69,26 @@ export function DashboardFiltersBar({
       const value = filterValues[filter.key] || '';
       switch (filter.type) {
         case 'select':
+          if (filter.searchable) {
+            return (
+              <SearchableSelect
+                value={value}
+                onChange={(val: string) => onFilterChange(filter.key, val)}
+                options={filter.options || []}
+                placeholder={filter.placeholder || filter.label}
+                searchPlaceholder={
+                  filter.searchPlaceholder || `Search ${filter.label}...`
+                }
+                emptyMessage={
+                  filter.emptyMessage || `No ${filter.label.toLowerCase()} found`
+                }
+                emptySelectionLabel={
+                  filter.emptyLabel || `All ${filter.label}`
+                }
+                triggerClassName="min-w-[200px]"
+              />
+            );
+          }
           return (
             <Select
               value={value === '' ? 'all' : value}

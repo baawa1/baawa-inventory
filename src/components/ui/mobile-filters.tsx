@@ -8,13 +8,6 @@ import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Badge } from '@/components/ui/badge';
 import {
-  Select,
-  SelectContent,
-  SelectItem,
-  SelectTrigger,
-  SelectValue,
-} from '@/components/ui/select';
-import {
   Sheet,
   SheetContent,
   SheetDescription,
@@ -27,6 +20,14 @@ import { Switch } from '@/components/ui/switch';
 import { Separator } from '@/components/ui/separator';
 import { ScrollArea } from '@/components/ui/scroll-area';
 import { cn } from '@/lib/utils';
+import { SearchableSelect } from '@/components/ui/searchable-select';
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from '@/components/ui/select';
 
 export interface FilterOption {
   value: string;
@@ -39,6 +40,10 @@ export interface FilterConfig {
   type: 'select' | 'text' | 'boolean' | 'date';
   options?: FilterOption[];
   placeholder?: string;
+  searchable?: boolean;
+  searchPlaceholder?: string;
+  emptyMessage?: string;
+  emptyLabel?: string;
 }
 
 export interface MobileFiltersProps {
@@ -94,16 +99,37 @@ export function MobileFilters({
 
     switch (filter.type) {
       case 'select':
-        return (
+        return filter.searchable ? (
+          <SearchableSelect
+            value={value || ''}
+            onChange={newValue => onFilterChange(filter.key, newValue)}
+            options={filter.options || []}
+            placeholder={
+              filter.placeholder || `Select ${filter.label.toLowerCase()}`
+            }
+            searchPlaceholder={
+              filter.searchPlaceholder || `Search ${filter.label}...`
+            }
+            emptyMessage={
+              filter.emptyMessage || `No ${filter.label.toLowerCase()} found`
+            }
+            emptySelectionLabel={filter.emptyLabel || `All ${filter.label}`}
+          />
+        ) : (
           <Select
             value={value || ''}
-            onValueChange={(newValue) => onFilterChange(filter.key, newValue)}
+            onValueChange={newValue => onFilterChange(filter.key, newValue)}
           >
             <SelectTrigger>
-              <SelectValue placeholder={filter.placeholder || `Select ${filter.label.toLowerCase()}`} />
+              <SelectValue
+                placeholder={
+                  filter.placeholder ||
+                  `Select ${filter.label.toLowerCase()}`
+                }
+              />
             </SelectTrigger>
             <SelectContent>
-              {filter.options?.map((option) => (
+              {filter.options?.map(option => (
                 <SelectItem key={option.value} value={option.value}>
                   {option.label}
                 </SelectItem>

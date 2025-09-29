@@ -290,6 +290,9 @@ const ProductList = ({ user }: ProductListProps) => {
         type: 'select',
         options: brandOptions,
         placeholder: 'All Brands',
+        searchable: true,
+        searchPlaceholder: 'Search brands...',
+        emptyMessage: 'No brands found',
       },
       {
         key: 'supplier',
