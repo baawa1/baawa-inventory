@@ -324,6 +324,11 @@ The system is designed as a PWA with:
 
 This is a private project for BaaWA Accessories. Development follows established coding guidelines and testing standards.
 
+## 🚀 Deployments
+
+- **Production**: Every push to `main` builds and deploys on Vercel.
+- **Preview**: Every push to `dev` triggers a preview deployment at `https://baawa-inventory-b9bsgfdy0-baawa1s-projects.vercel.app`.
+
 ## 📄 License
 
 Private project - All rights reserved.
