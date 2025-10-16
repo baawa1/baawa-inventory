@@ -307,6 +307,14 @@ export const emailService = {
     timestamp: Date;
     staffName: string;
     notes?: string | null;
+    amountPaid: number;
+    balanceDue: number;
+    transactionPayments?: Array<{
+      amount: number;
+      method: string;
+      note?: string | null;
+      paymentDate?: string | Date | null;
+    }>;
   }): Promise<boolean> {
     try {
       const service = createEmailService();
@@ -320,6 +328,10 @@ export const emailService = {
         paymentMethod: data.paymentMethod,
         timestamp: data.timestamp,
         staffName: data.staffName,
+        notes: data.notes,
+        amountPaid: data.amountPaid,
+        balanceDue: data.balanceDue,
+        transactionPayments: data.transactionPayments,
       };
 
       await service.sendTemplatedEmail('receipt_email', data.to, receiptData);

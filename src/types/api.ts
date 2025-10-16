@@ -392,6 +392,11 @@ export type SalesTransactionWithIncludes = Prisma.SalesTransactionGetPayload<{
     customer: true;
     split_payments: true;
     transaction_fees: true;
+    transaction_payments: {
+      include: {
+        recordedBy: true;
+      };
+    };
     users: {
       select: {
         id: true;

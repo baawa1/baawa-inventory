@@ -41,6 +41,23 @@ export interface Sale {
     method: string;
     createdAt: Date;
   }>;
+  amountPaid?: number;
+  balanceDue?: number;
+  transactionPayments?: Array<{
+    id: number;
+    amount: number;
+    method: string;
+    note?: string | null;
+    paymentDate?: string | Date | null;
+    recordedById?: number | null;
+    recordedBy?: {
+      id: number;
+      firstName: string;
+      lastName: string;
+      email: string;
+    } | null;
+    createdAt?: string | Date | null;
+  }>;
 }
 
 export interface CouponData {
@@ -139,8 +156,9 @@ export interface PaymentMethodStepProps {
   processing: boolean;
   isSplitPayment: boolean;
   setIsSplitPayment: (isSplit: boolean) => void;
-  _splitPayments: SplitPayment[];
-  _setSplitPayments: React.Dispatch<React.SetStateAction<SplitPayment[]>>;
+  subtotal: number;
+  splitPayments: SplitPayment[];
+  setSplitPayments: (payments: SplitPayment[]) => void;
 }
 
 export interface CustomerInfoStepProps {
@@ -165,11 +183,12 @@ export interface ReviewStepProps {
   isSplitPayment: boolean;
   splitPayments: SplitPayment[];
   couponDiscount: number;
+  balanceDue?: number;
 }
 
 export interface SplitPaymentInterfaceProps {
-  splitPayments: SplitPayment[];
-  setSplitPayments: (payments: SplitPayment[]) => void;
+  splitPayments?: SplitPayment[];
+  setSplitPayments?: (payments: SplitPayment[]) => void;
   total: number;
   processing: boolean;
 }

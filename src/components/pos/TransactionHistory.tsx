@@ -28,6 +28,7 @@ import {
   IconChevronRight,
   IconChartBar,
   IconCalendar,
+  IconReportMoney,
 } from '@tabler/icons-react';
 import { format } from 'date-fns';
 import { toast } from 'sonner';
@@ -36,9 +37,125 @@ import { formatCurrency } from '@/lib/utils';
 import { ReceiptPrinter } from './ReceiptPrinter';
 import { DateRangePickerWithPresets } from '@/components/ui/date-range-picker-with-presets';
 import { DateRange } from 'react-day-picker';
-import type { Sale } from '@/types/pos';
+import {
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogFooter,
+  DialogHeader,
+  DialogTitle,
+} from '@/components/ui/dialog';
+import { Input } from '@/components/ui/input';
+import { Label } from '@/components/ui/label';
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from '@/components/ui/select';
+import { Textarea } from '@/components/ui/textarea';
+import { formatPaymentMethodLabel } from '@/lib/utils/payment-methods';
 
-type Transaction = any;
+interface TransactionCoupon {
+  id: number;
+  code: string;
+  name: string;
+  type: string;
+  value: number;
+}
+
+interface TransactionItem {
+  id: number;
+  productId: number;
+  name: string;
+  sku: string;
+  price: number;
+  quantity: number;
+  total: number;
+  coupon: TransactionCoupon | null;
+}
+
+interface TransactionFee {
+  id: number;
+  type: string;
+  description?: string | null;
+  amount: number;
+  createdAt?: string | Date | null;
+}
+
+interface TransactionSplitPayment {
+  id: number;
+  amount: number;
+  method: string;
+  createdAt?: string | Date | null;
+}
+
+interface TransactionRecordedPayment {
+  id: number;
+  amount: number;
+  method: string;
+  note?: string | null;
+  paymentDate?: string | Date | null;
+  recordedById?: number | null;
+  recordedBy?: {
+    id: number;
+    firstName: string;
+    lastName: string;
+    email: string;
+  } | null;
+  createdAt?: string | Date | null;
+}
+
+interface TransactionCustomer {
+  id: number;
+  name: string;
+  email?: string | null;
+  phone?: string | null;
+  city?: string | null;
+  state?: string | null;
+  customerType?: string | null;
+}
+
+type TransactionStatusFilter =
+  | 'all'
+  | 'outstanding'
+  | 'pending'
+  | 'partial'
+  | 'paid';
+
+const STATUS_OPTIONS: Array<{ key: TransactionStatusFilter; label: string }> = [
+  { key: 'all', label: 'All' },
+  { key: 'outstanding', label: 'Outstanding' },
+  { key: 'pending', label: 'Pending' },
+  { key: 'partial', label: 'Partial' },
+  { key: 'paid', label: 'Paid' },
+];
+
+interface Transaction {
+  id: number;
+  transactionNumber: string;
+  items: TransactionItem[];
+  fees: TransactionFee[];
+  customer: TransactionCustomer | null;
+  customerEmail?: string | null;
+  customerPhone?: string | null;
+  staffName: string;
+  staffId?: number;
+  timestamp?: string | Date | null;
+  createdAt?: string | Date | null;
+  updatedAt?: string | Date | null;
+  paymentStatus?: string | null;
+  subtotal: number;
+  discount: number;
+  total: number;
+  amountPaid?: number;
+  balanceDue?: number;
+  splitPayments?: TransactionSplitPayment[];
+  transactionPayments?: TransactionRecordedPayment[];
+  paymentMethod: string;
+  notes?: string | null;
+}
 
 const paymentMethodIcons = {
   cash: IconCash,
@@ -57,9 +174,20 @@ export function TransactionHistory() {
   const [transactions, setTransactions] = useState<Transaction[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
-  const [selectedTransaction, setSelectedTransaction] =
-    useState<Transaction | null>(null);
+  const [selectedTransactionId, setSelectedTransactionId] = useState<
+    number | null
+  >(null);
   const [expandedDates, setExpandedDates] = useState<Set<string>>(new Set());
+  const [statusFilter, setStatusFilter] =
+    useState<TransactionStatusFilter>('outstanding');
+  const [recordPaymentOpen, setRecordPaymentOpen] = useState(false);
+  const [paymentMethod, setPaymentMethod] = useState('cash');
+  const [paymentAmount, setPaymentAmount] = useState(0);
+  const [paymentNote, setPaymentNote] = useState('');
+  const [paymentDate, setPaymentDate] = useState(
+    () => new Date().toISOString().split('T')[0]
+  );
+  const [submittingPayment, setSubmittingPayment] = useState(false);
 
   // Date range state - default to last 30 days
   const [dateRange, setDateRange] = useState<DateRange | undefined>({
@@ -86,6 +214,14 @@ export function TransactionHistory() {
       // Load all transactions for the date range (no pagination)
       params.append('limit', '1000'); // Large limit to get all transactions
 
+      if (statusFilter !== 'all') {
+        const statusQuery =
+          statusFilter === 'outstanding'
+            ? ['PENDING', 'PARTIAL']
+            : [statusFilter.toUpperCase()];
+        params.append('paymentStatus', statusQuery.join(','));
+      }
+
       const response = await fetch(
         `/api/pos/transactions?${params.toString()}`
       );
@@ -101,11 +237,18 @@ export function TransactionHistory() {
     } finally {
       setLoading(false);
     }
-  }, [dateRange]);
+  }, [dateRange, statusFilter]);
 
   useEffect(() => {
     loadTransactions();
   }, [loadTransactions]);
+
+  const selectedTransaction = useMemo(() => {
+    if (selectedTransactionId === null) {
+      return null;
+    }
+    return transactions.find(t => t.id === selectedTransactionId) || null;
+  }, [transactions, selectedTransactionId]);
 
   // Group transactions by date
   const groupedTransactions = useMemo(() => {
@@ -191,7 +334,20 @@ export function TransactionHistory() {
 
   // Render order item
   const renderOrderItem = (transaction: Transaction) => {
-    const isSelected = selectedTransaction?.id === transaction.id;
+    const isSelected = selectedTransactionId === transaction.id;
+    const normalizedStatus = (transaction.paymentStatus || '').toLowerCase();
+    const statusLabel = normalizedStatus
+      ? normalizedStatus
+          .split('_')
+          .map((word: string) => word.charAt(0).toUpperCase() + word.slice(1))
+          .join(' ')
+      : 'Completed';
+    const statusClass =
+      normalizedStatus === 'completed' || normalizedStatus === 'paid'
+        ? 'bg-green-100 text-green-800'
+        : normalizedStatus === 'partial'
+          ? 'bg-amber-100 text-amber-800'
+          : 'bg-yellow-100 text-yellow-800';
 
     return (
       <div
@@ -201,7 +357,7 @@ export function TransactionHistory() {
             ? 'bg-primary/10 border-primary'
             : 'bg-card hover:bg-accent/50 border-border'
         }`}
-        onClick={() => setSelectedTransaction(transaction)}
+        onClick={() => setSelectedTransactionId(transaction.id)}
       >
         <div className="mb-2 flex items-center justify-between">
           <div className="flex items-center gap-2">
@@ -210,13 +366,9 @@ export function TransactionHistory() {
             </span>
             <Badge
               variant="secondary"
-              className={
-                transaction.paymentStatus === 'completed'
-                  ? 'bg-green-100 text-green-800'
-                  : 'bg-yellow-100 text-yellow-800'
-              }
+              className={statusClass}
             >
-              {transaction.paymentStatus || 'completed'}
+              {statusLabel}
             </Badge>
           </div>
           <div className="text-muted-foreground text-sm">
@@ -226,9 +378,9 @@ export function TransactionHistory() {
           </div>
         </div>
 
-        <div className="text-muted-foreground mb-2 text-sm">
-          Customer: {transaction.customer?.name || 'Walk-in Customer'}
-        </div>
+          <div className="text-muted-foreground mb-2 text-sm">
+            Customer: {transaction.customer?.name || 'Walk-in Customer'}
+          </div>
 
         <div className="flex items-center justify-between">
           <div className="text-sm">{transaction.items.length} items</div>
@@ -256,6 +408,19 @@ export function TransactionHistory() {
       paymentMethodIcons[
         transaction.paymentMethod as keyof typeof paymentMethodIcons
       ] || IconCash;
+    const normalizedStatus = (transaction.paymentStatus || '').toLowerCase();
+    const statusLabel = normalizedStatus
+      ? normalizedStatus
+          .split('_')
+          .map((word: string) => word.charAt(0).toUpperCase() + word.slice(1))
+          .join(' ')
+      : 'Completed';
+    const statusClass =
+      normalizedStatus === 'completed' || normalizedStatus === 'paid'
+        ? 'bg-green-100 text-green-800'
+        : normalizedStatus === 'partial'
+          ? 'bg-amber-100 text-amber-800'
+          : 'bg-yellow-100 text-yellow-800';
 
     return (
       <div className="space-y-6">
@@ -269,13 +434,9 @@ export function TransactionHistory() {
             </div>
             <Badge
               variant="secondary"
-              className={
-                transaction.paymentStatus === 'completed'
-                  ? 'bg-green-100 text-green-800'
-                  : 'bg-yellow-100 text-yellow-800'
-              }
+              className={statusClass}
             >
-              {transaction.paymentStatus || 'completed'}
+              {statusLabel}
             </Badge>
           </div>
 
@@ -288,6 +449,18 @@ export function TransactionHistory() {
 
           <div className="text-sm">
             Customer: {transaction.customer?.name || 'Walk-in Customer'}
+          </div>
+          <div className="text-sm">
+            Outstanding Balance:{' '}
+            <span
+              className={
+                (transaction.balanceDue ?? 0) > 0.01
+                  ? 'font-semibold text-amber-600'
+                  : 'text-muted-foreground'
+              }
+            >
+              {formatCurrency(transaction.balanceDue ?? 0)}
+            </span>
           </div>
         </div>
 
@@ -391,6 +564,71 @@ export function TransactionHistory() {
           </div>
         </div>
 
+        {!!transaction.splitPayments?.length && (
+          <div className="border-t pt-4">
+            <h3 className="mb-2 text-sm font-medium">Split Payments</h3>
+            <div className="space-y-2">
+              {transaction.splitPayments.map(payment => (
+                <div
+                  key={payment.id}
+                  className="flex items-center justify-between rounded-md border p-2 text-sm"
+                >
+                  <span>{formatPaymentMethodLabel(payment.method)}</span>
+                  <div className="text-right">
+                    <div className="font-medium">
+                      {formatCurrency(payment.amount)}
+                    </div>
+                    {payment.createdAt && (
+                      <div className="text-muted-foreground text-xs">
+                        {format(new Date(payment.createdAt), 'MMM d, yyyy')}
+                      </div>
+                    )}
+                  </div>
+                </div>
+              ))}
+            </div>
+          </div>
+        )}
+
+        {!!transaction.transactionPayments?.length && (
+          <div className="border-t pt-4">
+            <h3 className="mb-2 text-sm font-medium">Recorded Payments</h3>
+            <div className="space-y-2">
+              {transaction.transactionPayments.map(payment => (
+                <div
+                  key={payment.id}
+                  className="rounded-md border p-3 text-sm"
+                >
+                  <div className="flex items-center justify-between">
+                    <span>{formatPaymentMethodLabel(payment.method)}</span>
+                    <span className="font-medium">
+                      {formatCurrency(payment.amount)}
+                    </span>
+                  </div>
+                  <div className="text-muted-foreground mt-1 flex flex-wrap justify-between gap-2 text-xs">
+                    <span>
+                      {payment.paymentDate
+                        ? format(new Date(payment.paymentDate), 'MMM d, yyyy')
+                        : 'No date recorded'}
+                    </span>
+                    {payment.recordedBy && (
+                      <span>
+                        Recorded by {payment.recordedBy.firstName}{' '}
+                        {payment.recordedBy.lastName}
+                      </span>
+                    )}
+                  </div>
+                  {payment.note && (
+                    <div className="text-muted-foreground mt-2 text-xs">
+                      {payment.note}
+                    </div>
+                  )}
+                </div>
+              ))}
+            </div>
+          </div>
+        )}
+
         {/* Transaction Notes */}
         {transaction.notes && (
           <div className="border-t pt-4">
@@ -410,7 +648,9 @@ export function TransactionHistory() {
               receiptData={{
                 id: transaction.id.toString(),
                 transactionNumber: transaction.transactionNumber,
-                timestamp: transaction.timestamp || new Date(),
+                timestamp: transaction.timestamp
+                  ? new Date(transaction.timestamp)
+                  : new Date(),
                 staffName: transaction.staffName,
                 customerName: transaction.customer?.name || '',
                 customerPhone: transaction.customer?.phone || '',
@@ -438,6 +678,22 @@ export function TransactionHistory() {
             <Button variant="ghost" className="w-full text-sm">
               or print gift receipt
             </Button>
+            {(transaction.balanceDue ?? 0) > 0.01 && (
+              <Button
+                variant="default"
+                className="w-full"
+                onClick={() => {
+                  setPaymentAmount(Number((transaction.balanceDue ?? 0).toFixed(2)));
+                  setPaymentMethod('cash');
+                  setPaymentNote('');
+                  setPaymentDate(new Date().toISOString().split('T')[0]);
+                  setRecordPaymentOpen(true);
+                }}
+              >
+                <IconReportMoney className="mr-2 h-4 w-4" />
+                Record Payment
+              </Button>
+            )}
           </div>
         </div>
       </div>
@@ -490,6 +746,32 @@ export function TransactionHistory() {
         </div>
       </div>
 
+      <Card>
+        <CardHeader>
+          <CardTitle className="flex items-center gap-2">
+            <IconReportMoney className="h-5 w-5" />
+            Payment Status Filter
+          </CardTitle>
+        </CardHeader>
+        <CardContent>
+          <div className="flex flex-wrap gap-2">
+            {STATUS_OPTIONS.map(option => (
+              <Button
+                key={option.key}
+                variant={statusFilter === option.key ? 'default' : 'outline'}
+                size="sm"
+                onClick={() => {
+                  setStatusFilter(option.key);
+                  setSelectedTransactionId(null);
+                }}
+              >
+                {option.label}
+              </Button>
+            ))}
+          </div>
+        </CardContent>
+      </Card>
+
       {/* Date Range Filter */}
       <Card>
         <CardHeader>
@@ -510,7 +792,7 @@ export function TransactionHistory() {
               size="sm"
               onClick={() => {
                 setDateRange(undefined);
-                setSelectedTransaction(null);
+                setSelectedTransactionId(null);
               }}
             >
               Reset Filter
@@ -599,8 +881,149 @@ export function TransactionHistory() {
         <div>
           Total:{' '}
           {formatCurrency(transactions.reduce((sum, t) => sum + t.total, 0))}
+          {statusFilter !== 'paid' && (
+            <span className="ml-2 text-xs text-amber-600">
+              Outstanding:{' '}
+              {formatCurrency(
+                transactions.reduce(
+                  (sum, t) => sum + (t.balanceDue ?? 0),
+                  0
+                )
+              )}
+            </span>
+          )}
         </div>
       </div>
+
+      <Dialog open={recordPaymentOpen} onOpenChange={setRecordPaymentOpen}>
+        <DialogContent>
+          <DialogHeader>
+            <DialogTitle>Record Payment</DialogTitle>
+            <DialogDescription>
+              Log the amount collected to update the outstanding balance.
+            </DialogDescription>
+          </DialogHeader>
+          <div className="space-y-4">
+            <div>
+              <Label htmlFor="payment-amount">Amount</Label>
+              <Input
+                id="payment-amount"
+                type="number"
+                min="0"
+                step="0.01"
+                value={paymentAmount}
+                onChange={event =>
+                  setPaymentAmount(parseFloat(event.target.value) || 0)
+                }
+              />
+            </div>
+            <div>
+              <Label htmlFor="payment-method">Method</Label>
+              <Select value={paymentMethod} onValueChange={setPaymentMethod}>
+                <SelectTrigger id="payment-method">
+                  <SelectValue placeholder="Select method" />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="cash">Cash</SelectItem>
+                  <SelectItem value="pos">POS Machine</SelectItem>
+                  <SelectItem value="bank_transfer">Bank Transfer</SelectItem>
+                  <SelectItem value="mobile_money">Mobile Money</SelectItem>
+                  <SelectItem value="debt">Debt</SelectItem>
+                </SelectContent>
+              </Select>
+            </div>
+            <div>
+              <Label htmlFor="payment-date">Payment Date</Label>
+              <Input
+                id="payment-date"
+                type="date"
+                value={paymentDate}
+                onChange={event => setPaymentDate(event.target.value)}
+              />
+            </div>
+            <div>
+              <Label htmlFor="payment-note">Note</Label>
+              <Textarea
+                id="payment-note"
+                rows={3}
+                value={paymentNote}
+                onChange={event => setPaymentNote(event.target.value)}
+                placeholder="Optional note for this payment"
+              />
+            </div>
+            {selectedTransaction && (
+              <div className="rounded-md border border-amber-200 bg-amber-50 p-3 text-sm text-amber-800">
+                Outstanding balance:{' '}
+                {formatCurrency(selectedTransaction.balanceDue ?? 0)}
+              </div>
+            )}
+          </div>
+          <DialogFooter className="mt-4 flex items-center justify-between gap-2">
+            <Button
+              variant="outline"
+              onClick={() => setRecordPaymentOpen(false)}
+              disabled={submittingPayment}
+            >
+              Cancel
+            </Button>
+            <Button
+              onClick={async () => {
+                if (!selectedTransaction) {
+                  return;
+                }
+                const outstanding = selectedTransaction.balanceDue ?? 0;
+                if (paymentAmount <= 0) {
+                  toast.error('Enter a payment amount');
+                  return;
+                }
+                if (paymentAmount - outstanding > 0.01) {
+                  toast.error('Amount exceeds outstanding balance');
+                  return;
+                }
+                setSubmittingPayment(true);
+                try {
+                  const response = await fetch(
+                    `/api/sales/${selectedTransaction.id}/payments`,
+                    {
+                      method: 'POST',
+                      headers: { 'Content-Type': 'application/json' },
+                      body: JSON.stringify({
+                        amount: paymentAmount,
+                        paymentMethod,
+                        note: paymentNote || undefined,
+                        paymentDate: paymentDate
+                          ? new Date(paymentDate).toISOString()
+                          : undefined,
+                      }),
+                    }
+                  );
+                  if (!response.ok) {
+                    const errorData = await response.json().catch(() => null);
+                    throw new Error(
+                      errorData?.error || 'Failed to record payment'
+                    );
+                  }
+                  await loadTransactions();
+                  toast.success('Payment recorded');
+                  setRecordPaymentOpen(false);
+                } catch (recordError) {
+                  console.error(recordError);
+                  toast.error(
+                    recordError instanceof Error
+                      ? recordError.message
+                      : 'Failed to record payment'
+                  );
+                } finally {
+                  setSubmittingPayment(false);
+                }
+              }}
+              disabled={submittingPayment}
+            >
+              {submittingPayment ? 'Recording...' : 'Record Payment'}
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
     </div>
   );
 }

@@ -20,6 +20,22 @@ export interface TransactionItem {
   } | null;
 }
 
+export interface TransactionPaymentHistory {
+  id: number;
+  amount: number;
+  method: string;
+  note?: string | null;
+  paymentDate?: string | Date | null;
+  recordedById?: number | null;
+  recordedBy?: {
+    id: number;
+    firstName: string;
+    lastName: string;
+    email: string;
+  } | null;
+  createdAt?: string | Date | null;
+}
+
 export interface Transaction {
   id: number;
   transactionNumber: string;
@@ -38,6 +54,9 @@ export interface Transaction {
   createdAt: Date;
   updatedAt: Date;
   notes?: string;
+  amountPaid?: number;
+  balanceDue?: number;
+  transactionPayments?: TransactionPaymentHistory[];
 }
 
 export interface TransactionFilters {
@@ -226,6 +245,8 @@ export const getPaymentMethodLabel = (method: string): string => {
       return 'Bank Transfer';
     case PAYMENT_METHODS.MOBILE_MONEY:
       return 'Mobile Money';
+    case PAYMENT_METHODS.DEBT:
+      return 'Debt';
     default:
       return method;
   }

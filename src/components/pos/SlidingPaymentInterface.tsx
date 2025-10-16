@@ -1,6 +1,7 @@
 'use client';
 
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useCallback } from 'react';
+import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
@@ -16,6 +17,7 @@ import {
   IconCash,
   IconBuilding,
   IconWallet,
+  IconReportMoney,
   IconUser,
   IconCheck,
   IconLoader,
@@ -25,6 +27,7 @@ import {
   IconMail,
   IconPrinter,
   IconCoins,
+  IconAlertTriangle,
 } from '@tabler/icons-react';
 import { usePOSErrorHandler } from './POSErrorBoundary';
 import { DiscountStep } from './payment/DiscountStep';
@@ -37,8 +40,13 @@ import {
   validatePaymentAmount,
   validateSplitPayments,
   calculateChange,
+  roundCurrency,
 } from '@/lib/utils/calculations';
 import { formatCurrency } from '@/lib/utils';
+import {
+  formatPaymentMethodLabel,
+  formatLedgerPaymentLabel,
+} from '@/lib/utils/payment-methods';
 import { logger } from '@/lib/logger';
 import type {
   CartItem,
@@ -79,6 +87,7 @@ const PAYMENT_METHODS = [
   { value: 'pos', label: 'POS Machine', icon: IconCreditCard },
   { value: 'bank_transfer', label: 'Bank Transfer', icon: IconBuilding },
   { value: 'mobile_money', label: 'Mobile Money', icon: IconWallet },
+  { value: 'debt', label: 'Debt', icon: IconReportMoney },
 ];
 
 const STEPS = [
@@ -105,8 +114,21 @@ async function fetchCustomers({
   if (!response.ok) {
     throw new Error('Failed to fetch customers');
   }
-  const data: CustomerApiResponse = await response.json();
-  return data.data || [];
+
+  const payload = (await response.json()) as
+    | CustomerApiResponse
+    | Customer[]
+    | undefined;
+
+  if (Array.isArray(payload)) {
+    return payload;
+  }
+
+  if (payload && 'data' in payload && Array.isArray(payload.data)) {
+    return payload.data;
+  }
+
+  return [];
 }
 
 // Helper function to check if we should search for phone
@@ -154,18 +176,22 @@ export function SlidingPaymentInterface({
 
   const { handleError } = usePOSErrorHandler();
 
-  // Custom setPaymentMethod that also updates amountPaid to the discounted total
+  // Track selected payment method while delegating behaviour to child component
   const setPaymentMethod = (method: string) => {
     setPaymentMethodState(method);
-    // Auto-fill amount paid with the discounted total when payment method is selected
-    setAmountPaid(total);
   };
 
-  // Update amountPaid when total changes (due to discounts/coupons) if payment method is selected
+  // Update amountPaid when total changes (due to discounts/coupons) if payment method requires full payment
   useEffect(() => {
-    if (paymentMethod) {
-      setAmountPaid(total);
+    if (!paymentMethod) {
+      return;
     }
+
+    if (paymentMethod === 'debt') {
+      return;
+    }
+
+    setAmountPaid(total);
   }, [total, paymentMethod]);
 
   const handleDiscountChange = (value: number) => {
@@ -245,9 +271,70 @@ export function SlidingPaymentInterface({
       }
     }
 
+    if (!isSplitPayment && paymentMethod === 'debt') {
+      const hasContactDetails = Boolean(
+        (customerInfo.phone && customerInfo.phone.trim() !== '') ||
+          (customerInfo.email && customerInfo.email.trim() !== '')
+      );
+
+      if (!hasContactDetails) {
+        toast.error('Customer phone or email is required for debt payments');
+        return;
+      }
+    }
+
     setProcessing(true);
 
     try {
+      let normalizedSplitPayments = splitPayments;
+      let collectedSplitTotal = 0;
+
+      if (isSplitPayment) {
+        const nonDebtPayments = splitPayments.filter(
+          payment => payment.method !== 'debt'
+        );
+        const collected = roundCurrency(
+          nonDebtPayments.reduce((sum, payment) => sum + payment.amount, 0)
+        );
+        const outstanding = roundCurrency(Math.max(0, total - collected));
+        const debtIdentifier =
+          splitPayments.find(payment => payment.method === 'debt')?.id ||
+          `debt-${Date.now()}`;
+
+        const nextSplitPayments = [
+          ...nonDebtPayments.map(payment => ({
+            ...payment,
+            amount: roundCurrency(payment.amount),
+          })),
+        ];
+
+        if (outstanding > 0.01) {
+          nextSplitPayments.push({
+            id: debtIdentifier,
+            amount: outstanding,
+            method: 'debt',
+          });
+        }
+
+        normalizedSplitPayments = nextSplitPayments;
+        collectedSplitTotal = collected;
+
+        const hasChanged =
+          normalizedSplitPayments.length !== splitPayments.length ||
+          normalizedSplitPayments.some((payment, index) => {
+            const existing = splitPayments[index];
+            if (!existing) return true;
+            return (
+              payment.method !== existing.method ||
+              Math.abs(payment.amount - existing.amount) > 0.009
+            );
+          });
+
+        if (hasChanged) {
+          setSplitPayments(normalizedSplitPayments);
+        }
+      }
+
       // Create sales transaction
       const saleData = {
         items: items.map(item => ({
@@ -284,10 +371,10 @@ export function SlidingPaymentInterface({
         customerPhone: customerInfo.phone || undefined,
         customerEmail: customerInfo.email || undefined,
         amountPaid: isSplitPayment
-          ? splitPayments.reduce((sum, p) => sum + p.amount, 0)
+          ? collectedSplitTotal
           : amountPaid,
         notes: notes || undefined,
-        splitPayments: isSplitPayment ? splitPayments : undefined,
+        splitPayments: isSplitPayment ? normalizedSplitPayments : undefined,
       };
 
       // Debug logging
@@ -340,9 +427,39 @@ export function SlidingPaymentInterface({
         timestamp: new Date(),
         notes: notes || undefined,
         splitPayments: isSplitPayment
-          ? splitPayments.map(payment => ({
+          ? normalizedSplitPayments.map(payment => ({
               ...payment,
               createdAt: new Date(),
+            }))
+          : undefined,
+        amountPaid:
+          typeof result.amountPaid === 'number'
+            ? result.amountPaid
+            : isSplitPayment
+              ? collectedSplitTotal
+              : amountPaid,
+        balanceDue:
+          typeof result.balanceDue === 'number'
+            ? result.balanceDue
+            : isSplitPayment
+              ? Math.max(0, total - collectedSplitTotal)
+              : paymentMethod === 'debt'
+                ? Math.max(0, total - amountPaid)
+                : 0,
+        transactionPayments: Array.isArray(result.transactionPayments)
+          ? result.transactionPayments.map((payment: any) => ({
+              id: payment.id,
+              amount: Number(payment.amount),
+              method: payment.method,
+              note: payment.note,
+              paymentDate: payment.paymentDate
+                ? new Date(payment.paymentDate)
+                : undefined,
+              recordedById: payment.recordedById,
+              recordedBy: payment.recordedBy || undefined,
+              createdAt: payment.createdAt
+                ? new Date(payment.createdAt)
+                : undefined,
             }))
           : undefined,
       };
@@ -351,16 +468,21 @@ export function SlidingPaymentInterface({
       setCurrentStep(6); // Move to receipt step
 
       // Show success message with email status
+      const hasOutstandingBalance = (sale.balanceDue || 0) > 0.009;
+      const baseSuccessMessage = hasOutstandingBalance
+        ? `Sale recorded with outstanding balance of ${formatCurrency(
+            sale.balanceDue || 0
+          )}`
+        : 'Payment processed successfully!';
+
       if (result.emailSent && customerInfo.email) {
-        toast.success(
-          'Payment processed successfully! Email receipt sent to customer.'
-        );
+        toast.success(`${baseSuccessMessage} Email receipt sent to customer.`);
       } else if (customerInfo.email) {
         toast.success(
-          'Payment processed successfully! (Email receipt failed to send)'
+          `${baseSuccessMessage} (Email receipt failed to send)`
         );
       } else {
-        toast.success('Payment processed successfully!');
+        toast.success(baseSuccessMessage);
       }
     } catch (error) {
       const errorMessage = 'Payment processing failed';
@@ -467,8 +589,9 @@ export function SlidingPaymentInterface({
             processing={processing}
             isSplitPayment={isSplitPayment}
             setIsSplitPayment={setIsSplitPayment}
-            _splitPayments={splitPayments}
-            _setSplitPayments={setSplitPayments}
+            subtotal={subtotal}
+            splitPayments={splitPayments}
+            setSplitPayments={setSplitPayments}
           />
         );
       case 4:
@@ -491,6 +614,7 @@ export function SlidingPaymentInterface({
             customerInfo={customerInfo}
             amountPaid={amountPaid}
             change={change}
+            balanceDue={balanceDuePreview}
             notes={notes}
             setNotes={setNotes}
             processing={processing}
@@ -508,6 +632,10 @@ export function SlidingPaymentInterface({
 
   const change =
     paymentMethod === 'cash' ? calculateChange(amountPaid, total) : 0;
+  const balanceDuePreview =
+    !isSplitPayment && paymentMethod === 'debt'
+      ? Math.max(0, total - amountPaid)
+      : 0;
 
   return (
     <div className="bg-background animate-in slide-in-from-right flex h-full max-h-screen flex-col overflow-hidden rounded-lg border shadow-lg duration-300 lg:max-h-[calc(100vh-8rem)] lg:rounded-lg lg:border lg:shadow-lg">
@@ -724,26 +852,102 @@ function PaymentMethodStep({
   processing,
   isSplitPayment,
   setIsSplitPayment,
-  _splitPayments,
-  _setSplitPayments,
+  subtotal,
+  splitPayments,
+  setSplitPayments,
 }: PaymentMethodStepProps) {
+  const payments = Array.isArray(splitPayments) ? splitPayments : [];
+  const updateSplitPayments = useCallback(
+    (
+      next: SplitPayment[] | ((current: SplitPayment[]) => SplitPayment[])
+    ) => {
+      if (!setSplitPayments) return;
+      const value = (
+        typeof next === 'function'
+          ? (next as (current: SplitPayment[]) => SplitPayment[])(payments)
+          : next
+      );
+      setSplitPayments(value);
+    },
+    [payments, setSplitPayments]
+  );
+
+  const isDebtPayment = paymentMethod === 'debt';
+  const outstandingBalance = isDebtPayment
+    ? Math.max(0, total - amountPaid)
+    : 0;
+
+  const ensureSplitSeed = useCallback(() => {
+    if (payments.length === 0) {
+      updateSplitPayments([
+        {
+          id: Date.now().toString(),
+          amount: 0,
+          method: PAYMENT_METHODS[0].value,
+        },
+      ]);
+    }
+  }, [payments.length, updateSplitPayments]);
+
+  const handleSelectMethod = (method: string) => {
+    if (processing) return;
+
+    if (method === 'split') {
+      setIsSplitPayment(true);
+      setPaymentMethod('split');
+      ensureSplitSeed();
+      return;
+    }
+
+    setIsSplitPayment(false);
+    updateSplitPayments([]);
+
+    if (method !== paymentMethod) {
+      if (method === 'debt') {
+        setAmountPaid(0);
+      } else if (paymentMethod === 'debt' && method !== 'split') {
+        setAmountPaid(total);
+      }
+    }
+
+    setPaymentMethod(method);
+  };
+
+  const handleSplitToggle = () => {
+    if (processing || isDebtPayment) return;
+    const next = !isSplitPayment;
+    setIsSplitPayment(next);
+    if (next) {
+      setPaymentMethod('split');
+      ensureSplitSeed();
+    } else {
+      if (paymentMethod === 'split') {
+        setPaymentMethod('cash');
+        setAmountPaid(total);
+      }
+      updateSplitPayments([]);
+    }
+  };
+
+  const handleAmountPaidChange = (value: number) => {
+    setAmountPaid(value);
+  };
+
   return (
     <div className="space-y-4">
       <h3 className="text-lg font-semibold">Payment Method</h3>
 
-      {/* Payment Options */}
       <div className="mb-4 flex items-center gap-2">
         <Button
           variant={isSplitPayment ? 'default' : 'outline'}
           size="sm"
-          onClick={() => setIsSplitPayment(!isSplitPayment)}
-          disabled={processing}
+          onClick={handleSplitToggle}
+          disabled={processing || isDebtPayment}
         >
           Split Payment
         </Button>
       </div>
 
-      {/* Total Amount Display */}
       <div className="bg-muted mb-4 flex items-center justify-between rounded p-3">
         <span className="font-medium">Total Amount:</span>
         <span className="text-primary text-lg font-bold">
@@ -760,7 +964,7 @@ function PaymentMethodStep({
                 key={method.value}
                 variant={paymentMethod === method.value ? 'default' : 'outline'}
                 className="h-16 flex-col"
-                onClick={() => setPaymentMethod(method.value)}
+                onClick={() => handleSelectMethod(method.value)}
                 disabled={processing}
               >
                 <Icon className="mb-1 h-6 w-6" />
@@ -771,52 +975,81 @@ function PaymentMethodStep({
         </div>
       ) : (
         <SplitPaymentInterface
-          splitPayments={_splitPayments}
-          setSplitPayments={_setSplitPayments}
+          splitPayments={payments}
+          setSplitPayments={updateSplitPayments}
           total={total}
           processing={processing}
         />
       )}
 
-      {/* Payment Amounts (for non-split payments) */}
       {!isSplitPayment && paymentMethod && (
         <div className="space-y-4">
-          {/* Amount Paid Input */}
           <div className="space-y-2">
-            <Label htmlFor="amountPaid">Amount Paid (₦)</Label>
+            <Label htmlFor="amountPaid">
+              {isDebtPayment ? 'Deposit Amount (₦)' : 'Amount Paid (₦)'}
+            </Label>
             <Input
               id="amountPaid"
               type="number"
               step="0.01"
               value={amountPaid}
-              onChange={e => setAmountPaid(parseFloat(e.target.value) || 0)}
+              onChange={e =>
+                handleAmountPaidChange(parseFloat(e.target.value) || 0)
+              }
               disabled={processing}
             />
           </div>
 
-          {/* Change Due */}
-          {paymentMethod === 'cash' && change > 0 && (
-            <div className="bg-muted flex items-center justify-between rounded p-3">
-              <span className="font-medium">Change Due:</span>
-              <span className="text-lg font-bold text-green-600">
-                ₦{change.toLocaleString()}
-              </span>
+          {isDebtPayment ? (
+            <div className="rounded border border-dashed p-3 text-sm">
+              <div className="flex justify-between">
+                <span>Outstanding Balance:</span>
+                <span className="font-semibold text-amber-600">
+                  {formatCurrency(outstandingBalance)}
+                </span>
+              </div>
+              <p className="text-muted-foreground mt-2">
+                Record follow-up payments from the finance dashboard to close
+                this balance.
+              </p>
             </div>
-          )}
+          ) : (
+            <>
+              {paymentMethod === 'cash' && change > 0 && (
+                <div className="bg-muted flex items-center justify-between rounded p-3">
+                  <span className="font-medium">Change Due:</span>
+                  <span className="text-lg font-bold text-green-600">
+                    ₦{change.toLocaleString()}
+                  </span>
+                </div>
+              )}
 
-          {/* Insufficient Payment Warning */}
-          {paymentMethod === 'cash' && amountPaid < total && (
-            <div className="bg-destructive/10 border-destructive/20 flex items-center justify-between rounded border p-3">
-              <span className="text-destructive font-medium">
-                Insufficient Payment:
-              </span>
-              <span className="text-destructive text-lg font-bold">
-                ₦{(total - amountPaid).toLocaleString()}
-              </span>
-            </div>
+              {paymentMethod === 'cash' && amountPaid < total && (
+                <Alert className="border-amber-200 bg-amber-50 text-amber-800">
+                  <IconAlertTriangle className="h-4 w-4" />
+                  <AlertTitle>Insufficient amount</AlertTitle>
+                  <AlertDescription>
+                    The amount paid is less than the total. Collect the full
+                    amount or enable split payment.
+                  </AlertDescription>
+                </Alert>
+              )}
+            </>
           )}
         </div>
       )}
+
+      <div className="space-y-2">
+        <div className="flex justify-between">
+          <span>Subtotal:</span>
+          <span>{formatCurrency(subtotal)}</span>
+        </div>
+        <Separator />
+        <div className="flex justify-between text-lg font-bold">
+          <span>Total:</span>
+          <span>{formatCurrency(total)}</span>
+        </div>
+      </div>
     </div>
   );
 }
@@ -1414,6 +1647,7 @@ function ReviewStep({
   customerInfo,
   amountPaid,
   change,
+  balanceDue,
   notes,
   setNotes,
   processing,
@@ -1421,6 +1655,31 @@ function ReviewStep({
   splitPayments,
   couponDiscount,
 }: ReviewStepProps) {
+  const isDebtPayment = paymentMethod === 'debt';
+  const isSplitSale = paymentMethod === 'split' || isSplitPayment;
+  const splitCollectedTotal = isSplitSale
+    ? splitPayments.reduce(
+        (sum, payment) =>
+          payment.method === 'debt' ? sum : sum + payment.amount,
+        0
+      )
+    : amountPaid;
+  const splitDebtPortion = isSplitSale
+    ? splitPayments.reduce(
+        (sum, payment) =>
+          payment.method === 'debt' ? sum + payment.amount : sum,
+        0
+      )
+    : 0;
+  const outstandingBalance = isDebtPayment
+    ? balanceDue ?? Math.max(0, total - amountPaid)
+    : isSplitSale
+      ? balanceDue ?? Math.max(0, total - splitCollectedTotal)
+      : 0;
+  const hasOutstandingBalance = outstandingBalance > 0.009;
+  const paymentLabel = formatPaymentMethodLabel(paymentMethod);
+  const hasSplitPayments = Array.isArray(splitPayments) && splitPayments.length > 0;
+
   return (
     <div className="space-y-4">
       <h3 className="text-lg font-semibold">Review & Complete</h3>
@@ -1506,34 +1765,59 @@ function ReviewStep({
         <div className="space-y-2">
           <div className="flex justify-between">
             <span>Payment Method:</span>
-            <span>{isSplitPayment ? 'Split Payment' : paymentMethod}</span>
+            <span>{isSplitSale ? 'Split Payment' : paymentLabel}</span>
           </div>
-          {!isSplitPayment && (
+          {!isSplitSale && (
             <>
               <div className="flex justify-between">
-                <span>Amount Paid:</span>
-                <span>₦{amountPaid.toLocaleString()}</span>
+                <span>{isDebtPayment ? 'Deposit:' : 'Amount Paid:'}</span>
+                <span>{formatCurrency(amountPaid)}</span>
               </div>
-              {change > 0 && (
-                <div className="flex justify-between">
-                  <span>Change:</span>
-                  <span>₦{change.toLocaleString()}</span>
+              {isDebtPayment ? (
+                <div className="flex justify-between text-amber-600">
+                  <span>Balance Due:</span>
+                  <span>{formatCurrency(outstandingBalance)}</span>
                 </div>
+              ) : (
+                change > 0 && (
+                  <div className="flex justify-between">
+                    <span>Change:</span>
+                    <span>{formatCurrency(change)}</span>
+                  </div>
+                )
               )}
             </>
           )}
-          {isSplitPayment && (
+          {isSplitSale && hasSplitPayments && (
             <div className="space-y-2">
               {splitPayments.map((payment: SplitPayment) => (
                 <div key={payment.id} className="flex justify-between">
-                  <span>{payment.method}:</span>
-                  <span>₦{payment.amount.toLocaleString()}</span>
+                  <span>{formatPaymentMethodLabel(payment.method)}:</span>
+                  <span>{formatCurrency(payment.amount)}</span>
                 </div>
               ))}
+              <div className="border-t pt-2 text-xs text-muted-foreground">
+                <div className="flex justify-between">
+                  <span>Collected:</span>
+                  <span>{formatCurrency(splitCollectedTotal)}</span>
+                </div>
+                <div className="flex justify-between">
+                  <span>Recorded as debt:</span>
+                  <span>{formatCurrency(splitDebtPortion)}</span>
+                </div>
+              </div>
             </div>
           )}
         </div>
       </div>
+
+      {hasOutstandingBalance && (
+        <div className="rounded-md border border-amber-200 bg-amber-50 p-3 text-sm text-amber-700">
+          Outstanding balance of {formatCurrency(outstandingBalance)} remains
+          on this account. Use the finance dashboard to record follow-up
+          payments.
+        </div>
+      )}
 
       {/* Customer Information Section */}
       {customerInfo.name && (
@@ -1582,17 +1866,30 @@ function SplitPaymentInterface({
   total,
   processing,
 }: SplitPaymentInterfaceProps) {
+  const payments = Array.isArray(splitPayments) ? splitPayments : [];
+  const updatePayments = useCallback(
+    (next: SplitPayment[] | ((current: SplitPayment[]) => SplitPayment[])) => {
+      if (!setSplitPayments) return;
+      const value =
+        typeof next === 'function'
+          ? (next as (current: SplitPayment[]) => SplitPayment[])(payments)
+          : next;
+      setSplitPayments(value);
+    },
+    [payments, setSplitPayments]
+  );
+
   const addPayment = () => {
-    const newPayment = {
+    const newPayment: SplitPayment = {
       id: Date.now().toString(),
       amount: 0,
       method: 'cash',
     };
-    setSplitPayments([...splitPayments, newPayment]);
+    updatePayments([...payments, newPayment]);
   };
 
   const removePayment = (id: string) => {
-    setSplitPayments(splitPayments.filter(p => p.id !== id));
+    updatePayments(payments.filter(p => p.id !== id));
   };
 
   const updatePayment = (
@@ -1600,13 +1897,20 @@ function SplitPaymentInterface({
     field: 'amount' | 'method',
     value: string | number
   ) => {
-    setSplitPayments(
-      splitPayments.map(p => (p.id === id ? { ...p, [field]: value } : p))
+    updatePayments(
+      payments.map(p => (p.id === id ? { ...p, [field]: value } : p))
     );
   };
 
-  const totalPaid = splitPayments.reduce((sum, p) => sum + p.amount, 0);
-  const remaining = total - totalPaid;
+  const tolerance = 0.01;
+  const collectedTotal = payments
+    .filter(payment => payment.method !== 'debt')
+    .reduce((sum, payment) => sum + payment.amount, 0);
+  const debtPortion = payments
+    .filter(payment => payment.method === 'debt')
+    .reduce((sum, payment) => sum + payment.amount, 0);
+  const expectedOutstanding = Math.max(0, total - collectedTotal);
+  const coverageGap = total - (collectedTotal + debtPortion);
 
   return (
     <div className="space-y-4">
@@ -1615,7 +1919,7 @@ function SplitPaymentInterface({
       </div>
 
       <div className="space-y-3">
-        {splitPayments.map(payment => (
+        {payments.map(payment => (
           <Card key={payment.id} className="py-4">
             <CardContent className="px-4">
               <div className="flex items-center gap-3">
@@ -1681,17 +1985,33 @@ function SplitPaymentInterface({
         </Button>
       </div>
 
-      <div className="bg-muted rounded-lg p-3">
-        <div className="flex justify-between text-sm">
-          <span>Total Paid:</span>
-          <span>₦{totalPaid.toLocaleString()}</span>
+      <div className="bg-muted space-y-1 rounded-lg p-3 text-sm">
+        <div className="flex justify-between">
+          <span>Collected (non-debt):</span>
+          <span>{formatCurrency(collectedTotal)}</span>
         </div>
-        <div className="flex justify-between text-sm">
-          <span>Remaining:</span>
-          <span className={remaining > 0 ? 'text-red-600' : 'text-green-600'}>
-            ₦{remaining.toLocaleString()}
+        <div className="flex justify-between">
+          <span>Recorded as Debt:</span>
+          <span>{formatCurrency(debtPortion)}</span>
+        </div>
+        <div className="flex justify-between">
+          <span>Outstanding Balance:</span>
+          <span
+            className={
+              expectedOutstanding > tolerance
+                ? 'text-amber-600 font-medium'
+                : 'text-muted-foreground'
+            }
+          >
+            {formatCurrency(expectedOutstanding)}
           </span>
         </div>
+        {Math.abs(coverageGap) > tolerance && (
+          <div className="text-xs text-red-600">
+            Split payments must cover the full total. Adjust the amounts or
+            add a debt entry for the remainder.
+          </div>
+        )}
       </div>
     </div>
   );
@@ -1707,6 +2027,18 @@ function ReceiptStep({ sale }: { sale: Sale | null }) {
       </div>
     );
   }
+
+  const ledgerPayments = sale.transactionPayments ?? [];
+  const hasLedgerPayments = ledgerPayments.length > 0;
+  const splitPayments = sale.splitPayments ?? [];
+  const hasSplitPayments = splitPayments.length > 0;
+  const amountPaidValue = sale.amountPaid ?? 0;
+  const changeAmount =
+    sale.paymentMethod === 'cash'
+      ? calculateChange(amountPaidValue, sale.total)
+      : 0;
+  const isDebtSale = sale.paymentMethod === 'debt';
+  const isSplitSale = sale.paymentMethod === 'split';
 
   const formatDate = (date: Date) => {
     return date.toLocaleDateString('en-US', {
@@ -1729,24 +2061,31 @@ function ReceiptStep({ sale }: { sale: Sale | null }) {
     bank_transfer: IconBuilding,
     mobile_money: IconWallet,
     split: IconWallet,
-  };
-
-  const PAYMENT_METHOD_LABELS = {
-    cash: 'Cash',
-    pos: 'POS Machine',
-    bank_transfer: 'Bank Transfer',
-    mobile_money: 'Mobile Money',
-    split: 'Split Payment',
+    debt: IconReportMoney,
   };
 
   const _PaymentIcon =
     PAYMENT_METHOD_ICONS[
       sale.paymentMethod as keyof typeof PAYMENT_METHOD_ICONS
     ] || IconCash;
-  const paymentLabel =
-    PAYMENT_METHOD_LABELS[
-      sale.paymentMethod as keyof typeof PAYMENT_METHOD_LABELS
-    ] || 'Cash';
+  const paymentLabel = formatPaymentMethodLabel(sale.paymentMethod);
+
+  const hasOutstandingBalance = (sale.balanceDue || 0) > 0.009;
+  const ledgerPaymentsPrint = hasLedgerPayments
+    ? ledgerPayments
+        .map(payment => {
+          const dateLabel = payment.paymentDate
+            ? ` • ${new Date(payment.paymentDate).toLocaleDateString()}`
+            : '';
+          return `
+                <div class="total-line"><span>${formatLedgerPaymentLabel(
+                  payment.method
+                )}${dateLabel}</span><span>${formatCurrency(
+            payment.amount
+          )}</span></div>`;
+        })
+        .join('')
+    : '';
 
   // Print receipt
   const handlePrint = () => {
@@ -1824,6 +2163,18 @@ function ReceiptStep({ sale }: { sale: Sale | null }) {
               <span>TOTAL:</span>
               <span>${formatCurrency(sale.total)}</span>
             </div>
+            <div class="total-line">
+              <span>Amount Paid:</span>
+              <span>${formatCurrency(amountPaidValue)}</span>
+            </div>
+            ${
+              hasOutstandingBalance
+                ? `<div class="total-line"><span>Balance Due:</span><span>${formatCurrency(
+                      sale.balanceDue ?? 0
+                    )}</span></div>`
+                : ''
+            }
+            ${ledgerPaymentsPrint}
             ${
               sale.paymentMethod === 'split' &&
               sale.splitPayments &&
@@ -1835,7 +2186,7 @@ function ReceiptStep({ sale }: { sale: Sale | null }) {
                 .map(
                   payment => `
                 <div class="total-line" style="font-size: 11px;">
-                  <span>${payment.method}:</span>
+                  <span>${formatPaymentMethodLabel(payment.method)}:</span>
                   <span>${formatCurrency(payment.amount)}</span>
                 </div>
               `
@@ -1935,12 +2286,17 @@ function ReceiptStep({ sale }: { sale: Sale | null }) {
           <IconCheck className="h-8 w-8 text-green-600" />
         </div>
         <h2 className="text-2xl font-bold text-green-600">
-          Payment Successful!
+          {hasOutstandingBalance ? 'Sale Recorded' : 'Payment Successful!'}
         </h2>
         <p className="text-muted-foreground">
-          Transaction completed on {formatDate(sale.timestamp)} at{' '}
+          Transaction saved on {formatDate(sale.timestamp)} at{' '}
           {formatTime(sale.timestamp)}
         </p>
+        {hasOutstandingBalance && (
+          <p className="text-amber-600 mt-2 font-medium">
+            Outstanding balance: {formatCurrency(sale.balanceDue || 0)}
+          </p>
+        )}
       </div>
 
       {/* Sale Details */}
@@ -2050,6 +2406,18 @@ function ReceiptStep({ sale }: { sale: Sale | null }) {
           <span>{formatCurrency(sale.total)}</span>
         </div>
 
+        <div className="flex justify-between">
+          <span>Amount Paid:</span>
+          <span>{formatCurrency(sale.amountPaid ?? sale.total)}</span>
+        </div>
+
+        {sale.balanceDue && sale.balanceDue > 0 && (
+          <div className="flex justify-between text-amber-600">
+            <span>Balance Due:</span>
+            <span>{formatCurrency(sale.balanceDue)}</span>
+          </div>
+        )}
+
         {/* Split Payment Details */}
         {sale.paymentMethod === 'split' &&
           sale.splitPayments &&
@@ -2060,6 +2428,29 @@ function ReceiptStep({ sale }: { sale: Sale | null }) {
                 <div key={index} className="flex justify-between text-sm">
                   <span className="text-muted-foreground">
                     {payment.method}:
+                  </span>
+                  <span className="font-medium">
+                    {formatCurrency(payment.amount)}
+                  </span>
+                </div>
+              ))}
+            </div>
+          )}
+
+        {sale.transactionPayments &&
+          sale.transactionPayments.length > 0 && (
+            <div className="mt-4 space-y-2 rounded-lg border bg-gray-50 p-3">
+              <h4 className="text-sm font-semibold">Recorded Payments:</h4>
+              {sale.transactionPayments.map(payment => (
+                <div
+                  key={payment.id}
+                  className="flex items-center justify-between text-sm"
+                >
+                  <span className="text-muted-foreground">
+                    {payment.method}
+                    {payment.paymentDate
+                      ? ` • ${new Date(payment.paymentDate).toLocaleDateString()}`
+                      : ''}
                   </span>
                   <span className="font-medium">
                     {formatCurrency(payment.amount)}

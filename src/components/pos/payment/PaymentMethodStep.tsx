@@ -10,6 +10,7 @@ import {
   IconCreditCard,
   IconBuilding,
   IconWallet,
+  IconReportMoney,
 } from '@tabler/icons-react';
 
 export const PAYMENT_METHODS = [
@@ -31,6 +32,12 @@ export const PAYMENT_METHODS = [
     name: 'Mobile Money',
     icon: IconWallet,
     color: 'text-orange-600',
+  },
+  {
+    id: 'debt',
+    name: 'Debt',
+    icon: IconReportMoney,
+    color: 'text-amber-600',
   },
 ] as const;
 
@@ -63,6 +70,17 @@ export function PaymentMethodStep({
   setIsSplitPayment,
   subtotal,
 }: PaymentMethodStepProps) {
+  const isDebtPayment = paymentMethod === 'debt';
+  const outstandingBalance = Math.max(0, total - amountPaid);
+
+  const handleSelectMethod = (methodId: PaymentMethod) => {
+    setPaymentMethod(methodId);
+
+    if (methodId === 'debt') {
+      setIsSplitPayment(false);
+    }
+  };
+
   const handleAmountPaidChange = (value: number) => {
     setAmountPaid(value);
   };
@@ -94,7 +112,7 @@ export function PaymentMethodStep({
                   key={method.id}
                   type="button"
                   variant={paymentMethod === method.id ? 'default' : 'outline'}
-                  onClick={() => setPaymentMethod(method.id)}
+                  onClick={() => handleSelectMethod(method.id)}
                   disabled={processing}
                   className="h-16 flex-col gap-1"
                 >
@@ -119,7 +137,7 @@ export function PaymentMethodStep({
               id="split-payment"
               checked={isSplitPayment}
               onCheckedChange={setIsSplitPayment}
-              disabled={processing}
+              disabled={processing || isDebtPayment}
             />
           </div>
 
@@ -127,7 +145,9 @@ export function PaymentMethodStep({
           {!isSplitPayment && (
             <div className="space-y-4">
               <div className="space-y-3">
-                <Label htmlFor="amount-paid">Amount Paid</Label>
+                <Label htmlFor="amount-paid">
+                  {isDebtPayment ? 'Deposit Amount' : 'Amount Paid'}
+                </Label>
                 <Input
                   id="amount-paid"
                   type="number"
@@ -135,7 +155,11 @@ export function PaymentMethodStep({
                   onChange={e =>
                     handleAmountPaidChange(parseFloat(e.target.value) || 0)
                   }
-                  placeholder="Enter amount paid"
+                  placeholder={
+                    isDebtPayment
+                      ? 'Enter deposit amount (optional)'
+                      : 'Enter amount paid'
+                  }
                   disabled={processing}
                   className="text-lg"
                 />
@@ -185,25 +209,49 @@ export function PaymentMethodStep({
               <span>Total:</span>
               <span>{formatCurrency(total)}</span>
             </div>
-            {!isSplitPayment && amountPaid > 0 && (
-              <>
+            {!isSplitPayment && (
+              <div className="space-y-2">
                 <div className="flex justify-between">
-                  <span className="text-muted-foreground">Amount Paid:</span>
+                  <span className="text-muted-foreground">
+                    {isDebtPayment ? 'Deposit:' : 'Amount Paid:'}
+                  </span>
                   <span>{formatCurrency(amountPaid)}</span>
                 </div>
-                <div className="flex justify-between font-medium">
-                  <span>Change:</span>
-                  <span
-                    className={change >= 0 ? 'text-green-600' : 'text-red-600'}
-                  >
-                    {change >= 0
-                      ? formatCurrency(change)
-                      : `-${formatCurrency(Math.abs(change))}`}
-                  </span>
-                </div>
-              </>
+                {isDebtPayment ? (
+                  <div className="flex justify-between font-medium text-amber-600">
+                    <span>Balance Due:</span>
+                    <span>{formatCurrency(outstandingBalance)}</span>
+                  </div>
+                ) : (
+                  amountPaid > 0 && (
+                    <div className="flex justify-between font-medium">
+                      <span>Change:</span>
+                      <span
+                        className={
+                          change >= 0 ? 'text-green-600' : 'text-red-600'
+                        }
+                      >
+                        {change >= 0
+                          ? formatCurrency(change)
+                          : `-${formatCurrency(Math.abs(change))}`}
+                      </span>
+                    </div>
+                  )
+                )}
+              </div>
             )}
           </div>
+
+          {isDebtPayment && (
+            <div className="rounded-lg border border-dashed p-3 text-sm">
+              <p className="font-medium">Debt payment selected</p>
+              <p className="text-muted-foreground mt-1">
+                This sale will remain outstanding until the full balance is
+                collected. Record follow-up payments from the finance
+                transactions panel.
+              </p>
+            </div>
+          )}
         </CardContent>
       </Card>
     </div>

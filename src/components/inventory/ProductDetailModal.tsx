@@ -112,6 +112,20 @@ export const ProductDetailModal: React.FC<ProductDetailModalProps> = ({
   const headerBrand = productBasicInfo?.brand?.name || product?.brand?.name;
   const headerSKU = productBasicInfo?.sku || product?.sku || 'N/A';
 
+  const hasNumericStock = typeof product?.stock === 'number';
+  const hasNumericMinStock = typeof product?.minStock === 'number';
+  const isLowStock =
+    hasNumericStock &&
+    hasNumericMinStock &&
+    (product?.stock as number) <= (product?.minStock as number);
+
+  const stockBadgeVariant = isLowStock ? 'destructive' : 'outline';
+  const stockBadgeLabel = isLowStock
+    ? 'Low Stock'
+    : hasNumericStock
+      ? 'In Stock'
+      : 'Stock Unknown';
+
   return (
     <Dialog open={open} onOpenChange={onCloseAction}>
       <DialogContent className="max-h-[90vh] max-w-4xl overflow-y-auto sm:max-w-3xl">
@@ -139,19 +153,9 @@ export const ProductDetailModal: React.FC<ProductDetailModalProps> = ({
                     : 'Inactive'}
                 </Badge>
                 <Badge
-                  variant={
-                    product?.stock &&
-                    product?.minStock &&
-                    product?.stock <= product?.minStock
-                      ? 'destructive'
-                      : 'outline'
-                  }
+                  variant={stockBadgeVariant}
                 >
-                  {product?.stock &&
-                  product?.minStock &&
-                  product?.stock <= product?.minStock
-                    ? 'Low Stock'
-                    : 'In Stock'}
+                  {stockBadgeLabel}
                 </Badge>
               </div>
             </div>

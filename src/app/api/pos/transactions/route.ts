@@ -32,6 +32,7 @@ const querySchema = z.object({
   dateFrom: z.string().optional(),
   dateTo: z.string().optional(),
   staffId: z.string().optional(),
+  paymentStatus: z.string().optional(),
 });
 
 async function handleGetTransactions(request: AuthenticatedRequest) {
@@ -39,7 +40,16 @@ async function handleGetTransactions(request: AuthenticatedRequest) {
     // Parse query parameters
     const url = new URL(request.url);
     const params = Object.fromEntries(url.searchParams.entries());
-    const { page, limit, search, paymentMethod, dateFrom, dateTo, staffId } =
+    const {
+      page,
+      limit,
+      search,
+      paymentMethod,
+      dateFrom,
+      dateTo,
+      staffId,
+      paymentStatus,
+    } =
       querySchema.parse(params);
 
     const pageNum = parseInt(page);
@@ -90,6 +100,17 @@ async function handleGetTransactions(request: AuthenticatedRequest) {
       where.user_id = parseInt(staffId);
     }
 
+    const normalizedStatuses = paymentStatus
+      ? paymentStatus
+          .split(',')
+          .map(status => status.trim().toUpperCase())
+          .filter(Boolean)
+      : [];
+
+    if (normalizedStatuses.length > 0) {
+      where.payment_status = { in: normalizedStatuses };
+    }
+
     // Get transactions with related data
     const [transactions, totalCount] = await Promise.all([
       prisma.salesTransaction.findMany({
@@ -103,6 +124,15 @@ async function handleGetTransactions(request: AuthenticatedRequest) {
                   sku: true,
                 },
               },
+              coupon: {
+                select: {
+                  id: true,
+                  code: true,
+                  name: true,
+                  type: true,
+                  value: true,
+                },
+              },
             },
           },
           users: {
@@ -112,18 +142,99 @@ async function handleGetTransactions(request: AuthenticatedRequest) {
               lastName: true,
             },
           },
+          customer: {
+            select: {
+              id: true,
+              name: true,
+              email: true,
+              phone: true,
+              city: true,
+              state: true,
+              customerType: true,
+            },
+          },
+          transaction_fees: {
+            select: {
+              id: true,
+              feeType: true,
+              description: true,
+              amount: true,
+              createdAt: true,
+            },
+          },
+          split_payments: {
+            select: {
+              id: true,
+              amount: true,
+              payment_method: true,
+              created_at: true,
+            },
+            orderBy: {
+              created_at: 'asc',
+            },
+          },
+          transaction_payments: {
+            select: {
+              id: true,
+              amount: true,
+              payment_method: true,
+              note: true,
+              payment_date: true,
+              recorded_by: true,
+              created_at: true,
+              recordedBy: {
+                select: {
+                  id: true,
+                  firstName: true,
+                  lastName: true,
+                  email: true,
+                },
+              },
+            },
+            orderBy: [
+              { payment_date: 'asc' },
+              { created_at: 'asc' },
+            ],
+          },
         },
         orderBy: {
           created_at: 'desc',
         },
         skip: offset,
         take: limitNum,
-      }),
+      } as any),
       prisma.salesTransaction.count({ where }),
     ]);
 
     // Transform data for frontend with proper typing
-    const transformedTransactions: any[] = transactions.map((sale: any) => ({
+    const transformedTransactions: any[] = transactions.map((sale: any) => {
+      const splitPayments = sale.split_payments || [];
+      const ledgerPayments = sale.transaction_payments || [];
+      const splitPaid = splitPayments.reduce(
+        (sum: number, payment: any) =>
+          payment.payment_method === 'debt'
+            ? sum
+            : sum + Number(payment.amount || 0),
+        0
+      );
+      const splitDebtPortion = splitPayments.reduce(
+        (sum: number, payment: any) =>
+          payment.payment_method === 'debt'
+            ? sum + Number(payment.amount || 0)
+            : sum,
+        0
+      );
+      const ledgerPaid = ledgerPayments.reduce(
+        (sum: number, payment: any) => sum + Number(payment.amount || 0),
+        0
+      );
+      const amountPaid = splitPaid + ledgerPaid;
+      const balanceDue = Math.max(
+        0,
+        Number(sale.total_amount) - amountPaid
+      );
+
+      return {
       id: sale.id,
       transactionNumber: sale.transaction_number,
       items: sale.sales_items.map((item: any) => ({
@@ -179,7 +290,33 @@ async function handleGetTransactions(request: AuthenticatedRequest) {
       createdAt: sale.created_at,
       updatedAt: sale.updated_at,
       notes: sale.notes,
-    }));
+      amountPaid,
+      balanceDue,
+      splitPayments: splitPayments.map((payment: any) => ({
+        id: payment.id,
+        amount: Number(payment.amount),
+        method: payment.payment_method,
+        createdAt: payment.created_at,
+      })),
+      transactionPayments: ledgerPayments.map((payment: any) => ({
+        id: payment.id,
+        amount: Number(payment.amount),
+        method: payment.payment_method,
+        note: payment.note,
+        paymentDate: payment.payment_date,
+        recordedById: payment.recorded_by,
+        recordedBy: payment.recordedBy
+          ? {
+              id: payment.recordedBy.id,
+              firstName: payment.recordedBy.firstName,
+              lastName: payment.recordedBy.lastName,
+              email: payment.recordedBy.email,
+            }
+          : null,
+        createdAt: payment.created_at,
+      })),
+    };
+    });
 
     return createApiResponse.successWithPagination(
       transformedTransactions,

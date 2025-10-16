@@ -3,8 +3,10 @@ import { logger } from '@/lib/logger';
 
 type QueryFilter<T extends object = Record<string, unknown>> = Readonly<T>;
 
+const EMPTY_FILTERS: Record<string, never> = Object.freeze({});
+
 const withDefaultFilters = <T extends object>(filters?: T) =>
-  (filters ?? {}) as QueryFilter<T> | {};
+  (filters ?? EMPTY_FILTERS) as QueryFilter<T> | typeof EMPTY_FILTERS;
 
 export const queryClient = new QueryClient({
   defaultOptions: {

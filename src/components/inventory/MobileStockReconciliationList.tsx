@@ -234,7 +234,7 @@ const MobileStockReconciliationList = ({ user }: MobileStockReconciliationListPr
         options: [
           { value: '', label: 'All Status' },
           { value: 'DRAFT', label: 'Draft' },
-          { value: 'PENDING_APPROVAL', label: 'Pending Approval' },
+          { value: 'PENDING', label: 'Pending' },
           { value: 'APPROVED', label: 'Approved' },
           { value: 'REJECTED', label: 'Rejected' },
         ],
@@ -276,7 +276,7 @@ const MobileStockReconciliationList = ({ user }: MobileStockReconciliationListPr
     switch (status) {
       case 'DRAFT':
         return <Badge variant="secondary" className="text-xs">Draft</Badge>;
-      case 'PENDING_APPROVAL':
+      case 'PENDING':
         return <Badge className="bg-yellow-100 text-yellow-700 text-xs">Pending</Badge>;
       case 'APPROVED':
         return <Badge className="bg-green-100 text-green-700 text-xs">Approved</Badge>;

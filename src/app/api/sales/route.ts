@@ -175,7 +175,30 @@ export const GET = withAuth(async function (request: AuthenticatedRequest) {
               created_at: 'asc',
             },
           },
-        },
+          transaction_payments: {
+            select: {
+              id: true,
+              amount: true,
+              payment_method: true,
+              note: true,
+              payment_date: true,
+              recorded_by: true,
+              created_at: true,
+              recordedBy: {
+                select: {
+                  id: true,
+                  firstName: true,
+                  lastName: true,
+                  email: true,
+                },
+              },
+            },
+            orderBy: [
+              { payment_date: 'asc' },
+              { created_at: 'asc' },
+            ],
+          } as any,
+        } as any,
       }),
       prisma.salesTransaction.count({ where }),
     ]);
@@ -185,6 +208,21 @@ export const GET = withAuth(async function (request: AuthenticatedRequest) {
       (transaction: any) => {
         // Transform the base transaction
         const baseTransaction = transformDatabaseResponse(transaction);
+        const splitPayments = transaction.split_payments || [];
+        const ledgerPayments = transaction.transaction_payments || [];
+        const splitPaidTotal = splitPayments.reduce(
+          (sum: number, payment: any) => sum + Number(payment.amount || 0),
+          0
+        );
+        const ledgerPaidTotal = ledgerPayments.reduce(
+          (sum: number, payment: any) => sum + Number(payment.amount || 0),
+          0
+        );
+        const totalPaid = splitPaidTotal + ledgerPaidTotal;
+        const balanceDue = Math.max(
+          0,
+          Number(transaction.total_amount) - totalPaid
+        );
 
         // Handle nested objects and computed fields
         return {
@@ -196,6 +234,8 @@ export const GET = withAuth(async function (request: AuthenticatedRequest) {
             `${transaction.users.firstName} ${transaction.users.lastName}`.trim(),
           staffId: transaction.users.id,
           timestamp: transaction.created_at,
+          amountPaid: Number(totalPaid.toFixed(2)),
+          balanceDue: Number(balanceDue.toFixed(2)),
           // Enhanced customer information
           customer: transaction.customer
             ? {
@@ -231,6 +271,25 @@ export const GET = withAuth(async function (request: AuthenticatedRequest) {
               id: payment.id,
               amount: Number(payment.amount),
               method: payment.payment_method,
+              createdAt: payment.created_at,
+            })) || [],
+          transactionPayments:
+            ledgerPayments.map((payment: any) => ({
+              id: payment.id,
+              amount: Number(payment.amount),
+              method: payment.payment_method,
+              note: payment.note,
+              paymentDate: payment.payment_date,
+              recordedById: payment.recorded_by,
+              recordedBy:
+                payment.recordedBy
+                  ? {
+                      id: payment.recordedBy.id,
+                      firstName: payment.recordedBy.firstName,
+                      lastName: payment.recordedBy.lastName,
+                      email: payment.recordedBy.email,
+                    }
+                  : null,
               createdAt: payment.created_at,
             })) || [],
         };
