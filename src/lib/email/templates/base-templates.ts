@@ -6,6 +6,34 @@ import {
 } from '../types';
 import { getFullLogoUrl, getLogoUrl } from '../utils/logo-utils';
 
+const PAYMENT_METHOD_LABELS: Record<string, string> = {
+  cash: 'Cash',
+  pos: 'POS Machine',
+  bank_transfer: 'Bank Transfer',
+  mobile_money: 'Mobile Money',
+  split: 'Split Payment',
+  debt: 'Debt',
+};
+
+const LEDGER_METHOD_LABELS: Record<string, string> = {
+  debt: 'Debt Deposit',
+  debt_deposit: 'Debt Deposit',
+};
+
+const formatPaymentMethodLabel = (method?: string) => {
+  if (!method) return 'Unknown';
+  const normalized = method.toLowerCase();
+  return PAYMENT_METHOD_LABELS[normalized] || method;
+};
+
+const formatLedgerPaymentLabel = (method?: string) => {
+  if (!method) return 'Payment';
+  const normalized = method.toLowerCase();
+  return (
+    LEDGER_METHOD_LABELS[normalized] || PAYMENT_METHOD_LABELS[normalized] || method
+  );
+};
+
 /**
  * Base template wrapper with consistent styling
  */
@@ -668,6 +696,45 @@ export const createReceiptEmailTemplate = (
     )
     .join('');
 
+  const ledgerPaymentsEmailHtml =
+    data.transactionPayments && data.transactionPayments.length > 0
+      ? data.transactionPayments
+          .map(payment => {
+            const dateLabel = payment.paymentDate
+              ? ` • ${new Date(payment.paymentDate).toLocaleDateString()}`
+              : '';
+            return `<p style="margin: 4px 0; font-size: 14px; color: #4b5563;"><strong>${formatLedgerPaymentLabel(
+              payment.method
+            )}${dateLabel}:</strong> ₦${payment.amount.toLocaleString()}</p>`;
+          })
+          .join('')
+      : '';
+
+  const ledgerPaymentsText =
+    data.transactionPayments && data.transactionPayments.length > 0
+      ? data.transactionPayments
+          .map(payment => {
+            const dateLabel = payment.paymentDate
+              ? ` (${new Date(payment.paymentDate).toLocaleDateString()})`
+              : '';
+            return `${formatLedgerPaymentLabel(payment.method)}${dateLabel}: ₦${payment.amount.toLocaleString()}`;
+          })
+          .join('\n')
+      : '';
+
+  const amountPaidHtml = `<p><strong>Amount Paid:</strong> ₦${data.amountPaid.toLocaleString()}</p>`;
+  const amountPaidText = `Amount Paid: ₦${data.amountPaid.toLocaleString()}`;
+
+  const balanceDueHtml =
+    data.balanceDue > 0
+      ? `<p style="color: #b45309;"><strong>Balance Due:</strong> ₦${data.balanceDue.toLocaleString()}</strong></p>`
+      : '';
+
+  const balanceDueText =
+    data.balanceDue > 0
+      ? `Balance Due: ₦${data.balanceDue.toLocaleString()}`
+      : '';
+
   const content = `
     <div class="content">
         <h2 style="color: #2563eb; margin-bottom: 20px;">Thank you for your purchase!</h2>
@@ -680,7 +747,9 @@ export const createReceiptEmailTemplate = (
             <h3 style="margin: 0 0 10px 0; color: #1f2937;">Purchase Details</h3>
             <p><strong>Receipt #:</strong> ${data.saleId}</p>
             <p><strong>Date:</strong> ${formattedDate}</p>
-            <p><strong>Payment Method:</strong> ${data.paymentMethod}</p>
+            <p><strong>Payment Method:</strong> ${formatPaymentMethodLabel(
+              data.paymentMethod
+            )}</p>
             <p><strong>Served by:</strong> ${data.staffName}</p>
         </div>
         
@@ -709,8 +778,22 @@ export const createReceiptEmailTemplate = (
                   `<p style="color: #059669;"><strong>${fee.type}${fee.description ? ` (${fee.description})` : ''}: ₦${fee.amount.toLocaleString()}</strong></p>`
                 ).join('') : ''}
                 <p style="font-size: 18px; color: #2563eb;"><strong>Total: ₦${data.total.toLocaleString()}</strong></p>
+                ${amountPaidHtml}
+                ${balanceDueHtml}
+                ${ledgerPaymentsEmailHtml}
             </div>
         </div>
+
+        ${
+          data.balanceDue > 0
+            ? `
+        <div style="background-color: #fef3c7; border: 1px solid #fcd34d; padding: 16px; border-radius: 8px; margin: 25px 0; color: #92400e;">
+            <strong>Outstanding Balance:</strong> ₦${data.balanceDue.toLocaleString()}<br>
+            Please arrange payment at your earliest convenience. You can settle the balance in-store or via any of our accepted payment channels.
+        </div>
+        `
+            : ''
+        }
         
         ${
           data.notes
@@ -737,14 +820,14 @@ export const createReceiptEmailTemplate = (
   return {
     subject: `Receipt for Your Purchase - ${data.saleId} - Baawa Accessories`,
     html: createBaseTemplate(content, 'Purchase Receipt'),
-    text: `Purchase Receipt\n\nDear ${data.customerName},\n\nThank you for your purchase!\n\nReceipt #: ${data.saleId}\nDate: ${formattedDate}\nPayment Method: ${data.paymentMethod}\nServed by: ${data.staffName}\n\nItems:\n${data.items
+    text: `Purchase Receipt\n\nDear ${data.customerName},\n\nThank you for your purchase!\n\nReceipt #: ${data.saleId}\nDate: ${formattedDate}\nPayment Method: ${formatPaymentMethodLabel(data.paymentMethod)}\nServed by: ${data.staffName}\n\nItems:\n${data.items
       .map(
         item =>
           `${item.name} x${item.quantity} - ₦${item.total.toLocaleString()}`
       )
       .join(
         '\n'
-      )}\n\nSubtotal: ₦${data.subtotal.toLocaleString()}\n${data.discount > 0 ? `Discount: -₦${data.discount.toLocaleString()}\n` : ''}Total: ₦${data.total.toLocaleString()}\n${data.notes ? `\nNotes: ${data.notes}\n` : ''}\n\nThank you for choosing Baawa Accessories!\n\nBest regards,\nBaawa Accessories Team`,
+      )}\n\nSubtotal: ₦${data.subtotal.toLocaleString()}\n${data.discount > 0 ? `Discount: -₦${data.discount.toLocaleString()}\n` : ''}Total: ₦${data.total.toLocaleString()}\n${amountPaidText}\n${balanceDueText ? `${balanceDueText}\n` : ''}${ledgerPaymentsText ? `${ledgerPaymentsText}\n` : ''}${data.notes ? `\nNotes: ${data.notes}\n` : ''}\nThank you for choosing Baawa Accessories!\n\nBest regards,\nBaawa Accessories Team`,
   };
 };
 

@@ -5,7 +5,7 @@ generator client {
 datasource db {
   provider  = "postgresql"
   url       = env("DATABASE_URL")
-  directUrl = env("DIRECT_URL")
+
 }
 
 model User {
@@ -44,6 +44,7 @@ model User {
   approvedTransactions                                   FinancialTransaction[] @relation("TransactionApprover")
   createdTransactions                                    FinancialTransaction[] @relation("TransactionCreator")
   sales_transactions                                     SalesTransaction[]
+  transaction_payments_recorded                          TransactionPayment[]  @relation("TransactionPaymentsRecordedBy")
   stockAdditions                                         StockAddition[]        @relation("StockAdditionCreator")
   stock_adjustments_stock_adjustments_user_idTousers     StockAdjustment[]      @relation("stock_adjustments_user_idTousers")
   stock_adjustments_stock_adjustments_approved_byTousers StockAdjustment[]      @relation("stock_adjustments_approved_byTousers")
@@ -212,6 +213,7 @@ model SalesTransaction {
   customer           Customer?        @relation(fields: [customer_id], references: [id])
   users              User             @relation(fields: [user_id], references: [id], onDelete: NoAction, onUpdate: NoAction)
   split_payments     SplitPayment[]
+  transaction_payments TransactionPayment[]
   transaction_fees   TransactionFee[]
 
   @@index([created_at], map: "idx_sales_transactions_created_at")
@@ -257,6 +259,24 @@ model SplitPayment {
   @@index([transaction_id], map: "idx_split_payments_transaction_id")
   @@index([payment_method], map: "idx_split_payments_payment_method")
   @@map("split_payments")
+}
+
+model TransactionPayment {
+  id                 Int              @id @default(autoincrement())
+  transaction_id     Int
+  amount             Decimal          @db.Decimal(10, 2)
+  payment_method     String           @db.VarChar(50)
+  note               String?
+  payment_date       DateTime?        @db.Timestamptz(6)
+  recorded_by        Int?
+  created_at         DateTime?        @default(now()) @db.Timestamptz(6)
+  sales_transaction  SalesTransaction @relation(fields: [transaction_id], references: [id], onDelete: Cascade, onUpdate: NoAction)
+  recordedBy         User?            @relation("TransactionPaymentsRecordedBy", fields: [recorded_by], references: [id], onDelete: SetNull, onUpdate: NoAction)
+
+  @@index([transaction_id], map: "idx_transaction_payments_transaction_id")
+  @@index([payment_method], map: "idx_transaction_payments_payment_method")
+  @@index([recorded_by], map: "idx_transaction_payments_recorded_by")
+  @@map("transaction_payments")
 }
 
 model StockAddition {

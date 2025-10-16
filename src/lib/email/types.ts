@@ -180,6 +180,14 @@ export interface ReceiptEmailData extends Record<string, unknown> {
   timestamp: Date;
   staffName: string;
   notes?: string | null;
+  amountPaid: number;
+  balanceDue: number;
+  transactionPayments?: Array<{
+    amount: number;
+    method: string;
+    note?: string | null;
+    paymentDate?: string | Date | null;
+  }>;
 }
 
 /**

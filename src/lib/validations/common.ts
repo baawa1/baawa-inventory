@@ -43,11 +43,13 @@ export const paymentMethodSchema = z.enum([
   'POS_MACHINE',
   'CREDIT_CARD',
   'MOBILE_MONEY',
+  'DEBT',
 ]);
 
 export const paymentStatusSchema = z.enum([
   'PENDING',
   'PAID',
+  'PARTIAL',
   'REFUNDED',
   'CANCELLED',
 ]);

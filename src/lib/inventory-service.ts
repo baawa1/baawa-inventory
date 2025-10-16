@@ -736,7 +736,7 @@ export class InventoryService {
    * @returns The sales transaction with related items
    */
   static async getSalesTransaction(id: number) {
-    return await prisma.salesTransaction.findUnique({
+    return (await prisma.salesTransaction.findUnique({
       where: { id },
       include: {
         users: {
@@ -760,8 +760,29 @@ export class InventoryService {
             },
           },
         },
-      },
-    });
+        split_payments: {
+          orderBy: {
+            created_at: 'asc',
+          },
+        },
+        transaction_payments: {
+          include: {
+            recordedBy: {
+              select: {
+                id: true,
+                firstName: true,
+                lastName: true,
+                email: true,
+              },
+            },
+          },
+          orderBy: [
+            { payment_date: 'asc' },
+            { created_at: 'asc' },
+          ],
+        },
+      } as any,
+    })) as any;
   }
 
   /**

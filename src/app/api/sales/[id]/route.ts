@@ -2,6 +2,7 @@ import { auth } from '#root/auth';
 import { NextRequest, NextResponse } from 'next/server';
 import { canAccessPOS } from '@/lib/auth/roles';
 import { InventoryService } from '@/lib/inventory-service';
+import { transformDatabaseResponse } from '@/lib/api-response';
 
 interface RouteParams {
   params: Promise<{ id: string }>;
@@ -42,7 +43,58 @@ export async function GET(request: NextRequest, { params }: RouteParams) {
       );
     }
 
-    return NextResponse.json({ data: salesTransaction });
+    const transactionRecord = salesTransaction as any;
+
+    const splitPayments = transactionRecord.split_payments || [];
+    const ledgerPayments = transactionRecord.transaction_payments || [];
+    const splitPaidTotal = splitPayments.reduce(
+      (sum: number, payment: any) => sum + Number(payment.amount || 0),
+      0
+    );
+    const ledgerPaidTotal = ledgerPayments.reduce(
+      (sum: number, payment: any) => sum + Number(payment.amount || 0),
+      0
+    );
+    const totalPaid = splitPaidTotal + ledgerPaidTotal;
+    const balanceDue = Math.max(
+      0,
+      Number(transactionRecord.total_amount) - totalPaid
+    );
+
+    const transformedTransaction: any = {
+      ...transformDatabaseResponse(salesTransaction),
+      subtotal: Number(transactionRecord.subtotal),
+      discountAmount: Number(transactionRecord.discount_amount),
+      taxAmount: Number(transactionRecord.tax_amount),
+      totalAmount: Number(transactionRecord.total_amount),
+      amountPaid: Number(totalPaid.toFixed(2)),
+      balanceDue: Number(balanceDue.toFixed(2)),
+      splitPayments: splitPayments.map((payment: any) => ({
+        id: payment.id,
+        amount: Number(payment.amount),
+        method: payment.payment_method,
+        createdAt: payment.created_at,
+      })),
+      transactionPayments: ledgerPayments.map((payment: any) => ({
+        id: payment.id,
+        amount: Number(payment.amount),
+        method: payment.payment_method,
+        note: payment.note,
+        paymentDate: payment.payment_date,
+        recordedById: payment.recorded_by,
+        recordedBy: payment.recordedBy
+          ? {
+              id: payment.recordedBy.id,
+              firstName: payment.recordedBy.firstName,
+              lastName: payment.recordedBy.lastName,
+              email: payment.recordedBy.email,
+            }
+          : null,
+        createdAt: payment.created_at,
+      })),
+    };
+
+    return NextResponse.json({ data: transformedTransaction });
   } catch (error) {
     console.error('Error in GET /api/sales/[id]:', error);
     return NextResponse.json(

@@ -5,6 +5,8 @@ import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { Input } from '@/components/ui/input';
+import { Label } from '@/components/ui/label';
+import { Textarea } from '@/components/ui/textarea';
 import {
   Table,
   TableBody,
@@ -21,6 +23,14 @@ import {
   SelectValue,
 } from '@/components/ui/select';
 import {
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogFooter,
+  DialogHeader,
+  DialogTitle,
+} from '@/components/ui/dialog';
+import {
   IconFilter,
   IconEye,
   IconDownload,
@@ -29,13 +39,16 @@ import {
   IconCreditCard,
   IconBuildingBank,
   IconDeviceMobile,
+  IconReportMoney,
 } from '@tabler/icons-react';
 import { format } from 'date-fns';
 import { useQuery } from '@tanstack/react-query';
 import { formatCurrency } from '@/lib/utils';
+import { toast } from 'sonner';
+import { PAYMENT_METHODS, PAYMENT_METHODS_UI } from '@/lib/constants';
 
 interface Transaction {
-  id: string;
+  id: number | string;
   transactionNumber: string;
   customerName?: string;
   customerPhone?: string;
@@ -52,6 +65,8 @@ interface Transaction {
     unitPrice: number;
     totalPrice: number;
   }>;
+  amountPaid?: number;
+  balanceDue?: number;
 }
 
 interface TransactionListProps {
@@ -69,6 +84,7 @@ const paymentMethodIcons = {
   pos: IconCreditCard,
   bank_transfer: IconBuildingBank,
   mobile_money: IconDeviceMobile,
+  debt: IconReportMoney,
 };
 
 const paymentMethodLabels = {
@@ -76,6 +92,7 @@ const paymentMethodLabels = {
   pos: 'POS Machine',
   bank_transfer: 'Bank Transfer',
   mobile_money: 'Mobile Money',
+  debt: 'Debt',
 };
 
 export function TransactionList({
@@ -85,6 +102,105 @@ export function TransactionList({
   const [search, setSearch] = useState('');
   const [currentPage, setCurrentPage] = useState(1);
   const [pageSize, setPageSize] = useState(10);
+  const [paymentDialogOpen, setPaymentDialogOpen] = useState(false);
+  const [selectedTransaction, setSelectedTransaction] =
+    useState<Transaction | null>(null);
+  const [paymentAmount, setPaymentAmount] = useState('');
+  const [paymentMethodOption, setPaymentMethodOption] = useState<string>(
+    PAYMENT_METHODS.CASH
+  );
+  const [paymentNote, setPaymentNote] = useState('');
+  const [paymentDate, setPaymentDate] = useState(
+    () => new Date().toISOString().slice(0, 10)
+  );
+  const [isSavingPayment, setIsSavingPayment] = useState(false);
+
+  const settlementMethods = useMemo(
+    () => PAYMENT_METHODS_UI.filter(method => method.value !== PAYMENT_METHODS.DEBT),
+    []
+  );
+
+  const resetPaymentForm = () => {
+    setPaymentAmount('');
+    setPaymentMethodOption(PAYMENT_METHODS.CASH);
+    setPaymentNote('');
+    setPaymentDate(new Date().toISOString().slice(0, 10));
+    setIsSavingPayment(false);
+  };
+
+  const openRecordPaymentDialog = (transaction: Transaction) => {
+    setSelectedTransaction(transaction);
+    const outstanding = transaction.balanceDue ?? 0;
+    setPaymentAmount(
+      outstanding > 0 ? outstanding.toFixed(2) : ''
+    );
+    setPaymentMethodOption(PAYMENT_METHODS.CASH);
+    setPaymentNote('');
+    setPaymentDate(new Date().toISOString().slice(0, 10));
+    setPaymentDialogOpen(true);
+  };
+
+  const closePaymentDialog = () => {
+    setPaymentDialogOpen(false);
+    setSelectedTransaction(null);
+    resetPaymentForm();
+  };
+
+  const handleSavePayment = async () => {
+    if (!selectedTransaction) {
+      return;
+    }
+
+    const amountValue = parseFloat(paymentAmount);
+    if (Number.isNaN(amountValue) || amountValue <= 0) {
+      toast.error('Enter a valid payment amount greater than zero');
+      return;
+    }
+
+    const outstanding = selectedTransaction.balanceDue ?? 0;
+    if (amountValue - outstanding > 0.01) {
+      toast.error('Payment amount cannot exceed outstanding balance');
+      return;
+    }
+
+    const transactionId = Number(selectedTransaction.id);
+    if (!Number.isFinite(transactionId) || transactionId <= 0) {
+      toast.error('Invalid transaction identifier');
+      return;
+    }
+
+    setIsSavingPayment(true);
+    try {
+      const response = await fetch(`/api/sales/${transactionId}/payments`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          amount: amountValue,
+          paymentMethod: paymentMethodOption,
+          note: paymentNote || undefined,
+          paymentDate: paymentDate ? new Date(paymentDate).toISOString() : undefined,
+        }),
+      });
+
+      const result = await response.json();
+
+      if (!response.ok) {
+        throw new Error(result?.error || 'Failed to record payment');
+      }
+
+      toast.success('Payment recorded successfully');
+      closePaymentDialog();
+      refetch();
+    } catch (err) {
+      toast.error(
+        err instanceof Error ? err.message : 'Unable to record payment'
+      );
+    } finally {
+      setIsSavingPayment(false);
+    }
+  };
 
   // Build query parameters
   const queryParams = useMemo(() => {
@@ -157,6 +273,7 @@ export function TransactionList({
         ] || t.paymentMethod,
       Status: t.paymentStatus,
       Staff: t.staffName,
+      'Outstanding Balance': t.balanceDue ?? 0,
     }));
 
     const csvContent = [
@@ -194,7 +311,8 @@ export function TransactionList({
   }
 
   return (
-    <div className="space-y-6">
+    <>
+      <div className="space-y-6">
       {/* Header */}
       <div className="flex items-center justify-between">
         <div>
@@ -281,6 +399,7 @@ export function TransactionList({
                     <TableHead>Customer</TableHead>
                     <TableHead>Amount</TableHead>
                     <TableHead>Payment Method</TableHead>
+                    <TableHead>Balance</TableHead>
                     <TableHead>Status</TableHead>
                     <TableHead>Staff</TableHead>
                     <TableHead className="text-right">Actions</TableHead>
@@ -288,10 +407,27 @@ export function TransactionList({
                 </TableHeader>
                 <TableBody>
                   {transactions.map((transaction: Transaction) => {
-                    const PaymentIcon =
-                      paymentMethodIcons[
-                        transaction.paymentMethod as keyof typeof paymentMethodIcons
-                      ] || IconCash;
+                    const methodKey = (transaction.paymentMethod || '').toLowerCase() as keyof typeof paymentMethodIcons;
+                    const PaymentIcon = paymentMethodIcons[methodKey] || IconCash;
+                    const methodLabel =
+                      paymentMethodLabels[methodKey] || transaction.paymentMethod;
+                    const normalizedStatus = (transaction.paymentStatus || '').toLowerCase();
+                    const statusLabel = normalizedStatus
+                      ? normalizedStatus
+                          .split('_')
+                          .map(word => word.charAt(0).toUpperCase() + word.slice(1))
+                          .join(' ')
+                      : 'Unknown';
+                    const statusVariant =
+                      normalizedStatus === 'completed' || normalizedStatus === 'paid'
+                        ? 'default'
+                        : normalizedStatus === 'partial'
+                          ? 'secondary'
+                          : normalizedStatus === 'pending'
+                            ? 'outline'
+                            : 'secondary';
+                    const balanceDue = transaction.balanceDue ?? 0;
+                    const canRecordPayment = balanceDue > 0.01;
 
                     return (
                       <TableRow key={transaction.id}>
@@ -318,29 +454,40 @@ export function TransactionList({
                         <TableCell>
                           <div className="flex items-center gap-2">
                             <PaymentIcon className="h-4 w-4" />
-                            <span>
-                              {paymentMethodLabels[
-                                transaction.paymentMethod as keyof typeof paymentMethodLabels
-                              ] || transaction.paymentMethod}
-                            </span>
+                            <span>{methodLabel}</span>
                           </div>
                         </TableCell>
                         <TableCell>
-                          <Badge
-                            variant={
-                              transaction.paymentStatus === 'completed'
-                                ? 'default'
-                                : 'secondary'
+                          <span
+                            className={
+                              balanceDue > 0.01
+                                ? 'font-semibold text-amber-600'
+                                : 'text-muted-foreground'
                             }
                           >
-                            {transaction.paymentStatus}
-                          </Badge>
+                            {formatCurrency(balanceDue)}
+                          </span>
+                        </TableCell>
+                        <TableCell>
+                          <Badge variant={statusVariant}>{statusLabel}</Badge>
                         </TableCell>
                         <TableCell>{transaction.staffName}</TableCell>
                         <TableCell className="text-right">
-                          <Button variant="ghost" size="sm">
-                            <IconEye className="h-4 w-4" />
-                          </Button>
+                          <div className="flex justify-end gap-2">
+                            <Button variant="ghost" size="sm">
+                              <IconEye className="h-4 w-4" />
+                            </Button>
+                            {canRecordPayment && (
+                              <Button
+                                variant="outline"
+                                size="sm"
+                                onClick={() => openRecordPaymentDialog(transaction)}
+                              >
+                                <IconReportMoney className="mr-2 h-4 w-4" />
+                                Record
+                              </Button>
+                            )}
+                          </div>
                         </TableCell>
                       </TableRow>
                     );
@@ -383,6 +530,111 @@ export function TransactionList({
           )}
         </CardContent>
       </Card>
-    </div>
+      </div>
+      <Dialog
+        open={paymentDialogOpen}
+        onOpenChange={open => {
+          if (!open) {
+            closePaymentDialog();
+          } else {
+            setPaymentDialogOpen(true);
+          }
+        }}
+      >
+        <DialogContent>
+          <DialogHeader>
+            <DialogTitle>Record Payment</DialogTitle>
+            <DialogDescription>
+              Log an additional payment for this transaction and update the
+              outstanding balance.
+            </DialogDescription>
+          </DialogHeader>
+          <div className="space-y-4">
+            <div className="rounded-lg bg-muted p-3 text-sm">
+              <div className="flex justify-between">
+                <span className="text-muted-foreground">Transaction:</span>
+                <span className="font-medium">
+                  {selectedTransaction?.transactionNumber || '—'}
+                </span>
+              </div>
+              <div className="flex justify-between">
+                <span className="text-muted-foreground">Outstanding:</span>
+                <span className="font-semibold text-amber-600">
+                  {formatCurrency(selectedTransaction?.balanceDue ?? 0)}
+                </span>
+              </div>
+            </div>
+
+            <div className="grid gap-3">
+              <div className="grid gap-2">
+                <Label htmlFor="payment-amount">Amount</Label>
+                <Input
+                  id="payment-amount"
+                  type="number"
+                  min="0"
+                  step="0.01"
+                  inputMode="decimal"
+                  value={paymentAmount}
+                  onChange={event => setPaymentAmount(event.target.value)}
+                  placeholder="Enter amount"
+                />
+              </div>
+
+              <div className="grid gap-2">
+                <Label htmlFor="payment-method">Payment Method</Label>
+                <Select
+                  value={paymentMethodOption}
+                  onValueChange={setPaymentMethodOption}
+                >
+                  <SelectTrigger id="payment-method">
+                    <SelectValue placeholder="Select method" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    {settlementMethods.map(method => (
+                      <SelectItem key={method.value} value={method.value}>
+                        {method.label}
+                      </SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+              </div>
+
+              <div className="grid gap-2">
+                <Label htmlFor="payment-date">Payment Date</Label>
+                <Input
+                  id="payment-date"
+                  type="date"
+                  value={paymentDate}
+                  onChange={event => setPaymentDate(event.target.value)}
+                />
+              </div>
+
+              <div className="grid gap-2">
+                <Label htmlFor="payment-note">Note (optional)</Label>
+                <Textarea
+                  id="payment-note"
+                  value={paymentNote}
+                  onChange={event => setPaymentNote(event.target.value)}
+                  placeholder="Add any relevant details"
+                  rows={3}
+                />
+              </div>
+            </div>
+          </div>
+          <DialogFooter>
+            <Button
+              variant="outline"
+              onClick={closePaymentDialog}
+              disabled={isSavingPayment}
+            >
+              Cancel
+            </Button>
+            <Button onClick={handleSavePayment} disabled={isSavingPayment}>
+              {isSavingPayment ? 'Saving...' : 'Save Payment'}
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+    </>
   );
 }

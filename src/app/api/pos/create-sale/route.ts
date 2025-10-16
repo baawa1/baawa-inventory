@@ -9,6 +9,7 @@ import {
   normalizeNigerianPhone,
   getPhoneSearchPatterns,
 } from '@/lib/utils/phone-utils';
+import { formatPaymentMethodLabel } from '@/lib/utils/payment-methods';
 
 // Validation schema for POS sale creation
 const posSaleItemSchema = z.object({
@@ -136,6 +137,38 @@ const posSaleSchema = z
       message: 'Split payments must have positive amounts',
       path: ['splitPayments'],
     }
+  )
+  .refine(
+    data => {
+      if (data.paymentMethod !== 'debt') {
+        return true;
+      }
+
+      return data.amountPaid <= data.total + 0.01;
+    },
+    {
+      message: 'Deposit cannot exceed total amount for debt payments',
+      path: ['amountPaid'],
+    }
+  )
+  .refine(
+    data => {
+      if (data.paymentMethod !== 'debt') {
+        return true;
+      }
+
+      const info = data.customerInfo;
+      const infoPhone = info?.phone ? info.phone.trim() : '';
+      const infoEmail = info?.email ? info.email.trim() : '';
+      const legacyPhone = data.customerPhone ? data.customerPhone.trim() : '';
+      const legacyEmail = data.customerEmail ? data.customerEmail.trim() : '';
+
+      return !!(infoPhone || infoEmail || legacyPhone || legacyEmail);
+    },
+    {
+      message: 'Customer phone or email is required for debt payments',
+      path: ['customerInfo'],
+    }
   );
 
 export const POST = withAuth(async function (request: AuthenticatedRequest) {
@@ -153,6 +186,45 @@ export const POST = withAuth(async function (request: AuthenticatedRequest) {
 
     // Generate transaction number
     const transactionNumber = `TXN-${Date.now()}-${Math.random().toString(36).substr(2, 9).toUpperCase()}`;
+
+    const isSplitPayment = validatedData.paymentMethod === 'split';
+    const isDebtPayment = validatedData.paymentMethod === 'debt';
+    const splitPaymentsInput = validatedData.splitPayments || [];
+    const splitNonDebtTotal = isSplitPayment
+      ? splitPaymentsInput
+          .filter(payment => payment.method !== 'debt')
+          .reduce((sum, payment) => sum + payment.amount, 0)
+      : 0;
+    const splitDebtTotal = isSplitPayment
+      ? splitPaymentsInput
+          .filter(payment => payment.method === 'debt')
+          .reduce((sum, payment) => sum + payment.amount, 0)
+      : 0;
+    const totalCoverage = isSplitPayment
+      ? splitNonDebtTotal + splitDebtTotal
+      : validatedData.amountPaid;
+
+    const tolerance = 0.01;
+    if (
+      isSplitPayment &&
+      Math.abs(totalCoverage - validatedData.total) > tolerance
+    ) {
+      throw new Error('Split payments must cover the total amount');
+    }
+
+    const totalPaidAtCreation = isSplitPayment
+      ? splitNonDebtTotal
+      : validatedData.amountPaid;
+    const outstandingAfterPayment = Math.max(
+      0,
+      Number((validatedData.total - totalPaidAtCreation).toFixed(2))
+    );
+    const initialPaymentStatus =
+      outstandingAfterPayment <= tolerance
+        ? 'PAID'
+        : totalPaidAtCreation > 0
+          ? 'PARTIAL'
+          : 'PENDING';
 
     // Start database transaction
     const result = await prisma.$transaction(async tx => {
@@ -298,7 +370,7 @@ export const POST = withAuth(async function (request: AuthenticatedRequest) {
           discount_amount: validatedData.discount,
           total_amount: validatedData.total,
           payment_method: validatedData.paymentMethod,
-          payment_status: 'PAID', // POS sales are typically paid immediately
+          payment_status: initialPaymentStatus,
           transaction_number: transactionNumber,
           transaction_type: 'sale',
           ...(customerId && { customer_id: customerId }),
@@ -366,10 +438,7 @@ export const POST = withAuth(async function (request: AuthenticatedRequest) {
 
       // Create split payments if this is a split payment transaction
       let splitPayments: SplitPayment[] = [];
-      if (
-        validatedData.paymentMethod === 'split' &&
-        validatedData.splitPayments
-      ) {
+      if (isSplitPayment && validatedData.splitPayments) {
         splitPayments = await Promise.all(
           validatedData.splitPayments.map(async payment => {
             return await tx.splitPayment.create({
@@ -381,6 +450,49 @@ export const POST = withAuth(async function (request: AuthenticatedRequest) {
             });
           })
         );
+      }
+
+      // Record initial debt deposit if provided
+      type TransactionPaymentRecord = {
+        id: number;
+        amount: unknown;
+        payment_method: string;
+        note: string | null;
+        payment_date: Date | null;
+        recorded_by: number | null;
+        created_at: Date | null;
+        recordedBy: {
+          id: number;
+          firstName: string;
+          lastName: string;
+          email: string;
+        } | null;
+      };
+
+      let transactionPayments: TransactionPaymentRecord[] = [];
+      if (isDebtPayment && totalPaidAtCreation > 0) {
+        const paymentRecord = await (tx as any).transactionPayment.create({
+          data: {
+            transaction_id: salesTransaction.id,
+            amount: totalPaidAtCreation,
+            payment_method: 'DEBT',
+            note: validatedData.notes,
+            payment_date: new Date(),
+            recorded_by: parseInt(request.user.id),
+          },
+          include: {
+            recordedBy: {
+              select: {
+                id: true,
+                firstName: true,
+                lastName: true,
+                email: true,
+              },
+            },
+          },
+        });
+
+        transactionPayments = [paymentRecord];
       }
 
       // Create transaction fees if any
@@ -402,6 +514,7 @@ export const POST = withAuth(async function (request: AuthenticatedRequest) {
         salesItems,
         splitPayments,
         transactionFees,
+        transactionPayments,
       };
     });
 
@@ -410,6 +523,23 @@ export const POST = withAuth(async function (request: AuthenticatedRequest) {
     const customerEmail =
       validatedData.customerEmail || validatedData.customerInfo?.email;
     if (customerEmail) {
+      const totalSplitPaid =
+        result.splitPayments?.reduce((sum, payment) => {
+          if (payment.payment_method === 'debt') {
+            return sum;
+          }
+          return sum + Number(payment.amount);
+        }, 0) || 0;
+      const totalLedgerPaid =
+        result.transactionPayments?.reduce(
+          (sum, payment) => sum + Number(payment.amount),
+          0
+        ) || 0;
+      const totalPaid = totalSplitPaid + totalLedgerPaid;
+      const balanceDue = Math.max(
+        0,
+        Number((validatedData.total - totalPaid).toFixed(2))
+      );
       try {
         // Get staff user details for email
         const staffUser = await prisma.user.findUnique({
@@ -445,7 +575,7 @@ export const POST = withAuth(async function (request: AuthenticatedRequest) {
               amount: Number(fee.amount),
             })) || [],
           total: validatedData.total,
-          paymentMethod: validatedData.paymentMethod,
+          paymentMethod: formatPaymentMethodLabel(validatedData.paymentMethod),
           splitPayments:
             result.splitPayments?.map(payment => ({
               method: payment.payment_method,
@@ -453,6 +583,16 @@ export const POST = withAuth(async function (request: AuthenticatedRequest) {
             })) || [],
           timestamp: new Date(),
           staffName,
+          notes: validatedData.notes,
+          amountPaid: Number(totalPaid.toFixed(2)),
+          balanceDue,
+          transactionPayments:
+            result.transactionPayments?.map(payment => ({
+              amount: Number(payment.amount),
+              method: payment.payment_method,
+              note: payment.note,
+              paymentDate: payment.payment_date,
+            })) || [],
         };
 
         // Send email receipt
@@ -485,6 +625,22 @@ export const POST = withAuth(async function (request: AuthenticatedRequest) {
       }
     }
 
+    const totalSplitPaid = result.splitPayments?.reduce((sum, payment) => {
+      if (payment.payment_method === 'debt') {
+        return sum;
+      }
+      return sum + Number(payment.amount);
+    }, 0) || 0;
+    const totalLedgerPaid = result.transactionPayments?.reduce(
+      (sum, payment) => sum + Number(payment.amount),
+      0
+    ) || 0;
+    const totalPaid = totalSplitPaid + totalLedgerPaid;
+    const balanceDue = Math.max(
+      0,
+      Number((validatedData.total - totalPaid).toFixed(2))
+    );
+
     // Return success response
     return NextResponse.json({
       success: true,
@@ -492,6 +648,27 @@ export const POST = withAuth(async function (request: AuthenticatedRequest) {
       transactionNumber: result.salesTransaction.transaction_number,
       message: 'Sale created successfully',
       emailSent,
+      paymentStatus: initialPaymentStatus,
+      amountPaid: Number(totalPaid.toFixed(2)),
+      balanceDue,
+      transactionPayments:
+        result.transactionPayments?.map(payment => ({
+          id: payment.id,
+          amount: Number(payment.amount),
+          method: payment.payment_method,
+          note: payment.note,
+          paymentDate: payment.payment_date,
+          recordedById: payment.recorded_by,
+          recordedBy: payment.recordedBy
+            ? {
+                id: payment.recordedBy.id,
+                firstName: payment.recordedBy.firstName,
+                lastName: payment.recordedBy.lastName,
+                email: payment.recordedBy.email,
+              }
+            : null,
+          createdAt: payment.created_at,
+        })) || [],
     });
   } catch (error) {
     logger.error('POS create sale error', {

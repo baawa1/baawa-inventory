@@ -11,7 +11,6 @@ import { useProducts, type Product as APIProduct } from '@/hooks/api/products';
 import { useBrands } from '@/hooks/api/brands';
 import { useCategoriesWithHierarchy } from '@/hooks/api/categories';
 import { useSupplierOptions } from '@/hooks/api/suppliers';
-import { useSyncEntity, useSyncAllEntities } from '@/hooks/api/useWebhookSync';
 
 // Permissions
 import { usePermissions } from '@/hooks/usePermissions';
@@ -173,48 +172,6 @@ const MobileProductList = ({ user }: MobileProductListProps) => {
   const brandsQuery = useBrands({ status: 'true' });
   const categoriesQuery = useCategoriesWithHierarchy();
   const { data: supplierOptions = [] } = useSupplierOptions();
-
-  // Sync hooks
-  const syncEntityMutation = useSyncEntity();
-  const syncAllEntitiesMutation = useSyncAllEntities();
-
-  // Handle sync success/error
-  useEffect(() => {
-    if (syncEntityMutation.isSuccess) {
-      toast.success(
-        syncEntityMutation.data?.message || 'Product synced successfully'
-      );
-    }
-    if (syncEntityMutation.isError) {
-      toast.error(
-        syncEntityMutation.error?.message || 'Failed to sync product'
-      );
-    }
-  }, [
-    syncEntityMutation.isSuccess,
-    syncEntityMutation.isError,
-    syncEntityMutation.data,
-    syncEntityMutation.error,
-  ]);
-
-  useEffect(() => {
-    if (syncAllEntitiesMutation.isSuccess) {
-      toast.success(
-        syncAllEntitiesMutation.data?.message ||
-          'All products synced successfully'
-      );
-    }
-    if (syncAllEntitiesMutation.isError) {
-      toast.error(
-        syncAllEntitiesMutation.error?.message || 'Failed to sync all products'
-      );
-    }
-  }, [
-    syncAllEntitiesMutation.isSuccess,
-    syncAllEntitiesMutation.isError,
-    syncAllEntitiesMutation.data,
-    syncAllEntitiesMutation.error,
-  ]);
 
   // Extract data from queries - memoized to prevent unnecessary re-renders
   const products = useMemo(

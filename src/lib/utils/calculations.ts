@@ -59,6 +59,23 @@ export const validatePaymentAmount = (
   total: number,
   paymentMethod: string
 ): { isValid: boolean; error?: string } => {
+  if (amountPaid < 0) {
+    return {
+      isValid: false,
+      error: 'Payment amount cannot be negative',
+    };
+  }
+
+  if (paymentMethod === 'debt') {
+    if (amountPaid > total) {
+      return {
+        isValid: false,
+        error: 'Deposit cannot exceed total amount',
+      };
+    }
+    return { isValid: true };
+  }
+
   if (paymentMethod === 'cash' && amountPaid < total) {
     return {
       isValid: false,
@@ -82,22 +99,45 @@ export const validateSplitPayments = (
   splitPayments: Array<{ id: string; amount: number; method: string }>,
   total: number
 ): { isValid: boolean; error?: string } => {
-  const totalPaid = roundCurrency(
-    splitPayments.reduce((sum, p) => sum + p.amount, 0)
-  );
-  const roundedTotal = roundCurrency(total);
-
-  if (totalPaid < roundedTotal) {
-    return {
-      isValid: false,
-      error: 'Split payment total is less than the required amount',
-    };
-  }
-
   if (splitPayments.some(payment => payment.amount <= 0)) {
     return {
       isValid: false,
       error: 'Split payments must have positive amounts',
+    };
+  }
+
+  const roundedTotal = roundCurrency(total);
+  const tolerance = 0.01;
+
+  const nonDebtTotal = roundCurrency(
+    splitPayments
+      .filter(payment => payment.method !== 'debt')
+      .reduce((sum, payment) => sum + payment.amount, 0)
+  );
+
+  if (nonDebtTotal - roundedTotal > tolerance) {
+    return {
+      isValid: false,
+      error: 'Collected split payments exceed the total due',
+    };
+  }
+
+  const expectedDebtPortion = roundCurrency(
+    Math.max(0, roundedTotal - nonDebtTotal)
+  );
+  const declaredDebtPortion = roundCurrency(
+    splitPayments
+      .filter(payment => payment.method === 'debt')
+      .reduce((sum, payment) => sum + payment.amount, 0)
+  );
+
+  if (
+    splitPayments.some(payment => payment.method === 'debt') &&
+    Math.abs(declaredDebtPortion - expectedDebtPortion) > tolerance
+  ) {
+    return {
+      isValid: false,
+      error: 'Debt portion must match the outstanding balance',
     };
   }
 

@@ -12,7 +12,6 @@ import { useProducts, type Product as APIProduct } from '@/hooks/api/products';
 import { useBrands } from '@/hooks/api/brands';
 import { useCategoriesWithHierarchy } from '@/hooks/api/categories';
 import { useSupplierOptions } from '@/hooks/api/suppliers';
-import { useSyncEntity, useSyncAllEntities } from '@/hooks/api/useWebhookSync';
 
 // Permissions
 import { usePermissions } from '@/hooks/usePermissions';
@@ -160,48 +159,6 @@ const ProductList = ({ user }: ProductListProps) => {
   const brandsQuery = useBrands({ status: 'true' });
   const categoriesQuery = useCategoriesWithHierarchy();
   const { data: supplierOptions = [] } = useSupplierOptions();
-
-  // Sync hooks
-  const syncEntityMutation = useSyncEntity();
-  const syncAllEntitiesMutation = useSyncAllEntities();
-
-  // Handle sync success/error
-  useEffect(() => {
-    if (syncEntityMutation.isSuccess) {
-      toast.success(
-        syncEntityMutation.data?.message || 'Product synced successfully'
-      );
-    }
-    if (syncEntityMutation.isError) {
-      toast.error(
-        syncEntityMutation.error?.message || 'Failed to sync product'
-      );
-    }
-  }, [
-    syncEntityMutation.isSuccess,
-    syncEntityMutation.isError,
-    syncEntityMutation.data,
-    syncEntityMutation.error,
-  ]);
-
-  useEffect(() => {
-    if (syncAllEntitiesMutation.isSuccess) {
-      toast.success(
-        syncAllEntitiesMutation.data?.message ||
-          'All products synced successfully'
-      );
-    }
-    if (syncAllEntitiesMutation.isError) {
-      toast.error(
-        syncAllEntitiesMutation.error?.message || 'Failed to sync all products'
-      );
-    }
-  }, [
-    syncAllEntitiesMutation.isSuccess,
-    syncAllEntitiesMutation.isError,
-    syncAllEntitiesMutation.data,
-    syncAllEntitiesMutation.error,
-  ]);
 
   // Extract data from queries - memoized to prevent unnecessary re-renders
   const products = useMemo(
@@ -626,19 +583,6 @@ const ProductList = ({ user }: ProductListProps) => {
           <>
             <DropdownMenuSeparator />
             <DropdownMenuItem
-              onClick={() => {
-                syncEntityMutation.mutate({
-                  entityType: 'product',
-                  entityId: product.id,
-                });
-              }}
-              disabled={syncEntityMutation.isPending}
-              className="flex items-center gap-2"
-            >
-              <IconPackages className="h-4 w-4" />
-              {syncEntityMutation.isPending ? 'Syncing...' : 'Sync to N8N'}
-            </DropdownMenuItem>
-            <DropdownMenuItem
               className="text-red-600"
               onClick={() => handleArchiveProduct(product.id, product.name)}
             >
@@ -694,19 +638,6 @@ const ProductList = ({ user }: ProductListProps) => {
                     <IconAdjustments className="h-4 w-4" />
                     Reconcile Stock
                   </Link>
-                </Button>
-                <Button
-                  variant="outline"
-                  className="flex items-center gap-2"
-                  onClick={() => {
-                    syncAllEntitiesMutation.mutate('product');
-                  }}
-                  disabled={syncAllEntitiesMutation.isPending}
-                >
-                  <IconPackages className="h-4 w-4" />
-                  {syncAllEntitiesMutation.isPending
-                    ? 'Syncing All...'
-                    : 'Sync All'}
                 </Button>
                 <Button asChild>
                   <Link

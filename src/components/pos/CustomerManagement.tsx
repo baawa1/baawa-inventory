@@ -409,6 +409,19 @@ export function CustomerManagement({ user: _user }: CustomerManagementProps) {
                   paymentMethodIcons[
                     order.paymentMethod as keyof typeof paymentMethodIcons
                   ] || IconCash;
+                const normalizedStatus = (order.paymentStatus || '').toLowerCase();
+                const statusLabel = normalizedStatus
+                  ? normalizedStatus
+                      .split('_')
+                      .map(word => word.charAt(0).toUpperCase() + word.slice(1))
+                      .join(' ')
+                  : 'Completed';
+                const statusClass =
+                  normalizedStatus === 'completed' || normalizedStatus === 'paid'
+                    ? 'bg-green-100 text-green-800'
+                    : normalizedStatus === 'partial'
+                      ? 'bg-amber-100 text-amber-800'
+                      : 'bg-yellow-100 text-yellow-800';
 
                 return (
                   <Collapsible key={order.id} className="w-full">
@@ -421,13 +434,9 @@ export function CustomerManagement({ user: _user }: CustomerManagementProps) {
                             </span>
                             <Badge
                               variant="secondary"
-                              className={
-                                order.paymentStatus === 'completed'
-                                  ? 'bg-green-100 text-green-800'
-                                  : 'bg-yellow-100 text-yellow-800'
-                              }
+                              className={statusClass}
                             >
-                              {order.paymentStatus}
+                              {statusLabel}
                             </Badge>
                           </div>
                           <div className="text-muted-foreground text-sm">

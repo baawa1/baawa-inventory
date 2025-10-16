@@ -10,6 +10,7 @@ import {
   IconCreditCard,
   IconBuilding,
   IconWallet,
+  IconReportMoney,
 } from '@tabler/icons-react';
 
 // User Status Constants (must match Prisma UserStatus enum exactly)
@@ -44,6 +45,7 @@ export const PAYMENT_METHODS = {
   POS_MACHINE: 'POS_MACHINE',
   CREDIT_CARD: 'CREDIT_CARD',
   MOBILE_MONEY: 'MOBILE_MONEY',
+  DEBT: 'DEBT',
 } as const;
 
 export type PaymentMethod =
@@ -96,12 +98,18 @@ export const PAYMENT_METHODS_UI = [
     label: 'Mobile Money',
     icon: IconWallet,
   },
+  {
+    value: PAYMENT_METHODS.DEBT,
+    label: 'Debt',
+    icon: IconReportMoney,
+  },
 ] as const;
 
 // Payment Status Constants (must match Prisma PaymentStatus enum exactly)
 export const PAYMENT_STATUS = {
   PENDING: 'PENDING',
   PAID: 'PAID',
+  PARTIAL: 'PARTIAL',
   REFUNDED: 'REFUNDED',
   CANCELLED: 'CANCELLED',
 } as const;

@@ -8,6 +8,7 @@ import {
   SUCCESS_MESSAGES,
   VALIDATION_RULES,
 } from '@/lib/constants';
+import { formatPaymentMethodLabel } from '@/lib/utils/payment-methods';
 
 // Validation schema for email receipt
 const emailReceiptSchema = z.object({
@@ -58,9 +59,12 @@ async function handleEmailReceipt(request: AuthenticatedRequest) {
         subtotal: receiptData.subtotal,
         discount: receiptData.discount,
         total: receiptData.total,
-        paymentMethod: receiptData.paymentMethod,
+        paymentMethod: formatPaymentMethodLabel(receiptData.paymentMethod),
         timestamp: new Date(receiptData.timestamp),
         staffName: receiptData.staffName,
+        amountPaid: receiptData.total,
+        balanceDue: 0,
+        transactionPayments: [],
       });
 
       if (!emailSent) {
@@ -79,7 +83,7 @@ async function handleEmailReceipt(request: AuthenticatedRequest) {
     }
 
     // Otherwise, fetch complete transaction data from database
-    const transaction = await prisma.salesTransaction.findUnique({
+    const transaction = (await prisma.salesTransaction.findUnique({
       where: { id: parseInt(saleId) },
       include: {
         sales_items: {
@@ -95,8 +99,10 @@ async function handleEmailReceipt(request: AuthenticatedRequest) {
         customer: {
           select: { name: true },
         },
-      },
-    });
+        split_payments: true,
+        transaction_payments: true,
+      } as any,
+    })) as any;
 
     if (!transaction) {
       return NextResponse.json(
@@ -111,11 +117,27 @@ async function handleEmailReceipt(request: AuthenticatedRequest) {
       : 'Staff Member';
 
     // Prepare email data
+    const splitPaid =
+      transaction.split_payments?.reduce(
+        (sum: number, payment: any) => sum + Number(payment.amount),
+        0
+      ) || 0;
+    const ledgerPaid =
+      transaction.transaction_payments?.reduce(
+        (sum: number, payment: any) => sum + Number(payment.amount),
+        0
+      ) || 0;
+    const totalPaid = splitPaid + ledgerPaid;
+    const balanceDue = Math.max(
+      0,
+      Number(transaction.total_amount) - totalPaid
+    );
+
     const emailData = {
       to: customerEmail,
       customerName: customerName || transaction.customer?.name || 'Customer',
       saleId: transaction.id.toString(),
-      items: transaction.sales_items.map(item => ({
+      items: transaction.sales_items.map((item: any) => ({
         name: item.products?.name || 'Unknown Product',
         quantity: item.quantity,
         price: Number(item.unit_price),
@@ -124,10 +146,19 @@ async function handleEmailReceipt(request: AuthenticatedRequest) {
       subtotal: Number(transaction.subtotal),
       discount: Number(transaction.discount_amount),
       total: Number(transaction.total_amount),
-      paymentMethod: transaction.payment_method,
+      paymentMethod: formatPaymentMethodLabel(transaction.payment_method),
       timestamp: transaction.created_at || new Date(),
       staffName,
       notes: transaction.notes,
+      amountPaid: Number(totalPaid.toFixed(2)),
+      balanceDue,
+      transactionPayments:
+        transaction.transaction_payments?.map((payment: any) => ({
+          amount: Number(payment.amount),
+          method: payment.payment_method,
+          note: payment.note,
+          paymentDate: payment.payment_date,
+        })) || [],
     };
 
     // Send email receipt
