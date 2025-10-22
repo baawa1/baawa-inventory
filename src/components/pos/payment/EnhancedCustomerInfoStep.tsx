@@ -256,15 +256,17 @@ export function EnhancedCustomerInfoStep({
               {customers.map((customer: any) => (
                 <div
                   key={customer.id}
-                  className="cursor-pointer rounded-lg border p-3 hover:bg-gray-50"
+                  className="cursor-pointer rounded-lg border border-border bg-card p-3 transition hover:bg-muted dark:hover:bg-muted/70"
                   onClick={() => selectCustomer(customer)}
                 >
-                  <div className="font-medium">{customer.name}</div>
-                  <div className="text-muted-foreground text-sm">
+                  <div className="font-medium text-foreground">
+                    {customer.name}
+                  </div>
+                  <div className="text-sm text-foreground/80">
                     {customer.email} • {customer.phone}
                   </div>
                   {customer.city && customer.state && (
-                    <div className="text-muted-foreground text-sm">
+                    <div className="text-sm text-foreground/70">
                       {customer.city}, {customer.state}
                     </div>
                   )}
@@ -277,11 +279,11 @@ export function EnhancedCustomerInfoStep({
 
       {/* Selected Customer Display */}
       {selectedCustomer && (
-        <div className="rounded-lg border bg-green-50 p-4">
+        <div className="rounded-lg border border-border bg-muted p-4">
           <div className="flex items-center justify-between">
             <div className="flex items-center gap-2">
-              <IconUser className="h-4 w-4 text-green-600" />
-              <span className="font-medium text-green-800">
+              <IconUser className="h-4 w-4 text-foreground" />
+              <span className="font-medium text-foreground">
                 Selected: {selectedCustomer.name}
               </span>
             </div>
@@ -290,6 +292,7 @@ export function EnhancedCustomerInfoStep({
               size="sm"
               onClick={startNewCustomer}
               disabled={processing}
+              className="text-foreground hover:text-foreground/80"
             >
               Change
             </Button>

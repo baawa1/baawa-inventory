@@ -706,7 +706,7 @@ export function SlidingPaymentInterface({
 
       {/* Navigation - Fixed at bottom with compact sizing */}
       <div className="bg-background flex flex-shrink-0 justify-between border-t p-2 sm:p-4">
-        {currentStep !== 5 && currentStep !== 6 && (
+        {currentStep !== 6 && (
           <Button
             variant="outline"
             onClick={prevStep}
@@ -739,13 +739,13 @@ export function SlidingPaymentInterface({
             )}
           </Button>
         ) : currentStep === 6 ? (
-          <div className="ml-auto flex w-full gap-2 sm:w-auto sm:gap-3">
+          <div className="flex w-full gap-2 sm:gap-3">
             <Button
               onClick={() => {
                 onPaymentSuccess(completedSale!);
                 onCancel();
               }}
-              className="h-9 min-w-14 flex-1 sm:h-10 sm:min-w-32 sm:flex-none"
+              className="h-9 w-full sm:h-10"
             >
               <IconCash className="mr-1 h-4 w-4 sm:mr-2" />
               <span className="xs:inline hidden">New Sale</span>
@@ -2462,14 +2462,16 @@ function ReceiptStep({ sale }: { sale: Sale | null }) {
         {sale.paymentMethod === 'split' &&
           sale.splitPayments &&
           sale.splitPayments.length > 0 && (
-            <div className="mt-4 space-y-2 rounded-lg border bg-gray-50 p-3">
-              <h4 className="text-sm font-semibold">Payment Details:</h4>
+            <div className="mt-4 space-y-2 rounded-lg border border-border bg-muted p-3">
+              <h4 className="text-sm font-semibold text-foreground">
+                Payment Details:
+              </h4>
               {sale.splitPayments.map((payment, index) => (
                 <div key={index} className="flex justify-between text-sm">
-                  <span className="text-muted-foreground">
+                  <span className="text-foreground/80">
                     {payment.method}:
                   </span>
-                  <span className="font-medium">
+                  <span className="font-medium text-foreground">
                     {formatCurrency(payment.amount)}
                   </span>
                 </div>
@@ -2479,20 +2481,22 @@ function ReceiptStep({ sale }: { sale: Sale | null }) {
 
         {sale.transactionPayments &&
           sale.transactionPayments.length > 0 && (
-            <div className="mt-4 space-y-2 rounded-lg border bg-gray-50 p-3">
-              <h4 className="text-sm font-semibold">Recorded Payments:</h4>
+            <div className="mt-4 space-y-2 rounded-lg border border-border bg-muted p-3">
+              <h4 className="text-sm font-semibold text-foreground">
+                Recorded Payments:
+              </h4>
               {sale.transactionPayments.map(payment => (
                 <div
                   key={payment.id}
                   className="flex items-center justify-between text-sm"
                 >
-                  <span className="text-muted-foreground">
+                  <span className="text-foreground/80">
                     {payment.method}
                     {payment.paymentDate
                       ? ` • ${new Date(payment.paymentDate).toLocaleDateString()}`
                       : ''}
                   </span>
-                  <span className="font-medium">
+                  <span className="font-medium text-foreground">
                     {formatCurrency(payment.amount)}
                   </span>
                 </div>
