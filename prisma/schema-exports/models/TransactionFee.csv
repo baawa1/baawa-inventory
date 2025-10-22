@@ -1,0 +1,8 @@
+Field,BaseType,Kind,Optional,List,Id,Unique,UpdatedAt,Default,DbType,MapTo,RelationName,RelationFields,RelationReferences,RelationOnDelete,RelationOnUpdate,AttributesRaw,Documentation
+id,Int,scalar,FALSE,FALSE,TRUE,FALSE,FALSE,autoincrement(),,,,,,,,@id @default(autoincrement()),
+transactionId,Int,scalar,FALSE,FALSE,FALSE,FALSE,FALSE,,,transaction_id,,,,,,"@map(""transaction_id"")",
+feeType,String,scalar,FALSE,FALSE,FALSE,FALSE,FALSE,,VarChar(50),fee_type,,,,,,"@map(""fee_type"") @db.VarChar(50)",
+description,String,scalar,TRUE,FALSE,FALSE,FALSE,FALSE,,VarChar(255),,,,,,,@db.VarChar(255),
+amount,Decimal,scalar,FALSE,FALSE,FALSE,FALSE,FALSE,,"Decimal(10, 2)",,,,,,,"@db.Decimal(10, 2)",
+createdAt,DateTime,scalar,TRUE,FALSE,FALSE,FALSE,FALSE,now(),Timestamptz(6),created_at,,,,,,"@default(now()) @map(""created_at"") @db.Timestamptz(6)",
+transaction,SalesTransaction,relation,FALSE,FALSE,FALSE,FALSE,FALSE,,,,,transactionId,id,Cascade,,"@relation(fields: [transactionId], references: [id], onDelete: Cascade)",

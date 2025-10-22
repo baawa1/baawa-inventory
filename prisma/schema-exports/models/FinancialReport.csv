@@ -1,0 +1,11 @@
+Field,BaseType,Kind,Optional,List,Id,Unique,UpdatedAt,Default,DbType,MapTo,RelationName,RelationFields,RelationReferences,RelationOnDelete,RelationOnUpdate,AttributesRaw,Documentation
+id,Int,scalar,FALSE,FALSE,TRUE,FALSE,FALSE,autoincrement(),,,,,,,,@id @default(autoincrement()),
+reportType,String,scalar,FALSE,FALSE,FALSE,FALSE,FALSE,,VarChar(50),report_type,,,,,,"@map(""report_type"") @db.VarChar(50)",
+reportName,String,scalar,FALSE,FALSE,FALSE,FALSE,FALSE,,VarChar(255),report_name,,,,,,"@map(""report_name"") @db.VarChar(255)",
+periodStart,DateTime,scalar,FALSE,FALSE,FALSE,FALSE,FALSE,,Date,period_start,,,,,,"@map(""period_start"") @db.Date",
+periodEnd,DateTime,scalar,FALSE,FALSE,FALSE,FALSE,FALSE,,Date,period_end,,,,,,"@map(""period_end"") @db.Date",
+reportData,Json,scalar,FALSE,FALSE,FALSE,FALSE,FALSE,,,report_data,,,,,,"@map(""report_data"")",
+generatedBy,Int,scalar,FALSE,FALSE,FALSE,FALSE,FALSE,,,generated_by,,,,,,"@map(""generated_by"")",
+generatedAt,DateTime,scalar,FALSE,FALSE,FALSE,FALSE,FALSE,now(),Timestamptz(6),generated_at,,,,,,"@default(now()) @map(""generated_at"") @db.Timestamptz(6)",
+fileUrl,String,scalar,TRUE,FALSE,FALSE,FALSE,FALSE,,VarChar(500),file_url,,,,,,"@map(""file_url"") @db.VarChar(500)",
+generatedByUser,User,relation,FALSE,FALSE,FALSE,FALSE,FALSE,,,,ReportGenerator,generatedBy,id,,,"@relation(""ReportGenerator"", fields: [generatedBy], references: [id])",

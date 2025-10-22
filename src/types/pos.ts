@@ -11,10 +11,14 @@ export interface CartItem {
   name: string;
   sku: string;
   price: number;
+  basePrice: number;
+  priceOverride?: number;
+  overrideReason?: string;
   quantity: number;
   stock: number;
   category?: string;
   brand?: string;
+  barcode?: string;
 }
 
 export interface Sale {

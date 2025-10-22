@@ -71,8 +71,14 @@ interface TransactionItem {
   name: string;
   sku: string;
   price: number;
+  basePrice?: number | null;
+  unitPrice?: number | null;
+  originalPrice?: number | null;
   quantity: number;
   total: number;
+  overrideReason?: string | null;
+  priceOverrideReason?: string | null;
+  note?: string | null;
   coupon: TransactionCoupon | null;
 }
 
@@ -468,30 +474,60 @@ export function TransactionHistory() {
         <div>
           <h3 className="mb-3 font-medium">Items in Order</h3>
           <div className="space-y-3">
-            {transaction.items.map((item: any) => (
-              <div
-                key={`${item.id}-${item.sku}`}
-                className="flex items-center gap-3 rounded-lg border p-3"
-              >
-                <div className="bg-muted flex h-12 w-12 items-center justify-center rounded-md">
-                  <IconChartBar className="text-muted-foreground h-6 w-6" />
-                </div>
-                <div className="flex-1">
-                  <div className="text-sm font-medium">{item.name}</div>
-                  <div className="text-muted-foreground text-xs">
-                    SKU: {item.sku}
+            {transaction.items.map((item: any) => {
+              const basePrice =
+                item.basePrice ??
+                item.unitPrice ??
+                item.originalPrice ??
+                item.price;
+              const hasOverride = Math.abs(item.price - basePrice) > 0.009;
+              const overrideReason =
+                item.overrideReason ??
+                item.priceOverrideReason ??
+                item.note ??
+                undefined;
+
+              return (
+                <div
+                  key={`${item.id}-${item.sku}`}
+                  className="flex items-center gap-3 rounded-lg border p-3"
+                >
+                  <div className="bg-muted flex h-12 w-12 items-center justify-center rounded-md">
+                    <IconChartBar className="text-muted-foreground h-6 w-6" />
+                  </div>
+                  <div className="flex-1">
+                    <div className="text-sm font-medium">{item.name}</div>
+                    <div className="text-muted-foreground text-xs">
+                      SKU: {item.sku}
+                    </div>
+                    {overrideReason && (
+                      <div className="text-muted-foreground mt-1 text-xs">
+                        Override reason: {overrideReason}
+                      </div>
+                    )}
+                  </div>
+                  <div className="text-right">
+                    <div className="text-sm">
+                      {hasOverride ? (
+                        <span className="flex flex-col items-end">
+                          <span className="line-through">
+                            {formatCurrency(basePrice)} × {item.quantity}
+                          </span>
+                          <span className="text-emerald-600">
+                            {formatCurrency(item.price)} × {item.quantity}
+                          </span>
+                        </span>
+                      ) : (
+                        `${item.quantity} × ${formatCurrency(item.price)}`
+                      )}
+                    </div>
+                    <div className="font-medium">
+                      {formatCurrency(item.total)}
+                    </div>
                   </div>
                 </div>
-                <div className="text-right">
-                  <div className="text-sm">
-                    {item.quantity} x {formatCurrency(item.price)}
-                  </div>
-                  <div className="font-medium">
-                    {formatCurrency(item.total)}
-                  </div>
-                </div>
-              </div>
-            ))}
+              );
+            })}
           </div>
         </div>
 
@@ -660,6 +696,26 @@ export function TransactionHistory() {
                   name: item.name,
                   sku: item.sku,
                   price: item.price,
+                  basePrice:
+                    item.basePrice ??
+                    item.unitPrice ??
+                    item.originalPrice ??
+                    item.price,
+                  priceOverride:
+                    Math.abs(
+                      item.price -
+                        (item.basePrice ??
+                          item.unitPrice ??
+                          item.originalPrice ??
+                          item.price)
+                    ) > 0.009
+                      ? item.price
+                      : undefined,
+                  overrideReason:
+                    item.overrideReason ??
+                    item.priceOverrideReason ??
+                    item.note ??
+                    undefined,
                   quantity: item.quantity,
                   category: '',
                 })),

@@ -27,32 +27,7 @@ import {
   downloadThermalReceiptAsText,
   ThermalReceiptData,
 } from '@/lib/utils/thermal-receipt';
-
-export interface CartItem {
-  id: number;
-  name: string;
-  sku: string;
-  price: number;
-  quantity: number;
-  stock: number;
-  category?: string;
-  brand?: string;
-}
-
-export interface Sale {
-  id: string;
-  items: CartItem[];
-  subtotal: number;
-  discount: number;
-  total: number;
-  paymentMethod: string;
-  customerName?: string;
-  customerPhone?: string;
-  customerEmail?: string;
-  staffName: string;
-  timestamp: Date;
-  notes?: string | null;
-}
+import type { CartItem, Sale } from '@/types/pos';
 
 interface ReceiptGeneratorProps {
   sale: Sale;
@@ -215,6 +190,9 @@ export function ReceiptGenerator({ sale, onClose }: ReceiptGeneratorProps) {
           name: item.name,
           sku: item.sku,
           price: item.price,
+          basePrice: item.basePrice ?? item.price,
+          priceOverride: item.priceOverride,
+          overrideReason: item.overrideReason,
           quantity: item.quantity,
         })),
         subtotal: sale.subtotal,
@@ -273,6 +251,9 @@ export function ReceiptGenerator({ sale, onClose }: ReceiptGeneratorProps) {
               name: item.name,
               quantity: item.quantity,
               price: item.price,
+              basePrice: item.basePrice ?? item.price,
+              priceOverride: item.priceOverride,
+              overrideReason: item.overrideReason,
               total: item.price * item.quantity,
             })),
             subtotal: sale.subtotal,

@@ -27,17 +27,7 @@ import { toast } from 'sonner';
 import { formatCurrency } from '@/lib/utils';
 import { logger } from '@/lib/logger';
 import { calculateOrderTotals } from '@/lib/utils/calculations';
-
-export interface CartItem {
-  id: number;
-  name: string;
-  sku: string;
-  price: number;
-  quantity: number;
-  stock: number;
-  category?: string;
-  brand?: string;
-}
+import type { CartItem } from '@/types/pos';
 
 export interface Sale {
   id: string;
@@ -105,11 +95,25 @@ export function POSInterface() {
       if (existingItem) {
         return prev.map(item =>
           item.id === product.id
-            ? { ...item, quantity: Math.min(item.quantity + 1, item.stock) }
+            ? {
+                ...item,
+                basePrice: item.basePrice ?? product.basePrice ?? product.price,
+                quantity: Math.min(item.quantity + 1, item.stock),
+              }
             : item
         );
       }
-      return [...prev, { ...product, quantity: 1 }];
+      return [
+        ...prev,
+        {
+          ...product,
+          basePrice: product.basePrice ?? product.price,
+          priceOverride: undefined,
+          overrideReason: undefined,
+          price: product.price,
+          quantity: 1,
+        },
+      ];
     });
   };
 
@@ -126,6 +130,32 @@ export function POSInterface() {
           ? { ...item, quantity: Math.min(quantity, item.stock) }
           : item
       )
+    );
+  };
+
+  const updateItemPrice = (
+    productId: number,
+    newPrice: number,
+    reason?: string
+  ) => {
+    setCart(prev =>
+      prev.map(item => {
+        if (item.id !== productId) {
+          return item;
+        }
+
+        const basePrice = item.basePrice ?? item.price;
+        const normalizedPrice = Math.max(0, newPrice);
+        const hasOverride = Math.abs(normalizedPrice - basePrice) > 0.009;
+
+        return {
+          ...item,
+          basePrice,
+          price: normalizedPrice,
+          priceOverride: hasOverride ? normalizedPrice : undefined,
+          overrideReason: hasOverride ? reason?.trim() || undefined : undefined,
+        };
+      })
     );
   };
 
@@ -171,6 +201,9 @@ export function POSInterface() {
             name: item.name,
             sku: item.sku,
             price: item.price,
+            basePrice: item.basePrice ?? item.price,
+            priceOverride: item.priceOverride,
+            overrideReason: item.overrideReason,
             quantity: item.quantity,
             total: item.price * item.quantity,
           })),
@@ -319,6 +352,7 @@ export function POSInterface() {
                       <ShoppingCart
                         items={cart}
                         onUpdateQuantity={updateQuantity}
+                        onUpdatePrice={updateItemPrice}
                         onRemoveItem={removeFromCart}
                         onClearCart={clearCart}
                         disabled={currentStep !== 'search'}

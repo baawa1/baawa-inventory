@@ -12,6 +12,9 @@ export interface OfflineTransaction {
     name: string;
     sku: string;
     price: number;
+    basePrice: number;
+    priceOverride?: number;
+    overrideReason?: string;
     quantity: number;
     total: number;
   }>;

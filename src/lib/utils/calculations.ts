@@ -1,13 +1,4 @@
-export interface CartItem {
-  id: number;
-  name: string;
-  sku: string;
-  price: number;
-  quantity: number;
-  stock: number;
-  category?: string;
-  brand?: string;
-}
+import type { CartItem } from '@/types/pos';
 
 /**
  * Helper function to handle currency calculations with proper precision
