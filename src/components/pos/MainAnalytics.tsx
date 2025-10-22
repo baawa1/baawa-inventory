@@ -98,11 +98,9 @@ async function fetchMainAnalytics(
   }
 
   const result = await response.json();
-  console.log('API Response:', result);
 
   // Handle the wrapped API response format
   if (result.success && result.data) {
-    console.log('Extracted data:', result.data);
     return result.data as AnalyticsResponse;
   }
 
