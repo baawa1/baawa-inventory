@@ -1,0 +1,8 @@
+Field,BaseType,Kind,Optional,List,Id,Unique,UpdatedAt,Default,DbType,MapTo,RelationName,RelationFields,RelationReferences,RelationOnDelete,RelationOnUpdate,AttributesRaw,Documentation
+id,Int,scalar,FALSE,FALSE,TRUE,FALSE,FALSE,autoincrement(),,,,,,,,@id @default(autoincrement()),
+sessionId,String,scalar,FALSE,FALSE,FALSE,FALSE,FALSE,,VarChar(255),session_id,,,,,,"@map(""session_id"") @db.VarChar(255)",
+userId,Int,scalar,FALSE,FALSE,FALSE,FALSE,FALSE,,,user_id,,,,,,"@map(""user_id"")",
+reason,String,scalar,FALSE,FALSE,FALSE,FALSE,FALSE,,VarChar(100),,,,,,,@db.VarChar(100),
+blacklistedAt,DateTime,scalar,FALSE,FALSE,FALSE,FALSE,FALSE,,Timestamptz(6),blacklisted_at,,,,,,"@map(""blacklisted_at"") @db.Timestamptz(6)",
+expiresAt,DateTime,scalar,FALSE,FALSE,FALSE,FALSE,FALSE,,Timestamptz(6),expires_at,,,,,,"@map(""expires_at"") @db.Timestamptz(6)",
+createdAt,DateTime,scalar,FALSE,FALSE,FALSE,FALSE,FALSE,now(),Timestamptz(6),created_at,,,,,,"@default(now()) @map(""created_at"") @db.Timestamptz(6)",

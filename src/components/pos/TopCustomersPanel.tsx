@@ -61,8 +61,14 @@ interface CustomerOrder {
     name: string;
     sku: string;
     price: number;
+    basePrice?: number | null;
+    unitPrice?: number | null;
+    originalPrice?: number | null;
     quantity: number;
     total: number;
+    overrideReason?: string | null;
+    priceOverrideReason?: string | null;
+    note?: string | null;
   }[];
   fees?: {
     id: number;
@@ -372,30 +378,60 @@ export function TopCustomersPanel({ customers }: TopCustomersPanelProps) {
                         <div>
                           <h4 className="mb-2 text-sm font-medium">Items</h4>
                           <div className="divide-border space-y-0 divide-y rounded-lg border">
-                            {order.items.map(item => (
-                              <div
-                                key={item.id}
-                                className="flex items-center justify-between p-3"
-                              >
-                                <div className="flex-1">
-                                  <div className="text-sm font-medium">
-                                    {item.name}
+                            {order.items.map(item => {
+                              const basePrice =
+                                item.basePrice ??
+                                item.unitPrice ??
+                                item.originalPrice ??
+                                item.price;
+                              const hasOverride =
+                                Math.abs(item.price - basePrice) > 0.009;
+                              const overrideReason =
+                                item.overrideReason ??
+                                item.priceOverrideReason ??
+                                item.note ??
+                                undefined;
+
+                              return (
+                                <div
+                                  key={item.id}
+                                  className="flex items-center justify-between p-3"
+                                >
+                                  <div className="flex-1">
+                                    <div className="text-sm font-medium">
+                                      {item.name}
+                                    </div>
+                                    <div className="text-muted-foreground text-xs">
+                                      SKU: {item.sku}
+                                    </div>
+                                    {overrideReason && (
+                                      <div className="text-muted-foreground mt-1 text-xs">
+                                        Override reason: {overrideReason}
+                                      </div>
+                                    )}
                                   </div>
-                                  <div className="text-muted-foreground text-xs">
-                                    SKU: {item.sku}
+                                  <div className="text-right">
+                                    <div className="text-sm">
+                                      {hasOverride ? (
+                                        <span className="flex flex-col items-end">
+                                          <span className="line-through">
+                                            {formatCurrency(basePrice)} × {item.quantity}
+                                          </span>
+                                          <span className="text-emerald-600">
+                                            {formatCurrency(item.price)} × {item.quantity}
+                                          </span>
+                                        </span>
+                                      ) : (
+                                        `${item.quantity} × ${formatCurrency(item.price)}`
+                                      )}
+                                    </div>
+                                    <div className="text-sm font-medium">
+                                      {formatCurrency(item.total)}
+                                    </div>
                                   </div>
                                 </div>
-                                <div className="text-right">
-                                  <div className="text-sm">
-                                    {item.quantity} x{' '}
-                                    {formatCurrency(item.price)}
-                                  </div>
-                                  <div className="text-sm font-medium">
-                                    {formatCurrency(item.total)}
-                                  </div>
-                                </div>
-                              </div>
-                            ))}
+                              );
+                            })}
                           </div>
                         </div>
 
@@ -474,6 +510,26 @@ export function TopCustomersPanel({ customers }: TopCustomersPanelProps) {
                                 name: item.name,
                                 sku: item.sku,
                                 price: item.price,
+                                basePrice:
+                                  item.basePrice ??
+                                  item.unitPrice ??
+                                  item.originalPrice ??
+                                  item.price,
+                                priceOverride:
+                                  Math.abs(
+                                    item.price -
+                                      (item.basePrice ??
+                                        item.unitPrice ??
+                                        item.originalPrice ??
+                                        item.price)
+                                  ) > 0.009
+                                    ? item.price
+                                    : undefined,
+                                overrideReason:
+                                  item.overrideReason ??
+                                  item.priceOverrideReason ??
+                                  item.note ??
+                                  undefined,
                                 quantity: item.quantity,
                                 category: '',
                               })),

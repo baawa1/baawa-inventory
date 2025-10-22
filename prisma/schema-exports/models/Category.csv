@@ -1,0 +1,13 @@
+Field,BaseType,Kind,Optional,List,Id,Unique,UpdatedAt,Default,DbType,MapTo,RelationName,RelationFields,RelationReferences,RelationOnDelete,RelationOnUpdate,AttributesRaw,Documentation
+id,Int,scalar,FALSE,FALSE,TRUE,FALSE,FALSE,autoincrement(),,,,,,,,@id @default(autoincrement()),
+name,String,scalar,FALSE,FALSE,FALSE,FALSE,FALSE,,VarChar(100),,,,,,,@db.VarChar(100),
+description,String,scalar,TRUE,FALSE,FALSE,FALSE,FALSE,,,,,,,,,,
+isActive,Boolean,scalar,FALSE,FALSE,FALSE,FALSE,FALSE,true,,is_active,,,,,,"@default(true) @map(""is_active"")",
+wordpress_id,Int,scalar,TRUE,FALSE,FALSE,FALSE,FALSE,,,wordpress_id,,,,,,"@map(""wordpress_id"")",
+createdAt,DateTime,scalar,FALSE,FALSE,FALSE,FALSE,FALSE,now(),Timestamptz(6),created_at,,,,,,"@default(now()) @map(""created_at"") @db.Timestamptz(6)",
+updatedAt,DateTime,scalar,FALSE,FALSE,FALSE,FALSE,TRUE,now(),Timestamptz(6),updated_at,,,,,,"@default(now()) @updatedAt @map(""updated_at"") @db.Timestamptz(6)",
+parentId,Int,scalar,TRUE,FALSE,FALSE,FALSE,FALSE,,,parent_id,,,,,,"@map(""parent_id"")",
+image,String,scalar,TRUE,FALSE,FALSE,FALSE,FALSE,,VarChar(500),,,,,,,@db.VarChar(500),
+parent,Category,relation,TRUE,FALSE,FALSE,FALSE,FALSE,,,,CategoryHierarchy,parentId,id,,,"@relation(""CategoryHierarchy"", fields: [parentId], references: [id])",
+children,Category,relation,FALSE,TRUE,FALSE,FALSE,FALSE,,,,CategoryHierarchy,,,,,"@relation(""CategoryHierarchy"")",
+products,Product,relation,FALSE,TRUE,FALSE,FALSE,FALSE,,,,,,,,,,

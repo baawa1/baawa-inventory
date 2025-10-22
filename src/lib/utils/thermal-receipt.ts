@@ -5,6 +5,9 @@ export interface ThermalReceiptData {
     name: string;
     sku: string;
     price: number;
+    basePrice: number;
+    priceOverride?: number;
+    overrideReason?: string;
     quantity: number;
     coupon?: {
       code: string;

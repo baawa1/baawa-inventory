@@ -336,6 +336,11 @@ export function SlidingPaymentInterface({
       }
 
       // Create sales transaction
+      const nonSplitAmountPaid =
+        paymentMethod === 'debt'
+          ? roundCurrency(amountPaid)
+          : roundCurrency(Math.max(amountPaid, total));
+
       const saleData = {
         items: items.map(item => ({
           productId: item.id,
@@ -372,7 +377,7 @@ export function SlidingPaymentInterface({
         customerEmail: customerInfo.email || undefined,
         amountPaid: isSplitPayment
           ? collectedSplitTotal
-          : amountPaid,
+          : nonSplitAmountPaid,
         notes: notes || undefined,
         splitPayments: isSplitPayment ? normalizedSplitPayments : undefined,
       };
@@ -408,6 +413,15 @@ export function SlidingPaymentInterface({
 
       const result = await response.json();
 
+      const saleAmountPaid = isSplitPayment
+        ? collectedSplitTotal
+        : nonSplitAmountPaid;
+      const saleBalanceDue = isSplitPayment
+        ? Math.max(0, total - collectedSplitTotal)
+        : paymentMethod === 'debt'
+          ? Math.max(0, total - amountPaid)
+          : 0;
+
       const sale: Sale = {
         id: result.saleId,
         items,
@@ -433,19 +447,13 @@ export function SlidingPaymentInterface({
             }))
           : undefined,
         amountPaid:
-          typeof result.amountPaid === 'number'
+          typeof result.amountPaid === 'number' && isSplitPayment
             ? result.amountPaid
-            : isSplitPayment
-              ? collectedSplitTotal
-              : amountPaid,
+            : saleAmountPaid,
         balanceDue:
-          typeof result.balanceDue === 'number'
+          typeof result.balanceDue === 'number' && isSplitPayment
             ? result.balanceDue
-            : isSplitPayment
-              ? Math.max(0, total - collectedSplitTotal)
-              : paymentMethod === 'debt'
-                ? Math.max(0, total - amountPaid)
-                : 0,
+            : saleBalanceDue,
         transactionPayments: Array.isArray(result.transactionPayments)
           ? result.transactionPayments.map((payment: any) => ({
               id: payment.id,
@@ -781,8 +789,24 @@ function OrderSummaryStep({
             <div className="flex-1">
               <p className="font-medium">{item.name}</p>
               <p className="text-muted-foreground text-sm">
-                {item.quantity} × {formatCurrency(item.price)}
+                {item.priceOverride ? (
+                  <span className="flex flex-col sm:flex-row sm:items-center sm:gap-2">
+                    <span className="line-through">
+                      {formatCurrency(item.basePrice)} × {item.quantity}
+                    </span>
+                    <span className="text-emerald-600">
+                      {formatCurrency(item.price)} × {item.quantity}
+                    </span>
+                  </span>
+                ) : (
+                  `${item.quantity} × ${formatCurrency(item.price)}`
+                )}
               </p>
+              {item.overrideReason && (
+                <p className="text-muted-foreground text-xs">
+                  Reason: {item.overrideReason}
+                </p>
+              )}
             </div>
             <div className="font-medium">
               {formatCurrency(item.price * item.quantity)}
@@ -1695,8 +1719,24 @@ function ReviewStep({
             <div className="flex-1">
               <p className="font-medium">{item.name}</p>
               <p className="text-muted-foreground text-sm">
-                {item.quantity} × {formatCurrency(item.price)}
+                {item.priceOverride ? (
+                  <span className="flex flex-col sm:flex-row sm:items-center sm:gap-2">
+                    <span className="line-through">
+                      {formatCurrency(item.basePrice)} × {item.quantity}
+                    </span>
+                    <span className="text-emerald-600">
+                      {formatCurrency(item.price)} × {item.quantity}
+                    </span>
+                  </span>
+                ) : (
+                  `${item.quantity} × ${formatCurrency(item.price)}`
+                )}
               </p>
+              {item.overrideReason && (
+                <p className="text-muted-foreground text-xs">
+                  Reason: {item.overrideReason}
+                </p>
+              )}
             </div>
             <div className="font-medium">
               {formatCurrency(item.price * item.quantity)}
@@ -2411,7 +2451,7 @@ function ReceiptStep({ sale }: { sale: Sale | null }) {
           <span>{formatCurrency(sale.amountPaid ?? sale.total)}</span>
         </div>
 
-        {sale.balanceDue && sale.balanceDue > 0 && (
+        {typeof sale.balanceDue === 'number' && sale.balanceDue > 0 && (
           <div className="flex justify-between text-amber-600">
             <span>Balance Due:</span>
             <span>{formatCurrency(sale.balanceDue)}</span>

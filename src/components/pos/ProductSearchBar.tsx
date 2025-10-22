@@ -24,17 +24,10 @@ import {
   useBarcodeLookupMutation,
   type POSProduct,
 } from '@/hooks/api/pos';
+import type { CartItem } from '@/types/pos';
 
 interface ProductSearchBarProps {
-  onProductSelect: (_product: {
-    id: number;
-    name: string;
-    sku: string;
-    price: number;
-    stock: number;
-    category?: string;
-    brand?: string;
-  }) => void;
+  onProductSelect: (_product: Omit<CartItem, 'quantity'>) => void;
   disabled?: boolean;
 }
 
@@ -80,6 +73,7 @@ export function ProductSearchBar({
         name: product.name,
         sku: product.sku,
         price: product.price,
+        basePrice: product.price,
         stock: product.stock,
         category: product.category?.name,
         brand: product.brand?.name,
@@ -115,6 +109,7 @@ export function ProductSearchBar({
       name: product.name,
       sku: product.sku,
       price: product.price,
+      basePrice: product.price,
       stock: product.stock,
       category: product.category?.name,
       brand: product.brand?.name,

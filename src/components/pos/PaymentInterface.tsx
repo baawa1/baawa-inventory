@@ -31,6 +31,7 @@ import {
   validatePaymentAmount,
 } from '@/lib/utils/calculations';
 import { DiscountStep } from './payment/DiscountStep';
+import type { CartItem, Sale } from '@/types/pos';
 
 interface CouponData {
   id: number;
@@ -39,31 +40,6 @@ interface CouponData {
   type: 'PERCENTAGE' | 'FIXED';
   value: number;
   minimumAmount?: number;
-}
-
-export interface CartItem {
-  id: number;
-  name: string;
-  sku: string;
-  price: number;
-  quantity: number;
-  stock: number;
-  category?: string;
-  brand?: string;
-}
-
-export interface Sale {
-  id: string;
-  items: CartItem[];
-  subtotal: number;
-  discount: number;
-  total: number;
-  paymentMethod: string;
-  customerName?: string;
-  customerPhone?: string;
-  customerEmail?: string;
-  staffName: string;
-  timestamp: Date;
 }
 
 interface PaymentInterfaceProps {

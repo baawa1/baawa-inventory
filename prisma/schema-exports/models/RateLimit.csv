@@ -1,0 +1,5 @@
+Field,BaseType,Kind,Optional,List,Id,Unique,UpdatedAt,Default,DbType,MapTo,RelationName,RelationFields,RelationReferences,RelationOnDelete,RelationOnUpdate,AttributesRaw,Documentation
+id,Int,scalar,FALSE,FALSE,TRUE,FALSE,FALSE,autoincrement(),,,,,,,,@id @default(autoincrement()),
+key,String,scalar,FALSE,FALSE,FALSE,FALSE,FALSE,,VarChar(255),,,,,,,@db.VarChar(255),
+count,Int,scalar,FALSE,FALSE,FALSE,FALSE,FALSE,1,,,,,,,,@default(1),
+createdAt,DateTime,scalar,FALSE,FALSE,FALSE,FALSE,FALSE,now(),Timestamptz(6),created_at,,,,,,"@default(now()) @map(""created_at"") @db.Timestamptz(6)",

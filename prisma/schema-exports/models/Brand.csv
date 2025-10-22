@@ -1,0 +1,11 @@
+Field,BaseType,Kind,Optional,List,Id,Unique,UpdatedAt,Default,DbType,MapTo,RelationName,RelationFields,RelationReferences,RelationOnDelete,RelationOnUpdate,AttributesRaw,Documentation
+id,Int,scalar,FALSE,FALSE,TRUE,FALSE,FALSE,autoincrement(),,,,,,,,@id @default(autoincrement()),
+name,String,scalar,FALSE,FALSE,FALSE,TRUE,FALSE,,VarChar(100),,,,,,,@unique @db.VarChar(100),
+description,String,scalar,TRUE,FALSE,FALSE,FALSE,FALSE,,,,,,,,,,
+website,String,scalar,TRUE,FALSE,FALSE,FALSE,FALSE,,VarChar(255),,,,,,,@db.VarChar(255),
+isActive,Boolean,scalar,TRUE,FALSE,FALSE,FALSE,FALSE,true,,is_active,,,,,,"@default(true) @map(""is_active"")",
+wordpress_id,Int,scalar,TRUE,FALSE,FALSE,FALSE,FALSE,,,wordpress_id,,,,,,"@map(""wordpress_id"")",
+createdAt,DateTime,scalar,TRUE,FALSE,FALSE,FALSE,FALSE,now(),Timestamptz(6),created_at,,,,,,"@default(now()) @map(""created_at"") @db.Timestamptz(6)",
+updatedAt,DateTime,scalar,TRUE,FALSE,FALSE,FALSE,TRUE,now(),Timestamptz(6),updated_at,,,,,,"@default(now()) @updatedAt @map(""updated_at"") @db.Timestamptz(6)",
+image,String,scalar,TRUE,FALSE,FALSE,FALSE,FALSE,,VarChar(500),,,,,,,@db.VarChar(500),
+products,Product,relation,FALSE,TRUE,FALSE,FALSE,FALSE,,,,,,,,,,

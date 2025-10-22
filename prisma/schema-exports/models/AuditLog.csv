@@ -1,0 +1,12 @@
+Field,BaseType,Kind,Optional,List,Id,Unique,UpdatedAt,Default,DbType,MapTo,RelationName,RelationFields,RelationReferences,RelationOnDelete,RelationOnUpdate,AttributesRaw,Documentation
+id,Int,scalar,FALSE,FALSE,TRUE,FALSE,FALSE,autoincrement(),,,,,,,,@id @default(autoincrement()),
+action,String,scalar,FALSE,FALSE,FALSE,FALSE,FALSE,,VarChar(100),,,,,,,@db.VarChar(100),
+created_at,DateTime,scalar,TRUE,FALSE,FALSE,FALSE,FALSE,now(),Timestamptz(6),,,,,,,@default(now()) @db.Timestamptz(6),
+ip_address,String,scalar,TRUE,FALSE,FALSE,FALSE,FALSE,,Inet,,,,,,,@db.Inet,
+new_values,Json,scalar,TRUE,FALSE,FALSE,FALSE,FALSE,,,,,,,,,,
+old_values,Json,scalar,TRUE,FALSE,FALSE,FALSE,FALSE,,,,,,,,,,
+record_id,Int,scalar,TRUE,FALSE,FALSE,FALSE,FALSE,,,,,,,,,,
+table_name,String,scalar,FALSE,FALSE,FALSE,FALSE,FALSE,,VarChar(100),,,,,,,@db.VarChar(100),
+user_agent,String,scalar,TRUE,FALSE,FALSE,FALSE,FALSE,,,,,,,,,,
+user_id,Int,scalar,TRUE,FALSE,FALSE,FALSE,FALSE,,,,,,,,,,
+users,User,relation,TRUE,FALSE,FALSE,FALSE,FALSE,,,,,user_id,id,,NoAction,"@relation(fields: [user_id], references: [id], onUpdate: NoAction)",

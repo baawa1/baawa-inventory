@@ -4,17 +4,7 @@ import { Badge } from '@/components/ui/badge';
 import { formatCurrency } from '@/lib/utils';
 import { IconPackage, IconTag } from '@tabler/icons-react';
 import { Separator } from '@/components/ui/separator';
-
-export interface CartItem {
-  id: number;
-  name: string;
-  sku: string;
-  price: number;
-  quantity: number;
-  stock: number;
-  category?: string;
-  brand?: string;
-}
+import type { CartItem } from '@/types/pos';
 
 interface OrderSummaryStepProps {
   items: CartItem[];
@@ -73,11 +63,27 @@ export function OrderSummaryStep({
                 </div>
                 <div className="text-right">
                   <div className="font-medium">
-                    {formatCurrency(item.price)} × {item.quantity}
+                    {item.priceOverride ? (
+                      <div className="flex flex-col items-end">
+                        <span className="text-muted-foreground line-through">
+                          {formatCurrency(item.basePrice)} × {item.quantity}
+                        </span>
+                        <span className="text-emerald-600">
+                          {formatCurrency(item.price)} × {item.quantity}
+                        </span>
+                      </div>
+                    ) : (
+                      `${formatCurrency(item.price)} × ${item.quantity}`
+                    )}
                   </div>
                   <div className="text-lg font-bold">
                     {formatCurrency(item.price * item.quantity)}
                   </div>
+                  {item.overrideReason && (
+                    <div className="text-muted-foreground mt-1 text-xs">
+                      Reason: {item.overrideReason}
+                    </div>
+                  )}
                 </div>
               </div>
             ))}

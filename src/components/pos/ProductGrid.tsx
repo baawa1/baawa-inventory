@@ -36,6 +36,7 @@ import { usePOSErrorHandler } from './POSErrorBoundary';
 import { formatCurrency } from '@/lib/utils';
 import Image from 'next/image';
 import { normalizeImageUrl } from '@/lib/utils/image';
+import type { CartItem } from '@/types/pos';
 
 interface Product {
   id: number;
@@ -51,7 +52,7 @@ interface Product {
 }
 
 interface ProductGridProps {
-  onProductSelect: (_product: Omit<Product, 'quantity'>) => void;
+  onProductSelect: (_product: Omit<CartItem, 'quantity'>) => void;
   disabled?: boolean;
 }
 
@@ -128,6 +129,7 @@ export function ProductGrid({
       sku: product.sku,
       barcode: product.barcode,
       price: product.price,
+      basePrice: product.price,
       stock: product.stock,
       category: product.category,
       brand: product.brand,

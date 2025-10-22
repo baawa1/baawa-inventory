@@ -1,0 +1,13 @@
+Field,BaseType,Kind,Optional,List,Id,Unique,UpdatedAt,Default,DbType,MapTo,RelationName,RelationFields,RelationReferences,RelationOnDelete,RelationOnUpdate,AttributesRaw,Documentation
+id,Int,scalar,FALSE,FALSE,TRUE,FALSE,FALSE,autoincrement(),,,,,,,,@id @default(autoincrement()),
+systemCount,Int,scalar,FALSE,FALSE,FALSE,FALSE,FALSE,,,system_count,,,,,,"@map(""system_count"")",
+physicalCount,Int,scalar,FALSE,FALSE,FALSE,FALSE,FALSE,,,physical_count,,,,,,"@map(""physical_count"")",
+discrepancy,Int,scalar,FALSE,FALSE,FALSE,FALSE,FALSE,,,discrepancy,,,,,,"@map(""discrepancy"")",
+discrepancyReason,String,scalar,TRUE,FALSE,FALSE,FALSE,FALSE,,,discrepancy_reason,,,,,,"@map(""discrepancy_reason"")",
+estimatedImpact,Decimal,scalar,TRUE,FALSE,FALSE,FALSE,FALSE,,"Decimal(10, 2)",estimated_impact,,,,,,"@map(""estimated_impact"") @db.Decimal(10, 2)",
+notes,String,scalar,TRUE,FALSE,FALSE,FALSE,FALSE,,,,,,,,,,
+verified,Boolean,scalar,FALSE,FALSE,FALSE,FALSE,FALSE,false,,,,,,,,@default(false),
+reconciliationId,Int,scalar,FALSE,FALSE,FALSE,FALSE,FALSE,,,reconciliation_id,,,,,,"@map(""reconciliation_id"")",
+productId,Int,scalar,FALSE,FALSE,FALSE,FALSE,FALSE,,,product_id,,,,,,"@map(""product_id"")",
+product,Product,relation,FALSE,FALSE,FALSE,FALSE,FALSE,,,,,productId,id,Cascade,NoAction,"@relation(fields: [productId], references: [id], onDelete: Cascade, onUpdate: NoAction)",
+reconciliation,StockReconciliation,relation,FALSE,FALSE,FALSE,FALSE,FALSE,,,,,reconciliationId,id,Cascade,NoAction,"@relation(fields: [reconciliationId], references: [id], onDelete: Cascade, onUpdate: NoAction)",

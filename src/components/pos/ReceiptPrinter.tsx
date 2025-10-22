@@ -28,6 +28,9 @@ export interface ReceiptData {
     name: string;
     sku: string;
     price: number;
+    basePrice: number;
+    priceOverride?: number;
+    overrideReason?: string;
     quantity: number;
     category?: string;
     brand?: string;
@@ -252,6 +255,9 @@ export function ReceiptPrinter({
           name: item.name,
           sku: item.sku,
           price: item.price,
+          basePrice: item.basePrice ?? item.price,
+          priceOverride: item.priceOverride,
+          overrideReason: item.overrideReason,
           quantity: item.quantity,
           coupon: item.coupon
             ? {
@@ -322,6 +328,9 @@ export function ReceiptPrinter({
               name: item.name,
               quantity: item.quantity,
               price: item.price,
+              basePrice: item.basePrice ?? item.price,
+              priceOverride: item.priceOverride,
+              overrideReason: item.overrideReason,
               total: item.price * item.quantity,
               coupon: item.coupon
                 ? {

@@ -54,8 +54,14 @@ interface TransactionItem {
   name: string;
   sku: string;
   price: number;
+  basePrice?: number | null;
+  unitPrice?: number | null;
+  originalPrice?: number | null;
   quantity: number;
   total: number;
+  overrideReason?: string | null;
+  priceOverrideReason?: string | null;
+  note?: string | null;
   coupon?: {
     id: number;
     code: string;
@@ -324,6 +330,26 @@ export function TransactionList({ user: _ }: TransactionListProps) {
           name: item.name,
           sku: item.sku,
           price: item.price,
+          basePrice:
+            item.basePrice ??
+            item.unitPrice ??
+            item.originalPrice ??
+            item.price,
+          priceOverride:
+            Math.abs(
+              item.price -
+                (item.basePrice ??
+                  item.unitPrice ??
+                  item.originalPrice ??
+                  item.price)
+            ) > 0.009
+              ? item.price
+              : undefined,
+          overrideReason:
+            item.overrideReason ??
+            item.priceOverrideReason ??
+            item.note ??
+            undefined,
           quantity: item.quantity,
           category: '',
           coupon: item.coupon || null,
@@ -582,43 +608,73 @@ function TransactionDetailsContent({
       <div>
         <h4 className="mb-3 text-sm font-medium">Items</h4>
         <div className="space-y-2">
-          {transaction.items.map((item, index) => (
-            <div
-              key={index}
-              className="flex items-center justify-between rounded-lg bg-gray-50 p-3"
-            >
-              <div>
-                <p className="font-medium">{item.name}</p>
-                <p className="text-muted-foreground text-sm">SKU: {item.sku}</p>
-                {item.coupon && (
-                  <div className="mt-1 flex items-center gap-2">
-                    <span className="inline-flex items-center rounded-full bg-green-100 px-2 py-1 text-xs font-medium text-green-800">
-                      <IconTag className="mr-1 h-3 w-3" />
-                      {item.coupon.code}
-                    </span>
-                    <span className="text-muted-foreground text-xs">
-                      {item.coupon.name}
-                    </span>
-                  </div>
-                )}
-              </div>
-              <div className="text-right">
-                <p className="font-medium">
-                  {item.quantity} × {formatCurrency(item.price)}
-                </p>
-                <p className="text-sm font-semibold">
-                  {formatCurrency(item.total)}
-                </p>
-                {item.coupon && (
-                  <p className="text-xs text-green-600">
-                    {item.coupon.type === 'PERCENTAGE'
-                      ? `${item.coupon.value}% off`
-                      : `${formatCurrency(item.coupon.value)} off`}
+          {transaction.items.map((item, index) => {
+            const basePrice =
+              item.basePrice ??
+              item.unitPrice ??
+              item.originalPrice ??
+              item.price;
+            const hasOverride = Math.abs(item.price - basePrice) > 0.009;
+            const overrideReason =
+              item.overrideReason ??
+              item.priceOverrideReason ??
+              item.note ??
+              undefined;
+
+            return (
+              <div
+                key={index}
+                className="flex items-center justify-between rounded-lg bg-gray-50 p-3"
+              >
+                <div>
+                  <p className="font-medium">{item.name}</p>
+                  <p className="text-muted-foreground text-sm">SKU: {item.sku}</p>
+                  {overrideReason && (
+                    <p className="text-muted-foreground text-xs">
+                      Override reason: {overrideReason}
+                    </p>
+                  )}
+                  {item.coupon && (
+                    <div className="mt-1 flex items-center gap-2">
+                      <span className="inline-flex items-center rounded-full bg-green-100 px-2 py-1 text-xs font-medium text-green-800">
+                        <IconTag className="mr-1 h-3 w-3" />
+                        {item.coupon.code}
+                      </span>
+                      <span className="text-muted-foreground text-xs">
+                        {item.coupon.name}
+                      </span>
+                    </div>
+                  )}
+                </div>
+                <div className="text-right">
+                  <p className="font-medium">
+                    {hasOverride ? (
+                      <span className="flex flex-col items-end">
+                        <span className="line-through">
+                          {formatCurrency(basePrice)} × {item.quantity}
+                        </span>
+                        <span className="text-emerald-600">
+                          {formatCurrency(item.price)} × {item.quantity}
+                        </span>
+                      </span>
+                    ) : (
+                      `${item.quantity} × ${formatCurrency(item.price)}`
+                    )}
                   </p>
-                )}
+                  <p className="text-sm font-semibold">
+                    {formatCurrency(item.total)}
+                  </p>
+                  {item.coupon && (
+                    <p className="text-xs text-green-600">
+                      {item.coupon.type === 'PERCENTAGE'
+                        ? `${item.coupon.value}% off`
+                        : `${formatCurrency(item.coupon.value)} off`}
+                    </p>
+                  )}
+                </div>
               </div>
-            </div>
-          ))}
+            );
+          })}
         </div>
       </div>
 
