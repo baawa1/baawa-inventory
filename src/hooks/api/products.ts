@@ -215,8 +215,11 @@ export function useProducts(
   return useQuery({
     queryKey: queryKeys.products.list({ filters, pagination }),
     queryFn: () => fetchProducts(filters, pagination),
-    staleTime: CACHE_DURATIONS.TRANSACTION_HISTORY, // 2 minutes
-    gcTime: CACHE_DURATIONS.PRODUCTS, // 5 minutes
+    staleTime: CACHE_DURATIONS.INFINITE,
+    gcTime: CACHE_DURATIONS.PRODUCTS_LONG,
+    refetchOnMount: false,
+    refetchOnWindowFocus: false,
+    refetchOnReconnect: false,
     placeholderData: previousData => previousData, // Keep previous data while loading new page
   });
 }
@@ -288,6 +291,7 @@ export function useCreateProduct() {
     onSuccess: () => {
       // Invalidate and refetch products list
       queryClient.invalidateQueries({ queryKey: queryKeys.products.lists() });
+      queryClient.invalidateQueries({ queryKey: queryKeys.pos.products() });
       queryClient.invalidateQueries({
         queryKey: queryKeys.inventory.metrics(),
       });
@@ -320,6 +324,7 @@ export function useUpdateProduct() {
       queryClient.setQueryData(queryKeys.products.detail(variables.id), data);
       // Invalidate products list to refetch updated data
       queryClient.invalidateQueries({ queryKey: queryKeys.products.lists() });
+      queryClient.invalidateQueries({ queryKey: queryKeys.pos.products() });
       queryClient.invalidateQueries({
         queryKey: queryKeys.inventory.metrics(),
       });
@@ -345,6 +350,7 @@ export function useDeleteProduct() {
     onSuccess: () => {
       // Invalidate products list
       queryClient.invalidateQueries({ queryKey: queryKeys.products.lists() });
+      queryClient.invalidateQueries({ queryKey: queryKeys.pos.products() });
       queryClient.invalidateQueries({
         queryKey: queryKeys.inventory.metrics(),
       });
@@ -364,6 +370,7 @@ export function useUnarchiveProduct() {
       });
       // Also invalidate regular products list in case unarchived products should appear there
       queryClient.invalidateQueries({ queryKey: queryKeys.products.lists() });
+      queryClient.invalidateQueries({ queryKey: queryKeys.pos.products() });
       queryClient.invalidateQueries({
         queryKey: queryKeys.inventory.metrics(),
       });
@@ -393,6 +400,10 @@ export const useProductOptions = () => {
         category: product.category?.name || 'No Category',
       }));
     },
-    staleTime: 5 * 60 * 1000, // 5 minutes for product options
+    staleTime: CACHE_DURATIONS.INFINITE,
+    gcTime: CACHE_DURATIONS.PRODUCTS_LONG,
+    refetchOnMount: false,
+    refetchOnWindowFocus: false,
+    refetchOnReconnect: false,
   });
 };

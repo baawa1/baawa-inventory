@@ -267,10 +267,12 @@ export const TRANSACTION_PREFIXES = {
 // Cache Durations (in milliseconds)
 export const CACHE_DURATIONS = {
   PRODUCTS: 5 * 60 * 1000, // 5 minutes
+  PRODUCTS_LONG: 24 * 60 * 60 * 1000, // 24 hours
   USER_SESSION: 60 * 1000, // 1 minute
   TRANSACTION_HISTORY: 2 * 60 * 1000, // 2 minutes
   QUERY_STALE_TIME: 5 * 60 * 1000, // 5 minutes
   QUERY_GC_TIME: 10 * 60 * 1000, // 10 minutes
+  INFINITE: Number.POSITIVE_INFINITY, // Never automatically stale
 } as const;
 
 // Polling and Refresh Intervals (in milliseconds)
