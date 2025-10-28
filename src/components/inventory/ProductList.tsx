@@ -44,6 +44,7 @@ import {
   IconTrash,
   IconEye,
   IconAdjustments,
+  IconRefresh,
   IconPackages,
   IconAlertTriangle,
   IconArchive,
@@ -159,6 +160,8 @@ const ProductList = ({ user }: ProductListProps) => {
   const brandsQuery = useBrands({ status: 'true' });
   const categoriesQuery = useCategoriesWithHierarchy();
   const { data: supplierOptions = [] } = useSupplierOptions();
+  const isRefreshing =
+    productsQuery.isFetching && !productsQuery.isLoading;
 
   // Extract data from queries - memoized to prevent unnecessary re-renders
   const products = useMemo(
@@ -299,6 +302,13 @@ const ProductList = ({ user }: ProductListProps) => {
       sortBy,
       sortOrder: sortOrder as 'asc' | 'desc',
     }));
+  };
+
+  const handleManualRefresh = async () => {
+    const result = await productsQuery.refetch({ cancelRefetch: false });
+    if (result.status === 'error') {
+      toast.error('Failed to refresh products. Please try again.');
+    }
   };
 
   const handlePageChange = (newPage: number) => {
@@ -619,6 +629,17 @@ const ProductList = ({ user }: ProductListProps) => {
           actions={
             canManageProducts ? (
               <div className="flex flex-row items-center gap-2">
+                <Button
+                  variant="outline"
+                  className="flex items-center gap-2"
+                  onClick={handleManualRefresh}
+                  disabled={productsQuery.isFetching}
+                >
+                  <IconRefresh
+                    className={isRefreshing ? 'h-4 w-4 animate-spin' : 'h-4 w-4'}
+                  />
+                  Refresh
+                </Button>
                 <Button
                   asChild
                   variant="outline"

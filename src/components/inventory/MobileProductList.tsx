@@ -63,6 +63,7 @@ import {
   IconAlertTriangle,
   IconArchive,
   IconPackages,
+  IconRefresh,
 } from '@tabler/icons-react';
 
 // Utils and Types
@@ -217,6 +218,8 @@ const MobileProductList = ({ user }: MobileProductListProps) => {
       })),
     [brands]
   );
+  const isRefreshing =
+    productsQuery.isFetching && !productsQuery.isLoading;
 
   // Static status options - memoized to prevent unnecessary re-renders
   const statusOptions = useMemo(
@@ -297,6 +300,13 @@ const MobileProductList = ({ user }: MobileProductListProps) => {
       sortBy,
       sortOrder: sortOrder as 'asc' | 'desc',
     }));
+  };
+
+  const handleManualRefresh = async () => {
+    const result = await productsQuery.refetch({ cancelRefetch: false });
+    if (result.status === 'error') {
+      toast.error('Failed to refresh products. Please try again.');
+    }
   };
 
   const handlePageChange = (newPage: number) => {
@@ -653,6 +663,19 @@ const MobileProductList = ({ user }: MobileProductListProps) => {
           actions={
             canManageProducts ? (
               <div className="flex flex-row items-center gap-2">
+                <Button
+                  variant="outline"
+                  size="sm"
+                  className="flex items-center gap-2"
+                  onClick={handleManualRefresh}
+                  disabled={productsQuery.isFetching}
+                >
+                  <IconRefresh
+                    className={isRefreshing ? 'h-4 w-4 animate-spin' : 'h-4 w-4'}
+                  />
+                  <span className="hidden sm:inline">Refresh</span>
+                  <span className="sm:hidden">Sync</span>
+                </Button>
                 <Button
                   asChild
                   variant="outline"

@@ -208,8 +208,14 @@ export const queryKeys = {
 
   // Session
   session: {
-    all: ['session'] as const,
-    current: () => [...queryKeys.session.all, 'current'] as const,
-    validity: () => [...queryKeys.session.all, 'validity'] as const,
+   all: ['session'] as const,
+   current: () => [...queryKeys.session.all, 'current'] as const,
+   validity: () => [...queryKeys.session.all, 'validity'] as const,
+ },
+
+  // POS
+  pos: {
+    all: ['pos'] as const,
+    products: () => [...queryKeys.pos.all, 'products'] as const,
   },
 } as const;

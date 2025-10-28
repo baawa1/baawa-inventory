@@ -21,13 +21,20 @@ import { ShoppingCart } from './ShoppingCart';
 import { SlidingPaymentInterface } from './SlidingPaymentInterface';
 import { OfflineStatusIndicator } from './OfflineStatusIndicator';
 import { POSErrorBoundary } from './POSErrorBoundary';
-import { IconShoppingCart, IconCash, IconTrash } from '@tabler/icons-react';
+import {
+  IconShoppingCart,
+  IconCash,
+  IconTrash,
+  IconRefresh,
+} from '@tabler/icons-react';
 import { useOffline } from '@/hooks/useOffline';
 import { toast } from 'sonner';
 import { formatCurrency } from '@/lib/utils';
 import { logger } from '@/lib/logger';
 import { calculateOrderTotals } from '@/lib/utils/calculations';
 import type { CartItem } from '@/types/pos';
+import { useIsFetching, useQueryClient } from '@tanstack/react-query';
+import { queryKeys } from '@/lib/query-client';
 
 export interface Sale {
   id: string;
@@ -46,6 +53,7 @@ export interface Sale {
 export function POSInterface() {
   const { data: session } = useSession();
   const { isOnline, queueTransaction } = useOffline();
+  const queryClient = useQueryClient();
   const [cart, setCart] = useState<CartItem[]>([]);
   const [currentStep, setCurrentStep] = useState<
     'search' | 'payment' | 'receipt'
@@ -190,6 +198,30 @@ export function POSInterface() {
     toast.success('Shopping cart cleared');
   };
 
+  const posProductsQueryKey = queryKeys.pos.products();
+  const isRefreshingProducts =
+    useIsFetching({ queryKey: posProductsQueryKey }) > 0;
+
+  const handleRefreshProducts = async () => {
+    try {
+      await queryClient.refetchQueries(
+        {
+          queryKey: posProductsQueryKey,
+          type: 'active',
+        },
+        {
+          throwOnError: true,
+        }
+      );
+      toast.success('Product list refreshed');
+    } catch (error) {
+      logger.error('POS product refresh failed', {
+        error: error instanceof Error ? error.message : String(error),
+      });
+      toast.error('Failed to refresh product list. Please try again.');
+    }
+  };
+
   // Handle successful payment
   const handlePaymentSuccess = async (sale: Sale) => {
     // If offline, queue the transaction
@@ -247,6 +279,21 @@ export function POSInterface() {
         <div className="flex flex-shrink-0 items-center justify-between border-b p-3 sm:p-4">
           <h1 className="text-xl font-bold sm:text-2xl">Point of Sale</h1>
           <div className="flex items-center gap-2 sm:gap-4">
+            <Button
+              variant="outline"
+              size="sm"
+              className="flex items-center gap-1 sm:gap-2"
+              onClick={handleRefreshProducts}
+              disabled={isRefreshingProducts}
+            >
+              <IconRefresh
+                className={
+                  isRefreshingProducts ? 'h-4 w-4 animate-spin' : 'h-4 w-4'
+                }
+              />
+              <span className="hidden sm:inline">Refresh Products</span>
+              <span className="sm:hidden">Refresh</span>
+            </Button>
             {cart.length > 0 && currentStep === 'search' && (
               <AlertDialog>
                 <AlertDialogTrigger asChild>

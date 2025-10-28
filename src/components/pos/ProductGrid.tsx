@@ -37,6 +37,8 @@ import { formatCurrency } from '@/lib/utils';
 import Image from 'next/image';
 import { normalizeImageUrl } from '@/lib/utils/image';
 import type { CartItem } from '@/types/pos';
+import { CACHE_DURATIONS } from '@/lib/constants';
+import { queryKeys } from '@/lib/query-client';
 
 interface Product {
   id: number;
@@ -68,8 +70,9 @@ export function ProductGrid({
   const videoRef = useRef<HTMLVideoElement>(null);
 
   // Fetch all products at once
+  const posProductsQueryKey = queryKeys.pos.products();
   const { data, isLoading, error } = useQuery({
-    queryKey: ['pos-all-products'],
+    queryKey: posProductsQueryKey,
     queryFn: async () => {
       const response = await fetch(`/api/pos/products?limit=0`);
       if (!response.ok) {
@@ -77,7 +80,11 @@ export function ProductGrid({
       }
       return response.json();
     },
-    staleTime: 60000, // 1 minute
+    staleTime: CACHE_DURATIONS.INFINITE,
+    gcTime: CACHE_DURATIONS.PRODUCTS_LONG,
+    refetchOnMount: false,
+    refetchOnWindowFocus: false,
+    refetchOnReconnect: false,
   });
 
   // Extract products from API response - memoized to prevent unnecessary re-renders
