@@ -138,7 +138,7 @@ The system uses a comprehensive PostgreSQL database schema with the following ma
 
 ### Prerequisites
 
-- Node.js 18+
+- Node.js 22+
 - PostgreSQL database (Supabase recommended)
 - OpenAI API key
 - Webflow API access

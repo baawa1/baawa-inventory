@@ -286,7 +286,7 @@ npm test -- --testPathPattern=components
 
 ### **Test Environment**
 
-- **Node.js**: v18+
+- **Node.js**: v22+
 - **TypeScript**: Full type safety
 - **ESLint**: Code quality
 - **Prettier**: Code formatting
