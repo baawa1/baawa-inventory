@@ -9,14 +9,14 @@ This guide provides comprehensive instructions for setting up, deploying, and ma
 ### System Requirements
 
 **Development Environment:**
-- Node.js 18+ and npm
+- Node.js 22+ and npm
 - Git
 - Code editor (VS Code recommended)
 - Web browser with developer tools
 
 **Production Environment:**
 - PostgreSQL 14+ database
-- Node.js 18+ runtime
+- Node.js 22+ runtime
 - SSL certificate (for HTTPS)
 - Email service (Resend or SMTP)
 - File storage service (Supabase Storage)
@@ -254,7 +254,7 @@ In `vercel.json`:
 #### 1. Create Dockerfile
 
 ```dockerfile
-FROM node:18-alpine AS base
+FROM node:22-alpine AS base
 
 # Install dependencies only when needed
 FROM base AS deps
@@ -313,7 +313,7 @@ docker run -p 3000:3000 --env-file .env.local inventory-pos
 
 ```bash
 # Install Node.js and PM2
-curl -fsSL https://deb.nodesource.com/setup_18.x | sudo -E bash -
+curl -fsSL https://deb.nodesource.com/setup_22.x | sudo -E bash -
 sudo apt-get install -y nodejs
 sudo npm install -g pm2
 
