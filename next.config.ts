@@ -86,7 +86,7 @@ const nextConfig: NextConfig = {
     minimumCacheTTL: 60 * 60 * 24 * 31, // 31 days to stretch optimizer cache
     formats: ["image/webp"],
     remotePatterns,
-    unoptimized: false,
+    unoptimized: true,
   },
 };
 
