@@ -25,6 +25,7 @@ import {
 } from '@/components/ui/form';
 import { Alert, AlertDescription } from '@/components/ui/alert';
 import { Eye, EyeOff, Loader2 } from 'lucide-react';
+import { toast } from 'sonner';
 
 const loginSchema = z.object({
   email: z.string().email('Please enter a valid email address'),
@@ -66,7 +67,10 @@ export function LoginForm({ callbackUrl }: LoginFormProps) {
 
       if (result?.error) {
         setGeneralError('Invalid email or password. Please try again.');
+        setIsLoading(false);
       } else if (result?.ok) {
+        toast.success('Login successful! Redirecting...');
+        // Keep isLoading true during redirect to show continuous feedback
         router.push(callbackUrl || '/dashboard');
       }
     } catch (error) {
@@ -74,7 +78,6 @@ export function LoginForm({ callbackUrl }: LoginFormProps) {
       setGeneralError(
         'Network error. Please check your connection and try again.'
       );
-    } finally {
       setIsLoading(false);
     }
   };
