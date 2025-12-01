@@ -126,6 +126,7 @@ export function StockReconciliationForm() {
   >({});
   const [isCategoryPopoverOpen, setIsCategoryPopoverOpen] = useState(false);
   const prefillRequestedRef = useRef(false);
+  const itemSearchInputRef = useRef<HTMLInputElement>(null);
   const router = useRouter();
 
   // TanStack Query hooks
@@ -304,6 +305,13 @@ export function StockReconciliationForm() {
       { units: 0, items: 0 }
     );
   }, [watchedItems]);
+
+  const focusAndSelectSearchField = useCallback(() => {
+    if (itemSearchInputRef.current) {
+      itemSearchInputRef.current.focus();
+      itemSearchInputRef.current.select();
+    }
+  }, []);
 
   const toggleCategory = useCallback((categoryId: number) => {
     setSelectedCategoryIds(previous => {
@@ -773,6 +781,7 @@ export function StockReconciliationForm() {
                       </button>
                     )}
                     <Input
+                      ref={itemSearchInputRef}
                       value={itemSearch}
                       onChange={event => setItemSearch(event.target.value)}
                       placeholder="Search added products by name or SKU..."
@@ -946,9 +955,12 @@ export function StockReconciliationForm() {
                                       return (
                                         <Checkbox
                                           checked={checked}
-                                          onCheckedChange={value =>
-                                            field.onChange(Boolean(value))
-                                          }
+                                          onCheckedChange={value => {
+                                            field.onChange(Boolean(value));
+                                            if (value) {
+                                              focusAndSelectSearchField();
+                                            }
+                                          }}
                                           disabled={isDiscrepancy}
                                           aria-label="Mark product as verified"
                                           className="mx-auto"
@@ -1111,9 +1123,12 @@ export function StockReconciliationForm() {
                                     </span>
                                     <Checkbox
                                       checked={checked}
-                                      onCheckedChange={value =>
-                                        field.onChange(Boolean(value))
-                                      }
+                                      onCheckedChange={value => {
+                                        field.onChange(Boolean(value));
+                                        if (value) {
+                                          focusAndSelectSearchField();
+                                        }
+                                      }}
                                       disabled={isDiscrepancy}
                                       aria-label="Mark product as verified"
                                     />
