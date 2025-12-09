@@ -148,6 +148,12 @@ const MobileProductList = ({ user }: MobileProductListProps) => {
     number | null
   >(null);
 
+  // Handler to open product detail modal
+  const handleOpenProductDetail = (productId: number) => {
+    setSelectedProductForDetail(productId);
+    setProductDetailModalOpen(true);
+  };
+
   // Debounce search term
   const debouncedSearchTerm = useDebounce(filters.search, 300);
   const isSearching = filters.search !== debouncedSearchTerm;
@@ -427,19 +433,29 @@ const MobileProductList = ({ user }: MobileProductListProps) => {
     switch (columnKey) {
       case 'image':
         return (
-          <div className="flex items-center justify-start">
+          <button
+            type="button"
+            onClick={() => handleOpenProductDetail(product.id)}
+            className="flex items-center justify-start cursor-pointer hover:opacity-80 transition-opacity"
+            aria-label={`View details for ${product.name}`}
+          >
             <ProductImage
               src={getProductImage(product)}
               alt={product.name}
               size="sm"
               className="sm:h-12 sm:w-12"
             />
-          </div>
+          </button>
         );
       case 'name':
         const truncatedName = truncateText(product.name, 25);
         return (
-          <div className="min-w-0">
+          <button
+            type="button"
+            onClick={() => handleOpenProductDetail(product.id)}
+            className="min-w-0 text-left cursor-pointer hover:text-blue-600 transition-colors"
+            aria-label={`View details for ${product.name}`}
+          >
             <div
               className="font-medium truncate"
               title={product.name}
@@ -451,7 +467,7 @@ const MobileProductList = ({ user }: MobileProductListProps) => {
                 {product.brand.name}
               </div>
             )}
-          </div>
+          </button>
         );
       case 'sku':
         return <span className="font-mono text-xs sm:text-sm">{product.sku}</span>;

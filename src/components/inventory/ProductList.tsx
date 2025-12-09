@@ -135,6 +135,12 @@ const ProductList = ({ user }: ProductListProps) => {
     number | null
   >(null);
 
+  // Handler to open product detail modal
+  const handleOpenProductDetail = (productId: number) => {
+    setSelectedProductForDetail(productId);
+    setProductDetailModalOpen(true);
+  };
+
   // Debounce search term
   const debouncedSearchTerm = useDebounce(filters.search, 300);
   const isSearching = filters.search !== debouncedSearchTerm;
@@ -436,7 +442,12 @@ const ProductList = ({ user }: ProductListProps) => {
         const productImage = getProductImage(product);
 
         return (
-          <div className="flex items-center justify-start">
+          <button
+            type="button"
+            onClick={() => handleOpenProductDetail(product.id)}
+            className="flex items-center justify-start cursor-pointer hover:opacity-80 transition-opacity"
+            aria-label={`View details for ${product.name}`}
+          >
             {productImage && productImage.trim() !== '' ? (
               <div className="relative h-12 w-12 overflow-hidden rounded-md border">
                 <Image
@@ -452,12 +463,17 @@ const ProductList = ({ user }: ProductListProps) => {
                 <IconPackages className="h-6 w-6 text-gray-400" />
               </div>
             )}
-          </div>
+          </button>
         );
       case 'name':
         const truncatedName = truncateText(product.name, 25);
         return (
-          <div>
+          <button
+            type="button"
+            onClick={() => handleOpenProductDetail(product.id)}
+            className="text-left cursor-pointer hover:text-blue-600 transition-colors"
+            aria-label={`View details for ${product.name}`}
+          >
             <div
               className="font-medium min-w-0 max-w-[240px] truncate"
               title={product.name}
@@ -467,7 +483,7 @@ const ProductList = ({ user }: ProductListProps) => {
             {product.brand && (
               <div className="text-sm">{product.brand.name}</div>
             )}
-          </div>
+          </button>
         );
       case 'sku':
         return <span className="font-mono text-sm">{product.sku}</span>;
