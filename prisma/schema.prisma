@@ -287,6 +287,8 @@ model StockAddition {
   purchaseDate DateTime? @default(now()) @map("purchase_date") @db.Timestamptz(6)
   notes        String?
   referenceNo  String?   @map("reference_no") @db.VarChar(255)
+  previousStock Int      @default(0) @map("previous_stock")
+  newStock      Int      @default(0) @map("new_stock")
   createdAt    DateTime? @default(now()) @map("created_at") @db.Timestamptz(6)
   updatedAt    DateTime? @default(now()) @updatedAt @map("updated_at") @db.Timestamptz(6)
   productId    Int       @map("product_id")

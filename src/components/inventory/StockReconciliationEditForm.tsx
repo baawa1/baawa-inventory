@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useEffect, useMemo } from 'react';
+import { useState, useEffect, useMemo, useRef, useCallback } from 'react';
 import { useForm, useFieldArray, useWatch } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { z } from 'zod';
@@ -116,6 +116,7 @@ export function StockReconciliationEditForm({
   const [showProductSearch, setShowProductSearch] = useState(false);
   const [itemSearch, setItemSearch] = useState('');
   const router = useRouter();
+  const itemSearchInputRef = useRef<HTMLInputElement>(null);
 
   // TanStack Query hooks
   const { data: reconciliationData, isLoading: loadingReconciliation } =
@@ -256,6 +257,13 @@ export function StockReconciliationEditForm({
     setShowProductSearch(false);
     setSearchTerm('');
   };
+
+  const focusAndSelectSearchField = useCallback(() => {
+    if (itemSearchInputRef.current) {
+      itemSearchInputRef.current.focus();
+      itemSearchInputRef.current.select();
+    }
+  }, []);
 
   const calculateDiscrepancy = (systemCount: number, physicalCount: number) => {
     return physicalCount - systemCount;
@@ -559,6 +567,7 @@ export function StockReconciliationEditForm({
                       </button>
                     )}
                     <Input
+                      ref={itemSearchInputRef}
                       value={itemSearch}
                       onChange={event => setItemSearch(event.target.value)}
                       placeholder="Search added products by name or SKU..."
@@ -720,9 +729,12 @@ export function StockReconciliationEditForm({
                                           return (
                                             <Checkbox
                                               checked={checked}
-                                              onCheckedChange={value =>
-                                                field.onChange(Boolean(value))
-                                              }
+                                              onCheckedChange={value => {
+                                                field.onChange(Boolean(value));
+                                                if (value) {
+                                                  focusAndSelectSearchField();
+                                                }
+                                              }}
                                               disabled={isDiscrepancy}
                                               aria-label="Mark product as verified"
                                               className="mx-auto"
@@ -885,9 +897,12 @@ export function StockReconciliationEditForm({
                                         </span>
                                         <Checkbox
                                           checked={checked}
-                                          onCheckedChange={value =>
-                                            field.onChange(Boolean(value))
-                                          }
+                                          onCheckedChange={value => {
+                                            field.onChange(Boolean(value));
+                                            if (value) {
+                                              focusAndSelectSearchField();
+                                            }
+                                          }}
                                           disabled={isDiscrepancy}
                                           aria-label="Mark product as verified"
                                         />

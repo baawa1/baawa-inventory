@@ -171,6 +171,9 @@ export const POST = withPermission(
 
         // Create the stock addition record
         const totalCost = validatedData.quantity * validatedData.costPerUnit;
+        const previousStock = product.stock;
+        const newStock = previousStock + validatedData.quantity;
+
         const stockAddition = await tx.stockAddition.create({
           data: {
             productId: validatedData.productId,
@@ -182,6 +185,9 @@ export const POST = withPermission(
               ? new Date(validatedData.purchaseDate)
               : new Date(),
             notes: validatedData.notes,
+            referenceNo: validatedData.referenceNo,
+            previousStock,
+            newStock,
             createdById: userId,
           },
           include: {
@@ -212,7 +218,6 @@ export const POST = withPermission(
         });
 
         // Update product stock
-        const newStock = product.stock + validatedData.quantity;
         await tx.product.update({
           where: { id: validatedData.productId },
           data: {
@@ -226,7 +231,7 @@ export const POST = withPermission(
 
         return {
           stockAddition,
-          previousStock: product.stock,
+          previousStock,
           newStock,
         };
       });

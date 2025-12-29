@@ -203,7 +203,7 @@ export function StockHistoryList({ user: _ }: StockHistoryListProps) {
       case 'new_stock':
         return (
           <Badge variant="outline">
-            {(item.previousStock || 0) + item.quantity} units
+            {item.newStock || 0} units
           </Badge>
         );
       case 'cost_per_unit':
@@ -227,7 +227,11 @@ export function StockHistoryList({ user: _ }: StockHistoryListProps) {
           <span className="text-gray-400">-</span>
         );
       case 'added_by':
-        return <div className="text-sm">{item.createdBy.name}</div>;
+        return (
+          <div className="text-sm">
+            {item.createdBy.name}
+          </div>
+        );
       default:
         return '-';
     }
