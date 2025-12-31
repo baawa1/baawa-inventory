@@ -205,7 +205,6 @@ export const GET = withAuth(async (request: AuthenticatedRequest) => {
         supplierId: product.supplierId,
         createdAt: product.createdAt,
         updatedAt: product.updatedAt,
-        wordpress_id: (product as any).wordpress_id ?? null,
         ...(includeSync && { content_sync: (product as any).content_sync }),
       } as any;
 
@@ -420,7 +419,6 @@ export const POST = withPermission(
         categoryId: validatedData.categoryId,
         brandId: validatedData.brandId,
         supplierId: validatedData.supplierId,
-        wordpress_id: validatedData.wordpress_id,
       };
 
       // Handle price field - required in database schema

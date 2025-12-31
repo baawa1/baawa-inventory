@@ -19,7 +19,6 @@ const CategoryCreateSchema = z.object({
   description: z.string().optional(),
   isActive: z.boolean().optional(),
   parentId: z.number().optional(),
-  wordpress_id: z.number().int().positive().max(2147483647, 'WordPress ID must be less than 2,147,483,647').optional().nullable(),
 });
 
 // Validation schema for category update (for future use)
@@ -110,7 +109,6 @@ export const GET = withAuth(async (request: AuthenticatedRequest) => {
       id: category.id,
       name: category.name,
       description: category.description,
-      wordpress_id: (category as any).wordpress_id ?? null,
       isActive: category.isActive,
       parentId: category.parentId,
       parent: category.parent,
@@ -180,7 +178,6 @@ export const POST = withPermission(
           description: validatedData.description,
           isActive: validatedData.isActive,
           parentId: validatedData.parentId,
-          wordpress_id: validatedData.wordpress_id,
         },
         include: {
           parent: {
@@ -202,7 +199,6 @@ export const POST = withPermission(
         id: newCategory.id,
         name: newCategory.name,
         description: newCategory.description,
-        wordpress_id: (newCategory as any).wordpress_id ?? null,
         isActive: newCategory.isActive,
         parentId: newCategory.parentId,
         parent: newCategory.parent,

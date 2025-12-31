@@ -32,7 +32,6 @@ const ProductUpdateSchema = z.object({
   minStock: z.number().min(0).optional(),
   isArchived: z.boolean().optional(),
   tags: z.array(z.string()).optional(),
-  wordpress_id: z.number().int().positive().optional().nullable(),
   // Images support for consolidated form
   images: z.array(z.object({
     url: z.string().url('Image URL must be valid'),
@@ -186,8 +185,6 @@ export const PUT = withPermission(
         updateData.tags = validatedData.tags;
       if (validatedData.isArchived !== undefined)
         updateData.isArchived = validatedData.isArchived;
-      if (validatedData.wordpress_id !== undefined)
-        updateData.wordpress_id = validatedData.wordpress_id;
       if (validatedData.images !== undefined)
         updateData.images = validatedData.images;
 

@@ -363,6 +363,25 @@ export const POST = withAuth(async function (request: AuthenticatedRequest) {
         willCreateTransaction: true,
       });
 
+      // Validate stock availability for all items BEFORE creating transaction
+      for (const item of validatedData.items) {
+        const product = await tx.product.findUnique({
+          where: { id: item.productId },
+          select: { name: true, stock: true, isService: true },
+        });
+
+        if (!product) {
+          throw new Error(`Product with ID ${item.productId} not found`);
+        }
+
+        // Check stock availability (skip for services)
+        if (!product.isService && product.stock < item.quantity) {
+          throw new Error(
+            `Insufficient stock for ${product.name}. Available: ${product.stock}, Requested: ${item.quantity}`
+          );
+        }
+      }
+
       // Create sales transaction
       const salesTransaction = await tx.salesTransaction.create({
         data: {
@@ -385,7 +404,7 @@ export const POST = withAuth(async function (request: AuthenticatedRequest) {
           // Get product details for email receipt
           const product = await tx.product.findUnique({
             where: { id: item.productId },
-            select: { name: true },
+            select: { name: true, isService: true },
           });
 
           // Create sales item
@@ -401,15 +420,17 @@ export const POST = withAuth(async function (request: AuthenticatedRequest) {
             },
           });
 
-          // Update product stock
-          await tx.product.update({
-            where: { id: item.productId },
-            data: {
-              stock: {
-                decrement: item.quantity,
+          // Update product stock (skip for services)
+          if (!product?.isService) {
+            await tx.product.update({
+              where: { id: item.productId },
+              data: {
+                stock: {
+                  decrement: item.quantity,
+                },
               },
-            },
-          });
+            });
+          }
 
           return {
             ...salesItem,

@@ -10,52 +10,102 @@ export const GET = withAuth(async (request: AuthenticatedRequest) => {
     const offset = parseInt(searchParams.get('offset') || '0');
     const search = searchParams.get('search') || '';
 
-    // Get all products first, then filter for low stock
-    const allProducts = await prisma.product.findMany({
-      where: {
-        isArchived: false,
-      },
-      include: {
-        category: { select: { id: true, name: true } },
-        brand: { select: { id: true, name: true } },
-        supplier: { select: { id: true, name: true } },
-      },
-      orderBy: [{ stock: 'asc' }, { name: 'asc' }],
-    });
+    // Build where clause with low stock condition at database level
+    let whereCondition = `
+      WHERE p."isArchived" = false
+      AND (p.stock = 0 OR p.stock <= p."minStock")
+    `;
 
-    // Filter for low stock products
-    let allLowStockProducts = allProducts.filter(
-      product => product.stock === 0 || product.stock <= product.minStock
-    );
-
-    // Apply search filter if provided
+    // Add search condition if provided
     if (search) {
-      const searchLower = search.toLowerCase();
-      allLowStockProducts = allLowStockProducts.filter(
-        product =>
-          product.name.toLowerCase().includes(searchLower) ||
-          product.sku.toLowerCase().includes(searchLower) ||
-          product.category?.name.toLowerCase().includes(searchLower) ||
-          product.brand?.name.toLowerCase().includes(searchLower)
-      );
+      const searchParam = `%${search}%`;
+      whereCondition += `
+        AND (
+          p.name ILIKE $1
+          OR p.sku ILIKE $1
+          OR c.name ILIKE $1
+          OR b.name ILIKE $1
+        )
+      `;
     }
 
-    // Calculate metrics
-    const totalValue = allLowStockProducts.reduce(
-      (sum, product) => sum + Number(product.stock) * Number(product.cost),
-      0
-    );
+    // Get total count
+    const countQuery = `
+      SELECT COUNT(*) as total
+      FROM "Product" p
+      LEFT JOIN "Category" c ON p."categoryId" = c.id
+      LEFT JOIN "Brand" b ON p."brandId" = b.id
+      ${whereCondition}
+    `;
 
-    const criticalStock = allLowStockProducts.filter(
-      product => product.stock === 0 || product.stock <= product.minStock * 0.5
-    ).length;
+    const countResult = search
+      ? await prisma.$queryRawUnsafe<[{ total: bigint }]>(
+          countQuery,
+          `%${search}%`
+        )
+      : await prisma.$queryRawUnsafe<[{ total: bigint }]>(countQuery);
 
-    const lowStock = allLowStockProducts.filter(
-      product => product.stock > 0 && product.stock <= product.minStock
-    ).length;
+    const total = Number(countResult[0]?.total || 0);
 
     // Get paginated products
-    const products = allLowStockProducts.slice(offset, offset + limit);
+    const productsQuery = `
+      SELECT
+        p.id,
+        p.name,
+        p.sku,
+        p.stock,
+        p."minStock",
+        p.cost,
+        p.price,
+        p.status,
+        p."createdAt",
+        p."updatedAt",
+        jsonb_build_object('id', c.id, 'name', c.name) as category,
+        jsonb_build_object('id', b.id, 'name', b.name) as brand,
+        jsonb_build_object('id', s.id, 'name', s.name) as supplier
+      FROM "Product" p
+      LEFT JOIN "Category" c ON p."categoryId" = c.id
+      LEFT JOIN "Brand" b ON p."brandId" = b.id
+      LEFT JOIN "Supplier" s ON p."supplierId" = s.id
+      ${whereCondition}
+      ORDER BY p.stock ASC, p.name ASC
+      LIMIT $${search ? 2 : 1} OFFSET $${search ? 3 : 2}
+    `;
+
+    const products = search
+      ? await prisma.$queryRawUnsafe<any[]>(
+          productsQuery,
+          `%${search}%`,
+          limit,
+          offset
+        )
+      : await prisma.$queryRawUnsafe<any[]>(productsQuery, limit, offset);
+
+    // Calculate metrics with raw SQL for better performance
+    const metricsQuery = `
+      SELECT
+        SUM(p.stock * p.cost) as "totalValue",
+        COUNT(CASE WHEN p.stock = 0 OR p.stock <= p."minStock" * 0.5 THEN 1 END) as "criticalStock",
+        COUNT(CASE WHEN p.stock > 0 AND p.stock <= p."minStock" THEN 1 END) as "lowStock"
+      FROM "Product" p
+      LEFT JOIN "Category" c ON p."categoryId" = c.id
+      LEFT JOIN "Brand" b ON p."brandId" = b.id
+      ${whereCondition}
+    `;
+
+    const metricsResult = search
+      ? await prisma.$queryRawUnsafe<
+          [{ totalValue: any; criticalStock: bigint; lowStock: bigint }]
+        >(metricsQuery, `%${search}%`)
+      : await prisma.$queryRawUnsafe<
+          [{ totalValue: any; criticalStock: bigint; lowStock: bigint }]
+        >(metricsQuery);
+
+    const metrics = metricsResult[0] || {
+      totalValue: 0,
+      criticalStock: 0,
+      lowStock: 0,
+    };
 
     // Transform products to match expected format
     const transformedProducts = products.map(product => ({
@@ -77,16 +127,16 @@ export const GET = withAuth(async (request: AuthenticatedRequest) => {
     return NextResponse.json({
       products: transformedProducts,
       pagination: {
-        total: allLowStockProducts.length,
+        total,
         limit,
         offset,
-        hasMore: offset + limit < allLowStockProducts.length,
+        hasMore: offset + limit < total,
       },
       metrics: {
-        totalValue,
-        criticalStock,
-        lowStock,
-        totalProducts: allLowStockProducts.length,
+        totalValue: Number(metrics.totalValue || 0),
+        criticalStock: Number(metrics.criticalStock || 0),
+        lowStock: Number(metrics.lowStock || 0),
+        totalProducts: total,
       },
     });
   } catch (error) {

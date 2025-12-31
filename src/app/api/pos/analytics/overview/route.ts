@@ -57,7 +57,7 @@ interface UniqueCustomer {
 }
 
 interface TopProductResult {
-  product_id: number | null;
+  product_id: number;
   _sum: {
     quantity: number | null;
     total_price: any; // Prisma Decimal type
@@ -185,9 +185,6 @@ export const GET = withAuth(async (request: AuthenticatedRequest) => {
             payment_status: {
               in: SUCCESSFUL_PAYMENT_STATUSES,
             },
-          },
-          product_id: {
-            not: null,
           },
         },
         _sum: {
@@ -325,8 +322,7 @@ export const GET = withAuth(async (request: AuthenticatedRequest) => {
 
     // Get product details for top products
     const productIds = currentTopProducts
-      .map((p: TopProductResult) => p.product_id)
-      .filter((id): id is number => id !== null);
+      .map((p: TopProductResult) => p.product_id);
 
     const products = await prisma.product.findMany({
       where: {
@@ -363,7 +359,7 @@ export const GET = withAuth(async (request: AuthenticatedRequest) => {
           (p: { id: number; name: string }) => p.id === item.product_id
         );
         return {
-          id: item.product_id || 0,
+          id: item.product_id,
           name: product?.name || 'Unknown Product',
           revenue: Number(item._sum.total_price || 0),
           quantity: item._sum.quantity || 0,

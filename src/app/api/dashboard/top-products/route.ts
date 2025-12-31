@@ -8,11 +8,6 @@ export const GET = withAuth(async (_request: AuthenticatedRequest) => {
     // Get top products by sales quantity
     const topProducts = await prisma.salesItem.groupBy({
       by: ['product_id'],
-      where: {
-        product_id: {
-          not: null,
-        },
-      },
       _sum: {
         quantity: true,
         total_price: true,
@@ -29,11 +24,11 @@ export const GET = withAuth(async (_request: AuthenticatedRequest) => {
     });
 
     // Get product details for the top products
-    const productIds = topProducts.map(item => item.product_id).filter(Boolean);
+    const productIds = topProducts.map(item => item.product_id);
     const products = await prisma.product.findMany({
       where: {
         id: {
-          in: productIds as number[],
+          in: productIds,
         },
       },
       select: {
