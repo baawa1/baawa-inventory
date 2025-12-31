@@ -33,7 +33,6 @@ export interface Product {
   price: number;
   stock: number;
   minStock: number;
-  hasVariants: boolean;
   isArchived: boolean;
   tags: string[];
   status: 'ACTIVE' | 'INACTIVE' | 'OUT_OF_STOCK' | 'DISCONTINUED';

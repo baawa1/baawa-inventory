@@ -427,16 +427,6 @@ export const ProductDetailModal: React.FC<ProductDetailModalProps> = ({
                         : 'N/A'}
                     </p>
                   </div>
-
-                  {product.hasVariants && (
-                    <div>
-                      <label className="text-muted-foreground text-sm font-medium">
-                        Variants
-                      </label>
-                      <br />
-                      <Badge variant="outline">Has Variants</Badge>
-                    </div>
-                  )}
                 </CardContent>
               </Card>
             </div>

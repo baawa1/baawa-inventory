@@ -48,7 +48,6 @@ export interface Product {
   stock: number;
   minStock: number;
   status: ProductStatus;
-  hasVariants: boolean;
   isArchived: boolean;
   images?: string[];
   tags: string[];
