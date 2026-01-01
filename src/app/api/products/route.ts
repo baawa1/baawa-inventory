@@ -282,56 +282,14 @@ export const POST = withPermission(
 
       // Manager can set selling prices, so no restriction needed
 
-      // Auto-generate SKU if not provided
+      // Handle SKU - will be generated or validated
       let finalSku = validatedData.sku;
+      let shouldGenerateFinalSKU = false;
+
       if (!finalSku) {
-        // Fetch category and brand names for SKU generation
-        let categoryName: string | undefined;
-        let brandName: string | undefined;
-
-        if (validatedData.categoryId) {
-          const category = await prisma.category.findUnique({
-            where: { id: validatedData.categoryId },
-            select: { name: true },
-          });
-          categoryName = category?.name;
-        }
-
-        if (validatedData.brandId) {
-          const brand = await prisma.brand.findUnique({
-            where: { id: validatedData.brandId },
-            select: { name: true },
-          });
-          brandName = brand?.name;
-        }
-
-        // Generate unique SKU with retry logic
-        let attempts = 0;
-        const maxAttempts = 10;
-
-        do {
-          finalSku = generateSKU(validatedData.name, categoryName, brandName);
-          attempts++;
-
-          // Check if SKU already exists
-          const existingSKU = await prisma.product.findUnique({
-            where: { sku: finalSku },
-            select: { id: true },
-          });
-
-          if (!existingSKU) break;
-        } while (attempts < maxAttempts);
-
-        if (attempts >= maxAttempts) {
-          return createSecureResponse(
-            {
-              success: false,
-              message: 'Failed to generate unique SKU after multiple attempts',
-              code: 'INTERNAL_ERROR',
-            },
-            500
-          );
-        }
+        // Generate temporary SKU for initial creation (will be replaced with final SKU using product ID)
+        shouldGenerateFinalSKU = true;
+        finalSku = `TEMP-${Date.now()}-${Math.random().toString(36).substr(2, 9)}`;
       } else {
         // Check if provided SKU already exists
         const existingSKU = await prisma.product.findUnique({
@@ -459,6 +417,46 @@ export const POST = withPermission(
         data: productData,
         include: includeRelations,
       });
+
+      // Generate final SKU using product ID if needed
+      if (shouldGenerateFinalSKU) {
+        // Fetch category and brand names for SKU generation
+        let categoryName: string | undefined;
+        let brandName: string | undefined;
+
+        if (validatedData.categoryId) {
+          const category = await prisma.category.findUnique({
+            where: { id: validatedData.categoryId },
+            select: { name: true },
+          });
+          categoryName = category?.name;
+        }
+
+        if (validatedData.brandId) {
+          const brand = await prisma.brand.findUnique({
+            where: { id: validatedData.brandId },
+            select: { name: true },
+          });
+          brandName = brand?.name;
+        }
+
+        // Generate final SKU using product ID (guaranteed unique)
+        const generatedSKU = generateSKU(
+          validatedData.name,
+          categoryName,
+          brandName,
+          newProduct.id
+        );
+
+        // Update product with final SKU
+        await prisma.product.update({
+          where: { id: newProduct.id },
+          data: { sku: generatedSKU },
+        });
+
+        // Update the newProduct object to reflect the new SKU
+        newProduct.sku = generatedSKU;
+      }
 
       try {
         await promoteProductImagesToSkuFolder(prisma, newProduct.id);
