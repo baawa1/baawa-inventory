@@ -10,8 +10,8 @@ import {
 } from './common';
 import { nairaPriceSchema, costPriceSchema } from './price';
 
-// Product creation schema
-export const createProductSchema = z.object({
+// Base product schema without validation
+const baseProductSchema = z.object({
   name: nameSchema,
   sku: skuSchema.optional(), // Made optional since it will be auto-generated
   description: z
@@ -55,12 +55,45 @@ export const createProductSchema = z.object({
   })),
 });
 
+// Product creation schema with price validation
+export const createProductSchema = baseProductSchema.refine(
+  (data) => {
+    // If purchasePrice is provided, ensure sellingPrice >= purchasePrice
+    if (data.purchasePrice !== undefined && data.purchasePrice !== null) {
+      return data.sellingPrice >= data.purchasePrice;
+    }
+    return true;
+  },
+  {
+    message: 'Selling price must be greater than or equal to purchase price',
+    path: ['sellingPrice'],
+  }
+);
+
 // Product update schema (all fields optional except validation rules)
-export const updateProductSchema = createProductSchema
+export const updateProductSchema = baseProductSchema
   .partial()
   .refine(data => Object.keys(data).length > 0, {
     message: 'At least one field must be provided for update',
-  });
+  })
+  .refine(
+    (data) => {
+      // If both prices are provided in update, ensure sellingPrice >= purchasePrice
+      if (
+        data.purchasePrice !== undefined &&
+        data.purchasePrice !== null &&
+        data.sellingPrice !== undefined &&
+        data.sellingPrice !== null
+      ) {
+        return data.sellingPrice >= data.purchasePrice;
+      }
+      return true;
+    },
+    {
+      message: 'Selling price must be greater than or equal to purchase price',
+      path: ['sellingPrice'],
+    }
+  );
 
 // Product query parameters schema
 export const productQuerySchema = paginationSchema.merge(searchSchema).extend({
