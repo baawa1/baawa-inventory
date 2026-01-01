@@ -142,9 +142,9 @@ model Product {
   status              ProductStatus             @default(ACTIVE)
   isService           Boolean                   @default(false) @map("is_service")
   ai_content          AIContent[]
-  brand               Brand?                    @relation(fields: [brandId], references: [id], onUpdate: NoAction)
-  category            Category?                 @relation(fields: [categoryId], references: [id], onUpdate: NoAction)
-  supplier            Supplier?                 @relation(fields: [supplierId], references: [id], onUpdate: NoAction)
+  brand               Brand?                    @relation(fields: [brandId], references: [id], onDelete: SetNull, onUpdate: Cascade)
+  category            Category?                 @relation(fields: [categoryId], references: [id], onDelete: SetNull, onUpdate: Cascade)
+  supplier            Supplier?                 @relation(fields: [supplierId], references: [id], onDelete: SetNull, onUpdate: Cascade)
   sales_items         SalesItem[]
   stockAdditions      StockAddition[]
   stock_adjustments   StockAdjustment[]
