@@ -144,30 +144,23 @@ export const POST = withPermission(
 
       // Execute all operations in a transaction
       const result = await prisma.$transaction(async tx => {
-        // Check if product exists
-        const product = await tx.product.findUnique({
+        // Validate product exists (throws if not found)
+        const product = await tx.product.findUniqueOrThrow({
           where: { id: validatedData.productId },
-          select: { id: true, name: true, stock: true, cost: true },
+          select: {
+            id: true,
+            name: true,
+            stock: true,
+            cost: true,
+          },
         });
 
-        if (!product) {
-          throw new Error(
-            `Product with ID ${validatedData.productId} not found`
-          );
-        }
-
-        // Check if supplier exists (if provided)
+        // Validate supplier if provided (throws if not found)
         if (validatedData.supplierId) {
-          const supplier = await tx.supplier.findUnique({
+          await tx.supplier.findUniqueOrThrow({
             where: { id: validatedData.supplierId },
-            select: { id: true, name: true },
+            select: { id: true },
           });
-
-          if (!supplier) {
-            throw new Error(
-              `Supplier with ID ${validatedData.supplierId} not found`
-            );
-          }
         }
 
         // Create the stock addition record
