@@ -156,6 +156,12 @@ model Product {
   @@index([stock], map: "idx_products_stock")
   @@index([supplierId], map: "idx_products_supplier_id")
   @@index([isService], map: "idx_products_is_service")
+  // Composite indexes for common query patterns
+  @@index([categoryId, status, isArchived], map: "idx_products_category_status_archived")
+  @@index([brandId, status, isArchived], map: "idx_products_brand_status_archived")
+  @@index([status, stock], map: "idx_products_status_stock")
+  @@index([isArchived, status, categoryId], map: "idx_products_archived_status_category")
+  @@index([name], map: "idx_products_name")
   @@map("products")
 }
 

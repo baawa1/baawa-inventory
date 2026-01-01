@@ -37,16 +37,12 @@ export function calculateProfitAmount(
 }
 
 /**
- * Generate SKU based on product name, category, brand, and optionally product ID
- *
- * When productId is provided, it creates a unique, collision-free SKU
- * When productId is not provided, generates a temporary SKU for initial creation
+ * Generate SKU based on product name, category, and brand
  */
 export function generateSKU(
   productName: string,
   category?: string,
-  brand?: string,
-  productId?: number
+  brand?: string
 ): string {
   // Get first 3 letters of category (default: PRD)
   const categoryCode = category
@@ -61,12 +57,10 @@ export function generateSKU(
     ? productName.substring(0, 3).toUpperCase()
     : 'PRO';
 
-  // Use product ID if provided (guaranteed unique), otherwise use timestamp + random
-  const uniqueCode = productId
-    ? productId.toString().padStart(6, '0')
-    : `T${Date.now().toString().slice(-5)}`;
+  // Generate random 4-digit number
+  const randomNum = Math.floor(1000 + Math.random() * 9000);
 
-  return `${categoryCode}-${brandCode}-${productCode}-${uniqueCode}`;
+  return `${categoryCode}-${brandCode}-${productCode}-${randomNum}`;
 }
 
 /**
