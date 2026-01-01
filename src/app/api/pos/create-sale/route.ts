@@ -401,10 +401,10 @@ export const POST = withAuth(async function (request: AuthenticatedRequest) {
       // Create sales items and update product stock
       const salesItems = await Promise.all(
         validatedData.items.map(async item => {
-          // Get product details for email receipt
+          // Get product details for stock update
           const product = await tx.product.findUnique({
             where: { id: item.productId },
-            select: { name: true, isService: true },
+            select: { name: true, isService: true, stock: true },
           });
 
           // Create sales item
@@ -420,14 +420,32 @@ export const POST = withAuth(async function (request: AuthenticatedRequest) {
             },
           });
 
-          // Update product stock (skip for services)
+          // Update product stock and log transaction (skip for services)
           if (!product?.isService) {
+            const previousStock = product?.stock || 0;
+            const newStock = previousStock - item.quantity;
+
             await tx.product.update({
               where: { id: item.productId },
               data: {
                 stock: {
                   decrement: item.quantity,
                 },
+              },
+            });
+
+            // Log stock transaction
+            await tx.stockTransaction.create({
+              data: {
+                productId: item.productId,
+                quantity: -item.quantity, // Negative for sales
+                type: 'SALE',
+                referenceType: 'SalesTransaction',
+                referenceId: salesTransaction.id,
+                reason: `Sale: ${salesTransaction.transaction_number}`,
+                userId: parseInt(request.user.id),
+                previousStock,
+                newStock,
               },
             });
           }

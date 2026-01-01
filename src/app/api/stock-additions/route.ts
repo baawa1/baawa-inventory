@@ -229,6 +229,21 @@ export const POST = withPermission(
           },
         });
 
+        // Log stock transaction
+        await tx.stockTransaction.create({
+          data: {
+            productId: validatedData.productId,
+            quantity: validatedData.quantity, // Positive for additions
+            type: 'PURCHASE',
+            referenceType: 'StockAddition',
+            referenceId: stockAddition.id,
+            reason: validatedData.notes || 'Stock addition from supplier',
+            userId: parseInt(request.user.id),
+            previousStock,
+            newStock,
+          },
+        });
+
         return {
           stockAddition,
           previousStock,

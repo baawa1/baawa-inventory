@@ -48,6 +48,7 @@ model User {
   stock_adjustments_stock_adjustments_approved_byTousers StockAdjustment[]      @relation("stock_adjustments_approved_byTousers")
   approvedReconciliations                                StockReconciliation[]  @relation("ReconciliationApprover")
   createdReconciliations                                 StockReconciliation[]  @relation("ReconciliationCreator")
+  stockTransactions                                      StockTransaction[]
   transaction_payments_recorded                          TransactionPayment[]   @relation("TransactionPaymentsRecordedBy")
   approver                                               User?                  @relation("UserApproval", fields: [approvedBy], references: [id], onDelete: NoAction, onUpdate: NoAction)
   approvedUsers                                          User[]                 @relation("UserApproval")
@@ -148,6 +149,7 @@ model Product {
   stockAdditions      StockAddition[]
   stock_adjustments   StockAdjustment[]
   reconciliationItems StockReconciliationItem[]
+  stockTransactions   StockTransaction[]
 
   @@index([sku], map: "idx_products_sku")
   @@index([status], map: "idx_products_status")
@@ -566,6 +568,42 @@ enum stock_reconciliation_status {
   PENDING
   APPROVED
   REJECTED
+}
+
+model StockTransaction {
+  id            Int                   @id @default(autoincrement())
+  productId     Int                   @map("product_id")
+  quantity      Int                   // Positive = increase, Negative = decrease
+  type          StockTransactionType
+  referenceType String?               @map("reference_type") @db.VarChar(50) // "SalesTransaction", "StockAddition", etc.
+  referenceId   Int?                  @map("reference_id")
+  reason        String?               @db.Text
+  userId        Int                   @map("user_id")
+  previousStock Int                   @map("previous_stock")
+  newStock      Int                   @map("new_stock")
+  createdAt     DateTime              @default(now()) @map("created_at") @db.Timestamptz(6)
+
+  product Product @relation(fields: [productId], references: [id], onDelete: Cascade)
+  user    User    @relation(fields: [userId], references: [id])
+
+  @@index([productId, createdAt])
+  @@index([type])
+  @@index([createdAt])
+  @@index([userId])
+  @@index([referenceType, referenceId])
+  @@map("stock_transactions")
+}
+
+enum StockTransactionType {
+  SALE           // Stock sold to customer
+  PURCHASE       // Stock received from supplier
+  ADJUSTMENT_IN  // Manual increase (found inventory)
+  ADJUSTMENT_OUT // Manual decrease (damage, theft)
+  RECONCILIATION // Physical count adjustment
+  RETURN         // Customer return (future)
+  DAMAGE         // Damaged goods
+  THEFT          // Stolen inventory
+  LOSS           // Lost/missing inventory
 }
 
 enum FinancialType {

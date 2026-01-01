@@ -56,6 +56,9 @@ export const POST = withPermission(
         for (const item of reconciliation.items) {
           const discrepancy = item.physicalCount - item.systemCount;
           if (discrepancy !== 0) {
+            const previousStock = item.systemCount;
+            const newStock = item.physicalCount;
+
             await tx.product.update({
               where: { id: item.productId },
               data: {
@@ -63,7 +66,22 @@ export const POST = withPermission(
               },
             });
 
-            // Stock reconciliation serves as the audit trail for these changes
+            // Log stock transaction for audit trail
+            await tx.stockTransaction.create({
+              data: {
+                productId: item.productId,
+                quantity: discrepancy, // Positive or negative
+                type: 'RECONCILIATION',
+                referenceType: 'StockReconciliation',
+                referenceId: reconciliation.id,
+                reason:
+                  item.discrepancyReason ||
+                  `Reconciliation: ${reconciliation.title}`,
+                userId: parseInt(request.user.id),
+                previousStock,
+                newStock,
+              },
+            });
           }
         }
 
