@@ -6,6 +6,7 @@ import {
 } from '@/lib/api-middleware';
 import { handleApiError } from '@/lib/api-error-handler-new';
 import { prisma } from '@/lib/db';
+import { calculateWeightedAverageCost } from '@/lib/weighted-average-cost';
 
 import { USER_ROLES } from '@/lib/auth/roles';
 import {
@@ -217,15 +218,20 @@ export const POST = withPermission(
           },
         });
 
-        // Update product stock
+        // Calculate weighted average cost using helper function
+        const costCalculation = calculateWeightedAverageCost({
+          existingStock: product.stock,
+          existingCost: Number(product.cost),
+          newQuantity: validatedData.quantity,
+          newCost: validatedData.costPerUnit,
+        });
+
+        // Update product stock and weighted average cost
         await tx.product.update({
           where: { id: validatedData.productId },
           data: {
             stock: newStock,
-            // Update cost if this addition provides a new cost
-            ...(validatedData.costPerUnit && {
-              cost: validatedData.costPerUnit,
-            }),
+            cost: costCalculation.weightedAverageCost,
           },
         });
 
