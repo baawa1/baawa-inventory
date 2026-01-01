@@ -4,19 +4,32 @@
  */
 
 const { PrismaClient } = require('@prisma/client');
+const dotenv = require('dotenv');
+const path = require('path');
+
+// Load production environment variables
+dotenv.config({ path: path.resolve(__dirname, '../.env.production') });
 
 async function applyPriceConstraintsProduction() {
-  // Use DIRECT_URL for production (from environment or pass as argument)
-  const productionUrl = process.env.DIRECT_URL || process.env.DATABASE_URL;
+  // Try DIRECT_URL first, fallback to DATABASE_URL (pooler)
+  // Note: Supabase may block direct connections on port 5432, so pooler might be needed
+  const productionUrl = process.env.DATABASE_URL || process.env.DIRECT_URL;
 
   if (!productionUrl) {
     console.error('❌ Error: No database URL provided');
-    console.error('Usage: DIRECT_URL="your-production-url" node apply-price-constraints-production.js');
+    console.error('Usage: Set DATABASE_URL or DIRECT_URL in .env.production');
     process.exit(1);
   }
 
+  console.log('🔗 Connecting to production database...');
+  console.log(`📍 Using: ${productionUrl.replace(/:[^:@]+@/, ':****@')}\n`);
+
   const prisma = new PrismaClient({
-    datasourceUrl: productionUrl,
+    datasources: {
+      db: {
+        url: productionUrl,
+      },
+    },
   });
 
   try {
@@ -67,10 +80,15 @@ async function applyPriceConstraintsProduction() {
   } catch (error) {
     console.error('❌ Error applying constraints:', error.message);
 
-    if (error.code === '23514') {
-      console.error('\nConstraint already exists - this is safe to ignore.');
-    } else if (error.code === '23502') {
-      console.error('\nFound products with negative values - please fix them first.');
+    // Check error code in meta (Prisma wraps PostgreSQL codes)
+    const pgCode = error.meta?.code || error.code;
+
+    if (pgCode === '42710') {
+      console.log('\n✅ Constraint already exists - production database is already protected!');
+      console.log('   No action needed - constraints are in place.\n');
+    } else if (pgCode === '23514' || pgCode === '23502') {
+      console.error('\n❌ Found products with negative values - please fix them first.');
+      process.exit(1);
     } else {
       throw error;
     }
