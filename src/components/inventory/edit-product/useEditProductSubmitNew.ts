@@ -58,8 +58,10 @@ export function useEditProductSubmit(
 
       if (!response.ok) {
         const errorData = await response.json();
-        setSubmitError(errorData.message || 'Failed to update product');
-        throw new Error(errorData.message || 'Failed to update product');
+        const errorMessage = errorData.error || errorData.message || 'Failed to update product';
+        setSubmitError(errorMessage);
+        toast.error(errorMessage);
+        throw new Error(errorMessage);
       }
 
       await response.json();

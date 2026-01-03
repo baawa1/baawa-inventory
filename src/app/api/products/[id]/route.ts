@@ -226,7 +226,9 @@ export const PUT = withPermission(
 
         if (skuConflict) {
           return NextResponse.json(
-            { error: 'Product with this SKU already exists' },
+            {
+              error: `SKU "${validatedData.sku}" is already in use by another product. Please use a different SKU or leave it empty to auto-generate.`
+            },
             { status: 409 }
           );
         }
