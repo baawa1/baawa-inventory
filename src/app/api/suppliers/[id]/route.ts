@@ -201,22 +201,8 @@ export const DELETE = withPermission(
         );
       }
 
-      // Check if supplier has associated products
-      const productsCount = await prisma.product.count({
-        where: { supplierId: id },
-      });
-
-      if (productsCount > 0) {
-        return NextResponse.json(
-          {
-            error: 'Cannot delete supplier with associated products',
-            details: `This supplier has ${productsCount} products associated with it`,
-          },
-          { status: 400 }
-        );
-      }
-
       // Delete the supplier
+      // Products with this supplier will have their supplierId set to NULL (onDelete: SetNull)
       await prisma.supplier.delete({
         where: { id },
       });

@@ -51,7 +51,9 @@ const fetchSuppliers = async (
   const response = await fetch(`/api/suppliers?${searchParams.toString()}`);
 
   if (!response.ok) {
-    throw new Error(`Failed to fetch suppliers: ${response.statusText}`);
+    const errorData = await response.json().catch(() => ({}));
+    const errorMessage = errorData.error || response.statusText;
+    throw new Error(`Failed to fetch suppliers: ${errorMessage}`);
   }
 
   const data = await response.json();
@@ -119,7 +121,10 @@ const updateSupplier = async ({
   });
 
   if (!response.ok) {
-    throw new Error(`Failed to update supplier: ${response.statusText}`);
+    const errorData = await response.json().catch(() => ({}));
+    const errorMessage = errorData.error || response.statusText;
+    const details = errorData.details ? ` - ${errorData.details}` : '';
+    throw new Error(`Failed to update supplier: ${errorMessage}${details}`);
   }
 
   const result = await response.json();
@@ -132,7 +137,10 @@ const deleteSupplier = async (id: number): Promise<void> => {
   });
 
   if (!response.ok) {
-    throw new Error(`Failed to delete supplier: ${response.statusText}`);
+    const errorData = await response.json();
+    const errorMessage = errorData.error || response.statusText;
+    const details = errorData.details ? ` - ${errorData.details}` : '';
+    throw new Error(`${errorMessage}${details}`);
   }
 };
 
@@ -151,7 +159,9 @@ export const useSupplier = (id: number) => {
     queryFn: async () => {
       const response = await fetch(`/api/suppliers/${id}`);
       if (!response.ok) {
-        throw new Error(`Failed to fetch supplier: ${response.statusText}`);
+        const errorData = await response.json().catch(() => ({}));
+        const errorMessage = errorData.error || response.statusText;
+        throw new Error(`Failed to fetch supplier: ${errorMessage}`);
       }
       const result = await response.json();
       return result.data;
@@ -215,8 +225,10 @@ export const useSupplierOptions = () => {
 
         const response = await fetch(`/api/suppliers?${params.toString()}`);
         if (!response.ok) {
+          const errorData = await response.json().catch(() => ({}));
+          const errorMessage = errorData.error || response.statusText;
           throw new Error(
-            `Failed to fetch supplier options: ${response.statusText}`
+            `Failed to fetch supplier options: ${errorMessage}`
           );
         }
 

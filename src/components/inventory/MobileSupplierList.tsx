@@ -211,7 +211,10 @@ const MobileSupplierList = ({ user }: MobileSupplierListProps) => {
         toast.success(`Supplier "${supplier.name}" deleted successfully`);
         suppliersQuery.refetch();
       } catch (error) {
-        ErrorHandlers.api(error, 'Failed to delete supplier');
+        // Error is already logged by global mutation handler
+        // Just show user-friendly toast message
+        const errorMessage = error instanceof Error ? error.message : 'Failed to delete supplier';
+        toast.error(errorMessage);
       }
     },
     [deleteSupplierMutation, suppliersQuery]

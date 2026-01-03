@@ -205,7 +205,10 @@ const MobileBrandList = ({ user }: MobileBrandListProps) => {
         toast.success(`Brand "${brand.name}" deleted successfully`);
         brandsQuery.refetch();
       } catch (error) {
-        ErrorHandlers.api(error, 'Failed to delete brand');
+        // Error is already logged by global mutation handler
+        // Just show user-friendly toast message
+        const errorMessage = error instanceof Error ? error.message : 'Failed to delete brand';
+        toast.error(errorMessage);
       }
     },
     [deleteBrandMutation, brandsQuery]

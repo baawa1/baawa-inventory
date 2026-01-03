@@ -160,20 +160,8 @@ export const DELETE = withPermission(
         return NextResponse.json({ error: 'Brand not found' }, { status: 404 });
       }
 
-      // Check if brand is being used by products
-      const products = await prisma.product.findFirst({
-        where: { brandId: id },
-        select: { id: true },
-      });
-
-      if (products) {
-        return NextResponse.json(
-          { error: 'Cannot delete brand that is being used by products' },
-          { status: 400 }
-        );
-      }
-
       // Delete the brand
+      // Products with this brand will have their brandId set to NULL (onDelete: SetNull)
       await prisma.brand.delete({
         where: { id },
       });

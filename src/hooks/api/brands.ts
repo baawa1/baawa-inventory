@@ -72,7 +72,9 @@ const fetchBrands = async (
   const response = await fetch(`/api/brands?${baseParams.toString()}`);
 
   if (!response.ok) {
-    throw new Error(`Failed to fetch brands: ${response.statusText}`);
+    const errorData = await response.json().catch(() => ({}));
+    const errorMessage = errorData.error || response.statusText;
+    throw new Error(`Failed to fetch brands: ${errorMessage}`);
   }
 
   const data = await response.json();
@@ -93,7 +95,9 @@ const fetchBrands = async (
       const pageResponse = await fetch(`/api/brands?${pageParams.toString()}`);
 
       if (!pageResponse.ok) {
-        throw new Error(`Failed to fetch brands: ${pageResponse.statusText}`);
+        const errorData = await pageResponse.json().catch(() => ({}));
+        const errorMessage = errorData.error || pageResponse.statusText;
+        throw new Error(`Failed to fetch brands: ${errorMessage}`);
       }
 
       const pageData = await pageResponse.json();
@@ -117,7 +121,10 @@ const createBrand = async (data: CreateBrandData): Promise<Brand> => {
   });
 
   if (!response.ok) {
-    throw new Error(`Failed to create brand: ${response.statusText}`);
+    const errorData = await response.json().catch(() => ({}));
+    const errorMessage = errorData.error || response.statusText;
+    const details = errorData.details ? ` - ${errorData.details}` : '';
+    throw new Error(`Failed to create brand: ${errorMessage}${details}`);
   }
 
   const result = await response.json();
@@ -140,7 +147,10 @@ const updateBrand = async ({
   });
 
   if (!response.ok) {
-    throw new Error(`Failed to update brand: ${response.statusText}`);
+    const errorData = await response.json().catch(() => ({}));
+    const errorMessage = errorData.error || response.statusText;
+    const details = errorData.details ? ` - ${errorData.details}` : '';
+    throw new Error(`Failed to update brand: ${errorMessage}${details}`);
   }
 
   const result = await response.json();
@@ -153,7 +163,10 @@ const deleteBrand = async (id: number): Promise<void> => {
   });
 
   if (!response.ok) {
-    throw new Error(`Failed to delete brand: ${response.statusText}`);
+    const errorData = await response.json();
+    const errorMessage = errorData.error || response.statusText;
+    const details = errorData.details ? ` - ${errorData.details}` : '';
+    throw new Error(`${errorMessage}${details}`);
   }
 };
 
@@ -172,7 +185,9 @@ export const useBrand = (id: number) => {
     queryFn: async () => {
       const response = await fetch(`/api/brands/${id}`);
       if (!response.ok) {
-        throw new Error(`Failed to fetch brand: ${response.statusText}`);
+        const errorData = await response.json().catch(() => ({}));
+        const errorMessage = errorData.error || response.statusText;
+        throw new Error(`Failed to fetch brand: ${errorMessage}`);
       }
       const result = await response.json();
       return result.data;
