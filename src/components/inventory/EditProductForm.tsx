@@ -221,7 +221,6 @@ export default function EditProductForm({ productId }: EditProductFormProps) {
                       ? String(firstError.message)
                       : 'Please fix the highlighted fields.';
                   toast.error(message);
-                  console.error('Product update validation failed', errors);
                 }
               )}
               className="space-y-4 sm:space-y-6"
