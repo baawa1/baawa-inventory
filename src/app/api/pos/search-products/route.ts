@@ -34,7 +34,6 @@ async function handleSearchProducts(request: AuthenticatedRequest) {
           status: status as
             | 'ACTIVE'
             | 'INACTIVE'
-            | 'OUT_OF_STOCK'
             | 'DISCONTINUED',
         },
         {

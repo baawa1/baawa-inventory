@@ -32,8 +32,6 @@ export function AdditionalInfoSection({ form }: AdditionalInfoSectionProps) {
         return 'bg-green-100 text-green-800 border-green-200';
       case 'INACTIVE':
         return 'bg-red-100 text-red-800 border-red-200';
-      case 'OUT_OF_STOCK':
-        return 'bg-yellow-100 text-yellow-800 border-yellow-200';
       case 'DISCONTINUED':
         return 'bg-gray-100 text-gray-800 border-gray-200';
       default:
@@ -79,16 +77,6 @@ export function AdditionalInfoSection({ form }: AdditionalInfoSectionProps) {
                         className={getStatusColor('INACTIVE')}
                       >
                         Inactive
-                      </Badge>
-                    </div>
-                  </SelectItem>
-                  <SelectItem value="OUT_OF_STOCK">
-                    <div className="flex items-center gap-2">
-                      <Badge
-                        variant="outline"
-                        className={getStatusColor('OUT_OF_STOCK')}
-                      >
-                        Out of Stock
                       </Badge>
                     </div>
                   </SelectItem>

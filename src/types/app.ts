@@ -4,7 +4,6 @@ export type UserRole = 'ADMIN' | 'MANAGER' | 'STAFF';
 export type ProductStatus =
   | 'ACTIVE'
   | 'INACTIVE'
-  | 'OUT_OF_STOCK'
   | 'DISCONTINUED';
 
 export type PaymentMethod =

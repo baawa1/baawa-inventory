@@ -35,7 +35,7 @@ export interface Product {
   minStock: number;
   isArchived: boolean;
   tags: string[];
-  status: 'ACTIVE' | 'INACTIVE' | 'OUT_OF_STOCK' | 'DISCONTINUED';
+  status: 'ACTIVE' | 'INACTIVE' | 'DISCONTINUED';
   supplier?: {
     id: number;
     name: string;

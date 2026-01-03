@@ -507,7 +507,6 @@ export type TransactionType = 'INCOME' | 'EXPENSE';
 export type ProductStatus =
   | 'ACTIVE'
   | 'INACTIVE'
-  | 'OUT_OF_STOCK'
   | 'DISCONTINUED';
 
 export type UserRole = 'ADMIN' | 'MANAGER' | 'STAFF';

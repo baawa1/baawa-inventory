@@ -33,7 +33,6 @@ export const userStatusSchema = z.enum([
 export const productStatusSchema = z.enum([
   'ACTIVE',
   'INACTIVE',
-  'OUT_OF_STOCK',
   'DISCONTINUED',
 ]);
 

@@ -40,7 +40,7 @@ interface ProductFormData {
   minStock: number;
   isArchived: boolean;
   tags: string[];
-  status: 'ACTIVE' | 'INACTIVE' | 'OUT_OF_STOCK' | 'DISCONTINUED';
+  status: 'ACTIVE' | 'INACTIVE' | 'DISCONTINUED';
   supplier?: { id: number; name: string };
   image?: string;
   images?: Array<{ url: string; isPrimary: boolean }>;

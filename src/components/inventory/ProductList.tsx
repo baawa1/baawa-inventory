@@ -210,7 +210,6 @@ const ProductList = ({ user }: ProductListProps) => {
     () => [
       { value: 'ACTIVE', label: 'Active' },
       { value: 'INACTIVE', label: 'Inactive' },
-      { value: 'OUT_OF_STOCK', label: 'Out of Stock' },
       { value: 'DISCONTINUED', label: 'Discontinued' },
     ],
     []
@@ -369,12 +368,6 @@ const ProductList = ({ user }: ProductListProps) => {
         );
       case 'INACTIVE':
         return <Badge variant="secondary">Inactive</Badge>;
-      case 'OUT_OF_STOCK':
-        return (
-          <Badge variant="secondary" className="bg-yellow-500">
-            Out of Stock
-          </Badge>
-        );
       case 'DISCONTINUED':
         return (
           <Badge variant="secondary" className="bg-gray-500">

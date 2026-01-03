@@ -26,7 +26,7 @@ export interface Product {
     id: number;
     name: string;
   };
-  status: 'ACTIVE' | 'INACTIVE' | 'OUT_OF_STOCK' | 'DISCONTINUED';
+  status: 'ACTIVE' | 'INACTIVE' | 'DISCONTINUED';
   images: Array<{ url: string; isPrimary: boolean }> | null;
   wordpress_id?: number | null;
 }

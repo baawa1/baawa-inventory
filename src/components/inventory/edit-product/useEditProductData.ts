@@ -77,7 +77,6 @@ export function useEditProductData(productId: number) {
           status: productData.status?.toUpperCase() as
             | 'ACTIVE'
             | 'INACTIVE'
-            | 'OUT_OF_STOCK'
             | 'DISCONTINUED',
           tags: productData.tags || [],
           wordpress_id:
