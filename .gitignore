@@ -44,6 +44,9 @@ playwright-report/
 # temporary database files
 temp_db_url.txt
 
+# deployment checklists with sensitive data
+TESTING_AND_DEPLOYMENT_CHECKLIST.md
+
 # vercel
 .vercel
 
