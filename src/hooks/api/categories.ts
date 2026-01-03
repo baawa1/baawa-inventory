@@ -75,7 +75,9 @@ const fetchCategories = async (
   const response = await fetch(`/api/categories?${searchParams.toString()}`);
 
   if (!response.ok) {
-    throw new Error(`Failed to fetch categories: ${response.statusText}`);
+    const errorData = await response.json().catch(() => ({}));
+    const errorMessage = errorData.error || response.statusText;
+    throw new Error(`Failed to fetch categories: ${errorMessage}`);
   }
 
   const data = await response.json();
@@ -100,7 +102,10 @@ const createCategory = async (data: CreateCategoryData): Promise<Category> => {
   });
 
   if (!response.ok) {
-    throw new Error(`Failed to create category: ${response.statusText}`);
+    const errorData = await response.json().catch(() => ({}));
+    const errorMessage = errorData.error || response.statusText;
+    const details = errorData.details ? ` - ${errorData.details}` : '';
+    throw new Error(`Failed to create category: ${errorMessage}${details}`);
   }
 
   const result = await response.json();
@@ -123,7 +128,10 @@ const updateCategory = async ({
   });
 
   if (!response.ok) {
-    throw new Error(`Failed to update category: ${response.statusText}`);
+    const errorData = await response.json().catch(() => ({}));
+    const errorMessage = errorData.error || response.statusText;
+    const details = errorData.details ? ` - ${errorData.details}` : '';
+    throw new Error(`Failed to update category: ${errorMessage}${details}`);
   }
 
   const result = await response.json();
@@ -136,7 +144,10 @@ const deleteCategory = async (id: number): Promise<void> => {
   });
 
   if (!response.ok) {
-    throw new Error(`Failed to delete category: ${response.statusText}`);
+    const errorData = await response.json();
+    const errorMessage = errorData.error || response.statusText;
+    const details = errorData.details ? ` - ${errorData.details}` : '';
+    throw new Error(`${errorMessage}${details}`);
   }
 };
 
@@ -155,7 +166,9 @@ export const useCategory = (id: number) => {
     queryFn: async () => {
       const response = await fetch(`/api/categories/${id}`);
       if (!response.ok) {
-        throw new Error(`Failed to fetch category: ${response.statusText}`);
+        const errorData = await response.json().catch(() => ({}));
+        const errorMessage = errorData.error || response.statusText;
+        throw new Error(`Failed to fetch category: ${errorMessage}`);
       }
       const result = await response.json();
       return result.data;
@@ -265,8 +278,10 @@ export const useCategoryOptions = () => {
     queryFn: async () => {
       const response = await fetch('/api/categories?isActive=true&limit=1000');
       if (!response.ok) {
+        const errorData = await response.json().catch(() => ({}));
+        const errorMessage = errorData.error || response.statusText;
         throw new Error(
-          `Failed to fetch category options: ${response.statusText}`
+          `Failed to fetch category options: ${errorMessage}`
         );
       }
       const result = await response.json();

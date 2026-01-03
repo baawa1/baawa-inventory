@@ -275,29 +275,20 @@ export const DELETE = withPermission(
         );
       }
 
-      // Check if category has products
-      if (existingCategory._count.products > 0) {
-        return NextResponse.json(
-          {
-            error: 'Cannot delete category with associated products',
-            details: `This category has ${existingCategory._count.products} associated products`,
-          },
-          { status: 400 }
-        );
-      }
-
       // Check if category has subcategories
+      // We only prevent deletion if there are subcategories, as they would become orphaned
       if (existingCategory._count.children > 0) {
         return NextResponse.json(
           {
             error: 'Cannot delete category with subcategories',
-            details: `This category has ${existingCategory._count.children} subcategories`,
+            details: `This category has ${existingCategory._count.children} subcategories. Please delete or reassign them first.`,
           },
           { status: 400 }
         );
       }
 
       // Delete the category
+      // Products with this category will have their categoryId set to NULL (onDelete: SetNull)
       await prisma.category.delete({
         where: { id: categoryId },
       });

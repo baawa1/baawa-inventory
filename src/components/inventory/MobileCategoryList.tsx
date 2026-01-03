@@ -227,7 +227,10 @@ const MobileCategoryList = ({ user }: MobileCategoryListProps) => {
         toast.success(`Category "${category.name}" deleted successfully`);
         categoriesQuery.refetch();
       } catch (error) {
-        ErrorHandlers.api(error, 'Failed to delete category');
+        // Error is already logged by global mutation handler
+        // Just show user-friendly toast message
+        const errorMessage = error instanceof Error ? error.message : 'Failed to delete category';
+        toast.error(errorMessage);
       }
     },
     [deleteCategoryMutation, categoriesQuery]

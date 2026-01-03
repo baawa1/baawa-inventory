@@ -55,12 +55,8 @@ export const queryClient = new QueryClient({
     },
     mutations: {
       retry: 0, // Disable retries for mutations by default
-      onError: error => {
-        logger.error('TanStack Query mutation failed', {
-          error: error instanceof Error ? error.message : String(error),
-        });
-        // TODO: Add global error handling/notifications here
-      },
+      // Note: Individual mutation handlers should handle errors and show user-facing messages
+      // Global error logging is disabled to avoid duplicate console errors
     },
   },
 });
