@@ -211,7 +211,13 @@ export const GET = withAuth(async function (request: AuthenticatedRequest) {
         const splitPayments = transaction.split_payments || [];
         const ledgerPayments = transaction.transaction_payments || [];
         const splitPaidTotal = splitPayments.reduce(
-          (sum: number, payment: any) => sum + Number(payment.amount || 0),
+          (sum: number, payment: any) => {
+            // Exclude debt from split payment total (debt is tracked separately in transaction_payments)
+            if (payment.payment_method === 'debt') {
+              return sum;
+            }
+            return sum + Number(payment.amount || 0);
+          },
           0
         );
         const ledgerPaidTotal = ledgerPayments.reduce(

@@ -1688,12 +1688,10 @@ function ReviewStep({
         0
       )
     : amountPaid;
+  // Calculate debt portion based on what's outstanding (total - collected)
+  // This ensures it shows correctly even before normalization adds debt to splitPayments
   const splitDebtPortion = isSplitSale
-    ? splitPayments.reduce(
-        (sum, payment) =>
-          payment.method === 'debt' ? sum + payment.amount : sum,
-        0
-      )
+    ? Math.max(0, total - splitCollectedTotal)
     : 0;
   const outstandingBalance = isDebtPayment
     ? balanceDue ?? Math.max(0, total - amountPaid)

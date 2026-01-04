@@ -119,7 +119,13 @@ async function handleEmailReceipt(request: AuthenticatedRequest) {
     // Prepare email data
     const splitPaid =
       transaction.split_payments?.reduce(
-        (sum: number, payment: any) => sum + Number(payment.amount),
+        (sum: number, payment: any) => {
+          // Exclude debt from split payment total (debt is tracked separately in transaction_payments)
+          if (payment.payment_method === 'debt') {
+            return sum;
+          }
+          return sum + Number(payment.amount);
+        },
         0
       ) || 0;
     const ledgerPaid =

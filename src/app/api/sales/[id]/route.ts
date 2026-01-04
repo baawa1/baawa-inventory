@@ -48,7 +48,13 @@ export async function GET(request: NextRequest, { params }: RouteParams) {
     const splitPayments = transactionRecord.split_payments || [];
     const ledgerPayments = transactionRecord.transaction_payments || [];
     const splitPaidTotal = splitPayments.reduce(
-      (sum: number, payment: any) => sum + Number(payment.amount || 0),
+      (sum: number, payment: any) => {
+        // Exclude debt from split payment total (debt is tracked separately in transaction_payments)
+        if (payment.payment_method === 'debt') {
+          return sum;
+        }
+        return sum + Number(payment.amount || 0);
+      },
       0
     );
     const ledgerPaidTotal = ledgerPayments.reduce(
