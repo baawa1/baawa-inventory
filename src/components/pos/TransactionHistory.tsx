@@ -185,7 +185,7 @@ export function TransactionHistory() {
   >(null);
   const [expandedDates, setExpandedDates] = useState<Set<string>>(new Set());
   const [statusFilter, setStatusFilter] =
-    useState<TransactionStatusFilter>('outstanding');
+    useState<TransactionStatusFilter>('all');
   const [recordPaymentOpen, setRecordPaymentOpen] = useState(false);
   const [paymentMethod, setPaymentMethod] = useState('cash');
   const [paymentAmount, setPaymentAmount] = useState(0);

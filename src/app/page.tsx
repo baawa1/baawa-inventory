@@ -1,4 +1,5 @@
 import Link from 'next/link';
+import { redirect } from 'next/navigation';
 import { Button } from '@/components/ui/button';
 import {
   Card,
@@ -22,8 +23,16 @@ import {
   Glasses,
   Gift,
 } from 'lucide-react';
+import { auth } from '#root/auth';
 
-export default function Home() {
+export default async function Home() {
+  // Check if user is already authenticated
+  const session = await auth();
+
+  // If user is authenticated and approved, redirect to dashboard
+  if (session?.user && session.user.status === 'APPROVED') {
+    redirect('/dashboard');
+  }
   return (
     <div className="min-h-screen bg-gradient-to-br from-slate-50 to-blue-50 dark:from-slate-900 dark:to-slate-800">
       {/* Header */}

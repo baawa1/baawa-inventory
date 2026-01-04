@@ -1,6 +1,7 @@
 import { prisma } from '@/lib/db';
 import { withAuth, AuthenticatedRequest } from '@/lib/api-middleware';
 import { createApiResponse } from '@/lib/api-response';
+import { SUCCESSFUL_PAYMENT_STATUSES } from '@/lib/constants';
 
 // GET /api/sales/stats - Get sales statistics
 export const GET = withAuth(async function (request: AuthenticatedRequest) {
@@ -9,8 +10,12 @@ export const GET = withAuth(async function (request: AuthenticatedRequest) {
     const fromDate = searchParams.get('fromDate');
     const toDate = searchParams.get('toDate');
 
-    // Build where clause for date filtering
-    const where: any = {};
+    // Build where clause for date filtering and successful payment status
+    const where: any = {
+      payment_status: {
+        in: SUCCESSFUL_PAYMENT_STATUSES,
+      },
+    };
     if (fromDate || toDate) {
       where.created_at = {};
       if (fromDate) where.created_at.gte = new Date(fromDate);
@@ -38,6 +43,9 @@ export const GET = withAuth(async function (request: AuthenticatedRequest) {
 
     // Previous period stats
     const previousPeriodWhere = {
+      payment_status: {
+        in: SUCCESSFUL_PAYMENT_STATUSES,
+      },
       created_at: {
         gte: previousMonthStart,
         lte: previousMonthEnd,

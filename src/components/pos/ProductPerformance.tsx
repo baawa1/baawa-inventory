@@ -39,6 +39,7 @@ import { formatCurrency } from '@/lib/utils';
 import { useQuery } from '@tanstack/react-query';
 import { toast } from 'sonner';
 import { DateRange } from 'react-day-picker';
+import { ProductSalesDialog } from './ProductSalesDialog';
 
 interface User {
   id: string;
@@ -125,6 +126,16 @@ export function ProductPerformance({ user: _ }: ProductPerformanceProps) {
     totalItems: 0,
   });
   const [sortBy, setSortBy] = useState('revenue');
+  const [selectedProduct, setSelectedProduct] = useState<{
+    id: number;
+    name: string;
+  } | null>(null);
+  const [salesDialogOpen, setSalesDialogOpen] = useState(false);
+
+  const handleProductClick = (product: ProductPerformanceData) => {
+    setSelectedProduct({ id: product.id, name: product.name });
+    setSalesDialogOpen(true);
+  };
 
   const {
     data: analyticsData,
@@ -359,7 +370,11 @@ export function ProductPerformance({ user: _ }: ProductPerformanceProps) {
                 </TableHeader>
                 <TableBody>
                   {products.map(product => (
-                    <TableRow key={product.id}>
+                    <TableRow
+                      key={product.id}
+                      className="cursor-pointer hover:bg-muted/50"
+                      onClick={() => handleProductClick(product)}
+                    >
                       <TableCell className="font-medium">
                         {product.name || 'Unknown Product'}
                       </TableCell>
@@ -505,6 +520,14 @@ export function ProductPerformance({ user: _ }: ProductPerformanceProps) {
           )}
         </CardContent>
       </Card>
+
+      {/* Product Sales Dialog */}
+      <ProductSalesDialog
+        productId={selectedProduct?.id || null}
+        productName={selectedProduct?.name || null}
+        open={salesDialogOpen}
+        onOpenChange={setSalesDialogOpen}
+      />
     </div>
   );
 }

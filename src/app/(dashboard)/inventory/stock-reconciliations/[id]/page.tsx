@@ -38,12 +38,21 @@ export default async function ReconciliationDetailPage({
     <div className="mx-auto max-w-4xl space-y-6 p-6">
       {/* Header */}
       <div className="mb-6">
-        <Button variant="ghost" asChild className="mb-4 px-4 lg:px-6">
-          <Link href="/inventory/stock-reconciliations">
-            <IconArrowLeft className="mr-2 h-4 w-4" />
-            Back to Reconciliations
-          </Link>
-        </Button>
+        <div className="mb-4 flex items-center justify-between">
+          <Button variant="ghost" asChild className="px-4 lg:px-6">
+            <Link href="/inventory/stock-reconciliations">
+              <IconArrowLeft className="mr-2 h-4 w-4" />
+              Back to Reconciliations
+            </Link>
+          </Button>
+          {['ADMIN', 'MANAGER'].includes(session.user.role) && (
+            <Button asChild>
+              <Link href={`/inventory/stock-reconciliations/${reconciliationId}/edit`}>
+                Edit Reconciliation
+              </Link>
+            </Button>
+          )}
+        </div>
         <div className="flex flex-col gap-2">
           <h1 className="text-2xl font-bold">Reconciliation Details</h1>
           <p className="text-muted-foreground">
