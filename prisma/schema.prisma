@@ -50,6 +50,7 @@ model User {
   createdReconciliations                                 StockReconciliation[]  @relation("ReconciliationCreator")
   stockTransactions                                      StockTransaction[]
   transaction_payments_recorded                          TransactionPayment[]   @relation("TransactionPaymentsRecordedBy")
+  backupLogs                                             BackupLog[]            @relation("BackupCreator")
   approver                                               User?                  @relation("UserApproval", fields: [approvedBy], references: [id], onDelete: NoAction, onUpdate: NoAction)
   approvedUsers                                          User[]                 @relation("UserApproval")
 
@@ -663,4 +664,58 @@ enum IncomeSource {
   ROYALTIES
   COMMISSIONS
   OTHER
+}
+
+model BackupLog {
+  id            Int           @id @default(autoincrement())
+  status        BackupStatus  @default(PENDING)
+  triggerType   BackupTrigger @map("trigger_type")
+  startedAt     DateTime      @default(now()) @map("started_at") @db.Timestamptz(6)
+  completedAt   DateTime?     @map("completed_at") @db.Timestamptz(6)
+  fileSize      BigInt?       @map("file_size")
+  tablesCount   Int?          @map("tables_count")
+  recordsCount  Json?         @map("records_count")
+  driveFileId   String?       @map("drive_file_id") @db.VarChar(255)
+  driveFileUrl  String?       @map("drive_file_url") @db.VarChar(500)
+  errorMessage  String?       @map("error_message")
+  metadata      Json?
+  createdBy     Int?          @map("created_by")
+  createdAt     DateTime      @default(now()) @map("created_at") @db.Timestamptz(6)
+  updatedAt     DateTime      @default(now()) @updatedAt @map("updated_at") @db.Timestamptz(6)
+
+  createdByUser User? @relation("BackupCreator", fields: [createdBy], references: [id], onUpdate: NoAction)
+
+  @@index([status], map: "idx_backup_logs_status")
+  @@index([triggerType], map: "idx_backup_logs_trigger_type")
+  @@index([startedAt], map: "idx_backup_logs_started_at")
+  @@index([createdBy], map: "idx_backup_logs_created_by")
+  @@map("backup_logs")
+}
+
+model GoogleOAuthToken {
+  id           Int      @id @default(autoincrement())
+  accessToken  String   @map("access_token") @db.Text
+  refreshToken String   @map("refresh_token") @db.Text
+  expiresAt    DateTime @map("expires_at") @db.Timestamptz(6)
+  scope        String   @db.Text
+  email        String?  @db.VarChar(255)
+  createdBy    Int      @map("created_by")
+  createdAt    DateTime @default(now()) @map("created_at") @db.Timestamptz(6)
+  updatedAt    DateTime @default(now()) @updatedAt @map("updated_at") @db.Timestamptz(6)
+
+  @@map("google_oauth_tokens")
+}
+
+enum BackupStatus {
+  PENDING
+  IN_PROGRESS
+  COMPLETED
+  FAILED
+  PARTIAL
+}
+
+enum BackupTrigger {
+  MANUAL
+  SCHEDULED
+  API
 }

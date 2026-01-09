@@ -9,12 +9,14 @@ import {
   IconUserCheck,
   IconShield,
   IconSettings,
+  IconDatabase,
 } from '@tabler/icons-react';
 
 // Import admin components
 import { AdminOverview } from './AdminOverview';
 import { UserManagement } from './UserManagement';
 import { SystemSettings } from './SystemSettings';
+import { DatabaseBackup } from './DatabaseBackup';
 
 // Import hooks
 import { useActiveUsers, usePendingUsers } from '@/hooks/api/users';
@@ -49,6 +51,12 @@ export function AdminDashboard() {
       component: UserManagement,
     },
     {
+      value: 'backup',
+      label: 'Database Backup',
+      icon: IconDatabase,
+      component: DatabaseBackup,
+    },
+    {
       value: 'settings',
       label: 'System Settings',
       icon: IconSettings,
@@ -79,7 +87,7 @@ export function AdminDashboard() {
 
       {/* Navigation Tabs */}
       <Tabs value={activeTab} onValueChange={setActiveTab} className="w-full">
-        <TabsList className="grid h-auto w-full grid-cols-2 lg:grid-cols-4">
+        <TabsList className="grid h-auto w-full grid-cols-2 lg:grid-cols-5">
           {navigationTabs.map(tab => {
             const IconComponent = tab.icon;
             return (

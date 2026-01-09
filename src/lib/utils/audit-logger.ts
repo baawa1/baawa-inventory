@@ -19,7 +19,9 @@ export type AuditAction =
   | 'SESSION_EXPIRED'
   | 'SESSION_BLACKLISTED'
   | 'SUSPICIOUS_ACTIVITY'
-  | 'RATE_LIMIT_EXCEEDED';
+  | 'RATE_LIMIT_EXCEEDED'
+  | 'BACKUP_CREATED'
+  | 'BACKUP_DOWNLOADED';
 
 export interface AuditLogData {
   action: AuditAction;
