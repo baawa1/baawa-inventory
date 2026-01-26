@@ -5,7 +5,7 @@
 
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { queryKeys } from '@/lib/query-client';
-import type { CreateStockReconciliationData } from '@/lib/validations/stock-management';
+import type { CreateStockReconciliationData, UpdateStockReconciliationData } from '@/lib/validations/stock-management';
 
 // Types
 export interface User {
@@ -36,7 +36,7 @@ export interface StockReconciliationItem {
   physicalCount: number;
   discrepancy: number;
   discrepancyReason?: string;
-  estimatedImpact?: number;
+  estimatedImpact?: number | null;
   notes?: string;
   verified: boolean;
   product: {
@@ -140,15 +140,20 @@ const createStockReconciliation = async (
 const updateStockReconciliation = async ({
   id,
   ...data
-}: { id: string } & Partial<StockReconciliation>) => {
+}: { id: string } & UpdateStockReconciliationData) => {
   const response = await fetch(`/api/stock-reconciliations/${id}`, {
     method: 'PUT',
     headers: { 'Content-Type': 'application/json' },
     body: JSON.stringify(data),
   });
   if (!response.ok) {
+    const errorData = await response.json().catch(() => ({}));
+    const errorMessage = errorData.error || response.statusText;
+    const errorDetails = errorData.details
+      ? `\n${JSON.stringify(errorData.details, null, 2)}`
+      : '';
     throw new Error(
-      `Failed to update stock reconciliation: ${response.statusText}`
+      `Failed to update stock reconciliation: ${errorMessage}${errorDetails}`
     );
   }
   return response.json();

@@ -128,7 +128,7 @@ export async function PUT(
       );
     }
 
-    const { title, description, items } = validationResult.data;
+    const { title, description, notes, items } = validationResult.data;
 
     // Check if reconciliation exists and is editable
     const existingReconciliation = await prisma.stockReconciliation.findUnique({
@@ -183,6 +183,7 @@ export async function PUT(
         data: {
           title,
           description,
+          notes,
           items: {
             create: items?.map(item => {
               const product = products.find(p => p.id === item.productId);

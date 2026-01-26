@@ -311,15 +311,13 @@ export function StockReconciliationEditForm({
         };
       });
 
-      const reconciliationData = {
+      await updateMutation.mutateAsync({
         id: reconciliationId.toString(),
         title: data.title,
         description: data.description,
         notes: data.notes,
         items: itemsWithCalculations,
-      } as any; // Type assertion to work with the API
-
-      await updateMutation.mutateAsync(reconciliationData);
+      });
 
       // If submitting for approval, also submit
       if (submitForApproval) {
