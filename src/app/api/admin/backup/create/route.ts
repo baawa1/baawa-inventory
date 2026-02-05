@@ -1,6 +1,7 @@
 import { NextResponse } from 'next/server';
 import { withPermission, AuthenticatedRequest } from '@/lib/api-middleware';
 import { BackupService } from '@/lib/services/backup-service';
+import { GoogleDriveService } from '@/lib/services/google-drive-service';
 import { AuditLogger } from '@/lib/utils/audit-logger';
 
 /**
@@ -14,6 +15,34 @@ export const POST = withPermission(
       const userId = parseInt(request.user.id);
 
       console.log(`[Admin Backup] Manual backup requested by user ${userId}`);
+
+      // Verify Google Drive connection before starting backup
+      const googleDrive = new GoogleDriveService();
+      const isConnected = await googleDrive.testConnection();
+
+      if (!isConnected) {
+        console.log('[Admin Backup] Google Drive not connected, backup aborted');
+
+        await AuditLogger.logAuthEvent(
+          {
+            action: 'BACKUP_CREATED',
+            userId,
+            success: false,
+            details: {
+              error: 'Google Drive not connected',
+            },
+          },
+          request
+        );
+
+        return NextResponse.json(
+          {
+            success: false,
+            error: 'Google Drive not connected. Please connect your Google Drive account before creating a backup.',
+          },
+          { status: 400 }
+        );
+      }
 
       const backupService = new BackupService();
       const result = await backupService.createManualBackup(userId);

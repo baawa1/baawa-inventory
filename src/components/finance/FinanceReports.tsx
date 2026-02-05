@@ -328,12 +328,13 @@ export default function FinanceReports() {
                     cx="50%"
                     cy="50%"
                     labelLine={false}
-                    label={({ source, percent }) =>
-                      `${source} ${((percent || 0) * 100).toFixed(0)}%`
+                    label={({ name, percent }) =>
+                      `${name} ${((percent || 0) * 100).toFixed(0)}%`
                     }
                     outerRadius={80}
                     fill="#8884d8"
                     dataKey="amount"
+                    nameKey="source"
                   >
                     {data.incomeBreakdown.map((entry, index) => (
                       <Cell
@@ -422,12 +423,13 @@ export default function FinanceReports() {
                     cx="50%"
                     cy="50%"
                     labelLine={false}
-                    label={({ type, percent }) =>
-                      `${type} ${((percent || 0) * 100).toFixed(0)}%`
+                    label={({ name, percent }) =>
+                      `${name} ${((percent || 0) * 100).toFixed(0)}%`
                     }
                     outerRadius={80}
                     fill="#8884d8"
                     dataKey="amount"
+                    nameKey="type"
                   >
                     {data.expenseBreakdown.map((entry, index) => (
                       <Cell

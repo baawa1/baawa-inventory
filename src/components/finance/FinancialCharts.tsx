@@ -112,8 +112,8 @@ export function FinancialCharts({
                 tickFormatter={value => value.toString()}
               />
               <Tooltip
-                formatter={(value: number, name: string) => [
-                  name === 'revenue' ? formatCurrency(value) : value,
+                formatter={(value: number | undefined, name: string | undefined) => [
+                  name === 'revenue' ? formatCurrency(value ?? 0) : (value ?? 0),
                   name === 'revenue' ? 'Revenue' : 'Transactions',
                 ]}
                 labelFormatter={label => `Date: ${label}`}
@@ -168,9 +168,9 @@ export function FinancialCharts({
                 ))}
               </Pie>
               <Tooltip
-                formatter={(value: number, name: string) => [
-                  `${value} transactions`,
-                  name,
+                formatter={(value: number | undefined, name: string | undefined) => [
+                  `${value ?? 0} transactions`,
+                  name ?? '',
                 ]}
               />
             </PieChart>
@@ -190,7 +190,7 @@ export function FinancialCharts({
               <XAxis dataKey="date" />
               <YAxis />
               <Tooltip
-                formatter={(value: number) => [value, 'Transactions']}
+                formatter={(value: number | undefined) => [value ?? 0, 'Transactions']}
                 labelFormatter={label => `Date: ${label}`}
               />
               <Legend />
@@ -221,8 +221,8 @@ export function FinancialCharts({
                 tickFormatter={value => `₦${(value / 1000).toFixed(0)}k`}
               />
               <Tooltip
-                formatter={(value: number) => [
-                  formatCurrency(value),
+                formatter={(value: number | undefined) => [
+                  formatCurrency(value ?? 0),
                   'Revenue',
                 ]}
                 labelFormatter={label => `Date: ${label}`}

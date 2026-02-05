@@ -45,7 +45,10 @@ export const GET = withPermission(
       );
 
       // Return file with appropriate headers
-      return new NextResponse(fileBuffer, {
+      // Convert Buffer to Uint8Array for NextResponse compatibility
+      const uint8Array = new Uint8Array(fileBuffer);
+
+      return new NextResponse(uint8Array, {
         headers: {
           'Content-Type': 'application/gzip',
           'Content-Disposition': `attachment; filename="backup-${backupId}.json.gz"`,

@@ -26,6 +26,16 @@ import {
 } from '@tabler/icons-react';
 import { toast } from 'sonner';
 import { format } from 'date-fns';
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+} from '@/components/ui/alert-dialog';
 
 interface BackupLog {
   id: number;
@@ -58,6 +68,7 @@ export function DatabaseBackup() {
   const [driveStatus, setDriveStatus] = useState<GoogleDriveStatus | null>(null);
   const [checkingDriveStatus, setCheckingDriveStatus] = useState(true);
   const [disconnecting, setDisconnecting] = useState(false);
+  const [showDriveWarning, setShowDriveWarning] = useState(false);
 
   // Fetch backup history
   const fetchBackupHistory = async () => {
@@ -162,6 +173,12 @@ export function DatabaseBackup() {
 
   // Create manual backup
   const handleCreateBackup = async () => {
+    // Check if Google Drive is connected before starting backup
+    if (!driveStatus?.connected) {
+      setShowDriveWarning(true);
+      return;
+    }
+
     try {
       setLoading(true);
       toast.info('Creating backup... This may take a few minutes.');
@@ -576,6 +593,43 @@ export function DatabaseBackup() {
           </ul>
         </CardContent>
       </Card>
+
+      {/* Google Drive Connection Warning Dialog */}
+      <AlertDialog open={showDriveWarning} onOpenChange={setShowDriveWarning}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle className="flex items-center gap-2">
+              <IconAlertCircle className="h-5 w-5 text-yellow-600" />
+              Google Drive Not Connected
+            </AlertDialogTitle>
+            <AlertDialogDescription className="space-y-3 pt-2">
+              <div className="space-y-3">
+                <div>
+                  You need to connect your Google Drive account before creating a backup.
+                  Without Google Drive connection, the backup cannot be uploaded and will fail.
+                </div>
+                <div className="font-medium text-foreground">
+                  Please connect to Google Drive first, then try creating the backup again.
+                </div>
+              </div>
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel>Cancel</AlertDialogCancel>
+            <AlertDialogAction
+              onClick={() => {
+                setShowDriveWarning(false);
+                // Scroll to Google Drive connection card
+                window.scrollTo({ top: 0, behavior: 'smooth' });
+              }}
+              className="bg-blue-600 hover:bg-blue-700"
+            >
+              <IconBrandGoogle className="mr-2 h-4 w-4" />
+              Connect Google Drive
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
     </div>
   );
 }

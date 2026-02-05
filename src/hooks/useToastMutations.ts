@@ -50,11 +50,14 @@ export function useToastMutation<
 
   return useMutation({
     ...mutationOptions,
-    onMutate: variables => {
+    onMutate: async (variables, context) => {
       if (showToast && loading) {
         toast.loading(loading);
       }
-      return mutationOptions.onMutate?.(variables);
+      if (mutationOptions.onMutate) {
+        return await mutationOptions.onMutate(variables, context);
+      }
+      return undefined as any;
     },
     onSuccess: (data, variables, context) => {
       if (showToast) {

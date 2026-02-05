@@ -395,8 +395,8 @@ export function MainAnalytics({ user: _ }: MainAnalyticsProps) {
                 />
                 <YAxis tickFormatter={value => formatCurrency(value, false)} />
                 <Tooltip
-                  formatter={(value: number) => [
-                    formatCurrency(value),
+                  formatter={(value: number | undefined) => [
+                    formatCurrency(value ?? 0),
                     'Revenue',
                   ]}
                   labelFormatter={label =>
