@@ -367,3 +367,22 @@ export function generateExportFilename(
     : '';
   return `${baseName}${type}-${date}`;
 }
+
+/**
+ * Calculate the previous period for comparison
+ * Returns start and end dates for the period immediately before the given period
+ */
+export function calculatePreviousPeriod(
+  startDate: Date,
+  endDate: Date
+): { start: Date; end: Date } {
+  const durationMs = endDate.getTime() - startDate.getTime();
+  const previousEnd = new Date(startDate.getTime() - 1); // One day before start
+  const previousStart = new Date(previousEnd.getTime() - durationMs);
+
+  return {
+    start: previousStart,
+    end: previousEnd,
+  };
+}
+

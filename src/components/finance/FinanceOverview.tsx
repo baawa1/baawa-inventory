@@ -1,6 +1,6 @@
 'use client';
 
-import React from 'react';
+import React, { useState } from 'react';
 import {
   Card,
   CardContent,
@@ -11,6 +11,7 @@ import {
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { PageHeader } from '@/components/ui/page-header';
+import { DateRangePickerWithPresets } from '@/components/ui/date-range-picker-with-presets';
 
 import { formatCurrency } from '@/lib/utils';
 import {
@@ -27,14 +28,24 @@ import Link from 'next/link';
 import { AppUser } from '@/types/user';
 import { useQuery } from '@tanstack/react-query';
 import { queryKeys } from '@/lib/query-client';
+import { DateRange } from 'react-day-picker';
 
 interface FinanceOverviewProps {
   user: AppUser;
 }
 
 // API function to fetch financial summary
-const fetchFinancialSummary = async () => {
-  const response = await fetch('/api/finance/summary');
+const fetchFinancialSummary = async (startDate?: Date, endDate?: Date) => {
+  const params = new URLSearchParams();
+  if (startDate) {
+    params.append('startDate', startDate.toISOString());
+  }
+  if (endDate) {
+    params.append('endDate', endDate.toISOString());
+  }
+
+  const url = `/api/finance/summary${params.toString() ? `?${params.toString()}` : ''}`;
+  const response = await fetch(url);
   if (!response.ok) {
     throw new Error('Failed to fetch financial summary');
   }
@@ -42,14 +53,29 @@ const fetchFinancialSummary = async () => {
 };
 
 export function FinanceOverview({ user: _user }: FinanceOverviewProps) {
+  const now = new Date();
+  const [dateRange, setDateRange] = useState<DateRange | undefined>({
+    from: new Date(now.getFullYear(), now.getMonth(), 1),
+    to: now,
+  });
+
+  const handleDateRangeChange = (newDateRange: DateRange | undefined) => {
+    setDateRange(newDateRange);
+  };
+
   const {
     data: summaryData,
     isLoading,
     error,
     refetch,
   } = useQuery({
-    queryKey: queryKeys.finance.summary(),
-    queryFn: fetchFinancialSummary,
+    queryKey: [
+      ...queryKeys.finance.summary(),
+      dateRange?.from?.toISOString(),
+      dateRange?.to?.toISOString(),
+    ],
+    queryFn: () => fetchFinancialSummary(dateRange?.from, dateRange?.to),
+    enabled: !!dateRange?.from && !!dateRange?.to,
     staleTime: 5 * 60 * 1000, // 5 minutes
     gcTime: 10 * 60 * 1000, // 10 minutes
     refetchOnWindowFocus: false,
@@ -59,10 +85,18 @@ export function FinanceOverview({ user: _user }: FinanceOverviewProps) {
   if (isLoading) {
     return (
       <div className="mx-auto max-w-7xl space-y-6 p-6">
-        <PageHeader
-          title="Finance Overview"
-          description="Track your business finances and financial performance"
-        />
+        {/* Header Skeleton */}
+        <div className="flex flex-wrap items-center justify-between gap-4">
+          <PageHeader
+            title="Finance Overview"
+            description="Track your business finances and financial performance"
+          />
+          <div className="flex flex-wrap items-center gap-2">
+            <div className="h-9 w-[300px] animate-pulse rounded bg-gray-200" />
+            <div className="h-9 w-28 animate-pulse rounded bg-gray-200" />
+            <div className="h-9 w-32 animate-pulse rounded bg-gray-200" />
+          </div>
+        </div>
 
         {/* Summary Cards Skeleton */}
         <div className="grid gap-6 md:grid-cols-2 lg:grid-cols-4">
@@ -131,6 +165,24 @@ export function FinanceOverview({ user: _user }: FinanceOverviewProps) {
             </div>
           </CardContent>
         </Card>
+
+        {/* Quick Actions Skeleton */}
+        <div className="grid gap-6 md:grid-cols-2 lg:grid-cols-3">
+          {['Income Management', 'Expense Management', 'Reports & Analytics'].map(
+            (title, i) => (
+              <Card key={i} className="animate-pulse">
+                <CardHeader>
+                  <CardTitle className="text-lg text-gray-400">{title}</CardTitle>
+                  <div className="h-3 w-40 animate-pulse rounded bg-gray-200" />
+                </CardHeader>
+                <CardContent className="space-y-2">
+                  <div className="h-9 w-full animate-pulse rounded bg-gray-200" />
+                  <div className="h-9 w-full animate-pulse rounded bg-gray-200" />
+                </CardContent>
+              </Card>
+            )
+          )}
+        </div>
       </div>
     );
   }
@@ -192,12 +244,17 @@ export function FinanceOverview({ user: _user }: FinanceOverviewProps) {
 
   return (
     <div className="mx-auto max-w-7xl space-y-6 p-6">
-      <div className="flex items-center justify-between">
+      <div className="flex flex-wrap items-center justify-between gap-4">
         <PageHeader
           title="Finance Overview"
           description="Track your business finances and financial performance"
         />
-        <div className="flex gap-2">
+        <div className="flex flex-wrap items-center gap-2">
+          <DateRangePickerWithPresets
+            date={dateRange}
+            onDateChange={handleDateRangeChange}
+            placeholder="Select date range"
+          />
           <Button asChild>
             <Link href="/finance/income/new">
               <Plus className="mr-2 h-4 w-4" />
@@ -227,7 +284,7 @@ export function FinanceOverview({ user: _user }: FinanceOverviewProps) {
             <div className="text-muted-foreground flex items-center text-xs">
               <ArrowUpRight className="mr-1 h-3 w-3" />
               {incomeChange > 0 ? '+' : ''}
-              {incomeChange.toFixed(1)}% from last month
+              {incomeChange.toFixed(1)}% from previous period
             </div>
           </CardContent>
         </Card>
@@ -246,7 +303,7 @@ export function FinanceOverview({ user: _user }: FinanceOverviewProps) {
             <div className="text-muted-foreground flex items-center text-xs">
               <ArrowDownRight className="mr-1 h-3 w-3" />
               {expenseChange > 0 ? '+' : ''}
-              {expenseChange.toFixed(1)}% from last month
+              {expenseChange.toFixed(1)}% from previous period
             </div>
           </CardContent>
         </Card>
@@ -263,7 +320,7 @@ export function FinanceOverview({ user: _user }: FinanceOverviewProps) {
               {formatCurrency(currentMonth.netIncome)}
             </div>
             <p className="text-muted-foreground text-xs">
-              {currentMonth.netIncome >= 0 ? 'Profit' : 'Loss'} this month
+              {currentMonth.netIncome >= 0 ? 'Profit' : 'Loss'} this period
             </p>
           </CardContent>
         </Card>
@@ -278,7 +335,7 @@ export function FinanceOverview({ user: _user }: FinanceOverviewProps) {
               {currentMonth.transactionCount}
             </div>
             <p className="text-muted-foreground text-xs">
-              Total transactions this month
+              Total transactions this period
             </p>
           </CardContent>
         </Card>

@@ -2,42 +2,67 @@ import { withAuth, AuthenticatedRequest } from '@/lib/api-middleware';
 import { createApiResponse } from '@/lib/api-response';
 import { prisma } from '@/lib/db';
 import { SUCCESSFUL_PAYMENT_STATUSES } from '@/lib/constants';
+import { calculatePreviousPeriod } from '@/lib/utils/finance';
 
 // GET /api/finance/summary - Get financial summary statistics with real data including sales and purchases
-export const GET = withAuth(async (_request: AuthenticatedRequest) => {
+export const GET = withAuth(async (request: AuthenticatedRequest) => {
   try {
-    // Get current month date range
+    const searchParams = request.nextUrl.searchParams;
+    const startDateParam = searchParams.get('startDate');
+    const endDateParam = searchParams.get('endDate');
+
+    // Get current month date range as default
     const now = new Date();
     const currentMonthStart = new Date(now.getFullYear(), now.getMonth(), 1);
-    const previousMonthStart = new Date(
-      now.getFullYear(),
-      now.getMonth() - 1,
-      1
+
+    // Use provided dates or default to current month
+    const currentPeriodStart = startDateParam
+      ? new Date(startDateParam)
+      : currentMonthStart;
+    const currentPeriodEnd = endDateParam ? new Date(endDateParam) : now;
+
+    // Validate dates
+    if (isNaN(currentPeriodStart.getTime()) || isNaN(currentPeriodEnd.getTime())) {
+      return createApiResponse.validationError('Invalid date parameters');
+    }
+
+    if (currentPeriodStart > currentPeriodEnd) {
+      return createApiResponse.validationError('Start date must be before end date');
+    }
+
+    // Calculate previous period for comparison
+    const previousPeriod = calculatePreviousPeriod(
+      currentPeriodStart,
+      currentPeriodEnd
     );
-    const previousMonthEnd = new Date(now.getFullYear(), now.getMonth(), 0);
+
     const yearStart = new Date(now.getFullYear(), 0, 1);
 
     // Optimized: Get all period stats in parallel with consolidated queries
     const [
-      currentMonthStats,
-      previousMonthStats,
+      currentPeriodStats,
+      previousPeriodStats,
       yearToDateStats,
       recentTransactions,
     ] = await Promise.all([
-      getPeriodStatsOptimized(currentMonthStart, now),
-      getPeriodStatsOptimized(previousMonthStart, previousMonthEnd),
+      getPeriodStatsOptimized(currentPeriodStart, currentPeriodEnd),
+      getPeriodStatsOptimized(previousPeriod.start, previousPeriod.end),
       getPeriodStatsOptimized(yearStart, now),
       getRecentTransactionsOptimized(),
     ]);
 
     const summary = {
-      currentMonth: currentMonthStats,
-      previousMonth: previousMonthStats,
+      currentMonth: currentPeriodStats,
+      previousMonth: previousPeriodStats,
       yearToDate: yearToDateStats,
       recentTransactions,
       dataSources: {
         includeSales: true,
         includePurchases: true,
+      },
+      dateRange: {
+        start: currentPeriodStart.toISOString(),
+        end: currentPeriodEnd.toISOString(),
       },
     };
 

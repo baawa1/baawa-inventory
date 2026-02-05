@@ -370,10 +370,7 @@ export function TransactionHistory() {
             <span className="font-mono text-sm font-medium">
               #{transaction.id}
             </span>
-            <Badge
-              variant="secondary"
-              className={statusClass}
-            >
+            <Badge variant="secondary" className={statusClass}>
               {statusLabel}
             </Badge>
           </div>
@@ -384,9 +381,9 @@ export function TransactionHistory() {
           </div>
         </div>
 
-          <div className="text-muted-foreground mb-2 text-sm">
-            Customer: {transaction.customer?.name || 'Walk-in Customer'}
-          </div>
+        <div className="text-muted-foreground mb-2 text-sm">
+          Customer: {transaction.customer?.name || 'Walk-in Customer'}
+        </div>
 
         <div className="flex items-center justify-between">
           <div className="text-sm">{transaction.items.length} items</div>
@@ -438,10 +435,7 @@ export function TransactionHistory() {
                 Order #{transaction.transactionNumber}
               </span>
             </div>
-            <Badge
-              variant="secondary"
-              className={statusClass}
-            >
+            <Badge variant="secondary" className={statusClass}>
               {statusLabel}
             </Badge>
           </div>
@@ -631,10 +625,7 @@ export function TransactionHistory() {
             <h3 className="mb-2 text-sm font-medium">Recorded Payments</h3>
             <div className="space-y-2">
               {transaction.transactionPayments.map(payment => (
-                <div
-                  key={payment.id}
-                  className="rounded-md border p-3 text-sm"
-                >
+                <div key={payment.id} className="rounded-md border p-3 text-sm">
                   <div className="flex items-center justify-between">
                     <span>{formatPaymentMethodLabel(payment.method)}</span>
                     <span className="font-medium">
@@ -739,7 +730,9 @@ export function TransactionHistory() {
                 variant="default"
                 className="w-full"
                 onClick={() => {
-                  setPaymentAmount(Number((transaction.balanceDue ?? 0).toFixed(2)));
+                  setPaymentAmount(
+                    Number((transaction.balanceDue ?? 0).toFixed(2))
+                  );
                   setPaymentMethod('cash');
                   setPaymentNote('');
                   setPaymentDate(new Date().toISOString().split('T')[0]);
@@ -779,7 +772,7 @@ export function TransactionHistory() {
   }
 
   return (
-    <div className="flex h-[calc(100vh-49px)] flex-col space-y-6 p-6">
+    <div className="flex h-[calc(100vh-49px)] flex-col space-y-6 py-6">
       {/* Header with Actions */}
       <div className="flex items-center justify-between">
         <div>
@@ -941,10 +934,7 @@ export function TransactionHistory() {
             <span className="ml-2 text-xs text-amber-600">
               Outstanding:{' '}
               {formatCurrency(
-                transactions.reduce(
-                  (sum, t) => sum + (t.balanceDue ?? 0),
-                  0
-                )
+                transactions.reduce((sum, t) => sum + (t.balanceDue ?? 0), 0)
               )}
             </span>
           )}
