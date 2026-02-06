@@ -1,6 +1,10 @@
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { queryKeys } from '@/lib/query-client';
 import { logger } from '@/lib/logger';
+import type {
+  CreateTransactionData,
+  UpdateTransactionData,
+} from '@/lib/validations/finance';
 
 // Types
 export interface FinancialTransaction {
@@ -166,7 +170,7 @@ export function useCreateFinancialTransaction() {
   const queryClient = useQueryClient();
 
   return useMutation({
-    mutationFn: async (data: any) => {
+    mutationFn: async (data: CreateTransactionData) => {
       const response = await fetch('/api/finance/transactions', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
@@ -195,7 +199,13 @@ export function useUpdateFinancialTransaction() {
   const queryClient = useQueryClient();
 
   return useMutation({
-    mutationFn: async ({ id, data }: { id: number; data: any }) => {
+    mutationFn: async ({
+      id,
+      data,
+    }: {
+      id: number;
+      data: Partial<UpdateTransactionData>;
+    }) => {
       const response = await fetch(`/api/finance/transactions/${id}`, {
         method: 'PATCH',
         headers: { 'Content-Type': 'application/json' },

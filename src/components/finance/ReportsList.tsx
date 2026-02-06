@@ -2,8 +2,11 @@
 
 import React, { useState } from 'react';
 import Link from 'next/link';
-// TODO: Implement financial reports hooks
 import { AppUser } from '@/types/user';
+import { useFinancialReports } from '@/hooks/api/finance';
+import { formatCurrency } from '@/lib/utils';
+import { exportToCSV, generateExportFilename } from '@/lib/utils/finance';
+import { toast } from 'sonner';
 
 // UI Components
 import { Button } from '@/components/ui/button';
@@ -14,14 +17,6 @@ import {
   CardHeader,
   CardTitle,
 } from '@/components/ui/card';
-import {
-  Table,
-  TableBody,
-  TableCell,
-  TableHead,
-  TableHeader,
-  TableRow,
-} from '@/components/ui/table';
 import { PageHeader } from '@/components/ui/page-header';
 import {
   Dialog,
@@ -43,15 +38,14 @@ import {
 
 // Icons
 import {
-  Plus,
   Download,
-  Eye,
   FileText,
   BarChart3,
   TrendingUp,
   TrendingDown,
   DollarSign,
   Activity,
+  RefreshCw,
 } from 'lucide-react';
 
 interface ReportsListProps {
@@ -61,44 +55,88 @@ interface ReportsListProps {
 export function ReportsList({ user: _user }: ReportsListProps) {
   const [isGenerateDialogOpen, setIsGenerateDialogOpen] = useState(false);
   const [reportType, setReportType] = useState('FINANCIAL_SUMMARY');
-  const [startDate, setStartDate] = useState('');
-  const [endDate, setEndDate] = useState('');
+  const [startDate, setStartDate] = useState(() => {
+    const d = new Date();
+    d.setMonth(d.getMonth() - 1);
+    return d.toISOString().split('T')[0];
+  });
+  const [endDate, setEndDate] = useState(() => new Date().toISOString().split('T')[0]);
+  const [period, setPeriod] = useState<'weekly' | 'monthly' | 'quarterly' | 'yearly'>('monthly');
+  const [isExporting, setIsExporting] = useState(false);
 
-  // TODO: Implement financial reports hooks
-  const reports: any[] = [];
-  const isLoading = false;
-  const error = null;
-  const generateReport = {
-    mutateAsync: async () => {},
-    isPending: false,
-  };
+  const {
+    data: reportsData,
+    isLoading,
+    error,
+    refetch,
+  } = useFinancialReports({
+    period,
+    type: 'all',
+    dateFrom: startDate,
+    dateTo: endDate,
+  });
+
+  const summary = reportsData?.data?.summary;
+  const profitLoss = reportsData?.data?.profitLoss;
 
   const handleGenerateReport = async () => {
     if (!startDate || !endDate) {
-      alert('Please select both start and end dates');
+      toast.error('Please select both start and end dates');
       return;
     }
 
+    setIsExporting(true);
     try {
-      await generateReport.mutateAsync();
-      setIsGenerateDialogOpen(false);
-    } catch (error) {
-      console.error('Error generating report:', error);
-    }
-  };
+      // Export the current report data as CSV
+      const exportData = [];
 
-  const getReportTypeIcon = (type: string) => {
-    switch (type) {
-      case 'FINANCIAL_SUMMARY':
-        return <DollarSign className="h-4 w-4" />;
-      case 'INCOME_STATEMENT':
-        return <TrendingUp className="h-4 w-4" />;
-      case 'EXPENSE_REPORT':
-        return <TrendingDown className="h-4 w-4" />;
-      case 'CASH_FLOW':
-        return <BarChart3 className="h-4 w-4" />;
-      default:
-        return <FileText className="h-4 w-4" />;
+      if (reportType === 'FINANCIAL_SUMMARY' || reportType === 'INCOME_STATEMENT') {
+        exportData.push(
+          { Category: 'REVENUE', Item: 'Sales', Amount: profitLoss?.revenue?.sales || 0 },
+          { Category: 'REVENUE', Item: 'Other Income', Amount: profitLoss?.revenue?.otherIncome || 0 },
+          { Category: 'REVENUE', Item: 'Total Revenue', Amount: profitLoss?.revenue?.totalRevenue || 0 },
+          { Category: '---', Item: '---', Amount: '---' },
+          { Category: 'EXPENSES', Item: 'Cost of Goods', Amount: profitLoss?.expenses?.costOfGoods || 0 },
+          { Category: 'EXPENSES', Item: 'Operating Expenses', Amount: profitLoss?.expenses?.operatingExpenses || 0 },
+          { Category: 'EXPENSES', Item: 'Total Expenses', Amount: profitLoss?.expenses?.totalExpenses || 0 },
+          { Category: '---', Item: '---', Amount: '---' },
+          { Category: 'PROFIT', Item: 'Gross Profit', Amount: profitLoss?.grossProfit || 0 },
+          { Category: 'PROFIT', Item: 'Net Profit', Amount: profitLoss?.netProfit || 0 }
+        );
+      }
+
+      if (reportType === 'EXPENSE_REPORT') {
+        exportData.push(
+          { Category: 'EXPENSES', Item: 'Cost of Goods', Amount: profitLoss?.expenses?.costOfGoods || 0 },
+          { Category: 'EXPENSES', Item: 'Operating Expenses', Amount: profitLoss?.expenses?.operatingExpenses || 0 },
+          { Category: 'EXPENSES', Item: 'Total Expenses', Amount: profitLoss?.expenses?.totalExpenses || 0 }
+        );
+      }
+
+      if (reportType === 'CASH_FLOW') {
+        const cashFlow = reportsData?.data?.cashFlow;
+        exportData.push(
+          { Category: 'OPERATING', Item: 'Net Income', Amount: cashFlow?.operatingActivities?.netIncome || 0 },
+          { Category: 'OPERATING', Item: 'Net Operating Cash Flow', Amount: cashFlow?.operatingActivities?.netOperatingCashFlow || 0 },
+          { Category: 'INVESTING', Item: 'Capital Expenditures', Amount: cashFlow?.investingActivities?.capitalExpenditures || 0 },
+          { Category: 'INVESTING', Item: 'Net Investing Cash Flow', Amount: cashFlow?.investingActivities?.netInvestingCashFlow || 0 },
+          { Category: 'FINANCING', Item: 'Loans', Amount: cashFlow?.financingActivities?.loans || 0 },
+          { Category: 'FINANCING', Item: 'Repayments', Amount: cashFlow?.financingActivities?.repayments || 0 },
+          { Category: 'FINANCING', Item: 'Net Financing Cash Flow', Amount: cashFlow?.financingActivities?.netFinancingCashFlow || 0 },
+          { Category: '---', Item: '---', Amount: '---' },
+          { Category: 'TOTAL', Item: 'Total Cash Flow', Amount: reportsData?.data?.totalCashFlow || 0 }
+        );
+      }
+
+      const filename = generateExportFilename('financial-report', reportType.toLowerCase().replace('_', '-'));
+      exportToCSV(exportData as any, filename);
+      toast.success(`${getReportTypeLabel(reportType)} exported successfully`);
+      setIsGenerateDialogOpen(false);
+    } catch (err) {
+      console.error('Error exporting report:', err);
+      toast.error('Failed to export report');
+    } finally {
+      setIsExporting(false);
     }
   };
 
@@ -128,7 +166,7 @@ export function ReportsList({ user: _user }: ReportsListProps) {
               </p>
               <Button
                 variant="outline"
-                onClick={() => window.location.reload()}
+                onClick={() => refetch()}
                 className="mt-2"
               >
                 Retry
@@ -147,164 +185,197 @@ export function ReportsList({ user: _user }: ReportsListProps) {
           title="Financial Reports"
           description="View and generate financial reports and analytics"
         />
-        <Dialog
-          open={isGenerateDialogOpen}
-          onOpenChange={setIsGenerateDialogOpen}
-        >
-          <DialogTrigger asChild>
-            <Button>
-              <Plus className="mr-2 h-4 w-4" />
-              Generate Report
-            </Button>
-          </DialogTrigger>
-          <DialogContent className="sm:max-w-[425px]">
-            <DialogHeader>
-              <DialogTitle>Generate Financial Report</DialogTitle>
-              <DialogDescription>
-                Select the report type and date range to generate a new
-                financial report.
-              </DialogDescription>
-            </DialogHeader>
-            <div className="grid gap-4 py-4">
-              <div className="grid gap-2">
-                <Label htmlFor="reportType">Report Type</Label>
-                <Select value={reportType} onValueChange={setReportType}>
-                  <SelectTrigger>
-                    <SelectValue placeholder="Select report type" />
-                  </SelectTrigger>
-                  <SelectContent>
-                    <SelectItem value="FINANCIAL_SUMMARY">
-                      Financial Summary
-                    </SelectItem>
-                    <SelectItem value="INCOME_STATEMENT">
-                      Income Statement
-                    </SelectItem>
-                    <SelectItem value="EXPENSE_REPORT">
-                      Expense Report
-                    </SelectItem>
-                    <SelectItem value="CASH_FLOW">Cash Flow</SelectItem>
-                  </SelectContent>
-                </Select>
-              </div>
-              <div className="grid gap-2">
-                <Label htmlFor="startDate">Start Date</Label>
-                <Input
-                  id="startDate"
-                  type="date"
-                  value={startDate}
-                  onChange={e => setStartDate(e.target.value)}
-                />
-              </div>
-              <div className="grid gap-2">
-                <Label htmlFor="endDate">End Date</Label>
-                <Input
-                  id="endDate"
-                  type="date"
-                  value={endDate}
-                  onChange={e => setEndDate(e.target.value)}
-                />
-              </div>
-            </div>
-            <div className="flex justify-end space-x-2">
-              <Button
-                variant="outline"
-                onClick={() => setIsGenerateDialogOpen(false)}
-              >
-                Cancel
+        <div className="flex gap-2">
+          <Button variant="outline" onClick={() => refetch()} disabled={isLoading}>
+            <RefreshCw className={`mr-2 h-4 w-4 ${isLoading ? 'animate-spin' : ''}`} />
+            Refresh
+          </Button>
+          <Dialog
+            open={isGenerateDialogOpen}
+            onOpenChange={setIsGenerateDialogOpen}
+          >
+            <DialogTrigger asChild>
+              <Button>
+                <Download className="mr-2 h-4 w-4" />
+                Export Report
               </Button>
-              <Button
-                onClick={handleGenerateReport}
-                disabled={generateReport.isPending}
-              >
-                {generateReport.isPending ? 'Generating...' : 'Generate Report'}
-              </Button>
-            </div>
-          </DialogContent>
-        </Dialog>
+            </DialogTrigger>
+            <DialogContent className="sm:max-w-[425px]">
+              <DialogHeader>
+                <DialogTitle>Export Financial Report</DialogTitle>
+                <DialogDescription>
+                  Select the report type and date range to export a financial report.
+                </DialogDescription>
+              </DialogHeader>
+              <div className="grid gap-4 py-4">
+                <div className="grid gap-2">
+                  <Label htmlFor="reportType">Report Type</Label>
+                  <Select value={reportType} onValueChange={setReportType}>
+                    <SelectTrigger>
+                      <SelectValue placeholder="Select report type" />
+                    </SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="FINANCIAL_SUMMARY">
+                        Financial Summary
+                      </SelectItem>
+                      <SelectItem value="INCOME_STATEMENT">
+                        Income Statement
+                      </SelectItem>
+                      <SelectItem value="EXPENSE_REPORT">
+                        Expense Report
+                      </SelectItem>
+                      <SelectItem value="CASH_FLOW">Cash Flow</SelectItem>
+                    </SelectContent>
+                  </Select>
+                </div>
+                <div className="grid gap-2">
+                  <Label htmlFor="period">Period</Label>
+                  <Select value={period} onValueChange={(v) => setPeriod(v as typeof period)}>
+                    <SelectTrigger>
+                      <SelectValue placeholder="Select period" />
+                    </SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="weekly">Weekly</SelectItem>
+                      <SelectItem value="monthly">Monthly</SelectItem>
+                      <SelectItem value="quarterly">Quarterly</SelectItem>
+                      <SelectItem value="yearly">Yearly</SelectItem>
+                    </SelectContent>
+                  </Select>
+                </div>
+                <div className="grid gap-2">
+                  <Label htmlFor="startDate">Start Date</Label>
+                  <Input
+                    id="startDate"
+                    type="date"
+                    value={startDate}
+                    onChange={e => setStartDate(e.target.value)}
+                  />
+                </div>
+                <div className="grid gap-2">
+                  <Label htmlFor="endDate">End Date</Label>
+                  <Input
+                    id="endDate"
+                    type="date"
+                    value={endDate}
+                    onChange={e => setEndDate(e.target.value)}
+                  />
+                </div>
+              </div>
+              <div className="flex justify-end space-x-2">
+                <Button
+                  variant="outline"
+                  onClick={() => setIsGenerateDialogOpen(false)}
+                >
+                  Cancel
+                </Button>
+                <Button
+                  onClick={handleGenerateReport}
+                  disabled={isExporting || isLoading}
+                >
+                  {isExporting ? 'Exporting...' : 'Export CSV'}
+                </Button>
+              </div>
+            </DialogContent>
+          </Dialog>
+        </div>
       </div>
 
-      {/* Quick Report Cards */}
+      {/* Quick Report Cards - Link to actual report pages */}
       <div className="grid gap-6 md:grid-cols-2 lg:grid-cols-4">
+        <Link href="/finance/reports/income-statement">
+          <Card className="cursor-pointer transition-shadow hover:shadow-md">
+            <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+              <CardTitle className="text-sm font-medium">
+                Total Revenue
+              </CardTitle>
+              <DollarSign className="h-4 w-4 text-green-600" />
+            </CardHeader>
+            <CardContent>
+              <div className="text-2xl font-bold text-green-600">
+                {isLoading ? '...' : formatCurrency(profitLoss?.revenue?.totalRevenue || 0)}
+              </div>
+              <p className="text-muted-foreground text-xs">
+                View income statement
+              </p>
+            </CardContent>
+          </Card>
+        </Link>
+
+        <Link href="/finance/reports/expenses">
+          <Card className="cursor-pointer transition-shadow hover:shadow-md">
+            <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+              <CardTitle className="text-sm font-medium">
+                Total Expenses
+              </CardTitle>
+              <TrendingDown className="h-4 w-4 text-red-600" />
+            </CardHeader>
+            <CardContent>
+              <div className="text-2xl font-bold text-red-600">
+                {isLoading ? '...' : formatCurrency(profitLoss?.expenses?.totalExpenses || 0)}
+              </div>
+              <p className="text-muted-foreground text-xs">
+                View expense breakdown
+              </p>
+            </CardContent>
+          </Card>
+        </Link>
+
+        <Link href="/finance/reports/cash-flow">
+          <Card className="cursor-pointer transition-shadow hover:shadow-md">
+            <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+              <CardTitle className="text-sm font-medium">Net Profit</CardTitle>
+              <TrendingUp className={`h-4 w-4 ${(profitLoss?.netProfit || 0) >= 0 ? 'text-green-600' : 'text-red-600'}`} />
+            </CardHeader>
+            <CardContent>
+              <div className={`text-2xl font-bold ${(profitLoss?.netProfit || 0) >= 0 ? 'text-green-600' : 'text-red-600'}`}>
+                {isLoading ? '...' : formatCurrency(profitLoss?.netProfit || 0)}
+              </div>
+              <p className="text-muted-foreground text-xs">
+                View cash flow
+              </p>
+            </CardContent>
+          </Card>
+        </Link>
+
         <Card>
           <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-            <CardTitle className="text-sm font-medium">
-              Financial Summary
-            </CardTitle>
-            <DollarSign className="text-muted-foreground h-4 w-4" />
+            <CardTitle className="text-sm font-medium">Transactions</CardTitle>
+            <BarChart3 className="h-4 w-4 text-blue-600" />
           </CardHeader>
           <CardContent>
-            <div className="text-2xl font-bold">Overview</div>
+            <div className="text-2xl font-bold text-blue-600">
+              {isLoading ? '...' : summary?.totalTransactions || 0}
+            </div>
             <p className="text-muted-foreground text-xs">
-              Complete financial overview
+              Total this period
             </p>
           </CardContent>
         </Card>
 
-        <Card>
-          <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-            <CardTitle className="text-sm font-medium">
-              Income Statement
-            </CardTitle>
-            <TrendingUp className="text-muted-foreground h-4 w-4" />
-          </CardHeader>
-          <CardContent>
-            <div className="text-2xl font-bold">Income</div>
-            <p className="text-muted-foreground text-xs">
-              Revenue and income analysis
-            </p>
-          </CardContent>
-        </Card>
-
-        <Card>
-          <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-            <CardTitle className="text-sm font-medium">
-              Expense Report
-            </CardTitle>
-            <TrendingDown className="text-muted-foreground h-4 w-4" />
-          </CardHeader>
-          <CardContent>
-            <div className="text-2xl font-bold">Expenses</div>
-            <p className="text-muted-foreground text-xs">
-              Cost and expense breakdown
-            </p>
-          </CardContent>
-        </Card>
-
-        <Card>
-          <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-            <CardTitle className="text-sm font-medium">Cash Flow</CardTitle>
-            <BarChart3 className="text-muted-foreground h-4 w-4" />
-          </CardHeader>
-          <CardContent>
-            <div className="text-2xl font-bold">Flow</div>
-            <p className="text-muted-foreground text-xs">Cash flow analysis</p>
-          </CardContent>
-        </Card>
-
-        <Card className="cursor-pointer transition-shadow hover:shadow-md">
-          <Link href="/finance/reports/analytics">
+        <Link href="/finance/reports/analytics">
+          <Card className="cursor-pointer transition-shadow hover:shadow-md">
             <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
               <CardTitle className="text-sm font-medium">
                 Analytics Dashboard
               </CardTitle>
-              <Activity className="text-muted-foreground h-4 w-4" />
+              <Activity className="h-4 w-4 text-purple-600" />
             </CardHeader>
             <CardContent>
-              <div className="text-2xl font-bold">Analytics</div>
+              <div className="text-2xl font-bold text-purple-600">Analytics</div>
               <p className="text-muted-foreground text-xs">
                 Comprehensive analytics
               </p>
             </CardContent>
-          </Link>
-        </Card>
+          </Card>
+        </Link>
       </div>
 
-      {/* Reports Table */}
+      {/* Period Summary */}
       <Card>
         <CardHeader>
-          <CardTitle>Generated Reports</CardTitle>
+          <CardTitle>Period Summary</CardTitle>
           <CardDescription>
-            View and download previously generated financial reports
+            Financial overview for the selected period ({period})
           </CardDescription>
         </CardHeader>
         <CardContent>
@@ -313,71 +384,90 @@ export function ReportsList({ user: _user }: ReportsListProps) {
               <div className="border-primary h-8 w-8 animate-spin rounded-full border-b-2"></div>
               <span className="ml-2">Loading reports...</span>
             </div>
-          ) : !reports || reports.length === 0 ? (
-            <div className="py-8 text-center">
-              <FileText className="text-muted-foreground mx-auto mb-4 h-12 w-12" />
-              <p className="text-muted-foreground">No reports generated yet</p>
-              <Button
-                onClick={() => setIsGenerateDialogOpen(true)}
-                className="mt-4"
-              >
-                <Plus className="mr-2 h-4 w-4" />
-                Generate First Report
-              </Button>
-            </div>
           ) : (
-            <Table>
-              <TableHeader>
-                <TableRow>
-                  <TableHead>Report Name</TableHead>
-                  <TableHead>Type</TableHead>
-                  <TableHead>Period</TableHead>
-                  <TableHead>Generated By</TableHead>
-                  <TableHead>Generated At</TableHead>
-                  <TableHead>Actions</TableHead>
-                </TableRow>
-              </TableHeader>
-              <TableBody>
-                {reports.map(report => (
-                  <TableRow key={report.id}>
-                    <TableCell className="font-medium">
-                      {report.reportName}
-                    </TableCell>
-                    <TableCell>
-                      <div className="flex items-center gap-2">
-                        {getReportTypeIcon(report.reportType)}
-                        {getReportTypeLabel(report.reportType)}
-                      </div>
-                    </TableCell>
-                    <TableCell>
-                      {new Date(report.periodStart).toLocaleDateString()} -{' '}
-                      {new Date(report.periodEnd).toLocaleDateString()}
-                    </TableCell>
-                    <TableCell>
-                      {report.generatedByUser.firstName}{' '}
-                      {report.generatedByUser.lastName}
-                    </TableCell>
-                    <TableCell>
-                      {new Date(report.generatedAt).toLocaleDateString()}
-                    </TableCell>
-                    <TableCell>
-                      <div className="flex items-center gap-2">
-                        <Button variant="outline" size="sm">
-                          <Eye className="mr-1 h-3 w-3" />
-                          View
-                        </Button>
-                        {report.fileUrl && (
-                          <Button variant="outline" size="sm">
-                            <Download className="mr-1 h-3 w-3" />
-                            Download
-                          </Button>
-                        )}
-                      </div>
-                    </TableCell>
-                  </TableRow>
-                ))}
-              </TableBody>
-            </Table>
+            <div className="grid gap-6 md:grid-cols-2">
+              {/* Profit & Loss Summary */}
+              <div className="space-y-4">
+                <h3 className="font-semibold">Profit & Loss</h3>
+                <div className="space-y-2">
+                  <div className="flex justify-between">
+                    <span className="text-muted-foreground">Sales Revenue</span>
+                    <span className="font-medium">{formatCurrency(profitLoss?.revenue?.sales || 0)}</span>
+                  </div>
+                  <div className="flex justify-between">
+                    <span className="text-muted-foreground">Other Income</span>
+                    <span className="font-medium">{formatCurrency(profitLoss?.revenue?.otherIncome || 0)}</span>
+                  </div>
+                  <div className="flex justify-between border-t pt-2">
+                    <span className="font-semibold">Total Revenue</span>
+                    <span className="font-bold text-green-600">{formatCurrency(profitLoss?.revenue?.totalRevenue || 0)}</span>
+                  </div>
+                  <div className="flex justify-between">
+                    <span className="text-muted-foreground">Cost of Goods</span>
+                    <span className="font-medium">{formatCurrency(profitLoss?.expenses?.costOfGoods || 0)}</span>
+                  </div>
+                  <div className="flex justify-between">
+                    <span className="text-muted-foreground">Operating Expenses</span>
+                    <span className="font-medium">{formatCurrency(profitLoss?.expenses?.operatingExpenses || 0)}</span>
+                  </div>
+                  <div className="flex justify-between border-t pt-2">
+                    <span className="font-semibold">Total Expenses</span>
+                    <span className="font-bold text-red-600">{formatCurrency(profitLoss?.expenses?.totalExpenses || 0)}</span>
+                  </div>
+                  <div className="flex justify-between border-t pt-2">
+                    <span className="font-semibold">Gross Profit</span>
+                    <span className="font-bold">{formatCurrency(profitLoss?.grossProfit || 0)}</span>
+                  </div>
+                  <div className="flex justify-between border-t pt-2">
+                    <span className="text-lg font-bold">Net Profit</span>
+                    <span className={`text-lg font-bold ${(profitLoss?.netProfit || 0) >= 0 ? 'text-green-600' : 'text-red-600'}`}>
+                      {formatCurrency(profitLoss?.netProfit || 0)}
+                    </span>
+                  </div>
+                </div>
+              </div>
+
+              {/* Quick Stats */}
+              <div className="space-y-4">
+                <h3 className="font-semibold">Quick Stats</h3>
+                <div className="grid grid-cols-2 gap-4">
+                  <div className="rounded-lg bg-green-50 p-4 text-center dark:bg-green-900/20">
+                    <div className="text-lg font-bold text-green-600">{formatCurrency(summary?.totalIncome || 0)}</div>
+                    <div className="text-xs text-green-600">Total Income</div>
+                  </div>
+                  <div className="rounded-lg bg-red-50 p-4 text-center dark:bg-red-900/20">
+                    <div className="text-lg font-bold text-red-600">{formatCurrency(summary?.totalExpenses || 0)}</div>
+                    <div className="text-xs text-red-600">Total Expenses</div>
+                  </div>
+                  <div className="rounded-lg bg-blue-50 p-4 text-center dark:bg-blue-900/20">
+                    <div className="text-lg font-bold text-blue-600">{summary?.totalTransactions || 0}</div>
+                    <div className="text-xs text-blue-600">Transactions</div>
+                  </div>
+                  <div className={`rounded-lg p-4 text-center ${(summary?.netProfit || 0) >= 0 ? 'bg-emerald-50 dark:bg-emerald-900/20' : 'bg-red-50 dark:bg-red-900/20'}`}>
+                    <div className={`text-lg font-bold ${(summary?.netProfit || 0) >= 0 ? 'text-emerald-600' : 'text-red-600'}`}>
+                      {formatCurrency(summary?.netProfit || 0)}
+                    </div>
+                    <div className={`text-xs ${(summary?.netProfit || 0) >= 0 ? 'text-emerald-600' : 'text-red-600'}`}>
+                      {(summary?.netProfit || 0) >= 0 ? 'Profit' : 'Loss'}
+                    </div>
+                  </div>
+                </div>
+                <div className="mt-4 flex gap-2">
+                  <Link href="/finance/income" className="flex-1">
+                    <Button variant="outline" className="w-full">
+                      <FileText className="mr-2 h-4 w-4" />
+                      View Income
+                    </Button>
+                  </Link>
+                  <Link href="/finance/expenses" className="flex-1">
+                    <Button variant="outline" className="w-full">
+                      <FileText className="mr-2 h-4 w-4" />
+                      View Expenses
+                    </Button>
+                  </Link>
+                </div>
+              </div>
+            </div>
           )}
         </CardContent>
       </Card>

@@ -32,15 +32,31 @@ interface ChartData {
   }>;
 }
 
+interface ExpenseBreakdown {
+  [expenseType: string]: number;
+}
+
+interface TopVendor {
+  vendor: string;
+  amount: number;
+  category: string;
+}
+
 interface FinancialAnalyticsData {
   summary: AnalyticsSummary;
   charts: ChartData;
+  expenseBreakdown: ExpenseBreakdown;
+  topVendors: TopVendor[];
   filters: {
     dateFrom?: string;
     dateTo?: string;
     type: string;
     paymentMethod?: string;
     groupBy: string;
+  };
+  dataSources: {
+    includeSales: boolean;
+    includePurchases: boolean;
   };
 }
 

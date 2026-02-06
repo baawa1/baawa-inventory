@@ -49,10 +49,11 @@ export interface ExportableData {
 }
 
 /**
- * Generate a unique transaction number
+ * Generate a unique transaction number with retry logic for race condition handling
  * Format: FIN-YYYYMMDD-XXXX (e.g., FIN-20241201-0001)
  */
 export async function generateTransactionNumber(): Promise<string> {
+  const maxRetries = 5;
   const today = new Date();
   const dateString = today.toISOString().slice(0, 10).replace(/-/g, '');
   const prefix = `FIN-${dateString}`;
@@ -69,18 +70,60 @@ export async function generateTransactionNumber(): Promise<string> {
     today.getDate() + 1
   );
 
-  const count = await prisma.financialTransaction.count({
-    where: {
-      createdAt: {
-        gte: startOfDay,
-        lt: endOfDay,
+  for (let attempt = 0; attempt < maxRetries; attempt++) {
+    // Get the highest sequence number used today
+    const latestTransaction = await prisma.financialTransaction.findFirst({
+      where: {
+        transactionNumber: { startsWith: prefix },
       },
-    },
-  });
+      orderBy: { transactionNumber: 'desc' },
+      select: { transactionNumber: true },
+    });
 
-  // Format the sequence number with leading zeros
-  const sequence = (count + 1).toString().padStart(4, '0');
-  return `${prefix}-${sequence}`;
+    let nextSequence: number;
+    if (latestTransaction?.transactionNumber) {
+      // Extract the sequence number from the last transaction
+      const lastSequence = parseInt(
+        latestTransaction.transactionNumber.split('-').pop() || '0',
+        10
+      );
+      nextSequence = lastSequence + 1;
+    } else {
+      // Fallback to count-based if no transactions found
+      const count = await prisma.financialTransaction.count({
+        where: {
+          createdAt: {
+            gte: startOfDay,
+            lt: endOfDay,
+          },
+        },
+      });
+      nextSequence = count + 1;
+    }
+
+    // Add attempt offset for retries to avoid conflicts
+    const sequence = (nextSequence + attempt).toString().padStart(4, '0');
+    const transactionNumber = `${prefix}-${sequence}`;
+
+    // Verify uniqueness before returning
+    const exists = await prisma.financialTransaction.findUnique({
+      where: { transactionNumber },
+      select: { id: true },
+    });
+
+    if (!exists) {
+      return transactionNumber;
+    }
+
+    // Small delay before retry to reduce contention
+    if (attempt < maxRetries - 1) {
+      await new Promise(resolve => setTimeout(resolve, 50 * (attempt + 1)));
+    }
+  }
+
+  // Last resort: use timestamp-based unique suffix
+  const timestamp = Date.now().toString(36);
+  return `${prefix}-${timestamp}`;
 }
 
 /**

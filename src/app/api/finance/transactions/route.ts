@@ -280,14 +280,9 @@ export const POST = withAuth(async (request: AuthenticatedRequest) => {
           });
         }
 
-        return transaction;
-      });
-
-      // Get complete transaction with details
-      let completeTransaction;
-      try {
-        completeTransaction = await prisma.financialTransaction.findUnique({
-          where: { id: result.id },
+        // Fetch complete transaction with all details in same transaction
+        const completeTransaction = await tx.financialTransaction.findUnique({
+          where: { id: transaction.id },
           include: {
             createdByUser: {
               select: {
@@ -301,10 +296,15 @@ export const POST = withAuth(async (request: AuthenticatedRequest) => {
             incomeDetails: true,
           },
         });
-      } catch (_fetchError) {
-        // Continue with the result we have
-        completeTransaction = result;
+
+        return completeTransaction;
+      });
+
+      if (!result) {
+        throw new Error('Failed to create transaction: no result returned');
       }
+
+      const completeTransaction = result;
 
       // Create audit log
       try {
@@ -312,7 +312,7 @@ export const POST = withAuth(async (request: AuthenticatedRequest) => {
           userId: parseInt(request.user.id),
           action: AuditLogAction._SALE_CREATED,
           tableName: 'financial_transactions',
-          recordId: result.id,
+          recordId: completeTransaction.id,
           newValues: completeTransaction,
         });
       } catch (_auditError) {

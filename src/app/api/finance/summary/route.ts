@@ -1,4 +1,5 @@
 import { withAuth, AuthenticatedRequest } from '@/lib/api-middleware';
+import { hasPermission } from '@/lib/auth/roles';
 import { createApiResponse } from '@/lib/api-response';
 import { prisma } from '@/lib/db';
 import { SUCCESSFUL_PAYMENT_STATUSES } from '@/lib/constants';
@@ -7,6 +8,13 @@ import { calculatePreviousPeriod } from '@/lib/utils/finance';
 // GET /api/finance/summary - Get financial summary statistics with real data including sales and purchases
 export const GET = withAuth(async (request: AuthenticatedRequest) => {
   try {
+    // Check if user has permission to read financial data
+    if (!hasPermission(request.user.role, 'FINANCE_TRANSACTIONS_READ')) {
+      return createApiResponse.forbidden(
+        'Insufficient permissions to view financial summary'
+      );
+    }
+
     const searchParams = request.nextUrl.searchParams;
     const startDateParam = searchParams.get('startDate');
     const endDateParam = searchParams.get('endDate');

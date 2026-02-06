@@ -1,4 +1,5 @@
 import { z } from 'zod';
+import { UseFormReturn } from 'react-hook-form';
 import { expenseTransactionSchema } from '@/lib/validations/finance';
 import {
   FINANCIAL_TYPES,
@@ -22,7 +23,7 @@ export const defaultFormValues: CreateExpenseData = {
 
 // Form section props interface
 export interface FormSectionProps {
-  form: any; // Will be properly typed when we create the form hook
+  form: UseFormReturn<CreateExpenseData>;
 }
 
 // Expense type option interface

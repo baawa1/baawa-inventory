@@ -16,13 +16,12 @@ import {
 } from '@/components/ui/card';
 import { Form } from '@/components/ui/form';
 import { PageHeader } from '@/components/ui/page-header';
-import { incomeTransactionSchema } from '@/lib/validations/finance';
+import { incomeTransactionSchema, IncomeTransactionFormData } from '@/lib/validations/finance';
 import { BasicInfoSection } from '../add-income/BasicInfoSection';
 import { IncomeDetailsSection } from '../add-income/IncomeDetailsSection';
 import { AdditionalInfoSection } from '../add-income/AdditionalInfoSection';
 import { FormActions } from '../add-income/FormActions';
 import { useFormDataQuery } from '../add-income/useFormDataQuery';
-import { useIncomeSubmit } from '../add-income/useIncomeSubmit';
 import { defaultFormValues } from '../add-income/types';
 import { AppUser } from '@/types/user';
 import { useIncomeData } from './useIncomeData';
@@ -34,17 +33,15 @@ interface EditIncomeFormProps {
 }
 
 export default function EditIncomeForm({
-  user: _user,
+  user,
   incomeId,
 }: EditIncomeFormProps) {
   const router = useRouter();
 
   const {
-    isSubmitting,
     submitError,
     incomeSourceOptions,
     paymentMethodOptions,
-    setIsSubmitting,
     setSubmitError,
   } = useFormDataQuery();
 
@@ -56,7 +53,7 @@ export default function EditIncomeForm({
   } = useIncomeData(incomeId);
 
   // Update mutation
-  const { updateIncome: _updateIncome } = useIncomeUpdate();
+  const { updateIncome, isUpdating } = useIncomeUpdate();
 
   const form = useForm({
     resolver: zodResolver(incomeTransactionSchema),
@@ -78,9 +75,30 @@ export default function EditIncomeForm({
         payerName: incomeData.incomeDetails?.payerName || '',
       });
     }
-  }, [incomeData, form]);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [incomeData]);
 
-  const { onSubmit } = useIncomeSubmit(form, setIsSubmitting, setSubmitError);
+  const onSubmit = async (data: IncomeTransactionFormData) => {
+    setSubmitError(null);
+    try {
+      await updateIncome({
+        id: incomeId,
+        data: {
+          amount: data.amount,
+          description: data.description,
+          transactionDate: data.transactionDate,
+          paymentMethod: data.paymentMethod || 'CASH',
+          incomeSource: data.incomeSource,
+          payerName: data.payerName,
+        },
+      });
+    } catch (error) {
+      setSubmitError(error instanceof Error ? error.message : 'Failed to update income');
+    }
+  };
+
+  // Keep user prop usage for potential future audit logging
+  void user;
 
   if (isLoadingIncome) {
     return (
@@ -172,7 +190,7 @@ export default function EditIncomeForm({
               <AdditionalInfoSection form={form} />
 
               <FormActions
-                isSubmitting={isSubmitting}
+                isSubmitting={isUpdating}
                 onCancelAction={() => router.push('/finance/income')}
                 submitText="Update Income Transaction"
                 loadingText="Updating..."

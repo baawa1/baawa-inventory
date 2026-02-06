@@ -43,6 +43,7 @@ interface DashboardFiltersBarProps {
   onFilterChange?: (_key: string, _value: any) => void;
   onResetFilters?: () => void;
   quickFilters?: React.ReactNode;
+  inlineFilters?: React.ReactNode;
   sortOptions?: Array<{ label: string; value: string }>;
   currentSort?: string;
   onSortChange?: (_value: string) => void;
@@ -60,6 +61,7 @@ export function DashboardFiltersBar({
   onFilterChange = () => {},
   onResetFilters = () => {},
   quickFilters,
+  inlineFilters,
   sortOptions = [],
   currentSort = '',
   onSortChange = () => {},
@@ -177,6 +179,7 @@ export function DashboardFiltersBar({
           {filters.map(filter => (
             <div key={filter.key}>{renderFilterControl(filter)}</div>
           ))}
+          {inlineFilters}
           <Button
             variant="outline"
             size="sm"

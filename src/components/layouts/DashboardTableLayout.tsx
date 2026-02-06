@@ -17,6 +17,7 @@ interface DashboardTableLayoutProps<T = Record<string, unknown>> {
   onFilterChange?: (_key: string, _value: unknown) => void;
   onResetFilters?: () => void;
   quickFilters?: React.ReactNode;
+  inlineFilters?: React.ReactNode;
   beforeFiltersContent?: React.ReactNode;
   sortOptions?: Array<{ label: string; value: string }>;
   currentSort?: string;
@@ -63,6 +64,7 @@ export function DashboardTableLayout<T = Record<string, unknown>>({
   onFilterChange = () => {},
   onResetFilters = () => {},
   quickFilters,
+  inlineFilters,
   beforeFiltersContent,
   sortOptions = [],
   currentSort = '',
@@ -110,6 +112,7 @@ export function DashboardTableLayout<T = Record<string, unknown>>({
         onFilterChange={onFilterChange}
         onResetFilters={onResetFilters}
         quickFilters={quickFilters}
+        inlineFilters={inlineFilters}
         sortOptions={sortOptions}
         currentSort={currentSort}
         onSortChange={onSortChange}

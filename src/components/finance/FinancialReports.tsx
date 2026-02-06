@@ -457,9 +457,11 @@ export function FinancialReports({
                 </CardTitle>
               </CardHeader>
               <CardContent>
-                <div className="text-2xl font-bold">{0}</div>
+                <div className="text-2xl font-bold">
+                  {reportsData?.data?.summary?.totalTransactions ?? 0}
+                </div>
                 <p className="text-muted-foreground mt-1 text-xs">
-                  Average: {formatCurrency(0)}
+                  Average: {formatCurrency(reportsData?.data?.summary?.averageTransactionValue ?? 0)}
                 </p>
               </CardContent>
             </Card>
@@ -471,7 +473,9 @@ export function FinancialReports({
                 </CardTitle>
               </CardHeader>
               <CardContent>
-                <div className="text-2xl font-bold capitalize">Cash</div>
+                <div className="text-2xl font-bold capitalize">
+                  {reportsData?.data?.summary?.topPaymentMethod ?? 'N/A'}
+                </div>
                 <p className="text-muted-foreground mt-1 text-xs">
                   Most used payment method
                 </p>

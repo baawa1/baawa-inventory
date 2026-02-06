@@ -1,4 +1,3 @@
-import { NextResponse } from 'next/server';
 import { prisma } from '@/lib/db';
 import { withAuth, AuthenticatedRequest } from '@/lib/api-middleware';
 import { hasPermission } from '@/lib/auth/roles';
@@ -26,13 +25,14 @@ export const GET = withAuth(async function (request: AuthenticatedRequest) {
     }
 
     // Parse and validate query parameters
+    // Note: searchParams.get() returns null when not present, but Zod expects undefined
     const { searchParams } = new URL(request.url);
     const validatedParams = reportParamsSchema.parse({
-      period: searchParams.get('period'),
-      type: searchParams.get('type'),
-      paymentMethod: searchParams.get('paymentMethod'),
-      dateFrom: searchParams.get('dateFrom'),
-      dateTo: searchParams.get('dateTo'),
+      period: searchParams.get('period') || undefined,
+      type: searchParams.get('type') || undefined,
+      paymentMethod: searchParams.get('paymentMethod') || undefined,
+      dateFrom: searchParams.get('dateFrom') || undefined,
+      dateTo: searchParams.get('dateTo') || undefined,
     });
 
     const { period, type, paymentMethod, dateFrom, dateTo } = validatedParams;
@@ -72,7 +72,7 @@ export const GET = withAuth(async function (request: AuthenticatedRequest) {
         gte: startDate,
         lte: endDate,
       },
-      status: 'COMPLETED',
+      status: { in: ['COMPLETED', 'APPROVED'] },
     };
 
     if (type !== 'all') {
@@ -220,6 +220,17 @@ export const GET = withAuth(async function (request: AuthenticatedRequest) {
       count: stat._count.id,
     }));
 
+    // Calculate top payment method and average transaction value
+    const topPaymentMethod = paymentMethodData.length > 0
+      ? paymentMethodData.reduce((prev, current) =>
+          (current.count > prev.count) ? current : prev
+        ).method?.replace('_', ' ').toLowerCase() || 'N/A'
+      : 'N/A';
+
+    const averageTransactionValue = transactions.length > 0
+      ? (totalIncome + totalExpenses) / transactions.length
+      : 0;
+
     const reportData = {
       profitLoss: profitLossData,
       cashFlow: cashFlowData,
@@ -237,6 +248,8 @@ export const GET = withAuth(async function (request: AuthenticatedRequest) {
         totalExpenses,
         netProfit,
         grossProfit,
+        topPaymentMethod,
+        averageTransactionValue,
       },
     };
 

@@ -429,6 +429,7 @@ model FinancialTransaction {
   status            FinancialStatus @default(COMPLETED)
   approvedBy        Int?            @map("approved_by")
   approvedAt        DateTime?       @map("approved_at") @db.Timestamptz(6)
+  rejectionReason   String?         @map("rejection_reason")
   createdBy         Int             @map("created_by")
   createdAt         DateTime        @default(now()) @map("created_at") @db.Timestamptz(6)
   updatedAt         DateTime        @default(now()) @updatedAt @map("updated_at") @db.Timestamptz(6)

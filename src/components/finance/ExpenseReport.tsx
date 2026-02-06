@@ -1,6 +1,6 @@
 'use client';
 
-import React, { useState } from 'react';
+import React, { useState, useMemo } from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
@@ -25,6 +25,11 @@ import { formatCurrency } from '@/lib/utils';
 import { useFinancialAnalytics } from '@/hooks/api/useFinancialAnalytics';
 import { DateRangePicker } from '@/components/ui/date-range-picker';
 import { AppUser } from '@/types/user';
+import { EXPENSE_TYPE_LABELS } from '@/lib/constants/finance';
+import {
+  exportToCSV,
+  generateExportFilename,
+} from '@/lib/utils/finance';
 
 interface ExpenseReportProps {
   user: AppUser;
@@ -32,10 +37,10 @@ interface ExpenseReportProps {
 
 export function ExpenseReport({ user: _user }: ExpenseReportProps) {
   const [dateRange, setDateRange] = useState<DateRange | undefined>({
-    from: new Date(Date.now() - 30 * 24 * 60 * 60 * 1000), // Last 30 days
+    from: new Date(Date.now() - 30 * 24 * 60 * 60 * 1000),
     to: new Date(),
   });
-  const [period, setPeriod] = useState('monthly');
+  const [_period, setPeriod] = useState('monthly');
   const [expenseCategory, setExpenseCategory] = useState('all');
 
   const {
@@ -48,51 +53,64 @@ export function ExpenseReport({ user: _user }: ExpenseReportProps) {
   });
 
   const summary = analyticsData?.summary;
+  const expenseBreakdown = analyticsData?.expenseBreakdown || {};
+  const topVendors = analyticsData?.topVendors || [];
 
-  // Calculate expense data
-  const expenseData = {
-    totalExpenses: summary?.totalExpenses || 0,
-    expenseBreakdown: {
-      salaries: 80000,
-      rent: 25000,
-      utilities: 15000,
-      marketing: 20000,
-      insurance: 10000,
-      depreciation: 15000,
-      supplies: 12000,
-      maintenance: 8000,
-      travel: 5000,
-      other: 5000,
-    },
-    vendorExpenses: [
-      { vendor: 'ABC Supplies', amount: 25000, category: 'Supplies' },
-      { vendor: 'XYZ Services', amount: 18000, category: 'Services' },
-      { vendor: 'Office Rent Co', amount: 25000, category: 'Rent' },
-      { vendor: 'Utility Corp', amount: 15000, category: 'Utilities' },
-      { vendor: 'Marketing Pro', amount: 20000, category: 'Marketing' },
-    ],
-    monthlyTrend: [
-      { month: 'Jan', amount: 120000 },
-      { month: 'Feb', amount: 135000 },
-      { month: 'Mar', amount: 110000 },
-      { month: 'Apr', amount: 145000 },
-      { month: 'May', amount: 130000 },
-      { month: 'Jun', amount: 140000 },
-    ],
-  };
+  const totalExpenses = summary?.totalExpenses || 0;
+  const expenseGrowth = summary?.expenseGrowth || 0;
 
-  const totalExpenses = Object.values(expenseData.expenseBreakdown).reduce(
-    (a, b) => a + b,
-    0
-  );
-  const averageExpense = totalExpenses / 6; // 6 months
+  const filteredBreakdown = useMemo(() => {
+    if (expenseCategory === 'all') {
+      return expenseBreakdown;
+    }
+    const categoryKey = expenseCategory.toUpperCase();
+    if (expenseBreakdown[categoryKey] !== undefined) {
+      return { [categoryKey]: expenseBreakdown[categoryKey] };
+    }
+    return expenseBreakdown;
+  }, [expenseBreakdown, expenseCategory]);
+
+  const sortedBreakdownEntries = useMemo(() => {
+    return Object.entries(filteredBreakdown).sort(([, a], [, b]) => b - a);
+  }, [filteredBreakdown]);
+
+  const topCategory = useMemo(() => {
+    if (sortedBreakdownEntries.length === 0) return { name: 'N/A', amount: 0 };
+    const [name, amount] = sortedBreakdownEntries[0];
+    return {
+      name: EXPENSE_TYPE_LABELS[name as keyof typeof EXPENSE_TYPE_LABELS] || name,
+      amount,
+    };
+  }, [sortedBreakdownEntries]);
+
+  const categoryCount = Object.keys(expenseBreakdown).length;
+  const vendorCount = topVendors.length;
 
   const handleExportReport = () => {
-    console.log('Exporting expense report...');
+    const exportData: { Category: string; Amount: number; Percentage: string }[] = sortedBreakdownEntries.map(([category, amount]) => ({
+      Category: EXPENSE_TYPE_LABELS[category as keyof typeof EXPENSE_TYPE_LABELS] || category,
+      Amount: amount,
+      Percentage: totalExpenses > 0 ? ((amount / totalExpenses) * 100).toFixed(2) + '%' : '0%',
+    }));
+
+    if (topVendors.length > 0) {
+      exportData.push({ Category: '---', Amount: 0, Percentage: '---' });
+      exportData.push({ Category: 'TOP VENDORS', Amount: 0, Percentage: '' });
+      topVendors.forEach(v => {
+        exportData.push({
+          Category: v.vendor,
+          Amount: v.amount,
+          Percentage: v.category,
+        });
+      });
+    }
+
+    const filename = generateExportFilename('expense-report');
+    exportToCSV(exportData, filename);
   };
 
   const handlePrintReport = () => {
-    console.log('Printing expense report...');
+    window.print();
   };
 
   const handleRefresh = () => {
@@ -103,7 +121,7 @@ export function ExpenseReport({ user: _user }: ExpenseReportProps) {
     return (
       <div className="mx-auto max-w-7xl space-y-6 p-6">
         <div className="py-8 text-center">
-          <div className="border-primary mx-auto h-8 w-8 animate-spin border-b-2"></div>
+          <div className="border-primary mx-auto h-8 w-8 animate-spin rounded-full border-b-2"></div>
           <p className="text-muted-foreground mt-2">Loading expense data...</p>
         </div>
       </div>
@@ -111,9 +129,9 @@ export function ExpenseReport({ user: _user }: ExpenseReportProps) {
   }
 
   return (
-    <div className="mx-auto max-w-7xl space-y-6 p-6">
+    <div className="mx-auto max-w-7xl space-y-6 p-6 print:p-2">
       {/* Header */}
-      <div className="flex items-center justify-between">
+      <div className="flex items-center justify-between print:hidden">
         <div>
           <h1 className="text-3xl font-bold tracking-tight">Expense Report</h1>
           <p className="text-muted-foreground">
@@ -121,7 +139,7 @@ export function ExpenseReport({ user: _user }: ExpenseReportProps) {
           </p>
         </div>
         <div className="flex items-center gap-2">
-          <Select value={period} onValueChange={setPeriod}>
+          <Select value={_period} onValueChange={setPeriod}>
             <SelectTrigger className="w-32">
               <SelectValue />
             </SelectTrigger>
@@ -147,8 +165,16 @@ export function ExpenseReport({ user: _user }: ExpenseReportProps) {
         </div>
       </div>
 
+      {/* Print Header */}
+      <div className="hidden print:block">
+        <h1 className="text-2xl font-bold">Expense Report</h1>
+        <p className="text-sm text-gray-600">
+          {dateRange?.from?.toLocaleDateString()} - {dateRange?.to?.toLocaleDateString()}
+        </p>
+      </div>
+
       {/* Filters */}
-      <Card>
+      <Card className="print:hidden">
         <CardHeader>
           <CardTitle className="flex items-center gap-2">
             <IconFilter className="h-5 w-5" />
@@ -176,12 +202,16 @@ export function ExpenseReport({ user: _user }: ExpenseReportProps) {
                 </SelectTrigger>
                 <SelectContent>
                   <SelectItem value="all">All Categories</SelectItem>
-                  <SelectItem value="salaries">Salaries</SelectItem>
-                  <SelectItem value="rent">Rent</SelectItem>
-                  <SelectItem value="utilities">Utilities</SelectItem>
-                  <SelectItem value="marketing">Marketing</SelectItem>
-                  <SelectItem value="supplies">Supplies</SelectItem>
-                  <SelectItem value="services">Services</SelectItem>
+                  <SelectItem value="INVENTORY_PURCHASES">Inventory Purchases</SelectItem>
+                  <SelectItem value="SALARIES">Salaries</SelectItem>
+                  <SelectItem value="RENT">Rent</SelectItem>
+                  <SelectItem value="UTILITIES">Utilities</SelectItem>
+                  <SelectItem value="MARKETING">Marketing</SelectItem>
+                  <SelectItem value="OFFICE_SUPPLIES">Office Supplies</SelectItem>
+                  <SelectItem value="TRAVEL">Travel</SelectItem>
+                  <SelectItem value="INSURANCE">Insurance</SelectItem>
+                  <SelectItem value="MAINTENANCE">Maintenance</SelectItem>
+                  <SelectItem value="OTHER">Other</SelectItem>
                 </SelectContent>
               </Select>
             </div>
@@ -200,10 +230,10 @@ export function ExpenseReport({ user: _user }: ExpenseReportProps) {
           </CardHeader>
           <CardContent>
             <div className="text-2xl font-bold text-red-600">
-              {formatCurrency(expenseData.totalExpenses)}
+              {formatCurrency(totalExpenses)}
             </div>
             <p className="text-muted-foreground text-xs">
-              Total expenses this period
+              {expenseGrowth >= 0 ? '+' : ''}{expenseGrowth.toFixed(1)}% from previous period
             </p>
           </CardContent>
         </Card>
@@ -211,16 +241,16 @@ export function ExpenseReport({ user: _user }: ExpenseReportProps) {
         <Card>
           <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
             <CardTitle className="text-sm font-medium">
-              Average Monthly
+              Average Per Transaction
             </CardTitle>
             <IconCash className="h-4 w-4 text-orange-600" />
           </CardHeader>
           <CardContent>
             <div className="text-2xl font-bold text-orange-600">
-              {formatCurrency(averageExpense)}
+              {formatCurrency(summary?.averageTransactionValue || 0)}
             </div>
             <p className="text-muted-foreground text-xs">
-              Average monthly expenses
+              Based on {summary?.totalTransactions || 0} transactions
             </p>
           </CardContent>
         </Card>
@@ -231,13 +261,13 @@ export function ExpenseReport({ user: _user }: ExpenseReportProps) {
             <IconChartBar className="h-4 w-4 text-purple-600" />
           </CardHeader>
           <CardContent>
-            <div className="text-2xl font-bold text-purple-600">Salaries</div>
+            <div className="text-2xl font-bold text-purple-600 truncate">
+              {topCategory.name}
+            </div>
             <p className="text-muted-foreground text-xs">
-              {(
-                (expenseData.expenseBreakdown.salaries / totalExpenses) *
-                100
-              ).toFixed(1)}
-              % of total
+              {totalExpenses > 0
+                ? ((topCategory.amount / totalExpenses) * 100).toFixed(1)
+                : 0}% of total
             </p>
           </CardContent>
         </Card>
@@ -249,7 +279,7 @@ export function ExpenseReport({ user: _user }: ExpenseReportProps) {
           </CardHeader>
           <CardContent>
             <div className="text-2xl font-bold text-indigo-600">
-              {expenseData.vendorExpenses.length}
+              {vendorCount}
             </div>
             <p className="text-muted-foreground text-xs">
               Active vendors this period
@@ -267,17 +297,25 @@ export function ExpenseReport({ user: _user }: ExpenseReportProps) {
           </CardTitle>
         </CardHeader>
         <CardContent>
-          <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3">
-            {Object.entries(expenseData.expenseBreakdown).map(
-              ([category, amount]) => (
+          {sortedBreakdownEntries.length === 0 ? (
+            <div className="py-8 text-center">
+              <p className="text-muted-foreground">No expense data for this period</p>
+            </div>
+          ) : (
+            <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3">
+              {sortedBreakdownEntries.map(([category, amount]) => (
                 <div
                   key={category}
                   className="flex items-center justify-between rounded-lg border p-3"
                 >
                   <div>
-                    <div className="font-medium capitalize">{category}</div>
+                    <div className="font-medium">
+                      {EXPENSE_TYPE_LABELS[category as keyof typeof EXPENSE_TYPE_LABELS] || category}
+                    </div>
                     <div className="text-muted-foreground text-sm">
-                      {((amount / totalExpenses) * 100).toFixed(1)}% of total
+                      {totalExpenses > 0
+                        ? ((amount / totalExpenses) * 100).toFixed(1)
+                        : 0}% of total
                     </div>
                   </div>
                   <div className="text-right">
@@ -286,9 +324,9 @@ export function ExpenseReport({ user: _user }: ExpenseReportProps) {
                     </div>
                   </div>
                 </div>
-              )
-            )}
-          </div>
+              ))}
+            </div>
+          )}
         </CardContent>
       </Card>
 
@@ -301,10 +339,13 @@ export function ExpenseReport({ user: _user }: ExpenseReportProps) {
           </CardTitle>
         </CardHeader>
         <CardContent>
-          <div className="space-y-4">
-            {expenseData.vendorExpenses
-              .sort((a, b) => b.amount - a.amount)
-              .map((vendor, index) => (
+          {topVendors.length === 0 ? (
+            <div className="py-8 text-center">
+              <p className="text-muted-foreground">No vendor data for this period</p>
+            </div>
+          ) : (
+            <div className="space-y-4">
+              {topVendors.map((vendor, index) => (
                 <div
                   key={vendor.vendor}
                   className="flex items-center justify-between rounded-lg border p-3"
@@ -319,7 +360,7 @@ export function ExpenseReport({ user: _user }: ExpenseReportProps) {
                     <div>
                       <div className="font-medium">{vendor.vendor}</div>
                       <div className="text-muted-foreground text-sm">
-                        {vendor.category}
+                        {EXPENSE_TYPE_LABELS[vendor.category as keyof typeof EXPENSE_TYPE_LABELS] || vendor.category}
                       </div>
                     </div>
                   </div>
@@ -328,93 +369,15 @@ export function ExpenseReport({ user: _user }: ExpenseReportProps) {
                       {formatCurrency(vendor.amount)}
                     </div>
                     <div className="text-muted-foreground text-sm">
-                      {((vendor.amount / totalExpenses) * 100).toFixed(1)}% of
-                      total
+                      {totalExpenses > 0
+                        ? ((vendor.amount / totalExpenses) * 100).toFixed(1)
+                        : 0}% of total
                     </div>
                   </div>
                 </div>
               ))}
-          </div>
-        </CardContent>
-      </Card>
-
-      {/* Monthly Trend */}
-      <Card>
-        <CardHeader>
-          <CardTitle className="flex items-center gap-2">
-            <IconTrendingDown className="h-5 w-5" />
-            Monthly Expense Trend
-          </CardTitle>
-        </CardHeader>
-        <CardContent>
-          <div className="space-y-4">
-            <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3">
-              {expenseData.monthlyTrend.map(month => (
-                <div
-                  key={month.month}
-                  className="rounded-lg border p-4 text-center"
-                >
-                  <div className="text-lg font-bold text-red-600">
-                    {formatCurrency(month.amount)}
-                  </div>
-                  <div className="text-muted-foreground text-sm">
-                    {month.month}
-                  </div>
-                  <div className="text-muted-foreground text-xs">
-                    {((month.amount / averageExpense) * 100).toFixed(0)}% of avg
-                  </div>
-                </div>
-              ))}
             </div>
-
-            <div className="mt-6 rounded-lg bg-gray-50 p-4">
-              <h3 className="mb-2 font-semibold">Expense Analysis</h3>
-              <div className="space-y-2 text-sm">
-                <p>
-                  <strong>Highest Expense Month:</strong>{' '}
-                  {
-                    expenseData.monthlyTrend.reduce((max, current) =>
-                      current.amount > max.amount ? current : max
-                    ).month
-                  }{' '}
-                  with{' '}
-                  {formatCurrency(
-                    expenseData.monthlyTrend.reduce((max, current) =>
-                      current.amount > max.amount ? current : max
-                    ).amount
-                  )}
-                </p>
-                <p>
-                  <strong>Lowest Expense Month:</strong>{' '}
-                  {
-                    expenseData.monthlyTrend.reduce((min, current) =>
-                      current.amount < min.amount ? current : min
-                    ).month
-                  }{' '}
-                  with{' '}
-                  {formatCurrency(
-                    expenseData.monthlyTrend.reduce((min, current) =>
-                      current.amount < min.amount ? current : min
-                    ).amount
-                  )}
-                </p>
-                <p>
-                  <strong>Expense Variance:</strong>{' '}
-                  {(
-                    ((expenseData.monthlyTrend.reduce((max, current) =>
-                      current.amount > max.amount ? current : max
-                    ).amount -
-                      expenseData.monthlyTrend.reduce((min, current) =>
-                        current.amount < min.amount ? current : min
-                      ).amount) /
-                      averageExpense) *
-                    100
-                  ).toFixed(1)}
-                  % variance from average
-                </p>
-              </div>
-            </div>
-          </div>
+          )}
         </CardContent>
       </Card>
 
@@ -428,72 +391,59 @@ export function ExpenseReport({ user: _user }: ExpenseReportProps) {
             <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-4">
               <div className="rounded-lg bg-red-50 p-4 text-center">
                 <div className="text-2xl font-bold text-red-600">
-                  {formatCurrency(expenseData.totalExpenses)}
+                  {formatCurrency(totalExpenses)}
                 </div>
                 <div className="text-sm text-red-600">Total Expenses</div>
               </div>
               <div className="rounded-lg bg-orange-50 p-4 text-center">
                 <div className="text-2xl font-bold text-orange-600">
-                  {formatCurrency(averageExpense)}
+                  {formatCurrency(summary?.averageTransactionValue || 0)}
                 </div>
-                <div className="text-sm text-orange-600">Monthly Average</div>
+                <div className="text-sm text-orange-600">Avg Transaction</div>
               </div>
               <div className="rounded-lg bg-purple-50 p-4 text-center">
                 <div className="text-2xl font-bold text-purple-600">
-                  {expenseData.vendorExpenses.length}
+                  {vendorCount}
                 </div>
                 <div className="text-sm text-purple-600">Active Vendors</div>
               </div>
               <div className="rounded-lg bg-indigo-50 p-4 text-center">
                 <div className="text-2xl font-bold text-indigo-600">
-                  {Object.keys(expenseData.expenseBreakdown).length}
+                  {categoryCount}
                 </div>
                 <div className="text-sm text-indigo-600">Categories</div>
               </div>
             </div>
 
-            <div className="mt-6 rounded-lg bg-gray-50 p-4">
-              <h3 className="mb-2 font-semibold">
-                Expense Management Insights
-              </h3>
-              <div className="space-y-2 text-sm">
-                <p>
-                  <strong>Largest Expense Category:</strong> Salaries at{' '}
-                  {formatCurrency(expenseData.expenseBreakdown.salaries)} (
-                  {(
-                    (expenseData.expenseBreakdown.salaries / totalExpenses) *
-                    100
-                  ).toFixed(1)}
-                  % of total)
-                </p>
-                <p>
-                  <strong>Cost Control Opportunity:</strong> Focus on reducing{' '}
-                  {expenseData.expenseBreakdown.marketing >
-                  expenseData.expenseBreakdown.utilities
-                    ? 'marketing'
-                    : 'utilities'}{' '}
-                  expenses which are{' '}
-                  {expenseData.expenseBreakdown.marketing >
-                  expenseData.expenseBreakdown.utilities
-                    ? expenseData.expenseBreakdown.marketing
-                    : expenseData.expenseBreakdown.utilities >
-                        averageExpense * 0.15
-                      ? 'above'
-                      : 'within'}{' '}
-                  target range.
-                </p>
-                <p>
-                  <strong>Vendor Management:</strong> Top vendor{' '}
-                  {expenseData.vendorExpenses[0]?.vendor} accounts for{' '}
-                  {(
-                    ((expenseData.vendorExpenses[0]?.amount || 0) /
-                      totalExpenses) *
-                    100
-                  ).toFixed(1)}
-                  % of total expenses.
-                </p>
+            {sortedBreakdownEntries.length > 0 && (
+              <div className="mt-6 rounded-lg bg-gray-50 p-4 dark:bg-gray-800">
+                <h3 className="mb-2 font-semibold">
+                  Expense Management Insights
+                </h3>
+                <div className="space-y-2 text-sm">
+                  <p>
+                    <strong>Largest Expense Category:</strong> {topCategory.name} at{' '}
+                    {formatCurrency(topCategory.amount)} (
+                    {totalExpenses > 0
+                      ? ((topCategory.amount / totalExpenses) * 100).toFixed(1)
+                      : 0}% of total)
+                  </p>
+                  {topVendors.length > 0 && (
+                    <p>
+                      <strong>Top Vendor:</strong> {topVendors[0].vendor} accounts for{' '}
+                      {totalExpenses > 0
+                        ? ((topVendors[0].amount / totalExpenses) * 100).toFixed(1)
+                        : 0}% of total expenses
+                    </p>
+                  )}
+                  <p>
+                    <strong>Period Change:</strong>{' '}
+                    {expenseGrowth >= 0 ? 'Expenses increased' : 'Expenses decreased'} by{' '}
+                    {Math.abs(expenseGrowth).toFixed(1)}% compared to previous period
+                  </p>
+                </div>
               </div>
-            </div>
+            )}
           </div>
         </CardContent>
       </Card>

@@ -32,7 +32,7 @@ export const POST = withAuth(
 
       // Parse request body
       const body = await request.json();
-      const { reason: _reason } = rejectTransactionSchema.parse(body);
+      const { reason } = rejectTransactionSchema.parse(body);
 
       // Get the transaction
       const transaction = await prisma.financialTransaction.findUnique({
@@ -76,6 +76,7 @@ export const POST = withAuth(
           status: 'REJECTED',
           approvedBy: parseInt(request.user.id),
           approvedAt: new Date(),
+          rejectionReason: reason,
         },
         include: {
           createdByUser: {

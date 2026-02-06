@@ -162,3 +162,5 @@ export type CreateTransactionData = z.infer<typeof createTransactionSchema>;
 export type UpdateTransactionData = z.infer<typeof updateTransactionSchema>;
 export type TransactionFilters = z.infer<typeof transactionFiltersSchema>;
 export type ReportFilters = z.infer<typeof reportFiltersSchema>;
+export type IncomeTransactionFormData = z.infer<typeof incomeTransactionSchema>;
+export type ExpenseTransactionFormData = z.infer<typeof expenseTransactionSchema>;

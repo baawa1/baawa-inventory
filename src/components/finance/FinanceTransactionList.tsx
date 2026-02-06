@@ -1,7 +1,7 @@
 'use client';
 
 import React, { useState, useMemo, useCallback } from 'react';
-import { useFinancialTransactions } from '@/hooks/api/finance';
+import { useQuery } from '@tanstack/react-query';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import {
@@ -28,12 +28,14 @@ import {
   IconTrendingDown,
 } from '@tabler/icons-react';
 import { format } from 'date-fns';
+import { DateRange } from 'react-day-picker';
 import { toast } from 'sonner';
 import { formatCurrency } from '@/lib/utils';
 import { useDebounce } from '@/hooks/useDebounce';
 import { DashboardTableLayout } from '@/components/layouts/DashboardTableLayout';
 import type { DashboardTableColumn } from '@/components/layouts/DashboardColumnCustomizer';
 import type { FilterConfig } from '@/components/layouts/DashboardFiltersBar';
+import { DateRangePickerWithPresets } from '@/components/ui/date-range-picker-with-presets';
 
 interface User {
   id: string;
@@ -88,13 +90,15 @@ export function FinanceTransactionList({
     totalItems: 0,
   });
 
+  // Date range state for custom date filtering
+  const [dateRange, setDateRange] = useState<DateRange | undefined>(undefined);
+
   // Filters state
   const [filters, setFilters] = useState({
     search: '',
     type: '',
     status: '',
     paymentMethod: '',
-    date: '',
   });
 
   // Debounce search term
@@ -106,19 +110,40 @@ export function FinanceTransactionList({
     isLoading,
     error,
     refetch,
-  } = useFinancialTransactions(
-    {
-      search: debouncedSearchTerm,
-      type: filters.type,
-      status: filters.status,
-      paymentMethod: filters.paymentMethod,
-      date: filters.date,
+  } = useQuery({
+    queryKey: [
+      'financial-transactions',
+      {
+        search: debouncedSearchTerm,
+        type: filters.type,
+        status: filters.status,
+        paymentMethod: filters.paymentMethod,
+        startDate: dateRange?.from?.toISOString(),
+        endDate: dateRange?.to?.toISOString(),
+        page: pagination.page,
+        limit: pagination.limit,
+        sortBy: 'transactionDate',
+        sortOrder: 'desc',
+      },
+    ],
+    queryFn: async () => {
+      const params = new URLSearchParams();
+      if (debouncedSearchTerm) params.append('search', debouncedSearchTerm);
+      if (filters.type) params.append('type', filters.type);
+      if (filters.status) params.append('status', filters.status);
+      if (filters.paymentMethod) params.append('paymentMethod', filters.paymentMethod);
+      if (dateRange?.from) params.append('startDate', dateRange.from.toISOString());
+      if (dateRange?.to) params.append('endDate', dateRange.to.toISOString());
+      params.append('page', String(pagination.page));
+      params.append('limit', String(pagination.limit));
+      params.append('sortBy', 'transactionDate');
+      params.append('sortOrder', 'desc');
+
+      const response = await fetch(`/api/finance/transactions?${params}`);
+      if (!response.ok) throw new Error('Failed to fetch transactions');
+      return response.json();
     },
-    {
-      page: pagination.page,
-      limit: pagination.limit,
-    }
-  );
+  });
 
   // Extract transactions array from API response
   const transactions = transactionData?.data || [];
@@ -199,6 +224,7 @@ export function FinanceTransactionList({
   );
 
   // Filter configurations
+  // Note: DashboardFiltersBar automatically adds "All {label}" option, so don't include it here
   const filterConfigs: FilterConfig[] = useMemo(
     () => [
       {
@@ -231,23 +257,10 @@ export function FinanceTransactionList({
         options: [
           { value: 'CASH', label: 'Cash' },
           { value: 'BANK_TRANSFER', label: 'Bank Transfer' },
-          { value: 'POS_MACHINE', label: 'POS Machine' },
-          { value: 'CREDIT_CARD', label: 'Credit Card' },
+          { value: 'POS', label: 'POS' },
           { value: 'MOBILE_MONEY', label: 'Mobile Money' },
         ],
         placeholder: 'All Payments',
-      },
-      {
-        key: 'date',
-        label: 'Date Range',
-        type: 'select',
-        options: [
-          { value: 'today', label: 'Today' },
-          { value: 'yesterday', label: 'Yesterday' },
-          { value: 'week', label: 'This Week' },
-          { value: 'month', label: 'This Month' },
-        ],
-        placeholder: 'All Dates',
       },
     ],
     []
@@ -269,8 +282,14 @@ export function FinanceTransactionList({
       type: '',
       status: '',
       paymentMethod: '',
-      date: '',
     });
+    setDateRange(undefined);
+    setPagination(prev => ({ ...prev, page: 1 }));
+  }, []);
+
+  // Handle date range change
+  const handleDateRangeChange = useCallback((range: DateRange | undefined) => {
+    setDateRange(range);
     setPagination(prev => ({ ...prev, page: 1 }));
   }, []);
 
@@ -473,6 +492,13 @@ export function FinanceTransactionList({
         filterValues={filters}
         onFilterChange={handleFilterChange}
         onResetFilters={handleResetFilters}
+        inlineFilters={
+          <DateRangePickerWithPresets
+            date={dateRange}
+            onDateChange={handleDateRangeChange}
+            placeholder="Filter by date range"
+          />
+        }
         // Table
         tableTitle="Financial Transactions"
         totalCount={currentPagination.totalItems}
@@ -500,7 +526,7 @@ export function FinanceTransactionList({
           filters.type ||
           filters.status ||
           filters.paymentMethod ||
-          filters.date
+          dateRange
             ? 'No transactions found matching your filters.'
             : 'No financial transactions found.'
         }

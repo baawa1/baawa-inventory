@@ -1,5 +1,7 @@
 import { NextResponse } from 'next/server';
 import { withAuth, AuthenticatedRequest } from '@/lib/api-middleware';
+import { hasPermission } from '@/lib/auth/roles';
+import { createApiResponse } from '@/lib/api-response';
 import { handleApiError } from '@/lib/api-error-handler-new';
 import { prisma } from '@/lib/db';
 
@@ -87,6 +89,13 @@ function getPeriodDates(dateRange?: { from?: Date; to?: Date }) {
 
 export const GET = withAuth(async (request: AuthenticatedRequest) => {
   try {
+    // Check if user has permission to access financial analytics (ADMIN only)
+    if (!hasPermission(request.user.role, 'FINANCIAL_ANALYTICS')) {
+      return createApiResponse.forbidden(
+        'Insufficient permissions to access advanced analytics'
+      );
+    }
+
     const { searchParams } = new URL(request.url);
     const fromDate = searchParams.get('fromDate');
     const toDate = searchParams.get('toDate');
@@ -104,20 +113,20 @@ export const GET = withAuth(async (request: AuthenticatedRequest) => {
 
     // Build where clause for current period
     const currentWhere: any = {
-      createdAt: {
+      transactionDate: {
         gte: currentStart,
         lte: currentEnd,
       },
-      status: 'COMPLETED',
+      status: { in: ['COMPLETED', 'APPROVED'] },
     };
 
     // Build where clause for previous period
     const previousWhere: any = {
-      createdAt: {
+      transactionDate: {
         gte: previousStart,
         lte: previousEnd,
       },
-      status: 'COMPLETED',
+      status: { in: ['COMPLETED', 'APPROVED'] },
     };
 
     // Add type filter if specified

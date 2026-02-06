@@ -8,9 +8,10 @@ import {
   DialogTitle,
 } from '@/components/ui/dialog';
 import { Badge } from '@/components/ui/badge';
+import type { FinancialTransaction } from '@/types/finance';
 
 interface TransactionDetailModalProps {
-  transaction: any;
+  transaction: FinancialTransaction | null;
   isOpen: boolean;
   onClose: () => void;
 }

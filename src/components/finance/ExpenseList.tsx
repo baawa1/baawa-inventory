@@ -3,7 +3,6 @@
 import React, { useState, useMemo, useCallback } from 'react';
 import { useQuery } from '@tanstack/react-query';
 import { Button } from '@/components/ui/button';
-import { Badge } from '@/components/ui/badge';
 import {
   Dialog,
   DialogContent,
@@ -20,53 +19,20 @@ import {
   IconEdit,
 } from '@tabler/icons-react';
 import { format } from 'date-fns';
+import { DateRange } from 'react-day-picker';
 import { toast } from 'sonner';
 import { formatCurrency } from '@/lib/utils';
 import { useDebounce } from '@/hooks/useDebounce';
 import { DashboardTableLayout } from '@/components/layouts/DashboardTableLayout';
 import type { DashboardTableColumn } from '@/components/layouts/DashboardColumnCustomizer';
 import type { FilterConfig } from '@/components/layouts/DashboardFiltersBar';
+import { DateRangePickerWithPresets } from '@/components/ui/date-range-picker-with-presets';
 import { AppUser } from '@/types/user';
+import type { FinancialTransaction } from '@/types/finance';
+import { PaymentMethodIcon } from './shared/PaymentMethodIcon';
+import { TransactionStatusBadge } from './shared/TransactionStatusBadge';
 import Link from 'next/link';
 import { canReadFinance, canWriteFinance } from '@/lib/auth/roles';
-
-interface FinancialTransaction {
-  id: number;
-  transactionNumber: string;
-  type: 'INCOME' | 'EXPENSE';
-  amount: number;
-  description: string | null;
-  transactionDate: Date;
-  paymentMethod: string | null;
-  status: 'PENDING' | 'COMPLETED' | 'CANCELLED' | 'APPROVED' | 'REJECTED';
-  approvedBy: number | null;
-  approvedAt: Date | null;
-  createdBy: number;
-  createdAt: Date;
-  updatedAt: Date;
-  expenseDetails?: {
-    id: number;
-    expenseType: string;
-    vendorName: string | null;
-  };
-  incomeDetails?: {
-    id: number;
-    incomeSource: string;
-    payerName: string | null;
-  };
-  createdByUser: {
-    id: number;
-    firstName: string;
-    lastName: string;
-    email: string;
-  };
-  approvedByUser?: {
-    id: number;
-    firstName: string;
-    lastName: string;
-    email: string;
-  };
-}
 
 interface ExpenseListProps {
   user: AppUser;
@@ -84,12 +50,14 @@ export function ExpenseList({ user }: ExpenseListProps) {
     totalItems: 0,
   });
 
+  // Date range state for custom date filtering
+  const [dateRange, setDateRange] = useState<DateRange | undefined>(undefined);
+
   // Filters state
   const [filters, setFilters] = useState({
     search: '',
     status: '',
     payment: '',
-    date: '',
   });
 
   // Debounce search term
@@ -109,6 +77,8 @@ export function ExpenseList({ user }: ExpenseListProps) {
         search: debouncedSearchTerm,
         status: filters.status !== 'all' ? filters.status : undefined,
         paymentMethod: filters.payment !== 'all' ? filters.payment : undefined,
+        startDate: dateRange?.from?.toISOString(),
+        endDate: dateRange?.to?.toISOString(),
         page: pagination.page,
         limit: pagination.limit,
         sortBy: 'transactionDate',
@@ -123,6 +93,8 @@ export function ExpenseList({ user }: ExpenseListProps) {
         params.append('status', filters.status);
       if (filters.payment && filters.payment !== 'all')
         params.append('paymentMethod', filters.payment);
+      if (dateRange?.from) params.append('startDate', dateRange.from.toISOString());
+      if (dateRange?.to) params.append('endDate', dateRange.to.toISOString());
       params.append('page', String(pagination.page));
       params.append('limit', String(pagination.limit));
       params.append('sortBy', 'transactionDate');
@@ -215,6 +187,7 @@ export function ExpenseList({ user }: ExpenseListProps) {
   );
 
   // Filter configurations
+  // Note: DashboardFiltersBar automatically adds "All {label}" option, so don't include it here
   const filterConfigs: FilterConfig[] = useMemo(
     () => [
       {
@@ -222,7 +195,6 @@ export function ExpenseList({ user }: ExpenseListProps) {
         label: 'Status',
         type: 'select',
         options: [
-          { value: 'all', label: 'All Status' },
           { value: 'PENDING', label: 'Pending' },
           { value: 'COMPLETED', label: 'Completed' },
           { value: 'APPROVED', label: 'Approved' },
@@ -236,26 +208,12 @@ export function ExpenseList({ user }: ExpenseListProps) {
         label: 'Payment Method',
         type: 'select',
         options: [
-          { value: 'all', label: 'All Methods' },
           { value: 'CASH', label: 'Cash' },
           { value: 'BANK_TRANSFER', label: 'Bank Transfer' },
           { value: 'POS', label: 'POS' },
           { value: 'MOBILE_MONEY', label: 'Mobile Money' },
         ],
         placeholder: 'All Methods',
-      },
-      {
-        key: 'date',
-        label: 'Date Range',
-        type: 'select',
-        options: [
-          { value: 'all', label: 'All Dates' },
-          { value: 'today', label: 'Today' },
-          { value: 'yesterday', label: 'Yesterday' },
-          { value: 'week', label: 'This Week' },
-          { value: 'month', label: 'This Month' },
-        ],
-        placeholder: 'All Dates',
       },
     ],
     []
@@ -276,8 +234,14 @@ export function ExpenseList({ user }: ExpenseListProps) {
       search: '',
       status: '',
       payment: '',
-      date: '',
     });
+    setDateRange(undefined);
+    setPagination(prev => ({ ...prev, page: 1 }));
+  }, []);
+
+  // Handle date range change
+  const handleDateRangeChange = useCallback((range: DateRange | undefined) => {
+    setDateRange(range);
     setPagination(prev => ({ ...prev, page: 1 }));
   }, []);
 
@@ -287,40 +251,6 @@ export function ExpenseList({ user }: ExpenseListProps) {
 
   const handlePageSizeChange = useCallback((newSize: number) => {
     setPagination(prev => ({ ...prev, limit: newSize, page: 1 }));
-  }, []);
-
-  // Get status badge
-  const getStatusBadge = useCallback((status: string) => {
-    switch (status) {
-      case 'COMPLETED':
-        return <Badge className="bg-green-100 text-green-700">Completed</Badge>;
-      case 'PENDING':
-        return <Badge className="bg-yellow-100 text-yellow-700">Pending</Badge>;
-      case 'APPROVED':
-        return <Badge className="bg-blue-100 text-blue-700">Approved</Badge>;
-      case 'REJECTED':
-        return <Badge variant="destructive">Rejected</Badge>;
-      case 'CANCELLED':
-        return <Badge variant="destructive">Cancelled</Badge>;
-      default:
-        return <Badge variant="secondary">{status}</Badge>;
-    }
-  }, []);
-
-  // Get payment method icon
-  const getPaymentIcon = useCallback((method: string) => {
-    switch (method?.toLowerCase()) {
-      case 'cash':
-        return <span className="text-green-600">💵</span>;
-      case 'bank_transfer':
-        return <span className="text-blue-600">🏦</span>;
-      case 'pos':
-        return <span className="text-purple-600">💳</span>;
-      case 'mobile_money':
-        return <span className="text-orange-600">📱</span>;
-      default:
-        return <span className="text-gray-600">💰</span>;
-    }
   }, []);
 
   // Render cell function
@@ -371,20 +301,15 @@ export function ExpenseList({ user }: ExpenseListProps) {
           );
         case 'paymentMethod':
           return (
-            <div className="flex items-center gap-2">
-              {getPaymentIcon(transaction.paymentMethod || '')}
-              <span className="capitalize">
-                {transaction.paymentMethod?.replace('_', ' ') || 'N/A'}
-              </span>
-            </div>
+            <PaymentMethodIcon method={transaction.paymentMethod} showLabel />
           );
         case 'status':
-          return getStatusBadge(transaction.status);
+          return <TransactionStatusBadge status={transaction.status} />;
         default:
           return null;
       }
     },
-    [getStatusBadge, getPaymentIcon]
+    []
   );
 
   // Check permissions
@@ -466,6 +391,13 @@ export function ExpenseList({ user }: ExpenseListProps) {
         filterValues={filters}
         onFilterChange={handleFilterChange}
         onResetFilters={handleResetFilters}
+        inlineFilters={
+          <DateRangePickerWithPresets
+            date={dateRange}
+            onDateChange={handleDateRangeChange}
+            placeholder="Filter by date range"
+          />
+        }
         // Table
         tableTitle="Expense Transactions"
         totalCount={currentPagination.totalItems}
@@ -494,7 +426,7 @@ export function ExpenseList({ user }: ExpenseListProps) {
           debouncedSearchTerm ||
           filters.status ||
           filters.payment ||
-          filters.date
+          dateRange
             ? 'No expense transactions found matching your filters.'
             : 'No expense transactions found.'
         }

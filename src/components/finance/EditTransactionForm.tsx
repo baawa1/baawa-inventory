@@ -115,6 +115,10 @@ export function EditTransactionForm({
   // Populate form when transaction data is loaded
   React.useEffect(() => {
     if (transaction) {
+      const paymentMethod = (transaction.paymentMethod || 'CASH') as FormData['paymentMethod'];
+      const incomeSource = (transaction.incomeDetails?.incomeSource || 'SALES') as FormData['incomeSource'];
+      const expenseType = (transaction.expenseDetails?.expenseType || 'SUPPLIES') as FormData['expenseType'];
+
       form.reset({
         id: transaction.id,
         type: transaction.type,
@@ -123,16 +127,15 @@ export function EditTransactionForm({
         transactionDate: new Date(transaction.transactionDate)
           .toISOString()
           .split('T')[0],
-        paymentMethod: (transaction.paymentMethod as any) || 'CASH',
-        // Income specific fields
-        incomeSource: (transaction as any).incomeSource || 'SALES',
-        payerName: (transaction as any).payerName || '',
-        // Expense specific fields
-        expenseType: (transaction as any).expenseType || 'SUPPLIES',
-        vendorName: (transaction as any).vendorName || '',
+        paymentMethod,
+        incomeSource,
+        payerName: transaction.incomeDetails?.payerName || '',
+        expenseType,
+        vendorName: transaction.expenseDetails?.vendorName || '',
       });
     }
-  }, [transaction, form]);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [transaction]);
 
   const onSubmit = async (data: FormData) => {
     setIsSubmitting(true);

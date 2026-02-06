@@ -16,14 +16,13 @@ import {
 } from '@/components/ui/card';
 import { Form } from '@/components/ui/form';
 import { PageHeader } from '@/components/ui/page-header';
-import { expenseTransactionSchema } from '@/lib/validations/finance';
+import { expenseTransactionSchema, ExpenseTransactionFormData } from '@/lib/validations/finance';
 
 import { BasicInfoSection } from '../add-expense/BasicInfoSection';
 import { ExpenseDetailsSection } from '../add-expense/ExpenseDetailsSection';
 import { AdditionalInfoSection } from '../add-expense/AdditionalInfoSection';
 import { FormActions } from '../add-expense/FormActions';
 import { useFormDataQuery } from '../add-expense/useFormDataQuery';
-import { useExpenseSubmit } from '../add-expense/useExpenseSubmit';
 import { defaultFormValues } from '../add-expense/types';
 import { AppUser } from '@/types/user';
 import { useExpenseData } from './useExpenseData';
@@ -35,17 +34,15 @@ interface EditExpenseFormProps {
 }
 
 export default function EditExpenseForm({
-  user: _user,
+  user,
   expenseId,
 }: EditExpenseFormProps) {
   const router = useRouter();
 
   const {
-    isSubmitting,
     submitError,
     expenseTypeOptions,
     paymentMethodOptions,
-    setIsSubmitting,
     setSubmitError,
   } = useFormDataQuery();
 
@@ -57,7 +54,7 @@ export default function EditExpenseForm({
   } = useExpenseData(expenseId);
 
   // Update mutation
-  const { updateExpense: _updateExpense } = useExpenseUpdate();
+  const { updateExpense, isUpdating } = useExpenseUpdate();
 
   const form = useForm({
     resolver: zodResolver(expenseTransactionSchema),
@@ -79,9 +76,30 @@ export default function EditExpenseForm({
         vendorName: expenseData.expenseDetails?.vendorName || '',
       });
     }
-  }, [expenseData, form]);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [expenseData]);
 
-  const { onSubmit } = useExpenseSubmit(form, setIsSubmitting, setSubmitError);
+  const onSubmit = async (data: ExpenseTransactionFormData) => {
+    setSubmitError(null);
+    try {
+      await updateExpense({
+        id: expenseId,
+        data: {
+          amount: data.amount,
+          description: data.description,
+          transactionDate: data.transactionDate,
+          paymentMethod: data.paymentMethod || 'CASH',
+          expenseType: data.expenseType,
+          vendorName: data.vendorName,
+        },
+      });
+    } catch (error) {
+      setSubmitError(error instanceof Error ? error.message : 'Failed to update expense');
+    }
+  };
+
+  // Keep user prop usage for potential future audit logging
+  void user;
 
   if (isLoadingExpense) {
     return (
@@ -173,7 +191,7 @@ export default function EditExpenseForm({
               <AdditionalInfoSection form={form} />
 
               <FormActions
-                isSubmitting={isSubmitting}
+                isSubmitting={isUpdating}
                 onCancelAction={() => router.push('/finance/expenses')}
                 submitText="Update Expense Transaction"
                 loadingText="Updating..."

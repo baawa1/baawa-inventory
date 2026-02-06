@@ -1,4 +1,5 @@
 import { withAuth, AuthenticatedRequest } from '@/lib/api-middleware';
+import { hasPermission } from '@/lib/auth/roles';
 import { prisma } from '@/lib/db';
 import { createApiResponse } from '@/lib/api-response';
 
@@ -9,15 +10,32 @@ export const GET = withAuth(
     { params }: { params: Promise<{ id: string }> }
   ) => {
     try {
+      // Check if user has permission to read financial transactions
+      if (!hasPermission(request.user.role, 'FINANCE_TRANSACTIONS_READ')) {
+        return createApiResponse.forbidden(
+          'Insufficient permissions to view financial transactions'
+        );
+      }
+
       const { id } = await params;
       const transactionId = parseInt(id);
 
       if (isNaN(transactionId)) {
-        return createApiResponse.internalError('Invalid transaction ID');
+        return createApiResponse.validationError('Invalid transaction ID');
       }
 
-      const transaction = await prisma.financialTransaction.findUnique({
-        where: { id: transactionId },
+      // Build where clause based on role
+      const whereClause: { id: number; createdBy?: number } = {
+        id: transactionId,
+      };
+
+      // MANAGER can only see their own transactions
+      if (request.user.role === 'MANAGER') {
+        whereClause.createdBy = parseInt(request.user.id);
+      }
+
+      const transaction = await prisma.financialTransaction.findFirst({
+        where: whereClause,
         include: {
           createdByUser: {
             select: {
@@ -41,9 +59,7 @@ export const GET = withAuth(
       });
 
       if (!transaction) {
-        return createApiResponse.internalError(
-          'Financial transaction not found'
-        );
+        return createApiResponse.notFound('Financial transaction not found');
       }
 
       return createApiResponse.success(transaction);
@@ -61,6 +77,13 @@ export const PUT = withAuth(
     { params }: { params: Promise<{ id: string }> }
   ) => {
     try {
+      // Check if user has permission to update financial transactions
+      if (!hasPermission(request.user.role, 'FINANCE_TRANSACTIONS_CREATE')) {
+        return createApiResponse.forbidden(
+          'Insufficient permissions to update financial transactions'
+        );
+      }
+
       const { id } = await params;
       const transactionId = parseInt(id);
 
@@ -74,9 +97,19 @@ export const PUT = withAuth(
       );
       const validatedData = updateTransactionSchema.parse(body);
 
+      // Build where clause based on role
+      const whereClause: { id: number; createdBy?: number } = {
+        id: transactionId,
+      };
+
+      // MANAGER can only update their own transactions
+      if (request.user.role === 'MANAGER') {
+        whereClause.createdBy = parseInt(request.user.id);
+      }
+
       // Get the existing transaction
-      const existingTransaction = await prisma.financialTransaction.findUnique({
-        where: { id: transactionId },
+      const existingTransaction = await prisma.financialTransaction.findFirst({
+        where: whereClause,
         include: {
           expenseDetails: true,
           incomeDetails: true,
@@ -100,6 +133,29 @@ export const PUT = withAuth(
 
       // Use Prisma transaction to ensure data consistency
       const result = await prisma.$transaction(async tx => {
+        // Clean up orphaned detail records when type changes
+        if (
+          validatedData.type &&
+          existingTransaction.type !== validatedData.type
+        ) {
+          if (
+            existingTransaction.type === 'EXPENSE' &&
+            existingTransaction.expenseDetails
+          ) {
+            await tx.expenseDetail.delete({
+              where: { transactionId },
+            });
+          }
+          if (
+            existingTransaction.type === 'INCOME' &&
+            existingTransaction.incomeDetails
+          ) {
+            await tx.incomeDetail.delete({
+              where: { transactionId },
+            });
+          }
+        }
+
         // Update the main transaction
         const transaction = await tx.financialTransaction.update({
           where: { id: transactionId },
@@ -180,13 +236,23 @@ export const PUT = withAuth(
   }
 );
 
-// DELETE /api/finance/transactions/[id] - Delete financial transaction
+// PATCH /api/finance/transactions/[id] - Update financial transaction (alias for PUT)
+export const PATCH = PUT;
+
+// DELETE /api/finance/transactions/[id] - Delete financial transaction (ADMIN only)
 export const DELETE = withAuth(
   async (
     request: AuthenticatedRequest,
     { params }: { params: Promise<{ id: string }> }
   ) => {
     try {
+      // Only ADMIN can delete financial transactions
+      if (request.user.role !== 'ADMIN') {
+        return createApiResponse.forbidden(
+          'Only administrators can delete financial transactions'
+        );
+      }
+
       const { id } = await params;
       const transactionId = parseInt(id);
 
