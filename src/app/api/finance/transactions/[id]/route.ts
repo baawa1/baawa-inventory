@@ -157,7 +157,7 @@ export const PUT = withAuth(
         }
 
         // Update the main transaction
-        const transaction = await tx.financialTransaction.update({
+        await tx.financialTransaction.update({
           where: { id: transactionId },
           data: {
             type: validatedData.type,
@@ -166,27 +166,7 @@ export const PUT = withAuth(
             transactionDate: validatedData.transactionDate
               ? new Date(validatedData.transactionDate)
               : undefined,
-            paymentMethod: (validatedData.paymentMethod as any) || null,
-          },
-          include: {
-            createdByUser: {
-              select: {
-                id: true,
-                firstName: true,
-                lastName: true,
-                email: true,
-              },
-            },
-            approvedByUser: {
-              select: {
-                id: true,
-                firstName: true,
-                lastName: true,
-                email: true,
-              },
-            },
-            expenseDetails: true,
-            incomeDetails: true,
+            paymentMethod: validatedData.paymentMethod as any ?? null,
           },
         });
 
@@ -222,7 +202,32 @@ export const PUT = withAuth(
           });
         }
 
-        return transaction;
+        // Re-fetch the complete transaction with all updated details
+        const updatedTransaction = await tx.financialTransaction.findUnique({
+          where: { id: transactionId },
+          include: {
+            createdByUser: {
+              select: {
+                id: true,
+                firstName: true,
+                lastName: true,
+                email: true,
+              },
+            },
+            approvedByUser: {
+              select: {
+                id: true,
+                firstName: true,
+                lastName: true,
+                email: true,
+              },
+            },
+            expenseDetails: true,
+            incomeDetails: true,
+          },
+        });
+
+        return updatedTransaction;
       });
 
       return createApiResponse.success(

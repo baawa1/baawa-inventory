@@ -4,7 +4,7 @@ import { hasPermission } from '@/lib/auth/roles';
 import { z } from 'zod';
 import { logger } from '@/lib/logger';
 import { createApiResponse } from '@/lib/api-response';
-import { ERROR_MESSAGES } from '@/lib/constants';
+import { ERROR_MESSAGES, SUCCESSFUL_PAYMENT_STATUSES } from '@/lib/constants';
 
 // Validation schema for report parameters
 const reportParamsSchema = z.object({
@@ -95,37 +95,87 @@ export const GET = withAuth(async function (request: AuthenticatedRequest) {
       },
     });
 
+    // Get sales transactions for the period
+    const salesTransactions = await prisma.salesTransaction.findMany({
+      where: {
+        created_at: {
+          gte: startDate,
+          lte: endDate,
+        },
+        payment_status: { in: SUCCESSFUL_PAYMENT_STATUSES },
+      },
+      select: {
+        id: true,
+        total_amount: true,
+        payment_method: true,
+        created_at: true,
+      },
+    });
+
+    // Get stock additions (purchases) for the period
+    const stockAdditions = await prisma.stockAddition.findMany({
+      where: {
+        purchaseDate: {
+          gte: startDate,
+          lte: endDate,
+        },
+      },
+      select: {
+        id: true,
+        totalCost: true,
+        purchaseDate: true,
+      },
+    });
+
+    // Calculate totals including all sources
+    const salesIncome = salesTransactions.reduce(
+      (sum, s) => sum + Number(s.total_amount),
+      0
+    );
+
+    const purchaseExpenses = stockAdditions.reduce(
+      (sum, sa) => sum + Number(sa.totalCost),
+      0
+    );
+
     // Calculate profit/loss data
     const incomeTransactions = transactions.filter(t => t.type === 'INCOME');
     const expenseTransactions = transactions.filter(t => t.type === 'EXPENSE');
 
-    const totalIncome = incomeTransactions.reduce(
+    const manualIncome = incomeTransactions.reduce(
       (sum, t) => sum + Number(t.amount),
       0
     );
-    const totalExpenses = expenseTransactions.reduce(
+    const manualExpenses = expenseTransactions.reduce(
       (sum, t) => sum + Number(t.amount),
       0
     );
 
-    // Categorize expenses
-    const costOfGoods = expenseTransactions
+    // Total income and expenses including all sources
+    const totalIncome = manualIncome + salesIncome;
+    const totalExpenses = manualExpenses + purchaseExpenses;
+
+    // Categorize expenses - include stock additions as cost of goods
+    const manualCostOfGoods = expenseTransactions
       .filter(t => t.expenseDetails?.expenseType === 'INVENTORY_PURCHASES')
       .reduce((sum, t) => sum + Number(t.amount), 0);
+    const costOfGoods = manualCostOfGoods + purchaseExpenses;
 
     const operatingExpenses = expenseTransactions
       .filter(t => t.expenseDetails?.expenseType !== 'INVENTORY_PURCHASES')
       .reduce((sum, t) => sum + Number(t.amount), 0);
 
-    // Calculate other income (non-sales income)
-    const salesIncome = incomeTransactions
+    // Calculate other income (non-sales income from manual transactions)
+    const manualSalesIncome = incomeTransactions
       .filter(t => t.incomeDetails?.incomeSource === 'SALES')
       .reduce((sum, t) => sum + Number(t.amount), 0);
 
-    const otherIncome = totalIncome - salesIncome;
+    // Total sales includes POS sales + manual sales income
+    const totalSalesRevenue = salesIncome + manualSalesIncome;
+    const otherIncome = manualIncome - manualSalesIncome;
 
     // Calculate profits
-    const grossProfit = salesIncome - costOfGoods;
+    const grossProfit = totalSalesRevenue - costOfGoods;
     const netProfit = totalIncome - totalExpenses;
 
     // Generate cash flow data
@@ -171,7 +221,7 @@ export const GET = withAuth(async function (request: AuthenticatedRequest) {
 
     const profitLossData = {
       revenue: {
-        sales: salesIncome,
+        sales: totalSalesRevenue,
         otherIncome: otherIncome,
         totalRevenue: totalIncome,
       },

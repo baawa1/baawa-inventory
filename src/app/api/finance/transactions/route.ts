@@ -310,7 +310,7 @@ export const POST = withAuth(async (request: AuthenticatedRequest) => {
       try {
         await createAuditLog({
           userId: parseInt(request.user.id),
-          action: AuditLogAction._SALE_CREATED,
+          action: AuditLogAction.FINANCE_TRANSACTION_CREATED,
           tableName: 'financial_transactions',
           recordId: completeTransaction.id,
           newValues: completeTransaction,
@@ -340,11 +340,11 @@ export const POST = withAuth(async (request: AuthenticatedRequest) => {
         validatedData,
       });
 
-      // Return more specific error information
-      const errorMessage =
-        dbError instanceof Error ? dbError.message : 'Unknown database error';
+      logger.error(`[${requestId}] Database error details`, {
+        error: dbError instanceof Error ? dbError.message : 'Unknown database error',
+      });
       return createApiResponse.internalError(
-        `Failed to create transaction in database: ${errorMessage}`
+        'Failed to create transaction. Please try again or contact support.'
       );
     }
   } catch (error) {
@@ -375,11 +375,11 @@ export const POST = withAuth(async (request: AuthenticatedRequest) => {
       );
     }
 
-    // Return more specific error message
-    const errorMessage =
-      error instanceof Error ? error.message : 'Unknown error';
+    logger.error(`[${requestId}] Error details`, {
+      error: error instanceof Error ? error.message : 'Unknown error',
+    });
     return createApiResponse.internalError(
-      `Failed to create transaction: ${errorMessage}`
+      'Failed to create transaction. Please try again or contact support.'
     );
   }
 });

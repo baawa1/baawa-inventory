@@ -4,6 +4,7 @@ import { createApiResponse } from '@/lib/api-response';
 import { logger } from '@/lib/logger';
 import { z } from 'zod';
 import { SUCCESSFUL_PAYMENT_STATUSES } from '@/lib/constants';
+import { hasPermission } from '@/lib/auth/roles';
 
 const analyticsQuerySchema = z.object({
   dateFrom: z.string().nullable().optional(),
@@ -17,6 +18,12 @@ const analyticsQuerySchema = z.object({
 export const GET = withAuth(async (request: AuthenticatedRequest) => {
   const prisma = createFreshPrismaClient();
   try {
+    if (!hasPermission(request.user.role, 'FINANCIAL_ANALYTICS')) {
+      return createApiResponse.forbidden(
+        'Insufficient permissions to access financial analytics'
+      );
+    }
+
     const { searchParams } = new URL(request.url);
     const queryParams = {
       dateFrom: searchParams.get('dateFrom') || undefined,
@@ -381,6 +388,71 @@ export const GET = withAuth(async (request: AuthenticatedRequest) => {
           ? 100
           : 0;
 
+    // Calculate daily trends from all sources
+    const dailyTrendsMap = new Map<string, { income: number; expense: number; date: string }>();
+
+    // Helper to add to daily map
+    const addToDaily = (date: Date | null, amount: number, type: 'income' | 'expense') => {
+      if (!date) return;
+      const dateKey = date.toISOString().split('T')[0];
+      const existing = dailyTrendsMap.get(dateKey) || { income: 0, expense: 0, date: dateKey };
+      if (type === 'income') {
+        existing.income += amount;
+      } else {
+        existing.expense += amount;
+      }
+      dailyTrendsMap.set(dateKey, existing);
+    };
+
+    // Fetch transactions for trend data
+    const [trendFinancial, trendSales, trendStock] = await Promise.all([
+      prisma.financialTransaction.findMany({
+        where: financialWhere,
+        select: { transactionDate: true, amount: true, type: true },
+      }),
+      includeIncome
+        ? prisma.salesTransaction.findMany({
+            where: salesWhere,
+            select: { created_at: true, total_amount: true },
+          })
+        : Promise.resolve([]),
+      includeExpense
+        ? prisma.stockAddition.findMany({
+            where: stockWhere,
+            select: { purchaseDate: true, totalCost: true },
+          })
+        : Promise.resolve([]),
+    ]);
+
+    // Process financial transactions
+    trendFinancial.forEach(t => {
+      addToDaily(
+        t.transactionDate,
+        Number(t.amount) || 0,
+        t.type === 'INCOME' ? 'income' : 'expense'
+      );
+    });
+
+    // Process sales
+    trendSales.forEach(s => {
+      addToDaily(s.created_at, Number(s.total_amount) || 0, 'income');
+    });
+
+    // Process stock additions
+    trendStock.forEach(sa => {
+      addToDaily(sa.purchaseDate, Number(sa.totalCost) || 0, 'expense');
+    });
+
+    // Convert to sorted array
+    const dailyTrends = Array.from(dailyTrendsMap.values())
+      .sort((a, b) => a.date.localeCompare(b.date))
+      .map(d => ({
+        date: d.date,
+        income: d.income,
+        expense: d.expense,
+        net: d.income - d.expense,
+      }));
+
     const analyticsData = {
       summary: {
         totalRevenue: totalIncome,
@@ -394,7 +466,7 @@ export const GET = withAuth(async (request: AuthenticatedRequest) => {
       },
       charts: {
         paymentMethodDistribution,
-        dailyTrends: [], // TODO: Implement daily trends aggregation across all sources
+        dailyTrends,
       },
       expenseBreakdown,
       topVendors,
