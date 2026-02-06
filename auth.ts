@@ -1,81 +1,26 @@
 import NextAuth from 'next-auth';
-import type { NextAuthConfig } from 'next-auth';
 import CredentialsProvider from 'next-auth/providers/credentials';
 import { prisma } from './src/lib/db';
 import * as bcrypt from 'bcryptjs';
 import { AccountLockout } from './src/lib/utils/account-lockout';
 import { AuditLogger } from './src/lib/utils/audit-logger';
-import type { UserRole, UserStatus } from './src/types/user';
-
-// Extend NextAuth types for better type safety
-declare module "next-auth" {
-  interface User {
-    id: string;
-    email: string;
-    name: string;
-    role: UserRole;
-    status: UserStatus;
-    isEmailVerified: boolean;
-    firstName: string;
-    lastName: string;
-    isActive: boolean;
-    userStatus: UserStatus;
-    createdAt: Date | string;
-    phone?: string;
-    lastLogin?: Date | string;
-    avatar_url?: string;
-    image?: string | null; // Allow NextAuth's default null handling
-  }
-
-  interface Session {
-    user: User & {
-      id: string;
-      image?: string | null; // Match NextAuth's default type
-    };
-  }
-}
-
-declare module "next-auth/jwt" {
-  interface JWT {
-    role: UserRole;
-    status: UserStatus;
-    isEmailVerified: boolean;
-    firstName: string;
-    lastName: string;
-    isActive: boolean;
-    userStatus: UserStatus;
-    createdAt: Date | string;
-    phone?: string;
-    lastLogin?: Date | string;
-    avatar_url?: string;
-    dataFetchedAt?: number;
-  }
-}
+import { authConfig } from './auth.config';
 
 /**
- * Comprehensive edge runtime detection to prevent database calls during middleware
+ * Full auth configuration with database providers
+ * This file is used for server-side auth (API routes, server components)
+ * The middleware uses auth.config.ts directly for Edge compatibility
  */
-function isRunningInEdgeRuntime(): boolean {
-  return (
-    process.env.NEXT_RUNTIME === 'edge' ||
-    typeof (globalThis as any).EdgeRuntime !== 'undefined' ||
-    (typeof (globalThis as any).navigator !== 'undefined' && 
-     (globalThis as any).navigator.userAgent?.includes?.('Next.js Middleware')) ||
-    // Check if we're in middleware context by checking for specific globals
-    (typeof (globalThis as any).Request !== 'undefined' && 
-     typeof (globalThis as any).crypto !== 'undefined' &&
-     typeof process.versions?.node === 'undefined') // Edge runtime doesn't have Node.js
-  );
-}
 
 /**
  * Check if database operations are safe to perform
  */
 function isDatabaseSafe(): boolean {
-  return !isRunningInEdgeRuntime() && typeof prisma?.user?.findUnique === 'function';
+  return typeof prisma?.user?.findUnique === 'function';
 }
 
-const config: NextAuthConfig = {
+export const { auth, handlers, signIn, signOut } = NextAuth({
+  ...authConfig,
   providers: [
     CredentialsProvider({
       name: 'credentials',
@@ -209,17 +154,12 @@ const config: NextAuthConfig = {
       },
     }),
   ],
-  session: {
-    strategy: 'jwt' as const,
-    maxAge: 24 * 60 * 60, // 24 hours
-    updateAge: process.env.NODE_ENV === 'development' ? 15 * 60 : 5 * 60, // 15 minutes in dev, 5 minutes in prod
-  },
   callbacks: {
+    ...authConfig.callbacks,
+    // Override JWT callback to include database refresh logic (server-side only)
     async jwt({ token, user, trigger }) {
-      // Only fetch fresh data from database on initial sign-in or when explicitly triggered
+      // First, run the base callback from config
       if (user) {
-        // Debug logging removed for production
-        // Type-safe assignment using the extended User interface
         token.role = user.role;
         token.status = user.status;
         token.isEmailVerified = Boolean(user.isEmailVerified);
@@ -231,21 +171,17 @@ const config: NextAuthConfig = {
         token.phone = user.phone;
         token.lastLogin = user.lastLogin;
         token.avatar_url = user.avatar_url;
-
-        // Add timestamp to track when data was last fetched
         token.dataFetchedAt = Date.now();
       }
 
       // Only fetch fresh data if it's been more than 5 minutes since last fetch
-      // or if this is a token refresh trigger
-      // BUT NOT in middleware/edge runtime environment
       const shouldFetchFreshData =
         trigger === 'update' ||
         !token.dataFetchedAt ||
         Date.now() - (token.dataFetchedAt as number) >
           (process.env.NODE_ENV === 'development'
             ? 15 * 60 * 1000
-            : 5 * 60 * 1000); // 15 minutes in dev, 5 minutes in prod
+            : 5 * 60 * 1000);
 
       // Only perform database operations if we're in a safe runtime environment
       if (
@@ -255,7 +191,6 @@ const config: NextAuthConfig = {
         isDatabaseSafe()
       ) {
         try {
-          // Fetch fresh user data from database
           const freshUser = await prisma.user.findUnique({
             where: { id: parseInt(token.sub) },
             select: {
@@ -275,9 +210,6 @@ const config: NextAuthConfig = {
           });
 
           if (freshUser) {
-            // Debug logging removed for production
-
-            // Update token with fresh data from database
             token.role = freshUser.role;
             token.status = freshUser.userStatus || 'PENDING';
             token.isEmailVerified = Boolean(freshUser.emailVerified);
@@ -290,58 +222,25 @@ const config: NextAuthConfig = {
             token.lastLogin = freshUser.lastLogin || undefined;
             token.avatar_url = freshUser.avatar_url || undefined;
             token.dataFetchedAt = Date.now();
-          } else {
-            // User not found in database
           }
         } catch (_error) {
-          // Error fetching fresh user data
+          // Error fetching fresh user data - silently continue with cached data
         }
       }
 
       return token;
     },
-    async session({ session, token }) {
-      if (token && session.user) {
-        // Type-safe assignment using the extended Session interface
-        session.user.id = token.sub!;
-        session.user.role = token.role;
-        session.user.status = token.status;
-        session.user.isEmailVerified = Boolean(token.isEmailVerified);
-        session.user.firstName = token.firstName;
-        session.user.lastName = token.lastName;
-        session.user.isActive = Boolean(token.isActive);
-        session.user.userStatus = token.userStatus;
-        session.user.createdAt = token.createdAt;
-        session.user.phone = token.phone;
-        session.user.lastLogin = token.lastLogin;
-        session.user.avatar_url = token.avatar_url;
-
-        // Update the name field with fresh firstName and lastName
-        if (token.firstName && token.lastName) {
-          session.user.name = `${token.firstName} ${token.lastName}`;
-        }
-
-        // Debug logging removed for production
-      }
-      return session;
-    },
-    async signIn({ user, account: _account, profile: _profile }) {
-      // Additional sign-in checks can be added here
-      // For now, return true to allow sign-in if user object is valid
-      return !!user;
-    },
   },
   events: {
     async signIn(message) {
       if (message.user && isDatabaseSafe()) {
-        // Log successful sign-in (skip in edge runtime)
         try {
           await AuditLogger.logLoginSuccess(
             parseInt(message.user.id),
             message.user.email || 'unknown'
           );
-        } catch (error) {
-          // Silently fail in edge runtime
+        } catch (_error) {
+          // Silently fail
         }
       }
     },
@@ -351,24 +250,20 @@ const config: NextAuthConfig = {
         const userEmail = message.token.email as string;
 
         try {
-          // Check if user exists before updating
           const user = await prisma.user.findUnique({
             where: { id: userId },
             select: { id: true },
           });
 
           if (user) {
-            // Update last logout timestamp
             await prisma.user.update({
               where: { id: userId },
               data: { lastLogout: new Date() },
             });
-
-            // Log logout event
             await AuditLogger.logLogout(userId, userEmail || 'unknown');
           }
         } catch (_error) {
-          // Error during signOut event - silently fail
+          // Silently fail
         }
       }
     },
@@ -377,60 +272,21 @@ const config: NextAuthConfig = {
         const userId = parseInt(message.token.sub);
 
         try {
-          // Check if user exists before updating
           const user = await prisma.user.findUnique({
             where: { id: userId },
             select: { id: true },
           });
 
           if (user) {
-            // Update last activity timestamp
             await prisma.user.update({
               where: { id: userId },
               data: { lastActivity: new Date() },
             });
           }
         } catch (_error) {
-          // Error during session event - silently fail
+          // Silently fail
         }
       }
     },
   },
-  pages: {
-    signIn: '/login',
-    error: '/login',
-    verifyRequest: '/check-email',
-    newUser: '/register',
-  },
-  // Enhanced security settings
-  useSecureCookies: process.env.NEXTAUTH_URL?.startsWith('https://') || process.env.NODE_ENV === 'production',
-  secret: process.env.NEXTAUTH_SECRET,
-  
-  // Enhanced JWT options with security considerations
-  jwt: {
-    maxAge: 24 * 60 * 60, // 24 hours
-    // NextAuth handles encryption automatically based on secret strength
-  },
-  
-  // Cookie security configuration
-  cookies: {
-    sessionToken: {
-      name: `${process.env.NODE_ENV === 'production' ? '__Secure-' : ''}next-auth.session-token`,
-      options: {
-        httpOnly: true,
-        sameSite: 'lax',
-        path: '/',
-        secure: process.env.NODE_ENV === 'production' || process.env.NEXTAUTH_URL?.startsWith('https://'),
-        domain: process.env.NODE_ENV === 'production' ? process.env.NEXTAUTH_DOMAIN : undefined,
-      },
-    },
-  },
-  
-  // Enhanced debug logging in development only
-  debug: process.env.NODE_ENV === 'development' && process.env.NEXTAUTH_DEBUG === 'true',
-  
-  // Conditional trust host - more secure
-  trustHost: process.env.VERCEL === '1' || process.env.NODE_ENV === 'development',
-};
-
-export const { auth, handlers, signIn, signOut } = NextAuth(config);
+});

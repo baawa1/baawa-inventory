@@ -1,15 +1,35 @@
 import { NextResponse } from 'next/server';
 import type { NextRequest } from 'next/server';
-import { auth } from '#root/auth';
+import NextAuth from 'next-auth';
+import { authConfig } from '#root/auth.config';
 import { authorizeUserForRoute } from '@/lib/auth/roles';
 import type { UserRole, UserStatus } from '@/types/user';
-import { generateSecurityHeaders } from '@/lib/security-headers';
+
+// Type representing the auth session available in middleware
+// Combines JWT token fields with user data
+interface MiddlewareAuth {
+  user?: {
+    id?: string;
+    email?: string;
+    name?: string;
+    role?: UserRole;
+    status?: UserStatus;
+    isEmailVerified?: boolean;
+  };
+  // JWT token fields (also accessible at top level)
+  role?: UserRole;
+  status?: UserStatus;
+  isEmailVerified?: boolean;
+}
+
+// Create Edge-compatible auth instance using only the config (no database providers)
+const { auth } = NextAuth(authConfig);
 
 // Pre-compile route sets for O(1) lookup performance
 const PUBLIC_ROUTES = new Set([
   '/',
   '/login',
-  '/logout', 
+  '/logout',
   '/register',
   '/forgot-password',
   '/reset-password',
@@ -54,21 +74,68 @@ const DEBUG_API_ROUTES = new Set([
 const isPublicRoute = (pathname: string): boolean => PUBLIC_ROUTES.has(pathname);
 const isPublicApiRoute = (pathname: string): boolean => PUBLIC_API_ROUTES.has(pathname);
 const isNextAuthApiRoute = (pathname: string): boolean => {
-  // Exact match first for performance
   if (NEXTAUTH_API_ROUTES.has(pathname)) return true;
-  // Check for callback patterns like /api/auth/callback/credentials
   return pathname.startsWith('/api/auth/callback/');
 };
 const isDebugApiRoute = (pathname: string): boolean => DEBUG_API_ROUTES.has(pathname);
 
-export default auth((req: NextRequest & { auth: any }) => {
+/**
+ * Edge-compatible security headers
+ * Inlined to avoid importing heavy dependencies
+ */
+function generateSecurityHeaders(): Record<string, string> {
+  const isProduction = process.env.NODE_ENV === 'production';
+
+  return {
+    'Content-Security-Policy': [
+      "default-src 'self'",
+      isProduction
+        ? "script-src 'self' 'unsafe-inline'"
+        : "script-src 'self' 'unsafe-eval' 'unsafe-inline'",
+      "style-src 'self' 'unsafe-inline' https://fonts.googleapis.com",
+      "img-src 'self' data: https: blob:",
+      "font-src 'self' data: https://fonts.gstatic.com",
+      "connect-src 'self' https:",
+      "media-src 'self'",
+      "object-src 'none'",
+      "base-uri 'self'",
+      "form-action 'self'",
+      "frame-ancestors 'none'",
+      isProduction ? 'upgrade-insecure-requests' : '',
+    ].filter(Boolean).join('; '),
+    'Strict-Transport-Security': isProduction
+      ? 'max-age=31536000; includeSubDomains; preload'
+      : 'max-age=0',
+    'X-Frame-Options': 'DENY',
+    'X-Content-Type-Options': 'nosniff',
+    'X-XSS-Protection': '1; mode=block',
+    'Referrer-Policy': 'strict-origin-when-cross-origin',
+    'Permissions-Policy': [
+      'camera=()',
+      'microphone=()',
+      'geolocation=()',
+      'payment=()',
+      'usb=()',
+      'accelerometer=()',
+      'gyroscope=()',
+      'magnetometer=()',
+      'fullscreen=(self)',
+    ].join(', '),
+    'Cache-Control': 'no-store, no-cache, must-revalidate, proxy-revalidate',
+    Pragma: 'no-cache',
+    Expires: '0',
+    'Cross-Origin-Opener-Policy': 'same-origin',
+    'Cross-Origin-Resource-Policy': 'same-origin',
+    'Cross-Origin-Embedder-Policy': 'credentialless',
+  };
+}
+
+export default auth((req: NextRequest & { auth: MiddlewareAuth | null }) => {
   const token = req.auth;
   const { pathname } = req.nextUrl;
 
-  // Check if this is an API route - early determination for performance
   const isApiRoute = pathname.startsWith('/api/');
-  
-  // Apply security headers to all responses - optimized function
+
   const applySecurityHeaders = (response: NextResponse) => {
     const securityHeaders = generateSecurityHeaders();
     Object.entries(securityHeaders).forEach(([key, value]) => {
@@ -78,43 +145,37 @@ export default auth((req: NextRequest & { auth: any }) => {
   };
 
   // Fast route checking with early returns for performance
-  // Handle public routes (pages and API) - O(1) lookup
   if (isPublicRoute(pathname) || isPublicApiRoute(pathname)) {
     return applySecurityHeaders(NextResponse.next());
   }
 
-  // Allow NextAuth API routes to pass through - optimized pattern matching
   if (isNextAuthApiRoute(pathname)) {
     return applySecurityHeaders(NextResponse.next());
   }
 
-  // Allow debug/development routes in development mode - O(1) lookup
   if (process.env.NODE_ENV === 'development' && isDebugApiRoute(pathname)) {
     return applySecurityHeaders(NextResponse.next());
   }
 
   // For API routes, handle authentication differently
   if (isApiRoute) {
-    // Protected API routes require authentication
     if (!token?.user) {
       return NextResponse.json(
-        { error: 'Authentication required' }, 
+        { error: 'Authentication required' },
         { status: 401, headers: generateSecurityHeaders() }
       );
     }
 
-    // Check user status for API routes
     const userStatus = token.user?.status || token.status;
     const isEmailVerified = Boolean(token.user?.isEmailVerified || token.isEmailVerified);
 
     if (!isEmailVerified || userStatus !== 'APPROVED') {
       return NextResponse.json(
-        { error: 'Account not fully activated' }, 
+        { error: 'Account not fully activated' },
         { status: 403, headers: generateSecurityHeaders() }
       );
     }
 
-    // API route is authorized, continue with security headers
     return applySecurityHeaders(NextResponse.next());
   }
 
@@ -133,7 +194,6 @@ export default auth((req: NextRequest & { auth: any }) => {
   // Helper function to safely redirect and prevent loops
   const safeRedirect = (targetPath: string, _reason: string) => {
     if (pathname === targetPath) {
-      // Already on target path, allow access to prevent redirect loops
       return applySecurityHeaders(NextResponse.next());
     }
     return applySecurityHeaders(NextResponse.redirect(new URL(targetPath, req.url)));
@@ -155,7 +215,6 @@ export default auth((req: NextRequest & { auth: any }) => {
     return safeRedirect('/unauthorized', `User status is ${userStatus}`);
   }
 
-  // At this point, user should be APPROVED
   if (userStatus !== 'APPROVED') {
     return safeRedirect('/unauthorized', `Invalid user status: ${userStatus}`);
   }
@@ -166,22 +225,11 @@ export default auth((req: NextRequest & { auth: any }) => {
     return safeRedirect('/unauthorized', 'Insufficient permissions');
   }
 
-  // Allow access to the requested route
   return applySecurityHeaders(NextResponse.next());
 });
 
 export const config = {
   matcher: [
-    /*
-     * Optimized matcher: exclude static assets and let middleware handle route logic
-     * This reduces the regex complexity and improves performance
-     * 
-     * Excluded patterns:
-     * - _next/static (static files)
-     * - _next/image (image optimization) 
-     * - Common static files (favicon, manifest, etc.)
-     * - Image files (*.svg, *.png, *.ico, etc.)
-     */
     '/((?!_next/static|_next/image|favicon|manifest|sw\\.|.*\\.(?:ico|png|jpg|jpeg|gif|svg|webp)).*)',
   ],
 };

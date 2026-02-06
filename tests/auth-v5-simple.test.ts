@@ -13,27 +13,26 @@ describe('Auth.js v5 Simple Tests', () => {
 
       const authContent = fs.readFileSync(authFilePath, 'utf8');
 
-      // Check for required imports
-      expect(authContent).toContain('import NextAuth from "next-auth"');
+      // Check for required imports (using single quotes)
+      expect(authContent).toContain("import NextAuth from 'next-auth'");
       expect(authContent).toContain(
-        'import CredentialsProvider from "next-auth/providers/credentials"'
+        "import CredentialsProvider from 'next-auth/providers/credentials'"
       );
+
+      // Check for auth.config import (new split architecture)
+      expect(authContent).toContain("import { authConfig } from './auth.config'");
 
       // Check for required exports (NextAuth returns auth and handlers)
       expect(authContent).toContain('export const { auth, handlers');
 
       // Check for provider configuration
       expect(authContent).toContain('CredentialsProvider({');
-      expect(authContent).toContain('name: "credentials"');
+      expect(authContent).toContain("name: 'credentials'");
 
-      // Check for session configuration
-      expect(authContent).toContain('session: {');
-      expect(authContent).toContain('strategy: "jwt"');
-
-      // Check for callbacks
+      // Check for callbacks (extends from authConfig)
       expect(authContent).toContain('callbacks: {');
+      expect(authContent).toContain('...authConfig.callbacks');
       expect(authContent).toContain('async jwt({ token, user, trigger })');
-      expect(authContent).toContain('async session({ session, token })');
     });
 
     it('should have API route with handlers', () => {
@@ -70,14 +69,17 @@ describe('Auth.js v5 Simple Tests', () => {
 
       const middlewareContent = fs.readFileSync(middlewarePath, 'utf8');
 
-      // Check for auth import and usage
-      expect(middlewareContent).toContain('import { auth } from "../auth"');
+      // Check for Edge-compatible auth setup (new split architecture)
+      // Middleware imports from auth.config.ts for Edge compatibility
+      expect(middlewareContent).toContain("import NextAuth from 'next-auth'");
+      expect(middlewareContent).toContain("import { authConfig } from '#root/auth.config'");
+      expect(middlewareContent).toContain('const { auth } = NextAuth(authConfig)');
       expect(middlewareContent).toContain('export default auth(');
     });
   });
 
   describe('Auth.js v5 Integration', () => {
-    it('should use Auth.js v5 auth function in middleware', () => {
+    it('should use Auth.js v5 auth function in api-middleware', () => {
       const fs = require('fs');
       const path = require('path');
 
@@ -92,8 +94,8 @@ describe('Auth.js v5 Simple Tests', () => {
       if (fs.existsSync(middlewareFile)) {
         const content = fs.readFileSync(middlewareFile, 'utf8');
 
-        // Should import and use Auth.js v5 auth function
-        expect(content).toContain('import { auth } from "../../auth"');
+        // Should import and use Auth.js v5 auth function from root auth.ts
+        expect(content).toContain('import { auth }');
         expect(content).toContain('const session = await auth()');
 
         // Should not contain deprecated patterns
@@ -102,6 +104,25 @@ describe('Auth.js v5 Simple Tests', () => {
         expect(content).not.toContain('withAuthAndRoleCheck(');
       }
     });
+
+    it('should have edge-compatible auth.config.ts', () => {
+      const fs = require('fs');
+      const path = require('path');
+
+      const authConfigPath = path.join(__dirname, '..', 'auth.config.ts');
+      expect(fs.existsSync(authConfigPath)).toBe(true);
+
+      const authConfigContent = fs.readFileSync(authConfigPath, 'utf8');
+
+      // Should NOT contain heavy dependencies (Edge compatibility)
+      expect(authConfigContent).not.toContain("from './src/lib/db'");
+      expect(authConfigContent).not.toContain("from 'bcryptjs'");
+      expect(authConfigContent).not.toContain('prisma');
+
+      // Should export authConfig
+      expect(authConfigContent).toContain('export const authConfig');
+      expect(authConfigContent).toContain('providers: []');
+    });
   });
 
   describe('Configuration Validation', () => {
@@ -109,18 +130,21 @@ describe('Auth.js v5 Simple Tests', () => {
       const fs = require('fs');
       const path = require('path');
 
+      // Check auth.ts for providers and events
       const authFilePath = path.join(__dirname, '..', 'auth.ts');
       const authContent = fs.readFileSync(authFilePath, 'utf8');
 
-      // Check for required configuration sections
       expect(authContent).toContain('providers: [');
-      expect(authContent).toContain('session: {');
       expect(authContent).toContain('callbacks: {');
       expect(authContent).toContain('events: {');
-      expect(authContent).toContain('pages: {');
 
-      // Check for security configuration
-      expect(authContent).toContain('secret: process.env.NEXTAUTH_SECRET');
+      // Check auth.config.ts for base configuration
+      const authConfigPath = path.join(__dirname, '..', 'auth.config.ts');
+      const authConfigContent = fs.readFileSync(authConfigPath, 'utf8');
+
+      expect(authConfigContent).toContain('session: {');
+      expect(authConfigContent).toContain('pages: {');
+      expect(authConfigContent).toContain('secret: process.env.NEXTAUTH_SECRET');
     });
 
     it('should have proper error handling in authorize function', () => {
@@ -135,7 +159,7 @@ describe('Auth.js v5 Simple Tests', () => {
       expect(authContent).toContain('try {');
       expect(authContent).toContain('} catch (error) {');
       expect(authContent).toContain(
-        'console.error("Authentication error:", error)'
+        "console.error('Authentication error:', error)"
       );
     });
   });
@@ -148,9 +172,9 @@ describe('Auth.js v5 Simple Tests', () => {
       const authFilePath = path.join(__dirname, '..', 'auth.ts');
       const authContent = fs.readFileSync(authFilePath, 'utf8');
 
-      // Check for account lockout imports and usage
+      // Check for account lockout imports and usage (using single quotes)
       expect(authContent).toContain(
-        'import { AccountLockout } from "./src/lib/utils/account-lockout"'
+        "import { AccountLockout } from './src/lib/utils/account-lockout'"
       );
       expect(authContent).toContain('AccountLockout.checkLockoutStatus');
       expect(authContent).toContain('AccountLockout.resetFailedAttempts');
@@ -163,9 +187,9 @@ describe('Auth.js v5 Simple Tests', () => {
       const authFilePath = path.join(__dirname, '..', 'auth.ts');
       const authContent = fs.readFileSync(authFilePath, 'utf8');
 
-      // Check for audit logging imports and usage
+      // Check for audit logging imports and usage (using single quotes)
       expect(authContent).toContain(
-        'import { AuditLogger } from "./src/lib/utils/audit-logger"'
+        "import { AuditLogger } from './src/lib/utils/audit-logger'"
       );
       expect(authContent).toContain('AuditLogger.logLoginFailed');
       expect(authContent).toContain('AuditLogger.logLoginSuccess');
@@ -179,8 +203,8 @@ describe('Auth.js v5 Simple Tests', () => {
       const authFilePath = path.join(__dirname, '..', 'auth.ts');
       const authContent = fs.readFileSync(authFilePath, 'utf8');
 
-      // Check for bcrypt usage
-      expect(authContent).toContain('import * as bcrypt from "bcryptjs"');
+      // Check for bcrypt usage (using single quotes)
+      expect(authContent).toContain("import * as bcrypt from 'bcryptjs'");
       expect(authContent).toContain('bcrypt.compare');
     });
   });
