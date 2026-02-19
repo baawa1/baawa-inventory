@@ -39,3 +39,23 @@ export function formatLedgerPaymentLabel(method?: string): string {
 export function mapSplitPaymentMethod(method: string): string {
   return formatPaymentMethodLabel(method);
 }
+
+export function normalizePaymentMethodForStorage(method: string): string {
+  const normalized = method?.toLowerCase().trim();
+  if (!normalized) {
+    return '';
+  }
+
+  switch (normalized) {
+    case 'pos_machine':
+      return 'pos';
+    case 'bank':
+      return 'bank_transfer';
+    case 'mobile':
+      return 'mobile_money';
+    case 'credit_card':
+      return 'pos';
+    default:
+      return normalized;
+  }
+}

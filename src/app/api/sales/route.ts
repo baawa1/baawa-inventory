@@ -6,6 +6,8 @@ import {
   transformDatabaseResponse,
 } from '@/lib/api-response';
 import { logger } from '@/lib/logger';
+import { normalizePaymentStatus } from '@/lib/utils/payment-status';
+import { normalizePaymentMethodForStorage } from '@/lib/utils/payment-methods';
 import type {
   SalesFilters,
   SalesWhereClause,
@@ -224,11 +226,19 @@ export const GET = withAuth(async function (request: AuthenticatedRequest) {
           (sum: number, payment: any) => sum + Number(payment.amount || 0),
           0
         );
-        const totalPaid = splitPaidTotal + ledgerPaidTotal;
-        const balanceDue = Math.max(
+        const normalizedStatus = normalizePaymentStatus(
+          transaction.payment_status
+        );
+        let totalPaid = splitPaidTotal + ledgerPaidTotal;
+        let balanceDue = Math.max(
           0,
           Number(transaction.total_amount) - totalPaid
         );
+
+        if (totalPaid <= 0.01 && normalizedStatus === 'PAID') {
+          totalPaid = Number(transaction.total_amount);
+          balanceDue = 0;
+        }
 
         // Handle nested objects and computed fields
         return {
@@ -236,6 +246,10 @@ export const GET = withAuth(async function (request: AuthenticatedRequest) {
           discount: Number(transaction.discount_amount),
           total: Number(transaction.total_amount),
           subtotal: Number(transaction.subtotal),
+          paymentMethod:
+            normalizePaymentMethodForStorage(transaction.payment_method) ||
+            transaction.payment_method,
+          paymentStatus: normalizedStatus ?? transaction.payment_status,
           staffName:
             `${transaction.users.firstName} ${transaction.users.lastName}`.trim(),
           staffId: transaction.users.id,
@@ -276,14 +290,18 @@ export const GET = withAuth(async function (request: AuthenticatedRequest) {
             transaction.split_payments?.map((payment: any) => ({
               id: payment.id,
               amount: Number(payment.amount),
-              method: payment.payment_method,
+              method:
+                normalizePaymentMethodForStorage(payment.payment_method) ||
+                payment.payment_method,
               createdAt: payment.created_at,
             })) || [],
           transactionPayments:
             ledgerPayments.map((payment: any) => ({
               id: payment.id,
               amount: Number(payment.amount),
-              method: payment.payment_method,
+              method:
+                normalizePaymentMethodForStorage(payment.payment_method) ||
+                payment.payment_method,
               note: payment.note,
               paymentDate: payment.payment_date,
               recordedById: payment.recorded_by,

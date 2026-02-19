@@ -4,12 +4,16 @@ import { z } from 'zod';
 import { prisma } from '@/lib/db';
 import { withAuth, AuthenticatedRequest } from '@/lib/api-middleware';
 import { logger } from '@/lib/logger';
+import { normalizePaymentMethodForStorage } from '@/lib/utils/payment-methods';
 
 const paymentSchema = z.object({
   amount: z.coerce
     .number()
     .positive('Payment amount must be greater than zero'),
-  paymentMethod: z.string().min(1, 'Payment method is required'),
+  paymentMethod: z
+    .string()
+    .min(1, 'Payment method is required')
+    .transform(value => normalizePaymentMethodForStorage(value) || value),
   note: z.string().max(500, 'Note must be 500 characters or less').optional(),
   paymentDate: z.string().datetime().optional(),
 });

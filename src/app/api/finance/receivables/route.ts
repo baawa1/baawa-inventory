@@ -2,9 +2,10 @@ import { withAuth, AuthenticatedRequest } from '@/lib/api-middleware';
 import { hasPermission } from '@/lib/auth/roles';
 import { createApiResponse } from '@/lib/api-response';
 import { prisma } from '@/lib/db';
+import { normalizePaymentMethodForStorage } from '@/lib/utils/payment-methods';
 
 // Payment statuses that indicate money is still owed
-const UNPAID_STATUSES = ['pending', 'partial', 'failed'];
+const UNPAID_STATUSES = ['PENDING', 'PARTIAL', 'pending', 'partial'];
 
 export const GET = withAuth(async (request: AuthenticatedRequest) => {
   try {
@@ -49,6 +50,12 @@ export const GET = withAuth(async (request: AuthenticatedRequest) => {
             payment_method: true,
           },
         },
+        split_payments: {
+          select: {
+            amount: true,
+            payment_method: true,
+          },
+        },
       },
       orderBy: { created_at: 'asc' },
     });
@@ -56,10 +63,23 @@ export const GET = withAuth(async (request: AuthenticatedRequest) => {
     // Calculate amounts and aging
     const receivables = unpaidSales.map(sale => {
       const totalAmount = Number(sale.total_amount);
-      const paidAmount = sale.transaction_payments.reduce(
+      const ledgerPaidAmount = sale.transaction_payments.reduce(
         (sum, p) => sum + Number(p.amount),
         0
       );
+      const splitPaidAmount = sale.split_payments.reduce(
+        (sum, payment) => {
+          const method = normalizePaymentMethodForStorage(
+            payment.payment_method
+          );
+          if (method === 'debt') {
+            return sum;
+          }
+          return sum + Number(payment.amount);
+        },
+        0
+      );
+      const paidAmount = ledgerPaidAmount + splitPaidAmount;
       const outstandingAmount = totalAmount - paidAmount;
       const saleDate = new Date(sale.created_at!);
       const daysOutstanding = Math.floor(

@@ -11,13 +11,16 @@ import { prisma } from '@/lib/db';
 import { z } from 'zod';
 import { withPOSAuth, AuthenticatedRequest } from '@/lib/api-auth-middleware';
 import {
-  ALL_PAYMENT_METHODS,
   API_LIMITS,
   ERROR_MESSAGES,
+  SUCCESSFUL_PAYMENT_STATUSES,
 } from '@/lib/constants';
+import { POS_PAYMENT_METHODS } from '@/lib/constants/pos';
 import { createApiResponse } from '@/lib/api-response';
 import { SalesTransactionWithIncludes } from '@/types/pos';
 import { logger } from '@/lib/logger';
+import { normalizePaymentStatus } from '@/lib/utils/payment-status';
+import { normalizePaymentMethodForStorage } from '@/lib/utils/payment-methods';
 
 const querySchema = z.object({
   page: z.string().optional().default('1'),
@@ -27,13 +30,38 @@ const querySchema = z.object({
     .default(API_LIMITS.TRANSACTION_HISTORY_LIMIT.toString()),
   search: z.string().optional(),
   paymentMethod: z
-    .enum(ALL_PAYMENT_METHODS as [string, ...string[]])
-    .optional(),
+    .string()
+    .optional()
+    .transform(value =>
+      value ? normalizePaymentMethodForStorage(value) : undefined
+    )
+    .refine(value => !value || POS_PAYMENT_METHODS.includes(value as any), {
+      message: 'Invalid payment method',
+    }),
   dateFrom: z.string().optional(),
   dateTo: z.string().optional(),
   staffId: z.string().optional(),
   paymentStatus: z.string().optional(),
 });
+
+const paymentMethodVariants = (method: string): string[] => {
+  switch (method) {
+    case 'pos':
+      return ['pos', 'POS', 'pos_machine', 'POS_MACHINE', 'credit_card', 'CREDIT_CARD'];
+    case 'bank_transfer':
+      return ['bank_transfer', 'BANK_TRANSFER', 'bank', 'BANK'];
+    case 'mobile_money':
+      return ['mobile_money', 'MOBILE_MONEY', 'mobile', 'MOBILE'];
+    case 'cash':
+      return ['cash', 'CASH'];
+    case 'debt':
+      return ['debt', 'DEBT'];
+    case 'split':
+      return ['split', 'SPLIT'];
+    default:
+      return [method, method.toUpperCase()];
+  }
+};
 
 async function handleGetTransactions(request: AuthenticatedRequest) {
   try {
@@ -83,7 +111,7 @@ async function handleGetTransactions(request: AuthenticatedRequest) {
     }
 
     if (paymentMethod) {
-      where.payment_method = paymentMethod;
+      where.payment_method = { in: paymentMethodVariants(paymentMethod) };
     }
 
     if (dateFrom || dateTo) {
@@ -100,12 +128,43 @@ async function handleGetTransactions(request: AuthenticatedRequest) {
       where.user_id = parseInt(staffId);
     }
 
-    const normalizedStatuses = paymentStatus
+    const rawStatuses = paymentStatus
       ? paymentStatus
           .split(',')
-          .map(status => status.trim().toUpperCase())
+          .map(status => status.trim())
           .filter(Boolean)
       : [];
+
+    const normalizedStatuses = Array.from(
+      new Set(
+        rawStatuses.flatMap(status => {
+          const normalized = normalizePaymentStatus(status);
+          if (!normalized) return [];
+
+          if (normalized === 'PAID') {
+            return SUCCESSFUL_PAYMENT_STATUSES;
+          }
+
+          if (normalized === 'PARTIAL') {
+            return ['PARTIAL', 'partial'];
+          }
+
+          if (normalized === 'PENDING') {
+            return ['PENDING', 'pending'];
+          }
+
+          if (normalized === 'CANCELLED') {
+            return ['CANCELLED', 'cancelled', 'canceled'];
+          }
+
+          if (normalized === 'REFUNDED') {
+            return ['REFUNDED', 'refunded'];
+          }
+
+          return [normalized, normalized.toLowerCase()];
+        })
+      )
+    );
 
     if (normalizedStatuses.length > 0) {
       where.payment_status = { in: normalizedStatuses };
@@ -217,105 +276,109 @@ async function handleGetTransactions(request: AuthenticatedRequest) {
             : sum + Number(payment.amount || 0),
         0
       );
-      const splitDebtPortion = splitPayments.reduce(
-        (sum: number, payment: any) =>
-          payment.payment_method === 'debt'
-            ? sum + Number(payment.amount || 0)
-            : sum,
-        0
-      );
       const ledgerPaid = ledgerPayments.reduce(
         (sum: number, payment: any) => sum + Number(payment.amount || 0),
         0
       );
-      const amountPaid = splitPaid + ledgerPaid;
-      const balanceDue = Math.max(
-        0,
-        Number(sale.total_amount) - amountPaid
-      );
+      const paymentStatus = normalizePaymentStatus(sale.payment_status);
+      let amountPaid = splitPaid + ledgerPaid;
+      let balanceDue = Math.max(0, Number(sale.total_amount) - amountPaid);
+
+      if (amountPaid <= 0.01 && paymentStatus === 'PAID') {
+        amountPaid = Number(sale.total_amount);
+        balanceDue = 0;
+      }
+
+      const normalizedMethod =
+        normalizePaymentMethodForStorage(sale.payment_method) ||
+        sale.payment_method;
 
       return {
-      id: sale.id,
-      transactionNumber: sale.transaction_number,
-      items: sale.sales_items.map((item: any) => ({
-        id: item.id,
-        productId: item.product_id || 0, // Handle null case
-        name: item.products?.name || 'Unknown Product',
-        sku: item.products?.sku || '',
-        price: Number(item.unit_price), // Convert Decimal to number
-        quantity: item.quantity,
-        total: Number(item.total_price), // Convert Decimal to number
-        coupon: item.coupon
+        id: sale.id,
+        transactionNumber: sale.transaction_number,
+        items: sale.sales_items.map((item: any) => ({
+          id: item.id,
+          productId: item.product_id || 0, // Handle null case
+          name: item.products?.name || 'Unknown Product',
+          sku: item.products?.sku || '',
+          price: Number(item.unit_price), // Convert Decimal to number
+          quantity: item.quantity,
+          total: Number(item.total_price), // Convert Decimal to number
+          coupon: item.coupon
+            ? {
+                id: item.coupon.id,
+                code: item.coupon.code,
+                name: item.coupon.name,
+                type: item.coupon.type,
+                value: Number(item.coupon.value),
+              }
+            : null,
+        })),
+        subtotal: Number(sale.subtotal), // Convert Decimal to number
+        discount: Number(sale.discount_amount), // Convert Decimal to number
+        total: Number(sale.total_amount), // Convert Decimal to number
+        paymentMethod: normalizedMethod,
+        paymentStatus: paymentStatus ?? sale.payment_status,
+        // Enhanced customer information
+        customer: sale.customer
           ? {
-              id: item.coupon.id,
-              code: item.coupon.code,
-              name: item.coupon.name,
-              type: item.coupon.type,
-              value: Number(item.coupon.value),
+              id: sale.customer.id,
+              name: sale.customer.name,
+              email: sale.customer.email,
+              phone: sale.customer.phone,
+              city: sale.customer.city,
+              state: sale.customer.state,
+              customerType: sale.customer.customerType,
             }
           : null,
-      })),
-      subtotal: Number(sale.subtotal), // Convert Decimal to number
-      discount: Number(sale.discount_amount), // Convert Decimal to number
-      total: Number(sale.total_amount), // Convert Decimal to number
-      paymentMethod: sale.payment_method,
-      paymentStatus: sale.payment_status,
-      // Enhanced customer information
-      customer: sale.customer
-        ? {
-            id: sale.customer.id,
-            name: sale.customer.name,
-            email: sale.customer.email,
-            phone: sale.customer.phone,
-            city: sale.customer.city,
-            state: sale.customer.state,
-            customerType: sale.customer.customerType,
-          }
-        : null,
-      // Transaction fees
-      fees:
-        sale.transaction_fees?.map((fee: any) => ({
-          id: fee.id,
-          type: fee.feeType,
-          description: fee.description,
-          amount: Number(fee.amount),
-          createdAt: fee.createdAt,
-        })) || [],
-      customerName: sale.customer_name,
-      customerPhone: sale.customer_phone,
-      customerEmail: sale.customer_email,
-      staffName: `${sale.users.firstName} ${sale.users.lastName}`.trim(),
-      staffId: sale.user_id,
-      timestamp: sale.created_at,
-      createdAt: sale.created_at,
-      updatedAt: sale.updated_at,
-      notes: sale.notes,
-      amountPaid,
-      balanceDue,
-      splitPayments: splitPayments.map((payment: any) => ({
-        id: payment.id,
-        amount: Number(payment.amount),
-        method: payment.payment_method,
-        createdAt: payment.created_at,
-      })),
-      transactionPayments: ledgerPayments.map((payment: any) => ({
-        id: payment.id,
-        amount: Number(payment.amount),
-        method: payment.payment_method,
-        note: payment.note,
-        paymentDate: payment.payment_date,
-        recordedById: payment.recorded_by,
-        recordedBy: payment.recordedBy
-          ? {
-              id: payment.recordedBy.id,
-              firstName: payment.recordedBy.firstName,
-              lastName: payment.recordedBy.lastName,
-              email: payment.recordedBy.email,
-            }
-          : null,
-        createdAt: payment.created_at,
-      })),
-    };
+        // Transaction fees
+        fees:
+          sale.transaction_fees?.map((fee: any) => ({
+            id: fee.id,
+            type: fee.feeType,
+            description: fee.description,
+            amount: Number(fee.amount),
+            createdAt: fee.createdAt,
+          })) || [],
+        customerName: sale.customer_name,
+        customerPhone: sale.customer_phone,
+        customerEmail: sale.customer_email,
+        staffName: `${sale.users.firstName} ${sale.users.lastName}`.trim(),
+        staffId: sale.user_id,
+        timestamp: sale.created_at,
+        createdAt: sale.created_at,
+        updatedAt: sale.updated_at,
+        notes: sale.notes,
+        amountPaid,
+        balanceDue,
+        splitPayments: splitPayments.map((payment: any) => ({
+          id: payment.id,
+          amount: Number(payment.amount),
+          method:
+            normalizePaymentMethodForStorage(payment.payment_method) ||
+            payment.payment_method,
+          createdAt: payment.created_at,
+        })),
+        transactionPayments: ledgerPayments.map((payment: any) => ({
+          id: payment.id,
+          amount: Number(payment.amount),
+          method:
+            normalizePaymentMethodForStorage(payment.payment_method) ||
+            payment.payment_method,
+          note: payment.note,
+          paymentDate: payment.payment_date,
+          recordedById: payment.recorded_by,
+          recordedBy: payment.recordedBy
+            ? {
+                id: payment.recordedBy.id,
+                firstName: payment.recordedBy.firstName,
+                lastName: payment.recordedBy.lastName,
+                email: payment.recordedBy.email,
+              }
+            : null,
+          createdAt: payment.created_at,
+        })),
+      };
     });
 
     return createApiResponse.successWithPagination(
