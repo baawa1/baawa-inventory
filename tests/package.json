@@ -75,7 +75,7 @@
     "setupFilesAfterEnv": [
       "<rootDir>/setup-env.ts"
     ],
-    "moduleNameMapping": {
+    "moduleNameMapper": {
       "^@/(.*)$": "<rootDir>/../src/$1"
     },
     "collectCoverageFrom": [

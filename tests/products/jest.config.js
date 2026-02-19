@@ -1,7 +1,6 @@
 module.exports = {
   displayName: "products",
   testEnvironment: "jsdom",
-  setupFilesAfterEnv: ["<rootDir>/../setup.ts"],
   testMatch: ["<rootDir>/**/*.test.ts", "<rootDir>/**/*.test.tsx"],
   collectCoverageFrom: [
     "src/components/inventory/**/*.{ts,tsx}",

@@ -14,7 +14,7 @@ const customJestConfig = {
   testEnvironment: "node",
 
   // Module name mapping for absolute imports
-  moduleNameMapping: {
+  moduleNameMapper: {
     "^@/(.*)$": "<rootDir>/src/$1",
     "^@/tests/(.*)$": "<rootDir>/tests/$1",
   },
@@ -60,8 +60,8 @@ const customJestConfig = {
   verbose: true,
 
   // Global setup for API tests
-  globalSetup: "<rootDir>/tests/api/setup.js",
-  globalTeardown: "<rootDir>/tests/api/teardown.js",
+  globalSetup: "<rootDir>/tests/api/setup.ts",
+  globalTeardown: "<rootDir>/tests/api/teardown.ts",
 };
 
 // createJestConfig is exported this way to ensure that next/jest can load the Next.js config which is async
