@@ -205,18 +205,8 @@ export function PaymentInterface({
         timestamp: new Date(),
       };
 
-      // Show success message with email status
-      if (result.emailSent && customerInfo.email) {
-        toast.success(
-          'Payment processed successfully! Email receipt sent to customer.'
-        );
-      } else if (customerInfo.email) {
-        toast.success(
-          'Payment processed successfully! (Email receipt failed to send)'
-        );
-      } else {
-        toast.success('Payment processed successfully!');
-      }
+      // Show success message (manual email sending only)
+      toast.success('Payment processed successfully!');
 
       onPaymentSuccess(sale);
     } catch (error) {

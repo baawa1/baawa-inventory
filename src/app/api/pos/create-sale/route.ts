@@ -9,7 +9,10 @@ import {
   normalizeNigerianPhone,
   getPhoneSearchPatterns,
 } from '@/lib/utils/phone-utils';
-import { formatPaymentMethodLabel } from '@/lib/utils/payment-methods';
+import {
+  formatPaymentMethodLabel,
+  normalizePaymentMethodForStorage,
+} from '@/lib/utils/payment-methods';
 
 // Validation schema for POS sale creation
 const posSaleItemSchema = z.object({
@@ -47,7 +50,10 @@ const posSaleSchema = z
     discount: z.coerce.number().min(0, 'Discount cannot be negative'),
     fees: z.array(transactionFeeSchema).optional().default([]),
     total: z.coerce.number().positive('Total must be positive'),
-    paymentMethod: z.string().min(1, 'Payment method is required'),
+    paymentMethod: z
+      .string()
+      .min(1, 'Payment method is required')
+      .transform(value => normalizePaymentMethodForStorage(value) || value),
     customerInfo: customerInfoSchema.optional(),
     // Legacy fields for backward compatibility
     customerName: z.string().optional(),
@@ -60,7 +66,9 @@ const posSaleSchema = z
         z.object({
           id: z.string(),
           amount: z.coerce.number().positive(),
-          method: z.string(),
+          method: z
+            .string()
+            .transform(value => normalizePaymentMethodForStorage(value) || value),
         })
       )
       .optional(),
@@ -187,9 +195,18 @@ export const POST = withAuth(async function (request: AuthenticatedRequest) {
     // Generate transaction number
     const transactionNumber = `TXN-${Date.now()}-${Math.random().toString(36).substr(2, 9).toUpperCase()}`;
 
-    const isSplitPayment = validatedData.paymentMethod === 'split';
-    const isDebtPayment = validatedData.paymentMethod === 'debt';
-    const splitPaymentsInput = validatedData.splitPayments || [];
+    const normalizedPaymentMethod =
+      normalizePaymentMethodForStorage(validatedData.paymentMethod) ||
+      validatedData.paymentMethod;
+    const isSplitPayment = normalizedPaymentMethod === 'split';
+    const isDebtPayment = normalizedPaymentMethod === 'debt';
+    const splitPaymentsInput = (validatedData.splitPayments || []).map(
+      payment => ({
+        ...payment,
+        method:
+          normalizePaymentMethodForStorage(payment.method) || payment.method,
+      })
+    );
     const splitNonDebtTotal = isSplitPayment
       ? splitPaymentsInput
           .filter(payment => payment.method !== 'debt')
@@ -388,7 +405,7 @@ export const POST = withAuth(async function (request: AuthenticatedRequest) {
           subtotal: validatedData.subtotal,
           discount_amount: validatedData.discount,
           total_amount: validatedData.total,
-          payment_method: validatedData.paymentMethod,
+          payment_method: normalizedPaymentMethod,
           payment_status: initialPaymentStatus,
           transaction_number: transactionNumber,
           transaction_type: 'sale',
@@ -479,7 +496,7 @@ export const POST = withAuth(async function (request: AuthenticatedRequest) {
       let splitPayments: SplitPayment[] = [];
       if (isSplitPayment && validatedData.splitPayments) {
         splitPayments = await Promise.all(
-          validatedData.splitPayments.map(async payment => {
+          splitPaymentsInput.map(async payment => {
             return await tx.splitPayment.create({
               data: {
                 amount: payment.amount,
@@ -514,7 +531,32 @@ export const POST = withAuth(async function (request: AuthenticatedRequest) {
           data: {
             transaction_id: salesTransaction.id,
             amount: totalPaidAtCreation,
-            payment_method: 'DEBT',
+            payment_method: 'debt',
+            note: validatedData.notes,
+            payment_date: new Date(),
+            recorded_by: parseInt(request.user.id),
+          },
+          include: {
+            recordedBy: {
+              select: {
+                id: true,
+                firstName: true,
+                lastName: true,
+                email: true,
+              },
+            },
+          },
+        });
+
+        transactionPayments = [paymentRecord];
+      }
+
+      if (!isSplitPayment && !isDebtPayment) {
+        const paymentRecord = await (tx as any).transactionPayment.create({
+          data: {
+            transaction_id: salesTransaction.id,
+            amount: validatedData.total,
+            payment_method: normalizedPaymentMethod,
             note: validatedData.notes,
             payment_date: new Date(),
             recorded_by: parseInt(request.user.id),
@@ -557,112 +599,8 @@ export const POST = withAuth(async function (request: AuthenticatedRequest) {
       };
     });
 
-    // Send email receipt if customer email is provided
-    let emailSent = false;
-    const customerEmail =
-      validatedData.customerEmail || validatedData.customerInfo?.email;
-    if (customerEmail) {
-      const totalSplitPaid =
-        result.splitPayments?.reduce((sum, payment) => {
-          if (payment.payment_method === 'debt') {
-            return sum;
-          }
-          return sum + Number(payment.amount);
-        }, 0) || 0;
-      const totalLedgerPaid =
-        result.transactionPayments?.reduce(
-          (sum, payment) => sum + Number(payment.amount),
-          0
-        ) || 0;
-      const totalPaid = totalSplitPaid + totalLedgerPaid;
-      const balanceDue = Math.max(
-        0,
-        Number((validatedData.total - totalPaid).toFixed(2))
-      );
-      try {
-        // Get staff user details for email
-        const staffUser = await prisma.user.findUnique({
-          where: { id: parseInt(request.user.id) },
-          select: { firstName: true, lastName: true },
-        });
-
-        const staffName = staffUser
-          ? `${staffUser.firstName} ${staffUser.lastName}`.trim()
-          : 'Staff Member';
-
-        // Prepare email data
-        const customerName =
-          validatedData.customerName ||
-          validatedData.customerInfo?.name ||
-          'Customer';
-        const emailData = {
-          to: customerEmail,
-          customerName,
-          saleId: result.salesTransaction.id.toString(),
-          items: result.salesItems.map(item => ({
-            name: item.productName,
-            quantity: item.quantity,
-            price: Number(item.unit_price),
-            total: Number(item.total_price),
-          })),
-          subtotal: validatedData.subtotal,
-          discount: validatedData.discount,
-          fees:
-            result.transactionFees?.map(fee => ({
-              type: fee.feeType,
-              description: fee.description || undefined,
-              amount: Number(fee.amount),
-            })) || [],
-          total: validatedData.total,
-          paymentMethod: formatPaymentMethodLabel(validatedData.paymentMethod),
-          splitPayments:
-            result.splitPayments?.map(payment => ({
-              method: payment.payment_method,
-              amount: Number(payment.amount),
-            })) || [],
-          timestamp: new Date(),
-          staffName,
-          notes: validatedData.notes,
-          amountPaid: Number(totalPaid.toFixed(2)),
-          balanceDue,
-          transactionPayments:
-            result.transactionPayments?.map(payment => ({
-              amount: Number(payment.amount),
-              method: payment.payment_method,
-              note: payment.note,
-              paymentDate: payment.payment_date,
-            })) || [],
-        };
-
-        // Send email receipt
-        emailSent = await emailService.sendReceiptEmail(emailData);
-
-        if (emailSent) {
-          logger.info('Email receipt sent successfully', {
-            customerEmail,
-            saleId: result.salesTransaction.id,
-            userId: request.user.id,
-          });
-        } else {
-          logger.warn('Failed to send email receipt', {
-            customerEmail,
-            saleId: result.salesTransaction.id,
-            userId: request.user.id,
-          });
-        }
-      } catch (emailError) {
-        // Don't fail the transaction if email fails
-        logger.error('Error sending email receipt', {
-          error:
-            emailError instanceof Error
-              ? emailError.message
-              : String(emailError),
-          customerEmail,
-          saleId: result.salesTransaction.id,
-          userId: request.user.id,
-        });
-      }
-    }
+    // Automatic email receipts disabled; manual sending only.
+    const emailSent = false;
 
     const totalSplitPaid = result.splitPayments?.reduce((sum, payment) => {
       if (payment.payment_method === 'debt') {

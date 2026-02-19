@@ -477,7 +477,7 @@ export function SlidingPaymentInterface({
       setCompletedSale(sale);
       setCurrentStep(6); // Move to receipt step
 
-      // Show success message with email status
+      // Show success message (manual email sending only)
       const hasOutstandingBalance = (sale.balanceDue || 0) > 0.009;
       const baseSuccessMessage = hasOutstandingBalance
         ? `Sale recorded with outstanding balance of ${formatCurrency(
@@ -485,15 +485,7 @@ export function SlidingPaymentInterface({
           )}`
         : 'Payment processed successfully!';
 
-      if (result.emailSent && customerInfo.email) {
-        toast.success(`${baseSuccessMessage} Email receipt sent to customer.`);
-      } else if (customerInfo.email) {
-        toast.success(
-          `${baseSuccessMessage} (Email receipt failed to send)`
-        );
-      } else {
-        toast.success(baseSuccessMessage);
-      }
+      toast.success(baseSuccessMessage);
     } catch (error) {
       const errorMessage = 'Payment processing failed';
       toast.error(errorMessage);
