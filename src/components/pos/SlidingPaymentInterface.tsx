@@ -26,6 +26,7 @@ import {
   IconSearch,
   IconMail,
   IconPrinter,
+  IconBrandWhatsapp,
   IconCoins,
   IconAlertTriangle,
 } from '@tabler/icons-react';
@@ -48,6 +49,7 @@ import {
   formatLedgerPaymentLabel,
 } from '@/lib/utils/payment-methods';
 import { logger } from '@/lib/logger';
+import { normalizeNigerianPhone } from '@/lib/utils/phone-utils';
 import type {
   CartItem,
   Sale,
@@ -2086,6 +2088,14 @@ function ReceiptStep({ sale }: { sale: Sale | null }) {
     });
   };
 
+  const formatShortDate = (date: Date) => {
+    return date.toLocaleDateString('en-NG', {
+      year: 'numeric',
+      month: 'short',
+      day: 'numeric',
+    });
+  };
+
   const formatTime = (date: Date) => {
     return date.toLocaleTimeString('en-US', {
       hour: '2-digit',
@@ -2124,6 +2134,79 @@ function ReceiptStep({ sale }: { sale: Sale | null }) {
         })
         .join('')
     : '';
+
+  const buildWhatsAppReceiptMessage = () => {
+    const maxItems = 12;
+    const customerName = sale.customerName?.trim() || 'there';
+    const itemLines = sale.items.slice(0, maxItems).map(item => {
+      const lineTotal = formatCurrency(item.price * item.quantity);
+      return `- ${item.name} (x${item.quantity}) - ${lineTotal}`;
+    });
+
+    if (sale.items.length > maxItems) {
+      itemLines.push(`- ...and ${sale.items.length - maxItems} more item(s)`);
+    }
+
+    const feeLines =
+      sale.fees && sale.fees.length > 0
+        ? sale.fees.map(
+            fee =>
+              `Processing ${fee.type}${fee.description ? ` (${fee.description})` : ''}: ${formatCurrency(fee.amount)}`
+          )
+        : [];
+
+    const statusLabel = hasOutstandingBalance
+      ? `Status: Balance due ${formatCurrency(sale.balanceDue ?? 0)}`
+      : `Status: Paid via ${paymentLabel}`;
+
+    const lines = [
+      'ORDER CONFIRMED',
+      '',
+      'BAAWA ACCESSORIES',
+      '',
+      `Hi ${customerName}, thank you for your order! Here is your digital receipt:`,
+      '',
+      '===========================================',
+      '',
+      'ORDER DETAILS',
+      `Receipt: #${sale.id}`,
+      `Date: ${formatShortDate(sale.timestamp)} | ${formatTime(
+        sale.timestamp
+      )}`,
+      sale.customerPhone ? `Phone: ${sale.customerPhone}` : null,
+      '',
+      '===========================================',
+      '',
+      'YOUR ITEMS',
+      ...itemLines,
+      '',
+      '===========================================',
+      '',
+      'FINANCIAL SUMMARY',
+      `Subtotal: ${formatCurrency(sale.subtotal)}`,
+      sale.discount > 0
+        ? `Discount: -${formatCurrency(sale.discount)}`
+        : null,
+      ...feeLines,
+      '',
+      `Total: ${formatCurrency(sale.total)}`,
+      '',
+      statusLabel,
+      '',
+      'Shop more at: https://baawa.ng/shop',
+      '',
+      'Thank you for choosing BaaWA!',
+      '',
+      "Pro Tip: Save our contact to your phone so you don't miss our exclusive deals and new arrivals on our WhatsApp Status!",
+      '',
+      'Follow us for more updates:',
+      'Instagram: https://www.instagram.com/baawa_ng/',
+      'Facebook: https://web.facebook.com/baawa.accessories/',
+      'TikTok: https://www.tiktok.com/@baawa.accessories',
+    ].filter((line): line is string => line !== null && line !== undefined);
+
+    return lines.join('\n');
+  };
 
   // Print receipt
   const handlePrint = () => {
@@ -2314,6 +2397,27 @@ function ReceiptStep({ sale }: { sale: Sale | null }) {
     } catch (_error) {
       toast.error('Failed to send receipt');
     }
+  };
+
+  const handleWhatsAppReceipt = () => {
+    if (!sale.customerPhone) {
+      toast.error('No customer phone available');
+      return;
+    }
+
+    const normalizedPhone = normalizeNigerianPhone(sale.customerPhone);
+    if (!normalizedPhone.isValid) {
+      toast.error('Customer phone number is not a valid Nigerian format');
+      return;
+    }
+
+    const whatsappNumber = normalizedPhone.normalized.replace('+', '');
+    const message = buildWhatsAppReceiptMessage();
+    const url = `https://wa.me/${whatsappNumber}?text=${encodeURIComponent(
+      message
+    )}`;
+
+    window.open(url, '_blank', 'noopener,noreferrer');
   };
 
   return (
@@ -2514,7 +2618,7 @@ function ReceiptStep({ sale }: { sale: Sale | null }) {
       )}
 
       {/* Printer Actions */}
-      <div className="flex gap-3 pt-4">
+      <div className="flex flex-wrap gap-3 pt-4">
         <Button onClick={handlePrint} variant="outline" className="flex-1">
           <IconPrinter className="mr-2 h-4 w-4" />
           Print
@@ -2527,6 +2631,16 @@ function ReceiptStep({ sale }: { sale: Sale | null }) {
           >
             <IconMail className="mr-2 h-4 w-4" />
             Email
+          </Button>
+        )}
+        {sale.customerPhone && (
+          <Button
+            onClick={handleWhatsAppReceipt}
+            variant="outline"
+            className="flex-1"
+          >
+            <IconBrandWhatsapp className="mr-2 h-4 w-4" />
+            WhatsApp
           </Button>
         )}
       </div>

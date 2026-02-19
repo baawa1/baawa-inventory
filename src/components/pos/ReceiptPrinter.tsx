@@ -9,10 +9,16 @@ import {
   DialogHeader,
   DialogTitle,
 } from '@/components/ui/dialog';
-import { IconPrinter, IconMail, IconLoader } from '@tabler/icons-react';
+import {
+  IconPrinter,
+  IconMail,
+  IconLoader,
+  IconBrandWhatsapp,
+} from '@tabler/icons-react';
 import { toast } from 'sonner';
 import { formatCurrency } from '@/lib/utils';
 import { logger } from '@/lib/logger';
+import { normalizeNigerianPhone } from '@/lib/utils/phone-utils';
 import {
   generateThermalReceipt,
   createRawTextPrintWindow,
@@ -67,6 +73,7 @@ interface ReceiptPrinterProps {
   trigger?: React.ReactNode;
   showEmailOption?: boolean;
   showThermalOption?: boolean;
+  showWhatsAppOption?: boolean;
   size?: 'sm' | 'default' | 'lg';
   variant?: 'default' | 'outline' | 'ghost';
 }
@@ -84,6 +91,7 @@ export function ReceiptPrinter({
   trigger,
   showEmailOption = true,
   showThermalOption = true,
+  showWhatsAppOption = true,
   size = 'sm',
   variant = 'outline',
 }: ReceiptPrinterProps) {
@@ -105,12 +113,99 @@ export function ReceiptPrinter({
     });
   };
 
+  const formatShortDate = (date: Date | string) => {
+    const d = typeof date === 'string' ? new Date(date) : date;
+    return d.toLocaleDateString('en-NG', {
+      year: 'numeric',
+      month: 'short',
+      day: 'numeric',
+    });
+  };
+
   const formatTime = (date: Date | string) => {
     const d = typeof date === 'string' ? new Date(date) : date;
     return d.toLocaleTimeString('en-NG', {
       hour: '2-digit',
       minute: '2-digit',
     });
+  };
+
+  const buildWhatsAppReceiptMessage = () => {
+    const maxItems = 12;
+    const customerName = receiptData.customerName?.trim() || 'there';
+    const receiptNumber = receiptData.transactionNumber || receiptData.id;
+    const itemLines = receiptData.items.slice(0, maxItems).map(item => {
+      const lineTotal = formatCurrency(item.price * item.quantity);
+      return `- ${item.name} (x${item.quantity}) - ${lineTotal}`;
+    });
+
+    if (receiptData.items.length > maxItems) {
+      itemLines.push(
+        `- ...and ${receiptData.items.length - maxItems} more item(s)`
+      );
+    }
+
+    const feeLines =
+      receiptData.fees && receiptData.fees.length > 0
+        ? receiptData.fees.map(
+            fee =>
+              `Processing ${fee.type}${fee.description ? ` (${fee.description})` : ''}: ${formatCurrency(fee.amount)}`
+          )
+        : [];
+
+    const statusLabel =
+      receiptData.paymentMethod === 'debt'
+        ? 'Status: Unpaid (Debt)'
+        : `Status: Paid via ${paymentLabel}`;
+
+    const lines = [
+      'ORDER CONFIRMED',
+      '',
+      'BAAWA ACCESSORIES',
+      '',
+      `Hi ${customerName}, thank you for your order! Here is your digital receipt:`,
+      '',
+      '===========================================',
+      '',
+      'ORDER DETAILS',
+      `Receipt: #${receiptNumber}`,
+      `Date: ${formatShortDate(receiptData.timestamp)} | ${formatTime(
+        receiptData.timestamp
+      )}`,
+      receiptData.customerPhone ? `Phone: ${receiptData.customerPhone}` : null,
+      '',
+      '===========================================',
+      '',
+      'YOUR ITEMS',
+      ...itemLines,
+      '',
+      '===========================================',
+      '',
+      'FINANCIAL SUMMARY',
+      `Subtotal: ${formatCurrency(receiptData.subtotal)}`,
+      receiptData.discount > 0
+        ? `Discount: -${formatCurrency(receiptData.discount)}`
+        : null,
+      ...feeLines,
+      '',
+      `Total: ${formatCurrency(receiptData.total)}`,
+      '',
+      statusLabel,
+      '',
+      'Shop more at: https://baawa.ng/shop',
+      '',
+      'Thank you for choosing BaaWA!',
+      '',
+      "Pro Tip: Save our contact to your phone so you don't miss our exclusive deals and new arrivals on our WhatsApp Status!",
+      '',
+      'Follow us for more updates:',
+      'Instagram: https://www.instagram.com/baawa_ng/',
+      'Facebook: https://web.facebook.com/baawa.accessories/',
+      'TikTok: https://www.tiktok.com/@baawa.accessories',
+      '',
+    ].filter((line): line is string => line !== null && line !== undefined);
+
+    return lines.join('\n');
   };
 
   // Standard paper print
@@ -368,6 +463,27 @@ export function ReceiptPrinter({
     }
   };
 
+  const handleWhatsAppReceipt = () => {
+    if (!receiptData.customerPhone) {
+      toast.error('No customer phone available');
+      return;
+    }
+
+    const normalizedPhone = normalizeNigerianPhone(receiptData.customerPhone);
+    if (!normalizedPhone.isValid) {
+      toast.error('Customer phone number is not a valid Nigerian format');
+      return;
+    }
+
+    const whatsappNumber = normalizedPhone.normalized.replace('+', '');
+    const message = buildWhatsAppReceiptMessage();
+    const url = `https://wa.me/${whatsappNumber}?text=${encodeURIComponent(
+      message
+    )}`;
+
+    window.open(url, '_blank', 'noopener,noreferrer');
+  };
+
   const defaultTrigger = (
     <Button
       variant={variant}
@@ -444,6 +560,19 @@ export function ReceiptPrinter({
                   <IconMail className="mr-2 h-4 w-4" />
                 )}
                 Email to {receiptData.customerEmail}
+              </Button>
+            )}
+
+            {/* WhatsApp Receipt */}
+            {showWhatsAppOption && receiptData.customerPhone && (
+              <Button
+                onClick={handleWhatsAppReceipt}
+                className="w-full justify-start"
+                variant="outline"
+                disabled={isProcessing}
+              >
+                <IconBrandWhatsapp className="mr-2 h-4 w-4" />
+                WhatsApp to {receiptData.customerPhone}
               </Button>
             )}
           </div>
