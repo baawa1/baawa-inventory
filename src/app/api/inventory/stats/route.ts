@@ -2,43 +2,47 @@ import { withAuth, AuthenticatedRequest } from '@/lib/api-middleware';
 import { createApiResponse } from '@/lib/api-response';
 import { prisma } from '@/lib/db';
 import { logger } from '@/lib/logger';
-import type { ProductWithIncludes } from '@/types/api';
 
 // GET /api/inventory/stats - Get inventory statistics
 export const GET = withAuth(async (_request: AuthenticatedRequest) => {
   try {
-    // Get all products for calculations
-    const allProducts = await prisma.product.findMany({
-      where: { isArchived: false },
-      select: {
-        stock: true,
-        price: true,
-        minStock: true,
-      },
-    });
+    // Aggregate inventory stats in the database
+    const [inventoryStats] = await prisma.$queryRaw<
+      Array<{
+        total_products: bigint;
+        low_stock_items: bigint;
+        out_of_stock_items: bigint;
+        in_stock_items: bigint;
+        total_stock_value: unknown;
+      }>
+    >`
+      SELECT
+        COUNT(*) FILTER (WHERE "is_archived" = false) AS total_products,
+        COUNT(*) FILTER (
+          WHERE "is_archived" = false
+            AND "stock" > 0
+            AND "stock" <= "min_stock"
+        ) AS low_stock_items,
+        COUNT(*) FILTER (
+          WHERE "is_archived" = false
+            AND "stock" = 0
+        ) AS out_of_stock_items,
+        COUNT(*) FILTER (
+          WHERE "is_archived" = false
+            AND "stock" > "min_stock"
+        ) AS in_stock_items,
+        COALESCE(
+          SUM("stock" * "price") FILTER (WHERE "is_archived" = false),
+          0
+        ) AS total_stock_value
+      FROM "products"
+    `;
 
-    // Get total products
-    const totalProducts = allProducts.length;
-
-    // Calculate stock levels using minStock logic
-    const lowStockItems = allProducts.filter(
-      p => (p.stock || 0) <= (p.minStock || 0) && (p.stock || 0) > 0
-    ).length;
-
-    const outOfStockItems = allProducts.filter(
-      p => (p.stock || 0) === 0
-    ).length;
-
-    const inStockItems = allProducts.filter(
-      p => (p.stock || 0) > (p.minStock || 0)
-    ).length;
-
-    // Get total stock value
-    const totalStockValue = allProducts.reduce(
-      (sum: number, product) =>
-        sum + (product.stock || 0) * Number(product.price || 0),
-      0
-    );
+    const totalProducts = Number(inventoryStats?.total_products || 0);
+    const lowStockItems = Number(inventoryStats?.low_stock_items || 0);
+    const outOfStockItems = Number(inventoryStats?.out_of_stock_items || 0);
+    const inStockItems = Number(inventoryStats?.in_stock_items || 0);
+    const totalStockValue = Number(inventoryStats?.total_stock_value || 0);
 
     // Get suppliers count
     const activeSuppliers = await prisma.supplier.count();

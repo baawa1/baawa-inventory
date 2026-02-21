@@ -6,6 +6,7 @@ interface FinancialAnalyticsFilters {
   type?: 'all' | 'income' | 'expense';
   paymentMethod?: string;
   groupBy?: 'day' | 'week' | 'month';
+  summaryOnly?: boolean;
 }
 
 interface AnalyticsSummary {
@@ -83,6 +84,9 @@ const fetchFinancialAnalytics = async (
   if (filters.groupBy) {
     params.append('groupBy', filters.groupBy);
   }
+  if (filters.summaryOnly) {
+    params.append('summaryOnly', '1');
+  }
 
   const response = await fetch(`/api/finance/analytics?${params.toString()}`);
   if (!response.ok) {
@@ -105,7 +109,10 @@ export function useFinancialAnalytics(filters: FinancialAnalyticsFilters = {}) {
 export function useFinancialAnalyticsSummary(
   filters: FinancialAnalyticsFilters = {}
 ) {
-  const { data, ...rest } = useFinancialAnalytics(filters);
+  const { data, ...rest } = useFinancialAnalytics({
+    ...filters,
+    summaryOnly: true,
+  });
 
   return {
     ...rest,

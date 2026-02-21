@@ -32,6 +32,9 @@ export const GET = withAuth(async (request: AuthenticatedRequest) => {
       paymentMethod: searchParams.get('paymentMethod') || undefined,
       groupBy: searchParams.get('groupBy') || 'day',
     };
+    const summaryOnlyParam = searchParams.get('summaryOnly');
+    const summaryOnly =
+      summaryOnlyParam === '1' || summaryOnlyParam === 'true';
 
     const validatedQuery = analyticsQuerySchema.parse(queryParams);
 
@@ -78,8 +81,11 @@ export const GET = withAuth(async (request: AuthenticatedRequest) => {
     }
 
     // Determine which data to fetch based on type filter
-    const includeIncome = validatedQuery.type === 'all' || validatedQuery.type === 'income';
-    const includeExpense = validatedQuery.type === 'all' || validatedQuery.type === 'expense';
+    const includeIncome =
+      validatedQuery.type === 'all' || validatedQuery.type === 'income';
+    const includeExpense =
+      validatedQuery.type === 'all' || validatedQuery.type === 'expense';
+    const includeExpenseDetails = includeExpense && !summaryOnly;
 
     // Fetch all data in parallel
     const [
@@ -130,7 +136,7 @@ export const GET = withAuth(async (request: AuthenticatedRequest) => {
       }),
 
       // Expense breakdown by type - use groupBy for efficiency instead of fetching all records
-      includeExpense
+      includeExpenseDetails
         ? prisma.expenseDetail.groupBy({
             by: ['expenseType'],
             where: {
@@ -157,7 +163,7 @@ export const GET = withAuth(async (request: AuthenticatedRequest) => {
         : Promise.resolve([]),
 
       // Top vendors from expense transactions - limit to 100 most recent for performance
-      includeExpense
+      includeExpenseDetails
         ? prisma.expenseDetail.findMany({
             where: {
               transaction: {
@@ -276,42 +282,58 @@ export const GET = withAuth(async (request: AuthenticatedRequest) => {
       : { name: 'Cash', value: 0, amount: 0 };
 
     // Build expense breakdown by type
-    const expenseBreakdownMap = new Map<string, number>();
+    let expenseBreakdown: Record<string, number> = {};
+    let topVendors: Array<{ vendor: string; amount: number; category: string }> =
+      [];
 
-    // Add financial expense types from grouped results
-    (financialExpenseByType as Array<{ expenseType: string; amount: number }>).forEach(item => {
-      const expenseType = item.expenseType || 'OTHER';
-      const existing = expenseBreakdownMap.get(expenseType) || 0;
-      expenseBreakdownMap.set(expenseType, existing + item.amount);
-    });
+    if (!summaryOnly) {
+      const expenseBreakdownMap = new Map<string, number>();
 
-    // Add stock purchases as INVENTORY_PURCHASES
-    if (stockExpense > 0) {
-      const existing = expenseBreakdownMap.get('INVENTORY_PURCHASES') || 0;
-      expenseBreakdownMap.set('INVENTORY_PURCHASES', existing + stockExpense);
-    }
-
-    const expenseBreakdown = Object.fromEntries(expenseBreakdownMap);
-
-    // Build top vendors list
-    const vendorMap = new Map<string, { amount: number; category: string }>();
-    (financialExpenseVendors as any[]).forEach(detail => {
-      const vendorName = detail.vendorName || 'Unknown Vendor';
-      const existing = vendorMap.get(vendorName) || { amount: 0, category: detail.expenseType || 'OTHER' };
-      vendorMap.set(vendorName, {
-        amount: existing.amount + Number(detail.transaction?.amount || 0),
-        category: existing.category,
+      // Add financial expense types from grouped results
+      (financialExpenseByType as Array<{
+        expenseType: string;
+        amount: number;
+      }>).forEach(item => {
+        const expenseType = item.expenseType || 'OTHER';
+        const existing = expenseBreakdownMap.get(expenseType) || 0;
+        expenseBreakdownMap.set(expenseType, existing + item.amount);
       });
-    });
 
-    const topVendors = Array.from(vendorMap.entries())
-      .map(([vendor, data]) => ({
-        vendor,
-        amount: data.amount,
-        category: data.category,
-      }))
-      .sort((a, b) => b.amount - a.amount)
-      .slice(0, 10);
+      // Add stock purchases as INVENTORY_PURCHASES
+      if (stockExpense > 0) {
+        const existing =
+          expenseBreakdownMap.get('INVENTORY_PURCHASES') || 0;
+        expenseBreakdownMap.set('INVENTORY_PURCHASES', existing + stockExpense);
+      }
+
+      expenseBreakdown = Object.fromEntries(expenseBreakdownMap);
+
+      // Build top vendors list
+      const vendorMap = new Map<
+        string,
+        { amount: number; category: string }
+      >();
+      (financialExpenseVendors as any[]).forEach(detail => {
+        const vendorName = detail.vendorName || 'Unknown Vendor';
+        const existing = vendorMap.get(vendorName) || {
+          amount: 0,
+          category: detail.expenseType || 'OTHER',
+        };
+        vendorMap.set(vendorName, {
+          amount: existing.amount + Number(detail.transaction?.amount || 0),
+          category: existing.category,
+        });
+      });
+
+      topVendors = Array.from(vendorMap.entries())
+        .map(([vendor, data]) => ({
+          vendor,
+          amount: data.amount,
+          category: data.category,
+        }))
+        .sort((a, b) => b.amount - a.amount)
+        .slice(0, 10);
+    }
 
     // Calculate previous period for growth comparison
     const currentPeriodDays = startDate && endDate
@@ -388,70 +410,90 @@ export const GET = withAuth(async (request: AuthenticatedRequest) => {
           ? 100
           : 0;
 
-    // Calculate daily trends from all sources
-    const dailyTrendsMap = new Map<string, { income: number; expense: number; date: string }>();
+    // Calculate daily trends from all sources (skip for summaryOnly)
+    let dailyTrends: Array<{
+      date: string;
+      income: number;
+      expense: number;
+      net: number;
+    }> = [];
 
-    // Helper to add to daily map
-    const addToDaily = (date: Date | null, amount: number, type: 'income' | 'expense') => {
-      if (!date) return;
-      const dateKey = date.toISOString().split('T')[0];
-      const existing = dailyTrendsMap.get(dateKey) || { income: 0, expense: 0, date: dateKey };
-      if (type === 'income') {
-        existing.income += amount;
-      } else {
-        existing.expense += amount;
-      }
-      dailyTrendsMap.set(dateKey, existing);
-    };
+    if (!summaryOnly) {
+      const dailyTrendsMap = new Map<
+        string,
+        { income: number; expense: number; date: string }
+      >();
 
-    // Fetch transactions for trend data
-    const [trendFinancial, trendSales, trendStock] = await Promise.all([
-      prisma.financialTransaction.findMany({
-        where: financialWhere,
-        select: { transactionDate: true, amount: true, type: true },
-      }),
-      includeIncome
-        ? prisma.salesTransaction.findMany({
-            where: salesWhere,
-            select: { created_at: true, total_amount: true },
-          })
-        : Promise.resolve([]),
-      includeExpense
-        ? prisma.stockAddition.findMany({
-            where: stockWhere,
-            select: { purchaseDate: true, totalCost: true },
-          })
-        : Promise.resolve([]),
-    ]);
+      // Helper to add to daily map
+      const addToDaily = (
+        date: Date | null,
+        amount: number,
+        type: 'income' | 'expense'
+      ) => {
+        if (!date) return;
+        const dateKey = date.toISOString().split('T')[0];
+        const existing = dailyTrendsMap.get(dateKey) || {
+          income: 0,
+          expense: 0,
+          date: dateKey,
+        };
+        if (type === 'income') {
+          existing.income += amount;
+        } else {
+          existing.expense += amount;
+        }
+        dailyTrendsMap.set(dateKey, existing);
+      };
 
-    // Process financial transactions
-    trendFinancial.forEach(t => {
-      addToDaily(
-        t.transactionDate,
-        Number(t.amount) || 0,
-        t.type === 'INCOME' ? 'income' : 'expense'
-      );
-    });
+      // Fetch transactions for trend data
+      const [trendFinancial, trendSales, trendStock] = await Promise.all([
+        prisma.financialTransaction.findMany({
+          where: financialWhere,
+          select: { transactionDate: true, amount: true, type: true },
+        }),
+        includeIncome
+          ? prisma.salesTransaction.findMany({
+              where: salesWhere,
+              select: { created_at: true, total_amount: true },
+            })
+          : Promise.resolve([]),
+        includeExpense
+          ? prisma.stockAddition.findMany({
+              where: stockWhere,
+              select: { purchaseDate: true, totalCost: true },
+            })
+          : Promise.resolve([]),
+      ]);
 
-    // Process sales
-    trendSales.forEach(s => {
-      addToDaily(s.created_at, Number(s.total_amount) || 0, 'income');
-    });
+      // Process financial transactions
+      trendFinancial.forEach(t => {
+        addToDaily(
+          t.transactionDate,
+          Number(t.amount) || 0,
+          t.type === 'INCOME' ? 'income' : 'expense'
+        );
+      });
 
-    // Process stock additions
-    trendStock.forEach(sa => {
-      addToDaily(sa.purchaseDate, Number(sa.totalCost) || 0, 'expense');
-    });
+      // Process sales
+      trendSales.forEach(s => {
+        addToDaily(s.created_at, Number(s.total_amount) || 0, 'income');
+      });
 
-    // Convert to sorted array
-    const dailyTrends = Array.from(dailyTrendsMap.values())
-      .sort((a, b) => a.date.localeCompare(b.date))
-      .map(d => ({
-        date: d.date,
-        income: d.income,
-        expense: d.expense,
-        net: d.income - d.expense,
-      }));
+      // Process stock additions
+      trendStock.forEach(sa => {
+        addToDaily(sa.purchaseDate, Number(sa.totalCost) || 0, 'expense');
+      });
+
+      // Convert to sorted array
+      dailyTrends = Array.from(dailyTrendsMap.values())
+        .sort((a, b) => a.date.localeCompare(b.date))
+        .map(d => ({
+          date: d.date,
+          income: d.income,
+          expense: d.expense,
+          net: d.income - d.expense,
+        }));
+    }
 
     const analyticsData = {
       summary: {

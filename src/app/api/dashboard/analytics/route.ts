@@ -3,6 +3,7 @@ import { withAuth, AuthenticatedRequest } from '@/lib/api-middleware';
 import { createApiResponse } from '@/lib/api-response';
 import { logger } from '@/lib/logger';
 import { hasPermission } from '@/lib/auth/roles';
+import { Prisma } from '@prisma/client';
 import {
   PRODUCT_STATUS,
   SUCCESSFUL_PAYMENT_STATUSES,
@@ -129,23 +130,45 @@ export const GET = withAuth(async (request: AuthenticatedRequest) => {
     ]);
 
     // Transform top customers data - only if user has permissions
-    const transformedTopCustomers = canViewCustomerAnalytics
-      ? await Promise.all(
-          topCustomers.map(async (customerData, index) => {
-            const customer = await prisma.customer.findUnique({
-              where: { id: customerData.customer_id! },
-              select: { id: true, name: true, email: true },
-            });
+    let transformedTopCustomers: Array<{
+      id: number;
+      name: string;
+      orders: number;
+      totalSpend: number | null;
+    }> = [];
 
-            return {
-              id: index + 1,
-              name: customer?.name || 'Unknown Customer',
-              orders: customerData._count.id,
-              totalSpend: canViewRevenue ? Number(customerData._sum.total_amount || 0) : null,
-            };
-          })
-        )
-      : [];
+    if (canViewCustomerAnalytics) {
+      const customerIds = topCustomers
+        .map(customer => customer.customer_id)
+        .filter((id): id is number => typeof id === 'number');
+
+      const customers =
+        customerIds.length > 0
+          ? await prisma.customer.findMany({
+              where: {
+                id: { in: customerIds },
+              },
+              select: { id: true, name: true, email: true },
+            })
+          : [];
+
+      const customerMap = new Map(
+        customers.map(customer => [customer.id, customer])
+      );
+
+      transformedTopCustomers = topCustomers.map((customerData, index) => {
+        const customer = customerMap.get(customerData.customer_id!);
+
+        return {
+          id: index + 1,
+          name: customer?.name || 'Unknown Customer',
+          orders: customerData._count.id,
+          totalSpend: canViewRevenue
+            ? Number(customerData._sum.total_amount || 0)
+            : null,
+        };
+      });
+    }
 
     // Transform low stock items data
     const transformedLowStockItems = lowStockItems.map(item => ({
@@ -169,35 +192,48 @@ export const GET = withAuth(async (request: AuthenticatedRequest) => {
     // Generate sales data for charts (last 30 days) - with role-based filtering
     const salesData = [];
     const daysToShow = API_LIMITS.SALES_CHART_DAYS;
+    const msPerDay = 24 * 60 * 60 * 1000;
+    const salesStart = new Date(now.getTime() - (daysToShow - 1) * msPerDay);
+    salesStart.setHours(0, 0, 0, 0);
+    const salesEnd = new Date(now);
+    salesEnd.setHours(23, 59, 59, 999);
+
+    const dailySales = await prisma.$queryRaw<
+      Array<{ day: Date; total_sales: unknown; net_sales: unknown; orders: number }>
+    >`
+      SELECT
+        date_trunc('day', "created_at") AS day,
+        COALESCE(SUM("total_amount"), 0) AS total_sales,
+        COALESCE(SUM("subtotal"), 0) AS net_sales,
+        COUNT(*)::int AS orders
+      FROM "sales_transactions"
+      WHERE "created_at" >= ${salesStart}
+        AND "created_at" <= ${salesEnd}
+        AND "payment_status" IN (${Prisma.join(SUCCESSFUL_PAYMENT_STATUSES)})
+      GROUP BY 1
+      ORDER BY 1 ASC
+    `;
+
+    const salesMap = new Map(
+      dailySales.map(row => [row.day.toISOString().split('T')[0], row])
+    );
 
     for (let i = daysToShow - 1; i >= 0; i--) {
-      const date = new Date(now.getTime() - i * 24 * 60 * 60 * 1000);
+      const date = new Date(now.getTime() - i * msPerDay);
+      const dateKey = date.toISOString().split('T')[0];
       const dateStr = date.toLocaleDateString('en-US', {
         month: 'short',
         day: 'numeric',
       });
-
-      const daySales = await prisma.salesTransaction.aggregate({
-        where: {
-          created_at: {
-            gte: new Date(date.getFullYear(), date.getMonth(), date.getDate()),
-            lt: new Date(
-              date.getFullYear(),
-              date.getMonth(),
-              date.getDate() + 1
-            ),
-          },
-          payment_status: { in: SUCCESSFUL_PAYMENT_STATUSES },
-        },
-        _sum: canViewRevenue ? { total_amount: true, subtotal: true } : undefined,
-        _count: { id: true },
-      });
+      const daySales = salesMap.get(dateKey);
 
       salesData.push({
         date: dateStr,
-        sales: canViewRevenue ? Number(daySales._sum?.total_amount || 0) : null,
-        orders: daySales._count.id,
-        netSales: canViewRevenue ? Number(daySales._sum?.subtotal || 0) : null,
+        sales: canViewRevenue
+          ? Number(daySales?.total_sales || 0)
+          : null,
+        orders: daySales?.orders || 0,
+        netSales: canViewRevenue ? Number(daySales?.net_sales || 0) : null,
       });
     }
 

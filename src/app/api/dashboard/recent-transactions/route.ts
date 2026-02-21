@@ -1,6 +1,7 @@
 import { prisma } from '@/lib/db';
 import { withAuth, AuthenticatedRequest } from '@/lib/api-middleware';
 import { createApiResponse } from '@/lib/api-response';
+import { SUCCESSFUL_PAYMENT_STATUSES } from '@/lib/constants';
 
 // GET /api/dashboard/recent-transactions - Get recent POS transactions
 export const GET = withAuth(async (request: AuthenticatedRequest) => {
@@ -12,6 +13,7 @@ export const GET = withAuth(async (request: AuthenticatedRequest) => {
     const recentTransactions = await prisma.salesTransaction.findMany({
       where: {
         transaction_type: 'sale',
+        payment_status: { in: SUCCESSFUL_PAYMENT_STATUSES },
       },
       orderBy: {
         created_at: 'desc',
@@ -34,27 +36,50 @@ export const GET = withAuth(async (request: AuthenticatedRequest) => {
               },
             },
           },
+          orderBy: { created_at: 'asc' },
+          take: 1,
         },
       },
     });
 
+    const transactionIds = recentTransactions.map(
+      transaction => transaction.id
+    );
+
+    const itemCounts =
+      transactionIds.length > 0
+        ? await prisma.salesItem.groupBy({
+            by: ['transaction_id'],
+            where: {
+              transaction_id: { in: transactionIds },
+            },
+            _sum: { quantity: true },
+            _count: { id: true },
+          })
+        : [];
+
+    const itemCountMap = new Map(
+      itemCounts.map(item => [item.transaction_id, item])
+    );
+
     // Process the data for display
-    const processedTransactions = recentTransactions.map(transaction => ({
-      id: transaction.id,
-      transactionNumber: transaction.transaction_number,
-      totalAmount: Number(transaction.total_amount),
-      paymentMethod: transaction.payment_method,
-      paymentStatus: transaction.payment_status,
-      customerName: transaction.customer?.name || 'Walk-in Customer',
-      customerEmail: transaction.customer?.email,
-      createdAt: transaction.created_at,
-      itemCount: transaction.sales_items.length,
-      totalItems: transaction.sales_items.reduce(
-        (sum, item) => sum + item.quantity,
-        0
-      ),
-      firstItem: transaction.sales_items[0]?.products?.name || 'Product',
-    }));
+    const processedTransactions = recentTransactions.map(transaction => {
+      const itemStats = itemCountMap.get(transaction.id);
+
+      return {
+        id: transaction.id,
+        transactionNumber: transaction.transaction_number,
+        totalAmount: Number(transaction.total_amount),
+        paymentMethod: transaction.payment_method,
+        paymentStatus: transaction.payment_status,
+        customerName: transaction.customer?.name || 'Walk-in Customer',
+        customerEmail: transaction.customer?.email,
+        createdAt: transaction.created_at,
+        itemCount: itemStats?._count.id || 0,
+        totalItems: Number(itemStats?._sum.quantity || 0),
+        firstItem: transaction.sales_items[0]?.products?.name || 'Product',
+      };
+    });
 
     return createApiResponse.success(
       processedTransactions,

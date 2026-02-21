@@ -53,8 +53,8 @@ jest.mock('@/lib/security-headers', () => ({
 
 // Standard Prisma mock for integration tests
 export const createPrismaMock = (additionalMethods: any = {}) => {
-  return jest.mock('@/lib/db', () => ({
-    prisma: {
+  return jest.mock('@/lib/db', () => {
+    const prisma = {
       // User methods
       user: {
         findMany: jest.fn(),
@@ -132,10 +132,21 @@ export const createPrismaMock = (additionalMethods: any = {}) => {
         count: jest.fn(),
         ...additionalMethods.sale,
       },
+      // Base Prisma helpers used in API routes
+      $transaction: jest.fn(),
+      $queryRaw: jest.fn(),
+      $disconnect: jest.fn(),
       // Add any additional methods
       ...additionalMethods,
-    },
-  }));
+    };
+
+    return {
+      prisma,
+      createFreshPrismaClient: () => prisma,
+      createFreshPrismaClientWithFallback: () => prisma,
+      createDirectClient: () => prisma,
+    };
+  });
 };
 
 // Create mock request helper
