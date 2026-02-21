@@ -2,6 +2,7 @@ import { defineConfig, devices } from '@playwright/test';
 import { config } from 'dotenv';
 
 config({ path: '.env.test' });
+process.env.E2E_USE_TEST_AUTH = '1';
 
 const webServerEnv = Object.fromEntries(
   Object.entries(process.env).filter(([, value]) => typeof value === 'string')

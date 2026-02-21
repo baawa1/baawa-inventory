@@ -1,8 +1,9 @@
 import { NextResponse } from 'next/server';
 import { cookies } from 'next/headers';
-import { sign } from 'jsonwebtoken';
 import { createApiResponse } from '@/lib/api-response';
 import { envConfig } from '@/lib/config/env-validation';
+import { encode } from 'next-auth/jwt';
+import { authConfig } from '#root/auth.config';
 
 export async function GET() {
   // Only allow in development
@@ -19,7 +20,8 @@ export async function POST(request: Request) {
   }
   
   try {
-    const { email, role, status, isEmailVerified } = await request.json();
+    const { id, email, role, status, isEmailVerified, firstName, lastName, isActive } =
+      await request.json();
 
     // Validate required fields
     if (!email || !role || !status) {
@@ -32,32 +34,40 @@ export async function POST(request: Request) {
       return createApiResponse.internalError('NEXTAUTH_SECRET not configured');
     }
 
-    // Create a test JWT token
-    const testToken = sign(
-      {
-        user: {
-          email,
-          role,
-          status,
-          isEmailVerified: isEmailVerified ?? true,
-        },
-        exp: Math.floor(Date.now() / 1000) + 24 * 60 * 60, // 24 hours
+    const cookieName =
+      authConfig.cookies?.sessionToken?.name || 'next-auth.session-token';
+
+    const token = await encode({
+      token: {
+        sub: String(id || email),
+        email,
+        role,
+        status,
+        isEmailVerified: isEmailVerified ?? true,
+        firstName: firstName || 'Test',
+        lastName: lastName || 'User',
+        isActive: isActive ?? true,
+        userStatus: status,
+        createdAt: new Date().toISOString(),
+        dataFetchedAt: Date.now(),
       },
       secret,
-      { algorithm: 'HS256' }
-    );
+      maxAge: 24 * 60 * 60,
+      salt: cookieName,
+    });
 
-    // Set the token in a cookie
+    // Set the session token cookie used by NextAuth
     const cookieStore = await cookies();
-    cookieStore.set('auth-token', testToken, {
+    cookieStore.set(cookieName, token, {
       httpOnly: true,
-      secure: false, // Allow HTTP in development
+      secure: authConfig.cookies?.sessionToken?.options?.secure ?? false,
       sameSite: 'lax',
+      path: '/',
       maxAge: 24 * 60 * 60, // 24 hours
     });
 
     return createApiResponse.success(
-      { email, role, status, isEmailVerified },
+      { id: id || email, email, role, status, isEmailVerified },
       'Test user session created (development only)'
     );
   } catch (error) {
@@ -74,9 +84,12 @@ export async function DELETE() {
   }
   
   try {
+    const cookieName =
+      authConfig.cookies?.sessionToken?.name || 'next-auth.session-token';
+
     // Clear the test session
     const cookieStore = await cookies();
-    cookieStore.delete('auth-token');
+    cookieStore.delete(cookieName);
 
     return createApiResponse.success(null, 'Test user session cleared (development only)');
   } catch (error) {

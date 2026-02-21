@@ -17,18 +17,43 @@ export class TestAuthHelper {
    * Log in a test user using the actual login form
    */
   static async loginUser(page: Page, user: TestUser): Promise<void> {
-    // Navigate to login page
-    await page.goto('/login');
+    if (process.env.E2E_USE_TEST_AUTH === '1') {
+      const response = await page.request.post('/api/test-auth', {
+        data: {
+          id: user.email,
+          email: user.email,
+          role: user.role,
+          status: user.userStatus,
+          isEmailVerified: user.emailVerified,
+          firstName: user.firstName,
+          lastName: user.lastName,
+          isActive: user.isActive,
+        },
+      });
 
-    // Fill in login form
-    await page.fill('input[name="email"]', user.email);
-    await page.fill('input[name="password"]', user.password);
+      if (!response.ok()) {
+        const payload = await response.json().catch(() => ({}));
+        throw new Error(
+          `Test auth failed: ${response.status()} ${JSON.stringify(payload)}`
+        );
+      }
 
-    // Submit the form by clicking the submit button (not form.submit())
-    await page.click('button[type="submit"]');
+      // Navigate to dashboard to establish session
+      await page.goto('/dashboard');
+    } else {
+      // Navigate to login page
+      await page.goto('/login');
 
-    // Wait for the form submission to complete
-    await page.waitForLoadState('networkidle');
+      // Fill in login form
+      await page.fill('input[name="email"]', user.email);
+      await page.fill('input[name="password"]', user.password);
+
+      // Submit the form by clicking the submit button (not form.submit())
+      await page.click('button[type="submit"]');
+
+      // Wait for the form submission to complete
+      await page.waitForLoadState('networkidle');
+    }
 
     // Wait for either a redirect or an error message
     try {

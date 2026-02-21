@@ -12,11 +12,11 @@ This document is the single source of truth for test coverage across the app. It
 
 | Feature | UI Routes | API Routes | Critical Rules / Validations | Test Types | Status |
 | --- | --- | --- | --- | --- | --- |
-| Authentication entrypoints | `/login`, `/register`, `/logout`, `/logout/immediate` | `/api/auth/:...nextauth`, `/api/auth/register` | Password policy, email uniqueness, session creation | Unit, Integration, E2E | Not Started |
+| Authentication entrypoints | `/login`, `/register`, `/logout`, `/logout/immediate` | `/api/auth/:...nextauth`, `/api/auth/register` | Password policy, email uniqueness, session creation | Unit, Integration, E2E | In Progress |
 | Password reset | `/forgot-password`, `/reset-password` | `/api/auth/forgot-password`, `/api/auth/reset-password`, `/api/auth/validate-reset-token` | Token expiry, password policy, error handling | Unit, Integration, E2E | Not Started |
 | Email verification | `/verify-email`, `/check-email` | `/api/auth/verify-email` | Token validity, status updates, idempotency | Unit, Integration, E2E | Not Started |
-| Session refresh | (none) | `/api/auth/refresh-session` | Role status, refresh timing, error responses | Unit, Integration | Not Started |
-| Access gating | `/pending-approval`, `/unauthorized` | (none) | UserStatus transitions and redirects | Unit, E2E | Not Started |
+| Session refresh | (none) | `/api/auth/refresh-session` | Role status, refresh timing, error responses | Unit, Integration | In Progress |
+| Access gating | `/pending-approval`, `/unauthorized` | (none) | UserStatus transitions and redirects | Unit, E2E | In Progress |
 | Account profile | `/account` | `/api/users/profile`, `/api/users/change-password` | Profile updates, password change validation | Unit, Integration, E2E | Not Started |
 
 ## Admin & Users

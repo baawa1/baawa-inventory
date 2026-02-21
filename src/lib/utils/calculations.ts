@@ -106,6 +106,18 @@ export const validateSplitPayments = (
       .reduce((sum, payment) => sum + payment.amount, 0)
   );
 
+  if (nonDebtTotal + tolerance < roundedTotal) {
+    const hasDebtPayment = splitPayments.some(
+      payment => payment.method === 'debt'
+    );
+    if (!hasDebtPayment) {
+      return {
+        isValid: false,
+        error: 'Split payment total is less than the required amount',
+      };
+    }
+  }
+
   if (nonDebtTotal - roundedTotal > tolerance) {
     return {
       isValid: false,
