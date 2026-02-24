@@ -3,7 +3,6 @@ import { prisma } from '@/lib/db';
 import { withAuth, AuthenticatedRequest } from '@/lib/api-middleware';
 import { emailService } from '@/lib/email';
 import { z } from 'zod';
-import type { SplitPayment } from '@prisma/client';
 import { logger } from '@/lib/logger';
 import {
   normalizeNigerianPhone,
@@ -380,21 +379,34 @@ export const POST = withAuth(async function (request: AuthenticatedRequest) {
         willCreateTransaction: true,
       });
 
-      // Validate stock availability for all items BEFORE creating transaction
-      for (const item of validatedData.items) {
-        const product = await tx.product.findUnique({
-          where: { id: item.productId },
-          select: { name: true, stock: true, isService: true },
-        });
+      const itemsByProductId = new Map<number, { quantity: number }>();
+      validatedData.items.forEach(item => {
+        const current = itemsByProductId.get(item.productId);
+        if (current) {
+          current.quantity += item.quantity;
+        } else {
+          itemsByProductId.set(item.productId, { quantity: item.quantity });
+        }
+      });
 
+      const productIds = Array.from(itemsByProductId.keys());
+      const products = await tx.product.findMany({
+        where: { id: { in: productIds } },
+        select: { id: true, name: true, stock: true, isService: true },
+      });
+      const productMap = new Map(products.map(product => [product.id, product]));
+
+      // Validate stock availability for all items BEFORE creating transaction
+      for (const [productId, productData] of itemsByProductId.entries()) {
+        const product = productMap.get(productId);
         if (!product) {
-          throw new Error(`Product with ID ${item.productId} not found`);
+          throw new Error(`Product with ID ${productId} not found`);
         }
 
         // Check stock availability (skip for services)
-        if (!product.isService && product.stock < item.quantity) {
+        if (!product.isService && product.stock < productData.quantity) {
           throw new Error(
-            `Insufficient stock for ${product.name}. Available: ${product.stock}, Requested: ${item.quantity}`
+            `Insufficient stock for ${product.name}. Available: ${product.stock}, Requested: ${productData.quantity}`
           );
         }
       }
@@ -415,64 +427,73 @@ export const POST = withAuth(async function (request: AuthenticatedRequest) {
         },
       });
 
-      // Create sales items and update product stock
-      const salesItems = await Promise.all(
-        validatedData.items.map(async item => {
-          // Get product details for stock update
-          const product = await tx.product.findUnique({
-            where: { id: item.productId },
-            select: { name: true, isService: true, stock: true },
-          });
+      await tx.salesItem.createMany({
+        data: validatedData.items.map(item => ({
+          quantity: item.quantity,
+          unit_price: item.price,
+          total_price: item.total,
+          discount_amount: 0, // Item-level discounts handled at transaction level
+          transaction_id: salesTransaction.id,
+          product_id: item.productId,
+          coupon_id: item.couponId ?? null,
+        })),
+      });
 
-          // Create sales item
-          const salesItem = await tx.salesItem.create({
+      const stockUpdates: Array<Promise<unknown>> = [];
+      const stockTransactions: Array<{
+        productId: number;
+        quantity: number;
+        type: 'SALE';
+        referenceType: string;
+        referenceId: number;
+        reason: string;
+        userId: number;
+        previousStock: number;
+        newStock: number;
+      }> = [];
+
+      itemsByProductId.forEach((itemData, productId) => {
+        const product = productMap.get(productId);
+        if (!product || product.isService) {
+          return;
+        }
+
+        const previousStock = product.stock ?? 0;
+        const newStock = previousStock - itemData.quantity;
+
+        stockUpdates.push(
+          tx.product.update({
+            where: { id: productId },
             data: {
-              quantity: item.quantity,
-              unit_price: item.price,
-              total_price: item.total,
-              discount_amount: 0, // Item-level discounts handled at transaction level
-              transaction_id: salesTransaction.id,
-              product_id: item.productId,
-              coupon_id: item.couponId,
+              stock: {
+                decrement: itemData.quantity,
+              },
             },
-          });
+          })
+        );
 
-          // Update product stock and log transaction (skip for services)
-          if (!product?.isService) {
-            const previousStock = product?.stock || 0;
-            const newStock = previousStock - item.quantity;
+        stockTransactions.push({
+          productId,
+          quantity: -itemData.quantity, // Negative for sales
+          type: 'SALE',
+          referenceType: 'SalesTransaction',
+          referenceId: salesTransaction.id,
+          reason: `Sale: ${salesTransaction.transaction_number}`,
+          userId: parseInt(request.user.id),
+          previousStock,
+          newStock,
+        });
+      });
 
-            await tx.product.update({
-              where: { id: item.productId },
-              data: {
-                stock: {
-                  decrement: item.quantity,
-                },
-              },
-            });
+      if (stockUpdates.length > 0) {
+        await Promise.all(stockUpdates);
+      }
 
-            // Log stock transaction
-            await tx.stockTransaction.create({
-              data: {
-                productId: item.productId,
-                quantity: -item.quantity, // Negative for sales
-                type: 'SALE',
-                referenceType: 'SalesTransaction',
-                referenceId: salesTransaction.id,
-                reason: `Sale: ${salesTransaction.transaction_number}`,
-                userId: parseInt(request.user.id),
-                previousStock,
-                newStock,
-              },
-            });
-          }
-
-          return {
-            ...salesItem,
-            productName: product?.name || 'Unknown Product',
-          };
-        })
-      );
+      if (stockTransactions.length > 0) {
+        await tx.stockTransaction.createMany({
+          data: stockTransactions,
+        });
+      }
 
       // Increment coupon usage only once if any item has a coupon
       const hasCoupon = validatedData.items.some(item => item.couponId);
@@ -493,19 +514,14 @@ export const POST = withAuth(async function (request: AuthenticatedRequest) {
       }
 
       // Create split payments if this is a split payment transaction
-      let splitPayments: SplitPayment[] = [];
-      if (isSplitPayment && validatedData.splitPayments) {
-        splitPayments = await Promise.all(
-          splitPaymentsInput.map(async payment => {
-            return await tx.splitPayment.create({
-              data: {
-                amount: payment.amount,
-                payment_method: payment.method,
-                transaction_id: salesTransaction.id,
-              },
-            });
-          })
-        );
+      if (isSplitPayment && splitPaymentsInput.length > 0) {
+        await tx.splitPayment.createMany({
+          data: splitPaymentsInput.map(payment => ({
+            amount: payment.amount,
+            payment_method: payment.method,
+            transaction_id: salesTransaction.id,
+          })),
+        });
       }
 
       // Record initial debt deposit if provided
@@ -577,24 +593,19 @@ export const POST = withAuth(async function (request: AuthenticatedRequest) {
       }
 
       // Create transaction fees if any
-      const transactionFees = await Promise.all(
-        (validatedData.fees || []).map(async (fee: any) => {
-          return await (tx as any).transactionFee.create({
-            data: {
-              transactionId: salesTransaction.id,
-              feeType: fee.feeType,
-              description: fee.description,
-              amount: fee.amount,
-            },
-          });
-        })
-      );
+      if (validatedData.fees && validatedData.fees.length > 0) {
+        await (tx as any).transactionFee.createMany({
+          data: validatedData.fees.map((fee: any) => ({
+            transactionId: salesTransaction.id,
+            feeType: fee.feeType,
+            description: fee.description,
+            amount: fee.amount,
+          })),
+        });
+      }
 
       return {
         salesTransaction,
-        salesItems,
-        splitPayments,
-        transactionFees,
         transactionPayments,
       };
     });
@@ -602,12 +613,14 @@ export const POST = withAuth(async function (request: AuthenticatedRequest) {
     // Automatic email receipts disabled; manual sending only.
     const emailSent = false;
 
-    const totalSplitPaid = result.splitPayments?.reduce((sum, payment) => {
-      if (payment.payment_method === 'debt') {
-        return sum;
-      }
-      return sum + Number(payment.amount);
-    }, 0) || 0;
+    const totalSplitPaid = isSplitPayment
+      ? splitPaymentsInput.reduce((sum, payment) => {
+          if (payment.method === 'debt') {
+            return sum;
+          }
+          return sum + Number(payment.amount);
+        }, 0)
+      : 0;
     const totalLedgerPaid = result.transactionPayments?.reduce(
       (sum, payment) => sum + Number(payment.amount),
       0

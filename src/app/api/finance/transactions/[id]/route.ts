@@ -2,6 +2,7 @@ import { withAuth, AuthenticatedRequest } from '@/lib/api-middleware';
 import { hasPermission } from '@/lib/auth/roles';
 import { prisma } from '@/lib/db';
 import { createApiResponse } from '@/lib/api-response';
+import { z } from 'zod';
 
 // GET /api/finance/transactions/[id] - Get specific financial transaction
 export const GET = withAuth(
@@ -102,6 +103,12 @@ export const PUT = withAuth(
         id: transactionId,
       };
 
+      if (validatedData.id !== transactionId) {
+        return createApiResponse.validationError(
+          'Transaction ID mismatch'
+        );
+      }
+
       // MANAGER can only update their own transactions
       if (request.user.role === 'MANAGER') {
         whereClause.createdBy = parseInt(request.user.id);
@@ -119,6 +126,8 @@ export const PUT = withAuth(
       if (!existingTransaction) {
         return createApiResponse.notFound('Financial transaction not found');
       }
+
+      const effectiveType = validatedData.type ?? existingTransaction.type;
 
       // Check if transaction can be updated (not approved/rejected/cancelled)
       if (
@@ -171,7 +180,7 @@ export const PUT = withAuth(
         });
 
         // Update expense details if provided
-        if (validatedData.type === 'EXPENSE' && validatedData.expenseType) {
+        if (effectiveType === 'EXPENSE' && validatedData.expenseType) {
           await tx.expenseDetail.upsert({
             where: { transactionId },
             update: {
@@ -187,7 +196,7 @@ export const PUT = withAuth(
         }
 
         // Update income details if provided
-        if (validatedData.type === 'INCOME' && validatedData.incomeSource) {
+        if (effectiveType === 'INCOME' && validatedData.incomeSource) {
           await tx.incomeDetail.upsert({
             where: { transactionId },
             update: {
@@ -236,6 +245,12 @@ export const PUT = withAuth(
       );
     } catch (error) {
       console.error('Error updating financial transaction:', error);
+      if (error instanceof z.ZodError) {
+        return createApiResponse.validationError(
+          'Invalid request data',
+          error.errors
+        );
+      }
       return createApiResponse.internalError('Failed to update transaction');
     }
   }

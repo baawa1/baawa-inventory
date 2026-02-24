@@ -30,7 +30,7 @@ import {
   IconX,
   IconFilter,
 } from '@tabler/icons-react';
-import { useQuery } from '@tanstack/react-query';
+import { useQuery, useQueryClient } from '@tanstack/react-query';
 import { toast } from 'sonner';
 import { usePOSErrorHandler } from './POSErrorBoundary';
 import { formatCurrency } from '@/lib/utils';
@@ -51,6 +51,8 @@ interface Product {
   brand: string;
   description?: string;
   images?: any[]; // Array of image objects or strings
+  primaryImageUrl?: string | null;
+  updatedAt?: string | Date | null;
 }
 
 interface ProductGridProps {
@@ -68,17 +70,53 @@ export function ProductGrid({
   const [selectedBrand, setSelectedBrand] = useState<string>('all');
   const [isCameraOpen, setIsCameraOpen] = useState(false);
   const videoRef = useRef<HTMLVideoElement>(null);
+  const queryClient = useQueryClient();
+  const etagRef = useRef<string | null>(null);
 
   // Fetch all products at once
   const posProductsQueryKey = queryKeys.pos.products();
   const { data, isLoading, error } = useQuery({
     queryKey: posProductsQueryKey,
     queryFn: async () => {
-      const response = await fetch(`/api/pos/products?limit=0`);
+      const headers: HeadersInit = {};
+      if (etagRef.current) {
+        headers['If-None-Match'] = etagRef.current;
+      }
+
+      const response = await fetch(`/api/pos/products?limit=0&fields=pos`, {
+        headers,
+      });
+
+      if (response.status === 304) {
+        const cached = queryClient.getQueryData(posProductsQueryKey);
+        if (cached) {
+          return cached;
+        }
+
+        const fallbackResponse = await fetch(
+          `/api/pos/products?limit=0&fields=pos`
+        );
+        if (!fallbackResponse.ok) {
+          throw new Error('Failed to fetch products');
+        }
+        const fallbackPayload = await fallbackResponse.json();
+        const fallbackEtag = fallbackResponse.headers.get('ETag');
+        if (fallbackEtag) {
+          etagRef.current = fallbackEtag;
+        }
+        return fallbackPayload;
+      }
+
       if (!response.ok) {
         throw new Error('Failed to fetch products');
       }
-      return response.json();
+
+      const payload = await response.json();
+      const responseEtag = response.headers.get('ETag');
+      if (responseEtag) {
+        etagRef.current = responseEtag;
+      }
+      return payload;
     },
     staleTime: CACHE_DURATIONS.INFINITE,
     gcTime: CACHE_DURATIONS.PRODUCTS_LONG,
@@ -88,7 +126,31 @@ export function ProductGrid({
   });
 
   // Extract products from API response - memoized to prevent unnecessary re-renders
-  const products = useMemo(() => data?.data || [], [data?.data]);
+  const products = useMemo(() => {
+    const payload = data as any;
+    const rawProducts = Array.isArray(payload?.data)
+      ? payload.data
+      : Array.isArray(payload?.products)
+        ? payload.products
+        : Array.isArray(payload)
+          ? payload
+          : [];
+
+    return rawProducts.map((product: any) => ({
+      id: product.id,
+      name: product.name,
+      sku: product.sku,
+      barcode: product.barcode,
+      price: product.price,
+      stock: product.stock,
+      category: product.categoryName || product.category || 'Uncategorized',
+      brand: product.brandName || product.brand || 'No Brand',
+      description: product.description,
+      images: product.images,
+      primaryImageUrl: product.primaryImageUrl || null,
+      updatedAt: product.updatedAt || null,
+    })) as Product[];
+  }, [data]);
 
   // Get unique categories and brands for filters
   const categories = useMemo(() => {
@@ -200,6 +262,10 @@ export function ProductGrid({
 
   // Helper function to get the first/primary image from product images
   const getProductImage = (product: Product): string | null => {
+    if (product.primaryImageUrl) {
+      return product.primaryImageUrl;
+    }
+
     if (
       !product.images ||
       !Array.isArray(product.images) ||

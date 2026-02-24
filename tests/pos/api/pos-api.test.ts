@@ -106,6 +106,59 @@ test.describe('POS API Tests', () => {
 
       console.log('✅ Status filtering works correctly');
     });
+
+    test('should return POS fields with ETag for full product list', async ({
+      request,
+    }) => {
+      // Login as staff
+      const loginResponse = await request.post('/api/auth/signin', {
+        data: {
+          email: APPROVED_STAFF.email,
+          password: APPROVED_STAFF.password,
+        },
+      });
+
+      expect(loginResponse.ok()).toBeTruthy();
+
+      const productsResponse = await request.get(
+        '/api/pos/products?limit=0&fields=pos'
+      );
+
+      expect(productsResponse.ok()).toBeTruthy();
+
+      const etag = productsResponse.headers()['etag'];
+      expect(etag).toBeTruthy();
+
+      const productsData = await productsResponse.json();
+      expect(productsData).toHaveProperty('success', true);
+      expect(Array.isArray(productsData.data)).toBeTruthy();
+
+      if (productsData.data.length > 0) {
+        const product = productsData.data[0];
+        expect(product).toHaveProperty('id');
+        expect(product).toHaveProperty('name');
+        expect(product).toHaveProperty('sku');
+        expect(product).toHaveProperty('price');
+        expect(product).toHaveProperty('stock');
+        expect(product).toHaveProperty('categoryName');
+        expect(product).toHaveProperty('brandName');
+        expect(product).toHaveProperty('primaryImageUrl');
+        expect(product).toHaveProperty('updatedAt');
+        expect(product).not.toHaveProperty('description');
+      }
+
+      const notModifiedResponse = await request.get(
+        '/api/pos/products?limit=0&fields=pos',
+        {
+          headers: {
+            'If-None-Match': etag,
+          },
+        }
+      );
+
+      expect(notModifiedResponse.status()).toBe(304);
+      console.log('✅ POS product list supports ETag');
+    });
   });
 
   test.describe('Barcode Lookup API', () => {
@@ -187,6 +240,83 @@ test.describe('POS API Tests', () => {
       expect(errorData).toHaveProperty('error');
 
       console.log('✅ Non-existent barcode returns 404');
+    });
+  });
+
+  test.describe('Customers API', () => {
+    test('should return basic fields for customer search by default', async ({
+      request,
+    }) => {
+      const loginResponse = await request.post('/api/auth/signin', {
+        data: {
+          email: APPROVED_STAFF.email,
+          password: APPROVED_STAFF.password,
+        },
+      });
+
+      expect(loginResponse.ok()).toBeTruthy();
+
+      const searchResponse = await request.get(
+        '/api/pos/customers?search=test'
+      );
+
+      expect(searchResponse.ok()).toBeTruthy();
+
+      const searchData = await searchResponse.json();
+      expect(Array.isArray(searchData)).toBeTruthy();
+
+      if (searchData.length > 0) {
+        const customer = searchData[0];
+        expect(customer).toHaveProperty('id');
+        expect(customer).toHaveProperty('name');
+        expect(customer).toHaveProperty('email');
+        expect(customer).toHaveProperty('phone');
+        expect(customer).not.toHaveProperty('totalSpent');
+      }
+
+      console.log('✅ Customer search returns basic fields by default');
+    });
+
+    test('should cap check-unique results and return minimal fields', async ({
+      request,
+    }) => {
+      const loginResponse = await request.post('/api/auth/signin', {
+        data: {
+          email: APPROVED_STAFF.email,
+          password: APPROVED_STAFF.password,
+        },
+      });
+
+      expect(loginResponse.ok()).toBeTruthy();
+
+      const cookies = loginResponse.headers()['set-cookie'];
+
+      const uniqueResponse = await request.post(
+        '/api/pos/customers/check-unique',
+        {
+          data: { email: APPROVED_STAFF.email },
+          headers: {
+            'Content-Type': 'application/json',
+            ...(cookies && { Cookie: cookies }),
+          },
+        }
+      );
+
+      expect(uniqueResponse.ok()).toBeTruthy();
+
+      const uniqueData = await uniqueResponse.json();
+      expect(Array.isArray(uniqueData.customers)).toBeTruthy();
+      expect(uniqueData.customers.length).toBeLessThanOrEqual(5);
+
+      if (uniqueData.customers.length > 0) {
+        const customer = uniqueData.customers[0];
+        expect(customer).toHaveProperty('id');
+        expect(customer).toHaveProperty('name');
+        expect(customer).toHaveProperty('email');
+        expect(customer).not.toHaveProperty('totalSpent');
+      }
+
+      console.log('✅ Check-unique returns limited basic matches');
     });
   });
 

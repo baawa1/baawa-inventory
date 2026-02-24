@@ -29,7 +29,14 @@ export async function GET(request: NextRequest) {
     // Get search query from URL parameters
     const { searchParams } = new URL(request.url);
     const searchQuery = searchParams.get('search')?.trim();
-    const limit = parseInt(searchParams.get('limit') || '100');
+    const defaultLimit = searchQuery ? 20 : 100;
+    const limit = parseInt(
+      searchParams.get('limit') || defaultLimit.toString(),
+      10
+    );
+    const fieldsParam = searchParams.get('fields')?.trim();
+    const fields = fieldsParam || (searchQuery ? 'basic' : 'full');
+    const useBasicFields = fields === 'basic';
 
     // If no search query, return all active customers (limited by limit)
     if (!searchQuery) {
@@ -38,42 +45,63 @@ export async function GET(request: NextRequest) {
           where: {
             isActive: true,
           },
-          select: {
-            id: true,
-            name: true,
-            email: true,
-            phone: true,
-            city: true,
-            state: true,
-            postalCode: true,
-            country: true,
-            customerType: true,
-            billingAddress: true,
-            shippingAddress: true,
-            notes: true,
-            createdAt: true,
-            salesTransactions: {
-              where: {
-                payment_status: {
-                  in: SUCCESSFUL_PAYMENT_STATUSES,
+          select: useBasicFields
+            ? {
+                id: true,
+                name: true,
+                email: true,
+                phone: true,
+              }
+            : {
+                id: true,
+                name: true,
+                email: true,
+                phone: true,
+                city: true,
+                state: true,
+                postalCode: true,
+                country: true,
+                customerType: true,
+                billingAddress: true,
+                shippingAddress: true,
+                notes: true,
+                createdAt: true,
+                salesTransactions: {
+                  where: {
+                    payment_status: {
+                      in: SUCCESSFUL_PAYMENT_STATUSES,
+                    },
+                  },
+                  select: {
+                    id: true,
+                    total_amount: true,
+                    created_at: true,
+                    payment_status: true,
+                  },
+                  orderBy: {
+                    created_at: 'desc',
+                  },
                 },
               },
-              select: {
-                id: true,
-                total_amount: true,
-                created_at: true,
-                payment_status: true,
-              },
-              orderBy: {
-                created_at: 'desc',
-              },
-            },
-          },
           take: limit,
           orderBy: {
             createdAt: 'desc',
           },
         });
+
+        if (useBasicFields) {
+          const allCustomers = customers.map((customer: any, index: number) => ({
+            id: customer.id.toString(),
+            name: customer.name || 'Unknown Customer',
+            email: customer.email || '',
+            phone: customer.phone || '',
+            type: 'customer',
+            priority: 1,
+            rank: index + 1,
+          }));
+
+          return NextResponse.json(allCustomers);
+        }
 
         // Transform customer data with proper calculations
         const allCustomers = customers.map((customer: any, index: number) => {
@@ -111,6 +139,7 @@ export async function GET(request: NextRequest) {
             totalOrders: totalOrders,
             averageOrderValue: averageOrderValue,
             rank: index + 1,
+            type: 'customer',
           };
         });
 
@@ -237,37 +266,44 @@ export async function GET(request: NextRequest) {
               },
             ],
           },
-          select: {
-            id: true,
-            name: true,
-            email: true,
-            phone: true,
-            city: true,
-            state: true,
-            postalCode: true,
-            country: true,
-            customerType: true,
-            billingAddress: true,
-            shippingAddress: true,
-            notes: true,
-            createdAt: true,
-            salesTransactions: {
-              where: {
-                payment_status: {
-                  in: SUCCESSFUL_PAYMENT_STATUSES,
+          select: useBasicFields
+            ? {
+                id: true,
+                name: true,
+                email: true,
+                phone: true,
+              }
+            : {
+                id: true,
+                name: true,
+                email: true,
+                phone: true,
+                city: true,
+                state: true,
+                postalCode: true,
+                country: true,
+                customerType: true,
+                billingAddress: true,
+                shippingAddress: true,
+                notes: true,
+                createdAt: true,
+                salesTransactions: {
+                  where: {
+                    payment_status: {
+                      in: SUCCESSFUL_PAYMENT_STATUSES,
+                    },
+                  },
+                  select: {
+                    id: true,
+                    total_amount: true,
+                    created_at: true,
+                    payment_status: true,
+                  },
+                  orderBy: {
+                    created_at: 'desc',
+                  },
                 },
               },
-              select: {
-                id: true,
-                total_amount: true,
-                created_at: true,
-                payment_status: true,
-              },
-              orderBy: {
-                created_at: 'desc',
-              },
-            },
-          },
           take: limit,
           orderBy: {
             createdAt: 'desc',
@@ -275,7 +311,20 @@ export async function GET(request: NextRequest) {
         });
 
         // Transform customer data with proper calculations
-        customers.forEach((customer: any) => {
+        customers.forEach((customer: any, index: number) => {
+          if (useBasicFields) {
+            results.push({
+              id: customer.id.toString(),
+              name: customer.name || 'Unknown Customer',
+              email: customer.email || '',
+              phone: customer.phone || '',
+              priority: 1,
+              rank: index + 1,
+              type: 'customer',
+            });
+            return;
+          }
+
           const successfulTransactions = customer.salesTransactions || [];
           const totalSpent = successfulTransactions.reduce(
             (sum: number, t: any) => sum + Number(t.total_amount || 0),
@@ -309,6 +358,8 @@ export async function GET(request: NextRequest) {
             totalSpent: totalSpent,
             totalOrders: totalOrders,
             averageOrderValue: averageOrderValue,
+            rank: index + 1,
+            type: 'customer',
           });
         });
       } catch (error) {
@@ -402,27 +453,44 @@ export async function GET(request: NextRequest) {
       });
 
       // Transform user data to match customer format
-      const userData = users.map((user, index) => ({
-        id: `user-${user.id}`,
-        name: `${user.firstName} ${user.lastName}`.trim(),
-        email: user.email,
-        phone: user.phone || '',
-        city: '',
-        state: '',
-        postalCode: '',
-        country: 'Nigeria',
-        customerType: 'individual',
-        billingAddress: '',
-        shippingAddress: '',
-        notes: '',
-        totalSpent: 0, // Users don't have spending data
-        totalOrders: 0, // Users don't have order data
-        lastPurchase: user.createdAt?.toISOString() || new Date().toISOString(),
-        averageOrderValue: 0,
-        rank: results.length + index + 1,
-        type: 'user', // Mark as user
-        role: user.role, // Include role for users
-      }));
+      const userData = users.map((user, index) => {
+        if (useBasicFields) {
+          return {
+            id: `user-${user.id}`,
+            name: `${user.firstName} ${user.lastName}`.trim(),
+            email: user.email,
+            phone: user.phone || '',
+            rank: results.length + index + 1,
+            type: 'user',
+            role: user.role,
+            priority: 2,
+          };
+        }
+
+        return {
+          id: `user-${user.id}`,
+          name: `${user.firstName} ${user.lastName}`.trim(),
+          email: user.email,
+          phone: user.phone || '',
+          city: '',
+          state: '',
+          postalCode: '',
+          country: 'Nigeria',
+          customerType: 'individual',
+          billingAddress: '',
+          shippingAddress: '',
+          notes: '',
+          totalSpent: 0, // Users don't have spending data
+          totalOrders: 0, // Users don't have order data
+          lastPurchase:
+            user.createdAt?.toISOString() || new Date().toISOString(),
+          averageOrderValue: 0,
+          rank: results.length + index + 1,
+          type: 'user', // Mark as user
+          role: user.role, // Include role for users
+          priority: 2,
+        };
+      });
 
       results.push(...userData);
     }

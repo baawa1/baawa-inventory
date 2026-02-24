@@ -21,6 +21,7 @@ const validateDateRange = (startDate: string, endDate: string) => {
 export const baseTransactionSchema = z.object({
   type: z.enum([FINANCIAL_TYPES.INCOME, FINANCIAL_TYPES.EXPENSE]),
   amount: z
+    .coerce
     .number()
     .min(0.01, 'Amount must be greater than 0')
     .max(999999999.99, 'Amount is too large'),
@@ -64,9 +65,10 @@ export const createTransactionSchema = z.discriminatedUnion('type', [
 
 // Update transaction schema (all fields optional)
 export const updateTransactionSchema = z.object({
-  id: z.number().positive('Invalid transaction ID'),
+  id: z.coerce.number().positive('Invalid transaction ID'),
   type: z.enum([FINANCIAL_TYPES.INCOME, FINANCIAL_TYPES.EXPENSE]).optional(),
   amount: z
+    .coerce
     .number()
     .min(0.01, 'Amount must be greater than 0')
     .max(999999999.99, 'Amount is too large')

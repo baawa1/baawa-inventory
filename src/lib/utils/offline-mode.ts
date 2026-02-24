@@ -351,24 +351,32 @@ class OfflineModeManager {
     try {
       // Debug logging removed for production
 
-      const response = await fetch('/api/pos/products?limit=0');
+      const response = await fetch('/api/pos/products?limit=0&fields=pos');
       if (!response.ok) {
         throw new Error('Failed to fetch products');
       }
 
-      const data = await response.json();
-      const products: OfflineProduct[] = data.products.map((p: any) => ({
+      const payload = await response.json();
+      const rawProducts = Array.isArray(payload?.data)
+        ? payload.data
+        : Array.isArray(payload?.products)
+          ? payload.products
+          : Array.isArray(payload)
+            ? payload
+            : [];
+
+      const products: OfflineProduct[] = rawProducts.map((p: any) => ({
         id: p.id,
         name: p.name,
         sku: p.sku,
         barcode: p.barcode,
         price: p.price,
         stock: p.stock,
-        category: p.category,
-        brand: p.brand,
+        category: p.categoryName || p.category || 'Uncategorized',
+        brand: p.brandName || p.brand || 'No Brand',
         description: p.description,
-        status: p.status,
-        lastUpdated: new Date(),
+        status: p.status || 'ACTIVE',
+        lastUpdated: p.updatedAt ? new Date(p.updatedAt) : new Date(),
       }));
 
       await offlineStorage.cacheProducts(products);

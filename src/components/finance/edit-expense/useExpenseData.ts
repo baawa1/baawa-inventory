@@ -25,7 +25,11 @@ export function useExpenseData(expenseId: string) {
       }
       const data = await response.json();
       // API returns { success: true, data: transaction, message?: string }
-      return data.data;
+      const amount = Number(data.data.amount);
+      return {
+        ...data.data,
+        amount: Number.isFinite(amount) ? amount : 0,
+      };
     },
     enabled: !!expenseId,
   });

@@ -1,6 +1,6 @@
 'use client';
 
-import React, { useState, useEffect, useCallback } from 'react';
+import React, { useState, useEffect, useCallback, useRef } from 'react';
 import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -105,14 +105,16 @@ const STEPS = [
 // API function to fetch customers
 async function fetchCustomers({
   queryKey,
+  signal,
 }: {
   queryKey: string[];
+  signal?: AbortSignal;
 }): Promise<Customer[]> {
   const searchQuery = queryKey[1]; // The search term is the second element in the query key
   const url = searchQuery
-    ? `/api/pos/customers?search=${encodeURIComponent(searchQuery)}`
-    : '/api/pos/customers';
-  const response = await fetch(url);
+    ? `/api/pos/customers?search=${encodeURIComponent(searchQuery)}&fields=basic&limit=20`
+    : '/api/pos/customers?fields=basic&limit=20';
+  const response = await fetch(url, { signal });
   if (!response.ok) {
     throw new Error('Failed to fetch customers');
   }
@@ -1079,6 +1081,7 @@ function CustomerInfoStep({
 }: CustomerInfoStepProps) {
   const [showCustomerSearch, setShowCustomerSearch] = useState(false);
   const [searchTerm, setSearchTerm] = useState('');
+  const [debouncedSearchTerm, setDebouncedSearchTerm] = useState('');
   const [selectedCustomer, setSelectedCustomer] = useState<any>(null);
   const [emailValidation, setEmailValidation] = useState<{
     checking: boolean;
@@ -1092,59 +1095,166 @@ function CustomerInfoStep({
   }>({ checking: false, exists: false, message: '' });
   const [autoSearchResults, setAutoSearchResults] = useState<any[]>([]);
   const [showAutoSearch, setShowAutoSearch] = useState(false);
+  const phoneSearchTimeoutRef = useRef<ReturnType<typeof setTimeout> | null>(
+    null
+  );
+  const emailSearchTimeoutRef = useRef<ReturnType<typeof setTimeout> | null>(
+    null
+  );
+  const phoneUniqueTimeoutRef = useRef<ReturnType<typeof setTimeout> | null>(
+    null
+  );
+  const emailUniqueTimeoutRef = useRef<ReturnType<typeof setTimeout> | null>(
+    null
+  );
+  const phoneSearchAbortRef = useRef<AbortController | null>(null);
+  const emailSearchAbortRef = useRef<AbortController | null>(null);
+  const phoneUniqueAbortRef = useRef<AbortController | null>(null);
+  const emailUniqueAbortRef = useRef<AbortController | null>(null);
+  const lastPhoneSearchRef = useRef('');
+  const lastEmailSearchRef = useRef('');
+  const lastPhoneUniqueRef = useRef('');
+  const lastEmailUniqueRef = useRef('');
 
   const {
     data: customers = [],
     isLoading: customersLoading,
     error: customersError,
   } = useQuery({
-    queryKey: ['customers', searchTerm],
+    queryKey: ['customers', debouncedSearchTerm],
     queryFn: fetchCustomers,
-    enabled: showCustomerSearch && searchTerm.length > 0,
+    enabled: showCustomerSearch && debouncedSearchTerm.length > 0,
   });
 
-  // Auto-search for phone numbers
-  const autoSearchPhone = async (phone: string) => {
+  useEffect(() => {
+    const handle = setTimeout(() => {
+      setDebouncedSearchTerm(searchTerm.trim());
+    }, 300);
+
+    return () => clearTimeout(handle);
+  }, [searchTerm]);
+
+  useEffect(() => {
+    return () => {
+      if (phoneSearchTimeoutRef.current) {
+        clearTimeout(phoneSearchTimeoutRef.current);
+      }
+      if (emailSearchTimeoutRef.current) {
+        clearTimeout(emailSearchTimeoutRef.current);
+      }
+      if (phoneUniqueTimeoutRef.current) {
+        clearTimeout(phoneUniqueTimeoutRef.current);
+      }
+      if (emailUniqueTimeoutRef.current) {
+        clearTimeout(emailUniqueTimeoutRef.current);
+      }
+      phoneSearchAbortRef.current?.abort();
+      emailSearchAbortRef.current?.abort();
+      phoneUniqueAbortRef.current?.abort();
+      emailUniqueAbortRef.current?.abort();
+    };
+  }, []);
+
+  const runAutoSearchPhone = async (phone: string) => {
+    const trimmedPhone = phone.trim();
+    if (!shouldSearchPhone(trimmedPhone)) {
+      setAutoSearchResults([]);
+      setShowAutoSearch(false);
+      return;
+    }
+
+    if (trimmedPhone === lastPhoneSearchRef.current) {
+      return;
+    }
+
+    lastPhoneSearchRef.current = trimmedPhone;
+    phoneSearchAbortRef.current?.abort();
+    const controller = new AbortController();
+    phoneSearchAbortRef.current = controller;
+
+    try {
+      const response = await fetch(
+        `/api/pos/customers?search=${encodeURIComponent(trimmedPhone)}&fields=basic&limit=20`,
+        { signal: controller.signal }
+      );
+      if (response.ok) {
+        const results = await response.json();
+        setAutoSearchResults(results);
+        setShowAutoSearch(results.length > 0);
+      }
+    } catch (error) {
+      if (error instanceof DOMException && error.name === 'AbortError') {
+        return;
+      }
+      console.error('Auto-search error:', error);
+    }
+  };
+
+  const runAutoSearchEmail = async (email: string) => {
+    const trimmedEmail = email.trim();
+    if (!shouldSearchEmail(trimmedEmail)) {
+      setAutoSearchResults([]);
+      setShowAutoSearch(false);
+      return;
+    }
+
+    if (trimmedEmail === lastEmailSearchRef.current) {
+      return;
+    }
+
+    lastEmailSearchRef.current = trimmedEmail;
+    emailSearchAbortRef.current?.abort();
+    const controller = new AbortController();
+    emailSearchAbortRef.current = controller;
+
+    try {
+      const response = await fetch(
+        `/api/pos/customers?search=${encodeURIComponent(trimmedEmail)}&fields=basic&limit=20`,
+        { signal: controller.signal }
+      );
+      if (response.ok) {
+        const results = await response.json();
+        setAutoSearchResults(results);
+        setShowAutoSearch(results.length > 0);
+      }
+    } catch (error) {
+      if (error instanceof DOMException && error.name === 'AbortError') {
+        return;
+      }
+      console.error('Auto-search error:', error);
+    }
+  };
+
+  const scheduleAutoSearchPhone = (phone: string) => {
+    if (phoneSearchTimeoutRef.current) {
+      clearTimeout(phoneSearchTimeoutRef.current);
+    }
+
     if (!shouldSearchPhone(phone)) {
       setAutoSearchResults([]);
       setShowAutoSearch(false);
       return;
     }
 
-    try {
-      const response = await fetch(
-        `/api/pos/customers?search=${encodeURIComponent(phone)}`
-      );
-      if (response.ok) {
-        const results = await response.json();
-        setAutoSearchResults(results);
-        setShowAutoSearch(results.length > 0);
-      }
-    } catch (error) {
-      console.error('Auto-search error:', error);
-    }
+    phoneSearchTimeoutRef.current = setTimeout(() => {
+      void runAutoSearchPhone(phone);
+    }, 300);
   };
 
-  // Auto-search for emails
-  const autoSearchEmail = async (email: string) => {
+  const scheduleAutoSearchEmail = (email: string) => {
+    if (emailSearchTimeoutRef.current) {
+      clearTimeout(emailSearchTimeoutRef.current);
+    }
+
     if (!shouldSearchEmail(email)) {
       setAutoSearchResults([]);
       setShowAutoSearch(false);
       return;
     }
 
-    try {
-      const response = await fetch(
-        `/api/pos/customers?search=${encodeURIComponent(email)}`
-      );
-      if (response.ok) {
-        const results = await response.json();
-        setAutoSearchResults(results);
-        setShowAutoSearch(results.length > 0);
-      }
-    } catch (error) {
-      console.error('Auto-search error:', error);
-    }
+    emailSearchTimeoutRef.current = setTimeout(() => {
+      void runAutoSearchEmail(email);
+    }, 300);
   };
 
   const selectCustomer = (customer: Customer) => {
@@ -1177,19 +1287,28 @@ function CustomerInfoStep({
   };
 
   // Function to check email uniqueness
-  const checkEmailUniqueness = async (email: string) => {
+  const runCheckEmailUniqueness = async (email: string) => {
     if (!email || email.length < 3) {
       setEmailValidation({ checking: false, exists: false, message: '' });
       return;
     }
 
+    if (email === lastEmailUniqueRef.current) {
+      return;
+    }
+
+    lastEmailUniqueRef.current = email;
     setEmailValidation({ checking: true, exists: false, message: '' });
+    emailUniqueAbortRef.current?.abort();
+    const controller = new AbortController();
+    emailUniqueAbortRef.current = controller;
 
     try {
       const response = await fetch('/api/pos/customers/check-unique', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ email }),
+        signal: controller.signal,
       });
 
       const data = await response.json();
@@ -1213,7 +1332,10 @@ function CustomerInfoStep({
           message: 'Failed to check email',
         });
       }
-    } catch (_error) {
+    } catch (error) {
+      if (error instanceof DOMException && error.name === 'AbortError') {
+        return;
+      }
       setEmailValidation({
         checking: false,
         exists: false,
@@ -1222,20 +1344,48 @@ function CustomerInfoStep({
     }
   };
 
+  const scheduleEmailUniquenessCheck = (
+    email: string,
+    immediate: boolean = false
+  ) => {
+    if (emailUniqueTimeoutRef.current) {
+      clearTimeout(emailUniqueTimeoutRef.current);
+    }
+
+    if (!email || email.length < 3) {
+      setEmailValidation({ checking: false, exists: false, message: '' });
+      return;
+    }
+
+    const delay = immediate ? 0 : 500;
+    emailUniqueTimeoutRef.current = setTimeout(() => {
+      void runCheckEmailUniqueness(email);
+    }, delay);
+  };
+
   // Function to check phone uniqueness
-  const checkPhoneUniqueness = async (phone: string) => {
+  const runCheckPhoneUniqueness = async (phone: string) => {
     if (!phone || phone.length < 5) {
       setPhoneValidation({ checking: false, exists: false, message: '' });
       return;
     }
 
+    if (phone === lastPhoneUniqueRef.current) {
+      return;
+    }
+
+    lastPhoneUniqueRef.current = phone;
     setPhoneValidation({ checking: true, exists: false, message: '' });
+    phoneUniqueAbortRef.current?.abort();
+    const controller = new AbortController();
+    phoneUniqueAbortRef.current = controller;
 
     try {
       const response = await fetch('/api/pos/customers/check-unique', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ phone }),
+        signal: controller.signal,
       });
 
       const data = await response.json();
@@ -1259,13 +1409,35 @@ function CustomerInfoStep({
           message: 'Failed to check phone',
         });
       }
-    } catch (_error) {
+    } catch (error) {
+      if (error instanceof DOMException && error.name === 'AbortError') {
+        return;
+      }
       setPhoneValidation({
         checking: false,
         exists: false,
         message: 'Failed to check phone',
       });
     }
+  };
+
+  const schedulePhoneUniquenessCheck = (
+    phone: string,
+    immediate: boolean = false
+  ) => {
+    if (phoneUniqueTimeoutRef.current) {
+      clearTimeout(phoneUniqueTimeoutRef.current);
+    }
+
+    if (!phone || phone.length < 5) {
+      setPhoneValidation({ checking: false, exists: false, message: '' });
+      return;
+    }
+
+    const delay = immediate ? 0 : 500;
+    phoneUniqueTimeoutRef.current = setTimeout(() => {
+      void runCheckPhoneUniqueness(phone);
+    }, delay);
   };
 
   // Use customers directly since API handles filtering
@@ -1357,6 +1529,17 @@ function CustomerInfoStep({
                 {/* Existing Customers */}
                 {filteredCustomers.map((customer, index) => {
                   const isStaff = customer.type === 'user';
+                  const totalOrders =
+                    typeof customer.totalOrders === 'number'
+                      ? customer.totalOrders
+                      : 0;
+                  const totalSpent =
+                    typeof customer.totalSpent === 'number'
+                      ? customer.totalSpent
+                      : 0;
+                  const hasSpendStats =
+                    typeof customer.totalOrders === 'number' &&
+                    typeof customer.totalSpent === 'number';
 
                   return (
                     <div
@@ -1382,7 +1565,9 @@ function CustomerInfoStep({
                         <div className="text-muted-foreground text-xs">
                           {isStaff
                             ? `Staff Member • ${customer.role}`
-                            : `${customer.totalOrders || 0} orders • ${(customer.totalSpent || 0).toLocaleString()} spent`}
+                            : hasSpendStats
+                              ? `${totalOrders} orders • ${totalSpent.toLocaleString()} spent`
+                              : 'Customer record'}
                         </div>
                       </div>
                       <Button size="sm" variant="ghost">
@@ -1450,6 +1635,9 @@ function CustomerInfoStep({
                       customerInfo.phone.replace(/\D/g, ''));
 
                 const isExactMatch = isExactEmailMatch || isExactPhoneMatch;
+                const hasSpendStats =
+                  typeof customer.totalOrders === 'number' &&
+                  typeof customer.totalSpent === 'number';
 
                 return (
                   <div
@@ -1476,10 +1664,12 @@ function CustomerInfoStep({
                         {customer.email}
                         {customer.phone && ` • ${customer.phone}`}
                       </div>
-                      <div className="text-xs text-gray-500">
-                        {customer.totalOrders} orders •{' '}
-                        {customer.totalSpent.toLocaleString()} spent
-                      </div>
+                      {hasSpendStats && (
+                        <div className="text-xs text-gray-500">
+                          {customer.totalOrders} orders •{' '}
+                          {customer.totalSpent.toLocaleString()} spent
+                        </div>
+                      )}
                     </div>
                     <Button
                       size="sm"
@@ -1531,10 +1721,13 @@ function CustomerInfoStep({
               </div>
             )}
 
-            <div className="text-muted-foreground text-xs">
-              {selectedCustomer.totalOrders} orders •{' '}
-              {selectedCustomer.totalSpent.toLocaleString()} spent
-            </div>
+            {typeof selectedCustomer.totalOrders === 'number' &&
+              typeof selectedCustomer.totalSpent === 'number' && (
+                <div className="text-muted-foreground text-xs">
+                  {selectedCustomer.totalOrders} orders •{' '}
+                  {selectedCustomer.totalSpent.toLocaleString()} spent
+                </div>
+              )}
           </div>
         </div>
       ) : (
@@ -1569,15 +1762,17 @@ function CustomerInfoStep({
                   });
                   // Auto-search when phone has 7+ digits
                   if (shouldSearchPhone(phone)) {
-                    autoSearchPhone(phone);
+                    scheduleAutoSearchPhone(phone);
                   } else {
                     setShowAutoSearch(false);
                     setAutoSearchResults([]);
                   }
                   // Check uniqueness after a delay
-                  setTimeout(() => checkPhoneUniqueness(phone), 500);
+                  schedulePhoneUniquenessCheck(phone);
                 }}
-                onBlur={() => checkPhoneUniqueness(customerInfo.phone)}
+                onBlur={() =>
+                  schedulePhoneUniquenessCheck(customerInfo.phone, true)
+                }
                 disabled={processing}
                 className={phoneValidation.exists ? 'border-red-500' : ''}
               />
@@ -1617,15 +1812,17 @@ function CustomerInfoStep({
                   });
                   // Auto-search when email has sufficient characters
                   if (shouldSearchEmail(email)) {
-                    autoSearchEmail(email);
+                    scheduleAutoSearchEmail(email);
                   } else {
                     setShowAutoSearch(false);
                     setAutoSearchResults([]);
                   }
                   // Check uniqueness after a delay
-                  setTimeout(() => checkEmailUniqueness(email), 500);
+                  scheduleEmailUniquenessCheck(email);
                 }}
-                onBlur={() => checkEmailUniqueness(customerInfo.email)}
+                onBlur={() =>
+                  scheduleEmailUniquenessCheck(customerInfo.email, true)
+                }
                 disabled={processing}
                 className={emailValidation.exists ? 'border-red-500' : ''}
               />

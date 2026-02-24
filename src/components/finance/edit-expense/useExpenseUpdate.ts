@@ -29,7 +29,10 @@ export function useExpenseUpdate() {
         headers: {
           'Content-Type': 'application/json',
         },
-        body: JSON.stringify(data),
+        body: JSON.stringify({
+          id: Number(id),
+          ...data,
+        }),
       });
 
       if (!response.ok) {

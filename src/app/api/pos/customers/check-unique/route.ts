@@ -2,6 +2,9 @@ import { NextRequest, NextResponse } from 'next/server';
 import { auth } from '#root/auth';
 import { prisma } from '@/lib/db';
 import { USER_ROLES, hasRole } from '@/lib/auth/roles';
+import { getPhoneSearchPatterns } from '@/lib/utils/phone-utils';
+
+const RESULT_LIMIT = 5;
 
 export async function POST(request: NextRequest) {
   try {
@@ -23,28 +26,43 @@ export async function POST(request: NextRequest) {
     }
 
     const { email, phone } = await request.json();
+    const trimmedEmail = email ? email.trim().toLowerCase() : '';
+    const trimmedPhone = phone ? phone.trim() : '';
+    const phoneDigits = trimmedPhone.replace(/\D/g, '');
+    const phonePatterns = trimmedPhone
+      ? getPhoneSearchPatterns(trimmedPhone)
+      : [];
+    const hasEmail = trimmedEmail.length > 0;
+    const hasPhone = trimmedPhone.length > 0;
 
     // Validate input
-    if (!email && !phone) {
+    if (!hasEmail && !hasPhone) {
       return NextResponse.json(
         { error: 'Email or phone number is required' },
         { status: 400 }
       );
     }
 
-    const allResults = [];
+    const allResults: Array<{
+      id: string;
+      name: string;
+      email: string;
+      phone: string;
+      type: 'customer' | 'user';
+      role?: string;
+    }> = [];
     let exactMatches = 0;
     let partialMatches = 0;
 
     // 1. Check Customer table
-    if (email || phone) {
+    if (hasEmail || hasPhone) {
       const whereClause: any = {
         OR: [],
         isActive: true,
       };
 
-      if (email) {
-        const cleanEmail = email.trim().toLowerCase();
+      if (hasEmail) {
+        const cleanEmail = trimmedEmail;
         whereClause.OR.push(
           {
             email: {
@@ -61,103 +79,63 @@ export async function POST(request: NextRequest) {
         );
       }
 
-      if (phone) {
-        const cleanPhone = phone.trim();
-        const digitsOnly = cleanPhone.replace(/\D/g, '');
+      if (hasPhone) {
+        const cleanPhone = trimmedPhone;
+        const digitsOnly = phoneDigits;
         whereClause.OR.push(
           {
             phone: {
               equals: cleanPhone,
             },
           },
-          {
-            phone: {
-              contains: digitsOnly,
-            },
-          }
+          ...(digitsOnly.length > 0
+            ? [
+                {
+                  phone: {
+                    contains: digitsOnly,
+                  },
+                },
+              ]
+            : [])
         );
       }
 
       // Check for existing customers
       const existingCustomers = await prisma.customer.findMany({
         where: whereClause,
-        include: {
-          salesTransactions: {
-            select: {
-              total_amount: true,
-              created_at: true,
-            },
-            orderBy: {
-              created_at: 'desc',
-            },
-          },
+        select: {
+          id: true,
+          name: true,
+          email: true,
+          phone: true,
+        },
+        take: RESULT_LIMIT,
+        orderBy: {
+          createdAt: 'desc',
         },
       });
 
       // Transform the results
-      const customers = existingCustomers.map(customer => {
-        const totalOrders = customer.salesTransactions.length;
-        const totalSpent = customer.salesTransactions.reduce(
-          (sum, transaction) => sum + Number(transaction.total_amount),
-          0
-        );
-        const lastPurchase = customer.salesTransactions[0];
-
-        return {
-          id: `customer-${customer.id}`,
-          name: customer.name || 'Unknown',
-          email: customer.email || '',
-          phone: customer.phone || '',
-          totalOrders,
-          totalSpent,
-          lastPurchase:
-            lastPurchase?.created_at?.toISOString() ||
-            customer.createdAt?.toISOString() ||
-            new Date().toISOString(),
-          type: 'customer',
-        };
-      });
+      const customers = existingCustomers.map(customer => ({
+        id: `customer-${customer.id}`,
+        name: customer.name || 'Unknown',
+        email: customer.email || '',
+        phone: customer.phone || '',
+        type: 'customer' as const,
+      }));
 
       allResults.push(...customers);
-
-      // Count exact and partial matches
-      if (email) {
-        const cleanEmail = email.trim().toLowerCase();
-        exactMatches += customers.filter(
-          c => c.email.toLowerCase() === cleanEmail
-        ).length;
-        partialMatches += customers.filter(
-          c =>
-            c.email.toLowerCase().includes(cleanEmail) &&
-            c.email.toLowerCase() !== cleanEmail
-        ).length;
-      }
-
-      if (phone) {
-        const cleanPhone = phone.trim();
-        const digitsOnly = cleanPhone.replace(/\D/g, '');
-        exactMatches += customers.filter(
-          c =>
-            c.phone === cleanPhone || c.phone?.replace(/\D/g, '') === digitsOnly
-        ).length;
-        partialMatches += customers.filter(
-          c =>
-            c.phone?.includes(digitsOnly) &&
-            c.phone !== cleanPhone &&
-            c.phone?.replace(/\D/g, '') !== digitsOnly
-        ).length;
-      }
     }
 
     // 2. Check users table (staff/employees)
-    if (email || phone) {
+    if (hasEmail || hasPhone) {
       const userWhereClause: any = {
         OR: [],
         isActive: true, // Only active users
       };
 
-      if (email) {
-        const cleanEmail = email.trim().toLowerCase();
+      if (hasEmail) {
+        const cleanEmail = trimmedEmail;
         userWhereClause.OR.push(
           {
             email: {
@@ -174,9 +152,9 @@ export async function POST(request: NextRequest) {
         );
       }
 
-      if (phone) {
-        const cleanPhone = phone.trim();
-        const digitsOnly = cleanPhone.replace(/\D/g, '');
+      if (hasPhone) {
+        const cleanPhone = trimmedPhone;
+        const digitsOnly = phoneDigits;
         userWhereClause.OR.push(
           {
             phone: {
@@ -184,12 +162,16 @@ export async function POST(request: NextRequest) {
               mode: 'insensitive',
             },
           },
-          {
-            phone: {
-              contains: digitsOnly,
-              mode: 'insensitive',
-            },
-          }
+          ...(digitsOnly.length > 0
+            ? [
+                {
+                  phone: {
+                    contains: digitsOnly,
+                    mode: 'insensitive',
+                  },
+                },
+              ]
+            : [])
         );
       }
 
@@ -202,8 +184,8 @@ export async function POST(request: NextRequest) {
           email: true,
           phone: true,
           role: true,
-          createdAt: true,
         },
+        take: RESULT_LIMIT,
       });
 
       // Transform user data
@@ -212,42 +194,132 @@ export async function POST(request: NextRequest) {
         name: `${user.firstName} ${user.lastName}`.trim(),
         email: user.email,
         phone: user.phone || '',
-        totalOrders: 0,
-        totalSpent: 0,
-        lastPurchase: user.createdAt?.toISOString() || new Date().toISOString(),
-        type: 'user',
+        type: 'user' as const,
         role: user.role,
       }));
 
       allResults.push(...userResults);
+    }
 
-      // Count exact and partial matches for users
-      if (email) {
-        const cleanEmail = email.trim().toLowerCase();
-        exactMatches += userResults.filter(
-          u => u.email.toLowerCase() === cleanEmail
-        ).length;
-        partialMatches += userResults.filter(
-          u =>
-            u.email.toLowerCase().includes(cleanEmail) &&
-            u.email.toLowerCase() !== cleanEmail
-        ).length;
-      }
+    // Count exact and partial matches across both customers and users
+    if (hasEmail) {
+      const cleanEmail = trimmedEmail;
+      const [customerExact, userExact, customerPartial, userPartial] =
+        await Promise.all([
+          prisma.customer.count({
+            where: {
+              isActive: true,
+              email: {
+                equals: cleanEmail,
+                mode: 'insensitive',
+              },
+            },
+          }),
+          prisma.user.count({
+            where: {
+              isActive: true,
+              email: {
+                equals: cleanEmail,
+                mode: 'insensitive',
+              },
+            },
+          }),
+          prisma.customer.count({
+            where: {
+              isActive: true,
+              email: {
+                contains: cleanEmail,
+                mode: 'insensitive',
+              },
+              NOT: {
+                email: {
+                  equals: cleanEmail,
+                  mode: 'insensitive',
+                },
+              },
+            },
+          }),
+          prisma.user.count({
+            where: {
+              isActive: true,
+              email: {
+                contains: cleanEmail,
+                mode: 'insensitive',
+              },
+              NOT: {
+                email: {
+                  equals: cleanEmail,
+                  mode: 'insensitive',
+                },
+              },
+            },
+          }),
+        ]);
 
-      if (phone) {
-        const cleanPhone = phone.trim();
-        const digitsOnly = cleanPhone.replace(/\D/g, '');
-        exactMatches += userResults.filter(
-          u =>
-            u.phone === cleanPhone || u.phone?.replace(/\D/g, '') === digitsOnly
-        ).length;
-        partialMatches += userResults.filter(
-          u =>
-            u.phone?.includes(digitsOnly) &&
-            u.phone !== cleanPhone &&
-            u.phone?.replace(/\D/g, '') !== digitsOnly
-        ).length;
-      }
+      exactMatches += customerExact + userExact;
+      partialMatches += customerPartial + userPartial;
+    }
+
+    if (hasPhone) {
+      const hasPhoneDigits = phoneDigits.length > 0;
+      const [customerExact, userExact, customerPartial, userPartial] =
+        await Promise.all([
+          prisma.customer.count({
+            where: {
+              isActive: true,
+              phone: {
+                in: phonePatterns.length > 0 ? phonePatterns : [trimmedPhone],
+              },
+            },
+          }),
+          prisma.user.count({
+            where: {
+              isActive: true,
+              phone: {
+                in: phonePatterns.length > 0 ? phonePatterns : [trimmedPhone],
+              },
+            },
+          }),
+          hasPhoneDigits
+            ? prisma.customer.count({
+                where: {
+                  isActive: true,
+                  phone: {
+                    contains: phoneDigits,
+                  },
+                  NOT: {
+                    phone: {
+                      in:
+                        phonePatterns.length > 0
+                          ? phonePatterns
+                          : [trimmedPhone],
+                    },
+                  },
+                },
+              })
+            : Promise.resolve(0),
+          hasPhoneDigits
+            ? prisma.user.count({
+                where: {
+                  isActive: true,
+                  phone: {
+                    contains: phoneDigits,
+                  },
+                  NOT: {
+                    phone: {
+                      in:
+                        phonePatterns.length > 0
+                          ? phonePatterns
+                          : [trimmedPhone],
+                    },
+                  },
+                },
+              })
+            : Promise.resolve(0),
+        ]);
+
+      exactMatches += customerExact + userExact;
+      partialMatches += customerPartial + userPartial;
     }
 
     const hasExactMatch = exactMatches > 0;
@@ -256,7 +328,7 @@ export async function POST(request: NextRequest) {
     // Generate appropriate message
     let message = 'Customer information is unique';
     if (hasExactMatch) {
-      message = `Customer with this ${email ? 'email' : 'phone'} already exists`;
+      message = `Customer with this ${hasEmail ? 'email' : 'phone'} already exists`;
     } else if (hasPartialMatch) {
       message = `Found similar customer information. Please review before proceeding.`;
     }
@@ -264,7 +336,7 @@ export async function POST(request: NextRequest) {
     return NextResponse.json({
       exists: hasExactMatch,
       hasPartialMatches: hasPartialMatch,
-      customers: allResults,
+      customers: allResults.slice(0, RESULT_LIMIT),
       message: message,
       exactMatches: exactMatches,
       partialMatches: partialMatches,

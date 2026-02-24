@@ -98,7 +98,7 @@ async function fetchCustomers({
   if (!searchQuery) return [];
 
   const response = await fetch(
-    `/api/pos/customers?search=${encodeURIComponent(searchQuery)}`
+    `/api/pos/customers?search=${encodeURIComponent(searchQuery)}&fields=basic&limit=20`
   );
   if (!response.ok) throw new Error('Failed to fetch customers');
   return response.json();
