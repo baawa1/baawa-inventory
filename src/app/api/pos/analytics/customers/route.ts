@@ -24,7 +24,7 @@ interface CustomerWithTransactions {
 interface ProcessedCustomer {
   id: string;
   name: string;
-  email: string;
+  email: string | null;
   phone: string | null;
   totalSpent: number;
   totalOrders: number;
@@ -232,9 +232,9 @@ export const GET = withPOSAuth(async (request: AuthenticatedRequest) => {
             : 0;
 
         return {
-          id: customer.email || `customer-${customer.id}`,
+          id: customer.id.toString(),
           name: customerName,
-          email: customer.email || '',
+          email: customer.email,
           phone: customerPhone,
           totalSpent,
           totalOrders,
@@ -269,31 +269,24 @@ export const GET = withPOSAuth(async (request: AuthenticatedRequest) => {
       totalCustomers > 0 ? totalRevenue / totalCustomers : 0;
 
     // Calculate new customers in current period
-    const currentPeriodEmails = new Set(
-      currentPeriodCustomers.map(c => c.email).filter(Boolean)
-    );
-    const previousPeriodEmails = new Set(
-      previousPeriodCustomers.map(c => c.email).filter(Boolean)
-    );
+    const currentPeriodIds = new Set(currentPeriodCustomers.map(c => c.id));
+    const previousPeriodIds = new Set(previousPeriodCustomers.map(c => c.id));
 
-    const newCustomers = Array.from(currentPeriodEmails).filter(
-      email => !previousPeriodEmails.has(email)
+    const newCustomers = Array.from(currentPeriodIds).filter(
+      id => !previousPeriodIds.has(id)
     ).length;
 
-    // Calculate returning customers (customers who made purchases in both periods)
-    const returningCustomers = Array.from(currentPeriodEmails).filter(email =>
-      previousPeriodEmails.has(email)
+    const returningCustomers = Array.from(currentPeriodIds).filter(id =>
+      previousPeriodIds.has(id)
     ).length;
 
-    // Calculate churned customers (customers who purchased in previous period but not current)
-    const churnedCustomers = Array.from(previousPeriodEmails).filter(
-      email => !currentPeriodEmails.has(email)
+    const churnedCustomers = Array.from(previousPeriodIds).filter(
+      id => !currentPeriodIds.has(id)
     ).length;
 
-    // Calculate retention rate
     const retentionRate =
-      previousPeriodEmails.size > 0
-        ? (returningCustomers / previousPeriodEmails.size) * 100
+      previousPeriodIds.size > 0
+        ? (returningCustomers / previousPeriodIds.size) * 100
         : 0;
 
     // Calculate customer segments
@@ -327,6 +320,7 @@ export const GET = withPOSAuth(async (request: AuthenticatedRequest) => {
         },
       },
       select: {
+        id: true,
         email: true,
         salesTransactions: {
           where: {
@@ -351,12 +345,12 @@ export const GET = withPOSAuth(async (request: AuthenticatedRequest) => {
     // Group transactions by date with customer emails
     allCustomersWithTransactions.forEach((customer: any) => {
       customer.salesTransactions.forEach((transaction: any) => {
-        if (transaction.created_at && customer.email) {
+        if (transaction.created_at) {
           const dateStr = transaction.created_at.toISOString().split('T')[0];
           if (!transactionsByDate.has(dateStr)) {
             transactionsByDate.set(dateStr, new Set());
           }
-          transactionsByDate.get(dateStr)!.add(customer.email);
+          transactionsByDate.get(dateStr)!.add(customer.id.toString());
         }
       });
     });
@@ -374,10 +368,10 @@ export const GET = withPOSAuth(async (request: AuthenticatedRequest) => {
 
       // Count new customers for this date (customers who haven't been seen before)
       let newCustomersForDay = 0;
-      dayCustomers.forEach((email: string) => {
-        if (!seenCustomers.has(email)) {
+      dayCustomers.forEach((customerId: string) => {
+        if (!seenCustomers.has(customerId)) {
           newCustomersForDay++;
-          seenCustomers.add(email);
+          seenCustomers.add(customerId);
         }
       });
 

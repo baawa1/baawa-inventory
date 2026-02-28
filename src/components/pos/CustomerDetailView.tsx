@@ -6,6 +6,7 @@ import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { Separator } from '@/components/ui/separator';
+import { InlineLoading } from '@/components/ui/loading';
 import {
   Table,
   TableBody,
@@ -39,7 +40,7 @@ import { toast } from 'sonner';
 interface CustomerData {
   id: string;
   name: string;
-  email: string;
+  email?: string | null;
   phone?: string;
   totalSpent: number;
   totalOrders: number;
@@ -89,10 +90,10 @@ interface CustomerDetailViewProps {
 
 // API function to fetch customer purchases
 async function fetchCustomerPurchases(
-  customerEmail: string
+  customerId: string
 ): Promise<CustomerPurchase[]> {
   const response = await fetch(
-    `/api/pos/customers/${encodeURIComponent(customerEmail)}/purchases`
+    `/api/pos/customers/by-id/${encodeURIComponent(customerId)}/purchases`
   );
   if (!response.ok) {
     throw new Error('Failed to fetch customer purchases');
@@ -124,8 +125,8 @@ export function CustomerDetailView({
     isLoading,
     error,
   } = useQuery({
-    queryKey: ['customer-purchases', customer.email],
-    queryFn: () => fetchCustomerPurchases(customer.email),
+    queryKey: ['customer-purchases', customer.id],
+    queryFn: () => fetchCustomerPurchases(customer.id),
   });
 
   const reprintMutation = useMutation({
@@ -281,8 +282,7 @@ export function CustomerDetailView({
         <CardContent>
           {isLoading ? (
             <div className="py-8 text-center">
-              <div className="border-primary mx-auto h-8 w-8 animate-spin border-b-2"></div>
-              <p className="text-muted-foreground mt-2">Loading orders...</p>
+              <InlineLoading className="justify-center" label="Loading orders..." />
             </div>
           ) : purchases.length === 0 ? (
             <div className="py-8 text-center">

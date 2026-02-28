@@ -57,7 +57,7 @@ interface MobileCustomerListProps {
 interface Customer {
   id: string;
   name: string;
-  email: string;
+  email?: string | null;
   phone?: string;
   city?: string;
   state?: string;
@@ -90,11 +90,11 @@ async function fetchCustomers(): Promise<Customer[]> {
 
 // API function to update customer
 async function updateCustomer(
-  customerEmail: string,
+  customerId: string,
   data: Partial<Customer>
 ): Promise<Customer> {
-  const encodedEmail = encodeURIComponent(customerEmail);
-  const response = await fetch(`/api/pos/customers/${encodedEmail}`, {
+  const encodedId = encodeURIComponent(customerId);
+  const response = await fetch(`/api/pos/customers/by-id/${encodedId}`, {
     method: 'PUT',
     headers: {
       'Content-Type': 'application/json',
@@ -161,8 +161,8 @@ export function MobileCustomerList({ user }: MobileCustomerListProps) {
 
   // Update customer mutation
   const updateCustomerMutation = useMutation({
-    mutationFn: ({ email, data }: { email: string; data: Partial<Customer> }) =>
-      updateCustomer(email, data),
+    mutationFn: ({ id, data }: { id: string; data: Partial<Customer> }) =>
+      updateCustomer(id, data),
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['customers'] });
       toast.success('Customer updated successfully');
@@ -177,8 +177,13 @@ export function MobileCustomerList({ user }: MobileCustomerListProps) {
   // Filter and sort customers
   const processedCustomers = useMemo(() => {
     let filtered = customers.filter(customer => {
-      const matchesSearch = customer.name.toLowerCase().includes(debouncedSearchTerm.toLowerCase()) ||
-        customer.email.toLowerCase().includes(debouncedSearchTerm.toLowerCase()) ||
+      const matchesSearch =
+        customer.name
+          .toLowerCase()
+          .includes(debouncedSearchTerm.toLowerCase()) ||
+        (customer.email || '')
+          .toLowerCase()
+          .includes(debouncedSearchTerm.toLowerCase()) ||
         customer.phone?.includes(debouncedSearchTerm);
       
       const matchesType = !filters.customerType || customer.customerType === filters.customerType;
@@ -402,9 +407,22 @@ export function MobileCustomerList({ user }: MobileCustomerListProps) {
 
   const handleUpdateCustomer = () => {
     if (!selectedCustomer) return;
+
+    if (!editFormData.name.trim() || !editFormData.phone.trim()) {
+      toast.error('Name and phone are required');
+      return;
+    }
+
+    if (
+      editFormData.email.trim() &&
+      !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(editFormData.email)
+    ) {
+      toast.error('Please enter a valid email address');
+      return;
+    }
     
     updateCustomerMutation.mutate({
-      email: selectedCustomer.email,
+      id: selectedCustomer.id,
       data: editFormData,
     });
   };
@@ -434,14 +452,14 @@ export function MobileCustomerList({ user }: MobileCustomerListProps) {
                 {customer.name}
               </div>
               <div className="text-xs text-muted-foreground truncate">
-                {customer.email}
+                {customer.email || '-'}
               </div>
             </div>
           );
         case 'email':
           return (
             <span className="text-xs sm:text-sm truncate">
-              {customer.email}
+              {customer.email || '-'}
             </span>
           );
         case 'phone':
@@ -541,7 +559,7 @@ export function MobileCustomerList({ user }: MobileCustomerListProps) {
   const mobileCardSubtitle = (customer: Customer) => (
     <div className="flex items-center gap-2 text-xs text-muted-foreground">
       <IconMail className="h-3 w-3" />
-      <span className="truncate">{customer.email}</span>
+      <span className="truncate">{customer.email || '-'}</span>
       {customer.phone && (
         <>
           <span>•</span>
@@ -629,7 +647,7 @@ export function MobileCustomerList({ user }: MobileCustomerListProps) {
                 />
               </div>
               <div>
-                <Label htmlFor="email">Email</Label>
+                <Label htmlFor="email">Email (Optional)</Label>
                 <Input
                   id="email"
                   type="email"
@@ -640,7 +658,7 @@ export function MobileCustomerList({ user }: MobileCustomerListProps) {
             </div>
             <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
               <div>
-                <Label htmlFor="phone">Phone</Label>
+                <Label htmlFor="phone">Phone *</Label>
                 <Input
                   id="phone"
                   value={editFormData.phone}

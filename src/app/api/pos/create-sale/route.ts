@@ -14,6 +14,48 @@ import {
 } from '@/lib/utils/payment-methods';
 
 // Validation schema for POS sale creation
+const normalizeOptionalString = (value: unknown): string | undefined => {
+  if (typeof value !== 'string') {
+    return undefined;
+  }
+  const trimmed = value.trim();
+  return trimmed.length > 0 ? trimmed : undefined;
+};
+
+const normalizeOptionalField = (value: unknown): string | undefined => {
+  if (typeof value === 'string') {
+    return normalizeOptionalString(value);
+  }
+  return undefined;
+};
+
+const normalizeSalePayload = (body: any) => {
+  const customerInfo = body?.customerInfo
+    ? {
+        ...body.customerInfo,
+        name: normalizeOptionalString(body.customerInfo.name),
+        email: normalizeOptionalField(body.customerInfo.email),
+        phone: normalizeOptionalField(body.customerInfo.phone),
+        billingAddress: normalizeOptionalString(body.customerInfo.billingAddress),
+        shippingAddress: normalizeOptionalString(
+          body.customerInfo.shippingAddress
+        ),
+        city: normalizeOptionalString(body.customerInfo.city),
+        state: normalizeOptionalString(body.customerInfo.state),
+        postalCode: normalizeOptionalString(body.customerInfo.postalCode),
+        country: normalizeOptionalString(body.customerInfo.country),
+        notes: normalizeOptionalString(body.customerInfo.notes),
+      }
+    : undefined;
+
+  return {
+    ...body,
+    customerInfo,
+    customerName: normalizeOptionalString(body?.customerName),
+    customerEmail: normalizeOptionalField(body?.customerEmail),
+    customerPhone: normalizeOptionalField(body?.customerPhone),
+  };
+};
 const posSaleItemSchema = z.object({
   productId: z.coerce.number().int().positive('Product ID must be positive'),
   quantity: z.coerce.number().int().positive('Quantity must be positive'),
@@ -178,18 +220,30 @@ const posSaleSchema = z
     }
   );
 
+const requireCustomerPhone = (data: z.infer<typeof posSaleSchema>) => {
+  const infoPhone = data.customerInfo?.phone?.trim() || '';
+  const legacyPhone = data.customerPhone?.trim() || '';
+  return Boolean(infoPhone || legacyPhone);
+};
+
 export const POST = withAuth(async function (request: AuthenticatedRequest) {
   try {
     // Parse and validate request body
     const body = await request.json();
+    const normalizedBody = normalizeSalePayload(body);
     logger.info('POS sale request received', {
       userId: request.user.id,
-      itemCount: body.items?.length || 0,
-      total: body.total,
-      paymentMethod: body.paymentMethod,
+      itemCount: normalizedBody.items?.length || 0,
+      total: normalizedBody.total,
+      paymentMethod: normalizedBody.paymentMethod,
     });
 
-    const validatedData = posSaleSchema.parse(body);
+    const validatedData = posSaleSchema
+      .refine(requireCustomerPhone, {
+        message: 'Customer phone is required for checkout',
+        path: ['customerInfo', 'phone'],
+      })
+      .parse(normalizedBody);
 
     // Generate transaction number
     const transactionNumber = `TXN-${Date.now()}-${Math.random().toString(36).substr(2, 9).toUpperCase()}`;
@@ -293,8 +347,14 @@ export const POST = withAuth(async function (request: AuthenticatedRequest) {
           // Update existing customer with new information
           // Normalize phone number if provided
           const normalizedPhone = validatedData.customerInfo.phone
-            ? normalizeNigerianPhone(validatedData.customerInfo.phone)
-                .normalized
+            ? (() => {
+                const normalized = normalizeNigerianPhone(
+                  validatedData.customerInfo.phone
+                );
+                return normalized.isValid
+                  ? normalized.normalized
+                  : validatedData.customerInfo.phone.trim();
+              })()
             : existingCustomer.phone;
 
           const updatedCustomer = await (tx as any).customer.update({
@@ -338,8 +398,14 @@ export const POST = withAuth(async function (request: AuthenticatedRequest) {
           // Create new customer
           // Normalize phone number before storing
           const normalizedPhone = validatedData.customerInfo.phone
-            ? normalizeNigerianPhone(validatedData.customerInfo.phone)
-                .normalized
+            ? (() => {
+                const normalized = normalizeNigerianPhone(
+                  validatedData.customerInfo.phone
+                );
+                return normalized.isValid
+                  ? normalized.normalized
+                  : validatedData.customerInfo.phone.trim();
+              })()
             : null;
 
           const newCustomer = await (tx as any).customer.create({

@@ -6,6 +6,7 @@ import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
+import { InlineLoading } from '@/components/ui/loading';
 import {
   Table,
   TableBody,
@@ -45,7 +46,7 @@ import { toast } from 'sonner';
 interface Customer {
   id: string;
   name: string;
-  email: string;
+  email?: string | null;
   phone: string | null;
   totalSpent: number;
   totalOrders: number;
@@ -83,10 +84,10 @@ async function fetchCustomers(): Promise<Customer[]> {
 }
 
 async function fetchCustomerPurchases(
-  customerEmail: string
+  customerId: string
 ): Promise<CustomerPurchase[]> {
   const response = await fetch(
-    `/api/pos/customers/${encodeURIComponent(customerEmail)}/purchases`
+    `/api/pos/customers/by-id/${encodeURIComponent(customerId)}/purchases`
   );
   if (!response.ok) {
     throw new Error('Failed to fetch customer purchases');
@@ -114,8 +115,8 @@ export function CustomerLeaderboard({ user: _ }: CustomerLeaderboardProps) {
 
   const { data: customerPurchases = [], isLoading: purchasesLoading } =
     useQuery({
-      queryKey: ['customer-purchases', selectedCustomer?.email],
-      queryFn: () => fetchCustomerPurchases(selectedCustomer!.email),
+      queryKey: ['customer-purchases', selectedCustomer?.id],
+      queryFn: () => fetchCustomerPurchases(selectedCustomer!.id),
       enabled: !!selectedCustomer,
     });
 
@@ -123,7 +124,9 @@ export function CustomerLeaderboard({ user: _ }: CustomerLeaderboardProps) {
     .filter(
       customer =>
         customer.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
-        customer.email.toLowerCase().includes(searchTerm.toLowerCase())
+        (customer.email || '')
+          .toLowerCase()
+          .includes(searchTerm.toLowerCase())
     )
     .sort((a, b) => {
       switch (sortBy) {
@@ -264,7 +267,7 @@ export function CustomerLeaderboard({ user: _ }: CustomerLeaderboardProps) {
         <CardContent>
           {isLoading ? (
             <div className="flex justify-center py-8">
-              <div className="h-8 w-8 animate-spin rounded-full border-b-2 border-gray-900"></div>
+              <InlineLoading label="Loading customers..." />
             </div>
           ) : (
             <Table>
@@ -289,7 +292,7 @@ export function CustomerLeaderboard({ user: _ }: CustomerLeaderboardProps) {
                         <div className="font-medium">{customer.name}</div>
                         <div className="text-muted-foreground flex items-center text-sm">
                           <IconMail className="mr-1 h-3 w-3" />
-                          {customer.email}
+                          {customer.email || '-'}
                         </div>
                       </div>
                     </TableCell>
@@ -340,7 +343,7 @@ export function CustomerLeaderboard({ user: _ }: CustomerLeaderboardProps) {
 
                           {purchasesLoading ? (
                             <div className="flex justify-center py-8">
-                              <div className="h-8 w-8 animate-spin rounded-full border-b-2 border-gray-900"></div>
+                              <InlineLoading label="Loading purchases..." />
                             </div>
                           ) : (
                             <div className="space-y-4">

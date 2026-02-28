@@ -8,6 +8,7 @@ import { Label } from '@/components/ui/label';
 import { Card, CardContent } from '@/components/ui/card';
 import { Textarea } from '@/components/ui/textarea';
 import { Separator } from '@/components/ui/separator';
+import { InlineLoading, Spinner } from '@/components/ui/loading';
 import { toast } from 'sonner';
 import {
   IconX,
@@ -20,7 +21,6 @@ import {
   IconReportMoney,
   IconUser,
   IconCheck,
-  IconLoader,
   IconArrowLeft,
   IconArrowRight,
   IconSearch,
@@ -275,6 +275,12 @@ export function SlidingPaymentInterface({
       }
     }
 
+    const trimmedPhone = customerInfo.phone.trim();
+    if (!trimmedPhone) {
+      toast.error('Customer phone is required');
+      return;
+    }
+
     if (!isSplitPayment && paymentMethod === 'debt') {
       const hasContactDetails = Boolean(
         (customerInfo.phone && customerInfo.phone.trim() !== '') ||
@@ -345,6 +351,21 @@ export function SlidingPaymentInterface({
           ? roundCurrency(amountPaid)
           : roundCurrency(Math.max(amountPaid, total));
 
+      const trimmedEmail = customerInfo.email.trim();
+      const normalizedCustomerInfo = {
+        name: customerInfo.name.trim() || undefined,
+        email: trimmedEmail || undefined,
+        phone: trimmedPhone,
+        billingAddress: customerInfo.billingAddress?.trim() || undefined,
+        shippingAddress: customerInfo.shippingAddress?.trim() || undefined,
+        city: customerInfo.city?.trim() || undefined,
+        state: customerInfo.state?.trim() || undefined,
+        postalCode: customerInfo.postalCode?.trim() || undefined,
+        country: customerInfo.country?.trim() || undefined,
+        customerType: customerInfo.customerType,
+        notes: customerInfo.notes?.trim() || undefined,
+      };
+
       const saleData = {
         items: items.map(item => ({
           productId: item.id,
@@ -360,25 +381,15 @@ export function SlidingPaymentInterface({
         paymentMethod: isSplitPayment ? 'split' : paymentMethod,
         // Send customerInfo object for proper customer processing
         customerInfo:
-          customerInfo.name || customerInfo.email || customerInfo.phone
-            ? {
-                name: customerInfo.name,
-                email: customerInfo.email,
-                phone: customerInfo.phone,
-                billingAddress: customerInfo.billingAddress,
-                shippingAddress: customerInfo.shippingAddress,
-                city: customerInfo.city,
-                state: customerInfo.state,
-                postalCode: customerInfo.postalCode,
-                country: customerInfo.country,
-                customerType: customerInfo.customerType,
-                notes: customerInfo.notes,
-              }
+          normalizedCustomerInfo.name ||
+          normalizedCustomerInfo.email ||
+          normalizedCustomerInfo.phone
+            ? normalizedCustomerInfo
             : undefined,
         // Legacy fields for backward compatibility
-        customerName: customerInfo.name || undefined,
-        customerPhone: customerInfo.phone || undefined,
-        customerEmail: customerInfo.email || undefined,
+        customerName: normalizedCustomerInfo.name,
+        customerPhone: normalizedCustomerInfo.phone,
+        customerEmail: normalizedCustomerInfo.email,
         amountPaid: isSplitPayment
           ? collectedSplitTotal
           : nonSplitAmountPaid,
@@ -438,9 +449,9 @@ export function SlidingPaymentInterface({
         })),
         total,
         paymentMethod: isSplitPayment ? 'split' : paymentMethod,
-        customerName: customerInfo.name || undefined,
-        customerPhone: customerInfo.phone || undefined,
-        customerEmail: customerInfo.email || undefined,
+        customerName: normalizedCustomerInfo.name,
+        customerPhone: normalizedCustomerInfo.phone,
+        customerEmail: normalizedCustomerInfo.email,
         staffName,
         timestamp: new Date(),
         notes: notes || undefined,
@@ -719,20 +730,12 @@ export function SlidingPaymentInterface({
             onClick={handlePayment}
             disabled={!canProceed() || processing}
             className="ml-2 h-9 min-w-20 flex-1 sm:ml-0 sm:h-10 sm:min-w-32 sm:flex-none"
+            isLoading={processing}
+            loadingText="Processing..."
           >
-            {processing ? (
-              <>
-                <IconLoader className="mr-1 h-4 w-4 animate-spin sm:mr-2" />
-                <span className="xs:inline hidden">Processing...</span>
-                <span className="xs:hidden">...</span>
-              </>
-            ) : (
-              <>
-                <IconCheck className="mr-1 h-4 w-4 sm:mr-2" />
-                <span className="xs:inline hidden">Complete Payment</span>
-                <span className="xs:hidden">Pay</span>
-              </>
-            )}
+            <IconCheck className="mr-1 h-4 w-4 sm:mr-2" />
+            <span className="xs:inline hidden">Complete Payment</span>
+            <span className="xs:hidden">Pay</span>
           </Button>
         ) : currentStep === 6 ? (
           <div className="flex w-full gap-2 sm:gap-3">
@@ -1263,7 +1266,7 @@ function CustomerInfoStep({
     onCustomerInfoChange({
       name: customer.name,
       phone: customer.phone || '',
-      email: customer.email,
+      email: customer.email || '',
     });
     setShowCustomerSearch(false);
     setShowAutoSearch(false);
@@ -1449,7 +1452,7 @@ function CustomerInfoStep({
 
   return (
     <div className="space-y-4">
-      <h3 className="text-lg font-semibold">Customer Information (Optional)</h3>
+      <h3 className="text-lg font-semibold">Customer Information</h3>
 
       {/* Customer Search */}
       <div className="space-y-2">
@@ -1492,10 +1495,10 @@ function CustomerInfoStep({
 
             {customersLoading ? (
               <div className="py-4 text-center">
-                <IconLoader className="mx-auto mb-2 h-6 w-6 animate-spin" />
-                <p className="text-muted-foreground text-sm">
-                  Loading customers...
-                </p>
+                <InlineLoading
+                  className="justify-center"
+                  label="Loading customers..."
+                />
               </div>
             ) : filteredCustomers.length === 0 ? (
               <div className="py-4 text-center">
@@ -1559,7 +1562,7 @@ function CustomerInfoStep({
                           )}
                         </div>
                         <div className="text-muted-foreground text-sm">
-                          {customer.email}
+                          {customer.email || 'No email'}
                           {customer.phone && ` • ${customer.phone}`}
                         </div>
                         <div className="text-muted-foreground text-xs">
@@ -1625,8 +1628,8 @@ function CustomerInfoStep({
               {autoSearchResults.map((customer, index) => {
                 // Check if this is an exact match for current input
                 const isExactEmailMatch =
-                  customerInfo.email &&
-                  customer.email.toLowerCase() ===
+                  Boolean(customerInfo.email) &&
+                  (customer.email || '').toLowerCase() ===
                     customerInfo.email.toLowerCase();
                 const isExactPhoneMatch =
                   customerInfo.phone &&
@@ -1661,7 +1664,7 @@ function CustomerInfoStep({
                         )}
                       </div>
                       <div className="text-sm text-gray-400">
-                        {customer.email}
+                        {customer.email || 'No email'}
                         {customer.phone && ` • ${customer.phone}`}
                       </div>
                       {hasSpendStats && (
@@ -1711,7 +1714,7 @@ function CustomerInfoStep({
 
             <div>
               <Label className="text-muted-foreground text-xs">Email</Label>
-              <div className="text-sm">{selectedCustomer.email}</div>
+              <div className="text-sm">{selectedCustomer.email || '-'}</div>
             </div>
 
             {selectedCustomer.phone && (
@@ -1777,7 +1780,10 @@ function CustomerInfoStep({
                 className={phoneValidation.exists ? 'border-red-500' : ''}
               />
               {phoneValidation.checking && (
-                <IconLoader className="text-muted-foreground absolute top-1/2 right-3 h-4 w-4 -translate-y-1/2 animate-spin" />
+                <Spinner
+                  size="sm"
+                  className="text-muted-foreground absolute top-1/2 right-3 h-4 w-4 -translate-y-1/2"
+                />
               )}
             </div>
             {phoneValidation.message && (
@@ -1827,7 +1833,10 @@ function CustomerInfoStep({
                 className={emailValidation.exists ? 'border-red-500' : ''}
               />
               {emailValidation.checking && (
-                <IconLoader className="text-muted-foreground absolute top-1/2 right-3 h-4 w-4 -translate-y-1/2 animate-spin" />
+                <Spinner
+                  size="sm"
+                  className="text-muted-foreground absolute top-1/2 right-3 h-4 w-4 -translate-y-1/2"
+                />
               )}
             </div>
             {emailValidation.message && (
@@ -2760,7 +2769,7 @@ function ReceiptStep({ sale }: { sale: Sale | null }) {
               {sale.splitPayments.map((payment, index) => (
                 <div key={index} className="flex justify-between text-sm">
                   <span className="text-foreground/80">
-                    {payment.method}:
+                    {formatPaymentMethodLabel(payment.method)}:
                   </span>
                   <span className="font-medium text-foreground">
                     {formatCurrency(payment.amount)}
@@ -2782,7 +2791,7 @@ function ReceiptStep({ sale }: { sale: Sale | null }) {
                   className="flex items-center justify-between text-sm"
                 >
                   <span className="text-foreground/80">
-                    {payment.method}
+                    {formatLedgerPaymentLabel(payment.method)}
                     {payment.paymentDate
                       ? ` • ${new Date(payment.paymentDate).toLocaleDateString()}`
                       : ''}

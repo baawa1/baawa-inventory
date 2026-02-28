@@ -92,6 +92,7 @@ test.describe('POS Create Sale API Tests', () => {
       total: -8500.0,
       paymentMethod: 'CASH',
       amountPaid: -8500.0,
+      customerPhone: '+2347087367278',
     };
 
     // Create sale
@@ -128,6 +129,7 @@ test.describe('POS Create Sale API Tests', () => {
       total: 8500.0,
       paymentMethod: 'CASH',
       amountPaid: 8500.0,
+      customerPhone: '+2347087367278',
     };
 
     // Create sale without authentication
@@ -144,6 +146,55 @@ test.describe('POS Create Sale API Tests', () => {
     expect(errorData).toHaveProperty('error', 'Authentication required');
 
     console.log('✅ Unauthenticated requests properly rejected');
+  });
+
+  test('should reject sale without customer phone', async ({ request }) => {
+    const loginResponse = await request.post('/api/auth/signin', {
+      data: {
+        email: APPROVED_STAFF.email,
+        password: APPROVED_STAFF.password,
+      },
+    });
+
+    expect(loginResponse.ok()).toBeTruthy();
+
+    const cookies = loginResponse.headers()['set-cookie'];
+
+    const saleData = {
+      items: [
+        {
+          productId: 1,
+          quantity: 1,
+          price: 8500.0,
+          total: 8500.0,
+        },
+      ],
+      subtotal: 8500.0,
+      discount: 0,
+      total: 8500.0,
+      paymentMethod: 'CASH',
+      amountPaid: 8500.0,
+    };
+
+    const createSaleResponse = await request.post('/api/pos/create-sale', {
+      data: saleData,
+      headers: {
+        'Content-Type': 'application/json',
+        ...(cookies && { Cookie: cookies }),
+      },
+    });
+
+    expect(createSaleResponse.status()).toBe(400);
+
+    const errorData = await createSaleResponse.json();
+    expect(errorData).toHaveProperty('error', 'Validation error');
+    expect(Array.isArray(errorData.details)).toBeTruthy();
+    const phoneError = errorData.details.find((detail: any) =>
+      String(detail.message || '').toLowerCase().includes('phone')
+    );
+    expect(phoneError).toBeTruthy();
+
+    console.log('✅ Missing customer phone properly rejected');
   });
 
   test('should handle split payments correctly', async ({ request }) => {
@@ -175,6 +226,7 @@ test.describe('POS Create Sale API Tests', () => {
       total: 8500.0,
       paymentMethod: 'split',
       amountPaid: 8500.0,
+      customerPhone: '+2347087367278',
       splitPayments: [
         {
           id: '1',
@@ -246,6 +298,7 @@ test.describe('POS Create Sale API Tests', () => {
       total: 1750.0,
       paymentMethod: 'CASH',
       amountPaid: 1750.0,
+      customerPhone: '+2347087367278',
     };
 
     // Create sale

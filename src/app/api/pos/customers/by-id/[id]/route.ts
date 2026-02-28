@@ -4,9 +4,17 @@ import { prisma } from '@/lib/db';
 import { USER_ROLES, hasRole } from '@/lib/auth/roles';
 import { normalizeNigerianPhone } from '@/lib/utils/phone-utils';
 
+const parseCustomerId = (rawId: string) => {
+  const id = Number(rawId);
+  if (!Number.isFinite(id) || id <= 0) {
+    return null;
+  }
+  return id;
+};
+
 export async function PUT(
   request: NextRequest,
-  { params }: { params: Promise<{ email: string }> }
+  { params }: { params: Promise<{ id: string }> }
 ) {
   const resolvedParams = await params;
   try {
@@ -16,7 +24,6 @@ export async function PUT(
       return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
     }
 
-    // Check if user has permission to update customer data
     if (
       !hasRole(session.user.role, [
         USER_ROLES.ADMIN,
@@ -27,7 +34,14 @@ export async function PUT(
       return NextResponse.json({ error: 'Forbidden' }, { status: 403 });
     }
 
-    const customerEmail = decodeURIComponent(resolvedParams.email);
+    const customerId = parseCustomerId(resolvedParams.id);
+    if (!customerId) {
+      return NextResponse.json(
+        { error: 'Invalid customer id' },
+        { status: 400 }
+      );
+    }
+
     const body = await request.json();
     const {
       name,
@@ -48,7 +62,6 @@ export async function PUT(
       typeof email === 'string' ? email.trim().toLowerCase() : '';
     const trimmedPhone = typeof phone === 'string' ? phone.trim() : '';
 
-    // Validate required fields
     if (!trimmedName || !trimmedPhone) {
       return NextResponse.json(
         { error: 'Name and phone are required' },
@@ -56,7 +69,6 @@ export async function PUT(
       );
     }
 
-    // Validate email format if provided
     if (trimmedEmail) {
       const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
       if (!emailRegex.test(trimmedEmail)) {
@@ -67,11 +79,8 @@ export async function PUT(
       }
     }
 
-    // First check if customer exists
-    const existingCustomer = await prisma.customer.findFirst({
-      where: {
-        email: customerEmail,
-      },
+    const existingCustomer = await prisma.customer.findUnique({
+      where: { id: customerId },
     });
 
     if (!existingCustomer) {
@@ -81,16 +90,13 @@ export async function PUT(
       );
     }
 
-    // Update customer in the Customer table
     const normalizedPhoneResult = normalizeNigerianPhone(trimmedPhone);
     const normalizedPhone = normalizedPhoneResult.isValid
       ? normalizedPhoneResult.normalized
       : trimmedPhone;
 
     const updatedCustomer = await prisma.customer.update({
-      where: {
-        id: existingCustomer.id,
-      },
+      where: { id: existingCustomer.id },
       data: {
         name: trimmedName,
         email: trimmedEmail || null,
@@ -134,8 +140,8 @@ export async function PUT(
 }
 
 export async function GET(
-  request: NextRequest,
-  { params }: { params: Promise<{ email: string }> }
+  _request: NextRequest,
+  { params }: { params: Promise<{ id: string }> }
 ) {
   const resolvedParams = await params;
   try {
@@ -145,7 +151,6 @@ export async function GET(
       return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
     }
 
-    // Check if user has permission to view customer data
     if (
       !hasRole(session.user.role, [
         USER_ROLES.ADMIN,
@@ -156,13 +161,16 @@ export async function GET(
       return NextResponse.json({ error: 'Forbidden' }, { status: 403 });
     }
 
-    const customerEmail = decodeURIComponent(resolvedParams.email);
+    const customerId = parseCustomerId(resolvedParams.id);
+    if (!customerId) {
+      return NextResponse.json(
+        { error: 'Invalid customer id' },
+        { status: 400 }
+      );
+    }
 
-    // Get customer data from Customer table
-    const customer = await prisma.customer.findFirst({
-      where: {
-        email: customerEmail,
-      },
+    const customer = await prisma.customer.findUnique({
+      where: { id: customerId },
       include: {
         salesTransactions: {
           orderBy: {
@@ -179,7 +187,6 @@ export async function GET(
       );
     }
 
-    // Calculate customer analytics from sales transactions
     const customerTransactions = customer.salesTransactions;
     const totalSpent = customerTransactions.reduce(
       (sum, transaction) => sum + Number(transaction.total_amount),

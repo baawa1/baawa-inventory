@@ -61,7 +61,7 @@ export const CustomerInfoStep: React.FC<CustomerInfoStepProps> = ({
           <div className="space-y-2">
             <Label htmlFor="customer-phone" className="flex items-center gap-2">
               <IconPhone className="h-4 w-4" />
-              Phone Number
+              Phone Number *
             </Label>
             <Input
               id="customer-phone"
@@ -76,7 +76,7 @@ export const CustomerInfoStep: React.FC<CustomerInfoStepProps> = ({
           <div className="space-y-2">
             <Label htmlFor="customer-email" className="flex items-center gap-2">
               <IconMail className="h-4 w-4" />
-              Email Address
+              Email Address (Optional)
             </Label>
             <Input
               id="customer-email"

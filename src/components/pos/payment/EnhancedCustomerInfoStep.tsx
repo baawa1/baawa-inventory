@@ -263,7 +263,7 @@ export function EnhancedCustomerInfoStep({
                     {customer.name}
                   </div>
                   <div className="text-sm text-foreground/80">
-                    {customer.email} • {customer.phone}
+                    {(customer.email || 'No email') + ' • ' + (customer.phone || 'No phone')}
                   </div>
                   {customer.city && customer.state && (
                     <div className="text-sm text-foreground/70">
@@ -337,7 +337,7 @@ export function EnhancedCustomerInfoStep({
           </div>
 
           <div className="space-y-2">
-            <Label htmlFor="customerPhone">Phone</Label>
+            <Label htmlFor="customerPhone">Phone *</Label>
             <Input
               id="customerPhone"
               value={customerInfo.phone || ''}
@@ -348,7 +348,7 @@ export function EnhancedCustomerInfoStep({
           </div>
 
           <div className="space-y-2">
-            <Label htmlFor="customerEmail">Email</Label>
+            <Label htmlFor="customerEmail">Email (Optional)</Label>
             <Input
               id="customerEmail"
               type="email"

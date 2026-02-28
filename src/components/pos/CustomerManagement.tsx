@@ -5,6 +5,7 @@ import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
+import { InlineLoading } from '@/components/ui/loading';
 import {
   Select,
   SelectContent,
@@ -50,7 +51,7 @@ interface User {
 interface CustomerData {
   id: string;
   name: string;
-  email: string;
+  email?: string | null;
   phone?: string;
   totalSpent: number;
   totalOrders: number;
@@ -153,10 +154,10 @@ async function fetchCustomerAnalytics(): Promise<{
 }
 
 async function fetchCustomerOrders(
-  customerEmail: string
+  customerId: string
 ): Promise<CustomerOrder[]> {
   const response = await fetch(
-    `/api/pos/analytics/customers/${encodeURIComponent(customerEmail)}/orders`
+    `/api/pos/analytics/customers/by-id/${encodeURIComponent(customerId)}/orders`
   );
   if (!response.ok) {
     throw new Error('Failed to fetch customer orders');
@@ -195,10 +196,10 @@ export function CustomerManagement({ user: _user }: CustomerManagementProps) {
     isLoading: ordersLoading,
     error: ordersError,
   } = useQuery({
-    queryKey: ['customer-orders', selectedCustomer?.email],
+    queryKey: ['customer-orders', selectedCustomer?.id],
     queryFn: () =>
       selectedCustomer
-        ? fetchCustomerOrders(selectedCustomer.email)
+        ? fetchCustomerOrders(selectedCustomer.id)
         : Promise.resolve([]),
     enabled: !!selectedCustomer,
   });
@@ -216,7 +217,9 @@ export function CustomerManagement({ user: _user }: CustomerManagementProps) {
     analyticsData?.customers.filter(customer => {
       const matchesSearch =
         customer.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
-        customer.email.toLowerCase().includes(searchTerm.toLowerCase()) ||
+        (customer.email || '')
+          .toLowerCase()
+          .includes(searchTerm.toLowerCase()) ||
         customer.phone?.toLowerCase().includes(searchTerm.toLowerCase());
 
       const matchesStatus =
@@ -292,7 +295,9 @@ export function CustomerManagement({ user: _user }: CustomerManagementProps) {
 
         <div className="mb-2">
           <div className="font-medium">{customer.name}</div>
-          <div className="text-muted-foreground text-sm">{customer.email}</div>
+          <div className="text-muted-foreground text-sm">
+            {customer.email || '-'}
+          </div>
         </div>
 
         <div className="flex items-center justify-between text-sm">
@@ -401,12 +406,7 @@ export function CustomerManagement({ user: _user }: CustomerManagementProps) {
           <h3 className="mb-3 font-medium">Order History</h3>
           {ordersLoading ? (
             <div className="flex items-center justify-center py-8">
-              <div className="text-center">
-                <div className="border-primary mx-auto mb-4 h-8 w-8 animate-spin rounded-full border-b-2"></div>
-                <p className="text-muted-foreground text-sm">
-                  Loading orders...
-                </p>
-              </div>
+              <InlineLoading label="Loading orders..." />
             </div>
           ) : customerOrders && customerOrders.length > 0 ? (
             <div className="space-y-3">
@@ -710,10 +710,7 @@ export function CustomerManagement({ user: _user }: CustomerManagementProps) {
   if (isLoading) {
     return (
       <div className="flex h-64 items-center justify-center">
-        <div className="text-center">
-          <div className="border-primary mx-auto mb-4 h-8 w-8 animate-spin rounded-full border-b-2"></div>
-          <p>Loading customers...</p>
-        </div>
+        <InlineLoading label="Loading customers..." />
       </div>
     );
   }

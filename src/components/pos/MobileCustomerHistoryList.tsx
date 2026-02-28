@@ -47,7 +47,7 @@ import { CustomerDetailView } from './CustomerDetailView';
 interface CustomerData {
   id: string;
   name: string;
-  email: string;
+  email?: string | null;
   phone?: string;
   totalSpent: number;
   totalOrders: number;
@@ -111,7 +111,9 @@ export function MobileCustomerHistoryList({ user }: MobileCustomerHistoryListPro
     let filtered = customers.filter(
       customer =>
         customer.name.toLowerCase().includes(debouncedSearchTerm.toLowerCase()) ||
-        customer.email.toLowerCase().includes(debouncedSearchTerm.toLowerCase()) ||
+        (customer.email || '')
+          .toLowerCase()
+          .includes(debouncedSearchTerm.toLowerCase()) ||
         customer.phone?.includes(debouncedSearchTerm)
     );
 
@@ -309,14 +311,14 @@ export function MobileCustomerHistoryList({ user }: MobileCustomerHistoryListPro
                 {customer.name}
               </div>
               <div className="text-xs text-muted-foreground truncate">
-                {customer.email}
+                {customer.email || '-'}
               </div>
             </div>
           );
         case 'email':
           return (
             <span className="text-xs sm:text-sm truncate">
-              {customer.email}
+              {customer.email || '-'}
             </span>
           );
         case 'phone':
@@ -415,7 +417,7 @@ export function MobileCustomerHistoryList({ user }: MobileCustomerHistoryListPro
   const mobileCardSubtitle = (customer: CustomerData) => (
     <div className="flex items-center gap-2 text-xs text-muted-foreground">
       <IconMail className="h-3 w-3" />
-      <span className="truncate">{customer.email}</span>
+      <span className="truncate">{customer.email || '-'}</span>
       <span>•</span>
       <IconShoppingBag className="h-3 w-3" />
       <span>{customer.totalOrders} orders</span>

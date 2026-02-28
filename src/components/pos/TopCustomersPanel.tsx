@@ -4,6 +4,7 @@ import React, { useState } from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
+import { InlineLoading } from '@/components/ui/loading';
 import {
   Collapsible,
   CollapsibleContent,
@@ -29,7 +30,7 @@ import { ReceiptPrinter } from './ReceiptPrinter';
 interface CustomerData {
   id: string;
   name: string;
-  email: string;
+  email?: string | null;
   phone?: string;
   totalSpent: number;
   totalOrders: number;
@@ -91,10 +92,10 @@ const paymentMethodIcons = {
 };
 
 async function fetchCustomerOrders(
-  customerEmail: string
+  customerId: string
 ): Promise<CustomerOrder[]> {
   const response = await fetch(
-    `/api/pos/analytics/customers/${encodeURIComponent(customerEmail)}/orders`
+    `/api/pos/analytics/customers/by-id/${encodeURIComponent(customerId)}/orders`
   );
   if (!response.ok) {
     throw new Error('Failed to fetch customer orders');
@@ -121,10 +122,10 @@ export function TopCustomersPanel({ customers }: TopCustomersPanelProps) {
     isLoading: ordersLoading,
     error: ordersError,
   } = useQuery({
-    queryKey: ['customer-orders', selectedCustomer?.email],
+    queryKey: ['customer-orders', selectedCustomer?.id],
     queryFn: () =>
       selectedCustomer
-        ? fetchCustomerOrders(selectedCustomer.email)
+        ? fetchCustomerOrders(selectedCustomer.id)
         : Promise.resolve([]),
     enabled: !!selectedCustomer,
   });
@@ -179,7 +180,9 @@ export function TopCustomersPanel({ customers }: TopCustomersPanelProps) {
 
         <div className="mb-2">
           <div className="font-medium">{customer.name}</div>
-          <div className="text-muted-foreground text-sm">{customer.email}</div>
+          <div className="text-muted-foreground text-sm">
+            {customer.email || '-'}
+          </div>
         </div>
 
         <div className="flex items-center justify-between text-sm">
@@ -284,12 +287,7 @@ export function TopCustomersPanel({ customers }: TopCustomersPanelProps) {
           <h3 className="mb-3 font-medium">Order History</h3>
           {ordersLoading ? (
             <div className="flex items-center justify-center py-8">
-              <div className="text-center">
-                <div className="border-primary mx-auto mb-4 h-8 w-8 animate-spin rounded-full border-b-2"></div>
-                <p className="text-muted-foreground text-sm">
-                  Loading orders...
-                </p>
-              </div>
+              <InlineLoading label="Loading orders..." />
             </div>
           ) : customerOrders && customerOrders.length > 0 ? (
             <div className="space-y-3">

@@ -20,7 +20,6 @@ import {
   IconCash,
   IconUser,
   IconReceipt,
-  IconLoader,
 } from '@tabler/icons-react';
 import { toast } from 'sonner';
 import { formatCurrency } from '@/lib/utils';
@@ -147,6 +146,12 @@ export function PaymentInterface({
       return;
     }
 
+    const trimmedPhone = customerInfo.phone.trim();
+    if (!trimmedPhone) {
+      toast.error('Customer phone is required');
+      return;
+    }
+
     const validation = validatePaymentAmount(amountPaid, total, paymentMethod);
     if (!validation.isValid) {
       toast.error(validation.error || 'Invalid payment amount');
@@ -157,6 +162,7 @@ export function PaymentInterface({
 
     try {
       // Create sales transaction
+      const normalizedEmail = customerInfo.email.trim();
       const saleData = {
         items: items.map(item => ({
           productId: item.id,
@@ -169,9 +175,9 @@ export function PaymentInterface({
         discount,
         total,
         paymentMethod,
-        customerName: customerInfo.name || undefined,
-        customerPhone: customerInfo.phone || undefined,
-        customerEmail: customerInfo.email || undefined,
+        customerName: customerInfo.name.trim() || undefined,
+        customerPhone: trimmedPhone,
+        customerEmail: normalizedEmail || undefined,
         amountPaid,
         notes: notes || undefined,
       };
@@ -374,7 +380,7 @@ export function PaymentInterface({
               <CardHeader>
                 <CardTitle className="flex items-center gap-2 text-lg">
                   <IconUser className="h-5 w-5" />
-                  Customer Information (Optional)
+                  Customer Information
                 </CardTitle>
               </CardHeader>
               <CardContent className="space-y-4">
@@ -394,7 +400,7 @@ export function PaymentInterface({
                 </div>
 
                 <div>
-                  <Label htmlFor="customerPhone">Phone</Label>
+                  <Label htmlFor="customerPhone">Phone *</Label>
                   <Input
                     id="customerPhone"
                     type="tel"
@@ -410,7 +416,7 @@ export function PaymentInterface({
                 </div>
 
                 <div>
-                  <Label htmlFor="customerEmail">Email</Label>
+                  <Label htmlFor="customerEmail">Email (Optional)</Label>
                   <Input
                     id="customerEmail"
                     type="email"
@@ -454,18 +460,11 @@ export function PaymentInterface({
             onClick={handlePayment}
             disabled={processing || !paymentMethod}
             className="min-w-32"
+            isLoading={processing}
+            loadingText="Processing..."
           >
-            {processing ? (
-              <>
-                <IconLoader className="mr-2 h-4 w-4 animate-spin" />
-                Processing...
-              </>
-            ) : (
-              <>
-                <IconCash className="mr-2 h-4 w-4" />
-                Complete Payment
-              </>
-            )}
+            <IconCash className="mr-2 h-4 w-4" />
+            Complete Payment
           </Button>
         </div>
       </DialogContent>

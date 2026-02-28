@@ -5,7 +5,10 @@ import { USER_ROLES, hasRole } from '@/lib/auth/roles';
 import { Prisma } from '@prisma/client';
 import { logger } from '@/lib/logger';
 import { SUCCESSFUL_PAYMENT_STATUSES } from '@/lib/constants';
-import { getPhoneSearchPatterns } from '@/lib/utils/phone-utils';
+import {
+  getPhoneSearchPatterns,
+  normalizeNigerianPhone,
+} from '@/lib/utils/phone-utils';
 
 export async function GET(request: NextRequest) {
   try {
@@ -509,8 +512,10 @@ export async function GET(request: NextRequest) {
       }
 
       if (isEmailSearch) {
-        const aExactMatch = a.email.toLowerCase() === searchQuery.toLowerCase();
-        const bExactMatch = b.email.toLowerCase() === searchQuery.toLowerCase();
+        const aExactMatch =
+          (a.email || '').toLowerCase() === searchQuery.toLowerCase();
+        const bExactMatch =
+          (b.email || '').toLowerCase() === searchQuery.toLowerCase();
 
         if (aExactMatch && !bExactMatch) return -1;
         if (!aExactMatch && bExactMatch) return 1;
@@ -579,33 +584,76 @@ export async function POST(request: NextRequest) {
       notes,
     } = body;
 
+    const trimmedName = typeof name === 'string' ? name.trim() : '';
+    const trimmedEmail =
+      typeof email === 'string' ? email.trim().toLowerCase() : '';
+    const trimmedPhone = typeof phone === 'string' ? phone.trim() : '';
+
     // Validate required fields
-    if (!name || !email) {
+    if (!trimmedName || !trimmedPhone) {
       return NextResponse.json(
-        { error: 'Name and email are required' },
+        { error: 'Name and phone are required' },
         { status: 400 }
       );
     }
 
-    // Validate email format
-    const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
-    if (!emailRegex.test(email)) {
-      return NextResponse.json(
-        { error: 'Invalid email format' },
-        { status: 400 }
-      );
+    // Validate email format if provided
+    if (trimmedEmail) {
+      const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+      if (!emailRegex.test(trimmedEmail)) {
+        return NextResponse.json(
+          { error: 'Invalid email format' },
+          { status: 400 }
+        );
+      }
     }
 
-    // Check if customer already exists (by email)
-    const existingCustomer = await prisma.customer.findFirst({
+    // Normalize phone number when possible
+    const normalizedPhoneResult = normalizeNigerianPhone(trimmedPhone);
+    const normalizedPhone = normalizedPhoneResult.isValid
+      ? normalizedPhoneResult.normalized
+      : trimmedPhone;
+
+    // Check if customer already exists (by email or phone)
+    if (trimmedEmail) {
+      const existingCustomerByEmail = await prisma.customer.findFirst({
+        where: {
+          email: trimmedEmail,
+        },
+      });
+
+      if (existingCustomerByEmail) {
+        return NextResponse.json(
+          { error: 'Customer with this email already exists' },
+          { status: 409 }
+        );
+      }
+    }
+
+    const phonePatterns = getPhoneSearchPatterns(trimmedPhone);
+    const phoneDigits = trimmedPhone.replace(/\D/g, '');
+    const phoneOrClauses: Prisma.CustomerWhereInput[] = [
+      ...phonePatterns.map(pattern => ({ phone: pattern })),
+      ...(phoneDigits
+        ? [
+            {
+              phone: {
+                contains: phoneDigits,
+              },
+            },
+          ]
+        : []),
+    ];
+
+    const existingCustomerByPhone = await prisma.customer.findFirst({
       where: {
-        email: email.toLowerCase(),
+        OR: phoneOrClauses,
       },
     });
 
-    if (existingCustomer) {
+    if (existingCustomerByPhone) {
       return NextResponse.json(
-        { error: 'Customer with this email already exists' },
+        { error: 'Customer with this phone number already exists' },
         { status: 409 }
       );
     }
@@ -613,9 +661,9 @@ export async function POST(request: NextRequest) {
     // Create a new customer in the dedicated Customer table
     const newCustomerRecord = await prisma.customer.create({
       data: {
-        name,
-        email: email.toLowerCase(),
-        phone: phone || null,
+        name: trimmedName,
+        email: trimmedEmail || null,
+        phone: normalizedPhone,
         city: city || null,
         state: state || null,
         postalCode: postalCode || null,

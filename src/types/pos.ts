@@ -108,7 +108,7 @@ export interface SplitPayment {
 export interface Customer {
   id: string | number;
   name: string;
-  email: string;
+  email?: string | null;
   phone?: string;
   city?: string;
   state?: string;

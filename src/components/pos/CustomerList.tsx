@@ -45,7 +45,7 @@ interface CustomerListProps {
 interface Customer {
   id: string;
   name: string;
-  email: string;
+  email?: string | null;
   phone?: string;
   city?: string;
   state?: string;
@@ -78,7 +78,7 @@ async function fetchCustomers(): Promise<Customer[]> {
 
 // API function to update customer
 async function updateCustomer(
-  customerEmail: string,
+  customerId: string,
   data: {
     name: string;
     email: string;
@@ -93,9 +93,8 @@ async function updateCustomer(
     notes: string;
   }
 ): Promise<Customer> {
-  // Encode the email for URL safety
-  const encodedEmail = encodeURIComponent(customerEmail);
-  const response = await fetch(`/api/pos/customers/${encodedEmail}`, {
+  const encodedId = encodeURIComponent(customerId);
+  const response = await fetch(`/api/pos/customers/by-id/${encodedId}`, {
     method: 'PUT',
     headers: {
       'Content-Type': 'application/json',
@@ -193,10 +192,10 @@ export function CustomerList({ user: _ }: CustomerListProps) {
   // Update customer mutation
   const updateCustomerMutation = useMutation({
     mutationFn: ({
-      customerEmail,
+      customerId,
       data,
     }: {
-      customerEmail: string;
+      customerId: string;
       data: {
         name: string;
         email: string;
@@ -210,7 +209,7 @@ export function CustomerList({ user: _ }: CustomerListProps) {
         shippingAddress: string;
         notes: string;
       };
-    }) => updateCustomer(customerEmail, data),
+    }) => updateCustomer(customerId, data),
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['customers-list'] });
       toast.success('Customer updated successfully');
@@ -283,7 +282,9 @@ export function CustomerList({ user: _ }: CustomerListProps) {
     return customers.filter(customer => {
       const matchesSearch =
         customer.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
-        customer.email.toLowerCase().includes(searchTerm.toLowerCase()) ||
+        (customer.email || '')
+          .toLowerCase()
+          .includes(searchTerm.toLowerCase()) ||
         customer.phone?.includes(searchTerm);
 
       const matchesStatus = (() => {
@@ -492,20 +493,20 @@ export function CustomerList({ user: _ }: CustomerListProps) {
     if (!editingCustomer) return;
 
     // Validate form data
-    if (!editFormData.name.trim() || !editFormData.email.trim()) {
-      toast.error('Name and email are required');
+    if (!editFormData.name.trim() || !editFormData.phone.trim()) {
+      toast.error('Name and phone are required');
       return;
     }
 
     // Email validation
     const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
-    if (!emailRegex.test(editFormData.email)) {
+    if (editFormData.email.trim() && !emailRegex.test(editFormData.email)) {
       toast.error('Please enter a valid email address');
       return;
     }
 
     updateCustomerMutation.mutate({
-      customerEmail: editingCustomer.email,
+      customerId: editingCustomer.id,
       data: {
         name: editFormData.name.trim(),
         email: editFormData.email.trim(),
@@ -560,14 +561,14 @@ export function CustomerList({ user: _ }: CustomerListProps) {
 
   const handleAddSave = async () => {
     // Validate form data
-    if (!addFormData.name.trim() || !addFormData.email.trim()) {
-      toast.error('Name and email are required');
+    if (!addFormData.name.trim() || !addFormData.phone.trim()) {
+      toast.error('Name and phone are required');
       return;
     }
 
     // Email validation
     const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
-    if (!emailRegex.test(addFormData.email)) {
+    if (addFormData.email.trim() && !emailRegex.test(addFormData.email)) {
       toast.error('Please enter a valid email address');
       return;
     }
@@ -612,7 +613,7 @@ export function CustomerList({ user: _ }: CustomerListProps) {
       case 'name':
         return <span className="font-medium">{customer.name}</span>;
       case 'email':
-        return customer.email;
+        return customer.email || 'N/A';
       case 'phone':
         return customer.phone || 'N/A';
       case 'totalSpent':
@@ -746,7 +747,7 @@ export function CustomerList({ user: _ }: CustomerListProps) {
             </div>
             <div className="grid grid-cols-4 items-center gap-4">
               <Label htmlFor="email" className="text-right">
-                Email
+                Email (Optional)
               </Label>
               <Input
                 id="email"
@@ -761,7 +762,7 @@ export function CustomerList({ user: _ }: CustomerListProps) {
             </div>
             <div className="grid grid-cols-4 items-center gap-4">
               <Label htmlFor="phone" className="text-right">
-                Phone
+                Phone *
               </Label>
               <Input
                 id="phone"
@@ -923,16 +924,10 @@ export function CustomerList({ user: _ }: CustomerListProps) {
             </Button>
             <Button
               onClick={handleEditSave}
-              disabled={updateCustomerMutation.isPending}
+              isLoading={updateCustomerMutation.isPending}
+              loadingText="Updating customer..."
             >
-              {updateCustomerMutation.isPending ? (
-                <>
-                  <div className="mr-2 h-4 w-4 animate-spin rounded-full border-b-2 border-white"></div>
-                  Updating customer...
-                </>
-              ) : (
-                'Update customer'
-              )}
+              Update customer
             </Button>
           </DialogFooter>
         </DialogContent>
@@ -965,7 +960,7 @@ export function CustomerList({ user: _ }: CustomerListProps) {
             </div>
             <div className="grid grid-cols-4 items-center gap-4">
               <Label htmlFor="add-email" className="text-right">
-                Email *
+                Email (Optional)
               </Label>
               <Input
                 id="add-email"
@@ -981,7 +976,7 @@ export function CustomerList({ user: _ }: CustomerListProps) {
             </div>
             <div className="grid grid-cols-4 items-center gap-4">
               <Label htmlFor="add-phone" className="text-right">
-                Phone
+                Phone *
               </Label>
               <Input
                 id="add-phone"
@@ -992,7 +987,7 @@ export function CustomerList({ user: _ }: CustomerListProps) {
                 }
                 className="col-span-3"
                 disabled={createCustomerMutation.isPending}
-                placeholder="Enter phone number (optional)"
+                placeholder="Enter phone number"
               />
             </div>
 
@@ -1148,16 +1143,10 @@ export function CustomerList({ user: _ }: CustomerListProps) {
             </Button>
             <Button
               onClick={handleAddSave}
-              disabled={createCustomerMutation.isPending}
+              isLoading={createCustomerMutation.isPending}
+              loadingText="Creating customer..."
             >
-              {createCustomerMutation.isPending ? (
-                <>
-                  <div className="mr-2 h-4 w-4 animate-spin rounded-full border-b-2 border-white"></div>
-                  Creating customer...
-                </>
-              ) : (
-                'Create customer'
-              )}
+              Create customer
             </Button>
           </DialogFooter>
         </DialogContent>

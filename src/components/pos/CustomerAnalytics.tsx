@@ -31,6 +31,7 @@ import {
   Cell,
 } from 'recharts';
 import Link from 'next/link';
+import { AnalyticsPageSkeleton } from '@/components/ui/skeletons';
 
 interface User {
   id: string;
@@ -48,7 +49,7 @@ interface CustomerAnalyticsProps {
 interface CustomerData {
   id: string;
   name: string;
-  email: string;
+  email?: string | null;
   phone?: string;
   totalSpent: number;
   totalOrders: number;
@@ -137,61 +138,9 @@ export function CustomerAnalytics({ user: _user }: CustomerAnalyticsProps) {
   // Customer segment colors for pie chart
   const segmentColors = ['#10b981', '#3b82f6', '#f59e0b', '#ef4444'];
 
-  // Loading skeleton component
-  const LoadingSkeleton = () => (
-    <div className="space-y-6 p-6">
-      {/* Header */}
-      <div className="flex flex-col items-start justify-between gap-4 sm:flex-row sm:items-center">
-        <div>
-          <h1 className="text-3xl font-bold tracking-tight">
-            Customer Analytics
-          </h1>
-          <p className="text-muted-foreground">
-            Comprehensive customer insights and analytics
-          </p>
-        </div>
-        <DateRangePicker
-          date={dateRange}
-          onDateChange={setDateRange}
-          placeholder="Select date range"
-          className="w-[300px]"
-        />
-      </div>
-
-      {/* KPI Cards Loading */}
-      <div className="grid grid-cols-1 gap-4 md:grid-cols-2 lg:grid-cols-4">
-        {[1, 2, 3, 4].map(i => (
-          <Card key={i}>
-            <CardHeader className="pb-2">
-              <div className="h-4 w-24 animate-pulse rounded bg-gray-200" />
-            </CardHeader>
-            <CardContent>
-              <div className="h-8 w-20 animate-pulse rounded bg-gray-200" />
-              <div className="mt-2 h-4 w-16 animate-pulse rounded bg-gray-200" />
-            </CardContent>
-          </Card>
-        ))}
-      </div>
-
-      {/* Charts Loading */}
-      <div className="grid grid-cols-1 gap-6 lg:grid-cols-2">
-        {[1, 2].map(i => (
-          <Card key={i}>
-            <CardHeader>
-              <div className="h-6 w-32 animate-pulse rounded bg-gray-200" />
-            </CardHeader>
-            <CardContent>
-              <div className="h-[300px] animate-pulse rounded bg-gray-200" />
-            </CardContent>
-          </Card>
-        ))}
-      </div>
-    </div>
-  );
-
   // Show loading skeleton while data is loading
   if (isLoading) {
-    return <LoadingSkeleton />;
+    return <AnalyticsPageSkeleton />;
   }
 
   // Show error state if no data

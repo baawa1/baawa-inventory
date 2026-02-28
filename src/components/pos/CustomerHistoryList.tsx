@@ -6,6 +6,7 @@ import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Badge } from '@/components/ui/badge';
+import { InlineLoading } from '@/components/ui/loading';
 import {
   Table,
   TableBody,
@@ -39,7 +40,7 @@ import { CustomerDetailView } from './CustomerDetailView';
 interface CustomerData {
   id: string;
   name: string;
-  email: string;
+  email?: string | null;
   phone?: string;
   totalSpent: number;
   totalOrders: number;
@@ -87,7 +88,9 @@ export function CustomerHistoryList({ user }: CustomerHistoryListProps) {
   const filteredCustomers = customers.filter(
     customer =>
       customer.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
-      customer.email.toLowerCase().includes(searchTerm.toLowerCase()) ||
+      (customer.email || '')
+        .toLowerCase()
+        .includes(searchTerm.toLowerCase()) ||
       customer.phone?.includes(searchTerm)
   );
 
@@ -202,8 +205,10 @@ export function CustomerHistoryList({ user }: CustomerHistoryListProps) {
         <CardContent>
           {isLoading ? (
             <div className="py-8 text-center">
-              <div className="border-primary mx-auto h-8 w-8 animate-spin border-b-2"></div>
-              <p className="text-muted-foreground mt-2">Loading customers...</p>
+              <InlineLoading
+                className="justify-center"
+                label="Loading customers..."
+              />
             </div>
           ) : filteredCustomers.length === 0 ? (
             <div className="py-8 text-center">
@@ -238,7 +243,7 @@ export function CustomerHistoryList({ user }: CustomerHistoryListProps) {
                       <div>
                         <div className="font-medium">{customer.name}</div>
                         <div className="text-muted-foreground text-sm">
-                          {customer.email}
+                          {customer.email || '-'}
                         </div>
                       </div>
                     </TableCell>
