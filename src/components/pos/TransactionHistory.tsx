@@ -28,7 +28,6 @@ import {
   IconChevronDown,
   IconChevronRight,
   IconChartBar,
-  IconCalendar,
   IconReportMoney,
 } from '@tabler/icons-react';
 import { format } from 'date-fns';
@@ -794,56 +793,49 @@ export function TransactionHistory() {
       </div>
 
       <Card>
-        <CardHeader>
-          <CardTitle className="flex items-center gap-2">
-            <IconReportMoney className="h-5 w-5" />
-            Payment Status Filter
-          </CardTitle>
-        </CardHeader>
-        <CardContent>
-          <div className="flex flex-wrap gap-2">
-            {STATUS_OPTIONS.map(option => (
+        <CardContent className="space-y-4">
+          <div className="flex flex-col gap-2 md:flex-row md:items-center">
+            <div className="text-sm font-medium text-muted-foreground md:w-40">
+              Payment Status
+            </div>
+            <div className="flex flex-wrap gap-2">
+              {STATUS_OPTIONS.map(option => (
+                <Button
+                  key={option.key}
+                  variant={statusFilter === option.key ? 'default' : 'outline'}
+                  size="sm"
+                  onClick={() => {
+                    setStatusFilter(option.key);
+                    setSelectedTransactionId(null);
+                  }}
+                >
+                  {option.label}
+                </Button>
+              ))}
+            </div>
+          </div>
+
+          <div className="flex flex-col gap-2 md:flex-row md:items-center">
+            <div className="text-sm font-medium text-muted-foreground md:w-40">
+              Date Range
+            </div>
+            <div className="flex flex-wrap items-center gap-2">
+              <DateRangePickerWithPresets
+                date={dateRange}
+                onDateChange={handleDateRangeChange}
+                placeholder="Select date range"
+              />
               <Button
-                key={option.key}
-                variant={statusFilter === option.key ? 'default' : 'outline'}
+                variant="outline"
                 size="sm"
                 onClick={() => {
-                  setStatusFilter(option.key);
+                  setDateRange(undefined);
                   setSelectedTransactionId(null);
                 }}
               >
-                {option.label}
+                Reset Filter
               </Button>
-            ))}
-          </div>
-        </CardContent>
-      </Card>
-
-      {/* Date Range Filter */}
-      <Card>
-        <CardHeader>
-          <CardTitle className="flex items-center gap-2">
-            <IconCalendar className="h-5 w-5" />
-            Date Range Filter
-          </CardTitle>
-        </CardHeader>
-        <CardContent>
-          <div className="flex items-center gap-4">
-            <DateRangePickerWithPresets
-              date={dateRange}
-              onDateChange={handleDateRangeChange}
-              placeholder="Select date range"
-            />
-            <Button
-              variant="outline"
-              size="sm"
-              onClick={() => {
-                setDateRange(undefined);
-                setSelectedTransactionId(null);
-              }}
-            >
-              Reset Filter
-            </Button>
+            </div>
           </div>
         </CardContent>
       </Card>
