@@ -11,6 +11,7 @@ import {
 } from '@/components/ui/card';
 import { Input } from '@/components/ui/input';
 import { Badge } from '@/components/ui/badge';
+import { InlineLoading } from '@/components/ui/loading';
 import {
   IconUsers,
   IconUserCheck,
@@ -156,10 +157,7 @@ const UserManagement = ({ activeTab }: UserManagementProps) => {
     return (
       <Card>
         <CardContent className="flex items-center justify-center p-6">
-          <div className="text-center">
-            <div className="border-primary mx-auto h-8 w-8 animate-spin rounded-full border-b-2"></div>
-            <p className="text-muted-foreground mt-2 text-sm">Loading...</p>
-          </div>
+          <InlineLoading label="Loading users..." />
         </CardContent>
       </Card>
     );

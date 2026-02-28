@@ -13,8 +13,9 @@ import {
   CardHeader,
   CardTitle,
 } from '@/components/ui/card';
-import { Clock, CheckCircle, XCircle, AlertCircle, Mail } from 'lucide-react';
+import { CheckCircle, XCircle, AlertCircle, Mail } from 'lucide-react';
 import { useEmailVerification } from '@/hooks/api/useEmailVerification';
+import { PageLoading, Spinner } from '@/components/ui/loading';
 
 function VerifyEmailContent() {
   const router = useRouter();
@@ -161,7 +162,7 @@ function VerifyEmailContent() {
     switch (overallStatus) {
       case 'loading':
       case 'verifying':
-        return <Clock className="h-16 w-16 animate-spin text-blue-500" />;
+        return <Spinner size="lg" className="text-blue-500" />;
       case 'success':
         return <CheckCircle className="h-16 w-16 text-green-500" />;
       case 'error':
@@ -251,7 +252,7 @@ function VerifyEmailContent() {
           <Card>
             <CardHeader className="text-center">
               <div className="mb-4 flex justify-center">
-                <Clock className="h-16 w-16 animate-spin text-blue-500" />
+                <Spinner size="lg" className="text-blue-500" />
               </div>
               <CardTitle className="text-2xl text-blue-600">
                 Loading...
@@ -304,7 +305,7 @@ function VerifyEmailContent() {
                 </div>
                 {isRedirecting ? (
                   <div className="flex items-center justify-center space-x-2">
-                    <Clock className="h-4 w-4 animate-spin text-blue-500" />
+                    <Spinner size="sm" className="text-blue-500" />
                     <span className="text-sm text-blue-600">
                       Redirecting to pending approval...
                     </span>
@@ -370,12 +371,12 @@ function VerifyEmailContent() {
 
                   <Button
                     type="submit"
-                    disabled={resendLoading || !email}
                     className="w-full"
+                    isLoading={resendLoading}
+                    loadingText="Sending..."
+                    disabled={!email}
                   >
-                    {resendLoading
-                      ? 'Sending...'
-                      : 'Send New Verification Email'}
+                    Send New Verification Email
                   </Button>
 
                   {resendMessage && (
@@ -438,10 +439,12 @@ function VerifyEmailContent() {
 
                   <Button
                     type="submit"
-                    disabled={resendLoading || !email}
                     className="w-full"
+                    isLoading={resendLoading}
+                    loadingText="Sending..."
+                    disabled={!email}
                   >
-                    {resendLoading ? 'Sending...' : 'Send Verification Email'}
+                    Send Verification Email
                   </Button>
 
                   {resendMessage && (
@@ -477,7 +480,14 @@ function VerifyEmailContent() {
 
 export default function VerifyEmailPage() {
   return (
-    <Suspense fallback={<div>Loading...</div>}>
+    <Suspense
+      fallback={
+        <PageLoading
+          title="Verifying your email"
+          description="Checking your verification status"
+        />
+      }
+    >
       <VerifyEmailContent />
     </Suspense>
   );

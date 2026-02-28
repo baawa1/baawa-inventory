@@ -12,6 +12,7 @@ import {
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
+import { InlineLoading } from '@/components/ui/loading';
 import {
   IconPackage,
   IconTag,
@@ -175,12 +176,7 @@ export const ProductDetailModal: React.FC<ProductDetailModalProps> = ({
 
         {isLoading && (
           <div className="flex items-center justify-center py-8">
-            <div className="text-center">
-              <IconRefresh className="mx-auto mb-4 h-8 w-8 animate-spin" />
-              <p className="text-muted-foreground">
-                Loading product details...
-              </p>
-            </div>
+            <InlineLoading label="Loading product details..." />
           </div>
         )}
 

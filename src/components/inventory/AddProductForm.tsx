@@ -6,6 +6,7 @@ import { zodResolver } from '@hookform/resolvers/zod';
 import { useForm } from 'react-hook-form';
 import { PageHeader } from '@/components/ui/page-header';
 import { Button } from '@/components/ui/button';
+import { InlineLoading } from '@/components/ui/loading';
 import {
   Card,
   CardContent,
@@ -14,7 +15,7 @@ import {
   CardTitle,
 } from '@/components/ui/card';
 import { Form } from '@/components/ui/form';
-import { ArrowLeft, Loader2 } from 'lucide-react';
+import { ArrowLeft } from 'lucide-react';
 import { Alert, AlertDescription } from '@/components/ui/alert';
 import { createProductSchema } from '@/lib/validations/product';
 
@@ -95,8 +96,7 @@ export default function AddProductForm() {
         <Card>
           <CardContent className="p-4 sm:p-6">
             <div className="flex items-center justify-center py-8 sm:py-12">
-              <Loader2 className="mr-3 h-6 w-6 animate-spin sm:h-8 sm:w-8" />
-              <span>Loading form...</span>
+              <InlineLoading label="Loading form..." spinnerSize="md" />
             </div>
           </CardContent>
         </Card>

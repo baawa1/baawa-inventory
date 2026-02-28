@@ -24,7 +24,7 @@ import {
   FormMessage,
 } from '@/components/ui/form';
 import { Alert, AlertDescription } from '@/components/ui/alert';
-import { Eye, EyeOff, Loader2 } from 'lucide-react';
+import { Eye, EyeOff } from 'lucide-react';
 import { toast } from 'sonner';
 
 const loginSchema = z.object({
@@ -178,16 +178,10 @@ export function LoginForm({ callbackUrl }: LoginFormProps) {
               type="submit"
               data-testid="login-button"
               className="w-full"
-              disabled={isLoading}
+              isLoading={isLoading}
+              loadingText="Signing in..."
             >
-              {isLoading ? (
-                <>
-                  <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-                  Signing in...
-                </>
-              ) : (
-                'Sign in'
-              )}
+              Sign in
             </Button>
           </form>
         </Form>

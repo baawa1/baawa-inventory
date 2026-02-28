@@ -18,6 +18,7 @@ import {
   CardTitle,
 } from '@/components/ui/card';
 import { PageHeader } from '@/components/ui/page-header';
+import { InlineLoading } from '@/components/ui/loading';
 import {
   Dialog,
   DialogContent,
@@ -186,8 +187,13 @@ export function ReportsList({ user: _user }: ReportsListProps) {
           description="View and generate financial reports and analytics"
         />
         <div className="flex gap-2">
-          <Button variant="outline" onClick={() => refetch()} disabled={isLoading}>
-            <RefreshCw className={`mr-2 h-4 w-4 ${isLoading ? 'animate-spin' : ''}`} />
+          <Button
+            variant="outline"
+            onClick={() => refetch()}
+            isLoading={isLoading}
+            loadingText="Refreshing..."
+          >
+            <RefreshCw className="mr-2 h-4 w-4" />
             Refresh
           </Button>
           <Dialog
@@ -381,8 +387,7 @@ export function ReportsList({ user: _user }: ReportsListProps) {
         <CardContent>
           {isLoading ? (
             <div className="flex items-center justify-center py-8">
-              <div className="border-primary h-8 w-8 animate-spin rounded-full border-b-2"></div>
-              <span className="ml-2">Loading reports...</span>
+              <InlineLoading label="Loading reports..." />
             </div>
           ) : (
             <div className="grid gap-6 md:grid-cols-2">

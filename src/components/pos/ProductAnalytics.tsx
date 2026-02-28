@@ -7,6 +7,7 @@ import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { DateRangePicker } from '@/components/ui/date-range-picker';
+import { InlineLoading } from '@/components/ui/loading';
 import {
   Table,
   TableBody,
@@ -320,7 +321,7 @@ export function ProductAnalytics({ user: _ }: ProductAnalyticsProps) {
         <CardContent>
           {isLoading ? (
             <div className="flex justify-center py-8">
-              <div className="h-8 w-8 animate-spin rounded-full border-b-2 border-gray-900"></div>
+              <InlineLoading label="Loading products..." />
             </div>
           ) : (
             <Table>

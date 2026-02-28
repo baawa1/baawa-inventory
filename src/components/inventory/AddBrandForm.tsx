@@ -19,7 +19,7 @@ import {
   CardTitle,
   CardDescription,
 } from '@/components/ui/card';
-import { ArrowLeft, Loader2 } from 'lucide-react';
+import { ArrowLeft } from 'lucide-react';
 import { PageHeader } from '@/components/ui/page-header';
 import { FormLoading } from '@/components/ui/form-loading';
 
@@ -213,13 +213,10 @@ export default function AddBrandForm() {
             <div className="flex items-center gap-4 pt-4">
               <Button
                 type="submit"
-                disabled={createBrandMutation.isPending}
-                className="flex items-center gap-2"
+                isLoading={createBrandMutation.isPending}
+                loadingText="Creating..."
               >
-                {createBrandMutation.isPending && (
-                  <Loader2 className="h-4 w-4 animate-spin" />
-                )}
-                {createBrandMutation.isPending ? 'Creating...' : 'Create Brand'}
+                Create Brand
               </Button>
 
               <Button

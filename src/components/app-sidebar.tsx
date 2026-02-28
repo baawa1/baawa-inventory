@@ -23,6 +23,12 @@ import {
 } from '@/components/ui/sidebar';
 import Link from 'next/link';
 
+type AppSidebarUser = {
+  name: string;
+  email: string;
+  avatar: string;
+};
+
 const navSecondary = [
   {
     title: 'Admin Panel',
@@ -31,12 +37,14 @@ const navSecondary = [
   },
 ];
 
-export function AppSidebar({ ...props }: React.ComponentProps<typeof Sidebar>) {
+export function AppSidebar({
+  user,
+  ...props
+}: React.ComponentProps<typeof Sidebar> & { user?: AppSidebarUser }) {
   const { data: session } = useSession();
   const { setOpenMobile, isMobile } = useSidebar();
 
-  // Create dynamic user data from session
-  const userData = React.useMemo(() => {
+  const userData = React.useMemo<AppSidebarUser>(() => {
     if (session?.user) {
       return {
         name: session.user.name || session.user.email || 'User',
@@ -45,13 +53,16 @@ export function AppSidebar({ ...props }: React.ComponentProps<typeof Sidebar>) {
       };
     }
 
-    // Fallback data while loading or if no session
+    if (user) {
+      return user;
+    }
+
     return {
       name: 'Loading...',
       email: '',
       avatar: '',
     };
-  }, [session]);
+  }, [session?.user, user]);
 
   return (
     <Sidebar collapsible="offcanvas" {...props}>

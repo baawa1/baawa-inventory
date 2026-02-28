@@ -319,18 +319,11 @@ function OfflineStatusDetails({
                 !isOnline || isSyncing || queueStats.pendingTransactions === 0
               }
               className="flex-1"
+              isLoading={isSyncing}
+              loadingText="Syncing..."
             >
-              {isSyncing ? (
-                <>
-                  <IconRefresh className="mr-1 h-4 w-4 animate-spin" />
-                  Syncing...
-                </>
-              ) : (
-                <>
-                  <IconRefresh className="mr-1 h-4 w-4" />
-                  Sync Now
-                </>
-              )}
+              <IconRefresh className="mr-1 h-4 w-4" />
+              Sync Now
             </Button>
 
             {queueStats.failedTransactions > 0 && (
@@ -380,20 +373,13 @@ function OfflineStatusDetails({
               size="sm"
               variant="outline"
               onClick={onCacheProducts}
-              disabled={!isOnline || isCaching}
               className="mt-2 w-full"
+              isLoading={isCaching}
+              loadingText="Caching..."
+              disabled={!isOnline}
             >
-              {isCaching ? (
-                <>
-                  <IconRefresh className="mr-1 h-4 w-4 animate-spin" />
-                  Caching...
-                </>
-              ) : (
-                <>
-                  <IconDatabase className="mr-1 h-4 w-4" />
-                  Update Cache
-                </>
-              )}
+              <IconDatabase className="mr-1 h-4 w-4" />
+              Update Cache
             </Button>
           </CardContent>
         </Card>

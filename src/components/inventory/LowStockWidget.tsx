@@ -4,6 +4,7 @@ import { useState, useEffect, useCallback } from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
+import { InlineLoading } from '@/components/ui/loading';
 import { AlertTriangle, Package, TrendingUp, ExternalLink } from 'lucide-react';
 import { useRouter } from 'next/navigation';
 import { logger } from '@/lib/logger';
@@ -93,7 +94,7 @@ export function LowStockWidget({ limit = 5 }: LowStockWidgetProps) {
         </CardHeader>
         <CardContent>
           <div className="flex items-center justify-center py-8">
-            <div className="border-primary h-8 w-8 animate-spin rounded-full border-b-2"></div>
+            <InlineLoading label="Loading alerts..." />
           </div>
         </CardContent>
       </Card>

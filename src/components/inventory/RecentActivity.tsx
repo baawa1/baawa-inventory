@@ -8,6 +8,7 @@ import {
   CardTitle,
 } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
+import { Skeleton } from '@/components/ui/skeleton';
 import {
   IconPackages,
   IconAdjustments,
@@ -160,8 +161,8 @@ export function RecentActivity() {
       <div className="px-4 lg:px-6">
         <Card>
           <CardHeader>
-            <div className="mb-2 h-6 w-1/4 rounded bg-gray-200"></div>
-            <div className="h-4 w-1/2 rounded bg-gray-200"></div>
+            <Skeleton className="mb-2 h-6 w-1/4 rounded" />
+            <Skeleton className="h-4 w-1/2 rounded" />
           </CardHeader>
           <CardContent>
             <div className="space-y-4">
@@ -170,10 +171,10 @@ export function RecentActivity() {
                   key={i}
                   className="flex animate-pulse items-center space-x-4"
                 >
-                  <div className="h-8 w-8 rounded bg-gray-200"></div>
+                  <Skeleton className="h-8 w-8 rounded" />
                   <div className="flex-1">
-                    <div className="mb-2 h-4 w-3/4 rounded bg-gray-200"></div>
-                    <div className="h-3 w-1/2 rounded bg-gray-200"></div>
+                    <Skeleton className="mb-2 h-4 w-3/4 rounded" />
+                    <Skeleton className="h-3 w-1/2 rounded" />
                   </div>
                 </div>
               ))}

@@ -6,6 +6,7 @@ import { XIcon } from 'lucide-react';
 
 import { cn } from '@/lib/utils';
 import { markRadixLayerClosed, markRadixLayerOpen } from '@/lib/radix-guards';
+import { getSafeAsChildProps } from '@/components/ui/slot-utils';
 
 function SheetLayerTracker() {
   React.useEffect(() => {
@@ -23,9 +24,21 @@ function Sheet({ ...props }: React.ComponentProps<typeof SheetPrimitive.Root>) {
 }
 
 function SheetTrigger({
+  asChild,
+  children,
   ...props
 }: React.ComponentProps<typeof SheetPrimitive.Trigger>) {
-  return <SheetPrimitive.Trigger data-slot="sheet-trigger" {...props} />;
+  const safeProps = getSafeAsChildProps('SheetTrigger', asChild, children);
+
+  return (
+    <SheetPrimitive.Trigger
+      data-slot="sheet-trigger"
+      asChild={safeProps.asChild}
+      {...props}
+    >
+      {safeProps.children}
+    </SheetPrimitive.Trigger>
+  );
 }
 
 function SheetClose({

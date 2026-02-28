@@ -6,6 +6,7 @@ import * as AlertDialogPrimitive from '@radix-ui/react-alert-dialog';
 import { cn } from '@/lib/utils';
 import { buttonVariants } from '@/components/ui/button';
 import { markRadixLayerClosed, markRadixLayerOpen } from '@/lib/radix-guards';
+import { getSafeAsChildProps } from '@/components/ui/slot-utils';
 
 function AlertDialogLayerTracker() {
   React.useEffect(() => {
@@ -25,10 +26,24 @@ function AlertDialog({
 }
 
 function AlertDialogTrigger({
+  asChild,
+  children,
   ...props
 }: React.ComponentProps<typeof AlertDialogPrimitive.Trigger>) {
+  const safeProps = getSafeAsChildProps(
+    'AlertDialogTrigger',
+    asChild,
+    children
+  );
+
   return (
-    <AlertDialogPrimitive.Trigger data-slot="alert-dialog-trigger" {...props} />
+    <AlertDialogPrimitive.Trigger
+      data-slot="alert-dialog-trigger"
+      asChild={safeProps.asChild}
+      {...props}
+    >
+      {safeProps.children}
+    </AlertDialogPrimitive.Trigger>
   );
 }
 

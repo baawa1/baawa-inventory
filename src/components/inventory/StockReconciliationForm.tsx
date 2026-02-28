@@ -44,9 +44,10 @@ import {
   IconChevronDown,
   IconX,
 } from '@tabler/icons-react';
-import { ArrowLeft, Loader2 } from 'lucide-react';
+import { ArrowLeft } from 'lucide-react';
 import { PageHeader } from '@/components/ui/page-header';
 import { FormLoading } from '@/components/ui/form-loading';
+import { InlineLoading } from '@/components/ui/loading';
 import { formatCurrency } from '@/lib/utils';
 import { useProductSearch } from '@/hooks/useProductSearch';
 import {
@@ -705,14 +706,12 @@ export function StockReconciliationForm() {
                     onClick={handleLoadProducts}
                     disabled={
                       selectedCategoryIds.length === 0 ||
-                      snapshotQuery.isFetching ||
                       categoriesLoading
                     }
+                    isLoading={snapshotQuery.isFetching}
+                    loadingText="Loading…"
                   >
-                    {snapshotQuery.isFetching && (
-                      <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-                    )}
-                    {snapshotQuery.isFetching ? 'Loading…' : 'Load products'}
+                    Load products
                   </Button>
                 </div>
               </div>
@@ -811,8 +810,10 @@ export function StockReconciliationForm() {
                   <div className="max-h-48 space-y-2 overflow-y-auto">
                     {isLoadingProducts ? (
                       <div className="text-muted-foreground py-4 text-center">
-                        <Loader2 className="mx-auto mb-2 h-4 w-4 animate-spin" />
-                        Loading products...
+                        <InlineLoading
+                          className="justify-center"
+                          label="Loading products..."
+                        />
                       </div>
                     ) : (
                       <>
@@ -1310,38 +1311,24 @@ export function StockReconciliationForm() {
               type="button"
               variant="outline"
               onClick={form.handleSubmit(data => onSubmit(data, true))}
-              disabled={createMutation.isPending || submitMutation.isPending}
               className="md:w-auto"
+              isLoading={createMutation.isPending}
+              loadingText="Saving..."
+              disabled={submitMutation.isPending}
             >
-              {createMutation.isPending ? (
-                <>
-                  <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-                  Saving...
-                </>
-              ) : (
-                <>
-                  <IconDeviceFloppy className="mr-2 h-4 w-4" />
-                  Save Draft
-                </>
-              )}
+              <IconDeviceFloppy className="mr-2 h-4 w-4" />
+              Save Draft
             </Button>
             <Button
               type="button"
               onClick={form.handleSubmit(data => onSubmit(data, false))}
-              disabled={createMutation.isPending || submitMutation.isPending}
               className="md:w-auto"
+              isLoading={submitMutation.isPending}
+              loadingText="Submitting..."
+              disabled={createMutation.isPending}
             >
-              {submitMutation.isPending ? (
-                <>
-                  <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-                  Submitting...
-                </>
-              ) : (
-                <>
-                  <IconSend className="mr-2 h-4 w-4" />
-                  Submit for Approval
-                </>
-              )}
+              <IconSend className="mr-2 h-4 w-4" />
+              Submit for Approval
             </Button>
           </div>
         </form>

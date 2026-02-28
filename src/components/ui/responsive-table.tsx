@@ -1,11 +1,9 @@
 'use client';
 
 import * as React from 'react';
-import { Card, CardContent } from '@/components/ui/card';
-import { Badge } from '@/components/ui/badge';
-import { Button } from '@/components/ui/button';
+import { CardContent } from '@/components/ui/card';
 import { Separator } from '@/components/ui/separator';
-import { SwipeableCard, TouchButton } from '@/components/ui/touch-enhanced';
+import { SwipeableCard } from '@/components/ui/touch-enhanced';
 import {
   Table,
   TableBody,
@@ -15,6 +13,7 @@ import {
   TableRow,
 } from '@/components/ui/table';
 import { cn } from '@/lib/utils';
+import { TableSkeleton } from '@/components/ui/skeletons';
 
 export interface Column<T> {
   key: string;
@@ -65,53 +64,16 @@ export function ResponsiveTable<T>({
       <div className="space-y-4">
         {/* Desktop skeleton */}
         <div className="hidden md:block">
-          <div className="rounded-md border">
-            <Table>
-              <TableHeader>
-                <TableRow>
-                  {visibleDesktopColumns.map(column => (
-                    <TableHead key={column.key} className={column.headerClassName}>
-                      <div className="h-4 bg-muted animate-pulse rounded" />
-                    </TableHead>
-                  ))}
-                  {renderActions && <TableHead className="w-10" />}
-                </TableRow>
-              </TableHeader>
-              <TableBody>
-                {Array.from({ length: 5 }).map((_, index) => (
-                  <TableRow key={index}>
-                    {visibleDesktopColumns.map(column => (
-                      <TableCell key={column.key} className={column.className}>
-                        <div className="h-4 bg-muted animate-pulse rounded" />
-                      </TableCell>
-                    ))}
-                    {renderActions && (
-                      <TableCell>
-                        <div className="h-8 w-8 bg-muted animate-pulse rounded" />
-                      </TableCell>
-                    )}
-                  </TableRow>
-                ))}
-              </TableBody>
-            </Table>
-          </div>
+          <TableSkeleton
+            columns={visibleDesktopColumns.length}
+            rows={5}
+            withActions={!!renderActions}
+          />
         </div>
         
         {/* Mobile skeleton */}
         <div className="md:hidden space-y-3">
-          {Array.from({ length: 3 }).map((_, index) => (
-            <Card key={index}>
-              <CardContent className="p-4 space-y-2">
-                <div className="h-5 bg-muted animate-pulse rounded w-3/4" />
-                <div className="h-4 bg-muted animate-pulse rounded w-1/2" />
-                <Separator className="my-3" />
-                <div className="space-y-2">
-                  <div className="h-3 bg-muted animate-pulse rounded w-full" />
-                  <div className="h-3 bg-muted animate-pulse rounded w-2/3" />
-                </div>
-              </CardContent>
-            </Card>
-          ))}
+          <TableSkeleton variant="cards" rows={3} />
         </div>
       </div>
     );

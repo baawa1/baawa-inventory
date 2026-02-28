@@ -6,6 +6,7 @@ import { XIcon } from 'lucide-react';
 
 import { cn } from '@/lib/utils';
 import { markRadixLayerClosed, markRadixLayerOpen } from '@/lib/radix-guards';
+import { getSafeAsChildProps } from '@/components/ui/slot-utils';
 
 function DialogLayerTracker() {
   React.useEffect(() => {
@@ -25,9 +26,21 @@ function Dialog({
 }
 
 function DialogTrigger({
+  asChild,
+  children,
   ...props
 }: React.ComponentProps<typeof DialogPrimitive.Trigger>) {
-  return <DialogPrimitive.Trigger data-slot="dialog-trigger" {...props} />;
+  const safeProps = getSafeAsChildProps('DialogTrigger', asChild, children);
+
+  return (
+    <DialogPrimitive.Trigger
+      data-slot="dialog-trigger"
+      asChild={safeProps.asChild}
+      {...props}
+    >
+      {safeProps.children}
+    </DialogPrimitive.Trigger>
+  );
 }
 
 function DialogPortal({

@@ -70,21 +70,13 @@ export default function LogoutPage() {
         <CardContent className="space-y-4">
           <Button
             onClick={handleLogout}
-            disabled={isLoggingOut}
             className="w-full"
             variant="destructive"
+            isLoading={isLoggingOut}
+            loadingText="Logging out..."
           >
-            {isLoggingOut ? (
-              <>
-                <div className="mr-2 h-4 w-4 animate-spin rounded-full border-b-2 border-white" />
-                Logging out...
-              </>
-            ) : (
-              <>
-                <LogOut className="mr-2 h-4 w-4" />
-                Confirm Logout
-              </>
-            )}
+            <LogOut className="mr-2 h-4 w-4" />
+            Confirm Logout
           </Button>
 
           {error && (

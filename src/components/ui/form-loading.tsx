@@ -1,7 +1,8 @@
 import { Button } from '@/components/ui/button';
 import { Card, CardContent } from '@/components/ui/card';
-import { ArrowLeft, Loader2 } from 'lucide-react';
+import { ArrowLeft } from 'lucide-react';
 import { PageHeader } from '@/components/ui/page-header';
+import { InlineLoading } from '@/components/ui/loading';
 
 interface FormLoadingProps {
   title: string;
@@ -27,11 +28,10 @@ export function FormLoading({
         <PageHeader title={title} description={description} />
       </div>
 
-      <Card>
+        <Card>
         <CardContent className="p-6">
           <div className="flex items-center justify-center py-12">
-            <Loader2 className="mr-3 h-8 w-8 animate-spin" />
-            <span>Loading form...</span>
+            <InlineLoading label="Loading form..." spinnerSize="md" />
           </div>
         </CardContent>
       </Card>

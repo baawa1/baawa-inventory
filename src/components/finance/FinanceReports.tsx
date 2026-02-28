@@ -9,6 +9,7 @@ import {
   CardTitle,
 } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
+import { InlineLoading } from '@/components/ui/loading';
 import {
   Select,
   SelectContent,
@@ -625,10 +626,12 @@ export default function FinanceReports() {
             <Download className="mr-2 h-4 w-4" />
             Export
           </Button>
-          <Button onClick={fetchData} disabled={loading}>
-            <RefreshCw
-              className={`mr-2 h-4 w-4 ${loading ? 'animate-spin' : ''}`}
-            />
+          <Button
+            onClick={fetchData}
+            isLoading={loading}
+            loadingText="Refreshing..."
+          >
+            <RefreshCw className="mr-2 h-4 w-4" />
             Refresh
           </Button>
         </div>
@@ -716,10 +719,7 @@ export default function FinanceReports() {
       {loading && (
         <Card>
           <CardContent className="flex items-center justify-center py-12">
-            <div className="flex items-center space-x-2">
-              <RefreshCw className="h-6 w-6 animate-spin" />
-              <span>Loading report data...</span>
-            </div>
+            <InlineLoading label="Loading report data..." />
           </CardContent>
         </Card>
       )}

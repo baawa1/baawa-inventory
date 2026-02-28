@@ -4,6 +4,7 @@ import { redirect } from 'next/navigation';
 import { auth } from '#root/auth';
 import { LoginForm } from '@/components/auth/LoginForm';
 import { Logo } from '@/components/ui/logo';
+import { InlineLoading } from '@/components/ui/loading';
 
 interface LoginPageProps {
   searchParams: Promise<{ callbackUrl?: string; message?: string }>;
@@ -57,7 +58,13 @@ export default async function LoginPage({ searchParams }: LoginPageProps) {
           </p>
         </div>
 
-        <Suspense fallback={<div>Loading...</div>}>
+        <Suspense
+          fallback={
+            <div className="flex justify-center py-8">
+              <InlineLoading label="Loading login form..." />
+            </div>
+          }
+        >
           <LoginFormWrapper searchParams={resolvedSearchParams} />
         </Suspense>
 

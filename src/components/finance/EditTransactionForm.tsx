@@ -36,7 +36,8 @@ import {
 } from '@/components/ui/card';
 import { Alert, AlertDescription } from '@/components/ui/alert';
 import { PageHeader } from '@/components/ui/page-header';
-import { ArrowLeft, AlertCircle, Loader2 } from 'lucide-react';
+import { InlineLoading } from '@/components/ui/loading';
+import { ArrowLeft, AlertCircle } from 'lucide-react';
 
 interface EditTransactionFormProps {
   transactionId: number;
@@ -159,12 +160,7 @@ export function EditTransactionForm({
     return (
       <div className="mx-auto max-w-4xl p-6">
         <div className="flex h-64 items-center justify-center">
-          <div className="text-center">
-            <Loader2 className="mx-auto mb-4 h-8 w-8 animate-spin" />
-            <p className="text-muted-foreground">
-              Loading transaction details...
-            </p>
-          </div>
+          <InlineLoading label="Loading transaction details..." />
         </div>
       </div>
     );
@@ -437,15 +433,12 @@ export function EditTransactionForm({
                 >
                   Cancel
                 </Button>
-                <Button type="submit" disabled={isSubmitting}>
-                  {isSubmitting ? (
-                    <>
-                      <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-                      Updating...
-                    </>
-                  ) : (
-                    'Update Transaction'
-                  )}
+                <Button
+                  type="submit"
+                  isLoading={isSubmitting}
+                  loadingText="Updating..."
+                >
+                  Update Transaction
                 </Button>
               </div>
             </form>

@@ -36,7 +36,8 @@ import {
   DashboardTableColumn,
 } from '@/components/layouts/DashboardColumnCustomizer';
 import { IconPackages } from '@tabler/icons-react';
-import { Loader2 } from 'lucide-react';
+import { InlineLoading } from '@/components/ui/loading';
+import { Skeleton } from '@/components/ui/skeleton';
 
 interface DashboardTableProps<T = Record<string, unknown>> {
   tableTitle?: string;
@@ -120,8 +121,8 @@ export function DashboardTable<T = Record<string, unknown>>({
                 className="flex animate-pulse items-center space-x-4"
               >
                 <div className="flex-1 space-y-2">
-                  <div className="h-4 w-1/4 rounded bg-gray-200"></div>
-                  <div className="h-3 w-1/2 rounded bg-gray-200"></div>
+                  <Skeleton className="h-4 w-1/4 rounded" />
+                  <Skeleton className="h-3 w-1/2 rounded" />
                 </div>
               </div>
             ))}
@@ -149,8 +150,7 @@ export function DashboardTable<T = Record<string, unknown>>({
               {isRefetching && (
                 <div className="absolute inset-0 z-10 flex items-center justify-center rounded-md bg-white/80 backdrop-blur-sm">
                   <div className="flex items-center gap-2 rounded-lg border bg-white px-4 py-2 shadow-sm">
-                    <Loader2 className="h-4 w-4 animate-spin text-blue-600" />
-                    <span className="text-sm text-gray-600">Loading...</span>
+                    <InlineLoading label="Loading..." />
                   </div>
                 </div>
               )}

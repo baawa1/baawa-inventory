@@ -24,7 +24,7 @@ import {
   FormLabel,
   FormMessage,
 } from '@/components/ui/form';
-import { ArrowLeft, Loader2 } from 'lucide-react';
+import { ArrowLeft } from 'lucide-react';
 import { PageHeader } from '@/components/ui/page-header';
 import { FormLoading } from '@/components/ui/form-loading';
 import { toast } from 'sonner';
@@ -459,15 +459,12 @@ export default function AddSupplierForm() {
             >
               Cancel
             </Button>
-            <Button type="submit" disabled={createSupplierMutation.isPending}>
-              {createSupplierMutation.isPending ? (
-                <>
-                  <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-                  Creating...
-                </>
-              ) : (
-                'Create Supplier'
-              )}
+            <Button
+              type="submit"
+              isLoading={createSupplierMutation.isPending}
+              loadingText="Creating..."
+            >
+              Create Supplier
             </Button>
           </div>
         </form>

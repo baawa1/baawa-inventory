@@ -6,6 +6,7 @@ import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { DateRangePickerWithPresets } from '@/components/ui/date-range-picker-with-presets';
+import { InlineLoading } from '@/components/ui/loading';
 import {
   Table,
   TableBody,
@@ -145,7 +146,7 @@ export function CategoryAnalytics({ user: _ }: CategoryAnalyticsProps) {
 
       {isLoading ? (
         <div className="flex justify-center py-12">
-          <div className="h-8 w-8 animate-spin rounded-full border-b-2 border-gray-900"></div>
+          <InlineLoading label="Loading categories..." />
         </div>
       ) : categories.length > 0 ? (
         <>

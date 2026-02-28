@@ -6,6 +6,7 @@ import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { PageHeader } from '@/components/ui/page-header';
+import { InlineLoading } from '@/components/ui/loading';
 import { useFinancialTransaction } from '@/hooks/api/finance';
 import { formatCurrency, formatDate } from '@/lib/utils';
 import { AppUser } from '@/types/user';
@@ -40,12 +41,7 @@ export function TransactionDetail({
     return (
       <div className="mx-auto max-w-4xl p-6">
         <div className="flex h-64 items-center justify-center">
-          <div className="text-center">
-            <div className="border-primary mx-auto mb-4 h-8 w-8 animate-spin rounded-full border-b-2"></div>
-            <p className="text-muted-foreground">
-              Loading transaction details...
-            </p>
-          </div>
+          <InlineLoading label="Loading transaction details..." />
         </div>
       </div>
     );

@@ -40,7 +40,6 @@ import {
   IconSearch,
   IconCalculator,
   IconFilter,
-  IconLoader2,
   IconX,
   IconChevronDown,
 } from '@tabler/icons-react';
@@ -617,14 +616,12 @@ export function StockReconciliationDialog({
                         onClick={handleLoadProducts}
                         disabled={
                           selectedCategoryIds.length === 0 ||
-                          snapshotQuery.isFetching ||
                           categoriesLoading
                         }
+                        isLoading={snapshotQuery.isFetching}
+                        loadingText="Loading…"
                       >
-                        {snapshotQuery.isFetching && (
-                          <IconLoader2 className="mr-2 h-4 w-4 animate-spin" />
-                        )}
-                        {snapshotQuery.isFetching ? 'Loading…' : 'Load products'}
+                        Load products
                       </Button>
                     </div>
                   </div>

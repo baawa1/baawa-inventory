@@ -3,6 +3,7 @@
 import React, { useState } from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
+import { InlineLoading } from '@/components/ui/loading';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import {
   Select,
@@ -94,10 +95,10 @@ export function FinancialReports({
     return (
       <div className="space-y-6">
         <div className="py-8 text-center">
-          <div className="border-primary mx-auto h-8 w-8 animate-spin border-b-2"></div>
-          <p className="text-muted-foreground mt-2">
-            Loading financial reports...
-          </p>
+          <InlineLoading
+            className="justify-center"
+            label="Loading financial reports..."
+          />
         </div>
       </div>
     );

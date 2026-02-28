@@ -4,6 +4,7 @@ import * as React from 'react';
 import * as PopoverPrimitive from '@radix-ui/react-popover';
 
 import { cn } from '@/lib/utils';
+import { getSafeAsChildProps } from '@/components/ui/slot-utils';
 
 function Popover({
   ...props
@@ -12,9 +13,25 @@ function Popover({
 }
 
 function PopoverTrigger({
+  asChild,
+  children,
   ...props
 }: React.ComponentProps<typeof PopoverPrimitive.Trigger>) {
-  return <PopoverPrimitive.Trigger data-slot="popover-trigger" {...props} />;
+  const safeProps = getSafeAsChildProps(
+    'PopoverTrigger',
+    asChild,
+    children
+  );
+
+  return (
+    <PopoverPrimitive.Trigger
+      data-slot="popover-trigger"
+      asChild={safeProps.asChild}
+      {...props}
+    >
+      {safeProps.children}
+    </PopoverPrimitive.Trigger>
+  );
 }
 
 function PopoverContent({

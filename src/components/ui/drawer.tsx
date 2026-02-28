@@ -4,6 +4,7 @@ import * as React from 'react';
 import { Drawer as DrawerPrimitive } from 'vaul';
 
 import { cn } from '@/lib/utils';
+import { getSafeAsChildProps } from '@/components/ui/slot-utils';
 
 function Drawer({
   ...props
@@ -12,9 +13,21 @@ function Drawer({
 }
 
 function DrawerTrigger({
+  asChild,
+  children,
   ...props
 }: React.ComponentProps<typeof DrawerPrimitive.Trigger>) {
-  return <DrawerPrimitive.Trigger data-slot="drawer-trigger" {...props} />;
+  const safeProps = getSafeAsChildProps('DrawerTrigger', asChild, children);
+
+  return (
+    <DrawerPrimitive.Trigger
+      data-slot="drawer-trigger"
+      asChild={safeProps.asChild}
+      {...props}
+    >
+      {safeProps.children}
+    </DrawerPrimitive.Trigger>
+  );
 }
 
 function DrawerPortal({

@@ -12,7 +12,6 @@ import {
 import {
   IconPrinter,
   IconMail,
-  IconLoader,
   IconBrandWhatsapp,
 } from '@tabler/icons-react';
 import { toast } from 'sonner';
@@ -489,13 +488,10 @@ export function ReceiptPrinter({
       variant={variant}
       size={size}
       onClick={() => setIsOpen(true)}
-      disabled={isProcessing}
+      isLoading={isProcessing}
+      loadingText=""
     >
-      {isProcessing ? (
-        <IconLoader className="h-4 w-4 animate-spin" />
-      ) : (
-        <IconPrinter className="h-4 w-4" />
-      )}
+      <IconPrinter className="h-4 w-4" />
     </Button>
   );
 
@@ -535,13 +531,10 @@ export function ReceiptPrinter({
                 onClick={handleThermalPrint}
                 className="w-full justify-start"
                 variant="outline"
-                disabled={isProcessing}
+                isLoading={isProcessing}
+                loadingText="Printing..."
               >
-                {isProcessing ? (
-                  <IconLoader className="mr-2 h-4 w-4 animate-spin" />
-                ) : (
-                  <IconPrinter className="mr-2 h-4 w-4" />
-                )}
+                <IconPrinter className="mr-2 h-4 w-4" />
                 Thermal Print (Receipt Printer)
               </Button>
             )}
@@ -552,13 +545,10 @@ export function ReceiptPrinter({
                 onClick={handleEmailReceipt}
                 className="w-full justify-start"
                 variant="outline"
-                disabled={isProcessing}
+                isLoading={isProcessing}
+                loadingText="Sending..."
               >
-                {isProcessing ? (
-                  <IconLoader className="mr-2 h-4 w-4 animate-spin" />
-                ) : (
-                  <IconMail className="mr-2 h-4 w-4" />
-                )}
+                <IconMail className="mr-2 h-4 w-4" />
                 Email to {receiptData.customerEmail}
               </Button>
             )}

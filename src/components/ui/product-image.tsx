@@ -4,6 +4,7 @@ import React, { useState } from 'react';
 import Image from 'next/image';
 import { IconPackages, IconPhoto } from '@tabler/icons-react';
 import { cn } from '@/lib/utils';
+import { Spinner } from '@/components/ui/loading';
 import { normalizeImageUrl } from '@/lib/utils/image';
 
 interface ProductImageProps {
@@ -86,7 +87,7 @@ export function ProductImage({
     )}>
       {imageLoading && (
         <div className="absolute inset-0 flex items-center justify-center">
-          <div className="animate-spin rounded-full h-4 w-4 border-2 border-primary border-t-transparent" />
+          <Spinner size="sm" className="text-primary" />
         </div>
       )}
       

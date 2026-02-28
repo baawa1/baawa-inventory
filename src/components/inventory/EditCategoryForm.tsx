@@ -25,7 +25,7 @@ import {
   FormLabel,
   FormMessage,
 } from '@/components/ui/form';
-import { ArrowLeft, Loader2 } from 'lucide-react';
+import { ArrowLeft } from 'lucide-react';
 import { Alert, AlertDescription } from '@/components/ui/alert';
 import { PageHeader } from '@/components/ui/page-header';
 import { FormLoading } from '@/components/ui/form-loading';
@@ -291,15 +291,10 @@ export default function EditCategoryForm({ category }: EditCategoryFormProps) {
                 </Button>
                 <Button
                   type="submit"
-                  disabled={updateCategoryMutation.isPending}
-                  className="flex items-center gap-2"
+                  isLoading={updateCategoryMutation.isPending}
+                  loadingText="Updating..."
                 >
-                  {updateCategoryMutation.isPending && (
-                    <Loader2 className="h-4 w-4 animate-spin" />
-                  )}
-                  {updateCategoryMutation.isPending
-                    ? 'Updating...'
-                    : 'Update Category'}
+                  Update Category
                 </Button>
               </div>
             </form>

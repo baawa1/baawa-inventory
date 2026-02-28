@@ -4,6 +4,7 @@ import * as React from 'react';
 import * as TooltipPrimitive from '@radix-ui/react-tooltip';
 
 import { cn } from '@/lib/utils';
+import { getSafeAsChildProps } from '@/components/ui/slot-utils';
 
 function TooltipProvider({
   delayDuration = 0,
@@ -29,9 +30,25 @@ function Tooltip({
 }
 
 function TooltipTrigger({
+  asChild,
+  children,
   ...props
 }: React.ComponentProps<typeof TooltipPrimitive.Trigger>) {
-  return <TooltipPrimitive.Trigger data-slot="tooltip-trigger" {...props} />;
+  const safeProps = getSafeAsChildProps(
+    'TooltipTrigger',
+    asChild,
+    children
+  );
+
+  return (
+    <TooltipPrimitive.Trigger
+      data-slot="tooltip-trigger"
+      asChild={safeProps.asChild}
+      {...props}
+    >
+      {safeProps.children}
+    </TooltipPrimitive.Trigger>
+  );
 }
 
 function TooltipContent({

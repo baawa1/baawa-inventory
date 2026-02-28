@@ -19,6 +19,7 @@ import { useQuery } from '@tanstack/react-query';
 import { toast } from 'sonner';
 import { Button } from '@/components/ui/button';
 import Link from 'next/link';
+import { AnalyticsPageSkeleton } from '@/components/ui/skeletons';
 import {
   LineChart,
   Line,
@@ -156,87 +157,9 @@ export function MainAnalytics({ user: _ }: MainAnalyticsProps) {
     setDateRange(newDateRange);
   };
 
-  // Loading skeleton component
-  const LoadingSkeleton = () => (
-    <div className="space-y-6 p-6">
-      {/* Header */}
-      <div className="flex flex-col items-start justify-between gap-4 sm:flex-row sm:items-center">
-        <div>
-          <h1 className="text-3xl font-bold tracking-tight">Analytics</h1>
-          <p className="text-muted-foreground">
-            Quick insights for informed decision-making
-          </p>
-        </div>
-        <DateRangePickerWithPresets
-          date={dateRange}
-          onDateChange={handleDateRangeChange}
-          placeholder="Select date range"
-          className="w-[300px]"
-        />
-      </div>
-
-      {/* KPI Cards Loading */}
-      <div className="grid grid-cols-1 gap-4 md:grid-cols-2 lg:grid-cols-4">
-        {[1, 2, 3, 4].map(i => (
-          <Card key={i}>
-            <CardHeader className="pb-2">
-              <div className="h-4 w-24 animate-pulse rounded bg-gray-200" />
-            </CardHeader>
-            <CardContent>
-              <div className="h-8 w-20 animate-pulse rounded bg-gray-200" />
-              <div className="mt-2 h-4 w-16 animate-pulse rounded bg-gray-200" />
-            </CardContent>
-          </Card>
-        ))}
-      </div>
-
-      {/* Chart Loading */}
-      <Card>
-        <CardHeader>
-          <div className="h-6 w-32 animate-pulse rounded bg-gray-200" />
-          <div className="h-4 w-48 animate-pulse rounded bg-gray-200" />
-        </CardHeader>
-        <CardContent>
-          <div className="h-[300px] animate-pulse rounded bg-gray-200" />
-        </CardContent>
-      </Card>
-
-      {/* Bottom Section Loading */}
-      <div className="grid grid-cols-1 gap-6 lg:grid-cols-2">
-        {[1, 2].map(i => (
-          <Card key={i}>
-            <CardHeader>
-              <div className="h-6 w-32 animate-pulse rounded bg-gray-200" />
-              <div className="h-4 w-48 animate-pulse rounded bg-gray-200" />
-            </CardHeader>
-            <CardContent>
-              <div className="space-y-4">
-                {[1, 2, 3, 4, 5].map(j => (
-                  <div
-                    key={j}
-                    className="flex items-center justify-between rounded-lg border p-3"
-                  >
-                    <div className="flex items-center gap-3">
-                      <div className="h-8 w-8 animate-pulse rounded-full bg-gray-200" />
-                      <div>
-                        <div className="h-4 w-24 animate-pulse rounded bg-gray-200" />
-                        <div className="h-3 w-16 animate-pulse rounded bg-gray-200" />
-                      </div>
-                    </div>
-                    <div className="h-4 w-20 animate-pulse rounded bg-gray-200" />
-                  </div>
-                ))}
-              </div>
-            </CardContent>
-          </Card>
-        ))}
-      </div>
-    </div>
-  );
-
   // Show loading skeleton while data is loading
   if (isLoading) {
-    return <LoadingSkeleton />;
+    return <AnalyticsPageSkeleton />;
   }
 
   // Show error state if no data

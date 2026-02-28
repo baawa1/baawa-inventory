@@ -13,6 +13,7 @@ import {
 import { Button } from '@/components/ui/button';
 import { Logo } from '@/components/ui/logo';
 import { Clock, RefreshCw } from 'lucide-react';
+import { PageLoading } from '@/components/ui/loading';
 
 export default function PendingApprovalPage() {
   const { data: session, status, update } = useSession();
@@ -78,12 +79,10 @@ export default function PendingApprovalPage() {
 
   if (status === 'loading') {
     return (
-      <div className="flex min-h-screen items-center justify-center">
-        <div className="text-center">
-          <div className="mx-auto h-8 w-8 animate-spin rounded-full border-b-2 border-blue-600"></div>
-          <p className="mt-2">Loading...</p>
-        </div>
-      </div>
+      <PageLoading
+        title="Loading account status"
+        description="Checking approval status"
+      />
     );
   }
 
@@ -153,14 +152,13 @@ export default function PendingApprovalPage() {
 
             <Button
               onClick={handleRefreshSession}
-              disabled={isRefreshing}
               variant="outline"
               className="w-full"
+              isLoading={isRefreshing}
+              loadingText="Refreshing..."
             >
-              <RefreshCw
-                className={`mr-2 h-4 w-4 ${isRefreshing ? 'animate-spin' : ''}`}
-              />
-              {isRefreshing ? 'Refreshing...' : 'Refresh Status'}
+              <RefreshCw className="h-4 w-4" />
+              Refresh Status
             </Button>
           </CardContent>
         </Card>

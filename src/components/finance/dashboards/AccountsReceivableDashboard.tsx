@@ -21,6 +21,7 @@ import {
   TableHeader,
   TableRow,
 } from '@/components/ui/table';
+import { CardGridSkeleton, PageHeaderSkeleton } from '@/components/ui/skeletons';
 import { formatCurrency } from '@/lib/utils/finance';
 import { AlertTriangle, DollarSign, Clock, Users } from 'lucide-react';
 
@@ -293,17 +294,8 @@ export function AccountsReceivableDashboard() {
 function ReceivablesSkeleton() {
   return (
     <div className="space-y-6">
-      <div className="h-8 w-48 bg-muted animate-pulse rounded" />
-      <div className="grid gap-4 md:grid-cols-4">
-        {[...Array(4)].map((_, i) => (
-          <Card key={i}>
-            <CardContent className="p-6">
-              <div className="h-4 w-20 bg-muted animate-pulse rounded mb-2" />
-              <div className="h-8 w-32 bg-muted animate-pulse rounded" />
-            </CardContent>
-          </Card>
-        ))}
-      </div>
+      <PageHeaderSkeleton titleWidth="w-48" descriptionWidth="w-64" />
+      <CardGridSkeleton count={4} columns={{ base: 1, md: 2, lg: 4 }} />
     </div>
   );
 }

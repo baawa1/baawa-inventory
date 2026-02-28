@@ -4,7 +4,8 @@ import { useState, useRef } from 'react';
 import { Button } from '@/components/ui/button';
 import { Label } from '@/components/ui/label';
 import { ImagePreview } from '@/components/ui/image-preview';
-import { Upload, X, Loader2 } from 'lucide-react';
+import { Upload, X } from 'lucide-react';
+import { InlineLoading } from '@/components/ui/loading';
 import { toast } from 'sonner';
 import { cn } from '@/lib/utils';
 import { UPLOAD_LIMITS } from '@/lib/constants';
@@ -172,10 +173,7 @@ export function ImageUpload({
 
           <div className="flex flex-col items-center gap-2">
             {uploading ? (
-              <>
-                <Loader2 className="h-8 w-8 animate-spin text-gray-400" />
-                <p className="text-sm text-gray-600">Uploading...</p>
-              </>
+              <InlineLoading label="Uploading..." spinnerSize="md" />
             ) : (
               <>
                 <Upload className="h-8 w-8 text-gray-400" />

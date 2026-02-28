@@ -12,7 +12,8 @@ import {
   CardHeader,
   CardTitle,
 } from '@/components/ui/card';
-import { AlertTriangle, Clock, XCircle, RefreshCw } from 'lucide-react';
+import { AlertTriangle, XCircle, RefreshCw } from 'lucide-react';
+import { PageLoading } from '@/components/ui/loading';
 
 export default function UnauthorizedPage() {
   const { data: session, status, update } = useSession();
@@ -58,21 +59,10 @@ export default function UnauthorizedPage() {
   // Show loading while redirecting
   if (isRedirecting || status === 'loading') {
     return (
-      <div className="flex min-h-screen items-center justify-center">
-        <Card className="w-full max-w-md">
-          <CardHeader className="text-center">
-            <div className="mb-4 flex justify-center">
-              <Clock className="h-16 w-16 animate-spin text-blue-500" />
-            </div>
-            <CardTitle className="text-2xl text-blue-600">
-              Redirecting...
-            </CardTitle>
-            <CardDescription>
-              Taking you to the appropriate page based on your account status.
-            </CardDescription>
-          </CardHeader>
-        </Card>
-      </div>
+      <PageLoading
+        title="Redirecting..."
+        description="Taking you to the appropriate page based on your account status."
+      />
     );
   }
 
@@ -150,19 +140,11 @@ export default function UnauthorizedPage() {
                   setIsRefreshing(false);
                 }
               }}
-              disabled={isRefreshing}
+              isLoading={isRefreshing}
+              loadingText="Refreshing..."
             >
-              {isRefreshing ? (
-                <>
-                  <RefreshCw className="mr-2 h-4 w-4 animate-spin" />
-                  Refreshing...
-                </>
-              ) : (
-                <>
-                  <RefreshCw className="mr-2 h-4 w-4" />
-                  Refresh Status
-                </>
-              )}
+              <RefreshCw className="mr-2 h-4 w-4" />
+              Refresh Status
             </Button>
           </div>
         </CardContent>

@@ -5,6 +5,7 @@ import * as DropdownMenuPrimitive from '@radix-ui/react-dropdown-menu';
 import { CheckIcon, ChevronRightIcon, CircleIcon } from 'lucide-react';
 
 import { cn } from '@/lib/utils';
+import { getSafeAsChildProps } from '@/components/ui/slot-utils';
 
 function DropdownMenu({
   ...props
@@ -21,13 +22,24 @@ function DropdownMenuPortal({
 }
 
 function DropdownMenuTrigger({
+  asChild,
+  children,
   ...props
 }: React.ComponentProps<typeof DropdownMenuPrimitive.Trigger>) {
+  const safeProps = getSafeAsChildProps(
+    'DropdownMenuTrigger',
+    asChild,
+    children
+  );
+
   return (
     <DropdownMenuPrimitive.Trigger
       data-slot="dropdown-menu-trigger"
+      asChild={safeProps.asChild}
       {...props}
-    />
+    >
+      {safeProps.children}
+    </DropdownMenuPrimitive.Trigger>
   );
 }
 
@@ -202,10 +214,17 @@ function DropdownMenuSubTrigger({
   className,
   inset,
   children,
+  asChild,
   ...props
 }: React.ComponentProps<typeof DropdownMenuPrimitive.SubTrigger> & {
   inset?: boolean;
 }) {
+  const safeProps = getSafeAsChildProps(
+    'DropdownMenuSubTrigger',
+    asChild,
+    children
+  );
+
   return (
     <DropdownMenuPrimitive.SubTrigger
       data-slot="dropdown-menu-sub-trigger"
@@ -214,9 +233,10 @@ function DropdownMenuSubTrigger({
         'focus:bg-accent focus:text-accent-foreground data-[state=open]:bg-accent data-[state=open]:text-accent-foreground flex cursor-default items-center rounded-sm px-2 py-1.5 text-sm outline-hidden select-none data-[inset]:pl-8',
         className
       )}
+      asChild={safeProps.asChild}
       {...props}
     >
-      {children}
+      {safeProps.children}
       <ChevronRightIcon className="ml-auto size-4" />
     </DropdownMenuPrimitive.SubTrigger>
   );

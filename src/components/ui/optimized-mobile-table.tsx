@@ -1,7 +1,8 @@
 import React, { memo, useCallback, useMemo } from 'react';
 import { Card, CardContent } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
-import { Skeleton } from '@/components/ui/skeleton';
+import { ListSkeleton } from '@/components/ui/skeletons';
+import { InlineLoading } from '@/components/ui/loading';
 import { 
   useLazyLoading, 
   usePerformanceMonitor,
@@ -76,31 +77,6 @@ const MemoizedCard = memo(function MemoizedCard({
   );
 });
 
-// Loading skeleton component
-const LoadingSkeleton = memo(function LoadingSkeleton({ count = 3 }: { count?: number }) {
-  return (
-    <>
-      {Array.from({ length: count }).map((_, index) => (
-        <Card key={index} className="mb-3">
-          <CardContent className="p-4">
-            <div className="flex items-start gap-3">
-              <Skeleton className="h-12 w-12 rounded-full" />
-              <div className="flex-1 space-y-2">
-                <Skeleton className="h-4 w-3/4" />
-                <Skeleton className="h-3 w-1/2" />
-                <div className="flex gap-2">
-                  <Skeleton className="h-6 w-16 rounded-full" />
-                  <Skeleton className="h-6 w-20 rounded-full" />
-                </div>
-              </div>
-            </div>
-          </CardContent>
-        </Card>
-      ))}
-    </>
-  );
-});
-
 // Load more button component
 const LoadMoreButton = memo(function LoadMoreButton({ 
   onLoadMore, 
@@ -118,17 +94,11 @@ const LoadMoreButton = memo(function LoadMoreButton({
       <Button
         variant="outline"
         onClick={onLoadMore}
-        disabled={isLoading}
         className="min-h-[44px] px-6"
+        isLoading={isLoading}
+        loadingText="Loading..."
       >
-        {isLoading ? (
-          <>
-            <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-gray-600 mr-2" />
-            Loading...
-          </>
-        ) : (
-          'Load More'
-        )}
+        Load More
       </Button>
     </div>
   );
@@ -222,8 +192,7 @@ export function OptimizedMobileTable<T>({
       {/* Show search loading state */}
       {isSearching && (
         <div className="mb-4 flex items-center justify-center py-2">
-          <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-blue-600 mr-2" />
-          <span className="text-sm text-muted-foreground">Searching...</span>
+          <InlineLoading label="Searching..." />
         </div>
       )}
 
@@ -236,7 +205,7 @@ export function OptimizedMobileTable<T>({
 
       {/* Loading skeleton for initial load */}
       {isLoading && loadedItems.length === 0 && (
-        <LoadingSkeleton count={loadingStateCount} />
+        <ListSkeleton rows={loadingStateCount} withAvatar />
       )}
 
       {/* Load more button */}

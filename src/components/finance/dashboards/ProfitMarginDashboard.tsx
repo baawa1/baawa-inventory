@@ -18,6 +18,7 @@ import {
   Cell,
 } from 'recharts';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
+import { CardGridSkeleton, PageHeaderSkeleton } from '@/components/ui/skeletons';
 import {
   Select,
   SelectContent,
@@ -259,17 +260,8 @@ export function ProfitMarginDashboard() {
 function ProfitMarginSkeleton() {
   return (
     <div className="space-y-6">
-      <div className="h-8 w-64 bg-muted animate-pulse rounded" />
-      <div className="grid gap-4 md:grid-cols-4">
-        {[...Array(4)].map((_, i) => (
-          <Card key={i}>
-            <CardContent className="p-6">
-              <div className="h-4 w-20 bg-muted animate-pulse rounded mb-2" />
-              <div className="h-8 w-32 bg-muted animate-pulse rounded" />
-            </CardContent>
-          </Card>
-        ))}
-      </div>
+      <PageHeaderSkeleton titleWidth="w-64" descriptionWidth="w-72" />
+      <CardGridSkeleton count={4} columns={{ base: 1, md: 2, lg: 4 }} />
     </div>
   );
 }

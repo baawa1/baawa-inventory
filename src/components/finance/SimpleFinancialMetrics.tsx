@@ -2,6 +2,7 @@
 
 import React from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
+import { Skeleton } from '@/components/ui/skeleton';
 import { DateRange } from 'react-day-picker';
 
 interface SimpleFinancialMetricsProps {
@@ -21,10 +22,10 @@ export function SimpleFinancialMetrics({
         {[...Array(4)].map((_, i) => (
           <Card key={i}>
             <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-              <CardTitle className="text-sm font-medium">Loading...</CardTitle>
+              <Skeleton className="h-4 w-24 rounded" />
             </CardHeader>
             <CardContent>
-              <div className="h-8 animate-pulse rounded bg-gray-200"></div>
+              <Skeleton className="h-8 w-24 rounded" />
             </CardContent>
           </Card>
         ))}

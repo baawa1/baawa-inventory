@@ -19,7 +19,7 @@ import {
 import { Badge } from '@/components/ui/badge';
 import { formatCurrency } from '@/lib/utils';
 import { format } from 'date-fns';
-import { IconLoader2 } from '@tabler/icons-react';
+import { InlineLoading } from '@/components/ui/loading';
 
 interface ProductSalesItem {
   id: number;
@@ -101,7 +101,7 @@ export function ProductSalesDialog({
 
         {loading ? (
           <div className="flex items-center justify-center py-8">
-            <IconLoader2 className="h-8 w-8 animate-spin text-muted-foreground" />
+            <InlineLoading label="Loading sales history..." />
           </div>
         ) : (
           <>

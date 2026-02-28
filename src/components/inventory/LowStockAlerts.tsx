@@ -6,7 +6,8 @@ import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { InventoryPageLayout } from '@/components/inventory/InventoryPageLayout';
-import { AlertTriangle, Package, RefreshCw, Loader2 } from 'lucide-react';
+import { AlertTriangle, Package, RefreshCw } from 'lucide-react';
+import { Spinner } from '@/components/ui/loading';
 import { toast } from 'sonner';
 import { formatCurrency } from '@/lib/utils';
 import { PaginationState } from '@/types/inventory';
@@ -276,11 +277,10 @@ export function LowStockAlerts() {
         <Button
           onClick={handleRefresh}
           variant="outline"
-          disabled={isRefetching}
+          isLoading={isRefetching}
+          loadingText="Refreshing..."
         >
-          <IconRefresh
-            className={`mr-2 h-4 w-4 ${isRefetching ? 'animate-spin' : ''}`}
-          />
+          <IconRefresh className="mr-2 h-4 w-4" />
           Refresh
         </Button>
       }
@@ -313,7 +313,7 @@ export function LowStockAlerts() {
                     <AlertTriangle className="h-4 w-4 text-red-500" />
                     <span className="text-2xl font-bold text-red-600">
                       {isLoading || isRefetching ? (
-                        <Loader2 className="h-6 w-6 animate-spin" />
+                        <Spinner size="md" />
                       ) : (
                         metrics.criticalStock
                       )}
@@ -336,7 +336,7 @@ export function LowStockAlerts() {
                     <Package className="h-4 w-4 text-orange-500" />
                     <span className="text-2xl font-bold text-orange-600">
                       {isLoading || isRefetching ? (
-                        <Loader2 className="h-6 w-6 animate-spin" />
+                        <Spinner size="md" />
                       ) : (
                         metrics.lowStock
                       )}
@@ -359,7 +359,7 @@ export function LowStockAlerts() {
                     <Package className="h-4 w-4 text-blue-500" />
                     <span className="text-2xl font-bold text-blue-600">
                       {isLoading || isRefetching ? (
-                        <Loader2 className="h-6 w-6 animate-spin" />
+                        <Spinner size="md" />
                       ) : (
                         formatCurrency(metrics.totalValue)
                       )}

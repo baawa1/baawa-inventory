@@ -5,6 +5,11 @@ import { useQuery } from '@tanstack/react-query';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { Skeleton } from '@/components/ui/skeleton';
+import {
+  CardGridSkeleton,
+  ListSkeleton,
+  PageHeaderSkeleton,
+} from '@/components/ui/skeletons';
 import { DateRangePickerWithPresets } from '@/components/ui/date-range-picker-with-presets';
 import {
   Package,
@@ -154,6 +159,24 @@ export function ProductOverview() {
   const handleDateRangeChange = (newDateRange: DateRange | undefined) => {
     setDateRange(newDateRange);
   };
+
+  if (isLoading) {
+    return (
+      <div className="space-y-6">
+        <PageHeaderSkeleton actionsCount={1} actionWidths={['w-[300px]']} />
+        <CardGridSkeleton count={4} columns={{ base: 1, md: 2, lg: 4 }} />
+        <CardGridSkeleton count={3} columns={{ base: 1, md: 2, lg: 3 }} />
+        <Card>
+          <CardHeader>
+            <Skeleton className="h-6 w-48 rounded" />
+          </CardHeader>
+          <CardContent>
+            <ListSkeleton rows={5} withAvatar />
+          </CardContent>
+        </Card>
+      </div>
+    );
+  }
 
   return (
     <div className="space-y-6">

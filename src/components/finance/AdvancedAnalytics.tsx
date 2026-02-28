@@ -18,8 +18,8 @@ import {
   IconChartLine,
   IconTarget,
   IconBrain,
-  IconLoader,
 } from '@tabler/icons-react';
+import { InlineLoading } from '@/components/ui/loading';
 import { formatCurrency } from '@/lib/utils';
 import { DateRange } from 'react-day-picker';
 import { useAdvancedAnalytics } from '@/hooks/api/useAdvancedAnalytics';
@@ -73,12 +73,7 @@ export function AdvancedAnalytics({
           />
         </div>
         <div className="flex items-center justify-center py-12">
-          <div className="text-center">
-            <IconLoader className="text-primary mx-auto h-8 w-8 animate-spin" />
-            <p className="text-muted-foreground mt-2 text-sm">
-              Loading advanced analytics...
-            </p>
-          </div>
+          <InlineLoading label="Loading advanced analytics..." />
         </div>
       </div>
     );

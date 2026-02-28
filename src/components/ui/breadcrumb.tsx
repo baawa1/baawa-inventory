@@ -3,6 +3,7 @@ import { Slot } from '@radix-ui/react-slot';
 import { ChevronRight, MoreHorizontal } from 'lucide-react';
 
 import { cn } from '@/lib/utils';
+import { getSafeAsChildProps } from '@/components/ui/slot-utils';
 
 function Breadcrumb({ ...props }: React.ComponentProps<'nav'>) {
   return <nav aria-label="breadcrumb" data-slot="breadcrumb" {...props} />;
@@ -34,18 +35,26 @@ function BreadcrumbItem({ className, ...props }: React.ComponentProps<'li'>) {
 function BreadcrumbLink({
   asChild,
   className,
+  children,
   ...props
 }: React.ComponentProps<'a'> & {
   asChild?: boolean;
 }) {
-  const Comp = asChild ? Slot : 'a';
+  const safeProps = getSafeAsChildProps(
+    'BreadcrumbLink',
+    asChild,
+    children
+  );
+  const Comp = safeProps.asChild ? Slot : 'a';
 
   return (
     <Comp
       data-slot="breadcrumb-link"
       className={cn('hover:text-foreground transition-colors', className)}
       {...props}
-    />
+    >
+      {safeProps.children}
+    </Comp>
   );
 }
 

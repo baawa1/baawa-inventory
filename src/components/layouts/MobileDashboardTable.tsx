@@ -8,7 +8,8 @@ import {
   DashboardTableColumn,
 } from '@/components/layouts/DashboardColumnCustomizer';
 import { IconPackages, IconRefresh } from '@tabler/icons-react';
-import { Loader2 } from 'lucide-react';
+import { TableSkeleton } from '@/components/ui/skeletons';
+import { InlineLoading } from '@/components/ui/loading';
 
 interface MobileDashboardTableProps<T = Record<string, unknown>> {
   tableTitle?: string;
@@ -111,8 +112,7 @@ export function MobileDashboardTable<T = Record<string, unknown>>({
             </CardTitle>
             {isRefetching && (
               <div className="flex items-center gap-2 mt-2">
-                <Loader2 className="h-3 w-3 animate-spin" />
-                <span className="text-xs text-muted-foreground">Updating...</span>
+                <InlineLoading label="Updating..." />
               </div>
             )}
           </div>
@@ -143,40 +143,16 @@ export function MobileDashboardTable<T = Record<string, unknown>>({
             <div className="space-y-4">
               {/* Desktop skeleton */}
               <div className="hidden md:block">
-                {[...Array(5)].map((_, i) => (
-                  <div key={i} className="flex animate-pulse items-center space-x-4">
-                    <div className="flex-1 space-y-2">
-                      <div className="h-4 w-1/4 rounded bg-gray-200"></div>
-                      <div className="h-3 w-1/2 rounded bg-gray-200"></div>
-                    </div>
-                  </div>
-                ))}
+                <TableSkeleton
+                  columns={visibleColumns.length}
+                  rows={5}
+                  withActions={!!renderActions}
+                />
               </div>
               
               {/* Mobile card skeletons */}
               <div className="md:hidden space-y-3">
-                {[...Array(3)].map((_, i) => (
-                  <Card key={i}>
-                    <CardContent className="px-3 py-2">
-                      <div className="animate-pulse">
-                        {/* Card header with image placeholder */}
-                        <div className="flex items-center gap-3 mb-3">
-                          <div className="h-10 w-10 bg-gray-200 rounded-md flex-shrink-0"></div>
-                          <div className="flex-1 space-y-2">
-                            <div className="h-4 bg-gray-200 rounded w-3/4"></div>
-                            <div className="h-3 bg-gray-200 rounded w-1/2"></div>
-                          </div>
-                        </div>
-                        
-                        {/* Tap to expand indicator */}
-                        <div className="flex items-center gap-1 mt-2">
-                          <div className="h-3 bg-gray-200 rounded w-24"></div>
-                          <div className="h-3 w-3 bg-gray-200 rounded"></div>
-                        </div>
-                      </div>
-                    </CardContent>
-                  </Card>
-                ))}
+                <TableSkeleton variant="cards" rows={3} />
               </div>
             </div>
           ) : (
@@ -186,8 +162,7 @@ export function MobileDashboardTable<T = Record<string, unknown>>({
                 {isRefetching && (
                   <div className="absolute inset-0 z-10 flex items-center justify-center rounded-md bg-white/80 backdrop-blur-sm">
                     <div className="flex items-center gap-2 rounded-lg border bg-white px-4 py-2 shadow-sm">
-                      <Loader2 className="h-4 w-4 animate-spin text-blue-600" />
-                      <span className="text-sm text-gray-600">Loading...</span>
+                      <InlineLoading label="Loading..." />
                     </div>
                   </div>
                 )}

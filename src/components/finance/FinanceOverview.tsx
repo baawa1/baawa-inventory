@@ -12,6 +12,12 @@ import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { PageHeader } from '@/components/ui/page-header';
 import { DateRangePickerWithPresets } from '@/components/ui/date-range-picker-with-presets';
+import {
+  CardGridSkeleton,
+  ListSkeleton,
+  PageHeaderSkeleton,
+} from '@/components/ui/skeletons';
+import { Skeleton } from '@/components/ui/skeleton';
 
 import { formatCurrency } from '@/lib/utils';
 import {
@@ -85,104 +91,26 @@ export function FinanceOverview({ user: _user }: FinanceOverviewProps) {
   if (isLoading) {
     return (
       <div className="mx-auto max-w-7xl space-y-6 p-6">
-        {/* Header Skeleton */}
-        <div className="flex flex-wrap items-center justify-between gap-4">
-          <PageHeader
-            title="Finance Overview"
-            description="Track your business finances and financial performance"
-          />
-          <div className="flex flex-wrap items-center gap-2">
-            <div className="h-9 w-[300px] animate-pulse rounded bg-gray-200" />
-            <div className="h-9 w-28 animate-pulse rounded bg-gray-200" />
-            <div className="h-9 w-32 animate-pulse rounded bg-gray-200" />
-          </div>
-        </div>
-
-        {/* Summary Cards Skeleton */}
-        <div className="grid gap-6 md:grid-cols-2 lg:grid-cols-4">
-          {[
-            {
-              title: 'Total Income',
-              icon: TrendingUp,
-              color: 'text-green-600',
-            },
-            {
-              title: 'Total Expenses',
-              icon: TrendingDown,
-              color: 'text-red-600',
-            },
-            { title: 'Net Income', icon: DollarSign, color: 'text-blue-600' },
-            { title: 'Transactions', icon: Activity, color: 'text-purple-600' },
-          ].map(({ title, icon: Icon, color }, i) => (
-            <Card key={i} className="animate-pulse">
-              <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-                <CardTitle className="text-sm font-medium text-gray-400">
-                  {title}
-                </CardTitle>
-                <Icon className={`h-4 w-4 ${color} opacity-50`} />
-              </CardHeader>
-              <CardContent>
-                <div className="mb-2 h-8 w-24 animate-pulse rounded bg-gray-200" />
-                <div className="h-3 w-32 animate-pulse rounded bg-gray-200" />
-              </CardContent>
-            </Card>
-          ))}
-        </div>
-
-        {/* Recent Transactions Skeleton */}
+        <PageHeaderSkeleton
+          actionsCount={3}
+          actionWidths={['w-[300px]', 'w-28', 'w-32']}
+        />
+        <CardGridSkeleton count={4} columns={{ base: 1, md: 2, lg: 4 }} />
         <Card>
           <CardHeader>
             <div className="flex items-center justify-between">
-              <div>
-                <CardTitle>Recent Transactions</CardTitle>
-                <CardDescription>
-                  Latest financial transactions across all sources
-                </CardDescription>
+              <div className="space-y-2">
+                <Skeleton className="h-5 w-40 rounded" />
+                <Skeleton className="h-4 w-56 rounded" />
               </div>
-              <div className="h-9 w-20 animate-pulse rounded bg-gray-200" />
+              <Skeleton className="h-9 w-20 rounded" />
             </div>
           </CardHeader>
           <CardContent>
-            <div className="space-y-4">
-              {[...Array(3)].map((_, i) => (
-                <div
-                  key={i}
-                  className="flex items-center justify-between rounded-lg border p-4"
-                >
-                  <div className="flex items-center space-x-4">
-                    <div className="h-6 w-16 animate-pulse rounded bg-gray-200" />
-                    <div>
-                      <div className="mb-2 h-4 w-32 animate-pulse rounded bg-gray-200" />
-                      <div className="h-3 w-24 animate-pulse rounded bg-gray-200" />
-                    </div>
-                  </div>
-                  <div className="text-right">
-                    <div className="mb-2 h-4 w-20 animate-pulse rounded bg-gray-200" />
-                    <div className="h-3 w-16 animate-pulse rounded bg-gray-200" />
-                  </div>
-                </div>
-              ))}
-            </div>
+            <ListSkeleton rows={3} withAvatar />
           </CardContent>
         </Card>
-
-        {/* Quick Actions Skeleton */}
-        <div className="grid gap-6 md:grid-cols-2 lg:grid-cols-3">
-          {['Income Management', 'Expense Management', 'Reports & Analytics'].map(
-            (title, i) => (
-              <Card key={i} className="animate-pulse">
-                <CardHeader>
-                  <CardTitle className="text-lg text-gray-400">{title}</CardTitle>
-                  <div className="h-3 w-40 animate-pulse rounded bg-gray-200" />
-                </CardHeader>
-                <CardContent className="space-y-2">
-                  <div className="h-9 w-full animate-pulse rounded bg-gray-200" />
-                  <div className="h-9 w-full animate-pulse rounded bg-gray-200" />
-                </CardContent>
-              </Card>
-            )
-          )}
-        </div>
+        <CardGridSkeleton count={3} columns={{ base: 1, md: 2, lg: 3 }} />
       </div>
     );
   }

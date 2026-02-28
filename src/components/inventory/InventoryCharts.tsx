@@ -7,6 +7,7 @@ import {
   CardHeader,
   CardTitle,
 } from '@/components/ui/card';
+import { Skeleton } from '@/components/ui/skeleton';
 import { Badge } from '@/components/ui/badge';
 import { IconTrendingUp, IconTrendingDown } from '@tabler/icons-react';
 import { formatCurrency } from '@/lib/utils';
@@ -58,13 +59,13 @@ export function InventoryCharts() {
         {[...Array(2)].map((_, i) => (
           <Card key={i} className="animate-pulse">
             <CardHeader>
-              <div className="mb-2 h-4 w-1/2 rounded bg-gray-200"></div>
-              <div className="h-3 w-3/4 rounded bg-gray-200"></div>
+              <Skeleton className="mb-2 h-4 w-1/2 rounded" />
+              <Skeleton className="h-3 w-3/4 rounded" />
             </CardHeader>
             <CardContent>
               <div className="space-y-3">
                 {[...Array(4)].map((_, j) => (
-                  <div key={j} className="h-8 rounded bg-gray-200"></div>
+                  <Skeleton key={j} className="h-8 rounded" />
                 ))}
               </div>
             </CardContent>

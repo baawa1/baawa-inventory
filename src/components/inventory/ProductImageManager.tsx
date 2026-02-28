@@ -654,14 +654,11 @@ export function ProductImageManager({
                               variant={image.isPrimary ? 'default' : 'outline'}
                               className="ml-2"
                               onClick={() => setPrimaryImage(image.url)}
-                              disabled={
-                                image.isPrimary ||
-                                updateImagesMutation.isPending
-                              }
+                              disabled={image.isPrimary}
+                              isLoading={updateImagesMutation.isPending}
+                              loadingText=""
                             >
-                              {updateImagesMutation.isPending ? (
-                                <div className="h-4 w-4 animate-spin rounded-full border-2 border-current border-t-transparent" />
-                              ) : image.isPrimary ? (
+                              {image.isPrimary ? (
                                 <Star className="h-4 w-4" />
                               ) : (
                                 <StarOff className="h-4 w-4" />

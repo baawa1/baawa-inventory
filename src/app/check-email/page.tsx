@@ -13,7 +13,8 @@ import {
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
-import { Mail, Clock, RefreshCw } from 'lucide-react';
+import { Mail, Clock } from 'lucide-react';
+import { PageLoading } from '@/components/ui/loading';
 function CheckEmailContent() {
   const searchParams = useSearchParams();
   const router = useRouter();
@@ -126,21 +127,14 @@ function CheckEmailContent() {
 
                 <Button
                   type="submit"
-                  disabled={resendLoading || !resendEmail}
                   className="w-full"
                   variant="secondary"
+                  isLoading={resendLoading}
+                  loadingText="Sending..."
+                  disabled={!resendEmail}
                 >
-                  {resendLoading ? (
-                    <>
-                      <RefreshCw className="mr-2 h-4 w-4 animate-spin" />
-                      Sending...
-                    </>
-                  ) : (
-                    <>
-                      <Mail className="mr-2 h-4 w-4" />
-                      Resend Verification Email
-                    </>
-                  )}
+                  <Mail className="mr-2 h-4 w-4" />
+                  Resend Verification Email
                 </Button>
 
                 {resendMessage && (
@@ -175,7 +169,14 @@ function CheckEmailContent() {
 
 export default function CheckEmailPage() {
   return (
-    <Suspense fallback={<div>Loading...</div>}>
+    <Suspense
+      fallback={
+        <PageLoading
+          title="Loading email verification"
+          description="Preparing your verification details"
+        />
+      }
+    >
       <CheckEmailContent />
     </Suspense>
   );

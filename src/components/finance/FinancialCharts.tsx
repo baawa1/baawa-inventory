@@ -2,6 +2,7 @@
 
 import React from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
+import { Skeleton } from '@/components/ui/skeleton';
 import { DateRange } from 'react-day-picker';
 import {
   LineChart,
@@ -56,10 +57,10 @@ export function FinancialCharts({
         {[...Array(3)].map((_, i) => (
           <Card key={i}>
             <CardHeader>
-              <CardTitle>Loading...</CardTitle>
+              <Skeleton className="h-5 w-32 rounded" />
             </CardHeader>
             <CardContent>
-              <div className="h-[300px] animate-pulse rounded bg-gray-200"></div>
+              <Skeleton className="h-[300px] w-full rounded" />
             </CardContent>
           </Card>
         ))}

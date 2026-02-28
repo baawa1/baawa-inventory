@@ -23,6 +23,7 @@ import {
   FormMessage,
 } from '@/components/ui/form';
 import { useTokenValidation } from '@/hooks/api/useTokenValidation';
+import { InlineLoading } from '@/components/ui/loading';
 
 const resetPasswordSchema = z
   .object({
@@ -49,7 +50,13 @@ interface ResetPasswordFormProps {
 
 export function ResetPasswordForm({ className }: ResetPasswordFormProps) {
   return (
-    <Suspense fallback={<div>Loading...</div>}>
+    <Suspense
+      fallback={
+        <div className="flex justify-center py-6">
+          <InlineLoading label="Loading reset form..." />
+        </div>
+      }
+    >
       <ResetPasswordFormContent className={className} />
     </Suspense>
   );

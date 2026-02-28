@@ -10,6 +10,7 @@ import { useSession } from 'next-auth/react';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
+import { InlineLoading } from '@/components/ui/loading';
 import {
   Collapsible,
   CollapsibleContent,
@@ -752,10 +753,7 @@ export function TransactionHistory() {
   if (loading) {
     return (
       <div className="flex h-64 items-center justify-center">
-        <div className="text-center">
-          <div className="border-primary mx-auto mb-4 h-8 w-8 animate-spin rounded-full border-b-2"></div>
-          <p>Loading transactions...</p>
-        </div>
+        <InlineLoading label="Loading transactions..." />
       </div>
     );
   }

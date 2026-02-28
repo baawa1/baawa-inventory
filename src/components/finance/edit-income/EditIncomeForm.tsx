@@ -16,6 +16,7 @@ import {
 } from '@/components/ui/card';
 import { Form } from '@/components/ui/form';
 import { PageHeader } from '@/components/ui/page-header';
+import { InlineLoading } from '@/components/ui/loading';
 import { incomeTransactionSchema, IncomeTransactionFormData } from '@/lib/validations/finance';
 import { BasicInfoSection } from '../add-income/BasicInfoSection';
 import { IncomeDetailsSection } from '../add-income/IncomeDetailsSection';
@@ -104,10 +105,7 @@ export default function EditIncomeForm({
     return (
       <div className="mx-auto max-w-4xl space-y-6 p-6">
         <div className="flex h-64 items-center justify-center">
-          <div className="text-center">
-            <div className="mx-auto h-8 w-8 animate-spin rounded-full border-b-2 border-gray-900"></div>
-            <p className="mt-2 text-gray-600">Loading income data...</p>
-          </div>
+          <InlineLoading label="Loading income data..." />
         </div>
       </div>
     );

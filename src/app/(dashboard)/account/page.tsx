@@ -3,6 +3,7 @@ import { redirect } from 'next/navigation';
 import { Suspense } from 'react';
 import { AccountProfile } from '@/components/account/AccountProfile';
 import { DashboardPageLayout } from '@/components/layouts/DashboardPageLayout';
+import { PageLoading } from '@/components/ui/loading';
 
 export default async function AccountPage() {
   const session = await auth();
@@ -20,7 +21,14 @@ export default async function AccountPage() {
       title="Account Settings"
       description="Manage your profile information and account settings"
     >
-      <Suspense fallback={<div>Loading account settings...</div>}>
+      <Suspense
+        fallback={
+          <PageLoading
+            title="Loading account settings"
+            description="Preparing your profile details"
+          />
+        }
+      >
         <AccountProfile user={session.user} />
       </Suspense>
     </DashboardPageLayout>

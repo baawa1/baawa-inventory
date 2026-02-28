@@ -25,7 +25,7 @@ import {
   FormLabel,
   FormMessage,
 } from '@/components/ui/form';
-import { ArrowLeft, Loader2 } from 'lucide-react';
+import { ArrowLeft } from 'lucide-react';
 import { Alert, AlertDescription } from '@/components/ui/alert';
 import { PageHeader } from '@/components/ui/page-header';
 import { FormLoading } from '@/components/ui/form-loading';
@@ -459,15 +459,10 @@ export default function EditSupplierForm({
                 </Button>
                 <Button
                   type="submit"
-                  disabled={updateSupplierMutation.isPending}
-                  className="flex items-center gap-2"
+                  isLoading={updateSupplierMutation.isPending}
+                  loadingText="Updating..."
                 >
-                  {updateSupplierMutation.isPending && (
-                    <Loader2 className="h-4 w-4 animate-spin" />
-                  )}
-                  {updateSupplierMutation.isPending
-                    ? 'Updating...'
-                    : 'Update Supplier'}
+                  Update Supplier
                 </Button>
               </div>
             </form>

@@ -2,9 +2,10 @@
 
 import { useEffect, useState, useCallback } from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
-import { Loader2, AlertTriangle } from 'lucide-react';
+import { AlertTriangle } from 'lucide-react';
 import { useLogout } from '@/hooks/useLogout';
 import { Button } from '@/components/ui/button';
+import { Spinner } from '@/components/ui/loading';
 import { useRouter } from 'next/navigation';
 
 /**
@@ -92,7 +93,7 @@ export default function ImmediateLogoutPage() {
               </Button>
             </>
           ) : (
-            <Loader2 className="text-primary h-8 w-8 animate-spin" />
+            <Spinner size="lg" className="text-primary" />
           )}
         </CardContent>
       </Card>

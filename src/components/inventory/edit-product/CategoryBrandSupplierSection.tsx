@@ -15,7 +15,7 @@ import {
   SelectTrigger,
   SelectValue,
 } from '@/components/ui/select';
-import { Loader2 } from 'lucide-react';
+import { InlineLoading } from '@/components/ui/loading';
 import { SearchableSelect } from '@/components/ui/searchable-select';
 
 import { UpdateProductFormData, Category, Brand, Supplier } from './types';
@@ -65,10 +65,7 @@ export function CategoryBrandSupplierSection({
                       <SelectValue
                         placeholder={
                           loadingCategories ? (
-                            <div className="flex items-center">
-                              <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-                              Loading...
-                            </div>
+                            <InlineLoading label="Loading..." />
                           ) : (
                             'Select category'
                           )
@@ -144,10 +141,7 @@ export function CategoryBrandSupplierSection({
                       <SelectValue
                         placeholder={
                           loadingSuppliers ? (
-                            <div className="flex items-center">
-                              <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-                              Loading...
-                            </div>
+                            <InlineLoading label="Loading..." />
                           ) : (
                             'Select supplier'
                           )

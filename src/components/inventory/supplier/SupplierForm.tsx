@@ -18,7 +18,7 @@ import {
   FormLabel,
   FormMessage,
 } from '@/components/ui/form';
-import { IconLoader2, IconDeviceFloppy } from '@tabler/icons-react';
+import { IconDeviceFloppy } from '@tabler/icons-react';
 
 type SupplierFormData = z.infer<typeof updateSupplierSchema>;
 
@@ -233,21 +233,11 @@ export function SupplierForm({
         <div className="flex flex-col gap-3 pt-4 sm:flex-row">
           <Button
             type="submit"
-            disabled={isSubmitting}
-            className="flex items-center gap-2"
+            isLoading={isSubmitting}
+            loadingText={isEditing ? 'Updating...' : 'Creating...'}
           >
-            {isSubmitting ? (
-              <IconLoader2 className="h-4 w-4 animate-spin" />
-            ) : (
-              <IconDeviceFloppy className="h-4 w-4" />
-            )}
-            {isSubmitting
-              ? isEditing
-                ? 'Updating...'
-                : 'Creating...'
-              : isEditing
-                ? 'Update Supplier'
-                : 'Create Supplier'}
+            <IconDeviceFloppy className="h-4 w-4" />
+            {isEditing ? 'Update Supplier' : 'Create Supplier'}
           </Button>
           <Button
             type="button"

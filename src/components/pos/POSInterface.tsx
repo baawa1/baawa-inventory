@@ -284,13 +284,10 @@ export function POSInterface() {
               size="sm"
               className="flex items-center gap-1 sm:gap-2"
               onClick={handleRefreshProducts}
-              disabled={isRefreshingProducts}
+              isLoading={isRefreshingProducts}
+              loadingText="Refreshing..."
             >
-              <IconRefresh
-                className={
-                  isRefreshingProducts ? 'h-4 w-4 animate-spin' : 'h-4 w-4'
-                }
-              />
+              <IconRefresh className="h-4 w-4" />
               <span className="hidden sm:inline">Refresh Products</span>
               <span className="sm:hidden">Refresh</span>
             </Button>

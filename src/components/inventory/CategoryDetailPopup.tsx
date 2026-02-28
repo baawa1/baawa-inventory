@@ -10,6 +10,7 @@ import { Category } from '@/hooks/api/categories';
 // UI Components
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
+import { InlineLoading } from '@/components/ui/loading';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Separator } from '@/components/ui/separator';
 
@@ -85,12 +86,7 @@ export default function CategoryDetailPopup({
 
           {isLoading && (
             <div className="flex h-64 items-center justify-center">
-              <div className="text-center">
-                <div className="border-primary mx-auto mb-4 h-8 w-8 animate-spin rounded-full border-b-2"></div>
-                <p className="text-muted-foreground">
-                  Loading category details...
-                </p>
-              </div>
+              <InlineLoading label="Loading category details..." />
             </div>
           )}
 

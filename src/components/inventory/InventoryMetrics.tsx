@@ -16,6 +16,7 @@ import {
   CardHeader,
   CardTitle,
 } from '@/components/ui/card';
+import { Skeleton } from '@/components/ui/skeleton';
 import { formatCurrency } from '@/lib/utils';
 import { useInventoryStats } from '@/hooks/api/inventory';
 
@@ -59,8 +60,8 @@ export function InventoryMetrics() {
         {[...Array(4)].map((_, i) => (
           <Card key={i} className="animate-pulse">
             <CardHeader>
-              <div className="mb-2 h-4 w-1/2 rounded bg-gray-200"></div>
-              <div className="h-8 w-3/4 rounded bg-gray-200"></div>
+              <Skeleton className="mb-2 h-4 w-1/2 rounded" />
+              <Skeleton className="h-8 w-3/4 rounded" />
             </CardHeader>
           </Card>
         ))}

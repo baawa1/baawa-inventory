@@ -14,6 +14,11 @@ import {
 } from 'recharts';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import {
+  CardGridSkeleton,
+  ChartCardSkeleton,
+  PageHeaderSkeleton,
+} from '@/components/ui/skeletons';
+import {
   Select,
   SelectContent,
   SelectItem,
@@ -295,22 +300,9 @@ export function CashFlowForecastDashboard() {
 function ForecastSkeleton() {
   return (
     <div className="space-y-6">
-      <div className="h-8 w-48 bg-muted animate-pulse rounded" />
-      <div className="grid gap-4 md:grid-cols-4">
-        {[...Array(4)].map((_, i) => (
-          <Card key={i}>
-            <CardContent className="p-6">
-              <div className="h-4 w-20 bg-muted animate-pulse rounded mb-2" />
-              <div className="h-8 w-32 bg-muted animate-pulse rounded" />
-            </CardContent>
-          </Card>
-        ))}
-      </div>
-      <Card>
-        <CardContent className="h-[400px] flex items-center justify-center">
-          <div className="animate-pulse">Loading forecast...</div>
-        </CardContent>
-      </Card>
+      <PageHeaderSkeleton titleWidth="w-48" descriptionWidth="w-72" />
+      <CardGridSkeleton count={4} columns={{ base: 1, md: 2, lg: 4 }} />
+      <ChartCardSkeleton height="h-[400px]" showDescription={false} />
     </div>
   );
 }

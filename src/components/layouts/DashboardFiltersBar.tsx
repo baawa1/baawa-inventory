@@ -9,7 +9,7 @@ import {
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { IconSearch, IconFilter } from '@tabler/icons-react';
-import { Loader2 } from 'lucide-react';
+import { Spinner } from '@/components/ui/loading';
 import { SearchableSelect } from '@/components/ui/searchable-select';
 import {
   Select,
@@ -172,7 +172,7 @@ export function DashboardFiltersBar({
             />
             {isSearching && (
               <div className="absolute top-1/2 right-3 -translate-y-1/2 transform">
-                <Loader2 className="h-4 w-4 animate-spin text-gray-400" />
+                <Spinner size="sm" className="text-gray-400" />
               </div>
             )}
           </div>

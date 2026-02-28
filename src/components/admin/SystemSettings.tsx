@@ -6,6 +6,7 @@ import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Badge } from '@/components/ui/badge';
+import { InlineLoading } from '@/components/ui/loading';
 import {
   Select,
   SelectContent,
@@ -127,12 +128,7 @@ export function SystemSettings({ activeTab: _activeTab }: SystemSettingsProps) {
     return (
       <Card>
         <CardContent className="flex items-center justify-center p-6">
-          <div className="text-center">
-            <div className="border-primary mx-auto h-8 w-8 animate-spin rounded-full border-b-2"></div>
-            <p className="text-muted-foreground mt-2 text-sm">
-              Loading settings...
-            </p>
-          </div>
+          <InlineLoading label="Loading settings..." />
         </CardContent>
       </Card>
     );

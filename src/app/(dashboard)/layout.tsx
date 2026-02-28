@@ -45,10 +45,16 @@ export default async function DashboardLayout({
     redirect('/unauthorized');
   }
 
+  const sidebarUser = {
+    name: session.user.name || session.user.email || 'User',
+    email: session.user.email || '',
+    avatar: session.user.avatar_url || session.user.image || '',
+  };
+
   return (
     <SidebarProvider>
       <div className="flex min-h-screen w-full">
-        <AppSidebar />
+        <AppSidebar user={sidebarUser} />
         <main className="flex flex-1 flex-col">
           <SiteHeader />
           <div className="flex-1 space-y-4">{children}</div>

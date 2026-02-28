@@ -6,6 +6,7 @@ import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
+import { InlineLoading } from '@/components/ui/loading';
 import { Textarea } from '@/components/ui/textarea';
 import {
   Table,
@@ -420,7 +421,7 @@ export function CouponsManagement({ user: _user }: CouponsManagementProps) {
         <CardContent>
           {isLoading ? (
             <div className="flex justify-center py-8">
-              <div className="h-8 w-8 animate-spin rounded-full border-b-2 border-gray-900"></div>
+              <InlineLoading label="Loading coupons..." />
             </div>
           ) : (
             <Table>

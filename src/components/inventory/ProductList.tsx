@@ -642,11 +642,10 @@ const ProductList = ({ user }: ProductListProps) => {
                   variant="outline"
                   className="flex items-center gap-2"
                   onClick={handleManualRefresh}
-                  disabled={productsQuery.isFetching}
+                  isLoading={productsQuery.isFetching}
+                  loadingText="Refreshing..."
                 >
-                  <IconRefresh
-                    className={isRefreshing ? 'h-4 w-4 animate-spin' : 'h-4 w-4'}
-                  />
+                  <IconRefresh className="h-4 w-4" />
                   Refresh
                 </Button>
                 <Button

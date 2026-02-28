@@ -7,6 +7,7 @@ import { Badge } from '@/components/ui/badge';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Textarea } from '@/components/ui/textarea';
+import { InlineLoading } from '@/components/ui/loading';
 import {
   Table,
   TableBody,
@@ -380,10 +381,10 @@ export function TransactionList({
         <CardContent>
           {isLoading ? (
             <div className="py-8 text-center">
-              <div className="border-primary mx-auto h-8 w-8 animate-spin border-b-2"></div>
-              <p className="text-muted-foreground mt-2">
-                Loading transactions...
-              </p>
+              <InlineLoading
+                className="justify-center"
+                label="Loading transactions..."
+              />
             </div>
           ) : transactions.length === 0 ? (
             <div className="py-8 text-center">

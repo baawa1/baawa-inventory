@@ -14,6 +14,7 @@ import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Separator } from '@/components/ui/separator';
+import { InlineLoading } from '@/components/ui/loading';
 
 // Icons
 import {
@@ -58,10 +59,7 @@ export default function CategoryDetail({
     return (
       <div className="mx-auto max-w-4xl p-6">
         <div className="flex h-64 items-center justify-center">
-          <div className="text-center">
-            <div className="border-primary mx-auto mb-4 h-8 w-8 animate-spin rounded-full border-b-2"></div>
-            <p className="text-muted-foreground">Loading category details...</p>
-          </div>
+          <InlineLoading label="Loading category details..." />
         </div>
       </div>
     );

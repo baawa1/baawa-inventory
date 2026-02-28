@@ -4,6 +4,7 @@ import React, { useState, useMemo } from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
+import { InlineLoading } from '@/components/ui/loading';
 import {
   Select,
   SelectContent,
@@ -121,8 +122,10 @@ export function ExpenseReport({ user: _user }: ExpenseReportProps) {
     return (
       <div className="mx-auto max-w-7xl space-y-6 p-6">
         <div className="py-8 text-center">
-          <div className="border-primary mx-auto h-8 w-8 animate-spin rounded-full border-b-2"></div>
-          <p className="text-muted-foreground mt-2">Loading expense data...</p>
+          <InlineLoading
+            className="justify-center"
+            label="Loading expense data..."
+          />
         </div>
       </div>
     );

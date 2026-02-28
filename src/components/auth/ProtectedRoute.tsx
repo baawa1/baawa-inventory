@@ -12,6 +12,7 @@ import {
 } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import Link from 'next/link';
+import { PageLoading } from '@/components/ui/loading';
 
 interface ProtectedRouteProps {
   children: React.ReactNode;
@@ -32,9 +33,10 @@ export function ProtectedRoute({
   // Show loading state
   if (isLoading) {
     return (
-      <div className="flex min-h-screen items-center justify-center">
-        <div className="border-primary h-32 w-32 animate-spin rounded-full border-b-2"></div>
-      </div>
+      <PageLoading
+        title="Loading access"
+        description="Checking your permissions"
+      />
     );
   }
 

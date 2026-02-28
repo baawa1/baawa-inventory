@@ -4,6 +4,7 @@ import { useState, useEffect } from 'react';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
+import { InlineLoading, Spinner } from '@/components/ui/loading';
 import {
   Table,
   TableBody,
@@ -244,7 +245,7 @@ export function DatabaseBackup() {
       case 'IN_PROGRESS':
         return (
           <Badge variant="secondary" className="flex items-center gap-1">
-            <IconClock className="h-3 w-3 animate-spin" />
+            <Spinner size="sm" />
             In Progress
           </Badge>
         );
@@ -305,10 +306,7 @@ export function DatabaseBackup() {
         </CardHeader>
         <CardContent>
           {checkingDriveStatus ? (
-            <div className="flex items-center gap-2 text-muted-foreground">
-              <IconRefresh className="h-4 w-4 animate-spin" />
-              Checking connection status...
-            </div>
+            <InlineLoading label="Checking connection status..." />
           ) : driveStatus?.connected ? (
             <div className="flex items-center justify-between">
               <div className="flex items-center gap-3">
@@ -338,19 +336,11 @@ export function DatabaseBackup() {
               <Button
                 variant="outline"
                 onClick={handleDisconnectDrive}
-                disabled={disconnecting}
+                isLoading={disconnecting}
+                loadingText="Disconnecting..."
               >
-                {disconnecting ? (
-                  <>
-                    <IconRefresh className="mr-2 h-4 w-4 animate-spin" />
-                    Disconnecting...
-                  </>
-                ) : (
-                  <>
-                    <IconPlugConnectedX className="mr-2 h-4 w-4" />
-                    Disconnect
-                  </>
-                )}
+                <IconPlugConnectedX className="mr-2 h-4 w-4" />
+                Disconnect
               </Button>
             </div>
           ) : (
@@ -400,20 +390,12 @@ export function DatabaseBackup() {
             </div>
             <Button
               onClick={handleCreateBackup}
-              disabled={loading}
               size="lg"
+              isLoading={loading}
+              loadingText="Creating..."
             >
-              {loading ? (
-                <>
-                  <IconRefresh className="mr-2 h-4 w-4 animate-spin" />
-                  Creating...
-                </>
-              ) : (
-                <>
-                  <IconDatabase className="mr-2 h-4 w-4" />
-                  Create Manual Backup
-                </>
-              )}
+              <IconDatabase className="mr-2 h-4 w-4" />
+              Create Manual Backup
             </Button>
           </div>
         </CardHeader>
@@ -467,13 +449,10 @@ export function DatabaseBackup() {
               variant="outline"
               size="sm"
               onClick={fetchBackupHistory}
-              disabled={fetchingHistory}
+              isLoading={fetchingHistory}
+              loadingText=""
             >
-              {fetchingHistory ? (
-                <IconRefresh className="h-4 w-4 animate-spin" />
-              ) : (
-                <IconRefresh className="h-4 w-4" />
-              )}
+              <IconRefresh className="h-4 w-4" />
             </Button>
           </div>
         </CardHeader>

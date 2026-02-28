@@ -5,6 +5,7 @@ import { Input } from '@/components/ui/input';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
+import { InlineLoading } from '@/components/ui/loading';
 
 import { useDebounce } from '@/hooks/useDebounce';
 import { BarcodeScanner } from './BarcodeScanner';
@@ -252,12 +253,14 @@ export function ProductSearchBar({
       {/* Loading State */}
       {loading && (
         <div className="py-4 text-center">
-          <div className="border-primary mx-auto h-8 w-8 animate-spin rounded-full border-b-2"></div>
-          <p className="text-muted-foreground mt-2 text-sm">
-            {searchMode === 'text'
-              ? 'Searching products...'
-              : 'Looking up barcode...'}
-          </p>
+          <InlineLoading
+            className="justify-center"
+            label={
+              searchMode === 'text'
+                ? 'Searching products...'
+                : 'Looking up barcode...'
+            }
+          />
         </div>
       )}
 

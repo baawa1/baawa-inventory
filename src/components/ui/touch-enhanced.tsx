@@ -2,6 +2,7 @@ import React, { useRef, useEffect, useState } from 'react';
 import { Button } from '@/components/ui/button';
 import { ComponentProps } from 'react';
 import { cn } from '@/lib/utils';
+import { InlineLoading } from '@/components/ui/loading';
 import { 
   triggerHapticFeedback, 
   getTouchOptimizedStyles,
@@ -350,10 +351,7 @@ export const PullToRefresh: React.FC<PullToRefreshProps> = ({
         }}
       >
         {isRefreshing ? (
-          <div className="flex items-center gap-2">
-            <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-gray-600" />
-            <span>Refreshing...</span>
-          </div>
+          <InlineLoading label="Refreshing..." />
         ) : shouldRefresh ? (
           <div className="flex items-center gap-2">
             <span>Release to refresh</span>

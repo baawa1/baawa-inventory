@@ -24,6 +24,7 @@ import {
   TooltipProvider,
   TooltipTrigger,
 } from '@/components/ui/tooltip';
+import { getSafeAsChildProps } from '@/components/ui/slot-utils';
 
 const SIDEBAR_COOKIE_NAME = 'sidebar_state';
 const SIDEBAR_COOKIE_MAX_AGE = 60 * 60 * 24 * 7;
@@ -396,9 +397,15 @@ function SidebarGroup({ className, ...props }: React.ComponentProps<'div'>) {
 function SidebarGroupLabel({
   className,
   asChild = false,
+  children,
   ...props
 }: React.ComponentProps<'div'> & { asChild?: boolean }) {
-  const Comp = asChild ? Slot : 'div';
+  const safeProps = getSafeAsChildProps(
+    'SidebarGroupLabel',
+    asChild,
+    children
+  );
+  const Comp = safeProps.asChild ? Slot : 'div';
 
   return (
     <Comp
@@ -410,16 +417,24 @@ function SidebarGroupLabel({
         className
       )}
       {...props}
-    />
+    >
+      {safeProps.children}
+    </Comp>
   );
 }
 
 function SidebarGroupAction({
   className,
   asChild = false,
+  children,
   ...props
 }: React.ComponentProps<'button'> & { asChild?: boolean }) {
-  const Comp = asChild ? Slot : 'button';
+  const safeProps = getSafeAsChildProps(
+    'SidebarGroupAction',
+    asChild,
+    children
+  );
+  const Comp = safeProps.asChild ? Slot : 'button';
 
   return (
     <Comp
@@ -433,7 +448,9 @@ function SidebarGroupAction({
         className
       )}
       {...props}
-    />
+    >
+      {safeProps.children}
+    </Comp>
   );
 }
 
@@ -502,13 +519,19 @@ function SidebarMenuButton({
   size = 'default',
   tooltip,
   className,
+  children,
   ...props
 }: React.ComponentProps<'button'> & {
   asChild?: boolean;
   isActive?: boolean;
   tooltip?: string | React.ComponentProps<typeof TooltipContent>;
 } & VariantProps<typeof sidebarMenuButtonVariants>) {
-  const Comp = asChild ? Slot : 'button';
+  const safeProps = getSafeAsChildProps(
+    'SidebarMenuButton',
+    asChild,
+    children
+  );
+  const Comp = safeProps.asChild ? Slot : 'button';
   const { isMobile, state } = useSidebar();
 
   const button = (
@@ -519,7 +542,9 @@ function SidebarMenuButton({
       data-active={isActive}
       className={cn(sidebarMenuButtonVariants({ variant, size }), className)}
       {...props}
-    />
+    >
+      {safeProps.children}
+    </Comp>
   );
 
   if (!tooltip) {
@@ -549,12 +574,18 @@ function SidebarMenuAction({
   className,
   asChild = false,
   showOnHover = false,
+  children,
   ...props
 }: React.ComponentProps<'button'> & {
   asChild?: boolean;
   showOnHover?: boolean;
 }) {
-  const Comp = asChild ? Slot : 'button';
+  const safeProps = getSafeAsChildProps(
+    'SidebarMenuAction',
+    asChild,
+    children
+  );
+  const Comp = safeProps.asChild ? Slot : 'button';
 
   return (
     <Comp
@@ -573,7 +604,9 @@ function SidebarMenuAction({
         className
       )}
       {...props}
-    />
+    >
+      {safeProps.children}
+    </Comp>
   );
 }
 
@@ -595,7 +628,9 @@ function SidebarMenuBadge({
         className
       )}
       {...props}
-    />
+    >
+      {props.children}
+    </div>
   );
 }
 
@@ -671,13 +706,19 @@ function SidebarMenuSubButton({
   size = 'md',
   isActive = false,
   className,
+  children,
   ...props
 }: React.ComponentProps<'a'> & {
   asChild?: boolean;
   size?: 'sm' | 'md';
   isActive?: boolean;
 }) {
-  const Comp = asChild ? Slot : 'a';
+  const safeProps = getSafeAsChildProps(
+    'SidebarMenuSubButton',
+    asChild,
+    children
+  );
+  const Comp = safeProps.asChild ? Slot : 'a';
 
   return (
     <Comp
@@ -694,7 +735,9 @@ function SidebarMenuSubButton({
         className
       )}
       {...props}
-    />
+    >
+      {safeProps.children}
+    </Comp>
   );
 }
 

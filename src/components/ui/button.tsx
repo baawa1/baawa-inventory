@@ -1,6 +1,6 @@
 import * as React from 'react';
-import { Slot } from '@radix-ui/react-slot';
 import { cva, type VariantProps } from 'class-variance-authority';
+import { Loader2 } from 'lucide-react';
 
 import { cn } from '@/lib/utils';
 
@@ -40,19 +40,117 @@ function Button({
   variant,
   size,
   asChild = false,
+  isLoading = false,
+  loadingText,
+  spinnerPlacement = 'left',
+  spinnerSize = 'sm',
+  children,
   ...props
 }: React.ComponentProps<'button'> &
   VariantProps<typeof buttonVariants> & {
     asChild?: boolean;
+    isLoading?: boolean;
+    loadingText?: string;
+    spinnerPlacement?: 'left' | 'right';
+    spinnerSize?: 'sm' | 'md' | 'lg';
   }) {
-  const Comp = asChild ? Slot : 'button';
+  let onlyChild: React.ReactElement | null = null;
+  if (asChild) {
+    try {
+      const child = React.Children.only(children);
+      if (React.isValidElement(child)) {
+        onlyChild = child;
+      }
+    } catch {
+      onlyChild = null;
+    }
+  }
+  const canUseAsChild = asChild && !!onlyChild;
+  const spinnerSizeClass =
+    spinnerSize === 'lg'
+      ? 'h-6 w-6'
+      : spinnerSize === 'md'
+        ? 'h-5 w-5'
+        : 'h-4 w-4';
+  const fallbackText = typeof children === 'string' ? children : 'Loading...';
+  const label = isLoading ? loadingText ?? fallbackText : children;
+  const isDisabled = props.disabled || isLoading;
+  if (asChild && !canUseAsChild && process.env.NODE_ENV !== 'production') {
+    console.warn(
+      'Button with `asChild` expects a single React element child. Falling back to a native button.'
+    );
+  }
+
+  const content = canUseAsChild ? onlyChild : label;
+
+  if (canUseAsChild && onlyChild) {
+    const childProps = onlyChild.props as {
+      className?: string;
+      onClick?: React.MouseEventHandler;
+    };
+    const isIntrinsicButton =
+      typeof onlyChild.type === 'string' && onlyChild.type === 'button';
+    const composedClassName = cn(
+      buttonVariants({ variant, size, className }),
+      childProps.className
+    );
+    const buttonOnClick = props.onClick as
+      | React.MouseEventHandler
+      | undefined;
+    const childOnClick = childProps.onClick;
+    const composedOnClick =
+      childOnClick || buttonOnClick || isDisabled
+        ? (event: React.MouseEvent) => {
+            if (isDisabled) {
+              event.preventDefault();
+              event.stopPropagation();
+              return;
+            }
+            childOnClick?.(event);
+            buttonOnClick?.(event);
+          }
+        : undefined;
+
+    const mergedProps: Record<string, unknown> = {
+      ...(onlyChild.props as Record<string, unknown>),
+      ...(props as Record<string, unknown>),
+      className: composedClassName,
+      'data-slot': 'button',
+      'aria-busy': isLoading || undefined,
+      'data-loading': isLoading || undefined,
+      onClick: composedOnClick,
+    };
+
+    if (isDisabled) {
+      if (isIntrinsicButton) {
+        mergedProps.disabled = true;
+      } else {
+        mergedProps['aria-disabled'] = true;
+        mergedProps['data-disabled'] = true;
+        mergedProps.tabIndex = -1;
+      }
+    }
+
+    return React.cloneElement(onlyChild, mergedProps);
+  }
 
   return (
-    <Comp
+    <button
       data-slot="button"
       className={cn(buttonVariants({ variant, size, className }))}
+      aria-busy={isLoading || undefined}
+      data-loading={isLoading || undefined}
       {...props}
-    />
+      disabled={isDisabled}
+    >
+      {!canUseAsChild && isLoading && spinnerPlacement === 'left' && (
+        <Loader2 className={cn('animate-spin', spinnerSizeClass)} />
+      )}
+      {content}
+      {!canUseAsChild && isLoading && spinnerPlacement === 'right' && (
+        <Loader2 className={cn('animate-spin', spinnerSizeClass)} />
+      )}
+    </button>
   );
 }
 

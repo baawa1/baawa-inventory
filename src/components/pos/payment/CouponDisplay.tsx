@@ -2,6 +2,7 @@ import React from 'react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
+import { Spinner } from '@/components/ui/loading';
 import { Separator } from '@/components/ui/separator';
 import { formatCurrency } from '@/lib/utils';
 import { IconTag, IconX, IconCheck } from '@tabler/icons-react';
@@ -118,7 +119,7 @@ export function CouponDisplay({
             />
             <div className="absolute top-1/2 right-2 -translate-y-1/2">
               {isValidatingCoupon && (
-                <div className="border-primary h-4 w-4 animate-spin rounded-full border-b-2"></div>
+                <Spinner size="sm" className="text-primary" />
               )}
             </div>
           </div>
