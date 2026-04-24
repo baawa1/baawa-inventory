@@ -24,17 +24,15 @@ import {
 } from '@/components/ui/form';
 import { useTokenValidation } from '@/hooks/api/useTokenValidation';
 import { InlineLoading } from '@/components/ui/loading';
+import {
+  passwordSchema,
+  PASSWORD_REQUIREMENT_HINT,
+  PASSWORD_SYMBOL_HINT,
+} from '@/lib/validations/common';
 
 const resetPasswordSchema = z
   .object({
-    password: z
-      .string()
-      .min(12, 'Password must be at least 12 characters')
-      .max(128, 'Password must be less than 128 characters')
-      .regex(
-        /^(?=.*[a-z])(?=.*[A-Z])(?=.*\d)(?=.*[@$!%*?&])[A-Za-z\d@$!%*?&]/,
-        'Password must contain at least one lowercase letter, one uppercase letter, one number, and one special character (@$!%*?&)'
-      ),
+    password: passwordSchema,
     confirmPassword: z.string(),
   })
   .refine(data => data.password === data.confirmPassword, {
@@ -230,13 +228,16 @@ function ResetPasswordFormContent({ className }: ResetPasswordFormProps) {
                       <Input
                         data-testid="password-input"
                         type="password"
-                        placeholder="Enter new password"
+                        placeholder="Enter a new password (8+ chars)"
                         required
                         {...field}
                         disabled={isLoading}
                       />
                     </FormControl>
                     <FormMessage />
+                    <div className="text-muted-foreground mt-1 text-xs">
+                      {PASSWORD_REQUIREMENT_HINT} {PASSWORD_SYMBOL_HINT}
+                    </div>
                   </FormItem>
                 )}
               />

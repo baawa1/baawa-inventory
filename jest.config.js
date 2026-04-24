@@ -39,6 +39,10 @@ const customJestConfig = {
     "<rootDir>/tests/pos/api/", // Exclude POS API tests (Playwright)
   ],
 
+  modulePathIgnorePatterns: [
+    "<rootDir>/.worktrees/",
+  ],
+
   // Coverage configuration
   collectCoverageFrom: [
     "src/**/*.{js,jsx,ts,tsx}",

@@ -1,4 +1,3 @@
-import { NextRequest } from 'next/server';
 import { POST } from '@/app/api/auth/reset-password/route';
 
 // Mock dependencies
@@ -9,36 +8,40 @@ const mockSendPasswordResetEmail = jest.fn();
 const mockSendPasswordResetConfirmationEmail = jest.fn();
 const mockLogAuthEvent = jest.fn();
 const mockLogPasswordResetSuccess = jest.fn();
+const validPassword = 'Abcd123.';
 
 jest.mock('@/lib/db', () => ({
   prisma: {
     user: {
-      findFirst: mockFindFirst,
-      update: mockUpdate,
+      findFirst: (...args: any[]) => mockFindFirst(...args),
+      update: (...args: any[]) => mockUpdate(...args),
     },
   },
 }));
 
 jest.mock('@/lib/email/service', () => ({
   emailService: {
-    sendPasswordResetEmail: mockSendPasswordResetEmail,
-    sendPasswordResetConfirmationEmail: mockSendPasswordResetConfirmationEmail,
+    sendPasswordResetEmail: (...args: any[]) =>
+      mockSendPasswordResetEmail(...args),
+    sendPasswordResetConfirmationEmail: (...args: any[]) =>
+      mockSendPasswordResetConfirmationEmail(...args),
   },
 }));
 
 jest.mock('@/lib/utils/audit-logger', () => ({
   AuditLogger: {
-    logAuthEvent: mockLogAuthEvent,
-    logPasswordResetSuccess: mockLogPasswordResetSuccess,
+    logAuthEvent: (...args: any[]) => mockLogAuthEvent(...args),
+    logPasswordResetSuccess: (...args: any[]) =>
+      mockLogPasswordResetSuccess(...args),
   },
 }));
 
 jest.mock('@/lib/rate-limiting', () => ({
-  withRateLimit: jest.fn(handler => handler),
+  withRateLimit: jest.fn(() => handler => handler),
 }));
 
 jest.mock('bcryptjs', () => ({
-  hash: mockHash,
+  hash: (...args: any[]) => mockHash(...args),
 }));
 
 describe('POST /api/auth/reset-password', () => {
@@ -46,21 +49,21 @@ describe('POST /api/auth/reset-password', () => {
     jest.clearAllMocks();
   });
 
-  const createRequest = (body: any): NextRequest => {
-    return new NextRequest('http://localhost:3000/api/auth/reset-password', {
-      method: 'POST',
-      headers: {
+  const createRequest = (body: any) => {
+    return {
+      json: async () => body,
+      headers: new Headers({
         'Content-Type': 'application/json',
-      },
-      body: JSON.stringify(body),
-    });
+        'User-Agent': 'jest',
+      }),
+    };
   };
 
   describe('Input Validation', () => {
     it('returns 400 for missing token', async () => {
       const request = createRequest({
-        password: 'StrongPass123!',
-        confirmPassword: 'StrongPass123!',
+        password: validPassword,
+        confirmPassword: validPassword,
       });
 
       const response = await POST(request);
@@ -70,7 +73,7 @@ describe('POST /api/auth/reset-password', () => {
       expect(data.error).toBe('Invalid input data');
       expect(data.details).toContainEqual(
         expect.objectContaining({
-          message: 'Reset token is required',
+          path: ['token'],
         })
       );
     });
@@ -78,7 +81,7 @@ describe('POST /api/auth/reset-password', () => {
     it('returns 400 for missing password', async () => {
       const request = createRequest({
         token: 'valid-token',
-        confirmPassword: 'StrongPass123!',
+        confirmPassword: validPassword,
       });
 
       const response = await POST(request);
@@ -105,7 +108,7 @@ describe('POST /api/auth/reset-password', () => {
     it('returns 400 for password mismatch', async () => {
       const request = createRequest({
         token: 'valid-token',
-        password: 'StrongPass123!',
+        password: validPassword,
         confirmPassword: 'DifferentPass123!',
       });
 
@@ -128,8 +131,8 @@ describe('POST /api/auth/reset-password', () => {
 
       const request = createRequest({
         token: 'invalid-token',
-        password: 'StrongPass123!',
-        confirmPassword: 'StrongPass123!',
+        password: validPassword,
+        confirmPassword: validPassword,
       });
 
       const response = await POST(request);
@@ -168,8 +171,8 @@ describe('POST /api/auth/reset-password', () => {
 
       const request = createRequest({
         token: 'valid-token',
-        password: 'StrongPass123!',
-        confirmPassword: 'StrongPass123!',
+        password: validPassword,
+        confirmPassword: validPassword,
       });
 
       const response = await POST(request);
@@ -191,8 +194,8 @@ describe('POST /api/auth/reset-password', () => {
 
       const request = createRequest({
         token: 'valid-token',
-        password: 'StrongPass123!',
-        confirmPassword: 'StrongPass123!',
+        password: validPassword,
+        confirmPassword: validPassword,
       });
 
       const response = await POST(request);
@@ -222,8 +225,8 @@ describe('POST /api/auth/reset-password', () => {
 
       const request = createRequest({
         token: 'valid-token',
-        password: 'StrongPass123!',
-        confirmPassword: 'StrongPass123!',
+        password: validPassword,
+        confirmPassword: validPassword,
       });
 
       const response = await POST(request);
@@ -236,7 +239,7 @@ describe('POST /api/auth/reset-password', () => {
       expect(data.success).toBe(true);
 
       // Verify password was hashed
-      expect(mockHash).toHaveBeenCalledWith('StrongPass123!', 12);
+      expect(mockHash).toHaveBeenCalledWith(validPassword, 12);
 
       // Verify user was updated
       expect(mockUpdate).toHaveBeenCalledWith({
@@ -272,8 +275,8 @@ describe('POST /api/auth/reset-password', () => {
 
       const request = createRequest({
         token: 'valid-token',
-        password: 'StrongPass123!',
-        confirmPassword: 'StrongPass123!',
+        password: validPassword,
+        confirmPassword: validPassword,
       });
 
       const response = await POST(request);
@@ -298,8 +301,8 @@ describe('POST /api/auth/reset-password', () => {
 
       const request = createRequest({
         token: 'valid-token',
-        password: 'StrongPass123!',
-        confirmPassword: 'StrongPass123!',
+        password: validPassword,
+        confirmPassword: validPassword,
       });
 
       const response = await POST(request);
@@ -325,8 +328,8 @@ describe('POST /api/auth/reset-password', () => {
 
       const request = createRequest({
         token: 'valid-token',
-        password: 'StrongPass123!',
-        confirmPassword: 'StrongPass123!',
+        password: validPassword,
+        confirmPassword: validPassword,
       });
 
       const response = await POST(request);
@@ -356,8 +359,8 @@ describe('POST /api/auth/reset-password', () => {
 
       const request = createRequest({
         token: 'valid-token',
-        password: 'StrongPass123!',
-        confirmPassword: 'StrongPass123!',
+        password: validPassword,
+        confirmPassword: validPassword,
       });
 
       await POST(request);
@@ -380,8 +383,8 @@ describe('POST /api/auth/reset-password', () => {
 
       const request = createRequest({
         token: 'invalid-token',
-        password: 'StrongPass123!',
-        confirmPassword: 'StrongPass123!',
+        password: validPassword,
+        confirmPassword: validPassword,
       });
 
       await POST(request);
@@ -392,10 +395,52 @@ describe('POST /api/auth/reset-password', () => {
           action: 'PASSWORD_RESET_SUCCESS',
           success: false,
           errorMessage: 'Invalid or expired reset token',
-          details: { token: 'invalid-t...' },
+          details: { token: 'invalid-...' },
         },
         request
       );
+    });
+
+    it('rejects reuse of a reset token after a successful reset', async () => {
+      const mockUser = {
+        id: 'user-id',
+        firstName: 'Test',
+        lastName: 'User',
+        email: 'test@example.com',
+        userStatus: 'APPROVED',
+        emailVerified: true,
+      };
+
+      mockFindFirst
+        .mockResolvedValueOnce(mockUser)
+        .mockResolvedValueOnce(null);
+      mockUpdate.mockResolvedValueOnce(mockUser);
+      mockHash.mockResolvedValueOnce('hashed-password');
+      mockSendPasswordResetConfirmationEmail.mockResolvedValue(undefined);
+      mockLogPasswordResetSuccess.mockResolvedValue(undefined);
+      mockLogAuthEvent.mockResolvedValue(undefined);
+
+      const firstResponse = await POST(
+        createRequest({
+          token: 'one-time-token',
+          password: validPassword,
+          confirmPassword: validPassword,
+        })
+      );
+
+      expect(firstResponse.status).toBe(200);
+
+      const secondResponse = await POST(
+        createRequest({
+          token: 'one-time-token',
+          password: validPassword,
+          confirmPassword: validPassword,
+        })
+      );
+      const secondPayload = await secondResponse.json();
+
+      expect(secondResponse.status).toBe(400);
+      expect(secondPayload.error).toBe('Invalid or expired reset token');
     });
   });
 });

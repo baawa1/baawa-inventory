@@ -1,8 +1,8 @@
 import { passwordSchema } from '@/lib/validations/common';
 
 describe('password schema', () => {
-  it('accepts a strong password', () => {
-    const result = passwordSchema.safeParse('SecurePass123!');
+  it('accepts a valid 8-character password with a symbol', () => {
+    const result = passwordSchema.safeParse('Abcd123.');
     expect(result.success).toBe(true);
   });
 
@@ -17,6 +17,9 @@ describe('password schema', () => {
 
     const noUppercase = passwordSchema.safeParse('securepass123!');
     expect(noUppercase.success).toBe(false);
+
+    const noLowercase = passwordSchema.safeParse('SECURE123!');
+    expect(noLowercase.success).toBe(false);
 
     const noNumber = passwordSchema.safeParse('SecurePass!!!');
     expect(noNumber.success).toBe(false);

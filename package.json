@@ -38,7 +38,8 @@
     "test:e2e:debug": "playwright test --debug",
     "test:e2e:auth": "playwright test tests/e2e/corrected-auth-flow.spec.ts",
     "test:e2e:access": "playwright test tests/e2e/verified-unapproved-users.spec.ts tests/e2e/unverified-email-access-control.spec.ts tests/e2e/dashboard-access-control.spec.ts",
-    "test:e2e:password": "playwright test tests/e2e/reset-password-e2e.spec.ts",
+    "test:e2e:password": "playwright test tests/e2e/reset-password-e2e.spec.ts tests/e2e/password-management-e2e.spec.ts",
+    "test:e2e:password:chromium": "playwright test tests/e2e/reset-password-e2e.spec.ts tests/e2e/password-management-e2e.spec.ts --project=chromium",
     "test:e2e:inventory": "playwright test tests/e2e/comprehensive-inventory-pos-workflow.spec.ts",
     "test:e2e:pos": "playwright test tests/e2e/pos-transaction-workflow.spec.ts",
     "test:e2e:reports": "playwright test tests/e2e/reports-analytics-workflow.spec.ts",
@@ -46,6 +47,8 @@
     "test:e2e:report": "playwright show-report",
     "test:e2e:install": "playwright install",
     "test:e2e:codegen": "playwright codegen",
+    "test:password:jest": "jest --config jest.config.js --runInBand --runTestsByPath tests/critical/unit/password-schema.test.ts tests/utils/password-policy.test.ts tests/utils/form-utilities.test.ts tests/validations/unit/common-validations.test.ts tests/validations/unit/user-validations.test.ts tests/critical/integration/auth-register.test.ts tests/components/auth/LoginForm.test.tsx tests/components/auth/RegisterForm.test.tsx tests/components/auth/ForgotPasswordForm.test.tsx tests/components/auth/ResetPasswordForm.test.tsx tests/components/account/ChangePasswordForm.test.tsx tests/components/admin/UserForm.test.tsx tests/api/forgot-password.test.ts tests/api/reset-password.test.ts tests/api/change-password.test.ts tests/api/password-rate-limit-config.test.ts tests/api/password-rate-limit-behavior.test.ts tests/api/users-id-route.test.ts",
+    "test:password": "npm run test:password:jest && npm run test:e2e:password:chromium",
     "seed:test-data": "node scripts/generate-complete-test-data.js",
     "seed:test-data:reset": "node scripts/generate-complete-test-data.js --reset",
     "db:seed": "npx tsx prisma/seed.ts",
@@ -54,7 +57,11 @@
     "db:deploy": "node scripts/migrate.js deploy",
     "db:dev": "node scripts/migrate.js dev",
     "db:resolve": "node scripts/migrate.js resolve",
-    "db:reset": "node scripts/migrate.js reset"
+    "db:reset": "node scripts/migrate.js reset",
+    "db:snapshot": "node scripts/db-transfer.js snapshot",
+    "db:clone:dry-run": "node scripts/db-transfer.js clone --dry-run",
+    "db:clone": "node scripts/db-transfer.js clone",
+    "db:restore": "node scripts/db-transfer.js restore"
   },
   "dependencies": {
     "@dnd-kit/core": "^6.3.1",

@@ -65,6 +65,7 @@ describe('Form Utilities', () => {
     describe('password validation', () => {
       it('should validate strong passwords', () => {
         const validPasswords = [
+          'Abcd123.',
           'StrongPass123!',
           'MySecure@Password456',
           'Test123456789$',

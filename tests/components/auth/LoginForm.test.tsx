@@ -36,8 +36,8 @@ describe('LoginForm', () => {
     expect(
       screen.getByText('Enter your credentials to access your account')
     ).toBeInTheDocument();
-    expect(screen.getByLabelText('Email')).toBeInTheDocument();
-    expect(screen.getByLabelText('Password')).toBeInTheDocument();
+    expect(screen.getByTestId('email-input')).toBeInTheDocument();
+    expect(screen.getByTestId('password-input')).toBeInTheDocument();
     expect(screen.getByRole('button', { name: 'Sign in' })).toBeInTheDocument();
   });
 
@@ -62,8 +62,8 @@ describe('LoginForm', () => {
 
     renderWithProviders(<LoginForm />);
 
-    const emailInput = screen.getByLabelText('Email');
-    const passwordInput = screen.getByLabelText('Password');
+    const emailInput = screen.getByTestId('email-input');
+    const passwordInput = screen.getByTestId('password-input');
     const submitButton = screen.getByRole('button', { name: 'Sign in' });
 
     fireEvent.change(emailInput, { target: { value: 'test@example.com' } });
@@ -92,8 +92,8 @@ describe('LoginForm', () => {
 
     renderWithProviders(<LoginForm />);
 
-    const emailInput = screen.getByLabelText('Email');
-    const passwordInput = screen.getByLabelText('Password');
+    const emailInput = screen.getByTestId('email-input');
+    const passwordInput = screen.getByTestId('password-input');
     const submitButton = screen.getByRole('button', { name: 'Sign in' });
 
     fireEvent.change(emailInput, { target: { value: 'test@example.com' } });
@@ -112,8 +112,8 @@ describe('LoginForm', () => {
 
     renderWithProviders(<LoginForm callbackUrl="/admin/dashboard" />);
 
-    const emailInput = screen.getByLabelText('Email');
-    const passwordInput = screen.getByLabelText('Password');
+    const emailInput = screen.getByTestId('email-input');
+    const passwordInput = screen.getByTestId('password-input');
     const submitButton = screen.getByRole('button', { name: 'Sign in' });
 
     fireEvent.change(emailInput, { target: { value: 'test@example.com' } });
@@ -135,8 +135,8 @@ describe('LoginForm', () => {
 
     renderWithProviders(<LoginForm />);
 
-    const emailInput = screen.getByLabelText('Email');
-    const passwordInput = screen.getByLabelText('Password');
+    const emailInput = screen.getByTestId('email-input');
+    const passwordInput = screen.getByTestId('password-input');
     const submitButton = screen.getByRole('button', { name: 'Sign in' });
 
     fireEvent.change(emailInput, { target: { value: 'test@example.com' } });

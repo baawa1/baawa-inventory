@@ -123,7 +123,7 @@ export function PasswordStrengthIndicator({
         <div className="grid grid-cols-1 gap-1 text-sm">
           <RequirementItem
             met={result.requirements.length}
-            text="Minimum length (12 characters)"
+            text="Minimum length (8 characters)"
           />
           <RequirementItem
             met={result.requirements.uppercase}
@@ -138,16 +138,12 @@ export function PasswordStrengthIndicator({
             text="At least one number"
           />
           <RequirementItem
-            met={result.requirements.specialChars}
-            text="At least one special character"
+            met={result.requirements.symbols}
+            text="At least one symbol"
           />
           <RequirementItem
-            met={result.requirements.noForbiddenPatterns}
-            text="No common patterns or words"
-          />
-          <RequirementItem
-            met={result.requirements.noCommonWords}
-            text="No company-specific terms"
+            met={result.requirements.notCommonPassword}
+            text="Not a very common password"
           />
         </div>
       </div>

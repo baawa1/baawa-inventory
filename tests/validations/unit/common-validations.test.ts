@@ -20,7 +20,6 @@ import {
   skuSchema,
   nameSchema,
   passwordSchema,
-  simplePasswordSchema,
   currentPasswordSchema,
   formatZodError,
   validateRequest,
@@ -336,6 +335,7 @@ describe('Common Validation Schemas', () => {
     describe('passwordSchema', () => {
       it('should accept strong passwords', () => {
         const validPasswords = [
+          'Abcd123.',
           'StrongPass123!',
           'MySecure@Password456',
           'Test123456789$',
@@ -350,10 +350,10 @@ describe('Common Validation Schemas', () => {
       it('should reject weak passwords', () => {
         const weakPasswords = [
           'short', // Too short
-          'NoSpecialChar123', // Missing special character
+          'NoSymbol123', // Missing symbol
           'no-uppercase-123!', // No uppercase
           'NO-LOWERCASE-123!', // No lowercase
-          'NoNumbers!@#', // No numbers
+          'NoNumbers!@#', // No number
           'password123!', // Common password
           'Password123!', // Common password
         ];
@@ -364,28 +364,8 @@ describe('Common Validation Schemas', () => {
       });
 
       it('should enforce length constraints', () => {
-        expect(() => passwordSchema.parse('Short1!')).toThrow(); // < 12 chars
+        expect(() => passwordSchema.parse('Short1!')).toThrow(); // < 8 chars
         expect(() => passwordSchema.parse('a'.repeat(129) + 'A1!')).toThrow(); // > 128 chars
-      });
-    });
-
-    describe('simplePasswordSchema', () => {
-      it('should accept simpler but still secure passwords', () => {
-        const validSimplePasswords = [
-          'Password123',
-          'TestPass456',
-          'MyPass789',
-        ];
-
-        validSimplePasswords.forEach(password => {
-          expect(simplePasswordSchema.parse(password)).toBe(password);
-        });
-      });
-
-      it('should still enforce basic requirements', () => {
-        expect(() => simplePasswordSchema.parse('password')).toThrow(); // No uppercase or number
-        expect(() => simplePasswordSchema.parse('PASSWORD')).toThrow(); // No lowercase or number
-        expect(() => simplePasswordSchema.parse('Password')).toThrow(); // No number
       });
     });
 

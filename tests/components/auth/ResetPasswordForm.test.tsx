@@ -16,6 +16,11 @@ const mockPush = jest.fn();
 const mockSearchParams = {
   get: jest.fn(),
 };
+const validPassword = 'Abcd123.';
+const validTokenResponse = {
+  ok: true,
+  json: async () => ({ valid: true }),
+};
 
 describe('ResetPasswordForm', () => {
   beforeEach(() => {
@@ -53,6 +58,7 @@ describe('ResetPasswordForm', () => {
       mockSearchParams.get.mockReturnValue('expired-token');
       (global.fetch as jest.Mock).mockResolvedValueOnce({
         ok: false,
+        json: async () => ({ error: 'Token expired' }),
       });
 
       await act(async () => {
@@ -67,9 +73,7 @@ describe('ResetPasswordForm', () => {
 
     it('renders password form for valid token', async () => {
       mockSearchParams.get.mockReturnValue('valid-token');
-      (global.fetch as jest.Mock).mockResolvedValueOnce({
-        ok: true,
-      });
+      (global.fetch as jest.Mock).mockResolvedValueOnce(validTokenResponse);
 
       await act(async () => {
         renderWithProviders(<ResetPasswordForm />);
@@ -108,7 +112,7 @@ describe('ResetPasswordForm', () => {
   describe('Password Validation', () => {
     beforeEach(async () => {
       mockSearchParams.get.mockReturnValue('valid-token');
-      (global.fetch as jest.Mock).mockResolvedValueOnce({ ok: true });
+      (global.fetch as jest.Mock).mockResolvedValueOnce(validTokenResponse);
 
       await act(async () => {
         renderWithProviders(<ResetPasswordForm />);
@@ -128,7 +132,7 @@ describe('ResetPasswordForm', () => {
 
       await waitFor(() => {
         expect(
-          screen.getByText('Password must be at least 12 characters')
+          screen.getByText('Password must be at least 8 characters')
         ).toBeInTheDocument();
       });
     });
@@ -152,14 +156,14 @@ describe('ResetPasswordForm', () => {
       const user = userEvent.setup();
       const passwordInput = screen.getByTestId('password-input');
 
-      // Test password without special character
+      // Test password without a symbol
       await user.type(passwordInput, 'StrongPass123');
       await user.tab();
 
       await waitFor(() => {
         expect(
           screen.getByText(
-            /Password must contain at least one lowercase letter, one uppercase letter, one number, and one special character/
+            'Password must contain at least one symbol'
           )
         ).toBeInTheDocument();
       });
@@ -171,7 +175,7 @@ describe('ResetPasswordForm', () => {
       const confirmInput = screen.getByTestId('confirm-password-input');
       const submitButton = screen.getByTestId('reset-button');
 
-      await user.type(passwordInput, 'StrongPass123!');
+      await user.type(passwordInput, validPassword);
       await user.type(confirmInput, 'DifferentPass123!');
       await user.click(submitButton);
 
@@ -184,7 +188,7 @@ describe('ResetPasswordForm', () => {
       const user = userEvent.setup();
       const passwordInput = screen.getByTestId('password-input');
 
-      await user.type(passwordInput, 'StrongPass123!');
+      await user.type(passwordInput, validPassword);
       await user.tab();
 
       // Should not show validation error for valid password
@@ -199,7 +203,7 @@ describe('ResetPasswordForm', () => {
   describe('Form Submission', () => {
     beforeEach(async () => {
       mockSearchParams.get.mockReturnValue('valid-token');
-      (global.fetch as jest.Mock).mockResolvedValueOnce({ ok: true });
+      (global.fetch as jest.Mock).mockResolvedValueOnce(validTokenResponse);
 
       await act(async () => {
         renderWithProviders(<ResetPasswordForm />);
@@ -234,8 +238,8 @@ describe('ResetPasswordForm', () => {
       const confirmInput = screen.getByTestId('confirm-password-input');
       const submitButton = screen.getByTestId('reset-button');
 
-      await user.type(passwordInput, 'StrongPass123!');
-      await user.type(confirmInput, 'StrongPass123!');
+      await user.type(passwordInput, validPassword);
+      await user.type(confirmInput, validPassword);
       await user.click(submitButton);
 
       // Check loading state
@@ -265,8 +269,8 @@ describe('ResetPasswordForm', () => {
       const confirmInput = screen.getByTestId('confirm-password-input');
       const submitButton = screen.getByTestId('reset-button');
 
-      await user.type(passwordInput, 'StrongPass123!');
-      await user.type(confirmInput, 'StrongPass123!');
+      await user.type(passwordInput, validPassword);
+      await user.type(confirmInput, validPassword);
       await user.click(submitButton);
 
       await waitFor(() => {
@@ -289,8 +293,8 @@ describe('ResetPasswordForm', () => {
       const confirmInput = screen.getByTestId('confirm-password-input');
       const submitButton = screen.getByTestId('reset-button');
 
-      await user.type(passwordInput, 'StrongPass123!');
-      await user.type(confirmInput, 'StrongPass123!');
+      await user.type(passwordInput, validPassword);
+      await user.type(confirmInput, validPassword);
       await user.click(submitButton);
 
       await waitFor(() => {
@@ -328,7 +332,7 @@ describe('ResetPasswordForm', () => {
       const mockFetch = jest.fn();
       global.fetch = mockFetch;
 
-      await user.type(passwordInput, 'StrongPass123!');
+      await user.type(passwordInput, validPassword);
       await user.type(confirmInput, 'DifferentPass123!');
       await user.click(submitButton);
 
@@ -341,10 +345,21 @@ describe('ResetPasswordForm', () => {
     it('disables form inputs during submission', async () => {
       mockSearchParams.get.mockReturnValue('valid-token');
       (global.fetch as jest.Mock)
-        .mockResolvedValueOnce({ ok: true }) // Token validation
+        .mockResolvedValueOnce(validTokenResponse) // Token validation
         .mockImplementation(
           () =>
-            new Promise(resolve => setTimeout(() => resolve({ ok: true }), 100))
+            new Promise(resolve =>
+              setTimeout(
+                () =>
+                  resolve({
+                    ok: true,
+                    json: async () => ({
+                      message: 'Password reset successfully',
+                    }),
+                  }),
+                100
+              )
+            )
         ); // Slow response
 
       await act(async () => {
@@ -360,8 +375,8 @@ describe('ResetPasswordForm', () => {
       const confirmInput = screen.getByTestId('confirm-password-input');
       const submitButton = screen.getByTestId('reset-button');
 
-      await user.type(passwordInput, 'StrongPass123!');
-      await user.type(confirmInput, 'StrongPass123!');
+      await user.type(passwordInput, validPassword);
+      await user.type(confirmInput, validPassword);
       await user.click(submitButton);
 
       await waitFor(() => {
@@ -390,7 +405,7 @@ describe('ResetPasswordForm', () => {
   describe('Accessibility', () => {
     beforeEach(async () => {
       mockSearchParams.get.mockReturnValue('valid-token');
-      (global.fetch as jest.Mock).mockResolvedValueOnce({ ok: true });
+      (global.fetch as jest.Mock).mockResolvedValueOnce(validTokenResponse);
 
       await act(async () => {
         renderWithProviders(<ResetPasswordForm />);

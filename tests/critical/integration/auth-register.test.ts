@@ -35,8 +35,13 @@ jest.mock('@/lib/utils/audit-logger', () => ({
   },
 }));
 
+jest.mock('bcryptjs', () => ({
+  hash: jest.fn(async () => 'hashed-password'),
+}));
+
 import { POST } from '@/app/api/auth/register/route';
 const prismaMock = (jest.requireMock('@/lib/db') as { prisma: any }).prisma;
+const validPassword = 'Abcd123.';
 
 describe('POST /api/auth/register', () => {
   beforeEach(() => {
@@ -67,13 +72,63 @@ describe('POST /api/auth/register', () => {
         firstName: 'John',
         lastName: 'Doe',
         email: 'john@example.com',
-        password: 'SecurePass123!',
-        confirmPassword: 'SecurePass123!',
+        password: validPassword,
+        confirmPassword: validPassword,
       })
     );
 
     expect(response.status).toBe(409);
     const payload = await response.json();
     expect(payload.error).toBe('User with this email already exists');
+  });
+
+  it('returns 400 for weak passwords', async () => {
+    const response = await POST(
+      createRequest({
+        firstName: 'John',
+        lastName: 'Doe',
+        email: 'john@example.com',
+        password: 'weak',
+        confirmPassword: 'weak',
+      })
+    );
+
+    expect(response.status).toBe(400);
+    const payload = await response.json();
+    expect(payload.error).toBe('Invalid input data');
+  });
+
+  it('creates a user with a valid 8-character password', async () => {
+    prismaMock.user.findUnique.mockResolvedValueOnce(null);
+    prismaMock.user.create.mockResolvedValueOnce({
+      id: 1,
+      firstName: 'John',
+      lastName: 'Doe',
+      email: 'john@example.com',
+      userStatus: 'PENDING',
+      role: 'STAFF',
+      createdAt: new Date(),
+    });
+    prismaMock.user.findMany.mockResolvedValueOnce([]);
+
+    const response = await POST(
+      createRequest({
+        firstName: 'John',
+        lastName: 'Doe',
+        email: 'john@example.com',
+        password: validPassword,
+        confirmPassword: validPassword,
+      })
+    );
+
+    expect(response.status).toBe(201);
+    expect(prismaMock.user.create).toHaveBeenCalledWith(
+      expect.objectContaining({
+        data: expect.objectContaining({
+          email: 'john@example.com',
+          password: 'hashed-password',
+        }),
+      })
+    );
   });
 });

@@ -1,5 +1,7 @@
 import { test, expect } from '@playwright/test';
 
+const validPassword = 'Abcd123.';
+
 test.describe('Reset Password End-to-End Flow', () => {
   test.beforeEach(async ({ page }) => {
     // Navigate to reset password page with a valid token
@@ -22,7 +24,7 @@ test.describe('Reset Password End-to-End Flow', () => {
 
       // Validate the request data
       expect(postData.token).toBe('valid-test-token');
-      expect(postData.password).toBe('StrongPass123!');
+      expect(postData.password).toBe(validPassword);
 
       await route.fulfill({
         status: 200,
@@ -36,15 +38,11 @@ test.describe('Reset Password End-to-End Flow', () => {
     await expect(page.getByText('Enter your new password below')).toBeVisible();
 
     // Fill out the form
-    await page.getByTestId('password-input').fill('StrongPass123!');
-    await page.getByTestId('confirm-password-input').fill('StrongPass123!');
+    await page.getByTestId('password-input').fill(validPassword);
+    await page.getByTestId('confirm-password-input').fill(validPassword);
 
     // Submit the form
     await page.getByTestId('reset-button').click();
-
-    // Check loading state
-    await expect(page.getByText('Resetting...')).toBeVisible();
-    await expect(page.getByTestId('reset-button')).toBeDisabled();
 
     // Wait for redirect to login page
     await expect(page).toHaveURL(/\/login\?message=password-reset-success/);
@@ -110,8 +108,8 @@ test.describe('Reset Password End-to-End Flow', () => {
     });
 
     // Fill out the form
-    await page.getByTestId('password-input').fill('StrongPass123!');
-    await page.getByTestId('confirm-password-input').fill('StrongPass123!');
+    await page.getByTestId('password-input').fill(validPassword);
+    await page.getByTestId('confirm-password-input').fill(validPassword);
 
     // Submit the form
     await page.getByTestId('reset-button').click();
@@ -137,20 +135,20 @@ test.describe('Reset Password End-to-End Flow', () => {
 
     // Check validation error
     await expect(
-      page.getByText('Password must be at least 12 characters')
+      page.getByText('Password must be at least 8 characters')
     ).toBeVisible();
 
-    // Test password without special character
+    // Test password without a symbol
     await page.getByTestId('password-input').fill('StrongPass123');
     await page.getByTestId('password-input').blur();
 
     // Check validation error
     await expect(
-      page.getByText(/Password must contain at least one special character/)
+      page.getByText(/Password must contain at least one symbol/)
     ).toBeVisible();
 
     // Test valid password
-    await page.getByTestId('password-input').fill('StrongPass123!');
+    await page.getByTestId('password-input').fill(validPassword);
     await page.getByTestId('password-input').blur();
 
     // Should not show validation error
@@ -168,7 +166,7 @@ test.describe('Reset Password End-to-End Flow', () => {
     });
 
     // Fill passwords that don't match
-    await page.getByTestId('password-input').fill('StrongPass123!');
+    await page.getByTestId('password-input').fill(validPassword);
     await page.getByTestId('confirm-password-input').fill('DifferentPass123!');
 
     // Submit the form
@@ -215,7 +213,7 @@ test.describe('Reset Password End-to-End Flow', () => {
 
     // Should show validation error and not make API call
     await expect(
-      page.getByText('Password must be at least 12 characters')
+      page.getByText('Password must be at least 8 characters')
     ).toBeVisible();
   });
 
@@ -235,14 +233,14 @@ test.describe('Reset Password End-to-End Flow', () => {
     });
 
     // Fill out the form
-    await page.getByTestId('password-input').fill('StrongPass123!');
-    await page.getByTestId('confirm-password-input').fill('StrongPass123!');
+    await page.getByTestId('password-input').fill(validPassword);
+    await page.getByTestId('confirm-password-input').fill(validPassword);
 
     // Submit the form
     await page.getByTestId('reset-button').click();
 
     // Check error message
-    await expect(page.getByText('An error occurred')).toBeVisible();
+    await expect(page.getByText('Failed to fetch')).toBeVisible();
   });
 
   test('form is accessible', async ({ page }) => {

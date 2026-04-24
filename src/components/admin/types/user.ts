@@ -1,5 +1,6 @@
 import { z } from 'zod';
 import type { AppUser, UserRole, UserStatus } from '@/types/user';
+import { passwordSchema } from '@/lib/validations/common';
 
 // Base user schema without password fields
 const baseUserSchema = z.object({
@@ -23,20 +24,10 @@ const baseUserSchema = z.object({
   ),
 });
 
-// Password fields schema
-const _passwordSchema = z
-  .string()
-  .min(12, 'Password must be at least 12 characters')
-  .max(128, 'Password must be less than 128 characters')
-  .regex(
-    /^(?=.*[a-z])(?=.*[A-Z])(?=.*\d)(?=.*[@$!%*?&])[A-Za-z\d@$!%*?&]/,
-    'Password must contain at least one lowercase letter, one uppercase letter, one number, and one special character (@$!%*?&)'
-  );
-
 // User form validation schema for creating users
 export const createUserFormSchema = baseUserSchema
   .extend({
-    password: _passwordSchema,
+    password: passwordSchema,
     confirmPassword: z.string(),
   })
   .refine(data => data.password === data.confirmPassword, {

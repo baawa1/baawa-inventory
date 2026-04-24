@@ -88,30 +88,57 @@ export const nameSchema = z
   .max(255, 'Name must be 255 characters or less')
   .trim();
 
-// Password validation schemas - Enhanced security requirements
+export const PASSWORD_POLICY = {
+  minLength: 8,
+  maxLength: 128,
+} as const;
+
+export const PASSWORD_REGEX = {
+  uppercase: /[A-Z]/,
+  lowercase: /[a-z]/,
+  number: /\d/,
+  symbol: /[^A-Za-z0-9]/,
+} as const;
+
+export const PASSWORD_REQUIREMENT_HINT =
+  'Use at least 8 characters with uppercase, lowercase, number, and any symbol.';
+
+export const PASSWORD_SYMBOL_HINT =
+  'Any symbol is allowed, including . and @.';
+
+export const COMMON_PASSWORD_BLOCKLIST = new Set([
+  '12345678',
+  '123456789012',
+  'password123!',
+  'qwerty123456',
+  'admin123456!',
+  'welcome123!',
+]);
+
+// Password validation schemas
 export const passwordSchema = z
   .string()
-  .min(12, 'Password must be at least 12 characters')
-  .max(128, 'Password must be less than 128 characters')
-  .regex(
-    /^(?=.*[a-z])(?=.*[A-Z])(?=.*\d)(?=.*[@$!%*?&])[A-Za-z\d@$!%*?&]/,
-    'Password must contain at least one lowercase letter, one uppercase letter, one number, and one special character (@$!%*?&)'
+  .min(
+    PASSWORD_POLICY.minLength,
+    `Password must be at least ${PASSWORD_POLICY.minLength} characters`
   )
+  .max(
+    PASSWORD_POLICY.maxLength,
+    `Password must be less than ${PASSWORD_POLICY.maxLength} characters`
+  )
+  .regex(
+    PASSWORD_REGEX.uppercase,
+    'Password must contain at least one uppercase letter'
+  )
+  .regex(
+    PASSWORD_REGEX.lowercase,
+    'Password must contain at least one lowercase letter'
+  )
+  .regex(PASSWORD_REGEX.number, 'Password must contain at least one number')
+  .regex(PASSWORD_REGEX.symbol, 'Password must contain at least one symbol')
   .refine(password => {
-    // Check for common weak passwords
-    const commonPasswords = [
-      '123456789012',
-      'password123!',
-      'Password123!',
-      'qwerty123456',
-      'admin123456!',
-      'welcome123!',
-    ];
-    return !commonPasswords.includes(password.toLowerCase());
+    return !COMMON_PASSWORD_BLOCKLIST.has(password.toLowerCase());
   }, 'Password is too common. Please choose a more secure password.');
-
-// Legacy simple password schema removed for security
-// All password validation now uses the stronger passwordSchema above
 
 export const currentPasswordSchema = z
   .string()

@@ -61,7 +61,7 @@ export const userIdSchema = z.object({
 // User login schema (for future authentication)
 export const userLoginSchema = z.object({
   email: emailSchema,
-  password: passwordSchema,
+  password: currentPasswordSchema,
 });
 
 // User password change schema
@@ -75,6 +75,19 @@ export const changePasswordSchema = z
     message: "Passwords don't match",
     path: ['confirmPassword'],
   });
+
+export const forgotPasswordSchema = z.object({
+  email: emailSchema,
+});
+
+export const resetPasswordSchema = z.object({
+  token: z.string().min(1, 'Reset token is required'),
+  newPassword: passwordSchema,
+});
+
+export const verifyEmailSchema = z.object({
+  token: z.string().trim().min(1, 'Verification token is required'),
+});
 
 // User profile update schema (limited fields)
 export const updateUserProfileSchema = z.object({

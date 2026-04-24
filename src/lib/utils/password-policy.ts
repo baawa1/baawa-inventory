@@ -2,6 +2,11 @@
  * Password Policy and Strength Validation
  * Comprehensive password security requirements and validation
  */
+import {
+  COMMON_PASSWORD_BLOCKLIST,
+  PASSWORD_POLICY,
+  PASSWORD_REGEX,
+} from '@/lib/validations/common';
 
 export interface PasswordRequirements {
   minLength: number;
@@ -9,11 +14,8 @@ export interface PasswordRequirements {
   requireUppercase: boolean;
   requireLowercase: boolean;
   requireNumbers: boolean;
-  requireSpecialChars: boolean;
-  forbiddenPatterns: string[];
-  forbiddenWords: string[];
-  preventReuse: boolean;
-  reuseLimit: number;
+  requireSymbols: boolean;
+  blockCommonPasswords: boolean;
 }
 
 export interface PasswordStrengthResult {
@@ -26,54 +28,23 @@ export interface PasswordStrengthResult {
     uppercase: boolean;
     lowercase: boolean;
     numbers: boolean;
-    specialChars: boolean;
-    noForbiddenPatterns: boolean;
-    noCommonWords: boolean;
+    symbols: boolean;
+    notCommonPassword: boolean;
   };
 }
 
 export class PasswordPolicy {
   private static readonly DEFAULT_REQUIREMENTS: PasswordRequirements = {
-    minLength: 12,
-    maxLength: 128,
+    minLength: PASSWORD_POLICY.minLength,
+    maxLength: PASSWORD_POLICY.maxLength,
     requireUppercase: true,
     requireLowercase: true,
     requireNumbers: true,
-    requireSpecialChars: true,
-    forbiddenPatterns: [
-      'password',
-      'admin',
-      'user',
-      'login',
-      'welcome',
-      'qwerty',
-      'abc123',
-      '123456',
-      'letmein',
-      'monkey',
-      'dragon',
-      'master',
-      'shadow',
-      'superman',
-      'michael',
-      'football',
-      'baseball',
-      'mustang',
-      'access',
-      'batman',
-      'trustno1',
-      'starwars',
-      'matrix',
-      'freedom',
-      'whatever',
-      'secret',
-    ],
-    forbiddenWords: ['inventory', 'pos', 'system', 'company', 'business'],
-    preventReuse: true,
-    reuseLimit: 5,
+    requireSymbols: true,
+    blockCommonPasswords: true,
   };
 
-  private static readonly SPECIAL_CHARS = '!@#$%^&*()_+-=[]{}|;:,.<>?';
+  private static readonly SYMBOL_CHARS = '!@#$%^&*()_+-=[]{}|;:,.<>?';
   private static readonly COMMON_PATTERNS = [
     /(.)\1{2,}/g, // Repeated characters (aaa, 111, etc.)
     /123456|654321|abcdef|qwerty|asdfgh|zxcvbn/i, // Common sequences
@@ -104,7 +75,8 @@ export class PasswordPolicy {
     }
 
     // Check uppercase requirement
-    const uppercaseValid = !policy.requireUppercase || /[A-Z]/.test(password);
+    const uppercaseValid =
+      !policy.requireUppercase || PASSWORD_REGEX.uppercase.test(password);
     if (!uppercaseValid) {
       feedback.push('Password must contain at least one uppercase letter');
     } else if (policy.requireUppercase) {
@@ -112,7 +84,8 @@ export class PasswordPolicy {
     }
 
     // Check lowercase requirement
-    const lowercaseValid = !policy.requireLowercase || /[a-z]/.test(password);
+    const lowercaseValid =
+      !policy.requireLowercase || PASSWORD_REGEX.lowercase.test(password);
     if (!lowercaseValid) {
       feedback.push('Password must contain at least one lowercase letter');
     } else if (policy.requireLowercase) {
@@ -120,64 +93,51 @@ export class PasswordPolicy {
     }
 
     // Check numbers requirement
-    const numbersValid = !policy.requireNumbers || /\d/.test(password);
+    const numbersValid =
+      !policy.requireNumbers || PASSWORD_REGEX.number.test(password);
     if (!numbersValid) {
       feedback.push('Password must contain at least one number');
     } else if (policy.requireNumbers) {
       score += 15;
     }
 
-    // Check special characters requirement
-    const specialCharsValid =
-      !policy.requireSpecialChars ||
-      new RegExp(
-        `[${this.SPECIAL_CHARS.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')}]`
-      ).test(password);
-    if (!specialCharsValid) {
-      feedback.push('Password must contain at least one special character');
-    } else if (policy.requireSpecialChars) {
+    // Check symbol requirement
+    const symbolsValid =
+      !policy.requireSymbols || PASSWORD_REGEX.symbol.test(password);
+    if (!symbolsValid) {
+      feedback.push('Password must contain at least one symbol');
+    } else if (policy.requireSymbols) {
       score += 15;
     }
 
-    // Check forbidden patterns
-    const forbiddenPatternsValid = !policy.forbiddenPatterns.some(pattern =>
-      password.toLowerCase().includes(pattern.toLowerCase())
-    );
-    if (!forbiddenPatternsValid) {
-      feedback.push('Password contains forbidden words or patterns');
+    const commonPasswordValid =
+      !policy.blockCommonPasswords ||
+      !COMMON_PASSWORD_BLOCKLIST.has(password.toLowerCase());
+    if (!commonPasswordValid) {
+      feedback.push(
+        'Password is too common. Please choose a more secure password.'
+      );
     } else {
       score += 10;
     }
 
-    // Check forbidden words
-    const forbiddenWordsValid = !policy.forbiddenWords.some(word =>
-      password.toLowerCase().includes(word.toLowerCase())
-    );
-    if (!forbiddenWordsValid) {
-      feedback.push('Password contains company-specific forbidden words');
-    } else {
-      score += 10;
-    }
-
-    // Check for common patterns
+    // Penalize obvious sequences without making them invalid.
     const noCommonPatterns = !this.COMMON_PATTERNS.some(pattern =>
       pattern.test(password)
     );
     if (!noCommonPatterns) {
       feedback.push(
-        'Password contains common patterns (repeated characters, sequences, etc.)'
+        'Avoid repeated characters or obvious sequences when possible.'
       );
       score -= 10;
     }
 
     // Bonus points for complexity
     const characterTypes = [
-      /[A-Z]/.test(password), // Uppercase
-      /[a-z]/.test(password), // Lowercase
-      /\d/.test(password), // Numbers
-      new RegExp(
-        `[${this.SPECIAL_CHARS.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')}]`
-      ).test(password), // Special chars
+      PASSWORD_REGEX.uppercase.test(password), // Uppercase
+      PASSWORD_REGEX.lowercase.test(password), // Lowercase
+      PASSWORD_REGEX.number.test(password), // Numbers
+      PASSWORD_REGEX.symbol.test(password), // Symbols
     ].filter(Boolean).length;
 
     if (characterTypes >= 3) {
@@ -221,10 +181,8 @@ export class PasswordPolicy {
       uppercaseValid &&
       lowercaseValid &&
       numbersValid &&
-      specialCharsValid &&
-      forbiddenPatternsValid &&
-      forbiddenWordsValid &&
-      noCommonPatterns;
+      symbolsValid &&
+      commonPasswordValid;
 
     return {
       isValid,
@@ -236,9 +194,8 @@ export class PasswordPolicy {
         uppercase: uppercaseValid,
         lowercase: lowercaseValid,
         numbers: numbersValid,
-        specialChars: specialCharsValid,
-        noForbiddenPatterns: forbiddenPatternsValid,
-        noCommonWords: forbiddenWordsValid,
+        symbols: symbolsValid,
+        notCommonPassword: commonPasswordValid,
       },
     };
   }
@@ -249,9 +206,9 @@ export class PasswordPolicy {
   static generatePasswordSuggestions(): string[] {
     return [
       'Use a mix of uppercase and lowercase letters',
-      'Include numbers and special characters',
-      'Make it at least 12 characters long',
-      'Avoid common words and patterns',
+      'Include numbers and at least one symbol',
+      'Make it at least 8 characters long',
+      'Avoid obvious sequences when possible',
       'Consider using a passphrase with multiple words',
       'Use a password manager to generate strong passwords',
       'Avoid personal information like names, birthdays, or addresses',
@@ -286,7 +243,7 @@ export class PasswordPolicy {
     const uppercase = 'ABCDEFGHIJKLMNOPQRSTUVWXYZ';
     const lowercase = 'abcdefghijklmnopqrstuvwxyz';
     const numbers = '0123456789';
-    const specialChars = this.SPECIAL_CHARS;
+    const specialChars = this.SYMBOL_CHARS;
 
     const allChars = uppercase + lowercase + numbers + specialChars;
 
@@ -328,15 +285,9 @@ export class PasswordPolicy {
     if (policy.requireLowercase)
       text.push('Must contain at least one lowercase letter');
     if (policy.requireNumbers) text.push('Must contain at least one number');
-    if (policy.requireSpecialChars)
-      text.push('Must contain at least one special character');
-
-    text.push('Cannot contain common words or patterns');
-    text.push('Cannot contain company-specific terms');
-
-    if (policy.preventReuse) {
-      text.push(`Cannot reuse any of your last ${policy.reuseLimit} passwords`);
-    }
+    if (policy.requireSymbols) text.push('Must contain at least one symbol');
+    if (policy.blockCommonPasswords)
+      text.push('Cannot be a very common password');
 
     return text;
   }

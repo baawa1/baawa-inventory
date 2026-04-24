@@ -6,6 +6,7 @@ import { renderWithProviders, screen, waitFor } from '../../utils/test-providers
 // Mock fetch for API calls
 const mockFetch = jest.fn();
 global.fetch = mockFetch;
+const validPassword = 'Abcd123.';
 
 // Mock next/navigation
 const mockPush = jest.fn();
@@ -70,7 +71,7 @@ describe('RegisterForm', () => {
         'Please enter a valid email address'
       );
       const passwordErrors = screen.getAllByText(
-        'Password must be at least 12 characters'
+        'Password must be at least 8 characters'
       );
 
       expect(firstNameErrors.length).toBeGreaterThan(0);
@@ -92,7 +93,7 @@ describe('RegisterForm', () => {
     fireEvent.change(firstNameInput, { target: { value: 'John' } });
     fireEvent.change(lastNameInput, { target: { value: 'Doe' } });
     fireEvent.change(emailInput, { target: { value: 'john@example.com' } });
-    fireEvent.change(passwordInput, { target: { value: 'SecurePass123!' } });
+    fireEvent.change(passwordInput, { target: { value: validPassword } });
     fireEvent.change(confirmPasswordInput, {
       target: { value: 'differentpassword' },
     });
@@ -128,9 +129,9 @@ describe('RegisterForm', () => {
     fireEvent.change(firstNameInput, { target: { value: 'John' } });
     fireEvent.change(lastNameInput, { target: { value: 'Doe' } });
     fireEvent.change(emailInput, { target: { value: 'john@example.com' } });
-    fireEvent.change(passwordInput, { target: { value: 'SecurePass123!' } });
+    fireEvent.change(passwordInput, { target: { value: validPassword } });
     fireEvent.change(confirmPasswordInput, {
-      target: { value: 'SecurePass123!' },
+      target: { value: validPassword },
     });
     fireEvent.click(submitButton);
 
@@ -144,8 +145,8 @@ describe('RegisterForm', () => {
           firstName: 'John',
           lastName: 'Doe',
           email: 'john@example.com',
-          password: 'SecurePass123!',
-          confirmPassword: 'SecurePass123!',
+          password: validPassword,
+          confirmPassword: validPassword,
         }),
       });
     });
@@ -174,9 +175,9 @@ describe('RegisterForm', () => {
     fireEvent.change(firstNameInput, { target: { value: 'John' } });
     fireEvent.change(lastNameInput, { target: { value: 'Doe' } });
     fireEvent.change(emailInput, { target: { value: 'john@example.com' } });
-    fireEvent.change(passwordInput, { target: { value: 'SecurePass123!' } });
+    fireEvent.change(passwordInput, { target: { value: validPassword } });
     fireEvent.change(confirmPasswordInput, {
-      target: { value: 'SecurePass123!' },
+      target: { value: validPassword },
     });
     fireEvent.click(submitButton);
 
@@ -208,9 +209,9 @@ describe('RegisterForm', () => {
     fireEvent.change(firstNameInput, { target: { value: 'John' } });
     fireEvent.change(lastNameInput, { target: { value: 'Doe' } });
     fireEvent.change(emailInput, { target: { value: 'john@example.com' } });
-    fireEvent.change(passwordInput, { target: { value: 'SecurePass123!' } });
+    fireEvent.change(passwordInput, { target: { value: validPassword } });
     fireEvent.change(confirmPasswordInput, {
-      target: { value: 'SecurePass123!' },
+      target: { value: validPassword },
     });
     fireEvent.click(submitButton);
 
@@ -230,7 +231,7 @@ describe('RegisterForm', () => {
       }),
     } as Response);
 
-    render(<RegisterForm defaultRole="MANAGER" />);
+    renderWithProviders(<RegisterForm defaultRole="MANAGER" />);
 
     const firstNameInput = screen.getByLabelText('First Name');
     const lastNameInput = screen.getByLabelText('Last Name');
@@ -242,9 +243,9 @@ describe('RegisterForm', () => {
     fireEvent.change(firstNameInput, { target: { value: 'John' } });
     fireEvent.change(lastNameInput, { target: { value: 'Doe' } });
     fireEvent.change(emailInput, { target: { value: 'john@example.com' } });
-    fireEvent.change(passwordInput, { target: { value: 'SecurePass123!' } });
+    fireEvent.change(passwordInput, { target: { value: validPassword } });
     fireEvent.change(confirmPasswordInput, {
-      target: { value: 'SecurePass123!' },
+      target: { value: validPassword },
     });
     fireEvent.click(submitButton);
 
@@ -258,8 +259,8 @@ describe('RegisterForm', () => {
           firstName: 'John',
           lastName: 'Doe',
           email: 'john@example.com',
-          password: 'SecurePass123!',
-          confirmPassword: 'SecurePass123!',
+          password: validPassword,
+          confirmPassword: validPassword,
         }),
       });
     });
@@ -277,7 +278,7 @@ describe('RegisterForm', () => {
       }),
     } as Response);
 
-    render(<RegisterForm onSuccess={mockOnSuccess} />);
+    renderWithProviders(<RegisterForm onSuccess={mockOnSuccess} />);
 
     const firstNameInput = screen.getByLabelText('First Name');
     const lastNameInput = screen.getByLabelText('Last Name');
@@ -289,9 +290,9 @@ describe('RegisterForm', () => {
     fireEvent.change(firstNameInput, { target: { value: 'John' } });
     fireEvent.change(lastNameInput, { target: { value: 'Doe' } });
     fireEvent.change(emailInput, { target: { value: 'john@example.com' } });
-    fireEvent.change(passwordInput, { target: { value: 'SecurePass123!' } });
+    fireEvent.change(passwordInput, { target: { value: validPassword } });
     fireEvent.change(confirmPasswordInput, {
-      target: { value: 'SecurePass123!' },
+      target: { value: validPassword },
     });
     fireEvent.click(submitButton);
 

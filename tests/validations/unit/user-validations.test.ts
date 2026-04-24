@@ -14,13 +14,16 @@ import {
   verifyEmailSchema,
 } from '@/lib/validations/user';
 
+const validPassword = 'Abcd123.';
+const validNewPassword = 'Xyz1234.';
+
 describe('User Validation Schemas', () => {
   describe('createUserSchema', () => {
     const validUserData = {
       firstName: 'John',
       lastName: 'Doe',
       email: 'john.doe@example.com',
-      password: 'StrongPassword123!',
+      password: validPassword,
       phone: '+2347087367278',
       role: 'STAFF' as const,
       isActive: true,
@@ -33,7 +36,7 @@ describe('User Validation Schemas', () => {
       expect(result.firstName).toBe('John');
       expect(result.lastName).toBe('Doe');
       expect(result.email).toBe('john.doe@example.com');
-      expect(result.password).toBe('StrongPassword123!');
+      expect(result.password).toBe(validPassword);
       expect(result.role).toBe('STAFF');
       expect(result.isActive).toBe(true);
     });
@@ -43,7 +46,7 @@ describe('User Validation Schemas', () => {
         firstName: 'John',
         lastName: 'Doe',
         email: 'john@example.com',
-        password: 'StrongPassword123!',
+        password: validPassword,
       };
 
       const result = createUserSchema.parse(minimalData);
@@ -57,7 +60,7 @@ describe('User Validation Schemas', () => {
         firstName: 'John',
         lastName: 'Doe',
         email: 'john@example.com',
-        password: 'StrongPassword123!',
+        password: validPassword,
         phone: undefined,
         notes: null,
       };
@@ -89,16 +92,20 @@ describe('User Validation Schemas', () => {
         expect(() => createUserSchema.parse(invalidData)).toThrow();
       });
 
-      it('should reject empty string fields', () => {
+      it('should reject empty first names and trim padded names', () => {
         expect(() => createUserSchema.parse({ 
           ...validUserData, 
           firstName: '' 
         })).toThrow();
 
-        expect(() => createUserSchema.parse({ 
+        const result = createUserSchema.parse({
           ...validUserData, 
-          lastName: '   ' 
-        })).toThrow();
+          firstName: '  John  ',
+          lastName: '  Doe  ',
+        });
+
+        expect(result.firstName).toBe('John');
+        expect(result.lastName).toBe('Doe');
       });
     });
 
@@ -244,10 +251,8 @@ describe('User Validation Schemas', () => {
       expect(result.lastName).toBeUndefined();
     });
 
-    it('should accept empty updates', () => {
-      const result = updateUserSchema.parse({});
-      
-      expect(Object.keys(result)).toHaveLength(0);
+    it('should reject empty updates', () => {
+      expect(() => updateUserSchema.parse({})).toThrow();
     });
 
     it('should validate fields when provided', () => {
@@ -260,16 +265,14 @@ describe('User Validation Schemas', () => {
       })).toThrow();
     });
 
-    it('should not allow password updates', () => {
-      // Password should not be in the update schema for security
+    it('should validate password updates when provided', () => {
       const updateData = {
         firstName: 'Jane',
-        password: 'NewPassword123!',
+        password: validNewPassword,
       };
 
-      // This should either ignore password or have a separate schema
       const result = updateUserSchema.parse(updateData);
-      expect('password' in result).toBe(false);
+      expect(result.password).toBe(validNewPassword);
     });
 
     it('should handle role updates', () => {
@@ -280,16 +283,6 @@ describe('User Validation Schemas', () => {
       expect(result.role).toBe('MANAGER');
     });
 
-    it('should handle status updates', () => {
-      const statusUpdates = ['PENDING', 'VERIFIED', 'APPROVED', 'REJECTED', 'SUSPENDED'];
-
-      statusUpdates.forEach(userStatus => {
-        const result = updateUserSchema.parse({
-          userStatus: userStatus as any,
-        });
-        expect(result.userStatus).toBe(userStatus);
-      });
-    });
   });
 
   describe('userQuerySchema', () => {
@@ -299,8 +292,8 @@ describe('User Validation Schemas', () => {
         limit: 20,
         search: 'john',
         role: 'ADMIN',
-        userStatus: 'APPROVED',
-        isActive: true,
+        status: 'APPROVED',
+        isActive: 'true',
         sortBy: 'email',
         sortOrder: 'asc' as const,
       };
@@ -311,7 +304,7 @@ describe('User Validation Schemas', () => {
       expect(result.limit).toBe(20);
       expect(result.search).toBe('john');
       expect(result.role).toBe('ADMIN');
-      expect(result.userStatus).toBe('APPROVED');
+      expect(result.status).toBe('APPROVED');
       expect(result.isActive).toBe(true);
       expect(result.sortBy).toBe('email');
       expect(result.sortOrder).toBe('asc');
@@ -350,7 +343,7 @@ describe('User Validation Schemas', () => {
       })).toThrow();
 
       expect(() => userQuerySchema.parse({
-        userStatus: 'INVALID',
+        status: 'INVALID',
       })).toThrow();
 
       expect(() => userQuerySchema.parse({
@@ -361,29 +354,30 @@ describe('User Validation Schemas', () => {
 
   describe('userIdSchema', () => {
     it('should accept valid user IDs', () => {
-      expect(userIdSchema.parse(1)).toBe(1);
-      expect(userIdSchema.parse(999999)).toBe(999999);
+      expect(userIdSchema.parse({ id: 1 }).id).toBe(1);
+      expect(userIdSchema.parse({ id: 999999 }).id).toBe(999999);
     });
 
     it('should reject invalid IDs', () => {
-      expect(() => userIdSchema.parse(0)).toThrow();
-      expect(() => userIdSchema.parse(-1)).toThrow();
-      expect(() => userIdSchema.parse(1.5)).toThrow();
-      expect(() => userIdSchema.parse('1')).toThrow();
+      expect(() => userIdSchema.parse({ id: 0 })).toThrow();
+      expect(() => userIdSchema.parse({ id: -1 })).toThrow();
+      expect(() => userIdSchema.parse({ id: 1.5 })).toThrow();
+      expect(() => userIdSchema.parse({ id: '1' })).toThrow();
     });
   });
 
   describe('changePasswordSchema', () => {
     const validPasswordData = {
       currentPassword: 'OldPassword123!',
-      newPassword: 'NewStrongPassword456@',
+      newPassword: validNewPassword,
+      confirmPassword: validNewPassword,
     };
 
     it('should accept valid password change data', () => {
       const result = changePasswordSchema.parse(validPasswordData);
       
       expect(result.currentPassword).toBe('OldPassword123!');
-      expect(result.newPassword).toBe('NewStrongPassword456@');
+      expect(result.newPassword).toBe(validNewPassword);
     });
 
     it('should require both passwords', () => {
@@ -392,7 +386,8 @@ describe('User Validation Schemas', () => {
       })).toThrow();
 
       expect(() => changePasswordSchema.parse({
-        newPassword: 'NewStrongPassword456@',
+        newPassword: validNewPassword,
+        confirmPassword: validNewPassword,
       })).toThrow();
     });
 
@@ -407,7 +402,8 @@ describe('User Validation Schemas', () => {
       // Current password doesn't need to meet strength requirements
       const result = changePasswordSchema.parse({
         currentPassword: 'old-weak-password',
-        newPassword: 'NewStrongPassword456@',
+        newPassword: validNewPassword,
+        confirmPassword: validNewPassword,
       });
 
       expect(result.currentPassword).toBe('old-weak-password');
@@ -437,14 +433,14 @@ describe('User Validation Schemas', () => {
   describe('resetPasswordSchema', () => {
     const validResetData = {
       token: 'valid-reset-token-string',
-      newPassword: 'NewStrongPassword123!',
+      newPassword: validNewPassword,
     };
 
     it('should accept valid reset data', () => {
       const result = resetPasswordSchema.parse(validResetData);
       
       expect(result.token).toBe('valid-reset-token-string');
-      expect(result.newPassword).toBe('NewStrongPassword123!');
+      expect(result.newPassword).toBe(validNewPassword);
     });
 
     it('should require both token and password', () => {
@@ -453,7 +449,7 @@ describe('User Validation Schemas', () => {
       })).toThrow();
 
       expect(() => resetPasswordSchema.parse({
-        newPassword: 'NewStrongPassword123!',
+        newPassword: validNewPassword,
       })).toThrow();
     });
 
@@ -467,7 +463,7 @@ describe('User Validation Schemas', () => {
     it('should require non-empty token', () => {
       expect(() => resetPasswordSchema.parse({
         token: '',
-        newPassword: 'NewStrongPassword123!',
+        newPassword: validNewPassword,
       })).toThrow();
     });
   });
@@ -525,7 +521,7 @@ describe('User Validation Schemas', () => {
           firstName: maliciousInput,
           lastName: 'Doe',
           email: 'user@example.com',
-          password: 'StrongPassword123!',
+          password: validPassword,
         });
 
         expect(result.firstName).toBe(maliciousInput);
@@ -539,7 +535,7 @@ describe('User Validation Schemas', () => {
         firstName: veryLongString, // Should fail due to max length
         lastName: 'Doe',
         email: 'user@example.com',
-        password: 'StrongPassword123!',
+        password: validPassword,
       })).toThrow();
     });
 

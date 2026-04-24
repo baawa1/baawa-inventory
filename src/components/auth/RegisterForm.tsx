@@ -24,7 +24,11 @@ import {
 } from '@/components/ui/form';
 import { Input } from '@/components/ui/input';
 import { UserRole } from '@/types/app';
-import { passwordSchema } from '@/lib/validations/common';
+import {
+  passwordSchema,
+  PASSWORD_REQUIREMENT_HINT,
+  PASSWORD_SYMBOL_HINT,
+} from '@/lib/validations/common';
 
 const registerSchema = z
   .object({
@@ -250,15 +254,14 @@ export function RegisterForm({ onSuccess }: RegisterFormProps) {
                     <Input
                       data-testid="password-input"
                       type="password"
-                      placeholder="Enter a strong password (12+ chars)"
+                      placeholder="Enter a strong password (8+ chars)"
                       required
                       {...field}
                     />
                   </FormControl>
                   <FormMessage data-testid="password-error" />
                   <div className="text-muted-foreground mt-1 text-xs">
-                    Password must be at least 12 characters with uppercase,
-                    lowercase, number, and special character
+                    {PASSWORD_REQUIREMENT_HINT} {PASSWORD_SYMBOL_HINT}
                   </div>
                 </FormItem>
               )}

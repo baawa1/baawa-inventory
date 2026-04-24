@@ -4,6 +4,7 @@ import { prisma } from '@/lib/db';
 import bcrypt from 'bcryptjs';
 import { emailService } from '@/lib/email';
 import { getAppBaseUrl } from '@/lib/utils';
+import { passwordSchema } from '@/lib/validations/common';
 
 interface RouteParams {
   params: Promise<{ id: string }>;
@@ -166,7 +167,20 @@ export async function PUT(request: NextRequest, { params }: RouteParams) {
 
         // Hash password if provided
         if (body.password && body.password.trim() !== '') {
-          updateData.password = await bcrypt.hash(body.password, 12);
+          const passwordValidation = passwordSchema.safeParse(body.password);
+
+          if (!passwordValidation.success) {
+            return NextResponse.json(
+              {
+                error:
+                  passwordValidation.error.issues[0]?.message ||
+                  'Invalid password',
+              },
+              { status: 400 }
+            );
+          }
+
+          updateData.password = await bcrypt.hash(passwordValidation.data, 12);
         }
 
         // Debug logging removed for production
