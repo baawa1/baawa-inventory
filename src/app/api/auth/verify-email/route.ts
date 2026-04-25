@@ -4,6 +4,7 @@ import { emailService } from '@/lib/email/service';
 import { AuditLogger } from '@/lib/utils/audit-logger';
 import { randomBytes } from 'crypto';
 import { getAppBaseUrl } from '@/lib/utils';
+import { AuditLogAction } from '@/types/audit';
 
 export async function POST(request: NextRequest) {
   try {
@@ -72,7 +73,7 @@ export async function POST(request: NextRequest) {
     // Log the email verification
     await AuditLogger.logAuthEvent(
       {
-        action: 'EMAIL_VERIFICATION',
+        action: AuditLogAction.EMAIL_VERIFICATION,
         userEmail: user.email,
         success: true,
         userId: user.id,
@@ -100,7 +101,7 @@ export async function POST(request: NextRequest) {
     // Log the error
     await AuditLogger.logAuthEvent(
       {
-        action: 'EMAIL_VERIFICATION',
+        action: AuditLogAction.EMAIL_VERIFICATION,
         userEmail: 'unknown',
         success: false,
         errorMessage: error instanceof Error ? error.message : 'Unknown error',
@@ -175,7 +176,7 @@ export async function PUT(request: NextRequest) {
       // Log the resend verification email
       await AuditLogger.logAuthEvent(
         {
-          action: 'EMAIL_VERIFICATION',
+          action: AuditLogAction.EMAIL_VERIFICATION,
           userEmail: user.email,
           success: true,
           userId: user.id,
@@ -199,7 +200,7 @@ export async function PUT(request: NextRequest) {
     // Log the error
     await AuditLogger.logAuthEvent(
       {
-        action: 'EMAIL_VERIFICATION',
+        action: AuditLogAction.EMAIL_VERIFICATION,
         userEmail: 'unknown',
         success: false,
         errorMessage: error instanceof Error ? error.message : 'Unknown error',

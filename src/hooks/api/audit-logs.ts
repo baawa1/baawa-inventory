@@ -9,15 +9,18 @@ export interface AuditLogFilters {
   limit?: number;
   userId?: string;
   action?: string;
+  search?: string;
   from?: string;
   to?: string;
+  sortBy?: string;
+  sortOrder?: 'asc' | 'desc';
 }
 
 export interface AuditLog {
-  id: string;
+  id: number;
   action: string;
   table_name: string;
-  record_id: string | null;
+  record_id: number | null;
   old_values: any;
   new_values: any;
   ip_address: string | null;
@@ -41,18 +44,34 @@ export interface AuditLogsResponse {
  * Hook to fetch audit logs with filters and pagination
  */
 export function useAuditLogs(filters: AuditLogFilters = {}) {
-  const { page = 1, limit = 10, userId, action, from, to } = filters;
+  const {
+    page = 1,
+    limit = 10,
+    userId,
+    action,
+    search,
+    from,
+    to,
+    sortBy = 'created_at',
+    sortOrder = 'desc',
+  } = filters;
 
   return useQuery({
-    queryKey: ['audit-logs', { page, limit, userId, action, from, to }],
+    queryKey: [
+      'audit-logs',
+      { page, limit, userId, action, search, from, to, sortBy, sortOrder },
+    ],
     queryFn: async (): Promise<AuditLogsResponse> => {
       const params = new URLSearchParams({
         page: String(page),
         limit: String(limit),
         ...(userId && { userId }),
         ...(action && { action }),
+        ...(search && { search }),
         ...(from && { from }),
         ...(to && { to }),
+        sortBy,
+        sortOrder,
       });
 
       const response = await fetch(
@@ -68,7 +87,7 @@ export function useAuditLogs(filters: AuditLogFilters = {}) {
         logs: data.logs || [],
         totalPages: data.totalPages || 1,
         totalCount: data.totalCount || 0,
-        currentPage: page,
+        currentPage: data.currentPage || page,
       };
     },
     staleTime: 30 * 1000, // 30 seconds

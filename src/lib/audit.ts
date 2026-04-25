@@ -8,19 +8,76 @@ export type AuditValues = Prisma.InputJsonValue;
 
 export type AuditValuesOrNull = AuditValues | null;
 
+type AuditLogClient = Pick<PrismaClient, 'auditLog'>;
+
 export interface AuditLogParams {
-  tx?: Omit<
-    PrismaClient,
-    '$connect' | '$disconnect' | '$on' | '$transaction' | '$use' | '$extends'
-  >;
-  userId: number;
-  action: AuditLogAction;
+  tx?: AuditLogClient;
+  userId?: number | null;
+  action: AuditLogAction | string;
   tableName: string;
-  recordId: number;
-  oldValues?: AuditValuesOrNull;
-  newValues?: AuditValuesOrNull;
+  recordId?: number | null;
+  oldValues?: unknown | null;
+  newValues?: unknown | null;
   ipAddress?: string;
   userAgent?: string;
+}
+
+function normalizeAuditValue(value: unknown): AuditValuesOrNull {
+  if (value === null) {
+    return null;
+  }
+
+  if (
+    typeof value === 'string' ||
+    typeof value === 'number' ||
+    typeof value === 'boolean'
+  ) {
+    return value;
+  }
+
+  if (typeof value === 'bigint') {
+    return value.toString();
+  }
+
+  if (value instanceof Date) {
+    return value.toISOString();
+  }
+
+  if (Array.isArray(value)) {
+    return value.map(item => normalizeAuditValue(item)) as Prisma.InputJsonArray;
+  }
+
+  if (typeof value === 'object') {
+    const maybeSerializable = value as { toJSON?: () => unknown };
+    if (typeof maybeSerializable.toJSON === 'function') {
+      const serializedValue = maybeSerializable.toJSON();
+      if (serializedValue !== value) {
+        return normalizeAuditValue(serializedValue);
+      }
+    }
+
+    const normalizedEntries = Object.entries(value).reduce<
+      [string, AuditValuesOrNull][]
+    >((entries, [key, entryValue]) => {
+      if (typeof entryValue === 'undefined') {
+        return entries;
+      }
+
+      entries.push([key, normalizeAuditValue(entryValue)]);
+      return entries;
+    }, []);
+
+    return Object.fromEntries(normalizedEntries) as Prisma.InputJsonObject;
+  }
+
+  return String(value);
+}
+
+function normalizeAuditFieldInput(
+  value: unknown
+): Prisma.NullableJsonNullValueInput | AuditValues {
+  const normalizedValue = normalizeAuditValue(value);
+  return normalizedValue === null ? Prisma.DbNull : normalizedValue;
 }
 
 /**
@@ -35,8 +92,8 @@ export async function createAuditLog(params: AuditLogParams) {
     action,
     tableName,
     recordId,
-    oldValues = {},
-    newValues = {},
+    oldValues,
+    newValues,
     ipAddress,
     userAgent,
   } = params;
@@ -46,12 +103,18 @@ export async function createAuditLog(params: AuditLogParams) {
 
   return await client.auditLog.create({
     data: {
-      user_id: userId,
+      user_id: userId ?? null,
       action,
       table_name: tableName,
-      record_id: recordId,
-      old_values: oldValues ?? undefined,
-      new_values: newValues ?? undefined,
+      record_id: recordId ?? null,
+      old_values:
+        typeof oldValues === 'undefined'
+          ? undefined
+          : normalizeAuditFieldInput(oldValues),
+      new_values:
+        typeof newValues === 'undefined'
+          ? undefined
+          : normalizeAuditFieldInput(newValues),
       ip_address: ipAddress,
       user_agent: userAgent,
     },

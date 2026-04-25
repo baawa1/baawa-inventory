@@ -1,6 +1,8 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { auth } from '#root/auth';
 import { prisma } from '@/lib/db';
+import { createAuditLog } from '@/lib/audit';
+import { AuditLogAction } from '@/types/audit';
 import { z } from 'zod';
 
 // Archive/Unarchive product endpoint
@@ -9,6 +11,15 @@ const archiveProductSchema = z.object({
   archived: z.boolean(),
   reason: z.string().optional(),
 });
+
+class ProductArchiveError extends Error {
+  constructor(
+    readonly status: number,
+    message: string
+  ) {
+    super(message);
+  }
+}
 
 // PATCH /api/products/[id]/archive - Archive or unarchive a product
 export async function PATCH(
@@ -37,63 +48,75 @@ export async function PATCH(
 
     const { archived, reason } = validatedData;
 
-    // Check if product exists
-    const existingProduct = await prisma.product.findUnique({
-      where: { id: productId },
-      select: { id: true, name: true, isArchived: true, status: true },
-    });
+    const updatedProduct = await prisma.$transaction(async tx => {
+      const existingProduct = await tx.product.findUnique({
+        where: { id: productId },
+        select: { id: true, name: true, isArchived: true, status: true },
+      });
 
-    if (!existingProduct) {
-      return NextResponse.json({ error: 'Product not found' }, { status: 404 });
-    }
+      if (!existingProduct) {
+        throw new ProductArchiveError(404, 'Product not found');
+      }
 
-    // Check if already in requested state
-    if (existingProduct.isArchived === archived) {
-      return NextResponse.json(
-        {
-          error: `Product is already ${archived ? 'archived' : 'active'}`,
-        },
-        { status: 400 }
-      );
-    }
+      if (existingProduct.isArchived === archived) {
+        throw new ProductArchiveError(
+          400,
+          `Product is already ${archived ? 'archived' : 'active'}`
+        );
+      }
 
-    // Update product archive status
-    const updatedProduct = await prisma.product.update({
-      where: { id: productId },
-      data: {
-        isArchived: archived,
-        updatedAt: new Date(),
-      },
-      select: {
-        id: true,
-        name: true,
-        isArchived: true,
-        status: true,
-      },
-    });
-
-    // Log the archive/unarchive action
-    if (reason) {
-      await prisma.auditLog.create({
+      const nextProduct = await tx.product.update({
+        where: { id: productId },
         data: {
-          user_id: parseInt(session.user.id),
-          action: archived ? 'ARCHIVE' : 'UNARCHIVE',
-          table_name: 'products',
-          record_id: productId,
-          new_values: {
-            isArchived: archived,
-            reason,
-          },
-          created_at: new Date(),
+          isArchived: archived,
+          updatedAt: new Date(),
+        },
+        select: {
+          id: true,
+          name: true,
+          isArchived: true,
+          status: true,
         },
       });
-    }
+
+      await createAuditLog({
+        tx,
+        userId: parseInt(session.user.id),
+        action: archived
+          ? AuditLogAction.PRODUCT_ARCHIVED
+          : AuditLogAction.PRODUCT_UNARCHIVED,
+        tableName: 'products',
+        recordId: productId,
+        oldValues: {
+          isArchived: existingProduct.isArchived,
+          status: existingProduct.status,
+        },
+        newValues: {
+          isArchived: archived,
+          status: nextProduct.status,
+          reason: reason?.trim() || null,
+        },
+      });
+
+      return nextProduct;
+    });
 
     return NextResponse.json({
       data: updatedProduct,
       message: `Product ${archived ? 'archived' : 'unarchived'} successfully`,
     });
   } catch (error) {
+    if (error instanceof z.ZodError) {
+      return NextResponse.json(
+        { error: 'Invalid request data' },
+        { status: 400 }
+      );
+    }
+
+    if (error instanceof ProductArchiveError) {
+      return NextResponse.json({ error: error.message }, { status: error.status });
+    }
+
     console.error('Error in PATCH /api/products/[id]/archive:', error);
     return NextResponse.json(
       { error: 'Internal server error' },

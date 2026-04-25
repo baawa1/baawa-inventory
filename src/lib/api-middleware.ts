@@ -3,6 +3,7 @@ import { auth } from '#root/auth';
 import { hasRole, USER_ROLES } from './auth/roles';
 import { AuditLogger } from './utils/audit-logger';
 import { USER_STATUS } from './constants';
+import { AuditLogAction } from '@/types/audit';
 import type { UserRole } from '@/types/user';
 // import { logger } from "./logger";
 
@@ -164,7 +165,7 @@ export function withPermission<T extends unknown[]>(
         if (!hasRole(_request.user.role, allowedRoles)) {
           await AuditLogger.logAuthEvent(
             {
-              action: 'LOGIN_FAILED',
+              action: AuditLogAction.ACCESS_DENIED,
               userId: parseInt(_request.user.id),
               userEmail: _request.user.email,
               success: false,
@@ -189,7 +190,7 @@ export function withPermission<T extends unknown[]>(
 
         await AuditLogger.logAuthEvent(
           {
-            action: 'LOGIN_FAILED',
+            action: AuditLogAction.AUTHORIZATION_FAILED,
             userId: parseInt(_request.user.id),
             userEmail: _request.user.email,
             success: false,

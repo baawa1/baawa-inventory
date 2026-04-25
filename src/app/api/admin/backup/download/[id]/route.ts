@@ -2,6 +2,7 @@ import { NextResponse } from 'next/server';
 import { withPermission, AuthenticatedRequest } from '@/lib/api-middleware';
 import { BackupService } from '@/lib/services/backup-service';
 import { AuditLogger } from '@/lib/utils/audit-logger';
+import { AuditLogAction } from '@/types/audit';
 
 /**
  * GET /api/admin/backup/download/[id]
@@ -34,9 +35,11 @@ export const GET = withPermission(
       // Log audit event
       await AuditLogger.logAuthEvent(
         {
-          action: 'BACKUP_DOWNLOADED',
+          action: AuditLogAction.BACKUP_DOWNLOADED,
           userId: parseInt(request.user.id),
           success: true,
+          tableName: 'backup_logs',
+          recordId: backupId,
           details: {
             backupId,
           },
@@ -62,9 +65,10 @@ export const GET = withPermission(
       const { id: failedId } = await params;
       await AuditLogger.logAuthEvent(
         {
-          action: 'BACKUP_DOWNLOADED',
+          action: AuditLogAction.BACKUP_DOWNLOADED,
           userId: parseInt(request.user.id),
           success: false,
+          tableName: 'backup_logs',
           details: {
             backupId: failedId,
             error: error instanceof Error ? error.message : 'Unknown error',

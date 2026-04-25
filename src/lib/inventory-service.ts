@@ -123,7 +123,7 @@ export class InventoryService {
       await createAuditLog({
         tx,
         userId,
-        action: AuditLogAction._STOCK_ADDITION,
+        action: AuditLogAction.STOCK_ADDITION,
         tableName: 'products',
         recordId: productId,
         oldValues: { stock: updatedProduct.stock - quantity },
@@ -198,7 +198,7 @@ export class InventoryService {
       await createAuditLog({
         tx,
         userId,
-        action: AuditLogAction._STOCK_REMOVAL,
+        action: AuditLogAction.STOCK_REMOVAL,
         tableName: 'products',
         recordId: productId,
         oldValues: { stock: product.stock },
@@ -273,7 +273,7 @@ export class InventoryService {
       await createAuditLog({
         tx,
         userId,
-        action: AuditLogAction._STOCK_ADJUSTMENT,
+        action: AuditLogAction.STOCK_ADJUSTMENT,
         tableName: 'products',
         recordId: productId,
         oldValues: { stock: oldQuantity },
@@ -404,7 +404,7 @@ export class InventoryService {
         await createAuditLog({
           tx,
           userId,
-          action: AuditLogAction._STOCK_RECONCILIATION,
+          action: AuditLogAction.STOCK_RECONCILIATION,
           tableName: 'products',
           recordId: productId,
           oldValues: { stock: systemCount },
@@ -644,7 +644,7 @@ export class InventoryService {
       await createAuditLog({
         tx,
         userId,
-        action: AuditLogAction._PRODUCT_UPDATED,
+        action: AuditLogAction.PRODUCT_UPDATED,
         tableName: 'products',
         recordId: id,
         oldValues: originalProduct,
@@ -682,7 +682,7 @@ export class InventoryService {
       await createAuditLog({
         tx,
         userId,
-        action: AuditLogAction._PRODUCT_ARCHIVED,
+        action: AuditLogAction.PRODUCT_ARCHIVED,
         tableName: 'products',
         recordId: id,
         oldValues: { isArchived: false },
@@ -719,7 +719,7 @@ export class InventoryService {
       await createAuditLog({
         tx,
         userId,
-        action: AuditLogAction._PRODUCT_DELETED,
+        action: AuditLogAction.PRODUCT_DELETED,
         tableName: 'products',
         recordId: id,
         oldValues: originalProduct,
@@ -825,7 +825,7 @@ export class InventoryService {
       await createAuditLog({
         tx,
         userId: data.userId,
-        action: AuditLogAction._SALE_UPDATED,
+        action: AuditLogAction.SALE_UPDATED,
         tableName: 'sales_transactions',
         recordId: id,
         oldValues: currentTransaction,

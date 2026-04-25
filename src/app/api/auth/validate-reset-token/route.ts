@@ -3,6 +3,8 @@ import { z } from 'zod';
 import { prisma } from '@/lib/db';
 import { AuditLogger } from '@/lib/utils/audit-logger';
 import { withRateLimit } from '@/lib/rate-limiting';
+import { AuditLogAction } from '@/types/audit';
+import { getClientIp } from '@/lib/utils/request-ip';
 
 // Validate reset token schema
 const validateTokenSchema = z.object({
@@ -53,7 +55,7 @@ async function validateResetTokenHandler(request: NextRequest) {
       // Log failed validation attempt
       await AuditLogger.logAuthEvent(
         {
-          action: 'PASSWORD_RESET_REQUEST',
+          action: AuditLogAction.PASSWORD_RESET_REQUEST,
           success: false,
           errorMessage: 'Invalid or expired reset token',
           details: {
@@ -77,7 +79,7 @@ async function validateResetTokenHandler(request: NextRequest) {
     if (!user.emailVerified || user.userStatus !== 'APPROVED') {
       await AuditLogger.logAuthEvent(
         {
-          action: 'PASSWORD_RESET_REQUEST',
+          action: AuditLogAction.PASSWORD_RESET_REQUEST,
           userId: user.id,
           userEmail: user.email,
           success: false,
@@ -109,7 +111,7 @@ async function validateResetTokenHandler(request: NextRequest) {
     // Log successful validation
     await AuditLogger.logAuthEvent(
       {
-        action: 'PASSWORD_RESET_REQUEST',
+        action: AuditLogAction.PASSWORD_RESET_REQUEST,
         userId: user.id,
         userEmail: user.email,
         success: true,
@@ -144,7 +146,7 @@ async function validateResetTokenHandler(request: NextRequest) {
     // Log the error
     await AuditLogger.logAuthEvent(
       {
-        action: 'PASSWORD_RESET_REQUEST',
+        action: AuditLogAction.PASSWORD_RESET_REQUEST,
         success: false,
         errorMessage: error instanceof Error ? error.message : 'Unknown error',
         details: {
@@ -170,10 +172,6 @@ export const POST = withRateLimit({
   windowMs: 60 * 60 * 1000, // 1 hour
   maxRequests: 10, // 10 requests per hour (more lenient as this is just validation)
   keyGenerator: request => {
-    const ip =
-      request.headers.get('x-forwarded-for') ||
-      request.headers.get('x-real-ip') ||
-      'unknown';
-    return `validate-reset-token:${ip}`;
+    return `validate-reset-token:${getClientIp(request)}`;
   },
 })(validateResetTokenHandler);

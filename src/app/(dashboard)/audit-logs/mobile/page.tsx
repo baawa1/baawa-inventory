@@ -20,6 +20,7 @@ export default function MobileAuditLogsPage() {
   const initialUserId = searchParams?.get('userId') || '';
 
   const [page, setPage] = React.useState(1);
+  const [search, setSearch] = React.useState('');
   const [user, setUser] = React.useState(initialUserId);
   const [action, setAction] = React.useState('');
   const [from, setFrom] = React.useState('');
@@ -39,20 +40,32 @@ export default function MobileAuditLogsPage() {
     limit: pageSize,
     userId: user || undefined,
     action: action || undefined,
+    search: search || undefined,
     from: from || undefined,
     to: to || undefined,
   });
 
   const logs = data?.logs || [];
   const totalPages = data?.totalPages || 1;
+  const totalCount = data?.totalCount || 0;
+  const errorMessage = React.useMemo(() => {
+    if (!error) {
+      return null;
+    }
 
-  // Handle errors (TanStack Query will show error in console, but we can add user-friendly handling)
-  if (error) {
+    return error instanceof Error ? error.message : String(error);
+  }, [error]);
+
+  React.useEffect(() => {
+    if (!errorMessage) {
+      return;
+    }
+
     logger.error('Failed to fetch audit logs', {
-      error: error instanceof Error ? error.message : String(error),
+      error: errorMessage,
     });
     toast.error('Failed to load audit logs');
-  }
+  }, [errorMessage]);
 
   // Filters config for MobileDashboardFiltersBar
   const filters: FilterConfig[] = [
@@ -94,6 +107,7 @@ export default function MobileAuditLogsPage() {
   };
   
   const onResetFilters = () => {
+    setSearch('');
     setUser('');
     setAction('');
     setFrom('');
@@ -221,8 +235,11 @@ export default function MobileAuditLogsPage() {
         {/* Mobile-optimized Filters */}
         <MobileDashboardFiltersBar
           searchPlaceholder="Search audit logs..."
-          searchValue=""
-          onSearchChange={() => {}} // No search for audit logs
+          searchValue={search}
+          onSearchChange={value => {
+            setSearch(value);
+            setPage(1);
+          }}
           filters={filters}
           filterValues={filterValues}
           onFilterChange={onFilterChange}
@@ -232,7 +249,7 @@ export default function MobileAuditLogsPage() {
         {/* Mobile-optimized Table */}
         <MobileDashboardTable
           tableTitle="Audit Log Results"
-          totalCount={totalPages * pageSize}
+          totalCount={totalCount}
           currentCount={logs.length}
           columns={mobileAuditLogColumns}
           visibleColumns={visibleColumns}
@@ -244,7 +261,7 @@ export default function MobileAuditLogsPage() {
             page,
             limit: pageSize,
             totalPages,
-            totalItems: totalPages * pageSize,
+            totalItems: totalCount,
           }}
           onPageChange={setPage}
           onPageSizeChange={setPageSize}
@@ -255,7 +272,7 @@ export default function MobileAuditLogsPage() {
           emptyStateMessage="No audit logs found"
           mobileCardTitle={mobileCardTitle}
           mobileCardSubtitle={mobileCardSubtitle}
-          keyExtractor={log => log.id}
+          keyExtractor={log => log.id.toString()}
         />
       </div>
     </DashboardPageLayout>

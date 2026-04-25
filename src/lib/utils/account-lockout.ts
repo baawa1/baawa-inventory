@@ -1,4 +1,3 @@
-import { prisma } from '@/lib/db';
 import { AuditLogger } from './audit-logger';
 import { logger } from '@/lib/logger';
 
@@ -49,9 +48,10 @@ export class AccountLockout {
       }
 
       // Get the timestamp of the last failed attempt
-      const lastFailedAttempt = await this.getLastFailedAttempt(
-        identifier,
-        type
+      const lastFailedAttempt = await AuditLogger.getLastFailedLoginAttempt(
+        type === 'ip' ? identifier : 'unknown',
+        type === 'email' ? identifier : undefined,
+        24
       );
 
       if (!lastFailedAttempt) {
@@ -92,44 +92,6 @@ export class AccountLockout {
   }
 
   /**
-   * Get the last failed login attempt timestamp
-   */
-  private static async getLastFailedAttempt(
-    identifier: string,
-    type: 'email' | 'ip'
-  ): Promise<Date | null> {
-    try {
-      const where: any = {
-        action: 'LOGIN_FAILED',
-        created_at: {
-          gte: new Date(Date.now() - 24 * 60 * 60 * 1000), // Last 24 hours
-        },
-      };
-
-      if (type === 'email') {
-        where.userEmail = identifier;
-      } else if (identifier !== 'unknown') {
-        // Only add IP address filter if it's not "unknown"
-        where.ip_address = identifier;
-      }
-
-      const lastAttempt = await prisma.auditLog.findFirst({
-        where,
-        orderBy: { created_at: 'desc' },
-        select: { created_at: true },
-      });
-
-      return lastAttempt?.created_at || null;
-    } catch (error) {
-      logger.error('Failed to get last failed login attempt', {
-        email: identifier,
-        error: error instanceof Error ? error.message : String(error),
-      });
-      return null;
-    }
-  }
-
-  /**
    * Get the appropriate lockout rule for the number of failed attempts
    */
   private static getLockoutRule(
@@ -149,28 +111,10 @@ export class AccountLockout {
    * Reset failed attempts for an identifier (e.g., after successful login)
    */
   static async resetFailedAttempts(
-    email: string,
-    ipAddress: string
+    _email: string,
+    _ipAddress: string
   ): Promise<void> {
-    try {
-      // For this implementation, we rely on the natural expiry of audit logs
-      // In a production system, you might want to mark attempts as "resolved"
-      // or maintain a separate lockout table
-
-      // Log that the lockout has been reset
-      await AuditLogger.logAuthEvent({
-        action: 'LOGIN_SUCCESS', // This will naturally reset the failed attempt count
-        userEmail: email,
-        ipAddress,
-        success: true,
-        details: { lockoutReset: true },
-      });
-    } catch (error) {
-      logger.error('Failed to reset failed login attempts', {
-        email,
-        error: error instanceof Error ? error.message : String(error),
-      });
-    }
+    // Failed-attempt streaks reset when a real LOGIN_SUCCESS audit event is written.
   }
 
   /**

@@ -50,6 +50,7 @@ export default function AuditLogsPage() {
     filters,
     apiFilters,
     pagination,
+    sorting,
     visibleColumns,
     isSearching,
     currentSort,
@@ -83,29 +84,42 @@ export default function AuditLogsPage() {
     limit: pagination.limit,
     userId: apiFilters.user || undefined,
     action: apiFilters.action || undefined,
+    search: apiFilters.search || undefined,
     from: apiFilters.from || undefined,
     to: apiFilters.to || undefined,
+    sortBy: sorting.sortBy,
+    sortOrder: sorting.sortOrder,
   });
 
   const logs = React.useMemo(() => data?.logs || [], [data?.logs]);
+  const errorMessage = React.useMemo(() => {
+    if (!error) {
+      return null;
+    }
+
+    return error instanceof Error ? error.message : String(error);
+  }, [error]);
 
   // Update pagination state when API response changes
   React.useEffect(() => {
     if (data) {
       updatePaginationFromAPI({
         totalPages: data.totalPages,
-        total: data.totalPages * pagination.limit,
+        total: data.totalCount,
       });
     }
   }, [data, updatePaginationFromAPI, pagination.limit]);
 
-  // Handle errors (TanStack Query will show error in console, but we can add user-friendly handling)
-  if (error) {
+  React.useEffect(() => {
+    if (!errorMessage) {
+      return;
+    }
+
     logger.error('Failed to fetch audit logs', {
-      error: error instanceof Error ? error.message : String(error),
+      error: errorMessage,
     });
     toast.error('Failed to load audit logs');
-  }
+  }, [errorMessage]);
 
   // Filters config
   const filterConfigs: FilterConfig[] = React.useMemo(() => [

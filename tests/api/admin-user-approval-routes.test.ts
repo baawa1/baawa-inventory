@@ -40,6 +40,13 @@ jest.mock('@/lib/utils', () => ({
   getAppBaseUrl: () => 'http://localhost:3000',
 }));
 
+const mockLogUserStatusChange = jest.fn();
+jest.mock('@/lib/utils/audit-logger', () => ({
+  AuditLogger: {
+    logUserStatusChange: (...args: unknown[]) => mockLogUserStatusChange(...args),
+  },
+}));
+
 const mockResolveActingUserId = jest.fn();
 jest.mock('@/lib/utils/resolve-acting-user-id', () => ({
   resolveActingUserId: (...args: unknown[]) => mockResolveActingUserId(...args),
@@ -62,12 +69,14 @@ describe('admin user approval routes', () => {
       user: {
         id: '7',
         name: 'Admin User',
+        email: 'admin@example.com',
       },
     }) as {
       json: () => Promise<unknown>;
       user: {
         id: string;
         name: string;
+        email: string;
       };
     };
 
@@ -118,6 +127,14 @@ describe('admin user approval routes', () => {
         dashboardLink: 'http://localhost:3000/dashboard',
         role: 'STAFF',
       }
+    );
+    expect(mockLogUserStatusChange).toHaveBeenCalledWith(
+      7,
+      42,
+      'pending@example.com',
+      'APPROVED',
+      undefined,
+      expect.anything()
     );
 
     expect(response.status).toBe(200);
@@ -184,6 +201,14 @@ describe('admin user approval routes', () => {
         rejectionReason: 'Missing details',
         supportEmail: 'support@baawa.com',
       }
+    );
+    expect(mockLogUserStatusChange).toHaveBeenCalledWith(
+      7,
+      24,
+      'verified@example.com',
+      'REJECTED',
+      'Missing details',
+      expect.anything()
     );
 
     expect(response.status).toBe(200);

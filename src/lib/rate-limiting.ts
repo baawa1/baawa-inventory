@@ -5,6 +5,7 @@
 
 import { NextRequest, NextResponse } from 'next/server';
 import { logger } from './logger';
+import { getClientIp } from './utils/request-ip';
 
 interface RateLimitConfig {
   windowMs: number; // Time window in milliseconds
@@ -53,10 +54,7 @@ function generateKey(_request: NextRequest, config: RateLimitConfig): string {
   }
 
   // Default: IP + User Agent
-  const ip =
-    _request.headers.get('x-forwarded-for') ||
-    _request.headers.get('x-real-ip') ||
-    'unknown';
+  const ip = getClientIp(_request);
   const userAgent = _request.headers.get('user-agent') || 'unknown';
   return `${ip}:${userAgent}`;
 }
@@ -144,9 +142,7 @@ export function withRateLimit(
           limit: config.maxRequests,
           windowMs: config.windowMs,
           userAgent: _request.headers.get('user-agent'),
-          ip:
-            _request.headers.get('x-forwarded-for') ||
-            _request.headers.get('x-real-ip'),
+          ip: getClientIp(_request),
         });
 
         return NextResponse.json(

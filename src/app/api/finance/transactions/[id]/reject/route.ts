@@ -9,6 +9,15 @@ const rejectTransactionSchema = z.object({
   reason: z.string().min(1, 'Rejection reason is required'),
 });
 
+class FinanceRejectionError extends Error {
+  constructor(
+    readonly status: number,
+    message: string
+  ) {
+    super(message);
+  }
+}
+
 // POST /api/finance/transactions/[id]/reject - Reject financial transaction
 export const POST = withAuth(
   async (
@@ -34,80 +43,85 @@ export const POST = withAuth(
       const body = await request.json();
       const { reason } = rejectTransactionSchema.parse(body);
 
-      // Get the transaction
-      const transaction = await prisma.financialTransaction.findUnique({
-        where: { id: transactionId },
-        include: {
-          createdByUser: {
-            select: {
-              id: true,
-              firstName: true,
-              lastName: true,
-              email: true,
+      const updatedTransaction = await prisma.$transaction(async tx => {
+        const transaction = await tx.financialTransaction.findUnique({
+          where: { id: transactionId },
+          include: {
+            createdByUser: {
+              select: {
+                id: true,
+                firstName: true,
+                lastName: true,
+                email: true,
+              },
             },
+            expenseDetails: true,
+            incomeDetails: true,
           },
-          expenseDetails: true,
-          incomeDetails: true,
-        },
-      });
+        });
 
-      if (!transaction) {
-        return createApiResponse.notFound('Financial transaction not found');
-      }
+        if (!transaction) {
+          throw new FinanceRejectionError(
+            404,
+            'Financial transaction not found'
+          );
+        }
 
-      // Check if transaction is already rejected
-      if (transaction.status === 'REJECTED') {
-        return createApiResponse.validationError(
-          'Transaction is already rejected'
-        );
-      }
+        if (transaction.status === 'REJECTED') {
+          throw new FinanceRejectionError(
+            400,
+            'Transaction is already rejected'
+          );
+        }
 
-      // Check if transaction is cancelled
-      if (transaction.status === 'CANCELLED') {
-        return createApiResponse.validationError(
-          'Cannot reject a cancelled transaction'
-        );
-      }
+        if (transaction.status === 'CANCELLED') {
+          throw new FinanceRejectionError(
+            400,
+            'Cannot reject a cancelled transaction'
+          );
+        }
 
-      // Update transaction status
-      const updatedTransaction = await prisma.financialTransaction.update({
-        where: { id: transactionId },
-        data: {
-          status: 'REJECTED',
-          approvedBy: parseInt(request.user.id),
-          approvedAt: new Date(),
-          rejectionReason: reason,
-        },
-        include: {
-          createdByUser: {
-            select: {
-              id: true,
-              firstName: true,
-              lastName: true,
-              email: true,
+        const nextTransaction = await tx.financialTransaction.update({
+          where: { id: transactionId },
+          data: {
+            status: 'REJECTED',
+            approvedBy: parseInt(request.user.id),
+            approvedAt: new Date(),
+            rejectionReason: reason,
+          },
+          include: {
+            createdByUser: {
+              select: {
+                id: true,
+                firstName: true,
+                lastName: true,
+                email: true,
+              },
             },
-          },
-          approvedByUser: {
-            select: {
-              id: true,
-              firstName: true,
-              lastName: true,
-              email: true,
+            approvedByUser: {
+              select: {
+                id: true,
+                firstName: true,
+                lastName: true,
+                email: true,
+              },
             },
+            expenseDetails: true,
+            incomeDetails: true,
           },
-          expenseDetails: true,
-          incomeDetails: true,
-        },
-      });
+        });
 
-      // Create audit log
-      await createAuditLog({
-        userId: parseInt(request.user.id),
-        action: AuditLogAction._SALE_VOIDED, // Using existing action for now
-        tableName: 'financial_transactions',
-        recordId: transactionId,
-        oldValues: transaction,
-        newValues: updatedTransaction,
+        await createAuditLog({
+          tx,
+          userId: parseInt(request.user.id),
+          action: AuditLogAction.FINANCE_TRANSACTION_REJECTED,
+          tableName: 'financial_transactions',
+          recordId: transactionId,
+          oldValues: transaction,
+          newValues: nextTransaction,
+        });
+
+        return nextTransaction;
       });
 
       return createApiResponse.success(
@@ -115,10 +129,19 @@ export const POST = withAuth(
         'Transaction rejected successfully'
       );
     } catch (error) {
-      console.error('Error rejecting financial transaction:', error);
       if (error instanceof z.ZodError) {
         return createApiResponse.validationError('Invalid request data');
       }
+
+      if (error instanceof FinanceRejectionError) {
+        if (error.status === 404) {
+          return createApiResponse.notFound(error.message);
+        }
+
+        return createApiResponse.validationError(error.message);
+      }
+
+      console.error('Error rejecting financial transaction:', error);
       return createApiResponse.internalError('Failed to reject transaction');
     }
   }

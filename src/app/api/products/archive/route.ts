@@ -2,7 +2,9 @@ import { NextResponse } from 'next/server';
 import { withPermission, AuthenticatedRequest } from '@/lib/api-middleware';
 import { handleApiError } from '@/lib/api-error-handler-new';
 import { USER_ROLES } from '@/lib/auth/roles';
+import { createAuditLog } from '@/lib/audit';
 import { prisma } from '@/lib/db';
+import { AuditLogAction } from '@/types/audit';
 import { z } from 'zod';
 
 // Schema for bulk archive operations
@@ -53,10 +55,32 @@ export const POST = withPermission(
         });
       }
 
-      // Update products
-      const result = await prisma.product.updateMany({
-        where: { id: { in: productsToUpdate.map(p => p.id) } },
-        data: { isArchived: isArchiving },
+      const result = await prisma.$transaction(async tx => {
+        const updateResult = await tx.product.updateMany({
+          where: { id: { in: productsToUpdate.map(p => p.id) } },
+          data: { isArchived: isArchiving },
+        });
+
+        for (const product of productsToUpdate) {
+          await createAuditLog({
+            tx,
+            userId: parseInt(request.user.id),
+            action: isArchiving
+              ? AuditLogAction.PRODUCT_ARCHIVED
+              : AuditLogAction.PRODUCT_UNARCHIVED,
+            tableName: 'products',
+            recordId: product.id,
+            oldValues: {
+              isArchived: product.isArchived,
+            },
+            newValues: {
+              isArchived: isArchiving,
+              bulkOperation: true,
+            },
+          });
+        }
+
+        return updateResult;
       });
 
       return NextResponse.json({

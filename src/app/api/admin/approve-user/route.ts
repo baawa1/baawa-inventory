@@ -2,6 +2,7 @@ import { NextResponse } from 'next/server';
 import { prisma } from '@/lib/db';
 import { withPermission, AuthenticatedRequest } from '@/lib/api-middleware';
 import { emailService } from '@/lib/email';
+import { AuditLogger } from '@/lib/utils/audit-logger';
 import { getAppBaseUrl } from '@/lib/utils';
 import { resolveActingUserId } from '@/lib/utils/resolve-acting-user-id';
 import { z } from 'zod';
@@ -92,6 +93,15 @@ export const POST = withPermission(
       } catch (emailError) {
         console.error('Failed to send approval email:', emailError);
       }
+
+      await AuditLogger.logUserStatusChange(
+        adminId,
+        user.id,
+        user.email,
+        'APPROVED',
+        undefined,
+        request
+      );
 
       return NextResponse.json({
         success: true,

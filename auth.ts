@@ -4,6 +4,7 @@ import { prisma } from './src/lib/db';
 import * as bcrypt from 'bcryptjs';
 import { AccountLockout } from './src/lib/utils/account-lockout';
 import { AuditLogger } from './src/lib/utils/audit-logger';
+import { getClientIp } from './src/lib/utils/request-ip';
 import { authConfig } from './auth.config';
 
 /**
@@ -35,7 +36,8 @@ export const { auth, handlers, signIn, signOut } = NextAuth({
         if (!email || !password) {
           await AuditLogger.logLoginFailed(
             email || 'unknown',
-            'Missing credentials'
+            'Missing credentials',
+            req
           );
           return null;
         }
@@ -47,26 +49,27 @@ export const { auth, handlers, signIn, signOut } = NextAuth({
             'email'
           );
           if (emailLockoutStatus.isLocked) {
-            await AuditLogger.logLoginFailed(
+            await AuditLogger.logAccountLocked(
+              'email',
               email,
-              `Account locked: ${AccountLockout.getLockoutMessage(emailLockoutStatus)}`
+              emailLockoutStatus,
+              req
             );
             return null;
           }
 
           // Check IP lockout status
-          const ipAddress =
-            req.headers?.get('x-forwarded-for') ||
-            req.headers?.get('x-real-ip') ||
-            'unknown';
+          const ipAddress = getClientIp(req);
           const ipLockoutStatus = await AccountLockout.checkLockoutStatus(
             ipAddress,
             'ip'
           );
           if (ipLockoutStatus.isLocked) {
-            await AuditLogger.logLoginFailed(
-              email,
-              `IP locked: ${AccountLockout.getLockoutMessage(ipLockoutStatus)}`
+            await AuditLogger.logAccountLocked(
+              'ip',
+              ipAddress,
+              ipLockoutStatus,
+              req
             );
             return null;
           }
@@ -98,26 +101,30 @@ export const { auth, handlers, signIn, signOut } = NextAuth({
           });
 
           if (!user) {
-            await AuditLogger.logLoginFailed(email, 'User not found');
+            await AuditLogger.logLoginFailed(email, 'User not found', req);
             return null;
           }
 
           // Validate password first
           if (!user.password) {
-            await AuditLogger.logLoginFailed(email, 'No password set');
+            await AuditLogger.logLoginFailed(email, 'No password set', req);
             return null;
           }
 
           const isValidPassword = await bcrypt.compare(password, user.password);
           if (!isValidPassword) {
-            await AuditLogger.logLoginFailed(email, 'Invalid password');
+            await AuditLogger.logLoginFailed(email, 'Invalid password', req);
             return null;
           }
 
           // Allow login for all active users regardless of status
           // The middleware will handle redirects based on status
           if (!user.isActive) {
-            await AuditLogger.logLoginFailed(email, 'User account is inactive');
+            await AuditLogger.logLoginFailed(
+              email,
+              'User account is inactive',
+              req
+            );
             return null;
           }
 
@@ -131,7 +138,7 @@ export const { auth, handlers, signIn, signOut } = NextAuth({
           });
 
           await AccountLockout.resetFailedAttempts(email, ipAddress);
-          await AuditLogger.logLoginSuccess(user.id, user.email);
+          await AuditLogger.logLoginSuccess(user.id, user.email, req);
 
           return {
             id: user.id.toString(),
@@ -148,7 +155,7 @@ export const { auth, handlers, signIn, signOut } = NextAuth({
           };
         } catch (error) {
           console.error('Authentication error:', error);
-          await AuditLogger.logLoginFailed(email, 'Authentication failed');
+          await AuditLogger.logLoginFailed(email, 'Authentication failed', req);
           return null;
         }
       },
@@ -232,18 +239,6 @@ export const { auth, handlers, signIn, signOut } = NextAuth({
     },
   },
   events: {
-    async signIn(message) {
-      if (message.user && isDatabaseSafe()) {
-        try {
-          await AuditLogger.logLoginSuccess(
-            parseInt(message.user.id),
-            message.user.email || 'unknown'
-          );
-        } catch (_error) {
-          // Silently fail
-        }
-      }
-    },
     async signOut(message) {
       if ('token' in message && message.token?.sub && isDatabaseSafe()) {
         const userId = parseInt(message.token.sub);

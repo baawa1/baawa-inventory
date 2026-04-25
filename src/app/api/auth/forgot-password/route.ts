@@ -7,6 +7,8 @@ import { emailSchema } from '@/lib/validations/common';
 import { randomBytes } from 'crypto';
 import { withRateLimit } from '@/lib/rate-limiting';
 import { getAppBaseUrl } from '@/lib/utils';
+import { AuditLogAction } from '@/types/audit';
+import { getClientIp } from '@/lib/utils/request-ip';
 
 // Forgot password validation schema
 const forgotPasswordSchema = z.object({
@@ -81,7 +83,7 @@ async function forgotPasswordHandler(request: NextRequest) {
       // Log failed password reset request for security monitoring
       await AuditLogger.logAuthEvent(
         {
-          action: 'PASSWORD_RESET_REQUEST',
+          action: AuditLogAction.PASSWORD_RESET_REQUEST,
           userEmail: email,
           success: false,
           errorMessage: user
@@ -107,7 +109,7 @@ async function forgotPasswordHandler(request: NextRequest) {
     // Log the error
     await AuditLogger.logAuthEvent(
       {
-        action: 'PASSWORD_RESET_REQUEST',
+        action: AuditLogAction.PASSWORD_RESET_REQUEST,
         userEmail: body?.email,
         success: false,
         errorMessage: error instanceof Error ? error.message : 'Unknown error',
@@ -127,10 +129,6 @@ export const POST = withRateLimit({
   windowMs: 60 * 60 * 1000, // 1 hour
   maxRequests: 3, // 3 requests per hour
   keyGenerator: request => {
-    const ip =
-      request.headers.get('x-forwarded-for') ||
-      request.headers.get('x-real-ip') ||
-      'unknown';
-    return `forgot-password:${ip}`;
+    return `forgot-password:${getClientIp(request)}`;
   },
 })(forgotPasswordHandler);

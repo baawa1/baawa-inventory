@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { logger } from './logger';
+import { getClientIp } from './utils/request-ip';
 
 // In-memory store for rate limiting (use Redis in production)
 interface RateLimitStore {
@@ -67,10 +68,7 @@ function generateKey(
   }
 
   // Use IP address as default key
-  const forwarded = _req.headers.get('x-forwarded-for');
-  const ip = forwarded
-    ? forwarded.split(',')[0]
-    : _req.headers.get('x-real-ip') || 'unknown';
+  const ip = getClientIp(_req);
   const pathname = _req.nextUrl.pathname;
 
   return `${ip}:${pathname}`;
@@ -193,10 +191,7 @@ export function withUserRateLimit(config: RateLimitConfig) {
         }
 
         // Fallback to IP-based limiting
-        const forwarded = req.headers.get('x-forwarded-for');
-        const ip = forwarded
-          ? forwarded.split(',')[0]
-          : req.headers.get('x-real-ip') || 'unknown';
+        const ip = getClientIp(req);
         return `ip:${ip}:${req.nextUrl.pathname}`;
       },
     })(handler);

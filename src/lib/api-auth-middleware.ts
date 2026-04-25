@@ -9,6 +9,7 @@ import { hasPermission } from './auth/roles';
 import { AuditLogger } from './utils/audit-logger';
 import { USER_STATUS } from './constants';
 import { logger } from './logger';
+import { AuditLogAction } from '@/types/audit';
 import type { UserRole, UserStatus } from '@/types/user';
 
 export interface AuthenticatedRequest extends NextRequest {
@@ -39,7 +40,7 @@ export function withPOSAuth<T extends unknown[]>(
       if (!session?.user) {
         await AuditLogger.logAuthEvent(
           {
-            action: 'LOGIN_FAILED',
+            action: AuditLogAction.AUTHENTICATION_REQUIRED,
             success: false,
             errorMessage: 'No session found',
           },
@@ -56,7 +57,7 @@ export function withPOSAuth<T extends unknown[]>(
       if (!session.user.id || !session.user.email || !session.user.role) {
         await AuditLogger.logAuthEvent(
           {
-            action: 'LOGIN_FAILED',
+            action: AuditLogAction.INVALID_SESSION,
             userEmail: session.user.email || undefined,
             success: false,
             errorMessage: 'Invalid session data',
@@ -74,7 +75,7 @@ export function withPOSAuth<T extends unknown[]>(
       if (!hasPermission(session.user.role, 'POS_ACCESS')) {
         await AuditLogger.logAuthEvent(
           {
-            action: 'LOGIN_FAILED',
+            action: AuditLogAction.ACCESS_DENIED,
             userId: parseInt(session.user.id),
             userEmail: session.user.email,
             success: false,
@@ -93,7 +94,7 @@ export function withPOSAuth<T extends unknown[]>(
       if (session.user.status !== USER_STATUS.APPROVED) {
         await AuditLogger.logAuthEvent(
           {
-            action: 'LOGIN_FAILED',
+            action: AuditLogAction.ACCOUNT_NOT_APPROVED,
             userId: parseInt(session.user.id),
             userEmail: session.user.email,
             success: false,
@@ -126,7 +127,7 @@ export function withPOSAuth<T extends unknown[]>(
 
       await AuditLogger.logAuthEvent(
         {
-          action: 'LOGIN_FAILED',
+          action: AuditLogAction.AUTHORIZATION_FAILED,
           success: false,
           errorMessage:
             error instanceof Error ? error.message : 'Unknown error',

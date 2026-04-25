@@ -1,27 +1,96 @@
 import { prisma } from '@/lib/db';
-import { NextRequest } from 'next/server';
+import { Prisma } from '@prisma/client';
 import { ErrorSanitizer } from './error-sanitizer';
 import { logger } from '@/lib/logger';
+import { createAuditLog } from '@/lib/audit';
+import { AuditLogAction } from '@/types/audit';
+import { getClientIp } from './request-ip';
 
-export type AuditAction =
-  | 'LOGIN_SUCCESS'
-  | 'LOGIN_FAILED'
-  | 'LOGOUT'
-  | 'REGISTRATION'
-  | 'PASSWORD_RESET_REQUEST'
-  | 'PASSWORD_RESET_SUCCESS'
-  | 'EMAIL_VERIFICATION'
-  | 'ADMIN_USER_APPROVED'
-  | 'ADMIN_USER_REJECTED'
-  | 'ROLE_CHANGED'
-  | 'ACCOUNT_SUSPENDED'
-  | 'ACCOUNT_REACTIVATED'
-  | 'SESSION_EXPIRED'
-  | 'SESSION_BLACKLISTED'
-  | 'SUSPICIOUS_ACTIVITY'
-  | 'RATE_LIMIT_EXCEEDED'
-  | 'BACKUP_CREATED'
-  | 'BACKUP_DOWNLOADED';
+export type AuditAction = AuditLogAction;
+
+export interface AuditRequestLike {
+  headers?: Headers;
+  method?: string;
+  url?: string;
+}
+
+const RECENT_AUTH_ACTIONS: AuditLogAction[] = [
+  AuditLogAction.LOGIN_SUCCESS,
+  AuditLogAction.LOGIN_FAILED,
+  AuditLogAction.LOGIN_BLOCKED,
+  AuditLogAction.LOGOUT,
+  AuditLogAction.REGISTRATION,
+  AuditLogAction.PASSWORD_RESET_REQUEST,
+  AuditLogAction.PASSWORD_RESET_SUCCESS,
+  AuditLogAction.EMAIL_VERIFICATION,
+  AuditLogAction.SESSION_EXPIRED,
+  AuditLogAction.SESSION_BLACKLISTED,
+  AuditLogAction.SUSPICIOUS_ACTIVITY,
+  AuditLogAction.RATE_LIMIT_EXCEEDED,
+  AuditLogAction.ACCOUNT_LOCKED,
+  AuditLogAction.ACCESS_DENIED,
+  AuditLogAction.AUTHENTICATION_REQUIRED,
+  AuditLogAction.INVALID_SESSION,
+  AuditLogAction.ACCOUNT_NOT_APPROVED,
+  AuditLogAction.AUTHORIZATION_FAILED,
+  AuditLogAction.BACKUP_CREATED,
+  AuditLogAction.BACKUP_DOWNLOADED,
+  AuditLogAction.ADMIN_USER_APPROVED,
+  AuditLogAction.ADMIN_USER_REJECTED,
+  AuditLogAction.ROLE_CHANGED,
+];
+
+function normalizeUserEmail(userEmail?: string): string | undefined {
+  const normalizedEmail = userEmail?.trim().toLowerCase();
+  return normalizedEmail || undefined;
+}
+
+function buildAuthIdentifierFilter(
+  ipAddress?: string,
+  userEmail?: string
+): Prisma.AuditLogWhereInput | null {
+  const filters: Prisma.AuditLogWhereInput[] = [];
+  const normalizedEmail = normalizeUserEmail(userEmail);
+
+  if (ipAddress && ipAddress !== 'unknown') {
+    filters.push({ ip_address: ipAddress });
+  }
+
+  if (normalizedEmail) {
+    filters.push({
+      new_values: {
+        path: ['userEmail'],
+        equals: normalizedEmail,
+      },
+    });
+  }
+
+  if (filters.length === 0) {
+    return null;
+  }
+
+  return filters.length === 1 ? filters[0] : { OR: filters };
+}
+
+function getDefaultTableName(action: AuditAction): string {
+  switch (action) {
+    case AuditLogAction.BACKUP_CREATED:
+    case AuditLogAction.BACKUP_DOWNLOADED:
+      return 'backup_logs';
+    case AuditLogAction.REGISTRATION:
+    case AuditLogAction.PASSWORD_RESET_REQUEST:
+    case AuditLogAction.PASSWORD_RESET_SUCCESS:
+    case AuditLogAction.EMAIL_VERIFICATION:
+    case AuditLogAction.ADMIN_USER_APPROVED:
+    case AuditLogAction.ADMIN_USER_REJECTED:
+    case AuditLogAction.ROLE_CHANGED:
+    case AuditLogAction.ACCOUNT_SUSPENDED:
+    case AuditLogAction.ACCOUNT_REACTIVATED:
+      return 'users';
+    default:
+      return 'auth';
+  }
+}
 
 export interface AuditLogData {
   action: AuditAction;
@@ -29,19 +98,23 @@ export interface AuditLogData {
   userEmail?: string;
   ipAddress?: string;
   userAgent?: string;
-  details?: Record<string, any>;
+  details?: Record<string, unknown>;
   success: boolean;
   errorMessage?: string;
+  tableName?: string;
+  recordId?: number | null;
 }
 
 /**
  * Extract client IP and user agent from request with enhanced security info
  */
-function extractRequestInfo(request?: NextRequest): {
+function extractRequestInfo(request?: AuditRequestLike): {
   ipAddress: string;
   userAgent: string;
-  securityInfo: Record<string, any>;
+  securityInfo: Record<string, unknown>;
 } {
+  const headers = request?.headers;
+
   if (!request) {
     return {
       ipAddress: 'unknown',
@@ -51,31 +124,22 @@ function extractRequestInfo(request?: NextRequest): {
   }
 
   // Extract IP address from various headers (prioritize most reliable sources)
-  const forwarded = request.headers.get('x-forwarded-for');
-  const realIp = request.headers.get('x-real-ip');
-  const cfConnectingIp = request.headers.get('cf-connecting-ip');
-  const remoteAddr = request.headers.get('x-remote-addr');
+  const forwarded = headers?.get('x-forwarded-for');
+  const ipAddress = getClientIp(request);
 
-  const ipAddress =
-    cfConnectingIp || // Cloudflare (most reliable)
-    realIp || // Nginx/Apache
-    forwarded?.split(',')[0] || // Load balancer
-    remoteAddr ||
-    'unknown';
-
-  const userAgent = request.headers.get('user-agent') || 'unknown';
+  const userAgent = headers?.get('user-agent') || 'unknown';
 
   // Collect additional security-relevant information
   const securityInfo = {
-    origin: request.headers.get('origin'),
-    referer: request.headers.get('referer'),
-    acceptLanguage: request.headers.get('accept-language'),
-    acceptEncoding: request.headers.get('accept-encoding'),
-    connection: request.headers.get('connection'),
-    upgradeInsecureRequests: request.headers.get('upgrade-insecure-requests'),
-    secFetchSite: request.headers.get('sec-fetch-site'),
-    secFetchMode: request.headers.get('sec-fetch-mode'),
-    secFetchDest: request.headers.get('sec-fetch-dest'),
+    origin: headers?.get('origin'),
+    referer: headers?.get('referer'),
+    acceptLanguage: headers?.get('accept-language'),
+    acceptEncoding: headers?.get('accept-encoding'),
+    connection: headers?.get('connection'),
+    upgradeInsecureRequests: headers?.get('upgrade-insecure-requests'),
+    secFetchSite: headers?.get('sec-fetch-site'),
+    secFetchMode: headers?.get('sec-fetch-mode'),
+    secFetchDest: headers?.get('sec-fetch-dest'),
     forwardedChain: forwarded, // Full forwarded chain for analysis
     timestamp: new Date().toISOString(),
     method: request.method,
@@ -83,7 +147,7 @@ function extractRequestInfo(request?: NextRequest): {
   };
 
   return {
-    ipAddress: ipAddress.trim(),
+    ipAddress,
     userAgent,
     securityInfo,
   };
@@ -98,30 +162,33 @@ export class AuditLogger {
    */
   static async logAuthEvent(
     data: AuditLogData,
-    request?: NextRequest
+    request?: AuditRequestLike
   ): Promise<void> {
     try {
       const { ipAddress, userAgent, securityInfo } =
         extractRequestInfo(request);
+      const normalizedEmail = normalizeUserEmail(data.userEmail);
+      const resolvedIpAddress =
+        data.ipAddress && data.ipAddress !== 'unknown'
+          ? data.ipAddress
+          : ipAddress;
 
-      // Combine user details with security info
       const auditDetails = {
-        ...data.details,
-        securityInfo,
         success: data.success,
-        errorMessage: data.errorMessage,
+        userEmail: normalizedEmail ?? null,
+        errorMessage: data.errorMessage ?? null,
+        details: data.details ?? null,
+        securityInfo,
       };
 
-      await prisma.auditLog.create({
-        data: {
-          action: data.action,
-          user_id: data.userId || null,
-          table_name: 'users', // Default table for auth events
-          record_id: data.userId || null,
-          ip_address: ipAddress === 'unknown' ? null : ipAddress,
-          user_agent: data.userAgent || userAgent,
-          new_values: JSON.stringify(auditDetails),
-        },
+      await createAuditLog({
+        userId: data.userId ?? null,
+        action: data.action,
+        tableName: data.tableName ?? getDefaultTableName(data.action),
+        recordId: data.recordId ?? data.userId ?? null,
+        ipAddress: resolvedIpAddress === 'unknown' ? undefined : resolvedIpAddress,
+        userAgent: data.userAgent || userAgent || undefined,
+        newValues: auditDetails,
       });
     } catch (error) {
       // Use sanitized error logging to prevent sensitive data exposure
@@ -139,14 +206,16 @@ export class AuditLogger {
   static async logLoginSuccess(
     userId: number,
     userEmail: string,
-    request?: NextRequest
+    request?: AuditRequestLike
   ): Promise<void> {
     await this.logAuthEvent(
       {
-        action: 'LOGIN_SUCCESS',
+        action: AuditLogAction.LOGIN_SUCCESS,
         userId,
         userEmail,
         success: true,
+        tableName: 'users',
+        recordId: userId,
       },
       request
     );
@@ -158,14 +227,44 @@ export class AuditLogger {
   static async logLoginFailed(
     userEmail: string,
     reason: string,
-    request?: NextRequest
+    request?: AuditRequestLike
   ): Promise<void> {
     await this.logAuthEvent(
       {
-        action: 'LOGIN_FAILED',
+        action: AuditLogAction.LOGIN_FAILED,
         userEmail,
         success: false,
         errorMessage: reason,
+      },
+      request
+    );
+  }
+
+  /**
+   * Log a lockout event without inflating failed-login counters.
+   */
+  static async logAccountLocked(
+    identifierType: 'email' | 'ip',
+    identifier: string,
+    details: {
+      failedAttempts?: number;
+      remainingTime?: number;
+      nextAttemptAllowed?: Date;
+    },
+    request?: AuditRequestLike
+  ): Promise<void> {
+    await this.logAuthEvent(
+      {
+        action: AuditLogAction.ACCOUNT_LOCKED,
+        userEmail: identifierType === 'email' ? identifier : undefined,
+        ipAddress: identifierType === 'ip' ? identifier : undefined,
+        success: false,
+        details: {
+          identifierType,
+          failedAttempts: details.failedAttempts ?? null,
+          remainingTime: details.remainingTime ?? null,
+          nextAttemptAllowed: details.nextAttemptAllowed?.toISOString() ?? null,
+        },
       },
       request
     );
@@ -177,14 +276,16 @@ export class AuditLogger {
   static async logLogout(
     userId: number,
     userEmail: string,
-    request?: NextRequest
+    request?: AuditRequestLike
   ): Promise<void> {
     await this.logAuthEvent(
       {
-        action: 'LOGOUT',
+        action: AuditLogAction.LOGOUT,
         userId,
         userEmail,
         success: true,
+        tableName: 'users',
+        recordId: userId,
       },
       request
     );
@@ -196,14 +297,15 @@ export class AuditLogger {
   static async logRegistration(
     userEmail: string,
     role: string,
-    request?: NextRequest
+    request?: AuditRequestLike
   ): Promise<void> {
     await this.logAuthEvent(
       {
-        action: 'REGISTRATION',
+        action: AuditLogAction.REGISTRATION,
         userEmail,
         success: true,
         details: { role },
+        tableName: 'users',
       },
       request
     );
@@ -214,13 +316,14 @@ export class AuditLogger {
    */
   static async logPasswordResetRequest(
     userEmail: string,
-    request?: NextRequest
+    request?: AuditRequestLike
   ): Promise<void> {
     await this.logAuthEvent(
       {
-        action: 'PASSWORD_RESET_REQUEST',
+        action: AuditLogAction.PASSWORD_RESET_REQUEST,
         userEmail,
         success: true,
+        tableName: 'users',
       },
       request
     );
@@ -232,14 +335,16 @@ export class AuditLogger {
   static async logPasswordResetSuccess(
     userId: number,
     userEmail: string,
-    request?: NextRequest
+    request?: AuditRequestLike
   ): Promise<void> {
     await this.logAuthEvent(
       {
-        action: 'PASSWORD_RESET_SUCCESS',
+        action: AuditLogAction.PASSWORD_RESET_SUCCESS,
         userId,
         userEmail,
         success: true,
+        tableName: 'users',
+        recordId: userId,
       },
       request
     );
@@ -251,14 +356,16 @@ export class AuditLogger {
   static async logEmailVerification(
     userId: number,
     userEmail: string,
-    request?: NextRequest
+    request?: AuditRequestLike
   ): Promise<void> {
     await this.logAuthEvent(
       {
-        action: 'EMAIL_VERIFICATION',
+        action: AuditLogAction.EMAIL_VERIFICATION,
         userId,
         userEmail,
         success: true,
+        tableName: 'users',
+        recordId: userId,
       },
       request
     );
@@ -273,10 +380,12 @@ export class AuditLogger {
     targetUserEmail: string,
     newStatus: string,
     reason?: string,
-    request?: NextRequest
+    request?: AuditRequestLike
   ): Promise<void> {
     const action =
-      newStatus === 'APPROVED' ? 'ADMIN_USER_APPROVED' : 'ADMIN_USER_REJECTED';
+      newStatus === 'APPROVED'
+        ? AuditLogAction.ADMIN_USER_APPROVED
+        : AuditLogAction.ADMIN_USER_REJECTED;
 
     await this.logAuthEvent(
       {
@@ -289,6 +398,8 @@ export class AuditLogger {
           newStatus,
           reason,
         },
+        tableName: 'users',
+        recordId: targetUserId,
       },
       request
     );
@@ -303,11 +414,11 @@ export class AuditLogger {
     targetUserEmail: string,
     oldRole: string,
     newRole: string,
-    request?: NextRequest
+    request?: AuditRequestLike
   ): Promise<void> {
     await this.logAuthEvent(
       {
-        action: 'ROLE_CHANGED',
+        action: AuditLogAction.ROLE_CHANGED,
         userId: adminUserId,
         userEmail: targetUserEmail,
         success: true,
@@ -316,6 +427,8 @@ export class AuditLogger {
           oldRole,
           newRole,
         },
+        tableName: 'users',
+        recordId: targetUserId,
       },
       request
     );
@@ -329,10 +442,12 @@ export class AuditLogger {
     userEmail: string
   ): Promise<void> {
     await this.logAuthEvent({
-      action: 'SESSION_EXPIRED',
+      action: AuditLogAction.SESSION_EXPIRED,
       userId,
       userEmail,
       success: true,
+      tableName: 'users',
+      recordId: userId,
     });
   }
 
@@ -344,11 +459,11 @@ export class AuditLogger {
     userEmail: string,
     reason: string,
     sessionId?: string,
-    request?: NextRequest
+    request?: AuditRequestLike
   ): Promise<void> {
     await this.logAuthEvent(
       {
-        action: 'SESSION_BLACKLISTED',
+        action: AuditLogAction.SESSION_BLACKLISTED,
         userId,
         userEmail,
         success: true,
@@ -356,6 +471,8 @@ export class AuditLogger {
           reason,
           sessionId: sessionId?.slice(-8), // Only log last 8 chars
         },
+        tableName: 'users',
+        recordId: userId,
       },
       request
     );
@@ -368,11 +485,11 @@ export class AuditLogger {
     description: string,
     userId?: number,
     userEmail?: string,
-    request?: NextRequest
+    request?: AuditRequestLike
   ): Promise<void> {
     await this.logAuthEvent(
       {
-        action: 'SUSPICIOUS_ACTIVITY',
+        action: AuditLogAction.SUSPICIOUS_ACTIVITY,
         userId,
         userEmail,
         success: false,
@@ -392,11 +509,11 @@ export class AuditLogger {
     endpoint: string,
     userId?: number,
     userEmail?: string,
-    request?: NextRequest
+    request?: AuditRequestLike
   ): Promise<void> {
     await this.logAuthEvent(
       {
-        action: 'RATE_LIMIT_EXCEEDED',
+        action: AuditLogAction.RATE_LIMIT_EXCEEDED,
         userId,
         userEmail,
         success: false,
@@ -417,7 +534,12 @@ export class AuditLogger {
     userId?: number
   ): Promise<any[]> {
     try {
-      const where = userId ? { user_id: userId } : {};
+      const where: Prisma.AuditLogWhereInput = {
+        action: {
+          in: RECENT_AUTH_ACTIONS,
+        },
+        ...(userId ? { user_id: userId } : {}),
+      };
 
       return await prisma.auditLog.findMany({
         where,
@@ -455,26 +577,25 @@ export class AuditLogger {
     hoursBack: number = 1
   ): Promise<number> {
     try {
-      const since = new Date(Date.now() - hoursBack * 60 * 60 * 1000);
+      const recentEvents = await this.getRecentLoginEvents(
+        ipAddress,
+        email,
+        hoursBack
+      );
 
-      const where: any = {
-        action: 'LOGIN_FAILED',
-        created_at: { gte: since },
-      };
+      let failedAttempts = 0;
 
-      // Only add IP address filter if it's not "unknown"
-      if (ipAddress !== 'unknown') {
-        if (email) {
-          where.OR = [{ ip_address: ipAddress }, { users: { email: email } }];
-        } else {
-          where.ip_address = ipAddress;
+      for (const event of recentEvents) {
+        if (event.action === AuditLogAction.LOGIN_SUCCESS) {
+          break;
         }
-      } else if (email) {
-        // If IP is unknown but we have email, filter by user email through relation
-        where.users = { email: email };
+
+        if (event.action === AuditLogAction.LOGIN_FAILED) {
+          failedAttempts += 1;
+        }
       }
 
-      return await prisma.auditLog.count({ where });
+      return failedAttempts;
     } catch (error) {
       logger.error('Failed to count failed login attempts', {
         userId: 'unknown', // No specific user for rate limiting
@@ -482,5 +603,69 @@ export class AuditLogger {
       });
       return 0;
     }
+  }
+
+  /**
+   * Get the timestamp of the latest failed login attempt in the current failure streak.
+   */
+  static async getLastFailedLoginAttempt(
+    ipAddress: string,
+    email?: string,
+    hoursBack: number = 24
+  ): Promise<Date | null> {
+    try {
+      const recentEvents = await this.getRecentLoginEvents(
+        ipAddress,
+        email,
+        hoursBack
+      );
+
+      for (const event of recentEvents) {
+        if (event.action === AuditLogAction.LOGIN_SUCCESS) {
+          return null;
+        }
+
+        if (event.action === AuditLogAction.LOGIN_FAILED) {
+          return event.created_at || null;
+        }
+      }
+
+      return null;
+    } catch (error) {
+      logger.error('Failed to fetch last failed login attempt', {
+        ipAddress,
+        email,
+        error: error instanceof Error ? error.message : String(error),
+      });
+      return null;
+    }
+  }
+
+  private static async getRecentLoginEvents(
+    ipAddress: string,
+    email?: string,
+    hoursBack: number = 24
+  ) {
+    const since = new Date(Date.now() - hoursBack * 60 * 60 * 1000);
+    const identifierFilter = buildAuthIdentifierFilter(ipAddress, email);
+
+    if (!identifierFilter) {
+      return [];
+    }
+
+    return prisma.auditLog.findMany({
+      where: {
+        created_at: { gte: since },
+        action: {
+          in: [AuditLogAction.LOGIN_FAILED, AuditLogAction.LOGIN_SUCCESS],
+        },
+        AND: [identifierFilter],
+      },
+      orderBy: { created_at: 'desc' },
+      select: {
+        action: true,
+        created_at: true,
+      },
+    });
   }
 }

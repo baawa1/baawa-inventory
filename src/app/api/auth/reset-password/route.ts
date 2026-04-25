@@ -7,6 +7,8 @@ import { AuditLogger } from '@/lib/utils/audit-logger';
 import { passwordSchema } from '@/lib/validations/common';
 import { withRateLimit } from '@/lib/rate-limiting';
 import { logger } from '@/lib/logger';
+import { AuditLogAction } from '@/types/audit';
+import { getClientIp } from '@/lib/utils/request-ip';
 
 // Reset password validation schema
 const resetPasswordSchema = z
@@ -63,7 +65,7 @@ async function resetPasswordHandler(request: NextRequest) {
       // Log failed password reset attempt
       await AuditLogger.logAuthEvent(
         {
-          action: 'PASSWORD_RESET_SUCCESS',
+          action: AuditLogAction.PASSWORD_RESET_SUCCESS,
           success: false,
           errorMessage: 'Invalid or expired reset token',
           details: { token: token.substring(0, 8) + '...' }, // Log partial token for debugging
@@ -81,7 +83,7 @@ async function resetPasswordHandler(request: NextRequest) {
     if (!user.emailVerified || user.userStatus !== 'APPROVED') {
       await AuditLogger.logAuthEvent(
         {
-          action: 'PASSWORD_RESET_SUCCESS',
+          action: AuditLogAction.PASSWORD_RESET_SUCCESS,
           userId: user.id,
           userEmail: user.email,
           success: false,
@@ -137,7 +139,7 @@ async function resetPasswordHandler(request: NextRequest) {
     // Log the error
     await AuditLogger.logAuthEvent(
       {
-        action: 'PASSWORD_RESET_SUCCESS',
+        action: AuditLogAction.PASSWORD_RESET_SUCCESS,
         success: false,
         errorMessage: error instanceof Error ? error.message : 'Unknown error',
         details: { token: body?.token?.substring(0, 8) + '...' },
@@ -157,10 +159,6 @@ export const POST = withRateLimit({
   windowMs: 60 * 60 * 1000, // 1 hour
   maxRequests: 5, // 5 requests per hour
   keyGenerator: request => {
-    const ip =
-      request.headers.get('x-forwarded-for') ||
-      request.headers.get('x-real-ip') ||
-      'unknown';
-    return `reset-password:${ip}`;
+    return `reset-password:${getClientIp(request)}`;
   },
 })(resetPasswordHandler);

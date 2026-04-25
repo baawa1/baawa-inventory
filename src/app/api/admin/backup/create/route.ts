@@ -3,6 +3,7 @@ import { withPermission, AuthenticatedRequest } from '@/lib/api-middleware';
 import { BackupService } from '@/lib/services/backup-service';
 import { GoogleDriveService } from '@/lib/services/google-drive-service';
 import { AuditLogger } from '@/lib/utils/audit-logger';
+import { AuditLogAction } from '@/types/audit';
 
 /**
  * POST /api/admin/backup/create
@@ -25,9 +26,10 @@ export const POST = withPermission(
 
         await AuditLogger.logAuthEvent(
           {
-            action: 'BACKUP_CREATED',
+            action: AuditLogAction.BACKUP_CREATED,
             userId,
             success: false,
+            tableName: 'backup_logs',
             details: {
               error: 'Google Drive not connected',
             },
@@ -50,9 +52,11 @@ export const POST = withPermission(
       // Log audit event
       await AuditLogger.logAuthEvent(
         {
-          action: 'BACKUP_CREATED',
+          action: AuditLogAction.BACKUP_CREATED,
           userId,
           success: true,
+          tableName: 'backup_logs',
+          recordId: result.id,
           details: {
             backupId: result.id,
             status: result.status,
@@ -78,9 +82,10 @@ export const POST = withPermission(
       // Log failed attempt
       await AuditLogger.logAuthEvent(
         {
-          action: 'BACKUP_CREATED',
+          action: AuditLogAction.BACKUP_CREATED,
           userId: parseInt(request.user.id),
           success: false,
+          tableName: 'backup_logs',
           details: {
             error: error instanceof Error ? error.message : 'Unknown error',
           },

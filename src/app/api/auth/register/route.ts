@@ -12,6 +12,8 @@ import {
 import { randomBytes } from 'crypto';
 import { withRateLimit } from '@/lib/rate-limiting';
 import { getAppBaseUrl } from '@/lib/utils';
+import { AuditLogAction } from '@/types/audit';
+import { getClientIp } from '@/lib/utils/request-ip';
 
 // Registration validation schema
 const registerSchema = z
@@ -202,7 +204,7 @@ async function registerHandler(request: NextRequest) {
     // Log the error for debugging
     await AuditLogger.logAuthEvent(
       {
-        action: 'REGISTRATION',
+        action: AuditLogAction.REGISTRATION,
         userEmail: body?.email,
         success: false,
         errorMessage: error instanceof Error ? error.message : 'Unknown error',
@@ -222,10 +224,6 @@ export const POST = withRateLimit({
   windowMs: 60 * 60 * 1000, // 1 hour
   maxRequests: 5, // 5 requests per hour
   keyGenerator: request => {
-    const ip =
-      request.headers.get('x-forwarded-for') ||
-      request.headers.get('x-real-ip') ||
-      'unknown';
-    return `register:${ip}`;
+    return `register:${getClientIp(request)}`;
   },
 })(registerHandler);

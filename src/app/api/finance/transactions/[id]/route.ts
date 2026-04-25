@@ -2,6 +2,8 @@ import { withAuth, AuthenticatedRequest } from '@/lib/api-middleware';
 import { hasPermission } from '@/lib/auth/roles';
 import { prisma } from '@/lib/db';
 import { createApiResponse } from '@/lib/api-response';
+import { createAuditLog } from '@/lib/audit';
+import { AuditLogAction } from '@/types/audit';
 import { z } from 'zod';
 
 // GET /api/finance/transactions/[id] - Get specific financial transaction
@@ -236,6 +238,16 @@ export const PUT = withAuth(
           },
         });
 
+        await createAuditLog({
+          tx,
+          userId: parseInt(request.user.id),
+          action: AuditLogAction.FINANCE_TRANSACTION_UPDATED,
+          tableName: 'financial_transactions',
+          recordId: transactionId,
+          oldValues: existingTransaction,
+          newValues: updatedTransaction,
+        });
+
         return updatedTransaction;
       });
 
@@ -296,9 +308,20 @@ export const DELETE = withAuth(
         );
       }
 
-      // Delete the transaction (cascade will handle related records)
-      await prisma.financialTransaction.delete({
-        where: { id: transactionId },
+      await prisma.$transaction(async tx => {
+        await tx.financialTransaction.delete({
+          where: { id: transactionId },
+        });
+
+        await createAuditLog({
+          tx,
+          userId: parseInt(request.user.id),
+          action: AuditLogAction.FINANCE_TRANSACTION_DELETED,
+          tableName: 'financial_transactions',
+          recordId: transactionId,
+          oldValues: transaction,
+          newValues: null,
+        });
       });
 
       return createApiResponse.success(

@@ -8,6 +8,7 @@ import { NextRequest } from 'next/server';
 import { logger } from './logger';
 import { ErrorSanitizer } from './utils/error-sanitizer';
 import { envConfig } from '@/lib/config/env-validation';
+import { getClientIp } from './utils/request-ip';
 
 export interface RateLimitResult {
   success: boolean;
@@ -84,10 +85,7 @@ export class RedisRateLimiter {
     }
 
     // Default key generation based on IP
-    const forwarded = _req.headers.get('x-forwarded-for');
-    const ip = forwarded
-      ? forwarded.split(',')[0]
-      : _req.headers.get('x-real-ip') || 'unknown';
+    const ip = getClientIp(_req);
     const pathname = _req.nextUrl.pathname;
 
     return `rate_limit:${ip}:${pathname}`;
