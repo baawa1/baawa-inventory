@@ -90,7 +90,7 @@ const posSaleSchema = z
     subtotal: z.coerce.number().positive('Subtotal must be positive'),
     discount: z.coerce.number().min(0, 'Discount cannot be negative'),
     fees: z.array(transactionFeeSchema).optional().default([]),
-    total: z.coerce.number().positive('Total must be positive'),
+    total: z.coerce.number().min(0, 'Total cannot be negative'),
     paymentMethod: z
       .string()
       .min(1, 'Payment method is required')

@@ -24,7 +24,7 @@ const printReceiptSchema = z.object({
   ),
   subtotal: z.number().positive('Subtotal must be positive'),
   discount: z.number().min(0, 'Discount cannot be negative'),
-  total: z.number().positive('Total must be positive'),
+  total: z.number().min(0, 'Total cannot be negative'),
   paymentMethod: z.string().min(1, 'Payment method is required'),
 });
 

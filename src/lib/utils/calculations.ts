@@ -148,30 +148,34 @@ export const validateSplitPayments = (
 };
 
 /**
- * Validate discount amount to prevent excessive discounts
+ * Validate discount input based on the selected discount type.
+ * Percentage discounts are validated against 100%, while fixed
+ * discounts are validated against the current subtotal.
  */
 export const validateDiscountAmount = (
-  discountAmount: number,
+  discountValue: number,
   subtotal: number,
   discountType: 'percentage' | 'fixed'
 ): { isValid: boolean; error?: string } => {
-  if (discountType === 'percentage') {
-    if (discountAmount > 100) {
-      return {
-        isValid: false,
-        error: 'Discount percentage cannot exceed 100%',
-      };
-    }
-  }
-
-  if (discountAmount < 0) {
+  if (discountValue < 0) {
     return {
       isValid: false,
       error: 'Discount amount cannot be negative',
     };
   }
 
-  if (discountAmount > subtotal) {
+  if (discountType === 'percentage') {
+    if (discountValue > 100) {
+      return {
+        isValid: false,
+        error: 'Discount percentage cannot exceed 100%',
+      };
+    }
+
+    return { isValid: true };
+  }
+
+  if (discountValue > subtotal) {
     return {
       isValid: false,
       error: 'Discount cannot exceed subtotal amount',

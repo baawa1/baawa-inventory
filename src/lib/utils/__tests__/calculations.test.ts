@@ -1,6 +1,7 @@
 import {
   calculateOrderTotals,
   calculateDiscountAmount,
+  validateDiscountAmount,
   validatePaymentAmount,
   validateSplitPayments,
   calculateChange,
@@ -58,6 +59,19 @@ describe('POS Calculation Utilities', () => {
     it('should not exceed subtotal for fixed discount', () => {
       const result = calculateDiscountAmount(100, 150, 'fixed');
       expect(result).toBe(100); // Should cap at subtotal
+    });
+  });
+
+  describe('validateDiscountAmount', () => {
+    it('should allow a 100% discount even when subtotal is less than 100', () => {
+      const result = validateDiscountAmount(100, 50, 'percentage');
+      expect(result.isValid).toBe(true);
+    });
+
+    it('should reject fixed discounts above the subtotal', () => {
+      const result = validateDiscountAmount(150, 100, 'fixed');
+      expect(result.isValid).toBe(false);
+      expect(result.error).toBe('Discount cannot exceed subtotal amount');
     });
   });
 
