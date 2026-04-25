@@ -24,6 +24,7 @@ export interface UserFilters {
   isActive?: boolean;
   status?: string;
   role?: string;
+  limit?: number;
 }
 
 // API Functions
@@ -38,6 +39,9 @@ const fetchUsers = async (filters: UserFilters = {}): Promise<AppUser[]> => {
   }
   if (filters.role) {
     params.append('role', filters.role);
+  }
+  if (filters.limit !== undefined) {
+    params.append('limit', filters.limit.toString());
   }
 
   const url = `/api/users${params.toString() ? `?${params.toString()}` : ''}`;
@@ -107,28 +111,38 @@ const deleteUser = async (id: number): Promise<void> => {
   }
 };
 
-const approveUser = async (
+const updateUserApprovalStatus = async (
   userId: number,
   action: 'approve' | 'reject',
   rejectionReason?: string
-): Promise<void> => {
-  const response = await fetch('/api/admin/approve-user', {
+): Promise<{ message?: string }> => {
+  const endpoint =
+    action === 'approve'
+      ? '/api/admin/approve-user'
+      : '/api/admin/reject-user';
+  const payload =
+    action === 'approve'
+      ? { userId }
+      : { userId, reason: rejectionReason?.trim() || undefined };
+
+  const response = await fetch(endpoint, {
     method: 'POST',
     credentials: 'include',
     headers: {
       'Content-Type': 'application/json',
     },
-    body: JSON.stringify({
-      userId,
-      action,
-      rejectionReason,
-    }),
+    body: JSON.stringify(payload),
   });
 
+  const data = await response.json().catch(() => ({}));
+
   if (!response.ok) {
-    const errorData = await response.json().catch(() => ({}));
-    throw new Error(errorData.message || `Failed to ${action} user`);
+    throw new Error(
+      data.error || data.message || `Failed to ${action} user`
+    );
   }
+
+  return data;
 };
 
 // Query Hooks
@@ -150,7 +164,9 @@ export const useDeactivatedUsers = () => {
 };
 
 export const usePendingUsers = (status?: string) => {
-  const filters: UserFilters = {};
+  const filters: UserFilters = {
+    limit: 100,
+  };
   if (status && status !== 'all') {
     filters.status = status;
   }
@@ -159,9 +175,12 @@ export const usePendingUsers = (status?: string) => {
     queryKey: queryKeys.users.pending(status),
     queryFn: async () => {
       const users = await fetchUsers(filters);
-      // Filter users to show non-approved users for pending management
+      // Only show actionable approval states in the admin queue.
       return status === 'all' || !status
-        ? users.filter(user => user.userStatus !== 'APPROVED')
+        ? users.filter(
+            user =>
+              user.userStatus === 'PENDING' || user.userStatus === 'VERIFIED'
+          )
         : users;
     },
     staleTime: 2 * 60 * 1000, // 2 minutes for more frequent updates
@@ -218,7 +237,7 @@ export const useApproveUser = () => {
       userId: number;
       action: 'approve' | 'reject';
       rejectionReason?: string;
-    }) => approveUser(userId, action, rejectionReason),
+    }) => updateUserApprovalStatus(userId, action, rejectionReason),
     onSuccess: () => {
       // Invalidate all user-related queries
       queryClient.invalidateQueries({ queryKey: queryKeys.users.all });

@@ -30,6 +30,7 @@ import {
 import {
   useActiveUsers,
   usePendingUsers,
+  useApproveUser,
   useCreateUser,
   useUpdateUser,
   useDeleteUser,
@@ -60,6 +61,7 @@ const UserManagement = ({ activeTab }: UserManagementProps) => {
     isLoading: pendingLoading,
     refetch: refetchPending,
   } = usePendingUsers();
+  const approvalMutation = useApproveUser();
   const createUserMutation = useCreateUser();
   const updateUserMutation = useUpdateUser();
   const deleteUserMutation = useDeleteUser();
@@ -250,40 +252,36 @@ const UserManagement = ({ activeTab }: UserManagementProps) => {
             onDelete={handleDeleteUser}
             onApprove={async userId => {
               try {
-                const response = await fetch('/api/admin/approve-user', {
-                  method: 'POST',
-                  headers: { 'Content-Type': 'application/json' },
-                  body: JSON.stringify({ userId }),
+                const result = await approvalMutation.mutateAsync({
+                  userId,
+                  action: 'approve',
                 });
 
-                if (!response.ok) {
-                  throw new Error('Failed to approve user');
-                }
-
-                toast.success('User approved successfully');
-                refetch();
+                toast.success(result.message || 'User approved successfully');
               } catch (error) {
                 console.error('Error approving user:', error);
-                toast.error('Failed to approve user');
+                toast.error(
+                  error instanceof Error
+                    ? error.message
+                    : 'Failed to approve user'
+                );
               }
             }}
             onReject={async userId => {
               try {
-                const response = await fetch('/api/admin/reject-user', {
-                  method: 'POST',
-                  headers: { 'Content-Type': 'application/json' },
-                  body: JSON.stringify({ userId }),
+                const result = await approvalMutation.mutateAsync({
+                  userId,
+                  action: 'reject',
                 });
 
-                if (!response.ok) {
-                  throw new Error('Failed to reject user');
-                }
-
-                toast.success('User rejected successfully');
-                refetch();
+                toast.success(result.message || 'User rejected successfully');
               } catch (error) {
                 console.error('Error rejecting user:', error);
-                toast.error('Failed to reject user');
+                toast.error(
+                  error instanceof Error
+                    ? error.message
+                    : 'Failed to reject user'
+                );
               }
             }}
           />

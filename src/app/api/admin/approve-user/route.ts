@@ -1,6 +1,9 @@
 import { NextResponse } from 'next/server';
 import { prisma } from '@/lib/db';
 import { withPermission, AuthenticatedRequest } from '@/lib/api-middleware';
+import { emailService } from '@/lib/email';
+import { getAppBaseUrl } from '@/lib/utils';
+import { resolveActingUserId } from '@/lib/utils/resolve-acting-user-id';
 import { z } from 'zod';
 
 const approveUserSchema = z.object({
@@ -24,6 +27,21 @@ export const POST = withPermission(
       }
 
       const { userId } = validation.data;
+      const adminId = await resolveActingUserId({
+        id: request.user.id,
+        email: request.user.email,
+      });
+      const processedAt = new Date();
+
+      if (!adminId) {
+        return NextResponse.json(
+          {
+            error:
+              'Administrator account could not be resolved. Please sign out and sign in again.',
+          },
+          { status: 401 }
+        );
+      }
 
       // Check if user exists and is pending
       const user = await prisma.user.findUnique({
@@ -47,16 +65,44 @@ export const POST = withPermission(
         data: {
           userStatus: 'APPROVED',
           isActive: true,
+          approvedBy: adminId,
+          approvedAt: processedAt,
+          rejectionReason: null,
+          sessionNeedsRefresh: true,
+          sessionRefreshAt: processedAt,
+        },
+        select: {
+          id: true,
+          firstName: true,
+          email: true,
+          role: true,
+          userStatus: true,
+          approvedBy: true,
+          approvedAt: true,
         },
       });
+
+      try {
+        await emailService.sendUserApprovalEmail(updatedUser.email, {
+          firstName: updatedUser.firstName,
+          adminName: request.user.name,
+          dashboardLink: `${getAppBaseUrl()}/dashboard`,
+          role: updatedUser.role,
+        });
+      } catch (emailError) {
+        console.error('Failed to send approval email:', emailError);
+      }
 
       return NextResponse.json({
         success: true,
         message: 'User approved successfully',
+        sessionUpdated: true,
         user: {
           id: updatedUser.id,
           email: updatedUser.email,
           userStatus: updatedUser.userStatus,
+          approvedBy: updatedUser.approvedBy,
+          approvedAt: updatedUser.approvedAt,
         },
       });
     } catch (error) {

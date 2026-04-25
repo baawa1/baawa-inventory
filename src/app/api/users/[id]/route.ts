@@ -5,6 +5,7 @@ import bcrypt from 'bcryptjs';
 import { emailService } from '@/lib/email';
 import { getAppBaseUrl } from '@/lib/utils';
 import { passwordSchema } from '@/lib/validations/common';
+import { resolveActingUserId } from '@/lib/utils/resolve-acting-user-id';
 
 interface RouteParams {
   params: Promise<{ id: string }>;
@@ -161,6 +162,85 @@ export async function PUT(request: NextRequest, { params }: RouteParams) {
         if (body.lastName) updateData.lastName = body.lastName;
         if (body.email) updateData.email = body.email;
         if (body.role) updateData.role = body.role;
+        if (body.userStatus) {
+          const actingUserId = await resolveActingUserId({
+            id: authRequest.user.id,
+            email: authRequest.user.email,
+          });
+          const validStatuses = [
+            'PENDING',
+            'VERIFIED',
+            'APPROVED',
+            'REJECTED',
+            'SUSPENDED',
+          ];
+
+          if (!validStatuses.includes(body.userStatus)) {
+            return NextResponse.json(
+              {
+                error:
+                  'Invalid status. Must be one of: PENDING, VERIFIED, APPROVED, REJECTED, SUSPENDED',
+              },
+              { status: 400 }
+            );
+          }
+
+          const processedAt = new Date();
+          updateData.userStatus = body.userStatus;
+
+          if (body.userStatus === 'APPROVED') {
+            if (!actingUserId) {
+              return NextResponse.json(
+                {
+                  error:
+                    'Administrator account could not be resolved. Please sign out and sign in again.',
+                },
+                { status: 401 }
+              );
+            }
+
+            updateData.approvedBy = actingUserId;
+            updateData.approvedAt = processedAt;
+            updateData.rejectionReason = null;
+
+            if (body.isActive === undefined) {
+              updateData.isActive = true;
+            }
+          }
+
+          if (body.userStatus === 'REJECTED') {
+            if (!actingUserId) {
+              return NextResponse.json(
+                {
+                  error:
+                    'Administrator account could not be resolved. Please sign out and sign in again.',
+                },
+                { status: 401 }
+              );
+            }
+
+            updateData.approvedBy = actingUserId;
+            updateData.approvedAt = processedAt;
+            updateData.rejectionReason = body.rejectionReason?.trim() || null;
+
+            if (body.isActive === undefined) {
+              updateData.isActive = false;
+            }
+          }
+
+          if (body.userStatus === 'SUSPENDED' && body.isActive === undefined) {
+            updateData.isActive = false;
+          }
+
+          if (
+            body.userStatus === 'VERIFIED' ||
+            body.userStatus === 'PENDING'
+          ) {
+            updateData.approvedBy = null;
+            updateData.approvedAt = null;
+            updateData.rejectionReason = null;
+          }
+        }
         if (body.phone) updateData.phone = body.phone;
         if (body.isActive !== undefined) updateData.isActive = body.isActive;
         if (body.notes !== undefined) updateData.notes = body.notes;
@@ -205,6 +285,7 @@ export async function PUT(request: NextRequest, { params }: RouteParams) {
             email: true,
             role: true,
             isActive: true,
+            userStatus: true,
             createdAt: true,
             lastLogin: true,
           },
@@ -237,6 +318,7 @@ export async function PUT(request: NextRequest, { params }: RouteParams) {
           email: user.email,
           role: user.role,
           isActive: user.isActive,
+          userStatus: user.userStatus,
           createdAt: user.createdAt,
           lastLogin: user.lastLogin,
         };

@@ -1,6 +1,8 @@
 import { NextResponse } from 'next/server';
 import { prisma } from '@/lib/db';
 import { withPermission, AuthenticatedRequest } from '@/lib/api-middleware';
+import { emailService } from '@/lib/email';
+import { resolveActingUserId } from '@/lib/utils/resolve-acting-user-id';
 import { z } from 'zod';
 
 const rejectUserSchema = z.object({
@@ -24,7 +26,22 @@ export const POST = withPermission(
         );
       }
 
-      const { userId } = validation.data;
+      const { userId, reason } = validation.data;
+      const adminId = await resolveActingUserId({
+        id: request.user.id,
+        email: request.user.email,
+      });
+      const processedAt = new Date();
+
+      if (!adminId) {
+        return NextResponse.json(
+          {
+            error:
+              'Administrator account could not be resolved. Please sign out and sign in again.',
+          },
+          { status: 401 }
+        );
+      }
 
       // Check if user exists and is pending
       const user = await prisma.user.findUnique({
@@ -48,16 +65,48 @@ export const POST = withPermission(
         data: {
           userStatus: 'REJECTED',
           isActive: false,
+          approvedBy: adminId,
+          approvedAt: processedAt,
+          rejectionReason: reason?.trim() || null,
+          sessionNeedsRefresh: true,
+          sessionRefreshAt: processedAt,
+        },
+        select: {
+          id: true,
+          firstName: true,
+          email: true,
+          userStatus: true,
+          approvedBy: true,
+          approvedAt: true,
+          rejectionReason: true,
         },
       });
+
+      try {
+        await emailService.sendUserRejectionEmail(updatedUser.email, {
+          firstName: updatedUser.firstName,
+          adminName: request.user.name,
+          rejectionReason: updatedUser.rejectionReason || undefined,
+          supportEmail:
+            process.env.SUPPORT_EMAIL ||
+            process.env.FROM_EMAIL ||
+            'support@baawa.com',
+        });
+      } catch (emailError) {
+        console.error('Failed to send rejection email:', emailError);
+      }
 
       return NextResponse.json({
         success: true,
         message: 'User rejected successfully',
+        sessionUpdated: true,
         user: {
           id: updatedUser.id,
           email: updatedUser.email,
           userStatus: updatedUser.userStatus,
+          approvedBy: updatedUser.approvedBy,
+          approvedAt: updatedUser.approvedAt,
+          rejectionReason: updatedUser.rejectionReason,
         },
       });
     } catch (error) {

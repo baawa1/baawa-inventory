@@ -39,6 +39,11 @@ jest.mock('@/lib/utils', () => ({
   getAppBaseUrl: () => 'http://localhost:3000',
 }));
 
+const mockResolveActingUserId = jest.fn();
+jest.mock('@/lib/utils/resolve-acting-user-id', () => ({
+  resolveActingUserId: (...args: unknown[]) => mockResolveActingUserId(...args),
+}));
+
 import { PUT } from '@/app/api/users/[id]/route';
 
 const validPassword = 'Abcd123.';
@@ -46,6 +51,7 @@ const validPassword = 'Abcd123.';
 describe('PUT /api/users/[id]', () => {
   beforeEach(() => {
     jest.clearAllMocks();
+    mockResolveActingUserId.mockResolvedValue(999);
   });
 
   const createRequest = (body: unknown) =>
@@ -103,6 +109,7 @@ describe('PUT /api/users/[id]', () => {
       email: 'user@example.com',
       role: 'STAFF',
       isActive: true,
+      userStatus: 'APPROVED',
       createdAt: new Date(),
       lastLogin: null,
     });
@@ -129,6 +136,7 @@ describe('PUT /api/users/[id]', () => {
         email: true,
         role: true,
         isActive: true,
+        userStatus: true,
         createdAt: true,
         lastLogin: true,
       },
@@ -155,6 +163,7 @@ describe('PUT /api/users/[id]', () => {
       email: 'user@example.com',
       role: 'STAFF',
       isActive: true,
+      userStatus: 'APPROVED',
       createdAt: new Date(),
       lastLogin: null,
     });
@@ -180,11 +189,78 @@ describe('PUT /api/users/[id]', () => {
         email: true,
         role: true,
         isActive: true,
+        userStatus: true,
         createdAt: true,
         lastLogin: true,
       },
     });
 
     expect(response.status).toBe(200);
+  });
+
+  it('persists user status updates and approval metadata', async () => {
+    mockFindUnique.mockResolvedValueOnce({
+      id: 42,
+      email: 'user@example.com',
+      role: 'STAFF',
+      firstName: 'Jane',
+      lastName: 'Doe',
+      userStatus: 'VERIFIED',
+    });
+    mockUpdate.mockResolvedValueOnce({
+      id: 42,
+      firstName: 'Jane',
+      lastName: 'Doe',
+      email: 'user@example.com',
+      role: 'MANAGER',
+      isActive: true,
+      userStatus: 'APPROVED',
+      createdAt: new Date(),
+      lastLogin: null,
+    });
+
+    const response = await PUT(
+      createRequest({
+        firstName: 'Jane',
+        role: 'MANAGER',
+        userStatus: 'APPROVED',
+      }),
+      createParams()
+    );
+
+    expect(mockUpdate).toHaveBeenCalledWith({
+      where: { id: 42 },
+      data: {
+        firstName: 'Jane',
+        role: 'MANAGER',
+        userStatus: 'APPROVED',
+        approvedBy: 999,
+        approvedAt: expect.any(Date),
+        rejectionReason: null,
+        isActive: true,
+        sessionNeedsRefresh: true,
+        sessionRefreshAt: expect.any(Date),
+      },
+      select: {
+        id: true,
+        firstName: true,
+        lastName: true,
+        email: true,
+        role: true,
+        isActive: true,
+        userStatus: true,
+        createdAt: true,
+        lastLogin: true,
+      },
+    });
+
+    expect(response.status).toBe(200);
+    const payload = await response.json();
+    expect(payload).toMatchObject({
+      role: 'MANAGER',
+      isActive: true,
+      userStatus: 'APPROVED',
+      sessionUpdated: true,
+    });
   });
 });
