@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useRef, useMemo } from 'react';
+import { useEffect, useMemo, useRef, useState } from 'react';
 import { Card, CardContent } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
@@ -30,7 +30,7 @@ import {
   IconX,
   IconFilter,
 } from '@tabler/icons-react';
-import { useQuery, useQueryClient } from '@tanstack/react-query';
+import { useQuery } from '@tanstack/react-query';
 import { toast } from 'sonner';
 import { usePOSErrorHandler } from './POSErrorBoundary';
 import { formatCurrency } from '@/lib/utils';
@@ -60,6 +60,11 @@ interface ProductGridProps {
   disabled?: boolean;
 }
 
+interface ProductFiltersPayload {
+  categories?: string[];
+  brands?: string[];
+}
+
 export function ProductGrid({
   onProductSelect,
   disabled = false,
@@ -69,69 +74,94 @@ export function ProductGrid({
   const [selectedCategory, setSelectedCategory] = useState<string>('all');
   const [selectedBrand, setSelectedBrand] = useState<string>('all');
   const [isCameraOpen, setIsCameraOpen] = useState(false);
+  const [debouncedSearchTerm, setDebouncedSearchTerm] = useState('');
+  const [imageLoadErrors, setImageLoadErrors] = useState<
+    Record<number, true>
+  >({});
   const videoRef = useRef<HTMLVideoElement>(null);
-  const queryClient = useQueryClient();
-  const etagRef = useRef<string | null>(null);
 
-  // Fetch all products at once
-  const posProductsQueryKey = queryKeys.pos.products();
+  useEffect(() => {
+    const timeout = window.setTimeout(() => {
+      setDebouncedSearchTerm(searchTerm.trim());
+    }, 250);
+
+    return () => window.clearTimeout(timeout);
+  }, [searchTerm]);
+
+  const productFilters = useMemo(
+    () => ({
+      search: debouncedSearchTerm || '',
+      category: selectedCategory,
+      brand: selectedBrand,
+      limit: 0,
+    }),
+    [debouncedSearchTerm, selectedCategory, selectedBrand]
+  );
+
+  const posProductsQueryKey = queryKeys.pos.products(productFilters);
   const { data, isLoading, error } = useQuery({
     queryKey: posProductsQueryKey,
     queryFn: async () => {
-      const headers: HeadersInit = {};
-      if (etagRef.current) {
-        headers['If-None-Match'] = etagRef.current;
+      const params = new URLSearchParams();
+      params.set('limit', productFilters.limit.toString());
+
+      let endpoint = '/api/pos/products';
+      if (productFilters.search) {
+        endpoint = '/api/pos/search-products';
+        params.set('search', productFilters.search);
+      } else {
+        params.set('fields', 'pos');
+        params.set('page', '1');
       }
 
-      const response = await fetch(`/api/pos/products?limit=0&fields=pos`, {
-        headers,
-      });
-
-      if (response.status === 304) {
-        const cached = queryClient.getQueryData(posProductsQueryKey);
-        if (cached) {
-          return cached;
-        }
-
-        const fallbackResponse = await fetch(
-          `/api/pos/products?limit=0&fields=pos`
-        );
-        if (!fallbackResponse.ok) {
-          throw new Error('Failed to fetch products');
-        }
-        const fallbackPayload = await fallbackResponse.json();
-        const fallbackEtag = fallbackResponse.headers.get('ETag');
-        if (fallbackEtag) {
-          etagRef.current = fallbackEtag;
-        }
-        return fallbackPayload;
+      if (productFilters.category !== 'all') {
+        params.set('category', productFilters.category);
       }
 
+      if (productFilters.brand !== 'all') {
+        params.set('brand', productFilters.brand);
+      }
+
+      const response = await fetch(`${endpoint}?${params.toString()}`);
       if (!response.ok) {
         throw new Error('Failed to fetch products');
       }
 
-      const payload = await response.json();
-      const responseEtag = response.headers.get('ETag');
-      if (responseEtag) {
-        etagRef.current = responseEtag;
-      }
-      return payload;
+      return response.json();
     },
-    staleTime: CACHE_DURATIONS.INFINITE,
+    staleTime: 30 * 1000,
     gcTime: CACHE_DURATIONS.PRODUCTS_LONG,
-    refetchOnMount: false,
-    refetchOnWindowFocus: false,
-    refetchOnReconnect: false,
   });
 
-  // Extract products from API response - memoized to prevent unnecessary re-renders
+  const { data: filterMetadata } = useQuery({
+    queryKey: [...queryKeys.pos.all, 'product-filters'],
+    queryFn: async () => {
+      const params = new URLSearchParams();
+      params.set('limit', '1');
+      params.set('page', '1');
+      params.set('fields', 'pos');
+      params.set('includeFilters', 'true');
+
+      const response = await fetch(`/api/pos/products?${params.toString()}`);
+      if (!response.ok) {
+        throw new Error('Failed to fetch product filters');
+      }
+
+      const payload = (await response.json()) as { filters?: ProductFiltersPayload };
+      return payload.filters;
+    },
+    staleTime: CACHE_DURATIONS.PRODUCTS_LONG,
+    gcTime: CACHE_DURATIONS.PRODUCTS_LONG,
+  });
+
   const products = useMemo(() => {
     const payload = data as any;
     const rawProducts = Array.isArray(payload?.data)
       ? payload.data
       : Array.isArray(payload?.products)
         ? payload.products
+        : Array.isArray(payload?.data?.products)
+          ? payload.data.products
         : Array.isArray(payload)
           ? payload
           : [];
@@ -154,35 +184,28 @@ export function ProductGrid({
 
   // Get unique categories and brands for filters
   const categories = useMemo(() => {
+    if (Array.isArray(filterMetadata?.categories)) {
+      return filterMetadata.categories;
+    }
+
     return Array.from(
       new Set(products.map((p: Product) => p.category).filter(Boolean))
     ) as string[];
-  }, [products]);
+  }, [filterMetadata, products]);
 
   const brands = useMemo(() => {
+    if (Array.isArray(filterMetadata?.brands)) {
+      return filterMetadata.brands;
+    }
+
     return Array.from(
       new Set(products.map((p: Product) => p.brand).filter(Boolean))
     ) as string[];
+  }, [filterMetadata, products]);
+
+  useEffect(() => {
+    setImageLoadErrors({});
   }, [products]);
-
-  // Filter products by search term, category, and brand
-  const filteredProducts = useMemo(() => {
-    if (!products) return [];
-
-    return products.filter((product: Product) => {
-      const matchesSearch =
-        product.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
-        product.sku.toLowerCase().includes(searchTerm.toLowerCase()) ||
-        product.barcode?.toLowerCase().includes(searchTerm.toLowerCase());
-
-      const matchesCategory =
-        selectedCategory === 'all' || product.category === selectedCategory;
-      const matchesBrand =
-        selectedBrand === 'all' || product.brand === selectedBrand;
-
-      return matchesSearch && matchesCategory && matchesBrand;
-    });
-  }, [products, searchTerm, selectedCategory, selectedBrand]);
 
   const handleProductClick = (product: Product) => {
     if (disabled) return;
@@ -204,21 +227,27 @@ export function ProductGrid({
       brand: product.brand,
     });
 
-    toast.success(`${product.name} added to cart`);
   };
 
   const handleBarcodeSearch = async (barcode: string) => {
     if (!barcode.trim()) return;
 
     try {
-      const product = filteredProducts.find(
-        (p: Product) => p.barcode === barcode.trim()
+      const response = await fetch(
+        `/api/pos/barcode-lookup?barcode=${encodeURIComponent(barcode.trim())}`
       );
-      if (product) {
-        handleProductClick(product);
-      } else {
+
+      if (response.status === 404) {
         toast.error('Product not found');
+        return;
       }
+
+      if (!response.ok) {
+        throw new Error('Failed to look up barcode');
+      }
+
+      const product = (await response.json()) as Product;
+      handleProductClick(product);
     } catch (error) {
       const errorMessage = 'Error searching for product';
       toast.error(errorMessage);
@@ -258,7 +287,9 @@ export function ProductGrid({
   };
 
   const hasActiveFilters =
-    searchTerm || selectedCategory !== 'all' || selectedBrand !== 'all';
+    Boolean(searchTerm.trim()) ||
+    selectedCategory !== 'all' ||
+    selectedBrand !== 'all';
 
   // Helper function to get the first/primary image from product images
   const getProductImage = (product: Product): string | null => {
@@ -290,6 +321,48 @@ export function ProductGrid({
     return null;
   };
 
+  const getProductFallbackEmoji = (category?: string): string => {
+    const normalizedCategory = category?.toLowerCase() || '';
+
+    if (
+      normalizedCategory.includes('wall clock') ||
+      normalizedCategory.includes('clock')
+    ) {
+      return '🕰️';
+    }
+
+    if (normalizedCategory.includes('phone')) return '📱';
+    if (normalizedCategory.includes('watch')) return '⌚';
+    if (normalizedCategory.includes('laptop')) return '💻';
+    if (normalizedCategory.includes('headphone')) return '🎧';
+    if (normalizedCategory.includes('cable')) return '🔌';
+    if (normalizedCategory.includes('charger')) return '🔋';
+    if (
+      normalizedCategory.includes('service') ||
+      normalizedCategory.includes('cutting') ||
+      normalizedCategory.includes('repair')
+    ) {
+      return '✂️';
+    }
+    if (
+      normalizedCategory.includes('glass') ||
+      normalizedCategory.includes('glasses') ||
+      normalizedCategory.includes('sunglass') ||
+      normalizedCategory.includes('spectacle')
+    ) {
+      return '👓';
+    }
+    if (
+      normalizedCategory.includes('accessor') ||
+      normalizedCategory.includes('box') ||
+      normalizedCategory.includes('case')
+    ) {
+      return '📦';
+    }
+
+    return '📦';
+  };
+
   if (error) {
     return (
       <div className="py-8 text-center">
@@ -318,7 +391,7 @@ export function ProductGrid({
               value={searchTerm}
               onChange={e => setSearchTerm(e.target.value)}
               className="h-10 pl-10"
-              onKeyPress={e => {
+              onKeyDown={e => {
                 if (e.key === 'Enter' && searchTerm.trim()) {
                   // Try barcode search if it looks like a barcode
                   if (/^\d+$/.test(searchTerm.trim())) {
@@ -396,7 +469,7 @@ export function ProductGrid({
                   <p className="text-muted-foreground text-sm">
                     {isLoading
                       ? 'Loading...'
-                      : `${filteredProducts.length} products found`}
+                      : `${products.length} products found`}
                   </p>
                 </div>
               </div>
@@ -469,7 +542,7 @@ export function ProductGrid({
           <p className="text-muted-foreground text-sm">
             {isLoading
               ? 'Loading...'
-              : `${filteredProducts.length} products found`}
+              : `${products.length} products found`}
           </p>
         </div>
       </div>
@@ -504,7 +577,7 @@ export function ProductGrid({
             Array.from({ length: 8 }).map((_, i) => (
               <Card key={i} className="overflow-hidden pt-0 pb-2">
                 <CardContent className="p-0">
-                  <Skeleton className="h-32 w-full" />
+                  <Skeleton className="aspect-[4/3] w-full" />
                   <div className="p-4">
                     <Skeleton className="mb-2 h-4 w-3/4" />
                     <Skeleton className="mb-2 h-3 w-1/2" />
@@ -513,128 +586,109 @@ export function ProductGrid({
                 </CardContent>
               </Card>
             ))
-          ) : filteredProducts.length === 0 ? (
+          ) : products.length === 0 ? (
             <div className="col-span-full py-8 text-center">
               <p className="text-muted-foreground">No products found</p>
             </div>
           ) : (
-            filteredProducts.map((product: Product) => (
-              <Card
-                key={product.id}
-                className={`cursor-pointer overflow-hidden pt-0 pb-1 transition-all hover:scale-[1.02] hover:shadow-lg ${
-                  disabled ? 'cursor-not-allowed opacity-50' : ''
-                } ${product.stock <= 0 ? 'opacity-60' : ''}`}
-                onClick={() => handleProductClick(product)}
-              >
-                <CardContent className="p-0">
-                  {/* Product Image Background */}
-                  <div className="relative flex h-40 items-center justify-center overflow-hidden bg-gradient-to-br from-gray-100 to-gray-200 sm:h-32">
-                    {getProductImage(product) ? (
-                      <Image
-                        src={normalizeImageUrl(getProductImage(product))!}
-                        alt={product.name}
-                        fill
-                        className="object-cover"
-                        onError={() => {
-                          // Fallback to gradient background if image fails to load
-                          const imgElement = document.querySelector(
-                            `[alt="${product.name}"]`
-                          ) as HTMLImageElement;
-                          if (imgElement) {
-                            imgElement.style.display = 'none';
-                            const fallbackElement =
-                              imgElement.nextElementSibling as HTMLElement;
-                            if (fallbackElement) {
-                              fallbackElement.classList.remove('hidden');
-                            }
-                          }
-                        }}
-                      />
-                    ) : null}
-                    <div
-                      className={`absolute inset-0 flex items-center justify-center bg-gradient-to-br from-gray-100 to-gray-200 ${getProductImage(product) ? 'hidden' : ''}`}
-                    >
-                      <div className="mb-1 text-2xl">
-                        {product.category?.toLowerCase().includes('phone')
-                          ? '📱'
-                          : product.category?.toLowerCase().includes('watch')
-                            ? '⌚'
-                            : product.category?.toLowerCase().includes('laptop')
-                              ? '💻'
-                              : product.category
-                                    ?.toLowerCase()
-                                    .includes('headphone')
-                                ? '🎧'
-                                : product.category
-                                      ?.toLowerCase()
-                                      .includes('cable')
-                                  ? '🔌'
-                                  : product.category
-                                        ?.toLowerCase()
-                                        .includes('charger')
-                                    ? '🔋'
-                                    : '📦'}
+            products.map((product: Product) => {
+              const productImage = getProductImage(product);
+              const normalizedProductImage = normalizeImageUrl(productImage);
+              const resolvedProductImage = normalizedProductImage || '';
+              const showImage =
+                resolvedProductImage !== '' && !imageLoadErrors[product.id];
+
+              return (
+                <Card
+                  key={product.id}
+                  className={`cursor-pointer overflow-hidden pt-0 pb-1 transition-all hover:scale-[1.02] hover:shadow-lg ${
+                    disabled ? 'cursor-not-allowed opacity-50' : ''
+                  } ${product.stock <= 0 ? 'opacity-60' : ''}`}
+                  onClick={() => handleProductClick(product)}
+                >
+                  <CardContent className="p-0">
+                    <div className="relative aspect-[1/1] overflow-hidden bg-gradient-to-br from-gray-100 to-gray-200">
+                      <div className="absolute inset-0">
+                        {showImage ? (
+                          <Image
+                            src={resolvedProductImage}
+                            alt={product.name}
+                            fill
+                            className="object-cover"
+                            sizes="(min-width: 1024px) 33vw, (min-width: 640px) 50vw, 100vw"
+                            onError={() => {
+                              setImageLoadErrors(currentErrors => ({
+                                ...currentErrors,
+                                [product.id]: true,
+                              }));
+                            }}
+                          />
+                        ) : (
+                          <div className="flex h-full items-center justify-center rounded-lg bg-gradient-to-br from-gray-100 to-gray-200">
+                            <div className="mb-1 text-4xl">
+                              {getProductFallbackEmoji(product.category)}
+                            </div>
+                          </div>
+                        )}
                       </div>
-                    </div>
-                    <div className="absolute inset-0 bg-black/20" />
-                    <div className="relative z-10 p-2 text-center text-white">
+
                       {product.stock <= 0 && (
-                        <Badge variant="destructive">Out of Stock</Badge>
+                        <div className="absolute top-2 left-2">
+                          <Badge variant="destructive" className="text-xs">
+                            Out of Stock
+                          </Badge>
+                        </div>
                       )}
-                      <div className="mt-1 text-xs font-medium opacity-90">
-                        {product.name.substring(0, 25)}
-                        {product.name.length > 25 ? '...' : ''}
+
+                      <div className="absolute top-2 right-2">
+                        <Badge variant="secondary" className="text-xs">
+                          {product.stock} left
+                        </Badge>
                       </div>
                     </div>
-                    <div className="absolute top-2 right-2">
-                      <Badge variant="secondary" className="text-xs">
-                        {product.stock} left
-                      </Badge>
-                    </div>
-                  </div>
 
-                  {/* Product Info */}
-                  <div className="space-y-2 p-3 sm:p-4">
-                    <h3 className="line-clamp-2 text-sm leading-tight font-semibold sm:text-sm">
-                      {product.name}
-                    </h3>
+                    <div className="space-y-2 p-3 sm:p-4">
+                      <h3 className="line-clamp-2 text-sm leading-tight font-semibold sm:text-sm">
+                        {product.name}
+                      </h3>
 
-                    <div className="text-muted-foreground flex items-center justify-between text-xs">
-                      <span>{product.sku}</span>
-                    </div>
+                      <div className="text-muted-foreground flex items-center justify-between text-xs">
+                        <span>{product.sku}</span>
+                      </div>
 
-                    <div className="flex items-center justify-between">
-                      <span className="text-primary text-base font-bold sm:text-lg">
-                        {formatCurrency(product.price)}
-                      </span>
-                      <Button
-                        size="sm"
-                        disabled={disabled || product.stock <= 0}
-                        onClick={e => {
-                          e.stopPropagation();
-                          handleProductClick(product);
-                        }}
-                        className="h-8 px-3 sm:px-4"
-                      >
-                        <IconPlus className="mr-1 h-3 w-3" />
-                        Add
-                      </Button>
-                    </div>
+                      <div className="flex items-center justify-between gap-2">
+                        <span className="text-primary text-base font-bold sm:text-lg">
+                          {formatCurrency(product.price)}
+                        </span>
+                        <Button
+                          size="sm"
+                          disabled={disabled || product.stock <= 0}
+                          onClick={e => {
+                            e.stopPropagation();
+                            handleProductClick(product);
+                          }}
+                          className="h-8 px-3 sm:px-4"
+                        >
+                          <IconPlus className="mr-1 h-3 w-3" />
+                          Add
+                        </Button>
+                      </div>
 
-                    <div className="flex flex-wrap gap-1">
-                      <Badge variant="secondary" className="text-xs">
-                        {product.category}
-                      </Badge>
-                      {product.brand && (
-                        <Badge variant="outline" className="text-xs">
-                          {product.brand}
+                      <div className="flex flex-wrap gap-1">
+                        <Badge variant="secondary" className="text-xs">
+                          {product.category}
                         </Badge>
-                      )}
+                        {product.brand && (
+                          <Badge variant="outline" className="text-xs">
+                            {product.brand}
+                          </Badge>
+                        )}
+                      </div>
                     </div>
-                  </div>
-                </CardContent>
-              </Card>
-            ))
+                  </CardContent>
+                </Card>
+              );
+            })
           )}
         </div>
       </ScrollArea>

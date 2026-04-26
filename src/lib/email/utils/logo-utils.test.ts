@@ -6,30 +6,31 @@ import {
 
 describe('Logo Utils', () => {
   describe('getLogoUrl', () => {
-    it('should return base64 logo URL by default for emails', () => {
+    it('should return a brand-color icon URL by default', () => {
       const url = getLogoUrl();
-      expect(url).toMatch(/^data:image\/png;base64,/);
-    });
-
-    it('should return brand-color base64 logo URL by default', () => {
-      const url = getLogoUrl('brand-color');
-      expect(url).toMatch(/^data:image\/png;base64,/);
-    });
-
-    it('should return black base64 logo URL when specified', () => {
-      const url = getLogoUrl('black');
-      expect(url).toMatch(/^data:image\/png;base64,/);
-    });
-
-    it('should return white base64 logo URL when specified', () => {
-      const url = getLogoUrl('white');
-      expect(url).toMatch(/^data:image\/png;base64,/);
-    });
-
-    it('should return external URL when useBase64 is false', () => {
-      const url = getLogoUrl('brand-color', false);
       expect(url).toBe(
         'https://inventory.baawa.com/logo/baawa-icon-brand-color.png'
+      );
+    });
+
+    it('should return brand-color icon URL when specified', () => {
+      const url = getLogoUrl('brand-color');
+      expect(url).toBe(
+        'https://inventory.baawa.com/logo/baawa-icon-brand-color.png'
+      );
+    });
+
+    it('should return black icon URL when specified', () => {
+      const url = getLogoUrl('black');
+      expect(url).toBe(
+        'https://inventory.baawa.com/logo/baawa-icon-black.png'
+      );
+    });
+
+    it('should return white icon URL when specified', () => {
+      const url = getLogoUrl('white');
+      expect(url).toBe(
+        'https://inventory.baawa.com/logo/baawa-icon-white.png'
       );
     });
   });
@@ -85,8 +86,8 @@ describe('Logo Utils', () => {
     });
   });
 
-  describe('Base64 logo data', () => {
-    it('should contain valid base64 data for all variants', () => {
+  describe('Icon logo URLs', () => {
+    it('should return URL paths for all icon variants', () => {
       const variants: Array<'brand-color' | 'black' | 'white'> = [
         'brand-color',
         'black',
@@ -95,8 +96,9 @@ describe('Logo Utils', () => {
 
       variants.forEach(variant => {
         const url = getLogoUrl(variant);
-        expect(url).toMatch(/^data:image\/png;base64,/);
-        expect(url.length).toBeGreaterThan(100); // Should have substantial base64 data
+        expect(url).toBe(
+          `https://inventory.baawa.com/logo/baawa-icon-${variant}.png`
+        );
       });
     });
   });

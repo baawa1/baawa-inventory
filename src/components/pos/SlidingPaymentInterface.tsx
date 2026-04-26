@@ -50,6 +50,7 @@ import {
 } from '@/lib/utils/payment-methods';
 import { logger } from '@/lib/logger';
 import { normalizeNigerianPhone } from '@/lib/utils/phone-utils';
+import { useOffline } from '@/hooks/useOffline';
 import type {
   CartItem,
   Sale,
@@ -67,6 +68,7 @@ import type {
   SplitPaymentInterfaceProps,
   ApiError,
   ValidationError,
+  PosSalePayload,
 } from '@/types/pos';
 
 interface SlidingPaymentInterfaceProps {
@@ -77,12 +79,30 @@ interface SlidingPaymentInterfaceProps {
   total: number;
   customerInfo: CustomerInfo;
   staffName: string;
+  staffId: number;
   onPaymentSuccess: (_sale: Sale) => void;
   onCancel: () => void;
   onDiscountChange: (_discount: number) => void;
   onFeesChange: (_fees: TransactionFee[]) => void;
   onCustomerInfoChange: (_info: CustomerInfo) => void;
 }
+
+const isNetworkFailure = (error: unknown) => {
+  if (error instanceof TypeError) {
+    return true;
+  }
+
+  if (!(error instanceof Error)) {
+    return false;
+  }
+
+  const message = error.message.toLowerCase();
+  return (
+    message.includes('failed to fetch') ||
+    message.includes('network') ||
+    message.includes('load failed')
+  );
+};
 
 const PAYMENT_METHODS = [
   { value: 'cash', label: 'Cash', icon: IconCash },
@@ -154,12 +174,14 @@ export function SlidingPaymentInterface({
   total,
   customerInfo,
   staffName,
+  staffId,
   onPaymentSuccess,
   onCancel,
   onDiscountChange,
   onFeesChange,
   onCustomerInfoChange,
 }: SlidingPaymentInterfaceProps) {
+  const { isOnline, queueTransaction } = useOffline();
   const [currentStep, setCurrentStep] = useState(0);
   const [discountType, setDiscountType] = useState<'percentage' | 'fixed'>(
     'percentage'
@@ -251,6 +273,144 @@ export function SlidingPaymentInterface({
     }
   };
 
+  const buildNormalizedCustomerInfo = () => {
+    const trimmedPhone = customerInfo.phone.trim();
+    const trimmedEmail = customerInfo.email.trim();
+
+    return {
+      name: customerInfo.name.trim() || undefined,
+      email: trimmedEmail || undefined,
+      phone: trimmedPhone || undefined,
+      billingAddress: customerInfo.billingAddress?.trim() || undefined,
+      shippingAddress: customerInfo.shippingAddress?.trim() || undefined,
+      city: customerInfo.city?.trim() || undefined,
+      state: customerInfo.state?.trim() || undefined,
+      postalCode: customerInfo.postalCode?.trim() || undefined,
+      country: customerInfo.country?.trim() || undefined,
+      customerType: customerInfo.customerType,
+      notes: customerInfo.notes?.trim() || undefined,
+      useBillingAsShipping: customerInfo.useBillingAsShipping,
+      shippingCity: customerInfo.shippingCity?.trim() || undefined,
+      shippingState: customerInfo.shippingState?.trim() || undefined,
+      shippingPostalCode:
+        customerInfo.shippingPostalCode?.trim() || undefined,
+      shippingCountry: customerInfo.shippingCountry?.trim() || undefined,
+    };
+  };
+
+  const buildSalePayload = (
+    normalizedSplitPayments: SplitPayment[],
+    collectedSplitTotal: number
+  ): PosSalePayload => {
+    const normalizedCustomerInfo = buildNormalizedCustomerInfo();
+    const paymentMethodForPayload = (isSplitPayment
+      ? 'split'
+      : paymentMethod) as PosSalePayload['paymentMethod'];
+    const nonSplitAmountPaid =
+      paymentMethodForPayload === 'debt'
+        ? roundCurrency(amountPaid)
+        : roundCurrency(Math.max(amountPaid, total));
+    const normalizedNotes = notes.trim() || undefined;
+
+    return {
+      items: items.map(item => ({
+        productId: item.id,
+        quantity: item.quantity,
+        price: item.price,
+        total: item.price * item.quantity,
+        basePrice: item.basePrice ?? item.price,
+        priceOverride: item.priceOverride,
+        overrideReason: item.overrideReason,
+        ...(appliedCoupon?.id && { couponId: appliedCoupon.id }),
+      })),
+      subtotal,
+      discount,
+      fees: localFees,
+      total,
+      paymentMethod: paymentMethodForPayload,
+      customerInfo:
+        normalizedCustomerInfo.name ||
+        normalizedCustomerInfo.email ||
+        normalizedCustomerInfo.phone
+          ? normalizedCustomerInfo
+          : undefined,
+      customerName: normalizedCustomerInfo.name,
+      customerPhone: normalizedCustomerInfo.phone,
+      customerEmail: normalizedCustomerInfo.email,
+      amountPaid: isSplitPayment ? collectedSplitTotal : nonSplitAmountPaid,
+      notes: normalizedNotes,
+      splitPayments: isSplitPayment ? normalizedSplitPayments : undefined,
+    };
+  };
+
+  const buildCompletedSale = (
+    saleId: string,
+    saleData: PosSalePayload,
+    options?: {
+      transactionNumber?: string;
+      paymentStatus?: string;
+      amountPaid?: number;
+      balanceDue?: number;
+      transactionPayments?: Sale['transactionPayments'];
+      syncStatus?: Sale['syncStatus'];
+      timestamp?: Date;
+    }
+  ): Sale => ({
+    id: saleId,
+    transactionNumber: options?.transactionNumber,
+    items,
+    subtotal: saleData.subtotal,
+    discount: saleData.discount,
+    fees: localFees.map(fee => ({
+      type: fee.feeType,
+      description: fee.description,
+      amount: fee.amount,
+    })),
+    total: saleData.total,
+    paymentMethod: saleData.paymentMethod,
+    customerName: saleData.customerName,
+    customerPhone: saleData.customerPhone,
+    customerEmail: saleData.customerEmail,
+    staffName,
+    timestamp: options?.timestamp || new Date(),
+    paymentStatus: options?.paymentStatus,
+    notes: saleData.notes,
+    splitPayments: saleData.splitPayments?.map(payment => ({
+      ...payment,
+      createdAt: options?.timestamp || new Date(),
+    })),
+    amountPaid: options?.amountPaid ?? saleData.amountPaid,
+    balanceDue:
+      options?.balanceDue ?? Math.max(0, saleData.total - saleData.amountPaid),
+    transactionPayments: options?.transactionPayments,
+    syncStatus: options?.syncStatus,
+  });
+
+  const queueSaleOffline = async (
+    saleData: PosSalePayload,
+    queuedAt: Date
+  ) => {
+    const queuedTransactionId = await queueTransaction({
+      saleData,
+      staffId,
+      staffName,
+      timestamp: queuedAt,
+    });
+
+    const queuedSale = buildCompletedSale(queuedTransactionId, saleData, {
+      paymentStatus:
+        saleData.total - saleData.amountPaid <= 0.01 ? 'PAID' : 'PARTIAL',
+      balanceDue: Math.max(0, saleData.total - saleData.amountPaid),
+      syncStatus: 'pending',
+      timestamp: queuedAt,
+    });
+
+    setCompletedSale(queuedSale);
+    setCurrentStep(6);
+    onPaymentSuccess(queuedSale);
+    toast.success('Sale saved offline. It will sync automatically.');
+  };
+
   const handlePayment = async () => {
     if (isSplitPayment) {
       const validation = validateSplitPayments(splitPayments, total);
@@ -294,6 +454,9 @@ export function SlidingPaymentInterface({
     }
 
     setProcessing(true);
+
+    let saleDataForQueue: PosSalePayload | null = null;
+    let queuedAtForQueue: Date | null = null;
 
     try {
       let normalizedSplitPayments = splitPayments;
@@ -345,57 +508,18 @@ export function SlidingPaymentInterface({
         }
       }
 
-      // Create sales transaction
-      const nonSplitAmountPaid =
-        paymentMethod === 'debt'
-          ? roundCurrency(amountPaid)
-          : roundCurrency(Math.max(amountPaid, total));
+      const saleData = buildSalePayload(
+        normalizedSplitPayments,
+        collectedSplitTotal
+      );
+      const queuedAt = new Date();
+      saleDataForQueue = saleData;
+      queuedAtForQueue = queuedAt;
 
-      const trimmedEmail = customerInfo.email.trim();
-      const normalizedCustomerInfo = {
-        name: customerInfo.name.trim() || undefined,
-        email: trimmedEmail || undefined,
-        phone: trimmedPhone,
-        billingAddress: customerInfo.billingAddress?.trim() || undefined,
-        shippingAddress: customerInfo.shippingAddress?.trim() || undefined,
-        city: customerInfo.city?.trim() || undefined,
-        state: customerInfo.state?.trim() || undefined,
-        postalCode: customerInfo.postalCode?.trim() || undefined,
-        country: customerInfo.country?.trim() || undefined,
-        customerType: customerInfo.customerType,
-        notes: customerInfo.notes?.trim() || undefined,
-      };
-
-      const saleData = {
-        items: items.map(item => ({
-          productId: item.id,
-          quantity: item.quantity,
-          price: item.price,
-          total: item.price * item.quantity,
-          ...(appliedCoupon?.id && { couponId: appliedCoupon.id }), // Only add couponId if it exists
-        })),
-        subtotal,
-        discount,
-        fees: localFees, // Include fees in the sale data
-        total,
-        paymentMethod: isSplitPayment ? 'split' : paymentMethod,
-        // Send customerInfo object for proper customer processing
-        customerInfo:
-          normalizedCustomerInfo.name ||
-          normalizedCustomerInfo.email ||
-          normalizedCustomerInfo.phone
-            ? normalizedCustomerInfo
-            : undefined,
-        // Legacy fields for backward compatibility
-        customerName: normalizedCustomerInfo.name,
-        customerPhone: normalizedCustomerInfo.phone,
-        customerEmail: normalizedCustomerInfo.email,
-        amountPaid: isSplitPayment
-          ? collectedSplitTotal
-          : nonSplitAmountPaid,
-        notes: notes || undefined,
-        splitPayments: isSplitPayment ? normalizedSplitPayments : undefined,
-      };
+      if (!isOnline || !navigator.onLine) {
+        await queueSaleOffline(saleData, queuedAt);
+        return;
+      }
 
       // Debug logging
       logger.info('Sale data being sent', {
@@ -426,51 +550,21 @@ export function SlidingPaymentInterface({
         throw new Error(errorData.error || 'Failed to process payment');
       }
 
-      const result = await response.json();
+      const result = (await response.json()) as SaleApiResponse;
 
-      const saleAmountPaid = isSplitPayment
-        ? collectedSplitTotal
-        : nonSplitAmountPaid;
-      const saleBalanceDue = isSplitPayment
-        ? Math.max(0, total - collectedSplitTotal)
-        : paymentMethod === 'debt'
-          ? Math.max(0, total - amountPaid)
-          : 0;
-
-      const sale: Sale = {
-        id: result.saleId,
-        items,
-        subtotal,
-        discount,
-        fees: localFees.map(fee => ({
-          type: fee.feeType,
-          description: fee.description,
-          amount: fee.amount,
-        })),
-        total,
-        paymentMethod: isSplitPayment ? 'split' : paymentMethod,
-        customerName: normalizedCustomerInfo.name,
-        customerPhone: normalizedCustomerInfo.phone,
-        customerEmail: normalizedCustomerInfo.email,
-        staffName,
-        timestamp: new Date(),
-        notes: notes || undefined,
-        splitPayments: isSplitPayment
-          ? normalizedSplitPayments.map(payment => ({
-              ...payment,
-              createdAt: new Date(),
-            }))
-          : undefined,
+      const sale = buildCompletedSale(result.saleId.toString(), saleData, {
+        transactionNumber: result.transactionNumber,
+        paymentStatus: result.paymentStatus,
         amountPaid:
-          typeof result.amountPaid === 'number' && isSplitPayment
+          typeof result.amountPaid === 'number'
             ? result.amountPaid
-            : saleAmountPaid,
+            : saleData.amountPaid,
         balanceDue:
-          typeof result.balanceDue === 'number' && isSplitPayment
+          typeof result.balanceDue === 'number'
             ? result.balanceDue
-            : saleBalanceDue,
+            : Math.max(0, saleData.total - saleData.amountPaid),
         transactionPayments: Array.isArray(result.transactionPayments)
-          ? result.transactionPayments.map((payment: any) => ({
+          ? result.transactionPayments.map(payment => ({
               id: payment.id,
               amount: Number(payment.amount),
               method: payment.method,
@@ -485,10 +579,11 @@ export function SlidingPaymentInterface({
                 : undefined,
             }))
           : undefined,
-      };
+      });
 
       setCompletedSale(sale);
-      setCurrentStep(6); // Move to receipt step
+      setCurrentStep(6);
+      onPaymentSuccess(sale);
 
       // Show success message (manual email sending only)
       const hasOutstandingBalance = (sale.balanceDue || 0) > 0.009;
@@ -500,6 +595,22 @@ export function SlidingPaymentInterface({
 
       toast.success(baseSuccessMessage);
     } catch (error) {
+      if (isNetworkFailure(error) && saleDataForQueue && queuedAtForQueue) {
+        try {
+          await queueSaleOffline(saleDataForQueue, queuedAtForQueue);
+          return;
+        } catch (queueError) {
+          const queueErrorMessage = 'Failed to save sale offline';
+          toast.error(queueErrorMessage);
+          handleError(
+            queueError instanceof Error
+              ? queueError
+              : new Error(queueErrorMessage)
+          );
+          return;
+        }
+      }
+
       const errorMessage = 'Payment processing failed';
       toast.error(errorMessage);
       handleError(error instanceof Error ? error : new Error(errorMessage));
@@ -741,7 +852,6 @@ export function SlidingPaymentInterface({
           <div className="flex w-full gap-2 sm:gap-3">
             <Button
               onClick={() => {
-                onPaymentSuccess(completedSale!);
                 onCancel();
               }}
               className="h-9 w-full sm:h-10"
@@ -2271,12 +2381,14 @@ function ReceiptStep({ sale }: { sale: Sale | null }) {
   const splitPayments = sale.splitPayments ?? [];
   const hasSplitPayments = splitPayments.length > 0;
   const amountPaidValue = sale.amountPaid ?? 0;
+  const receiptNumber = sale.transactionNumber || sale.id;
   const changeAmount =
     sale.paymentMethod === 'cash'
       ? calculateChange(amountPaidValue, sale.total)
       : 0;
   const isDebtSale = sale.paymentMethod === 'debt';
   const isSplitSale = sale.paymentMethod === 'split';
+  const isPendingSync = sale.syncStatus === 'pending';
 
   const formatDate = (date: Date) => {
     return date.toLocaleDateString('en-US', {
@@ -2355,7 +2467,9 @@ function ReceiptStep({ sale }: { sale: Sale | null }) {
 
     const statusLabel = hasOutstandingBalance
       ? `Status: Balance due ${formatCurrency(sale.balanceDue ?? 0)}`
-      : `Status: Paid via ${paymentLabel}`;
+      : isPendingSync
+        ? 'Status: Pending sync'
+        : `Status: Paid via ${paymentLabel}`;
 
     const lines = [
       'ORDER CONFIRMED',
@@ -2367,7 +2481,7 @@ function ReceiptStep({ sale }: { sale: Sale | null }) {
       '===========================================',
       '',
       'ORDER DETAILS',
-      `Receipt: #${sale.id}`,
+      `Receipt: #${receiptNumber}`,
       `Date: ${formatShortDate(sale.timestamp)} | ${formatTime(
         sale.timestamp
       )}`,
@@ -2414,7 +2528,7 @@ function ReceiptStep({ sale }: { sale: Sale | null }) {
         <!DOCTYPE html>
         <html>
         <head>
-          <title>Receipt - ${sale.id}</title>
+          <title>Receipt - ${receiptNumber}</title>
           <style>
             body { font-family: monospace; font-size: 12px; line-height: 1.4; margin: 20px; }
             .header { text-align: center; margin-bottom: 20px; }
@@ -2438,7 +2552,7 @@ function ReceiptStep({ sale }: { sale: Sale | null }) {
           <div class="header">
             <div class="store-name">BaaWA ACCESSORIES</div>
             <div>Quality Accessories Store</div>
-            <div>Receipt #${sale.id}</div>
+            <div>Receipt #${receiptNumber}</div>
           </div>
           
           <div class="receipt-details">
@@ -2446,6 +2560,11 @@ function ReceiptStep({ sale }: { sale: Sale | null }) {
             <div><strong>Time:</strong> ${formatTime(sale.timestamp)}</div>
             <div><strong>Staff:</strong> ${sale.staffName}</div>
             <div><strong>Payment:</strong> ${paymentLabel}</div>
+            ${
+              isPendingSync
+                ? '<div><strong>Sync Status:</strong> Pending server sync</div>'
+                : ''
+            }
             
             ${sale.customerName ? `<div><strong>Customer:</strong> ${sale.customerName}</div>` : ''}
             ${sale.customerPhone ? `<div><strong>Phone:</strong> ${sale.customerPhone}</div>` : ''}
@@ -2555,6 +2674,11 @@ function ReceiptStep({ sale }: { sale: Sale | null }) {
 
   // Email receipt
   const handleEmailReceipt = async () => {
+    if (isPendingSync) {
+      toast.error('Email receipt will be available after this sale syncs');
+      return;
+    }
+
     if (!sale.customerEmail) {
       toast.error('No customer email available');
       return;
@@ -2570,20 +2694,6 @@ function ReceiptStep({ sale }: { sale: Sale | null }) {
           saleId: sale.id,
           customerEmail: sale.customerEmail,
           customerName: sale.customerName,
-          receiptData: {
-            items: sale.items.map(item => ({
-              name: item.name,
-              quantity: item.quantity,
-              price: item.price,
-              total: item.price * item.quantity,
-            })),
-            subtotal: sale.subtotal,
-            discount: sale.discount,
-            total: sale.total,
-            paymentMethod: sale.paymentMethod,
-            timestamp: sale.timestamp.toISOString(),
-            staffName: sale.staffName,
-          },
         }),
       });
 
@@ -2626,7 +2736,11 @@ function ReceiptStep({ sale }: { sale: Sale | null }) {
           <IconCheck className="h-8 w-8 text-green-600" />
         </div>
         <h2 className="text-2xl font-bold text-green-600">
-          {hasOutstandingBalance ? 'Sale Recorded' : 'Payment Successful!'}
+          {isPendingSync
+            ? 'Sale Saved Offline'
+            : hasOutstandingBalance
+              ? 'Sale Recorded'
+              : 'Payment Successful!'}
         </h2>
         <p className="text-muted-foreground">
           Transaction saved on {formatDate(sale.timestamp)} at{' '}
@@ -2637,6 +2751,11 @@ function ReceiptStep({ sale }: { sale: Sale | null }) {
             Outstanding balance: {formatCurrency(sale.balanceDue || 0)}
           </p>
         )}
+        {isPendingSync && (
+          <p className="mt-2 font-medium text-blue-600">
+            This receipt is pending server sync.
+          </p>
+        )}
       </div>
 
       {/* Sale Details */}
@@ -2645,7 +2764,7 @@ function ReceiptStep({ sale }: { sale: Sale | null }) {
         <div className="space-y-2">
           <div className="flex justify-between">
             <span className="text-muted-foreground">Transaction ID:</span>
-            <span className="font-medium">{sale.id}</span>
+            <span className="font-medium">{receiptNumber}</span>
           </div>
           <div className="flex justify-between">
             <span className="text-muted-foreground">Staff:</span>
@@ -2821,7 +2940,7 @@ function ReceiptStep({ sale }: { sale: Sale | null }) {
           <IconPrinter className="mr-2 h-4 w-4" />
           Print
         </Button>
-        {sale.customerEmail && (
+        {sale.customerEmail && !isPendingSync && (
           <Button
             onClick={handleEmailReceipt}
             variant="outline"

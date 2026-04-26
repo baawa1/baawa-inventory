@@ -2,7 +2,7 @@ import { NextResponse } from 'next/server';
 import { z } from 'zod';
 
 import { prisma } from '@/lib/db';
-import { withAuth, AuthenticatedRequest } from '@/lib/api-middleware';
+import { withPOSAuth, AuthenticatedRequest } from '@/lib/api-auth-middleware';
 import { logger } from '@/lib/logger';
 import { normalizePaymentMethodForStorage } from '@/lib/utils/payment-methods';
 
@@ -32,7 +32,7 @@ function getTransactionIdFromPath(pathname: string): number | null {
   return Number.isNaN(maybeId) ? null : maybeId;
 }
 
-export const POST = withAuth(async function (request: AuthenticatedRequest) {
+export const POST = withPOSAuth(async function (request: AuthenticatedRequest) {
   try {
     const transactionId = getTransactionIdFromPath(request.nextUrl.pathname);
 

@@ -1,7 +1,6 @@
 import { NextResponse } from 'next/server';
 import { prisma } from '@/lib/db';
-import { withAuth, AuthenticatedRequest } from '@/lib/api-middleware';
-import { emailService } from '@/lib/email';
+import { withPOSAuth, AuthenticatedRequest } from '@/lib/api-auth-middleware';
 import { z } from 'zod';
 import { logger } from '@/lib/logger';
 import {
@@ -45,6 +44,16 @@ const normalizeSalePayload = (body: any) => {
         postalCode: normalizeOptionalString(body.customerInfo.postalCode),
         country: normalizeOptionalString(body.customerInfo.country),
         notes: normalizeOptionalString(body.customerInfo.notes),
+        shippingCity: normalizeOptionalString(body.customerInfo.shippingCity),
+        shippingState: normalizeOptionalString(
+          body.customerInfo.shippingState
+        ),
+        shippingPostalCode: normalizeOptionalString(
+          body.customerInfo.shippingPostalCode
+        ),
+        shippingCountry: normalizeOptionalString(
+          body.customerInfo.shippingCountry
+        ),
       }
     : undefined;
 
@@ -62,6 +71,9 @@ const posSaleItemSchema = z.object({
   price: z.coerce.number().positive('Price must be positive'),
   total: z.coerce.number().positive('Total must be positive'),
   couponId: z.coerce.number().int().positive().optional(),
+  basePrice: z.coerce.number().positive().optional(),
+  priceOverride: z.coerce.number().positive().optional(),
+  overrideReason: z.string().optional(),
 });
 
 const transactionFeeSchema = z.object({
@@ -82,6 +94,11 @@ const customerInfoSchema = z.object({
   country: z.string().default('Nigeria'),
   customerType: z.enum(['individual', 'business']).default('individual'),
   notes: z.string().optional(),
+  useBillingAsShipping: z.boolean().optional(),
+  shippingCity: z.string().optional(),
+  shippingState: z.string().optional(),
+  shippingPostalCode: z.string().optional(),
+  shippingCountry: z.string().optional(),
 });
 
 const posSaleSchema = z
@@ -226,7 +243,7 @@ const requireCustomerPhone = (data: z.infer<typeof posSaleSchema>) => {
   return Boolean(infoPhone || legacyPhone);
 };
 
-export const POST = withAuth(async function (request: AuthenticatedRequest) {
+export const POST = withPOSAuth(async function (request: AuthenticatedRequest) {
   try {
     // Parse and validate request body
     const body = await request.json();

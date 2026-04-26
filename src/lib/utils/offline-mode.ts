@@ -10,6 +10,7 @@ import {
   OfflineProduct,
 } from './offline-storage';
 import { logger } from '@/lib/logger';
+import type { PosSalePayload } from '@/types/pos';
 
 export interface NetworkStatus {
   isOnline: boolean;
@@ -34,6 +35,53 @@ class OfflineModeManager {
   private lastOnlineTime?: Date;
   private lastOfflineTime?: Date;
   private isSlowConnection: boolean = false;
+
+  private getSaleData(transaction: OfflineTransaction): PosSalePayload {
+    if (transaction.saleData) {
+      return transaction.saleData;
+    }
+
+    const legacyTransaction = transaction as OfflineTransaction & {
+      items?: Array<{
+        productId: number;
+        price: number;
+        total: number;
+        quantity: number;
+        basePrice?: number;
+        priceOverride?: number;
+        overrideReason?: string;
+      }>;
+      subtotal?: number;
+      discount?: number;
+      total?: number;
+      paymentMethod?: PosSalePayload['paymentMethod'];
+      customerName?: string;
+      customerPhone?: string;
+      customerEmail?: string;
+    };
+
+    return {
+      items:
+        legacyTransaction.items?.map(item => ({
+          productId: item.productId,
+          quantity: item.quantity,
+          price: item.price,
+          total: item.total,
+          basePrice: item.basePrice,
+          priceOverride: item.priceOverride,
+          overrideReason: item.overrideReason,
+        })) || [],
+      subtotal: legacyTransaction.subtotal || 0,
+      discount: legacyTransaction.discount || 0,
+      total: legacyTransaction.total || 0,
+      paymentMethod: legacyTransaction.paymentMethod || 'cash',
+      customerName: legacyTransaction.customerName,
+      customerPhone: legacyTransaction.customerPhone,
+      customerEmail: legacyTransaction.customerEmail,
+      amountPaid: legacyTransaction.total || 0,
+      notes: `Offline transaction synced. Original ID: ${transaction.id}`,
+    };
+  }
 
   constructor() {
     // Only initialize in browser environment
@@ -188,31 +236,17 @@ class OfflineModeManager {
    * Queue a transaction for offline processing
    */
   async queueTransaction(transactionData: {
-    items: Array<{
-      productId: number;
-      name: string;
-      sku: string;
-      price: number;
-      basePrice: number;
-      priceOverride?: number;
-      overrideReason?: string;
-      quantity: number;
-      total: number;
-    }>;
-    subtotal: number;
-    discount: number;
-    total: number;
-    paymentMethod: 'cash' | 'pos' | 'bank_transfer' | 'mobile_money';
-    customerName?: string;
-    customerPhone?: string;
-    customerEmail?: string;
+    saleData: PosSalePayload;
     staffName: string;
     staffId: number;
+    timestamp?: Date;
   }): Promise<string> {
     const transaction: OfflineTransaction = {
       id: generateTransactionId(),
-      ...transactionData,
-      timestamp: new Date(),
+      saleData: transactionData.saleData,
+      staffName: transactionData.staffName,
+      staffId: transactionData.staffId,
+      timestamp: transactionData.timestamp || new Date(),
       status: 'pending',
       syncAttempts: 0,
     };
@@ -245,7 +279,8 @@ class OfflineModeManager {
 
     try {
       await offlineStorage.init();
-      const pendingTransactions = await offlineStorage.getPendingTransactions();
+      const pendingTransactions =
+        await offlineStorage.getTransactionsByStatuses(['pending', 'failed']);
 
       // Debug logging removed for production
 
@@ -282,31 +317,15 @@ class OfflineModeManager {
    */
   private async syncSingleTransaction(transactionId: string): Promise<void> {
     try {
-      const pendingTransactions = await offlineStorage.getPendingTransactions();
+      const pendingTransactions =
+        await offlineStorage.getTransactionsByStatuses(['pending', 'failed']);
       const transaction = pendingTransactions.find(t => t.id === transactionId);
 
       if (!transaction) {
         throw new Error('Transaction not found');
       }
 
-      // Convert offline transaction to API format
-      const saleData = {
-        items: transaction.items.map(item => ({
-          productId: item.productId,
-          quantity: item.quantity,
-          price: item.price,
-          total: item.total,
-        })),
-        subtotal: transaction.subtotal,
-        discount: transaction.discount,
-        total: transaction.total,
-        paymentMethod: transaction.paymentMethod,
-        customerName: transaction.customerName,
-        customerPhone: transaction.customerPhone,
-        customerEmail: transaction.customerEmail,
-        amountPaid: transaction.total, // Assume full payment for offline transactions
-        notes: `Offline transaction synced. Original ID: ${transaction.id}`,
-      };
+      const saleData = this.getSaleData(transaction);
 
       // Send to server
       const response = await fetch('/api/pos/create-sale', {
@@ -322,8 +341,21 @@ class OfflineModeManager {
         throw new Error(errorData.error || 'Sync failed');
       }
 
+      const result = await response.json();
+
       // Mark as synced
-      await offlineStorage.updateTransactionStatus(transactionId, 'synced');
+      await offlineStorage.updateTransactionStatus(
+        transactionId,
+        'synced',
+        undefined,
+        {
+          syncedSaleId:
+            typeof result?.saleId === 'number'
+              ? result.saleId.toString()
+              : undefined,
+          syncedAt: new Date(),
+        }
+      );
       // Debug logging removed for production
     } catch (error) {
       logger.error('Failed to sync transaction', {
@@ -396,10 +428,10 @@ class OfflineModeManager {
   async getQueueStats(): Promise<OfflineQueueStats> {
     try {
       await offlineStorage.init();
-      const pendingTransactions = await offlineStorage.getPendingTransactions();
-      const failedTransactions = pendingTransactions.filter(
-        t => t.status === 'failed'
-      );
+      const pendingTransactions =
+        await offlineStorage.getTransactionsByStatuses(['pending']);
+      const failedTransactions =
+        await offlineStorage.getTransactionsByStatuses(['failed']);
       const lastSyncAttempt =
         await offlineStorage.getSyncStatus('lastSyncAttempt');
 
@@ -437,14 +469,7 @@ class OfflineModeManager {
    */
   async clearFailedTransactions(): Promise<void> {
     try {
-      const pendingTransactions = await offlineStorage.getPendingTransactions();
-      const failedTransactions = pendingTransactions.filter(
-        t => t.status === 'failed'
-      );
-
-      for (const transaction of failedTransactions) {
-        await offlineStorage.updateTransactionStatus(transaction.id, 'synced');
-      }
+      await offlineStorage.deleteTransactionsByStatuses(['failed']);
 
       // Debug logging removed for production
     } catch (error) {

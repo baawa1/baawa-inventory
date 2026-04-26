@@ -4,34 +4,23 @@
  */
 
 import { PRODUCT_STATUS } from '@/lib/constants';
+import type {
+  OfflineTransactionStatus,
+  PosSalePayload,
+} from '@/types/pos';
 
 export interface OfflineTransaction {
   id: string;
-  items: Array<{
-    productId: number;
-    name: string;
-    sku: string;
-    price: number;
-    basePrice: number;
-    priceOverride?: number;
-    overrideReason?: string;
-    quantity: number;
-    total: number;
-  }>;
-  subtotal: number;
-  discount: number;
-  total: number;
-  paymentMethod: 'cash' | 'pos' | 'bank_transfer' | 'mobile_money';
-  customerName?: string;
-  customerPhone?: string;
-  customerEmail?: string;
+  saleData: PosSalePayload;
   staffName: string;
   staffId: number;
   timestamp: Date;
-  status: 'pending' | 'synced' | 'failed';
+  status: OfflineTransactionStatus;
   syncAttempts: number;
   lastSyncAttempt?: Date;
   errorMessage?: string;
+  syncedSaleId?: string;
+  syncedAt?: Date;
 }
 
 export interface OfflineProduct {
@@ -125,19 +114,60 @@ class OfflineStorageManager {
    * Get all pending transactions
    */
   async getPendingTransactions(): Promise<OfflineTransaction[]> {
+    return this.getTransactionsByStatuses(['pending']);
+  }
+
+  /**
+   * Get queued transactions by status
+   */
+  async getTransactionsByStatuses(
+    statuses: OfflineTransactionStatus[]
+  ): Promise<OfflineTransaction[]> {
     if (!this.db) throw new Error('Database not initialized');
 
     return new Promise((resolve, reject) => {
       const tx = this.db!.transaction(['transactions'], 'readonly');
       const store = tx.objectStore('transactions');
-      const index = store.index('status');
+      const request = store.getAll();
 
-      const request = index.getAll('pending');
-
-      request.onsuccess = () => resolve(request.result);
+      request.onsuccess = () =>
+        resolve(
+          (request.result as OfflineTransaction[]).filter(transaction =>
+            statuses.includes(transaction.status)
+          )
+        );
       request.onerror = () =>
         reject(new Error('Failed to get pending transactions'));
     });
+  }
+
+  /**
+   * Delete queued transactions by status
+   */
+  async deleteTransactionsByStatuses(
+    statuses: OfflineTransactionStatus[]
+  ): Promise<void> {
+    if (!this.db) throw new Error('Database not initialized');
+
+    const transactions = await this.getTransactionsByStatuses(statuses);
+    if (transactions.length === 0) {
+      return;
+    }
+
+    await Promise.all(
+      transactions.map(
+        transaction =>
+          new Promise<void>((resolve, reject) => {
+            const tx = this.db!.transaction(['transactions'], 'readwrite');
+            const store = tx.objectStore('transactions');
+            const request = store.delete(transaction.id);
+
+            request.onsuccess = () => resolve();
+            request.onerror = () =>
+              reject(new Error('Failed to delete transaction'));
+          })
+      )
+    );
   }
 
   /**
@@ -163,8 +193,9 @@ class OfflineStorageManager {
    */
   async updateTransactionStatus(
     id: string,
-    status: 'pending' | 'synced' | 'failed',
-    errorMessage?: string
+    status: OfflineTransactionStatus,
+    errorMessage?: string,
+    updates?: Partial<Pick<OfflineTransaction, 'syncedSaleId' | 'syncedAt'>>
   ): Promise<void> {
     if (!this.db) throw new Error('Database not initialized');
 
@@ -180,7 +211,17 @@ class OfflineStorageManager {
           transaction.status = status;
           transaction.syncAttempts = (transaction.syncAttempts || 0) + 1;
           transaction.lastSyncAttempt = new Date();
-          if (errorMessage) transaction.errorMessage = errorMessage;
+          if (errorMessage) {
+            transaction.errorMessage = errorMessage;
+          } else {
+            delete transaction.errorMessage;
+          }
+          if (updates?.syncedSaleId) {
+            transaction.syncedSaleId = updates.syncedSaleId;
+          }
+          if (updates?.syncedAt) {
+            transaction.syncedAt = updates.syncedAt;
+          }
 
           const updateRequest = store.put(transaction);
           updateRequest.onsuccess = () => resolve();

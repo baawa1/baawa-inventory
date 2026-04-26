@@ -27,32 +27,16 @@ import {
   IconTrash,
   IconRefresh,
 } from '@tabler/icons-react';
-import { useOffline } from '@/hooks/useOffline';
 import { toast } from 'sonner';
 import { formatCurrency } from '@/lib/utils';
 import { logger } from '@/lib/logger';
 import { calculateOrderTotals } from '@/lib/utils/calculations';
-import type { CartItem } from '@/types/pos';
+import type { CartItem, Sale } from '@/types/pos';
 import { useIsFetching, useQueryClient } from '@tanstack/react-query';
 import { queryKeys } from '@/lib/query-client';
 
-export interface Sale {
-  id: string;
-  items: CartItem[];
-  subtotal: number;
-  discount: number;
-  total: number;
-  paymentMethod: string;
-  customerName?: string;
-  customerPhone?: string;
-  customerEmail?: string;
-  staffName: string;
-  timestamp: Date;
-}
-
 export function POSInterface() {
   const { data: session } = useSession();
-  const { isOnline, queueTransaction } = useOffline();
   const queryClient = useQueryClient();
   const [cart, setCart] = useState<CartItem[]>([]);
   const [currentStep, setCurrentStep] = useState<
@@ -172,8 +156,7 @@ export function POSInterface() {
     setCart(prev => prev.filter(item => item.id !== productId));
   };
 
-  // Clear cart
-  const clearCart = () => {
+  const resetCheckoutState = () => {
     setCart([]);
     setDiscount(0);
     setFees([]);
@@ -195,6 +178,11 @@ export function POSInterface() {
       shippingPostalCode: '',
       shippingCountry: 'Nigeria',
     });
+  };
+
+  // Clear cart
+  const clearCart = () => {
+    resetCheckoutState();
     toast.success('Shopping cart cleared');
   };
 
@@ -223,46 +211,8 @@ export function POSInterface() {
   };
 
   // Handle successful payment
-  const handlePaymentSuccess = async (sale: Sale) => {
-    // If offline, queue the transaction
-    if (!isOnline) {
-      try {
-        await queueTransaction({
-          items: cart.map(item => ({
-            productId: item.id,
-            name: item.name,
-            sku: item.sku,
-            price: item.price,
-            basePrice: item.basePrice ?? item.price,
-            priceOverride: item.priceOverride,
-            overrideReason: item.overrideReason,
-            quantity: item.quantity,
-            total: item.price * item.quantity,
-          })),
-          subtotal,
-          discount,
-          total,
-          paymentMethod: sale.paymentMethod as any,
-          customerName: customerInfo.name || undefined,
-          customerPhone: customerInfo.phone || undefined,
-          customerEmail: customerInfo.email || undefined,
-          staffName: session?.user?.name || 'Staff',
-          staffId: parseInt(session?.user?.id || '0'),
-        });
-
-        clearCart();
-
-        toast.success('Transaction saved offline. Will sync when online.');
-      } catch (error) {
-        logger.error('Offline transaction failed', {
-          error: error instanceof Error ? error.message : String(error),
-        });
-        toast.error('Transaction failed. Please try again.');
-      }
-    } else {
-      // Online - normal flow
-      clearCart();
-    }
+  const handlePaymentSuccess = (_sale: Sale) => {
+    resetCheckoutState();
   };
 
   if (!session) {
@@ -352,20 +302,8 @@ export function POSInterface() {
                     total={validatedTotal}
                     customerInfo={customerInfo}
                     staffName={session.user.name || 'Staff'}
-                    onPaymentSuccess={sale => {
-                      // Convert SlidingPaymentInterface.Sale to POSInterface.Sale
-                      handlePaymentSuccess({
-                        ...sale,
-                        items: sale.items.map(item => ({
-                          ...item,
-                          id: Number(item.id),
-                          sku: '',
-                          stock: 0,
-                          category: undefined,
-                          brand: undefined,
-                        })),
-                      });
-                    }}
+                    staffId={parseInt(session.user.id, 10)}
+                    onPaymentSuccess={handlePaymentSuccess}
                     onCancel={() => setCurrentStep('search')}
                     onDiscountChange={setDiscount}
                     onFeesChange={setFees}

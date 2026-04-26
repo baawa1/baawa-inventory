@@ -12,6 +12,8 @@ const searchParamsSchema = z.object({
     .optional()
     .default(API_LIMITS.PRODUCT_SEARCH_LIMIT.toString()),
   status: z.string().optional().default(PRODUCT_STATUS.ACTIVE),
+  category: z.string().optional(),
+  brand: z.string().optional(),
 });
 
 async function handleSearchProducts(request: AuthenticatedRequest) {
@@ -22,10 +24,14 @@ async function handleSearchProducts(request: AuthenticatedRequest) {
       search: searchParams.get('search'),
       limit: searchParams.get('limit'),
       status: searchParams.get('status'),
+      category: searchParams.get('category') || undefined,
+      brand: searchParams.get('brand') || undefined,
     });
 
-    const { search, limit, status } = validatedParams;
-    const limitNum = parseInt(limit);
+    const { search, limit, status, category, brand } = validatedParams;
+    const limitNum = parseInt(limit, 10);
+    const take =
+      limitNum > 0 ? Math.min(limitNum, API_LIMITS.MAX_PAGE_SIZE) : undefined;
 
     // Build search conditions
     const searchConditions = {
@@ -68,6 +74,30 @@ async function handleSearchProducts(request: AuthenticatedRequest) {
             },
           ],
         },
+        ...(category
+          ? [
+              {
+                category: {
+                  name: {
+                    contains: category,
+                    mode: 'insensitive' as const,
+                  },
+                },
+              },
+            ]
+          : []),
+        ...(brand
+          ? [
+              {
+                brand: {
+                  name: {
+                    contains: brand,
+                    mode: 'insensitive' as const,
+                  },
+                },
+              },
+            ]
+          : []),
       ],
     };
 
@@ -92,7 +122,7 @@ async function handleSearchProducts(request: AuthenticatedRequest) {
         { stock: 'desc' }, // Show in-stock products first
         { name: 'asc' },
       ],
-      take: limitNum,
+      take,
     });
 
     // Format response data
@@ -100,12 +130,20 @@ async function handleSearchProducts(request: AuthenticatedRequest) {
       id: product.id,
       name: product.name,
       sku: product.sku,
+      barcode: undefined,
       price: product.price,
       stock: product.stock,
       status: product.status,
-      category: product.category,
-      brand: product.brand,
+      categoryName: product.category?.name || 'Uncategorized',
+      brandName: product.brand?.name || 'No Brand',
       description: product.description,
+      images: product.images,
+      primaryImageUrl: Array.isArray(product.images)
+        ? typeof product.images[0] === 'string'
+          ? product.images[0]
+          : (product.images[0] as { url?: string } | undefined)?.url || null
+        : null,
+      updatedAt: product.updatedAt,
     }));
 
     return createApiResponse.success(

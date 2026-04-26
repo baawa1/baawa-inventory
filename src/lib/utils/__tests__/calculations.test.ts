@@ -14,10 +14,19 @@ describe('POS Calculation Utilities', () => {
       name: 'Product 1',
       sku: 'SKU1',
       price: 100,
+      basePrice: 100,
       quantity: 2,
       stock: 10,
     },
-    { id: 2, name: 'Product 2', sku: 'SKU2', price: 50, quantity: 1, stock: 5 },
+    {
+      id: 2,
+      name: 'Product 2',
+      sku: 'SKU2',
+      price: 50,
+      basePrice: 50,
+      quantity: 1,
+      stock: 5,
+    },
   ];
 
   describe('calculateOrderTotals', () => {

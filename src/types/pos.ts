@@ -23,6 +23,7 @@ export interface CartItem {
 
 export interface Sale {
   id: string;
+  transactionNumber?: string;
   items: CartItem[];
   subtotal: number;
   discount: number;
@@ -38,6 +39,7 @@ export interface Sale {
   customerEmail?: string;
   staffName: string;
   timestamp: Date;
+  paymentStatus?: string;
   notes?: string | null;
   splitPayments?: Array<{
     id: string;
@@ -62,6 +64,7 @@ export interface Sale {
     } | null;
     createdAt?: string | Date | null;
   }>;
+  syncStatus?: 'pending' | 'synced' | 'failed';
 }
 
 export interface CouponData {
@@ -102,6 +105,42 @@ export interface SplitPayment {
   id: string;
   amount: number;
   method: string;
+}
+
+export interface PosSaleItemPayload {
+  productId: number;
+  quantity: number;
+  price: number;
+  total: number;
+  couponId?: number;
+  basePrice?: number;
+  priceOverride?: number;
+  overrideReason?: string;
+}
+
+export interface PosSalePayload {
+  items: PosSaleItemPayload[];
+  subtotal: number;
+  discount: number;
+  fees?: TransactionFee[];
+  total: number;
+  paymentMethod: PaymentMethod;
+  customerInfo?: Partial<CustomerInfo>;
+  customerName?: string;
+  customerPhone?: string;
+  customerEmail?: string;
+  amountPaid: number;
+  notes?: string;
+  splitPayments?: SplitPayment[];
+}
+
+export type OfflineTransactionStatus = 'pending' | 'synced' | 'failed';
+
+export interface OfflineTransactionInput {
+  saleData: PosSalePayload;
+  staffName: string;
+  staffId: number;
+  timestamp?: Date;
 }
 
 // Customer API Types
@@ -214,6 +253,24 @@ export interface SaleApiResponse {
   transactionNumber: string;
   message: string;
   emailSent: boolean;
+  paymentStatus?: string;
+  amountPaid?: number;
+  balanceDue?: number;
+  transactionPayments?: Array<{
+    id: number;
+    amount: number;
+    method: string;
+    note?: string | null;
+    paymentDate?: string | Date | null;
+    recordedById?: number | null;
+    recordedBy?: {
+      id: number;
+      firstName: string;
+      lastName: string;
+      email: string;
+    } | null;
+    createdAt?: string | Date | null;
+  }>;
 }
 
 // Error Types
@@ -275,6 +332,7 @@ export type PaymentMethod =
   | 'pos'
   | 'bank_transfer'
   | 'mobile_money'
+  | 'debt'
   | 'split';
 
 export type DiscountType = 'percentage' | 'fixed';

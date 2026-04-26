@@ -80,7 +80,6 @@ export function ProductSearchBar({
         brand: product.brand?.name,
       });
 
-      toast.success(`Added ${product.name} to cart`);
       setSearchTerm('');
     } catch (_error) {
       toast.error('Product not found or barcode invalid');
@@ -116,7 +115,6 @@ export function ProductSearchBar({
       brand: product.brand?.name,
     });
 
-    toast.success(`Added ${product.name} to cart`);
     setSearchTerm('');
   };
 

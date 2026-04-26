@@ -101,7 +101,10 @@ async function fetchCustomers({
     `/api/pos/customers?search=${encodeURIComponent(searchQuery)}&fields=basic&limit=20`
   );
   if (!response.ok) throw new Error('Failed to fetch customers');
-  return response.json();
+  const results = await response.json();
+  return Array.isArray(results)
+    ? results.filter(customer => customer?.type !== 'user')
+    : [];
 }
 
 export function EnhancedCustomerInfoStep({
@@ -141,6 +144,11 @@ export function EnhancedCustomerInfoStep({
   ]);
 
   const selectCustomer = (customer: any) => {
+    if (customer?.type === 'user') {
+      toast.error('Staff records cannot be attached to checkout sales');
+      return;
+    }
+
     setSelectedCustomer(customer);
 
     // Update with customer data

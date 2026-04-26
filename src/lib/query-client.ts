@@ -212,6 +212,9 @@ export const queryKeys = {
   // POS
   pos: {
     all: ['pos'] as const,
-    products: () => [...queryKeys.pos.all, 'products'] as const,
+    products: <T extends object>(filters?: QueryFilter<T>) =>
+      filters
+        ? [...queryKeys.pos.all, 'products', filters] as const
+        : [...queryKeys.pos.all, 'products'] as const,
   },
 } as const;

@@ -246,23 +246,6 @@ export function ReceiptGenerator({ sale, onClose }: ReceiptGeneratorProps) {
           saleId: sale.id,
           customerEmail: sale.customerEmail,
           customerName: sale.customerName,
-          receiptData: {
-            items: sale.items.map(item => ({
-              name: item.name,
-              quantity: item.quantity,
-              price: item.price,
-              basePrice: item.basePrice ?? item.price,
-              priceOverride: item.priceOverride,
-              overrideReason: item.overrideReason,
-              total: item.price * item.quantity,
-            })),
-            subtotal: sale.subtotal,
-            discount: sale.discount,
-            total: sale.total,
-            paymentMethod: sale.paymentMethod,
-            timestamp: sale.timestamp.toISOString(),
-            staffName: sale.staffName,
-          },
         }),
       });
 

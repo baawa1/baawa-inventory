@@ -324,6 +324,7 @@ export const emailService = {
         items: data.items,
         subtotal: data.subtotal,
         discount: data.discount,
+        fees: data.fees,
         total: data.total,
         paymentMethod: data.paymentMethod,
         timestamp: data.timestamp,

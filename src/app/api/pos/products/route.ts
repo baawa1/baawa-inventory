@@ -32,6 +32,7 @@ async function handleGetProducts(request: AuthenticatedRequest) {
     const category = searchParams.get('category');
     const brand = searchParams.get('brand');
     const fieldsParam = searchParams.get('fields')?.trim();
+    const includeFilters = searchParams.get('includeFilters') === 'true';
     const usePosFields = fieldsParam === 'pos' || (!fieldsParam && limit === 0);
 
     // Build where clause
@@ -184,6 +185,7 @@ async function handleGetProducts(request: AuthenticatedRequest) {
           id: posProduct.id,
           name: posProduct.name,
           sku: posProduct.sku,
+          barcode: undefined,
           price: posProduct.price,
           stock: posProduct.stock,
           categoryName: posProduct.category?.name || 'Uncategorized',
@@ -214,12 +216,55 @@ async function handleGetProducts(request: AuthenticatedRequest) {
       };
     });
 
+    let filters:
+      | {
+          categories: string[];
+          brands: string[];
+        }
+      | undefined;
+
+    if (usePosFields && includeFilters) {
+      const [categories, brands] = await Promise.all([
+        prisma.category.findMany({
+          where: {
+            isActive: true,
+            products: {
+              some: {
+                status: PRODUCT_STATUS.ACTIVE,
+              },
+            },
+          },
+          select: { name: true },
+          orderBy: { name: 'asc' },
+        }),
+        prisma.brand.findMany({
+          where: {
+            OR: [{ isActive: true }, { isActive: null }],
+            products: {
+              some: {
+                status: PRODUCT_STATUS.ACTIVE,
+              },
+            },
+          },
+          select: { name: true },
+          orderBy: { name: 'asc' },
+        }),
+      ]);
+
+      filters = {
+        categories: categories.map(item => item.name).filter(Boolean),
+        brands: brands.map(item => item.name).filter(Boolean),
+      };
+    }
+
     // Return products directly if no pagination requested
     if (limit === 0) {
-      const response = createApiResponse.success(
-        formattedProducts,
-        'Products retrieved successfully'
-      );
+      const response = NextResponse.json({
+        success: true,
+        data: formattedProducts,
+        message: 'Products retrieved successfully',
+        ...(filters ? { filters } : {}),
+      });
 
       if (etag) {
         response.headers.set('ETag', etag);
@@ -234,18 +279,31 @@ async function handleGetProducts(request: AuthenticatedRequest) {
 
     const totalCount = await prisma.product.count({ where: whereClause });
 
-    return createApiResponse.successWithPagination(
-      formattedProducts,
-      {
-        page,
-        limit,
-        total: totalCount,
-        totalPages: Math.ceil(totalCount / limit),
-        hasNextPage: page < Math.ceil(totalCount / limit),
-        hasPreviousPage: page > 1,
-      },
-      'Products retrieved successfully'
-    );
+    if (filters) {
+      return NextResponse.json({
+        success: true,
+        data: formattedProducts,
+        message: 'Products retrieved successfully',
+        pagination: {
+          page,
+          limit,
+          total: totalCount,
+          totalPages: Math.ceil(totalCount / limit),
+          hasNextPage: page < Math.ceil(totalCount / limit),
+          hasPreviousPage: page > 1,
+        },
+        filters,
+      });
+    }
+
+    return createApiResponse.successWithPagination(formattedProducts, {
+      page,
+      limit,
+      total: totalCount,
+      totalPages: Math.ceil(totalCount / limit),
+      hasNextPage: page < Math.ceil(totalCount / limit),
+      hasPreviousPage: page > 1,
+    }, 'Products retrieved successfully');
   } catch (error) {
     console.error('Error fetching products:', error);
     return createApiResponse.internalError(ERROR_MESSAGES.INTERNAL_ERROR);

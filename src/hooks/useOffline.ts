@@ -14,6 +14,7 @@ import {
 import { offlineStorage } from '@/lib/utils/offline-storage';
 import { INTERVALS } from '@/lib/constants';
 import { logger } from '@/lib/logger';
+import type { OfflineTransactionInput } from '@/types/pos';
 
 export interface UseOfflineReturn {
   // Network status
@@ -25,7 +26,7 @@ export interface UseOfflineReturn {
   queueStats: OfflineQueueStats;
 
   // Actions
-  queueTransaction: (_transactionData: any) => Promise<string>;
+  queueTransaction: (_transactionData: OfflineTransactionInput) => Promise<string>;
   syncNow: () => Promise<{ success: number; failed: number }>;
   cacheProducts: () => Promise<void>;
   clearFailedTransactions: () => Promise<void>;
@@ -112,7 +113,7 @@ export function useOffline(): UseOfflineReturn {
 
   // Queue a transaction
   const queueTransaction = useCallback(
-    async (transactionData: any): Promise<string> => {
+    async (transactionData: OfflineTransactionInput): Promise<string> => {
       try {
         setError(null);
         const transactionId =

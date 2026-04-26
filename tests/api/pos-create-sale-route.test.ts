@@ -8,8 +8,8 @@ jest.mock('next/server', () => ({
   },
 }));
 
-jest.mock('@/lib/api-middleware', () => ({
-  withAuth: (handler: any) => handler,
+jest.mock('@/lib/api-auth-middleware', () => ({
+  withPOSAuth: (handler: any) => handler,
 }));
 
 jest.mock('@/lib/db', () => ({

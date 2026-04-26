@@ -417,31 +417,6 @@ export function ReceiptPrinter({
           saleId: receiptData.id,
           customerEmail: receiptData.customerEmail,
           customerName: receiptData.customerName,
-          receiptData: {
-            items: receiptData.items.map(item => ({
-              name: item.name,
-              quantity: item.quantity,
-              price: item.price,
-              basePrice: item.basePrice ?? item.price,
-              priceOverride: item.priceOverride,
-              overrideReason: item.overrideReason,
-              total: item.price * item.quantity,
-              coupon: item.coupon
-                ? {
-                    code: item.coupon.code,
-                    name: item.coupon.name,
-                    type: item.coupon.type,
-                    value: item.coupon.value,
-                  }
-                : null,
-            })),
-            subtotal: receiptData.subtotal,
-            discount: receiptData.discount,
-            total: receiptData.total,
-            paymentMethod: receiptData.paymentMethod,
-            timestamp: receiptData.timestamp.toISOString(),
-            staffName: receiptData.staffName,
-          },
         }),
       });
 

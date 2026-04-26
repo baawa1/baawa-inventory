@@ -37,6 +37,7 @@ export async function GET(request: NextRequest) {
       searchParams.get('limit') || defaultLimit.toString(),
       10
     );
+    const includeUsers = searchParams.get('includeUsers') === 'true';
     const fieldsParam = searchParams.get('fields')?.trim();
     const fields = fieldsParam || (searchQuery ? 'basic' : 'full');
     const useBasicFields = fields === 'basic';
@@ -377,7 +378,7 @@ export async function GET(request: NextRequest) {
     // as customer fields have been moved to dedicated Customer table
 
     // 3. Search in users table (staff/employees)
-    if (searchQuery) {
+    if (searchQuery && includeUsers) {
       const userSearchConditions: Prisma.UserWhereInput[] = [];
 
       if (isPhoneSearch) {
@@ -498,7 +499,7 @@ export async function GET(request: NextRequest) {
       results.push(...userData);
     }
 
-    // Sort results with exact matches first, then by type (users first), then by rank
+    // Sort results with exact matches first, then prioritize customer records
     const sortedResults = results.sort((a, b) => {
       // Prioritize exact matches
       if (isPhoneSearch) {
@@ -521,9 +522,8 @@ export async function GET(request: NextRequest) {
         if (!aExactMatch && bExactMatch) return 1;
       }
 
-      // Then prioritize users (staff) over customers
-      if (a.type === 'user' && b.type === 'customer') return -1;
-      if (a.type === 'customer' && b.type === 'user') return 1;
+      if (a.type === 'customer' && b.type === 'user') return -1;
+      if (a.type === 'user' && b.type === 'customer') return 1;
 
       // Then sort by rank
       return (a.rank || 0) - (b.rank || 0);
