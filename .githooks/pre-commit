@@ -1,0 +1,14 @@
+#!/bin/sh
+
+set -eu
+
+blocked_files=$(
+  git diff --cached --name-only --diff-filter=ACMR | grep '^backups/' || true
+)
+
+if [ -n "$blocked_files" ]; then
+  echo "Commit blocked: backup artifacts are staged."
+  echo "$blocked_files"
+  echo "Keep backup files outside the repository or leave them untracked."
+  exit 1
+fi

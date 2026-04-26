@@ -47,6 +47,9 @@ temp_db_url.txt
 # deployment checklists with sensitive data
 TESTING_AND_DEPLOYMENT_CHECKLIST.md
 
+# local backup/export artifacts
+/backups/
+
 # vercel
 .vercel
 
