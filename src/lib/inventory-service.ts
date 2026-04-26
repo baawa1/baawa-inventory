@@ -1,7 +1,7 @@
 import { prisma } from '@/lib/db';
 import { createAuditLog } from '@/lib/audit';
 import { AuditLogAction } from '@/types/audit';
-import { Prisma } from '@prisma/client';
+import { Prisma, StockTransactionType } from '@prisma/client';
 import { ProductStatus } from '@/lib/constants';
 
 // ===== TYPE DEFINITIONS =====
@@ -62,6 +62,14 @@ export interface LowStockOptions {
   brandId?: number;
   supplierId?: number;
   threshold?: number;
+}
+
+function toAuditJson(value: unknown): Prisma.InputJsonValue | null {
+  if (value === undefined || value === null) {
+    return null;
+  }
+
+  return JSON.parse(JSON.stringify(value)) as Prisma.InputJsonValue;
 }
 
 // ===== INVENTORY SERVICE CLASS =====
@@ -837,21 +845,250 @@ export class InventoryService {
   }
 
   /**
-   * Void a sales transaction and restore product stock
+   * Delete a sales transaction, restore stock, and leave an audit trail
    * @param id The ID of the sales transaction
-   * @param userId The ID of the user voiding the transaction
-   * @param reason The reason for voiding
-   * @returns The voided sales transaction
+   * @param userId The ID of the user deleting the transaction
+   * @param reason The reason for deleting the transaction
+   * @returns Summary of the deleted transaction
    */
-  static async voidSalesTransaction(
-    _id: number,
-    _userId: number,
-    _reason: string
+  static async deleteSalesTransaction(
+    id: number,
+    userId: number,
+    reason: string
   ) {
-    // TODO: Fix this method to work with the actual SalesTransaction schema
-    // The current implementation assumes fields that don't exist in the schema
-    throw new Error(
-      'voidSalesTransaction method needs to be updated for current schema'
-    );
+    const trimmedReason = reason.trim();
+
+    if (!trimmedReason) {
+      throw new Error('Delete reason is required');
+    }
+
+    return await prisma.$transaction(async tx => {
+      const existingTransaction = (await tx.salesTransaction.findUnique({
+        where: { id },
+        include: {
+          users: {
+            select: {
+              id: true,
+              email: true,
+              firstName: true,
+              lastName: true,
+            },
+          },
+          customer: {
+            select: {
+              id: true,
+              name: true,
+              email: true,
+              phone: true,
+              city: true,
+              state: true,
+              customerType: true,
+            },
+          },
+          sales_items: {
+            include: {
+              products: {
+                select: {
+                  id: true,
+                  name: true,
+                  sku: true,
+                  stock: true,
+                  isService: true,
+                },
+              },
+              coupon: {
+                select: {
+                  id: true,
+                  code: true,
+                  name: true,
+                  currentUses: true,
+                },
+              },
+            },
+          },
+          split_payments: true,
+          transaction_payments: {
+            include: {
+              recordedBy: {
+                select: {
+                  id: true,
+                  firstName: true,
+                  lastName: true,
+                  email: true,
+                },
+              },
+            },
+          },
+          transaction_fees: true,
+        } as any,
+      })) as any;
+
+      if (!existingTransaction) {
+        throw new Error('Sales transaction not found');
+      }
+
+      const itemsByProductId = new Map<
+        number,
+        {
+          quantity: number;
+          product: {
+            id: number;
+            name: string;
+            sku: string;
+            stock: number;
+            isService: boolean;
+          };
+        }
+      >();
+
+      for (const item of existingTransaction.sales_items) {
+        const product = item.products;
+
+        if (!product || product.isService) {
+          continue;
+        }
+
+        const current = itemsByProductId.get(product.id);
+        if (current) {
+          current.quantity += item.quantity;
+          continue;
+        }
+
+        itemsByProductId.set(product.id, {
+          quantity: item.quantity,
+          product: {
+            id: product.id,
+            name: product.name,
+            sku: product.sku,
+            stock: product.stock,
+            isService: product.isService,
+          },
+        });
+      }
+
+      const stockRestorations: Array<{
+        productId: number;
+        productName: string;
+        sku: string;
+        quantity: number;
+        previousStock: number;
+        newStock: number;
+      }> = [];
+
+      for (const { quantity, product } of itemsByProductId.values()) {
+        const previousStock = product.stock ?? 0;
+        const newStock = previousStock + quantity;
+
+        await tx.product.update({
+          where: { id: product.id },
+          data: {
+            stock: {
+              increment: quantity,
+            },
+          },
+        });
+
+        stockRestorations.push({
+          productId: product.id,
+          productName: product.name,
+          sku: product.sku,
+          quantity,
+          previousStock,
+          newStock,
+        });
+      }
+
+      if (stockRestorations.length > 0) {
+        await tx.stockTransaction.createMany({
+          data: stockRestorations.map(restoration => ({
+            productId: restoration.productId,
+            quantity: restoration.quantity,
+            type: StockTransactionType.RETURN,
+            referenceType: 'SalesTransaction',
+            referenceId: existingTransaction.id,
+            reason: `Deleted sale reversal: ${existingTransaction.transaction_number}`,
+            userId,
+            previousStock: restoration.previousStock,
+            newStock: restoration.newStock,
+          })),
+        });
+      }
+
+      const couponId =
+        existingTransaction.sales_items.find(
+          (item: { coupon_id?: number | null }) => item.coupon_id
+        )?.coupon_id ?? null;
+
+      let couponReversed: { id: number; previousUses: number; newUses: number } | null =
+        null;
+
+      if (couponId) {
+        const coupon = await tx.coupon.findUnique({
+          where: { id: couponId },
+          select: {
+            id: true,
+            currentUses: true,
+          },
+        });
+
+        if (coupon) {
+          const newUses = Math.max(0, coupon.currentUses - 1);
+
+          await tx.coupon.update({
+            where: { id: couponId },
+            data: {
+              currentUses: newUses,
+            },
+          });
+
+          couponReversed = {
+            id: coupon.id,
+            previousUses: coupon.currentUses,
+            newUses,
+          };
+        }
+      }
+
+      const deletedAt = new Date();
+
+      await createAuditLog({
+        tx,
+        userId,
+        action: AuditLogAction.SALE_VOIDED,
+        tableName: 'sales_transactions',
+        recordId: existingTransaction.id,
+        oldValues: toAuditJson(existingTransaction),
+        newValues: toAuditJson({
+          deleted: true,
+          deletedAt: deletedAt.toISOString(),
+          deletedBy: userId,
+          reason: trimmedReason,
+          transactionNumber: existingTransaction.transaction_number,
+          stockRestorations,
+          couponReversed,
+        }),
+      });
+
+      await tx.salesTransaction.delete({
+        where: { id: existingTransaction.id },
+      });
+
+      return {
+        id: existingTransaction.id,
+        transactionNumber: existingTransaction.transaction_number,
+        deletedAt,
+        deletedBy: userId,
+        reason: trimmedReason,
+        stockRestorations,
+        couponReversed,
+      };
+    });
+  }
+
+  /**
+   * Backward-compatible wrapper for the former void flow.
+   */
+  static async voidSalesTransaction(id: number, userId: number, reason: string) {
+    return this.deleteSalesTransaction(id, userId, reason);
   }
 }

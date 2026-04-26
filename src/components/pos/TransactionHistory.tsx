@@ -6,6 +6,7 @@
 'use client';
 
 import React, { useState, useMemo, useCallback, useEffect } from 'react';
+import { useQueryClient } from '@tanstack/react-query';
 import { useSession } from 'next-auth/react';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
@@ -20,6 +21,7 @@ import {
   IconEye,
   IconDownload,
   IconRefresh,
+  IconTrash,
   IconCash,
   IconCreditCard,
   IconBuildingBank,
@@ -56,6 +58,7 @@ import {
 } from '@/components/ui/select';
 import { Textarea } from '@/components/ui/textarea';
 import { formatPaymentMethodLabel } from '@/lib/utils/payment-methods';
+import { queryKeys } from '@/lib/query-client';
 
 interface TransactionCoupon {
   id: number;
@@ -175,7 +178,8 @@ interface GroupedTransactions {
 }
 
 export function TransactionHistory() {
-  const { data: _ } = useSession();
+  const { data: session } = useSession();
+  const queryClient = useQueryClient();
   const { handleError: _handleError } = usePOSErrorHandler();
   const [transactions, setTransactions] = useState<Transaction[]>([]);
   const [loading, setLoading] = useState(true);
@@ -194,6 +198,11 @@ export function TransactionHistory() {
     () => new Date().toISOString().split('T')[0]
   );
   const [submittingPayment, setSubmittingPayment] = useState(false);
+  const [deleteDialogOpen, setDeleteDialogOpen] = useState(false);
+  const [deleteReason, setDeleteReason] = useState('');
+  const [deletingTransaction, setDeletingTransaction] = useState(false);
+
+  const isAdmin = session?.user?.role === 'ADMIN';
 
   // Date range state - default to last 30 days
   const [dateRange, setDateRange] = useState<DateRange | undefined>({
@@ -337,6 +346,63 @@ export function TransactionHistory() {
     window.URL.revokeObjectURL(url);
     toast.success('Transactions exported successfully');
   };
+
+  const handleDeleteTransaction = useCallback(async () => {
+    if (!selectedTransaction) {
+      return;
+    }
+
+    const reason = deleteReason.trim();
+    if (!reason) {
+      toast.error('Enter a reason for deleting this transaction');
+      return;
+    }
+
+    setDeletingTransaction(true);
+
+    try {
+      const response = await fetch(`/api/sales/${selectedTransaction.id}`, {
+        method: 'DELETE',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({ reason }),
+      });
+
+      const payload = await response.json().catch(() => null);
+
+      if (!response.ok) {
+        throw new Error(payload?.error || 'Failed to delete transaction');
+      }
+
+      setTransactions(current =>
+        current.filter(transaction => transaction.id !== selectedTransaction.id)
+      );
+      setError(null);
+      setLoading(false);
+      setSelectedTransactionId(null);
+      setDeleteReason('');
+      setDeleteDialogOpen(false);
+
+      await loadTransactions();
+      await Promise.all([
+        queryClient.invalidateQueries({ queryKey: queryKeys.products.all }),
+        queryClient.invalidateQueries({ queryKey: queryKeys.pos.products() }),
+        queryClient.invalidateQueries({ queryKey: queryKeys.inventory.all }),
+        queryClient.invalidateQueries({ queryKey: queryKeys.transactions.all }),
+      ]);
+      toast.success('Transaction deleted successfully');
+    } catch (deleteError) {
+      console.error(deleteError);
+      toast.error(
+        deleteError instanceof Error
+          ? deleteError.message
+          : 'Failed to delete transaction'
+      );
+    } finally {
+      setDeletingTransaction(false);
+    }
+  }, [deleteReason, loadTransactions, queryClient, selectedTransaction]);
 
   // Render order item
   const renderOrderItem = (transaction: Transaction) => {
@@ -743,6 +809,20 @@ export function TransactionHistory() {
                 Record Payment
               </Button>
             )}
+            {isAdmin && (
+              <Button
+                variant="outline"
+                className="w-full border-red-200 text-red-600 hover:bg-red-50 hover:text-red-700"
+                onClick={() => {
+                  setDeleteReason('');
+                  setDeleteDialogOpen(true);
+                }}
+                disabled={deletingTransaction}
+              >
+                <IconTrash className="mr-2 h-4 w-4" />
+                Delete Transaction
+              </Button>
+            )}
           </div>
         </div>
       </div>
@@ -1056,6 +1136,68 @@ export function TransactionHistory() {
               disabled={submittingPayment}
             >
               {submittingPayment ? 'Recording...' : 'Record Payment'}
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+
+      <Dialog
+        open={deleteDialogOpen}
+        onOpenChange={open => {
+          if (deletingTransaction) {
+            return;
+          }
+
+          setDeleteDialogOpen(open);
+          if (!open) {
+            setDeleteReason('');
+          }
+        }}
+      >
+        <DialogContent>
+          <DialogHeader>
+            <DialogTitle>Delete Transaction</DialogTitle>
+            <DialogDescription>
+              This permanently removes the sale from transaction history and all
+              normal sales views.
+            </DialogDescription>
+          </DialogHeader>
+          <div className="space-y-4">
+            {selectedTransaction && (
+              <div className="rounded-md border border-red-200 bg-red-50 p-3 text-sm text-red-700">
+                Deleting order #{selectedTransaction.transactionNumber} will
+                restore stock, reverse coupon usage, remove the sale from
+                history, and keep audit and stock trace records.
+              </div>
+            )}
+            <div>
+              <Label htmlFor="delete-transaction-reason">Reason</Label>
+              <Textarea
+                id="delete-transaction-reason"
+                rows={4}
+                value={deleteReason}
+                onChange={event => setDeleteReason(event.target.value)}
+                placeholder="Explain why this transaction is being deleted"
+              />
+            </div>
+          </div>
+          <DialogFooter className="mt-4 flex items-center justify-between gap-2">
+            <Button
+              variant="outline"
+              onClick={() => {
+                setDeleteDialogOpen(false);
+                setDeleteReason('');
+              }}
+              disabled={deletingTransaction}
+            >
+              Cancel
+            </Button>
+            <Button
+              variant="destructive"
+              onClick={handleDeleteTransaction}
+              disabled={deletingTransaction}
+            >
+              {deletingTransaction ? 'Deleting...' : 'Delete Transaction'}
             </Button>
           </DialogFooter>
         </DialogContent>

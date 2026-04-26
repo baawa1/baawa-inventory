@@ -1,6 +1,6 @@
 import { auth } from '#root/auth';
 import { NextRequest, NextResponse } from 'next/server';
-import { canAccessPOS } from '@/lib/auth/roles';
+import { canAccessPOS, USER_ROLES } from '@/lib/auth/roles';
 import { InventoryService } from '@/lib/inventory-service';
 import { transformDatabaseResponse } from '@/lib/api-response';
 
@@ -162,7 +162,7 @@ export async function PATCH(request: NextRequest, { params }: RouteParams) {
   }
 }
 
-// DELETE /api/sales/[id] - Void a sales transaction
+// DELETE /api/sales/[id] - Delete a sales transaction
 export async function DELETE(request: NextRequest, { params }: RouteParams) {
   try {
     const session = await auth();
@@ -171,13 +171,17 @@ export async function DELETE(request: NextRequest, { params }: RouteParams) {
       return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
     }
 
-    // Check if user has required permissions
-    if (!canAccessPOS(session.user.role)) {
-      return NextResponse.json({ error: 'Forbidden' }, { status: 403 });
+    if (session.user.role !== USER_ROLES.ADMIN) {
+      return NextResponse.json(
+        { error: 'Only administrators can delete sales transactions' },
+        { status: 403 }
+      );
     }
 
     const { id } = await params;
-    const { reason } = await request.json();
+    const body = await request.json().catch(() => ({}));
+    const reason =
+      typeof body?.reason === 'string' ? body.reason.trim() : '';
 
     // Validate ID
     const salesId = parseInt(id);
@@ -190,25 +194,29 @@ export async function DELETE(request: NextRequest, { params }: RouteParams) {
 
     if (!reason) {
       return NextResponse.json(
-        { error: 'Void reason is required' },
+        { error: 'Delete reason is required' },
         { status: 400 }
       );
     }
 
-    const voidedTransaction = await InventoryService.voidSalesTransaction(
+    const deletedTransaction = await InventoryService.deleteSalesTransaction(
       salesId,
       parseInt(session.user.id),
       reason
     );
 
     return NextResponse.json({
-      data: voidedTransaction,
-      message: 'Sales transaction voided successfully',
+      data: deletedTransaction,
+      message: 'Sales transaction deleted successfully',
     });
   } catch (error) {
     console.error('Error in DELETE /api/sales/[id]:', error);
 
     if (error instanceof Error) {
+      if (error.message === 'Sales transaction not found') {
+        return NextResponse.json({ error: error.message }, { status: 404 });
+      }
+
       return NextResponse.json({ error: error.message }, { status: 400 });
     }
 
