@@ -2,7 +2,6 @@
 
 import React, { useState, useMemo, useCallback } from 'react';
 import Link from 'next/link';
-import { useRouter } from 'next/navigation';
 import { toast } from 'sonner';
 
 // Hooks
@@ -18,7 +17,6 @@ import { usePermissions } from '@/hooks/usePermissions';
 
 // UI Components
 import { Button } from '@/components/ui/button';
-import { Badge } from '@/components/ui/badge';
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -38,7 +36,10 @@ import {
 
 // Mobile-optimized components
 import { DashboardPageLayout } from '@/components/layouts/DashboardPageLayout';
-import { MobileDashboardFiltersBar, FilterConfig } from '@/components/layouts/MobileDashboardFiltersBar';
+import {
+  MobileDashboardFiltersBar,
+  FilterConfig,
+} from '@/components/layouts/MobileDashboardFiltersBar';
 import { MobileDashboardTable } from '@/components/layouts/MobileDashboardTable';
 
 // Custom Components
@@ -55,13 +56,11 @@ import {
   IconMail,
   IconTruck,
   IconX,
-  IconAlertTriangle,
   IconWorld,
 } from '@tabler/icons-react';
 
 // Utils and Types
 import { formatDate } from '@/lib/utils';
-import { ErrorHandlers } from '@/lib/utils/error-handling';
 import { SortOption, PaginationState } from '@/types/inventory';
 
 interface User {
@@ -79,7 +78,6 @@ interface MobileSupplierListProps {
 
 interface SupplierFilters {
   search: string;
-  status: string;
   sortBy: string;
   sortOrder: 'asc' | 'desc';
 }
@@ -91,12 +89,15 @@ const SORT_OPTIONS: SortOption[] = [
   { value: 'createdAt-asc', label: 'Oldest First' },
 ];
 
-const MobileSupplierList = ({ user }: MobileSupplierListProps) => {
-  const router = useRouter();
+const MobileSupplierList = ({ user: _user }: MobileSupplierListProps) => {
   const [deleteDialogOpen, setDeleteDialogOpen] = useState(false);
-  const [supplierToDelete, setSupplierToDelete] = useState<APISupplier | null>(null);
+  const [supplierToDelete, setSupplierToDelete] = useState<APISupplier | null>(
+    null
+  );
   const [detailModalOpen, setDetailModalOpen] = useState(false);
-  const [selectedSupplierId, setSelectedSupplierId] = useState<number | null>(null);
+  const [selectedSupplierId, setSelectedSupplierId] = useState<number | null>(
+    null
+  );
 
   const [pagination, setPagination] = useState<PaginationState>({
     page: 1,
@@ -104,7 +105,11 @@ const MobileSupplierList = ({ user }: MobileSupplierListProps) => {
     totalPages: 1,
     totalItems: 0,
   });
-  const [visibleColumns, setVisibleColumns] = useState<string[]>(['name', 'status', 'contact', 'products', 'createdAt']);
+  const [visibleColumns, setVisibleColumns] = useState<string[]>(
+    SUPPLIER_COLUMNS.filter(
+      column => column.defaultVisible || column.required
+    ).map(column => column.key)
+  );
 
   // Get permissions using centralized hook
   const permissions = usePermissions();
@@ -112,7 +117,6 @@ const MobileSupplierList = ({ user }: MobileSupplierListProps) => {
 
   const [filters, setFilters] = useState<SupplierFilters>({
     search: '',
-    status: '',
     sortBy: 'createdAt',
     sortOrder: 'desc',
   });
@@ -124,7 +128,6 @@ const MobileSupplierList = ({ user }: MobileSupplierListProps) => {
   // TanStack Query hooks
   const suppliersQuery = useSuppliers({
     search: debouncedSearchTerm,
-    status: filters.status,
     sortBy: filters.sortBy,
     sortOrder: filters.sortOrder,
     page: pagination.page,
@@ -146,22 +149,7 @@ const MobileSupplierList = ({ user }: MobileSupplierListProps) => {
     });
   }, []);
 
-  // Filter configurations
-  const filterConfigs: FilterConfig[] = useMemo(
-    () => [
-      {
-        key: 'status',
-        label: 'Status',
-        type: 'select',
-        options: [
-          { value: 'ACTIVE', label: 'Active' },
-          { value: 'INACTIVE', label: 'Inactive' },
-        ],
-        placeholder: 'All Status',
-      },
-    ],
-    []
-  );
+  const filterConfigs: FilterConfig[] = useMemo(() => [], []);
 
   const handleFilterChange = (key: string, value: string | boolean) => {
     setFilters(prev => {
@@ -175,7 +163,6 @@ const MobileSupplierList = ({ user }: MobileSupplierListProps) => {
   const handleResetFilters = () => {
     setFilters({
       search: '',
-      status: '',
       sortBy: 'createdAt',
       sortOrder: 'desc',
     });
@@ -213,79 +200,90 @@ const MobileSupplierList = ({ user }: MobileSupplierListProps) => {
       } catch (error) {
         // Error is already logged by global mutation handler
         // Just show user-friendly toast message
-        const errorMessage = error instanceof Error ? error.message : 'Failed to delete supplier';
+        const errorMessage =
+          error instanceof Error ? error.message : 'Failed to delete supplier';
         toast.error(errorMessage);
       }
     },
     [deleteSupplierMutation, suppliersQuery]
   );
 
-  const getStatusBadge = (status: string) => {
-    return status === 'ACTIVE' ? (
-      <Badge variant="default" className="bg-green-500">
-        Active
-      </Badge>
-    ) : (
-      <Badge variant="secondary">Inactive</Badge>
-    );
-  };
-
   const renderCell = (supplier: APISupplier, columnKey: string) => {
     switch (columnKey) {
       case 'name':
         return (
           <div className="min-w-0">
-            <div className="font-medium truncate">{supplier.name}</div>
-            {supplier.contactPerson && !visibleColumns.includes('contactPerson') && (
-              <div className="text-xs sm:text-sm text-muted-foreground truncate">
-                Contact: {supplier.contactPerson}
-              </div>
-            )}
+            <div className="truncate font-medium">{supplier.name}</div>
+            {supplier.contactPerson &&
+              !visibleColumns.includes('contactPerson') && (
+                <div className="text-muted-foreground truncate text-xs sm:text-sm">
+                  Contact: {supplier.contactPerson}
+                </div>
+              )}
           </div>
         );
       case 'contactPerson':
         return supplier.contactPerson ? (
           <span className="text-xs sm:text-sm">{supplier.contactPerson}</span>
         ) : (
-          <span className="text-xs sm:text-sm text-muted-foreground">-</span>
+          <span className="text-muted-foreground text-xs sm:text-sm">-</span>
         );
-      case 'contact':
-        return (
+      case 'email':
+        return supplier.email ? (
+          <a
+            href={`mailto:${supplier.email}`}
+            className="flex items-center gap-1 text-xs text-blue-600 hover:underline sm:text-sm"
+          >
+            <IconMail className="h-3 w-3" />
+            <span className="truncate">{supplier.email}</span>
+          </a>
+        ) : (
+          <span className="text-muted-foreground text-xs sm:text-sm">-</span>
+        );
+      case 'phone':
+        return supplier.phone ? (
+          <a
+            href={`tel:${supplier.phone}`}
+            className="flex items-center gap-1 text-xs hover:underline sm:text-sm"
+          >
+            <IconPhone className="h-3 w-3" />
+            <span>{supplier.phone}</span>
+          </a>
+        ) : (
+          <span className="text-muted-foreground text-xs sm:text-sm">-</span>
+        );
+      case 'address':
+        return supplier.address ? (
           <div className="text-xs sm:text-sm">
-            {supplier.phone && (
-              <div className="flex items-center gap-1 mb-1">
-                <IconPhone className="h-3 w-3" />
-                <span>{supplier.phone}</span>
-              </div>
-            )}
-            {supplier.email && (
-              <div className="flex items-center gap-1">
-                <IconMail className="h-3 w-3" />
-                <span>{supplier.email}</span>
+            <div className="truncate">
+              {supplier.address.length > 30
+                ? `${supplier.address.substring(0, 30)}...`
+                : supplier.address}
+            </div>
+            {(supplier.city || supplier.state) && (
+              <div className="text-muted-foreground">
+                {[supplier.city, supplier.state].filter(Boolean).join(', ')}
               </div>
             )}
           </div>
+        ) : (
+          <span className="text-muted-foreground text-xs sm:text-sm">-</span>
         );
-      case 'location':
+      case 'city':
         return (
-          <div className="text-xs sm:text-sm">
-            {supplier.address && <div>{supplier.address.length > 20 ? `${supplier.address.substring(0, 20)}...` : supplier.address}</div>}
-            {supplier.city && supplier.state && (
-              <div>{supplier.city}, {supplier.state}</div>
-            )}
-          </div>
+          <span className="text-xs sm:text-sm">{supplier.city || '-'}</span>
         );
-      case 'products':
-        return <span className="text-xs sm:text-sm font-medium">{supplier._count?.products || 0}</span>;
-      case 'status':
-        return getStatusBadge('ACTIVE'); // Default to active for now
+      case 'state':
+        return (
+          <span className="text-xs sm:text-sm">{supplier.state || '-'}</span>
+        );
       case 'website':
         return supplier.website ? (
-          <a 
-            href={supplier.website} 
-            target="_blank" 
+          <a
+            href={supplier.website}
+            target="_blank"
             rel="noopener noreferrer"
-            className="text-xs sm:text-sm text-blue-600 hover:underline flex items-center gap-1"
+            className="flex items-center gap-1 text-xs text-blue-600 hover:underline sm:text-sm"
           >
             <IconWorld className="h-3 w-3" />
             Website
@@ -294,9 +292,27 @@ const MobileSupplierList = ({ user }: MobileSupplierListProps) => {
           <span className="text-xs sm:text-sm">-</span>
         );
       case 'createdAt':
-        return <span className="text-xs sm:text-sm">{supplier.createdAt ? formatDate(supplier.createdAt) : '-'}</span>;
+        return (
+          <span className="text-xs sm:text-sm">
+            {supplier.createdAt ? formatDate(supplier.createdAt) : '-'}
+          </span>
+        );
       case 'updatedAt':
-        return <span className="text-xs sm:text-sm">{supplier.updatedAt ? formatDate(supplier.updatedAt) : '-'}</span>;
+        return (
+          <span className="text-xs sm:text-sm">
+            {supplier.updatedAt ? formatDate(supplier.updatedAt) : '-'}
+          </span>
+        );
+      case 'notes':
+        return supplier.notes ? (
+          <span className="text-xs sm:text-sm">
+            {supplier.notes.length > 30
+              ? `${supplier.notes.substring(0, 30)}...`
+              : supplier.notes}
+          </span>
+        ) : (
+          <span className="text-muted-foreground text-xs sm:text-sm">-</span>
+        );
       default:
         return <span className="text-xs sm:text-sm">-</span>;
     }
@@ -352,24 +368,28 @@ const MobileSupplierList = ({ user }: MobileSupplierListProps) => {
     <div className="flex items-center gap-3">
       {/* Supplier Icon */}
       <div className="flex-shrink-0">
-        <div className="h-10 w-10 bg-orange-100 rounded-md flex items-center justify-center">
+        <div className="flex h-10 w-10 items-center justify-center rounded-md bg-orange-100">
           <IconTruck className="h-5 w-5 text-orange-600" />
         </div>
       </div>
       {/* Supplier Name */}
-      <span className="text-sm font-semibold flex-1 min-w-0 truncate">
+      <span className="min-w-0 flex-1 truncate text-sm font-semibold">
         {supplier.name}
       </span>
     </div>
   );
 
   const mobileCardSubtitle = (supplier: APISupplier) => (
-    <div className="flex items-center gap-2 text-xs text-muted-foreground">
+    <div className="text-muted-foreground flex items-center gap-2 text-xs">
       <span>{supplier._count?.products || 0} products</span>
       {supplier.contactPerson && (
         <>
           <span>•</span>
-          <span className="truncate max-w-[120px]">{supplier.contactPerson.length > 15 ? `${supplier.contactPerson.substring(0, 15)}...` : supplier.contactPerson}</span>
+          <span className="max-w-[120px] truncate">
+            {supplier.contactPerson.length > 15
+              ? `${supplier.contactPerson.substring(0, 15)}...`
+              : supplier.contactPerson}
+          </span>
         </>
       )}
       {supplier.city && (
@@ -387,7 +407,9 @@ const MobileSupplierList = ({ user }: MobileSupplierListProps) => {
       const apiPagination = suppliersQuery.data.pagination;
       setPagination(prev => ({
         ...prev,
-        totalPages: apiPagination.totalPages || Math.ceil((apiPagination.totalSuppliers || 0) / prev.limit),
+        totalPages:
+          apiPagination.totalPages ||
+          Math.ceil((apiPagination.totalSuppliers || 0) / prev.limit),
         totalItems: apiPagination.totalSuppliers || 0,
       }));
     }
@@ -449,7 +471,9 @@ const MobileSupplierList = ({ user }: MobileSupplierListProps) => {
             onPageChange={handlePageChange}
             onPageSizeChange={handlePageSizeChange}
             isLoading={suppliersQuery.isLoading}
-            isRefetching={suppliersQuery.isFetching && !suppliersQuery.isLoading}
+            isRefetching={
+              suppliersQuery.isFetching && !suppliersQuery.isLoading
+            }
             error={suppliersQuery.error?.message}
             onRetry={() => suppliersQuery.refetch()}
             emptyStateIcon={
@@ -459,7 +483,9 @@ const MobileSupplierList = ({ user }: MobileSupplierListProps) => {
             emptyStateAction={
               canManageSuppliers ? (
                 <Button asChild>
-                  <Link href="/inventory/suppliers/add">Add Your First Supplier</Link>
+                  <Link href="/inventory/suppliers/add">
+                    Add Your First Supplier
+                  </Link>
                 </Button>
               ) : undefined
             }
@@ -475,8 +501,8 @@ const MobileSupplierList = ({ user }: MobileSupplierListProps) => {
             <AlertDialogHeader>
               <AlertDialogTitle>Delete Supplier</AlertDialogTitle>
               <AlertDialogDescription>
-                Are you sure you want to delete "{supplierToDelete?.name}"?
-                This action cannot be undone and may affect associated products.
+                Are you sure you want to delete "{supplierToDelete?.name}"? This
+                action cannot be undone and may affect associated products.
               </AlertDialogDescription>
             </AlertDialogHeader>
             <AlertDialogFooter>

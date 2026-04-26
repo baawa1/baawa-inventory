@@ -32,7 +32,7 @@ export function useEditProductData(productId: number) {
   const product = useProduct(productId);
   const categories = useCategoriesWithHierarchy();
   const brands = useBrands({ status: 'true' });
-  const suppliers = useSuppliers({ isActive: true, limit: 1000 });
+  const suppliers = useSuppliers({ limit: 1000 });
 
   // Combine loading states
   const loading =

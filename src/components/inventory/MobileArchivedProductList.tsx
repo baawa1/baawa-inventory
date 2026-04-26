@@ -4,6 +4,8 @@ import React, { useState, useMemo, useCallback } from 'react';
 import Link from 'next/link';
 import { toast } from 'sonner';
 import { useDebounce } from '@/hooks/useDebounce';
+import { useBrands } from '@/hooks/api/brands';
+import { useCategoriesWithHierarchy } from '@/hooks/api/categories';
 import {
   useArchivedProducts,
   useUnarchiveProduct,
@@ -12,7 +14,10 @@ import {
 
 // Mobile-optimized components
 import { DashboardPageLayout } from '@/components/layouts/DashboardPageLayout';
-import { MobileDashboardFiltersBar, FilterConfig } from '@/components/layouts/MobileDashboardFiltersBar';
+import {
+  MobileDashboardFiltersBar,
+  FilterConfig,
+} from '@/components/layouts/MobileDashboardFiltersBar';
 import { MobileDashboardTable } from '@/components/layouts/MobileDashboardTable';
 
 import { Button } from '@/components/ui/button';
@@ -65,9 +70,12 @@ interface MobileArchivedProductListProps {
   user: User;
 }
 
-export function MobileArchivedProductList({ user }: MobileArchivedProductListProps) {
+export function MobileArchivedProductList({
+  user,
+}: MobileArchivedProductListProps) {
   const [unarchiveDialogOpen, setUnarchiveDialogOpen] = useState(false);
-  const [productToUnarchive, setProductToUnarchive] = useState<APIProduct | null>(null);
+  const [productToUnarchive, setProductToUnarchive] =
+    useState<APIProduct | null>(null);
 
   const [pagination, setPagination] = useState({
     page: 1,
@@ -123,12 +131,16 @@ export function MobileArchivedProductList({ user }: MobileArchivedProductListPro
   );
 
   const unarchiveProductMutation = useUnarchiveProduct();
+  const brandsQuery = useBrands();
+  const categoriesQuery = useCategoriesWithHierarchy();
 
   // Extract data
   const products = useMemo(
     () => archivedProductsQuery.data?.data || [],
     [archivedProductsQuery.data?.data]
   );
+  const brands = brandsQuery.data?.data || [];
+  const categories = categoriesQuery.data?.data || [];
 
   // Column configuration with bold headers
   const columns = useMemo(
@@ -190,6 +202,24 @@ export function MobileArchivedProductList({ user }: MobileArchivedProductListPro
     []
   );
 
+  const categoryOptions = useMemo(
+    () =>
+      categories.map(category => ({
+        value: String(category.id),
+        label: formatCategoryHierarchy(category),
+      })),
+    [categories]
+  );
+
+  const brandOptions = useMemo(
+    () =>
+      brands.map(brand => ({
+        value: String(brand.id),
+        label: brand.name,
+      })),
+    [brands]
+  );
+
   // Filter configurations
   const filterConfigs: FilterConfig[] = useMemo(
     () => [
@@ -197,18 +227,18 @@ export function MobileArchivedProductList({ user }: MobileArchivedProductListPro
         key: 'categoryId',
         label: 'Categories',
         type: 'select',
-        options: [],
+        options: categoryOptions,
         placeholder: 'All Categories',
       },
       {
         key: 'brandId',
         label: 'Brands',
         type: 'select',
-        options: [],
+        options: brandOptions,
         placeholder: 'All Brands',
       },
     ],
-    []
+    [brandOptions, categoryOptions]
   );
 
   // Handle filter changes
@@ -245,7 +275,9 @@ export function MobileArchivedProductList({ user }: MobileArchivedProductListPro
 
     unarchiveProductMutation.mutate(productToUnarchive.id, {
       onSuccess: () => {
-        toast.success(`Product "${productToUnarchive.name}" has been unarchived`);
+        toast.success(
+          `Product "${productToUnarchive.name}" has been unarchived`
+        );
         archivedProductsQuery.refetch();
         setUnarchiveDialogOpen(false);
         setProductToUnarchive(null);
@@ -269,83 +301,78 @@ export function MobileArchivedProductList({ user }: MobileArchivedProductListPro
 
   // Get status badge
   const getStatusBadge = (status: APIProduct['status']) => {
-    return <Badge variant="secondary" className="text-xs">Archived</Badge>;
+    return (
+      <Badge variant="secondary" className="text-xs">
+        Archived
+      </Badge>
+    );
   };
 
   // Render cell function
-  const renderCell = useCallback(
-    (product: APIProduct, columnKey: string) => {
-      switch (columnKey) {
-        case 'image':
-          return (
-            <div className="flex items-center justify-start">
-              <ProductImage
-                src={getProductImage(product)}
-                alt={product.name}
-                size="sm"
-                className="h-10 w-10 sm:h-12 sm:w-12"
-              />
+  const renderCell = useCallback((product: APIProduct, columnKey: string) => {
+    switch (columnKey) {
+      case 'image':
+        return (
+          <div className="flex items-center justify-start">
+            <ProductImage
+              src={getProductImage(product)}
+              alt={product.name}
+              size="sm"
+              className="h-10 w-10 sm:h-12 sm:w-12"
+            />
+          </div>
+        );
+      case 'name':
+        return (
+          <div className="min-w-0">
+            <div className="truncate text-xs font-medium sm:text-sm">
+              {product.name}
             </div>
-          );
-        case 'name':
-          return (
-            <div className="min-w-0">
-              <div className="font-medium text-xs sm:text-sm truncate">
-                {product.name}
+            {product.brand && (
+              <div className="text-muted-foreground truncate text-xs">
+                {product.brand.name}
               </div>
-              {product.brand && (
-                <div className="text-xs text-muted-foreground truncate">
-                  {product.brand.name}
-                </div>
-              )}
+            )}
+          </div>
+        );
+      case 'sku':
+        return (
+          <span className="font-mono text-xs sm:text-sm">{product.sku}</span>
+        );
+      case 'category':
+        return (
+          <span className="text-xs sm:text-sm">
+            {product.category?.name || '-'}
+          </span>
+        );
+      case 'brand':
+        return (
+          <span className="text-xs sm:text-sm">
+            {product.brand?.name || '-'}
+          </span>
+        );
+      case 'price':
+        return (
+          <span className="text-xs font-medium sm:text-sm">
+            {formatCurrency(product.price)}
+          </span>
+        );
+      case 'stock':
+        return <span className="text-xs sm:text-sm">{product.stock || 0}</span>;
+      case 'archivedAt':
+        return (
+          <div>
+            <div className="text-xs sm:text-sm">
+              {product.updatedAt
+                ? new Date(product.updatedAt).toLocaleDateString()
+                : 'Unknown'}
             </div>
-          );
-        case 'sku':
-          return (
-            <span className="font-mono text-xs sm:text-sm">
-              {product.sku}
-            </span>
-          );
-        case 'category':
-          return (
-            <span className="text-xs sm:text-sm">
-              {product.category?.name || '-'}
-            </span>
-          );
-        case 'brand':
-          return (
-            <span className="text-xs sm:text-sm">
-              {product.brand?.name || '-'}
-            </span>
-          );
-        case 'price':
-          return (
-            <span className="font-medium text-xs sm:text-sm">
-              {formatCurrency(product.price)}
-            </span>
-          );
-        case 'stock':
-          return (
-            <span className="text-xs sm:text-sm">
-              {product.stock || 0}
-            </span>
-          );
-        case 'archivedAt':
-          return (
-            <div>
-              <div className="text-xs sm:text-sm">
-                {product.updatedAt
-                  ? new Date(product.updatedAt).toLocaleDateString()
-                  : 'Unknown'}
-              </div>
-            </div>
-          );
-        default:
-          return <span className="text-xs sm:text-sm">-</span>;
-      }
-    },
-    []
-  );
+          </div>
+        );
+      default:
+        return <span className="text-xs sm:text-sm">-</span>;
+    }
+  }, []);
 
   // Render actions function
   const renderActions = useCallback(
@@ -395,14 +422,14 @@ export function MobileArchivedProductList({ user }: MobileArchivedProductListPro
           className="h-10 w-10"
         />
       </div>
-      <span className="text-sm font-semibold flex-1 min-w-0 truncate">
+      <span className="min-w-0 flex-1 truncate text-sm font-semibold">
         {product.name}
       </span>
     </div>
   );
 
   const mobileCardSubtitle = (product: APIProduct) => (
-    <div className="flex items-center gap-2 text-xs text-muted-foreground">
+    <div className="text-muted-foreground flex items-center gap-2 text-xs">
       <span className="font-mono">{product.sku}</span>
       {product.brand && (
         <>
@@ -413,7 +440,10 @@ export function MobileArchivedProductList({ user }: MobileArchivedProductListPro
       <span>•</span>
       <IconCalendar className="h-3 w-3" />
       <span>
-        Archived {product.updatedAt ? new Date(product.updatedAt).toLocaleDateString() : 'Unknown'}
+        Archived{' '}
+        {product.updatedAt
+          ? new Date(product.updatedAt).toLocaleDateString()
+          : 'Unknown'}
       </span>
     </div>
   );
@@ -422,7 +452,9 @@ export function MobileArchivedProductList({ user }: MobileArchivedProductListPro
   const currentPagination = {
     page: archivedProductsQuery.data?.pagination?.page || pagination.page,
     limit: archivedProductsQuery.data?.pagination?.limit || pagination.limit,
-    totalPages: archivedProductsQuery.data?.pagination?.totalPages || pagination.totalPages,
+    totalPages:
+      archivedProductsQuery.data?.pagination?.totalPages ||
+      pagination.totalPages,
     totalItems: archivedProductsQuery.data?.pagination?.total || 0,
   };
 
@@ -433,7 +465,10 @@ export function MobileArchivedProductList({ user }: MobileArchivedProductListPro
         description="View and manage archived products"
         actions={
           <Button asChild variant="outline">
-            <Link href="/inventory/products" className="flex items-center gap-2">
+            <Link
+              href="/inventory/products"
+              className="flex items-center gap-2"
+            >
               <IconPackages className="h-4 w-4" />
               <span className="hidden sm:inline">Back to Products</span>
               <span className="sm:hidden">Back</span>
@@ -470,7 +505,10 @@ export function MobileArchivedProductList({ user }: MobileArchivedProductListPro
             onPageChange={handlePageChange}
             onPageSizeChange={handlePageSizeChange}
             isLoading={archivedProductsQuery.isLoading}
-            isRefetching={archivedProductsQuery.isFetching && !archivedProductsQuery.isLoading}
+            isRefetching={
+              archivedProductsQuery.isFetching &&
+              !archivedProductsQuery.isLoading
+            }
             error={archivedProductsQuery.error?.message}
             onRetry={() => archivedProductsQuery.refetch()}
             emptyStateIcon={
@@ -493,7 +531,10 @@ export function MobileArchivedProductList({ user }: MobileArchivedProductListPro
       </DashboardPageLayout>
 
       {/* Unarchive Confirmation Dialog */}
-      <AlertDialog open={unarchiveDialogOpen} onOpenChange={setUnarchiveDialogOpen}>
+      <AlertDialog
+        open={unarchiveDialogOpen}
+        onOpenChange={setUnarchiveDialogOpen}
+      >
         <AlertDialogContent>
           <AlertDialogHeader>
             <AlertDialogTitle className="flex items-center gap-2">
@@ -501,7 +542,7 @@ export function MobileArchivedProductList({ user }: MobileArchivedProductListPro
               Unarchive Product
             </AlertDialogTitle>
             <AlertDialogDescription>
-              Are you sure you want to unarchive "{productToUnarchive?.name}"? 
+              Are you sure you want to unarchive "{productToUnarchive?.name}"?
               This will restore the product to your active inventory.
             </AlertDialogDescription>
           </AlertDialogHeader>
@@ -511,7 +552,9 @@ export function MobileArchivedProductList({ user }: MobileArchivedProductListPro
               onClick={handleUnarchiveProduct}
               disabled={unarchiveProductMutation.isPending}
             >
-              {unarchiveProductMutation.isPending ? 'Unarchiving...' : 'Unarchive'}
+              {unarchiveProductMutation.isPending
+                ? 'Unarchiving...'
+                : 'Unarchive'}
             </AlertDialogAction>
           </AlertDialogFooter>
         </AlertDialogContent>

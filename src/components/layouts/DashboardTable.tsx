@@ -91,6 +91,18 @@ export function DashboardTable<T = Record<string, unknown>>({
   emptyStateMessage = 'No items found',
   emptyStateAction,
 }: DashboardTableProps<T>) {
+  const resolvedVisibleColumns = React.useMemo(() => {
+    const fallbackColumns = columns
+      .filter(col => col.defaultVisible || col.required)
+      .map(col => col.key);
+    const availableColumnKeys = new Set(columns.map(col => col.key));
+    const filteredColumns = visibleColumns.filter(columnKey =>
+      availableColumnKeys.has(columnKey)
+    );
+
+    return filteredColumns.length > 0 ? filteredColumns : fallbackColumns;
+  }, [columns, visibleColumns]);
+
   return (
     <Card className="dark:bg-card bg-white px-4 lg:px-6">
       <CardHeader>
@@ -157,7 +169,7 @@ export function DashboardTable<T = Record<string, unknown>>({
               <Table>
                 <TableHeader>
                   <TableRow>
-                    {visibleColumns.map((columnKey: string) => {
+                    {resolvedVisibleColumns.map((columnKey: string) => {
                       const column = columns.find(
                         (col: DashboardTableColumn) => col.key === columnKey
                       );
@@ -175,7 +187,7 @@ export function DashboardTable<T = Record<string, unknown>>({
                 <TableBody>
                   {data.map((item: T, index: number) => (
                     <TableRow key={(item as any).id || index}>
-                      {visibleColumns.map((columnKey: string) => (
+                      {resolvedVisibleColumns.map((columnKey: string) => (
                         <TableCell key={columnKey}>
                           {renderCell(item, columnKey)}
                         </TableCell>

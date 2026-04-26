@@ -2,7 +2,7 @@
 
 import React, { useState, useEffect, useMemo } from 'react';
 import Link from 'next/link';
-import { useSearchParams } from 'next/navigation';
+import { useRouter, useSearchParams } from 'next/navigation';
 import { toast } from 'sonner';
 
 // Hooks
@@ -29,7 +29,10 @@ import {
 
 // Mobile-optimized components
 import { DashboardPageLayout } from '@/components/layouts/DashboardPageLayout';
-import { MobileDashboardFiltersBar, FilterConfig } from '@/components/layouts/MobileDashboardFiltersBar';
+import {
+  MobileDashboardFiltersBar,
+  FilterConfig,
+} from '@/components/layouts/MobileDashboardFiltersBar';
 import { MobileDashboardTable } from '@/components/layouts/MobileDashboardTable';
 
 // Custom Components
@@ -41,12 +44,12 @@ import { InlinePriceEditor } from '@/components/inventory/InlinePriceEditor';
 import { ProductImage } from '@/components/ui/product-image';
 
 // Enhanced mobile card templates
-import { 
-  MobileCardTitle, 
-  ProductIconWrapper, 
-  MobileCardSubtitle, 
+import {
+  MobileCardTitle,
+  ProductIconWrapper,
+  MobileCardSubtitle,
   MobileCardHighlight,
-  MobileCardContent 
+  MobileCardContent,
 } from '@/components/ui/mobile-card-templates';
 
 // Utils
@@ -107,6 +110,7 @@ const SORT_OPTIONS: SortOption[] = [
 ];
 
 const MobileProductList = ({ user }: MobileProductListProps) => {
+  const router = useRouter();
   const searchParams = useSearchParams();
 
   const [pagination, setPagination] = useState<PaginationState>({
@@ -224,8 +228,7 @@ const MobileProductList = ({ user }: MobileProductListProps) => {
       })),
     [brands]
   );
-  const isRefreshing =
-    productsQuery.isFetching && !productsQuery.isLoading;
+  const isRefreshing = productsQuery.isFetching && !productsQuery.isLoading;
 
   // Static status options - memoized to prevent unnecessary re-renders
   const statusOptions = useMemo(
@@ -392,7 +395,7 @@ const MobileProductList = ({ user }: MobileProductListProps) => {
   const getStockStatus = (product: APIProduct) => {
     const stock = product.stock || 0;
     const minStock = product.minStock || 0;
-    
+
     if (stock === 0) {
       return {
         icon: <IconAlertTriangle className="h-4 w-4 text-red-500" />,
@@ -428,7 +431,7 @@ const MobileProductList = ({ user }: MobileProductListProps) => {
           <button
             type="button"
             onClick={() => handleOpenProductDetail(product.id)}
-            className="flex items-center justify-start cursor-pointer hover:opacity-80 transition-opacity"
+            className="flex cursor-pointer items-center justify-start transition-opacity hover:opacity-80"
             aria-label={`View details for ${product.name}`}
           >
             <ProductImage
@@ -445,24 +448,23 @@ const MobileProductList = ({ user }: MobileProductListProps) => {
           <button
             type="button"
             onClick={() => handleOpenProductDetail(product.id)}
-            className="min-w-0 text-left cursor-pointer hover:text-blue-600 transition-colors"
+            className="min-w-0 cursor-pointer text-left transition-colors hover:text-blue-600"
             aria-label={`View details for ${product.name}`}
           >
-            <div
-              className="font-medium truncate"
-              title={product.name}
-            >
+            <div className="truncate font-medium" title={product.name}>
               {truncatedName}
             </div>
             {product.brand && (
-              <div className="text-xs sm:text-sm text-muted-foreground truncate">
+              <div className="text-muted-foreground truncate text-xs sm:text-sm">
                 {product.brand.name}
               </div>
             )}
           </button>
         );
       case 'sku':
-        return <span className="font-mono text-xs sm:text-sm">{product.sku}</span>;
+        return (
+          <span className="font-mono text-xs sm:text-sm">{product.sku}</span>
+        );
       case 'category':
         const categoryWithHierarchy = categories.find(
           cat => cat.id === product.category?.id
@@ -475,13 +477,19 @@ const MobileProductList = ({ user }: MobileProductListProps) => {
           </span>
         );
       case 'brand':
-        return <span className="text-xs sm:text-sm">{product.brand?.name || '-'}</span>;
+        return (
+          <span className="text-xs sm:text-sm">
+            {product.brand?.name || '-'}
+          </span>
+        );
       case 'stock':
         const stockStatus = getStockStatus(product);
         return (
           <div className="flex items-center gap-1 sm:gap-2">
             {stockStatus.icon}
-            <span className={`${stockStatus.color} text-xs sm:text-sm font-medium`}>
+            <span
+              className={`${stockStatus.color} text-xs font-medium sm:text-sm`}
+            >
               {product.stock || 0}
             </span>
           </div>
@@ -501,16 +509,24 @@ const MobileProductList = ({ user }: MobileProductListProps) => {
         );
       case 'price':
         return (
-          <div className="text-xs sm:text-sm font-medium">
+          <div className="text-xs font-medium sm:text-sm">
             {formatCurrency(product.price || 0)}
           </div>
         );
       case 'cost':
-        return <span className="text-xs sm:text-sm">{formatCurrency(product.cost || 0)}</span>;
+        return (
+          <span className="text-xs sm:text-sm">
+            {formatCurrency(product.cost || 0)}
+          </span>
+        );
       case 'status':
         return getStatusBadge(product.status);
       case 'supplier':
-        return <span className="text-xs sm:text-sm">{product.supplier?.name || '-'}</span>;
+        return (
+          <span className="text-xs sm:text-sm">
+            {product.supplier?.name || '-'}
+          </span>
+        );
       default:
         return <span className="text-xs sm:text-sm">-</span>;
     }
@@ -582,14 +598,20 @@ const MobileProductList = ({ user }: MobileProductListProps) => {
         key="stock"
         label="Stock"
         value={product.stock || 0}
-        variant={product.stock === 0 ? 'danger' : product.stock <= 10 ? 'warning' : 'success'}
+        variant={
+          product.stock === 0
+            ? 'danger'
+            : product.stock <= 10
+              ? 'warning'
+              : 'success'
+        }
       />,
       <MobileCardHighlight
         key="price"
         label="Price"
         value={formatCurrency(product.price)}
         variant="default"
-      />
+      />,
     ];
 
     return (
@@ -617,9 +639,9 @@ const MobileProductList = ({ user }: MobileProductListProps) => {
               <Button
                 variant="ghost"
                 size="sm"
-                onClick={(e) => {
+                onClick={e => {
                   e.stopPropagation();
-                  // Add edit functionality
+                  router.push(`/inventory/products/${product.id}/edit`);
                 }}
                 className="h-8 w-8 p-0"
               >
@@ -686,7 +708,7 @@ const MobileProductList = ({ user }: MobileProductListProps) => {
                 <Button
                   asChild
                   variant="outline"
-                  className="hidden sm:flex items-center gap-2"
+                  className="hidden items-center gap-2 sm:flex"
                 >
                   <Link href="/inventory/products/archived">
                     <IconArchive className="h-4 w-4" />
@@ -724,7 +746,9 @@ const MobileProductList = ({ user }: MobileProductListProps) => {
                 <Button
                   variant={filters.lowStock ? 'default' : 'outline'}
                   size="sm"
-                  onClick={() => handleFilterChange('lowStock', !filters.lowStock)}
+                  onClick={() =>
+                    handleFilterChange('lowStock', !filters.lowStock)
+                  }
                   className="text-xs"
                 >
                   <IconAlertTriangle className="mr-1 h-3 w-3 sm:h-4 sm:w-4" />
@@ -753,7 +777,9 @@ const MobileProductList = ({ user }: MobileProductListProps) => {
               onPageChange={handlePageChange}
               onPageSizeChange={handlePageSizeChange}
               isLoading={productsQuery.isLoading}
-              isRefetching={productsQuery.isFetching && !productsQuery.isLoading}
+              isRefetching={
+                productsQuery.isFetching && !productsQuery.isLoading
+              }
               error={productsQuery.error?.message}
               onRetry={() => productsQuery.refetch()}
               emptyStateIcon={
@@ -763,7 +789,9 @@ const MobileProductList = ({ user }: MobileProductListProps) => {
               emptyStateAction={
                 canManageProducts ? (
                   <Button asChild>
-                    <Link href="/inventory/products/add">Add Your First Product</Link>
+                    <Link href="/inventory/products/add">
+                      Add Your First Product
+                    </Link>
                   </Button>
                 ) : undefined
               }

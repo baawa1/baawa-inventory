@@ -4,6 +4,8 @@ import React, { useState, useMemo, useCallback } from 'react';
 import Link from 'next/link';
 import { toast } from 'sonner';
 import { useDebounce } from '@/hooks/useDebounce';
+import { useBrands } from '@/hooks/api/brands';
+import { useCategoriesWithHierarchy } from '@/hooks/api/categories';
 import {
   useArchivedProducts,
   useUnarchiveProduct,
@@ -38,6 +40,7 @@ import {
 } from '@tabler/icons-react';
 import type { FilterConfig } from '@/types/inventory';
 import type { DashboardTableColumn } from '@/components/layouts/DashboardColumnCustomizer';
+import { formatCategoryHierarchy } from '@/lib/utils/category';
 
 const ARCHIVED_FILTER_KEYS = ['search', 'categoryId', 'brandId'] as const;
 type FilterKey = (typeof ARCHIVED_FILTER_KEYS)[number];
@@ -121,12 +124,16 @@ export function ArchivedProductList({ user }: ArchivedProductListProps) {
   );
 
   const unarchiveProductMutation = useUnarchiveProduct();
+  const brandsQuery = useBrands();
+  const categoriesQuery = useCategoriesWithHierarchy();
 
   // Extract data from queries
   const products = archivedProductsQuery.data?.data || [];
   const loading = archivedProductsQuery.isLoading;
   const total = archivedProductsQuery.data?.pagination?.total || 0;
   const apiPagination = archivedProductsQuery.data?.pagination;
+  const brands = brandsQuery.data?.data || [];
+  const categories = categoriesQuery.data?.data || [];
 
   // Update pagination state from API response
   const currentPagination = {
@@ -140,6 +147,24 @@ export function ArchivedProductList({ user }: ArchivedProductListProps) {
   // Permission checks
   const canManageProducts = ['ADMIN', 'MANAGER'].includes(user.role);
 
+  const categoryOptions = useMemo(
+    () =>
+      categories.map(category => ({
+        value: String(category.id),
+        label: formatCategoryHierarchy(category),
+      })),
+    [categories]
+  );
+
+  const brandOptions = useMemo(
+    () =>
+      brands.map(brand => ({
+        value: String(brand.id),
+        label: brand.name,
+      })),
+    [brands]
+  );
+
   // Filter configurations - memoized to prevent unnecessary re-renders
   const filterConfigs: FilterConfig[] = useMemo(
     () => [
@@ -147,31 +172,28 @@ export function ArchivedProductList({ user }: ArchivedProductListProps) {
         key: 'categoryId',
         label: 'Category',
         type: 'select',
-        options: [], // TODO: Add category options
+        options: categoryOptions,
         placeholder: 'All Categories',
       },
       {
         key: 'brandId',
         label: 'Brand',
         type: 'select',
-        options: [], // TODO: Add brand options
+        options: brandOptions,
         placeholder: 'All Brands',
       },
     ],
-    []
+    [brandOptions, categoryOptions]
   );
 
   // Handle filter changes
-  const handleFilterChange = useCallback(
-    (key: FilterKey, value: string) => {
-      setFilters(prev => {
-        if (prev[key] === value) return prev; // Prevent unnecessary updates
-        return { ...prev, [key]: value };
-      });
-      setPagination(prev => ({ ...prev, page: 1 }));
-    },
-    []
-  );
+  const handleFilterChange = useCallback((key: FilterKey, value: string) => {
+    setFilters(prev => {
+      if (prev[key] === value) return prev; // Prevent unnecessary updates
+      return { ...prev, [key]: value };
+    });
+    setPagination(prev => ({ ...prev, page: 1 }));
+  }, []);
 
   const handleFilterChangeWrapper = useCallback(
     (key: string, value: unknown) => {

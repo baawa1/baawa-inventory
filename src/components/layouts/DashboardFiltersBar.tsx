@@ -82,11 +82,10 @@ export function DashboardFiltersBar({
                   filter.searchPlaceholder || `Search ${filter.label}...`
                 }
                 emptyMessage={
-                  filter.emptyMessage || `No ${filter.label.toLowerCase()} found`
+                  filter.emptyMessage ||
+                  `No ${filter.label.toLowerCase()} found`
                 }
-                emptySelectionLabel={
-                  filter.emptyLabel || `All ${filter.label}`
-                }
+                emptySelectionLabel={filter.emptyLabel || `All ${filter.label}`}
                 triggerClassName="min-w-[200px]"
               />
             );
@@ -159,53 +158,69 @@ export function DashboardFiltersBar({
         {description && <CardDescription>{description}</CardDescription>}
       </CardHeader>
       <CardContent>
-        <div className="flex items-center justify-start gap-4">
-          <div className="relative">
-            <IconSearch className="absolute top-1/2 left-3 h-4 w-4 -translate-y-1/2 transform text-gray-400" />
-            <Input
-              placeholder={searchPlaceholder}
-              value={searchValue}
-              onChange={(e: React.ChangeEvent<HTMLInputElement>) =>
-                onSearchChange(e.target.value)
-              }
-              className="pr-8 pl-9"
-            />
-            {isSearching && (
-              <div className="absolute top-1/2 right-3 -translate-y-1/2 transform">
-                <Spinner size="sm" className="text-gray-400" />
+        <div className="flex flex-col gap-4">
+          <div className="flex flex-col gap-4 xl:flex-row xl:items-start xl:justify-between">
+            <div className="flex flex-1 flex-col gap-4">
+              <div className="relative w-full sm:max-w-md">
+                <IconSearch className="absolute top-1/2 left-3 h-4 w-4 -translate-y-1/2 transform text-gray-400" />
+                <Input
+                  placeholder={searchPlaceholder}
+                  value={searchValue}
+                  onChange={(e: React.ChangeEvent<HTMLInputElement>) =>
+                    onSearchChange(e.target.value)
+                  }
+                  className="pr-8 pl-9"
+                />
+                {isSearching && (
+                  <div className="absolute top-1/2 right-3 -translate-y-1/2 transform">
+                    <Spinner size="sm" className="text-gray-400" />
+                  </div>
+                )}
+              </div>
+
+              <div className="flex flex-wrap items-center gap-3">
+                {filters.map(filter => (
+                  <div
+                    key={filter.key}
+                    className="min-w-[160px] flex-1 sm:flex-none"
+                  >
+                    {renderFilterControl(filter)}
+                  </div>
+                ))}
+                {inlineFilters}
+                <Button
+                  variant="outline"
+                  size="sm"
+                  onClick={onResetFilters}
+                  className="whitespace-nowrap"
+                >
+                  Reset Filters
+                </Button>
+              </div>
+            </div>
+
+            {sortOptions.length > 0 && onSortChange && (
+              <div className="w-full xl:w-auto xl:min-w-[220px]">
+                <Select value={currentSort || ''} onValueChange={onSortChange}>
+                  <SelectTrigger className="w-full">
+                    <SelectValue placeholder="Sort by" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    {sortOptions.map(option => (
+                      <SelectItem key={option.value} value={option.value}>
+                        {option.label}
+                      </SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
               </div>
             )}
           </div>
-          {filters.map(filter => (
-            <div key={filter.key}>{renderFilterControl(filter)}</div>
-          ))}
-          {inlineFilters}
-          <Button
-            variant="outline"
-            size="sm"
-            onClick={onResetFilters}
-            className="py-4.5 whitespace-nowrap"
-          >
-            Reset Filters
-          </Button>
-          {sortOptions.length > 0 && onSortChange && (
-            <div className="ml-auto flex items-center justify-center">
-              <Select value={currentSort || ''} onValueChange={onSortChange}>
-                <SelectTrigger>
-                  <SelectValue placeholder="Sort by" />
-                </SelectTrigger>
-                <SelectContent>
-                  {sortOptions.map(option => (
-                    <SelectItem key={option.value} value={option.value}>
-                      {option.label}
-                    </SelectItem>
-                  ))}
-                </SelectContent>
-              </Select>
-            </div>
+
+          {quickFilters && (
+            <div className="flex flex-wrap gap-2">{quickFilters}</div>
           )}
         </div>
-        {quickFilters && <div className="mt-4 flex gap-2">{quickFilters}</div>}
       </CardContent>
     </Card>
   );

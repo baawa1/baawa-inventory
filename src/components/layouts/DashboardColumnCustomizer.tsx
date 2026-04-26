@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useRef } from 'react';
 import { Button } from '@/components/ui/button';
 import {
   DropdownMenu,
@@ -33,6 +33,13 @@ interface DashboardColumnCustomizerProps {
   localStorageKey: string;
 }
 
+function areColumnsEqual(left: string[], right: string[]) {
+  return (
+    left.length === right.length &&
+    left.every((columnKey, index) => columnKey === right[index])
+  );
+}
+
 export function DashboardColumnCustomizer({
   columns,
   onColumnsChange,
@@ -40,49 +47,80 @@ export function DashboardColumnCustomizer({
 }: DashboardColumnCustomizerProps) {
   const [visibleColumns, setVisibleColumns] = useState<string[]>([]);
   const [isClient, setIsClient] = useState(false);
+  const lastSyncedColumnsRef = useRef<string[]>([]);
+  const columnKeys = columns.map(col => col.key);
+  const requiredColumns = columns
+    .filter(col => col.required)
+    .map(col => col.key);
+  const defaultColumns = columns
+    .filter(col => col.defaultVisible || col.required)
+    .map(col => col.key);
+  const fallbackColumns =
+    defaultColumns.length > 0 ? defaultColumns : requiredColumns;
+  const columnsSignature = columns
+    .map(
+      col =>
+        `${col.key}:${col.required ? 'required' : 'optional'}:${
+          col.defaultVisible ? 'default' : 'hidden'
+        }`
+    )
+    .join('|');
+
+  const normalizeColumns = (input: unknown) => {
+    const validColumnKeys = new Set(columnKeys);
+    const requestedColumns = Array.isArray(input)
+      ? input.filter(
+          (col): col is string =>
+            typeof col === 'string' && validColumnKeys.has(col)
+        )
+      : fallbackColumns;
+    const mergedColumns = Array.from(
+      new Set(
+        requestedColumns.length > 0
+          ? [...requiredColumns, ...requestedColumns]
+          : fallbackColumns
+      )
+    );
+
+    return columnKeys.filter(columnKey => mergedColumns.includes(columnKey));
+  };
+
+  const applyVisibleColumns = (nextVisibleColumns: string[]) => {
+    lastSyncedColumnsRef.current = nextVisibleColumns;
+    setVisibleColumns(nextVisibleColumns);
+    onColumnsChange(nextVisibleColumns);
+  };
 
   // Initialize visible columns from localStorage or defaults
   useEffect(() => {
     setIsClient(true);
+    let normalizedColumns: string[];
     const savedColumns = localStorage.getItem(localStorageKey);
+
     if (savedColumns) {
       try {
         const parsed = JSON.parse(savedColumns);
-        // Ensure required columns are always included and first
-        const requiredColumns = columns
-          .filter(col => col.required)
-          .map(col => col.key);
-        const otherColumns = parsed.filter(
-          (col: string) => !requiredColumns.includes(col)
-        );
-        const mergedColumns = [...requiredColumns, ...otherColumns];
-        setVisibleColumns(mergedColumns);
-        onColumnsChange(mergedColumns);
+        normalizedColumns = normalizeColumns(parsed);
       } catch {
         // Fallback to defaults if parsing fails
-        const requiredColumns = columns
-          .filter(col => col.required)
-          .map(col => col.key);
-        const defaultColumns = columns
-          .filter(col => col.defaultVisible && !col.required)
-          .map(col => col.key);
-        const mergedColumns = [...requiredColumns, ...defaultColumns];
-        setVisibleColumns(mergedColumns);
-        onColumnsChange(mergedColumns);
+        normalizedColumns = normalizeColumns(undefined);
       }
     } else {
       // Use default visible columns
-      const requiredColumns = columns
-        .filter(col => col.required)
-        .map(col => col.key);
-      const defaultColumns = columns
-        .filter(col => col.defaultVisible && !col.required)
-        .map(col => col.key);
-      const mergedColumns = [...requiredColumns, ...defaultColumns];
-      setVisibleColumns(mergedColumns);
-      onColumnsChange(mergedColumns);
+      normalizedColumns = normalizeColumns(undefined);
     }
-  }, [localStorageKey, onColumnsChange, columns]);
+
+    setVisibleColumns(currentColumns =>
+      areColumnsEqual(currentColumns, normalizedColumns)
+        ? currentColumns
+        : normalizedColumns
+    );
+
+    if (!areColumnsEqual(lastSyncedColumnsRef.current, normalizedColumns)) {
+      lastSyncedColumnsRef.current = normalizedColumns;
+      onColumnsChange(normalizedColumns);
+    }
+  }, [columnsSignature, localStorageKey, onColumnsChange]);
 
   const handleColumnToggle = (columnKey: string, checked: boolean) => {
     // Don't allow disabling required columns
@@ -91,46 +129,34 @@ export function DashboardColumnCustomizer({
       return;
     }
 
-    const newVisibleColumns = checked
+    const nextSelection = checked
       ? [...visibleColumns, columnKey]
       : visibleColumns.filter(key => key !== columnKey);
+    const newVisibleColumns = normalizeColumns(nextSelection);
 
-    setVisibleColumns(newVisibleColumns);
-    onColumnsChange(newVisibleColumns);
+    applyVisibleColumns(newVisibleColumns);
 
     // Save to localStorage
     localStorage.setItem(localStorageKey, JSON.stringify(newVisibleColumns));
   };
 
   const resetToDefaults = () => {
-    const requiredColumns = columns
-      .filter(col => col.required)
-      .map(col => col.key);
-    const defaultColumns = columns
-      .filter(col => col.defaultVisible && !col.required)
-      .map(col => col.key);
-    const mergedColumns = [...requiredColumns, ...defaultColumns];
+    const mergedColumns = normalizeColumns(undefined);
 
-    setVisibleColumns(mergedColumns);
-    onColumnsChange(mergedColumns);
+    applyVisibleColumns(mergedColumns);
     localStorage.setItem(localStorageKey, JSON.stringify(mergedColumns));
   };
 
   const showAllColumns = () => {
-    const allColumns = columns.map(col => col.key);
-    setVisibleColumns(allColumns);
-    onColumnsChange(allColumns);
+    const allColumns = normalizeColumns(columns.map(col => col.key));
+    applyVisibleColumns(allColumns);
     localStorage.setItem(localStorageKey, JSON.stringify(allColumns));
   };
 
   const hideOptionalColumns = () => {
-    const requiredColumns = columns
-      .filter(col => col.required)
-      .map(col => col.key);
-
-    setVisibleColumns(requiredColumns);
-    onColumnsChange(requiredColumns);
-    localStorage.setItem(localStorageKey, JSON.stringify(requiredColumns));
+    const requiredOnlyColumns = normalizeColumns(requiredColumns);
+    applyVisibleColumns(requiredOnlyColumns);
+    localStorage.setItem(localStorageKey, JSON.stringify(requiredOnlyColumns));
   };
 
   const visibleCount = visibleColumns.length;

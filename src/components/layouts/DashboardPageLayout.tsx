@@ -19,8 +19,8 @@ export function DashboardPageLayout({
     <div className="flex min-h-[calc(100vh-49px)] flex-col">
       {title && (
         <header className="px-4 py-6 lg:px-6">
-          <div className="flex items-center justify-between">
-            <div>
+          <div className="flex flex-col gap-4 lg:flex-row lg:items-start lg:justify-between">
+            <div className="min-w-0">
               <h1 className="text-3xl font-bold text-gray-900 dark:text-gray-100">
                 {title}
               </h1>
@@ -30,7 +30,11 @@ export function DashboardPageLayout({
                 </p>
               )}
             </div>
-            {actions && <div>{actions}</div>}
+            {actions && (
+              <div className="flex flex-wrap items-center gap-2 lg:justify-end">
+                {actions}
+              </div>
+            )}
           </div>
         </header>
       )}

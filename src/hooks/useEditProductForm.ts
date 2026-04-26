@@ -78,7 +78,7 @@ export function useEditProductForm(
   const product = useProduct(productId);
   const categories = useCategories({ status: 'true' });
   const brands = useBrands({ status: 'true' });
-  const suppliers = useSuppliers({ status: 'true' });
+  const suppliers = useSuppliers();
 
   // Combine loading states
   const isLoading =

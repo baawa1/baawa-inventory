@@ -55,9 +55,11 @@ export function ResponsiveTable<T>({
   // Filter columns for mobile view
   const mobileColumns = columns.filter(col => !col.hideOnMobile);
   const visibleDesktopColumns = columns;
-  
+
   // Track expanded state for mobile cards
-  const [expandedItems, setExpandedItems] = React.useState<Set<string | number>>(new Set());
+  const [expandedItems, setExpandedItems] = React.useState<
+    Set<string | number>
+  >(new Set());
 
   if (loading) {
     return (
@@ -70,9 +72,9 @@ export function ResponsiveTable<T>({
             withActions={!!renderActions}
           />
         </div>
-        
+
         {/* Mobile skeleton */}
-        <div className="md:hidden space-y-3">
+        <div className="space-y-3 md:hidden">
           <TableSkeleton variant="cards" rows={3} />
         </div>
       </div>
@@ -81,7 +83,7 @@ export function ResponsiveTable<T>({
 
   if (!data || data.length === 0) {
     return (
-      <div className="text-center py-8">
+      <div className="py-8 text-center">
         <p className="text-muted-foreground">{emptyMessage}</p>
       </div>
     );
@@ -106,17 +108,19 @@ export function ResponsiveTable<T>({
             {data.map(item => (
               <TableRow
                 key={keyExtractor(item)}
-                className={onRowClick ? 'cursor-pointer hover:bg-muted/50' : ''}
+                className={onRowClick ? 'hover:bg-muted/50 cursor-pointer' : ''}
                 onClick={() => onRowClick?.(item)}
               >
                 {visibleDesktopColumns.map(column => (
                   <TableCell key={column.key} className={column.className}>
-                    {column.render ? column.render(item) : String((item as any)[column.key] || '-')}
+                    {column.render
+                      ? column.render(item)
+                      : String((item as any)[column.key] || '-')}
                   </TableCell>
                 ))}
                 {renderActions && (
                   <TableCell>
-                    <div onClick={(e) => e.stopPropagation()}>
+                    <div onClick={e => e.stopPropagation()}>
                       {renderActions(item)}
                     </div>
                   </TableCell>
@@ -128,11 +132,11 @@ export function ResponsiveTable<T>({
       </div>
 
       {/* Mobile Card View */}
-      <div className="md:hidden space-y-3">
+      <div className="space-y-3 md:hidden">
         {data.map(item => {
           const itemKey = keyExtractor(item);
           const isExpanded = expandedItems.has(itemKey);
-          
+
           const toggleExpanded = () => {
             setExpandedItems(prev => {
               const newSet = new Set(prev);
@@ -144,49 +148,40 @@ export function ResponsiveTable<T>({
               return newSet;
             });
           };
-          
+
           return (
             <SwipeableCard
               key={itemKey}
               onTap={toggleExpanded}
-              onLongPress={() => {
-                // Optional: Add long press actions here
-              }}
-              leftAction={{
-                label: 'Edit',
-                color: 'bg-blue-500',
-                icon: <span>✏️</span>,
-              }}
-              rightAction={{
-                label: 'Delete', 
-                color: 'bg-red-500',
-                icon: <span>🗑️</span>,
-              }}
-              className="rounded-xl border border-gray-200 shadow-sm hover:shadow-md transition-all duration-200"
+              className="rounded-xl border border-gray-200 shadow-sm transition-all duration-200 hover:shadow-md"
             >
               <CardContent className="px-4 py-3">
                 {/* Card Header - Always Visible */}
                 <div className="flex items-start justify-between">
-                  <div className="flex-1 min-w-0">
+                  <div className="min-w-0 flex-1">
                     {mobileCardTitle && (
-                      <div className="text-base mb-1 whitespace-normal break-words line-clamp-2">
+                      <div className="mb-1 line-clamp-2 text-base break-words whitespace-normal">
                         {mobileCardTitle(item)}
                       </div>
                     )}
                     {mobileCardSubtitle && (
-                      <div className="text-sm text-muted-foreground mb-2 whitespace-normal break-words line-clamp-2">
+                      <div className="text-muted-foreground mb-2 line-clamp-2 text-sm break-words whitespace-normal">
                         {mobileCardSubtitle(item)}
                       </div>
                     )}
                     {/* Enhanced tap indicator */}
-                    <div className="flex items-center gap-2 mt-2 text-xs text-muted-foreground">
+                    <div className="text-muted-foreground mt-2 flex items-center gap-2 text-xs">
                       <span className="font-medium">
-                        {isExpanded ? 'Tap to collapse' : 'Tap to expand details'}
+                        {isExpanded
+                          ? 'Tap to collapse'
+                          : 'Tap to expand details'}
                       </span>
-                      <span className={cn(
-                        'transition-all duration-300 text-blue-500',
-                        isExpanded ? 'rotate-180 scale-110' : 'rotate-0'
-                      )}>
+                      <span
+                        className={cn(
+                          'text-blue-500 transition-all duration-300',
+                          isExpanded ? 'scale-110 rotate-180' : 'rotate-0'
+                        )}
+                      >
                         ▼
                       </span>
                     </div>
@@ -206,20 +201,26 @@ export function ResponsiveTable<T>({
                     <Separator className="my-3" />
                     <div className="grid grid-cols-1 gap-3">
                       {mobileColumns
-                        .sort((a, b) => (a.mobileOrder || 999) - (b.mobileOrder || 999))
+                        .sort(
+                          (a, b) =>
+                            (a.mobileOrder || 999) - (b.mobileOrder || 999)
+                        )
                         .map(column => {
-                          const value = column.mobileRender 
+                          const value = column.mobileRender
                             ? column.mobileRender(item)
-                            : column.render 
-                            ? column.render(item) 
-                            : String((item as any)[column.key] || '-');
+                            : column.render
+                              ? column.render(item)
+                              : String((item as any)[column.key] || '-');
 
                           return (
-                            <div key={column.key} className="flex justify-between items-center">
-                              <span className="text-sm font-medium text-muted-foreground">
+                            <div
+                              key={column.key}
+                              className="flex items-center justify-between"
+                            >
+                              <span className="text-muted-foreground text-sm font-medium">
                                 {column.mobileLabel || column.label}:
                               </span>
-                              <div className="text-sm font-medium text-right max-w-[60%] truncate">
+                              <div className="max-w-[60%] truncate text-right text-sm font-medium">
                                 {value}
                               </div>
                             </div>

@@ -13,10 +13,8 @@ export type UpdateSupplierData = UpdateSupplierBodyData;
 
 export interface SupplierFilters {
   search: string;
-  status: string;
   sortBy: string;
   sortOrder: 'asc' | 'desc';
-  isActive?: boolean;
   page?: number;
   limit?: number;
 }
@@ -33,7 +31,6 @@ export interface SupplierResponse {
   pagination: SupplierPagination;
 }
 
-
 // API Functions
 const fetchSuppliers = async (
   filters: Partial<SupplierFilters> = {}
@@ -46,7 +43,6 @@ const fetchSuppliers = async (
   });
 
   if (filters.search) searchParams.set('search', filters.search);
-  if (filters.status) searchParams.set('isActive', filters.status);
 
   const response = await fetch(`/api/suppliers?${searchParams.toString()}`);
 
@@ -227,9 +223,7 @@ export const useSupplierOptions = () => {
         if (!response.ok) {
           const errorData = await response.json().catch(() => ({}));
           const errorMessage = errorData.error || response.statusText;
-          throw new Error(
-            `Failed to fetch supplier options: ${errorMessage}`
-          );
+          throw new Error(`Failed to fetch supplier options: ${errorMessage}`);
         }
 
         const result: {
@@ -246,7 +240,10 @@ export const useSupplierOptions = () => {
         );
 
         const apiTotalPages = Number(result.pagination?.totalPages);
-        totalPages = Number.isFinite(apiTotalPages) && apiTotalPages > 0 ? apiTotalPages : 1;
+        totalPages =
+          Number.isFinite(apiTotalPages) && apiTotalPages > 0
+            ? apiTotalPages
+            : 1;
 
         if (page >= totalPages || pageSuppliers.length === 0) {
           break;
