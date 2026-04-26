@@ -2,12 +2,14 @@ import { useQuery } from '@tanstack/react-query';
 
 interface ExpenseData {
   id: number;
+  transactionNumber: string;
   type: 'INCOME' | 'EXPENSE';
   amount: number;
   description: string | null;
   transactionDate: Date;
   paymentMethod: string | null;
   notes: string | null;
+  status: 'PENDING' | 'COMPLETED' | 'CANCELLED' | 'APPROVED' | 'REJECTED';
   expenseDetails?: {
     id: number;
     expenseType: string;

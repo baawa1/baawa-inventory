@@ -240,24 +240,39 @@ export function useDeleteFinancialTransaction() {
   const queryClient = useQueryClient();
 
   return useMutation({
-    mutationFn: async (id: number) => {
+    mutationFn: async ({ id, reason }: { id: number; reason: string }) => {
       const response = await fetch(`/api/finance/transactions/${id}`, {
         method: 'DELETE',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ reason }),
       });
+      const result = await response.json().catch(() => ({}));
       if (!response.ok) {
         throw new Error(
-          `Failed to delete financial transaction: ${response.statusText}`
+          (result as { error?: string }).error ||
+            'Failed to delete financial transaction'
         );
       }
-      const result = await response.json();
       return result.data || result;
     },
-    onSuccess: () => {
+    onSuccess: (_, { id }) => {
       queryClient.invalidateQueries({
         queryKey: queryKeys.finance.transactions.all(),
       });
       queryClient.invalidateQueries({
+        queryKey: queryKeys.finance.transactions.detail(id),
+      });
+      queryClient.invalidateQueries({
         queryKey: queryKeys.finance.summary(),
+      });
+      queryClient.invalidateQueries({
+        queryKey: ['financial-transactions'],
+      });
+      queryClient.invalidateQueries({
+        queryKey: ['income', String(id)],
+      });
+      queryClient.invalidateQueries({
+        queryKey: ['expense', String(id)],
       });
     },
   });

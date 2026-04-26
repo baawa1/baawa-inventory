@@ -62,7 +62,7 @@ export const GET = withAuth(
       });
 
       if (!transaction) {
-        return createApiResponse.notFound('Financial transaction not found');
+        return createApiResponse.notFound('Financial transaction');
       }
 
       return createApiResponse.success(transaction);
@@ -126,7 +126,7 @@ export const PUT = withAuth(
       });
 
       if (!existingTransaction) {
-        return createApiResponse.notFound('Financial transaction not found');
+        return createApiResponse.notFound('Financial transaction');
       }
 
       const effectiveType = validatedData.type ?? existingTransaction.type;
@@ -278,27 +278,54 @@ export const DELETE = withAuth(
     { params }: { params: Promise<{ id: string }> }
   ) => {
     try {
-      // Only ADMIN can delete financial transactions
-      if (request.user.role !== 'ADMIN') {
+      if (!hasPermission(request.user.role, 'FINANCE_DELETE')) {
         return createApiResponse.forbidden(
           'Only administrators can delete financial transactions'
         );
       }
 
       const { id } = await params;
+      const body = await request.json().catch(() => ({}));
+      const reason =
+        typeof body?.reason === 'string' ? body.reason.trim() : '';
       const transactionId = parseInt(id);
+      const userId = parseInt(request.user.id);
 
       if (isNaN(transactionId)) {
         return createApiResponse.validationError('Invalid transaction ID');
       }
 
+      if (!reason) {
+        return createApiResponse.validationError('Delete reason is required');
+      }
+
       // Get the transaction
       const transaction = await prisma.financialTransaction.findUnique({
         where: { id: transactionId },
+        include: {
+          createdByUser: {
+            select: {
+              id: true,
+              firstName: true,
+              lastName: true,
+              email: true,
+            },
+          },
+          approvedByUser: {
+            select: {
+              id: true,
+              firstName: true,
+              lastName: true,
+              email: true,
+            },
+          },
+          expenseDetails: true,
+          incomeDetails: true,
+        },
       });
 
       if (!transaction) {
-        return createApiResponse.notFound('Financial transaction not found');
+        return createApiResponse.notFound('Financial transaction');
       }
 
       // Check if transaction can be deleted (not approved/rejected)
@@ -308,24 +335,42 @@ export const DELETE = withAuth(
         );
       }
 
-      await prisma.$transaction(async tx => {
-        await tx.financialTransaction.delete({
-          where: { id: transactionId },
-        });
+      const deletedAt = new Date();
 
+      const deletedTransaction = await prisma.$transaction(async tx => {
         await createAuditLog({
           tx,
-          userId: parseInt(request.user.id),
+          userId,
           action: AuditLogAction.FINANCE_TRANSACTION_DELETED,
           tableName: 'financial_transactions',
           recordId: transactionId,
           oldValues: transaction,
-          newValues: null,
+          newValues: {
+            deleted: true,
+            deletedAt: deletedAt.toISOString(),
+            deletedBy: userId,
+            reason,
+            transactionNumber: transaction.transactionNumber,
+            type: transaction.type,
+          },
         });
+
+        await tx.financialTransaction.delete({
+          where: { id: transactionId },
+        });
+
+        return {
+          id: transaction.id,
+          transactionNumber: transaction.transactionNumber,
+          type: transaction.type,
+          deletedAt,
+          deletedBy: userId,
+          reason,
+        };
       });
 
       return createApiResponse.success(
-        null,
+        deletedTransaction,
         'Financial transaction deleted successfully'
       );
     } catch (error) {
