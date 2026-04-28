@@ -1,10 +1,15 @@
 import { NextResponse } from 'next/server';
 import { withAuth, AuthenticatedRequest } from '@/lib/api-middleware';
 import { handleApiError } from '@/lib/api-error-handler-new';
+import { envConfig } from '@/lib/config/env-validation';
 import { USER_STATUS } from '@/lib/constants';
 import { USER_ROLES } from '@/lib/auth/roles';
 
 export const GET = withAuth(async (_request: AuthenticatedRequest) => {
+  if (!envConfig.isDevelopment) {
+    return NextResponse.json({ error: 'Not found' }, { status: 404 });
+  }
+
   try {
     // Return detailed session information for debugging
     return NextResponse.json({

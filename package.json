@@ -58,11 +58,7 @@
     "db:dev": "node scripts/migrate.js dev",
     "db:resolve": "node scripts/migrate.js resolve",
     "db:reset": "node scripts/migrate.js reset",
-    "hooks:install": "git config core.hooksPath .githooks",
-    "db:snapshot": "node scripts/db-transfer.js snapshot",
-    "db:clone:dry-run": "node scripts/db-transfer.js clone --dry-run",
-    "db:clone": "node scripts/db-transfer.js clone",
-    "db:restore": "node scripts/db-transfer.js restore"
+    "hooks:install": "git config core.hooksPath .githooks"
   },
   "dependencies": {
     "@dnd-kit/core": "^6.3.1",

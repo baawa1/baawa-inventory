@@ -18,6 +18,7 @@ jest.mock('@/lib/config/env-validation', () => ({
 }));
 
 // Import the route handlers after mocking
+import { GET as debugSessionGET } from '@/app/api/debug/session/route';
 import { GET as debugTokenGET } from '@/app/api/debug-token/route';
 import { GET as testAuthGET, POST as testAuthPOST, DELETE as testAuthDELETE } from '@/app/api/test-auth/route';
 import { POST as testEmailPOST } from '@/app/api/test-email/route';
@@ -41,6 +42,26 @@ describe('Debug/Test Endpoints Security', () => {
         } as any;
 
         const response = await debugTokenGET(req);
+        const data = await response.json();
+
+        expect(response.status).toBe(404);
+        expect(data.error).toBe('Not found');
+      });
+    });
+
+    describe('/api/debug/session', () => {
+      it('should return 404 in production', async () => {
+        const req = {
+          user: {
+            id: 1,
+            email: 'test@example.com',
+            role: 'ADMIN',
+            status: 'APPROVED',
+            isEmailVerified: true,
+          },
+        } as any;
+
+        const response = await debugSessionGET(req);
         const data = await response.json();
 
         expect(response.status).toBe(404);
@@ -79,6 +100,28 @@ describe('Debug/Test Endpoints Security', () => {
 
         expect(response.status).toBe(404);
         expect(data.error).toBe('Not found');
+      });
+    });
+
+    describe('/api/debug/session', () => {
+      it('should work in development', async () => {
+        const req = {
+          user: {
+            id: 1,
+            email: 'test@example.com',
+            name: 'Test User',
+            role: 'ADMIN',
+            status: 'APPROVED',
+            isEmailVerified: true,
+          },
+        } as any;
+
+        const response = await debugSessionGET(req);
+        const data = await response.json();
+
+        expect(response.status).toBe(200);
+        expect(data.authenticated).toBe(true);
+        expect(data.user.email).toBe('test@example.com');
       });
     });
 

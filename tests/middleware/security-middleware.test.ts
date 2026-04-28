@@ -42,6 +42,7 @@ describe('Middleware Security', () => {
       '/reset-password',
       '/verify-email',
       '/pending-approval',
+      '/test-data',
       '/unauthorized',
     ];
 
@@ -63,7 +64,6 @@ describe('Middleware Security', () => {
     const publicApiRoutes = [
       '/api/health',
       '/api/auth/register',
-      '/api/auth/login',
       '/api/auth/forgot-password',
       '/api/auth/reset-password',
       '/api/auth/verify-email',
@@ -204,7 +204,7 @@ describe('Middleware Security', () => {
       expect(response.headers.get('location')).toContain('/login');
     });
 
-    it('should redirect unverified users to verify email', async () => {
+    it('should redirect unverified users to check email', async () => {
       mockAuth.mockResolvedValue({
         user: {
           id: 1,
@@ -231,7 +231,7 @@ describe('Middleware Security', () => {
       const response = await middleware(mockReq);
 
       expect(response.status).toBe(307); // Redirect status
-      expect(response.headers.get('location')).toContain('/verify-email');
+      expect(response.headers.get('location')).toContain('/check-email');
     });
 
     it('should redirect unapproved users to pending approval', async () => {

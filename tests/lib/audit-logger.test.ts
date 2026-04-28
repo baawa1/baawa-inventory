@@ -50,7 +50,7 @@ describe('AuditLogger', () => {
           'user-agent': 'jest-agent',
         }),
         method: 'POST',
-        url: 'http://localhost/api/auth/login',
+        url: 'http://localhost/api/auth/signin',
       }
     );
 
