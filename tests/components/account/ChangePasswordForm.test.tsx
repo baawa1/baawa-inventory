@@ -30,7 +30,7 @@ describe('ChangePasswordForm', () => {
     expect(screen.getByLabelText('Confirm New Password')).toBeInTheDocument();
     expect(
       screen.getByText(
-        'Use at least 8 characters with uppercase, lowercase, number, and any symbol. Any symbol is allowed, including . and @.'
+        'Use 8+ characters with uppercase, lowercase, a number, and a symbol.'
       )
     ).toBeInTheDocument();
     expect(

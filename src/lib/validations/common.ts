@@ -97,14 +97,11 @@ export const PASSWORD_REGEX = {
   uppercase: /[A-Z]/,
   lowercase: /[a-z]/,
   number: /\d/,
-  symbol: /[^A-Za-z0-9]/,
+  symbol: /[!-\/:-@\[-`{-~]/,
 } as const;
 
 export const PASSWORD_REQUIREMENT_HINT =
-  'Use at least 8 characters with uppercase, lowercase, number, and any symbol.';
-
-export const PASSWORD_SYMBOL_HINT =
-  'Any symbol is allowed, including . and @.';
+  'Use 8+ characters with uppercase, lowercase, a number, and a symbol.';
 
 export const COMMON_PASSWORD_BLOCKLIST = new Set([
   '12345678',

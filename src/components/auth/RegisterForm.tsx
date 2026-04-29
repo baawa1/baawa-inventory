@@ -5,6 +5,7 @@ import { useRouter } from 'next/navigation';
 import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { z } from 'zod';
+import { Eye, EyeOff } from 'lucide-react';
 
 import { Button } from '@/components/ui/button';
 import {
@@ -27,7 +28,6 @@ import { UserRole } from '@/types/app';
 import {
   passwordSchema,
   PASSWORD_REQUIREMENT_HINT,
-  PASSWORD_SYMBOL_HINT,
 } from '@/lib/validations/common';
 
 const registerSchema = z
@@ -52,6 +52,8 @@ interface RegisterFormProps {
 
 export function RegisterForm({ onSuccess }: RegisterFormProps) {
   const [isLoading, setIsLoading] = useState(false);
+  const [showPassword, setShowPassword] = useState(false);
+  const [showConfirmPassword, setShowConfirmPassword] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [success, setSuccess] = useState(false);
   const router = useRouter();
@@ -250,18 +252,34 @@ export function RegisterForm({ onSuccess }: RegisterFormProps) {
               render={({ field }) => (
                 <FormItem>
                   <FormLabel>Password</FormLabel>
-                  <FormControl>
-                    <Input
-                      data-testid="password-input"
-                      type="password"
-                      placeholder="Enter a strong password (8+ chars)"
-                      required
-                      {...field}
-                    />
-                  </FormControl>
+                  <div className="relative">
+                    <FormControl>
+                      <Input
+                        data-testid="password-input"
+                        type={showPassword ? 'text' : 'password'}
+                        placeholder="Enter a strong password (8+ chars)"
+                        required
+                        {...field}
+                      />
+                    </FormControl>
+                    <Button
+                      type="button"
+                      variant="ghost"
+                      size="sm"
+                      className="absolute top-0 right-0 h-full px-3 py-2 hover:bg-transparent"
+                      onClick={() => setShowPassword(!showPassword)}
+                      disabled={isLoading}
+                    >
+                      {showPassword ? (
+                        <EyeOff className="h-4 w-4" />
+                      ) : (
+                        <Eye className="h-4 w-4" />
+                      )}
+                    </Button>
+                  </div>
                   <FormMessage data-testid="password-error" />
                   <div className="text-muted-foreground mt-1 text-xs">
-                    {PASSWORD_REQUIREMENT_HINT} {PASSWORD_SYMBOL_HINT}
+                    {PASSWORD_REQUIREMENT_HINT}
                   </div>
                 </FormItem>
               )}
@@ -273,15 +291,33 @@ export function RegisterForm({ onSuccess }: RegisterFormProps) {
               render={({ field }) => (
                 <FormItem>
                   <FormLabel>Confirm Password</FormLabel>
-                  <FormControl>
-                    <Input
-                      data-testid="confirmPassword-input"
-                      type="password"
-                      placeholder="Confirm your password"
-                      required
-                      {...field}
-                    />
-                  </FormControl>
+                  <div className="relative">
+                    <FormControl>
+                      <Input
+                        data-testid="confirmPassword-input"
+                        type={showConfirmPassword ? 'text' : 'password'}
+                        placeholder="Confirm your password"
+                        required
+                        {...field}
+                      />
+                    </FormControl>
+                    <Button
+                      type="button"
+                      variant="ghost"
+                      size="sm"
+                      className="absolute top-0 right-0 h-full px-3 py-2 hover:bg-transparent"
+                      onClick={() =>
+                        setShowConfirmPassword(!showConfirmPassword)
+                      }
+                      disabled={isLoading}
+                    >
+                      {showConfirmPassword ? (
+                        <EyeOff className="h-4 w-4" />
+                      ) : (
+                        <Eye className="h-4 w-4" />
+                      )}
+                    </Button>
+                  </div>
                   <FormMessage />
                 </FormItem>
               )}

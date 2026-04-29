@@ -1,9 +1,20 @@
 import { passwordSchema } from '@/lib/validations/common';
 
 describe('password schema', () => {
-  it('accepts a valid 8-character password with a symbol', () => {
-    const result = passwordSchema.safeParse('Abcd123.');
-    expect(result.success).toBe(true);
+  it('accepts valid passwords with keyboard punctuation symbols', () => {
+    const validPasswords = [
+      'Abcd123.',
+      'Abcd123@',
+      'Abcd123!',
+      'Abcd123_',
+      'Abcd123+',
+      'Abcd123?',
+    ];
+
+    validPasswords.forEach(password => {
+      const result = passwordSchema.safeParse(password);
+      expect(result.success).toBe(true);
+    });
   });
 
   it('rejects passwords that are too short', () => {
@@ -27,6 +38,16 @@ describe('password schema', () => {
 
   it('rejects common passwords', () => {
     const result = passwordSchema.safeParse('Password123!');
+    expect(result.success).toBe(false);
+  });
+
+  it('rejects passwords where a space is the only special character', () => {
+    const result = passwordSchema.safeParse('Abcd123 ');
+    expect(result.success).toBe(false);
+  });
+
+  it('rejects passwords where a non-ASCII character is the only special character', () => {
+    const result = passwordSchema.safeParse('Abcd123é');
     expect(result.success).toBe(false);
   });
 });

@@ -162,9 +162,7 @@ describe('ResetPasswordForm', () => {
 
       await waitFor(() => {
         expect(
-          screen.getByText(
-            'Password must contain at least one symbol'
-          )
+          screen.getByText('Password must contain at least one symbol')
         ).toBeInTheDocument();
       });
     });

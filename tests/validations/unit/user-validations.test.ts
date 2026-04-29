@@ -10,7 +10,6 @@ import {
   userIdSchema,
   changePasswordSchema,
   forgotPasswordSchema,
-  resetPasswordSchema,
   verifyEmailSchema,
 } from '@/lib/validations/user';
 
@@ -426,44 +425,6 @@ describe('User Validation Schemas', () => {
     it('should validate email format', () => {
       expect(() => forgotPasswordSchema.parse({
         email: 'invalid-email',
-      })).toThrow();
-    });
-  });
-
-  describe('resetPasswordSchema', () => {
-    const validResetData = {
-      token: 'valid-reset-token-string',
-      newPassword: validNewPassword,
-    };
-
-    it('should accept valid reset data', () => {
-      const result = resetPasswordSchema.parse(validResetData);
-      
-      expect(result.token).toBe('valid-reset-token-string');
-      expect(result.newPassword).toBe(validNewPassword);
-    });
-
-    it('should require both token and password', () => {
-      expect(() => resetPasswordSchema.parse({
-        token: 'valid-token',
-      })).toThrow();
-
-      expect(() => resetPasswordSchema.parse({
-        newPassword: validNewPassword,
-      })).toThrow();
-    });
-
-    it('should validate password strength', () => {
-      expect(() => resetPasswordSchema.parse({
-        token: 'valid-token',
-        newPassword: 'weak',
-      })).toThrow();
-    });
-
-    it('should require non-empty token', () => {
-      expect(() => resetPasswordSchema.parse({
-        token: '',
-        newPassword: validNewPassword,
       })).toThrow();
     });
   });

@@ -27,7 +27,6 @@ import { InlineLoading } from '@/components/ui/loading';
 import {
   passwordSchema,
   PASSWORD_REQUIREMENT_HINT,
-  PASSWORD_SYMBOL_HINT,
 } from '@/lib/validations/common';
 
 const resetPasswordSchema = z
@@ -236,7 +235,7 @@ function ResetPasswordFormContent({ className }: ResetPasswordFormProps) {
                     </FormControl>
                     <FormMessage />
                     <div className="text-muted-foreground mt-1 text-xs">
-                      {PASSWORD_REQUIREMENT_HINT} {PASSWORD_SYMBOL_HINT}
+                      {PASSWORD_REQUIREMENT_HINT}
                     </div>
                   </FormItem>
                 )}

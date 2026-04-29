@@ -26,10 +26,7 @@ import {
   type EditUserFormData,
   type User,
 } from './types/user';
-import {
-  PASSWORD_REQUIREMENT_HINT,
-  PASSWORD_SYMBOL_HINT,
-} from '@/lib/validations/common';
+import { PASSWORD_REQUIREMENT_HINT } from '@/lib/validations/common';
 
 interface UserFormProps {
   user?: User | null;
@@ -209,7 +206,7 @@ export function UserForm({
                   </FormControl>
                   <FormMessage />
                   <div className="text-muted-foreground mt-1 text-xs">
-                    {PASSWORD_REQUIREMENT_HINT} {PASSWORD_SYMBOL_HINT}
+                    {PASSWORD_REQUIREMENT_HINT}
                   </div>
                 </FormItem>
               )}

@@ -39,15 +39,6 @@ export const createUserFormSchema = baseUserSchema
 export const editUserFormSchema = baseUserSchema;
 
 // Generic user form schema type
-export const userFormSchema = z.union([
-  createUserFormSchema,
-  editUserFormSchema,
-]);
-
-export const createUserFormSchemaFunction = (isEditing: boolean) => {
-  return isEditing ? editUserFormSchema : createUserFormSchema;
-};
-
 export type UserFormData = z.infer<typeof createUserFormSchema>;
 export type EditUserFormData = z.infer<typeof editUserFormSchema>;
 

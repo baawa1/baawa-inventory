@@ -41,6 +41,29 @@ describe('RegisterForm', () => {
     ).toBeInTheDocument();
   });
 
+  it('toggles password visibility like the login form', () => {
+    renderWithProviders(<RegisterForm />);
+
+    const passwordInput = screen.getByTestId('password-input');
+    const confirmPasswordInput = screen.getByTestId('confirmPassword-input');
+    const toggleButtons = screen.getAllByRole('button');
+    const passwordToggle = toggleButtons.find(
+      button => button.getAttribute('type') === 'button'
+    );
+    const confirmToggle = toggleButtons.filter(
+      button => button.getAttribute('type') === 'button'
+    )[1];
+
+    expect(passwordInput).toHaveAttribute('type', 'password');
+    expect(confirmPasswordInput).toHaveAttribute('type', 'password');
+
+    fireEvent.click(passwordToggle!);
+    expect(passwordInput).toHaveAttribute('type', 'text');
+
+    fireEvent.click(confirmToggle);
+    expect(confirmPasswordInput).toHaveAttribute('type', 'text');
+  });
+
   it('shows validation errors for invalid inputs', async () => {
     renderWithProviders(<RegisterForm />);
 

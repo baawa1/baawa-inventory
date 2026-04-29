@@ -351,6 +351,8 @@ describe('Common Validation Schemas', () => {
         const weakPasswords = [
           'short', // Too short
           'NoSymbol123', // Missing symbol
+          'Abcd123 ', // Space does not count as punctuation
+          'Abcd123é', // Non-ASCII character does not count as punctuation
           'no-uppercase-123!', // No uppercase
           'NO-LOWERCASE-123!', // No lowercase
           'NoNumbers!@#', // No number
