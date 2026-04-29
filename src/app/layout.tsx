@@ -9,6 +9,7 @@ import { Toaster } from '@/components/ui/sonner';
 import { PWAManager } from '@/components/pwa/PWAManager';
 import { NavigationLoading } from '@/components/ui/navigation-loading';
 import { RoutePreloader } from '@/components/providers/RoutePreloader';
+import { EnvironmentModeIndicator } from '@/components/common/EnvironmentModeIndicator';
 
 export const metadata: Metadata = {
   title: 'BaaWA Inventory & POS',
@@ -67,7 +68,7 @@ export default function RootLayout({
       <head>
         <link rel="apple-touch-icon" href="/apple-touch-icon.png" />
       </head>
-      <body className="antialiased font-sans">
+      <body className="font-sans antialiased">
         <ThemeProvider
           attribute="class"
           defaultTheme="system"
@@ -79,6 +80,7 @@ export default function RootLayout({
               {/* <SessionMonitor /> */}
               <NavigationLoading />
               <RoutePreloader />
+              <EnvironmentModeIndicator />
               {children}
               <PWAManager />
               <Toaster />
