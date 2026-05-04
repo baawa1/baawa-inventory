@@ -119,10 +119,15 @@ const periodAggregate = {
 describe('GET /api/finance/kpis', () => {
   beforeEach(() => {
     jest.clearAllMocks();
+    jest.useFakeTimers().setSystemTime(new Date('2026-04-15T12:00:00.000Z'));
     mockBuildFinanceRange.mockReturnValue(periodRange);
     mockGetFinanceAggregate
       .mockResolvedValueOnce(periodAggregate)
       .mockResolvedValueOnce(periodAggregate);
+  });
+
+  afterEach(() => {
+    jest.useRealTimers();
   });
 
   it('uses operating revenue for profit metrics and cash flow for runway', async () => {
@@ -153,6 +158,13 @@ describe('GET /api/finance/kpis', () => {
       operatingExpenseRatio: 20.83,
       dailyRevenue: 40,
     });
+    const [startDate, endDate, groupBy] = mockBuildFinanceRange.mock.calls[0];
+    expect(startDate).toBeInstanceOf(Date);
+    expect(startDate.getFullYear()).toBe(2026);
+    expect(startDate.getMonth()).toBe(3);
+    expect(startDate.getDate()).toBe(1);
+    expect(endDate).toEqual(new Date('2026-04-15T12:00:00.000Z'));
+    expect(groupBy).toBe('month');
   });
 
   it('returns a validation error for invalid KPI month counts', async () => {

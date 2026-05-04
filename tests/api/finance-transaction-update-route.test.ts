@@ -19,8 +19,14 @@ jest.mock('@/lib/validations/finance', () => ({
 }));
 
 const mockFindFirst = jest.fn();
+const mockUpdate = jest.fn();
+const mockExpenseUpsert = jest.fn();
+const mockIncomeUpsert = jest.fn();
+const mockFindUnique = jest.fn();
+const mockTransaction = jest.fn();
 jest.mock('@/lib/db', () => ({
   prisma: {
+    $transaction: (...args: unknown[]) => mockTransaction(...args),
     financialTransaction: {
       findFirst: (...args: unknown[]) => mockFindFirst(...args),
     },
@@ -33,9 +39,40 @@ jest.mock('@/lib/audit', () => ({
 
 import { PUT as updateFinanceTransaction } from '@/app/api/finance/transactions/[id]/route';
 
+const transactionFixture = {
+  id: 12,
+  type: 'EXPENSE',
+  status: 'PENDING',
+  amount: 100,
+  description: 'Original',
+  paymentMethod: 'CASH',
+  createdBy: 7,
+  expenseDetails: {
+    expenseType: 'TRANSPORTATION',
+    vendorName: 'Vendor A',
+  },
+  incomeDetails: null,
+};
+
+const createTransactionClient = () => ({
+  financialTransaction: {
+    update: mockUpdate,
+    findUnique: mockFindUnique,
+  },
+  expenseDetail: {
+    upsert: mockExpenseUpsert,
+    delete: jest.fn(),
+  },
+  incomeDetail: {
+    upsert: mockIncomeUpsert,
+    delete: jest.fn(),
+  },
+});
+
 describe('PUT /api/finance/transactions/[id]', () => {
   beforeEach(() => {
     jest.clearAllMocks();
+    mockTransaction.mockImplementation(async callback => callback(createTransactionClient()));
   });
 
   it('limits managers to editing only their own transactions', async () => {
@@ -101,5 +138,86 @@ describe('PUT /api/finance/transactions/[id]', () => {
       success: false,
       error: 'Financial transaction not found',
     });
+  });
+
+  it('preserves the payment method when a partial update omits it', async () => {
+    mockFindFirst.mockResolvedValue(transactionFixture);
+    mockUpdate.mockResolvedValue(undefined);
+    mockExpenseUpsert.mockResolvedValue(undefined);
+    mockFindUnique.mockResolvedValue({
+      ...transactionFixture,
+      description: 'Updated description',
+    });
+
+    const response = await updateFinanceTransaction(
+      {
+        json: async () => ({
+          id: 12,
+          description: 'Updated description',
+        }),
+        user: {
+          id: '1',
+          role: 'ADMIN',
+          email: 'admin@example.com',
+        },
+      } as any,
+      { params: Promise.resolve({ id: '12' }) }
+    );
+
+    expect(response.status).toBe(200);
+    expect(mockUpdate).toHaveBeenCalledWith(
+      expect.objectContaining({
+        data: expect.objectContaining({
+          description: 'Updated description',
+          paymentMethod: undefined,
+        }),
+      })
+    );
+    expect(mockExpenseUpsert).toHaveBeenCalledWith(
+      expect.objectContaining({
+        update: expect.objectContaining({
+          expenseType: 'TRANSPORTATION',
+          vendorName: 'Vendor A',
+        }),
+      })
+    );
+  });
+
+  it('updates vendor details without requiring the expense type again', async () => {
+    mockFindFirst.mockResolvedValue(transactionFixture);
+    mockUpdate.mockResolvedValue(undefined);
+    mockExpenseUpsert.mockResolvedValue(undefined);
+    mockFindUnique.mockResolvedValue({
+      ...transactionFixture,
+      expenseDetails: {
+        expenseType: 'TRANSPORTATION',
+        vendorName: 'Vendor B',
+      },
+    });
+
+    const response = await updateFinanceTransaction(
+      {
+        json: async () => ({
+          id: 12,
+          vendorName: 'Vendor B',
+        }),
+        user: {
+          id: '1',
+          role: 'ADMIN',
+          email: 'admin@example.com',
+        },
+      } as any,
+      { params: Promise.resolve({ id: '12' }) }
+    );
+
+    expect(response.status).toBe(200);
+    expect(mockExpenseUpsert).toHaveBeenCalledWith(
+      expect.objectContaining({
+        update: expect.objectContaining({
+          expenseType: 'TRANSPORTATION',
+          vendorName: 'Vendor B',
+        }),
+      })
+    );
   });
 });

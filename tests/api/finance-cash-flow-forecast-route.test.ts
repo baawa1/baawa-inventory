@@ -126,6 +126,13 @@ describe('GET /api/finance/cash-flow-forecast', () => {
       dailyExpense: 5,
       dailyNetCashFlow: 5,
     });
+    const [startDate, endDate, groupBy] = mockBuildFinanceRange.mock.calls[0];
+    expect(startDate).toBeInstanceOf(Date);
+    expect(startDate.getFullYear()).toBe(2026);
+    expect(startDate.getMonth()).toBe(4);
+    expect(startDate.getDate()).toBe(1);
+    expect(endDate).toEqual(new Date('2026-05-10T12:00:00.000Z'));
+    expect(groupBy).toBe('month');
   });
 
   it('returns a validation error for invalid forecast day counts', async () => {

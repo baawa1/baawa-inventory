@@ -28,7 +28,7 @@ export const GET = withAuth(async (request: AuthenticatedRequest) => {
 
     const now = new Date();
     const periodRange = buildFinanceRange(
-      new Date(now.getFullYear(), now.getMonth() - months, 1),
+      new Date(now.getFullYear(), now.getMonth() - months + 1, 1),
       now,
       'month'
     );

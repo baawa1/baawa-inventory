@@ -41,7 +41,7 @@ export const GET = withAuth(async (request: AuthenticatedRequest) => {
 
     const now = new Date();
     const historicalRange = buildFinanceRange(
-      new Date(now.getFullYear(), now.getMonth() - historicalMonths, 1),
+      new Date(now.getFullYear(), now.getMonth() - historicalMonths + 1, 1),
       now,
       'month'
     );

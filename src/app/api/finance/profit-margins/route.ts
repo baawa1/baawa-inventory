@@ -64,6 +64,7 @@ export const GET = withAuth(async (request: AuthenticatedRequest) => {
       const operatingExpenses = metrics.operatingExpenses;
       const cogs = metrics.costOfGoodsSold;
       const grossProfit = metrics.grossProfit;
+      const operatingIncome = grossProfit - operatingExpenses;
       const netProfit = metrics.netProfit;
 
       return {
@@ -75,7 +76,7 @@ export const GET = withAuth(async (request: AuthenticatedRequest) => {
         netProfit,
         grossMargin: revenue > 0 ? (grossProfit / revenue) * 100 : 0,
         netMargin: revenue > 0 ? (netProfit / revenue) * 100 : 0,
-        operatingMargin: revenue > 0 ? (netProfit / revenue) * 100 : 0,
+        operatingMargin: revenue > 0 ? (operatingIncome / revenue) * 100 : 0,
       };
     });
 

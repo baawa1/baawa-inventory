@@ -133,6 +133,23 @@ export const PUT = withAuth(
         );
       }
 
+      const nextPaymentMethod =
+        validatedData.paymentMethod === undefined
+          ? undefined
+          : (validatedData.paymentMethod as any);
+      const nextExpenseType =
+        validatedData.expenseType ?? existingTransaction.expenseDetails?.expenseType;
+      const nextVendorName =
+        validatedData.vendorName === undefined
+          ? existingTransaction.expenseDetails?.vendorName
+          : validatedData.vendorName;
+      const nextIncomeSource =
+        validatedData.incomeSource ?? existingTransaction.incomeDetails?.incomeSource;
+      const nextPayerName =
+        validatedData.payerName === undefined
+          ? existingTransaction.incomeDetails?.payerName
+          : validatedData.payerName;
+
       // Use Prisma transaction to ensure data consistency
       const result = await prisma.$transaction(async tx => {
         // Clean up orphaned detail records when type changes
@@ -168,38 +185,43 @@ export const PUT = withAuth(
             transactionDate: validatedData.transactionDate
               ? new Date(validatedData.transactionDate)
               : undefined,
-            paymentMethod: validatedData.paymentMethod as any ?? null,
+            paymentMethod: nextPaymentMethod,
           },
         });
 
-        // Update expense details if provided
-        if (effectiveType === 'EXPENSE' && validatedData.expenseType) {
+        // Preserve existing detail values during partial updates.
+        if (
+          effectiveType === 'EXPENSE' &&
+          nextExpenseType !== undefined
+        ) {
           await tx.expenseDetail.upsert({
             where: { transactionId },
             update: {
-              expenseType: validatedData.expenseType as any,
-              vendorName: validatedData.vendorName,
+              expenseType: nextExpenseType as any,
+              vendorName: nextVendorName,
             },
             create: {
               transactionId,
-              expenseType: validatedData.expenseType as any,
-              vendorName: validatedData.vendorName,
+              expenseType: nextExpenseType as any,
+              vendorName: nextVendorName,
             },
           });
         }
 
-        // Update income details if provided
-        if (effectiveType === 'INCOME' && validatedData.incomeSource) {
+        if (
+          effectiveType === 'INCOME' &&
+          nextIncomeSource !== undefined
+        ) {
           await tx.incomeDetail.upsert({
             where: { transactionId },
             update: {
-              incomeSource: validatedData.incomeSource as any,
-              payerName: validatedData.payerName,
+              incomeSource: nextIncomeSource as any,
+              payerName: nextPayerName,
             },
             create: {
               transactionId,
-              incomeSource: validatedData.incomeSource as any,
-              payerName: validatedData.payerName,
+              incomeSource: nextIncomeSource as any,
+              payerName: nextPayerName,
             },
           });
         }
