@@ -14,9 +14,9 @@ jest.mock('sonner', () => ({
 // Mock the fetch function
 global.fetch = jest.fn();
 
-// Mock the DateRangePicker component
-jest.mock('@/components/ui/date-range-picker', () => ({
-  DateRangePicker: ({ date, onDateChange, placeholder }: any) => (
+// Mock the centralized date range picker component
+jest.mock('@/components/ui/date-range-picker-with-presets', () => ({
+  DateRangePickerWithPresets: ({ date, onDateChange, placeholder }: any) => (
     <div data-testid="date-range-picker">
       <button
         onClick={() =>

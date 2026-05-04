@@ -1,314 +1,281 @@
 import * as React from 'react';
 import { CalendarIcon } from '@radix-ui/react-icons';
-import {
-  format,
-  startOfDay,
-  endOfDay,
-  subDays,
-  startOfWeek,
-  endOfWeek,
-  startOfMonth,
-  endOfMonth,
-  startOfQuarter,
-  endOfQuarter,
-  startOfYear,
-  endOfYear,
-} from 'date-fns';
+import { ChevronLeftIcon, ChevronRightIcon } from 'lucide-react';
+import { addMonths, startOfMonth, subMonths } from 'date-fns';
 import { DateRange } from 'react-day-picker';
 import { cn } from '@/lib/utils';
+import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { Calendar } from '@/components/ui/calendar';
+import { useIsMobile } from '@/hooks/use-mobile';
 import {
   Popover,
   PopoverContent,
   PopoverTrigger,
 } from '@/components/ui/popover';
-import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
+import {
+  DATE_RANGE_PRESET_OPTIONS,
+  DEFAULT_DATE_RANGE_PRESET,
+  type DateRangePresetValue,
+  formatDateRangeDisplay,
+  getDateRangePreset,
+  getDateRangePresetLabel,
+  getMatchingDateRangePreset,
+  hasCompleteDateRange,
+  normalizeCalendarDateRange,
+} from '@/lib/utils/date-range';
 
 interface DateRangePickerWithPresetsProps {
   date?: DateRange;
   onDateChange?: (_date: DateRange | undefined) => void;
   className?: string;
   placeholder?: string;
-  showCompare?: boolean;
-  onCompareChange?: (
-    _compare: 'previous_period' | 'previous_year' | null
-  ) => void;
-  compareValue?: 'previous_period' | 'previous_year' | null;
+  defaultPreset?: DateRangePresetValue;
+  disableFuture?: boolean;
+  presets?: DateRangePresetValue[];
 }
 
-const PRESET_OPTIONS = [
-  {
-    label: 'Today',
-    value: 'today',
-    getRange: () => {
-      const today = new Date();
-      return { from: startOfDay(today), to: endOfDay(today) };
-    },
-  },
-  {
-    label: 'Yesterday',
-    value: 'yesterday',
-    getRange: () => {
-      const yesterday = subDays(new Date(), 1);
-      return { from: startOfDay(yesterday), to: endOfDay(yesterday) };
-    },
-  },
-  {
-    label: 'Week to date',
-    value: 'week_to_date',
-    getRange: () => {
-      const now = new Date();
-      return { from: startOfWeek(now, { weekStartsOn: 1 }), to: endOfDay(now) };
-    },
-  },
-  {
-    label: 'Last week',
-    value: 'last_week',
-    getRange: () => {
-      const now = new Date();
-      const lastWeekStart = subDays(startOfWeek(now, { weekStartsOn: 1 }), 7);
-      const lastWeekEnd = subDays(endOfWeek(now, { weekStartsOn: 1 }), 7);
-      return { from: startOfDay(lastWeekStart), to: endOfDay(lastWeekEnd) };
-    },
-  },
-  {
-    label: 'Month to date',
-    value: 'month_to_date',
-    getRange: () => {
-      const now = new Date();
-      return { from: startOfMonth(now), to: endOfDay(now) };
-    },
-  },
-  {
-    label: 'Last month',
-    value: 'last_month',
-    getRange: () => {
-      const now = new Date();
-      const lastMonth = new Date(now.getFullYear(), now.getMonth() - 1, 1);
-      return { from: startOfMonth(lastMonth), to: endOfMonth(lastMonth) };
-    },
-  },
-  {
-    label: 'Quarter to date',
-    value: 'quarter_to_date',
-    getRange: () => {
-      const now = new Date();
-      return { from: startOfQuarter(now), to: endOfDay(now) };
-    },
-  },
-  {
-    label: 'Last quarter',
-    value: 'last_quarter',
-    getRange: () => {
-      const now = new Date();
-      const lastQuarter = new Date(
-        now.getFullYear(),
-        Math.floor(now.getMonth() / 3) * 3 - 3,
-        1
-      );
-      return {
-        from: startOfQuarter(lastQuarter),
-        to: endOfQuarter(lastQuarter),
-      };
-    },
-  },
-  {
-    label: 'Year to date',
-    value: 'year_to_date',
-    getRange: () => {
-      const now = new Date();
-      return { from: startOfYear(now), to: endOfDay(now) };
-    },
-  },
-  {
-    label: 'Last year',
-    value: 'last_year',
-    getRange: () => {
-      const now = new Date();
-      const lastYear = new Date(now.getFullYear() - 1, 0, 1);
-      return { from: startOfYear(lastYear), to: endOfYear(lastYear) };
-    },
-  },
-];
-
-export function DateRangePickerWithPresets({
-  date,
-  onDateChange,
-  className,
-  placeholder = 'Pick a date range',
-  showCompare = false,
-  onCompareChange,
-  compareValue = null,
-}: DateRangePickerWithPresetsProps) {
-  const [dateRange, setDateRange] = React.useState<DateRange | undefined>(date);
-  const [selectedPreset, setSelectedPreset] = React.useState<string | null>(
-    null
+export function DateRangePickerWithPresets(
+  props: DateRangePickerWithPresetsProps
+) {
+  const {
+    date,
+    onDateChange,
+    className,
+    placeholder = 'Pick a date range',
+    defaultPreset = DEFAULT_DATE_RANGE_PRESET,
+    disableFuture = true,
+    presets,
+  } = props;
+  const isControlled = Object.prototype.hasOwnProperty.call(props, 'date');
+  const initialRange = React.useMemo(
+    () => date ?? getDateRangePreset(defaultPreset),
+    [date, defaultPreset]
   );
-  const [isOpen, setIsOpen] = React.useState(false);
-  const [pendingDateRange, setPendingDateRange] = React.useState<
+  const [internalDateRange, setInternalDateRange] = React.useState<
     DateRange | undefined
-  >(date);
-  const [pendingPreset, setPendingPreset] = React.useState<string | null>(null);
+  >(initialRange);
+  const [isOpen, setIsOpen] = React.useState(false);
+  const [draftDateRange, setDraftDateRange] = React.useState<
+    DateRange | undefined
+  >(initialRange);
+  const [calendarMonth, setCalendarMonth] = React.useState<Date>(
+    startOfMonth(initialRange?.from ?? new Date())
+  );
+  const isMobile = useIsMobile();
+  const triggerId = React.useId();
+  const referenceDate = React.useMemo(() => new Date(), [isOpen]);
+  const selectedDateRange = isControlled ? date : internalDateRange;
+  const presetOptions = React.useMemo(
+    () =>
+      presets?.length
+        ? DATE_RANGE_PRESET_OPTIONS.filter(option =>
+            presets.includes(option.value)
+          )
+        : DATE_RANGE_PRESET_OPTIONS,
+    [presets]
+  );
+  const activePreset = React.useMemo(
+    () => getMatchingDateRangePreset(selectedDateRange, referenceDate),
+    [selectedDateRange, referenceDate]
+  );
+  const draftPreset = React.useMemo(
+    () => getMatchingDateRangePreset(draftDateRange, referenceDate),
+    [draftDateRange, referenceDate]
+  );
+  const defaultPresetLabel = getDateRangePresetLabel(defaultPreset);
+  const triggerRangeLabel = formatDateRangeDisplay(selectedDateRange);
 
-  // Update internal state when external date changes
   React.useEffect(() => {
-    setDateRange(date);
-    setPendingDateRange(date);
-  }, [date]);
+    if (isControlled) {
+      setDraftDateRange(date);
+    }
+  }, [date, isControlled]);
 
-  const handleDateChange = (newDate: DateRange | undefined) => {
-    setPendingDateRange(newDate);
-    setPendingPreset(null); // Clear preset when custom date is selected
+  const applyDateRange = React.useCallback(
+    (nextRange: DateRange | undefined) => {
+      const normalizedRange = normalizeCalendarDateRange(nextRange);
+
+      if (!isControlled) {
+        setInternalDateRange(normalizedRange);
+      }
+
+      onDateChange?.(normalizedRange);
+    },
+    [isControlled, onDateChange]
+  );
+
+  const handleOpenChange = (nextOpen: boolean) => {
+    setIsOpen(nextOpen);
+
+    if (nextOpen) {
+      const nextRange = selectedDateRange ?? getDateRangePreset(defaultPreset);
+      setDraftDateRange(nextRange);
+      setCalendarMonth(startOfMonth(nextRange?.from ?? new Date()));
+      return;
+    }
+
+    setDraftDateRange(selectedDateRange);
   };
 
-  const handlePresetSelect = (presetValue: string) => {
-    const preset = PRESET_OPTIONS.find(p => p.value === presetValue);
-    if (preset) {
-      const newRange = preset.getRange();
-      setPendingDateRange(newRange);
-      setPendingPreset(presetValue);
+  const handlePresetSelect = (presetValue: DateRangePresetValue) => {
+    const nextRange = getDateRangePreset(presetValue, referenceDate);
+    setDraftDateRange(nextRange);
+    applyDateRange(nextRange);
+    setIsOpen(false);
+  };
+
+  const handleDateChange = (nextRange: DateRange | undefined) => {
+    const normalizedRange = normalizeCalendarDateRange(nextRange);
+    setDraftDateRange(normalizedRange);
+
+    if (normalizedRange?.from) {
+      setCalendarMonth(startOfMonth(normalizedRange.from));
+    }
+
+    if (hasCompleteDateRange(normalizedRange)) {
+      applyDateRange(normalizedRange);
+      setIsOpen(false);
     }
   };
 
-  const handleUpdate = () => {
-    // Apply the pending changes
-    setDateRange(pendingDateRange);
-    setSelectedPreset(pendingPreset);
-    onDateChange?.(pendingDateRange);
-    setIsOpen(false);
-  };
-
-  const handleCompareChange = (
-    value: 'previous_period' | 'previous_year' | null
-  ) => {
-    onCompareChange?.(value);
-  };
-
-  const handleCancel = () => {
-    // Reset pending changes to current values
-    setPendingDateRange(dateRange);
-    setPendingPreset(selectedPreset);
-    setIsOpen(false);
-  };
-
   return (
-    <div className={cn('grid gap-2', className)}>
-      <Popover open={isOpen} onOpenChange={setIsOpen}>
+    <div className={cn('grid min-w-[280px] gap-2', className)}>
+      <Popover open={isOpen} onOpenChange={handleOpenChange}>
         <PopoverTrigger asChild>
           <Button
-            id="date"
-            variant={'outline'}
+            id={triggerId}
+            variant="outline"
             className={cn(
-              'w-[300px] justify-start text-left font-normal',
-              !dateRange && 'text-muted-foreground'
+              'group/date-trigger h-auto w-full justify-start px-3 py-2 text-left font-normal',
+              !selectedDateRange && 'text-muted-foreground'
             )}
           >
-            <CalendarIcon className="mr-2 h-4 w-4" />
-            {dateRange?.from ? (
-              dateRange.to ? (
+            <CalendarIcon className="mt-0.5 mr-1 h-4 w-4 shrink-0" />
+            <div className="flex min-w-0 items-center gap-2">
+              {selectedDateRange?.from ? (
                 <>
-                  {format(dateRange.from, 'LLL dd, y')} -{' '}
-                  {format(dateRange.to, 'LLL dd, y')}
+                  <span className="shrink-0 text-sm font-medium">
+                    {activePreset
+                      ? getDateRangePresetLabel(activePreset)
+                      : 'Custom range'}
+                  </span>
+                  <span className="text-muted-foreground truncate text-xs transition-colors group-hover/date-trigger:text-foreground/80">
+                    {triggerRangeLabel}
+                  </span>
                 </>
               ) : (
-                format(dateRange.from, 'LLL dd, y')
-              )
-            ) : (
-              <span>{placeholder}</span>
-            )}
+                <span>{placeholder}</span>
+              )}
+            </div>
           </Button>
         </PopoverTrigger>
-        <PopoverContent className="w-auto p-0" align="end">
-          <div className="p-4">
-            <div className="mb-4">
-              <h3 className="mb-2 text-lg font-semibold">
-                SELECT A DATE RANGE
-              </h3>
-
-              <Tabs defaultValue="presets" className="w-full">
-                <TabsList className="grid w-full grid-cols-2">
-                  <TabsTrigger value="presets">Presets</TabsTrigger>
-                  <TabsTrigger value="custom">Custom</TabsTrigger>
-                </TabsList>
-
-                <TabsContent value="presets" className="mt-4">
-                  <div className="grid grid-cols-2 gap-2">
-                    {PRESET_OPTIONS.map(preset => (
-                      <Button
-                        key={preset.value}
-                        variant={
-                          pendingPreset === preset.value ? 'default' : 'outline'
-                        }
-                        size="sm"
-                        className="h-auto justify-start px-3 py-2 text-left"
-                        onClick={() => handlePresetSelect(preset.value)}
-                      >
-                        <div className="flex items-center gap-2">
-                          <span className="text-sm">{preset.label}</span>
-                        </div>
-                      </Button>
-                    ))}
-                  </div>
-                </TabsContent>
-
-                <TabsContent value="custom" className="mt-4">
-                  <Calendar
-                    initialFocus
-                    mode="range"
-                    defaultMonth={pendingDateRange?.from}
-                    selected={pendingDateRange}
-                    onSelect={handleDateChange}
-                    numberOfMonths={2}
-                  />
-                </TabsContent>
-              </Tabs>
+        <PopoverContent
+          className="w-[calc(100vw-1rem)] max-w-[calc(100vw-1rem)] p-0 sm:w-[680px] sm:max-w-[calc(100vw-2rem)]"
+          align="end"
+          sideOffset={8}
+        >
+          <div className="grid overflow-hidden lg:grid-cols-[180px_minmax(0,1fr)]">
+            <div className="border-b p-3 lg:border-r lg:border-b-0">
+              <div className="mb-3">
+                <p className="text-muted-foreground text-xs font-semibold tracking-[0.18em] uppercase">
+                  Quick Select
+                </p>
+              </div>
+              <div className="grid gap-1.5">
+                {presetOptions.map(option => (
+                  <Button
+                    key={option.value}
+                    variant={draftPreset === option.value ? 'default' : 'outline'}
+                    size="sm"
+                    className="h-auto items-start justify-start px-3 py-2 text-left"
+                    onClick={() => handlePresetSelect(option.value)}
+                  >
+                    <span className="text-sm font-medium">{option.label}</span>
+                  </Button>
+                ))}
+              </div>
             </div>
 
-            {showCompare && (
-              <div className="mb-4">
-                <h4 className="mb-2 text-sm font-semibold">COMPARE TO</h4>
-                <div className="grid grid-cols-2 gap-2">
+            <div className="flex min-w-0 flex-col">
+              <div className="border-b px-4 py-3">
+                <div className="flex flex-wrap items-start justify-between gap-3">
+                  <div>
+                    <p className="text-sm font-semibold">Custom range</p>
+                  </div>
+                  <Badge variant={draftPreset ? 'secondary' : 'outline'}>
+                    {draftPreset
+                      ? getDateRangePresetLabel(draftPreset)
+                      : 'Custom'}
+                  </Badge>
+                </div>
+              </div>
+
+              <div className="px-2 pb-2 sm:p-3">
+                <Calendar
+                  initialFocus
+                  mode="range"
+                  month={calendarMonth}
+                  onMonthChange={setCalendarMonth}
+                  selected={draftDateRange}
+                  onSelect={handleDateChange}
+                  numberOfMonths={isMobile ? 1 : 2}
+                  disabled={disableFuture ? { after: new Date() } : undefined}
+                  className="w-full p-0 sm:p-3"
+                  classNames={{
+                    root: 'w-full',
+                    months: 'flex w-full flex-col gap-6 md:flex-row',
+                    month: 'w-full',
+                    nav: 'hidden',
+                    table: 'w-full table-fixed border-collapse',
+                  }}
+                />
+              </div>
+
+              <div className="border-t px-4 py-2">
+                <div className="flex items-center justify-between gap-2">
                   <Button
-                    variant={
-                      compareValue === 'previous_period' ? 'default' : 'outline'
-                    }
+                    type="button"
+                    variant="ghost"
                     size="sm"
-                    className="h-auto justify-start px-3 py-2 text-left"
-                    onClick={() => handleCompareChange('previous_period')}
+                    onClick={() =>
+                      setCalendarMonth(current =>
+                        startOfMonth(subMonths(current, 1))
+                      )
+                    }
                   >
-                    <div className="flex items-center gap-2">
-                      <span className="text-sm">Previous period</span>
-                    </div>
+                    <ChevronLeftIcon className="mr-1 h-4 w-4" />
+                    Previous
                   </Button>
                   <Button
-                    variant={
-                      compareValue === 'previous_year' ? 'default' : 'outline'
-                    }
+                    type="button"
+                    variant="ghost"
                     size="sm"
-                    className="h-auto justify-start px-3 py-2 text-left"
-                    onClick={() => handleCompareChange('previous_year')}
+                    onClick={() =>
+                      setCalendarMonth(current =>
+                        startOfMonth(addMonths(current, 1))
+                      )
+                    }
                   >
-                    <div className="flex items-center gap-2">
-                      <span className="text-sm">Previous year</span>
-                    </div>
+                    Next
+                    <ChevronRightIcon className="ml-1 h-4 w-4" />
                   </Button>
                 </div>
               </div>
-            )}
 
-            <div className="flex gap-2">
-              <Button
-                onClick={handleCancel}
-                variant="outline"
-                size="sm"
-                className="flex-1"
-              >
-                Cancel
-              </Button>
-              <Button onClick={handleUpdate} size="sm" className="flex-1">
-                Update
-              </Button>
+              {activePreset !== defaultPreset && (
+                <div className="border-t px-4 py-2">
+                  <div className="flex justify-end">
+                    <Button
+                      variant="ghost"
+                      size="sm"
+                      onClick={() => handlePresetSelect(defaultPreset)}
+                    >
+                      Reset to {defaultPresetLabel}
+                    </Button>
+                  </div>
+                </div>
+              )}
             </div>
           </div>
         </PopoverContent>

@@ -4,7 +4,7 @@ import React, { useState } from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
-import { DateRangePicker } from '@/components/ui/date-range-picker';
+import { DateRangePickerWithPresets } from '@/components/ui/date-range-picker-with-presets';
 import {
   IconTrendingUp,
   IconCurrencyNaira,
@@ -156,7 +156,7 @@ export function CustomerAnalytics({ user: _user }: CustomerAnalyticsProps) {
               Comprehensive customer insights and analytics
             </p>
           </div>
-          <DateRangePicker
+          <DateRangePickerWithPresets
             date={dateRange}
             onDateChange={setDateRange}
             placeholder="Select date range"
@@ -194,7 +194,7 @@ export function CustomerAnalytics({ user: _user }: CustomerAnalyticsProps) {
             Comprehensive customer insights and analytics
           </p>
         </div>
-        <DateRangePicker
+        <DateRangePickerWithPresets
           date={dateRange}
           onDateChange={setDateRange}
           placeholder="Select date range"

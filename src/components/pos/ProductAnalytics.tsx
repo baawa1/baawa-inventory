@@ -6,7 +6,7 @@ import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
-import { DateRangePicker } from '@/components/ui/date-range-picker';
+import { DateRangePickerWithPresets } from '@/components/ui/date-range-picker-with-presets';
 import { InlineLoading } from '@/components/ui/loading';
 import {
   Table,
@@ -290,7 +290,7 @@ export function ProductAnalytics({ user: _ }: ProductAnalyticsProps) {
               </SelectContent>
             </Select>
 
-            <DateRangePicker
+            <DateRangePickerWithPresets
               date={dateRange}
               onDateChange={setDateRange}
               placeholder="Select date range"
