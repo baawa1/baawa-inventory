@@ -30,7 +30,7 @@ export default async function TransactionDetailPage({
   const transactionId = parseInt(id);
 
   if (isNaN(transactionId)) {
-    redirect('/finance');
+    redirect('/finance/transactions');
   }
 
   return (

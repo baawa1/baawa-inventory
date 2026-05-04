@@ -38,6 +38,15 @@ import { Alert, AlertDescription } from '@/components/ui/alert';
 import { PageHeader } from '@/components/ui/page-header';
 import { InlineLoading } from '@/components/ui/loading';
 import { ArrowLeft, AlertCircle } from 'lucide-react';
+import {
+  MANUAL_ALLOWED_EXPENSE_TYPE_VALUES,
+  MANUAL_ALLOWED_INCOME_SOURCE_VALUES,
+} from '@/lib/constants/finance';
+import {
+  canUserEditFinancialTransaction,
+  getFinanceUserDisplayName,
+} from '@/lib/finance/transaction-access';
+import { formatFinanceDateInput } from '@/lib/finance/date-range';
 
 interface EditTransactionFormProps {
   transactionId: number;
@@ -53,39 +62,35 @@ type FormData = {
   paymentMethod:
     | 'CASH'
     | 'BANK_TRANSFER'
-    | 'CARD'
+    | 'POS_MACHINE'
+    | 'CREDIT_CARD'
     | 'MOBILE_MONEY'
-    | 'CHECK'
-    | 'OTHER';
+    ;
   // Income specific fields
   incomeSource?:
-    | 'SALES'
-    | 'LOAN'
     | 'SERVICES'
-    | 'INVESTMENT'
-    | 'RENTAL'
-    | 'COMMISSION'
-    | 'REFUND'
+    | 'INVESTMENTS'
+    | 'ROYALTIES'
+    | 'COMMISSIONS'
     | 'OTHER';
   payerName?: string;
   // Expense specific fields
   expenseType?:
-    | 'SUPPLIES'
-    | 'RENT'
     | 'UTILITIES'
-    | 'SALARY'
+    | 'RENT'
+    | 'SALARIES'
     | 'MARKETING'
+    | 'OFFICE_SUPPLIES'
     | 'TRAVEL'
     | 'MAINTENANCE'
     | 'INSURANCE'
-    | 'TAXES'
     | 'OTHER';
   vendorName?: string;
 };
 
 export function EditTransactionForm({
   transactionId,
-  user: _user,
+  user,
 }: EditTransactionFormProps) {
   const router = useRouter();
   const [isSubmitting, setIsSubmitting] = useState(false);
@@ -104,11 +109,11 @@ export function EditTransactionForm({
       type: 'INCOME',
       amount: 0,
       description: '',
-      transactionDate: new Date().toISOString().split('T')[0],
+      transactionDate: formatFinanceDateInput(new Date()),
       paymentMethod: 'CASH',
-      incomeSource: 'SALES',
+      incomeSource: 'SERVICES',
       payerName: '',
-      expenseType: 'SUPPLIES',
+      expenseType: 'UTILITIES',
       vendorName: '',
     },
   });
@@ -116,18 +121,25 @@ export function EditTransactionForm({
   // Populate form when transaction data is loaded
   React.useEffect(() => {
     if (transaction) {
-      const paymentMethod = (transaction.paymentMethod || 'CASH') as FormData['paymentMethod'];
-      const incomeSource = (transaction.incomeDetails?.incomeSource || 'SALES') as FormData['incomeSource'];
-      const expenseType = (transaction.expenseDetails?.expenseType || 'SUPPLIES') as FormData['expenseType'];
+      const paymentMethod = (transaction.paymentMethod ||
+        'CASH') as FormData['paymentMethod'];
+      const incomeSource = (
+        transaction.incomeDetails?.incomeSource ||
+        MANUAL_ALLOWED_INCOME_SOURCE_VALUES[0]
+      ) as FormData['incomeSource'];
+      const expenseType = (
+        transaction.expenseDetails?.expenseType ||
+        MANUAL_ALLOWED_EXPENSE_TYPE_VALUES[0]
+      ) as FormData['expenseType'];
 
       form.reset({
         id: transaction.id,
         type: transaction.type,
         amount: transaction.amount,
         description: transaction.description || '',
-        transactionDate: new Date(transaction.transactionDate)
-          .toISOString()
-          .split('T')[0],
+        transactionDate: formatFinanceDateInput(
+          new Date(transaction.transactionDate)
+        ),
         paymentMethod,
         incomeSource,
         payerName: transaction.incomeDetails?.payerName || '',
@@ -176,6 +188,35 @@ export function EditTransactionForm({
             again.
           </AlertDescription>
         </Alert>
+      </div>
+    );
+  }
+
+  const canEditTransaction = canUserEditFinancialTransaction(user.role, user.id, {
+    createdBy: transaction.createdBy,
+    status: transaction.status,
+  });
+
+  if (!canEditTransaction) {
+    return (
+      <div className="mx-auto max-w-4xl p-6">
+        <Alert variant="destructive">
+          <AlertCircle className="h-4 w-4" />
+          <AlertDescription>
+            You can only edit your own pending or completed transactions.
+            {transaction.createdByUser && (
+              <> This transaction was created by {getFinanceUserDisplayName(transaction.createdByUser) || 'another user'}.</>
+            )}
+          </AlertDescription>
+        </Alert>
+        <Button
+          variant="ghost"
+          onClick={() => router.push(`/finance/transactions/${transactionId}`)}
+          className="mt-4 px-4 lg:px-6"
+        >
+          <ArrowLeft className="mr-2 h-4 w-4" />
+          Back to Transaction
+        </Button>
       </div>
     );
   }
@@ -303,15 +344,12 @@ export function EditTransactionForm({
                           </SelectTrigger>
                         </FormControl>
                         <SelectContent>
-                          <SelectItem value="SALES">Sales Revenue</SelectItem>
-                          <SelectItem value="LOAN">Loan</SelectItem>
                           <SelectItem value="SERVICES">Service Fees</SelectItem>
-                          <SelectItem value="INVESTMENT">
+                          <SelectItem value="INVESTMENTS">
                             Investment Income
                           </SelectItem>
-                          <SelectItem value="RENTAL">Rental Income</SelectItem>
-                          <SelectItem value="COMMISSION">Commission</SelectItem>
-                          <SelectItem value="REFUND">Refund</SelectItem>
+                          <SelectItem value="ROYALTIES">Royalties</SelectItem>
+                          <SelectItem value="COMMISSIONS">Commission</SelectItem>
                           <SelectItem value="OTHER">Other</SelectItem>
                         </SelectContent>
                       </Select>
@@ -342,14 +380,15 @@ export function EditTransactionForm({
                           <SelectItem value="UTILITIES">Utilities</SelectItem>
                           <SelectItem value="RENT">Rent</SelectItem>
                           <SelectItem value="SALARIES">Salaries</SelectItem>
-                          <SelectItem value="SUPPLIES">Supplies</SelectItem>
                           <SelectItem value="MARKETING">Marketing</SelectItem>
+                          <SelectItem value="OFFICE_SUPPLIES">
+                            Office Supplies
+                          </SelectItem>
                           <SelectItem value="TRAVEL">Travel</SelectItem>
                           <SelectItem value="MAINTENANCE">
                             Maintenance
                           </SelectItem>
                           <SelectItem value="INSURANCE">Insurance</SelectItem>
-                          <SelectItem value="TAXES">Taxes</SelectItem>
                           <SelectItem value="OTHER">Other</SelectItem>
                         </SelectContent>
                       </Select>
@@ -383,12 +422,11 @@ export function EditTransactionForm({
                         <SelectItem value="BANK_TRANSFER">
                           Bank Transfer
                         </SelectItem>
-                        <SelectItem value="CARD">Card</SelectItem>
-                        <SelectItem value="MOBILE_MONEY">
-                          Mobile Money
+                        <SelectItem value="POS_MACHINE">POS Machine</SelectItem>
+                        <SelectItem value="CREDIT_CARD">
+                          Credit Card
                         </SelectItem>
-                        <SelectItem value="CHECK">Check</SelectItem>
-                        <SelectItem value="OTHER">Other</SelectItem>
+                        <SelectItem value="MOBILE_MONEY">Mobile Money</SelectItem>
                       </SelectContent>
                     </Select>
                     <FormMessage />

@@ -1,7 +1,10 @@
 'use client';
 
 import { useState } from 'react';
-import { INCOME_SOURCES, PAYMENT_METHODS } from '@/lib/constants/finance';
+import {
+  MANUAL_ALLOWED_INCOME_SOURCE_VALUES,
+  PAYMENT_METHODS,
+} from '@/lib/constants/finance';
 import type { IncomeSourceOption, PaymentMethodOption } from './types';
 
 export function useFormDataQuery() {
@@ -9,14 +12,18 @@ export function useFormDataQuery() {
   const [submitError, setSubmitError] = useState<string | null>(null);
 
   // Income source options
-  const incomeSourceOptions: IncomeSourceOption[] = [
-    { value: INCOME_SOURCES.SALES, label: 'Sales Revenue' },
-    { value: INCOME_SOURCES.SERVICES, label: 'Service Fees' },
-    { value: INCOME_SOURCES.INVESTMENTS, label: 'Investment Income' },
-    { value: INCOME_SOURCES.ROYALTIES, label: 'Royalties' },
-    { value: INCOME_SOURCES.COMMISSIONS, label: 'Commission' },
-    { value: INCOME_SOURCES.OTHER, label: 'Other' },
-  ];
+  const incomeSourceOptions: IncomeSourceOption[] =
+    MANUAL_ALLOWED_INCOME_SOURCE_VALUES.map(value => ({
+      value,
+      label:
+        {
+          SERVICES: 'Service Fees',
+          INVESTMENTS: 'Investment Income',
+          ROYALTIES: 'Royalties',
+          COMMISSIONS: 'Commission',
+          OTHER: 'Other',
+        }[value] || value,
+    }));
 
   // Payment method options
   const paymentMethodOptions: PaymentMethodOption[] = [

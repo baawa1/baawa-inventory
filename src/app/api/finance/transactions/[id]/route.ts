@@ -5,6 +5,10 @@ import { createApiResponse } from '@/lib/api-response';
 import { createAuditLog } from '@/lib/audit';
 import { AuditLogAction } from '@/types/audit';
 import { z } from 'zod';
+import {
+  attachFinancialTransactionNames,
+  isFinancialTransactionMutable,
+} from '@/lib/finance/transaction-access';
 
 // GET /api/finance/transactions/[id] - Get specific financial transaction
 export const GET = withAuth(
@@ -27,18 +31,8 @@ export const GET = withAuth(
         return createApiResponse.validationError('Invalid transaction ID');
       }
 
-      // Build where clause based on role
-      const whereClause: { id: number; createdBy?: number } = {
-        id: transactionId,
-      };
-
-      // MANAGER can only see their own transactions
-      if (request.user.role === 'MANAGER') {
-        whereClause.createdBy = parseInt(request.user.id);
-      }
-
-      const transaction = await prisma.financialTransaction.findFirst({
-        where: whereClause,
+      const transaction = await prisma.financialTransaction.findUnique({
+        where: { id: transactionId },
         include: {
           createdByUser: {
             select: {
@@ -65,7 +59,9 @@ export const GET = withAuth(
         return createApiResponse.notFound('Financial transaction');
       }
 
-      return createApiResponse.success(transaction);
+      return createApiResponse.success(
+        attachFinancialTransactionNames(transaction)
+      );
     } catch (error) {
       console.error('Error fetching financial transaction:', error);
       return createApiResponse.internalError('Failed to fetch transaction');
@@ -100,7 +96,6 @@ export const PUT = withAuth(
       );
       const validatedData = updateTransactionSchema.parse(body);
 
-      // Build where clause based on role
       const whereClause: { id: number; createdBy?: number } = {
         id: transactionId,
       };
@@ -132,11 +127,7 @@ export const PUT = withAuth(
       const effectiveType = validatedData.type ?? existingTransaction.type;
 
       // Check if transaction can be updated (not approved/rejected/cancelled)
-      if (
-        ['APPROVED', 'REJECTED', 'CANCELLED'].includes(
-          existingTransaction.status
-        )
-      ) {
+      if (!isFinancialTransactionMutable(existingTransaction.status)) {
         return createApiResponse.validationError(
           'Cannot update a transaction that is approved, rejected, or cancelled'
         );
@@ -248,7 +239,9 @@ export const PUT = withAuth(
           newValues: updatedTransaction,
         });
 
-        return updatedTransaction;
+        return updatedTransaction
+          ? attachFinancialTransactionNames(updatedTransaction)
+          : updatedTransaction;
       });
 
       return createApiResponse.success(

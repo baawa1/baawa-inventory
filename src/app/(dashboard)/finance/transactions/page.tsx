@@ -16,8 +16,7 @@ export default async function FinanceTransactionsPage() {
     redirect('/login');
   }
 
-  // Check if user has permission to access financial reports (Admin only)
-  if (!hasPermission(session.user.role, 'FINANCIAL_REPORTS')) {
+  if (!hasPermission(session.user.role, 'FINANCE_TRANSACTIONS_READ')) {
     redirect('/unauthorized');
   }
 

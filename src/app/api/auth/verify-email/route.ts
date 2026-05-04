@@ -5,17 +5,28 @@ import { AuditLogger } from '@/lib/utils/audit-logger';
 import { randomBytes } from 'crypto';
 import { getAppBaseUrl } from '@/lib/utils';
 import { AuditLogAction } from '@/types/audit';
+import type {
+  ResendVerificationEmailResponse,
+  VerifyEmailResponse,
+} from '@/lib/auth/email-flow';
+import {
+  resendVerificationEmailSchema,
+  verifyEmailSchema,
+} from '@/lib/validations/user';
 
 export async function POST(request: NextRequest) {
   try {
-    const { token } = await request.json();
-
-    if (!token) {
+    const validation = verifyEmailSchema.safeParse(await request.json());
+    if (!validation.success) {
       return NextResponse.json(
-        { error: 'Verification token is required' },
+        {
+          error: 'Invalid input data',
+          details: validation.error.issues,
+        },
         { status: 400 }
       );
     }
+    const token = validation.data.token;
 
     // Find user with this verification token
     const user = await prisma.user.findFirst({
@@ -81,9 +92,10 @@ export async function POST(request: NextRequest) {
       request
     );
 
-    return NextResponse.json({
+    const response: VerifyEmailResponse = {
       message:
         'Email verified successfully! Your account is now pending admin approval.',
+      email: updatedUser.email,
       user: {
         id: updatedUser.id,
         email: updatedUser.email,
@@ -91,10 +103,12 @@ export async function POST(request: NextRequest) {
         status: updatedUser.userStatus,
         emailVerified: updatedUser.emailVerified,
       },
-      // Indicate that the client should refresh the session
       shouldRefreshSession: true,
-      redirectTo: '/pending-approval', // Add explicit redirect instruction
-    });
+      requiresLogin: true,
+      redirectTo: '/login',
+    };
+
+    return NextResponse.json(response);
   } catch (error) {
     console.error('Error in POST /api/auth/verify-email:', error);
 
@@ -102,7 +116,6 @@ export async function POST(request: NextRequest) {
     await AuditLogger.logAuthEvent(
       {
         action: AuditLogAction.EMAIL_VERIFICATION,
-        userEmail: 'unknown',
         success: false,
         errorMessage: error instanceof Error ? error.message : 'Unknown error',
       },
@@ -118,12 +131,22 @@ export async function POST(request: NextRequest) {
 
 // Generate new verification token for existing user
 export async function PUT(request: NextRequest) {
-  try {
-    const { email } = await request.json();
+  let email = 'unknown';
 
-    if (!email) {
-      return NextResponse.json({ error: 'Email is required' }, { status: 400 });
+  try {
+    const validation = resendVerificationEmailSchema.safeParse(
+      await request.json()
+    );
+    if (!validation.success) {
+      return NextResponse.json(
+        {
+          error: 'Invalid input data',
+          details: validation.error.issues,
+        },
+        { status: 400 }
+      );
     }
+    email = validation.data.email;
 
     // Find user by email
     const user = await prisma.user.findUnique({
@@ -165,7 +188,9 @@ export async function PUT(request: NextRequest) {
 
     // Send new verification email
     try {
-      const verificationLink = `${getAppBaseUrl()}/verify-email?token=${verificationToken}`;
+      const verificationLink = `${getAppBaseUrl()}/verify-email?token=${verificationToken}&email=${encodeURIComponent(
+        user.email
+      )}`;
 
       await emailService.sendVerificationEmail(email, {
         firstName: user.firstName,
@@ -184,9 +209,13 @@ export async function PUT(request: NextRequest) {
         request
       );
 
-      return NextResponse.json({
+      const response: ResendVerificationEmailResponse = {
         message: 'New verification email sent successfully!',
-      });
+        email: user.email,
+        verificationEmailSent: true,
+      };
+
+      return NextResponse.json(response);
     } catch (emailError) {
       console.error('Error sending verification email:', emailError);
       return NextResponse.json(
@@ -201,7 +230,7 @@ export async function PUT(request: NextRequest) {
     await AuditLogger.logAuthEvent(
       {
         action: AuditLogAction.EMAIL_VERIFICATION,
-        userEmail: 'unknown',
+        userEmail: email,
         success: false,
         errorMessage: error instanceof Error ? error.message : 'Unknown error',
       },

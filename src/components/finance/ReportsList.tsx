@@ -7,6 +7,7 @@ import { useFinancialReports } from '@/hooks/api/finance';
 import { formatCurrency } from '@/lib/utils';
 import { exportToCSV, generateExportFilename } from '@/lib/utils/finance';
 import { toast } from 'sonner';
+import { formatFinanceDateInput } from '@/lib/finance/date-range';
 
 // UI Components
 import { Button } from '@/components/ui/button';
@@ -47,6 +48,7 @@ import {
   DollarSign,
   Activity,
   RefreshCw,
+  ShieldAlert,
 } from 'lucide-react';
 
 interface ReportsListProps {
@@ -59,9 +61,11 @@ export function ReportsList({ user: _user }: ReportsListProps) {
   const [startDate, setStartDate] = useState(() => {
     const d = new Date();
     d.setMonth(d.getMonth() - 1);
-    return d.toISOString().split('T')[0];
+    return formatFinanceDateInput(d);
   });
-  const [endDate, setEndDate] = useState(() => new Date().toISOString().split('T')[0]);
+  const [endDate, setEndDate] = useState(() =>
+    formatFinanceDateInput(new Date())
+  );
   const [period, setPeriod] = useState<'weekly' | 'monthly' | 'quarterly' | 'yearly'>('monthly');
   const [isExporting, setIsExporting] = useState(false);
 
@@ -94,7 +98,7 @@ export function ReportsList({ user: _user }: ReportsListProps) {
       if (reportType === 'FINANCIAL_SUMMARY' || reportType === 'INCOME_STATEMENT') {
         exportData.push(
           { Category: 'REVENUE', Item: 'Sales', Amount: profitLoss?.revenue?.sales || 0 },
-          { Category: 'REVENUE', Item: 'Other Income', Amount: profitLoss?.revenue?.otherIncome || 0 },
+          { Category: 'REVENUE', Item: 'Other Operating Income', Amount: profitLoss?.revenue?.otherIncome || 0 },
           { Category: 'REVENUE', Item: 'Total Revenue', Amount: profitLoss?.revenue?.totalRevenue || 0 },
           { Category: '---', Item: '---', Amount: '---' },
           { Category: 'EXPENSES', Item: 'Cost of Goods', Amount: profitLoss?.expenses?.costOfGoods || 0 },
@@ -121,7 +125,7 @@ export function ReportsList({ user: _user }: ReportsListProps) {
           { Category: 'OPERATING', Item: 'Net Operating Cash Flow', Amount: cashFlow?.operatingActivities?.netOperatingCashFlow || 0 },
           { Category: 'INVESTING', Item: 'Capital Expenditures', Amount: cashFlow?.investingActivities?.capitalExpenditures || 0 },
           { Category: 'INVESTING', Item: 'Net Investing Cash Flow', Amount: cashFlow?.investingActivities?.netInvestingCashFlow || 0 },
-          { Category: 'FINANCING', Item: 'Loans', Amount: cashFlow?.financingActivities?.loans || 0 },
+          { Category: 'FINANCING', Item: 'Financing Inflows', Amount: cashFlow?.financingActivities?.loans || 0 },
           { Category: 'FINANCING', Item: 'Repayments', Amount: cashFlow?.financingActivities?.repayments || 0 },
           { Category: 'FINANCING', Item: 'Net Financing Cash Flow', Amount: cashFlow?.financingActivities?.netFinancingCashFlow || 0 },
           { Category: '---', Item: '---', Amount: '---' },
@@ -287,7 +291,7 @@ export function ReportsList({ user: _user }: ReportsListProps) {
       </div>
 
       {/* Quick Report Cards - Link to actual report pages */}
-      <div className="grid gap-6 md:grid-cols-2 lg:grid-cols-4">
+      <div className="grid gap-6 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4">
         <Link href="/finance/reports/income-statement">
           <Card className="cursor-pointer transition-shadow hover:shadow-md">
             <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
@@ -374,6 +378,23 @@ export function ReportsList({ user: _user }: ReportsListProps) {
             </CardContent>
           </Card>
         </Link>
+
+        <Link href="/finance/reports/overlap-audit">
+          <Card className="cursor-pointer transition-shadow hover:shadow-md">
+            <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+              <CardTitle className="text-sm font-medium">
+                Overlap Audit
+              </CardTitle>
+              <ShieldAlert className="h-4 w-4 text-amber-600" />
+            </CardHeader>
+            <CardContent>
+              <div className="text-2xl font-bold text-amber-600">Audit</div>
+              <p className="text-muted-foreground text-xs">
+                Review excluded legacy entries
+              </p>
+            </CardContent>
+          </Card>
+        </Link>
       </div>
 
       {/* Period Summary */}
@@ -400,7 +421,7 @@ export function ReportsList({ user: _user }: ReportsListProps) {
                     <span className="font-medium">{formatCurrency(profitLoss?.revenue?.sales || 0)}</span>
                   </div>
                   <div className="flex justify-between">
-                    <span className="text-muted-foreground">Other Income</span>
+                    <span className="text-muted-foreground">Other Operating Income</span>
                     <span className="font-medium">{formatCurrency(profitLoss?.revenue?.otherIncome || 0)}</span>
                   </div>
                   <div className="flex justify-between border-t pt-2">
@@ -438,7 +459,7 @@ export function ReportsList({ user: _user }: ReportsListProps) {
                 <div className="grid grid-cols-2 gap-4">
                   <div className="rounded-lg bg-green-50 p-4 text-center dark:bg-green-900/20">
                     <div className="text-lg font-bold text-green-600">{formatCurrency(summary?.totalIncome || 0)}</div>
-                    <div className="text-xs text-green-600">Total Income</div>
+                    <div className="text-xs text-green-600">Operating Revenue</div>
                   </div>
                   <div className="rounded-lg bg-red-50 p-4 text-center dark:bg-red-900/20">
                     <div className="text-lg font-bold text-red-600">{formatCurrency(summary?.totalExpenses || 0)}</div>

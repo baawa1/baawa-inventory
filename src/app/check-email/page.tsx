@@ -15,14 +15,17 @@ import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Mail, Clock } from 'lucide-react';
 import { PageLoading } from '@/components/ui/loading';
+import { useResendVerificationEmail } from '@/hooks/api/useEmailVerification';
 function CheckEmailContent() {
   const searchParams = useSearchParams();
   const router = useRouter();
-  const { data: session } = useSession(); // Add this line
+  const { data: session } = useSession();
   const email = searchParams.get('email') || session?.user?.email || '';
+  const verificationEmailSent = searchParams.get('sent') !== '0';
   const [resendLoading, setResendLoading] = useState(false);
   const [resendMessage, setResendMessage] = useState('');
   const [resendEmail, setResendEmail] = useState(email || '');
+  const resendVerificationEmail = useResendVerificationEmail();
 
   useEffect(() => {
     if (email) {
@@ -38,21 +41,18 @@ function CheckEmailContent() {
     setResendMessage('');
 
     try {
-      const response = await fetch('/api/auth/verify-email', {
-        method: 'PUT',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ email: resendEmail }),
+      const data = await resendVerificationEmail.mutateAsync({
+        email: resendEmail,
       });
-
-      const data = await response.json();
-
-      if (response.ok) {
+      if (data.verificationEmailSent) {
         setResendMessage('Verification email sent! Please check your inbox.');
-      } else {
-        setResendMessage(data.error || 'Failed to send verification email');
       }
-    } catch {
-      setResendMessage('Failed to send verification email. Please try again.');
+    } catch (error) {
+      setResendMessage(
+        error instanceof Error
+          ? error.message
+          : 'Failed to send verification email. Please try again.'
+      );
     } finally {
       setResendLoading(false);
     }
@@ -73,28 +73,61 @@ function CheckEmailContent() {
               data-testid="email-sent-message"
               className="text-center"
             >
-              We&apos;ve sent a verification link to your email address
+              {verificationEmailSent
+                ? "We've sent a verification link to your email address"
+                : "Your account was created, but we couldn't send the verification email yet"}
             </CardDescription>
           </CardHeader>
 
           <CardContent className="space-y-4">
-            <div className="rounded-lg border border-blue-200 bg-blue-100 p-4">
-              <p className="text-center text-sm text-blue-700">
+            <div
+              className={`rounded-lg border p-4 ${
+                verificationEmailSent
+                  ? 'border-blue-200 bg-blue-100'
+                  : 'border-yellow-200 bg-yellow-50'
+              }`}
+            >
+              <p
+                className={`text-center text-sm ${
+                  verificationEmailSent ? 'text-blue-700' : 'text-yellow-800'
+                }`}
+              >
                 <strong>Email sent to:</strong>
                 <br />
                 {email}
               </p>
             </div>
 
+            {!verificationEmailSent && (
+              <div className="rounded-lg border border-yellow-200 bg-yellow-50 p-4">
+                <p className="text-sm text-yellow-800">
+                  Request a new verification email below. Once it arrives, open
+                  the link to finish confirming your account.
+                </p>
+              </div>
+            )}
+
             <div className="space-y-3 text-sm">
               <h3 className="font-medium">Next steps:</h3>
               <ol className="list-inside list-decimal space-y-2">
-                <li>Check your email inbox (and spam folder)</li>
-                <li>Click the verification link in the email</li>
-                <li>
-                  You&apos;ll be redirected back to complete your registration
-                </li>
-                <li>Wait for admin approval to access your account</li>
+                {verificationEmailSent ? (
+                  <>
+                    <li>Check your email inbox (and spam folder)</li>
+                    <li>Click the verification link in the email</li>
+                    <li>
+                      You&apos;ll be redirected back to complete your
+                      registration
+                    </li>
+                    <li>Wait for admin approval to access your account</li>
+                  </>
+                ) : (
+                  <>
+                    <li>Use the form below to request a new verification email</li>
+                    <li>Open the latest verification link when it arrives</li>
+                    <li>Sign in after verification to track your approval status</li>
+                    <li>Wait for admin approval before accessing the dashboard</li>
+                  </>
+                )}
               </ol>
             </div>
 
@@ -129,7 +162,7 @@ function CheckEmailContent() {
                   type="submit"
                   className="w-full"
                   variant="secondary"
-                  isLoading={resendLoading}
+                  isLoading={resendLoading || resendVerificationEmail.isPending}
                   loadingText="Sending..."
                   disabled={!resendEmail}
                 >

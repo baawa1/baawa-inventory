@@ -7,6 +7,13 @@ import type {
 } from '@/lib/validations/finance';
 
 // Types
+export interface FinancialTransactionUser {
+  id: number;
+  firstName: string;
+  lastName: string;
+  email?: string;
+}
+
 export interface FinancialTransaction {
   id: number;
   transactionNumber: string;
@@ -19,9 +26,11 @@ export interface FinancialTransaction {
   createdAt: string;
   updatedAt: string;
   createdBy: number;
-  createdByName: string;
+  createdByName?: string;
+  createdByUser?: FinancialTransactionUser;
   approvedBy?: number;
   approvedByName?: string;
+  approvedByUser?: FinancialTransactionUser;
   approvedAt?: string;
   expenseDetails?: {
     expenseType: string;
@@ -34,25 +43,41 @@ export interface FinancialTransaction {
 }
 
 export interface FinancialTransactionFilters {
-  search: string;
-  type: string;
-  status: string;
-  paymentMethod: string;
-  date: string;
-  sortBy: string;
-  sortOrder: 'asc' | 'desc';
+  search?: string;
+  type?: string;
+  status?: string;
+  paymentMethod?: string;
+  date?: string;
+  startDate?: string;
+  endDate?: string;
+  sortBy?: string;
+  sortOrder?: 'asc' | 'desc';
 }
 
 export interface FinancialTransactionPagination {
   page: number;
   limit: number;
   totalPages: number;
-  totalItems: number;
+  total: number;
+  totalItems?: number;
 }
 
 export interface FinancialTransactionListResponse {
   data: FinancialTransaction[];
   pagination: FinancialTransactionPagination;
+}
+
+type ApiErrorPayload = {
+  error?: string;
+  message?: string;
+};
+
+async function getApiErrorMessage(
+  response: Response,
+  fallbackMessage: string
+): Promise<string> {
+  const errorPayload = (await response.json().catch(() => ({}))) as ApiErrorPayload;
+  return errorPayload.error || errorPayload.message || fallbackMessage;
 }
 
 // API Functions
@@ -76,17 +101,30 @@ const fetchFinancialTransactions = async (
     searchParams.set('paymentMethod', filters.paymentMethod);
   if (filters.date && filters.date !== 'all')
     searchParams.set('date', filters.date);
+  if (filters.startDate) searchParams.set('startDate', filters.startDate);
+  if (filters.endDate) searchParams.set('endDate', filters.endDate);
 
   const response = await fetch(
     `/api/finance/transactions?${searchParams.toString()}`
   );
   if (!response.ok) {
     throw new Error(
-      `Failed to fetch financial transactions: ${response.status} ${response.statusText}`
+      await getApiErrorMessage(
+        response,
+        `Failed to fetch financial transactions: ${response.status} ${response.statusText}`
+      )
     );
   }
-  const data = await response.json();
-  return data.data || data;
+  const result = await response.json();
+  return {
+    data: result.data || [],
+    pagination: result.pagination || {
+      page: pagination.page || 1,
+      limit: pagination.limit || 10,
+      totalPages: 1,
+      total: 0,
+    },
+  };
 };
 
 const fetchFinancialTransactionById = async (
@@ -154,7 +192,9 @@ export function useFinancialReports(params: {
           error: errorData,
         });
         throw new Error(
-          errorData.message || 'Failed to fetch financial reports'
+          errorData.error ||
+            errorData.message ||
+            'Failed to fetch financial reports'
         );
       }
 
@@ -178,7 +218,10 @@ export function useCreateFinancialTransaction() {
       });
       if (!response.ok) {
         throw new Error(
-          `Failed to create financial transaction: ${response.statusText}`
+          await getApiErrorMessage(
+            response,
+            `Failed to create financial transaction: ${response.statusText}`
+          )
         );
       }
       const result = await response.json();
@@ -216,7 +259,10 @@ export function useUpdateFinancialTransaction() {
       });
       if (!response.ok) {
         throw new Error(
-          `Failed to update financial transaction: ${response.statusText}`
+          await getApiErrorMessage(
+            response,
+            `Failed to update financial transaction: ${response.statusText}`
+          )
         );
       }
       const result = await response.json();
@@ -273,6 +319,82 @@ export function useDeleteFinancialTransaction() {
       });
       queryClient.invalidateQueries({
         queryKey: ['expense', String(id)],
+      });
+    },
+  });
+}
+
+export function useApproveFinancialTransaction() {
+  const queryClient = useQueryClient();
+
+  return useMutation({
+    mutationFn: async (id: number) => {
+      const response = await fetch(`/api/finance/transactions/${id}/approve`, {
+        method: 'POST',
+      });
+      const result = await response.json().catch(() => ({}));
+      if (!response.ok) {
+        throw new Error(
+          (result as { error?: string }).error ||
+            'Failed to approve financial transaction'
+        );
+      }
+      return result.data || result;
+    },
+    onSuccess: (_, id) => {
+      queryClient.invalidateQueries({
+        queryKey: queryKeys.finance.transactions.all(),
+      });
+      queryClient.invalidateQueries({
+        queryKey: queryKeys.finance.transactions.detail(id),
+      });
+      queryClient.invalidateQueries({
+        queryKey: queryKeys.finance.summary(),
+      });
+      queryClient.invalidateQueries({
+        queryKey: queryKeys.finance.reports.all(),
+      });
+      queryClient.invalidateQueries({
+        queryKey: ['financial-analytics'],
+      });
+    },
+  });
+}
+
+export function useRejectFinancialTransaction() {
+  const queryClient = useQueryClient();
+
+  return useMutation({
+    mutationFn: async ({ id, reason }: { id: number; reason: string }) => {
+      const response = await fetch(`/api/finance/transactions/${id}/reject`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ reason }),
+      });
+      const result = await response.json().catch(() => ({}));
+      if (!response.ok) {
+        throw new Error(
+          (result as { error?: string }).error ||
+            'Failed to reject financial transaction'
+        );
+      }
+      return result.data || result;
+    },
+    onSuccess: (_, { id }) => {
+      queryClient.invalidateQueries({
+        queryKey: queryKeys.finance.transactions.all(),
+      });
+      queryClient.invalidateQueries({
+        queryKey: queryKeys.finance.transactions.detail(id),
+      });
+      queryClient.invalidateQueries({
+        queryKey: queryKeys.finance.summary(),
+      });
+      queryClient.invalidateQueries({
+        queryKey: queryKeys.finance.reports.all(),
+      });
+      queryClient.invalidateQueries({
+        queryKey: ['financial-analytics'],
       });
     },
   });

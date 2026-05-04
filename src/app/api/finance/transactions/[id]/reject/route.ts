@@ -4,6 +4,7 @@ import { createApiResponse } from '@/lib/api-response';
 import { createAuditLog } from '@/lib/audit';
 import { AuditLogAction } from '@/types/audit';
 import { z } from 'zod';
+import { canRejectFinance } from '@/lib/auth/roles';
 
 const rejectTransactionSchema = z.object({
   reason: z.string().min(1, 'Rejection reason is required'),
@@ -33,7 +34,7 @@ export const POST = withAuth(
       }
 
       // Check if user has permission to reject (ADMIN or MANAGER)
-      if (!['ADMIN', 'MANAGER'].includes(request.user.role)) {
+      if (!canRejectFinance(request.user.role)) {
         return createApiResponse.forbidden(
           'Insufficient permissions to reject transactions'
         );
@@ -74,10 +75,10 @@ export const POST = withAuth(
           );
         }
 
-        if (transaction.status === 'CANCELLED') {
+        if (transaction.status !== 'PENDING') {
           throw new FinanceRejectionError(
             400,
-            'Cannot reject a cancelled transaction'
+            'Only pending transactions can be rejected'
           );
         }
 

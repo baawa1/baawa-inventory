@@ -4,6 +4,8 @@ import {
   canWriteFinance,
   canApproveFinance,
   canDeleteFinance,
+  canRejectFinance,
+  canAccessFinanceReports,
   authorizeUserForRoute,
 } from '@/lib/auth/roles';
 
@@ -25,9 +27,17 @@ describe('finance permissions by role', () => {
     expect(canApproveFinance(USER_ROLES.MANAGER)).toBe(false);
     expect(canApproveFinance(USER_ROLES.STAFF)).toBe(false);
 
+    expect(canRejectFinance(USER_ROLES.ADMIN)).toBe(true);
+    expect(canRejectFinance(USER_ROLES.MANAGER)).toBe(true);
+    expect(canRejectFinance(USER_ROLES.STAFF)).toBe(false);
+
     expect(canDeleteFinance(USER_ROLES.ADMIN)).toBe(true);
     expect(canDeleteFinance(USER_ROLES.MANAGER)).toBe(false);
     expect(canDeleteFinance(USER_ROLES.STAFF)).toBe(false);
+
+    expect(canAccessFinanceReports(USER_ROLES.ADMIN)).toBe(true);
+    expect(canAccessFinanceReports(USER_ROLES.MANAGER)).toBe(false);
+    expect(canAccessFinanceReports(USER_ROLES.STAFF)).toBe(false);
   });
 });
 
@@ -47,10 +57,30 @@ describe('route authorization', () => {
     expect(authorizeUserForRoute(USER_ROLES.MANAGER, '/reports')).toBe(true);
     expect(authorizeUserForRoute(USER_ROLES.MANAGER, '/settings')).toBe(true);
     expect(authorizeUserForRoute(USER_ROLES.MANAGER, '/pos')).toBe(true);
+    expect(authorizeUserForRoute(USER_ROLES.MANAGER, '/finance')).toBe(false);
+    expect(
+      authorizeUserForRoute(USER_ROLES.MANAGER, '/finance/reports')
+    ).toBe(false);
+    expect(
+      authorizeUserForRoute(USER_ROLES.MANAGER, '/finance/reports/analytics')
+    ).toBe(false);
+    expect(
+      authorizeUserForRoute(USER_ROLES.MANAGER, '/finance/transactions')
+    ).toBe(true);
+    expect(
+      authorizeUserForRoute(USER_ROLES.MANAGER, '/finance/transactions/12')
+    ).toBe(true);
+    expect(authorizeUserForRoute(USER_ROLES.MANAGER, '/finance/income')).toBe(
+      true
+    );
 
     expect(authorizeUserForRoute(USER_ROLES.STAFF, '/admin')).toBe(false);
     expect(authorizeUserForRoute(USER_ROLES.STAFF, '/reports')).toBe(false);
     expect(authorizeUserForRoute(USER_ROLES.STAFF, '/pos')).toBe(true);
     expect(authorizeUserForRoute(USER_ROLES.STAFF, '/dashboard')).toBe(true);
+    expect(authorizeUserForRoute(USER_ROLES.STAFF, '/finance')).toBe(false);
+    expect(
+      authorizeUserForRoute(USER_ROLES.STAFF, '/finance/transactions')
+    ).toBe(false);
   });
 });

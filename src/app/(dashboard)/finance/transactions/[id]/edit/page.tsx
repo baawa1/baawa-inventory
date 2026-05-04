@@ -2,6 +2,8 @@ import { Metadata } from 'next';
 import { auth } from '#root/auth';
 import { redirect } from 'next/navigation';
 import { EditTransactionForm } from '@/components/finance/EditTransactionForm';
+import { prisma } from '@/lib/db';
+import { canUserEditFinancialTransaction } from '@/lib/finance/transaction-access';
 
 export const metadata: Metadata = {
   title: 'Edit Transaction | BaaWA Finance Manager',
@@ -30,7 +32,30 @@ export default async function EditTransactionPage({
   const transactionId = parseInt(id);
 
   if (isNaN(transactionId)) {
-    redirect('/finance');
+    redirect('/finance/transactions');
+  }
+
+  const transaction = await prisma.financialTransaction.findUnique({
+    where: { id: transactionId },
+    select: {
+      id: true,
+      createdBy: true,
+      status: true,
+    },
+  });
+
+  if (!transaction) {
+    redirect('/finance/transactions');
+  }
+
+  if (
+    !canUserEditFinancialTransaction(
+      session.user.role,
+      session.user.id,
+      transaction
+    )
+  ) {
+    redirect(`/finance/transactions/${transactionId}`);
   }
 
   return (

@@ -41,6 +41,7 @@ import { defaultFormValues } from '../add-expense/types';
 import { AppUser } from '@/types/user';
 import { useExpenseData } from './useExpenseData';
 import { useExpenseUpdate } from './useExpenseUpdate';
+import { formatFinanceDateInput } from '@/lib/finance/date-range';
 
 interface EditExpenseFormProps {
   user: AppUser;
@@ -85,9 +86,9 @@ export default function EditExpenseForm({
         type: 'EXPENSE',
         amount: expenseData.amount,
         description: expenseData.description || '',
-        transactionDate: new Date(expenseData.transactionDate)
-          .toISOString()
-          .split('T')[0],
+        transactionDate: formatFinanceDateInput(
+          new Date(expenseData.transactionDate)
+        ),
         paymentMethod: expenseData.paymentMethod || '',
         expenseType: expenseData.expenseDetails?.expenseType || '',
         vendorName: expenseData.expenseDetails?.vendorName || '',

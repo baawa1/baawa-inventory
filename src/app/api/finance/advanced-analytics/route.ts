@@ -1,9 +1,21 @@
-import { NextResponse } from 'next/server';
 import { withAuth, AuthenticatedRequest } from '@/lib/api-middleware';
 import { hasPermission } from '@/lib/auth/roles';
 import { createApiResponse } from '@/lib/api-response';
-import { handleApiError } from '@/lib/api-error-handler-new';
-import { prisma } from '@/lib/db';
+import { z } from 'zod';
+import {
+  buildFinanceRange,
+  getFinanceAggregate,
+  getPreviousFinanceRange,
+} from '@/lib/finance/aggregation';
+import {
+  buildCanonicalFinanceTrends,
+  summarizeCanonicalFinanceAggregate,
+} from '@/lib/finance/metrics';
+import {
+  addFinanceDateRangeIssue,
+  getZodErrorMessage,
+  nullableOptionalFinanceDateInputSchema,
+} from '@/lib/finance/query-validation';
 
 interface TrendAnalysis {
   revenue: {
@@ -46,50 +58,30 @@ interface Predictions {
   growthRate: number;
 }
 
-interface AdvancedAnalyticsData {
-  trendAnalysis: TrendAnalysis;
-  performanceMetrics: PerformanceMetrics;
-  predictions: Predictions;
-}
-
-// Helper function to calculate percentage change
 function calculateChange(current: number, previous: number): number {
   if (previous === 0) return current > 0 ? 100 : 0;
   return ((current - previous) / previous) * 100;
 }
 
-// Helper function to determine trend direction
 function getTrendDirection(change: number): 'up' | 'down' | 'stable' {
   if (change > 5) return 'up';
   if (change < -5) return 'down';
   return 'stable';
 }
 
-// Helper function to get period dates
-function getPeriodDates(dateRange?: { from?: Date; to?: Date }) {
-  const now = new Date();
-  let currentStart: Date;
-  let currentEnd: Date;
-
-  if (dateRange?.from && dateRange?.to) {
-    currentStart = dateRange.from;
-    currentEnd = dateRange.to;
-  } else {
-    // Default to current month
-    currentStart = new Date(now.getFullYear(), now.getMonth(), 1);
-    currentEnd = now;
-  }
-
-  const periodDuration = currentEnd.getTime() - currentStart.getTime();
-  const previousStart = new Date(currentStart.getTime() - periodDuration);
-  const previousEnd = new Date(currentStart.getTime() - 1);
-
-  return { currentStart, currentEnd, previousStart, previousEnd };
-}
+const advancedAnalyticsQuerySchema = z
+  .object({
+    fromDate: nullableOptionalFinanceDateInputSchema,
+    toDate: nullableOptionalFinanceDateInputSchema,
+    type: z.enum(['all', 'income', 'expense']).default('all'),
+    paymentMethod: z.string().optional(),
+  })
+  .superRefine((value, ctx) => {
+    addFinanceDateRangeIssue(value.fromDate, value.toDate, ctx, ['toDate']);
+  });
 
 export const GET = withAuth(async (request: AuthenticatedRequest) => {
   try {
-    // Check if user has permission to access financial analytics (ADMIN only)
     if (!hasPermission(request.user.role, 'FINANCIAL_ANALYTICS')) {
       return createApiResponse.forbidden(
         'Insufficient permissions to access advanced analytics'
@@ -97,199 +89,146 @@ export const GET = withAuth(async (request: AuthenticatedRequest) => {
     }
 
     const { searchParams } = new URL(request.url);
-    const fromDate = searchParams.get('fromDate');
-    const toDate = searchParams.get('toDate');
-    const type = searchParams.get('type') || 'all';
-    const paymentMethod = searchParams.get('paymentMethod');
-
-    // Parse date range
-    const dateRange =
-      fromDate && toDate
-        ? { from: new Date(fromDate), to: new Date(toDate) }
-        : undefined;
-
-    const { currentStart, currentEnd, previousStart, previousEnd } =
-      getPeriodDates(dateRange);
-
-    // Build where clause for current period
-    const currentWhere: any = {
-      transactionDate: {
-        gte: currentStart,
-        lte: currentEnd,
-      },
-      status: { in: ['COMPLETED', 'APPROVED'] },
-    };
-
-    // Build where clause for previous period
-    const previousWhere: any = {
-      transactionDate: {
-        gte: previousStart,
-        lte: previousEnd,
-      },
-      status: { in: ['COMPLETED', 'APPROVED'] },
-    };
-
-    // Add type filter if specified
-    if (type && type !== 'all') {
-      currentWhere.type = type.toUpperCase() as 'EXPENSE' | 'INCOME';
-      previousWhere.type = type.toUpperCase() as 'EXPENSE' | 'INCOME';
-    }
-
-    // Add payment method filter if specified
-    if (paymentMethod && paymentMethod !== 'all') {
-      currentWhere.payment_method = paymentMethod.toUpperCase();
-      previousWhere.payment_method = paymentMethod.toUpperCase();
-    }
-
-    // Get current period data
-    const currentData = await prisma.financialTransaction.aggregate({
-      where: currentWhere,
-      _sum: {
-        amount: true,
-      },
-      _count: {
-        id: true,
-      },
+    const validatedQuery = advancedAnalyticsQuerySchema.parse({
+      fromDate: searchParams.get('fromDate') || undefined,
+      toDate: searchParams.get('toDate') || undefined,
+      type: searchParams.get('type') || 'all',
+      paymentMethod: searchParams.get('paymentMethod') || undefined,
     });
 
-    // Get previous period data
-    const previousData = await prisma.financialTransaction.aggregate({
-      where: previousWhere,
-      _sum: {
-        amount: true,
-      },
-      _count: {
-        id: true,
-      },
-    });
-
-    // Get expense data for current period
-    const currentExpenses = await prisma.financialTransaction.aggregate({
-      where: {
-        ...currentWhere,
-        type: 'EXPENSE',
-      },
-      _sum: {
-        amount: true,
-      },
-    });
-
-    // Get expense data for previous period
-    const previousExpenses = await prisma.financialTransaction.aggregate({
-      where: {
-        ...previousWhere,
-        type: 'EXPENSE',
-      },
-      _sum: {
-        amount: true,
-      },
-    });
-
-    // Get income data for current period
-    const currentIncome = await prisma.financialTransaction.aggregate({
-      where: {
-        ...currentWhere,
-        type: 'INCOME',
-      },
-      _sum: {
-        amount: true,
-      },
-    });
-
-    // Get income data for previous period
-    const previousIncome = await prisma.financialTransaction.aggregate({
-      where: {
-        ...previousWhere,
-        type: 'INCOME',
-      },
-      _sum: {
-        amount: true,
-      },
-    });
-
-    // Calculate values
-    const currentRevenue = Number(currentIncome._sum.amount || 0);
-    const previousRevenue = Number(previousIncome._sum.amount || 0);
-    const currentExpensesAmount = Number(currentExpenses._sum.amount || 0);
-    const previousExpensesAmount = Number(previousExpenses._sum.amount || 0);
-    const currentProfit = currentRevenue - currentExpensesAmount;
-    const previousProfit = previousRevenue - previousExpensesAmount;
-    const currentTransactions = currentData._count.id || 0;
-    const previousTransactions = previousData._count.id || 0;
-
-    // Calculate trend analysis
-    const revenueChange = calculateChange(currentRevenue, previousRevenue);
-    const expensesChange = calculateChange(
-      currentExpensesAmount,
-      previousExpensesAmount
+    const currentRange = buildFinanceRange(
+      validatedQuery.fromDate,
+      validatedQuery.toDate,
+      'month'
     );
-    const profitChange = calculateChange(currentProfit, previousProfit);
-    const transactionsChange = calculateChange(
-      currentTransactions,
-      previousTransactions
+
+    const previousRange = getPreviousFinanceRange(currentRange);
+
+    const [currentAggregate, previousAggregate] = await Promise.all([
+      getFinanceAggregate(
+        {
+          startDate: currentRange.startDate,
+          endDate: currentRange.endDate,
+          type: validatedQuery.type,
+          paymentMethod: validatedQuery.paymentMethod,
+        },
+        { groupBy: 'week' }
+      ),
+      getFinanceAggregate({
+        startDate: previousRange.startDate,
+        endDate: previousRange.endDate,
+        type: validatedQuery.type,
+        paymentMethod: validatedQuery.paymentMethod,
+      }),
+    ]);
+
+    const currentMetrics = summarizeCanonicalFinanceAggregate(currentAggregate);
+    const previousMetrics = summarizeCanonicalFinanceAggregate(previousAggregate);
+    const weeklyTrends = buildCanonicalFinanceTrends(
+      currentAggregate.transactions,
+      'week'
+    );
+
+    const revenueChange = calculateChange(
+      currentMetrics.operatingRevenue,
+      previousMetrics.operatingRevenue
+    );
+    const expenseChange = calculateChange(
+      currentMetrics.totalExpenses,
+      previousMetrics.totalExpenses
+    );
+    const profitChange = calculateChange(
+      currentMetrics.netProfit,
+      previousMetrics.netProfit
+    );
+    const transactionChange = calculateChange(
+      currentMetrics.totalTransactions,
+      previousMetrics.totalTransactions
     );
 
     const trendAnalysis: TrendAnalysis = {
       revenue: {
-        current: currentRevenue,
-        previous: previousRevenue,
+        current: currentMetrics.operatingRevenue,
+        previous: previousMetrics.operatingRevenue,
         change: revenueChange,
         trend: getTrendDirection(revenueChange),
       },
       expenses: {
-        current: currentExpensesAmount,
-        previous: previousExpensesAmount,
-        change: expensesChange,
-        trend: getTrendDirection(expensesChange),
+        current: currentMetrics.totalExpenses,
+        previous: previousMetrics.totalExpenses,
+        change: expenseChange,
+        trend: getTrendDirection(expenseChange),
       },
       profit: {
-        current: currentProfit,
-        previous: previousProfit,
+        current: currentMetrics.netProfit,
+        previous: previousMetrics.netProfit,
         change: profitChange,
         trend: getTrendDirection(profitChange),
       },
       transactions: {
-        current: currentTransactions,
-        previous: previousTransactions,
-        change: transactionsChange,
-        trend: getTrendDirection(transactionsChange),
+        current: currentMetrics.totalTransactions,
+        previous: previousMetrics.totalTransactions,
+        change: transactionChange,
+        trend: getTrendDirection(transactionChange),
       },
     };
 
-    // Calculate performance metrics
     const performanceMetrics: PerformanceMetrics = {
       profitMargin:
-        currentRevenue > 0 ? (currentProfit / currentRevenue) * 100 : 0,
-      averageTransactionValue:
-        currentTransactions > 0 ? currentRevenue / currentTransactions : 0,
+        currentMetrics.operatingRevenue > 0
+          ? (currentMetrics.netProfit / currentMetrics.operatingRevenue) *
+            100
+          : 0,
+      averageTransactionValue: currentMetrics.averageTransactionValue,
       revenuePerTransaction:
-        currentTransactions > 0 ? currentRevenue / currentTransactions : 0,
+        currentMetrics.totalTransactions > 0
+          ? currentMetrics.operatingRevenue / currentMetrics.totalTransactions
+          : 0,
       expenseRatio:
-        currentRevenue > 0 ? (currentExpensesAmount / currentRevenue) * 100 : 0,
+        currentMetrics.operatingRevenue > 0
+          ? (currentMetrics.totalExpenses / currentMetrics.operatingRevenue) *
+            100
+          : 0,
     };
 
-    // Calculate predictions (simple linear projection based on current trends)
-    const growthRate = revenueChange;
+    const weeklyAverageRevenue =
+      weeklyTrends.length > 0
+        ? weeklyTrends.reduce((sum, item) => sum + item.revenue, 0) /
+          weeklyTrends.length
+        : 0;
+    const weeklyAverageExpenses =
+      weeklyTrends.length > 0
+        ? weeklyTrends.reduce((sum, item) => sum + item.expenses, 0) /
+          weeklyTrends.length
+        : 0;
+
     const predictions: Predictions = {
-      nextMonthRevenue: currentRevenue * (1 + growthRate / 100),
-      nextMonthExpenses: currentExpensesAmount * (1 + expensesChange / 100),
+      nextMonthRevenue: Math.round((weeklyAverageRevenue * 4.3) * 100) / 100,
+      nextMonthExpenses:
+        Math.round((weeklyAverageExpenses * 4.3) * 100) / 100,
       nextMonthProfit:
-        currentRevenue * (1 + growthRate / 100) -
-        currentExpensesAmount * (1 + expensesChange / 100),
-      growthRate: growthRate,
+        Math.round((weeklyAverageRevenue - weeklyAverageExpenses) * 4.3 * 100) /
+        100,
+      growthRate: Math.round(revenueChange * 100) / 100,
     };
 
-    const advancedAnalyticsData: AdvancedAnalyticsData = {
-      trendAnalysis,
-      performanceMetrics,
-      predictions,
-    };
-
-    return NextResponse.json({
-      success: true,
-      data: advancedAnalyticsData,
-    });
+    return createApiResponse.success(
+      {
+        trendAnalysis,
+        performanceMetrics,
+        predictions,
+      },
+      'Advanced analytics retrieved successfully'
+    );
   } catch (error) {
-    return handleApiError(error, 500);
+    if (error instanceof z.ZodError) {
+      return createApiResponse.validationError(
+        getZodErrorMessage(error, 'Invalid analytics query'),
+        error.issues
+      );
+    }
+
+    console.error('Error fetching advanced analytics:', error);
+    return createApiResponse.internalError('Failed to fetch advanced analytics');
   }
 });

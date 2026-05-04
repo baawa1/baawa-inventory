@@ -1,5 +1,7 @@
 # Finance Reports - Real Data Implementation Complete ✅
 
+> Historical note: this document predates the reporting consolidation work. The old `FinanceReports` component and detail-style reporting surface are no longer current. For the live reporting model, use `docs/app-documentation/finance/README.md`.
+
 ## 🎯 **IMPLEMENTATION SUMMARY**
 
 **Status: ✅ COMPLETE** - All finance reports now use real database data instead of mock data.
@@ -195,11 +197,11 @@ The implementation has been tested and verified:
 
 ## 🎯 **Next Steps**
 
-Your finance module is now **production-ready** with real data! You can:
+At the time of this milestone, the finance reports had moved to real data. The current production-readiness assessment now depends on the consolidated reporting and access model documented elsewhere. You can still use the notes below as a historical milestone summary:
 
 1. **Add more transactions** - Reports will automatically update
 2. **Use date filtering** - Analyze specific periods
 3. **Generate reports** - Get accurate financial insights
 4. **Export functionality** - Add PDF/CSV download (future enhancement)
 
-**Status: ✅ PRODUCTION READY** - All finance reports now use real database data!
+**Historical status:** real-data reporting milestone complete for that iteration.

@@ -45,12 +45,12 @@ This document is the single source of truth for test coverage across the app. It
 
 | Feature | UI Routes | API Routes | Critical Rules / Validations | Test Types | Status |
 | --- | --- | --- | --- | --- | --- |
-| Finance overview | `/finance` | `/api/finance/summary` | Permissions, period calculations | Unit, Integration, E2E | Not Started |
-| Transactions CRUD | `/finance/transactions`, `/finance/transactions/:id`, `/finance/transactions/:id/edit` | `/api/finance/transactions`, `/api/finance/transactions/:id` | Validation, role access, pagination | Unit, Integration, E2E | Not Started |
-| Approvals & rejections | `/finance/transactions/:id` | `/api/finance/transactions/:id/approve`, `/api/finance/transactions/:id/reject` | Admin-only approval, audit logs | Unit, Integration, E2E | Not Started |
-| Income & expense entry | `/finance/income`, `/finance/income/new`, `/finance/income/:id/edit`, `/finance/expenses`, `/finance/expenses/new`, `/finance/expenses/:id/edit` | `/api/finance/transactions` | Schema validation, status defaults | Unit, Integration, E2E | Not Started |
-| Reports list & detail | `/finance/reports`, `/finance/reports/:id` | `/api/finance/reports`, `/api/finance/reports/export` | Report filtering, export formats | Unit, Integration, E2E | Not Started |
-| Analytics dashboards | `/finance/reports/analytics`, `/finance/reports/cash-flow`, `/finance/reports/expenses`, `/finance/reports/income-statement` | `/api/finance/analytics`, `/api/finance/advanced-analytics`, `/api/finance/kpis`, `/api/finance/profit-margins`, `/api/finance/receivables`, `/api/finance/cash-flow-forecast` | Aggregations, permissions, date ranges | Unit, Integration, E2E | Not Started |
+| Finance overview | `/finance` | `/api/finance/summary` | Admin-only KPI access, shared aggregation ranges | Unit, Integration, E2E | In Progress |
+| Transactions CRUD | `/finance/transactions`, `/finance/transactions/:id`, `/finance/transactions/:id/edit` | `/api/finance/transactions`, `/api/finance/transactions/:id` | Manager review access, manager own-only edit, pagination, mutable-state rules | Unit, Integration, E2E | In Progress |
+| Approvals & rejections | `/finance/transactions/:id` | `/api/finance/transactions/:id/approve`, `/api/finance/transactions/:id/reject` | Admin-only approval, manager/admin rejection, pending-only transitions, audit logs | Unit, Integration, E2E | In Progress |
+| Income & expense entry | `/finance/income`, `/finance/income/new`, `/finance/income/:id/edit`, `/finance/expenses`, `/finance/expenses/new`, `/finance/expenses/:id/edit` | `/api/finance/transactions` | Block manual `SALES` and `INVENTORY_PURCHASES`, status defaults, validation parity between UI and API | Unit, Integration, E2E | In Progress |
+| Reports hub & export | `/finance/reports` | `/api/finance/reports` | Admin-only access, canonical hub behavior, live CSV export from the canonical hub, no dynamic detail surface | Unit, Integration, E2E | In Progress |
+| Analytics dashboards | `/finance/reports/analytics`, `/finance/reports/cash-flow`, `/finance/reports/expenses`, `/finance/reports/income-statement`, `/finance/reports/overlap-audit` | `/api/finance/analytics`, `/api/finance/advanced-analytics`, `/api/finance/kpis`, `/api/finance/profit-margins`, `/api/finance/receivables`, `/api/finance/cash-flow-forecast`, `/api/finance/overlap-audit` | Shared aggregation consistency, admin-only access, overlap exclusion, date ranges | Unit, Integration, E2E | In Progress |
 
 ## Inventory
 

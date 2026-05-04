@@ -2,6 +2,7 @@ import { auth } from '#root/auth';
 import { Metadata } from 'next';
 import { redirect } from 'next/navigation';
 import { hasPermission } from '@/lib/auth/roles';
+import { AnalyticsReportPage } from '@/components/finance/AnalyticsReportPage';
 
 export const metadata: Metadata = {
   title: 'Financial Analytics - BaaWA Inventory',
@@ -20,12 +21,5 @@ export default async function AnalyticsPage() {
     redirect('/unauthorized');
   }
 
-  return (
-    <div className="mx-auto max-w-7xl space-y-6 p-6">
-      <div className="text-center py-8">
-        <h1 className="text-2xl font-bold mb-4">Financial Analytics</h1>
-        <p className="text-muted-foreground">Coming soon...</p>
-      </div>
-    </div>
-  );
+  return <AnalyticsReportPage />;
 }

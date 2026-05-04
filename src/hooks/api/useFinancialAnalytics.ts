@@ -1,5 +1,6 @@
 import { useQuery } from '@tanstack/react-query';
 import { DateRange } from 'react-day-picker';
+import { formatFinanceDateInput } from '@/lib/finance/date-range';
 
 interface FinancialAnalyticsFilters {
   dateRange?: DateRange;
@@ -67,13 +68,10 @@ const fetchFinancialAnalytics = async (
   const params = new URLSearchParams();
 
   if (filters.dateRange?.from) {
-    params.append(
-      'dateFrom',
-      filters.dateRange.from.toISOString().split('T')[0]
-    );
+    params.append('dateFrom', formatFinanceDateInput(filters.dateRange.from));
   }
   if (filters.dateRange?.to) {
-    params.append('dateTo', filters.dateRange.to.toISOString().split('T')[0]);
+    params.append('dateTo', formatFinanceDateInput(filters.dateRange.to));
   }
   if (filters.type && filters.type !== 'all') {
     params.append('type', filters.type);

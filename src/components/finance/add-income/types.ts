@@ -4,8 +4,9 @@ import { incomeTransactionSchema } from '@/lib/validations/finance';
 import {
   FINANCIAL_TYPES,
   PAYMENT_METHODS,
-  INCOME_SOURCES,
+  MANUAL_ALLOWED_INCOME_SOURCE_VALUES,
 } from '@/lib/constants/finance';
+import { formatFinanceDateInput } from '@/lib/finance/date-range';
 
 // Form data type - only for income transactions
 export type CreateIncomeData = z.infer<typeof incomeTransactionSchema>;
@@ -15,9 +16,9 @@ export const defaultFormValues: CreateIncomeData = {
   type: FINANCIAL_TYPES.INCOME,
   amount: 0.01,
   description: '',
-  transactionDate: new Date().toISOString().split('T')[0],
+  transactionDate: formatFinanceDateInput(new Date()),
   paymentMethod: PAYMENT_METHODS.CASH,
-  incomeSource: INCOME_SOURCES.SALES,
+  incomeSource: MANUAL_ALLOWED_INCOME_SOURCE_VALUES[0],
   payerName: '',
 };
 

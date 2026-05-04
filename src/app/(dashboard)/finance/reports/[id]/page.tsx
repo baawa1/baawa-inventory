@@ -1,7 +1,7 @@
 import { Metadata } from 'next';
 import { auth } from '#root/auth';
 import { redirect } from 'next/navigation';
-import { ReportDetail } from '@/components/finance/ReportDetail';
+import { hasPermission } from '@/lib/auth/roles';
 
 export const metadata: Metadata = {
   title: 'Report Details | BaaWA Finance Manager',
@@ -13,7 +13,7 @@ interface ReportDetailPageProps {
 }
 
 export default async function ReportDetailPage({
-  params,
+  params: _params,
 }: ReportDetailPageProps) {
   const session = await auth();
 
@@ -21,17 +21,9 @@ export default async function ReportDetailPage({
     redirect('/login');
   }
 
-  // Only admins and managers can access finance details
-  if (!['ADMIN', 'MANAGER'].includes(session.user.role)) {
+  if (!hasPermission(session.user.role, 'FINANCIAL_REPORTS')) {
     redirect('/unauthorized');
   }
 
-  const { id } = await params;
-  const reportId = parseInt(id);
-
-  if (isNaN(reportId)) {
-    redirect('/finance/reports');
-  }
-
-  return <ReportDetail reportId={reportId} user={session.user} />;
+  redirect('/finance/reports');
 }

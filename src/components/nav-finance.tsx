@@ -96,8 +96,16 @@ const financeNavItems = [
         url: '/finance/reports/income-statement',
       },
       {
+        title: 'Expense Report',
+        url: '/finance/reports/expenses',
+      },
+      {
         title: 'Cash Flow',
         url: '/finance/reports/cash-flow',
+      },
+      {
+        title: 'Overlap Audit',
+        url: '/finance/reports/overlap-audit',
       },
     ],
   },

@@ -24,6 +24,11 @@ import {
   type LucideIcon,
 } from 'lucide-react';
 import { DateRange } from 'react-day-picker';
+import {
+  DEFAULT_DATE_RANGE_PRESET,
+  formatCalendarDateInput,
+  getDateRangePreset,
+} from '@/lib/utils/date-range';
 
 interface ProductOverviewData {
   totalProducts: number;
@@ -127,7 +132,9 @@ function SummaryCard({
 }
 
 export function ProductOverview() {
-  const [dateRange, setDateRange] = useState<DateRange | undefined>();
+  const [dateRange, setDateRange] = useState<DateRange | undefined>(() =>
+    getDateRangePreset(DEFAULT_DATE_RANGE_PRESET)
+  );
 
   // Fetch product overview data
   const { data: overviewData, isLoading } = useQuery({
@@ -135,10 +142,10 @@ export function ProductOverview() {
     queryFn: async (): Promise<ProductOverviewData> => {
       const params = new URLSearchParams();
       if (dateRange?.from) {
-        params.append('fromDate', dateRange.from.toISOString().split('T')[0]);
+        params.append('fromDate', formatCalendarDateInput(dateRange.from));
       }
       if (dateRange?.to) {
-        params.append('toDate', dateRange.to.toISOString().split('T')[0]);
+        params.append('toDate', formatCalendarDateInput(dateRange.to));
       }
 
       const response = await fetch(`/api/inventory/overview?${params}`);

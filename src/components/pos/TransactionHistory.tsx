@@ -58,6 +58,10 @@ import {
 } from '@/components/ui/select';
 import { Textarea } from '@/components/ui/textarea';
 import { formatPaymentMethodLabel } from '@/lib/utils/payment-methods';
+import {
+  formatCalendarDateInput,
+  getDateRangePreset,
+} from '@/lib/utils/date-range';
 import { queryKeys } from '@/lib/query-client';
 
 interface TransactionCoupon {
@@ -205,10 +209,9 @@ export function TransactionHistory() {
   const isAdmin = session?.user?.role === 'ADMIN';
 
   // Date range state - default to last 30 days
-  const [dateRange, setDateRange] = useState<DateRange | undefined>({
-    from: new Date(Date.now() - 30 * 24 * 60 * 60 * 1000), // Last 30 days
-    to: new Date(),
-  });
+  const [dateRange, setDateRange] = useState<DateRange | undefined>(() =>
+    getDateRangePreset('last_30_days')
+  );
 
   const loadTransactions = useCallback(async () => {
     try {
@@ -220,10 +223,10 @@ export function TransactionHistory() {
 
       // Add date range filters
       if (dateRange?.from) {
-        params.append('dateFrom', dateRange.from.toISOString().split('T')[0]);
+        params.append('dateFrom', formatCalendarDateInput(dateRange.from));
       }
       if (dateRange?.to) {
-        params.append('dateTo', dateRange.to.toISOString().split('T')[0]);
+        params.append('dateTo', formatCalendarDateInput(dateRange.to));
       }
 
       // Load all transactions for the date range (no pagination)
@@ -909,7 +912,7 @@ export function TransactionHistory() {
                 variant="outline"
                 size="sm"
                 onClick={() => {
-                  setDateRange(undefined);
+                  setDateRange(getDateRangePreset('last_30_days'));
                   setSelectedTransactionId(null);
                 }}
               >

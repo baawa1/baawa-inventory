@@ -2,21 +2,32 @@ import { withAuth, AuthenticatedRequest } from '@/lib/api-middleware';
 import { hasPermission } from '@/lib/auth/roles';
 import { createApiResponse } from '@/lib/api-response';
 import { prisma } from '@/lib/db';
+import { z } from 'zod';
 import { normalizePaymentMethodForStorage } from '@/lib/utils/payment-methods';
+import {
+  buildPositiveIntegerQuerySchema,
+  getZodErrorMessage,
+} from '@/lib/finance/query-validation';
 
 // Payment statuses that indicate money is still owed
 const UNPAID_STATUSES = ['PENDING', 'PARTIAL', 'pending', 'partial'];
 
+const receivablesQuerySchema = z.object({
+  agingDays: buildPositiveIntegerQuerySchema('Aging days', 90, { max: 3650 }),
+});
+
 export const GET = withAuth(async (request: AuthenticatedRequest) => {
   try {
-    if (!hasPermission(request.user.role, 'FINANCE_TRANSACTIONS_READ')) {
+    if (!hasPermission(request.user.role, 'FINANCIAL_REPORTS')) {
       return createApiResponse.forbidden(
         'Insufficient permissions to view accounts receivable'
       );
     }
 
     const { searchParams } = new URL(request.url);
-    const agingDays = parseInt(searchParams.get('agingDays') || '90');
+    const { agingDays } = receivablesQuerySchema.parse({
+      agingDays: searchParams.get('agingDays') || undefined,
+    });
 
     const now = new Date();
     const cutoffDate = new Date(now.getTime() - agingDays * 24 * 60 * 60 * 1000);
@@ -189,6 +200,13 @@ export const GET = withAuth(async (request: AuthenticatedRequest) => {
       'Accounts receivable data retrieved successfully'
     );
   } catch (error) {
+    if (error instanceof z.ZodError) {
+      return createApiResponse.validationError(
+        getZodErrorMessage(error, 'Invalid receivables query'),
+        error.issues
+      );
+    }
+
     console.error('Error fetching accounts receivable:', error);
     return createApiResponse.internalError('Failed to fetch accounts receivable');
   }

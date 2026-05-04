@@ -33,6 +33,11 @@ import { PaymentMethodIcon } from './shared/PaymentMethodIcon';
 import { TransactionStatusBadge } from './shared/TransactionStatusBadge';
 import Link from 'next/link';
 import { canReadFinance, canWriteFinance } from '@/lib/auth/roles';
+import { formatFinanceDateInput } from '@/lib/finance/date-range';
+import {
+  DEFAULT_DATE_RANGE_PRESET,
+  getDateRangePreset,
+} from '@/lib/utils/date-range';
 
 interface ExpenseListProps {
   user: AppUser;
@@ -51,7 +56,9 @@ export function ExpenseList({ user }: ExpenseListProps) {
   });
 
   // Date range state for custom date filtering
-  const [dateRange, setDateRange] = useState<DateRange | undefined>(undefined);
+  const [dateRange, setDateRange] = useState<DateRange | undefined>(() =>
+    getDateRangePreset(DEFAULT_DATE_RANGE_PRESET)
+  );
 
   // Filters state
   const [filters, setFilters] = useState({
@@ -77,8 +84,10 @@ export function ExpenseList({ user }: ExpenseListProps) {
         search: debouncedSearchTerm,
         status: filters.status !== 'all' ? filters.status : undefined,
         paymentMethod: filters.payment !== 'all' ? filters.payment : undefined,
-        startDate: dateRange?.from?.toISOString(),
-        endDate: dateRange?.to?.toISOString(),
+        startDate: dateRange?.from
+          ? formatFinanceDateInput(dateRange.from)
+          : undefined,
+        endDate: dateRange?.to ? formatFinanceDateInput(dateRange.to) : undefined,
         page: pagination.page,
         limit: pagination.limit,
         sortBy: 'transactionDate',
@@ -93,8 +102,10 @@ export function ExpenseList({ user }: ExpenseListProps) {
         params.append('status', filters.status);
       if (filters.payment && filters.payment !== 'all')
         params.append('paymentMethod', filters.payment);
-      if (dateRange?.from) params.append('startDate', dateRange.from.toISOString());
-      if (dateRange?.to) params.append('endDate', dateRange.to.toISOString());
+      if (dateRange?.from)
+        params.append('startDate', formatFinanceDateInput(dateRange.from));
+      if (dateRange?.to)
+        params.append('endDate', formatFinanceDateInput(dateRange.to));
       params.append('page', String(pagination.page));
       params.append('limit', String(pagination.limit));
       params.append('sortBy', 'transactionDate');
@@ -235,7 +246,7 @@ export function ExpenseList({ user }: ExpenseListProps) {
       status: '',
       payment: '',
     });
-    setDateRange(undefined);
+    setDateRange(getDateRangePreset(DEFAULT_DATE_RANGE_PRESET));
     setPagination(prev => ({ ...prev, page: 1 }));
   }, []);
 

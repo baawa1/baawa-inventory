@@ -1,7 +1,10 @@
 'use client';
 
 import { useState } from 'react';
-import { EXPENSE_TYPES, PAYMENT_METHODS } from '@/lib/constants/finance';
+import {
+  MANUAL_ALLOWED_EXPENSE_TYPE_VALUES,
+  PAYMENT_METHODS,
+} from '@/lib/constants/finance';
 import type { ExpenseTypeOption, PaymentMethodOption } from './types';
 
 export function useFormDataQuery() {
@@ -9,18 +12,22 @@ export function useFormDataQuery() {
   const [submitError, setSubmitError] = useState<string | null>(null);
 
   // Expense type options
-  const expenseTypeOptions: ExpenseTypeOption[] = [
-    { value: EXPENSE_TYPES.INVENTORY_PURCHASES, label: 'Inventory Purchases' },
-    { value: EXPENSE_TYPES.UTILITIES, label: 'Utilities' },
-    { value: EXPENSE_TYPES.RENT, label: 'Rent' },
-    { value: EXPENSE_TYPES.SALARIES, label: 'Salaries' },
-    { value: EXPENSE_TYPES.MARKETING, label: 'Marketing' },
-    { value: EXPENSE_TYPES.OFFICE_SUPPLIES, label: 'Office Supplies' },
-    { value: EXPENSE_TYPES.TRAVEL, label: 'Travel' },
-    { value: EXPENSE_TYPES.INSURANCE, label: 'Insurance' },
-    { value: EXPENSE_TYPES.MAINTENANCE, label: 'Maintenance' },
-    { value: EXPENSE_TYPES.OTHER, label: 'Other' },
-  ];
+  const expenseTypeOptions: ExpenseTypeOption[] =
+    MANUAL_ALLOWED_EXPENSE_TYPE_VALUES.map(value => ({
+      value,
+      label:
+        {
+          UTILITIES: 'Utilities',
+          RENT: 'Rent',
+          SALARIES: 'Salaries',
+          MARKETING: 'Marketing',
+          OFFICE_SUPPLIES: 'Office Supplies',
+          TRAVEL: 'Travel',
+          INSURANCE: 'Insurance',
+          MAINTENANCE: 'Maintenance',
+          OTHER: 'Other',
+        }[value] || value,
+    }));
 
   // Payment method options
   const paymentMethodOptions: PaymentMethodOption[] = [

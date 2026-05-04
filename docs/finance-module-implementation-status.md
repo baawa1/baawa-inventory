@@ -1,154 +1,69 @@
 # Finance Module Implementation Status
 
-## ✅ **COMPLETED**
+## Current State
 
-### 1. **Form Simplification**
+The finance module is no longer in the earlier "single manual ledger" shape. It now runs on a consolidated model with explicit access rules and a shared reporting layer.
 
-- ✅ **AddIncomeForm** - Simplified to essential fields only
-- ✅ **AddExpenseForm** - Simplified to essential fields only
-- ✅ **EditTransactionForm** - Fixed TypeScript issues and simplified
-- ✅ **Validation Schemas** - Updated to match simplified structure
+Implemented:
+- Unified aggregation for manual finance, POS sales, and stock purchase expense.
+- Admin-only finance overview and reporting surfaces.
+- Manager transaction review access without report access.
+- Manual overlap prevention for `SALES` income and `INVENTORY_PURCHASES` expense.
+- Admin overlap audit for historical duplicate manual entries.
+- Live report pages for income statement, cash flow, analytics, and overlap audit.
+- Removal of the stale report-detail surface in favor of the reports hub.
 
-### 2. **Database Schema**
+## What Is Complete
 
-- ✅ **Migration Created** - `20250724052429_simplify_finance_schema`
-- ✅ **Removed Fields**:
-  - Currency (everything in Naira)
-  - Reference Number
-  - Payer/Vendor Contact
-  - Tax fields (taxWithheld, taxRate, taxAmount)
-  - Receipt URL and Notes
+### Access and policy hardening
+- Middleware and page authorization now distinguish:
+  - admin finance overview/report access
+  - manager transaction review access
+  - staff denial
+- Managers can reject pending transactions.
+- Managers can only edit transactions they created.
+- Summary, reports, analytics, receivables, forecasts, and overlap audit are admin-only.
 
-### 3. **Financial Reports**
+### Data correctness
+- Manual form choices no longer expose overlapping operational categories.
+- Server validation rejects blocked manual overlaps.
+- Shared aggregation excludes flagged legacy overlap entries from report totals.
+- Finance summaries and report-style APIs now read through a single aggregation layer.
 
-- ✅ **FinanceReports Component** - Comprehensive reporting dashboard
-- ✅ **Report Types**:
-  - Financial Summary
-  - Sales Report
-  - Purchase Report
-  - Income Report
-  - Expense Report
-  - Cash Flow
+### Reporting consolidation
+- `/finance/reports` is the canonical reporting entrypoint.
+- Report child pages are live or redirect back to the hub.
+- The old `FinanceReports.tsx` and detail-based reporting surface are retired.
 
-### 4. **API Updates**
+## What Still Needs Work
 
-- ✅ **Simplified API Structure** - Updated transaction creation
-- ✅ **Removed Complex Fields** - API now matches simplified schema
+These are the remaining high-value tasks, not blockers for the hardening pass itself:
 
-## 🔧 **IN PROGRESS**
+1. Broader API and E2E coverage
+- Add deeper end-to-end coverage for register -> verify -> approve -> finance access by role.
+- Add end-to-end coverage for create -> approve/reject -> report visibility.
+- Add end-to-end coverage for overlap-audit visibility and receivables updates.
 
-### 1. **Build Issues**
+2. Historical documentation cleanup
+- Some older retrospective finance docs still describe superseded components and older route shapes.
+- Those should either be archived as historical notes or updated to reference the shared aggregation model.
 
-- ⚠️ **Auth Import Paths** - Fixed most, but some TypeScript errors remain
-- ⚠️ **Type Mismatches** - Some user type issues in finance pages
+3. Optional workflow improvements
+- If admins need in-app resolution of flagged legacy overlaps, that would be a separate follow-up feature.
+- Current behavior is audit-and-export review, which matches the present scope.
 
-### 2. **API Endpoints**
+## Production Readiness
 
-- ⚠️ **Transaction API** - Partially updated, needs final cleanup
-- ⚠️ **Validation** - Some validation logic needs updating
+This module should not be described as "done because the UI exists." The current implementation is materially stronger because it now enforces:
+- explicit role boundaries
+- source-of-truth reporting rules
+- overlap prevention
+- shared aggregation across finance reporting endpoints
 
-## 📋 **REMAINING TASKS**
+That said, production confidence still depends on broader integration and E2E coverage, especially across auth gating and cross-module finance data flows.
 
-### **High Priority**
+## Verification Snapshot
 
-1. **Fix Remaining Build Issues**
-
-   ```bash
-   # Current build errors:
-   - Auth import path issues in some finance pages
-   - TypeScript type mismatches for user objects
-   ```
-
-2. **Complete API Integration**
-   - Update all finance API endpoints
-   - Test form submissions
-   - Verify data persistence
-
-3. **Test Forms**
-   - Test AddIncomeForm submission
-   - Test AddExpenseForm submission
-   - Test EditTransactionForm functionality
-
-### **Medium Priority**
-
-4. **Financial Reports API**
-   - Connect mock data to real database queries
-   - Implement date range filtering
-   - Add export functionality
-
-5. **Error Handling**
-   - Improve form validation feedback
-   - Add proper error boundaries
-   - Enhance user experience
-
-### **Low Priority**
-
-6. **Performance Optimization**
-   - Add database indexes for financial queries
-   - Implement caching for reports
-   - Optimize form rendering
-
-7. **User Experience**
-   - Add loading states
-   - Improve form feedback
-   - Add confirmation dialogs
-
-## 🎯 **Current Status: 85% Complete**
-
-### **What Works:**
-
-- ✅ Simplified forms are functional
-- ✅ Database schema is updated
-- ✅ Financial reports dashboard is ready
-- ✅ Basic API structure is in place
-
-### **What Needs Fixing:**
-
-- ⚠️ Build compilation issues
-- ⚠️ Some TypeScript type errors
-- ⚠️ API endpoint finalization
-
-## 🚀 **Next Steps**
-
-1. **Immediate (Today)**
-   - Fix remaining build issues
-   - Test form functionality
-   - Verify database operations
-
-2. **Short Term (This Week)**
-   - Complete API integration
-   - Add comprehensive testing
-   - Deploy to staging
-
-3. **Medium Term (Next Week)**
-   - Add financial reports API
-   - Implement export functionality
-   - Performance optimization
-
-## 📊 **Key Achievements**
-
-### **Simplified Structure**
-
-- **Before**: Complex forms with 15+ fields
-- **After**: Clean forms with 6-8 essential fields
-
-### **Database Optimization**
-
-- **Before**: 12 fields per transaction
-- **After**: 6 fields per transaction
-
-### **User Experience**
-
-- **Before**: Overwhelming forms
-- **After**: Simple, focused interface
-
-### **Maintainability**
-
-- **Before**: Complex validation and API logic
-- **After**: Streamlined, easy-to-maintain code
-
-## ✅ **Ready for Production**
-
-The finance module is **85% complete** and ready for production use. The core functionality is working, and the remaining issues are minor build and type fixes that don't affect the user experience.
-
-**Status: ✅ PRODUCTION READY** (with minor fixes needed)
+Verified during this pass:
+- `npm run build` succeeds.
+- Finance permissions, validation updates, approval/rejection routes, summary access, overlap audit behavior, and manager own-only edit behavior are covered by targeted Jest tests.

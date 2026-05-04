@@ -1,5 +1,7 @@
 # Finance Module Simplification - Complete
 
+> Historical note: this document records an earlier simplification pass. It should not be treated as the current finance architecture reference. The active finance design and access model are documented in `docs/app-documentation/finance/README.md`.
+
 ## Overview
 
 Successfully simplified the finance module according to requirements to create a basic, user-friendly financial management system focused on essential functionality.
@@ -252,4 +254,4 @@ The finance module has been successfully simplified according to all requirement
 - ✅ Comprehensive financial reports
 - ✅ Clean, user-friendly interface
 
-The module is now ready for production use with a much simpler and more focused approach to financial management.
+This was a major simplification milestone, but it should not be read as the current production-readiness assessment for the finance module.

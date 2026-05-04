@@ -1,6 +1,7 @@
 import { redirect } from 'next/navigation';
 import { auth } from '#root/auth';
 import { hasPermission } from '@/lib/auth/roles';
+import { CashFlowReport } from '@/components/finance/CashFlowReport';
 
 export const metadata = {
   title: 'Cash Flow Report - BaaWA Inventory POS',
@@ -19,12 +20,5 @@ export default async function CashFlowPage() {
     redirect('/unauthorized');
   }
 
-  return (
-    <div className="mx-auto max-w-7xl space-y-6 p-6">
-      <div className="text-center py-8">
-        <h1 className="text-2xl font-bold mb-4">Cash Flow Report</h1>
-        <p className="text-muted-foreground">Coming soon...</p>
-      </div>
-    </div>
-  );
+  return <CashFlowReport user={session.user} />;
 }

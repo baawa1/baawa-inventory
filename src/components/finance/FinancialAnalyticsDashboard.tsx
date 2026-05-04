@@ -34,6 +34,7 @@ import { AdvancedAnalytics } from './AdvancedAnalytics';
 
 // Import hooks
 import { useFinancialAnalytics } from '@/hooks/api/useFinancialAnalytics';
+import { formatFinanceDateInput } from '@/lib/finance/date-range';
 
 interface FinancialAnalyticsDashboardProps {
   user: any;
@@ -65,8 +66,8 @@ export function FinancialAnalyticsDashboard({
   const dateRangeFilter = useMemo(() => {
     if (!dateRange?.from || !dateRange?.to) return {};
     return {
-      dateFrom: dateRange.from.toISOString().split('T')[0],
-      dateTo: dateRange.to.toISOString().split('T')[0],
+      dateFrom: formatFinanceDateInput(dateRange.from),
+      dateTo: formatFinanceDateInput(dateRange.to),
     };
   }, [dateRange]);
 

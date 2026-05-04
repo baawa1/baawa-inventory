@@ -71,7 +71,7 @@ export const ROLE_PERMISSIONS = {
 
   // Finance permissions - GRANULAR CONTROL
   FINANCE_TRANSACTIONS_CREATE: [USER_ROLES.ADMIN, USER_ROLES.MANAGER], // Can record income/expenses
-  FINANCE_TRANSACTIONS_READ: [USER_ROLES.ADMIN, USER_ROLES.MANAGER], // Can view their own transactions
+  FINANCE_TRANSACTIONS_READ: [USER_ROLES.ADMIN, USER_ROLES.MANAGER], // Can review finance transactions
   FINANCE_APPROVE: [USER_ROLES.ADMIN], // Only Admin can approve
   FINANCE_DELETE: [USER_ROLES.ADMIN], // Only Admin can delete
 
@@ -249,6 +249,24 @@ export const canDeleteFinance = (
 };
 
 /**
+ * Check if a user can reject finance transactions during review
+ */
+export const canRejectFinance = (
+  userRole: UserRole | undefined | null
+): boolean => {
+  return hasRole(userRole, [USER_ROLES.ADMIN, USER_ROLES.MANAGER]);
+};
+
+/**
+ * Check if a user can access finance overview and reports
+ */
+export const canAccessFinanceReports = (
+  userRole: UserRole | undefined | null
+): boolean => {
+  return hasPermission(userRole, 'FINANCIAL_REPORTS');
+};
+
+/**
  * Determine if a user has access to a specific route based on their role
  * Optimized for performance with early returns
  */
@@ -273,6 +291,18 @@ export const authorizeUserForRoute = (
 
   if (route.startsWith('/pos')) {
     return hasPermission(userRole, 'POS_ACCESS');
+  }
+
+  if (route.startsWith('/finance/reports')) {
+    return canAccessFinanceReports(userRole);
+  }
+
+  if (route === '/finance' || route.startsWith('/finance?')) {
+    return canAccessFinanceReports(userRole);
+  }
+
+  if (route.startsWith('/finance')) {
+    return hasPermission(userRole, 'FINANCE_TRANSACTIONS_READ');
   }
 
   // Default routes (dashboard, inventory) accessible to all roles

@@ -1,33 +1,76 @@
 import { NextRequest, NextResponse } from 'next/server';
 import * as bcrypt from 'bcryptjs';
-import { z } from 'zod';
 import { prisma } from '@/lib/db';
 import { emailService } from '@/lib/email/service';
 import { AuditLogger } from '@/lib/utils/audit-logger';
-import {
-  emailSchema,
-  nameSchema,
-  passwordSchema,
-} from '@/lib/validations/common';
+import type { RegisterResponse } from '@/lib/auth/email-flow';
+import { registerUserSchema } from '@/lib/validations/user';
 import { randomBytes } from 'crypto';
 import { withRateLimit } from '@/lib/rate-limiting';
 import { getAppBaseUrl } from '@/lib/utils';
 import { AuditLogAction } from '@/types/audit';
 import { getClientIp } from '@/lib/utils/request-ip';
 
-// Registration validation schema
-const registerSchema = z
-  .object({
-    firstName: nameSchema,
-    lastName: nameSchema,
-    email: emailSchema,
-    password: passwordSchema,
-    confirmPassword: z.string(),
-  })
-  .refine(data => data.password === data.confirmPassword, {
-    message: "Passwords don't match",
-    path: ['confirmPassword'],
+function createVerificationToken() {
+  return {
+    token: randomBytes(32).toString('hex'),
+    expiresAt: new Date(Date.now() + 24 * 60 * 60 * 1000),
+  };
+}
+
+async function sendVerificationEmail(
+  email: string,
+  firstName: string,
+  verificationToken: string
+) {
+  const verificationLink = `${getAppBaseUrl()}/verify-email?token=${verificationToken}&email=${encodeURIComponent(
+    email
+  )}`;
+
+  if (
+    process.env.NODE_ENV !== 'production' &&
+    typeof emailService.sendVerificationEmailWithId === 'function'
+  ) {
+    const emailId = await emailService.sendVerificationEmailWithId(email, {
+      firstName,
+      verificationLink,
+      expiresInHours: 24,
+    });
+
+    return { emailId, verificationEmailSent: true };
+  }
+
+  await emailService.sendVerificationEmail(email, {
+    firstName,
+    verificationLink,
+    expiresInHours: 24,
   });
+
+  return { verificationEmailSent: true };
+}
+
+function buildRegisterResponse(
+  email: string,
+  message: string,
+  verificationEmailSent: boolean,
+  user?: RegisterResponse['user'],
+  emailId?: string
+) {
+  const response: RegisterResponse & { emailId?: string } = {
+    message,
+    email,
+    user,
+    requiresVerification: true,
+    redirectTo: '/check-email',
+    verificationEmailSent,
+  };
+
+  if (emailId) {
+    response.emailId = emailId;
+  }
+
+  return response;
+}
 
 async function registerHandler(request: NextRequest) {
   let body: any;
@@ -36,7 +79,7 @@ async function registerHandler(request: NextRequest) {
     body = await request.json();
 
     // Validate input
-    const validation = registerSchema.safeParse(body);
+    const validation = registerUserSchema.safeParse(body);
     if (!validation.success) {
       return NextResponse.json(
         {
@@ -62,30 +105,37 @@ async function registerHandler(request: NextRequest) {
           { status: 409 }
         );
       } else {
-        // User exists but email not verified - resend verification
-        const verificationToken = randomBytes(32).toString('hex');
-        const verificationExpires = new Date(Date.now() + 24 * 60 * 60 * 1000); // 24 hours
+        const { token: verificationToken, expiresAt: verificationExpires } =
+          createVerificationToken();
 
         await prisma.user.update({
           where: { id: existingUser.id },
           data: {
             emailVerificationToken: verificationToken,
             emailVerificationExpires: verificationExpires,
+            isActive: true,
           },
         });
 
-        // Send verification email
-        await emailService.sendVerificationEmail(email, {
-          firstName,
-          verificationLink: `${getAppBaseUrl()}/verify-email?token=${verificationToken}`,
-          expiresInHours: 24,
-        });
+        let verificationEmailSent = false;
+        try {
+          await sendVerificationEmail(email, firstName, verificationToken);
+          verificationEmailSent = true;
+        } catch (emailError) {
+          console.error(
+            'Failed to resend verification email for pending user:',
+            emailError
+          );
+        }
 
         return NextResponse.json(
-          {
-            message: 'Verification email sent. Please check your inbox.',
-            requiresVerification: true,
-          },
+          buildRegisterResponse(
+            email.toLowerCase(),
+            verificationEmailSent
+              ? 'We found an existing pending account and sent a fresh verification email. Use the original account details you registered with after you verify your email.'
+              : 'We found an existing pending account, but we could not send the verification email. Request another link from the next screen.',
+            verificationEmailSent
+          ),
           { status: 200 }
         );
       }
@@ -95,8 +145,8 @@ async function registerHandler(request: NextRequest) {
     const hashedPassword = await bcrypt.hash(password, 12);
 
     // Generate email verification token
-    const verificationToken = randomBytes(32).toString('hex');
-    const verificationExpires = new Date(Date.now() + 24 * 60 * 60 * 1000); // 24 hours
+    const { token: verificationToken, expiresAt: verificationExpires } =
+      createVerificationToken();
 
     // Create user
     const user = await prisma.user.create({
@@ -127,24 +177,16 @@ async function registerHandler(request: NextRequest) {
     await AuditLogger.logRegistration(user.email, user.role, request);
 
     // Send verification email and get Resend email ID if possible
-    let emailId: string | undefined = undefined;
+    let verificationEmailSent = false;
+    let emailId: string | undefined;
     try {
-      if (
-        process.env.NODE_ENV !== 'production' &&
-        typeof emailService.sendVerificationEmailWithId === 'function'
-      ) {
-        emailId = await emailService.sendVerificationEmailWithId(email, {
-          firstName,
-          verificationLink: `${getAppBaseUrl()}/verify-email?token=${verificationToken}`,
-          expiresInHours: 24,
-        });
-      } else {
-        await emailService.sendVerificationEmail(email, {
-          firstName,
-          verificationLink: `${getAppBaseUrl()}/verify-email?token=${verificationToken}`,
-          expiresInHours: 24,
-        });
-      }
+      const emailResult = await sendVerificationEmail(
+        email,
+        firstName,
+        verificationToken
+      );
+      verificationEmailSent = emailResult.verificationEmailSent;
+      emailId = emailResult.emailId;
     } catch (emailError) {
       console.error('Failed to send verification email:', emailError);
       // Don't fail the registration if email sending fails
@@ -179,25 +221,25 @@ async function registerHandler(request: NextRequest) {
     }
 
     // Build response
-    const response: any = {
-      message:
-        'Registration successful! Please check your email to verify your account.',
-      user: {
-        id: user.id,
-        firstName: user.firstName,
-        lastName: user.lastName,
-        email: user.email,
-        status: user.userStatus,
-        role: user.role,
-      },
-      requiresVerification: true,
-      redirectTo: '/check-email', // Add explicit redirect instruction
-    };
-    if (emailId) {
-      response.emailId = emailId;
-    }
-
-    return NextResponse.json(response, { status: 201 });
+    return NextResponse.json(
+      buildRegisterResponse(
+        user.email,
+        verificationEmailSent
+          ? 'Registration successful! Please check your email to verify your account.'
+          : 'Registration successful, but we could not send your verification email. Request another link from the next screen.',
+        verificationEmailSent,
+        {
+          id: user.id,
+          firstName: user.firstName,
+          lastName: user.lastName,
+          email: user.email,
+          status: user.userStatus,
+          role: user.role,
+        },
+        emailId
+      ),
+      { status: 201 }
+    );
   } catch (error) {
     console.error('Registration error:', error);
 

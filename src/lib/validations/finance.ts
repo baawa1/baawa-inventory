@@ -3,19 +3,22 @@ import {
   FINANCIAL_TYPES,
   FINANCIAL_STATUS,
   PAYMENT_METHODS,
-  EXPENSE_TYPES,
-  INCOME_SOURCES,
+  MANUAL_ALLOWED_EXPENSE_TYPE_VALUES,
+  MANUAL_ALLOWED_INCOME_SOURCE_VALUES,
 } from '@/lib/constants/finance';
+import {
+  getManualExpenseTypeError,
+  getManualIncomeSourceError,
+} from '@/lib/finance/manual-transaction-policy';
 
 // Helper function to validate date range
 const validateDateRange = (startDate: string, endDate: string) => {
   const start = new Date(startDate);
   const end = new Date(endDate);
-  if (start > end) {
-    throw new Error('Start date must be before end date');
-  }
-  return true;
+  return !isNaN(start.getTime()) && !isNaN(end.getTime()) && start <= end;
 };
+
+const validDateString = (value: string) => !isNaN(new Date(value).getTime());
 
 // Base transaction schema - simplified
 export const baseTransactionSchema = z.object({
@@ -46,14 +49,18 @@ export const baseTransactionSchema = z.object({
 // Income transaction schema - simplified
 export const incomeTransactionSchema = baseTransactionSchema.extend({
   type: z.literal(FINANCIAL_TYPES.INCOME),
-  incomeSource: z.enum(Object.values(INCOME_SOURCES) as [string, ...string[]]),
+  incomeSource: z.enum(
+    MANUAL_ALLOWED_INCOME_SOURCE_VALUES as unknown as [string, ...string[]]
+  ),
   payerName: z.string().max(255, 'Payer name is too long').optional(),
 });
 
 // Expense transaction schema - simplified
 export const expenseTransactionSchema = baseTransactionSchema.extend({
   type: z.literal(FINANCIAL_TYPES.EXPENSE),
-  expenseType: z.enum(Object.values(EXPENSE_TYPES) as [string, ...string[]]),
+  expenseType: z.enum(
+    MANUAL_ALLOWED_EXPENSE_TYPE_VALUES as unknown as [string, ...string[]]
+  ),
   vendorName: z.string().max(255, 'Vendor name is too long').optional(),
 });
 
@@ -92,14 +99,28 @@ export const updateTransactionSchema = z.object({
     .enum(Object.values(PAYMENT_METHODS) as [string, ...string[]])
     .optional(),
   // Income specific fields
-  incomeSource: z
-    .enum(Object.values(INCOME_SOURCES) as [string, ...string[]])
-    .optional(),
+  incomeSource: z.string().optional().refine(
+    value =>
+      value === undefined ||
+      MANUAL_ALLOWED_INCOME_SOURCE_VALUES.includes(
+        value as (typeof MANUAL_ALLOWED_INCOME_SOURCE_VALUES)[number]
+      ),
+    value => ({
+      message: getManualIncomeSourceError(String(value)),
+    })
+  ),
   payerName: z.string().max(255, 'Payer name is too long').optional(),
   // Expense specific fields
-  expenseType: z
-    .enum(Object.values(EXPENSE_TYPES) as [string, ...string[]])
-    .optional(),
+  expenseType: z.string().optional().refine(
+    value =>
+      value === undefined ||
+      MANUAL_ALLOWED_EXPENSE_TYPE_VALUES.includes(
+        value as (typeof MANUAL_ALLOWED_EXPENSE_TYPE_VALUES)[number]
+      ),
+    value => ({
+      message: getManualExpenseTypeError(String(value)),
+    })
+  ),
   vendorName: z.string().max(255, 'Vendor name is too long').optional(),
 });
 
@@ -116,8 +137,22 @@ export const transactionFiltersSchema = z
         ...string[],
       ])
       .optional(),
-    startDate: z.string().optional(),
-    endDate: z.string().optional(),
+    paymentMethod: z
+      .enum(
+        [
+          ...Object.values(PAYMENT_METHODS),
+          'POS',
+        ] as unknown as [string, ...string[]]
+      )
+      .optional(),
+    startDate: z
+      .string()
+      .refine(validDateString, 'Invalid start date')
+      .optional(),
+    endDate: z
+      .string()
+      .refine(validDateString, 'Invalid end date')
+      .optional(),
     page: z.number().min(1, 'Page must be at least 1').default(1),
     limit: z
       .number()

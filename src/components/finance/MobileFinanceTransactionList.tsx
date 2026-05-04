@@ -1,7 +1,10 @@
 'use client';
 
 import React, { useState, useMemo, useCallback } from 'react';
-import { useFinancialTransactions } from '@/hooks/api/finance';
+import {
+  useFinancialTransactions,
+  type FinancialTransaction,
+} from '@/hooks/api/finance';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import {
@@ -53,6 +56,7 @@ import { format } from 'date-fns';
 import { toast } from 'sonner';
 import { formatCurrency } from '@/lib/utils';
 import { useDebounce } from '@/hooks/useDebounce';
+import { getFinanceUserDisplayName } from '@/lib/finance/transaction-access';
 
 interface User {
   id: string;
@@ -61,32 +65,6 @@ interface User {
   role: string;
   status: string;
   isEmailVerified: boolean;
-}
-
-interface FinancialTransaction {
-  id: number;
-  transactionNumber: string;
-  type: 'EXPENSE' | 'INCOME';
-  amount: number;
-  description?: string;
-  transactionDate: string;
-  paymentMethod?: string;
-  status: 'PENDING' | 'COMPLETED' | 'CANCELLED' | 'APPROVED' | 'REJECTED';
-  createdAt: string;
-  updatedAt: string;
-  createdBy: number;
-  createdByName: string;
-  approvedBy?: number;
-  approvedByName?: string;
-  approvedAt?: string;
-  expenseDetails?: {
-    expenseType: string;
-    vendorName?: string;
-  };
-  incomeDetails?: {
-    incomeSource: string;
-    payerName?: string;
-  };
 }
 
 interface MobileFinanceTransactionListProps {
@@ -131,6 +109,9 @@ export function MobileFinanceTransactionList({
     status: filters.status !== 'all' ? filters.status : undefined,
     paymentMethod:
       filters.paymentMethod !== 'all' ? filters.paymentMethod : undefined,
+  }, {
+    page: pagination.page,
+    limit: pagination.limit,
   });
 
   // Extract transactions array from API response
@@ -142,7 +123,7 @@ export function MobileFinanceTransactionList({
     page: apiPagination?.page || pagination.page,
     limit: apiPagination?.limit || pagination.limit,
     totalPages: apiPagination?.totalPages || pagination.totalPages,
-    totalItems: apiPagination?.totalItems || 0,
+    totalItems: apiPagination?.total || apiPagination?.totalItems || 0,
   };
 
   if (error) {
@@ -251,7 +232,8 @@ export function MobileFinanceTransactionList({
           { value: 'all', label: 'All Methods' },
           { value: 'CASH', label: 'Cash' },
           { value: 'BANK_TRANSFER', label: 'Bank Transfer' },
-          { value: 'POS', label: 'POS' },
+          { value: 'POS_MACHINE', label: 'POS Machine' },
+          { value: 'CREDIT_CARD', label: 'Credit Card' },
           { value: 'MOBILE_MONEY', label: 'Mobile Money' },
         ],
         placeholder: 'All Methods',
@@ -296,6 +278,8 @@ export function MobileFinanceTransactionList({
       case 'bank_transfer':
         return <IconBuildingBank className="h-4 w-4 text-blue-600" />;
       case 'pos':
+      case 'pos_machine':
+      case 'credit_card':
         return <IconCreditCard className="h-4 w-4 text-purple-600" />;
       case 'mobile_money':
         return <IconDeviceMobile className="h-4 w-4 text-orange-600" />;
@@ -456,7 +440,9 @@ export function MobileFinanceTransactionList({
         case 'createdByName':
           return (
             <span className="truncate text-xs sm:text-sm">
-              {transaction.createdByName}
+              {transaction.createdByName ||
+                getFinanceUserDisplayName(transaction.createdByUser) ||
+                'Unknown User'}
             </span>
           );
         default:
@@ -533,7 +519,11 @@ export function MobileFinanceTransactionList({
       </span>
       <span>•</span>
       <IconUser className="h-3 w-3" />
-      <span className="truncate">{transaction.createdByName}</span>
+      <span className="truncate">
+        {transaction.createdByName ||
+          getFinanceUserDisplayName(transaction.createdByUser) ||
+          'Unknown User'}
+      </span>
       <span>•</span>
       <span
         className={`font-semibold ${transaction.type === 'INCOME' ? 'text-green-600' : 'text-red-600'}`}
@@ -707,7 +697,9 @@ function FinancialTransactionDetailsContent({
       <div>
         <h4 className="mb-2 text-sm font-medium">Created By</h4>
         <div className="text-muted-foreground text-sm">
-          {transaction.createdByName}
+          {transaction.createdByName ||
+            getFinanceUserDisplayName(transaction.createdByUser) ||
+            'Unknown User'}
           <br />
           {format(new Date(transaction.createdAt), 'PPP p')}
         </div>

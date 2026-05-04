@@ -40,6 +40,7 @@ import { defaultFormValues } from '../add-income/types';
 import { AppUser } from '@/types/user';
 import { useIncomeData } from './useIncomeData';
 import { useIncomeUpdate } from './useIncomeUpdate';
+import { formatFinanceDateInput } from '@/lib/finance/date-range';
 
 interface EditIncomeFormProps {
   user: AppUser;
@@ -84,9 +85,9 @@ export default function EditIncomeForm({
         type: 'INCOME',
         amount: incomeData.amount,
         description: incomeData.description || '',
-        transactionDate: new Date(incomeData.transactionDate)
-          .toISOString()
-          .split('T')[0],
+        transactionDate: formatFinanceDateInput(
+          new Date(incomeData.transactionDate)
+        ),
         paymentMethod: incomeData.paymentMethod || '',
         incomeSource: incomeData.incomeDetails?.incomeSource || '',
         payerName: incomeData.incomeDetails?.payerName || '',

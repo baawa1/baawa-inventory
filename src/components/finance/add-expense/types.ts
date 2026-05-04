@@ -4,8 +4,9 @@ import { expenseTransactionSchema } from '@/lib/validations/finance';
 import {
   FINANCIAL_TYPES,
   PAYMENT_METHODS,
-  EXPENSE_TYPES,
+  MANUAL_ALLOWED_EXPENSE_TYPE_VALUES,
 } from '@/lib/constants/finance';
+import { formatFinanceDateInput } from '@/lib/finance/date-range';
 
 // Form data type - only for expense transactions
 export type CreateExpenseData = z.infer<typeof expenseTransactionSchema>;
@@ -15,9 +16,9 @@ export const defaultFormValues: CreateExpenseData = {
   type: FINANCIAL_TYPES.EXPENSE,
   amount: 0.01,
   description: '',
-  transactionDate: new Date().toISOString().split('T')[0],
+  transactionDate: formatFinanceDateInput(new Date()),
   paymentMethod: PAYMENT_METHODS.CASH,
-  expenseType: EXPENSE_TYPES.OTHER,
+  expenseType: MANUAL_ALLOWED_EXPENSE_TYPE_VALUES[0],
   vendorName: '',
 };
 

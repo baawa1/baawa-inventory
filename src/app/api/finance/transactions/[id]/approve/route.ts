@@ -65,13 +65,10 @@ export const POST = withAuth(
           );
         }
 
-        if (
-          transaction.status === 'CANCELLED' ||
-          transaction.status === 'REJECTED'
-        ) {
+        if (transaction.status !== 'PENDING') {
           throw new FinanceApprovalError(
             400,
-            'Cannot approve a cancelled or rejected transaction'
+            'Only pending transactions can be approved'
           );
         }
 

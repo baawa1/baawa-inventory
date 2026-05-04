@@ -1,7 +1,6 @@
 'use client';
 
 import React, { useState, useMemo, useCallback } from 'react';
-import { useQuery } from '@tanstack/react-query';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import {
@@ -36,6 +35,18 @@ import { DashboardTableLayout } from '@/components/layouts/DashboardTableLayout'
 import type { DashboardTableColumn } from '@/components/layouts/DashboardColumnCustomizer';
 import type { FilterConfig } from '@/components/layouts/DashboardFiltersBar';
 import { DateRangePickerWithPresets } from '@/components/ui/date-range-picker-with-presets';
+import {
+  useFinancialTransactions,
+  type FinancialTransaction,
+} from '@/hooks/api/finance';
+import {
+  formatFinanceDateInput,
+} from '@/lib/finance/date-range';
+import { getFinanceUserDisplayName } from '@/lib/finance/transaction-access';
+import {
+  DEFAULT_DATE_RANGE_PRESET,
+  getDateRangePreset,
+} from '@/lib/utils/date-range';
 
 interface User {
   id: string;
@@ -44,32 +55,6 @@ interface User {
   role: string;
   status: string;
   isEmailVerified: boolean;
-}
-
-interface FinancialTransaction {
-  id: number;
-  transactionNumber: string;
-  type: 'EXPENSE' | 'INCOME';
-  amount: number;
-  description?: string;
-  transactionDate: string;
-  paymentMethod?: string;
-  status: 'PENDING' | 'COMPLETED' | 'CANCELLED' | 'APPROVED' | 'REJECTED';
-  createdAt: string;
-  updatedAt: string;
-  createdBy: number;
-  createdByName: string;
-  approvedBy?: number;
-  approvedByName?: string;
-  approvedAt?: string;
-  expenseDetails?: {
-    expenseType: string;
-    vendorName?: string;
-  };
-  incomeDetails?: {
-    incomeSource: string;
-    payerName?: string;
-  };
 }
 
 interface FinanceTransactionListProps {
@@ -91,7 +76,9 @@ export function FinanceTransactionList({
   });
 
   // Date range state for custom date filtering
-  const [dateRange, setDateRange] = useState<DateRange | undefined>(undefined);
+  const [dateRange, setDateRange] = useState<DateRange | undefined>(() =>
+    getDateRangePreset(DEFAULT_DATE_RANGE_PRESET)
+  );
 
   // Filters state
   const [filters, setFilters] = useState({
@@ -110,40 +97,24 @@ export function FinanceTransactionList({
     isLoading,
     error,
     refetch,
-  } = useQuery({
-    queryKey: [
-      'financial-transactions',
-      {
-        search: debouncedSearchTerm,
-        type: filters.type,
-        status: filters.status,
-        paymentMethod: filters.paymentMethod,
-        startDate: dateRange?.from?.toISOString(),
-        endDate: dateRange?.to?.toISOString(),
-        page: pagination.page,
-        limit: pagination.limit,
-        sortBy: 'transactionDate',
-        sortOrder: 'desc',
-      },
-    ],
-    queryFn: async () => {
-      const params = new URLSearchParams();
-      if (debouncedSearchTerm) params.append('search', debouncedSearchTerm);
-      if (filters.type) params.append('type', filters.type);
-      if (filters.status) params.append('status', filters.status);
-      if (filters.paymentMethod) params.append('paymentMethod', filters.paymentMethod);
-      if (dateRange?.from) params.append('startDate', dateRange.from.toISOString());
-      if (dateRange?.to) params.append('endDate', dateRange.to.toISOString());
-      params.append('page', String(pagination.page));
-      params.append('limit', String(pagination.limit));
-      params.append('sortBy', 'transactionDate');
-      params.append('sortOrder', 'desc');
-
-      const response = await fetch(`/api/finance/transactions?${params}`);
-      if (!response.ok) throw new Error('Failed to fetch transactions');
-      return response.json();
+  } = useFinancialTransactions(
+    {
+      search: debouncedSearchTerm || undefined,
+      type: filters.type || undefined,
+      status: filters.status || undefined,
+      paymentMethod: filters.paymentMethod || undefined,
+      startDate: dateRange?.from
+        ? formatFinanceDateInput(dateRange.from)
+        : undefined,
+      endDate: dateRange?.to ? formatFinanceDateInput(dateRange.to) : undefined,
+      sortBy: 'transactionDate',
+      sortOrder: 'desc',
     },
-  });
+    {
+      page: pagination.page,
+      limit: pagination.limit,
+    }
+  );
 
   // Extract transactions array from API response
   const transactions = transactionData?.data || [];
@@ -154,7 +125,7 @@ export function FinanceTransactionList({
     page: apiPagination?.page || pagination.page,
     limit: apiPagination?.limit || pagination.limit,
     totalPages: apiPagination?.totalPages || pagination.totalPages,
-    totalItems: apiPagination?.totalItems || 0,
+    totalItems: apiPagination?.total || apiPagination?.totalItems || 0,
   };
 
   if (error) {
@@ -257,7 +228,8 @@ export function FinanceTransactionList({
         options: [
           { value: 'CASH', label: 'Cash' },
           { value: 'BANK_TRANSFER', label: 'Bank Transfer' },
-          { value: 'POS', label: 'POS' },
+          { value: 'POS_MACHINE', label: 'POS Machine' },
+          { value: 'CREDIT_CARD', label: 'Credit Card' },
           { value: 'MOBILE_MONEY', label: 'Mobile Money' },
         ],
         placeholder: 'All Payments',
@@ -283,7 +255,7 @@ export function FinanceTransactionList({
       status: '',
       paymentMethod: '',
     });
-    setDateRange(undefined);
+    setDateRange(getDateRangePreset(DEFAULT_DATE_RANGE_PRESET));
     setPagination(prev => ({ ...prev, page: 1 }));
   }, []);
 
@@ -430,7 +402,13 @@ export function FinanceTransactionList({
         case 'status':
           return getStatusBadge(transaction.status);
         case 'createdBy':
-          return <span>{transaction.createdByName}</span>;
+          return (
+            <span>
+              {transaction.createdByName ||
+                getFinanceUserDisplayName(transaction.createdByUser) ||
+                'Unknown User'}
+            </span>
+          );
         default:
           return null;
       }
@@ -586,7 +564,11 @@ function TransactionDetailsContent({
           <label className="text-muted-foreground text-sm font-medium">
             Created By
           </label>
-          <p>{transaction.createdByName}</p>
+          <p>
+            {transaction.createdByName ||
+              getFinanceUserDisplayName(transaction.createdByUser) ||
+              'Unknown User'}
+          </p>
         </div>
         {transaction.paymentMethod && (
           <div>

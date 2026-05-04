@@ -1,6 +1,6 @@
 import { redirect } from 'next/navigation';
 import { auth } from '#root/auth';
-import { USER_ROLES, hasRole } from '@/lib/auth/roles';
+import { hasPermission } from '@/lib/auth/roles';
 import { ExpenseReport } from '@/components/finance/ExpenseReport';
 
 export const metadata = {
@@ -15,7 +15,7 @@ export default async function ExpenseReportPage() {
     redirect('/login');
   }
 
-  if (!hasRole(session.user.role, [USER_ROLES.ADMIN, USER_ROLES.MANAGER])) {
+  if (!hasPermission(session.user.role, 'FINANCIAL_REPORTS')) {
     redirect('/unauthorized');
   }
 

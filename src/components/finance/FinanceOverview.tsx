@@ -35,6 +35,7 @@ import { AppUser } from '@/types/user';
 import { useQuery } from '@tanstack/react-query';
 import { queryKeys } from '@/lib/query-client';
 import { DateRange } from 'react-day-picker';
+import { formatFinanceDateInput } from '@/lib/finance/date-range';
 
 interface FinanceOverviewProps {
   user: AppUser;
@@ -44,10 +45,10 @@ interface FinanceOverviewProps {
 const fetchFinancialSummary = async (startDate?: Date, endDate?: Date) => {
   const params = new URLSearchParams();
   if (startDate) {
-    params.append('startDate', startDate.toISOString());
+    params.append('startDate', formatFinanceDateInput(startDate));
   }
   if (endDate) {
-    params.append('endDate', endDate.toISOString());
+    params.append('endDate', formatFinanceDateInput(endDate));
   }
 
   const url = `/api/finance/summary${params.toString() ? `?${params.toString()}` : ''}`;
@@ -77,8 +78,8 @@ export function FinanceOverview({ user: _user }: FinanceOverviewProps) {
   } = useQuery({
     queryKey: [
       ...queryKeys.finance.summary(),
-      dateRange?.from?.toISOString(),
-      dateRange?.to?.toISOString(),
+      dateRange?.from ? formatFinanceDateInput(dateRange.from) : undefined,
+      dateRange?.to ? formatFinanceDateInput(dateRange.to) : undefined,
     ],
     queryFn: () => fetchFinancialSummary(dateRange?.from, dateRange?.to),
     enabled: !!dateRange?.from && !!dateRange?.to,
@@ -202,7 +203,9 @@ export function FinanceOverview({ user: _user }: FinanceOverviewProps) {
       <div className="grid gap-6 md:grid-cols-2 lg:grid-cols-4">
         <Card>
           <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-            <CardTitle className="text-sm font-medium">Total Income</CardTitle>
+            <CardTitle className="text-sm font-medium">
+              Operating Revenue
+            </CardTitle>
             <TrendingUp className="h-4 w-4 text-green-600" />
           </CardHeader>
           <CardContent>

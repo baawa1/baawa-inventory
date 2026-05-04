@@ -1,7 +1,10 @@
 import { fireEvent } from '@testing-library/react';
 import { RegisterForm } from '@/components/auth/RegisterForm';
-import { UserRole } from '@/types/user';
-import { renderWithProviders, screen, waitFor } from '../../utils/test-providers';
+import {
+  renderWithProviders,
+  screen,
+  waitFor,
+} from '../../utils/test-providers';
 
 // Mock fetch for API calls
 const mockFetch = jest.fn();
@@ -90,9 +93,7 @@ describe('RegisterForm', () => {
       const firstNameErrors = screen.getAllByText(
         'First name must be at least 2 characters'
       );
-      const emailErrors = screen.getAllByText(
-        'Please enter a valid email address'
-      );
+      const emailErrors = screen.getAllByText('Invalid email format');
       const passwordErrors = screen.getAllByText(
         'Password must be at least 8 characters'
       );
@@ -133,10 +134,11 @@ describe('RegisterForm', () => {
     mockFetch.mockResolvedValue({
       ok: true,
       json: async () => ({
-        id: 1,
-        firstName: 'John',
-        lastName: 'Doe',
+        message: 'Registration successful',
         email: 'john@example.com',
+        redirectTo: '/check-email',
+        requiresVerification: true,
+        verificationEmailSent: true,
       }),
     } as Response);
 
@@ -179,10 +181,11 @@ describe('RegisterForm', () => {
     mockFetch.mockResolvedValue({
       ok: true,
       json: async () => ({
-        id: 1,
-        firstName: 'John',
-        lastName: 'Doe',
+        message: 'Registration successful',
         email: 'john@example.com',
+        redirectTo: '/check-email',
+        requiresVerification: true,
+        verificationEmailSent: true,
       }),
     } as Response);
 
@@ -205,12 +208,9 @@ describe('RegisterForm', () => {
     fireEvent.click(submitButton);
 
     await waitFor(() => {
-      expect(screen.getByText('Check Your Email!')).toBeInTheDocument();
-      expect(
-        screen.getByText(
-          "We've sent a verification link to your email address. Please check your inbox and click the link to verify your account."
-        )
-      ).toBeInTheDocument();
+      expect(mockPush).toHaveBeenCalledWith(
+        '/check-email?email=john%40example.com'
+      );
     });
   });
 
@@ -243,18 +243,19 @@ describe('RegisterForm', () => {
     });
   });
 
-  it('uses custom default role when provided', async () => {
+  it('redirects with a delivery warning when verification email is not sent', async () => {
     mockFetch.mockResolvedValue({
       ok: true,
       json: async () => ({
-        id: 1,
-        firstName: 'John',
-        lastName: 'Doe',
+        message: 'Registration successful',
         email: 'john@example.com',
+        redirectTo: '/check-email',
+        requiresVerification: true,
+        verificationEmailSent: false,
       }),
     } as Response);
 
-    renderWithProviders(<RegisterForm defaultRole="MANAGER" />);
+    renderWithProviders(<RegisterForm />);
 
     const firstNameInput = screen.getByLabelText('First Name');
     const lastNameInput = screen.getByLabelText('Last Name');
@@ -273,19 +274,9 @@ describe('RegisterForm', () => {
     fireEvent.click(submitButton);
 
     await waitFor(() => {
-      expect(mockFetch).toHaveBeenCalledWith('/api/auth/register', {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify({
-          firstName: 'John',
-          lastName: 'Doe',
-          email: 'john@example.com',
-          password: validPassword,
-          confirmPassword: validPassword,
-        }),
-      });
+      expect(mockPush).toHaveBeenCalledWith(
+        '/check-email?email=john%40example.com&sent=0'
+      );
     });
   });
 
@@ -294,10 +285,11 @@ describe('RegisterForm', () => {
     mockFetch.mockResolvedValue({
       ok: true,
       json: async () => ({
-        id: 1,
-        firstName: 'John',
-        lastName: 'Doe',
+        message: 'Registration successful',
         email: 'john@example.com',
+        redirectTo: '/check-email',
+        requiresVerification: true,
+        verificationEmailSent: true,
       }),
     } as Response);
 

@@ -5,13 +5,7 @@ import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { InlineLoading } from '@/components/ui/loading';
-import {
-  Select,
-  SelectContent,
-  SelectItem,
-  SelectTrigger,
-  SelectValue,
-} from '@/components/ui/select';
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import {
   IconDownload,
   IconPrinter,
@@ -24,7 +18,7 @@ import {
 import { DateRange } from 'react-day-picker';
 import { formatCurrency } from '@/lib/utils';
 import { useFinancialAnalytics } from '@/hooks/api/useFinancialAnalytics';
-import { DateRangePicker } from '@/components/ui/date-range-picker';
+import { DateRangePickerWithPresets } from '@/components/ui/date-range-picker-with-presets';
 import { AppUser } from '@/types/user';
 import { EXPENSE_TYPE_LABELS } from '@/lib/constants/finance';
 import {
@@ -41,7 +35,6 @@ export function ExpenseReport({ user: _user }: ExpenseReportProps) {
     from: new Date(Date.now() - 30 * 24 * 60 * 60 * 1000),
     to: new Date(),
   });
-  const [_period, setPeriod] = useState('monthly');
   const [expenseCategory, setExpenseCategory] = useState('all');
 
   const {
@@ -142,17 +135,6 @@ export function ExpenseReport({ user: _user }: ExpenseReportProps) {
           </p>
         </div>
         <div className="flex items-center gap-2">
-          <Select value={_period} onValueChange={setPeriod}>
-            <SelectTrigger className="w-32">
-              <SelectValue />
-            </SelectTrigger>
-            <SelectContent>
-              <SelectItem value="weekly">Weekly</SelectItem>
-              <SelectItem value="monthly">Monthly</SelectItem>
-              <SelectItem value="quarterly">Quarterly</SelectItem>
-              <SelectItem value="yearly">Yearly</SelectItem>
-            </SelectContent>
-          </Select>
           <Button onClick={handleRefresh} variant="outline" size="sm">
             <IconRefresh className="mr-2 h-4 w-4" />
             Refresh
@@ -188,7 +170,7 @@ export function ExpenseReport({ user: _user }: ExpenseReportProps) {
           <div className="grid gap-4 md:grid-cols-2">
             <div className="space-y-2">
               <label className="text-sm font-medium">Date Range</label>
-              <DateRangePicker
+              <DateRangePickerWithPresets
                 date={dateRange}
                 onDateChange={setDateRange}
                 placeholder="Select date range for expense analysis"

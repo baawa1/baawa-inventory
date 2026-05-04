@@ -13,6 +13,7 @@ const customJestConfig = {
   },
   testMatch: [
     '<rootDir>/tests/critical/**/*.test.{ts,tsx}',
+    '<rootDir>/tests/api/finance*.test.{ts,tsx}',
     '<rootDir>/src/lib/utils/__tests__/**/*.test.{ts,tsx}',
   ],
   testPathIgnorePatterns: [

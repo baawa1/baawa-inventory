@@ -249,6 +249,8 @@ export const USER_ROLES = {
 export const ROLE_PERMISSIONS = {
   INVENTORY_READ: [ADMIN, MANAGER, STAFF],
   INVENTORY_WRITE: [ADMIN, MANAGER],
+  FINANCE_TRANSACTIONS_READ: [ADMIN, MANAGER],
+  FINANCIAL_REPORTS: [ADMIN],
   USER_MANAGEMENT: [ADMIN],
   POS_ACCESS: [ADMIN, MANAGER, STAFF],
 } as const;
@@ -258,6 +260,11 @@ export const hasRole = (userRole: string, allowedRoles: UserRole[]): boolean
 export const hasPermission = (userRole: string, permission: string): boolean
 export const authorizeUserForRoute = (userRole: string, route: string): boolean
 ```
+
+**Current finance access rule**:
+- Users must reach `APPROVED` status before any protected finance route is available.
+- `ADMIN` can access `/finance`, `/finance/reports`, analytics, forecasts, exports, and overlap audit.
+- `MANAGER` can access finance transaction workflows such as `/finance/transactions`, `/finance/income`, and `/finance/expenses`, but not finance overview or reporting surfaces.
 
 ### 4. `src/app/api/auth/register/route.ts` (Registration API)
 

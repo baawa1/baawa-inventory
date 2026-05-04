@@ -189,7 +189,7 @@ export function FinancialReports({
                       </span>
                     </div>
                     <div className="flex items-center justify-between">
-                      <span>Other Income</span>
+                      <span>Other Operating Income</span>
                       <span className="font-medium">
                         {formatCurrency(profitLossData.revenue.otherIncome)}
                       </span>
@@ -368,7 +368,7 @@ export function FinancialReports({
                   </h3>
                   <div className="space-y-2">
                     <div className="flex items-center justify-between">
-                      <span>Loans</span>
+                      <span>Financing Inflows</span>
                       <span className="font-medium">
                         {formatCurrency(cashFlowData.financingActivities.loans)}
                       </span>

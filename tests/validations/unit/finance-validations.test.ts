@@ -8,6 +8,7 @@ import {
   incomeTransactionSchema,
   expenseTransactionSchema,
   transactionFiltersSchema,
+  updateTransactionSchema,
 } from '@/lib/validations/finance';
 
 // Mock the constants since they might not be properly exported
@@ -50,6 +51,24 @@ jest.mock('@/lib/constants/finance', () => ({
     COMMISSIONS: 'COMMISSIONS',
     OTHER: 'OTHER',
   },
+  MANUAL_ALLOWED_INCOME_SOURCE_VALUES: [
+    'SERVICES',
+    'INVESTMENTS',
+    'ROYALTIES',
+    'COMMISSIONS',
+    'OTHER',
+  ],
+  MANUAL_ALLOWED_EXPENSE_TYPE_VALUES: [
+    'UTILITIES',
+    'RENT',
+    'SALARIES',
+    'MARKETING',
+    'OFFICE_SUPPLIES',
+    'TRAVEL',
+    'INSURANCE',
+    'MAINTENANCE',
+    'OTHER',
+  ],
 }));
 
 describe('Finance Validation Schemas', () => {
@@ -129,7 +148,7 @@ describe('Finance Validation Schemas', () => {
       });
 
       it('should reject non-numeric amounts', () => {
-        const invalidAmounts = ['100', null, undefined, ''];
+        const invalidAmounts = ['not-a-number', null, undefined, {}];
 
         invalidAmounts.forEach(amount => {
           expect(() => baseTransactionSchema.parse({
@@ -215,7 +234,7 @@ describe('Finance Validation Schemas', () => {
         const futureDates = [
           tomorrow.toISOString().split('T')[0],
           nextMonth.toISOString().split('T')[0],
-          '2025-12-31',
+          new Date(tomorrow.getFullYear() + 1, 0, 1).toISOString().split('T')[0],
         ];
 
         futureDates.forEach(transactionDate => {
@@ -274,10 +293,10 @@ describe('Finance Validation Schemas', () => {
     const validIncomeTransaction = {
       type: 'INCOME',
       amount: 25000,
-      description: 'Product sales revenue',
+      description: 'Service revenue',
       transactionDate: '2024-01-15',
       paymentMethod: 'BANK_TRANSFER',
-      incomeSource: 'SALES',
+      incomeSource: 'SERVICES',
       payerName: 'ABC Company Ltd',
     };
 
@@ -285,7 +304,7 @@ describe('Finance Validation Schemas', () => {
       const result = incomeTransactionSchema.parse(validIncomeTransaction);
       
       expect(result.type).toBe('INCOME');
-      expect(result.incomeSource).toBe('SALES');
+      expect(result.incomeSource).toBe('SERVICES');
       expect(result.payerName).toBe('ABC Company Ltd');
     });
 
@@ -293,20 +312,26 @@ describe('Finance Validation Schemas', () => {
       const minimalIncome = {
         type: 'INCOME',
         amount: 15000,
-        description: 'Sales income',
+        description: 'Service income',
         transactionDate: '2024-01-15',
-        incomeSource: 'SALES',
+        incomeSource: 'SERVICES',
       };
 
       const result = incomeTransactionSchema.parse(minimalIncome);
       
       expect(result.type).toBe('INCOME');
-      expect(result.incomeSource).toBe('SALES');
+      expect(result.incomeSource).toBe('SERVICES');
     });
 
     describe('Income Source Validation', () => {
       it('should accept valid income sources', () => {
-        const validSources = ['SALES', 'SERVICES', 'INVESTMENTS', 'ROYALTIES', 'COMMISSIONS', 'OTHER'];
+        const validSources = [
+          'SERVICES',
+          'INVESTMENTS',
+          'ROYALTIES',
+          'COMMISSIONS',
+          'OTHER',
+        ];
 
         validSources.forEach(incomeSource => {
           const result = incomeTransactionSchema.parse({
@@ -322,6 +347,25 @@ describe('Finance Validation Schemas', () => {
           ...validIncomeTransaction,
           incomeSource: 'INVALID',
         })).toThrow();
+      });
+
+      it('should reject overlapping sales income for manual transactions', () => {
+        expect(() =>
+          incomeTransactionSchema.parse({
+            ...validIncomeTransaction,
+            incomeSource: 'SALES',
+          })
+        ).toThrow();
+
+        const result = updateTransactionSchema.safeParse({
+          id: 1,
+          incomeSource: 'SALES',
+        });
+
+        expect(result.success).toBe(false);
+        if (!result.success) {
+          expect(result.error.issues[0]?.message).toContain('POS sales');
+        }
       });
     });
 
@@ -396,7 +440,6 @@ describe('Finance Validation Schemas', () => {
     describe('Expense Type Validation', () => {
       it('should accept valid expense types', () => {
         const validTypes = [
-          'INVENTORY_PURCHASES',
           'UTILITIES', 
           'RENT',
           'SALARIES',
@@ -422,6 +465,25 @@ describe('Finance Validation Schemas', () => {
           ...validExpenseTransaction,
           expenseType: 'INVALID',
         })).toThrow();
+      });
+
+      it('should reject overlapping inventory purchases for manual transactions', () => {
+        expect(() =>
+          expenseTransactionSchema.parse({
+            ...validExpenseTransaction,
+            expenseType: 'INVENTORY_PURCHASES',
+          })
+        ).toThrow();
+
+        const result = updateTransactionSchema.safeParse({
+          id: 1,
+          expenseType: 'INVENTORY_PURCHASES',
+        });
+
+        expect(result.success).toBe(false);
+        if (!result.success) {
+          expect(result.error.issues[0]?.message).toContain('stock additions');
+        }
       });
     });
 
@@ -480,6 +542,7 @@ describe('Finance Validation Schemas', () => {
       expect(result.search).toBe('office');
       expect(result.type).toBe('EXPENSE');
       expect(result.status).toBe('PENDING');
+      expect(result.paymentMethod).toBeUndefined();
       expect(result.startDate).toBe('2024-01-01');
       expect(result.endDate).toBe('2024-01-31');
       expect(result.sortBy).toBe('transactionDate');
@@ -507,6 +570,14 @@ describe('Finance Validation Schemas', () => {
       expect(result.endDate).toBe('2024-01-31');
     });
 
+    it('should accept POS as a payment method alias in filters', () => {
+      const result = transactionFiltersSchema.parse({
+        paymentMethod: 'POS',
+      });
+
+      expect(result.paymentMethod).toBe('POS');
+    });
+
     it('should reject invalid date ranges', () => {
       const invalidDateRange = {
         startDate: '2024-01-31',
@@ -514,6 +585,20 @@ describe('Finance Validation Schemas', () => {
       };
 
       expect(() => transactionFiltersSchema.parse(invalidDateRange)).toThrow();
+    });
+
+    it('should reject invalid individual filter dates', () => {
+      expect(() =>
+        transactionFiltersSchema.parse({
+          startDate: 'not-a-date',
+        })
+      ).toThrow('Invalid start date');
+
+      expect(() =>
+        transactionFiltersSchema.parse({
+          endDate: 'also-not-a-date',
+        })
+      ).toThrow('Invalid end date');
     });
   });
 

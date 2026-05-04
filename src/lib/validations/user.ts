@@ -64,6 +64,19 @@ export const userLoginSchema = z.object({
   password: currentPasswordSchema,
 });
 
+export const registerUserSchema = z
+  .object({
+    firstName: nameSchema.min(2, 'First name must be at least 2 characters'),
+    lastName: nameSchema.min(2, 'Last name must be at least 2 characters'),
+    email: emailSchema,
+    password: passwordSchema,
+    confirmPassword: z.string(),
+  })
+  .refine(data => data.password === data.confirmPassword, {
+    message: "Passwords don't match",
+    path: ['confirmPassword'],
+  });
+
 // User password change schema
 export const changePasswordSchema = z
   .object({
@@ -82,6 +95,10 @@ export const forgotPasswordSchema = z.object({
 
 export const verifyEmailSchema = z.object({
   token: z.string().trim().min(1, 'Verification token is required'),
+});
+
+export const resendVerificationEmailSchema = z.object({
+  email: emailSchema,
 });
 
 // User profile update schema (limited fields)

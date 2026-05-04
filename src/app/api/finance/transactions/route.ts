@@ -14,6 +14,11 @@ import { createAuditLog } from '@/lib/audit';
 import { AuditLogAction } from '@/types/audit';
 import { z } from 'zod';
 import { logger } from '@/lib/logger';
+import { normalizeFinanceDateFilters } from '@/lib/finance/date-range';
+import {
+  attachFinancialTransactionNames,
+} from '@/lib/finance/transaction-access';
+import { normalizeFinancePaymentMethod } from '@/lib/finance/aggregation';
 
 // GET /api/finance/transactions - List financial transactions with filtering
 export const GET = withAuth(async (request: AuthenticatedRequest) => {
@@ -33,8 +38,8 @@ export const GET = withAuth(async (request: AuthenticatedRequest) => {
       limit: parseInt(searchParams.get('limit') || '10'),
       search: searchParams.get('search') || undefined,
       type: searchParams.get('type') || undefined,
-
       status: searchParams.get('status') || undefined,
+      paymentMethod: searchParams.get('paymentMethod') || undefined,
       startDate: searchParams.get('startDate') || undefined,
       endDate: searchParams.get('endDate') || undefined,
       sortBy: searchParams.get('sortBy') || 'transactionDate',
@@ -48,6 +53,7 @@ export const GET = withAuth(async (request: AuthenticatedRequest) => {
       search,
       type,
       status,
+      paymentMethod,
       startDate,
       endDate,
       sortBy,
@@ -56,12 +62,6 @@ export const GET = withAuth(async (request: AuthenticatedRequest) => {
 
     // Build where clause
     const where: any = {};
-
-    // Role-based filtering: Manager can only see their own transactions
-    if (request.user.role === 'MANAGER') {
-      where.createdBy = parseInt(request.user.id);
-    }
-    // Admin can see all transactions (no additional filtering)
 
     if (search) {
       where.OR = [
@@ -72,11 +72,23 @@ export const GET = withAuth(async (request: AuthenticatedRequest) => {
 
     if (type && type !== 'ALL') where.type = type;
     if (status && status !== 'ALL') where.status = status;
+    if (paymentMethod) {
+      where.paymentMethod = normalizeFinancePaymentMethod(paymentMethod);
+    }
 
     if (startDate || endDate) {
+      const normalizedDateFilters = normalizeFinanceDateFilters(
+        startDate ? new Date(startDate) : undefined,
+        endDate ? new Date(endDate) : undefined
+      );
+
       where.transactionDate = {};
-      if (startDate) where.transactionDate.gte = new Date(startDate);
-      if (endDate) where.transactionDate.lte = new Date(endDate);
+      if (normalizedDateFilters.startDate) {
+        where.transactionDate.gte = normalizedDateFilters.startDate;
+      }
+      if (normalizedDateFilters.endDate) {
+        where.transactionDate.lte = normalizedDateFilters.endDate;
+      }
     }
 
     // Calculate pagination
@@ -127,7 +139,9 @@ export const GET = withAuth(async (request: AuthenticatedRequest) => {
 
     // Transform database response to camelCase for frontend
     const transformedTransactions = transactions.map(transaction =>
-      transformDatabaseResponse(transaction)
+      attachFinancialTransactionNames(
+        transformDatabaseResponse(transaction) as typeof transaction
+      )
     );
 
     return createApiResponse.successWithPagination(
@@ -143,6 +157,13 @@ export const GET = withAuth(async (request: AuthenticatedRequest) => {
       `Retrieved ${transactions.length} financial transactions`
     );
   } catch (error) {
+    if (error instanceof z.ZodError) {
+      return createApiResponse.validationError(
+        error.issues[0]?.message || 'Invalid transaction filters',
+        error.issues
+      );
+    }
+
     console.error('Error fetching financial transactions:', error);
     return createApiResponse.internalError('Failed to fetch transactions');
   }
@@ -243,6 +264,7 @@ export const POST = withAuth(async (request: AuthenticatedRequest) => {
             amount: validatedData.amount,
             description: validatedData.description,
             transactionDate: new Date(validatedData.transactionDate),
+            status: 'PENDING',
             paymentMethod: validatedData.paymentMethod as any,
             createdBy: userId,
           },

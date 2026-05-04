@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useCallback, useEffect, Suspense } from 'react';
+import { useState, useCallback, useEffect, useRef, Suspense } from 'react';
 import { useRouter, useSearchParams } from 'next/navigation';
 import { useSessionUpdate } from '@/hooks/useSessionUpdate';
 import { Button } from '@/components/ui/button';
@@ -14,7 +14,10 @@ import {
   CardTitle,
 } from '@/components/ui/card';
 import { CheckCircle, XCircle, AlertCircle, Mail } from 'lucide-react';
-import { useEmailVerification } from '@/hooks/api/useEmailVerification';
+import {
+  useEmailVerification,
+  useResendVerificationEmail,
+} from '@/hooks/api/useEmailVerification';
 import { PageLoading, Spinner } from '@/components/ui/loading';
 
 function VerifyEmailContent() {
@@ -26,7 +29,7 @@ function VerifyEmailContent() {
   const [isHydrated, setIsHydrated] = useState(false);
 
   const [verificationStatus, setVerificationStatus] = useState<
-    'idle' | 'verifying' | 'success' | 'error' | 'expired'
+    'idle' | 'verifying' | 'success' | 'error' | 'expired' | 'already-verified'
   >('idle');
   const [verificationMessage, setVerificationMessage] = useState('');
   const [email, setEmail] = useState('');
@@ -35,7 +38,10 @@ function VerifyEmailContent() {
   const [isRedirecting, setIsRedirecting] = useState(false);
 
   const token = searchParams.get('token');
+  const emailFromSearch = searchParams.get('email') || '';
   const emailVerificationMutation = useEmailVerification();
+  const resendVerificationMutation = useResendVerificationEmail();
+  const attemptedTokenRef = useRef<string | null>(null);
 
   // Handle hydration
   useEffect(() => {
@@ -72,10 +78,36 @@ function VerifyEmailContent() {
 
   // Set email from session when available
   useEffect(() => {
-    if (session?.user?.email && !email) {
+    if (!email && emailFromSearch) {
+      setEmail(emailFromSearch);
+      return;
+    }
+
+    if (!email && session?.user?.email) {
       setEmail(session.user.email);
     }
-  }, [session?.user?.email, email]);
+  }, [email, emailFromSearch, session?.user?.email]);
+
+  const getPostVerificationPath = useCallback(
+    (verifiedEmail?: string) => {
+      if (session?.user?.status === 'APPROVED') {
+        return '/dashboard';
+      }
+
+      if (session?.user) {
+        return '/pending-approval';
+      }
+
+      const loginParams = new URLSearchParams();
+      if (verifiedEmail) {
+        loginParams.set('email', verifiedEmail);
+      }
+      loginParams.set('verified', '1');
+
+      return `/login?${loginParams.toString()}`;
+    },
+    [session]
+  );
 
   const handleVerifyToken = useCallback(async () => {
     if (!token) return;
@@ -85,19 +117,21 @@ function VerifyEmailContent() {
 
     try {
       const data = await emailVerificationMutation.mutateAsync({ token });
+      const nextPath = getPostVerificationPath(data.email);
 
       setVerificationStatus('success');
       setVerificationMessage(data.message);
-
-      // Set flag for pending approval page
-      sessionStorage.setItem('emailJustVerified', 'true');
+      setEmail(data.email);
 
       // Refresh session if user is logged in
       if (session && data.shouldRefreshSession) {
         try {
           await updateSession();
-        } catch (error) {
-          console.error('❌ Error updating session:', error);
+        } catch (sessionError) {
+          console.error(
+            'Error updating session after email verification:',
+            sessionError
+          );
         }
       }
 
@@ -105,16 +139,15 @@ function VerifyEmailContent() {
       setTimeout(() => {
         if (!isRedirecting) {
           setIsRedirecting(true);
-          router.push('/pending-approval');
+          router.push(nextPath);
         }
       }, 2000);
     } catch (error) {
-      console.error('❌ Error verifying email:', error);
-
-      // Handle different error cases
       const errorMessage =
         error instanceof Error ? error.message : 'An error occurred';
-      if (errorMessage.includes('expired')) {
+      if (errorMessage.toLowerCase().includes('already verified')) {
+        setVerificationStatus('already-verified');
+      } else if (errorMessage.toLowerCase().includes('expired')) {
         setVerificationStatus('expired');
       } else {
         setVerificationStatus('error');
@@ -122,6 +155,7 @@ function VerifyEmailContent() {
       setVerificationMessage(errorMessage);
     }
   }, [
+    getPostVerificationPath,
     token,
     router,
     session,
@@ -129,6 +163,20 @@ function VerifyEmailContent() {
     isRedirecting,
     emailVerificationMutation,
   ]);
+
+  useEffect(() => {
+    if (
+      !isHydrated ||
+      !token ||
+      attemptedTokenRef.current === token ||
+      verificationStatus !== 'idle'
+    ) {
+      return;
+    }
+
+    attemptedTokenRef.current = token;
+    void handleVerifyToken();
+  }, [handleVerifyToken, isHydrated, token, verificationStatus]);
 
   const handleResendVerification = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -138,25 +186,27 @@ function VerifyEmailContent() {
     setResendMessage('');
 
     try {
-      const response = await fetch('/api/auth/verify-email', {
-        method: 'PUT',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ email }),
-      });
-
-      const data = await response.json();
-
-      if (response.ok) {
+      const data = await resendVerificationMutation.mutateAsync({ email });
+      if (data.verificationEmailSent) {
         setResendMessage('Verification email sent! Please check your inbox.');
-      } else {
-        setResendMessage(data.error || 'Failed to send verification email');
       }
-    } catch {
-      setResendMessage('Failed to send verification email. Please try again.');
+    } catch (error) {
+      setResendMessage(
+        error instanceof Error
+          ? error.message
+          : 'Failed to send verification email. Please try again.'
+      );
     } finally {
       setResendLoading(false);
     }
   };
+
+  const postVerificationPath = getPostVerificationPath(email);
+  const postVerificationButtonLabel = session?.user
+    ? session.user.status === 'APPROVED'
+      ? 'Continue to Dashboard'
+      : 'Continue to Pending Approval'
+    : 'Continue to Login';
 
   const getStatusIcon = () => {
     switch (overallStatus) {
@@ -236,7 +286,7 @@ function VerifyEmailContent() {
       case 'already-verified':
         return 'Your email is already verified. You can continue to your account.';
       case 'has-token':
-        return 'Click the button below to verify your email address.';
+        return 'We are verifying your email automatically.';
       case 'no-token':
         return 'Please enter your email address to receive a verification link.';
       default:
@@ -298,27 +348,27 @@ function VerifyEmailContent() {
               <div className="space-y-4 text-center">
                 <div className="rounded-lg border border-green-200 bg-green-50 p-4">
                   <p className="text-sm text-green-700">
-                    Your email has been verified successfully! Your account is
-                    now pending admin approval. You will receive an email
-                    notification once your account is approved.
+                    {session?.user
+                      ? 'Your email has been verified successfully. We are taking you to the next step for your account.'
+                      : 'Your email has been verified successfully. Sign in to track your approval status and access your account once it is approved.'}
                   </p>
                 </div>
                 {isRedirecting ? (
                   <div className="flex items-center justify-center space-x-2">
                     <Spinner size="sm" className="text-blue-500" />
                     <span className="text-sm text-blue-600">
-                      Redirecting to pending approval...
+                      Redirecting...
                     </span>
                   </div>
                 ) : (
                   <Button
                     onClick={() => {
                       setIsRedirecting(true);
-                      router.push('/pending-approval');
+                      router.push(postVerificationPath);
                     }}
                     className="w-full"
                   >
-                    Continue to Pending Approval
+                    {postVerificationButtonLabel}
                   </Button>
                 )}
               </div>
@@ -329,8 +379,8 @@ function VerifyEmailContent() {
               <div className="space-y-4 text-center">
                 <div className="rounded-lg border border-blue-200 bg-blue-50 p-4">
                   <p className="text-sm text-blue-700">
-                    We found a verification token in your link. Click below to
-                    verify your email address.
+                    We found a verification token in your link and are verifying
+                    it now.
                   </p>
                 </div>
                 <Button
@@ -340,7 +390,7 @@ function VerifyEmailContent() {
                 >
                   {verificationStatus === 'verifying'
                     ? 'Verifying...'
-                    : 'Verify Email'}
+                    : 'Retry Verification'}
                 </Button>
               </div>
             )}
@@ -372,7 +422,9 @@ function VerifyEmailContent() {
                   <Button
                     type="submit"
                     className="w-full"
-                    isLoading={resendLoading}
+                    isLoading={
+                      resendLoading || resendVerificationMutation.isPending
+                    }
                     loadingText="Sending..."
                     disabled={!email}
                   >
@@ -399,18 +451,18 @@ function VerifyEmailContent() {
               <div className="space-y-4 text-center">
                 <div className="rounded-lg border border-yellow-200 bg-yellow-50 p-4">
                   <p className="text-sm text-yellow-700">
-                    Your email is already verified. You can continue to your
-                    account.
+                    Your email is already verified. Continue to the next step
+                    for your account.
                   </p>
                 </div>
                 <Button
                   onClick={() => {
                     setIsRedirecting(true);
-                    router.push('/pending-approval');
+                    router.push(postVerificationPath);
                   }}
                   className="w-full"
                 >
-                  Continue to Account
+                  {postVerificationButtonLabel}
                 </Button>
               </div>
             )}
@@ -440,7 +492,9 @@ function VerifyEmailContent() {
                   <Button
                     type="submit"
                     className="w-full"
-                    isLoading={resendLoading}
+                    isLoading={
+                      resendLoading || resendVerificationMutation.isPending
+                    }
                     loadingText="Sending..."
                     disabled={!email}
                   >

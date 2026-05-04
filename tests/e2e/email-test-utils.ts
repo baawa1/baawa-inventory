@@ -78,8 +78,9 @@ export class EmailTestUtils {
    * Verify email success message
    */
   async verifyEmailSuccess(page: any): Promise<void> {
-    const successMessage = page.locator('text=Check Your Email!');
-    await expect(successMessage).toBeVisible();
+    await expect(
+      page.locator('[data-slot="card-title"]:has-text("Check Your Email")')
+    ).toBeVisible();
   }
 
   /**
