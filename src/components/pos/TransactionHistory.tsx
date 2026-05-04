@@ -853,7 +853,6 @@ export function TransactionHistory() {
 
   return (
     <div className="flex h-[calc(100vh-49px)] flex-col space-y-6 py-6">
-      {/* Header with Actions */}
       <div className="flex items-center justify-between">
         <div>
           <h1 className="text-3xl font-bold text-gray-900 dark:text-gray-100">
