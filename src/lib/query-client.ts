@@ -132,6 +132,14 @@ export const queryKeys = {
       [...queryKeys.analytics.all, 'dashboard', dateRange || 'month'] as const,
   },
 
+  // Dashboard
+  dashboard: {
+    all: ['dashboard'] as const,
+    analytics: (dateRange?: string) =>
+      [...queryKeys.dashboard.all, 'analytics', dateRange || 'month_to_date'] as const,
+    operations: () => [...queryKeys.dashboard.all, 'operations'] as const,
+  },
+
   // Inventory & Analytics
   inventory: {
     all: ['inventory'] as const,
