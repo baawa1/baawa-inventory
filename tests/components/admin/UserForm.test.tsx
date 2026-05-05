@@ -94,7 +94,7 @@ describe('UserForm', () => {
         lastName: 'Doe',
         email: 'jane@example.com',
         role: 'STAFF',
-        userStatus: 'PENDING',
+        userStatus: 'APPROVED',
         password: validPassword,
         confirmPassword: validPassword,
       });

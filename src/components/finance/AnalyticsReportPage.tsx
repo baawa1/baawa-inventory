@@ -1,10 +1,10 @@
 'use client';
 
 import { PageHeader } from '@/components/ui/page-header';
-import { FinancialKPIsWidget } from '@/components/finance/widgets/FinancialKPIsWidget';
 import { AdvancedAnalytics } from '@/components/finance/AdvancedAnalytics';
 import { ProfitMarginDashboard } from '@/components/finance/dashboards/ProfitMarginDashboard';
 import { AccountsReceivableDashboard } from '@/components/finance/dashboards/AccountsReceivableDashboard';
+import { FinancialKPIsWidget } from '@/components/finance/widgets/FinancialKPIsWidget';
 
 export function AnalyticsReportPage() {
   return (

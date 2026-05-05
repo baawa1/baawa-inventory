@@ -30,22 +30,16 @@ const PUBLIC_ROUTES = new Set([
   '/',
   '/login',
   '/logout',
-  '/register',
   '/forgot-password',
   '/reset-password',
-  '/check-email',
-  '/verify-email',
-  '/pending-approval',
   '/test-data',
   '/unauthorized',
 ]);
 
 const PUBLIC_API_ROUTES = new Set([
   '/api/health',
-  '/api/auth/register',
   '/api/auth/forgot-password',
   '/api/auth/reset-password',
-  '/api/auth/verify-email',
   '/api/auth/validate-reset-token',
 ]);
 
@@ -200,14 +194,15 @@ export default auth((req: NextRequest & { auth: MiddlewareAuth | null }) => {
 
   // Check user status with early returns for fastest processing
   if (userStatus === 'PENDING') {
-    if (!isEmailVerified) {
-      return safeRedirect('/check-email', 'Email not verified');
-    }
-    return safeRedirect('/pending-approval', 'User status is PENDING (needs admin approval)');
+    return safeRedirect('/unauthorized', 'User status is PENDING');
   }
 
   if (userStatus === 'VERIFIED') {
-    return safeRedirect('/pending-approval', 'User status is VERIFIED (needs admin approval)');
+    return safeRedirect('/unauthorized', 'User status is VERIFIED');
+  }
+
+  if (!isEmailVerified) {
+    return safeRedirect('/unauthorized', 'Email not verified');
   }
 
   if (userStatus === 'REJECTED' || userStatus === 'SUSPENDED') {

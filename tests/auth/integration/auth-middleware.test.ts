@@ -133,11 +133,9 @@ describe('Auth Middleware Integration', () => {
 
     const publicRoutes = [
       '/login',
-      '/register',
-      '/check-email',
       '/forgot-password',
       '/api/auth/signin',
-      '/api/auth/signup',
+      '/api/auth/signout',
     ];
 
     it('should identify protected routes correctly', () => {

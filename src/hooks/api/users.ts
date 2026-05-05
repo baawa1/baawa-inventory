@@ -111,40 +111,6 @@ const deleteUser = async (id: number): Promise<void> => {
   }
 };
 
-const updateUserApprovalStatus = async (
-  userId: number,
-  action: 'approve' | 'reject',
-  rejectionReason?: string
-): Promise<{ message?: string }> => {
-  const endpoint =
-    action === 'approve'
-      ? '/api/admin/approve-user'
-      : '/api/admin/reject-user';
-  const payload =
-    action === 'approve'
-      ? { userId }
-      : { userId, reason: rejectionReason?.trim() || undefined };
-
-  const response = await fetch(endpoint, {
-    method: 'POST',
-    credentials: 'include',
-    headers: {
-      'Content-Type': 'application/json',
-    },
-    body: JSON.stringify(payload),
-  });
-
-  const data = await response.json().catch(() => ({}));
-
-  if (!response.ok) {
-    throw new Error(
-      data.error || data.message || `Failed to ${action} user`
-    );
-  }
-
-  return data;
-};
-
 // Query Hooks
 export const useUsers = (filters: UserFilters = {}) => {
   return useQuery({
@@ -161,31 +127,6 @@ export const useActiveUsers = () => {
 
 export const useDeactivatedUsers = () => {
   return useUsers({ isActive: false });
-};
-
-export const usePendingUsers = (status?: string) => {
-  const filters: UserFilters = {
-    limit: 100,
-  };
-  if (status && status !== 'all') {
-    filters.status = status;
-  }
-
-  return useQuery({
-    queryKey: queryKeys.users.pending(status),
-    queryFn: async () => {
-      const users = await fetchUsers(filters);
-      // Only show actionable approval states in the admin queue.
-      return status === 'all' || !status
-        ? users.filter(
-            user =>
-              user.userStatus === 'PENDING' || user.userStatus === 'VERIFIED'
-          )
-        : users;
-    },
-    staleTime: 2 * 60 * 1000, // 2 minutes for more frequent updates
-    gcTime: 5 * 60 * 1000, // 5 minutes
-  });
 };
 
 // Mutation Hooks
@@ -220,26 +161,6 @@ export const useDeleteUser = () => {
     mutationFn: deleteUser,
     onSuccess: () => {
       // Invalidate and refetch users list
-      queryClient.invalidateQueries({ queryKey: queryKeys.users.all });
-    },
-  });
-};
-
-export const useApproveUser = () => {
-  const queryClient = useQueryClient();
-
-  return useMutation({
-    mutationFn: ({
-      userId,
-      action,
-      rejectionReason,
-    }: {
-      userId: number;
-      action: 'approve' | 'reject';
-      rejectionReason?: string;
-    }) => updateUserApprovalStatus(userId, action, rejectionReason),
-    onSuccess: () => {
-      // Invalidate all user-related queries
       queryClient.invalidateQueries({ queryKey: queryKeys.users.all });
     },
   });

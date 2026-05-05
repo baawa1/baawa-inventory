@@ -12,9 +12,9 @@ import {
 import { Input } from '@/components/ui/input';
 import { Badge } from '@/components/ui/badge';
 import { InlineLoading } from '@/components/ui/loading';
+import { Tabs, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import {
   IconUsers,
-  IconUserCheck,
   IconUserX,
   IconSearch,
   IconRefresh,
@@ -29,11 +29,11 @@ import {
 } from './types/user';
 import {
   useActiveUsers,
-  usePendingUsers,
-  useApproveUser,
+  useDeactivatedUsers,
   useCreateUser,
   useUpdateUser,
   useDeleteUser,
+  useReactivateUser,
   type CreateUserData,
   type UpdateUserData,
 } from '@/hooks/api/users';
@@ -44,35 +44,31 @@ interface UserManagementProps {
   activeTab?: string;
 }
 
-const UserManagement = ({ activeTab }: UserManagementProps) => {
+const UserManagement = ({ activeTab: _activeTab }: UserManagementProps) => {
   const { isAdmin, isLoading: isAuthLoading } = useAdminGuard();
   const [isDialogOpen, setIsDialogOpen] = useState(false);
   const [editingUser, setEditingUser] = useState<User | null>(null);
   const [searchTerm, setSearchTerm] = useState('');
+  const [userFilter, setUserFilter] = useState<'active' | 'inactive'>('active');
 
-  // TanStack Query hooks
   const {
     data: activeUsers = [],
-    isLoading: activeLoading,
-    refetch: refetchActive,
+    isLoading: isActiveUsersLoading,
+    refetch: refetchActiveUsers,
   } = useActiveUsers();
   const {
-    data: pendingUsers = [],
-    isLoading: pendingLoading,
-    refetch: refetchPending,
-  } = usePendingUsers();
-  const approvalMutation = useApproveUser();
+    data: inactiveUsers = [],
+    isLoading: isInactiveUsersLoading,
+    refetch: refetchInactiveUsers,
+  } = useDeactivatedUsers();
   const createUserMutation = useCreateUser();
   const updateUserMutation = useUpdateUser();
   const deleteUserMutation = useDeleteUser();
+  const reactivateUserMutation = useReactivateUser();
 
-  // Determine which data to show based on active tab
-  const isPendingTab = activeTab === 'pending';
-  const users = isPendingTab ? pendingUsers : activeUsers;
-  const isLoading = isPendingTab ? pendingLoading : activeLoading;
-  const refetch = isPendingTab ? refetchPending : refetchActive;
-
-  // Filter users based on search term
+  const users = userFilter === 'active' ? activeUsers : inactiveUsers;
+  const isLoading =
+    userFilter === 'active' ? isActiveUsersLoading : isInactiveUsersLoading;
   const filteredUsers = users.filter(
     user =>
       user.email.toLowerCase().includes(searchTerm.toLowerCase()) ||
@@ -80,10 +76,14 @@ const UserManagement = ({ activeTab }: UserManagementProps) => {
       user.role.toLowerCase().includes(searchTerm.toLowerCase())
   );
 
+  const refreshUsers = () => {
+    void refetchActiveUsers();
+    void refetchInactiveUsers();
+  };
+
   const handleSubmit = async (data: UserFormData | EditUserFormData) => {
     try {
       if (editingUser) {
-        // Update existing user
         const updateData: UpdateUserData = {
           firstName: data.firstName,
           lastName: data.lastName,
@@ -93,48 +93,60 @@ const UserManagement = ({ activeTab }: UserManagementProps) => {
         };
 
         await updateUserMutation.mutateAsync({
-          id: parseInt(editingUser.id),
+          id: parseInt(String(editingUser.id)),
           ...updateData,
         });
         toast.success('User updated successfully');
-      } else {
-        // Create new user
-        if ('password' in data && 'confirmPassword' in data) {
-          const createData: CreateUserData = {
-            firstName: data.firstName,
-            lastName: data.lastName,
-            email: data.email,
-            role: data.role,
-            userStatus: data.userStatus,
-            password: data.password,
-          };
+      } else if ('password' in data && 'confirmPassword' in data) {
+        const createData: CreateUserData = {
+          firstName: data.firstName,
+          lastName: data.lastName,
+          email: data.email,
+          role: data.role,
+          userStatus: data.userStatus,
+          password: data.password,
+        };
 
-          await createUserMutation.mutateAsync(createData);
-        } else {
-          throw new Error(
-            'Password and confirm password are required for new users'
-          );
-        }
+        await createUserMutation.mutateAsync(createData);
         toast.success('User created successfully');
+      } else {
+        throw new Error('Password and confirm password are required for new users');
       }
 
       setIsDialogOpen(false);
       setEditingUser(null);
-      refetch();
+      refreshUsers();
     } catch (error) {
       console.error('Error saving user:', error);
       toast.error('Failed to save user');
     }
   };
 
-  const handleDeleteUser = async (userId: number) => {
+  const handleDeactivateUser = async (userId: number) => {
     try {
       await deleteUserMutation.mutateAsync(userId);
-      toast.success('User deleted successfully');
-      refetch();
+      toast.success('User deactivated successfully');
+      refreshUsers();
     } catch (error) {
       console.error('Error deleting user:', error);
       toast.error('Failed to delete user');
+    }
+  };
+
+  const handleReactivateUser = async (user: User) => {
+    try {
+      await reactivateUserMutation.mutateAsync({
+        id: parseInt(String(user.id)),
+        firstName: user.firstName,
+        lastName: user.lastName,
+        email: user.email,
+        role: user.role,
+      });
+      toast.success('User reactivated successfully');
+      refreshUsers();
+    } catch (error) {
+      console.error('Error reactivating user:', error);
+      toast.error('Failed to reactivate user');
     }
   };
 
@@ -183,52 +195,37 @@ const UserManagement = ({ activeTab }: UserManagementProps) => {
 
   return (
     <div className="space-y-6">
-      {/* Header */}
       <Card>
         <CardHeader>
           <div className="flex items-center justify-between">
             <div>
               <CardTitle className="flex items-center gap-2">
-                {isPendingTab ? (
-                  <>
-                    <IconUserCheck className="h-5 w-5" />
-                    Pending User Approvals
-                  </>
-                ) : (
-                  <>
-                    <IconUsers className="h-5 w-5" />
-                    User Management
-                  </>
-                )}
+                <IconUsers className="h-5 w-5" />
+                User Management
               </CardTitle>
               <CardDescription>
-                {isPendingTab
-                  ? 'Review and approve new user registrations'
-                  : 'Manage active users and their permissions'}
+                Manage active and inactive users created by administrators
               </CardDescription>
             </div>
             <div className="flex items-center gap-2">
               <Button
                 variant="outline"
                 size="sm"
-                onClick={() => refetch()}
+                onClick={refreshUsers}
                 disabled={isLoading}
               >
                 <IconRefresh className="h-4 w-4" />
                 Refresh
               </Button>
-              {!isPendingTab && (
-                <Button size="sm" onClick={handleNewUser}>
-                  <IconUserPlus className="mr-2 h-4 w-4" />
-                  Add User
-                </Button>
-              )}
+              <Button size="sm" onClick={handleNewUser}>
+                <IconUserPlus className="mr-2 h-4 w-4" />
+                Add User
+              </Button>
             </div>
           </div>
         </CardHeader>
         <CardContent>
-          {/* Search and Filters */}
-          <div className="mb-6 flex items-center gap-4">
+          <div className="mb-6 flex flex-col gap-4 lg:flex-row lg:items-center lg:justify-between">
             <div className="relative max-w-sm flex-1">
               <IconSearch className="text-muted-foreground absolute top-1/2 left-3 h-4 w-4 -translate-y-1/2 transform" />
               <Input
@@ -238,64 +235,52 @@ const UserManagement = ({ activeTab }: UserManagementProps) => {
                 className="pl-10"
               />
             </div>
-            <Badge variant="secondary">
-              {filteredUsers.length} {isPendingTab ? 'pending' : 'active'} users
-            </Badge>
+            <div className="flex items-center gap-3">
+              <Tabs
+                value={userFilter}
+                onValueChange={value =>
+                  setUserFilter(value as 'active' | 'inactive')
+                }
+              >
+                <TabsList>
+                  <TabsTrigger value="active">
+                    Active ({activeUsers.length})
+                  </TabsTrigger>
+                  <TabsTrigger value="inactive">
+                    Inactive ({inactiveUsers.length})
+                  </TabsTrigger>
+                </TabsList>
+              </Tabs>
+              <Badge variant="secondary">
+                {filteredUsers.length} {userFilter} users
+              </Badge>
+            </div>
           </div>
 
-          {/* User Table */}
           <UserTable
             users={filteredUsers}
             isLoading={isLoading}
-            isPendingTab={isPendingTab}
             onEdit={handleEditUser}
-            onDelete={handleDeleteUser}
-            onApprove={async userId => {
-              try {
-                const result = await approvalMutation.mutateAsync({
-                  userId,
-                  action: 'approve',
-                });
-
-                toast.success(result.message || 'User approved successfully');
-              } catch (error) {
-                console.error('Error approving user:', error);
-                toast.error(
-                  error instanceof Error
-                    ? error.message
-                    : 'Failed to approve user'
-                );
-              }
-            }}
-            onReject={async userId => {
-              try {
-                const result = await approvalMutation.mutateAsync({
-                  userId,
-                  action: 'reject',
-                });
-
-                toast.success(result.message || 'User rejected successfully');
-              } catch (error) {
-                console.error('Error rejecting user:', error);
-                toast.error(
-                  error instanceof Error
-                    ? error.message
-                    : 'Failed to reject user'
-                );
-              }
-            }}
+            onDeactivate={
+              userFilter === 'active' ? handleDeactivateUser : undefined
+            }
+            onReactivate={
+              userFilter === 'inactive' ? handleReactivateUser : undefined
+            }
+            variant={userFilter}
           />
         </CardContent>
       </Card>
 
-      {/* User Dialog */}
       <UserDialog
         isOpen={isDialogOpen}
         onOpenChangeAction={handleDialogChange}
         user={editingUser}
         onSubmitAction={handleSubmit}
         isSubmitting={
-          createUserMutation.isPending || updateUserMutation.isPending
+          createUserMutation.isPending ||
+          updateUserMutation.isPending ||
+          reactivateUserMutation.isPending
         }
       />
     </div>

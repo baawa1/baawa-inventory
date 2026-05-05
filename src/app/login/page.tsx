@@ -1,5 +1,4 @@
 import { Suspense } from 'react';
-import Link from 'next/link';
 import { redirect } from 'next/navigation';
 import { auth } from '#root/auth';
 import { LoginForm } from '@/components/auth/LoginForm';
@@ -67,19 +66,9 @@ export default async function LoginPage({ searchParams }: LoginPageProps) {
         >
           <LoginFormWrapper searchParams={resolvedSearchParams} />
         </Suspense>
-
-        <div className="text-center">
-          <p className="text-sm text-gray-600 dark:text-gray-400">
-            {' '}
-            Don&apos;t have an account?{' '}
-            <Link
-              href="/register"
-              className="text-primary hover:text-primary/80 font-medium"
-            >
-              Sign up
-            </Link>
-          </p>
-        </div>
+        <p className="text-center text-sm text-gray-600 dark:text-gray-400">
+          Accounts are created by an administrator.
+        </p>
       </div>
     </div>
   );

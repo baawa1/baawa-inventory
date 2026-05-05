@@ -16,12 +16,9 @@ const baseUserSchema = z.object({
   role: z.enum(['ADMIN', 'MANAGER', 'STAFF'], {
     required_error: 'Role is required',
   }),
-  userStatus: z.enum(
-    ['PENDING', 'VERIFIED', 'APPROVED', 'REJECTED', 'SUSPENDED'],
-    {
-      required_error: 'Status is required',
-    }
-  ),
+  userStatus: z.enum(['APPROVED', 'REJECTED', 'SUSPENDED'], {
+    required_error: 'Status is required',
+  }),
 });
 
 // User form validation schema for creating users

@@ -6,7 +6,6 @@ import { Card } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import {
   IconUsers,
-  IconUserCheck,
   IconShield,
   IconSettings,
   IconDatabase,
@@ -19,15 +18,13 @@ import { SystemSettings } from './SystemSettings';
 import { DatabaseBackup } from './DatabaseBackup';
 
 // Import hooks
-import { useActiveUsers, usePendingUsers } from '@/hooks/api/users';
+import { useActiveUsers } from '@/hooks/api/users';
 
 export function AdminDashboard() {
   const [activeTab, setActiveTab] = useState('overview');
 
   // Fetch user counts for navigation badges
   const { data: activeUsers = [] } = useActiveUsers();
-  const { data: pendingUsers = [] } = usePendingUsers();
-
   const navigationTabs = [
     {
       value: 'overview',
@@ -40,14 +37,6 @@ export function AdminDashboard() {
       label: 'User Management',
       icon: IconUsers,
       badge: activeUsers.length,
-      component: UserManagement,
-    },
-    {
-      value: 'pending',
-      label: 'Pending Approvals',
-      icon: IconUserCheck,
-      badge: pendingUsers.length,
-      badgeVariant: 'destructive' as const,
       component: UserManagement,
     },
     {
@@ -74,7 +63,7 @@ export function AdminDashboard() {
         <div>
           <h1 className="text-3xl font-bold tracking-tight">Administration</h1>
           <p className="text-muted-foreground">
-            Manage users, approve registrations, and configure system settings
+            Manage users and configure system settings
           </p>
         </div>
         <Card className="px-4 py-2">
@@ -87,7 +76,7 @@ export function AdminDashboard() {
 
       {/* Navigation Tabs */}
       <Tabs value={activeTab} onValueChange={setActiveTab} className="w-full">
-        <TabsList className="grid h-auto w-full grid-cols-2 lg:grid-cols-5">
+        <TabsList className="grid h-auto w-full grid-cols-2 lg:grid-cols-4">
           {navigationTabs.map(tab => {
             const IconComponent = tab.icon;
             return (
@@ -100,7 +89,7 @@ export function AdminDashboard() {
                 <span className="truncate">{tab.label}</span>
                 {tab.badge !== undefined && tab.badge > 0 && (
                   <Badge
-                    variant={tab.badgeVariant || 'default'}
+                    variant="default"
                     className="ml-1 h-5 flex-shrink-0 px-1.5 text-xs"
                   >
                     {tab.badge}

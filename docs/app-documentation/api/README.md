@@ -89,50 +89,11 @@ API endpoints include rate limiting for security:
 export const POST = withRateLimit({
   windowMs: 60 * 60 * 1000, // 1 hour
   maxRequests: 5, // 5 requests per hour
-  keyGenerator: request => `register:${getClientIP(request)}`
-})(registrationHandler)
+  keyGenerator: request => `signin:${getClientIP(request)}`
+})(signinHandler)
 ```
 
 ## Authentication Endpoints
-
-### POST /api/auth/register
-Register a new user account
-
-**Request Body:**
-```json
-{
-  "firstName": "John",
-  "lastName": "Doe", 
-  "email": "john@example.com",
-  "password": "SecurePass123!",
-  "confirmPassword": "SecurePass123!"
-}
-```
-
-**Response:**
-```json
-{
-  "success": true,
-  "message": "Registration successful! Please check your email to verify your account.",
-  "user": {
-    "id": 1,
-    "firstName": "John",
-    "lastName": "Doe", 
-    "email": "john@example.com",
-    "status": "PENDING",
-    "role": "STAFF"
-  },
-  "requiresVerification": true,
-  "redirectTo": "/check-email"
-}
-```
-
-**Features:**
-- Password validation with strength requirements
-- Email verification token generation
-- Automatic admin notification
-- Rate limiting (5 requests/hour per IP)
-- Duplicate email handling
 
 ### POST /api/auth/login
 Authenticate user credentials
@@ -163,16 +124,6 @@ Reset password with token
 {
   "token": "reset-token",
   "newPassword": "NewPassword123!"
-}
-```
-
-### POST /api/auth/verify-email
-Verify email address
-
-**Request Body:**
-```json
-{
-  "token": "verification-token"
 }
 ```
 
@@ -465,27 +416,6 @@ Add stock to products
 
 ### GET /api/admin/activity
 Get system activity logs (Admin only)
-
-### POST /api/admin/approve-user
-Approve pending user (Admin only)
-
-**Request Body:**
-```json
-{
-  "userId": 123
-}
-```
-
-### POST /api/admin/reject-user
-Reject pending user (Admin only)
-
-**Request Body:**
-```json
-{
-  "userId": 123,
-  "reason": "Invalid documentation"
-}
-```
 
 ## Error Handling
 

@@ -64,9 +64,8 @@ test.describe('Dashboard Access Control - Role-Based Access', () => {
         await page.goto(route);
         await expect(page).toHaveURL(route);
 
-        // Should not be redirected to unauthorized or pending-approval
+        // Should not be redirected to unauthorized
         await expect(page).not.toHaveURL('/unauthorized');
-        await expect(page).not.toHaveURL('/pending-approval');
       }
     });
 
@@ -76,8 +75,7 @@ test.describe('Dashboard Access Control - Role-Based Access', () => {
 
       // Should see admin dashboard elements
       await expect(page.locator('text=User Management')).toBeVisible();
-      await expect(page.locator('text=Pending Users')).toBeVisible();
-      await expect(page.locator('text=All Users')).toBeVisible();
+      await expect(page.locator('text=Add User')).toBeVisible();
     });
 
     test('should allow admin to access audit logs', async ({ page }) => {
@@ -287,10 +285,8 @@ test.describe('Dashboard Access Control - Role-Based Access', () => {
 
       for (const route of allRoutes) {
         await page.goto(route);
-        await expect(page).toHaveURL('/pending-approval');
-        await expect(
-          page.locator('text=Your account is pending approval')
-        ).toBeVisible();
+        await expect(page).toHaveURL('/unauthorized');
+        await expect(page.locator('text=Access Denied')).toBeVisible();
       }
     });
   });

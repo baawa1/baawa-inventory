@@ -1162,7 +1162,6 @@ describe('Authentication Security Tests', () => {
     it('should implement API rate limiting', () => {
       const rateLimits = [
         { endpoint: '/api/auth/signin', limit: 5, window: 900000 }, // 15 minutes
-        { endpoint: '/api/auth/register', limit: 3, window: 3600000 }, // 1 hour
         { endpoint: '/api/auth/reset-password', limit: 3, window: 3600000 }, // 1 hour
         { endpoint: '/api/*', limit: 100, window: 60000 }, // 1 minute
       ];

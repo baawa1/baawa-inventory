@@ -11,22 +11,15 @@ import {
 } from '@/components/ui/table';
 import { Badge } from '@/components/ui/badge';
 import { type User } from './types/user';
-import {
-  IconEdit,
-  IconTrash,
-  IconUserCheck,
-  IconUserX,
-  IconEye,
-} from '@tabler/icons-react';
+import { IconEdit, IconTrash, IconRotateClockwise } from '@tabler/icons-react';
 
 interface UserTableProps {
   users: User[];
   onEdit: (_user: User) => void;
-  onDelete: (_userId: number) => void;
-  onApprove?: (_userId: number) => void;
-  onReject?: (_userId: number) => void;
+  onDeactivate?: (_userId: number) => void;
+  onReactivate?: (_user: User) => void;
   isLoading?: boolean;
-  isPendingTab?: boolean;
+  variant?: 'active' | 'inactive';
 }
 
 const getRoleColor = (role: string) => {
@@ -46,10 +39,6 @@ const getStatusColor = (status: string) => {
   switch (status) {
     case 'APPROVED':
       return 'default';
-    case 'PENDING':
-      return 'secondary';
-    case 'VERIFIED':
-      return 'outline';
     case 'REJECTED':
       return 'destructive';
     case 'SUSPENDED':
@@ -62,12 +51,13 @@ const getStatusColor = (status: string) => {
 export function UserTable({
   users,
   onEdit,
-  onDelete,
-  onApprove,
-  onReject,
+  onDeactivate,
+  onReactivate,
   isLoading,
-  isPendingTab = false,
+  variant = 'active',
 }: UserTableProps) {
+  const isInactiveView = variant === 'inactive';
+
   if (isLoading) {
     return (
       <div className="flex items-center justify-center p-8">
@@ -80,7 +70,7 @@ export function UserTable({
     return (
       <div className="flex items-center justify-center p-8">
         <div className="text-muted-foreground">
-          {isPendingTab ? 'No pending users found.' : 'No users found.'}
+          {isInactiveView ? 'No inactive users found.' : 'No active users found.'}
         </div>
       </div>
     );
@@ -91,14 +81,14 @@ export function UserTable({
       <TableHeader>
         <TableRow>
           <TableHead>Name</TableHead>
-          <TableHead>Email</TableHead>
-          <TableHead>Role</TableHead>
-          <TableHead>Status</TableHead>
-          {!isPendingTab && <TableHead>Active</TableHead>}
-          <TableHead>Created</TableHead>
-          {!isPendingTab && <TableHead>Last Login</TableHead>}
-          <TableHead className="text-right">Actions</TableHead>
-        </TableRow>
+        <TableHead>Email</TableHead>
+        <TableHead>Role</TableHead>
+        <TableHead>Status</TableHead>
+        <TableHead>Active</TableHead>
+        <TableHead>Created</TableHead>
+        <TableHead>Last Login</TableHead>
+        <TableHead className="text-right">Actions</TableHead>
+      </TableRow>
       </TableHeader>
       <TableBody>
         {users.map(user => (
@@ -117,72 +107,50 @@ export function UserTable({
                 {user.userStatus}
               </Badge>
             </TableCell>
-            {!isPendingTab && (
-              <TableCell>
-                <Badge variant={user.isActive ? 'default' : 'secondary'}>
-                  {user.isActive ? 'Active' : 'Inactive'}
-                </Badge>
-              </TableCell>
-            )}
+            <TableCell>
+              <Badge variant={user.isActive ? 'default' : 'secondary'}>
+                {user.isActive ? 'Active' : 'Inactive'}
+              </Badge>
+            </TableCell>
             <TableCell>
               {new Date(user.createdAt).toLocaleDateString()}
             </TableCell>
-            {!isPendingTab && (
-              <TableCell>
-                {user.lastLogin
-                  ? new Date(user.lastLogin).toLocaleDateString()
-                  : 'Never'}
-              </TableCell>
-            )}
+            <TableCell>
+              {user.lastLogin
+                ? new Date(user.lastLogin).toLocaleDateString()
+                : 'Never'}
+            </TableCell>
             <TableCell className="text-right">
               <div className="flex items-center justify-end gap-2">
-                {isPendingTab ? (
-                  <>
+                <Button
+                  variant="outline"
+                  size="sm"
+                  onClick={() => onEdit(user)}
+                >
+                  <IconEdit className="h-4 w-4" />
+                </Button>
+                {isInactiveView ? (
+                  onReactivate && (
                     <Button
-                      variant="outline"
+                      variant="default"
                       size="sm"
-                      onClick={() => onEdit(user)}
+                      onClick={() => onReactivate(user)}
                     >
-                      <IconEye className="h-4 w-4" />
+                      <IconRotateClockwise className="mr-1 h-4 w-4" />
+                      Reactivate
                     </Button>
-                    {onApprove && (
-                      <Button
-                        variant="default"
-                        size="sm"
-                        onClick={() => onApprove(parseInt(user.id))}
-                      >
-                        <IconUserCheck className="mr-1 h-4 w-4" />
-                        Approve
-                      </Button>
-                    )}
-                    {onReject && (
-                      <Button
-                        variant="destructive"
-                        size="sm"
-                        onClick={() => onReject(parseInt(user.id))}
-                      >
-                        <IconUserX className="mr-1 h-4 w-4" />
-                        Reject
-                      </Button>
-                    )}
-                  </>
+                  )
                 ) : (
-                  <>
-                    <Button
-                      variant="outline"
-                      size="sm"
-                      onClick={() => onEdit(user)}
-                    >
-                      <IconEdit className="h-4 w-4" />
-                    </Button>
+                  onDeactivate && (
                     <Button
                       variant="destructive"
                       size="sm"
-                      onClick={() => onDelete(parseInt(user.id))}
+                      onClick={() => onDeactivate(parseInt(user.id))}
                     >
-                      <IconTrash className="h-4 w-4" />
+                      <IconTrash className="mr-1 h-4 w-4" />
+                      Deactivate
                     </Button>
-                  </>
+                  )
                 )}
               </div>
             </TableCell>

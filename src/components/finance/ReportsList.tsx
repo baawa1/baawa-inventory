@@ -9,7 +9,6 @@ import { exportToCSV, generateExportFilename } from '@/lib/utils/finance';
 import { toast } from 'sonner';
 import { formatFinanceDateInput } from '@/lib/finance/date-range';
 
-// UI Components
 import { Button } from '@/components/ui/button';
 import {
   Card,
@@ -37,8 +36,6 @@ import {
   SelectTrigger,
   SelectValue,
 } from '@/components/ui/select';
-
-// Icons
 import {
   Download,
   FileText,
@@ -59,14 +56,16 @@ export function ReportsList({ user: _user }: ReportsListProps) {
   const [isGenerateDialogOpen, setIsGenerateDialogOpen] = useState(false);
   const [reportType, setReportType] = useState('FINANCIAL_SUMMARY');
   const [startDate, setStartDate] = useState(() => {
-    const d = new Date();
-    d.setMonth(d.getMonth() - 1);
-    return formatFinanceDateInput(d);
+    const date = new Date();
+    date.setMonth(date.getMonth() - 1);
+    return formatFinanceDateInput(date);
   });
   const [endDate, setEndDate] = useState(() =>
     formatFinanceDateInput(new Date())
   );
-  const [period, setPeriod] = useState<'weekly' | 'monthly' | 'quarterly' | 'yearly'>('monthly');
+  const [period, setPeriod] = useState<
+    'weekly' | 'monthly' | 'quarterly' | 'yearly'
+  >('monthly');
   const [isExporting, setIsExporting] = useState(false);
 
   const {
@@ -84,67 +83,6 @@ export function ReportsList({ user: _user }: ReportsListProps) {
   const summary = reportsData?.data?.summary;
   const profitLoss = reportsData?.data?.profitLoss;
 
-  const handleGenerateReport = async () => {
-    if (!startDate || !endDate) {
-      toast.error('Please select both start and end dates');
-      return;
-    }
-
-    setIsExporting(true);
-    try {
-      // Export the current report data as CSV
-      const exportData = [];
-
-      if (reportType === 'FINANCIAL_SUMMARY' || reportType === 'INCOME_STATEMENT') {
-        exportData.push(
-          { Category: 'REVENUE', Item: 'Sales', Amount: profitLoss?.revenue?.sales || 0 },
-          { Category: 'REVENUE', Item: 'Other Operating Income', Amount: profitLoss?.revenue?.otherIncome || 0 },
-          { Category: 'REVENUE', Item: 'Total Revenue', Amount: profitLoss?.revenue?.totalRevenue || 0 },
-          { Category: '---', Item: '---', Amount: '---' },
-          { Category: 'EXPENSES', Item: 'Cost of Goods', Amount: profitLoss?.expenses?.costOfGoods || 0 },
-          { Category: 'EXPENSES', Item: 'Operating Expenses', Amount: profitLoss?.expenses?.operatingExpenses || 0 },
-          { Category: 'EXPENSES', Item: 'Total Expenses', Amount: profitLoss?.expenses?.totalExpenses || 0 },
-          { Category: '---', Item: '---', Amount: '---' },
-          { Category: 'PROFIT', Item: 'Gross Profit', Amount: profitLoss?.grossProfit || 0 },
-          { Category: 'PROFIT', Item: 'Net Profit', Amount: profitLoss?.netProfit || 0 }
-        );
-      }
-
-      if (reportType === 'EXPENSE_REPORT') {
-        exportData.push(
-          { Category: 'EXPENSES', Item: 'Cost of Goods', Amount: profitLoss?.expenses?.costOfGoods || 0 },
-          { Category: 'EXPENSES', Item: 'Operating Expenses', Amount: profitLoss?.expenses?.operatingExpenses || 0 },
-          { Category: 'EXPENSES', Item: 'Total Expenses', Amount: profitLoss?.expenses?.totalExpenses || 0 }
-        );
-      }
-
-      if (reportType === 'CASH_FLOW') {
-        const cashFlow = reportsData?.data?.cashFlow;
-        exportData.push(
-          { Category: 'OPERATING', Item: 'Net Income', Amount: cashFlow?.operatingActivities?.netIncome || 0 },
-          { Category: 'OPERATING', Item: 'Net Operating Cash Flow', Amount: cashFlow?.operatingActivities?.netOperatingCashFlow || 0 },
-          { Category: 'INVESTING', Item: 'Capital Expenditures', Amount: cashFlow?.investingActivities?.capitalExpenditures || 0 },
-          { Category: 'INVESTING', Item: 'Net Investing Cash Flow', Amount: cashFlow?.investingActivities?.netInvestingCashFlow || 0 },
-          { Category: 'FINANCING', Item: 'Financing Inflows', Amount: cashFlow?.financingActivities?.loans || 0 },
-          { Category: 'FINANCING', Item: 'Repayments', Amount: cashFlow?.financingActivities?.repayments || 0 },
-          { Category: 'FINANCING', Item: 'Net Financing Cash Flow', Amount: cashFlow?.financingActivities?.netFinancingCashFlow || 0 },
-          { Category: '---', Item: '---', Amount: '---' },
-          { Category: 'TOTAL', Item: 'Total Cash Flow', Amount: reportsData?.data?.totalCashFlow || 0 }
-        );
-      }
-
-      const filename = generateExportFilename('financial-report', reportType.toLowerCase().replace('_', '-'));
-      exportToCSV(exportData as any, filename);
-      toast.success(`${getReportTypeLabel(reportType)} exported successfully`);
-      setIsGenerateDialogOpen(false);
-    } catch (err) {
-      console.error('Error exporting report:', err);
-      toast.error('Failed to export report');
-    } finally {
-      setIsExporting(false);
-    }
-  };
-
   const getReportTypeLabel = (type: string) => {
     switch (type) {
       case 'FINANCIAL_SUMMARY':
@@ -157,6 +95,146 @@ export function ReportsList({ user: _user }: ReportsListProps) {
         return 'Cash Flow';
       default:
         return type;
+    }
+  };
+
+  const handleGenerateReport = async () => {
+    if (!startDate || !endDate) {
+      toast.error('Please select both start and end dates');
+      return;
+    }
+
+    setIsExporting(true);
+
+    try {
+      const exportData = [];
+
+      if (
+        reportType === 'FINANCIAL_SUMMARY' ||
+        reportType === 'INCOME_STATEMENT'
+      ) {
+        exportData.push(
+          {
+            Category: 'REVENUE',
+            Item: 'Sales',
+            Amount: profitLoss?.revenue?.sales || 0,
+          },
+          {
+            Category: 'REVENUE',
+            Item: 'Other Operating Income',
+            Amount: profitLoss?.revenue?.otherIncome || 0,
+          },
+          {
+            Category: 'REVENUE',
+            Item: 'Total Revenue',
+            Amount: profitLoss?.revenue?.totalRevenue || 0,
+          },
+          { Category: '---', Item: '---', Amount: '---' },
+          {
+            Category: 'EXPENSES',
+            Item: 'Cost of Goods',
+            Amount: profitLoss?.expenses?.costOfGoods || 0,
+          },
+          {
+            Category: 'EXPENSES',
+            Item: 'Operating Expenses',
+            Amount: profitLoss?.expenses?.operatingExpenses || 0,
+          },
+          {
+            Category: 'EXPENSES',
+            Item: 'Total Expenses',
+            Amount: profitLoss?.expenses?.totalExpenses || 0,
+          },
+          { Category: '---', Item: '---', Amount: '---' },
+          {
+            Category: 'PROFIT',
+            Item: 'Gross Profit',
+            Amount: profitLoss?.grossProfit || 0,
+          },
+          {
+            Category: 'PROFIT',
+            Item: 'Net Profit',
+            Amount: profitLoss?.netProfit || 0,
+          }
+        );
+      }
+
+      if (reportType === 'EXPENSE_REPORT') {
+        exportData.push(
+          {
+            Category: 'EXPENSES',
+            Item: 'Cost of Goods',
+            Amount: profitLoss?.expenses?.costOfGoods || 0,
+          },
+          {
+            Category: 'EXPENSES',
+            Item: 'Operating Expenses',
+            Amount: profitLoss?.expenses?.operatingExpenses || 0,
+          },
+          {
+            Category: 'EXPENSES',
+            Item: 'Total Expenses',
+            Amount: profitLoss?.expenses?.totalExpenses || 0,
+          }
+        );
+      }
+
+      if (reportType === 'CASH_FLOW') {
+        const cashFlow = reportsData?.data?.cashFlow;
+
+        exportData.push(
+          {
+            Category: 'OPERATING',
+            Item: 'Net Income',
+            Amount: cashFlow?.operatingActivities?.netIncome || 0,
+          },
+          {
+            Category: 'OPERATING',
+            Item: 'Net Operating Cash Flow',
+            Amount: cashFlow?.operatingActivities?.netOperatingCashFlow || 0,
+          },
+          {
+            Category: 'INVESTING',
+            Item: 'Capital Expenditures',
+            Amount: cashFlow?.investingActivities?.capitalExpenditures || 0,
+          },
+          {
+            Category: 'INVESTING',
+            Item: 'Net Investing Cash Flow',
+            Amount: cashFlow?.investingActivities?.netInvestingCashFlow || 0,
+          },
+          {
+            Category: 'FINANCING',
+            Item: 'Owner Funding',
+            Amount: cashFlow?.financingActivities?.ownerFunding || 0,
+          },
+          {
+            Category: 'FINANCING',
+            Item: 'Net Financing Cash Flow',
+            Amount: cashFlow?.financingActivities?.netFinancingCashFlow || 0,
+          },
+          { Category: '---', Item: '---', Amount: '---' },
+          {
+            Category: 'TOTAL',
+            Item: 'Total Cash Flow',
+            Amount: reportsData?.data?.totalCashFlow || 0,
+          }
+        );
+      }
+
+      const filename = generateExportFilename(
+        'financial-report',
+        reportType.toLowerCase().replace('_', '-')
+      );
+
+      exportToCSV(exportData as never[], filename);
+      toast.success(`${getReportTypeLabel(reportType)} exported successfully`);
+      setIsGenerateDialogOpen(false);
+    } catch (error) {
+      console.error('Error exporting report:', error);
+      toast.error('Failed to export report');
+    } finally {
+      setIsExporting(false);
     }
   };
 
@@ -214,7 +292,8 @@ export function ReportsList({ user: _user }: ReportsListProps) {
               <DialogHeader>
                 <DialogTitle>Export Financial Report</DialogTitle>
                 <DialogDescription>
-                  Select the report type and date range to export a financial report.
+                  Select the report type and date range to export a financial
+                  report.
                 </DialogDescription>
               </DialogHeader>
               <div className="grid gap-4 py-4">
@@ -240,7 +319,10 @@ export function ReportsList({ user: _user }: ReportsListProps) {
                 </div>
                 <div className="grid gap-2">
                   <Label htmlFor="period">Period</Label>
-                  <Select value={period} onValueChange={(v) => setPeriod(v as typeof period)}>
+                  <Select
+                    value={period}
+                    onValueChange={value => setPeriod(value as typeof period)}
+                  >
                     <SelectTrigger>
                       <SelectValue placeholder="Select period" />
                     </SelectTrigger>
@@ -258,7 +340,7 @@ export function ReportsList({ user: _user }: ReportsListProps) {
                     id="startDate"
                     type="date"
                     value={startDate}
-                    onChange={e => setStartDate(e.target.value)}
+                    onChange={event => setStartDate(event.target.value)}
                   />
                 </div>
                 <div className="grid gap-2">
@@ -267,7 +349,7 @@ export function ReportsList({ user: _user }: ReportsListProps) {
                     id="endDate"
                     type="date"
                     value={endDate}
-                    onChange={e => setEndDate(e.target.value)}
+                    onChange={event => setEndDate(event.target.value)}
                   />
                 </div>
               </div>
@@ -290,7 +372,6 @@ export function ReportsList({ user: _user }: ReportsListProps) {
         </div>
       </div>
 
-      {/* Quick Report Cards - Link to actual report pages */}
       <div className="grid gap-6 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4">
         <Link href="/finance/reports/income-statement">
           <Card className="cursor-pointer transition-shadow hover:shadow-md">
@@ -302,7 +383,9 @@ export function ReportsList({ user: _user }: ReportsListProps) {
             </CardHeader>
             <CardContent>
               <div className="text-2xl font-bold text-green-600">
-                {isLoading ? '...' : formatCurrency(profitLoss?.revenue?.totalRevenue || 0)}
+                {isLoading
+                  ? '...'
+                  : formatCurrency(profitLoss?.revenue?.totalRevenue || 0)}
               </div>
               <p className="text-muted-foreground text-xs">
                 View income statement
@@ -321,7 +404,9 @@ export function ReportsList({ user: _user }: ReportsListProps) {
             </CardHeader>
             <CardContent>
               <div className="text-2xl font-bold text-red-600">
-                {isLoading ? '...' : formatCurrency(profitLoss?.expenses?.totalExpenses || 0)}
+                {isLoading
+                  ? '...'
+                  : formatCurrency(profitLoss?.expenses?.totalExpenses || 0)}
               </div>
               <p className="text-muted-foreground text-xs">
                 View expense breakdown
@@ -334,15 +419,27 @@ export function ReportsList({ user: _user }: ReportsListProps) {
           <Card className="cursor-pointer transition-shadow hover:shadow-md">
             <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
               <CardTitle className="text-sm font-medium">Net Profit</CardTitle>
-              <TrendingUp className={`h-4 w-4 ${(profitLoss?.netProfit || 0) >= 0 ? 'text-green-600' : 'text-red-600'}`} />
+              <TrendingUp
+                className={`h-4 w-4 ${
+                  (profitLoss?.netProfit || 0) >= 0
+                    ? 'text-green-600'
+                    : 'text-red-600'
+                }`}
+              />
             </CardHeader>
             <CardContent>
-              <div className={`text-2xl font-bold ${(profitLoss?.netProfit || 0) >= 0 ? 'text-green-600' : 'text-red-600'}`}>
-                {isLoading ? '...' : formatCurrency(profitLoss?.netProfit || 0)}
+              <div
+                className={`text-2xl font-bold ${
+                  (profitLoss?.netProfit || 0) >= 0
+                    ? 'text-green-600'
+                    : 'text-red-600'
+                }`}
+              >
+                {isLoading
+                  ? '...'
+                  : formatCurrency(profitLoss?.netProfit || 0)}
               </div>
-              <p className="text-muted-foreground text-xs">
-                View cash flow
-              </p>
+              <p className="text-muted-foreground text-xs">View cash flow</p>
             </CardContent>
           </Card>
         </Link>
@@ -356,9 +453,7 @@ export function ReportsList({ user: _user }: ReportsListProps) {
             <div className="text-2xl font-bold text-blue-600">
               {isLoading ? '...' : summary?.totalTransactions || 0}
             </div>
-            <p className="text-muted-foreground text-xs">
-              Total this period
-            </p>
+            <p className="text-muted-foreground text-xs">Total this period</p>
           </CardContent>
         </Card>
 
@@ -371,7 +466,9 @@ export function ReportsList({ user: _user }: ReportsListProps) {
               <Activity className="h-4 w-4 text-purple-600" />
             </CardHeader>
             <CardContent>
-              <div className="text-2xl font-bold text-purple-600">Analytics</div>
+              <div className="text-2xl font-bold text-purple-600">
+                Analytics
+              </div>
               <p className="text-muted-foreground text-xs">
                 Comprehensive analytics
               </p>
@@ -397,7 +494,6 @@ export function ReportsList({ user: _user }: ReportsListProps) {
         </Link>
       </div>
 
-      {/* Period Summary */}
       <Card>
         <CardHeader>
           <CardTitle>Period Summary</CardTitle>
@@ -412,68 +508,118 @@ export function ReportsList({ user: _user }: ReportsListProps) {
             </div>
           ) : (
             <div className="grid gap-6 md:grid-cols-2">
-              {/* Profit & Loss Summary */}
               <div className="space-y-4">
-                <h3 className="font-semibold">Profit & Loss</h3>
+                <h3 className="font-semibold">Profit &amp; Loss</h3>
                 <div className="space-y-2">
                   <div className="flex justify-between">
                     <span className="text-muted-foreground">Sales Revenue</span>
-                    <span className="font-medium">{formatCurrency(profitLoss?.revenue?.sales || 0)}</span>
+                    <span className="font-medium">
+                      {formatCurrency(profitLoss?.revenue?.sales || 0)}
+                    </span>
                   </div>
                   <div className="flex justify-between">
-                    <span className="text-muted-foreground">Other Operating Income</span>
-                    <span className="font-medium">{formatCurrency(profitLoss?.revenue?.otherIncome || 0)}</span>
+                    <span className="text-muted-foreground">
+                      Other Operating Income
+                    </span>
+                    <span className="font-medium">
+                      {formatCurrency(profitLoss?.revenue?.otherIncome || 0)}
+                    </span>
                   </div>
                   <div className="flex justify-between border-t pt-2">
                     <span className="font-semibold">Total Revenue</span>
-                    <span className="font-bold text-green-600">{formatCurrency(profitLoss?.revenue?.totalRevenue || 0)}</span>
+                    <span className="font-bold text-green-600">
+                      {formatCurrency(profitLoss?.revenue?.totalRevenue || 0)}
+                    </span>
                   </div>
                   <div className="flex justify-between">
                     <span className="text-muted-foreground">Cost of Goods</span>
-                    <span className="font-medium">{formatCurrency(profitLoss?.expenses?.costOfGoods || 0)}</span>
+                    <span className="font-medium">
+                      {formatCurrency(profitLoss?.expenses?.costOfGoods || 0)}
+                    </span>
                   </div>
                   <div className="flex justify-between">
-                    <span className="text-muted-foreground">Operating Expenses</span>
-                    <span className="font-medium">{formatCurrency(profitLoss?.expenses?.operatingExpenses || 0)}</span>
+                    <span className="text-muted-foreground">
+                      Operating Expenses
+                    </span>
+                    <span className="font-medium">
+                      {formatCurrency(
+                        profitLoss?.expenses?.operatingExpenses || 0
+                      )}
+                    </span>
                   </div>
                   <div className="flex justify-between border-t pt-2">
                     <span className="font-semibold">Total Expenses</span>
-                    <span className="font-bold text-red-600">{formatCurrency(profitLoss?.expenses?.totalExpenses || 0)}</span>
+                    <span className="font-bold text-red-600">
+                      {formatCurrency(profitLoss?.expenses?.totalExpenses || 0)}
+                    </span>
                   </div>
                   <div className="flex justify-between border-t pt-2">
                     <span className="font-semibold">Gross Profit</span>
-                    <span className="font-bold">{formatCurrency(profitLoss?.grossProfit || 0)}</span>
+                    <span className="font-bold">
+                      {formatCurrency(profitLoss?.grossProfit || 0)}
+                    </span>
                   </div>
                   <div className="flex justify-between border-t pt-2">
                     <span className="text-lg font-bold">Net Profit</span>
-                    <span className={`text-lg font-bold ${(profitLoss?.netProfit || 0) >= 0 ? 'text-green-600' : 'text-red-600'}`}>
+                    <span
+                      className={`text-lg font-bold ${
+                        (profitLoss?.netProfit || 0) >= 0
+                          ? 'text-green-600'
+                          : 'text-red-600'
+                      }`}
+                    >
                       {formatCurrency(profitLoss?.netProfit || 0)}
                     </span>
                   </div>
                 </div>
               </div>
 
-              {/* Quick Stats */}
               <div className="space-y-4">
                 <h3 className="font-semibold">Quick Stats</h3>
                 <div className="grid grid-cols-2 gap-4">
                   <div className="rounded-lg bg-green-50 p-4 text-center dark:bg-green-900/20">
-                    <div className="text-lg font-bold text-green-600">{formatCurrency(summary?.totalIncome || 0)}</div>
-                    <div className="text-xs text-green-600">Operating Revenue</div>
+                    <div className="text-lg font-bold text-green-600">
+                      {formatCurrency(summary?.totalIncome || 0)}
+                    </div>
+                    <div className="text-xs text-green-600">
+                      Operating Revenue
+                    </div>
                   </div>
                   <div className="rounded-lg bg-red-50 p-4 text-center dark:bg-red-900/20">
-                    <div className="text-lg font-bold text-red-600">{formatCurrency(summary?.totalExpenses || 0)}</div>
+                    <div className="text-lg font-bold text-red-600">
+                      {formatCurrency(summary?.totalExpenses || 0)}
+                    </div>
                     <div className="text-xs text-red-600">Total Expenses</div>
                   </div>
                   <div className="rounded-lg bg-blue-50 p-4 text-center dark:bg-blue-900/20">
-                    <div className="text-lg font-bold text-blue-600">{summary?.totalTransactions || 0}</div>
+                    <div className="text-lg font-bold text-blue-600">
+                      {summary?.totalTransactions || 0}
+                    </div>
                     <div className="text-xs text-blue-600">Transactions</div>
                   </div>
-                  <div className={`rounded-lg p-4 text-center ${(summary?.netProfit || 0) >= 0 ? 'bg-emerald-50 dark:bg-emerald-900/20' : 'bg-red-50 dark:bg-red-900/20'}`}>
-                    <div className={`text-lg font-bold ${(summary?.netProfit || 0) >= 0 ? 'text-emerald-600' : 'text-red-600'}`}>
+                  <div
+                    className={`rounded-lg p-4 text-center ${
+                      (summary?.netProfit || 0) >= 0
+                        ? 'bg-emerald-50 dark:bg-emerald-900/20'
+                        : 'bg-red-50 dark:bg-red-900/20'
+                    }`}
+                  >
+                    <div
+                      className={`text-lg font-bold ${
+                        (summary?.netProfit || 0) >= 0
+                          ? 'text-emerald-600'
+                          : 'text-red-600'
+                      }`}
+                    >
                       {formatCurrency(summary?.netProfit || 0)}
                     </div>
-                    <div className={`text-xs ${(summary?.netProfit || 0) >= 0 ? 'text-emerald-600' : 'text-red-600'}`}>
+                    <div
+                      className={`text-xs ${
+                        (summary?.netProfit || 0) >= 0
+                          ? 'text-emerald-600'
+                          : 'text-red-600'
+                      }`}
+                    >
                       {(summary?.netProfit || 0) >= 0 ? 'Profit' : 'Loss'}
                     </div>
                   </div>

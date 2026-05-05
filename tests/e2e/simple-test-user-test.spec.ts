@@ -20,7 +20,6 @@ test.describe('Simple Test User Test', () => {
     try {
       await Promise.race([
         page.waitForURL(/\/dashboard/, { timeout: 15000 }),
-        page.waitForURL(/\/pending-approval/, { timeout: 15000 }),
         page.waitForURL(/\/unauthorized/, { timeout: 15000 }),
       ]);
     } catch (error) {
@@ -43,12 +42,11 @@ test.describe('Simple Test User Test', () => {
       }
     }
 
-    // Should be redirected to dashboard (not pending-approval or unauthorized)
+    // Should be redirected to dashboard
     await expect(page).toHaveURL(/\/dashboard/);
 
-    // Should not be redirected to unauthorized or pending-approval
+    // Should not be redirected to unauthorized
     expect(page.url()).not.toContain('/unauthorized');
-    expect(page.url()).not.toContain('/pending-approval');
 
     console.log('✅ Successfully logged in with approved admin user');
   });
@@ -79,9 +77,8 @@ test.describe('Simple Test User Test', () => {
     await page.goto('/pos');
     await expect(page).toHaveURL('/pos');
 
-    // Should not be redirected to unauthorized or pending-approval
+    // Should not be redirected to unauthorized
     expect(page.url()).not.toContain('/unauthorized');
-    expect(page.url()).not.toContain('/pending-approval');
 
     console.log('✅ Successfully accessed POS with approved admin user');
   });

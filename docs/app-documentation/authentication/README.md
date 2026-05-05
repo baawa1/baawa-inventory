@@ -83,7 +83,7 @@ enum UserRole {
 // 2. Protected routes (auth + status check)
 // 3. Admin routes (auth + role check)
 
-const publicRoutes = ['/', '/login', '/register', '/forgot-password']
+const publicRoutes = ['/', '/login', '/forgot-password']
 const protectedRoutes = ['/dashboard', '/inventory', '/pos']
 const adminRoutes = ['/admin']
 ```
@@ -95,7 +95,7 @@ const adminRoutes = ['/admin']
 if (!token?.user) redirect('/login')
 
 // 2. Check user status
-if (userStatus !== 'APPROVED') redirect('/pending-approval')
+if (userStatus !== 'APPROVED') redirect('/unauthorized')
 
 // 3. Check role permissions
 const isAuthorized = authorizeUserForRoute(userRole, pathname)
@@ -110,8 +110,7 @@ if (!isAuthorized) redirect('/unauthorized')
 // All API routes protected except:
 const publicApiRoutes = [
   '/api/health',
-  '/api/auth/register',
-  '/api/auth/login',
+  '/api/auth/signin',
   '/api/auth/forgot-password'
 ]
 

@@ -30,30 +30,10 @@ export default function UnauthorizedPage() {
       return;
     }
 
-    const userStatus = session.user.status;
-    const isEmailVerified = session.user.isEmailVerified;
-
-    // Smart redirect based on user status
-    if (userStatus === 'PENDING') {
-      if (!isEmailVerified) {
-        setIsRedirecting(true);
-        router.push('/check-email');
-        return;
-      } else {
-        setIsRedirecting(true);
-        router.push('/pending-approval');
-        return;
-      }
-    }
-
-    if (userStatus === 'VERIFIED') {
+    if (session.user.status === 'APPROVED') {
       setIsRedirecting(true);
-      router.push('/pending-approval');
-      return;
+      router.push('/dashboard');
     }
-
-    // For REJECTED, SUSPENDED, or other invalid statuses, stay on this page
-    // Only APPROVED users should be able to access protected routes
   }, [session, status, router]);
 
   // Show loading while redirecting
@@ -91,9 +71,9 @@ export default function UnauthorizedPage() {
         return {
           icon: <AlertTriangle className="h-16 w-16 text-yellow-500" />,
           title: 'Access Denied',
-          description: "You don't have permission to access this page.",
+          description: 'This account is not active for system access.',
           message:
-            'This page requires elevated permissions. Please contact your administrator if you believe you should have access to this area.',
+            'Only active, administrator-provisioned accounts can access the protected areas of this app. Contact your administrator if this account should be enabled.',
           color: 'text-yellow-600',
         };
     }

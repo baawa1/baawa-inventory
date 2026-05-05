@@ -199,7 +199,7 @@ export const emailVerificationTemplate = (data: {
     <h1 class="title">Verify Your Email Address 📧</h1>
     <div class="content">
         <p>Hi ${data.firstName},</p>
-        <p>Thank you for registering with Baawa Accessories! To complete your registration, please verify your email address by clicking the button below:</p>
+        <p>Please verify your email address by clicking the button below.</p>
         
         <div style="text-align: center;">
             <a href="${data.verificationLink}" class="button">Verify Email Address</a>
@@ -318,7 +318,7 @@ export const adminNewUserNotificationTemplate = (data: {
     <h1 class="title">New User Registration Pending 👤</h1>
     <div class="content">
         <p>Hello Admin,</p>
-        <p>A new user has registered for Baawa Accessories and is awaiting approval.</p>
+        <p>A user account needs administrator review.</p>
         
         <div class="info">
             <p><strong>User Details:</strong></p>

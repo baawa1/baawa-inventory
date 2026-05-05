@@ -167,19 +167,13 @@ export async function PUT(request: NextRequest, { params }: RouteParams) {
             id: authRequest.user.id,
             email: authRequest.user.email,
           });
-          const validStatuses = [
-            'PENDING',
-            'VERIFIED',
-            'APPROVED',
-            'REJECTED',
-            'SUSPENDED',
-          ];
+          const validStatuses = ['APPROVED', 'REJECTED', 'SUSPENDED'];
 
           if (!validStatuses.includes(body.userStatus)) {
             return NextResponse.json(
               {
                 error:
-                  'Invalid status. Must be one of: PENDING, VERIFIED, APPROVED, REJECTED, SUSPENDED',
+                  'Invalid status. Must be one of: APPROVED, REJECTED, SUSPENDED',
               },
               { status: 400 }
             );
@@ -232,14 +226,6 @@ export async function PUT(request: NextRequest, { params }: RouteParams) {
             updateData.isActive = false;
           }
 
-          if (
-            body.userStatus === 'VERIFIED' ||
-            body.userStatus === 'PENDING'
-          ) {
-            updateData.approvedBy = null;
-            updateData.approvedAt = null;
-            updateData.rejectionReason = null;
-          }
         }
         if (body.phone) updateData.phone = body.phone;
         if (body.isActive !== undefined) updateData.isActive = body.isActive;

@@ -48,9 +48,6 @@ export default async function Home() {
             <Link href="/login" prefetch={true}>
               <Button variant="ghost">Sign In</Button>
             </Link>
-            <Link href="/register" prefetch={true}>
-              <Button>Register</Button>
-            </Link>
           </div>
         </div>
       </header>
@@ -84,12 +81,10 @@ export default async function Home() {
                 <ArrowRight className="ml-2 h-5 w-5" />
               </Button>
             </Link>
-            <Link href="/register" prefetch={true}>
-              <Button variant="outline" size="lg" className="px-8 py-6 text-lg">
-                Create Account
-              </Button>
-            </Link>
           </div>
+          <p className="mt-4 text-sm text-slate-500 dark:text-slate-400">
+            Accounts are provisioned by an administrator.
+          </p>
         </div>
       </section>
 
@@ -342,16 +337,10 @@ export default async function Home() {
                 <ArrowRight className="ml-2 h-5 w-5" />
               </Button>
             </Link>
-            <Link href="/register">
-              <Button
-                size="lg"
-                variant="outline"
-                className="border-white px-8 py-6 text-lg text-white hover:bg-white hover:text-blue-600"
-              >
-                Create New Account
-              </Button>
-            </Link>
           </div>
+          <p className="mt-4 text-sm text-blue-100">
+            Need access? Ask an administrator to create your account.
+          </p>
         </div>
       </section>
 
@@ -383,15 +372,6 @@ export default async function Home() {
                     prefetch={true}
                   >
                     Sign In
-                  </Link>
-                </li>
-                <li>
-                  <Link
-                    href="/register"
-                    className="transition-colors hover:text-white"
-                    prefetch={true}
-                  >
-                    Register
                   </Link>
                 </li>
                 <li>

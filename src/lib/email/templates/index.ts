@@ -1,13 +1,11 @@
 import { EmailTemplate, EmailTemplateType } from '../types';
 import {
   welcomeTemplate,
-  emailVerificationTemplate,
   passwordResetTemplate,
   passwordResetConfirmationTemplate,
   userApprovalTemplate,
   userRejectionTemplate,
   roleChangeTemplate,
-  adminNewUserNotificationTemplate,
   adminDigestTemplate,
   userSuspensionTemplate,
   userReactivationTemplate,
@@ -24,8 +22,6 @@ export async function getEmailTemplate(
   switch (templateType) {
     case 'welcome':
       return welcomeTemplate(data);
-    case 'email_verification':
-      return emailVerificationTemplate(data);
     case 'password_reset':
       return passwordResetTemplate(data);
     case 'password_reset_confirmation':
@@ -34,10 +30,6 @@ export async function getEmailTemplate(
       return userApprovalTemplate(data);
     case 'user_rejected':
       return userRejectionTemplate(data);
-    case 'admin_new_user_pending':
-      return adminNewUserNotificationTemplate(data);
-    case 'admin_user_registered':
-      return adminNewUserNotificationTemplate(data);
     case 'account_locked':
       return userRejectionTemplate(data);
     case 'role_changed':
@@ -61,13 +53,10 @@ export async function getEmailTemplate(
 export function getAvailableTemplateTypes(): EmailTemplateType[] {
   return [
     'welcome',
-    'email_verification',
     'password_reset',
     'password_reset_confirmation',
     'user_approved',
     'user_rejected',
-    'admin_new_user_pending',
-    'admin_user_registered',
     'admin_digest',
     'account_locked',
     'role_changed',
@@ -91,13 +80,11 @@ export function isValidTemplateType(
 // Re-export all templates for direct use
 export {
   welcomeTemplate,
-  emailVerificationTemplate,
   passwordResetTemplate,
   passwordResetConfirmationTemplate,
   userApprovalTemplate,
   userRejectionTemplate,
   roleChangeTemplate,
-  adminNewUserNotificationTemplate,
   adminDigestTemplate,
   userSuspensionTemplate,
   userReactivationTemplate,

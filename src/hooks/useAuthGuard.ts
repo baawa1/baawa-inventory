@@ -52,7 +52,7 @@ export function useAuthGuard(
     // Check status requirement
     if (requireActiveStatus && session.user.status !== 'APPROVED') {
       setError('Account not active');
-      router.push('/pending-approval');
+      router.push('/unauthorized');
       return;
     }
 

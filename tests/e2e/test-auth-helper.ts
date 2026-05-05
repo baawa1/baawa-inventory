@@ -59,9 +59,7 @@ export class TestAuthHelper {
     try {
       await Promise.race([
         page.waitForURL(/\/dashboard/, { timeout: 15000 }),
-        page.waitForURL(/\/pending-approval/, { timeout: 15000 }),
         page.waitForURL(/\/unauthorized/, { timeout: 15000 }),
-        page.waitForURL(/\/check-email/, { timeout: 15000 }),
         page.waitForSelector('[data-testid="login-error"]', { timeout: 15000 }),
       ]);
     } catch (error) {
@@ -121,15 +119,10 @@ export class TestAuthHelper {
     if (expectedRedirect) {
       await expect(page).toHaveURL(expectedRedirect);
     } else {
-      // Determine expected redirect based on user status
-      if (!user.emailVerified) {
-        await expect(page).toHaveURL('/check-email');
-      } else if (
+      if (
+        !user.emailVerified ||
         user.userStatus === 'PENDING' ||
-        user.userStatus === 'VERIFIED'
-      ) {
-        await expect(page).toHaveURL('/pending-approval');
-      } else if (
+        user.userStatus === 'VERIFIED' ||
         user.userStatus === 'REJECTED' ||
         user.userStatus === 'SUSPENDED'
       ) {
@@ -154,15 +147,10 @@ export class TestAuthHelper {
     if (shouldAllow) {
       await expect(page).toHaveURL(route);
     } else {
-      // Should be redirected based on user status
-      if (!user.emailVerified) {
-        await expect(page).toHaveURL('/check-email');
-      } else if (
+      if (
+        !user.emailVerified ||
         user.userStatus === 'PENDING' ||
-        user.userStatus === 'VERIFIED'
-      ) {
-        await expect(page).toHaveURL('/pending-approval');
-      } else if (
+        user.userStatus === 'VERIFIED' ||
         user.userStatus === 'REJECTED' ||
         user.userStatus === 'SUSPENDED'
       ) {
@@ -180,31 +168,8 @@ export class TestAuthHelper {
     if (user.userStatus === 'APPROVED') {
       await expect(page).toHaveURL('/dashboard');
       await expect(page).not.toHaveURL('/unauthorized');
-      await expect(page).not.toHaveURL('/pending-approval');
     } else {
-      // Should be redirected based on status
       this.verifyUserAccess(page, user);
-    }
-  }
-
-  /**
-   * Test that a user is redirected from pending-approval page (for approved users)
-   */
-  static async testPendingApprovalRedirect(
-    page: Page,
-    user: TestUser
-  ): Promise<void> {
-    await page.goto('/pending-approval');
-
-    if (user.userStatus === 'APPROVED') {
-      await expect(page).toHaveURL('/dashboard');
-    } else if (
-      user.userStatus === 'PENDING' ||
-      user.userStatus === 'VERIFIED'
-    ) {
-      await expect(page).toHaveURL('/pending-approval');
-    } else {
-      await expect(page).toHaveURL('/unauthorized');
     }
   }
 
@@ -215,11 +180,7 @@ export class TestAuthHelper {
     const publicRoutes = [
       '/',
       '/login',
-      '/register',
       '/forgot-password',
-      '/check-email',
-      '/verify-email',
-      '/pending-approval',
       '/unauthorized',
     ];
 

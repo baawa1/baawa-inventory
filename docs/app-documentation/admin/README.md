@@ -48,30 +48,24 @@ graph TD
 
 ### User Lifecycle Management
 
-#### User Registration Flow
+#### User Provisioning Flow
 
 ```typescript
-// 1. User registers
-POST /api/auth/register
+// 1. Admin creates the user
+POST /api/users
 {
   "firstName": "John",
   "lastName": "Doe",
   "email": "john@company.com",
-  "password": "SecurePass123!"
+  "password": "SecurePass123!",
+  "role": "STAFF"
 }
 
-// 2. User status: PENDING (awaiting email verification)
-// 3. User verifies email
-POST /api/auth/verify-email { "token": "verification-token" }
-
-// 4. User status: VERIFIED (awaiting admin approval)
-// 5. Admin reviews and approves
-POST /api/admin/approve-user { "userId": 123 }
-
-// 6. User status: APPROVED (full access)
+// 2. User status: APPROVED
+// 3. User logs in immediately with the assigned credentials
 ```
 
-#### Admin Approval System
+#### User Access System
 
 ```typescript
 interface User {
@@ -83,7 +77,7 @@ interface User {
   userStatus: UserStatus;
   emailVerified: boolean;
   
-  // Approval workflow
+  // Access workflow
   approvedBy?: number;        // Admin who approved
   approvedAt?: DateTime;      // When approved
   rejectionReason?: string;   // If rejected, why

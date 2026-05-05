@@ -113,8 +113,7 @@ export const authConfig: NextAuthConfig = {
   pages: {
     signIn: '/login',
     error: '/login',
-    verifyRequest: '/check-email',
-    newUser: '/register',
+    newUser: '/login',
   },
   useSecureCookies: process.env.NEXTAUTH_URL?.startsWith('https://') || process.env.NODE_ENV === 'production',
   secret: process.env.NEXTAUTH_SECRET,

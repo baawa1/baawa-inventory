@@ -44,17 +44,11 @@ export function UserForm({
   const isEditing = !!user;
   const schema = isEditing ? editUserFormSchema : createUserFormSchema;
 
-  const validStatuses = [
-    'PENDING',
-    'VERIFIED',
-    'APPROVED',
-    'REJECTED',
-    'SUSPENDED',
-  ] as const;
+  const validStatuses = ['APPROVED', 'REJECTED', 'SUSPENDED'] as const;
   const safeUserStatus =
     user && validStatuses.includes(user.userStatus as any)
       ? (user.userStatus as (typeof validStatuses)[number])
-      : 'PENDING';
+      : 'APPROVED';
 
   const form = useForm<UserFormData | EditUserFormData>({
     resolver: zodResolver(schema),
@@ -71,7 +65,7 @@ export function UserForm({
           lastName: '',
           email: '',
           role: 'STAFF',
-          userStatus: 'PENDING',
+          userStatus: 'APPROVED',
           password: '',
           confirmPassword: '',
         },
@@ -176,8 +170,6 @@ export function UserForm({
                     </SelectTrigger>
                   </FormControl>
                   <SelectContent>
-                    <SelectItem value="PENDING">Pending</SelectItem>
-                    <SelectItem value="VERIFIED">Verified</SelectItem>
                     <SelectItem value="APPROVED">Approved</SelectItem>
                     <SelectItem value="REJECTED">Rejected</SelectItem>
                     <SelectItem value="SUSPENDED">Suspended</SelectItem>

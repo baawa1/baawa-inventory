@@ -5,13 +5,12 @@ import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import {
   IconUsers,
-  IconUserCheck,
   IconUserX,
   IconShield,
   IconArrowRight,
   IconActivity,
 } from '@tabler/icons-react';
-import { useActiveUsers, usePendingUsers } from '@/hooks/api/users';
+import { useActiveUsers } from '@/hooks/api/users';
 import { useAdminActivity } from '@/hooks/api/admin';
 import Link from 'next/link';
 import { formatDistanceToNow } from 'date-fns';
@@ -22,7 +21,6 @@ interface AdminOverviewProps {
 
 export function AdminOverview({ activeTab: _activeTab }: AdminOverviewProps) {
   const { data: activeUsers = [] } = useActiveUsers();
-  const { data: pendingUsers = [] } = usePendingUsers();
   const { data: activityData } = useAdminActivity();
 
   // Admin-specific metrics only
@@ -34,14 +32,6 @@ export function AdminOverview({ activeTab: _activeTab }: AdminOverviewProps) {
       trend: 'neutral' as const,
       icon: <IconUsers className="h-5 w-5" />,
       color: 'text-blue-600',
-    },
-    {
-      title: 'Pending Approvals',
-      value: pendingUsers.length,
-      change: 0,
-      trend: 'neutral' as const,
-      icon: <IconUserCheck className="h-5 w-5" />,
-      color: 'text-orange-600',
     },
     {
       title: 'System Status',
@@ -59,8 +49,6 @@ export function AdminOverview({ activeTab: _activeTab }: AdminOverviewProps) {
     switch (type) {
       case 'user':
         return <IconUsers className="h-4 w-4 text-blue-600" />;
-      case 'approval':
-        return <IconUserCheck className="h-4 w-4 text-green-600" />;
       case 'deactivation':
         return <IconUserX className="h-4 w-4 text-red-600" />;
       default:
@@ -74,12 +62,6 @@ export function AdminOverview({ activeTab: _activeTab }: AdminOverviewProps) {
         return (
           <Badge variant="outline" className="border-blue-200 text-blue-600">
             Registration
-          </Badge>
-        );
-      case 'approval':
-        return (
-          <Badge variant="outline" className="border-green-200 text-green-600">
-            Approval
           </Badge>
         );
       case 'deactivation':
@@ -108,7 +90,7 @@ export function AdminOverview({ activeTab: _activeTab }: AdminOverviewProps) {
   return (
     <div className="space-y-6">
       {/* Admin Metrics */}
-      <div className="grid gap-4 md:grid-cols-3">
+      <div className="grid gap-4 md:grid-cols-2">
         {adminMetrics.map((metric, index) => (
           <Card key={index}>
             <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
@@ -135,17 +117,6 @@ export function AdminOverview({ activeTab: _activeTab }: AdminOverviewProps) {
         </CardHeader>
         <CardContent>
           <div className="grid gap-4 md:grid-cols-2">
-            <Link href="/admin?tab=pending">
-              <Button variant="outline" className="w-full justify-start">
-                <IconUserCheck className="mr-2 h-4 w-4" />
-                Review Pending Users
-                {pendingUsers.length > 0 && (
-                  <Badge variant="destructive" className="ml-auto">
-                    {pendingUsers.length}
-                  </Badge>
-                )}
-              </Button>
-            </Link>
             <Link href="/admin?tab=users">
               <Button variant="outline" className="w-full justify-start">
                 <IconUsers className="mr-2 h-4 w-4" />
