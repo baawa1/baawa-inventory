@@ -34,6 +34,7 @@ import {
   IconTrendingUp,
   IconPlus,
   IconEdit,
+  IconTrash,
   IconDots,
   IconReceipt2,
   IconCalendar,
@@ -46,45 +47,9 @@ import { toast } from 'sonner';
 import { formatCurrency } from '@/lib/utils';
 import { useDebounce } from '@/hooks/useDebounce';
 import { AppUser } from '@/types/user';
-import { canReadFinance, canWriteFinance } from '@/lib/auth/roles';
-
-interface FinancialTransaction {
-  id: number;
-  transactionNumber: string;
-  type: 'INCOME' | 'EXPENSE';
-  amount: number;
-  description: string | null;
-  transactionDate: Date;
-  paymentMethod: string | null;
-  status: 'PENDING' | 'COMPLETED' | 'CANCELLED' | 'APPROVED' | 'REJECTED';
-  approvedBy: number | null;
-  approvedAt: Date | null;
-  createdBy: number;
-  createdAt: Date;
-  updatedAt: Date;
-  expenseDetails?: {
-    id: number;
-    expenseType: string;
-    vendorName: string | null;
-  };
-  incomeDetails?: {
-    id: number;
-    incomeSource: string;
-    payerName: string | null;
-  };
-  createdByUser: {
-    id: number;
-    firstName: string;
-    lastName: string;
-    email: string;
-  };
-  approvedByUser?: {
-    id: number;
-    firstName: string;
-    lastName: string;
-    email: string;
-  };
-}
+import type { FinancialTransaction } from '@/types/finance';
+import { canDeleteFinance, canReadFinance, canWriteFinance } from '@/lib/auth/roles';
+import { FinancialTransactionDeleteAction } from './shared/FinancialTransactionDeleteAction';
 
 interface MobileIncomeListProps {
   user: AppUser;
@@ -145,6 +110,7 @@ export function MobileIncomeList({ user }: MobileIncomeListProps) {
       params.append('limit', String(pagination.limit));
       params.append('sortBy', 'transactionDate');
       params.append('sortOrder', 'desc');
+      params.append('view', 'manual');
 
       const response = await fetch(`/api/finance/transactions?${params}`);
       if (!response.ok) throw new Error('Failed to fetch income transactions');
@@ -422,6 +388,7 @@ export function MobileIncomeList({ user }: MobileIncomeListProps) {
   // Check permissions
   const canRead = canReadFinance(user.role);
   const canWrite = canWriteFinance(user.role);
+  const canDelete = canDeleteFinance(user.role);
 
   // Render actions function
   const renderActions = useCallback(
@@ -473,11 +440,35 @@ export function MobileIncomeList({ user }: MobileIncomeListProps) {
                 </DropdownMenuItem>
               </>
             )}
+            {canDelete && (
+              <>
+                <DropdownMenuSeparator />
+                <FinancialTransactionDeleteAction
+                  transactionId={transaction.id}
+                  transactionNumber={transaction.transactionNumber}
+                  transactionType="income"
+                  transactionStatus={transaction.status}
+                  renderTrigger={({ actionLabel, blocked, openDialog }) => (
+                    <DropdownMenuItem
+                      disabled={blocked}
+                      onSelect={event => {
+                        event.preventDefault();
+                        openDialog();
+                      }}
+                      className="flex items-center gap-2 text-destructive focus:text-destructive"
+                    >
+                      <IconTrash className="h-4 w-4" />
+                      {actionLabel}
+                    </DropdownMenuItem>
+                  )}
+                />
+              </>
+            )}
           </DropdownMenuContent>
         </DropdownMenu>
       );
     },
-    [selectedTransaction, canRead, canWrite]
+    [selectedTransaction, canDelete, canRead, canWrite]
   );
 
   // Mobile card title and subtitle

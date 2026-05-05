@@ -5,18 +5,15 @@ import { useQuery } from '@tanstack/react-query';
 import { Button } from '@/components/ui/button';
 import {
   Dialog,
-  DialogContent,
-  DialogHeader,
-  DialogTitle,
   DialogTrigger,
 } from '@/components/ui/dialog';
-import { Separator } from '@/components/ui/separator';
 import {
   IconEye,
   IconRefresh,
   IconTrendingUp,
   IconPlus,
   IconEdit,
+  IconTrash,
 } from '@tabler/icons-react';
 import { format } from 'date-fns';
 import { DateRange } from 'react-day-picker';
@@ -31,8 +28,10 @@ import { AppUser } from '@/types/user';
 import type { FinancialTransaction } from '@/types/finance';
 import { PaymentMethodIcon } from './shared/PaymentMethodIcon';
 import { TransactionStatusBadge } from './shared/TransactionStatusBadge';
+import { FinancialTransactionDeleteAction } from './shared/FinancialTransactionDeleteAction';
+import { ManualTransactionDetailDialog } from './shared/ManualTransactionDetailDialog';
 import Link from 'next/link';
-import { canReadFinance, canWriteFinance } from '@/lib/auth/roles';
+import { canDeleteFinance, canReadFinance, canWriteFinance } from '@/lib/auth/roles';
 import { formatFinanceDateInput } from '@/lib/finance/date-range';
 import {
   DEFAULT_DATE_RANGE_PRESET,
@@ -44,9 +43,6 @@ interface IncomeListProps {
 }
 
 export function IncomeList({ user }: IncomeListProps) {
-  const [selectedTransaction, setSelectedTransaction] =
-    useState<FinancialTransaction | null>(null);
-
   // Pagination state
   const [pagination, setPagination] = useState({
     page: 1,
@@ -110,6 +106,7 @@ export function IncomeList({ user }: IncomeListProps) {
       params.append('limit', String(pagination.limit));
       params.append('sortBy', 'transactionDate');
       params.append('sortOrder', 'desc');
+      params.append('view', 'manual');
 
       const response = await fetch(`/api/finance/transactions?${params}`);
       if (!response.ok) throw new Error('Failed to fetch income transactions');
@@ -326,6 +323,7 @@ export function IncomeList({ user }: IncomeListProps) {
   // Check permissions
   const canRead = canReadFinance(user.role);
   const canWrite = canWriteFinance(user.role);
+  const canDelete = canDeleteFinance(user.role);
 
   // Render actions function
   const renderActions = useCallback(
@@ -333,42 +331,56 @@ export function IncomeList({ user }: IncomeListProps) {
       if (!canRead) return null;
 
       return (
-        <div className="flex items-center gap-2">
-          {/* View Details Button */}
+        <div className="flex items-center justify-start gap-2">
           <Dialog>
             <DialogTrigger asChild>
               <Button
                 variant="ghost"
                 size="sm"
-                onClick={() => setSelectedTransaction(transaction)}
+                aria-label={`View income ${transaction.transactionNumber}`}
               >
                 <IconEye className="h-4 w-4" />
               </Button>
             </DialogTrigger>
-            <DialogContent className="max-h-[80vh] max-w-2xl overflow-y-auto">
-              <DialogHeader>
-                <DialogTitle>
-                  Income Details - {transaction.transactionNumber}
-                </DialogTitle>
-              </DialogHeader>
-              {selectedTransaction && (
-                <TransactionDetailsContent transaction={selectedTransaction} />
-              )}
-            </DialogContent>
+            <ManualTransactionDetailDialog transaction={transaction} />
           </Dialog>
 
-          {/* Edit Button */}
           {canWrite && (
             <Button asChild variant="ghost" size="sm">
-              <Link href={`/finance/income/${transaction.id}/edit`}>
+              <Link
+                href={`/finance/income/${transaction.id}/edit`}
+                aria-label={`Edit income ${transaction.transactionNumber}`}
+              >
                 <IconEdit className="h-4 w-4" />
               </Link>
             </Button>
           )}
+
+          {canDelete && (
+            <FinancialTransactionDeleteAction
+              transactionId={transaction.id}
+              transactionNumber={transaction.transactionNumber}
+              transactionType="income"
+              transactionStatus={transaction.status}
+              renderTrigger={({ actionLabel, blocked, openDialog }) => (
+                <Button
+                  type="button"
+                  variant="ghost"
+                  size="sm"
+                  aria-label={actionLabel}
+                  onClick={openDialog}
+                  disabled={blocked}
+                  className="text-destructive hover:text-destructive"
+                >
+                  <IconTrash className="h-4 w-4" />
+                </Button>
+              )}
+            />
+          )}
         </div>
       );
     },
-    [selectedTransaction, canRead, canWrite]
+    [canDelete, canRead, canWrite]
   );
 
   return (
@@ -449,115 +461,5 @@ export function IncomeList({ user }: IncomeListProps) {
         }
       />
     </>
-  );
-}
-
-function TransactionDetailsContent({
-  transaction,
-}: {
-  transaction: FinancialTransaction;
-}) {
-  return (
-    <div className="space-y-4">
-      {/* Basic Info */}
-      <div className="grid grid-cols-2 gap-4">
-        <div>
-          <h4 className="mb-2 text-sm font-medium">Transaction Details</h4>
-          <div className="space-y-2 text-sm">
-            <div className="flex justify-between">
-              <span className="text-muted-foreground">Transaction #:</span>
-              <span className="font-mono">{transaction.transactionNumber}</span>
-            </div>
-            <div className="flex justify-between">
-              <span className="text-muted-foreground">Amount:</span>
-              <span className="font-semibold text-green-600">
-                +{formatCurrency(transaction.amount)}
-              </span>
-            </div>
-            <div className="flex justify-between">
-              <span className="text-muted-foreground">Date:</span>
-              <span>
-                {format(new Date(transaction.transactionDate), 'PPP')}
-              </span>
-            </div>
-            <div className="flex justify-between">
-              <span className="text-muted-foreground">Status:</span>
-              <span className="capitalize">
-                {transaction.status.toLowerCase()}
-              </span>
-            </div>
-          </div>
-        </div>
-        <div>
-          <h4 className="mb-2 text-sm font-medium">Payment Info</h4>
-          <div className="space-y-2 text-sm">
-            <div className="flex justify-between">
-              <span className="text-muted-foreground">Method:</span>
-              <span className="capitalize">
-                {transaction.paymentMethod?.replace('_', ' ') || 'N/A'}
-              </span>
-            </div>
-          </div>
-        </div>
-      </div>
-
-      <Separator />
-
-      {/* Income Details */}
-      {transaction.incomeDetails && (
-        <div>
-          <h4 className="mb-3 text-sm font-medium">Income Details</h4>
-          <div className="space-y-2 text-sm">
-            <div className="flex justify-between">
-              <span className="text-muted-foreground">Income Source:</span>
-              <span className="capitalize">
-                {transaction.incomeDetails.incomeSource}
-              </span>
-            </div>
-            {transaction.incomeDetails.payerName && (
-              <div className="flex justify-between">
-                <span className="text-muted-foreground">Payer:</span>
-                <span>{transaction.incomeDetails.payerName}</span>
-              </div>
-            )}
-          </div>
-        </div>
-      )}
-
-      <Separator />
-
-      {/* Created By */}
-      <div>
-        <h4 className="mb-2 text-sm font-medium">Created By</h4>
-        <div className="text-muted-foreground text-sm">
-          {transaction.createdByUser.firstName}{' '}
-          {transaction.createdByUser.lastName}
-          <br />
-          {transaction.createdByUser.email}
-        </div>
-      </div>
-
-      {/* Approved By */}
-      {transaction.approvedByUser && (
-        <>
-          <Separator />
-          <div>
-            <h4 className="mb-2 text-sm font-medium">Approved By</h4>
-            <div className="text-muted-foreground text-sm">
-              {transaction.approvedByUser.firstName}{' '}
-              {transaction.approvedByUser.lastName}
-              <br />
-              {transaction.approvedByUser.email}
-              {transaction.approvedAt && (
-                <>
-                  <br />
-                  {format(new Date(transaction.approvedAt), 'PPP')}
-                </>
-              )}
-            </div>
-          </div>
-        </>
-      )}
-    </div>
   );
 }

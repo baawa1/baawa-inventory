@@ -179,9 +179,7 @@ export function DashboardTable<T = Record<string, unknown>>({
                         </TableHead>
                       );
                     })}
-                    {renderActions && (
-                      <TableHead className="text-right">Actions</TableHead>
-                    )}
+                    {renderActions && <TableHead className="text-left">Actions</TableHead>}
                   </TableRow>
                 </TableHeader>
                 <TableBody>
@@ -192,11 +190,7 @@ export function DashboardTable<T = Record<string, unknown>>({
                           {renderCell(item, columnKey)}
                         </TableCell>
                       ))}
-                      {renderActions && (
-                        <TableCell className="text-right">
-                          {renderActions(item)}
-                        </TableCell>
-                      )}
+                      {renderActions && <TableCell className="text-left">{renderActions(item)}</TableCell>}
                     </TableRow>
                   ))}
                 </TableBody>

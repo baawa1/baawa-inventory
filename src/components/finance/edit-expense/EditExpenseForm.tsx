@@ -5,7 +5,6 @@ import { useRouter } from 'next/navigation';
 import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { ArrowLeft, Trash2 } from 'lucide-react';
-import { toast } from 'sonner';
 import { Alert, AlertDescription } from '@/components/ui/alert';
 import { Button } from '@/components/ui/button';
 import {
@@ -15,20 +14,9 @@ import {
   CardHeader,
   CardTitle,
 } from '@/components/ui/card';
-import {
-  Dialog,
-  DialogContent,
-  DialogDescription,
-  DialogFooter,
-  DialogHeader,
-  DialogTitle,
-} from '@/components/ui/dialog';
 import { Form } from '@/components/ui/form';
 import { PageHeader } from '@/components/ui/page-header';
-import { Label } from '@/components/ui/label';
 import { InlineLoading } from '@/components/ui/loading';
-import { Textarea } from '@/components/ui/textarea';
-import { useDeleteFinancialTransaction } from '@/hooks/api/finance';
 import { canDeleteFinance } from '@/lib/auth/roles';
 import { expenseTransactionSchema, ExpenseTransactionFormData } from '@/lib/validations/finance';
 
@@ -42,6 +30,7 @@ import { AppUser } from '@/types/user';
 import { useExpenseData } from './useExpenseData';
 import { useExpenseUpdate } from './useExpenseUpdate';
 import { formatFinanceDateInput } from '@/lib/finance/date-range';
+import { FinancialTransactionDeleteAction } from '../shared/FinancialTransactionDeleteAction';
 
 interface EditExpenseFormProps {
   user: AppUser;
@@ -53,8 +42,6 @@ export default function EditExpenseForm({
   expenseId,
 }: EditExpenseFormProps) {
   const router = useRouter();
-  const [deleteDialogOpen, setDeleteDialogOpen] = React.useState(false);
-  const [deleteReason, setDeleteReason] = React.useState('');
 
   const {
     submitError,
@@ -72,7 +59,6 @@ export default function EditExpenseForm({
 
   // Update mutation
   const { updateExpense, isUpdating } = useExpenseUpdate();
-  const deleteTransactionMutation = useDeleteFinancialTransaction();
 
   const form = useForm({
     resolver: zodResolver(expenseTransactionSchema),
@@ -117,35 +103,6 @@ export default function EditExpenseForm({
   };
 
   const canDeleteTransaction = canDeleteFinance(user.role);
-  const deleteBlocked =
-    expenseData !== undefined &&
-    ['APPROVED', 'REJECTED'].includes(expenseData.status);
-
-  const handleDeleteExpense = async () => {
-    const reason = deleteReason.trim();
-
-    if (!reason) {
-      toast.error('Enter a reason for deleting this expense transaction');
-      return;
-    }
-
-    try {
-      await deleteTransactionMutation.mutateAsync({
-        id: Number(expenseId),
-        reason,
-      });
-      setDeleteDialogOpen(false);
-      setDeleteReason('');
-      toast.success('Expense transaction deleted successfully');
-      router.push('/finance/expenses');
-    } catch (error) {
-      toast.error(
-        error instanceof Error
-          ? error.message
-          : 'Failed to delete expense transaction'
-      );
-    }
-  };
 
   if (isLoadingExpense) {
     return (
@@ -207,20 +164,25 @@ export default function EditExpenseForm({
           />
           {canDeleteTransaction && (
             <div className="flex flex-col gap-2 sm:items-end">
-              <Button
-                type="button"
-                variant="destructive"
-                onClick={() => setDeleteDialogOpen(true)}
-                disabled={deleteBlocked}
-              >
-                <Trash2 className="h-4 w-4" />
-                Delete Expense
-              </Button>
-              {deleteBlocked && (
-                <p className="text-muted-foreground text-sm sm:text-right">
-                  Approved or rejected expense transactions cannot be deleted.
-                </p>
-              )}
+              <FinancialTransactionDeleteAction
+                transactionId={Number(expenseId)}
+                transactionNumber={expenseData?.transactionNumber}
+                transactionType="expense"
+                transactionStatus={expenseData?.status ?? 'PENDING'}
+                redirectTo="/finance/expenses"
+                showBlockedHelperText
+                renderTrigger={({ actionLabel, blocked, openDialog }) => (
+                  <Button
+                    type="button"
+                    variant="destructive"
+                    onClick={openDialog}
+                    disabled={blocked}
+                  >
+                    <Trash2 className="h-4 w-4" />
+                    {actionLabel}
+                  </Button>
+                )}
+              />
             </div>
           )}
         </div>
@@ -263,71 +225,6 @@ export default function EditExpenseForm({
           </Form>
         </CardContent>
       </Card>
-
-      <Dialog
-        open={deleteDialogOpen}
-        onOpenChange={open => {
-          if (deleteTransactionMutation.isPending) {
-            return;
-          }
-
-          setDeleteDialogOpen(open);
-          if (!open) {
-            setDeleteReason('');
-          }
-        }}
-      >
-        <DialogContent>
-          <DialogHeader>
-            <DialogTitle>Delete Expense</DialogTitle>
-            <DialogDescription>
-              This permanently removes the expense transaction from all expense
-              views, summaries, and reports.
-            </DialogDescription>
-          </DialogHeader>
-          <div className="space-y-4">
-            {expenseData && (
-              <div className="rounded-md border border-red-200 bg-red-50 p-3 text-sm text-red-700">
-                Deleting expense #{expenseData.transactionNumber} removes it
-                from the normal expense tables and financial totals. The audit
-                log entry will remain.
-              </div>
-            )}
-            <div>
-              <Label htmlFor="delete-expense-reason">Reason</Label>
-              <Textarea
-                id="delete-expense-reason"
-                rows={4}
-                value={deleteReason}
-                onChange={event => setDeleteReason(event.target.value)}
-                placeholder="Explain why this expense transaction is being deleted"
-              />
-            </div>
-          </div>
-          <DialogFooter className="mt-4 flex items-center justify-between gap-2">
-            <Button
-              type="button"
-              variant="outline"
-              onClick={() => {
-                setDeleteDialogOpen(false);
-                setDeleteReason('');
-              }}
-              disabled={deleteTransactionMutation.isPending}
-            >
-              Cancel
-            </Button>
-            <Button
-              type="button"
-              variant="destructive"
-              onClick={handleDeleteExpense}
-              isLoading={deleteTransactionMutation.isPending}
-              loadingText="Deleting..."
-            >
-              Delete Expense
-            </Button>
-          </DialogFooter>
-        </DialogContent>
-      </Dialog>
     </div>
   );
 }
