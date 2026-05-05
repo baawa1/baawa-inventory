@@ -11,8 +11,12 @@ import { Category } from '@/hooks/api/categories';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { InlineLoading } from '@/components/ui/loading';
-import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
-import { Separator } from '@/components/ui/separator';
+import {
+  detailDialogContentClassName,
+  DetailItem,
+  DetailMetric,
+  DetailSection,
+} from '@/components/ui/detail-dialog';
 
 import {
   Dialog,
@@ -76,7 +80,7 @@ export default function CategoryDetailPopup({
   return (
     <>
       <Dialog open={_open} onOpenChange={handleClose}>
-        <DialogContent className="max-h-[90vh] max-w-4xl sm:max-w-2xl md:max-w-3xl lg:max-w-4xl overflow-y-auto">
+        <DialogContent className={detailDialogContentClassName}>
           <DialogHeader>
             <DialogTitle className="flex items-center gap-2">
               <IconTag className="h-5 w-5" />
@@ -102,9 +106,10 @@ export default function CategoryDetailPopup({
           )}
 
           {categoryData && (
-            <div className="space-y-6">
+            <div className="grid gap-4 text-sm">
               {/* Header with Actions */}
-              <div className="flex items-center justify-between">
+              <DetailSection title="Category Summary">
+                <div className="flex flex-col gap-4 md:flex-row md:items-start md:justify-between">
                 <div>
                   <h1 className="text-2xl font-bold tracking-tight">
                     {categoryData.name}
@@ -126,181 +131,97 @@ export default function CategoryDetailPopup({
                     </Button>
                   </div>
                 )}
-              </div>
+                </div>
+              </DetailSection>
 
-              <div className="flex flex-col gap-4">
-                {/* Main Category Information */}
-                <div className="space-y-6 lg:col-span-2">
-                  {/* Category Image and Basic Info */}
-                  <Card>
-                    <CardHeader>
-                      <CardTitle className="flex items-center gap-2">
-                        <IconTag className="h-5 w-5" />
-                        Category Information
-                      </CardTitle>
-                    </CardHeader>
-                    <CardContent className="space-y-6">
-                      {/* Image */}
-                      <div className="flex items-start gap-6">
-                        <div className="flex-shrink-0">
-                          <div className="flex h-32 w-32 items-center justify-center rounded-lg bg-gray-100">
-                            <IconTag className="h-8 w-8 text-gray-400" />
-                          </div>
-                        </div>
-                        <div className="flex-1 space-y-4">
+              <DetailSection title="Key Metrics">
+                <div className="grid gap-3 md:grid-cols-3">
+                  <DetailMetric
+                    label="Products"
+                    value={categoryData.productCount}
+                  />
+                  <DetailMetric
+                    label="Subcategories"
+                    value={categoryData.subcategoryCount}
+                  />
+                  <DetailMetric
+                    label="Status"
+                    value={categoryData.isActive ? 'Active' : 'Inactive'}
+                  />
+                </div>
+              </DetailSection>
+
+              <DetailSection title="Category Information">
+                <div className="flex flex-col gap-6 md:flex-row md:items-start">
+                  <div className="flex h-32 w-32 flex-shrink-0 items-center justify-center rounded-lg bg-gray-100">
+                    <IconTag className="h-8 w-8 text-gray-400" />
+                  </div>
+                  <div className="flex-1 space-y-4">
+                    <div className="flex flex-wrap items-center gap-2">
+                      <Badge
+                        variant={categoryData.isActive ? 'default' : 'secondary'}
+                      >
+                        {categoryData.isActive ? 'Active' : 'Inactive'}
+                      </Badge>
+                      {categoryData.parent ? (
+                        <Badge variant="outline" className="flex items-center gap-1">
+                          <IconFolder className="h-3 w-3" />
+                          Subcategory of {categoryData.parent.name}
+                        </Badge>
+                      ) : null}
+                    </div>
+                    <div className="grid gap-3 md:grid-cols-2">
+                      <DetailItem label="Name" value={categoryData.name} />
+                      <DetailItem
+                        label="Parent Category"
+                        value={categoryData.parent?.name || 'None'}
+                      />
+                      <div className="md:col-span-2">
+                        <DetailItem
+                          label="Description"
+                          value={categoryData.description || 'No description provided.'}
+                        />
+                      </div>
+                    </div>
+                  </div>
+                </div>
+              </DetailSection>
+
+              {categoryData.children && categoryData.children.length > 0 ? (
+                <DetailSection
+                  title={`Subcategories (${categoryData.children.length})`}
+                >
+                  <div className="grid gap-4 sm:grid-cols-2">
+                    {categoryData.children.map((child: Category) => (
+                      <div
+                        key={child.id}
+                        className="flex items-center justify-between rounded-lg border p-3 transition-colors hover:bg-gray-50"
+                      >
+                        <div className="flex items-center gap-3">
+                          <IconFolder className="text-muted-foreground h-4 w-4" />
                           <div>
-                            <h3 className="text-lg font-semibold">
-                              {categoryData.name}
-                            </h3>
-                            <div className="mt-1 flex items-center gap-2">
-                              <Badge
-                                variant={
-                                  categoryData.isActive
-                                    ? 'default'
-                                    : 'secondary'
-                                }
-                              >
-                                {categoryData.isActive ? 'Active' : 'Inactive'}
-                              </Badge>
-                              {categoryData.parent && (
-                                <Badge
-                                  variant="outline"
-                                  className="flex items-center gap-1"
-                                >
-                                  <IconFolder className="h-3 w-3" />
-                                  Subcategory of {categoryData.parent.name}
-                                </Badge>
-                              )}
-                            </div>
-                          </div>
-
-                          {categoryData.description && (
-                            <div>
-                              <h4 className="text-muted-foreground mb-1 text-sm font-medium">
-                                Description
-                              </h4>
-                              <p className="text-sm">
-                                {categoryData.description}
-                              </p>
-                            </div>
-                          )}
-
-                          <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 text-sm">
-                            <div>
-                              <span className="text-muted-foreground">
-                                Products:
-                              </span>
-                              <div className="mt-1 flex items-center gap-1">
-                                <IconPackage className="h-4 w-4" />
-                                <span className="font-medium">
-                                  {categoryData.productCount}
-                                </span>
-                              </div>
-                            </div>
-                            <div>
-                              <span className="text-muted-foreground">
-                                Subcategories:
-                              </span>
-                              <div className="mt-1 flex items-center gap-1">
-                                <IconFolder className="h-4 w-4" />
-                                <span className="font-medium">
-                                  {categoryData.subcategoryCount}
-                                </span>
-                              </div>
-                            </div>
+                            <p className="font-medium">{child.name}</p>
+                            <p className="text-muted-foreground text-sm">
+                              {child.productCount || 0} products
+                            </p>
                           </div>
                         </div>
-                      </div>
-                    </CardContent>
-                  </Card>
-
-                  {/* Subcategories */}
-                  {categoryData.children &&
-                    categoryData.children.length > 0 && (
-                      <Card>
-                        <CardHeader>
-                          <CardTitle className="flex items-center gap-2">
-                            <IconFolder className="h-5 w-5" />
-                            Subcategories ({categoryData.children.length})
-                          </CardTitle>
-                        </CardHeader>
-                        <CardContent>
-                          <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-                            {categoryData.children.map((child: Category) => (
-                              <div
-                                key={child.id}
-                                className="flex items-center justify-between rounded-lg border p-3 transition-colors hover:bg-gray-50"
-                              >
-                                <div className="flex items-center gap-3">
-                                  <IconFolder className="text-muted-foreground h-4 w-4" />
-                                  <div>
-                                    <p className="font-medium">{child.name}</p>
-                                    <p className="text-muted-foreground text-sm">
-                                      {child.productCount || 0} products
-                                    </p>
-                                  </div>
-                                </div>
-                                <Button
-                                  variant="ghost"
-                                  size="sm"
-                                  onClick={() => {
-                                    if (onCategoryChange) {
-                                      onCategoryChange(child.id);
-                                    }
-                                  }}
-                                >
-                                  <IconEye className="h-4 w-4" />
-                                </Button>
-                              </div>
-                            ))}
-                          </div>
-                        </CardContent>
-                      </Card>
-                    )}
-                </div>
-
-                {/* Sidebar */}
-                <div className="space-y-6">
-                  {/* Category Stats */}
-                  <Card>
-                    <CardHeader>
-                      <CardTitle>Statistics</CardTitle>
-                    </CardHeader>
-                    <CardContent className="space-y-4">
-                      <div className="flex items-center justify-between">
-                        <span className="text-muted-foreground text-sm">
-                          Total Products
-                        </span>
-                        <Badge variant="outline">
-                          {categoryData.productCount}
-                        </Badge>
-                      </div>
-                      <Separator />
-                      <div className="flex items-center justify-between">
-                        <span className="text-muted-foreground text-sm">
-                          Subcategories
-                        </span>
-                        <Badge variant="outline">
-                          {categoryData.subcategoryCount}
-                        </Badge>
-                      </div>
-                      <Separator />
-                      <div className="flex items-center justify-between">
-                        <span className="text-muted-foreground text-sm">
-                          Status
-                        </span>
-                        <Badge
-                          variant={
-                            categoryData.isActive ? 'default' : 'secondary'
-                          }
+                        <Button
+                          variant="ghost"
+                          size="sm"
+                          onClick={() => {
+                            if (onCategoryChange) {
+                              onCategoryChange(child.id);
+                            }
+                          }}
                         >
-                          {categoryData.isActive ? 'Active' : 'Inactive'}
-                        </Badge>
+                          <IconEye className="h-4 w-4" />
+                        </Button>
                       </div>
-                    </CardContent>
-                  </Card>
-                </div>
-              </div>
+                    ))}
+                  </div>
+                </DetailSection>
+              ) : null}
             </div>
           )}
         </DialogContent>

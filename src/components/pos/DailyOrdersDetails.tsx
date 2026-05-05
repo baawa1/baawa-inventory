@@ -7,13 +7,19 @@ import { DashboardTableLayout } from '@/components/layouts/DashboardTableLayout'
 import { DashboardTableColumn } from '@/components/layouts/DashboardColumnCustomizer';
 import { formatCurrency } from '@/lib/utils';
 import { Button } from '@/components/ui/button';
-
 import {
   Dialog,
   DialogContent,
   DialogHeader,
   DialogTitle,
 } from '@/components/ui/dialog';
+import {
+  detailDialogContentClassName,
+} from '@/components/ui/detail-dialog';
+import {
+  OrderDetailContent,
+  type OrderDetail,
+} from '@/components/pos/shared/OrderDetailContent';
 import {
   IconEye,
   IconDownload,
@@ -364,75 +370,13 @@ export function DailyOrdersDetails({ user: _, date }: DailyOrdersDetailsProps) {
   }, [filteredOrders, date]);
 
   // Order details dialog
-  const OrderDetailsDialog = ({ order }: { order: Order }) => (
+  const OrderDetailsDialog = ({ order }: { order: OrderDetail }) => (
     <Dialog open={!!selectedOrder} onOpenChange={() => setSelectedOrder(null)}>
-      <DialogContent className="max-w-2xl">
+      <DialogContent className={detailDialogContentClassName}>
         <DialogHeader>
           <DialogTitle>Order Details - {order.transactionNumber}</DialogTitle>
         </DialogHeader>
-        <div className="space-y-4">
-          <div className="grid grid-cols-2 gap-4">
-            <div>
-              <label className="text-sm font-medium">Date & Time</label>
-              <p className="text-muted-foreground text-sm">
-                {format(new Date(order.createdAt), 'MMM dd, yyyy HH:mm:ss')}
-              </p>
-            </div>
-            <div>
-              <label className="text-sm font-medium">Customer</label>
-              <p className="text-muted-foreground text-sm">
-                {order.customerName || 'Walk-in Customer'}
-              </p>
-            </div>
-            <div>
-              <label className="text-sm font-medium">Payment Method</label>
-              <p className="text-muted-foreground text-sm capitalize">
-                {order.paymentMethod.replace('_', ' ')}
-              </p>
-            </div>
-            <div>
-              <label className="text-sm font-medium">Items Count</label>
-              <p className="text-muted-foreground text-sm">
-                {order.itemCount} items
-              </p>
-            </div>
-          </div>
-
-          {order.items && order.items.length > 0 && (
-            <div>
-              <label className="text-sm font-medium">Items</label>
-              <div className="mt-2 space-y-2">
-                {order.items.map(item => (
-                  <div key={item.id} className="flex justify-between text-sm">
-                    <span>
-                      {item.name} (x{item.quantity})
-                    </span>
-                    <span>{formatCurrency(item.total)}</span>
-                  </div>
-                ))}
-              </div>
-            </div>
-          )}
-
-          <div className="border-t pt-4">
-            {order.subtotal && (
-              <div className="flex justify-between text-sm">
-                <span>Subtotal:</span>
-                <span>{formatCurrency(order.subtotal)}</span>
-              </div>
-            )}
-            {order.discount && order.discount > 0 && (
-              <div className="flex justify-between text-sm">
-                <span>Discount:</span>
-                <span>-{formatCurrency(order.discount)}</span>
-              </div>
-            )}
-            <div className="flex justify-between font-medium">
-              <span>Total:</span>
-              <span>{formatCurrency(order.totalAmount)}</span>
-            </div>
-          </div>
-        </div>
+        <OrderDetailContent order={order} />
       </DialogContent>
     </Dialog>
   );

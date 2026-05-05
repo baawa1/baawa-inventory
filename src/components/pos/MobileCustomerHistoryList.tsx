@@ -11,6 +11,7 @@ import {
   DialogTitle,
   DialogTrigger,
 } from '@/components/ui/dialog';
+import { detailDialogContentClassName } from '@/components/ui/detail-dialog';
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -384,7 +385,7 @@ export function MobileCustomerHistoryList({ user }: MobileCustomerHistoryListPro
                 View Details
               </DropdownMenuItem>
             </DialogTrigger>
-            <DialogContent className="max-w-4xl max-h-[90vh] overflow-y-auto">
+            <DialogContent className={detailDialogContentClassName}>
               <DialogHeader>
                 <DialogTitle>Customer Details - {customer.name}</DialogTitle>
               </DialogHeader>
@@ -490,7 +491,7 @@ export function MobileCustomerHistoryList({ user }: MobileCustomerHistoryListPro
 
       {/* Customer Detail Dialog */}
       <Dialog open={customerDetailOpen} onOpenChange={setCustomerDetailOpen}>
-        <DialogContent className="max-w-4xl max-h-[90vh] overflow-y-auto">
+        <DialogContent className={detailDialogContentClassName}>
           <DialogHeader>
             <DialogTitle>Customer Details - {selectedCustomer?.name}</DialogTitle>
           </DialogHeader>

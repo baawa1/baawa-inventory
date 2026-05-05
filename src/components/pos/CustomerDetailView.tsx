@@ -5,7 +5,6 @@ import { useQuery, useMutation } from '@tanstack/react-query';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
-import { Separator } from '@/components/ui/separator';
 import { InlineLoading } from '@/components/ui/loading';
 import {
   Table,
@@ -22,6 +21,7 @@ import {
   DialogTitle,
   DialogTrigger,
 } from '@/components/ui/dialog';
+import { detailDialogContentClassName } from '@/components/ui/detail-dialog';
 import {
   IconUser,
   IconMail,
@@ -31,11 +31,14 @@ import {
   IconShoppingBag,
   IconEye,
   IconPrinter,
-  IconTag,
 } from '@tabler/icons-react';
 import { formatCurrency } from '@/lib/utils';
 import { format } from 'date-fns';
 import { toast } from 'sonner';
+import {
+  OrderDetailContent,
+  type OrderDetail,
+} from './shared/OrderDetailContent';
 
 interface CustomerData {
   id: string;
@@ -147,6 +150,24 @@ export function CustomerDetailView({
   const handleReprintReceipt = (transactionId: number) => {
     reprintMutation.mutate(transactionId);
   };
+
+  const mapPurchaseToOrderDetail = (purchase: CustomerPurchase): OrderDetail => ({
+    id: purchase.id,
+    transactionNumber: purchase.transactionNumber,
+    totalAmount: purchase.totalAmount,
+    createdAt: purchase.createdAt,
+    notes: purchase.notes,
+    fees: purchase.fees,
+    items: purchase.items.map((item, index) => ({
+      id: index,
+      name: item.productName,
+      quantity: item.quantity,
+      unitPrice: item.unitPrice,
+      total: item.totalPrice,
+      totalPrice: item.totalPrice,
+      coupon: item.coupon,
+    })),
+  });
 
   if (error) {
     toast.error('Failed to load customer purchases');
@@ -332,7 +353,7 @@ export function CustomerDetailView({
                             if (!open) setSelectedOrder(null);
                           }}
                         >
-                          <DialogTrigger asChild>
+                        <DialogTrigger asChild>
                             <Button
                               variant="ghost"
                               size="sm"
@@ -341,12 +362,14 @@ export function CustomerDetailView({
                               <IconEye className="h-4 w-4" />
                             </Button>
                           </DialogTrigger>
-                          <DialogContent className="max-h-[80vh] max-w-2xl overflow-y-auto">
+                          <DialogContent className={detailDialogContentClassName}>
                             <DialogHeader>
                               <DialogTitle>Order Details</DialogTitle>
                             </DialogHeader>
                             {selectedOrder && (
-                              <OrderDetailContent order={selectedOrder} />
+                              <OrderDetailContent
+                                order={mapPurchaseToOrderDetail(selectedOrder)}
+                              />
                             )}
                           </DialogContent>
                         </Dialog>
@@ -367,128 +390,6 @@ export function CustomerDetailView({
           )}
         </CardContent>
       </Card>
-    </div>
-  );
-}
-
-// Order Detail Component (reusing transaction detail logic)
-function OrderDetailContent({ order }: { order: CustomerPurchase }) {
-  return (
-    <div className="space-y-4">
-      <div className="grid grid-cols-2 gap-4">
-        <div>
-          <label className="text-muted-foreground text-sm font-medium">
-            Transaction #
-          </label>
-          <p className="font-mono">{order.transactionNumber}</p>
-        </div>
-        <div>
-          <label className="text-muted-foreground text-sm font-medium">
-            Date
-          </label>
-          <p>{format(new Date(order.createdAt), 'PPP p')}</p>
-        </div>
-      </div>
-
-      <Separator />
-
-      <div>
-        <h3 className="mb-3 font-medium">Items Purchased</h3>
-        <Table>
-          <TableHeader>
-            <TableRow>
-              <TableHead>Product</TableHead>
-              <TableHead className="text-right">Price</TableHead>
-              <TableHead className="text-right">Qty</TableHead>
-              <TableHead className="text-right">Total</TableHead>
-            </TableRow>
-          </TableHeader>
-          <TableBody>
-            {order.items.map((item, index) => (
-              <TableRow key={index}>
-                <TableCell className="font-medium">
-                  <div>
-                    <div>{item.productName}</div>
-                    {item.coupon && (
-                      <div className="mt-1 flex items-center gap-2">
-                        <span className="inline-flex items-center rounded-full bg-green-100 px-2 py-1 text-xs font-medium text-green-800">
-                          <IconTag className="mr-1 h-3 w-3" />
-                          {item.coupon.code}
-                        </span>
-                        <span className="text-muted-foreground text-xs">
-                          {item.coupon.name}
-                        </span>
-                      </div>
-                    )}
-                  </div>
-                </TableCell>
-                <TableCell className="text-right">
-                  {formatCurrency(item.unitPrice)}
-                </TableCell>
-                <TableCell className="text-right">{item.quantity}</TableCell>
-                <TableCell className="text-right">
-                  <div>
-                    <div>{formatCurrency(item.totalPrice)}</div>
-                    {item.coupon && (
-                      <div className="text-xs text-green-600">
-                        {item.coupon.type === 'PERCENTAGE'
-                          ? `${item.coupon.value}% off`
-                          : `${formatCurrency(item.coupon.value)} off`}
-                      </div>
-                    )}
-                  </div>
-                </TableCell>
-              </TableRow>
-            ))}
-          </TableBody>
-        </Table>
-      </div>
-
-      <Separator />
-
-      {/* Transaction Fees */}
-      {order.fees && order.fees.length > 0 && (
-        <div>
-          <h3 className="mb-3 font-medium">Fees</h3>
-          <div className="space-y-2">
-            {order.fees.map((fee, index) => (
-              <div key={fee.id} className="flex justify-between text-sm">
-                <span className="flex items-center gap-2">
-                  <span>{fee.type}</span>
-                  {fee.description && (
-                    <span className="text-muted-foreground text-xs">
-                      ({fee.description})
-                    </span>
-                  )}
-                </span>
-                <span>{formatCurrency(fee.amount)}</span>
-              </div>
-            ))}
-          </div>
-        </div>
-      )}
-
-      <Separator />
-
-      <div>
-        <div className="flex justify-between text-lg font-bold">
-          <span>Total:</span>
-          <span>{formatCurrency(order.totalAmount)}</span>
-        </div>
-      </div>
-
-      {/* Transaction Notes */}
-      {order.notes && (
-        <>
-          <Separator />
-          <div>
-            <h3 className="mb-2 text-sm font-medium">Notes</h3>
-            <div className="bg-muted rounded-lg p-3">
-              <p className="text-muted-foreground text-sm">{order.notes}</p>
-            </div>
-          </div>
-        </>
-      )}
     </div>
   );
 }

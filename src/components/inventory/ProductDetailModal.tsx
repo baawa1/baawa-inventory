@@ -10,9 +10,14 @@ import {
   DialogTitle,
 } from '@/components/ui/dialog';
 import { Button } from '@/components/ui/button';
-import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { InlineLoading } from '@/components/ui/loading';
+import {
+  detailDialogContentClassName,
+  DetailItem,
+  DetailMetric,
+  DetailSection,
+} from '@/components/ui/detail-dialog';
 import {
   IconPackage,
   IconTag,
@@ -129,7 +134,7 @@ export const ProductDetailModal: React.FC<ProductDetailModalProps> = ({
 
   return (
     <Dialog open={open} onOpenChange={onCloseAction}>
-      <DialogContent className="max-h-[90vh] max-w-4xl overflow-y-auto sm:max-w-3xl">
+      <DialogContent className={detailDialogContentClassName}>
         <DialogHeader className="pb-4">
           <div className="flex items-center justify-between">
             <div>
@@ -195,9 +200,23 @@ export const ProductDetailModal: React.FC<ProductDetailModalProps> = ({
         )}
 
         {product && (
-          <div className="space-y-6">
+          <div className="grid gap-4 text-sm">
+            <DetailSection title="Product Summary">
+              <div className="grid gap-3 md:grid-cols-3">
+                <DetailMetric label="Stock" value={product.stock || 0} />
+                <DetailMetric label="Min Stock" value={product.minStock || 0} />
+                <DetailMetric
+                  label="Selling Price"
+                  value={formatCurrency(product.price || 0)}
+                  accentClassName="text-green-600"
+                  valueClassName="break-words text-xl leading-snug sm:text-2xl"
+                />
+              </div>
+            </DetailSection>
+
             {/* Image Carousel */}
-            <div className="flex flex-row-reverse items-start justify-center gap-4">
+            <DetailSection title="Media">
+              <div className="flex flex-col-reverse items-center gap-4 md:flex-row md:items-start md:justify-center md:flex-row-reverse">
               <div className="bg-muted mb-2 flex h-48 w-48 items-center justify-center rounded-lg">
                 {images.length > 0 ? (
                   <Image
@@ -233,14 +252,12 @@ export const ProductDetailModal: React.FC<ProductDetailModalProps> = ({
                   ))}
                 </div>
               )}
-            </div>
+              </div>
+            </DetailSection>
 
             {/* Description with Show More */}
             {displayedDescription && (
-              <div>
-                <label className="text-muted-foreground text-sm font-medium">
-                  Description
-                </label>
+              <DetailSection title="Description">
                 <p className="text-sm whitespace-pre-line">
                   {displayedDescription}
                 </p>
@@ -254,181 +271,88 @@ export const ProductDetailModal: React.FC<ProductDetailModalProps> = ({
                     {showFullDescription ? 'Show Less' : 'Show More'}
                   </Button>
                 )}
-              </div>
+              </DetailSection>
             )}
 
             {/* Info Sections */}
-            <div className="grid grid-cols-1 gap-4 md:grid-cols-2">
-              {/* Basic Info Card */}
-              <Card>
-                <CardHeader>
-                  <CardTitle className="flex items-center gap-2">
-                    <IconPackage className="h-5 w-5" />
-                    Basic Information
-                  </CardTitle>
-                </CardHeader>
-                <CardContent className="space-y-2">
-                  <div>
-                    <label className="text-muted-foreground text-sm font-medium">
-                      Product Name
-                    </label>
-                    <p className="text-sm">{headerName}</p>
-                  </div>
-                  <div>
-                    <label className="text-muted-foreground text-sm font-medium">
-                      SKU
-                    </label>
-                    <p className="font-mono text-sm">{headerSKU}</p>
-                  </div>
-                  <div>
-                    <label className="text-muted-foreground text-sm font-medium">
-                      Category
-                    </label>
-                    <p className="text-sm">{headerCat || 'N/A'}</p>
-                  </div>
-                  <div>
-                    <label className="text-muted-foreground text-sm font-medium">
-                      Brand
-                    </label>
-                    <p className="text-sm">{headerBrand || 'N/A'}</p>
-                  </div>
-                  {product.supplier && (
-                    <div>
-                      <label className="text-muted-foreground text-sm font-medium">
-                        Supplier
-                      </label>
-                      <p className="text-sm">{product.supplier?.name}</p>
-                    </div>
-                  )}
-                  {/* <div>
-                    <label className="text-sm font-medium text-muted-foreground">
-                      Unit
-                    </label>
-                    <p className="text-sm">{product.unit || "N/A"}</p>
-                  </div> */}
-                </CardContent>
-              </Card>
+            <div className="grid gap-4 md:grid-cols-2">
+              <DetailSection title="Basic Information">
+                <div className="grid gap-3">
+                  <DetailItem label="Product Name" value={headerName} />
+                  <DetailItem
+                    label="SKU"
+                    value={<span className="font-mono">{headerSKU}</span>}
+                  />
+                  <DetailItem label="Category" value={headerCat || 'N/A'} />
+                  <DetailItem label="Brand" value={headerBrand || 'N/A'} />
+                  {product.supplier ? (
+                    <DetailItem label="Supplier" value={product.supplier.name} />
+                  ) : null}
+                </div>
+              </DetailSection>
 
-              {/* Pricing Info Card */}
-              <Card>
-                <CardHeader>
-                  <CardTitle className="flex items-center gap-2">
-                    <IconCurrencyNaira className="h-5 w-5" />
-                    Pricing Information
-                  </CardTitle>
-                </CardHeader>
-                <CardContent className="space-y-2">
-                  {/* Only show cost price if user has cost permissions */}
-                  {canViewCost && (
-                    <div>
-                      <label className="text-muted-foreground text-sm font-medium">
-                        Cost Price
-                      </label>
-                      <p className="text-sm">
-                        {formatCurrency(product.cost || 0)}
-                      </p>
-                    </div>
-                  )}
-                  <div>
-                    <label className="text-muted-foreground text-sm font-medium">
-                      Selling Price
-                    </label>
-                    <p className="text-sm">
-                      {formatCurrency(product.price || 0)}
-                    </p>
-                  </div>
-                </CardContent>
-              </Card>
+              <DetailSection title="Pricing">
+                <div className="grid gap-3">
+                  {canViewCost ? (
+                    <DetailItem
+                      label="Cost Price"
+                      value={formatCurrency(product.cost || 0)}
+                    />
+                  ) : null}
+                  <DetailItem
+                    label="Selling Price"
+                    value={formatCurrency(product.price || 0)}
+                  />
+                </div>
+              </DetailSection>
 
-              {/* Stock Info Card */}
-              <Card>
-                <CardHeader>
-                  <CardTitle className="flex items-center gap-2">
-                    <IconTag className="h-5 w-5" />
-                    Stock Information
-                  </CardTitle>
-                </CardHeader>
-                <CardContent className="space-y-2">
-                  <div>
-                    <label className="text-muted-foreground text-sm font-medium">
-                      Current Stock
-                    </label>
-                    <p className="text-sm">{product.stock || 0}</p>
-                  </div>
-                  <div>
-                    <label className="text-muted-foreground text-sm font-medium">
-                      Minimum Stock Level
-                    </label>
-                    <p className="text-sm">{product.minStock || 0}</p>
-                  </div>
-                </CardContent>
-              </Card>
+              <DetailSection title="Stock Information">
+                <div className="grid gap-3">
+                  <DetailItem label="Current Stock" value={product.stock || 0} />
+                  <DetailItem
+                    label="Minimum Stock Level"
+                    value={product.minStock || 0}
+                  />
+                </div>
+              </DetailSection>
 
-              {/* Product Tags Card */}
-              {product.tags && product.tags.length > 0 && (
-                <Card>
-                  <CardHeader>
-                    <CardTitle className="flex items-center gap-2">
-                      <IconRuler className="h-5 w-5" />
-                      Product Tags
-                    </CardTitle>
-                  </CardHeader>
-                  <CardContent className="space-y-2">
-                    <div>
-                      <label className="text-muted-foreground text-sm font-medium">
-                        Tags
-                      </label>
-                      <div className="mt-1 flex flex-wrap gap-1">
-                        {product.tags.map((tag, index) => (
-                          <Badge
-                            key={index}
-                            variant="outline"
-                            className="text-xs"
-                          >
-                            {tag}
-                          </Badge>
-                        ))}
-                      </div>
-                    </div>
-                  </CardContent>
-                </Card>
-              )}
-
-              {/* Additional Info Card */}
-              <Card>
-                <CardHeader>
-                  <CardTitle className="flex items-center gap-2">
-                    <IconFileText className="h-5 w-5" />
-                    Additional Information
-                  </CardTitle>
-                </CardHeader>
-                <CardContent className="space-y-2">
-                  <div>
-                    <label className="text-muted-foreground text-sm font-medium">
-                      Created Date
-                    </label>
-                    <p className="text-sm">
-                      {product.createdAt
+              <DetailSection title="Additional Information">
+                <div className="grid gap-3">
+                  <DetailItem
+                    label="Created Date"
+                    value={
+                      product.createdAt
                         ? formatDate(product.createdAt, { includeTime: false })
-                        : 'N/A'}
-                    </p>
-                  </div>
-                  <div>
-                    <label className="text-muted-foreground text-sm font-medium">
-                      Last Updated
-                    </label>
-                    <p className="text-sm">
-                      {product.updatedAt
+                        : 'N/A'
+                    }
+                  />
+                  <DetailItem
+                    label="Last Updated"
+                    value={
+                      product.updatedAt
                         ? formatDate(product.updatedAt, { includeTime: false })
-                        : 'N/A'}
-                    </p>
-                  </div>
-                </CardContent>
-              </Card>
+                        : 'N/A'
+                    }
+                  />
+                </div>
+              </DetailSection>
             </div>
 
+            {product.tags && product.tags.length > 0 ? (
+              <DetailSection title="Product Tags">
+                <div className="flex flex-wrap gap-2">
+                  {product.tags.map((tag, index) => (
+                    <Badge key={index} variant="outline" className="text-xs">
+                      {tag}
+                    </Badge>
+                  ))}
+                </div>
+              </DetailSection>
+            ) : null}
+
             {/* Actions */}
-            <div className="flex items-center gap-4 pt-4">
+            <DetailSection title="Actions">
+              <div className="flex flex-wrap items-center gap-4">
               <Button asChild>
                 <Link href={`/inventory/products/${product.id}/edit`}>
                   <IconEdit className="mr-2 h-4 w-4" />
@@ -446,7 +370,8 @@ export const ProductDetailModal: React.FC<ProductDetailModalProps> = ({
                 <IconPlus className="mr-2 h-4 w-4" />
                 Add Stock
               </Button>
-            </div>
+              </div>
+            </DetailSection>
           </div>
         )}
       </DialogContent>

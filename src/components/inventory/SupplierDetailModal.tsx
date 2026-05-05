@@ -12,20 +12,16 @@ import {
   DialogTitle,
 } from '@/components/ui/dialog';
 import { Button } from '@/components/ui/button';
-import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
-
-import { Separator } from '@/components/ui/separator';
+import {
+  detailDialogContentClassName,
+  DetailItem,
+  DetailMetric,
+  DetailNotice,
+  DetailSection,
+} from '@/components/ui/detail-dialog';
 import {
   IconTruck,
-  IconPhone,
-  IconMail,
-  IconMapPin,
   IconEdit,
-  IconCalendar,
-  IconPackage,
-  IconClipboardList,
-  IconUser,
-  IconFileText,
 } from '@tabler/icons-react';
 
 // Using ApiSupplier type from validation file
@@ -91,7 +87,7 @@ export default function SupplierDetailModal({
 
   return (
     <Dialog open={isOpen} onOpenChange={onClose}>
-      <DialogContent className="max-h-[90vh] w-[95vw] max-w-4xl overflow-y-auto">
+      <DialogContent className={detailDialogContentClassName}>
         <DialogHeader>
           <DialogTitle className="flex items-center gap-2">
             <IconTruck className="h-5 w-5" />
@@ -116,171 +112,100 @@ export default function SupplierDetailModal({
             </p>
           </div>
         ) : supplier ? (
-          <div className="space-y-6">
-            {/* Header with Actions */}
-            <div className="flex flex-col gap-4 sm:flex-row sm:justify-between">
-              <div className="flex flex-col gap-3">
-                <h2 className="text-2xl font-bold break-words">
-                  {supplier.name}
-                </h2>
+          <div className="grid gap-4 text-sm">
+            <DetailSection title="Supplier Summary">
+              <div className="flex flex-col gap-4 sm:flex-row sm:items-start sm:justify-between">
+                <div className="flex flex-col gap-3">
+                  <h2 className="text-2xl font-bold break-words">
+                    {supplier.name}
+                  </h2>
+                </div>
+                <div className="flex flex-wrap items-center gap-2">
+                  {canEdit && (
+                    <Button onClick={handleEdit} variant="outline" size="sm">
+                      <IconEdit className="mr-2 h-4 w-4" />
+                      Edit
+                    </Button>
+                  )}
+                </div>
               </div>
-              <div className="flex flex-wrap items-center gap-2">
-                {canEdit && (
-                  <Button onClick={handleEdit} variant="outline" size="sm">
-                    <IconEdit className="mr-2 h-4 w-4" />
-                    Edit
-                  </Button>
-                )}
-              </div>
-            </div>
+            </DetailSection>
 
-            <Separator />
+            <DetailSection title="Key Metrics">
+              <div className="grid gap-3 md:grid-cols-3">
+                <DetailMetric
+                  label="Products"
+                  value={supplier._count?.products || 0}
+                />
+                <DetailMetric
+                  label="Created"
+                  value={
+                    supplier.createdAt ? formatDate(supplier.createdAt) : 'N/A'
+                  }
+                  valueClassName="text-lg leading-snug"
+                />
+                <DetailMetric
+                  label="Updated"
+                  value={
+                    supplier.updatedAt ? formatDate(supplier.updatedAt) : 'N/A'
+                  }
+                  valueClassName="text-lg leading-snug"
+                />
+              </div>
+            </DetailSection>
 
             {/* Main Content Grid */}
-            <div className="grid grid-cols-1 gap-6 lg:grid-cols-2">
-              {/* Contact Information */}
-              <Card>
-                <CardHeader>
-                  <CardTitle className="flex items-center gap-2">
-                    <IconUser className="h-4 w-4" />
-                    Contact Information
-                  </CardTitle>
-                </CardHeader>
-                <CardContent className="space-y-4">
-                  {supplier.contactPerson && (
-                    <div className="flex items-start gap-3">
-                      <IconUser className="text-muted-foreground mt-0.5 h-4 w-4 flex-shrink-0" />
-                      <div className="min-w-0 flex-1">
-                        <p className="text-sm font-medium">Contact Person</p>
-                        <p className="text-muted-foreground text-sm break-words">
-                          {supplier.contactPerson}
-                        </p>
-                      </div>
-                    </div>
-                  )}
+            <div className="grid gap-4 md:grid-cols-2">
+              <DetailSection title="Contact Information">
+                <div className="grid gap-3">
+                  <DetailItem
+                    label="Contact Person"
+                    value={supplier.contactPerson || 'N/A'}
+                  />
+                  <DetailItem label="Email" value={supplier.email || 'N/A'} />
+                  <DetailItem label="Phone" value={supplier.phone || 'N/A'} />
+                </div>
+              </DetailSection>
 
-                  {supplier.email && (
-                    <div className="flex items-start gap-3">
-                      <IconMail className="text-muted-foreground mt-0.5 h-4 w-4 flex-shrink-0" />
-                      <div className="min-w-0 flex-1">
-                        <p className="text-sm font-medium">Email</p>
-                        <p className="text-muted-foreground text-sm break-all">
-                          {supplier.email}
-                        </p>
-                      </div>
-                    </div>
-                  )}
+              <DetailSection title="Address Information">
+                <div className="grid gap-3">
+                  <DetailItem
+                    label="Address"
+                    value={formatAddress() || 'No address information available'}
+                  />
+                </div>
+              </DetailSection>
 
-                  {supplier.phone && (
-                    <div className="flex items-start gap-3">
-                      <IconPhone className="text-muted-foreground mt-0.5 h-4 w-4 flex-shrink-0" />
-                      <div className="min-w-0 flex-1">
-                        <p className="text-sm font-medium">Phone</p>
-                        <p className="text-muted-foreground text-sm break-all">
-                          {supplier.phone}
-                        </p>
-                      </div>
-                    </div>
-                  )}
-
-                  {!supplier.contactPerson &&
-                    !supplier.email &&
-                    !supplier.phone && (
-                      <p className="text-muted-foreground text-sm">
-                        No contact information available
-                      </p>
-                    )}
-                </CardContent>
-              </Card>
-
-              {/* Address Information */}
-              <Card>
-                <CardHeader>
-                  <CardTitle className="flex items-center gap-2">
-                    <IconMapPin className="h-4 w-4" />
-                    Address Information
-                  </CardTitle>
-                </CardHeader>
-                <CardContent>
-                  {formatAddress() ? (
-                    <div className="flex items-start gap-3">
-                      <IconMapPin className="text-muted-foreground mt-0.5 h-4 w-4" />
-                      <div>
-                        <p className="text-sm font-medium">Address</p>
-                        <p className="text-muted-foreground text-sm">
-                          {formatAddress()}
-                        </p>
-                      </div>
-                    </div>
-                  ) : (
-                    <p className="text-muted-foreground text-sm">
-                      No address information available
-                    </p>
-                  )}
-                </CardContent>
-              </Card>
-
-              {/* Statistics */}
-              <Card>
-                <CardHeader>
-                  <CardTitle className="flex items-center gap-2">
-                    <IconClipboardList className="h-4 w-4" />
-                    Statistics
-                  </CardTitle>
-                </CardHeader>
-                <CardContent className="space-y-4">
-                  <div className="flex items-center gap-3">
-                    <IconPackage className="text-muted-foreground h-4 w-4" />
-                    <div>
-                      <p className="text-sm font-medium">Products</p>
-                      <p className="text-muted-foreground text-sm">
-                        {supplier._count?.products || 0} products
-                      </p>
-                    </div>
-                  </div>
-
-                  <div className="flex items-center gap-3">
-                    <IconCalendar className="text-muted-foreground h-4 w-4" />
-                    <div>
-                      <p className="text-sm font-medium">Created</p>
-                      <p className="text-muted-foreground text-sm">
-                        {supplier.createdAt
-                          ? formatDate(supplier.createdAt)
-                          : 'Not available'}
-                      </p>
-                    </div>
-                  </div>
-
-                  <div className="flex items-center gap-3">
-                    <IconCalendar className="text-muted-foreground h-4 w-4" />
-                    <div>
-                      <p className="text-sm font-medium">Last Updated</p>
-                      <p className="text-muted-foreground text-sm">
-                        {supplier.updatedAt
-                          ? formatDate(supplier.updatedAt)
-                          : 'Not available'}
-                      </p>
-                    </div>
-                  </div>
-                </CardContent>
-              </Card>
+              <DetailSection title="Supplier Metadata">
+                <div className="grid gap-3">
+                  <DetailItem
+                    label="Created"
+                    value={
+                      supplier.createdAt
+                        ? formatDate(supplier.createdAt)
+                        : 'Not available'
+                    }
+                  />
+                  <DetailItem
+                    label="Last Updated"
+                    value={
+                      supplier.updatedAt
+                        ? formatDate(supplier.updatedAt)
+                        : 'Not available'
+                    }
+                  />
+                </div>
+              </DetailSection>
             </div>
 
             {/* Notes Section */}
             {supplier.notes && (
-              <Card>
-                <CardHeader>
-                  <CardTitle className="flex items-center gap-2">
-                    <IconFileText className="h-4 w-4" />
-                    Notes
-                  </CardTitle>
-                </CardHeader>
-                <CardContent>
-                  <p className="text-muted-foreground text-sm whitespace-pre-wrap">
-                    {supplier.notes}
-                  </p>
-                </CardContent>
-              </Card>
+              <DetailNotice
+                title="Notes"
+                className="border-slate-200 bg-slate-50 text-slate-900"
+              >
+                <p className="whitespace-pre-wrap">{supplier.notes}</p>
+              </DetailNotice>
             )}
           </div>
         ) : null}

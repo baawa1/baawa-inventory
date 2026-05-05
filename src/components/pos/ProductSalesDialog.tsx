@@ -8,18 +8,16 @@ import {
   DialogHeader,
   DialogTitle,
 } from '@/components/ui/dialog';
-import {
-  Table,
-  TableBody,
-  TableCell,
-  TableHead,
-  TableHeader,
-  TableRow,
-} from '@/components/ui/table';
 import { Badge } from '@/components/ui/badge';
 import { formatCurrency } from '@/lib/utils';
 import { format } from 'date-fns';
 import { InlineLoading } from '@/components/ui/loading';
+import {
+  detailDialogContentClassName,
+  DetailItem,
+  DetailMetric,
+  DetailSection,
+} from '@/components/ui/detail-dialog';
 
 interface ProductSalesItem {
   id: number;
@@ -48,6 +46,7 @@ export function ProductSalesDialog({
   onOpenChange,
 }: ProductSalesDialogProps) {
   const [loading, setLoading] = useState(false);
+  const [error, setError] = useState<string | null>(null);
   const [salesItems, setSalesItems] = useState<ProductSalesItem[]>([]);
   const [totalRevenue, setTotalRevenue] = useState(0);
   const [totalQuantity, setTotalQuantity] = useState(0);
@@ -62,17 +61,29 @@ export function ProductSalesDialog({
     if (!productId) return;
 
     setLoading(true);
+    setError(null);
     try {
       const response = await fetch(`/api/products/${productId}/sales`);
-      if (!response.ok) throw new Error('Failed to load sales');
+      const payload = await response.json().catch(() => null);
 
-      const data = await response.json();
+      if (!response.ok) {
+        throw new Error(payload?.error || 'Failed to load sales');
+      }
+
+      const data = payload?.data ?? payload ?? {};
       setSalesItems(data.salesItems || []);
       setTotalRevenue(data.summary?.totalRevenue || 0);
       setTotalQuantity(data.summary?.totalQuantity || 0);
     } catch (error) {
       console.error('Failed to load product sales:', error);
       setSalesItems([]);
+      setTotalRevenue(0);
+      setTotalQuantity(0);
+      setError(
+        error instanceof Error
+          ? error.message
+          : 'Failed to load product sales.'
+      );
     } finally {
       setLoading(false);
     }
@@ -91,7 +102,7 @@ export function ProductSalesDialog({
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent className="max-w-4xl max-h-[80vh] overflow-y-auto">
+      <DialogContent className={detailDialogContentClassName}>
         <DialogHeader>
           <DialogTitle>Sales History: {productName}</DialogTitle>
           <DialogDescription>
@@ -104,65 +115,87 @@ export function ProductSalesDialog({
             <InlineLoading label="Loading sales history..." />
           </div>
         ) : (
-          <>
-            {/* Summary Cards */}
-            <div className="grid grid-cols-2 gap-4 mb-4">
-              <div className="bg-muted rounded-lg p-4">
-                <div className="text-sm text-muted-foreground">Total Quantity Sold</div>
-                <div className="text-2xl font-bold">{totalQuantity}</div>
+          <div className="grid gap-4 text-sm">
+            <DetailSection title="Sales Summary">
+              <div className="grid gap-3 md:grid-cols-3">
+                <DetailMetric label="Quantity Sold" value={totalQuantity} />
+                <DetailMetric
+                  label="Total Revenue"
+                  value={formatCurrency(totalRevenue)}
+                  accentClassName="text-green-600"
+                />
+                <DetailMetric label="Transactions" value={salesItems.length} />
               </div>
-              <div className="bg-muted rounded-lg p-4">
-                <div className="text-sm text-muted-foreground">Total Revenue</div>
-                <div className="text-2xl font-bold">{formatCurrency(totalRevenue)}</div>
-              </div>
-            </div>
+            </DetailSection>
 
-            {/* Sales Table */}
-            {salesItems.length === 0 ? (
-              <div className="text-center py-8 text-muted-foreground">
-                No sales found for this product
-              </div>
-            ) : (
-              <Table>
-                <TableHeader>
-                  <TableRow>
-                    <TableHead>Transaction #</TableHead>
-                    <TableHead>Date</TableHead>
-                    <TableHead>Customer</TableHead>
-                    <TableHead>Staff</TableHead>
-                    <TableHead>Qty</TableHead>
-                    <TableHead>Price</TableHead>
-                    <TableHead>Total</TableHead>
-                    <TableHead>Status</TableHead>
-                  </TableRow>
-                </TableHeader>
-                <TableBody>
-                  {salesItems.map((item) => (
-                    <TableRow key={item.id}>
-                      <TableCell className="font-mono text-sm">
-                        #{item.transactionNumber}
-                      </TableCell>
-                      <TableCell>
-                        {format(new Date(item.transactionDate), 'MMM dd, yyyy')}
-                      </TableCell>
-                      <TableCell>{item.customerName || 'Walk-in'}</TableCell>
-                      <TableCell>{item.staffName}</TableCell>
-                      <TableCell>{item.quantity}</TableCell>
-                      <TableCell>{formatCurrency(item.price)}</TableCell>
-                      <TableCell className="font-medium">
-                        {formatCurrency(item.total)}
-                      </TableCell>
-                      <TableCell>{getStatusBadge(item.paymentStatus)}</TableCell>
-                    </TableRow>
+            <DetailSection
+              title={`Transactions${salesItems.length ? ` (${salesItems.length})` : ''}`}
+            >
+              {error ? (
+                <p className="text-destructive">{error}</p>
+              ) : salesItems.length === 0 ? (
+                <p className="text-muted-foreground">
+                  No sales found for this product.
+                </p>
+              ) : (
+                <div className="space-y-3">
+                  {salesItems.map(item => (
+                    <div
+                      key={item.id}
+                      className="rounded-lg border bg-muted/20 p-4"
+                    >
+                      <div className="flex flex-col gap-3 md:flex-row md:items-start md:justify-between">
+                        <div className="space-y-2">
+                          <DetailItem
+                            label="Transaction"
+                            value={
+                              <span className="font-mono">
+                                #{item.transactionNumber}
+                              </span>
+                            }
+                          />
+                          <div className="grid gap-3 md:grid-cols-2">
+                            <DetailItem
+                              label="Date"
+                              value={format(
+                                new Date(item.transactionDate),
+                                'PPP p'
+                              )}
+                            />
+                            <DetailItem
+                              label="Customer"
+                              value={item.customerName || 'Walk-in'}
+                            />
+                            <DetailItem label="Staff" value={item.staffName} />
+                            <DetailItem
+                              label="Status"
+                              value={getStatusBadge(item.paymentStatus)}
+                            />
+                          </div>
+                        </div>
+
+                        <div className="grid gap-3 text-left md:min-w-44 md:text-right">
+                          <DetailItem label="Quantity" value={item.quantity} />
+                          <DetailItem
+                            label="Unit Price"
+                            value={formatCurrency(item.price)}
+                          />
+                          <DetailItem
+                            label="Total"
+                            value={
+                              <span className="text-base font-semibold text-green-600">
+                                {formatCurrency(item.total)}
+                              </span>
+                            }
+                          />
+                        </div>
+                      </div>
+                    </div>
                   ))}
-                </TableBody>
-              </Table>
-            )}
-
-            <div className="mt-4 text-sm text-muted-foreground text-right">
-              Showing {salesItems.length} transaction{salesItems.length !== 1 ? 's' : ''}
-            </div>
-          </>
+                </div>
+              )}
+            </DetailSection>
+          </div>
         )}
       </DialogContent>
     </Dialog>

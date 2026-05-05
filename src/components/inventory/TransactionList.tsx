@@ -11,10 +11,9 @@ import {
   DialogTitle,
   DialogTrigger,
 } from '@/components/ui/dialog';
-import { Separator } from '@/components/ui/separator';
+import { detailDialogContentClassName } from '@/components/ui/detail-dialog';
 import {
   IconEye,
-  IconDownload,
   IconRefresh,
   IconCash,
   IconCreditCard,
@@ -25,7 +24,6 @@ import {
   IconX,
   IconAlertTriangle,
   IconReceipt,
-  IconTag,
 } from '@tabler/icons-react';
 import { format } from 'date-fns';
 import { toast } from 'sonner';
@@ -38,6 +36,7 @@ import {
   ReceiptPrinter,
   type ReceiptData,
 } from '@/components/pos/ReceiptPrinter';
+import { TransactionDetailContent } from '@/components/pos/shared/TransactionDetailContent';
 
 interface User {
   id: string;
@@ -105,9 +104,6 @@ interface TransactionListProps {
 }
 
 export function TransactionList({ user: _ }: TransactionListProps) {
-  const [selectedTransaction, setSelectedTransaction] =
-    useState<Transaction | null>(null);
-
   // Pagination state
   const [pagination, setPagination] = useState({
     page: 1,
@@ -475,23 +471,20 @@ export function TransactionList({ user: _ }: TransactionListProps) {
               <Button
                 variant="ghost"
                 size="sm"
-                onClick={() => setSelectedTransaction(transaction)}
               >
                 <IconEye className="h-4 w-4" />
               </Button>
             </DialogTrigger>
-            <DialogContent className="max-h-[80vh] max-w-4xl overflow-y-auto">
+            <DialogContent className={detailDialogContentClassName}>
               <DialogHeader>
                 <DialogTitle>
                   Transaction Details - {transaction.transactionNumber}
                 </DialogTitle>
               </DialogHeader>
-              {selectedTransaction && (
-                <TransactionDetailsContent
-                  transaction={selectedTransaction}
-                  receiptData={convertToReceiptData(selectedTransaction)}
-                />
-              )}
+              <TransactionDetailsContent
+                transaction={transaction}
+                receiptData={convertToReceiptData(transaction)}
+              />
             </DialogContent>
           </Dialog>
 
@@ -505,7 +498,7 @@ export function TransactionList({ user: _ }: TransactionListProps) {
         </div>
       );
     },
-    [selectedTransaction, convertToReceiptData]
+    [convertToReceiptData]
   );
 
   return (
@@ -573,177 +566,9 @@ function TransactionDetailsContent({
   receiptData: ReceiptData;
 }) {
   return (
-    <div className="space-y-6">
-      {/* Transaction Info */}
-      <div className="grid grid-cols-2 gap-4">
-        <div>
-          <label className="text-muted-foreground text-sm font-medium">
-            Transaction #
-          </label>
-          <p className="font-mono">{transaction.transactionNumber}</p>
-        </div>
-        <div>
-          <label className="text-muted-foreground text-sm font-medium">
-            Date
-          </label>
-          <p>{format(new Date(transaction.createdAt), 'PPP p')}</p>
-        </div>
-        <div>
-          <label className="text-muted-foreground text-sm font-medium">
-            Staff
-          </label>
-          <p>{transaction.staffName}</p>
-        </div>
-        <div>
-          <label className="text-muted-foreground text-sm font-medium">
-            Customer
-          </label>
-          <p>{transaction.customerName || 'Walk-in Customer'}</p>
-        </div>
-      </div>
-
-      <Separator />
-
-      {/* Items */}
-      <div>
-        <h4 className="mb-3 text-sm font-medium">Items</h4>
-        <div className="space-y-2">
-          {transaction.items.map((item, index) => {
-            const basePrice =
-              item.basePrice ??
-              item.unitPrice ??
-              item.originalPrice ??
-              item.price;
-            const hasOverride = Math.abs(item.price - basePrice) > 0.009;
-            const overrideReason =
-              item.overrideReason ??
-              item.priceOverrideReason ??
-              item.note ??
-              undefined;
-
-            return (
-              <div
-                key={index}
-                className="flex items-center justify-between rounded-lg bg-gray-50 p-3"
-              >
-                <div>
-                  <p className="font-medium">{item.name}</p>
-                  <p className="text-muted-foreground text-sm">SKU: {item.sku}</p>
-                  {overrideReason && (
-                    <p className="text-muted-foreground text-xs">
-                      Override reason: {overrideReason}
-                    </p>
-                  )}
-                  {item.coupon && (
-                    <div className="mt-1 flex items-center gap-2">
-                      <span className="inline-flex items-center rounded-full bg-green-100 px-2 py-1 text-xs font-medium text-green-800">
-                        <IconTag className="mr-1 h-3 w-3" />
-                        {item.coupon.code}
-                      </span>
-                      <span className="text-muted-foreground text-xs">
-                        {item.coupon.name}
-                      </span>
-                    </div>
-                  )}
-                </div>
-                <div className="text-right">
-                  <p className="font-medium">
-                    {hasOverride ? (
-                      <span className="flex flex-col items-end">
-                        <span className="line-through">
-                          {formatCurrency(basePrice)} × {item.quantity}
-                        </span>
-                        <span className="text-emerald-600">
-                          {formatCurrency(item.price)} × {item.quantity}
-                        </span>
-                      </span>
-                    ) : (
-                      `${item.quantity} × ${formatCurrency(item.price)}`
-                    )}
-                  </p>
-                  <p className="text-sm font-semibold">
-                    {formatCurrency(item.total)}
-                  </p>
-                  {item.coupon && (
-                    <p className="text-xs text-green-600">
-                      {item.coupon.type === 'PERCENTAGE'
-                        ? `${item.coupon.value}% off`
-                        : `${formatCurrency(item.coupon.value)} off`}
-                    </p>
-                  )}
-                </div>
-              </div>
-            );
-          })}
-        </div>
-      </div>
-
-      <Separator />
-
-      {/* Totals */}
-      <div className="space-y-2">
-        <div className="flex justify-between">
-          <span>Subtotal:</span>
-          <span>{formatCurrency(transaction.subtotal)}</span>
-        </div>
-        {transaction.discount > 0 && (
-          <div className="flex justify-between text-green-600">
-            <span>Discount:</span>
-            <span>-{formatCurrency(transaction.discount)}</span>
-          </div>
-        )}
-
-        {/* Custom Fees */}
-        {transaction.fees && transaction.fees.length > 0 && (
-          <>
-            {transaction.fees.map((fee, index: number) => (
-              <div key={index} className="flex justify-between text-orange-600">
-                <span>
-                  {fee.type}
-                  {fee.description ? ` (${fee.description})` : ''}:
-                </span>
-                <span>{formatCurrency(fee.amount)}</span>
-              </div>
-            ))}
-          </>
-        )}
-
-        <Separator />
-        <div className="flex justify-between text-lg font-semibold">
-          <span>Total:</span>
-          <span>{formatCurrency(transaction.total)}</span>
-        </div>
-      </div>
-
-      <Separator />
-
-      {/* Payment Info */}
-      <div className="grid grid-cols-2 gap-4">
-        <div>
-          <label className="text-muted-foreground text-sm font-medium">
-            Payment Method
-          </label>
-          <p className="capitalize">{transaction.paymentMethod}</p>
-        </div>
-        <div>
-          <label className="text-muted-foreground text-sm font-medium">
-            Status
-          </label>
-          <p className="capitalize">{transaction.paymentStatus}</p>
-        </div>
-      </div>
-
-      {/* Action Buttons */}
-      <div className="flex gap-2 pt-4">
-        <ReceiptPrinter
-          receiptData={receiptData}
-          showEmailOption={!!transaction.customerEmail}
-        />
-        <Button variant="outline">
-          <IconDownload className="mr-2 h-4 w-4" />
-          Download Receipt
-        </Button>
-      </div>
-    </div>
+    <TransactionDetailContent
+      transaction={transaction}
+      receiptData={receiptData}
+    />
   );
 }

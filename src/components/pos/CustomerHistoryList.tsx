@@ -22,6 +22,7 @@ import {
   DialogTitle,
   DialogTrigger,
 } from '@/components/ui/dialog';
+import { detailDialogContentClassName } from '@/components/ui/detail-dialog';
 import {
   IconSearch,
   IconUser,
@@ -301,7 +302,7 @@ export function CustomerHistoryList({ user }: CustomerHistoryListProps) {
                             <IconEye className="h-4 w-4" />
                           </Button>
                         </DialogTrigger>
-                        <DialogContent className="max-h-[80vh] max-w-4xl overflow-y-auto">
+                        <DialogContent className={detailDialogContentClassName}>
                           <DialogHeader>
                             <DialogTitle>Customer Details</DialogTitle>
                           </DialogHeader>
