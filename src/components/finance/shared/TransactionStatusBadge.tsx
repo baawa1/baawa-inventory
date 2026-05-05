@@ -9,6 +9,9 @@ export type TransactionStatus =
   | 'CANCELLED'
   | 'APPROVED'
   | 'REJECTED'
+  | 'PAID'
+  | 'PARTIAL'
+  | 'UNKNOWN'
   | string;
 
 interface TransactionStatusBadgeProps {
@@ -32,6 +35,14 @@ const STATUS_CONFIG: Record<
     label: 'Approved',
     className: 'bg-blue-100 text-blue-700 hover:bg-blue-100',
   },
+  PAID: {
+    label: 'Paid',
+    className: 'bg-emerald-100 text-emerald-700 hover:bg-emerald-100',
+  },
+  PARTIAL: {
+    label: 'Partial',
+    className: 'bg-orange-100 text-orange-700 hover:bg-orange-100',
+  },
   REJECTED: {
     label: 'Rejected',
     className: '',
@@ -41,6 +52,11 @@ const STATUS_CONFIG: Record<
     label: 'Cancelled',
     className: '',
     variant: 'destructive',
+  },
+  UNKNOWN: {
+    label: 'Unknown',
+    className: '',
+    variant: 'secondary',
   },
 };
 

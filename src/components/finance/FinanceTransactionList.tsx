@@ -1,48 +1,31 @@
 'use client';
 
-import React, { useState, useMemo, useCallback } from 'react';
+import React, { useCallback, useEffect, useMemo, useState } from 'react';
+import Link from 'next/link';
+import { format } from 'date-fns';
+import { DateRange } from 'react-day-picker';
+import { IconExternalLink, IconEye, IconRefresh } from '@tabler/icons-react';
+import { toast } from 'sonner';
+import { formatCurrency } from '@/lib/utils';
+import { useDebounce } from '@/hooks/useDebounce';
+import {
+  useFinancialTransactions,
+  type FinancialTransaction,
+} from '@/hooks/api/finance';
+import { DashboardTableLayout } from '@/components/layouts/DashboardTableLayout';
+import type { DashboardTableColumn } from '@/components/layouts/DashboardColumnCustomizer';
+import type { FilterConfig } from '@/components/layouts/DashboardFiltersBar';
+import { DateRangePickerWithPresets } from '@/components/ui/date-range-picker-with-presets';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
+import { TransactionStatusBadge } from '@/components/finance/shared/TransactionStatusBadge';
 import {
   Dialog,
   DialogContent,
   DialogHeader,
   DialogTitle,
-  DialogTrigger,
 } from '@/components/ui/dialog';
-import { Separator } from '@/components/ui/separator';
-import {
-  IconEye,
-  IconRefresh,
-  IconCash,
-  IconCreditCard,
-  IconBuildingBank,
-  IconDeviceMobile,
-  IconClock,
-  IconCheck,
-  IconX,
-  IconAlertTriangle,
-  IconReceipt,
-  IconTrendingUp,
-  IconTrendingDown,
-} from '@tabler/icons-react';
-import { format } from 'date-fns';
-import { DateRange } from 'react-day-picker';
-import { toast } from 'sonner';
-import { formatCurrency } from '@/lib/utils';
-import { useDebounce } from '@/hooks/useDebounce';
-import { DashboardTableLayout } from '@/components/layouts/DashboardTableLayout';
-import type { DashboardTableColumn } from '@/components/layouts/DashboardColumnCustomizer';
-import type { FilterConfig } from '@/components/layouts/DashboardFiltersBar';
-import { DateRangePickerWithPresets } from '@/components/ui/date-range-picker-with-presets';
-import {
-  useFinancialTransactions,
-  type FinancialTransaction,
-} from '@/hooks/api/finance';
-import {
-  formatFinanceDateInput,
-} from '@/lib/finance/date-range';
-import { getFinanceUserDisplayName } from '@/lib/finance/transaction-access';
+import { formatFinanceDateInput } from '@/lib/finance/date-range';
 import {
   DEFAULT_DATE_RANGE_PRESET,
   getDateRangePreset,
@@ -61,47 +44,252 @@ interface FinanceTransactionListProps {
   user: User;
 }
 
+const EVENT_TYPE_OPTIONS = [
+  { value: 'OWNER_FUNDING_IN', label: 'Owner Funding' },
+  { value: 'STOCK_PURCHASE', label: 'Stock Purchase' },
+  { value: 'MANUAL_OPERATING_INCOME', label: 'Manual Income' },
+  { value: 'MANUAL_OPERATING_EXPENSE', label: 'Manual Expense' },
+  { value: 'POS_CASH_SALE', label: 'POS Cash Sale' },
+  { value: 'POS_DEBT_SALE_ISSUED', label: 'Debt Sale Issued' },
+  { value: 'POS_DEBT_PAYMENT_COLLECTED', label: 'Debt Payment Collected' },
+];
+
+const SOURCE_OPTIONS = [
+  { value: 'MANUAL', label: 'Manual' },
+  { value: 'POS', label: 'POS' },
+  { value: 'STOCK', label: 'Stock' },
+];
+
+const CASH_PROFIT_FILTERS: FilterConfig[] = [
+  {
+    key: 'source',
+    label: 'Source',
+    type: 'select',
+    options: SOURCE_OPTIONS,
+    placeholder: 'All Sources',
+  },
+  {
+    key: 'eventType',
+    label: 'Event Type',
+    type: 'select',
+    options: EVENT_TYPE_OPTIONS,
+    placeholder: 'All Events',
+  },
+  {
+    key: 'cashImpact',
+    label: 'Cash Impact',
+    type: 'select',
+    options: [
+      { value: 'in', label: 'Cash In' },
+      { value: 'out', label: 'Cash Out' },
+      { value: 'none', label: 'No Cash Move' },
+    ],
+    placeholder: 'All Cash Impact',
+  },
+  {
+    key: 'profitImpact',
+    label: 'Profit Impact',
+    type: 'select',
+    options: [
+      { value: 'in', label: 'Profit In' },
+      { value: 'out', label: 'Profit Out' },
+      { value: 'none', label: 'No Profit Move' },
+    ],
+    placeholder: 'All Profit Impact',
+  },
+  {
+    key: 'paymentState',
+    label: 'Payment State',
+    type: 'select',
+    options: [
+      { value: 'PAID', label: 'Paid' },
+      { value: 'PARTIAL', label: 'Partial' },
+      { value: 'PENDING', label: 'Pending' },
+    ],
+    placeholder: 'All Payment States',
+  },
+  {
+    key: 'paymentMethod',
+    label: 'Payment Method',
+    type: 'select',
+    options: [
+      { value: 'CASH', label: 'Cash' },
+      { value: 'BANK_TRANSFER', label: 'Bank Transfer' },
+      { value: 'POS_MACHINE', label: 'POS Machine' },
+      { value: 'CREDIT_CARD', label: 'Credit Card' },
+      { value: 'MOBILE_MONEY', label: 'Mobile Money' },
+      { value: 'DEBT', label: 'Debt Deposit' },
+      { value: 'SPLIT', label: 'Split Payment' },
+    ],
+    placeholder: 'All Payment Methods',
+  },
+];
+
+function formatSignedAmount(value: number) {
+  if (value === 0) {
+    return formatCurrency(0);
+  }
+
+  const prefix = value > 0 ? '+' : '-';
+  return `${prefix}${formatCurrency(Math.abs(value))}`;
+}
+
+function EffectBadge({
+  value,
+  positiveColor,
+  negativeColor,
+}: {
+  value: number;
+  positiveColor: string;
+  negativeColor: string;
+}) {
+  if (value === 0) {
+    return <span className="text-muted-foreground text-sm">-</span>;
+  }
+
+  return (
+    <span className={`text-sm font-medium ${value > 0 ? positiveColor : negativeColor}`}>
+      {formatSignedAmount(value)}
+    </span>
+  );
+}
+
+function LedgerDetailDialog({
+  transaction,
+  onOpenChange,
+}: {
+  transaction: FinancialTransaction | null;
+  onOpenChange: (open: boolean) => void;
+}) {
+  return (
+    <Dialog open={!!transaction} onOpenChange={onOpenChange}>
+      <DialogContent className="sm:max-w-2xl">
+        <DialogHeader>
+          <DialogTitle>Ledger Event Details</DialogTitle>
+        </DialogHeader>
+        {transaction ? (
+          <div className="grid gap-4 text-sm">
+            <div className="grid gap-2 rounded-lg border p-4 md:grid-cols-2">
+              <div>
+                <p className="text-muted-foreground">Event</p>
+                <p className="font-medium">{transaction.displayLabel}</p>
+              </div>
+              <div>
+                <p className="text-muted-foreground">Reference</p>
+                <p className="font-medium">{transaction.transactionNumber}</p>
+              </div>
+              <div>
+                <p className="text-muted-foreground">Date</p>
+                <p className="font-medium">
+                  {format(new Date(transaction.transactionDate), 'PPP p')}
+                </p>
+              </div>
+              <div>
+                <p className="text-muted-foreground">Source</p>
+                <p className="font-medium">{transaction.source}</p>
+              </div>
+              <div>
+                <p className="text-muted-foreground">Status</p>
+                <p className="font-medium">{transaction.status}</p>
+              </div>
+              <div>
+                <p className="text-muted-foreground">Payment State</p>
+                <p className="font-medium">
+                  {transaction.paymentState || 'Not applicable'}
+                </p>
+              </div>
+            </div>
+
+            <div className="grid gap-2 rounded-lg border p-4 md:grid-cols-2">
+              <div>
+                <p className="text-muted-foreground">Cash Impact</p>
+                <p className="font-medium">
+                  {formatSignedAmount(transaction.netCashImpact)}
+                </p>
+              </div>
+              <div>
+                <p className="text-muted-foreground">Profit Impact</p>
+                <p className="font-medium">
+                  {formatSignedAmount(transaction.netProfitImpact)}
+                </p>
+              </div>
+              <div>
+                <p className="text-muted-foreground">Inventory Impact</p>
+                <p className="font-medium">
+                  {formatSignedAmount(transaction.netInventoryImpact)}
+                </p>
+              </div>
+              <div>
+                <p className="text-muted-foreground">Receivable Impact</p>
+                <p className="font-medium">
+                  {formatSignedAmount(transaction.netReceivableImpact)}
+                </p>
+              </div>
+            </div>
+
+            <div className="rounded-lg border p-4">
+              <p className="text-muted-foreground mb-1">Description</p>
+              <p>{transaction.description}</p>
+            </div>
+
+            {transaction.estimated ? (
+              <div className="rounded-lg border border-amber-200 bg-amber-50 p-4 text-amber-900">
+                <p className="font-medium">Estimated component</p>
+                <p className="mt-1 text-sm">
+                  {transaction.estimatedReason ||
+                    'This row contains a best-effort estimate.'}
+                </p>
+              </div>
+            ) : null}
+          </div>
+        ) : null}
+      </DialogContent>
+    </Dialog>
+  );
+}
+
 export function FinanceTransactionList({
-  user: _,
+  user: _user,
 }: FinanceTransactionListProps) {
   const [selectedTransaction, setSelectedTransaction] =
     useState<FinancialTransaction | null>(null);
-
-  // Pagination state
   const [pagination, setPagination] = useState({
     page: 1,
     limit: 10,
     totalPages: 1,
     totalItems: 0,
   });
-
-  // Date range state for custom date filtering
   const [dateRange, setDateRange] = useState<DateRange | undefined>(() =>
     getDateRangePreset(DEFAULT_DATE_RANGE_PRESET)
   );
-
-  // Filters state
   const [filters, setFilters] = useState({
     search: '',
-    type: '',
-    status: '',
+    source: '',
+    eventType: '',
+    cashImpact: '',
+    profitImpact: '',
+    paymentState: '',
     paymentMethod: '',
   });
 
-  // Debounce search term
   const debouncedSearchTerm = useDebounce(filters.search, 500);
   const isSearching = filters.search !== debouncedSearchTerm;
 
   const {
     data: transactionData,
     isLoading,
+    isFetching,
     error,
     refetch,
   } = useFinancialTransactions(
     {
       search: debouncedSearchTerm || undefined,
-      type: filters.type || undefined,
-      status: filters.status || undefined,
+      source: filters.source || undefined,
+      eventType: filters.eventType || undefined,
+      cashImpact: (filters.cashImpact as 'in' | 'out' | 'none') || undefined,
+      profitImpact:
+        (filters.profitImpact as 'in' | 'out' | 'none') || undefined,
+      paymentState: filters.paymentState || undefined,
       paymentMethod: filters.paymentMethod || undefined,
       startDate: dateRange?.from
         ? formatFinanceDateInput(dateRange.from)
@@ -116,11 +304,14 @@ export function FinanceTransactionList({
     }
   );
 
-  // Extract transactions array from API response
+  useEffect(() => {
+    if (error) {
+      toast.error('Failed to load finance ledger events.');
+    }
+  }, [error]);
+
   const transactions = transactionData?.data || [];
   const apiPagination = transactionData?.pagination;
-
-  // Update pagination state from API response
   const currentPagination = {
     page: apiPagination?.page || pagination.page,
     limit: apiPagination?.limit || pagination.limit,
@@ -128,46 +319,54 @@ export function FinanceTransactionList({
     totalItems: apiPagination?.total || apiPagination?.totalItems || 0,
   };
 
-  if (error) {
-    toast.error('Failed to load transactions');
-  }
-
-  // Column configuration
   const columns: DashboardTableColumn[] = useMemo(
     () => [
       {
-        key: 'transactionNumber',
-        label: 'Transaction #',
-        defaultVisible: true,
-        required: true,
-      },
-      {
-        key: 'date',
+        key: 'transactionDate',
         label: 'Date',
         sortable: true,
         defaultVisible: true,
         required: true,
       },
       {
-        key: 'type',
-        label: 'Type',
+        key: 'displayLabel',
+        label: 'Event',
         defaultVisible: true,
         required: true,
       },
       {
-        key: 'description',
-        label: 'Description',
+        key: 'source',
+        label: 'Source',
         defaultVisible: true,
       },
       {
         key: 'amount',
         label: 'Amount',
         defaultVisible: true,
-        required: true,
       },
       {
-        key: 'paymentMethod',
-        label: 'Payment Method',
+        key: 'cash',
+        label: 'Cash',
+        defaultVisible: true,
+      },
+      {
+        key: 'profit',
+        label: 'Profit',
+        defaultVisible: true,
+      },
+      {
+        key: 'inventory',
+        label: 'Inventory',
+        defaultVisible: false,
+      },
+      {
+        key: 'receivable',
+        label: 'Receivable',
+        defaultVisible: false,
+      },
+      {
+        key: 'paymentState',
+        label: 'Payment State',
         defaultVisible: true,
       },
       {
@@ -175,18 +374,12 @@ export function FinanceTransactionList({
         label: 'Status',
         defaultVisible: true,
       },
-      {
-        key: 'createdBy',
-        label: 'Created By',
-        defaultVisible: true,
-      },
     ],
     []
   );
 
-  // Initialize visible columns
   const defaultVisibleColumns = useMemo(
-    () => columns.filter(col => col.defaultVisible).map(col => col.key),
+    () => columns.filter(column => column.defaultVisible).map(column => column.key),
     [columns]
   );
 
@@ -194,493 +387,209 @@ export function FinanceTransactionList({
     defaultVisibleColumns
   );
 
-  // Filter configurations
-  // Note: DashboardFiltersBar automatically adds "All {label}" option, so don't include it here
-  const filterConfigs: FilterConfig[] = useMemo(
-    () => [
-      {
-        key: 'type',
-        label: 'Type',
-        type: 'select',
-        options: [
-          { value: 'EXPENSE', label: 'Expense' },
-          { value: 'INCOME', label: 'Income' },
-        ],
-        placeholder: 'All Types',
-      },
-      {
-        key: 'status',
-        label: 'Status',
-        type: 'select',
-        options: [
-          { value: 'PENDING', label: 'Pending' },
-          { value: 'COMPLETED', label: 'Completed' },
-          { value: 'APPROVED', label: 'Approved' },
-          { value: 'REJECTED', label: 'Rejected' },
-          { value: 'CANCELLED', label: 'Cancelled' },
-        ],
-        placeholder: 'All Status',
-      },
-      {
-        key: 'paymentMethod',
-        label: 'Payment Method',
-        type: 'select',
-        options: [
-          { value: 'CASH', label: 'Cash' },
-          { value: 'BANK_TRANSFER', label: 'Bank Transfer' },
-          { value: 'POS_MACHINE', label: 'POS Machine' },
-          { value: 'CREDIT_CARD', label: 'Credit Card' },
-          { value: 'MOBILE_MONEY', label: 'Mobile Money' },
-        ],
-        placeholder: 'All Payments',
-      },
-    ],
-    []
-  );
-
-  // Handle filter changes
-  const handleFilterChange = useCallback((key: string, value: any) => {
+  const handleFilterChange = useCallback((key: string, value: unknown) => {
     setFilters(prev => {
-      if (prev[key as keyof typeof prev] === value) return prev;
-      return { ...prev, [key]: value };
+      if (prev[key as keyof typeof prev] === value) {
+        return prev;
+      }
+
+      return { ...prev, [key]: String(value || '') };
     });
     setPagination(prev => ({ ...prev, page: 1 }));
   }, []);
 
-  // Clear all filters
   const handleResetFilters = useCallback(() => {
     setFilters({
       search: '',
-      type: '',
-      status: '',
+      source: '',
+      eventType: '',
+      cashImpact: '',
+      profitImpact: '',
+      paymentState: '',
       paymentMethod: '',
     });
     setDateRange(getDateRangePreset(DEFAULT_DATE_RANGE_PRESET));
     setPagination(prev => ({ ...prev, page: 1 }));
   }, []);
 
-  // Handle date range change
-  const handleDateRangeChange = useCallback((range: DateRange | undefined) => {
-    setDateRange(range);
-    setPagination(prev => ({ ...prev, page: 1 }));
-  }, []);
-
-  const handlePageChange = useCallback((newPage: number) => {
-    setPagination(prev => ({ ...prev, page: newPage }));
-  }, []);
-
-  const handlePageSizeChange = useCallback((newSize: number) => {
-    setPagination(prev => ({ ...prev, limit: newSize, page: 1 }));
-  }, []);
-
-  // Get status badge
-  const getStatusBadge = useCallback((status: string) => {
-    switch (status.toUpperCase()) {
-      case 'COMPLETED':
-      case 'APPROVED':
-        return (
-          <Badge className="bg-green-100 text-green-800">
-            <IconCheck className="mr-1 h-3 w-3" />
-            {status}
-          </Badge>
-        );
-      case 'PENDING':
-        return (
-          <Badge className="bg-yellow-100 text-yellow-800">
-            <IconClock className="mr-1 h-3 w-3" />
-            {status}
-          </Badge>
-        );
-      case 'REJECTED':
-      case 'CANCELLED':
-        return (
-          <Badge className="bg-red-100 text-red-800">
-            <IconX className="mr-1 h-3 w-3" />
-            {status}
-          </Badge>
-        );
-      default:
-        return (
-          <Badge variant="outline">
-            <IconAlertTriangle className="mr-1 h-3 w-3" />
-            {status}
-          </Badge>
-        );
-    }
-  }, []);
-
-  // Get type badge
-  const getTypeBadge = useCallback((type: string) => {
-    switch (type.toUpperCase()) {
-      case 'INCOME':
-        return (
-          <Badge className="bg-green-100 text-green-800">
-            <IconTrendingUp className="mr-1 h-3 w-3" />
-            Income
-          </Badge>
-        );
-      case 'EXPENSE':
-        return (
-          <Badge className="bg-red-100 text-red-800">
-            <IconTrendingDown className="mr-1 h-3 w-3" />
-            Expense
-          </Badge>
-        );
-      default:
-        return <Badge variant="outline">{type}</Badge>;
-    }
-  }, []);
-
-  // Get payment method icon
-  const getPaymentIcon = useCallback((method: string) => {
-    switch (method?.toUpperCase()) {
-      case 'CASH':
-        return <IconCash className="h-4 w-4 text-green-600" />;
-      case 'CREDIT_CARD':
-      case 'POS_MACHINE':
-        return <IconCreditCard className="h-4 w-4 text-blue-600" />;
-      case 'BANK_TRANSFER':
-        return <IconBuildingBank className="h-4 w-4 text-purple-600" />;
-      case 'MOBILE_MONEY':
-        return <IconDeviceMobile className="h-4 w-4 text-orange-600" />;
-      default:
-        return <IconCash className="h-4 w-4 text-gray-600" />;
-    }
-  }, []);
-
-  // Render cell function
   const renderCell = useCallback(
     (transaction: FinancialTransaction, columnKey: string) => {
       switch (columnKey) {
-        case 'transactionNumber':
-          return (
-            <span className="font-mono">{transaction.transactionNumber}</span>
-          );
-        case 'date':
+        case 'transactionDate':
           return (
             <div>
               <div className="font-medium">
-                {format(new Date(transaction.transactionDate), 'MMM dd, yyyy')}
+                {format(new Date(transaction.transactionDate), 'MMM d, yyyy')}
               </div>
-              <div className="text-muted-foreground text-sm">
-                {format(new Date(transaction.createdAt), 'HH:mm')}
+              <div className="text-muted-foreground text-xs">
+                {format(new Date(transaction.transactionDate), 'p')}
               </div>
             </div>
           );
-        case 'type':
-          return getTypeBadge(transaction.type);
-        case 'description':
+        case 'displayLabel':
           return (
-            <span className="max-w-xs truncate">
-              {transaction.description || 'No description'}
-            </span>
+            <div className="space-y-1">
+              <div className="font-medium">{transaction.displayLabel}</div>
+              <div className="text-muted-foreground text-xs">
+                {transaction.description}
+              </div>
+              <div className="text-muted-foreground text-xs">
+                {transaction.transactionNumber}
+              </div>
+            </div>
           );
+        case 'source':
+          return <Badge variant="outline">{transaction.source}</Badge>;
         case 'amount':
+          return <span className="font-medium">{formatCurrency(transaction.amount)}</span>;
+        case 'cash':
           return (
-            <span
-              className={`font-semibold ${
-                transaction.type === 'INCOME'
-                  ? 'text-green-600'
-                  : 'text-red-600'
-              }`}
-            >
-              {transaction.type === 'EXPENSE' ? '-' : '+'}
-              {formatCurrency(transaction.amount)}
-            </span>
+            <EffectBadge
+              value={transaction.netCashImpact}
+              positiveColor="text-green-600"
+              negativeColor="text-red-600"
+            />
           );
-        case 'paymentMethod':
-          return transaction.paymentMethod ? (
-            <div className="flex items-center gap-2">
-              {getPaymentIcon(transaction.paymentMethod)}
-              <span className="capitalize">
-                {transaction.paymentMethod.replace('_', ' ').toLowerCase()}
-              </span>
-            </div>
-          ) : (
-            <span className="text-muted-foreground">Not specified</span>
+        case 'profit':
+          return (
+            <EffectBadge
+              value={transaction.netProfitImpact}
+              positiveColor="text-emerald-600"
+              negativeColor="text-rose-600"
+            />
+          );
+        case 'inventory':
+          return (
+            <EffectBadge
+              value={transaction.netInventoryImpact}
+              positiveColor="text-blue-600"
+              negativeColor="text-amber-600"
+            />
+          );
+        case 'receivable':
+          return (
+            <EffectBadge
+              value={transaction.netReceivableImpact}
+              positiveColor="text-purple-600"
+              negativeColor="text-slate-600"
+            />
+          );
+        case 'paymentState':
+          return (
+            <span className="text-sm">
+              {transaction.paymentState || 'Not applicable'}
+            </span>
           );
         case 'status':
-          return getStatusBadge(transaction.status);
-        case 'createdBy':
-          return (
-            <span>
-              {transaction.createdByName ||
-                getFinanceUserDisplayName(transaction.createdByUser) ||
-                'Unknown User'}
-            </span>
-          );
+          return <TransactionStatusBadge status={transaction.status} />;
         default:
           return null;
       }
     },
-    [getStatusBadge, getTypeBadge, getPaymentIcon]
+    []
   );
 
-  // Render actions function
-  const renderActions = useCallback(
-    (transaction: FinancialTransaction) => {
-      return (
-        <div className="flex items-center gap-2">
-          {/* View Details Button */}
-          <Dialog>
-            <DialogTrigger asChild>
-              <Button
-                variant="ghost"
-                size="sm"
-                onClick={() => setSelectedTransaction(transaction)}
-              >
-                <IconEye className="h-4 w-4" />
-              </Button>
-            </DialogTrigger>
-            <DialogContent className="max-h-[80vh] max-w-2xl overflow-y-auto">
-              <DialogHeader>
-                <DialogTitle>
-                  Transaction Details - {transaction.transactionNumber}
-                </DialogTitle>
-              </DialogHeader>
-              {selectedTransaction && (
-                <TransactionDetailsContent transaction={selectedTransaction} />
-              )}
-            </DialogContent>
-          </Dialog>
-        </div>
-      );
-    },
-    [selectedTransaction]
-  );
+  const renderActions = useCallback((transaction: FinancialTransaction) => {
+    const editHref =
+      transaction.editable && transaction.source === 'MANUAL'
+        ? transaction.type === 'INCOME'
+          ? `/finance/income/${transaction.sourceId}/edit`
+          : `/finance/expenses/${transaction.sourceId}/edit`
+        : null;
+
+    return (
+      <div className="flex items-center gap-2">
+        <Button
+          variant="ghost"
+          size="sm"
+          onClick={() => setSelectedTransaction(transaction)}
+        >
+          <IconEye className="h-4 w-4" />
+        </Button>
+        {transaction.sourcePath ? (
+          <Button asChild variant="ghost" size="sm">
+            <Link href={transaction.sourcePath}>
+              <IconExternalLink className="h-4 w-4" />
+            </Link>
+          </Button>
+        ) : null}
+        {editHref ? (
+          <Button asChild variant="outline" size="sm">
+            <Link href={editHref}>Edit</Link>
+          </Button>
+        ) : null}
+      </div>
+    );
+  }, []);
 
   return (
     <>
       <DashboardTableLayout
-        // Header
-        title="Financial Transactions"
-        description="View and manage all financial transactions (expenses and income)"
+        title="Finance Ledger"
+        description="One master list for trading events, cash movement, stock purchases, owner funding, and receivables."
         actions={
-          <Button onClick={() => refetch()} variant="outline" size="sm">
-            <IconRefresh className="mr-2 h-4 w-4" />
-            Refresh
-          </Button>
+          <>
+            <DateRangePickerWithPresets
+              date={dateRange}
+              onDateChange={setDateRange}
+              placeholder="Select ledger range"
+            />
+            <Button variant="outline" onClick={() => refetch()}>
+              <IconRefresh className="mr-2 h-4 w-4" />
+              Refresh
+            </Button>
+            <Button asChild variant="outline">
+              <Link href="/finance/income/new">Add Income</Link>
+            </Button>
+            <Button asChild>
+              <Link href="/finance/expenses/new">Add Expense</Link>
+            </Button>
+          </>
         }
-        // Filters
-        searchPlaceholder="Search transactions..."
+        searchPlaceholder="Search by event, customer, vendor, description, or reference..."
         searchValue={filters.search}
-        onSearchChange={value => handleFilterChange('search', value)}
+        onSearchChange={value => {
+          setFilters(prev => ({ ...prev, search: value }));
+          setPagination(prev => ({ ...prev, page: 1 }));
+        }}
         isSearching={isSearching}
-        filters={filterConfigs}
+        filters={CASH_PROFIT_FILTERS}
         filterValues={filters}
         onFilterChange={handleFilterChange}
         onResetFilters={handleResetFilters}
-        inlineFilters={
-          <DateRangePickerWithPresets
-            date={dateRange}
-            onDateChange={handleDateRangeChange}
-            placeholder="Filter by date range"
-          />
-        }
-        // Table
-        tableTitle="Financial Transactions"
+        tableTitle="Finance Ledger Events"
         totalCount={currentPagination.totalItems}
         currentCount={transactions.length}
+        showingText="ledger events"
         columns={columns}
         visibleColumns={visibleColumns}
         onColumnsChange={setVisibleColumns}
-        columnCustomizerKey="finance-transactions-visible-columns"
+        columnCustomizerKey="finance-ledger-columns"
         data={transactions}
         renderCell={renderCell}
         renderActions={renderActions}
-        // Pagination
         pagination={currentPagination}
-        onPageChange={handlePageChange}
-        onPageSizeChange={handlePageSizeChange}
-        // Loading states
-        isLoading={isLoading}
-        isRefetching={transactionData && isLoading}
-        error={error?.message}
-        onRetry={() => refetch()}
-        // Empty state
-        emptyStateIcon={<IconReceipt className="h-12 w-12 text-gray-400" />}
-        emptyStateMessage={
-          debouncedSearchTerm ||
-          filters.type ||
-          filters.status ||
-          filters.paymentMethod ||
-          dateRange
-            ? 'No transactions found matching your filters.'
-            : 'No financial transactions found.'
+        onPageChange={page =>
+          setPagination(prev => ({ ...prev, page }))
         }
+        onPageSizeChange={limit =>
+          setPagination(prev => ({ ...prev, limit, page: 1 }))
+        }
+        isLoading={isLoading}
+        isRefetching={isFetching}
+        error={error ? 'Failed to load finance ledger.' : undefined}
+        onRetry={() => refetch()}
+        emptyStateMessage="No finance ledger events found for the selected filters."
+      />
+
+      <LedgerDetailDialog
+        transaction={selectedTransaction}
+        onOpenChange={open => {
+          if (!open) {
+            setSelectedTransaction(null);
+          }
+        }}
       />
     </>
-  );
-}
-
-// Transaction Details Component
-function TransactionDetailsContent({
-  transaction,
-}: {
-  transaction: FinancialTransaction;
-}) {
-  return (
-    <div className="space-y-6">
-      {/* Transaction Info */}
-      <div className="grid grid-cols-2 gap-4">
-        <div>
-          <label className="text-muted-foreground text-sm font-medium">
-            Transaction #
-          </label>
-          <p className="font-mono">{transaction.transactionNumber}</p>
-        </div>
-        <div>
-          <label className="text-muted-foreground text-sm font-medium">
-            Type
-          </label>
-          <p>{transaction.type}</p>
-        </div>
-        <div>
-          <label className="text-muted-foreground text-sm font-medium">
-            Date
-          </label>
-          <p>{format(new Date(transaction.transactionDate), 'PPP')}</p>
-        </div>
-        <div>
-          <label className="text-muted-foreground text-sm font-medium">
-            Amount
-          </label>
-          <p
-            className={`font-semibold ${
-              transaction.type === 'INCOME' ? 'text-green-600' : 'text-red-600'
-            }`}
-          >
-            {transaction.type === 'EXPENSE' ? '-' : '+'}
-            {formatCurrency(transaction.amount)}
-          </p>
-        </div>
-        <div>
-          <label className="text-muted-foreground text-sm font-medium">
-            Status
-          </label>
-          <p>{transaction.status}</p>
-        </div>
-        <div>
-          <label className="text-muted-foreground text-sm font-medium">
-            Created By
-          </label>
-          <p>
-            {transaction.createdByName ||
-              getFinanceUserDisplayName(transaction.createdByUser) ||
-              'Unknown User'}
-          </p>
-        </div>
-        {transaction.paymentMethod && (
-          <div>
-            <label className="text-muted-foreground text-sm font-medium">
-              Payment Method
-            </label>
-            <p className="capitalize">
-              {transaction.paymentMethod.replace('_', ' ').toLowerCase()}
-            </p>
-          </div>
-        )}
-        {transaction.approvedByName && (
-          <div>
-            <label className="text-muted-foreground text-sm font-medium">
-              Approved By
-            </label>
-            <p>{transaction.approvedByName}</p>
-          </div>
-        )}
-      </div>
-
-      {transaction.description && (
-        <>
-          <Separator />
-          <div>
-            <label className="text-muted-foreground text-sm font-medium">
-              Description
-            </label>
-            <p>{transaction.description}</p>
-          </div>
-        </>
-      )}
-
-      {/* Expense Details */}
-      {transaction.expenseDetails && (
-        <>
-          <Separator />
-          <div>
-            <h4 className="mb-3 text-sm font-medium">Expense Details</h4>
-            <div className="space-y-2">
-              <div>
-                <label className="text-muted-foreground text-sm font-medium">
-                  Expense Type
-                </label>
-                <p className="capitalize">
-                  {transaction.expenseDetails.expenseType
-                    .replace('_', ' ')
-                    .toLowerCase()}
-                </p>
-              </div>
-              {transaction.expenseDetails.vendorName && (
-                <div>
-                  <label className="text-muted-foreground text-sm font-medium">
-                    Vendor
-                  </label>
-                  <p>{transaction.expenseDetails.vendorName}</p>
-                </div>
-              )}
-            </div>
-          </div>
-        </>
-      )}
-
-      {/* Income Details */}
-      {transaction.incomeDetails && (
-        <>
-          <Separator />
-          <div>
-            <h4 className="mb-3 text-sm font-medium">Income Details</h4>
-            <div className="space-y-2">
-              <div>
-                <label className="text-muted-foreground text-sm font-medium">
-                  Income Source
-                </label>
-                <p className="capitalize">
-                  {transaction.incomeDetails.incomeSource
-                    .replace('_', ' ')
-                    .toLowerCase()}
-                </p>
-              </div>
-              {transaction.incomeDetails.payerName && (
-                <div>
-                  <label className="text-muted-foreground text-sm font-medium">
-                    Payer
-                  </label>
-                  <p>{transaction.incomeDetails.payerName}</p>
-                </div>
-              )}
-            </div>
-          </div>
-        </>
-      )}
-
-      <Separator />
-
-      {/* Timestamps */}
-      <div className="grid grid-cols-2 gap-4 text-sm">
-        <div>
-          <label className="text-muted-foreground text-sm font-medium">
-            Created At
-          </label>
-          <p>{format(new Date(transaction.createdAt), 'PPP p')}</p>
-        </div>
-        {transaction.approvedAt && (
-          <div>
-            <label className="text-muted-foreground text-sm font-medium">
-              Approved At
-            </label>
-            <p>{format(new Date(transaction.approvedAt), 'PPP p')}</p>
-          </div>
-        )}
-      </div>
-    </div>
   );
 }
