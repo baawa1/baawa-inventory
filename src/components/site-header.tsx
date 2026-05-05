@@ -45,7 +45,6 @@ const PATH_LABELS: Record<string, string> = {
   '/pos/customers/all': 'Customer Management',
   '/pos/customers/manage': 'Customer List',
   '/pos/coupons/create': 'Create Coupon',
-  '/inventory/products/manage': 'Product Management',
 };
 
 function getSegmentLabel(segment: string) {
