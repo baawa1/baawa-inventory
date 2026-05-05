@@ -18,7 +18,173 @@ import { normalizeFinanceDateFilters } from '@/lib/finance/date-range';
 import {
   attachFinancialTransactionNames,
 } from '@/lib/finance/transaction-access';
-import { normalizeFinancePaymentMethod } from '@/lib/finance/aggregation';
+import {
+  getNormalizedFinanceTransactions,
+  normalizeFinancePaymentMethod,
+} from '@/lib/finance/ledger';
+
+function parseDateParam(value: string | null): Date | undefined {
+  if (!value) {
+    return undefined;
+  }
+
+  const parsed = new Date(value);
+  return Number.isNaN(parsed.getTime()) ? undefined : parsed;
+}
+
+function normalizeLedgerType(value?: string | null): 'all' | 'income' | 'expense' {
+  if (!value || value === 'ALL') {
+    return 'all';
+  }
+
+  return value.toUpperCase() === 'INCOME' ? 'income' : 'expense';
+}
+
+function sortLedgerTransactions(
+  transactions: Awaited<ReturnType<typeof getNormalizedFinanceTransactions>>,
+  sortBy: string,
+  sortOrder: 'asc' | 'desc'
+) {
+  const direction = sortOrder === 'asc' ? 1 : -1;
+
+  return [...transactions].sort((left, right) => {
+    switch (sortBy) {
+      case 'amount':
+        return (left.amount - right.amount) * direction;
+      case 'description':
+        return left.description.localeCompare(right.description) * direction;
+      case 'createdAt':
+      case 'transactionDate':
+      default:
+        return (left.date.getTime() - right.date.getTime()) * direction;
+    }
+  });
+}
+
+async function getManualTransactionsResponse(
+  request: AuthenticatedRequest
+) {
+  const { searchParams } = new URL(request.url);
+
+  const queryParams = {
+    page: parseInt(searchParams.get('page') || '1'),
+    limit: parseInt(searchParams.get('limit') || '10'),
+    search: searchParams.get('search') || undefined,
+    type: searchParams.get('type') || undefined,
+    status: searchParams.get('status') || undefined,
+    paymentMethod: searchParams.get('paymentMethod') || undefined,
+    startDate: searchParams.get('startDate') || undefined,
+    endDate: searchParams.get('endDate') || undefined,
+    sortBy: searchParams.get('sortBy') || 'transactionDate',
+    sortOrder: (searchParams.get('sortOrder') as 'asc' | 'desc') || 'desc',
+  };
+
+  const validatedQuery = transactionFiltersSchema.parse(queryParams);
+  const {
+    page,
+    limit,
+    search,
+    type,
+    status,
+    paymentMethod,
+    startDate,
+    endDate,
+    sortBy,
+    sortOrder,
+  } = validatedQuery;
+
+  const where: any = {};
+
+  if (search) {
+    where.OR = [
+      { transactionNumber: { contains: search, mode: 'insensitive' } },
+      { description: { contains: search, mode: 'insensitive' } },
+    ];
+  }
+
+  if (type && type !== 'ALL') where.type = type;
+  if (status && status !== 'ALL') where.status = status;
+  if (paymentMethod) {
+    where.paymentMethod = normalizeFinancePaymentMethod(paymentMethod);
+  }
+
+  if (startDate || endDate) {
+    const normalizedDateFilters = normalizeFinanceDateFilters(
+      startDate ? new Date(startDate) : undefined,
+      endDate ? new Date(endDate) : undefined
+    );
+
+    where.transactionDate = {};
+    if (normalizedDateFilters.startDate) {
+      where.transactionDate.gte = normalizedDateFilters.startDate;
+    }
+    if (normalizedDateFilters.endDate) {
+      where.transactionDate.lte = normalizedDateFilters.endDate;
+    }
+  }
+
+  const offset = (page - 1) * limit;
+
+  const orderBy: any = {};
+  if (sortBy === 'transactionDate') {
+    orderBy.transactionDate = sortOrder;
+  } else if (sortBy === 'amount') {
+    orderBy.amount = sortOrder;
+  } else if (sortBy === 'createdAt') {
+    orderBy.createdAt = sortOrder;
+  } else {
+    orderBy.transactionDate = 'desc';
+  }
+
+  const [transactions, totalCount] = await Promise.all([
+    prisma.financialTransaction.findMany({
+      where,
+      include: {
+        createdByUser: {
+          select: {
+            id: true,
+            firstName: true,
+            lastName: true,
+            email: true,
+          },
+        },
+        approvedByUser: {
+          select: {
+            id: true,
+            firstName: true,
+            lastName: true,
+            email: true,
+          },
+        },
+        expenseDetails: true,
+        incomeDetails: true,
+      },
+      orderBy,
+      skip: offset,
+      take: limit,
+    }),
+    prisma.financialTransaction.count({ where }),
+  ]);
+
+  const transformedTransactions = transactions.map(transaction =>
+    attachFinancialTransactionNames(
+      transformDatabaseResponse(transaction) as typeof transaction
+    )
+  );
+
+  return createApiResponse.successWithPagination(
+    transformedTransactions,
+    {
+      page,
+      limit,
+      total: totalCount,
+      totalPages: Math.ceil(totalCount / limit),
+      hasNext: offset + limit < totalCount,
+      hasPrev: page > 1,
+    },
+    `Retrieved ${transactions.length} financial transactions`
+  );
+}
 
 // GET /api/finance/transactions - List financial transactions with filtering
 export const GET = withAuth(async (request: AuthenticatedRequest) => {
@@ -31,130 +197,63 @@ export const GET = withAuth(async (request: AuthenticatedRequest) => {
     }
 
     const { searchParams } = new URL(request.url);
+    const view = searchParams.get('view');
 
-    // Parse and validate query parameters
-    const queryParams = {
-      page: parseInt(searchParams.get('page') || '1'),
-      limit: parseInt(searchParams.get('limit') || '10'),
+    if (view === 'manual') {
+      return await getManualTransactionsResponse(request);
+    }
+
+    const page = Math.max(1, parseInt(searchParams.get('page') || '1', 10));
+    const limit = Math.min(
+      100,
+      Math.max(1, parseInt(searchParams.get('limit') || '10', 10))
+    );
+    const sortBy = searchParams.get('sortBy') || 'transactionDate';
+    const sortOrder =
+      (searchParams.get('sortOrder') as 'asc' | 'desc') || 'desc';
+
+    const filters = {
       search: searchParams.get('search') || undefined,
-      type: searchParams.get('type') || undefined,
+      type: normalizeLedgerType(searchParams.get('type')),
       status: searchParams.get('status') || undefined,
       paymentMethod: searchParams.get('paymentMethod') || undefined,
-      startDate: searchParams.get('startDate') || undefined,
-      endDate: searchParams.get('endDate') || undefined,
-      sortBy: searchParams.get('sortBy') || 'transactionDate',
-      sortOrder: (searchParams.get('sortOrder') as 'asc' | 'desc') || 'desc',
-    };
+      startDate: parseDateParam(searchParams.get('startDate')),
+      endDate: parseDateParam(searchParams.get('endDate')),
+      source: searchParams.get('source') || undefined,
+      eventType: searchParams.get('eventType') || undefined,
+      cashImpact: searchParams.get('cashImpact') || undefined,
+      profitImpact: searchParams.get('profitImpact') || undefined,
+      paymentState: searchParams.get('paymentState') || undefined,
+    } as const;
 
-    const validatedQuery = transactionFiltersSchema.parse(queryParams);
-    const {
-      page,
-      limit,
-      search,
-      type,
-      status,
-      paymentMethod,
-      startDate,
-      endDate,
+    const unifiedTransactions = await getNormalizedFinanceTransactions(filters, {
+      includeFlaggedOverlaps: true,
+      manualStatusMode: 'all',
+    });
+
+    const sortedTransactions = sortLedgerTransactions(
+      unifiedTransactions,
       sortBy,
-      sortOrder,
-    } = validatedQuery;
-
-    // Build where clause
-    const where: any = {};
-
-    if (search) {
-      where.OR = [
-        { transactionNumber: { contains: search, mode: 'insensitive' } },
-        { description: { contains: search, mode: 'insensitive' } },
-      ];
-    }
-
-    if (type && type !== 'ALL') where.type = type;
-    if (status && status !== 'ALL') where.status = status;
-    if (paymentMethod) {
-      where.paymentMethod = normalizeFinancePaymentMethod(paymentMethod);
-    }
-
-    if (startDate || endDate) {
-      const normalizedDateFilters = normalizeFinanceDateFilters(
-        startDate ? new Date(startDate) : undefined,
-        endDate ? new Date(endDate) : undefined
-      );
-
-      where.transactionDate = {};
-      if (normalizedDateFilters.startDate) {
-        where.transactionDate.gte = normalizedDateFilters.startDate;
-      }
-      if (normalizedDateFilters.endDate) {
-        where.transactionDate.lte = normalizedDateFilters.endDate;
-      }
-    }
-
-    // Calculate pagination
-    const offset = (page - 1) * limit;
-
-    // Build order by clause
-    const orderBy: any = {};
-    if (sortBy === 'transactionDate') {
-      orderBy.transactionDate = sortOrder;
-    } else if (sortBy === 'amount') {
-      orderBy.amount = sortOrder;
-    } else if (sortBy === 'createdAt') {
-      orderBy.createdAt = sortOrder;
-    } else {
-      orderBy.transactionDate = 'desc';
-    }
-
-    // Get transactions with related data
-    const [transactions, totalCount] = await Promise.all([
-      prisma.financialTransaction.findMany({
-        where,
-        include: {
-          createdByUser: {
-            select: {
-              id: true,
-              firstName: true,
-              lastName: true,
-              email: true,
-            },
-          },
-          approvedByUser: {
-            select: {
-              id: true,
-              firstName: true,
-              lastName: true,
-              email: true,
-            },
-          },
-          expenseDetails: true,
-          incomeDetails: true,
-        },
-        orderBy,
-        skip: offset,
-        take: limit,
-      }),
-      prisma.financialTransaction.count({ where }),
-    ]);
-
-    // Transform database response to camelCase for frontend
-    const transformedTransactions = transactions.map(transaction =>
-      attachFinancialTransactionNames(
-        transformDatabaseResponse(transaction) as typeof transaction
-      )
+      sortOrder
     );
+    const offset = (page - 1) * limit;
+    const paginatedTransactions = sortedTransactions.slice(offset, offset + limit);
 
     return createApiResponse.successWithPagination(
-      transformedTransactions,
+      paginatedTransactions.map(transaction => ({
+        ...transaction,
+        transactionDate: transaction.date.toISOString(),
+        date: transaction.date.toISOString(),
+      })),
       {
         page,
         limit,
-        total: totalCount,
-        totalPages: Math.ceil(totalCount / limit),
-        hasNext: offset + limit < totalCount,
+        total: sortedTransactions.length,
+        totalPages: Math.ceil(sortedTransactions.length / limit) || 1,
+        hasNext: offset + limit < sortedTransactions.length,
         hasPrev: page > 1,
       },
-      `Retrieved ${transactions.length} financial transactions`
+      `Retrieved ${paginatedTransactions.length} finance ledger events`
     );
   } catch (error) {
     if (error instanceof z.ZodError) {
@@ -264,7 +363,7 @@ export const POST = withAuth(async (request: AuthenticatedRequest) => {
             amount: validatedData.amount,
             description: validatedData.description,
             transactionDate: new Date(validatedData.transactionDate),
-            status: 'PENDING',
+            status: 'COMPLETED',
             paymentMethod: validatedData.paymentMethod as any,
             createdBy: userId,
           },

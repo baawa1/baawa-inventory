@@ -1,5 +1,7 @@
 # Finance Module Implementation Status
 
+> Historical note: this status snapshot predates the current ledger-based finance rewrite. If this file disagrees with the finance docs under `docs/app-documentation/finance/`, follow the app-documentation version.
+
 ## Current State
 
 The finance module is no longer in the earlier "single manual ledger" shape. It now runs on a consolidated model with explicit access rules and a shared reporting layer.
@@ -20,7 +22,6 @@ Implemented:
   - admin finance overview/report access
   - manager transaction review access
   - staff denial
-- Managers can reject pending transactions.
 - Managers can only edit transactions they created.
 - Summary, reports, analytics, receivables, forecasts, and overlap audit are admin-only.
 
@@ -40,8 +41,8 @@ Implemented:
 These are the remaining high-value tasks, not blockers for the hardening pass itself:
 
 1. Broader API and E2E coverage
-- Add deeper end-to-end coverage for register -> verify -> approve -> finance access by role.
-- Add end-to-end coverage for create -> approve/reject -> report visibility.
+- Add deeper end-to-end coverage for register -> verify -> finance access by role.
+- Add end-to-end coverage for create -> list -> report visibility.
 - Add end-to-end coverage for overlap-audit visibility and receivables updates.
 
 2. Historical documentation cleanup
@@ -66,4 +67,4 @@ That said, production confidence still depends on broader integration and E2E co
 
 Verified during this pass:
 - `npm run build` succeeds.
-- Finance permissions, validation updates, approval/rejection routes, summary access, overlap audit behavior, and manager own-only edit behavior are covered by targeted Jest tests.
+- Finance permissions, validation updates, summary access, overlap audit behavior, and manager own-only edit behavior are covered by targeted Jest tests.

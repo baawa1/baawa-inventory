@@ -167,7 +167,7 @@ export default function EditIncomeForm({
                 transactionId={Number(incomeId)}
                 transactionNumber={incomeData?.transactionNumber}
                 transactionType="income"
-                transactionStatus={incomeData?.status ?? 'PENDING'}
+                transactionStatus={incomeData?.status ?? 'COMPLETED'}
                 redirectTo="/finance/income"
                 showBlockedHelperText
                 renderTrigger={({ actionLabel, blocked, openDialog }) => (

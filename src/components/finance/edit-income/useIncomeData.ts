@@ -9,7 +9,7 @@ interface IncomeData {
   transactionDate: Date;
   paymentMethod: string | null;
   notes: string | null;
-  status: 'PENDING' | 'COMPLETED' | 'CANCELLED' | 'APPROVED' | 'REJECTED';
+  status: 'COMPLETED' | 'CANCELLED' | string;
   incomeDetails?: {
     id: number;
     incomeSource: string;

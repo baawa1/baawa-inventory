@@ -16,22 +16,54 @@ export interface FinancialTransactionUser {
 
 export interface FinancialTransaction {
   id: number;
+  rowId?: string;
   transactionNumber: string;
   type: 'EXPENSE' | 'INCOME';
   amount: number;
-  description?: string;
+  eventType: string;
+  displayLabel: string;
+  source: 'MANUAL' | 'POS' | 'STOCK';
+  sourceId: number;
+  sourceModel:
+    | 'FinancialTransaction'
+    | 'SalesTransaction'
+    | 'StockAddition'
+    | 'TransactionPayment'
+    | 'SplitPayment';
+  sourcePath?: string | null;
+  description: string;
   transactionDate: string;
-  paymentMethod?: string;
-  status: 'PENDING' | 'COMPLETED' | 'CANCELLED' | 'APPROVED' | 'REJECTED';
-  createdAt: string;
-  updatedAt: string;
-  createdBy: number;
+  date?: string;
+  paymentMethod?: string | null;
+  status: string;
+  paymentState?: string | null;
+  createdAt?: string;
+  updatedAt?: string;
+  createdBy?: number;
   createdByName?: string;
   createdByUser?: FinancialTransactionUser;
   approvedBy?: number;
   approvedByName?: string;
   approvedByUser?: FinancialTransactionUser;
   approvedAt?: string;
+  category: string;
+  categoryLabel: string;
+  cashIn: number;
+  cashOut: number;
+  profitIn: number;
+  profitOut: number;
+  inventoryValueIn: number;
+  inventoryValueOut: number;
+  receivableIncrease: number;
+  receivableDecrease: number;
+  netCashImpact: number;
+  netProfitImpact: number;
+  netInventoryImpact: number;
+  netReceivableImpact: number;
+  editable: boolean;
+  estimated: boolean;
+  estimatedReason?: string | null;
+  customerName?: string | null;
   expenseDetails?: {
     expenseType: string;
     vendorName?: string;
@@ -47,6 +79,11 @@ export interface FinancialTransactionFilters {
   type?: string;
   status?: string;
   paymentMethod?: string;
+  source?: string;
+  eventType?: string;
+  cashImpact?: 'in' | 'out' | 'none' | 'all';
+  profitImpact?: 'in' | 'out' | 'none' | 'all';
+  paymentState?: string;
   date?: string;
   startDate?: string;
   endDate?: string;
@@ -99,6 +136,16 @@ const fetchFinancialTransactions = async (
     searchParams.set('status', filters.status);
   if (filters.paymentMethod && filters.paymentMethod !== 'all')
     searchParams.set('paymentMethod', filters.paymentMethod);
+  if (filters.source && filters.source !== 'all')
+    searchParams.set('source', filters.source);
+  if (filters.eventType && filters.eventType !== 'all')
+    searchParams.set('eventType', filters.eventType);
+  if (filters.cashImpact && filters.cashImpact !== 'all')
+    searchParams.set('cashImpact', filters.cashImpact);
+  if (filters.profitImpact && filters.profitImpact !== 'all')
+    searchParams.set('profitImpact', filters.profitImpact);
+  if (filters.paymentState && filters.paymentState !== 'all')
+    searchParams.set('paymentState', filters.paymentState);
   if (filters.date && filters.date !== 'all')
     searchParams.set('date', filters.date);
   if (filters.startDate) searchParams.set('startDate', filters.startDate);
@@ -319,82 +366,6 @@ export function useDeleteFinancialTransaction() {
       });
       queryClient.invalidateQueries({
         queryKey: ['expense', String(id)],
-      });
-    },
-  });
-}
-
-export function useApproveFinancialTransaction() {
-  const queryClient = useQueryClient();
-
-  return useMutation({
-    mutationFn: async (id: number) => {
-      const response = await fetch(`/api/finance/transactions/${id}/approve`, {
-        method: 'POST',
-      });
-      const result = await response.json().catch(() => ({}));
-      if (!response.ok) {
-        throw new Error(
-          (result as { error?: string }).error ||
-            'Failed to approve financial transaction'
-        );
-      }
-      return result.data || result;
-    },
-    onSuccess: (_, id) => {
-      queryClient.invalidateQueries({
-        queryKey: queryKeys.finance.transactions.all(),
-      });
-      queryClient.invalidateQueries({
-        queryKey: queryKeys.finance.transactions.detail(id),
-      });
-      queryClient.invalidateQueries({
-        queryKey: queryKeys.finance.summary(),
-      });
-      queryClient.invalidateQueries({
-        queryKey: queryKeys.finance.reports.all(),
-      });
-      queryClient.invalidateQueries({
-        queryKey: ['financial-analytics'],
-      });
-    },
-  });
-}
-
-export function useRejectFinancialTransaction() {
-  const queryClient = useQueryClient();
-
-  return useMutation({
-    mutationFn: async ({ id, reason }: { id: number; reason: string }) => {
-      const response = await fetch(`/api/finance/transactions/${id}/reject`, {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ reason }),
-      });
-      const result = await response.json().catch(() => ({}));
-      if (!response.ok) {
-        throw new Error(
-          (result as { error?: string }).error ||
-            'Failed to reject financial transaction'
-        );
-      }
-      return result.data || result;
-    },
-    onSuccess: (_, { id }) => {
-      queryClient.invalidateQueries({
-        queryKey: queryKeys.finance.transactions.all(),
-      });
-      queryClient.invalidateQueries({
-        queryKey: queryKeys.finance.transactions.detail(id),
-      });
-      queryClient.invalidateQueries({
-        queryKey: queryKeys.finance.summary(),
-      });
-      queryClient.invalidateQueries({
-        queryKey: queryKeys.finance.reports.all(),
-      });
-      queryClient.invalidateQueries({
-        queryKey: ['financial-analytics'],
       });
     },
   });

@@ -71,9 +71,7 @@ export function ManualTransactionDetailDialog({
     : transaction.expenseDetails?.vendorName;
   const amountClass = isIncome ? 'text-green-600' : 'text-red-600';
   const signedAmount = `${isIncome ? '+' : '-'}${formatCurrency(transaction.amount)}`;
-  const approvalName = formatPersonName(transaction.approvedByUser || undefined);
   const createdByName = formatPersonName(transaction.createdByUser);
-  const isApproved = Boolean(transaction.approvedByUser || transaction.approvedAt);
 
   return (
     <DialogContent className="max-h-[80vh] max-w-2xl overflow-y-auto">
@@ -148,36 +146,6 @@ export function ManualTransactionDetailDialog({
           </div>
           <p className="text-muted-foreground text-sm">{transaction.createdByUser.email}</p>
         </DetailSection>
-
-        <DetailSection title="Approval">
-          {isApproved ? (
-            <div className="grid gap-3 md:grid-cols-2">
-              <DetailItem label="Approved By" value={approvalName} />
-              <DetailItem
-                label="Approved At"
-                value={
-                  transaction.approvedAt
-                    ? format(new Date(transaction.approvedAt), 'PPP p')
-                    : 'N/A'
-                }
-              />
-            </div>
-          ) : (
-            <p className="text-muted-foreground">Not approved</p>
-          )}
-          {transaction.approvedByUser?.email ? (
-            <p className="text-muted-foreground text-sm">
-              {transaction.approvedByUser.email}
-            </p>
-          ) : null}
-        </DetailSection>
-
-        {transaction.rejectionReason ? (
-          <section className="space-y-2 rounded-lg border border-red-200 bg-red-50 p-4 text-red-900">
-            <p className="text-sm font-semibold">Rejection Reason</p>
-            <p>{transaction.rejectionReason}</p>
-          </section>
-        ) : null}
       </div>
     </DialogContent>
   );

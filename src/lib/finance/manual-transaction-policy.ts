@@ -7,7 +7,6 @@ import {
 
 export const REPORTABLE_MANUAL_FINANCE_STATUSES = [
   'COMPLETED',
-  'APPROVED',
 ] as const;
 
 export const MANUAL_OVERLAP_INCOME_SOURCES = [

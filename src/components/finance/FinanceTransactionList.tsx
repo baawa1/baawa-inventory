@@ -18,7 +18,6 @@ import type { FilterConfig } from '@/components/layouts/DashboardFiltersBar';
 import { DateRangePickerWithPresets } from '@/components/ui/date-range-picker-with-presets';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
-import { TransactionStatusBadge } from '@/components/finance/shared/TransactionStatusBadge';
 import {
   Dialog,
   DialogContent,
@@ -369,11 +368,6 @@ export function FinanceTransactionList({
         label: 'Payment State',
         defaultVisible: true,
       },
-      {
-        key: 'status',
-        label: 'Status',
-        defaultVisible: true,
-      },
     ],
     []
   );
@@ -480,8 +474,6 @@ export function FinanceTransactionList({
               {transaction.paymentState || 'Not applicable'}
             </span>
           );
-        case 'status':
-          return <TransactionStatusBadge status={transaction.status} />;
         default:
           return null;
       }

@@ -5,11 +5,8 @@
 export type FinancialType = 'INCOME' | 'EXPENSE';
 
 export type FinancialStatus =
-  | 'PENDING'
   | 'COMPLETED'
-  | 'CANCELLED'
-  | 'APPROVED'
-  | 'REJECTED';
+  | 'CANCELLED';
 
 export type PaymentMethod =
   | 'CASH'

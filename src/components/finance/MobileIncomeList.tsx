@@ -4,7 +4,6 @@ import React, { useState, useMemo, useCallback } from 'react';
 import { useQuery } from '@tanstack/react-query';
 import Link from 'next/link';
 import { Button } from '@/components/ui/button';
-import { Badge } from '@/components/ui/badge';
 import {
   Dialog,
   DialogTrigger,
@@ -63,7 +62,6 @@ export function MobileIncomeList({ user }: MobileIncomeListProps) {
   // Filters state
   const [filters, setFilters] = useState({
     search: '',
-    status: '',
     payment: '',
     date: '',
   });
@@ -83,7 +81,6 @@ export function MobileIncomeList({ user }: MobileIncomeListProps) {
       {
         type: 'INCOME',
         search: debouncedSearchTerm,
-        status: filters.status !== 'all' ? filters.status : undefined,
         paymentMethod: filters.payment !== 'all' ? filters.payment : undefined,
         page: pagination.page,
         limit: pagination.limit,
@@ -95,8 +92,6 @@ export function MobileIncomeList({ user }: MobileIncomeListProps) {
       const params = new URLSearchParams();
       params.append('type', 'INCOME');
       if (debouncedSearchTerm) params.append('search', debouncedSearchTerm);
-      if (filters.status && filters.status !== 'all')
-        params.append('status', filters.status);
       if (filters.payment && filters.payment !== 'all')
         params.append('paymentMethod', filters.payment);
       params.append('page', String(pagination.page));
@@ -179,12 +174,6 @@ export function MobileIncomeList({ user }: MobileIncomeListProps) {
         defaultVisible: true,
         className: 'font-bold',
       },
-      {
-        key: 'status',
-        label: 'Status',
-        defaultVisible: true,
-        className: 'font-bold',
-      },
     ],
     []
   );
@@ -202,20 +191,6 @@ export function MobileIncomeList({ user }: MobileIncomeListProps) {
   // Filter configurations
   const filterConfigs: FilterConfig[] = useMemo(
     () => [
-      {
-        key: 'status',
-        label: 'Status',
-        type: 'select',
-        options: [
-          { value: 'all', label: 'All Status' },
-          { value: 'PENDING', label: 'Pending' },
-          { value: 'COMPLETED', label: 'Completed' },
-          { value: 'APPROVED', label: 'Approved' },
-          { value: 'REJECTED', label: 'Rejected' },
-          { value: 'CANCELLED', label: 'Cancelled' },
-        ],
-        placeholder: 'All Status',
-      },
       {
         key: 'payment',
         label: 'Payment Method',
@@ -259,7 +234,6 @@ export function MobileIncomeList({ user }: MobileIncomeListProps) {
   const handleResetFilters = useCallback(() => {
     setFilters({
       search: '',
-      status: '',
       payment: '',
       date: '',
     });
@@ -272,24 +246,6 @@ export function MobileIncomeList({ user }: MobileIncomeListProps) {
 
   const handlePageSizeChange = useCallback((newSize: number) => {
     setPagination(prev => ({ ...prev, limit: newSize, page: 1 }));
-  }, []);
-
-  // Get status badge
-  const getStatusBadge = useCallback((status: string) => {
-    switch (status) {
-      case 'COMPLETED':
-        return <Badge className="bg-green-100 text-green-700 text-xs">Completed</Badge>;
-      case 'PENDING':
-        return <Badge className="bg-yellow-100 text-yellow-700 text-xs">Pending</Badge>;
-      case 'APPROVED':
-        return <Badge className="bg-blue-100 text-blue-700 text-xs">Approved</Badge>;
-      case 'REJECTED':
-        return <Badge variant="destructive" className="text-xs">Rejected</Badge>;
-      case 'CANCELLED':
-        return <Badge variant="destructive" className="text-xs">Cancelled</Badge>;
-      default:
-        return <Badge variant="secondary" className="text-xs">{status}</Badge>;
-    }
   }, []);
 
   // Get payment method icon
@@ -369,13 +325,11 @@ export function MobileIncomeList({ user }: MobileIncomeListProps) {
               </span>
             </div>
           );
-        case 'status':
-          return getStatusBadge(transaction.status);
         default:
           return <span className="text-xs sm:text-sm">-</span>;
       }
     },
-    [getStatusBadge, getPaymentIcon]
+    [getPaymentIcon]
   );
 
   // Check permissions
@@ -540,8 +494,7 @@ export function MobileIncomeList({ user }: MobileIncomeListProps) {
             <IconTrendingUp className="mx-auto mb-4 h-12 w-12 text-gray-400" />
           }
           emptyStateMessage={
-            debouncedSearchTerm ||
-            filters.status ||
+          debouncedSearchTerm ||
             filters.payment ||
             filters.date
               ? 'No income transactions found matching your filters.'

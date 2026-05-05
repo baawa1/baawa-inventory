@@ -27,7 +27,6 @@ import { DateRangePickerWithPresets } from '@/components/ui/date-range-picker-wi
 import { AppUser } from '@/types/user';
 import type { FinancialTransaction } from '@/types/finance';
 import { PaymentMethodIcon } from './shared/PaymentMethodIcon';
-import { TransactionStatusBadge } from './shared/TransactionStatusBadge';
 import { FinancialTransactionDeleteAction } from './shared/FinancialTransactionDeleteAction';
 import { ManualTransactionDetailDialog } from './shared/ManualTransactionDetailDialog';
 import Link from 'next/link';
@@ -59,7 +58,6 @@ export function IncomeList({ user }: IncomeListProps) {
   // Filters state
   const [filters, setFilters] = useState({
     search: '',
-    status: '',
     payment: '',
   });
 
@@ -78,7 +76,6 @@ export function IncomeList({ user }: IncomeListProps) {
       {
         type: 'INCOME',
         search: debouncedSearchTerm,
-        status: filters.status !== 'all' ? filters.status : undefined,
         paymentMethod: filters.payment !== 'all' ? filters.payment : undefined,
         startDate: dateRange?.from
           ? formatFinanceDateInput(dateRange.from)
@@ -94,8 +91,6 @@ export function IncomeList({ user }: IncomeListProps) {
       const params = new URLSearchParams();
       params.append('type', 'INCOME');
       if (debouncedSearchTerm) params.append('search', debouncedSearchTerm);
-      if (filters.status && filters.status !== 'all')
-        params.append('status', filters.status);
       if (filters.payment && filters.payment !== 'all')
         params.append('paymentMethod', filters.payment);
       if (dateRange?.from)
@@ -175,11 +170,6 @@ export function IncomeList({ user }: IncomeListProps) {
         label: 'Payment Method',
         defaultVisible: true,
       },
-      {
-        key: 'status',
-        label: 'Status',
-        defaultVisible: true,
-      },
     ],
     []
   );
@@ -198,19 +188,6 @@ export function IncomeList({ user }: IncomeListProps) {
   // Note: DashboardFiltersBar automatically adds "All {label}" option, so don't include it here
   const filterConfigs: FilterConfig[] = useMemo(
     () => [
-      {
-        key: 'status',
-        label: 'Status',
-        type: 'select',
-        options: [
-          { value: 'PENDING', label: 'Pending' },
-          { value: 'COMPLETED', label: 'Completed' },
-          { value: 'APPROVED', label: 'Approved' },
-          { value: 'REJECTED', label: 'Rejected' },
-          { value: 'CANCELLED', label: 'Cancelled' },
-        ],
-        placeholder: 'All Status',
-      },
       {
         key: 'payment',
         label: 'Payment Method',
@@ -240,7 +217,6 @@ export function IncomeList({ user }: IncomeListProps) {
   const handleResetFilters = useCallback(() => {
     setFilters({
       search: '',
-      status: '',
       payment: '',
     });
     setDateRange(getDateRangePreset(DEFAULT_DATE_RANGE_PRESET));
@@ -311,8 +287,6 @@ export function IncomeList({ user }: IncomeListProps) {
           return (
             <PaymentMethodIcon method={transaction.paymentMethod} showLabel />
           );
-        case 'status':
-          return <TransactionStatusBadge status={transaction.status} />;
         default:
           return null;
       }
@@ -445,7 +419,6 @@ export function IncomeList({ user }: IncomeListProps) {
         emptyStateIcon={<IconTrendingUp className="h-12 w-12 text-gray-400" />}
         emptyStateMessage={
           debouncedSearchTerm ||
-          filters.status ||
           filters.payment ||
           dateRange
             ? 'No income transactions found matching your filters.'

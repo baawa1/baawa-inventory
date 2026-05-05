@@ -168,7 +168,7 @@ export default function EditExpenseForm({
                 transactionId={Number(expenseId)}
                 transactionNumber={expenseData?.transactionNumber}
                 transactionType="expense"
-                transactionStatus={expenseData?.status ?? 'PENDING'}
+                transactionStatus={expenseData?.status ?? 'COMPLETED'}
                 redirectTo="/finance/expenses"
                 showBlockedHelperText
                 renderTrigger={({ actionLabel, blocked, openDialog }) => (

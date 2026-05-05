@@ -9,7 +9,7 @@ interface ExpenseData {
   transactionDate: Date;
   paymentMethod: string | null;
   notes: string | null;
-  status: 'PENDING' | 'COMPLETED' | 'CANCELLED' | 'APPROVED' | 'REJECTED';
+  status: 'COMPLETED' | 'CANCELLED' | string;
   expenseDetails?: {
     id: number;
     expenseType: string;

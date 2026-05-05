@@ -58,7 +58,7 @@ export function FinancialTransactionDeleteAction({
   const typeLabel = transactionType === 'income' ? 'income' : 'expense';
   const actionLabel =
     transactionType === 'income' ? 'Delete Income' : 'Delete Expense';
-  const blockedMessage = `Approved or rejected ${typeLabel} transactions cannot be deleted.`;
+  const blockedMessage = `Legacy approved or rejected ${typeLabel} transactions cannot be deleted.`;
   const blocked = ['APPROVED', 'REJECTED'].includes(transactionStatus);
 
   const resetDialogState = React.useCallback(() => {

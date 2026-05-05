@@ -203,7 +203,7 @@ export function EditTransactionForm({
         <Alert variant="destructive">
           <AlertCircle className="h-4 w-4" />
           <AlertDescription>
-            You can only edit your own pending or completed transactions.
+            You can only edit your own editable transactions.
             {transaction.createdByUser && (
               <> This transaction was created by {getFinanceUserDisplayName(transaction.createdByUser) || 'another user'}.</>
             )}

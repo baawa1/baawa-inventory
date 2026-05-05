@@ -126,10 +126,10 @@ export const PUT = withAuth(
 
       const effectiveType = validatedData.type ?? existingTransaction.type;
 
-      // Check if transaction can be updated (not approved/rejected/cancelled)
+      // Current workflow only treats mutable manual states as editable.
       if (!isFinancialTransactionMutable(existingTransaction.status)) {
         return createApiResponse.validationError(
-          'Cannot update a transaction that is approved, rejected, or cancelled'
+          'Cannot update a transaction that is no longer editable'
         );
       }
 

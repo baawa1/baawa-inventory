@@ -26,7 +26,7 @@ export interface Transaction {
   transactionDate: Date;
   paymentMethod: string | null;
   referenceNumber: string | null;
-  status: 'PENDING' | 'COMPLETED' | 'CANCELLED' | 'APPROVED' | 'REJECTED';
+  status: 'COMPLETED' | 'CANCELLED' | string;
   approvedBy: number | null;
   approvedAt: Date | null;
   createdBy: number;
@@ -93,6 +93,7 @@ export function useTransactions(filters: TransactionFilters = {}) {
           params.append(key, value.toString());
         }
       });
+      params.append('view', 'manual');
 
       const response = await fetch(`/api/finance/transactions?${params}`);
       if (!response.ok) {

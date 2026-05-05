@@ -4,11 +4,8 @@ import React from 'react';
 import { Badge } from '@/components/ui/badge';
 
 export type TransactionStatus =
-  | 'PENDING'
   | 'COMPLETED'
   | 'CANCELLED'
-  | 'APPROVED'
-  | 'REJECTED'
   | 'PAID'
   | 'PARTIAL'
   | 'UNKNOWN'
@@ -27,14 +24,6 @@ const STATUS_CONFIG: Record<
     label: 'Completed',
     className: 'bg-green-100 text-green-700 hover:bg-green-100',
   },
-  PENDING: {
-    label: 'Pending',
-    className: 'bg-yellow-100 text-yellow-700 hover:bg-yellow-100',
-  },
-  APPROVED: {
-    label: 'Approved',
-    className: 'bg-blue-100 text-blue-700 hover:bg-blue-100',
-  },
   PAID: {
     label: 'Paid',
     className: 'bg-emerald-100 text-emerald-700 hover:bg-emerald-100',
@@ -42,11 +31,6 @@ const STATUS_CONFIG: Record<
   PARTIAL: {
     label: 'Partial',
     className: 'bg-orange-100 text-orange-700 hover:bg-orange-100',
-  },
-  REJECTED: {
-    label: 'Rejected',
-    className: '',
-    variant: 'destructive',
   },
   CANCELLED: {
     label: 'Cancelled',
