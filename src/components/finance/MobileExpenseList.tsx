@@ -7,12 +7,8 @@ import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import {
   Dialog,
-  DialogContent,
-  DialogHeader,
-  DialogTitle,
   DialogTrigger,
 } from '@/components/ui/dialog';
-import { Separator } from '@/components/ui/separator';
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -39,7 +35,6 @@ import {
   IconReceipt,
   IconCalendar,
   IconCreditCard,
-  IconUser,
 } from '@tabler/icons-react';
 
 import { format } from 'date-fns';
@@ -50,15 +45,13 @@ import { AppUser } from '@/types/user';
 import type { FinancialTransaction } from '@/types/finance';
 import { canDeleteFinance, canReadFinance, canWriteFinance } from '@/lib/auth/roles';
 import { FinancialTransactionDeleteAction } from './shared/FinancialTransactionDeleteAction';
+import { ManualTransactionDetailDialog } from './shared/ManualTransactionDetailDialog';
 
 interface MobileExpenseListProps {
   user: AppUser;
 }
 
 export function MobileExpenseList({ user }: MobileExpenseListProps) {
-  const [selectedTransaction, setSelectedTransaction] =
-    useState<FinancialTransaction | null>(null);
-
   // Pagination state
   const [pagination, setPagination] = useState({
     page: 1,
@@ -408,23 +401,13 @@ export function MobileExpenseList({ user }: MobileExpenseListProps) {
               <DialogTrigger asChild>
                 <DropdownMenuItem
                   onSelect={(e) => e.preventDefault()}
-                  onClick={() => setSelectedTransaction(transaction)}
                   className="flex items-center gap-2"
                 >
                   <IconEye className="h-4 w-4" />
                   View Details
                 </DropdownMenuItem>
               </DialogTrigger>
-              <DialogContent className="max-h-[80vh] max-w-2xl overflow-y-auto">
-                <DialogHeader>
-                  <DialogTitle>
-                    Expense Details - {transaction.transactionNumber}
-                  </DialogTitle>
-                </DialogHeader>
-                {selectedTransaction && (
-                  <TransactionDetailsContent transaction={selectedTransaction} />
-                )}
-              </DialogContent>
+              <ManualTransactionDetailDialog transaction={transaction} />
             </Dialog>
             {canWrite && (
               <>
@@ -468,7 +451,7 @@ export function MobileExpenseList({ user }: MobileExpenseListProps) {
         </DropdownMenu>
       );
     },
-    [selectedTransaction, canDelete, canRead, canWrite]
+    [canDelete, canRead, canWrite]
   );
 
   // Mobile card title and subtitle
@@ -580,115 +563,5 @@ export function MobileExpenseList({ user }: MobileExpenseListProps) {
         />
       </div>
     </DashboardPageLayout>
-  );
-}
-
-function TransactionDetailsContent({
-  transaction,
-}: {
-  transaction: FinancialTransaction;
-}) {
-  return (
-    <div className="space-y-4">
-      {/* Basic Info */}
-      <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-        <div>
-          <h4 className="mb-2 text-sm font-medium">Transaction Details</h4>
-          <div className="space-y-2 text-sm">
-            <div className="flex justify-between">
-              <span className="text-muted-foreground">Transaction #:</span>
-              <span className="font-mono">{transaction.transactionNumber}</span>
-            </div>
-            <div className="flex justify-between">
-              <span className="text-muted-foreground">Amount:</span>
-              <span className="font-semibold text-red-600">
-                -{formatCurrency(transaction.amount)}
-              </span>
-            </div>
-            <div className="flex justify-between">
-              <span className="text-muted-foreground">Date:</span>
-              <span>
-                {format(new Date(transaction.transactionDate), 'PPP')}
-              </span>
-            </div>
-            <div className="flex justify-between">
-              <span className="text-muted-foreground">Status:</span>
-              <span className="capitalize">
-                {transaction.status.toLowerCase()}
-              </span>
-            </div>
-          </div>
-        </div>
-        <div>
-          <h4 className="mb-2 text-sm font-medium">Payment Info</h4>
-          <div className="space-y-2 text-sm">
-            <div className="flex justify-between">
-              <span className="text-muted-foreground">Method:</span>
-              <span className="capitalize">
-                {transaction.paymentMethod?.replace('_', ' ') || 'N/A'}
-              </span>
-            </div>
-          </div>
-        </div>
-      </div>
-
-      <Separator />
-
-      {/* Expense Details */}
-      {transaction.expenseDetails && (
-        <div>
-          <h4 className="mb-3 text-sm font-medium">Expense Details</h4>
-          <div className="space-y-2 text-sm">
-            <div className="flex justify-between">
-              <span className="text-muted-foreground">Expense Type:</span>
-              <span className="capitalize">
-                {transaction.expenseDetails.expenseType}
-              </span>
-            </div>
-            {transaction.expenseDetails.vendorName && (
-              <div className="flex justify-between">
-                <span className="text-muted-foreground">Vendor:</span>
-                <span>{transaction.expenseDetails.vendorName}</span>
-              </div>
-            )}
-          </div>
-        </div>
-      )}
-
-      <Separator />
-
-      {/* Created By */}
-      <div>
-        <h4 className="mb-2 text-sm font-medium">Created By</h4>
-        <div className="text-muted-foreground text-sm">
-          {transaction.createdByUser.firstName}{' '}
-          {transaction.createdByUser.lastName}
-          <br />
-          {transaction.createdByUser.email}
-        </div>
-      </div>
-
-      {/* Approved By */}
-      {transaction.approvedByUser && (
-        <>
-          <Separator />
-          <div>
-            <h4 className="mb-2 text-sm font-medium">Approved By</h4>
-            <div className="text-muted-foreground text-sm">
-              {transaction.approvedByUser.firstName}{' '}
-              {transaction.approvedByUser.lastName}
-              <br />
-              {transaction.approvedByUser.email}
-              {transaction.approvedAt && (
-                <>
-                  <br />
-                  {format(new Date(transaction.approvedAt), 'PPP')}
-                </>
-              )}
-            </div>
-          </div>
-        </>
-      )}
-    </div>
   );
 }
