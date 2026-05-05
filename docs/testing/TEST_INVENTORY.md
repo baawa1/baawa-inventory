@@ -12,11 +12,10 @@ This document is the single source of truth for test coverage across the app. It
 
 | Feature | UI Routes | API Routes | Critical Rules / Validations | Test Types | Status |
 | --- | --- | --- | --- | --- | --- |
-| Authentication entrypoints | `/login`, `/register`, `/logout`, `/logout/immediate` | `/api/auth/:...nextauth`, `/api/auth/register` | Password policy, email uniqueness, session creation | Unit, Integration, E2E | In Progress |
+| Authentication entrypoints | `/login`, `/logout`, `/logout/immediate` | `/api/auth/:...nextauth` | Password policy, session creation, login-only access | Unit, Integration, E2E | In Progress |
 | Password reset | `/forgot-password`, `/reset-password` | `/api/auth/forgot-password`, `/api/auth/reset-password`, `/api/auth/validate-reset-token` | Token expiry, password policy, error handling | Unit, Integration, E2E | Not Started |
-| Email verification | `/verify-email`, `/check-email` | `/api/auth/verify-email` | Token validity, status updates, idempotency | Unit, Integration, E2E | Not Started |
 | Session refresh | (none) | `/api/auth/refresh-session` | Role status, refresh timing, error responses | Unit, Integration | In Progress |
-| Access gating | `/pending-approval`, `/unauthorized` | (none) | UserStatus transitions and redirects | Unit, E2E | In Progress |
+| Access gating | `/unauthorized` | (none) | Inactive/unapproved account redirects | Unit, E2E | In Progress |
 | Account profile | `/account` | `/api/users/profile`, `/api/users/change-password` | Profile updates, password change validation | Unit, Integration, E2E | Not Started |
 
 ## Admin & Users
@@ -25,7 +24,7 @@ This document is the single source of truth for test coverage across the app. It
 | --- | --- | --- | --- | --- | --- |
 | Admin dashboard | `/admin` | `/api/admin/activity`, `/api/admin/settings` | Admin-only access | Unit, Integration, E2E | Not Started |
 | User management | `/admin` | `/api/users`, `/api/users/:id` | Role-based access, updates, deletions | Unit, Integration, E2E | Not Started |
-| User approval workflows | `/admin` | `/api/admin/approve-user`, `/api/admin/reject-user`, `/api/admin/suspend-user` | Status transitions, audit logs | Unit, Integration, E2E | Not Started |
+| User access workflows | `/admin` | `/api/admin/suspend-user` | Status transitions, audit logs | Unit, Integration, E2E | Not Started |
 | Audit logs | `/audit-logs`, `/audit-logs/mobile` | `/api/admin/activity` | Filtering, paging, admin-only access | Unit, Integration, E2E | Not Started |
 | Admin email test | `/admin` | `/api/admin/test-email` | Delivery handling, error paths | Unit, Integration | Not Started |
 
@@ -57,7 +56,7 @@ This document is the single source of truth for test coverage across the app. It
 | Feature | UI Routes | API Routes | Critical Rules / Validations | Test Types | Status |
 | --- | --- | --- | --- | --- | --- |
 | Inventory overview | `/inventory` | `/api/inventory/overview`, `/api/inventory/stats`, `/api/inventory/snapshot`, `/api/inventory/activity/recent`, `/api/inventory/charts` | Totals, low stock thresholds | Unit, Integration, E2E | Not Started |
-| Products CRUD | `/inventory/products`, `/inventory/products/add`, `/inventory/products/:id/edit`, `/inventory/products/manage` | `/api/products`, `/api/products/:id` | SKU uniqueness, price validation, archiving | Unit, Integration, E2E | Not Started |
+| Products CRUD | `/inventory/products`, `/inventory/products/add`, `/inventory/products/:id/edit` | `/api/products`, `/api/products/:id` | SKU uniqueness, price validation, archiving | Unit, Integration, E2E | Not Started |
 | Product media | `/inventory/products/:id/images` | `/api/products/:id/images`, `/api/upload` | Image count, storage paths | Unit, Integration, E2E | Not Started |
 | Product archive | `/inventory/products/archived` | `/api/products/archive`, `/api/products/archived`, `/api/products/:id/archive` | Archive rules, restore behavior | Unit, Integration, E2E | Not Started |
 | Product insights | `/inventory/stock-history` | `/api/products/:id/stock-history`, `/api/products/:id/sales`, `/api/products/low-stock`, `/api/products/barcodes` | History ordering, barcode validation | Unit, Integration, E2E | Not Started |

@@ -21,6 +21,7 @@ import { ShoppingCart } from './ShoppingCart';
 import { SlidingPaymentInterface } from './SlidingPaymentInterface';
 import { OfflineStatusIndicator } from './OfflineStatusIndicator';
 import { POSErrorBoundary } from './POSErrorBoundary';
+import { POSInterfaceSkeleton } from './POSSkeleton';
 import {
   IconShoppingCart,
   IconCash,
@@ -216,7 +217,7 @@ export function POSInterface() {
   };
 
   if (!session) {
-    return <div>Loading...</div>;
+    return <POSInterfaceSkeleton />;
   }
 
   return (

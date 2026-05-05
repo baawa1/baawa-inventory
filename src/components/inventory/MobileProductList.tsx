@@ -708,6 +708,7 @@ const MobileProductList = ({ user }: MobileProductListProps) => {
                 <Button
                   asChild
                   variant="outline"
+                  size="sm"
                   className="hidden items-center gap-2 sm:flex"
                 >
                   <Link href="/inventory/products/archived">
@@ -715,7 +716,7 @@ const MobileProductList = ({ user }: MobileProductListProps) => {
                     <span className="hidden md:inline">View Archived</span>
                   </Link>
                 </Button>
-                <Button asChild>
+                <Button asChild size="sm">
                   <Link
                     href="/inventory/products/add"
                     className="flex items-center gap-2"

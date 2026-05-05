@@ -4,7 +4,6 @@ import { useEffect, useMemo, useRef, useState } from 'react';
 import { Card, CardContent } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
-import { Skeleton } from '@/components/ui/skeleton';
 import { Input } from '@/components/ui/input';
 import { ScrollArea } from '@/components/ui/scroll-area';
 import {
@@ -33,6 +32,7 @@ import {
 import { useQuery } from '@tanstack/react-query';
 import { toast } from 'sonner';
 import { usePOSErrorHandler } from './POSErrorBoundary';
+import { POSProductGridSkeleton } from './POSSkeleton';
 import { formatCurrency } from '@/lib/utils';
 import Image from 'next/image';
 import { normalizeImageUrl } from '@/lib/utils/image';
@@ -226,7 +226,6 @@ export function ProductGrid({
       category: product.category,
       brand: product.brand,
     });
-
   };
 
   const handleBarcodeSearch = async (barcode: string) => {
@@ -468,7 +467,7 @@ export function ProductGrid({
                 <div className="pt-2">
                   <p className="text-muted-foreground text-sm">
                     {isLoading
-                      ? 'Loading...'
+                      ? 'Loading products...'
                       : `${products.length} products found`}
                   </p>
                 </div>
@@ -541,7 +540,7 @@ export function ProductGrid({
         <div className="hidden items-center justify-between sm:flex">
           <p className="text-muted-foreground text-sm">
             {isLoading
-              ? 'Loading...'
+              ? 'Loading products...'
               : `${products.length} products found`}
           </p>
         </div>
@@ -572,125 +571,116 @@ export function ProductGrid({
 
       {/* Product Grid - Scrollable */}
       <ScrollArea className="h-full min-h-0 flex-1 rounded-md border">
-        <div className="grid grid-cols-1 gap-3 p-3 sm:grid-cols-2 sm:gap-4 sm:p-4 lg:grid-cols-3">
-          {isLoading ? (
-            Array.from({ length: 8 }).map((_, i) => (
-              <Card key={i} className="overflow-hidden pt-0 pb-2">
-                <CardContent className="p-0">
-                  <Skeleton className="aspect-[4/3] w-full" />
-                  <div className="p-4">
-                    <Skeleton className="mb-2 h-4 w-3/4" />
-                    <Skeleton className="mb-2 h-3 w-1/2" />
-                    <Skeleton className="h-6 w-1/3" />
-                  </div>
-                </CardContent>
-              </Card>
-            ))
-          ) : products.length === 0 ? (
-            <div className="col-span-full py-8 text-center">
-              <p className="text-muted-foreground">No products found</p>
-            </div>
-          ) : (
-            products.map((product: Product) => {
-              const productImage = getProductImage(product);
-              const normalizedProductImage = normalizeImageUrl(productImage);
-              const resolvedProductImage = normalizedProductImage || '';
-              const showImage =
-                resolvedProductImage !== '' && !imageLoadErrors[product.id];
+        {isLoading ? (
+          <POSProductGridSkeleton />
+        ) : (
+          <div className="grid grid-cols-1 gap-3 p-3 sm:grid-cols-2 sm:gap-4 sm:p-4 lg:grid-cols-3">
+            {products.length === 0 ? (
+              <div className="col-span-full py-8 text-center">
+                <p className="text-muted-foreground">No products found</p>
+              </div>
+            ) : (
+              products.map((product: Product) => {
+                const productImage = getProductImage(product);
+                const normalizedProductImage = normalizeImageUrl(productImage);
+                const resolvedProductImage = normalizedProductImage || '';
+                const showImage =
+                  resolvedProductImage !== '' && !imageLoadErrors[product.id];
 
-              return (
-                <Card
-                  key={product.id}
-                  className={`cursor-pointer overflow-hidden pt-0 pb-1 transition-all hover:scale-[1.02] hover:shadow-lg ${
-                    disabled ? 'cursor-not-allowed opacity-50' : ''
-                  } ${product.stock <= 0 ? 'opacity-60' : ''}`}
-                  onClick={() => handleProductClick(product)}
-                >
-                  <CardContent className="p-0">
-                    <div className="relative aspect-[1/1] overflow-hidden bg-gradient-to-br from-gray-100 to-gray-200">
-                      <div className="absolute inset-0">
-                        {showImage ? (
-                          <Image
-                            src={resolvedProductImage}
-                            alt={product.name}
-                            fill
-                            className="object-cover"
-                            sizes="(min-width: 1024px) 33vw, (min-width: 640px) 50vw, 100vw"
-                            onError={() => {
-                              setImageLoadErrors(currentErrors => ({
-                                ...currentErrors,
-                                [product.id]: true,
-                              }));
-                            }}
-                          />
-                        ) : (
-                          <div className="flex h-full items-center justify-center rounded-lg bg-gradient-to-br from-gray-100 to-gray-200">
-                            <div className="mb-1 text-4xl">
-                              {getProductFallbackEmoji(product.category)}
+                return (
+                  <Card
+                    key={product.id}
+                    className={`cursor-pointer overflow-hidden pt-0 pb-1 transition-all hover:scale-[1.02] hover:shadow-lg ${
+                      disabled ? 'cursor-not-allowed opacity-50' : ''
+                    } ${product.stock <= 0 ? 'opacity-60' : ''}`}
+                    onClick={() => handleProductClick(product)}
+                  >
+                    <CardContent className="p-0">
+                      <div className="relative aspect-[1/1] overflow-hidden bg-gradient-to-br from-gray-100 to-gray-200">
+                        <div className="absolute inset-0">
+                          {showImage ? (
+                            <Image
+                              src={resolvedProductImage}
+                              alt={product.name}
+                              fill
+                              className="object-cover"
+                              sizes="(min-width: 1024px) 33vw, (min-width: 640px) 50vw, 100vw"
+                              onError={() => {
+                                setImageLoadErrors(currentErrors => ({
+                                  ...currentErrors,
+                                  [product.id]: true,
+                                }));
+                              }}
+                            />
+                          ) : (
+                            <div className="flex h-full items-center justify-center rounded-lg bg-gradient-to-br from-gray-100 to-gray-200">
+                              <div className="mb-1 text-4xl">
+                                {getProductFallbackEmoji(product.category)}
+                              </div>
                             </div>
+                          )}
+                        </div>
+
+                        {product.stock <= 0 && (
+                          <div className="absolute top-2 left-2">
+                            <Badge variant="destructive" className="text-xs">
+                              Out of Stock
+                            </Badge>
                           </div>
                         )}
-                      </div>
 
-                      {product.stock <= 0 && (
-                        <div className="absolute top-2 left-2">
-                          <Badge variant="destructive" className="text-xs">
-                            Out of Stock
+                        <div className="absolute top-2 right-2">
+                          <Badge variant="secondary" className="text-xs">
+                            {product.stock} left
                           </Badge>
                         </div>
-                      )}
-
-                      <div className="absolute top-2 right-2">
-                        <Badge variant="secondary" className="text-xs">
-                          {product.stock} left
-                        </Badge>
-                      </div>
-                    </div>
-
-                    <div className="space-y-2 p-3 sm:p-4">
-                      <h3 className="line-clamp-2 text-sm leading-tight font-semibold sm:text-sm">
-                        {product.name}
-                      </h3>
-
-                      <div className="text-muted-foreground flex items-center justify-between text-xs">
-                        <span>{product.sku}</span>
                       </div>
 
-                      <div className="flex items-center justify-between gap-2">
-                        <span className="text-primary text-base font-bold sm:text-lg">
-                          {formatCurrency(product.price)}
-                        </span>
-                        <Button
-                          size="sm"
-                          disabled={disabled || product.stock <= 0}
-                          onClick={e => {
-                            e.stopPropagation();
-                            handleProductClick(product);
-                          }}
-                          className="h-8 px-3 sm:px-4"
-                        >
-                          <IconPlus className="mr-1 h-3 w-3" />
-                          Add
-                        </Button>
-                      </div>
+                      <div className="space-y-2 p-3 sm:p-4">
+                        <h3 className="line-clamp-2 text-sm leading-tight font-semibold sm:text-sm">
+                          {product.name}
+                        </h3>
 
-                      <div className="flex flex-wrap gap-1">
-                        <Badge variant="secondary" className="text-xs">
-                          {product.category}
-                        </Badge>
-                        {product.brand && (
-                          <Badge variant="outline" className="text-xs">
-                            {product.brand}
+                        <div className="text-muted-foreground flex items-center justify-between text-xs">
+                          <span>{product.sku}</span>
+                        </div>
+
+                        <div className="flex items-center justify-between gap-2">
+                          <span className="text-primary text-base font-bold sm:text-lg">
+                            {formatCurrency(product.price)}
+                          </span>
+                          <Button
+                            size="sm"
+                            disabled={disabled || product.stock <= 0}
+                            onClick={e => {
+                              e.stopPropagation();
+                              handleProductClick(product);
+                            }}
+                            className="h-8 px-3 sm:px-4"
+                          >
+                            <IconPlus className="mr-1 h-3 w-3" />
+                            Add
+                          </Button>
+                        </div>
+
+                        <div className="flex flex-wrap gap-1">
+                          <Badge variant="secondary" className="text-xs">
+                            {product.category}
                           </Badge>
-                        )}
+                          {product.brand && (
+                            <Badge variant="outline" className="text-xs">
+                              {product.brand}
+                            </Badge>
+                          )}
+                        </div>
                       </div>
-                    </div>
-                  </CardContent>
-                </Card>
-              );
-            })
-          )}
-        </div>
+                    </CardContent>
+                  </Card>
+                );
+              })
+            )}
+          </div>
+        )}
       </ScrollArea>
     </div>
   );
