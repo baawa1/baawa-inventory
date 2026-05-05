@@ -443,9 +443,9 @@ export function MainAnalytics({ user: _ }: MainAnalyticsProps) {
               ))}
             </div>
             <div className="mt-4">
-              <Link href="/pos/analytics/sales">
+              <Link href="/pos/history">
                 <Button variant="outline" className="w-full">
-                  View All Sales
+                  View Transaction History
                 </Button>
               </Link>
             </div>

@@ -20,7 +20,6 @@ const SEGMENT_LABELS: Record<string, string> = {
   history: 'Transaction History',
   analytics: 'Analytics',
   customers: 'Customers',
-  'daily-orders': 'Daily Orders',
   coupons: 'Coupons',
   inventory: 'Inventory',
   products: 'Products',

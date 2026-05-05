@@ -546,7 +546,7 @@ test.describe('POS API Tests', () => {
   });
 
   test.describe('Analytics API', () => {
-    test('should fetch sales analytics', async ({ request }) => {
+    test('should fetch overview analytics', async ({ request }) => {
       // Login as staff
       const loginResponse = await request.post('/api/auth/signin', {
         data: {
@@ -557,9 +557,9 @@ test.describe('POS API Tests', () => {
 
       expect(loginResponse.ok()).toBeTruthy();
 
-      // Fetch sales analytics
+      // Fetch overview analytics
       const analyticsResponse = await request.get(
-        '/api/pos/analytics/sales?period=7d'
+        '/api/pos/analytics/overview?fromDate=2025-01-01&toDate=2025-01-07'
       );
 
       expect(analyticsResponse.ok()).toBeTruthy();
@@ -567,7 +567,7 @@ test.describe('POS API Tests', () => {
       const analyticsData = await analyticsResponse.json();
       expect(analyticsData).toHaveProperty('data');
 
-      console.log('✅ Sales analytics API works');
+      console.log('✅ Overview analytics API works');
     });
 
     test('should fetch category analytics', async ({ request }) => {
