@@ -5,7 +5,7 @@ import { z } from 'zod';
 import {
   buildFinanceRange,
   getFinanceAggregate,
-} from '@/lib/finance/aggregation';
+} from '@/lib/finance/ledger';
 import { formatFinanceDateInput } from '@/lib/finance/date-range';
 import {
   buildCanonicalFinanceTrends,

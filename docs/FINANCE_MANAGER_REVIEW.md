@@ -1,5 +1,7 @@
 # Finance Manager Comprehensive Review Report
 
+> Historical note: this review captures an earlier finance-manager pass. Some files and implementation details mentioned below have since been removed or consolidated. Use `docs/app-documentation/finance/README.md` and `docs/app-documentation/finance/how-finance-should-work.md` as the current finance source of truth.
+
 **Date:** 2026-02-06
 **Review Type:** Security, Data Integrity, Performance, Type Safety, Accessibility
 

@@ -41,7 +41,7 @@ Implemented:
 These are the remaining high-value tasks, not blockers for the hardening pass itself:
 
 1. Broader API and E2E coverage
-- Add deeper end-to-end coverage for register -> verify -> finance access by role.
+- Add deeper end-to-end coverage for admin-created users accessing finance by role.
 - Add end-to-end coverage for create -> list -> report visibility.
 - Add end-to-end coverage for overlap-audit visibility and receivables updates.
 

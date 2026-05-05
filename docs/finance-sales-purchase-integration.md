@@ -1,6 +1,6 @@
 # Finance Module Integration with Sales and Purchase Data
 
-> Historical note: this document describes an earlier iteration of the finance module. The current source of truth is `docs/app-documentation/finance/README.md`. References here to toggleable sales/purchase inclusion and `src/components/finance/FinanceReports.tsx` are obsolete; reporting now flows through the shared aggregation layer in `src/lib/finance/aggregation.ts` and the `/finance/reports` hub.
+> Historical note: this document describes an earlier iteration of the finance module. The current source of truth is `docs/app-documentation/finance/README.md`. References here to toggleable sales/purchase inclusion and `src/components/finance/FinanceReports.tsx` are obsolete; reporting now flows through the shared ledger layer in `src/lib/finance/ledger.ts` and the `/finance/reports` hub.
 
 ## Overview
 

@@ -14,7 +14,7 @@ The finance module is built around one rule: operational business activity is th
 
 Current operational sources:
 - POS sales are reported from `SalesTransaction` and related payment tables.
-- Inventory purchase expense is reported from stock addition and supplier purchase records.
+- Inventory purchase reporting is derived from `StockAddition` records and their supplier-linked purchase details where available.
 - Manual finance entries are stored in `FinancialTransaction`, `IncomeDetail`, and `ExpenseDetail`.
 
 Current reporting model:
@@ -90,15 +90,27 @@ Lifecycle rules:
 ### Canonical Pages
 - `/finance/reports`
 - `/finance/reports/income-statement`
-- `/finance/reports/expenses`
 - `/finance/reports/cash-flow`
 - `/finance/reports/analytics`
 - `/finance/reports/overlap-audit`
 
+### Compatibility Redirects
+- `/finance/reports/expenses` now redirects to `/finance/reports/analytics`.
+- `/finance/reports/[id]` redirects to `/finance/reports`.
+
+### Snapshot History
+- Saved report snapshots are stored in `FinancialReport`.
+- The reports hub loads snapshot history from `/api/finance/reports/history`.
+- Active snapshot types in this phase are:
+  - `FINANCIAL_SUMMARY`
+  - `INCOME_STATEMENT`
+  - `CASH_FLOW`
+- Snapshots are JSON-backed for auditability and re-opened comparison, not PDF-backed in this phase.
+
 ### Removed / Deprecated Behavior
-- The dynamic report detail surface at `/finance/reports/[id]` now redirects to the reports hub.
-- The old `FinanceReports.tsx` reporting surface is no longer used.
-- Report placeholders have been replaced with live pages or redirects back to the hub.
+- The dynamic report detail surface at `/finance/reports/[id]` no longer renders standalone details.
+- The standalone expense report page no longer exists as its own reporting product.
+- The older KPI, advanced analytics, and profit-margin micro-surfaces have been folded into the analytics page.
 - Older finance rewrite notes in the repository should be treated as historical/reference material if they disagree with `how-finance-should-work.md`.
 
 ## Shared Aggregation
@@ -120,10 +132,8 @@ Current source groups:
 The aggregation layer is used by:
 - `/api/finance/summary`
 - `/api/finance/reports`
+- `/api/finance/reports/history`
 - `/api/finance/analytics`
-- `/api/finance/advanced-analytics`
-- `/api/finance/kpis`
-- `/api/finance/profit-margins`
 - `/api/finance/receivables`
 - `/api/finance/cash-flow-forecast`
 - `/api/finance/overlap-audit`

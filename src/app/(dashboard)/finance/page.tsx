@@ -16,7 +16,7 @@ export default async function FinancePage() {
   }
 
   if (session.user.status !== 'APPROVED') {
-    redirect('/pending-approval');
+    redirect('/unauthorized');
   }
 
   // Check if user has permission to access financial reports (Admin only)

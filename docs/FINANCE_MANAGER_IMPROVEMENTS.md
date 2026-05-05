@@ -1,5 +1,7 @@
 # Finance Manager Improvements Guide
 
+> Historical note: this guide documents an earlier implementation plan. Some referenced files and steps have since been retired or merged into the shared finance ledger. Use `docs/app-documentation/finance/README.md` and `docs/app-documentation/finance/how-finance-should-work.md` for the current architecture.
+
 This document outlines all fixes and feature implementations for the Finance Manager module, organized for step-by-step execution.
 
 ---

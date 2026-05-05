@@ -1,15 +1,25 @@
 'use client';
 
 import React, { useState } from 'react';
+import Link from 'next/link';
+import { useQuery } from '@tanstack/react-query';
+import { DateRange } from 'react-day-picker';
 import {
-  Card,
-  CardContent,
-  CardDescription,
-  CardHeader,
-  CardTitle,
-} from '@/components/ui/card';
+  ArrowDownRight,
+  ArrowUpRight,
+  Briefcase,
+  Coins,
+  Package,
+  Plus,
+  Receipt,
+  Wallet,
+} from 'lucide-react';
+import { formatCurrency } from '@/lib/utils';
+import { queryKeys } from '@/lib/query-client';
+import { formatFinanceDateInput } from '@/lib/finance/date-range';
+import type { AppUser } from '@/types/user';
 import { Button } from '@/components/ui/button';
-import { Badge } from '@/components/ui/badge';
+import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { PageHeader } from '@/components/ui/page-header';
 import { DateRangePickerWithPresets } from '@/components/ui/date-range-picker-with-presets';
 import {
@@ -19,29 +29,10 @@ import {
 } from '@/components/ui/skeletons';
 import { Skeleton } from '@/components/ui/skeleton';
 
-import { formatCurrency } from '@/lib/utils';
-import {
-  TrendingUp,
-  TrendingDown,
-  DollarSign,
-  Receipt,
-  Plus,
-  ArrowUpRight,
-  ArrowDownRight,
-  Activity,
-} from 'lucide-react';
-import Link from 'next/link';
-import { AppUser } from '@/types/user';
-import { useQuery } from '@tanstack/react-query';
-import { queryKeys } from '@/lib/query-client';
-import { DateRange } from 'react-day-picker';
-import { formatFinanceDateInput } from '@/lib/finance/date-range';
-
 interface FinanceOverviewProps {
   user: AppUser;
 }
 
-// API function to fetch financial summary
 const fetchFinancialSummary = async (startDate?: Date, endDate?: Date) => {
   const params = new URLSearchParams();
   if (startDate) {
@@ -59,16 +50,47 @@ const fetchFinancialSummary = async (startDate?: Date, endDate?: Date) => {
   return response.json();
 };
 
+function percentageChange(current: number, previous: number) {
+  if (previous === 0) {
+    return current > 0 ? 100 : 0;
+  }
+
+  return ((current - previous) / previous) * 100;
+}
+
+function ComparisonText({
+  label,
+  current,
+  previous,
+}: {
+  label: string;
+  current: number;
+  previous: number;
+}) {
+  const change = percentageChange(current, previous);
+  const positive = change >= 0;
+
+  return (
+    <div className="text-muted-foreground flex items-center gap-1 text-xs">
+      {positive ? (
+        <ArrowUpRight className="h-3 w-3 text-green-600" />
+      ) : (
+        <ArrowDownRight className="h-3 w-3 text-red-600" />
+      )}
+      <span>
+        {change > 0 ? '+' : ''}
+        {change.toFixed(1)}% {label}
+      </span>
+    </div>
+  );
+}
+
 export function FinanceOverview({ user: _user }: FinanceOverviewProps) {
   const now = new Date();
   const [dateRange, setDateRange] = useState<DateRange | undefined>({
     from: new Date(now.getFullYear(), now.getMonth(), 1),
     to: now,
   });
-
-  const handleDateRangeChange = (newDateRange: DateRange | undefined) => {
-    setDateRange(newDateRange);
-  };
 
   const {
     data: summaryData,
@@ -83,8 +105,8 @@ export function FinanceOverview({ user: _user }: FinanceOverviewProps) {
     ],
     queryFn: () => fetchFinancialSummary(dateRange?.from, dateRange?.to),
     enabled: !!dateRange?.from && !!dateRange?.to,
-    staleTime: 5 * 60 * 1000, // 5 minutes
-    gcTime: 10 * 60 * 1000, // 10 minutes
+    staleTime: 5 * 60 * 1000,
+    gcTime: 10 * 60 * 1000,
     refetchOnWindowFocus: false,
     retry: 2,
   });
@@ -96,22 +118,18 @@ export function FinanceOverview({ user: _user }: FinanceOverviewProps) {
           actionsCount={3}
           actionWidths={['w-[300px]', 'w-28', 'w-32']}
         />
-        <CardGridSkeleton count={4} columns={{ base: 1, md: 2, lg: 4 }} />
+        <CardGridSkeleton count={3} columns={{ base: 1, md: 1, lg: 3 }} />
         <Card>
           <CardHeader>
-            <div className="flex items-center justify-between">
-              <div className="space-y-2">
-                <Skeleton className="h-5 w-40 rounded" />
-                <Skeleton className="h-4 w-56 rounded" />
-              </div>
-              <Skeleton className="h-9 w-20 rounded" />
+            <div className="space-y-2">
+              <Skeleton className="h-5 w-40 rounded" />
+              <Skeleton className="h-4 w-72 rounded" />
             </div>
           </CardHeader>
           <CardContent>
-            <ListSkeleton rows={3} withAvatar />
+            <ListSkeleton rows={4} withAvatar />
           </CardContent>
         </Card>
-        <CardGridSkeleton count={3} columns={{ base: 1, md: 2, lg: 3 }} />
       </div>
     );
   }
@@ -121,67 +139,66 @@ export function FinanceOverview({ user: _user }: FinanceOverviewProps) {
       <div className="mx-auto max-w-7xl space-y-6 p-6">
         <PageHeader
           title="Finance Overview"
-          description="Track your business finances and financial performance"
+          description="Track trading performance, cash movement, and business position."
         />
         <Card>
-          <CardContent className="p-6">
-            <div className="text-center">
-              <p className="text-destructive">Failed to load financial data</p>
-              <Button
-                variant="outline"
-                onClick={() => refetch()}
-                className="mt-2"
-              >
-                Retry
-              </Button>
-            </div>
+          <CardContent className="p-6 text-center">
+            <p className="text-destructive">Failed to load financial data.</p>
+            <Button variant="outline" onClick={() => refetch()} className="mt-3">
+              Retry
+            </Button>
           </CardContent>
         </Card>
       </div>
     );
   }
 
-  const currentMonth = summaryData?.data?.currentMonth || {
-    income: 0,
-    expenses: 0,
-    netIncome: 0,
-    transactionCount: 0,
+  const data = summaryData?.data;
+  const trading = data?.trading || {
+    salesRevenue: 0,
+    manualOperatingIncome: 0,
+    operatingRevenue: 0,
+    costOfGoodsSold: 0,
+    operatingExpenses: 0,
+    grossProfit: 0,
+    netProfit: 0,
   };
-
-  const previousMonth = summaryData?.data?.previousMonth || {
-    income: 0,
-    expenses: 0,
-    netIncome: 0,
-    transactionCount: 0,
+  const cashMovement = data?.cashMovement || {
+    cashReceived: 0,
+    cashSpent: 0,
+    customerCollections: 0,
+    ownerFunding: 0,
+    stockPurchases: 0,
+    operatingExpensePayments: 0,
+    manualIncomeCollections: 0,
+    netCashMovement: 0,
   };
-
-  const recentTransactions = summaryData?.data?.recentTransactions || [];
-
-  // Calculate percentage changes
-  const incomeChange =
-    previousMonth.income > 0
-      ? ((currentMonth.income - previousMonth.income) / previousMonth.income) *
-        100
-      : 0;
-
-  const expenseChange =
-    previousMonth.expenses > 0
-      ? ((currentMonth.expenses - previousMonth.expenses) /
-          previousMonth.expenses) *
-        100
-      : 0;
+  const businessPosition = data?.businessPosition || {
+    inventoryValueOnHand: 0,
+    inventoryUnitsOnHand: 0,
+    inventorySkusTracked: 0,
+    receivablesOutstanding: 0,
+    receivableTransactions: 0,
+    customersWithBalances: 0,
+    estimated: false,
+    estimatedReasons: [],
+  };
+  const previousTrading = data?.previousTrading || trading;
+  const previousCashMovement = data?.previousCashMovement || cashMovement;
+  const recentTransactions = data?.recentTransactions || [];
+  const methodology = data?.methodology;
 
   return (
     <div className="mx-auto max-w-7xl space-y-6 p-6">
       <div className="flex flex-wrap items-center justify-between gap-4">
         <PageHeader
           title="Finance Overview"
-          description="Track your business finances and financial performance"
+          description="See what the business earned, what cash moved, and what value is still tied up in stock and receivables."
         />
         <div className="flex flex-wrap items-center gap-2">
           <DateRangePickerWithPresets
             date={dateRange}
-            onDateChange={handleDateRangeChange}
+            onDateChange={setDateRange}
             placeholder="Select date range"
           />
           <Button asChild>
@@ -199,91 +216,156 @@ export function FinanceOverview({ user: _user }: FinanceOverviewProps) {
         </div>
       </div>
 
-      {/* Summary Cards */}
-      <div className="grid gap-6 md:grid-cols-2 lg:grid-cols-4">
+      {methodology?.estimated ? (
+        <Card className="border-amber-200 bg-amber-50/60">
+          <CardContent className="p-4 text-sm text-amber-900">
+            This period includes best-effort estimates.
+            {Array.isArray(methodology.reasons) && methodology.reasons.length > 0
+              ? ` ${methodology.reasons.join(' ')}`
+              : ''}
+          </CardContent>
+        </Card>
+      ) : null}
+
+      <div className="grid gap-6 lg:grid-cols-3">
         <Card>
-          <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-            <CardTitle className="text-sm font-medium">
-              Operating Revenue
-            </CardTitle>
-            <TrendingUp className="h-4 w-4 text-green-600" />
+          <CardHeader className="pb-3">
+            <div className="flex items-center justify-between">
+              <CardTitle className="text-base">Trading Performance</CardTitle>
+              <Briefcase className="h-4 w-4 text-emerald-600" />
+            </div>
           </CardHeader>
-          <CardContent>
-            <div className="text-2xl font-bold">
-              {formatCurrency(currentMonth.income)}
+          <CardContent className="space-y-3">
+            <div className="flex justify-between text-sm">
+              <span className="text-muted-foreground">Revenue recognised</span>
+              <span className="font-semibold">
+                {formatCurrency(trading.operatingRevenue)}
+              </span>
             </div>
-            <div className="text-muted-foreground flex items-center text-xs">
-              <ArrowUpRight className="mr-1 h-3 w-3" />
-              {incomeChange > 0 ? '+' : ''}
-              {incomeChange.toFixed(1)}% from previous period
+            <div className="flex justify-between text-sm">
+              <span className="text-muted-foreground">Cost of goods sold</span>
+              <span className="font-semibold">
+                {formatCurrency(trading.costOfGoodsSold)}
+              </span>
             </div>
+            <div className="flex justify-between text-sm">
+              <span className="text-muted-foreground">Operating expenses</span>
+              <span className="font-semibold">
+                {formatCurrency(trading.operatingExpenses)}
+              </span>
+            </div>
+            <div className="flex justify-between border-t pt-3">
+              <span className="font-medium">Net profit</span>
+              <span
+                className={`font-bold ${
+                  trading.netProfit >= 0 ? 'text-green-600' : 'text-red-600'
+                }`}
+              >
+                {formatCurrency(trading.netProfit)}
+              </span>
+            </div>
+            <ComparisonText
+              label="vs previous period"
+              current={trading.netProfit}
+              previous={previousTrading.netProfit}
+            />
           </CardContent>
         </Card>
 
         <Card>
-          <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-            <CardTitle className="text-sm font-medium">
-              Total Expenses
-            </CardTitle>
-            <TrendingDown className="h-4 w-4 text-red-600" />
+          <CardHeader className="pb-3">
+            <div className="flex items-center justify-between">
+              <CardTitle className="text-base">Cash Movement</CardTitle>
+              <Wallet className="h-4 w-4 text-blue-600" />
+            </div>
           </CardHeader>
-          <CardContent>
-            <div className="text-2xl font-bold">
-              {formatCurrency(currentMonth.expenses)}
+          <CardContent className="space-y-3">
+            <div className="flex justify-between text-sm">
+              <span className="text-muted-foreground">Cash received</span>
+              <span className="font-semibold">
+                {formatCurrency(cashMovement.cashReceived)}
+              </span>
             </div>
-            <div className="text-muted-foreground flex items-center text-xs">
-              <ArrowDownRight className="mr-1 h-3 w-3" />
-              {expenseChange > 0 ? '+' : ''}
-              {expenseChange.toFixed(1)}% from previous period
+            <div className="flex justify-between text-sm">
+              <span className="text-muted-foreground">Cash spent</span>
+              <span className="font-semibold">
+                {formatCurrency(cashMovement.cashSpent)}
+              </span>
             </div>
+            <div className="flex justify-between text-sm">
+              <span className="text-muted-foreground">Owner funding</span>
+              <span className="font-semibold">
+                {formatCurrency(cashMovement.ownerFunding)}
+              </span>
+            </div>
+            <div className="flex justify-between border-t pt-3">
+              <span className="font-medium">Net cash movement</span>
+              <span
+                className={`font-bold ${
+                  cashMovement.netCashMovement >= 0
+                    ? 'text-green-600'
+                    : 'text-red-600'
+                }`}
+              >
+                {formatCurrency(cashMovement.netCashMovement)}
+              </span>
+            </div>
+            <ComparisonText
+              label="vs previous period"
+              current={cashMovement.netCashMovement}
+              previous={previousCashMovement.netCashMovement}
+            />
           </CardContent>
         </Card>
 
         <Card>
-          <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-            <CardTitle className="text-sm font-medium">Net Income</CardTitle>
-            <DollarSign className="h-4 w-4 text-blue-600" />
-          </CardHeader>
-          <CardContent>
-            <div
-              className={`text-2xl font-bold ${currentMonth.netIncome >= 0 ? 'text-green-600' : 'text-red-600'}`}
-            >
-              {formatCurrency(currentMonth.netIncome)}
+          <CardHeader className="pb-3">
+            <div className="flex items-center justify-between">
+              <CardTitle className="text-base">Business Position</CardTitle>
+              <Package className="h-4 w-4 text-amber-600" />
             </div>
-            <p className="text-muted-foreground text-xs">
-              {currentMonth.netIncome >= 0 ? 'Profit' : 'Loss'} this period
-            </p>
-          </CardContent>
-        </Card>
-
-        <Card>
-          <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-            <CardTitle className="text-sm font-medium">Transactions</CardTitle>
-            <Activity className="h-4 w-4 text-purple-600" />
           </CardHeader>
-          <CardContent>
-            <div className="text-2xl font-bold">
-              {currentMonth.transactionCount}
+          <CardContent className="space-y-3">
+            <div className="flex justify-between text-sm">
+              <span className="text-muted-foreground">Inventory on hand</span>
+              <span className="font-semibold">
+                {formatCurrency(businessPosition.inventoryValueOnHand)}
+              </span>
             </div>
-            <p className="text-muted-foreground text-xs">
-              Total transactions this period
-            </p>
+            <div className="flex justify-between text-sm">
+              <span className="text-muted-foreground">Units in stock</span>
+              <span className="font-semibold">
+                {businessPosition.inventoryUnitsOnHand}
+              </span>
+            </div>
+            <div className="flex justify-between text-sm">
+              <span className="text-muted-foreground">Customers owing</span>
+              <span className="font-semibold">
+                {formatCurrency(businessPosition.receivablesOutstanding)}
+              </span>
+            </div>
+            <div className="flex justify-between border-t pt-3 text-sm">
+              <span className="font-medium">Open receivable accounts</span>
+              <span className="font-semibold">
+                {businessPosition.customersWithBalances}
+              </span>
+            </div>
           </CardContent>
         </Card>
       </div>
 
-      {/* Recent Transactions */}
       <Card>
         <CardHeader>
           <div className="flex items-center justify-between">
             <div>
-              <CardTitle>Recent Transactions</CardTitle>
-              <CardDescription>
-                Latest financial transactions across all sources
-              </CardDescription>
+              <CardTitle>Recent Finance Ledger Events</CardTitle>
+              <p className="text-muted-foreground text-sm">
+                Latest money movements and business events across finance, POS,
+                and stock.
+              </p>
             </div>
             <Button asChild variant="outline">
-              <Link href="/finance/transactions">View All</Link>
+              <Link href="/finance/transactions">Open Ledger</Link>
             </Button>
           </div>
         </CardHeader>
@@ -295,32 +377,25 @@ export function FinanceOverview({ user: _user }: FinanceOverviewProps) {
                   key={transaction.id}
                   className="flex items-center justify-between rounded-lg border p-4"
                 >
-                  <div className="flex items-center space-x-4">
-                    <div className="flex-shrink-0">
-                      <Badge
-                        variant={
-                          transaction.type === 'INCOME'
-                            ? 'default'
-                            : 'destructive'
-                        }
-                      >
-                        {transaction.type}
-                      </Badge>
-                    </div>
-                    <div>
-                      <p className="font-medium">{transaction.description}</p>
-                      <p className="text-muted-foreground text-sm">
-                        {new Date(
-                          transaction.transactionDate
-                        ).toLocaleDateString()}
+                  <div className="space-y-1">
+                    <div className="flex items-center gap-2">
+                      <Coins className="h-4 w-4 text-slate-500" />
+                      <p className="font-medium">
+                        {transaction.displayLabel || transaction.description}
                       </p>
                     </div>
+                    <p className="text-muted-foreground text-sm">
+                      {transaction.description}
+                    </p>
+                    <p className="text-muted-foreground text-xs">
+                      {new Date(transaction.transactionDate).toLocaleDateString()}
+                    </p>
                   </div>
-                  <div className="text-right">
-                    <p className="font-medium">
+                  <div className="text-right text-sm">
+                    <p className="font-semibold">
                       {formatCurrency(transaction.amount)}
                     </p>
-                    <p className="text-muted-foreground text-sm">
+                    <p className="text-muted-foreground">
                       {transaction.source}
                     </p>
                   </div>
@@ -330,75 +405,11 @@ export function FinanceOverview({ user: _user }: FinanceOverviewProps) {
           ) : (
             <div className="py-8 text-center">
               <Receipt className="text-muted-foreground mx-auto mb-4 h-12 w-12" />
-              <p className="text-muted-foreground">No recent transactions</p>
-              <Button asChild className="mt-4">
-                <Link href="/finance/income/new">
-                  <Plus className="mr-2 h-4 w-4" />
-                  Add First Transaction
-                </Link>
-              </Button>
+              <p className="text-muted-foreground">No finance events yet.</p>
             </div>
           )}
         </CardContent>
       </Card>
-
-      {/* Quick Actions */}
-      <div className="grid gap-6 md:grid-cols-2 lg:grid-cols-3">
-        <Card>
-          <CardHeader>
-            <CardTitle className="text-lg">Income Management</CardTitle>
-            <CardDescription>
-              Track and manage your income sources
-            </CardDescription>
-          </CardHeader>
-          <CardContent className="space-y-2">
-            <Button asChild className="w-full">
-              <Link href="/finance/income">View All Income</Link>
-            </Button>
-            <Button asChild variant="outline" className="w-full">
-              <Link href="/finance/income/new">
-                <Plus className="mr-2 h-4 w-4" />
-                Add Income
-              </Link>
-            </Button>
-          </CardContent>
-        </Card>
-
-        <Card>
-          <CardHeader>
-            <CardTitle className="text-lg">Expense Management</CardTitle>
-            <CardDescription>Track and manage your expenses</CardDescription>
-          </CardHeader>
-          <CardContent className="space-y-2">
-            <Button asChild className="w-full">
-              <Link href="/finance/expenses">View All Expenses</Link>
-            </Button>
-            <Button asChild variant="outline" className="w-full">
-              <Link href="/finance/expenses/new">
-                <Plus className="mr-2 h-4 w-4" />
-                Add Expense
-              </Link>
-            </Button>
-          </CardContent>
-        </Card>
-
-        <Card>
-          <CardHeader>
-            <CardTitle className="text-lg">Reports & Analytics</CardTitle>
-            <CardDescription>
-              Generate financial reports and insights
-            </CardDescription>
-          </CardHeader>
-          <CardContent className="space-y-2">
-            <Button asChild className="w-full">
-              <Link href="/finance/reports">View Reports</Link>
-            </Button>
-            <Button asChild variant="outline" className="w-full">
-              <Link href="/finance/reports">Financial Summary</Link>
-            </Button>
-          </CardContent>
-        </Card>
-      </div>
     </div>
   );
 }

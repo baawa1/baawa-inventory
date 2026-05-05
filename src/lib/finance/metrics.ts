@@ -1,10 +1,9 @@
 import { format, startOfMonth, startOfWeek } from 'date-fns';
-import { FINANCIAL_TYPES, INCOME_SOURCES } from '@/lib/constants/finance';
 import type {
   FinanceAggregateResult,
   FinanceGroupBy,
   NormalizedFinanceTransaction,
-} from './aggregation';
+} from './ledger';
 
 interface FinanceAggregateSummaryLike {
   totalTransactions: number;
@@ -52,46 +51,13 @@ interface CanonicalTrendAccumulator {
   financingInflows: number;
   costOfGoodsSold: number;
   operatingExpenses: number;
+  cashIn: number;
+  cashOut: number;
   transactions: number;
 }
 
-function isOperatingRevenueTransaction(
-  transaction: NormalizedFinanceTransaction
-): boolean {
-  return (
-    transaction.type === FINANCIAL_TYPES.INCOME &&
-    (transaction.source === 'POS_SALE' ||
-      (transaction.source === 'MANUAL' &&
-        transaction.category !== INCOME_SOURCES.INVESTMENTS))
-  );
-}
-
-function isFinancingInflowTransaction(
-  transaction: NormalizedFinanceTransaction
-): boolean {
-  return (
-    transaction.type === FINANCIAL_TYPES.INCOME &&
-    transaction.source === 'MANUAL' &&
-    transaction.category === INCOME_SOURCES.INVESTMENTS
-  );
-}
-
-function isCostOfGoodsTransaction(
-  transaction: NormalizedFinanceTransaction
-): boolean {
-  return (
-    transaction.type === FINANCIAL_TYPES.EXPENSE &&
-    transaction.source === 'STOCK_PURCHASE'
-  );
-}
-
-function isOperatingExpenseTransaction(
-  transaction: NormalizedFinanceTransaction
-): boolean {
-  return (
-    transaction.type === FINANCIAL_TYPES.EXPENSE &&
-    transaction.source === 'MANUAL'
-  );
+function roundCurrency(value: number): number {
+  return Math.round((value + Number.EPSILON) * 100) / 100;
 }
 
 function getPeriodKey(date: Date, groupBy: FinanceGroupBy): string {
@@ -110,16 +76,16 @@ function buildSummaryFallback(
   summary: FinanceAggregateSummaryLike
 ): CanonicalFinanceMetrics {
   return {
-    posSalesRevenue: 0,
-    manualOperatingIncome: summary.totalIncome,
+    posSalesRevenue: summary.totalIncome,
+    manualOperatingIncome: 0,
     operatingRevenue: summary.totalIncome,
     financingInflows: 0,
-    costOfGoodsSold: 0,
-    operatingExpenses: summary.totalExpenses,
+    costOfGoodsSold: summary.totalExpenses,
+    operatingExpenses: 0,
     totalExpenses: summary.totalExpenses,
-    grossProfit: summary.totalIncome,
+    grossProfit: summary.totalIncome - summary.totalExpenses,
     netProfit: summary.netProfit,
-    netOperatingCashFlow: summary.totalIncome - summary.totalExpenses,
+    netOperatingCashFlow: summary.netProfit,
     netInvestingCashFlow: 0,
     netFinancingCashFlow: 0,
     totalCashFlow: summary.netProfit,
@@ -130,96 +96,60 @@ function buildSummaryFallback(
 }
 
 export function deriveCanonicalFinanceMetrics(
-  transactions: NormalizedFinanceTransaction[] | undefined,
-  summary?: FinanceAggregateSummaryLike
+  aggregate?: Pick<
+    FinanceAggregateResult,
+    'summary' | 'trading' | 'cashMovement'
+  >
 ): CanonicalFinanceMetrics {
-  const normalizedTransactions = transactions ?? [];
-
-  if (normalizedTransactions.length === 0) {
-    if (summary) {
-      return buildSummaryFallback(summary);
-    }
-
-    return {
-      posSalesRevenue: 0,
-      manualOperatingIncome: 0,
-      operatingRevenue: 0,
-      financingInflows: 0,
-      costOfGoodsSold: 0,
-      operatingExpenses: 0,
-      totalExpenses: 0,
-      grossProfit: 0,
-      netProfit: 0,
-      netOperatingCashFlow: 0,
-      netInvestingCashFlow: 0,
-      netFinancingCashFlow: 0,
-      totalCashFlow: 0,
+  if (!aggregate) {
+    return buildSummaryFallback({
       totalTransactions: 0,
       averageTransactionValue: 0,
       topPaymentMethod: '',
-    };
+      totalIncome: 0,
+      totalExpenses: 0,
+      netProfit: 0,
+    });
   }
 
-  let posSalesRevenue = 0;
-  let manualOperatingIncome = 0;
-  let financingInflows = 0;
-  let costOfGoodsSold = 0;
-  let operatingExpenses = 0;
+  if (!aggregate.trading || !aggregate.cashMovement) {
+    return buildSummaryFallback(aggregate.summary);
+  }
 
-  normalizedTransactions.forEach(transaction => {
-    if (transaction.source === 'POS_SALE') {
-      posSalesRevenue += transaction.amount;
-      return;
-    }
-
-    if (isFinancingInflowTransaction(transaction)) {
-      financingInflows += transaction.amount;
-      return;
-    }
-
-    if (isOperatingRevenueTransaction(transaction)) {
-      manualOperatingIncome += transaction.amount;
-      return;
-    }
-
-    if (isCostOfGoodsTransaction(transaction)) {
-      costOfGoodsSold += transaction.amount;
-      return;
-    }
-
-    if (isOperatingExpenseTransaction(transaction)) {
-      operatingExpenses += transaction.amount;
-    }
-  });
-
-  const operatingRevenue = posSalesRevenue + manualOperatingIncome;
+  const operatingRevenue = aggregate.trading.operatingRevenue;
+  const financingInflows = aggregate.cashMovement.ownerFunding;
+  const costOfGoodsSold = aggregate.trading.costOfGoodsSold;
+  const operatingExpenses = aggregate.trading.operatingExpenses;
   const totalExpenses = costOfGoodsSold + operatingExpenses;
-  const grossProfit = operatingRevenue - costOfGoodsSold;
-  const netProfit = grossProfit - operatingExpenses;
-  const netOperatingCashFlow = operatingRevenue - operatingExpenses;
-  const netInvestingCashFlow = -costOfGoodsSold;
-  const netFinancingCashFlow = financingInflows;
-  const totalCashFlow =
-    netOperatingCashFlow + netInvestingCashFlow + netFinancingCashFlow;
+  const netOperatingCashFlow = roundCurrency(
+    aggregate.cashMovement.customerCollections +
+      aggregate.cashMovement.manualIncomeCollections -
+      aggregate.cashMovement.operatingExpensePayments
+  );
+  const netInvestingCashFlow = roundCurrency(
+    -aggregate.cashMovement.stockPurchases
+  );
+  const netFinancingCashFlow = roundCurrency(financingInflows);
 
   return {
-    posSalesRevenue,
-    manualOperatingIncome,
-    operatingRevenue,
-    financingInflows,
-    costOfGoodsSold,
-    operatingExpenses,
-    totalExpenses,
-    grossProfit,
-    netProfit,
+    posSalesRevenue: roundCurrency(aggregate.trading.salesRevenue),
+    manualOperatingIncome: roundCurrency(
+      aggregate.trading.manualOperatingIncome
+    ),
+    operatingRevenue: roundCurrency(operatingRevenue),
+    financingInflows: roundCurrency(financingInflows),
+    costOfGoodsSold: roundCurrency(costOfGoodsSold),
+    operatingExpenses: roundCurrency(operatingExpenses),
+    totalExpenses: roundCurrency(totalExpenses),
+    grossProfit: roundCurrency(aggregate.trading.grossProfit),
+    netProfit: roundCurrency(aggregate.trading.netProfit),
     netOperatingCashFlow,
     netInvestingCashFlow,
     netFinancingCashFlow,
-    totalCashFlow,
-    totalTransactions:
-      summary?.totalTransactions ?? normalizedTransactions.length,
-    averageTransactionValue: summary?.averageTransactionValue ?? 0,
-    topPaymentMethod: summary?.topPaymentMethod ?? '',
+    totalCashFlow: roundCurrency(aggregate.cashMovement.netCashMovement),
+    totalTransactions: aggregate.summary.totalTransactions,
+    averageTransactionValue: aggregate.summary.averageTransactionValue,
+    topPaymentMethod: aggregate.summary.topPaymentMethod,
   };
 }
 
@@ -236,17 +166,28 @@ export function buildCanonicalFinanceTrends(
       financingInflows: 0,
       costOfGoodsSold: 0,
       operatingExpenses: 0,
+      cashIn: 0,
+      cashOut: 0,
       transactions: 0,
     };
 
-    if (isOperatingRevenueTransaction(transaction)) {
-      current.revenue += transaction.amount;
-    } else if (isFinancingInflowTransaction(transaction)) {
-      current.financingInflows += transaction.amount;
-    } else if (isCostOfGoodsTransaction(transaction)) {
-      current.costOfGoodsSold += transaction.amount;
-    } else if (isOperatingExpenseTransaction(transaction)) {
-      current.operatingExpenses += transaction.amount;
+    current.revenue += transaction.profitIn;
+    current.cashIn += transaction.cashIn;
+    current.cashOut += transaction.cashOut;
+
+    if (transaction.eventType === 'OWNER_FUNDING_IN') {
+      current.financingInflows += transaction.cashIn;
+    }
+
+    if (
+      transaction.eventType === 'POS_CASH_SALE' ||
+      transaction.eventType === 'POS_DEBT_SALE_ISSUED'
+    ) {
+      current.costOfGoodsSold += transaction.profitOut;
+    }
+
+    if (transaction.eventType === 'MANUAL_OPERATING_EXPENSE') {
+      current.operatingExpenses += transaction.profitOut;
     }
 
     current.transactions += 1;
@@ -259,22 +200,17 @@ export function buildCanonicalFinanceTrends(
       const expenses = values.costOfGoodsSold + values.operatingExpenses;
       const grossProfit = values.revenue - values.costOfGoodsSold;
       const netProfit = grossProfit - values.operatingExpenses;
-      const netCashFlow =
-        values.revenue -
-        values.operatingExpenses -
-        values.costOfGoodsSold +
-        values.financingInflows;
 
       return {
         date,
-        revenue: values.revenue,
-        financingInflows: values.financingInflows,
-        expenses,
-        costOfGoodsSold: values.costOfGoodsSold,
-        operatingExpenses: values.operatingExpenses,
-        grossProfit,
-        netProfit,
-        netCashFlow,
+        revenue: roundCurrency(values.revenue),
+        financingInflows: roundCurrency(values.financingInflows),
+        expenses: roundCurrency(expenses),
+        costOfGoodsSold: roundCurrency(values.costOfGoodsSold),
+        operatingExpenses: roundCurrency(values.operatingExpenses),
+        grossProfit: roundCurrency(grossProfit),
+        netProfit: roundCurrency(netProfit),
+        netCashFlow: roundCurrency(values.cashIn - values.cashOut),
         transactions: values.transactions,
       };
     });
@@ -293,19 +229,20 @@ export function buildOperatingRevenueBySource(
   >();
 
   (transactions ?? [])
-    .filter(isOperatingRevenueTransaction)
+    .filter(
+      transaction =>
+        transaction.profitIn > 0 && transaction.eventType !== 'OWNER_FUNDING_IN'
+    )
     .forEach(transaction => {
       const key =
-        transaction.source === 'POS_SALE'
-          ? 'POS_SALES'
-          : transaction.category;
+        transaction.source === 'POS' ? 'POS_SALES' : transaction.category;
       const current = revenueBySource.get(key) || {
         revenue: 0,
         transactionCount: 0,
       };
 
       revenueBySource.set(key, {
-        revenue: current.revenue + transaction.amount,
+        revenue: roundCurrency(current.revenue + transaction.profitIn),
         transactionCount: current.transactionCount + 1,
       });
     });
@@ -320,7 +257,10 @@ export function buildOperatingRevenueBySource(
 }
 
 export function summarizeCanonicalFinanceAggregate(
-  aggregate: Pick<FinanceAggregateResult, 'transactions' | 'summary'>
+  aggregate: Pick<
+    FinanceAggregateResult,
+    'summary' | 'trading' | 'cashMovement'
+  >
 ): CanonicalFinanceMetrics {
-  return deriveCanonicalFinanceMetrics(aggregate.transactions, aggregate.summary);
+  return deriveCanonicalFinanceMetrics(aggregate);
 }

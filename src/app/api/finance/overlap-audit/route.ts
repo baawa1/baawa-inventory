@@ -4,7 +4,7 @@ import { createApiResponse } from '@/lib/api-response';
 import {
   buildFinanceRange,
   getManualFinanceOverlapEntries,
-} from '@/lib/finance/aggregation';
+} from '@/lib/finance/ledger';
 
 export const GET = withAuth(async (request: AuthenticatedRequest) => {
   try {

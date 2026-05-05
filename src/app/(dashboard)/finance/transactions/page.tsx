@@ -4,9 +4,9 @@ import { FinanceTransactionList } from '@/components/finance/FinanceTransactionL
 import { hasPermission } from '@/lib/auth/roles';
 
 export const metadata = {
-  title: 'Financial Transactions - BaaWA Inventory POS',
+  title: 'Finance Ledger - BaaWA Inventory POS',
   description:
-    'View and manage all financial transactions including expenses and income',
+    'View the master finance ledger across POS sales, debt collections, stock purchases, owner funding, and manual entries',
 };
 
 export default async function FinanceTransactionsPage() {

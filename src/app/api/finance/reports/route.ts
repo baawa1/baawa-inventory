@@ -3,8 +3,8 @@ import { hasPermission } from '@/lib/auth/roles';
 import { logger } from '@/lib/logger';
 import { createApiResponse } from '@/lib/api-response';
 import { prisma } from '@/lib/db';
+import type { Prisma } from '@prisma/client';
 import { getFinanceAggregate, type FinanceAggregationFilters } from '@/lib/finance/ledger';
-import { Prisma } from '@prisma/client';
 import {
   ACTIVE_FINANCE_REPORT_TYPES,
   buildFinanceReportExportRows,

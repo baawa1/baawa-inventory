@@ -7,7 +7,7 @@ import {
   getFinanceAggregate,
   getPreviousFinanceRange,
   getRecentFinanceTransactions,
-} from '@/lib/finance/aggregation';
+} from '@/lib/finance/ledger';
 import {
   addFinanceDateRangeIssue,
   getZodErrorMessage,
@@ -76,6 +76,19 @@ export const GET = withAuth(async (request: AuthenticatedRequest) => {
     const yearToDateMetrics = summarizeCanonicalFinanceAggregate(yearToDate);
 
     return createApiResponse.success({
+      trading: currentMonth.trading,
+      cashMovement: currentMonth.cashMovement,
+      businessPosition: currentMonth.businessPosition,
+      methodology: currentMonth.methodology,
+      previousTrading: previousMonth.trading,
+      previousCashMovement: previousMonth.cashMovement,
+      previousBusinessPosition: previousMonth.businessPosition,
+      yearToDateOverview: {
+        trading: yearToDate.trading,
+        cashMovement: yearToDate.cashMovement,
+        businessPosition: yearToDate.businessPosition,
+        methodology: yearToDate.methodology,
+      },
       currentMonth: mapSummaryBlock(currentMetrics),
       previousMonth: mapSummaryBlock(previousMetrics),
       yearToDate: mapSummaryBlock(yearToDateMetrics),
@@ -83,11 +96,17 @@ export const GET = withAuth(async (request: AuthenticatedRequest) => {
         id: transaction.id,
         transactionNumber: transaction.transactionNumber,
         type: transaction.type,
+        eventType: transaction.eventType,
+        displayLabel: transaction.displayLabel,
         amount: transaction.amount,
         description: transaction.description,
         transactionDate: transaction.date.toISOString(),
         paymentMethod: transaction.paymentMethod,
         source: transaction.source,
+        cashIn: transaction.cashIn,
+        cashOut: transaction.cashOut,
+        profitIn: transaction.profitIn,
+        profitOut: transaction.profitOut,
       })),
       dataSources: {
         includeSales: true,
