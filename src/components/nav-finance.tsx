@@ -230,8 +230,8 @@ export function NavFinance() {
         return false;
       }
 
-      // Show Transactions only if user can create transactions
-      if (item.title === 'Transactions' && !canCreateTransactions) {
+      // Show Finance Ledger only if user can create transactions
+      if (item.title === 'Finance Ledger' && !canCreateTransactions) {
         return false;
       }
 

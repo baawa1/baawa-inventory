@@ -1,5 +1,7 @@
 # Finance Page Performance Optimization
 
+> Historical note: this document describes an earlier performance pass. The current finance source of truth is `docs/app-documentation/finance/README.md`, and active reporting now flows through `src/lib/finance/ledger.ts`.
+
 ## Problem
 The finance page at `http://localhost:3000/finance` was taking too long to load due to inefficient database queries and lack of proper caching.
 

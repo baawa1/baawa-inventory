@@ -15,7 +15,7 @@ jest.mock('@/lib/api-middleware', () => ({
 const mockBuildFinanceRange = jest.fn();
 const mockGetFinanceAggregate = jest.fn();
 
-jest.mock('@/lib/finance/aggregation', () => ({
+jest.mock('@/lib/finance/ledger', () => ({
   buildFinanceRange: (...args: unknown[]) => mockBuildFinanceRange(...args),
   getFinanceAggregate: (...args: unknown[]) => mockGetFinanceAggregate(...args),
 }));
@@ -32,7 +32,7 @@ const forecastAggregate = {
   transactions: [
     {
       id: 'pos-1',
-      source: 'POS_SALE',
+      source: 'POS',
       sourceId: 1,
       transactionNumber: 'POS-001',
       type: 'INCOME',
@@ -43,6 +43,11 @@ const forecastAggregate = {
       category: 'POS_SALE',
       categoryLabel: 'POS Sales',
       status: 'COMPLETED',
+      eventType: 'POS_CASH_SALE',
+      cashIn: 100,
+      cashOut: 0,
+      profitIn: 100,
+      profitOut: 0,
       flaggedOverlap: false,
     },
     {
@@ -58,6 +63,11 @@ const forecastAggregate = {
       category: 'INVESTMENTS',
       categoryLabel: 'Investments',
       status: 'APPROVED',
+      eventType: 'OWNER_FUNDING_IN',
+      cashIn: 300,
+      cashOut: 0,
+      profitIn: 0,
+      profitOut: 0,
       flaggedOverlap: false,
     },
     {
@@ -73,6 +83,11 @@ const forecastAggregate = {
       category: 'OTHER',
       categoryLabel: 'Other',
       status: 'APPROVED',
+      eventType: 'MANUAL_OPERATING_EXPENSE',
+      cashIn: 0,
+      cashOut: 50,
+      profitIn: 0,
+      profitOut: 50,
       flaggedOverlap: false,
     },
   ],
@@ -88,6 +103,25 @@ const forecastAggregate = {
   dailyTrends: [],
   expenseBreakdown: {},
   topVendors: [],
+  trading: {
+    salesRevenue: 100,
+    manualOperatingIncome: 0,
+    operatingRevenue: 100,
+    costOfGoodsSold: 0,
+    operatingExpenses: 50,
+    grossProfit: 100,
+    netProfit: 50,
+  },
+  cashMovement: {
+    cashReceived: 400,
+    cashSpent: 50,
+    customerCollections: 100,
+    ownerFunding: 300,
+    stockPurchases: 0,
+    operatingExpensePayments: 50,
+    manualIncomeCollections: 0,
+    netCashMovement: 350,
+  },
 };
 
 describe('GET /api/finance/cash-flow-forecast', () => {

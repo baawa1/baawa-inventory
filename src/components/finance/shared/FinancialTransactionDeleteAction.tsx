@@ -15,19 +15,12 @@ import {
 } from '@/components/ui/dialog';
 import { Label } from '@/components/ui/label';
 import { Textarea } from '@/components/ui/textarea';
-import {
-  Tooltip,
-  TooltipContent,
-  TooltipTrigger,
-} from '@/components/ui/tooltip';
 import { useDeleteFinancialTransaction } from '@/hooks/api/finance';
-import type { FinancialStatus } from '@/types/finance';
 
 type TransactionVariant = 'income' | 'expense';
 
 interface TriggerRenderProps {
   actionLabel: string;
-  blocked: boolean;
   openDialog: () => void;
 }
 
@@ -35,20 +28,16 @@ interface FinancialTransactionDeleteActionProps {
   transactionId: number;
   transactionNumber?: string;
   transactionType: TransactionVariant;
-  transactionStatus: FinancialStatus | string;
   renderTrigger: (_props: TriggerRenderProps) => React.ReactNode;
   redirectTo?: string;
-  showBlockedHelperText?: boolean;
 }
 
 export function FinancialTransactionDeleteAction({
   transactionId,
   transactionNumber,
   transactionType,
-  transactionStatus,
   renderTrigger,
   redirectTo,
-  showBlockedHelperText = false,
 }: FinancialTransactionDeleteActionProps) {
   const router = useRouter();
   const deleteTransactionMutation = useDeleteFinancialTransaction();
@@ -58,8 +47,6 @@ export function FinancialTransactionDeleteAction({
   const typeLabel = transactionType === 'income' ? 'income' : 'expense';
   const actionLabel =
     transactionType === 'income' ? 'Delete Income' : 'Delete Expense';
-  const blockedMessage = `Legacy approved or rejected ${typeLabel} transactions cannot be deleted.`;
-  const blocked = ['APPROVED', 'REJECTED'].includes(transactionStatus);
 
   const resetDialogState = React.useCallback(() => {
     setOpen(false);
@@ -108,25 +95,8 @@ export function FinancialTransactionDeleteAction({
 
   const trigger = renderTrigger({
     actionLabel,
-    blocked,
     openDialog: () => setOpen(true),
   });
-
-  if (blocked) {
-    return (
-      <>
-        <Tooltip>
-          <TooltipTrigger asChild>
-            <span className="inline-flex">{trigger}</span>
-          </TooltipTrigger>
-          <TooltipContent>{blockedMessage}</TooltipContent>
-        </Tooltip>
-        {showBlockedHelperText ? (
-          <p className="text-muted-foreground text-sm">{blockedMessage}</p>
-        ) : null}
-      </>
-    );
-  }
 
   return (
     <>

@@ -15,7 +15,7 @@ jest.mock('@/lib/api-middleware', () => ({
 const mockBuildFinanceRange = jest.fn();
 const mockGetManualFinanceOverlapEntries = jest.fn();
 
-jest.mock('@/lib/finance/aggregation', () => ({
+jest.mock('@/lib/finance/ledger', () => ({
   buildFinanceRange: (...args: unknown[]) => mockBuildFinanceRange(...args),
   getManualFinanceOverlapEntries: (...args: unknown[]) =>
     mockGetManualFinanceOverlapEntries(...args),

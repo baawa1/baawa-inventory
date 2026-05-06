@@ -384,10 +384,8 @@ export function MobileExpenseList({ user }: MobileExpenseListProps) {
                   transactionId={transaction.id}
                   transactionNumber={transaction.transactionNumber}
                   transactionType="expense"
-                  transactionStatus={transaction.status}
-                  renderTrigger={({ actionLabel, blocked, openDialog }) => (
+                  renderTrigger={({ actionLabel, openDialog }) => (
                     <DropdownMenuItem
-                      disabled={blocked}
                       onSelect={event => {
                         event.preventDefault();
                         openDialog();

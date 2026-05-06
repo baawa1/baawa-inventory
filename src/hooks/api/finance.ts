@@ -126,6 +126,30 @@ export interface GeneratedFinancialReportResponse {
   };
 }
 
+export interface FinancialReportSnapshotDetail extends FinanceReportHistoryEntry {
+  reportData: FinanceReportPayloadWithExportRows;
+}
+
+export type FinancialReportSnapshotSummary = FinanceReportHistoryEntry;
+
+export interface FinancialReportComparisonMetric {
+  base: number;
+  comparison: number;
+  delta: number;
+  percentageChange: number;
+}
+
+export interface FinancialReportComparisonResponse {
+  base: FinancialReportSnapshotSummary;
+  comparison: FinancialReportSnapshotSummary;
+  deltas: {
+    summary: Record<string, FinancialReportComparisonMetric>;
+    trading: Record<string, FinancialReportComparisonMetric>;
+    cashMovement: Record<string, FinancialReportComparisonMetric>;
+    businessPosition: Record<string, FinancialReportComparisonMetric>;
+  };
+}
+
 type ApiErrorPayload = {
   error?: string;
   message?: string;
@@ -291,6 +315,41 @@ export function useFinancialReportHistory(limit: number = 20) {
 
       return response.json();
     },
+    staleTime: 5 * 60 * 1000,
+    gcTime: 10 * 60 * 1000,
+  });
+}
+
+export function useFinancialReportComparison(
+  baseId?: number,
+  comparisonId?: number
+) {
+  return useQuery<{
+    success: boolean;
+    data: FinancialReportComparisonResponse;
+  }>({
+    queryKey: ['financial-report-comparison', baseId, comparisonId],
+    queryFn: async () => {
+      if (!baseId || !comparisonId || baseId === comparisonId) {
+        throw new Error('Choose two different report snapshots to compare');
+      }
+
+      const response = await fetch(
+        `/api/finance/reports/compare?baseId=${baseId}&comparisonId=${comparisonId}`
+      );
+
+      if (!response.ok) {
+        const errorData = await response.json().catch(() => ({}));
+        throw new Error(
+          errorData.error ||
+            errorData.message ||
+            'Failed to compare financial reports'
+        );
+      }
+
+      return response.json();
+    },
+    enabled: false,
     staleTime: 5 * 60 * 1000,
     gcTime: 10 * 60 * 1000,
   });

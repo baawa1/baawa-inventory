@@ -335,15 +335,13 @@ export function IncomeList({ user }: IncomeListProps) {
               transactionId={transaction.id}
               transactionNumber={transaction.transactionNumber}
               transactionType="income"
-              transactionStatus={transaction.status}
-              renderTrigger={({ actionLabel, blocked, openDialog }) => (
+              renderTrigger={({ actionLabel, openDialog }) => (
                 <Button
                   type="button"
                   variant="ghost"
                   size="sm"
                   aria-label={actionLabel}
                   onClick={openDialog}
-                  disabled={blocked}
                   className="text-destructive hover:text-destructive"
                 >
                   <IconTrash className="h-4 w-4" />

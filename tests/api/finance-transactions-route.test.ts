@@ -12,16 +12,27 @@ jest.mock('@/lib/api-middleware', () => ({
   withAuth: jest.fn((handler: (...args: unknown[]) => unknown) => handler),
 }));
 
-const mockFindMany = jest.fn();
-const mockCount = jest.fn();
+const mockGetNormalizedFinanceTransactions = jest.fn();
+
+jest.mock('@/lib/finance/ledger', () => ({
+  getNormalizedFinanceTransactions: (...args: unknown[]) =>
+    mockGetNormalizedFinanceTransactions(...args),
+  normalizeFinancePaymentMethod: (method?: string | null) =>
+    method ? method.toUpperCase() : null,
+}));
 
 jest.mock('@/lib/db', () => ({
   prisma: {
     financialTransaction: {
-      findMany: (...args: unknown[]) => mockFindMany(...args),
-      count: (...args: unknown[]) => mockCount(...args),
+      findMany: jest.fn(),
+      count: jest.fn(),
+      create: jest.fn(),
     },
   },
+}));
+
+jest.mock('@/lib/audit', () => ({
+  createAuditLog: jest.fn(),
 }));
 
 import { GET as getFinanceTransactions } from '@/app/api/finance/transactions/route';
@@ -30,69 +41,47 @@ import { formatFinanceDateInput } from '@/lib/finance/date-range';
 describe('GET /api/finance/transactions', () => {
   beforeEach(() => {
     jest.clearAllMocks();
-  });
-
-  it('normalizes payment filters, keeps inclusive end dates, and returns pagination metadata', async () => {
-    mockFindMany.mockResolvedValue([
+    mockGetNormalizedFinanceTransactions.mockResolvedValue([
       {
-        id: 4,
-        transactionNumber: 'FTX-004',
+        id: 2000001,
+        rowId: 'SalesTransaction-1-POS_CASH_SALE',
+        transactionNumber: 'POS-001',
         type: 'INCOME',
-        amount: 45000,
-        description: 'POS settlement',
-        transactionDate: new Date('2026-04-30T15:45:00.000Z'),
-        paymentMethod: 'POS_MACHINE',
-        status: 'PENDING',
-        createdAt: new Date('2026-04-30T16:00:00.000Z'),
-        updatedAt: new Date('2026-04-30T16:00:00.000Z'),
-        createdBy: 12,
-        approvedBy: null,
-        approvedAt: null,
-        createdByUser: {
-          id: 12,
-          firstName: 'Jane',
-          lastName: 'Doe',
-          email: 'jane@example.com',
-        },
-        approvedByUser: null,
-        expenseDetails: null,
-        incomeDetails: {
-          incomeSource: 'SERVICES',
-          payerName: 'Customer',
-        },
+        amount: 1000,
+        date: new Date('2026-04-30T15:45:00.000Z'),
+        paymentMethod: 'CASH',
+        description: 'POS sale',
+        source: 'POS',
+        eventType: 'POS_CASH_SALE',
+        cashIn: 1000,
+        cashOut: 0,
+        profitIn: 1000,
+        profitOut: 300,
       },
     ]);
-    mockCount.mockResolvedValue(1);
+  });
 
+  it('normalizes inclusive end dates before reading unified ledger events', async () => {
     const response = await getFinanceTransactions({
       user: {
         id: '1',
         role: 'ADMIN',
         email: 'admin@example.com',
       },
-      url: 'http://localhost/api/finance/transactions?paymentMethod=POS&startDate=2026-04-01&endDate=2026-04-30&page=1&limit=10',
+      url: 'http://localhost/api/finance/transactions?startDate=2026-04-01&endDate=2026-04-30&page=1&limit=10',
     } as any);
 
     expect(response.status).toBe(200);
-    expect(mockFindMany).toHaveBeenCalledTimes(1);
-    expect(mockCount).toHaveBeenCalledTimes(1);
+    expect(mockGetNormalizedFinanceTransactions).toHaveBeenCalledTimes(1);
 
-    const findManyArgs = mockFindMany.mock.calls[0][0];
-    const countArgs = mockCount.mock.calls[0][0];
-
-    expect(findManyArgs.where.paymentMethod).toBe('POS_MACHINE');
-    expect(countArgs.where.paymentMethod).toBe('POS_MACHINE');
-    expect(formatFinanceDateInput(findManyArgs.where.transactionDate.gte)).toBe(
-      '2026-04-01'
-    );
-    expect(findManyArgs.where.transactionDate.gte.getHours()).toBe(0);
-    expect(formatFinanceDateInput(findManyArgs.where.transactionDate.lte)).toBe(
-      '2026-04-30'
-    );
-    expect(findManyArgs.where.transactionDate.lte.getHours()).toBe(23);
-    expect(findManyArgs.where.transactionDate.lte.getMinutes()).toBe(59);
-    expect(findManyArgs.where.transactionDate.lte.getSeconds()).toBe(59);
-    expect(findManyArgs.where.transactionDate.lte.getMilliseconds()).toBe(999);
+    const [filters] = mockGetNormalizedFinanceTransactions.mock.calls[0];
+    expect(formatFinanceDateInput(filters.startDate)).toBe('2026-04-01');
+    expect(filters.startDate.getHours()).toBe(0);
+    expect(formatFinanceDateInput(filters.endDate)).toBe('2026-04-30');
+    expect(filters.endDate.getHours()).toBe(23);
+    expect(filters.endDate.getMinutes()).toBe(59);
+    expect(filters.endDate.getSeconds()).toBe(59);
+    expect(filters.endDate.getMilliseconds()).toBe(999);
 
     await expect(response.json()).resolves.toMatchObject({
       success: true,
@@ -104,9 +93,8 @@ describe('GET /api/finance/transactions', () => {
       },
       data: [
         expect.objectContaining({
-          transactionNumber: 'FTX-004',
-          paymentMethod: 'POS_MACHINE',
-          createdByName: 'Jane Doe',
+          transactionNumber: 'POS-001',
+          transactionDate: '2026-04-30T15:45:00.000Z',
         }),
       ],
     });
@@ -128,7 +116,25 @@ describe('GET /api/finance/transactions', () => {
       error: 'Start date must be before end date',
       code: 'VALIDATION_ERROR',
     });
-    expect(mockFindMany).not.toHaveBeenCalled();
-    expect(mockCount).not.toHaveBeenCalled();
+    expect(mockGetNormalizedFinanceTransactions).not.toHaveBeenCalled();
+  });
+
+  it('returns a validation error for invalid dates', async () => {
+    const response = await getFinanceTransactions({
+      user: {
+        id: '1',
+        role: 'ADMIN',
+        email: 'admin@example.com',
+      },
+      url: 'http://localhost/api/finance/transactions?startDate=not-a-date',
+    } as any);
+
+    expect(response.status).toBe(400);
+    await expect(response.json()).resolves.toMatchObject({
+      success: false,
+      error: 'Invalid date',
+      code: 'VALIDATION_ERROR',
+    });
+    expect(mockGetNormalizedFinanceTransactions).not.toHaveBeenCalled();
   });
 });

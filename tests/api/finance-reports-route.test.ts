@@ -12,12 +12,23 @@ jest.mock('@/lib/api-middleware', () => ({
   withAuth: jest.fn((handler: (...args: unknown[]) => unknown) => handler),
 }));
 
-const mockBuildFinanceRange = jest.fn();
 const mockGetFinanceAggregate = jest.fn();
 
-jest.mock('@/lib/finance/aggregation', () => ({
-  buildFinanceRange: (...args: unknown[]) => mockBuildFinanceRange(...args),
-  getFinanceAggregate: (...args: unknown[]) => mockGetFinanceAggregate(...args),
+jest.mock('@/lib/finance/ledger', () => {
+  const dateRange = jest.requireActual('@/lib/finance/date-range');
+
+  return {
+    buildFinanceRange: dateRange.buildFinanceRange,
+    getFinanceAggregate: (...args: unknown[]) => mockGetFinanceAggregate(...args),
+  };
+});
+
+jest.mock('@/lib/db', () => ({
+  prisma: {
+    financialReport: {
+      create: jest.fn(),
+    },
+  },
 }));
 
 jest.mock('@/lib/logger', () => ({
@@ -29,151 +40,99 @@ jest.mock('@/lib/logger', () => ({
 
 import { GET as getFinanceReports } from '@/app/api/finance/reports/route';
 
-const reportRange = {
-  startDate: new Date('2026-04-01T00:00:00.000Z'),
-  endDate: new Date('2026-04-30T23:59:59.999Z'),
-  groupBy: 'month',
-};
-
 const aggregate = {
-  transactions: [
-    {
-      id: 'pos-1',
-      source: 'POS_SALE',
-      sourceId: 1,
-      transactionNumber: 'POS-001',
-      type: 'INCOME',
-      amount: 1000,
-      date: new Date('2026-04-01T10:00:00.000Z'),
-      paymentMethod: 'CASH',
-      description: 'POS sale',
-      category: 'POS_SALE',
-      categoryLabel: 'POS Sales',
-      status: 'COMPLETED',
-      flaggedOverlap: false,
-    },
-    {
-      id: 'inc-1',
-      source: 'MANUAL',
-      sourceId: 2,
-      transactionNumber: 'FIN-002',
-      type: 'INCOME',
-      amount: 200,
-      date: new Date('2026-04-02T10:00:00.000Z'),
-      paymentMethod: 'BANK_TRANSFER',
-      description: 'Service income',
-      category: 'SERVICES',
-      categoryLabel: 'Services',
-      status: 'APPROVED',
-      flaggedOverlap: false,
-    },
-    {
-      id: 'inv-1',
-      source: 'MANUAL',
-      sourceId: 3,
-      transactionNumber: 'FIN-003',
-      type: 'INCOME',
-      amount: 300,
-      date: new Date('2026-04-03T10:00:00.000Z'),
-      paymentMethod: 'BANK_TRANSFER',
-      description: 'Owner investment',
-      category: 'INVESTMENTS',
-      categoryLabel: 'Investments',
-      status: 'APPROVED',
-      flaggedOverlap: false,
-    },
-    {
-      id: 'exp-1',
-      source: 'MANUAL',
-      sourceId: 4,
-      transactionNumber: 'FIN-004',
-      type: 'EXPENSE',
-      amount: 250,
-      date: new Date('2026-04-04T10:00:00.000Z'),
-      paymentMethod: 'CASH',
-      description: 'Rent',
-      category: 'RENT_UTILITIES',
-      categoryLabel: 'Rent & Utilities',
-      status: 'APPROVED',
-      flaggedOverlap: false,
-    },
-    {
-      id: 'stock-1',
-      source: 'STOCK_PURCHASE',
-      sourceId: 5,
-      transactionNumber: 'PO-005',
-      type: 'EXPENSE',
-      amount: 400,
-      date: new Date('2026-04-05T10:00:00.000Z'),
-      paymentMethod: null,
-      description: 'Stock purchase',
-      category: 'PURCHASE',
-      categoryLabel: 'Stock Purchase',
-      status: 'COMPLETED',
-      flaggedOverlap: false,
-    },
-  ],
+  transactions: [],
   summary: {
-    totalIncome: 1500,
+    totalIncome: 1200,
     totalExpenses: 650,
-    netProfit: 850,
+    netProfit: 550,
     totalTransactions: 5,
     averageTransactionValue: 430,
     topPaymentMethod: 'CASH',
   },
-  paymentMethodDistribution: [
-    { method: 'CASH', count: 2, amount: 1250 },
-    { method: 'BANK_TRANSFER', count: 2, amount: 500 },
-  ],
+  paymentMethodDistribution: [],
   dailyTrends: [],
   expenseBreakdown: {},
   topVendors: [],
+  trading: {
+    salesRevenue: 1000,
+    manualOperatingIncome: 200,
+    operatingRevenue: 1200,
+    costOfGoodsSold: 400,
+    operatingExpenses: 250,
+    grossProfit: 800,
+    netProfit: 550,
+  },
+  cashMovement: {
+    cashReceived: 1500,
+    cashSpent: 650,
+    customerCollections: 1000,
+    ownerFunding: 300,
+    stockPurchases: 400,
+    operatingExpensePayments: 250,
+    manualIncomeCollections: 200,
+    netCashMovement: 850,
+  },
+  businessPosition: {
+    inventoryValueOnHand: 2500,
+    inventoryUnitsOnHand: 20,
+    inventorySkusTracked: 4,
+    receivablesOutstanding: 600,
+    receivableTransactions: 1,
+    customersWithBalances: 1,
+    estimated: false,
+    estimatedReasons: [],
+  },
+  methodology: {
+    status: 'exact',
+    estimated: false,
+    rebuiltFromOperationalData: true,
+    historicalRebuild: 'best_effort',
+    reasons: [],
+  },
 };
 
 describe('GET /api/finance/reports', () => {
   beforeEach(() => {
     jest.clearAllMocks();
-    mockBuildFinanceRange.mockReturnValue(reportRange);
     mockGetFinanceAggregate.mockResolvedValue(aggregate);
   });
 
-  it('keeps investments out of revenue and profit while preserving financing cash flow', async () => {
+  it('returns ledger-based financial report data for admins', async () => {
     const response = await getFinanceReports({
       user: {
         id: '1',
         role: 'ADMIN',
         email: 'admin@example.com',
       },
-      url: 'http://localhost/api/finance/reports?period=monthly',
+      url: 'http://localhost/api/finance/reports?period=monthly&dateFrom=2026-04-01&dateTo=2026-04-30',
     } as any);
 
     expect(response.status).toBe(200);
+    expect(mockGetFinanceAggregate).toHaveBeenCalledWith(
+      expect.objectContaining({
+        startDate: expect.any(Date),
+        endDate: expect.any(Date),
+        type: 'all',
+      }),
+      { groupBy: 'day' }
+    );
 
-    const payload = await response.json();
-    expect(payload.data.profitLoss).toMatchObject({
-      revenue: {
-        sales: 1000,
-        otherIncome: 200,
-        totalRevenue: 1200,
+    await expect(response.json()).resolves.toMatchObject({
+      success: true,
+      data: {
+        summary: {
+          totalIncome: 1200,
+          totalExpenses: 650,
+          grossProfit: 800,
+          netProfit: 550,
+        },
+        cashFlowStatement: {
+          ownerFunding: 300,
+          stockPurchaseCashOut: 400,
+          netCashMovement: 850,
+        },
       },
-      expenses: {
-        costOfGoods: 400,
-        operatingExpenses: 250,
-        totalExpenses: 650,
-      },
-      grossProfit: 800,
-      netProfit: 550,
-    });
-    expect(payload.data.cashFlow.financingActivities).toMatchObject({
-      loans: 300,
-      netFinancingCashFlow: 300,
-    });
-    expect(payload.data.totalCashFlow).toBe(850);
-    expect(payload.data.summary).toMatchObject({
-      totalIncome: 1200,
-      totalExpenses: 650,
-      netProfit: 550,
-      grossProfit: 800,
     });
   });
 

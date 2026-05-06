@@ -4,6 +4,7 @@ import { useMemo, useState } from 'react';
 import Link from 'next/link';
 import type { AppUser } from '@/types/user';
 import {
+  useFinancialReportComparison,
   useFinancialReportHistory,
   useFinancialReports,
   useGenerateFinancialReport,
@@ -59,7 +60,9 @@ import {
   ArrowRight,
   BarChart3,
   Download,
+  Eye,
   FileText,
+  GitCompareArrows,
   RefreshCw,
   Wallet,
 } from 'lucide-react';
@@ -111,6 +114,8 @@ export function ReportsList({ user: _user }: ReportsListProps) {
     formatFinanceDateInput(new Date())
   );
   const [saveSnapshot, setSaveSnapshot] = useState(true);
+  const [baseReportId, setBaseReportId] = useState<string>('');
+  const [comparisonReportId, setComparisonReportId] = useState<string>('');
 
   const {
     data: reportsData,
@@ -126,9 +131,14 @@ export function ReportsList({ user: _user }: ReportsListProps) {
   const { data: historyData, isLoading: historyLoading } =
     useFinancialReportHistory(12);
   const generateReport = useGenerateFinancialReport();
+  const comparison = useFinancialReportComparison(
+    baseReportId ? Number(baseReportId) : undefined,
+    comparisonReportId ? Number(comparisonReportId) : undefined
+  );
 
   const report = reportsData?.data;
   const history = historyData?.data || [];
+  const comparisonData = comparison.data?.data;
 
   const quickLinks = useMemo(
     () => [
@@ -508,7 +518,7 @@ export function ReportsList({ user: _user }: ReportsListProps) {
             Range: {formatRangeLabel(report.dateRange.startDate, report.dateRange.endDate)}
           </CardDescription>
         </CardHeader>
-        <CardContent>
+        <CardContent className="space-y-6">
           {historyLoading ? (
             <InlineLoading label="Loading saved report history..." />
           ) : history.length === 0 ? (
@@ -516,51 +526,185 @@ export function ReportsList({ user: _user }: ReportsListProps) {
               No saved report snapshots yet.
             </p>
           ) : (
-            <Table>
-              <TableHeader>
-                <TableRow>
-                  <TableHead>Report</TableHead>
-                  <TableHead>Period</TableHead>
-                  <TableHead>Generated</TableHead>
-                  <TableHead>By</TableHead>
-                  <TableHead>Status</TableHead>
-                </TableRow>
-              </TableHeader>
-              <TableBody>
-                {history.map(entry => (
-                  <TableRow key={entry.id}>
-                    <TableCell className="font-medium">
-                      {entry.reportName}
-                    </TableCell>
-                    <TableCell>
-                      {formatRangeLabel(entry.periodStart, entry.periodEnd)}
-                    </TableCell>
-                    <TableCell>
-                      {new Date(entry.generatedAt).toLocaleDateString('en-NG', {
-                        day: 'numeric',
-                        month: 'short',
-                        year: 'numeric',
-                      })}
-                    </TableCell>
-                    <TableCell>{entry.generatedBy.name}</TableCell>
-                    <TableCell>
-                      <Badge
-                        variant={
-                          entry.methodologyStatus === 'exact'
-                            ? 'default'
-                            : 'secondary'
-                        }
-                      >
-                        {entry.methodologyStatus}
-                      </Badge>
-                    </TableCell>
+            <>
+              <div className="grid gap-3 rounded-lg border p-4 lg:grid-cols-[1fr_1fr_auto] lg:items-end">
+                <div className="grid gap-2">
+                  <Label htmlFor="baseReport">Base Snapshot</Label>
+                  <Select
+                    value={baseReportId}
+                    onValueChange={setBaseReportId}
+                  >
+                    <SelectTrigger id="baseReport">
+                      <SelectValue placeholder="Choose base report" />
+                    </SelectTrigger>
+                    <SelectContent>
+                      {history.map(entry => (
+                        <SelectItem key={entry.id} value={String(entry.id)}>
+                          {entry.reportName}
+                        </SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
+                </div>
+                <div className="grid gap-2">
+                  <Label htmlFor="comparisonReport">Comparison Snapshot</Label>
+                  <Select
+                    value={comparisonReportId}
+                    onValueChange={setComparisonReportId}
+                  >
+                    <SelectTrigger id="comparisonReport">
+                      <SelectValue placeholder="Choose comparison report" />
+                    </SelectTrigger>
+                    <SelectContent>
+                      {history.map(entry => (
+                        <SelectItem key={entry.id} value={String(entry.id)}>
+                          {entry.reportName}
+                        </SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
+                </div>
+                <Button
+                  variant="outline"
+                  disabled={
+                    !baseReportId ||
+                    !comparisonReportId ||
+                    baseReportId === comparisonReportId
+                  }
+                  onClick={() => comparison.refetch()}
+                  isLoading={comparison.isFetching}
+                  loadingText="Comparing..."
+                >
+                  <GitCompareArrows className="mr-2 h-4 w-4" />
+                  Compare
+                </Button>
+              </div>
+
+              {baseReportId === comparisonReportId && baseReportId ? (
+                <p className="text-destructive text-sm">
+                  Choose two different report snapshots to compare.
+                </p>
+              ) : null}
+
+              {comparison.error ? (
+                <p className="text-destructive text-sm">
+                  {comparison.error instanceof Error
+                    ? comparison.error.message
+                    : 'Failed to compare reports'}
+                </p>
+              ) : null}
+
+              {comparisonData ? (
+                <div className="grid gap-4 md:grid-cols-2 xl:grid-cols-4">
+                  <ComparisonMetric
+                    label="Net Profit"
+                    metric={comparisonData.deltas.summary.netProfit}
+                  />
+                  <ComparisonMetric
+                    label="Cash Movement"
+                    metric={comparisonData.deltas.cashMovement.netCashMovement}
+                  />
+                  <ComparisonMetric
+                    label="Inventory Value"
+                    metric={
+                      comparisonData.deltas.businessPosition.inventoryValueOnHand
+                    }
+                  />
+                  <ComparisonMetric
+                    label="Receivables"
+                    metric={
+                      comparisonData.deltas.businessPosition
+                        .receivablesOutstanding
+                    }
+                  />
+                </div>
+              ) : null}
+
+              <Table>
+                <TableHeader>
+                  <TableRow>
+                    <TableHead>Report</TableHead>
+                    <TableHead>Period</TableHead>
+                    <TableHead>Generated</TableHead>
+                    <TableHead>By</TableHead>
+                    <TableHead>Status</TableHead>
+                    <TableHead className="text-right">Actions</TableHead>
                   </TableRow>
-                ))}
-              </TableBody>
-            </Table>
+                </TableHeader>
+                <TableBody>
+                  {history.map(entry => (
+                    <TableRow key={entry.id}>
+                      <TableCell className="font-medium">
+                        {entry.reportName}
+                      </TableCell>
+                      <TableCell>
+                        {formatRangeLabel(entry.periodStart, entry.periodEnd)}
+                      </TableCell>
+                      <TableCell>
+                        {new Date(entry.generatedAt).toLocaleDateString('en-NG', {
+                          day: 'numeric',
+                          month: 'short',
+                          year: 'numeric',
+                        })}
+                      </TableCell>
+                      <TableCell>{entry.generatedBy.name}</TableCell>
+                      <TableCell>
+                        <Badge
+                          variant={
+                            entry.methodologyStatus === 'exact'
+                              ? 'default'
+                              : 'secondary'
+                          }
+                        >
+                          {entry.methodologyStatus}
+                        </Badge>
+                      </TableCell>
+                      <TableCell className="text-right">
+                        <Button asChild size="sm" variant="outline">
+                          <Link href={`/finance/reports/${entry.id}`}>
+                            <Eye className="mr-2 h-4 w-4" />
+                            Open
+                          </Link>
+                        </Button>
+                      </TableCell>
+                    </TableRow>
+                  ))}
+                </TableBody>
+              </Table>
+            </>
           )}
         </CardContent>
       </Card>
+    </div>
+  );
+}
+
+function ComparisonMetric({
+  label,
+  metric,
+}: {
+  label: string;
+  metric: {
+    base: number;
+    comparison: number;
+    delta: number;
+    percentageChange: number;
+  };
+}) {
+  const isPositive = metric.delta >= 0;
+
+  return (
+    <div className="rounded-lg border p-4">
+      <p className="text-muted-foreground text-sm">{label}</p>
+      <p className={isPositive ? 'mt-2 font-semibold text-emerald-700' : 'mt-2 font-semibold text-red-700'}>
+        {isPositive ? '+' : '-'}
+        {formatCurrency(Math.abs(metric.delta))}
+      </p>
+      <p className="text-muted-foreground mt-1 text-xs">
+        {metric.percentageChange >= 0 ? '+' : ''}
+        {metric.percentageChange}% from {formatCurrency(metric.base)} to{' '}
+        {formatCurrency(metric.comparison)}
+      </p>
     </div>
   );
 }

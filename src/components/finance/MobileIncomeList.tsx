@@ -384,10 +384,8 @@ export function MobileIncomeList({ user }: MobileIncomeListProps) {
                   transactionId={transaction.id}
                   transactionNumber={transaction.transactionNumber}
                   transactionType="income"
-                  transactionStatus={transaction.status}
-                  renderTrigger={({ actionLabel, blocked, openDialog }) => (
+                  renderTrigger={({ actionLabel, openDialog }) => (
                     <DropdownMenuItem
-                      disabled={blocked}
                       onSelect={event => {
                         event.preventDefault();
                         openDialog();

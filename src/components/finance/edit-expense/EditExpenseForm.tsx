@@ -168,15 +168,12 @@ export default function EditExpenseForm({
                 transactionId={Number(expenseId)}
                 transactionNumber={expenseData?.transactionNumber}
                 transactionType="expense"
-                transactionStatus={expenseData?.status ?? 'COMPLETED'}
                 redirectTo="/finance/expenses"
-                showBlockedHelperText
-                renderTrigger={({ actionLabel, blocked, openDialog }) => (
+                renderTrigger={({ actionLabel, openDialog }) => (
                   <Button
                     type="button"
                     variant="destructive"
                     onClick={openDialog}
-                    disabled={blocked}
                   >
                     <Trash2 className="h-4 w-4" />
                     {actionLabel}

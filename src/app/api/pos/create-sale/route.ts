@@ -8,7 +8,6 @@ import {
   getPhoneSearchPatterns,
 } from '@/lib/utils/phone-utils';
 import {
-  formatPaymentMethodLabel,
   normalizePaymentMethodForStorage,
 } from '@/lib/utils/payment-methods';
 
@@ -475,7 +474,7 @@ export const POST = withPOSAuth(async function (request: AuthenticatedRequest) {
       const productIds = Array.from(itemsByProductId.keys());
       const products = await tx.product.findMany({
         where: { id: { in: productIds } },
-        select: { id: true, name: true, stock: true, isService: true },
+        select: { id: true, name: true, stock: true, isService: true, cost: true },
       });
       const productMap = new Map(products.map(product => [product.id, product]));
 
@@ -511,15 +510,26 @@ export const POST = withPOSAuth(async function (request: AuthenticatedRequest) {
       });
 
       await tx.salesItem.createMany({
-        data: validatedData.items.map(item => ({
-          quantity: item.quantity,
-          unit_price: item.price,
-          total_price: item.total,
-          discount_amount: 0, // Item-level discounts handled at transaction level
-          transaction_id: salesTransaction.id,
-          product_id: item.productId,
-          coupon_id: item.couponId ?? null,
-        })),
+        data: validatedData.items.map(item => {
+          const product = productMap.get(item.productId);
+          const unitCost = product && !product.isService ? product.cost : null;
+
+          return {
+            quantity: item.quantity,
+            unit_price: item.price,
+            total_price: item.total,
+            discount_amount: 0, // Item-level discounts handled at transaction level
+            unit_cost: unitCost,
+            total_cost:
+              unitCost !== null
+                ? Math.round(Number(unitCost) * item.quantity * 100) / 100
+                : null,
+            cost_is_estimated: false,
+            transaction_id: salesTransaction.id,
+            product_id: item.productId,
+            coupon_id: item.couponId ?? null,
+          };
+        }),
       });
 
       const stockUpdates: Array<Promise<unknown>> = [];

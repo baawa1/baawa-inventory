@@ -12,9 +12,69 @@ const mockEnvConfig = {
   isTest: false,
   nextAuthSecret: 'test-secret-key-for-tests-only-32-chars-long',
 };
+const mockCookieStore = {
+  set: jest.fn(),
+  delete: jest.fn(),
+};
 
 jest.mock('@/lib/config/env-validation', () => ({
-  envConfig: mockEnvConfig,
+  envConfig: {
+    get isDevelopment() {
+      return mockEnvConfig.isDevelopment;
+    },
+    get isProduction() {
+      return mockEnvConfig.isProduction;
+    },
+    get isTest() {
+      return mockEnvConfig.isTest;
+    },
+    get nextAuthSecret() {
+      return mockEnvConfig.nextAuthSecret;
+    },
+    getOptionalString: jest.fn(() => undefined),
+  },
+}));
+
+jest.mock('@/lib/api-middleware', () => ({
+  withAuth: jest.fn((handler: (...args: unknown[]) => unknown) => handler),
+}));
+
+jest.mock('next/headers', () => ({
+  cookies: jest.fn(async () => mockCookieStore),
+}));
+
+jest.mock('next-auth/jwt', () => ({
+  encode: jest.fn(async () => 'mock-session-token'),
+}));
+
+jest.mock('@/lib/email/service', () => ({
+  emailService: {
+    sendWelcomeEmail: jest.fn(async () => true),
+  },
+}));
+
+jest.mock('#root/auth', () => ({
+  auth: jest.fn(async () => ({
+    user: {
+      id: '1',
+      email: 'test@example.com',
+    },
+    role: 'ADMIN',
+    status: 'APPROVED',
+    isEmailVerified: true,
+  })),
+}));
+
+jest.mock('../../auth', () => ({
+  auth: jest.fn(async () => ({
+    user: {
+      id: '1',
+      email: 'test@example.com',
+    },
+    role: 'ADMIN',
+    status: 'APPROVED',
+    isEmailVerified: true,
+  })),
 }));
 
 // Import the route handlers after mocking
@@ -105,6 +165,9 @@ describe('Debug/Test Endpoints Security', () => {
 
     describe('/api/debug/session', () => {
       it('should work in development', async () => {
+        mockEnvConfig.isDevelopment = true;
+        mockEnvConfig.isProduction = false;
+
         const req = {
           user: {
             id: 1,
@@ -157,6 +220,8 @@ describe('Debug/Test Endpoints Security', () => {
 
       // Mock cookies
       global.fetch = jest.fn();
+      mockCookieStore.set.mockClear();
+      mockCookieStore.delete.mockClear();
       
       // Mock dynamic imports for logger
       jest.doMock('@/lib/logger', () => ({
@@ -177,16 +242,6 @@ describe('Debug/Test Endpoints Security', () => {
       });
 
       it('should work in development - POST with valid data', async () => {
-        // Mock cookies
-        const mockCookieStore = {
-          set: jest.fn(),
-        };
-        
-        // Mock the cookies function
-        jest.doMock('next/headers', () => ({
-          cookies: jest.fn().mockResolvedValue(mockCookieStore),
-        }));
-
         const mockRequest = {
           json: jest.fn().mockResolvedValue({
             email: 'test@example.com',
@@ -222,13 +277,6 @@ describe('Debug/Test Endpoints Security', () => {
 
     describe('/api/test-email', () => {
       it('should work in development', async () => {
-        // Mock email service
-        jest.doMock('@/lib/email/service', () => ({
-          emailService: {
-            sendWelcomeEmail: jest.fn().mockResolvedValue(true),
-          }
-        }));
-
         const mockRequest = {} as any;
         const response = await testEmailPOST(mockRequest);
         const data = await response.json();

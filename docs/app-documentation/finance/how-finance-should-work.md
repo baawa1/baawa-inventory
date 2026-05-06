@@ -361,6 +361,6 @@ Money the owner injects into the business. It helps cash, but it is not business
 
 ### Important historical note
 
-Historical cost of goods sold can only be fully exact if the app stores cost at the time of each sale.
+Cost of goods sold should use the cost stored at the time of each sale.
 
-If a sale does not have a cost snapshot, the system must use the best available estimate and clearly flag that period as estimated.
+If an older sale does not have a cost snapshot, the system must use the best available estimate and clearly flag that period as estimated.

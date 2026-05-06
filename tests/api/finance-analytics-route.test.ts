@@ -12,16 +12,20 @@ jest.mock('@/lib/api-middleware', () => ({
   withAuth: jest.fn((handler: (...args: unknown[]) => unknown) => handler),
 }));
 
-const mockBuildFinanceRange = jest.fn();
-const mockGetPreviousFinanceRange = jest.fn();
 const mockGetFinanceAggregate = jest.fn();
+const mockGetReceivablesSnapshot = jest.fn();
 
-jest.mock('@/lib/finance/aggregation', () => ({
-  buildFinanceRange: (...args: unknown[]) => mockBuildFinanceRange(...args),
-  getPreviousFinanceRange: (...args: unknown[]) =>
-    mockGetPreviousFinanceRange(...args),
-  getFinanceAggregate: (...args: unknown[]) => mockGetFinanceAggregate(...args),
-}));
+jest.mock('@/lib/finance/ledger', () => {
+  const dateRange = jest.requireActual('@/lib/finance/date-range');
+
+  return {
+    buildFinanceRange: dateRange.buildFinanceRange,
+    getPreviousFinanceRange: dateRange.getPreviousFinanceRange,
+    getFinanceAggregate: (...args: unknown[]) => mockGetFinanceAggregate(...args),
+    getReceivablesSnapshot: (...args: unknown[]) =>
+      mockGetReceivablesSnapshot(...args),
+  };
+});
 
 jest.mock('@/lib/logger', () => ({
   logger: {
@@ -31,261 +35,157 @@ jest.mock('@/lib/logger', () => ({
 
 import { GET as getFinanceAnalytics } from '@/app/api/finance/analytics/route';
 
-const currentRange = {
-  startDate: new Date('2026-04-01T00:00:00.000Z'),
-  endDate: new Date('2026-04-30T23:59:59.999Z'),
-  groupBy: 'month',
-};
-
-const previousRange = {
-  startDate: new Date('2026-03-01T00:00:00.000Z'),
-  endDate: new Date('2026-03-31T23:59:59.999Z'),
-  groupBy: 'month',
-};
-
-const currentAggregate = {
-  transactions: [
-    {
-      id: 'pos-1',
-      source: 'POS_SALE',
-      sourceId: 1,
-      transactionNumber: 'POS-001',
-      type: 'INCOME',
-      amount: 1000,
-      date: new Date('2026-04-01T10:00:00.000Z'),
-      paymentMethod: 'CASH',
-      description: 'POS sale',
-      category: 'POS_SALE',
-      categoryLabel: 'POS Sales',
-      status: 'COMPLETED',
-      flaggedOverlap: false,
+function buildAggregate(netProfit: number) {
+  return {
+    transactions: [
+      {
+        source: 'POS',
+        eventType: 'POS_CASH_SALE',
+        category: 'POS_SALES',
+        date: new Date('2026-04-10T10:00:00.000Z'),
+        profitIn: netProfit + 100,
+        profitOut: 40,
+        cashIn: netProfit + 100,
+        cashOut: 0,
+        netCashImpact: netProfit + 100,
+      },
+      {
+        source: 'MANUAL',
+        eventType: 'MANUAL_OPERATING_EXPENSE',
+        category: 'RENT_UTILITIES',
+        date: new Date('2026-04-11T10:00:00.000Z'),
+        profitIn: 0,
+        profitOut: 60,
+        cashIn: 0,
+        cashOut: 60,
+        netCashImpact: -60,
+      },
+    ],
+    summary: {
+      totalIncome: netProfit + 100,
+      totalExpenses: 100,
+      netProfit,
+      totalTransactions: 2,
+      averageTransactionValue: 100,
+      topPaymentMethod: 'CASH',
     },
-    {
-      id: 'inc-1',
-      source: 'MANUAL',
-      sourceId: 2,
-      transactionNumber: 'FIN-002',
-      type: 'INCOME',
-      amount: 200,
-      date: new Date('2026-04-02T10:00:00.000Z'),
-      paymentMethod: 'BANK_TRANSFER',
-      description: 'Service income',
-      category: 'SERVICES',
-      categoryLabel: 'Services',
-      status: 'APPROVED',
-      flaggedOverlap: false,
+    paymentMethodDistribution: [],
+    dailyTrends: [],
+    expenseBreakdown: {
+      RENT_UTILITIES: 60,
     },
-    {
-      id: 'inv-1',
-      source: 'MANUAL',
-      sourceId: 3,
-      transactionNumber: 'FIN-003',
-      type: 'INCOME',
-      amount: 300,
-      date: new Date('2026-04-03T10:00:00.000Z'),
-      paymentMethod: 'BANK_TRANSFER',
-      description: 'Owner investment',
-      category: 'INVESTMENTS',
-      categoryLabel: 'Investments',
-      status: 'APPROVED',
-      flaggedOverlap: false,
+    topVendors: [],
+    trading: {
+      salesRevenue: netProfit + 100,
+      manualOperatingIncome: 0,
+      operatingRevenue: netProfit + 100,
+      costOfGoodsSold: 40,
+      operatingExpenses: 60,
+      grossProfit: netProfit + 60,
+      netProfit,
     },
-    {
-      id: 'exp-1',
-      source: 'MANUAL',
-      sourceId: 4,
-      transactionNumber: 'FIN-004',
-      type: 'EXPENSE',
-      amount: 250,
-      date: new Date('2026-04-04T10:00:00.000Z'),
-      paymentMethod: 'CASH',
-      description: 'Rent',
-      category: 'RENT_UTILITIES',
-      categoryLabel: 'Rent & Utilities',
-      status: 'APPROVED',
-      flaggedOverlap: false,
+    cashMovement: {
+      cashReceived: netProfit + 100,
+      cashSpent: 60,
+      customerCollections: netProfit + 100,
+      ownerFunding: 0,
+      stockPurchases: 0,
+      operatingExpensePayments: 60,
+      manualIncomeCollections: 0,
+      netCashMovement: netProfit + 40,
     },
-    {
-      id: 'stock-1',
-      source: 'STOCK_PURCHASE',
-      sourceId: 5,
-      transactionNumber: 'PO-005',
-      type: 'EXPENSE',
-      amount: 400,
-      date: new Date('2026-04-05T10:00:00.000Z'),
-      paymentMethod: null,
-      description: 'Stock purchase',
-      category: 'PURCHASE',
-      categoryLabel: 'Stock Purchase',
-      status: 'COMPLETED',
-      flaggedOverlap: false,
+    businessPosition: {
+      inventoryValueOnHand: 1000,
+      inventoryUnitsOnHand: 10,
+      inventorySkusTracked: 3,
+      receivablesOutstanding: 500,
+      receivableTransactions: 1,
+      customersWithBalances: 1,
+      estimated: false,
+      estimatedReasons: [],
     },
-  ],
-  summary: {
-    totalIncome: 1500,
-    totalExpenses: 650,
-    netProfit: 850,
-    totalTransactions: 5,
-    averageTransactionValue: 430,
-    topPaymentMethod: 'CASH',
-  },
-  paymentMethodDistribution: [
-    { method: 'CASH', count: 2, amount: 1250 },
-    { method: 'BANK_TRANSFER', count: 2, amount: 500 },
-  ],
-  dailyTrends: [],
-  expenseBreakdown: {
-    RENT_UTILITIES: 250,
-  },
-  topVendors: [],
-};
-
-const previousAggregate = {
-  transactions: [
-    {
-      id: 'pos-2',
-      source: 'POS_SALE',
-      sourceId: 6,
-      transactionNumber: 'POS-010',
-      type: 'INCOME',
-      amount: 800,
-      date: new Date('2026-03-01T10:00:00.000Z'),
-      paymentMethod: 'CASH',
-      description: 'POS sale',
-      category: 'POS_SALE',
-      categoryLabel: 'POS Sales',
-      status: 'COMPLETED',
-      flaggedOverlap: false,
+    methodology: {
+      status: 'exact',
+      estimated: false,
+      rebuiltFromOperationalData: true,
+      historicalRebuild: 'best_effort',
+      reasons: [],
     },
-    {
-      id: 'inc-2',
-      source: 'MANUAL',
-      sourceId: 7,
-      transactionNumber: 'FIN-012',
-      type: 'INCOME',
-      amount: 100,
-      date: new Date('2026-03-02T10:00:00.000Z'),
-      paymentMethod: 'BANK_TRANSFER',
-      description: 'Service income',
-      category: 'SERVICES',
-      categoryLabel: 'Services',
-      status: 'APPROVED',
-      flaggedOverlap: false,
-    },
-    {
-      id: 'inv-2',
-      source: 'MANUAL',
-      sourceId: 8,
-      transactionNumber: 'FIN-013',
-      type: 'INCOME',
-      amount: 100,
-      date: new Date('2026-03-03T10:00:00.000Z'),
-      paymentMethod: 'BANK_TRANSFER',
-      description: 'Owner investment',
-      category: 'INVESTMENTS',
-      categoryLabel: 'Investments',
-      status: 'APPROVED',
-      flaggedOverlap: false,
-    },
-    {
-      id: 'exp-2',
-      source: 'MANUAL',
-      sourceId: 9,
-      transactionNumber: 'FIN-014',
-      type: 'EXPENSE',
-      amount: 150,
-      date: new Date('2026-03-04T10:00:00.000Z'),
-      paymentMethod: 'CASH',
-      description: 'Fuel',
-      category: 'TRANSPORTATION',
-      categoryLabel: 'Transportation',
-      status: 'APPROVED',
-      flaggedOverlap: false,
-    },
-    {
-      id: 'stock-2',
-      source: 'STOCK_PURCHASE',
-      sourceId: 10,
-      transactionNumber: 'PO-015',
-      type: 'EXPENSE',
-      amount: 300,
-      date: new Date('2026-03-05T10:00:00.000Z'),
-      paymentMethod: null,
-      description: 'Stock purchase',
-      category: 'PURCHASE',
-      categoryLabel: 'Stock Purchase',
-      status: 'COMPLETED',
-      flaggedOverlap: false,
-    },
-  ],
-  summary: {
-    totalIncome: 1000,
-    totalExpenses: 450,
-    netProfit: 550,
-    totalTransactions: 5,
-    averageTransactionValue: 290,
-    topPaymentMethod: 'CASH',
-  },
-  paymentMethodDistribution: [],
-  dailyTrends: [],
-  expenseBreakdown: {},
-  topVendors: [],
-};
+  };
+}
 
 describe('GET /api/finance/analytics', () => {
   beforeEach(() => {
     jest.clearAllMocks();
-    mockBuildFinanceRange.mockReturnValue(currentRange);
-    mockGetPreviousFinanceRange.mockReturnValue(previousRange);
     mockGetFinanceAggregate
-      .mockResolvedValueOnce(currentAggregate)
-      .mockResolvedValueOnce(previousAggregate);
+      .mockResolvedValueOnce(buildAggregate(550))
+      .mockResolvedValueOnce(buildAggregate(450));
+    mockGetReceivablesSnapshot.mockResolvedValue({
+      receivables: [
+        {
+          customer: {
+            name: 'Customer One',
+          },
+          outstandingAmount: 500,
+          agingBucket: '0-30',
+        },
+      ],
+      summary: {
+        totalOutstanding: 500,
+        totalTransactions: 1,
+        averageDaysOutstanding: 5,
+        customersWithBalances: 1,
+      },
+    });
   });
 
-  it('computes revenue trends from operating revenue only', async () => {
+  it('blocks managers from financial analytics', async () => {
+    const response = await getFinanceAnalytics({
+      user: {
+        id: '2',
+        role: 'MANAGER',
+        email: 'manager@example.com',
+      },
+      url: 'http://localhost/api/finance/analytics',
+    } as any);
+
+    expect(response.status).toBe(403);
+    expect(mockGetFinanceAggregate).not.toHaveBeenCalled();
+  });
+
+  it('returns ledger-based analytics for admins', async () => {
     const response = await getFinanceAnalytics({
       user: {
         id: '1',
         role: 'ADMIN',
         email: 'admin@example.com',
       },
-      url: 'http://localhost/api/finance/analytics?groupBy=day',
+      url: 'http://localhost/api/finance/analytics?dateFrom=2026-04-01&dateTo=2026-04-30&groupBy=day',
     } as any);
 
     expect(response.status).toBe(200);
-    const payload = await response.json();
-
-    expect(payload.data.summary.totalRevenue).toBe(1200);
-    expect(payload.data.summary.netProfit).toBe(550);
-    expect(payload.data.summary.revenueGrowth).toBeCloseTo(33.3333, 3);
-
-    expect(payload.data.charts.dailyTrends).toEqual(
-      expect.arrayContaining([
-        expect.objectContaining({
-          date: '2026-04-03',
-          revenue: 0,
-          transactions: 1,
-        }),
-      ])
-    );
-  });
-
-  it('returns a validation error for malformed analytics dates', async () => {
-    const response = await getFinanceAnalytics({
-      user: {
-        id: '1',
-        role: 'ADMIN',
-        email: 'admin@example.com',
-      },
-      url: 'http://localhost/api/finance/analytics?dateFrom=not-a-date',
-    } as any);
-
-    expect(response.status).toBe(400);
-    await expect(response.json()).resolves.toMatchObject({
-      success: false,
-      error: 'Invalid date',
-      code: 'VALIDATION_ERROR',
+    expect(mockGetFinanceAggregate).toHaveBeenCalledTimes(2);
+    expect(mockGetReceivablesSnapshot).toHaveBeenCalledWith({
+      asOfDate: expect.any(Date),
     });
-    expect(mockGetFinanceAggregate).not.toHaveBeenCalled();
+
+    await expect(response.json()).resolves.toMatchObject({
+      success: true,
+      data: {
+        overview: {
+          trading: {
+            netProfit: 550,
+          },
+          businessPosition: {
+            receivablesOutstanding: 500,
+          },
+        },
+        receivables: {
+          summary: {
+            totalOutstanding: 500,
+          },
+        },
+      },
+    });
   });
 });

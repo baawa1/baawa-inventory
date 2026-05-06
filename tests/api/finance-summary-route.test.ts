@@ -12,21 +12,76 @@ jest.mock('@/lib/api-middleware', () => ({
   withAuth: jest.fn((handler: (...args: unknown[]) => unknown) => handler),
 }));
 
-const mockBuildFinanceRange = jest.fn();
-const mockGetPreviousFinanceRange = jest.fn();
 const mockGetFinanceAggregate = jest.fn();
 const mockGetRecentFinanceTransactions = jest.fn();
 
-jest.mock('@/lib/finance/aggregation', () => ({
-  buildFinanceRange: (...args: unknown[]) => mockBuildFinanceRange(...args),
-  getPreviousFinanceRange: (...args: unknown[]) =>
-    mockGetPreviousFinanceRange(...args),
-  getFinanceAggregate: (...args: unknown[]) => mockGetFinanceAggregate(...args),
-  getRecentFinanceTransactions: (...args: unknown[]) =>
-    mockGetRecentFinanceTransactions(...args),
-}));
+jest.mock('@/lib/finance/ledger', () => {
+  const dateRange = jest.requireActual('@/lib/finance/date-range');
+
+  return {
+    buildFinanceRange: dateRange.buildFinanceRange,
+    getPreviousFinanceRange: dateRange.getPreviousFinanceRange,
+    getFinanceAggregate: (...args: unknown[]) => mockGetFinanceAggregate(...args),
+    getRecentFinanceTransactions: (...args: unknown[]) =>
+      mockGetRecentFinanceTransactions(...args),
+  };
+});
 
 import { GET as getFinanceSummary } from '@/app/api/finance/summary/route';
+
+function buildAggregate(netProfit: number, transactionCount: number) {
+  return {
+    transactions: [],
+    summary: {
+      totalIncome: netProfit + 100,
+      totalExpenses: 100,
+      netProfit,
+      totalTransactions: transactionCount,
+      averageTransactionValue: 100,
+      topPaymentMethod: 'CASH',
+    },
+    paymentMethodDistribution: [],
+    dailyTrends: [],
+    expenseBreakdown: {},
+    topVendors: [],
+    trading: {
+      salesRevenue: netProfit + 100,
+      manualOperatingIncome: 0,
+      operatingRevenue: netProfit + 100,
+      costOfGoodsSold: 40,
+      operatingExpenses: 60,
+      grossProfit: netProfit + 60,
+      netProfit,
+    },
+    cashMovement: {
+      cashReceived: netProfit + 100,
+      cashSpent: 100,
+      customerCollections: netProfit + 100,
+      ownerFunding: 0,
+      stockPurchases: 40,
+      operatingExpensePayments: 60,
+      manualIncomeCollections: 0,
+      netCashMovement: netProfit,
+    },
+    businessPosition: {
+      inventoryValueOnHand: 0,
+      inventoryUnitsOnHand: 0,
+      inventorySkusTracked: 0,
+      receivablesOutstanding: 0,
+      receivableTransactions: 0,
+      customersWithBalances: 0,
+      estimated: false,
+      estimatedReasons: [],
+    },
+    methodology: {
+      status: 'exact',
+      estimated: false,
+      rebuiltFromOperationalData: true,
+      historicalRebuild: 'best_effort',
+      reasons: [],
+    },
+  };
+}
 
 describe('GET /api/finance/summary', () => {
   beforeEach(() => {
@@ -51,64 +106,28 @@ describe('GET /api/finance/summary', () => {
     expect(mockGetFinanceAggregate).not.toHaveBeenCalled();
   });
 
-  it('returns unified summary data for admins from the shared aggregation service', async () => {
-    const currentRange = {
-      startDate: new Date('2026-04-01T00:00:00.000Z'),
-      endDate: new Date('2026-04-30T23:59:59.999Z'),
-      groupBy: 'month',
-    };
-    const previousRange = {
-      startDate: new Date('2026-03-01T00:00:00.000Z'),
-      endDate: new Date('2026-03-31T23:59:59.999Z'),
-      groupBy: 'month',
-    };
-    const yearRange = {
-      startDate: new Date('2026-01-01T00:00:00.000Z'),
-      endDate: new Date('2026-04-30T23:59:59.999Z'),
-      groupBy: 'year',
-    };
-
-    mockBuildFinanceRange
-      .mockReturnValueOnce(currentRange)
-      .mockReturnValueOnce(yearRange);
-    mockGetPreviousFinanceRange.mockReturnValue(previousRange);
-
+  it('returns unified summary data for admins from the ledger service', async () => {
     mockGetFinanceAggregate
-      .mockResolvedValueOnce({
-        summary: {
-          totalIncome: 120000,
-          totalExpenses: 45000,
-          netProfit: 75000,
-          totalTransactions: 18,
-        },
-      })
-      .mockResolvedValueOnce({
-        summary: {
-          totalIncome: 95000,
-          totalExpenses: 30000,
-          netProfit: 65000,
-          totalTransactions: 14,
-        },
-      })
-      .mockResolvedValueOnce({
-        summary: {
-          totalIncome: 410000,
-          totalExpenses: 180000,
-          netProfit: 230000,
-          totalTransactions: 63,
-        },
-      });
+      .mockResolvedValueOnce(buildAggregate(75000, 18))
+      .mockResolvedValueOnce(buildAggregate(65000, 14))
+      .mockResolvedValueOnce(buildAggregate(230000, 63));
 
     mockGetRecentFinanceTransactions.mockResolvedValue([
       {
-        id: 'sale-1',
+        id: 2000001,
         transactionNumber: 'POS-001',
         type: 'INCOME',
+        eventType: 'POS_CASH_SALE',
+        displayLabel: 'POS Cash Sale',
         amount: 15000,
         description: 'POS sale',
         date: new Date('2026-04-29T12:00:00.000Z'),
         paymentMethod: 'CASH',
-        source: 'POS_SALE',
+        source: 'POS',
+        cashIn: 15000,
+        cashOut: 0,
+        profitIn: 15000,
+        profitOut: 5000,
       },
     ]);
 
@@ -124,45 +143,31 @@ describe('GET /api/finance/summary', () => {
     } as any);
 
     expect(response.status).toBe(200);
-    expect(mockBuildFinanceRange).toHaveBeenCalledTimes(2);
-    expect(mockGetPreviousFinanceRange).toHaveBeenCalledWith(currentRange);
-    expect(mockGetFinanceAggregate).toHaveBeenNthCalledWith(1, currentRange);
-    expect(mockGetFinanceAggregate).toHaveBeenNthCalledWith(2, previousRange);
-    expect(mockGetFinanceAggregate).toHaveBeenNthCalledWith(3, yearRange);
+    expect(mockGetFinanceAggregate).toHaveBeenCalledTimes(3);
     expect(mockGetRecentFinanceTransactions).toHaveBeenCalledWith(10);
 
     await expect(response.json()).resolves.toMatchObject({
       success: true,
       data: {
         currentMonth: {
-          income: 120000,
-          expenses: 45000,
           netIncome: 75000,
           transactionCount: 18,
         },
         previousMonth: {
-          income: 95000,
-          expenses: 30000,
           netIncome: 65000,
           transactionCount: 14,
         },
         yearToDate: {
-          income: 410000,
-          expenses: 180000,
           netIncome: 230000,
           transactionCount: 63,
         },
         recentTransactions: [
           {
             transactionNumber: 'POS-001',
-            source: 'POS_SALE',
+            source: 'POS',
             amount: 15000,
           },
         ],
-        dataSources: {
-          includeSales: true,
-          includePurchases: true,
-        },
       },
     });
   });

@@ -343,13 +343,6 @@ export const DELETE = withAuth(
         return createApiResponse.notFound('Financial transaction');
       }
 
-      // Check if transaction can be deleted (not approved/rejected)
-      if (['APPROVED', 'REJECTED'].includes(transaction.status)) {
-        return createApiResponse.validationError(
-          'Cannot delete a transaction that is approved or rejected'
-        );
-      }
-
       const deletedAt = new Date();
 
       const deletedTransaction = await prisma.$transaction(async tx => {

@@ -172,15 +172,18 @@ describe('DELETE /api/finance/transactions/[id]', () => {
     });
   });
 
-  it('returns 400 when the transaction is approved or rejected', async () => {
-    mockFindUnique.mockResolvedValue({
+  it('allows admins to hard-delete legacy approved transactions with an audit log', async () => {
+    const approvedTransaction = {
       ...existingTransaction,
       status: 'APPROVED',
-    });
+    };
+
+    mockFindUnique.mockResolvedValue(approvedTransaction);
+    mockCreateAuditLog.mockResolvedValue({ id: 45 });
 
     const response = await deleteFinanceTransaction(
       {
-        json: async () => ({ reason: 'Cleanup' }),
+        json: async () => ({ reason: 'Remove duplicate approved legacy row' }),
         user: {
           id: '7',
           role: 'ADMIN',
@@ -190,12 +193,26 @@ describe('DELETE /api/finance/transactions/[id]', () => {
       { params: Promise.resolve({ id: '12' }) }
     );
 
-    expect(response.status).toBe(400);
-    expect(mockTransaction).not.toHaveBeenCalled();
-    expect(mockCreateAuditLog).not.toHaveBeenCalled();
+    expect(response.status).toBe(200);
+    expect(mockCreateAuditLog).toHaveBeenCalledWith(
+      expect.objectContaining({
+        oldValues: approvedTransaction,
+        newValues: expect.objectContaining({
+          deleted: true,
+          reason: 'Remove duplicate approved legacy row',
+        }),
+      })
+    );
+    expect(tx.financialTransaction.delete).toHaveBeenCalledWith({
+      where: { id: 12 },
+    });
     await expect(response.json()).resolves.toMatchObject({
-      success: false,
-      error: 'Cannot delete a transaction that is approved or rejected',
+      success: true,
+      data: {
+        id: 12,
+        deletedBy: 7,
+        reason: 'Remove duplicate approved legacy row',
+      },
     });
   });
 

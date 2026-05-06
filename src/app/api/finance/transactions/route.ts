@@ -16,6 +16,10 @@ import { z } from 'zod';
 import { logger } from '@/lib/logger';
 import { normalizeFinanceDateFilters } from '@/lib/finance/date-range';
 import {
+  addFinanceDateRangeIssue,
+  optionalFinanceDateInputSchema,
+} from '@/lib/finance/query-validation';
+import {
   attachFinancialTransactionNames,
 } from '@/lib/finance/transaction-access';
 import {
@@ -23,14 +27,14 @@ import {
   normalizeFinancePaymentMethod,
 } from '@/lib/finance/ledger';
 
-function parseDateParam(value: string | null): Date | undefined {
-  if (!value) {
-    return undefined;
-  }
-
-  const parsed = new Date(value);
-  return Number.isNaN(parsed.getTime()) ? undefined : parsed;
-}
+const ledgerTransactionQuerySchema = z
+  .object({
+    startDate: optionalFinanceDateInputSchema,
+    endDate: optionalFinanceDateInputSchema,
+  })
+  .superRefine((value, ctx) => {
+    addFinanceDateRangeIssue(value.startDate, value.endDate, ctx);
+  });
 
 function normalizeLedgerType(value?: string | null): 'all' | 'income' | 'expense' {
   if (!value || value === 'ALL') {
@@ -211,14 +215,22 @@ export const GET = withAuth(async (request: AuthenticatedRequest) => {
     const sortBy = searchParams.get('sortBy') || 'transactionDate';
     const sortOrder =
       (searchParams.get('sortOrder') as 'asc' | 'desc') || 'desc';
+    const validatedLedgerQuery = ledgerTransactionQuerySchema.parse({
+      startDate: searchParams.get('startDate') || undefined,
+      endDate: searchParams.get('endDate') || undefined,
+    });
+    const normalizedDateFilters = normalizeFinanceDateFilters(
+      validatedLedgerQuery.startDate,
+      validatedLedgerQuery.endDate
+    );
 
     const filters = {
       search: searchParams.get('search') || undefined,
       type: normalizeLedgerType(searchParams.get('type')),
       status: searchParams.get('status') || undefined,
       paymentMethod: searchParams.get('paymentMethod') || undefined,
-      startDate: parseDateParam(searchParams.get('startDate')),
-      endDate: parseDateParam(searchParams.get('endDate')),
+      startDate: normalizedDateFilters.startDate,
+      endDate: normalizedDateFilters.endDate,
       source: searchParams.get('source') || undefined,
       eventType: searchParams.get('eventType') || undefined,
       cashImpact: searchParams.get('cashImpact') || undefined,

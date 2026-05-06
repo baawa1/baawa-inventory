@@ -47,7 +47,7 @@ jest.mock('@/lib/logger', () => ({
   },
 }));
 
-jest.mock('@/lib/finance/aggregation', () => ({
+jest.mock('@/lib/finance/ledger', () => ({
   getFinanceAggregate: (...args: any[]) => mockGetFinanceAggregate(...args),
 }));
 

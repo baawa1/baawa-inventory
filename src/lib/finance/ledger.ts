@@ -238,7 +238,7 @@ const IGNORED_SALE_STATUSES = new Set([
   'refunded',
 ]);
 const ESTIMATED_COGS_REASON =
-  'Sales items do not store cost-at-sale snapshots. Cost of goods sold uses the current product cost as the best available estimate.';
+  'Some historical sales do not have exact cost-at-sale snapshots. Cost of goods sold uses the best available product cost estimate for those rows.';
 const ESTIMATED_INVENTORY_REASON =
   'Historical inventory value is reconstructed from current stock and later stock movements, so past periods are best-effort estimates.';
 
@@ -483,6 +483,21 @@ function matchesSearch(
   return searchableValues.some(value => value.includes(normalizedSearch));
 }
 
+function matchesDateRange(
+  filters: Pick<FinanceAggregationFilters, 'startDate' | 'endDate'>,
+  transaction: NormalizedFinanceTransaction
+): boolean {
+  if (filters.startDate && transaction.date < filters.startDate) {
+    return false;
+  }
+
+  if (filters.endDate && transaction.date > filters.endDate) {
+    return false;
+  }
+
+  return true;
+}
+
 function buildSourcePath(
   source: FinanceSource,
   sourceId: number,
@@ -616,6 +631,7 @@ function estimateSaleCost(saleItems: Array<any>): {
 } {
   let estimatedCost = 0;
   let hasPhysicalGoods = false;
+  let hasEstimatedCost = false;
 
   saleItems.forEach(item => {
     if (item.products?.isService) {
@@ -623,13 +639,28 @@ function estimateSaleCost(saleItems: Array<any>): {
     }
 
     hasPhysicalGoods = true;
+
+    if (item.total_cost !== null && typeof item.total_cost !== 'undefined') {
+      estimatedCost += toAmount(item.total_cost);
+      hasEstimatedCost = hasEstimatedCost || Boolean(item.cost_is_estimated);
+      return;
+    }
+
+    if (item.unit_cost !== null && typeof item.unit_cost !== 'undefined') {
+      estimatedCost += toAmount(item.unit_cost) * Number(item.quantity || 0);
+      hasEstimatedCost = hasEstimatedCost || Boolean(item.cost_is_estimated);
+      return;
+    }
+
     estimatedCost += toAmount(item.products?.cost) * Number(item.quantity || 0);
+    hasEstimatedCost = true;
   });
 
   return {
     amount: roundCurrency(estimatedCost),
-    estimated: hasPhysicalGoods,
-    estimatedReason: hasPhysicalGoods ? ESTIMATED_COGS_REASON : undefined,
+    estimated: hasPhysicalGoods && hasEstimatedCost,
+    estimatedReason:
+      hasPhysicalGoods && hasEstimatedCost ? ESTIMATED_COGS_REASON : undefined,
   };
 }
 
@@ -1190,14 +1221,17 @@ async function fetchSalesTransactions(filters: FinanceAggregationFilters) {
   if (filters.startDate || filters.endDate) {
     const createdAt: Record<string, Date> = {};
     const paymentDate: Record<string, Date> = {};
+    const paymentCreatedAt: Record<string, Date> = {};
 
     if (filters.startDate) {
       createdAt.gte = filters.startDate;
       paymentDate.gte = filters.startDate;
+      paymentCreatedAt.gte = filters.startDate;
     }
     if (filters.endDate) {
       createdAt.lte = filters.endDate;
       paymentDate.lte = filters.endDate;
+      paymentCreatedAt.lte = filters.endDate;
     }
 
     where.OR = [
@@ -1207,7 +1241,15 @@ async function fetchSalesTransactions(filters: FinanceAggregationFilters) {
       {
         transaction_payments: {
           some: {
-            payment_date: paymentDate,
+            OR: [
+              {
+                payment_date: paymentDate,
+              },
+              {
+                payment_date: null,
+                created_at: paymentCreatedAt,
+              },
+            ],
           },
         },
       },
@@ -1234,11 +1276,21 @@ async function fetchSalesTransactions(filters: FinanceAggregationFilters) {
   };
 
   if (filters.startDate || filters.endDate) {
+    const dateRange = {
+      ...(filters.startDate ? { gte: filters.startDate } : {}),
+      ...(filters.endDate ? { lte: filters.endDate } : {}),
+    };
+
     transactionPaymentsInclude.where = {
-      payment_date: {
-        ...(filters.startDate ? { gte: filters.startDate } : {}),
-        ...(filters.endDate ? { lte: filters.endDate } : {}),
-      },
+      OR: [
+        {
+          payment_date: dateRange,
+        },
+        {
+          payment_date: null,
+          created_at: dateRange,
+        },
+      ],
     };
   }
 
@@ -1264,6 +1316,9 @@ async function fetchSalesTransactions(filters: FinanceAggregationFilters) {
           quantity: true,
           unit_price: true,
           total_price: true,
+          unit_cost: true,
+          total_cost: true,
+          cost_is_estimated: true,
           products: {
             select: {
               name: true,
@@ -1370,6 +1425,7 @@ export async function getNormalizedFinanceTransactions(
     .filter(transaction =>
       includeFlaggedOverlaps ? true : !transaction.flaggedOverlap
     )
+    .filter(transaction => matchesDateRange(filters, transaction))
     .filter(transaction => matchesType(filters.type, transaction.type))
     .filter(transaction => matchesPaymentMethod(filters.paymentMethod, transaction.paymentMethod))
     .filter(transaction => matchesStatus(filters.status, transaction))
