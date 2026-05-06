@@ -21,7 +21,7 @@ export default async function CategoryPerformancePage() {
   }
 
   if (session.user.status !== 'APPROVED') {
-    redirect('/pending-approval');
+    redirect('/unauthorized');
   }
 
   return <CategoryPerformance user={session.user} />;

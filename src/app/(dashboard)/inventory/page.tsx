@@ -12,7 +12,7 @@ export default async function InventoryPage() {
   }
 
   if (session.user.status !== 'APPROVED') {
-    redirect('/pending-approval');
+    redirect('/unauthorized');
   }
 
   // Check if user has inventory access permissions

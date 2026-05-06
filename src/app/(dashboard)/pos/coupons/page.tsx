@@ -21,7 +21,7 @@ export default async function CouponsPage() {
   }
 
   if (session.user.status !== 'APPROVED') {
-    redirect('/pending-approval');
+    redirect('/unauthorized');
   }
 
   return <CouponList user={session.user} />;

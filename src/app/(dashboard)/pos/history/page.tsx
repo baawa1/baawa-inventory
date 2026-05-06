@@ -22,7 +22,7 @@ export default async function TransactionHistoryPage() {
   }
 
   if (session.user.status !== 'APPROVED') {
-    redirect('/pending-approval');
+    redirect('/unauthorized');
   }
 
   return (

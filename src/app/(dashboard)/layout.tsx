@@ -17,31 +17,10 @@ export default async function DashboardLayout({
     redirect('/login');
   }
 
-  // Check if user account is active - match middleware logic
-  if (session.user.status === USER_STATUS.PENDING) {
-    // PENDING users need email verification first
-    if (!session.user.isEmailVerified) {
-      redirect('/check-email');
-    } else {
-      // Email verified but still pending admin approval
-      redirect('/pending-approval');
-    }
-  }
-
-  if (session.user.status === USER_STATUS.VERIFIED) {
-    // Email verified but not yet approved by admin
-    redirect('/pending-approval');
-  }
-
   if (
-    session.user.status === USER_STATUS.REJECTED ||
-    session.user.status === USER_STATUS.SUSPENDED
+    session.user.status !== USER_STATUS.APPROVED ||
+    !session.user.isEmailVerified
   ) {
-    redirect('/unauthorized');
-  }
-
-  // At this point, user should be APPROVED
-  if (session.user.status !== USER_STATUS.APPROVED) {
     redirect('/unauthorized');
   }
 

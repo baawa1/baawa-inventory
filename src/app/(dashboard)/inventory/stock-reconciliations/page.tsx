@@ -16,7 +16,7 @@ export default async function StockReconciliationsPage() {
   }
 
   if (session.user.status !== 'APPROVED') {
-    redirect('/pending-approval');
+    redirect('/unauthorized');
   }
 
   // Check role permissions - only managers and above can access stock reconciliations

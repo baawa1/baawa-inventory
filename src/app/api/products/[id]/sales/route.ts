@@ -20,6 +20,11 @@ export const GET = withAuth(async function (
     const salesItems = await prisma.salesItem.findMany({
       where: {
         product_id: productId,
+        sales_transactions: {
+          payment_status: {
+            in: SUCCESSFUL_PAYMENT_STATUSES,
+          },
+        },
       },
       include: {
         sales_transactions: {
@@ -63,19 +68,21 @@ export const GET = withAuth(async function (
       total: Number(item.total_price),
       transactionDate: item.sales_transactions.created_at,
       customerName: item.sales_transactions.customer?.name || null,
-      staffName: `${item.sales_transactions.users.firstName} ${item.sales_transactions.users.lastName}`,
+      staffName:
+        [
+          item.sales_transactions.users?.firstName,
+          item.sales_transactions.users?.lastName,
+        ]
+          .filter(Boolean)
+          .join(' ')
+          .trim() || 'Unknown staff',
       paymentStatus: item.sales_transactions.payment_status || 'pending',
     }));
 
-    // Calculate summary - only for successful payments
-    const successfulSales = transformedItems.filter(item =>
-      SUCCESSFUL_PAYMENT_STATUSES.includes(item.paymentStatus)
-    );
-
     const summary = {
-      totalQuantity: successfulSales.reduce((sum, item) => sum + item.quantity, 0),
-      totalRevenue: successfulSales.reduce((sum, item) => sum + item.total, 0),
-      totalTransactions: successfulSales.length,
+      totalQuantity: transformedItems.reduce((sum, item) => sum + item.quantity, 0),
+      totalRevenue: transformedItems.reduce((sum, item) => sum + item.total, 0),
+      totalTransactions: transformedItems.length,
       allTransactions: transformedItems.length,
     };
 

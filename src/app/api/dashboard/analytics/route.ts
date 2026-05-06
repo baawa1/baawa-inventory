@@ -10,7 +10,7 @@ import {
   API_LIMITS,
   SUCCESSFUL_PAYMENT_STATUSES,
 } from '@/lib/constants';
-import { getFinanceAggregate } from '@/lib/finance/aggregation';
+import { getFinanceAggregate } from '@/lib/finance/ledger';
 import { summarizeCanonicalFinanceAggregate } from '@/lib/finance/metrics';
 import { formatCurrency } from '@/lib/utils';
 import type {

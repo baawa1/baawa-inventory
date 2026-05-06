@@ -21,7 +21,7 @@ export default async function ProductPerformancePage() {
   }
 
   if (session.user.status !== 'APPROVED') {
-    redirect('/pending-approval');
+    redirect('/unauthorized');
   }
 
   return <ProductPerformance user={session.user} />;

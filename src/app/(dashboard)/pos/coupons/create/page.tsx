@@ -24,7 +24,7 @@ export default async function CreateCouponPage() {
   }
 
   if (session.user.status !== 'APPROVED') {
-    redirect('/pending-approval');
+    redirect('/unauthorized');
   }
 
   return <CreateCouponForm user={session.user} />;

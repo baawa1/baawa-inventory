@@ -15,7 +15,7 @@ export default async function AnalyticsPage() {
   }
 
   if (session.user.status !== 'APPROVED') {
-    redirect('/pending-approval');
+    redirect('/unauthorized');
   }
 
   return <MainAnalytics user={session.user} />;

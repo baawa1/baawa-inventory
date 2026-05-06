@@ -16,7 +16,7 @@ export default async function BrandsPage() {
   }
 
   if (session.user.status !== 'APPROVED') {
-    redirect('/pending-approval');
+    redirect('/unauthorized');
   }
 
   return <MobileBrandList user={session.user} />;

@@ -15,7 +15,7 @@ export default async function CustomerManagementPage() {
   }
 
   if (session.user.status !== 'APPROVED') {
-    redirect('/pending-approval');
+    redirect('/unauthorized');
   }
 
   return <CustomerManagement user={session.user} />;

@@ -19,12 +19,8 @@ export async function GET(_req: NextRequest) {
       '/',
       '/login',
       '/logout',
-      '/register',
       '/forgot-password',
       '/reset-password',
-      '/check-email',
-      '/verify-email',
-      '/pending-approval',
       '/unauthorized',
     ];
 
@@ -50,55 +46,10 @@ export async function GET(_req: NextRequest) {
     const userStatus = (token as any).status;
     const isEmailVerified = Boolean((token as any).isEmailVerified);
 
-    // Authentication Flow Logic:
-    // 1. Unverified users → verify-email page
-    // 2. Verified but unapproved users → pending-approval page
-    // 3. Approved users → dashboard
-    // 4. Rejected/denied users → unauthorized page
-
-    // Check if email is not verified
-    if (!isEmailVerified) {
-      return NextResponse.json({
-        result: 'redirect_to_verify_email',
-        message: 'Email not verified - should redirect to verify-email',
-        userStatus,
-        isEmailVerified,
-      });
-    }
-
-    // Check user status after email verification
-    if (userStatus === 'PENDING') {
-      return NextResponse.json({
-        result: 'redirect_to_pending_approval',
-        message: 'User status is PENDING (needs admin approval)',
-        userStatus,
-        isEmailVerified,
-      });
-    }
-
-    if (userStatus === 'VERIFIED') {
-      return NextResponse.json({
-        result: 'redirect_to_pending_approval',
-        message: 'User status is VERIFIED (needs admin approval)',
-        userStatus,
-        isEmailVerified,
-      });
-    }
-
-    if (userStatus === 'REJECTED' || userStatus === 'SUSPENDED') {
+    if (!isEmailVerified || userStatus !== 'APPROVED') {
       return NextResponse.json({
         result: 'redirect_to_unauthorized',
-        message: `User status is ${userStatus}`,
-        userStatus,
-        isEmailVerified,
-      });
-    }
-
-    // At this point, user should be APPROVED
-    if (userStatus !== 'APPROVED') {
-      return NextResponse.json({
-        result: 'redirect_to_unauthorized',
-        message: `Invalid user status: ${userStatus}`,
+        message: 'User is not active for protected access',
         userStatus,
         isEmailVerified,
       });

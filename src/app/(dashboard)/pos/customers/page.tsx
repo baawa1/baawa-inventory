@@ -21,7 +21,7 @@ export default async function CustomersPage() {
   }
 
   if (session.user.status !== 'APPROVED') {
-    redirect('/pending-approval');
+    redirect('/unauthorized');
   }
 
   return <CustomerAnalytics user={session.user} />;
