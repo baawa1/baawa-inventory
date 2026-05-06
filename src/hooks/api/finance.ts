@@ -2,6 +2,11 @@ import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { queryKeys } from '@/lib/query-client';
 import { logger } from '@/lib/logger';
 import type {
+  FinanceReportHistoryEntry,
+  FinanceReportPayloadWithExportRows,
+  FinanceReportType,
+} from '@/lib/finance/reporting';
+import type {
   CreateTransactionData,
   UpdateTransactionData,
 } from '@/lib/validations/finance';
@@ -102,6 +107,23 @@ export interface FinancialTransactionPagination {
 export interface FinancialTransactionListResponse {
   data: FinancialTransaction[];
   pagination: FinancialTransactionPagination;
+}
+
+export interface FinancialReportsResponse {
+  data: FinanceReportPayloadWithExportRows;
+  message?: string;
+  success: boolean;
+}
+
+export interface GeneratedFinancialReportResponse {
+  report: FinanceReportPayloadWithExportRows;
+  snapshot?: {
+    id: number;
+    reportType: string;
+    reportName: string;
+    generatedAt: string;
+    methodologyStatus: 'exact' | 'estimated';
+  };
 }
 
 type ApiErrorPayload = {
@@ -216,7 +238,7 @@ export function useFinancialReports(params: {
   dateFrom?: string;
   dateTo?: string;
 }) {
-  return useQuery({
+  return useQuery<FinancialReportsResponse>({
     queryKey: ['financial-reports', params],
     queryFn: async () => {
       const searchParams = new URLSearchParams();
@@ -249,6 +271,78 @@ export function useFinancialReports(params: {
     },
     staleTime: 5 * 60 * 1000, // 5 minutes
     gcTime: 10 * 60 * 1000, // 10 minutes
+  });
+}
+
+export function useFinancialReportHistory(limit: number = 20) {
+  return useQuery<{ success: boolean; data: FinanceReportHistoryEntry[] }>({
+    queryKey: ['financial-report-history', limit],
+    queryFn: async () => {
+      const response = await fetch(`/api/finance/reports/history?limit=${limit}`);
+
+      if (!response.ok) {
+        const errorData = await response.json().catch(() => ({}));
+        throw new Error(
+          errorData.error ||
+            errorData.message ||
+            'Failed to fetch financial report history'
+        );
+      }
+
+      return response.json();
+    },
+    staleTime: 5 * 60 * 1000,
+    gcTime: 10 * 60 * 1000,
+  });
+}
+
+export function useGenerateFinancialReport() {
+  const queryClient = useQueryClient();
+
+  return useMutation<
+    { success: boolean; data: GeneratedFinancialReportResponse },
+    Error,
+    {
+      reportType: FinanceReportType;
+      period: 'weekly' | 'monthly' | 'quarterly' | 'yearly';
+      type?: 'all' | 'income' | 'expense';
+      paymentMethod?: string;
+      dateFrom?: string;
+      dateTo?: string;
+      saveSnapshot?: boolean;
+    }
+  >({
+    mutationFn: async payload => {
+      const response = await fetch('/api/finance/reports', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify(payload),
+      });
+
+      if (!response.ok) {
+        const errorData = await response.json().catch(() => ({}));
+        throw new Error(
+          errorData.error ||
+            errorData.message ||
+            'Failed to generate financial report'
+        );
+      }
+
+      return response.json();
+    },
+    onSuccess: (_, variables) => {
+      queryClient.invalidateQueries({
+        queryKey: ['financial-reports'],
+      });
+
+      if (variables.saveSnapshot) {
+        queryClient.invalidateQueries({
+          queryKey: ['financial-report-history'],
+        });
+      }
+    },
   });
 }
 

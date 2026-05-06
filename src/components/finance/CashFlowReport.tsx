@@ -1,19 +1,24 @@
 'use client';
 
-import React, { useMemo, useState } from 'react';
-import { DateRange } from 'react-day-picker';
-import { AppUser } from '@/types/user';
-import { useFinancialReports } from '@/hooks/api/finance';
+import { useState } from 'react';
+import type { DateRange } from 'react-day-picker';
+import type { AppUser } from '@/types/user';
+import {
+  useFinancialReports,
+  useGenerateFinancialReport,
+} from '@/hooks/api/finance';
 import { formatCurrency } from '@/lib/utils';
 import {
   exportToCSV,
   generateExportFilename,
 } from '@/lib/utils/finance';
+import { formatFinanceDateInput } from '@/lib/finance/date-range';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { InlineLoading } from '@/components/ui/loading';
 import { PageHeader } from '@/components/ui/page-header';
 import { DateRangePickerWithPresets } from '@/components/ui/date-range-picker-with-presets';
+import { Badge } from '@/components/ui/badge';
 import {
   Select,
   SelectContent,
@@ -22,14 +27,16 @@ import {
   SelectValue,
 } from '@/components/ui/select';
 import {
+  IconAlertTriangle,
+  IconArrowDownRight,
+  IconArrowUpRight,
+  IconDeviceFloppy,
   IconDownload,
   IconPrinter,
   IconRefresh,
-  IconArrowDownRight,
-  IconArrowUpRight,
 } from '@tabler/icons-react';
+import { toast } from 'sonner';
 import { CashFlowForecastDashboard } from './dashboards/CashFlowForecastDashboard';
-import { formatFinanceDateInput } from '@/lib/finance/date-range';
 
 interface CashFlowReportProps {
   user: AppUser;
@@ -44,73 +51,76 @@ export function CashFlowReport({ user: _user }: CashFlowReportProps) {
     to: new Date(),
   });
 
+  const queryParams = {
+    period,
+    type: 'all' as const,
+    dateFrom: dateRange?.from
+      ? formatFinanceDateInput(dateRange.from)
+      : undefined,
+    dateTo: dateRange?.to ? formatFinanceDateInput(dateRange.to) : undefined,
+  };
+
   const {
     data: reportsData,
     isLoading,
     error,
     refetch,
-  } = useFinancialReports({
-    period,
-    type: 'all',
-    dateFrom: dateRange?.from
-      ? formatFinanceDateInput(dateRange.from)
-      : undefined,
-    dateTo: dateRange?.to ? formatFinanceDateInput(dateRange.to) : undefined,
-  });
+  } = useFinancialReports(queryParams);
+  const generateReport = useGenerateFinancialReport();
 
-  const cashFlow = reportsData?.data?.cashFlow;
-  const totalCashFlow = reportsData?.data?.totalCashFlow || 0;
+  const report = reportsData?.data;
 
-  const exportRows = useMemo(
-    () => [
-      {
-        Section: 'Operating Activities',
-        Item: 'Net Income',
-        Amount: cashFlow?.operatingActivities?.netIncome || 0,
-      },
-      {
-        Section: 'Operating Activities',
-        Item: 'Operating Revenue',
-        Amount: cashFlow?.operatingActivities?.operatingRevenue || 0,
-      },
-      {
-        Section: 'Operating Activities',
-        Item: 'Operating Expenses',
-        Amount: cashFlow?.operatingActivities?.operatingExpenses || 0,
-      },
-      {
-        Section: 'Operating Activities',
-        Item: 'Net Operating Cash Flow',
-        Amount: cashFlow?.operatingActivities?.netOperatingCashFlow || 0,
-      },
-      {
-        Section: 'Investing Activities',
-        Item: 'Capital Expenditures',
-        Amount: cashFlow?.investingActivities?.capitalExpenditures || 0,
-      },
-      {
-        Section: 'Investing Activities',
-        Item: 'Net Investing Cash Flow',
-        Amount: cashFlow?.investingActivities?.netInvestingCashFlow || 0,
-      },
-      {
-        Section: 'Financing Activities',
-        Item: 'Financing Inflows',
-        Amount: cashFlow?.financingActivities?.loans || 0,
-      },
-      {
-        Section: 'Financing Activities',
-        Item: 'Net Financing Cash Flow',
-        Amount: cashFlow?.financingActivities?.netFinancingCashFlow || 0,
-      },
-      {
-        Section: 'Summary',
-        Item: 'Total Cash Flow',
-        Amount: totalCashFlow,
-      },
-    ],
-    [cashFlow, totalCashFlow]
-  );
+  const handleExport = async () => {
+    try {
+      const response = await generateReport.mutateAsync({
+        reportType: 'CASH_FLOW',
+        period,
+        dateFrom: queryParams.dateFrom,
+        dateTo: queryParams.dateTo,
+        saveSnapshot: false,
+      });
+
+      exportToCSV(
+        response.data.report.exportRows,
+        generateExportFilename('cash-flow-report', period)
+      );
+      toast.success('Cash flow report exported');
+    } catch (mutationError) {
+      toast.error(
+        mutationError instanceof Error
+          ? mutationError.message
+          : 'Failed to export cash flow report'
+      );
+    }
+  };
+
+  const handleSaveSnapshot = async () => {
+    try {
+      const response = await generateReport.mutateAsync({
+        reportType: 'CASH_FLOW',
+        period,
+        dateFrom: queryParams.dateFrom,
+        dateTo: queryParams.dateTo,
+        saveSnapshot: true,
+      });
+
+      toast.success(
+        response.data.snapshot
+          ? 'Cash flow snapshot saved'
+          : 'Cash flow report generated'
+      );
+    } catch (mutationError) {
+      toast.error(
+        mutationError instanceof Error
+          ? mutationError.message
+          : 'Failed to save cash flow snapshot'
+      );
+    }
+  };
+
+  const handlePrint = () => {
+    window.print();
+  };
 
   if (isLoading) {
     return (
@@ -120,7 +130,7 @@ export function CashFlowReport({ user: _user }: CashFlowReportProps) {
     );
   }
 
-  if (error) {
+  if (error || !report) {
     return (
       <div className="mx-auto max-w-7xl space-y-6 p-6">
         <Card>
@@ -135,20 +145,14 @@ export function CashFlowReport({ user: _user }: CashFlowReportProps) {
     );
   }
 
-  const handleExport = () => {
-    exportToCSV(exportRows, generateExportFilename('cash-flow-report', period));
-  };
-
-  const handlePrint = () => {
-    window.print();
-  };
+  const statement = report.cashFlowStatement;
 
   return (
     <div className="mx-auto max-w-7xl space-y-6 p-6">
       <div className="flex flex-wrap items-center justify-between gap-4">
         <PageHeader
           title="Cash Flow"
-          description="Live cash flow reporting with forecast projections from unified finance data"
+          description="Cash movement view showing money received, money spent, stock purchases, and owner funding."
         />
         <div className="flex flex-wrap items-center gap-2">
           <DateRangePickerWithPresets
@@ -175,6 +179,15 @@ export function CashFlowReport({ user: _user }: CashFlowReportProps) {
             <IconDownload className="mr-2 h-4 w-4" />
             Export
           </Button>
+          <Button
+            variant="outline"
+            onClick={handleSaveSnapshot}
+            isLoading={generateReport.isPending}
+            loadingText="Saving..."
+          >
+            <IconDeviceFloppy className="mr-2 h-4 w-4" />
+            Save Snapshot
+          </Button>
           <Button variant="outline" onClick={handlePrint}>
             <IconPrinter className="mr-2 h-4 w-4" />
             Print
@@ -182,20 +195,47 @@ export function CashFlowReport({ user: _user }: CashFlowReportProps) {
         </div>
       </div>
 
+      <div className="flex flex-wrap items-center gap-2">
+        <Badge variant="outline">{period}</Badge>
+        <Badge variant={report.methodology.status === 'exact' ? 'default' : 'secondary'}>
+          {report.methodology.status}
+        </Badge>
+      </div>
+
+      {report.methodology.estimated ? (
+        <Card className="border-amber-200 bg-amber-50/60">
+          <CardContent className="flex items-start gap-3 p-4 text-sm text-amber-900">
+            <IconAlertTriangle className="mt-0.5 h-4 w-4" />
+            <div className="space-y-1">
+              {report.methodology.reasons.map(reason => (
+                <div key={reason}>{reason}</div>
+              ))}
+            </div>
+          </CardContent>
+        </Card>
+      ) : null}
+
       <div className="grid gap-4 md:grid-cols-2 xl:grid-cols-4">
         <SummaryCard
-          title="Operating Cash Flow"
-          amount={cashFlow?.operatingActivities?.netOperatingCashFlow || 0}
+          title="Cash Received"
+          amount={statement.cashReceived}
+          positive
         />
         <SummaryCard
-          title="Investing Cash Flow"
-          amount={cashFlow?.investingActivities?.netInvestingCashFlow || 0}
+          title="Cash Spent"
+          amount={statement.cashSpent}
+          positive={false}
         />
         <SummaryCard
-          title="Financing Cash Flow"
-          amount={cashFlow?.financingActivities?.netFinancingCashFlow || 0}
+          title="Owner Funding"
+          amount={statement.ownerFunding}
+          positive
         />
-        <SummaryCard title="Total Cash Flow" amount={totalCashFlow} />
+        <SummaryCard
+          title="Net Cash Movement"
+          amount={statement.netCashMovement}
+          positive={statement.netCashMovement >= 0}
+        />
       </div>
 
       <Card>
@@ -204,57 +244,55 @@ export function CashFlowReport({ user: _user }: CashFlowReportProps) {
         </CardHeader>
         <CardContent className="grid gap-6 lg:grid-cols-3">
           <CashFlowSection
-            title="Operating Activities"
+            title="Money In"
             rows={[
-              ['Net Income', cashFlow?.operatingActivities?.netIncome || 0],
-              [
-                'Operating Revenue',
-                cashFlow?.operatingActivities?.operatingRevenue || 0,
-              ],
-              [
-                'Operating Expenses',
-                -(cashFlow?.operatingActivities?.operatingExpenses || 0),
-              ],
-              [
-                'Net Operating Cash Flow',
-                cashFlow?.operatingActivities?.netOperatingCashFlow || 0,
-              ],
+              ['Customer Collections', statement.customerCollections, false],
+              ['Manual Income Collections', statement.manualIncomeCollections, false],
+              ['Owner Funding', statement.ownerFunding, false],
+              ['Total Cash Received', statement.cashReceived, false, true],
             ]}
           />
           <CashFlowSection
-            title="Investing Activities"
+            title="Money Out"
             rows={[
-              [
-                'Capital Expenditures',
-                -(cashFlow?.investingActivities?.capitalExpenditures || 0),
-              ],
-              [
-                'Net Investing Cash Flow',
-                cashFlow?.investingActivities?.netInvestingCashFlow || 0,
-              ],
+              ['Operating Expense Payments', statement.operatingExpensePayments, true],
+              ['Stock Purchase Cash Out', statement.stockPurchaseCashOut, true],
+              ['Total Cash Spent', statement.cashSpent, true, true],
             ]}
           />
           <CashFlowSection
-            title="Financing Activities"
+            title="Net Cash"
             rows={[
-              ['Financing Inflows', cashFlow?.financingActivities?.loans || 0],
-              [
-                'Net Financing Cash Flow',
-                cashFlow?.financingActivities?.netFinancingCashFlow || 0,
-              ],
+              ['Net Operating Cash Flow', statement.netOperatingCashFlow, false],
+              ['Net Investing Cash Flow', statement.netInvestingCashFlow, false],
+              ['Net Financing Cash Flow', statement.netFinancingCashFlow, false],
+              ['Net Cash Movement', statement.netCashMovement, false, true],
             ]}
           />
         </CardContent>
       </Card>
 
-      <CashFlowForecastDashboard />
+      <Card>
+        <CardHeader>
+          <CardTitle>Estimated Forecast</CardTitle>
+        </CardHeader>
+        <CardContent>
+          <CashFlowForecastDashboard />
+        </CardContent>
+      </Card>
     </div>
   );
 }
 
-function SummaryCard({ title, amount }: { title: string; amount: number }) {
-  const positive = amount >= 0;
-
+function SummaryCard({
+  title,
+  amount,
+  positive,
+}: {
+  title: string;
+  amount: number;
+  positive: boolean;
+}) {
   return (
     <Card>
       <CardHeader className="pb-2">
@@ -262,19 +300,16 @@ function SummaryCard({ title, amount }: { title: string; amount: number }) {
       </CardHeader>
       <CardContent>
         <div
-          className={`text-2xl font-bold ${
+          className={`flex items-center gap-2 text-2xl font-bold ${
             positive ? 'text-green-600' : 'text-red-600'
           }`}
         >
-          {formatCurrency(amount)}
-        </div>
-        <div className="mt-2 flex items-center gap-1 text-xs text-muted-foreground">
           {positive ? (
-            <IconArrowUpRight className="h-3 w-3 text-green-600" />
+            <IconArrowUpRight className="h-5 w-5" />
           ) : (
-            <IconArrowDownRight className="h-3 w-3 text-red-600" />
+            <IconArrowDownRight className="h-5 w-5" />
           )}
-          {positive ? 'Positive movement' : 'Negative movement'}
+          <span>{formatCurrency(amount)}</span>
         </div>
       </CardContent>
     </Card>
@@ -286,17 +321,21 @@ function CashFlowSection({
   rows,
 }: {
   title: string;
-  rows: Array<[string, number]>;
+  rows: Array<[string, number, boolean?, boolean?]>;
 }) {
   return (
     <div className="space-y-4">
-      <h3 className="font-semibold">{title}</h3>
-      <div className="space-y-2">
-        {rows.map(([label, amount]) => (
-          <div key={label} className="flex justify-between">
+      <div className="font-semibold">{title}</div>
+      <div className="space-y-2 text-sm">
+        {rows.map(([label, amount, negative, strong]) => (
+          <div
+            key={label}
+            className={`flex justify-between ${strong ? 'border-t pt-2 font-semibold' : ''}`}
+          >
             <span>{label}</span>
-            <span className={amount >= 0 ? 'text-green-600' : 'text-red-600'}>
-              {formatCurrency(amount)}
+            <span>
+              {negative ? '-' : ''}
+              {formatCurrency(Math.abs(amount))}
             </span>
           </div>
         ))}

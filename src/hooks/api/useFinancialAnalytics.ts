@@ -1,64 +1,125 @@
 import { useQuery } from '@tanstack/react-query';
-import { DateRange } from 'react-day-picker';
+import type { DateRange } from 'react-day-picker';
 import { formatFinanceDateInput } from '@/lib/finance/date-range';
 
-interface FinancialAnalyticsFilters {
+export interface FinancialAnalyticsFilters {
   dateRange?: DateRange;
   type?: 'all' | 'income' | 'expense';
   paymentMethod?: string;
   groupBy?: 'day' | 'week' | 'month';
-  summaryOnly?: boolean;
 }
 
-interface AnalyticsSummary {
-  totalRevenue: number;
-  totalExpenses: number;
-  netProfit: number;
-  totalTransactions: number;
-  averageTransactionValue: number;
-  topPaymentMethod: string;
-  revenueGrowth: number;
-  expenseGrowth: number;
-}
-
-interface ChartData {
-  paymentMethodDistribution: Array<{
-    name: string;
-    value: number;
-    amount: number;
-  }>;
-  dailyTrends: Array<{
-    date: string;
+export interface FinancialAnalyticsData {
+  overview: {
+    trading: {
+      salesRevenue: number;
+      manualOperatingIncome: number;
+      operatingRevenue: number;
+      costOfGoodsSold: number;
+      operatingExpenses: number;
+      grossProfit: number;
+      netProfit: number;
+    };
+    cashMovement: {
+      cashReceived: number;
+      cashSpent: number;
+      customerCollections: number;
+      ownerFunding: number;
+      stockPurchases: number;
+      operatingExpensePayments: number;
+      manualIncomeCollections: number;
+      netCashMovement: number;
+    };
+    businessPosition: {
+      inventoryValueOnHand: number;
+      inventoryUnitsOnHand: number;
+      inventorySkusTracked: number;
+      receivablesOutstanding: number;
+      receivableTransactions: number;
+      customersWithBalances: number;
+      estimated: boolean;
+      estimatedReasons: string[];
+    };
+    activity: {
+      totalTransactions: number;
+      averageTransactionValue: number;
+      topPaymentMethod: string;
+      revenueGrowth: number;
+      expenseGrowth: number;
+      netProfitGrowth: number;
+      netCashGrowth: number;
+    };
+  };
+  tradingTrends: Array<{
+    period: string;
     revenue: number;
+    costOfGoodsSold: number;
+    grossProfit: number;
+    operatingExpenses: number;
+    netProfit: number;
     transactions: number;
   }>;
-}
-
-interface ExpenseBreakdown {
-  [expenseType: string]: number;
-}
-
-interface TopVendor {
-  vendor: string;
-  amount: number;
-  category: string;
-}
-
-interface FinancialAnalyticsData {
-  summary: AnalyticsSummary;
-  charts: ChartData;
-  expenseBreakdown: ExpenseBreakdown;
-  topVendors: TopVendor[];
+  cashTrends: Array<{
+    period: string;
+    cashReceived: number;
+    cashSpent: number;
+    customerCollections: number;
+    manualIncomeCollections: number;
+    ownerFunding: number;
+    stockPurchases: number;
+    operatingExpensePayments: number;
+    netCashMovement: number;
+  }>;
+  revenueBySource: Array<{
+    source: string;
+    revenue: number;
+    transactionCount: number;
+  }>;
+  expenseBreakdown: Array<{
+    category: string;
+    label: string;
+    amount: number;
+  }>;
+  receivables: {
+    summary: {
+      totalOutstanding: number;
+      totalTransactions: number;
+      averageDaysOutstanding: number;
+      customersWithBalances: number;
+    };
+    aging: {
+      '0-30': { count: number; amount: number };
+      '31-60': { count: number; amount: number };
+      '61-90': { count: number; amount: number };
+      '90+': { count: number; amount: number };
+    };
+    topDebtors: Array<{
+      customerName: string;
+      totalOwed: number;
+      transactionCount: number;
+    }>;
+  };
+  health: {
+    profitMargin: number;
+    operatingExpenseRatio: number;
+    averageTransactionValue: number;
+    estimatedCashPosition: number;
+    healthScore: number;
+    status: 'healthy' | 'monitor' | 'at-risk';
+  };
+  methodology: {
+    status: 'exact' | 'estimated';
+    estimated: boolean;
+    rebuiltFromOperationalData: boolean;
+    historicalRebuild: 'best_effort';
+    reasons: string[];
+  };
   filters: {
-    dateFrom?: string;
-    dateTo?: string;
+    dateFrom: string;
+    dateTo: string;
     type: string;
     paymentMethod?: string;
-    groupBy: string;
-  };
-  dataSources: {
-    includeSales: boolean;
-    includePurchases: boolean;
+    groupBy: 'day' | 'week' | 'month';
   };
 }
 
@@ -82,9 +143,6 @@ const fetchFinancialAnalytics = async (
   if (filters.groupBy) {
     params.append('groupBy', filters.groupBy);
   }
-  if (filters.summaryOnly) {
-    params.append('summaryOnly', '1');
-  }
 
   const response = await fetch(`/api/finance/analytics?${params.toString()}`);
   if (!response.ok) {
@@ -99,32 +157,6 @@ export function useFinancialAnalytics(filters: FinancialAnalyticsFilters = {}) {
   return useQuery({
     queryKey: ['financial-analytics', filters],
     queryFn: () => fetchFinancialAnalytics(filters),
-    staleTime: 5 * 60 * 1000, // 5 minutes
-    refetchInterval: 5 * 60 * 1000, // Refetch every 5 minutes
+    staleTime: 5 * 60 * 1000,
   });
-}
-
-export function useFinancialAnalyticsSummary(
-  filters: FinancialAnalyticsFilters = {}
-) {
-  const { data, ...rest } = useFinancialAnalytics({
-    ...filters,
-    summaryOnly: true,
-  });
-
-  return {
-    ...rest,
-    data: data?.summary,
-  };
-}
-
-export function useFinancialAnalyticsCharts(
-  filters: FinancialAnalyticsFilters = {}
-) {
-  const { data, ...rest } = useFinancialAnalytics(filters);
-
-  return {
-    ...rest,
-    data: data?.charts,
-  };
 }

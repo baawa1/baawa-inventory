@@ -68,12 +68,12 @@ const financeNavItems = [
     ],
   },
   {
-    title: 'Transactions',
+    title: 'Finance Ledger',
     url: '/finance/transactions',
     icon: IconReceipt,
     items: [
       {
-        title: 'All Transactions',
+        title: 'Finance Ledger',
         url: '/finance/transactions',
       },
     ],
@@ -84,20 +84,16 @@ const financeNavItems = [
     icon: IconChartBar,
     items: [
       {
-        title: 'Financial Summary',
+        title: 'Reports Hub',
         url: '/finance/reports',
       },
       {
-        title: 'Analytics Dashboard',
+        title: 'Analytics',
         url: '/finance/reports/analytics',
       },
       {
         title: 'Income Statement',
         url: '/finance/reports/income-statement',
-      },
-      {
-        title: 'Expense Report',
-        url: '/finance/reports/expenses',
       },
       {
         title: 'Cash Flow',

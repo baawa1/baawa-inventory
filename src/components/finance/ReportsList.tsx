@@ -1,13 +1,21 @@
 'use client';
 
-import React, { useState } from 'react';
+import { useMemo, useState } from 'react';
 import Link from 'next/link';
-import { AppUser } from '@/types/user';
-import { useFinancialReports } from '@/hooks/api/finance';
+import type { AppUser } from '@/types/user';
+import {
+  useFinancialReportHistory,
+  useFinancialReports,
+  useGenerateFinancialReport,
+} from '@/hooks/api/finance';
 import { formatCurrency } from '@/lib/utils';
-import { exportToCSV, generateExportFilename } from '@/lib/utils/finance';
-import { toast } from 'sonner';
+import {
+  exportToCSV,
+  generateExportFilename,
+} from '@/lib/utils/finance';
 import { formatFinanceDateInput } from '@/lib/finance/date-range';
+import type { FinanceReportType } from '@/lib/finance/reporting';
+import { toast } from 'sonner';
 
 import { Button } from '@/components/ui/button';
 import {
@@ -36,37 +44,73 @@ import {
   SelectTrigger,
   SelectValue,
 } from '@/components/ui/select';
+import { Checkbox } from '@/components/ui/checkbox';
+import { Badge } from '@/components/ui/badge';
 import {
+  Table,
+  TableBody,
+  TableCell,
+  TableHead,
+  TableHeader,
+  TableRow,
+} from '@/components/ui/table';
+import {
+  AlertTriangle,
+  ArrowRight,
+  BarChart3,
   Download,
   FileText,
-  BarChart3,
-  TrendingUp,
-  TrendingDown,
-  DollarSign,
-  Activity,
   RefreshCw,
-  ShieldAlert,
+  Wallet,
 } from 'lucide-react';
 
 interface ReportsListProps {
   user: AppUser;
 }
 
+type ReportPeriod = 'weekly' | 'monthly' | 'quarterly' | 'yearly';
+
+function formatRangeLabel(startDate: string, endDate: string) {
+  const start = new Date(startDate);
+  const end = new Date(endDate);
+
+  return `${start.toLocaleDateString('en-NG', {
+    day: 'numeric',
+    month: 'short',
+    year: 'numeric',
+  })} - ${end.toLocaleDateString('en-NG', {
+    day: 'numeric',
+    month: 'short',
+    year: 'numeric',
+  })}`;
+}
+
+function formatReportTypeLabel(reportType: FinanceReportType) {
+  switch (reportType) {
+    case 'INCOME_STATEMENT':
+      return 'Income Statement';
+    case 'CASH_FLOW':
+      return 'Cash Flow';
+    case 'FINANCIAL_SUMMARY':
+    default:
+      return 'Financial Summary';
+  }
+}
+
 export function ReportsList({ user: _user }: ReportsListProps) {
   const [isGenerateDialogOpen, setIsGenerateDialogOpen] = useState(false);
-  const [reportType, setReportType] = useState('FINANCIAL_SUMMARY');
+  const [reportType, setReportType] =
+    useState<FinanceReportType>('FINANCIAL_SUMMARY');
+  const [period, setPeriod] = useState<ReportPeriod>('monthly');
   const [startDate, setStartDate] = useState(() => {
-    const date = new Date();
-    date.setMonth(date.getMonth() - 1);
-    return formatFinanceDateInput(date);
+    const currentDate = new Date();
+    currentDate.setMonth(currentDate.getMonth() - 1);
+    return formatFinanceDateInput(currentDate);
   });
   const [endDate, setEndDate] = useState(() =>
     formatFinanceDateInput(new Date())
   );
-  const [period, setPeriod] = useState<
-    'weekly' | 'monthly' | 'quarterly' | 'yearly'
-  >('monthly');
-  const [isExporting, setIsExporting] = useState(false);
+  const [saveSnapshot, setSaveSnapshot] = useState(true);
 
   const {
     data: reportsData,
@@ -79,182 +123,92 @@ export function ReportsList({ user: _user }: ReportsListProps) {
     dateFrom: startDate,
     dateTo: endDate,
   });
+  const { data: historyData, isLoading: historyLoading } =
+    useFinancialReportHistory(12);
+  const generateReport = useGenerateFinancialReport();
 
-  const summary = reportsData?.data?.summary;
-  const profitLoss = reportsData?.data?.profitLoss;
+  const report = reportsData?.data;
+  const history = historyData?.data || [];
 
-  const getReportTypeLabel = (type: string) => {
-    switch (type) {
-      case 'FINANCIAL_SUMMARY':
-        return 'Financial Summary';
-      case 'INCOME_STATEMENT':
-        return 'Income Statement';
-      case 'EXPENSE_REPORT':
-        return 'Expense Report';
-      case 'CASH_FLOW':
-        return 'Cash Flow';
-      default:
-        return type;
-    }
-  };
+  const quickLinks = useMemo(
+    () => [
+      {
+        title: 'Income Statement',
+        description:
+          'Trading profit with recognised income, sold goods cost, and operating expenses.',
+        href: '/finance/reports/income-statement',
+      },
+      {
+        title: 'Cash Flow',
+        description:
+          'Cash received, cash spent, owner funding, and stock purchase cash out.',
+        href: '/finance/reports/cash-flow',
+      },
+      {
+        title: 'Analytics',
+        description:
+          'Trend analysis, receivables, revenue mix, and estimated health signals.',
+        href: '/finance/reports/analytics',
+      },
+    ],
+    []
+  );
 
-  const handleGenerateReport = async () => {
+  const handleExport = async () => {
     if (!startDate || !endDate) {
-      toast.error('Please select both start and end dates');
+      toast.error('Select both the start date and end date');
       return;
     }
 
-    setIsExporting(true);
-
     try {
-      const exportData = [];
+      const response = await generateReport.mutateAsync({
+        reportType,
+        period,
+        dateFrom: startDate,
+        dateTo: endDate,
+        saveSnapshot,
+      });
 
-      if (
-        reportType === 'FINANCIAL_SUMMARY' ||
-        reportType === 'INCOME_STATEMENT'
-      ) {
-        exportData.push(
-          {
-            Category: 'REVENUE',
-            Item: 'Sales',
-            Amount: profitLoss?.revenue?.sales || 0,
-          },
-          {
-            Category: 'REVENUE',
-            Item: 'Other Operating Income',
-            Amount: profitLoss?.revenue?.otherIncome || 0,
-          },
-          {
-            Category: 'REVENUE',
-            Item: 'Total Revenue',
-            Amount: profitLoss?.revenue?.totalRevenue || 0,
-          },
-          { Category: '---', Item: '---', Amount: '---' },
-          {
-            Category: 'EXPENSES',
-            Item: 'Cost of Goods',
-            Amount: profitLoss?.expenses?.costOfGoods || 0,
-          },
-          {
-            Category: 'EXPENSES',
-            Item: 'Operating Expenses',
-            Amount: profitLoss?.expenses?.operatingExpenses || 0,
-          },
-          {
-            Category: 'EXPENSES',
-            Item: 'Total Expenses',
-            Amount: profitLoss?.expenses?.totalExpenses || 0,
-          },
-          { Category: '---', Item: '---', Amount: '---' },
-          {
-            Category: 'PROFIT',
-            Item: 'Gross Profit',
-            Amount: profitLoss?.grossProfit || 0,
-          },
-          {
-            Category: 'PROFIT',
-            Item: 'Net Profit',
-            Amount: profitLoss?.netProfit || 0,
-          }
-        );
-      }
-
-      if (reportType === 'EXPENSE_REPORT') {
-        exportData.push(
-          {
-            Category: 'EXPENSES',
-            Item: 'Cost of Goods',
-            Amount: profitLoss?.expenses?.costOfGoods || 0,
-          },
-          {
-            Category: 'EXPENSES',
-            Item: 'Operating Expenses',
-            Amount: profitLoss?.expenses?.operatingExpenses || 0,
-          },
-          {
-            Category: 'EXPENSES',
-            Item: 'Total Expenses',
-            Amount: profitLoss?.expenses?.totalExpenses || 0,
-          }
-        );
-      }
-
-      if (reportType === 'CASH_FLOW') {
-        const cashFlow = reportsData?.data?.cashFlow;
-
-        exportData.push(
-          {
-            Category: 'OPERATING',
-            Item: 'Net Income',
-            Amount: cashFlow?.operatingActivities?.netIncome || 0,
-          },
-          {
-            Category: 'OPERATING',
-            Item: 'Net Operating Cash Flow',
-            Amount: cashFlow?.operatingActivities?.netOperatingCashFlow || 0,
-          },
-          {
-            Category: 'INVESTING',
-            Item: 'Capital Expenditures',
-            Amount: cashFlow?.investingActivities?.capitalExpenditures || 0,
-          },
-          {
-            Category: 'INVESTING',
-            Item: 'Net Investing Cash Flow',
-            Amount: cashFlow?.investingActivities?.netInvestingCashFlow || 0,
-          },
-          {
-            Category: 'FINANCING',
-            Item: 'Owner Funding',
-            Amount: cashFlow?.financingActivities?.ownerFunding || 0,
-          },
-          {
-            Category: 'FINANCING',
-            Item: 'Net Financing Cash Flow',
-            Amount: cashFlow?.financingActivities?.netFinancingCashFlow || 0,
-          },
-          { Category: '---', Item: '---', Amount: '---' },
-          {
-            Category: 'TOTAL',
-            Item: 'Total Cash Flow',
-            Amount: reportsData?.data?.totalCashFlow || 0,
-          }
-        );
-      }
-
-      const filename = generateExportFilename(
-        'financial-report',
-        reportType.toLowerCase().replace('_', '-')
+      exportToCSV(
+        response.data.report.exportRows,
+        generateExportFilename(
+          'financial-report',
+          reportType.toLowerCase().replace(/_/g, '-')
+        )
       );
 
-      exportToCSV(exportData as never[], filename);
-      toast.success(`${getReportTypeLabel(reportType)} exported successfully`);
+      toast.success(
+        response.data.snapshot
+          ? `${formatReportTypeLabel(reportType)} exported and saved`
+          : `${formatReportTypeLabel(reportType)} exported`
+      );
       setIsGenerateDialogOpen(false);
-    } catch (error) {
-      console.error('Error exporting report:', error);
-      toast.error('Failed to export report');
-    } finally {
-      setIsExporting(false);
+    } catch (mutationError) {
+      toast.error(
+        mutationError instanceof Error
+          ? mutationError.message
+          : 'Failed to export report'
+      );
     }
   };
 
-  if (error) {
+  if (isLoading) {
     return (
-      <div className="mx-auto max-w-7xl p-6">
+      <div className="mx-auto max-w-7xl space-y-6 p-6">
+        <InlineLoading className="justify-center" label="Loading finance reports..." />
+      </div>
+    );
+  }
+
+  if (error || !report) {
+    return (
+      <div className="mx-auto max-w-7xl space-y-6 p-6">
         <Card>
           <CardContent className="p-6">
-            <div className="text-center">
-              <p className="text-destructive">
-                Failed to load financial reports
-              </p>
-              <Button
-                variant="outline"
-                onClick={() => refetch()}
-                className="mt-2"
-              >
-                Retry
-              </Button>
-            </div>
+            <p className="text-destructive">Failed to load financial reports.</p>
+            <Button variant="outline" onClick={() => refetch()} className="mt-4">
+              Retry
+            </Button>
           </CardContent>
         </Card>
       </div>
@@ -263,12 +217,12 @@ export function ReportsList({ user: _user }: ReportsListProps) {
 
   return (
     <div className="mx-auto max-w-7xl space-y-6 p-6">
-      <div className="flex items-center justify-between">
+      <div className="flex flex-wrap items-center justify-between gap-4">
         <PageHeader
           title="Financial Reports"
-          description="View and generate financial reports and analytics"
+          description="Review trading performance, cash movement, and business position from the ledger-based finance model."
         />
-        <div className="flex gap-2">
+        <div className="flex flex-wrap items-center gap-2">
           <Button
             variant="outline"
             onClick={() => refetch()}
@@ -285,23 +239,25 @@ export function ReportsList({ user: _user }: ReportsListProps) {
             <DialogTrigger asChild>
               <Button>
                 <Download className="mr-2 h-4 w-4" />
-                Export Report
+                Export Or Save
               </Button>
             </DialogTrigger>
-            <DialogContent className="sm:max-w-[425px]">
+            <DialogContent className="sm:max-w-[460px]">
               <DialogHeader>
-                <DialogTitle>Export Financial Report</DialogTitle>
+                <DialogTitle>Generate Report</DialogTitle>
                 <DialogDescription>
-                  Select the report type and date range to export a financial
-                  report.
+                  Export a CSV and optionally save a snapshot to the report history.
                 </DialogDescription>
               </DialogHeader>
               <div className="grid gap-4 py-4">
                 <div className="grid gap-2">
                   <Label htmlFor="reportType">Report Type</Label>
-                  <Select value={reportType} onValueChange={setReportType}>
-                    <SelectTrigger>
-                      <SelectValue placeholder="Select report type" />
+                  <Select
+                    value={reportType}
+                    onValueChange={value => setReportType(value as FinanceReportType)}
+                  >
+                    <SelectTrigger id="reportType">
+                      <SelectValue />
                     </SelectTrigger>
                     <SelectContent>
                       <SelectItem value="FINANCIAL_SUMMARY">
@@ -310,21 +266,19 @@ export function ReportsList({ user: _user }: ReportsListProps) {
                       <SelectItem value="INCOME_STATEMENT">
                         Income Statement
                       </SelectItem>
-                      <SelectItem value="EXPENSE_REPORT">
-                        Expense Report
-                      </SelectItem>
                       <SelectItem value="CASH_FLOW">Cash Flow</SelectItem>
                     </SelectContent>
                   </Select>
                 </div>
+
                 <div className="grid gap-2">
                   <Label htmlFor="period">Period</Label>
                   <Select
                     value={period}
-                    onValueChange={value => setPeriod(value as typeof period)}
+                    onValueChange={value => setPeriod(value as ReportPeriod)}
                   >
-                    <SelectTrigger>
-                      <SelectValue placeholder="Select period" />
+                    <SelectTrigger id="period">
+                      <SelectValue />
                     </SelectTrigger>
                     <SelectContent>
                       <SelectItem value="weekly">Weekly</SelectItem>
@@ -334,26 +288,44 @@ export function ReportsList({ user: _user }: ReportsListProps) {
                     </SelectContent>
                   </Select>
                 </div>
-                <div className="grid gap-2">
-                  <Label htmlFor="startDate">Start Date</Label>
-                  <Input
-                    id="startDate"
-                    type="date"
-                    value={startDate}
-                    onChange={event => setStartDate(event.target.value)}
-                  />
+
+                <div className="grid gap-4 sm:grid-cols-2">
+                  <div className="grid gap-2">
+                    <Label htmlFor="startDate">Start Date</Label>
+                    <Input
+                      id="startDate"
+                      type="date"
+                      value={startDate}
+                      onChange={event => setStartDate(event.target.value)}
+                    />
+                  </div>
+                  <div className="grid gap-2">
+                    <Label htmlFor="endDate">End Date</Label>
+                    <Input
+                      id="endDate"
+                      type="date"
+                      value={endDate}
+                      onChange={event => setEndDate(event.target.value)}
+                    />
+                  </div>
                 </div>
-                <div className="grid gap-2">
-                  <Label htmlFor="endDate">End Date</Label>
-                  <Input
-                    id="endDate"
-                    type="date"
-                    value={endDate}
-                    onChange={event => setEndDate(event.target.value)}
+
+                <label className="flex items-start gap-3 rounded-lg border p-3">
+                  <Checkbox
+                    checked={saveSnapshot}
+                    onCheckedChange={checked => setSaveSnapshot(Boolean(checked))}
                   />
-                </div>
+                  <div className="space-y-1">
+                    <span className="text-sm font-medium">
+                      Save snapshot to history
+                    </span>
+                    <p className="text-muted-foreground text-xs">
+                      Keep an auditable copy of this report with its date range and methodology status.
+                    </p>
+                  </div>
+                </label>
               </div>
-              <div className="flex justify-end space-x-2">
+              <div className="flex justify-end gap-2">
                 <Button
                   variant="outline"
                   onClick={() => setIsGenerateDialogOpen(false)}
@@ -361,10 +333,11 @@ export function ReportsList({ user: _user }: ReportsListProps) {
                   Cancel
                 </Button>
                 <Button
-                  onClick={handleGenerateReport}
-                  disabled={isExporting || isLoading}
+                  onClick={handleExport}
+                  isLoading={generateReport.isPending}
+                  loadingText="Generating..."
                 >
-                  {isExporting ? 'Exporting...' : 'Export CSV'}
+                  Generate
                 </Button>
               </div>
             </DialogContent>
@@ -372,277 +345,258 @@ export function ReportsList({ user: _user }: ReportsListProps) {
         </div>
       </div>
 
-      <div className="grid gap-6 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4">
-        <Link href="/finance/reports/income-statement">
-          <Card className="cursor-pointer transition-shadow hover:shadow-md">
-            <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-              <CardTitle className="text-sm font-medium">
-                Total Revenue
-              </CardTitle>
-              <DollarSign className="h-4 w-4 text-green-600" />
-            </CardHeader>
-            <CardContent>
-              <div className="text-2xl font-bold text-green-600">
-                {isLoading
-                  ? '...'
-                  : formatCurrency(profitLoss?.revenue?.totalRevenue || 0)}
+      {report.methodology.estimated ? (
+        <Card className="border-amber-200 bg-amber-50/60">
+          <CardContent className="flex flex-col gap-3 p-4 md:flex-row md:items-start md:justify-between">
+            <div className="space-y-2">
+              <div className="flex items-center gap-2">
+                <AlertTriangle className="h-4 w-4 text-amber-700" />
+                <p className="font-medium text-amber-900">
+                  Some report figures are estimated
+                </p>
               </div>
-              <p className="text-muted-foreground text-xs">
-                View income statement
-              </p>
-            </CardContent>
-          </Card>
-        </Link>
-
-        <Link href="/finance/reports/expenses">
-          <Card className="cursor-pointer transition-shadow hover:shadow-md">
-            <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-              <CardTitle className="text-sm font-medium">
-                Total Expenses
-              </CardTitle>
-              <TrendingDown className="h-4 w-4 text-red-600" />
-            </CardHeader>
-            <CardContent>
-              <div className="text-2xl font-bold text-red-600">
-                {isLoading
-                  ? '...'
-                  : formatCurrency(profitLoss?.expenses?.totalExpenses || 0)}
+              <div className="text-sm text-amber-800">
+                {report.methodology.reasons.map(reason => (
+                  <div key={reason}>{reason}</div>
+                ))}
               </div>
-              <p className="text-muted-foreground text-xs">
-                View expense breakdown
-              </p>
-            </CardContent>
-          </Card>
-        </Link>
-
-        <Link href="/finance/reports/cash-flow">
-          <Card className="cursor-pointer transition-shadow hover:shadow-md">
-            <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-              <CardTitle className="text-sm font-medium">Net Profit</CardTitle>
-              <TrendingUp
-                className={`h-4 w-4 ${
-                  (profitLoss?.netProfit || 0) >= 0
-                    ? 'text-green-600'
-                    : 'text-red-600'
-                }`}
-              />
-            </CardHeader>
-            <CardContent>
-              <div
-                className={`text-2xl font-bold ${
-                  (profitLoss?.netProfit || 0) >= 0
-                    ? 'text-green-600'
-                    : 'text-red-600'
-                }`}
-              >
-                {isLoading
-                  ? '...'
-                  : formatCurrency(profitLoss?.netProfit || 0)}
-              </div>
-              <p className="text-muted-foreground text-xs">View cash flow</p>
-            </CardContent>
-          </Card>
-        </Link>
-
-        <Card>
-          <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-            <CardTitle className="text-sm font-medium">Transactions</CardTitle>
-            <BarChart3 className="h-4 w-4 text-blue-600" />
-          </CardHeader>
-          <CardContent>
-            <div className="text-2xl font-bold text-blue-600">
-              {isLoading ? '...' : summary?.totalTransactions || 0}
             </div>
-            <p className="text-muted-foreground text-xs">Total this period</p>
+            <Badge variant="outline" className="border-amber-300 text-amber-900">
+              Methodology: Estimated
+            </Badge>
+          </CardContent>
+        </Card>
+      ) : null}
+
+      <div className="grid gap-4 xl:grid-cols-3">
+        <Card>
+          <CardHeader>
+            <CardTitle className="flex items-center gap-2">
+              <FileText className="h-4 w-4" />
+              Trading Performance
+            </CardTitle>
+            <CardDescription>
+              What the business actually earned from trading in the selected range.
+            </CardDescription>
+          </CardHeader>
+          <CardContent className="space-y-3 text-sm">
+            <MetricRow
+              label="Sales Revenue Recognised"
+              value={report.incomeStatement.salesRevenueRecognised}
+            />
+            <MetricRow
+              label="Other Operating Income"
+              value={report.incomeStatement.otherOperatingIncome}
+            />
+            <MetricRow
+              label="Cost Of Goods Sold"
+              value={report.incomeStatement.costOfGoodsSold}
+              negative
+            />
+            <MetricRow
+              label="Operating Expenses"
+              value={report.incomeStatement.operatingExpenses}
+              negative
+            />
+            <MetricRow
+              label="Net Profit"
+              value={report.incomeStatement.netProfit}
+              strong
+            />
           </CardContent>
         </Card>
 
-        <Link href="/finance/reports/analytics">
-          <Card className="cursor-pointer transition-shadow hover:shadow-md">
-            <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-              <CardTitle className="text-sm font-medium">
-                Analytics Dashboard
-              </CardTitle>
-              <Activity className="h-4 w-4 text-purple-600" />
-            </CardHeader>
-            <CardContent>
-              <div className="text-2xl font-bold text-purple-600">
-                Analytics
-              </div>
-              <p className="text-muted-foreground text-xs">
-                Comprehensive analytics
-              </p>
-            </CardContent>
-          </Card>
-        </Link>
+        <Card>
+          <CardHeader>
+            <CardTitle className="flex items-center gap-2">
+              <Wallet className="h-4 w-4" />
+              Cash Movement
+            </CardTitle>
+            <CardDescription>
+              Real cash received and spent during the same range.
+            </CardDescription>
+          </CardHeader>
+          <CardContent className="space-y-3 text-sm">
+            <MetricRow
+              label="Cash Received"
+              value={report.cashFlowStatement.cashReceived}
+            />
+            <MetricRow
+              label="Cash Spent"
+              value={report.cashFlowStatement.cashSpent}
+              negative
+            />
+            <MetricRow
+              label="Owner Funding"
+              value={report.cashFlowStatement.ownerFunding}
+            />
+            <MetricRow
+              label="Stock Purchase Cash Out"
+              value={report.cashFlowStatement.stockPurchaseCashOut}
+              negative
+            />
+            <MetricRow
+              label="Net Cash Movement"
+              value={report.cashFlowStatement.netCashMovement}
+              strong
+            />
+          </CardContent>
+        </Card>
 
-        <Link href="/finance/reports/overlap-audit">
-          <Card className="cursor-pointer transition-shadow hover:shadow-md">
-            <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-              <CardTitle className="text-sm font-medium">
-                Overlap Audit
-              </CardTitle>
-              <ShieldAlert className="h-4 w-4 text-amber-600" />
+        <Card>
+          <CardHeader>
+            <CardTitle className="flex items-center gap-2">
+              <BarChart3 className="h-4 w-4" />
+              Business Position
+            </CardTitle>
+            <CardDescription>
+              Value still tied up in stock and money customers still owe.
+            </CardDescription>
+          </CardHeader>
+          <CardContent className="space-y-3 text-sm">
+            <MetricRow
+              label="Inventory Value On Hand"
+              value={report.businessPosition.inventoryValueOnHand}
+            />
+            <MetricRow
+              label="Inventory Units On Hand"
+              value={report.businessPosition.inventoryUnitsOnHand}
+              plainNumber
+            />
+            <MetricRow
+              label="Receivables Outstanding"
+              value={report.businessPosition.receivablesOutstanding}
+            />
+            <MetricRow
+              label="Customers With Balances"
+              value={report.businessPosition.customersWithBalances}
+              plainNumber
+            />
+            <MetricRow
+              label="Total Ledger Rows"
+              value={report.summary.totalTransactions}
+              plainNumber
+              strong
+            />
+          </CardContent>
+        </Card>
+      </div>
+
+      <div className="grid gap-4 xl:grid-cols-3">
+        {quickLinks.map(link => (
+          <Card key={link.href}>
+            <CardHeader>
+              <CardTitle className="text-base">{link.title}</CardTitle>
+              <CardDescription>{link.description}</CardDescription>
             </CardHeader>
             <CardContent>
-              <div className="text-2xl font-bold text-amber-600">Audit</div>
-              <p className="text-muted-foreground text-xs">
-                Review excluded legacy entries
-              </p>
+              <Button asChild variant="outline" className="w-full justify-between">
+                <Link href={link.href}>
+                  Open {link.title}
+                  <ArrowRight className="h-4 w-4" />
+                </Link>
+              </Button>
             </CardContent>
           </Card>
-        </Link>
+        ))}
       </div>
 
       <Card>
         <CardHeader>
-          <CardTitle>Period Summary</CardTitle>
+          <CardTitle>Saved Report History</CardTitle>
           <CardDescription>
-            Financial overview for the selected period ({period})
+            Range: {formatRangeLabel(report.dateRange.startDate, report.dateRange.endDate)}
           </CardDescription>
         </CardHeader>
         <CardContent>
-          {isLoading ? (
-            <div className="flex items-center justify-center py-8">
-              <InlineLoading label="Loading reports..." />
-            </div>
+          {historyLoading ? (
+            <InlineLoading label="Loading saved report history..." />
+          ) : history.length === 0 ? (
+            <p className="text-muted-foreground text-sm">
+              No saved report snapshots yet.
+            </p>
           ) : (
-            <div className="grid gap-6 md:grid-cols-2">
-              <div className="space-y-4">
-                <h3 className="font-semibold">Profit &amp; Loss</h3>
-                <div className="space-y-2">
-                  <div className="flex justify-between">
-                    <span className="text-muted-foreground">Sales Revenue</span>
-                    <span className="font-medium">
-                      {formatCurrency(profitLoss?.revenue?.sales || 0)}
-                    </span>
-                  </div>
-                  <div className="flex justify-between">
-                    <span className="text-muted-foreground">
-                      Other Operating Income
-                    </span>
-                    <span className="font-medium">
-                      {formatCurrency(profitLoss?.revenue?.otherIncome || 0)}
-                    </span>
-                  </div>
-                  <div className="flex justify-between border-t pt-2">
-                    <span className="font-semibold">Total Revenue</span>
-                    <span className="font-bold text-green-600">
-                      {formatCurrency(profitLoss?.revenue?.totalRevenue || 0)}
-                    </span>
-                  </div>
-                  <div className="flex justify-between">
-                    <span className="text-muted-foreground">Cost of Goods</span>
-                    <span className="font-medium">
-                      {formatCurrency(profitLoss?.expenses?.costOfGoods || 0)}
-                    </span>
-                  </div>
-                  <div className="flex justify-between">
-                    <span className="text-muted-foreground">
-                      Operating Expenses
-                    </span>
-                    <span className="font-medium">
-                      {formatCurrency(
-                        profitLoss?.expenses?.operatingExpenses || 0
-                      )}
-                    </span>
-                  </div>
-                  <div className="flex justify-between border-t pt-2">
-                    <span className="font-semibold">Total Expenses</span>
-                    <span className="font-bold text-red-600">
-                      {formatCurrency(profitLoss?.expenses?.totalExpenses || 0)}
-                    </span>
-                  </div>
-                  <div className="flex justify-between border-t pt-2">
-                    <span className="font-semibold">Gross Profit</span>
-                    <span className="font-bold">
-                      {formatCurrency(profitLoss?.grossProfit || 0)}
-                    </span>
-                  </div>
-                  <div className="flex justify-between border-t pt-2">
-                    <span className="text-lg font-bold">Net Profit</span>
-                    <span
-                      className={`text-lg font-bold ${
-                        (profitLoss?.netProfit || 0) >= 0
-                          ? 'text-green-600'
-                          : 'text-red-600'
-                      }`}
-                    >
-                      {formatCurrency(profitLoss?.netProfit || 0)}
-                    </span>
-                  </div>
-                </div>
-              </div>
-
-              <div className="space-y-4">
-                <h3 className="font-semibold">Quick Stats</h3>
-                <div className="grid grid-cols-2 gap-4">
-                  <div className="rounded-lg bg-green-50 p-4 text-center dark:bg-green-900/20">
-                    <div className="text-lg font-bold text-green-600">
-                      {formatCurrency(summary?.totalIncome || 0)}
-                    </div>
-                    <div className="text-xs text-green-600">
-                      Operating Revenue
-                    </div>
-                  </div>
-                  <div className="rounded-lg bg-red-50 p-4 text-center dark:bg-red-900/20">
-                    <div className="text-lg font-bold text-red-600">
-                      {formatCurrency(summary?.totalExpenses || 0)}
-                    </div>
-                    <div className="text-xs text-red-600">Total Expenses</div>
-                  </div>
-                  <div className="rounded-lg bg-blue-50 p-4 text-center dark:bg-blue-900/20">
-                    <div className="text-lg font-bold text-blue-600">
-                      {summary?.totalTransactions || 0}
-                    </div>
-                    <div className="text-xs text-blue-600">Transactions</div>
-                  </div>
-                  <div
-                    className={`rounded-lg p-4 text-center ${
-                      (summary?.netProfit || 0) >= 0
-                        ? 'bg-emerald-50 dark:bg-emerald-900/20'
-                        : 'bg-red-50 dark:bg-red-900/20'
-                    }`}
-                  >
-                    <div
-                      className={`text-lg font-bold ${
-                        (summary?.netProfit || 0) >= 0
-                          ? 'text-emerald-600'
-                          : 'text-red-600'
-                      }`}
-                    >
-                      {formatCurrency(summary?.netProfit || 0)}
-                    </div>
-                    <div
-                      className={`text-xs ${
-                        (summary?.netProfit || 0) >= 0
-                          ? 'text-emerald-600'
-                          : 'text-red-600'
-                      }`}
-                    >
-                      {(summary?.netProfit || 0) >= 0 ? 'Profit' : 'Loss'}
-                    </div>
-                  </div>
-                </div>
-                <div className="mt-4 flex gap-2">
-                  <Link href="/finance/income" className="flex-1">
-                    <Button variant="outline" className="w-full">
-                      <FileText className="mr-2 h-4 w-4" />
-                      View Income
-                    </Button>
-                  </Link>
-                  <Link href="/finance/expenses" className="flex-1">
-                    <Button variant="outline" className="w-full">
-                      <FileText className="mr-2 h-4 w-4" />
-                      View Expenses
-                    </Button>
-                  </Link>
-                </div>
-              </div>
-            </div>
+            <Table>
+              <TableHeader>
+                <TableRow>
+                  <TableHead>Report</TableHead>
+                  <TableHead>Period</TableHead>
+                  <TableHead>Generated</TableHead>
+                  <TableHead>By</TableHead>
+                  <TableHead>Status</TableHead>
+                </TableRow>
+              </TableHeader>
+              <TableBody>
+                {history.map(entry => (
+                  <TableRow key={entry.id}>
+                    <TableCell className="font-medium">
+                      {entry.reportName}
+                    </TableCell>
+                    <TableCell>
+                      {formatRangeLabel(entry.periodStart, entry.periodEnd)}
+                    </TableCell>
+                    <TableCell>
+                      {new Date(entry.generatedAt).toLocaleDateString('en-NG', {
+                        day: 'numeric',
+                        month: 'short',
+                        year: 'numeric',
+                      })}
+                    </TableCell>
+                    <TableCell>{entry.generatedBy.name}</TableCell>
+                    <TableCell>
+                      <Badge
+                        variant={
+                          entry.methodologyStatus === 'exact'
+                            ? 'default'
+                            : 'secondary'
+                        }
+                      >
+                        {entry.methodologyStatus}
+                      </Badge>
+                    </TableCell>
+                  </TableRow>
+                ))}
+              </TableBody>
+            </Table>
           )}
         </CardContent>
       </Card>
+    </div>
+  );
+}
+
+function MetricRow({
+  label,
+  value,
+  negative = false,
+  strong = false,
+  plainNumber = false,
+}: {
+  label: string;
+  value: number;
+  negative?: boolean;
+  strong?: boolean;
+  plainNumber?: boolean;
+}) {
+  const displayValue = plainNumber
+    ? new Intl.NumberFormat('en-NG').format(value)
+    : formatCurrency(value);
+
+  return (
+    <div className="flex items-center justify-between gap-4">
+      <span className="text-muted-foreground">{label}</span>
+      <span
+        className={[
+          'text-right',
+          strong ? 'font-semibold' : 'font-medium',
+          negative ? 'text-red-600' : '',
+        ]
+          .filter(Boolean)
+          .join(' ')}
+      >
+        {negative && !plainNumber ? '-' : ''}
+        {plainNumber ? displayValue : displayValue.replace('-', '')}
+      </span>
     </div>
   );
 }

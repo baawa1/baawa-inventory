@@ -1,11 +1,10 @@
 import { redirect } from 'next/navigation';
 import { auth } from '#root/auth';
 import { hasPermission } from '@/lib/auth/roles';
-import { ExpenseReport } from '@/components/finance/ExpenseReport';
 
 export const metadata = {
   title: 'Expense Report - BaaWA Inventory POS',
-  description: 'View expense report and analytics',
+  description: 'Redirects to the finance analytics page',
 };
 
 export default async function ExpenseReportPage() {
@@ -19,5 +18,5 @@ export default async function ExpenseReportPage() {
     redirect('/unauthorized');
   }
 
-  return <ExpenseReport user={session.user} />;
+  redirect('/finance/reports/analytics');
 }

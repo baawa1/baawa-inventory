@@ -1,19 +1,24 @@
 'use client';
 
-import React, { useMemo, useState } from 'react';
-import { DateRange } from 'react-day-picker';
-import { AppUser } from '@/types/user';
-import { useFinancialReports } from '@/hooks/api/finance';
+import { useState } from 'react';
+import type { DateRange } from 'react-day-picker';
+import type { AppUser } from '@/types/user';
+import {
+  useFinancialReports,
+  useGenerateFinancialReport,
+} from '@/hooks/api/finance';
 import { formatCurrency } from '@/lib/utils';
 import {
   exportToCSV,
   generateExportFilename,
 } from '@/lib/utils/finance';
+import { formatFinanceDateInput } from '@/lib/finance/date-range';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { InlineLoading } from '@/components/ui/loading';
 import { PageHeader } from '@/components/ui/page-header';
 import { DateRangePickerWithPresets } from '@/components/ui/date-range-picker-with-presets';
+import { Badge } from '@/components/ui/badge';
 import {
   Select,
   SelectContent,
@@ -27,8 +32,10 @@ import {
   IconRefresh,
   IconTrendingDown,
   IconTrendingUp,
+  IconDeviceFloppy,
+  IconAlertTriangle,
 } from '@tabler/icons-react';
-import { formatFinanceDateInput } from '@/lib/finance/date-range';
+import { toast } from 'sonner';
 
 interface IncomeStatementReportProps {
   user: AppUser;
@@ -45,73 +52,71 @@ export function IncomeStatementReport({
     to: new Date(),
   });
 
+  const queryParams = {
+    period,
+    type: 'all' as const,
+    dateFrom: dateRange?.from
+      ? formatFinanceDateInput(dateRange.from)
+      : undefined,
+    dateTo: dateRange?.to ? formatFinanceDateInput(dateRange.to) : undefined,
+  };
+
   const {
     data: reportsData,
     isLoading,
     error,
     refetch,
-  } = useFinancialReports({
-    period,
-    type: 'all',
-    dateFrom: dateRange?.from
-      ? formatFinanceDateInput(dateRange.from)
-      : undefined,
-    dateTo: dateRange?.to ? formatFinanceDateInput(dateRange.to) : undefined,
-  });
+  } = useFinancialReports(queryParams);
+  const generateReport = useGenerateFinancialReport();
 
-  const profitLoss = reportsData?.data?.profitLoss;
+  const report = reportsData?.data;
 
-  const exportRows = useMemo(
-    () => [
-      {
-        Section: 'Revenue',
-        Item: 'Sales Revenue',
-        Amount: profitLoss?.revenue?.sales || 0,
-      },
-      {
-        Section: 'Revenue',
-        Item: 'Other Operating Income',
-        Amount: profitLoss?.revenue?.otherIncome || 0,
-      },
-      {
-        Section: 'Revenue',
-        Item: 'Total Revenue',
-        Amount: profitLoss?.revenue?.totalRevenue || 0,
-      },
-      {
-        Section: 'Expenses',
-        Item: 'Cost Of Goods',
-        Amount: profitLoss?.expenses?.costOfGoods || 0,
-      },
-      {
-        Section: 'Expenses',
-        Item: 'Operating Expenses',
-        Amount: profitLoss?.expenses?.operatingExpenses || 0,
-      },
-      {
-        Section: 'Expenses',
-        Item: 'Total Expenses',
-        Amount: profitLoss?.expenses?.totalExpenses || 0,
-      },
-      {
-        Section: 'Profit',
-        Item: 'Gross Profit',
-        Amount: profitLoss?.grossProfit || 0,
-      },
-      {
-        Section: 'Profit',
-        Item: 'Net Profit',
-        Amount: profitLoss?.netProfit || 0,
-      },
-    ],
-    [profitLoss]
-  );
+  const handleExport = async () => {
+    try {
+      const response = await generateReport.mutateAsync({
+        reportType: 'INCOME_STATEMENT',
+        period,
+        dateFrom: queryParams.dateFrom,
+        dateTo: queryParams.dateTo,
+        saveSnapshot: false,
+      });
 
-  const handleExport = () => {
-    exportToCSV(
-      exportRows,
-      generateExportFilename('income-statement', period)
-    );
+      exportToCSV(
+        response.data.report.exportRows,
+        generateExportFilename('income-statement', period)
+      );
+      toast.success('Income statement exported');
+    } catch (mutationError) {
+      toast.error(
+        mutationError instanceof Error
+          ? mutationError.message
+          : 'Failed to export income statement'
+      );
+    }
+  };
+
+  const handleSaveSnapshot = async () => {
+    try {
+      const response = await generateReport.mutateAsync({
+        reportType: 'INCOME_STATEMENT',
+        period,
+        dateFrom: queryParams.dateFrom,
+        dateTo: queryParams.dateTo,
+        saveSnapshot: true,
+      });
+
+      toast.success(
+        response.data.snapshot
+          ? 'Income statement snapshot saved'
+          : 'Income statement generated'
+      );
+    } catch (mutationError) {
+      toast.error(
+        mutationError instanceof Error
+          ? mutationError.message
+          : 'Failed to save income statement snapshot'
+      );
+    }
   };
 
   const handlePrint = () => {
@@ -126,7 +131,7 @@ export function IncomeStatementReport({
     );
   }
 
-  if (error) {
+  if (error || !report) {
     return (
       <div className="mx-auto max-w-7xl space-y-6 p-6">
         <Card>
@@ -141,17 +146,14 @@ export function IncomeStatementReport({
     );
   }
 
-  const totalRevenue = profitLoss?.revenue?.totalRevenue || 0;
-  const totalExpenses = profitLoss?.expenses?.totalExpenses || 0;
-  const grossProfit = profitLoss?.grossProfit || 0;
-  const netProfit = profitLoss?.netProfit || 0;
+  const statement = report.incomeStatement;
 
   return (
     <div className="mx-auto max-w-7xl space-y-6 p-6">
       <div className="flex flex-wrap items-center justify-between gap-4">
         <PageHeader
           title="Income Statement"
-          description="Live profit and loss reporting across manual finance, POS sales, and stock purchases"
+          description="Trading profit view based on recognised sales income, sold goods cost, and operating expenses."
         />
         <div className="flex flex-wrap items-center gap-2">
           <DateRangePickerWithPresets
@@ -178,6 +180,15 @@ export function IncomeStatementReport({
             <IconDownload className="mr-2 h-4 w-4" />
             Export
           </Button>
+          <Button
+            variant="outline"
+            onClick={handleSaveSnapshot}
+            isLoading={generateReport.isPending}
+            loadingText="Saving..."
+          >
+            <IconDeviceFloppy className="mr-2 h-4 w-4" />
+            Save Snapshot
+          </Button>
           <Button variant="outline" onClick={handlePrint}>
             <IconPrinter className="mr-2 h-4 w-4" />
             Print
@@ -185,55 +196,47 @@ export function IncomeStatementReport({
         </div>
       </div>
 
+      <div className="flex flex-wrap items-center gap-2">
+        <Badge variant="outline">{period}</Badge>
+        <Badge variant={report.methodology.status === 'exact' ? 'default' : 'secondary'}>
+          {report.methodology.status}
+        </Badge>
+      </div>
+
+      {report.methodology.estimated ? (
+        <Card className="border-amber-200 bg-amber-50/60">
+          <CardContent className="flex items-start gap-3 p-4 text-sm text-amber-900">
+            <IconAlertTriangle className="mt-0.5 h-4 w-4" />
+            <div className="space-y-1">
+              {report.methodology.reasons.map(reason => (
+                <div key={reason}>{reason}</div>
+              ))}
+            </div>
+          </CardContent>
+        </Card>
+      ) : null}
+
       <div className="grid gap-4 md:grid-cols-2 xl:grid-cols-4">
-        <Card>
-          <CardHeader className="pb-2">
-            <CardTitle className="text-sm font-medium">Total Revenue</CardTitle>
-          </CardHeader>
-          <CardContent>
-            <div className="text-2xl font-bold text-green-600">
-              {formatCurrency(totalRevenue)}
-            </div>
-          </CardContent>
-        </Card>
-        <Card>
-          <CardHeader className="pb-2">
-            <CardTitle className="text-sm font-medium">Total Expenses</CardTitle>
-          </CardHeader>
-          <CardContent>
-            <div className="text-2xl font-bold text-red-600">
-              {formatCurrency(totalExpenses)}
-            </div>
-          </CardContent>
-        </Card>
-        <Card>
-          <CardHeader className="pb-2">
-            <CardTitle className="text-sm font-medium">Gross Profit</CardTitle>
-          </CardHeader>
-          <CardContent>
-            <div
-              className={`text-2xl font-bold ${
-                grossProfit >= 0 ? 'text-green-600' : 'text-red-600'
-              }`}
-            >
-              {formatCurrency(grossProfit)}
-            </div>
-          </CardContent>
-        </Card>
-        <Card>
-          <CardHeader className="pb-2">
-            <CardTitle className="text-sm font-medium">Net Profit</CardTitle>
-          </CardHeader>
-          <CardContent>
-            <div
-              className={`text-2xl font-bold ${
-                netProfit >= 0 ? 'text-green-600' : 'text-red-600'
-              }`}
-            >
-              {formatCurrency(netProfit)}
-            </div>
-          </CardContent>
-        </Card>
+        <SummaryCard
+          title="Sales Revenue"
+          amount={statement.salesRevenueRecognised}
+          accent="text-green-600"
+        />
+        <SummaryCard
+          title="Other Operating Income"
+          amount={statement.otherOperatingIncome}
+          accent="text-emerald-600"
+        />
+        <SummaryCard
+          title="Gross Profit"
+          amount={statement.grossProfit}
+          accent={statement.grossProfit >= 0 ? 'text-green-600' : 'text-red-600'}
+        />
+        <SummaryCard
+          title="Net Profit"
+          amount={statement.netProfit}
+          accent={statement.netProfit >= 0 ? 'text-green-600' : 'text-red-600'}
+        />
       </div>
 
       <Card>
@@ -244,59 +247,98 @@ export function IncomeStatementReport({
           <div className="space-y-4">
             <div className="flex items-center gap-2 font-semibold">
               <IconTrendingUp className="h-4 w-4 text-green-600" />
-              Revenue
+              Income
             </div>
-            <div className="space-y-2">
-              <div className="flex justify-between">
-                <span>Sales Revenue</span>
-                <span>{formatCurrency(profitLoss?.revenue?.sales || 0)}</span>
-              </div>
-              <div className="flex justify-between">
-                <span>Other Operating Income</span>
-                <span>{formatCurrency(profitLoss?.revenue?.otherIncome || 0)}</span>
-              </div>
-              <div className="flex justify-between border-t pt-2 font-semibold">
-                <span>Total Revenue</span>
-                <span>{formatCurrency(totalRevenue)}</span>
-              </div>
-            </div>
+            <StatementRow
+              label="Sales Revenue Recognised"
+              amount={statement.salesRevenueRecognised}
+            />
+            <StatementRow
+              label="Other Operating Income"
+              amount={statement.otherOperatingIncome}
+            />
+            <StatementRow
+              label="Total Operating Income"
+              amount={statement.totalOperatingIncome}
+              strong
+            />
           </div>
 
           <div className="space-y-4">
             <div className="flex items-center gap-2 font-semibold">
               <IconTrendingDown className="h-4 w-4 text-red-600" />
-              Expenses
+              Costs And Profit
             </div>
-            <div className="space-y-2">
-              <div className="flex justify-between">
-                <span>Cost Of Goods</span>
-                <span>{formatCurrency(profitLoss?.expenses?.costOfGoods || 0)}</span>
-              </div>
-              <div className="flex justify-between">
-                <span>Operating Expenses</span>
-                <span>{formatCurrency(profitLoss?.expenses?.operatingExpenses || 0)}</span>
-              </div>
-              <div className="flex justify-between border-t pt-2 font-semibold">
-                <span>Total Expenses</span>
-                <span>{formatCurrency(totalExpenses)}</span>
-              </div>
-            </div>
-          </div>
-
-          <div className="space-y-2 lg:col-span-2">
-            <div className="flex justify-between border-t pt-2 text-base font-semibold">
-              <span>Gross Profit</span>
-              <span>{formatCurrency(grossProfit)}</span>
-            </div>
-            <div className="flex justify-between border-t pt-2 text-lg font-bold">
-              <span>Net Profit</span>
-              <span className={netProfit >= 0 ? 'text-green-600' : 'text-red-600'}>
-                {formatCurrency(netProfit)}
-              </span>
-            </div>
+            <StatementRow
+              label="Cost Of Goods Sold"
+              amount={statement.costOfGoodsSold}
+              negative
+            />
+            <StatementRow
+              label="Gross Profit"
+              amount={statement.grossProfit}
+              strong
+            />
+            <StatementRow
+              label="Operating Expenses"
+              amount={statement.operatingExpenses}
+              negative
+            />
+            <StatementRow
+              label="Net Profit"
+              amount={statement.netProfit}
+              strong
+            />
           </div>
         </CardContent>
       </Card>
+    </div>
+  );
+}
+
+function SummaryCard({
+  title,
+  amount,
+  accent,
+}: {
+  title: string;
+  amount: number;
+  accent: string;
+}) {
+  return (
+    <Card>
+      <CardHeader className="pb-2">
+        <CardTitle className="text-sm font-medium">{title}</CardTitle>
+      </CardHeader>
+      <CardContent>
+        <div className={`text-2xl font-bold ${accent}`}>
+          {formatCurrency(amount)}
+        </div>
+      </CardContent>
+    </Card>
+  );
+}
+
+function StatementRow({
+  label,
+  amount,
+  negative = false,
+  strong = false,
+}: {
+  label: string;
+  amount: number;
+  negative?: boolean;
+  strong?: boolean;
+}) {
+  return (
+    <div
+      className={`flex justify-between ${strong ? 'border-t pt-2 font-semibold' : ''}`}
+    >
+      <span>{label}</span>
+      <span>
+        {negative ? '-' : ''}
+        {formatCurrency(Math.abs(amount))}
+      </span>
     </div>
   );
 }
