@@ -220,4 +220,66 @@ describe('PUT /api/finance/transactions/[id]', () => {
       })
     );
   });
+
+  it('rejects a type change that omits the new income detail', async () => {
+    mockFindFirst.mockResolvedValue(transactionFixture);
+
+    const response = await updateFinanceTransaction(
+      {
+        json: async () => ({
+          id: 12,
+          type: 'INCOME',
+        }),
+        user: {
+          id: '1',
+          role: 'ADMIN',
+          email: 'admin@example.com',
+        },
+      } as any,
+      { params: Promise.resolve({ id: '12' }) }
+    );
+
+    expect(response.status).toBe(400);
+    await expect(response.json()).resolves.toMatchObject({
+      success: false,
+      error: 'Income source is required when changing a transaction to income',
+    });
+    expect(mockTransaction).not.toHaveBeenCalled();
+  });
+
+  it('allows same-type partial updates while preserving existing detail rows', async () => {
+    mockFindFirst.mockResolvedValue(transactionFixture);
+    mockUpdate.mockResolvedValue(undefined);
+    mockExpenseUpsert.mockResolvedValue(undefined);
+    mockFindUnique.mockResolvedValue({
+      ...transactionFixture,
+      description: 'Still an expense',
+    });
+
+    const response = await updateFinanceTransaction(
+      {
+        json: async () => ({
+          id: 12,
+          type: 'EXPENSE',
+          description: 'Still an expense',
+        }),
+        user: {
+          id: '1',
+          role: 'ADMIN',
+          email: 'admin@example.com',
+        },
+      } as any,
+      { params: Promise.resolve({ id: '12' }) }
+    );
+
+    expect(response.status).toBe(200);
+    expect(mockExpenseUpsert).toHaveBeenCalledWith(
+      expect.objectContaining({
+        update: expect.objectContaining({
+          expenseType: 'TRANSPORTATION',
+          vendorName: 'Vendor A',
+        }),
+      })
+    );
+  });
 });

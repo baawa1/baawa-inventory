@@ -29,12 +29,13 @@ import {
   DEFAULT_DATE_RANGE_PRESET,
   getDateRangePreset,
 } from '@/lib/utils/date-range';
+import { hasPermission, type UserRole } from '@/lib/auth/roles';
 
 interface User {
   id: string;
   email?: string | null;
   name?: string | null;
-  role: string;
+  role: UserRole;
   status: string;
   isEmailVerified: boolean;
 }
@@ -59,7 +60,7 @@ const SOURCE_OPTIONS = [
   { value: 'STOCK', label: 'Stock' },
 ];
 
-const CASH_PROFIT_FILTERS: FilterConfig[] = [
+const BASE_LEDGER_FILTERS: FilterConfig[] = [
   {
     key: 'source',
     label: 'Source',
@@ -86,17 +87,6 @@ const CASH_PROFIT_FILTERS: FilterConfig[] = [
     placeholder: 'All Cash Impact',
   },
   {
-    key: 'profitImpact',
-    label: 'Profit Impact',
-    type: 'select',
-    options: [
-      { value: 'in', label: 'Profit In' },
-      { value: 'out', label: 'Profit Out' },
-      { value: 'none', label: 'No Profit Move' },
-    ],
-    placeholder: 'All Profit Impact',
-  },
-  {
     key: 'paymentState',
     label: 'Payment State',
     type: 'select',
@@ -121,6 +111,20 @@ const CASH_PROFIT_FILTERS: FilterConfig[] = [
       { value: 'SPLIT', label: 'Split Payment' },
     ],
     placeholder: 'All Payment Methods',
+  },
+];
+
+const SENSITIVE_LEDGER_FILTERS: FilterConfig[] = [
+  {
+    key: 'profitImpact',
+    label: 'Profit Impact',
+    type: 'select',
+    options: [
+      { value: 'in', label: 'Profit In' },
+      { value: 'out', label: 'Profit Out' },
+      { value: 'none', label: 'No Profit Move' },
+    ],
+    placeholder: 'All Profit Impact',
   },
 ];
 
@@ -156,9 +160,11 @@ function EffectBadge({
 function LedgerDetailDialog({
   transaction,
   onOpenChange,
+  canViewSensitiveFields,
 }: {
   transaction: FinancialTransaction | null;
   onOpenChange: (open: boolean) => void;
+  canViewSensitiveFields: boolean;
 }) {
   return (
     <Dialog open={!!transaction} onOpenChange={onOpenChange}>
@@ -206,18 +212,22 @@ function LedgerDetailDialog({
                   {formatSignedAmount(transaction.netCashImpact)}
                 </p>
               </div>
-              <div>
-                <p className="text-muted-foreground">Profit Impact</p>
-                <p className="font-medium">
-                  {formatSignedAmount(transaction.netProfitImpact)}
-                </p>
-              </div>
-              <div>
-                <p className="text-muted-foreground">Inventory Impact</p>
-                <p className="font-medium">
-                  {formatSignedAmount(transaction.netInventoryImpact)}
-                </p>
-              </div>
+              {canViewSensitiveFields ? (
+                <>
+                  <div>
+                    <p className="text-muted-foreground">Profit Impact</p>
+                    <p className="font-medium">
+                      {formatSignedAmount(transaction.netProfitImpact ?? 0)}
+                    </p>
+                  </div>
+                  <div>
+                    <p className="text-muted-foreground">Inventory Impact</p>
+                    <p className="font-medium">
+                      {formatSignedAmount(transaction.netInventoryImpact ?? 0)}
+                    </p>
+                  </div>
+                </>
+              ) : null}
               <div>
                 <p className="text-muted-foreground">Receivable Impact</p>
                 <p className="font-medium">
@@ -231,7 +241,7 @@ function LedgerDetailDialog({
               <p>{transaction.description}</p>
             </div>
 
-            {transaction.estimated ? (
+            {canViewSensitiveFields && transaction.estimated ? (
               <div className="rounded-lg border border-amber-200 bg-amber-50 p-4 text-amber-900">
                 <p className="font-medium">Estimated component</p>
                 <p className="mt-1 text-sm">
@@ -248,7 +258,7 @@ function LedgerDetailDialog({
 }
 
 export function FinanceTransactionList({
-  user: _user,
+  user,
 }: FinanceTransactionListProps) {
   const [selectedTransaction, setSelectedTransaction] =
     useState<FinancialTransaction | null>(null);
@@ -270,6 +280,9 @@ export function FinanceTransactionList({
     paymentState: '',
     paymentMethod: '',
   });
+  const canViewSensitiveLedgerFields =
+    hasPermission(user.role, 'FINANCIAL_AGGREGATES') &&
+    hasPermission(user.role, 'PRODUCT_COST_READ');
 
   const debouncedSearchTerm = useDebounce(filters.search, 500);
   const isSearching = filters.search !== debouncedSearchTerm;
@@ -286,8 +299,9 @@ export function FinanceTransactionList({
       source: filters.source || undefined,
       eventType: filters.eventType || undefined,
       cashImpact: (filters.cashImpact as 'in' | 'out' | 'none') || undefined,
-      profitImpact:
-        (filters.profitImpact as 'in' | 'out' | 'none') || undefined,
+      profitImpact: canViewSensitiveLedgerFields
+        ? (filters.profitImpact as 'in' | 'out' | 'none') || undefined
+        : undefined,
       paymentState: filters.paymentState || undefined,
       paymentMethod: filters.paymentMethod || undefined,
       startDate: dateRange?.from
@@ -348,16 +362,20 @@ export function FinanceTransactionList({
         label: 'Cash',
         defaultVisible: true,
       },
-      {
-        key: 'profit',
-        label: 'Profit',
-        defaultVisible: true,
-      },
-      {
-        key: 'inventory',
-        label: 'Inventory',
-        defaultVisible: false,
-      },
+      ...(canViewSensitiveLedgerFields
+        ? [
+            {
+              key: 'profit',
+              label: 'Profit',
+              defaultVisible: true,
+            },
+            {
+              key: 'inventory',
+              label: 'Inventory',
+              defaultVisible: false,
+            },
+          ]
+        : []),
       {
         key: 'receivable',
         label: 'Receivable',
@@ -369,7 +387,7 @@ export function FinanceTransactionList({
         defaultVisible: true,
       },
     ],
-    []
+    [canViewSensitiveLedgerFields]
   );
 
   const defaultVisibleColumns = useMemo(
@@ -447,7 +465,7 @@ export function FinanceTransactionList({
         case 'profit':
           return (
             <EffectBadge
-              value={transaction.netProfitImpact}
+              value={transaction.netProfitImpact ?? 0}
               positiveColor="text-emerald-600"
               negativeColor="text-rose-600"
             />
@@ -455,7 +473,7 @@ export function FinanceTransactionList({
         case 'inventory':
           return (
             <EffectBadge
-              value={transaction.netInventoryImpact}
+              value={transaction.netInventoryImpact ?? 0}
               positiveColor="text-blue-600"
               negativeColor="text-amber-600"
             />
@@ -545,7 +563,11 @@ export function FinanceTransactionList({
           setPagination(prev => ({ ...prev, page: 1 }));
         }}
         isSearching={isSearching}
-        filters={CASH_PROFIT_FILTERS}
+        filters={
+          canViewSensitiveLedgerFields
+            ? [...BASE_LEDGER_FILTERS, ...SENSITIVE_LEDGER_FILTERS]
+            : BASE_LEDGER_FILTERS
+        }
         filterValues={filters}
         onFilterChange={handleFilterChange}
         onResetFilters={handleResetFilters}
@@ -581,6 +603,7 @@ export function FinanceTransactionList({
             setSelectedTransaction(null);
           }
         }}
+        canViewSensitiveFields={canViewSensitiveLedgerFields}
       />
     </>
   );

@@ -55,18 +55,18 @@ export interface FinancialTransaction {
   categoryLabel: string;
   cashIn: number;
   cashOut: number;
-  profitIn: number;
-  profitOut: number;
-  inventoryValueIn: number;
-  inventoryValueOut: number;
+  profitIn?: number;
+  profitOut?: number;
+  inventoryValueIn?: number;
+  inventoryValueOut?: number;
   receivableIncrease: number;
   receivableDecrease: number;
   netCashImpact: number;
-  netProfitImpact: number;
-  netInventoryImpact: number;
+  netProfitImpact?: number;
+  netInventoryImpact?: number;
   netReceivableImpact: number;
   editable: boolean;
-  estimated: boolean;
+  estimated?: boolean;
   estimatedReason?: string | null;
   customerName?: string | null;
   expenseDetails?: {

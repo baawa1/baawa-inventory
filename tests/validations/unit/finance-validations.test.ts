@@ -700,4 +700,15 @@ describe('Finance Validation Schemas', () => {
       });
     });
   });
+
+  describe('updateTransactionSchema', () => {
+    it('allows partial same-type update payloads so the route can preserve existing subtype details', () => {
+      const result = updateTransactionSchema.safeParse({
+        id: 12,
+        type: 'INCOME',
+      });
+
+      expect(result.success).toBe(true);
+    });
+  });
 });

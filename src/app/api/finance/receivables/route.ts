@@ -26,10 +26,8 @@ export const GET = withAuth(async (request: AuthenticatedRequest) => {
     });
 
     const now = new Date();
-    const cutoffDate = new Date(now.getTime() - agingDays * 24 * 60 * 60 * 1000);
     const snapshot = await getReceivablesSnapshot({
       asOfDate: now,
-      agingStartDate: cutoffDate,
     });
     const receivables = snapshot.receivables;
 
@@ -95,8 +93,11 @@ export const GET = withAuth(async (request: AuthenticatedRequest) => {
         },
         aging: agingSummary,
         topDebtors,
+        agingWindowDays: agingDays,
         dateRange: {
-          from: cutoffDate.toISOString(),
+          from:
+            receivables[0]?.saleDate.toISOString() ||
+            now.toISOString(),
           to: now.toISOString(),
         },
       },

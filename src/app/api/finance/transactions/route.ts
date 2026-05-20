@@ -65,6 +65,35 @@ function sortLedgerTransactions(
   });
 }
 
+function serializeLedgerTransaction(
+  transaction: Awaited<ReturnType<typeof getNormalizedFinanceTransactions>>[number],
+  canViewSensitiveFields: boolean
+) {
+  const serializedTransaction = {
+    ...transaction,
+    transactionDate: transaction.date.toISOString(),
+    date: transaction.date.toISOString(),
+  };
+
+  if (canViewSensitiveFields) {
+    return serializedTransaction;
+  }
+
+  const {
+    profitIn: _profitIn,
+    profitOut: _profitOut,
+    inventoryValueIn: _inventoryValueIn,
+    inventoryValueOut: _inventoryValueOut,
+    netProfitImpact: _netProfitImpact,
+    netInventoryImpact: _netInventoryImpact,
+    estimated: _estimated,
+    estimatedReason: _estimatedReason,
+    ...publicTransaction
+  } = serializedTransaction;
+
+  return publicTransaction;
+}
+
 async function getManualTransactionsResponse(
   request: AuthenticatedRequest
 ) {
@@ -223,6 +252,9 @@ export const GET = withAuth(async (request: AuthenticatedRequest) => {
       validatedLedgerQuery.startDate,
       validatedLedgerQuery.endDate
     );
+    const canViewSensitiveLedgerFields =
+      hasPermission(request.user.role, 'FINANCIAL_AGGREGATES') &&
+      hasPermission(request.user.role, 'PRODUCT_COST_READ');
 
     const filters = {
       search: searchParams.get('search') || undefined,
@@ -234,7 +266,9 @@ export const GET = withAuth(async (request: AuthenticatedRequest) => {
       source: searchParams.get('source') || undefined,
       eventType: searchParams.get('eventType') || undefined,
       cashImpact: searchParams.get('cashImpact') || undefined,
-      profitImpact: searchParams.get('profitImpact') || undefined,
+      profitImpact: canViewSensitiveLedgerFields
+        ? searchParams.get('profitImpact') || undefined
+        : undefined,
       paymentState: searchParams.get('paymentState') || undefined,
     } as const;
 
@@ -252,11 +286,9 @@ export const GET = withAuth(async (request: AuthenticatedRequest) => {
     const paginatedTransactions = sortedTransactions.slice(offset, offset + limit);
 
     return createApiResponse.successWithPagination(
-      paginatedTransactions.map(transaction => ({
-        ...transaction,
-        transactionDate: transaction.date.toISOString(),
-        date: transaction.date.toISOString(),
-      })),
+      paginatedTransactions.map(transaction =>
+        serializeLedgerTransaction(transaction, canViewSensitiveLedgerFields)
+      ),
       {
         page,
         limit,

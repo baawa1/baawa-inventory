@@ -81,9 +81,10 @@ Enforcement points:
 Manual transactions are created in `COMPLETED` state.
 
 Lifecycle rules:
-- Manual income and expense entries are final immediately after creation.
+- Manual income and expense entries are created in `COMPLETED` state.
+- `PENDING` and `COMPLETED` manual entries remain editable while they are mutable.
 - Admins may delete manual transactions with a required reason.
-- Cancelled transactions are not editable.
+- `APPROVED`, `REJECTED`, and `CANCELLED` transactions are not editable.
 - Historical records may still contain older approval statuses, but the current product no longer uses that workflow.
 
 ## Reporting Architecture

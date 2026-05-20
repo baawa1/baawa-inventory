@@ -71,6 +71,26 @@ describe('GET /api/finance/receivables', () => {
           },
         ],
       },
+      {
+        id: 2,
+        transaction_number: 'SALE-002',
+        total_amount: '700',
+        payment_status: 'PENDING',
+        created_at: new Date('2025-12-01T12:00:00.000Z'),
+        customer: {
+          id: 11,
+          name: 'Older Debt Ltd',
+          email: 'finance@older-debt.test',
+          phone: '08000000001',
+        },
+        users: {
+          id: 8,
+          firstName: 'John',
+          lastName: 'Doe',
+        },
+        transaction_payments: [],
+        split_payments: [],
+      },
     ]);
 
     const response = await getReceivables({
@@ -86,11 +106,11 @@ describe('GET /api/finance/receivables', () => {
     const payload = await response.json();
 
     expect(payload.data.summary).toMatchObject({
-      totalOutstanding: 250,
-      totalTransactions: 1,
-      averageDaysOutstanding: 39,
-      estimatedCollectable: 200,
-      collectionProbability: 80,
+      totalOutstanding: 950,
+      totalTransactions: 2,
+      averageDaysOutstanding: 100,
+      estimatedCollectable: 410,
+      collectionProbability: 43,
     });
     expect(payload.data.receivables[0]).toMatchObject({
       transactionNumber: 'SALE-001',
@@ -98,9 +118,19 @@ describe('GET /api/finance/receivables', () => {
       outstandingAmount: 250,
       agingBucket: '31-60',
     });
+    expect(payload.data.receivables[1]).toMatchObject({
+      transactionNumber: 'SALE-002',
+      paidAmount: 0,
+      outstandingAmount: 700,
+      agingBucket: '90+',
+    });
     expect(payload.data.topDebtors[0]).toMatchObject({
-      totalOwed: 250,
+      totalOwed: 700,
       transactionCount: 1,
+    });
+    expect(payload.data.aging['90+']).toMatchObject({
+      count: 1,
+      amount: 700,
     });
   });
 

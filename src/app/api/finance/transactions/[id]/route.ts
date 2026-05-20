@@ -126,6 +126,28 @@ export const PUT = withAuth(
 
       const effectiveType = validatedData.type ?? existingTransaction.type;
 
+      if (
+        validatedData.type &&
+        validatedData.type !== existingTransaction.type &&
+        validatedData.type === 'INCOME' &&
+        !validatedData.incomeSource
+      ) {
+        return createApiResponse.validationError(
+          'Income source is required when changing a transaction to income'
+        );
+      }
+
+      if (
+        validatedData.type &&
+        validatedData.type !== existingTransaction.type &&
+        validatedData.type === 'EXPENSE' &&
+        !validatedData.expenseType
+      ) {
+        return createApiResponse.validationError(
+          'Expense type is required when changing a transaction to expense'
+        );
+      }
+
       // Current workflow only treats mutable manual states as editable.
       if (!isFinancialTransactionMutable(existingTransaction.status)) {
         return createApiResponse.validationError(

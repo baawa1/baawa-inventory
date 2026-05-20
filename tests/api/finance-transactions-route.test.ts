@@ -137,4 +137,32 @@ describe('GET /api/finance/transactions', () => {
     });
     expect(mockGetNormalizedFinanceTransactions).not.toHaveBeenCalled();
   });
+
+  it('redacts profit and inventory fields for managers', async () => {
+    const response = await getFinanceTransactions({
+      user: {
+        id: '2',
+        role: 'MANAGER',
+        email: 'manager@example.com',
+      },
+      url: 'http://localhost/api/finance/transactions?profitImpact=in',
+    } as any);
+
+    expect(response.status).toBe(200);
+    expect(mockGetNormalizedFinanceTransactions).toHaveBeenCalledWith(
+      expect.objectContaining({
+        profitImpact: undefined,
+      }),
+      expect.any(Object)
+    );
+
+    const payload = await response.json();
+    expect(payload.data[0]).not.toHaveProperty('profitIn');
+    expect(payload.data[0]).not.toHaveProperty('profitOut');
+    expect(payload.data[0]).not.toHaveProperty('inventoryValueIn');
+    expect(payload.data[0]).not.toHaveProperty('inventoryValueOut');
+    expect(payload.data[0]).not.toHaveProperty('netProfitImpact');
+    expect(payload.data[0]).not.toHaveProperty('netInventoryImpact');
+    expect(payload.data[0]).not.toHaveProperty('estimated');
+  });
 });

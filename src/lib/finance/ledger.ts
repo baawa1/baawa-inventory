@@ -1777,10 +1777,8 @@ async function getInventorySnapshot(asOfDate?: Date) {
 
 export async function getReceivablesSnapshot(options?: {
   asOfDate?: Date;
-  agingStartDate?: Date;
 }): Promise<ReceivablesSnapshot> {
   const asOfDate = options?.asOfDate || new Date();
-  const agingStartDate = options?.agingStartDate;
 
   const sales = (await prisma.salesTransaction.findMany({
     where: {
@@ -1867,9 +1865,6 @@ export async function getReceivablesSnapshot(options?: {
       }
 
       const saleDate = sale.created_at || new Date();
-      if (agingStartDate && saleDate.getTime() < agingStartDate.getTime()) {
-        return null;
-      }
 
       const daysOutstanding = Math.max(
         0,
