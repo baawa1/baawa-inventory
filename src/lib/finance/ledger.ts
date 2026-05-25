@@ -1468,7 +1468,14 @@ export function summarizeFinanceTransactions(
     totalExpenses += transaction.profitOut;
     totalValue += transaction.amount;
 
-    if (transaction.paymentMethod) {
+    const cashMovementAmount =
+      transaction.cashIn > 0
+        ? transaction.cashIn
+        : transaction.cashOut > 0
+          ? transaction.cashOut
+          : 0;
+
+    if (transaction.paymentMethod && cashMovementAmount > 0) {
       const current = paymentMethodMap.get(transaction.paymentMethod) || {
         count: 0,
         amount: 0,
@@ -1476,7 +1483,7 @@ export function summarizeFinanceTransactions(
 
       paymentMethodMap.set(transaction.paymentMethod, {
         count: current.count + 1,
-        amount: current.amount + transaction.amount,
+        amount: current.amount + cashMovementAmount,
       });
     }
   });
@@ -1508,6 +1515,17 @@ export function buildPaymentMethodDistribution(
       return;
     }
 
+    const cashMovementAmount =
+      transaction.cashIn > 0
+        ? transaction.cashIn
+        : transaction.cashOut > 0
+          ? transaction.cashOut
+          : 0;
+
+    if (cashMovementAmount <= 0) {
+      return;
+    }
+
     const current = paymentMethodMap.get(transaction.paymentMethod) || {
       count: 0,
       amount: 0,
@@ -1515,13 +1533,7 @@ export function buildPaymentMethodDistribution(
 
     paymentMethodMap.set(transaction.paymentMethod, {
       count: current.count + 1,
-      amount:
-        current.amount +
-        (transaction.cashIn > 0
-          ? transaction.cashIn
-          : transaction.cashOut > 0
-            ? transaction.cashOut
-            : transaction.amount),
+      amount: current.amount + cashMovementAmount,
     });
   });
 

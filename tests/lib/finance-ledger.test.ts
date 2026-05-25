@@ -16,7 +16,11 @@ jest.mock('@/lib/db', () => ({
   },
 }));
 
-import { getNormalizedFinanceTransactions } from '@/lib/finance/ledger';
+import {
+  buildPaymentMethodDistribution,
+  getNormalizedFinanceTransactions,
+  summarizeFinanceTransactions,
+} from '@/lib/finance/ledger';
 
 function buildSale(overrides: Record<string, unknown> = {}) {
   const saleDate = new Date('2026-04-10T10:00:00.000Z');
@@ -327,6 +331,68 @@ describe('finance ledger normalization', () => {
           },
         }),
       })
+    );
+  });
+
+  it('counts only collected cash in payment method aggregates for debt sales', async () => {
+    mockSalesTransactionFindMany.mockResolvedValue([
+      buildSale({
+        id: 9,
+        total_amount: 1000,
+        payment_method: 'split',
+        payment_status: 'partial',
+        transaction_number: 'POS-DEBT-003',
+        split_payments: [
+          {
+            id: 91,
+            amount: 250,
+            payment_method: 'cash',
+            created_at: new Date('2026-04-10T10:00:00.000Z'),
+          },
+          {
+            id: 92,
+            amount: 750,
+            payment_method: 'debt',
+            created_at: new Date('2026-04-10T10:00:00.000Z'),
+          },
+        ],
+        transaction_payments: [],
+      }),
+    ]);
+
+    const transactions = await getNormalizedFinanceTransactions({
+      source: 'POS',
+      startDate: new Date('2026-04-01T00:00:00.000Z'),
+      endDate: new Date('2026-04-30T23:59:59.999Z'),
+    });
+
+    expect(transactions).toEqual(
+      expect.arrayContaining([
+        expect.objectContaining({
+          eventType: 'POS_DEBT_SALE_ISSUED',
+          paymentMethod: 'SPLIT',
+          amount: 1000,
+          cashIn: 0,
+          receivableIncrease: 750,
+        }),
+        expect.objectContaining({
+          eventType: 'POS_DEBT_PAYMENT_COLLECTED',
+          paymentMethod: 'CASH',
+          amount: 250,
+          cashIn: 250,
+        }),
+      ])
+    );
+
+    expect(buildPaymentMethodDistribution(transactions)).toEqual([
+      {
+        method: 'CASH',
+        count: 1,
+        amount: 250,
+      },
+    ]);
+    expect(summarizeFinanceTransactions(transactions).topPaymentMethod).toBe(
+      'Cash'
     );
   });
 });
