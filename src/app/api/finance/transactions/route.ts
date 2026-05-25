@@ -19,9 +19,7 @@ import {
   addFinanceDateRangeIssue,
   optionalFinanceDateInputSchema,
 } from '@/lib/finance/query-validation';
-import {
-  attachFinancialTransactionNames,
-} from '@/lib/finance/transaction-access';
+import { attachFinancialTransactionNames } from '@/lib/finance/transaction-access';
 import {
   getNormalizedFinanceTransactions,
   normalizeFinancePaymentMethod,
@@ -29,19 +27,53 @@ import {
 
 const ledgerTransactionQuerySchema = z
   .object({
+    page: z.coerce.number().int().min(1, 'Page must be at least 1').default(1),
+    limit: z.coerce
+      .number()
+      .int()
+      .min(1, 'Limit must be at least 1')
+      .max(100, 'Limit cannot exceed 100')
+      .default(10),
+    search: z.string().max(100, 'Search term is too long').optional(),
+    type: z
+      .enum(['all', 'income', 'expense', 'ALL', 'INCOME', 'EXPENSE'])
+      .default('all'),
+    status: z.string().optional(),
+    paymentMethod: z.string().optional(),
     startDate: optionalFinanceDateInputSchema,
     endDate: optionalFinanceDateInputSchema,
+    source: z.string().optional(),
+    eventType: z.string().optional(),
+    cashImpact: z.enum(['in', 'out', 'none', 'all', 'ALL']).optional(),
+    profitImpact: z.enum(['in', 'out', 'none', 'all', 'ALL']).optional(),
+    paymentState: z.string().optional(),
+    sortBy: z
+      .enum(['transactionDate', 'amount', 'createdAt', 'description'])
+      .default('transactionDate'),
+    sortOrder: z.enum(['asc', 'desc']).default('desc'),
   })
   .superRefine((value, ctx) => {
     addFinanceDateRangeIssue(value.startDate, value.endDate, ctx);
   });
 
-function normalizeLedgerType(value?: string | null): 'all' | 'income' | 'expense' {
-  if (!value || value === 'ALL') {
+function normalizeLedgerType(
+  value?: string | null
+): 'all' | 'income' | 'expense' {
+  if (!value || value.toUpperCase() === 'ALL') {
     return 'all';
   }
 
   return value.toUpperCase() === 'INCOME' ? 'income' : 'expense';
+}
+
+function isSensitiveAmountTransaction(
+  transaction: Awaited<
+    ReturnType<typeof getNormalizedFinanceTransactions>
+  >[number]
+): boolean {
+  return (
+    transaction.source === 'STOCK' || transaction.eventType === 'STOCK_PURCHASE'
+  );
 }
 
 function sortLedgerTransactions(
@@ -66,7 +98,9 @@ function sortLedgerTransactions(
 }
 
 function serializeLedgerTransaction(
-  transaction: Awaited<ReturnType<typeof getNormalizedFinanceTransactions>>[number],
+  transaction: Awaited<
+    ReturnType<typeof getNormalizedFinanceTransactions>
+  >[number],
   canViewSensitiveFields: boolean
 ) {
   const serializedTransaction = {
@@ -91,12 +125,21 @@ function serializeLedgerTransaction(
     ...publicTransaction
   } = serializedTransaction;
 
+  if (isSensitiveAmountTransaction(transaction)) {
+    return {
+      ...publicTransaction,
+      amount: 0,
+      cashIn: 0,
+      cashOut: 0,
+      netCashImpact: 0,
+      amountRestricted: true,
+    };
+  }
+
   return publicTransaction;
 }
 
-async function getManualTransactionsResponse(
-  request: AuthenticatedRequest
-) {
+async function getManualTransactionsResponse(request: AuthenticatedRequest) {
   const { searchParams } = new URL(request.url);
 
   const queryParams = {
@@ -236,18 +279,24 @@ export const GET = withAuth(async (request: AuthenticatedRequest) => {
       return await getManualTransactionsResponse(request);
     }
 
-    const page = Math.max(1, parseInt(searchParams.get('page') || '1', 10));
-    const limit = Math.min(
-      100,
-      Math.max(1, parseInt(searchParams.get('limit') || '10', 10))
-    );
-    const sortBy = searchParams.get('sortBy') || 'transactionDate';
-    const sortOrder =
-      (searchParams.get('sortOrder') as 'asc' | 'desc') || 'desc';
     const validatedLedgerQuery = ledgerTransactionQuerySchema.parse({
+      page: searchParams.get('page') || undefined,
+      limit: searchParams.get('limit') || undefined,
+      search: searchParams.get('search') || undefined,
+      type: searchParams.get('type') || undefined,
+      status: searchParams.get('status') || undefined,
+      paymentMethod: searchParams.get('paymentMethod') || undefined,
       startDate: searchParams.get('startDate') || undefined,
       endDate: searchParams.get('endDate') || undefined,
+      source: searchParams.get('source') || undefined,
+      eventType: searchParams.get('eventType') || undefined,
+      cashImpact: searchParams.get('cashImpact') || undefined,
+      profitImpact: searchParams.get('profitImpact') || undefined,
+      paymentState: searchParams.get('paymentState') || undefined,
+      sortBy: searchParams.get('sortBy') || undefined,
+      sortOrder: searchParams.get('sortOrder') || undefined,
     });
+    const { page, limit, sortBy, sortOrder } = validatedLedgerQuery;
     const normalizedDateFilters = normalizeFinanceDateFilters(
       validatedLedgerQuery.startDate,
       validatedLedgerQuery.endDate
@@ -257,25 +306,28 @@ export const GET = withAuth(async (request: AuthenticatedRequest) => {
       hasPermission(request.user.role, 'PRODUCT_COST_READ');
 
     const filters = {
-      search: searchParams.get('search') || undefined,
-      type: normalizeLedgerType(searchParams.get('type')),
-      status: searchParams.get('status') || undefined,
-      paymentMethod: searchParams.get('paymentMethod') || undefined,
+      search: validatedLedgerQuery.search,
+      type: normalizeLedgerType(validatedLedgerQuery.type),
+      status: validatedLedgerQuery.status,
+      paymentMethod: validatedLedgerQuery.paymentMethod,
       startDate: normalizedDateFilters.startDate,
       endDate: normalizedDateFilters.endDate,
-      source: searchParams.get('source') || undefined,
-      eventType: searchParams.get('eventType') || undefined,
-      cashImpact: searchParams.get('cashImpact') || undefined,
+      source: validatedLedgerQuery.source,
+      eventType: validatedLedgerQuery.eventType,
+      cashImpact: validatedLedgerQuery.cashImpact,
       profitImpact: canViewSensitiveLedgerFields
-        ? searchParams.get('profitImpact') || undefined
+        ? validatedLedgerQuery.profitImpact
         : undefined,
-      paymentState: searchParams.get('paymentState') || undefined,
+      paymentState: validatedLedgerQuery.paymentState,
     } as const;
 
-    const unifiedTransactions = await getNormalizedFinanceTransactions(filters, {
-      includeFlaggedOverlaps: true,
-      manualStatusMode: 'all',
-    });
+    const unifiedTransactions = await getNormalizedFinanceTransactions(
+      filters,
+      {
+        includeFlaggedOverlaps: true,
+        manualStatusMode: 'all',
+      }
+    );
 
     const sortedTransactions = sortLedgerTransactions(
       unifiedTransactions,
@@ -283,7 +335,10 @@ export const GET = withAuth(async (request: AuthenticatedRequest) => {
       sortOrder
     );
     const offset = (page - 1) * limit;
-    const paginatedTransactions = sortedTransactions.slice(offset, offset + limit);
+    const paginatedTransactions = sortedTransactions.slice(
+      offset,
+      offset + limit
+    );
 
     return createApiResponse.successWithPagination(
       paginatedTransactions.map(transaction =>
@@ -506,7 +561,8 @@ export const POST = withAuth(async (request: AuthenticatedRequest) => {
       });
 
       logger.error(`[${requestId}] Database error details`, {
-        error: dbError instanceof Error ? dbError.message : 'Unknown database error',
+        error:
+          dbError instanceof Error ? dbError.message : 'Unknown database error',
       });
       return createApiResponse.internalError(
         'Failed to create transaction. Please try again or contact support.'

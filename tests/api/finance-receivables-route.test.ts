@@ -57,6 +57,7 @@ describe('GET /api/finance/receivables', () => {
           {
             amount: '100',
             payment_date: new Date('2026-04-03T12:00:00.000Z'),
+            created_at: new Date('2026-04-03T12:00:00.000Z'),
             payment_method: 'cash',
           },
         ],
@@ -64,10 +65,12 @@ describe('GET /api/finance/receivables', () => {
           {
             amount: '150',
             payment_method: 'cash',
+            created_at: new Date('2026-04-01T12:00:00.000Z'),
           },
           {
             amount: '250',
             payment_method: 'debt',
+            created_at: new Date('2026-04-01T12:00:00.000Z'),
           },
         ],
       },
@@ -131,6 +134,57 @@ describe('GET /api/finance/receivables', () => {
     expect(payload.data.aging['90+']).toMatchObject({
       count: 1,
       amount: 700,
+    });
+  });
+
+  it('does not count future legacy payments that have no payment date', async () => {
+    mockFindMany.mockResolvedValue([
+      {
+        id: 3,
+        transaction_number: 'SALE-003',
+        total_amount: '500',
+        payment_status: 'PARTIAL',
+        created_at: new Date('2026-04-01T12:00:00.000Z'),
+        customer: {
+          id: 12,
+          name: 'Future Payment Ltd',
+          email: 'future@example.test',
+          phone: '08000000002',
+        },
+        users: {
+          id: 9,
+          firstName: 'Ada',
+          lastName: 'Doe',
+        },
+        transaction_payments: [
+          {
+            amount: '300',
+            payment_date: null,
+            created_at: new Date('2026-05-20T12:00:00.000Z'),
+            payment_method: 'cash',
+          },
+        ],
+        split_payments: [],
+      },
+    ]);
+
+    const response = await getReceivables({
+      user: {
+        id: '1',
+        role: 'ADMIN',
+        email: 'admin@example.com',
+      },
+      url: 'http://localhost/api/finance/receivables',
+    } as any);
+
+    expect(response.status).toBe(200);
+    const payload = await response.json();
+
+    expect(payload.data.summary.totalOutstanding).toBe(500);
+    expect(payload.data.receivables[0]).toMatchObject({
+      transactionNumber: 'SALE-003',
+      paidAmount: 0,
+      outstandingAmount: 500,
     });
   });
 

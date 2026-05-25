@@ -165,4 +165,84 @@ describe('GET /api/finance/transactions', () => {
     expect(payload.data[0]).not.toHaveProperty('netInventoryImpact');
     expect(payload.data[0]).not.toHaveProperty('estimated');
   });
+
+  it('redacts stock purchase amounts for managers', async () => {
+    mockGetNormalizedFinanceTransactions.mockResolvedValue([
+      {
+        id: 1000030,
+        rowId: 'StockAddition-30-STOCK_PURCHASE',
+        transactionNumber: 'PO-030',
+        type: 'EXPENSE',
+        amount: 2500,
+        date: new Date('2026-04-07T00:00:00.000Z'),
+        paymentMethod: null,
+        description: 'Stock purchase - Stock Item',
+        source: 'STOCK',
+        sourceId: 30,
+        sourceModel: 'StockAddition',
+        eventType: 'STOCK_PURCHASE',
+        cashIn: 0,
+        cashOut: 2500,
+        profitIn: 0,
+        profitOut: 0,
+        inventoryValueIn: 2500,
+        inventoryValueOut: 0,
+        netCashImpact: -2500,
+        netProfitImpact: 0,
+        netInventoryImpact: 2500,
+        netReceivableImpact: 0,
+      },
+    ]);
+
+    const response = await getFinanceTransactions({
+      user: {
+        id: '2',
+        role: 'MANAGER',
+        email: 'manager@example.com',
+      },
+      url: 'http://localhost/api/finance/transactions',
+    } as any);
+
+    expect(response.status).toBe(200);
+    const payload = await response.json();
+    expect(payload.data[0]).toMatchObject({
+      source: 'STOCK',
+      eventType: 'STOCK_PURCHASE',
+      amount: 0,
+      cashIn: 0,
+      cashOut: 0,
+      netCashImpact: 0,
+      amountRestricted: true,
+    });
+    expect(payload.data[0]).not.toHaveProperty('inventoryValueIn');
+    expect(payload.data[0]).not.toHaveProperty('netInventoryImpact');
+  });
+
+  it('returns a validation error for invalid ledger type filters', async () => {
+    const response = await getFinanceTransactions({
+      user: {
+        id: '1',
+        role: 'ADMIN',
+        email: 'admin@example.com',
+      },
+      url: 'http://localhost/api/finance/transactions?type=bogus',
+    } as any);
+
+    expect(response.status).toBe(400);
+    expect(mockGetNormalizedFinanceTransactions).not.toHaveBeenCalled();
+  });
+
+  it('returns a validation error for invalid pagination values', async () => {
+    const response = await getFinanceTransactions({
+      user: {
+        id: '1',
+        role: 'ADMIN',
+        email: 'admin@example.com',
+      },
+      url: 'http://localhost/api/finance/transactions?page=abc',
+    } as any);
+
+    expect(response.status).toBe(400);
+    expect(mockGetNormalizedFinanceTransactions).not.toHaveBeenCalled();
+  });
 });

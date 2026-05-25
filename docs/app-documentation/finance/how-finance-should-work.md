@@ -263,6 +263,8 @@ Each row should clearly show:
 - receivable effect
 - whether the row is editable or read-only
 
+Sensitive cost and inventory-value effects should only be visible to roles that are allowed to see product costs and financial aggregate data.
+
 This list should include:
 
 - owner funding

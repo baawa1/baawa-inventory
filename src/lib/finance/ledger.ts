@@ -542,7 +542,10 @@ function buildLedgerNumericId(
   sourceModel: NormalizedFinanceTransaction['sourceModel'],
   sourceId: number
 ): number {
-  const baseOffsets: Record<NormalizedFinanceTransaction['sourceModel'], number> = {
+  const baseOffsets: Record<
+    NormalizedFinanceTransaction['sourceModel'],
+    number
+  > = {
     FinancialTransaction: 0,
     StockAddition: 1_000_000,
     SalesTransaction: 2_000_000,
@@ -748,7 +751,9 @@ function buildManualLedgerEvent(transaction: any) {
       ? 'MANUAL_OPERATING_INCOME'
       : 'MANUAL_OPERATING_EXPENSE';
 
-  const paymentMethod = normalizeFinancePaymentMethod(transaction.paymentMethod);
+  const paymentMethod = normalizeFinancePaymentMethod(
+    transaction.paymentMethod
+  );
 
   return createLedgerEvent({
     id: `manual-${transaction.id}`,
@@ -773,12 +778,10 @@ function buildManualLedgerEvent(transaction: any) {
     category,
     categoryLabel:
       transaction.type === FINANCIAL_TYPES.INCOME
-        ? INCOME_SOURCE_LABELS[
-            category as keyof typeof INCOME_SOURCE_LABELS
-          ] || category
-        : EXPENSE_TYPE_LABELS[
-            category as keyof typeof EXPENSE_TYPE_LABELS
-          ] || category,
+        ? INCOME_SOURCE_LABELS[category as keyof typeof INCOME_SOURCE_LABELS] ||
+          category
+        : EXPENSE_TYPE_LABELS[category as keyof typeof EXPENSE_TYPE_LABELS] ||
+          category,
     status: normalizeStatus(transaction.status),
     paymentState: null,
     cashIn: transaction.type === FINANCIAL_TYPES.INCOME ? amount : 0,
@@ -821,8 +824,7 @@ function buildStockPurchaseEvent(stockAddition: any) {
     sourceModel: 'StockAddition',
     eventType: 'STOCK_PURCHASE',
     displayLabel: 'Stock Purchase',
-    transactionNumber:
-      stockAddition.referenceNo || `STOCK-${stockAddition.id}`,
+    transactionNumber: stockAddition.referenceNo || `STOCK-${stockAddition.id}`,
     amount,
     date: stockAddition.purchaseDate || stockAddition.createdAt || new Date(),
     paymentMethod: null,
@@ -844,7 +846,8 @@ function buildStockPurchaseEvent(stockAddition: any) {
     vendorName: supplierName,
     payerName: null,
     customerName: null,
-    actorName: supplierName || getFinanceUserDisplayName(stockAddition.createdBy),
+    actorName:
+      supplierName || getFinanceUserDisplayName(stockAddition.createdBy),
     reference: stockAddition.referenceNo || null,
     flaggedOverlap: false,
     editable: false,
@@ -864,14 +867,19 @@ function buildSaleLedgerEvents(sale: any): NormalizedFinanceTransaction[] {
   }
 
   const splitPayments = getSplitPaymentsSummary(sale.split_payments || []);
-  const ledgerPayments = getLedgerPaymentsSummary(sale.transaction_payments || []);
-  const saleCreatedAt = sale.created_at ? new Date(sale.created_at) : new Date();
+  const ledgerPayments = getLedgerPaymentsSummary(
+    sale.transaction_payments || []
+  );
+  const saleCreatedAt = sale.created_at
+    ? new Date(sale.created_at)
+    : new Date();
   const createdByName = getFinanceUserDisplayName(sale.users);
   const customerName = getSaleCustomerName(sale);
   const estimatedCost = estimateSaleCost(sale.sales_items || []);
 
   const normalizedPaymentMethod =
-    normalizePaymentMethodForStorage(sale.payment_method) || sale.payment_method;
+    normalizePaymentMethodForStorage(sale.payment_method) ||
+    sale.payment_method;
   const isSplitSale = normalizedPaymentMethod === 'split';
   const hasDebtBalance =
     normalizedPaymentMethod === 'debt' || splitPayments.debtTotal > 0;
@@ -887,8 +895,7 @@ function buildSaleLedgerEvents(sale: any): NormalizedFinanceTransaction[] {
     }
 
     return (
-      Math.abs(paymentDate.getTime() - saleCreatedAt.getTime()) <=
-      5 * 60 * 1000
+      Math.abs(paymentDate.getTime() - saleCreatedAt.getTime()) <= 5 * 60 * 1000
     );
   });
   const laterLedgerPayments = ledgerPayments.all.filter(
@@ -1427,17 +1434,25 @@ export async function getNormalizedFinanceTransactions(
     )
     .filter(transaction => matchesDateRange(filters, transaction))
     .filter(transaction => matchesType(filters.type, transaction.type))
-    .filter(transaction => matchesPaymentMethod(filters.paymentMethod, transaction.paymentMethod))
+    .filter(transaction =>
+      matchesPaymentMethod(filters.paymentMethod, transaction.paymentMethod)
+    )
     .filter(transaction => matchesStatus(filters.status, transaction))
     .filter(transaction => matchesSource(filters.source, transaction))
     .filter(transaction => matchesEventType(filters.eventType, transaction))
     .filter(transaction => matchesCashImpact(filters.cashImpact, transaction))
-    .filter(transaction => matchesProfitImpact(filters.profitImpact, transaction))
-    .filter(transaction => matchesPaymentState(filters.paymentState, transaction))
+    .filter(transaction =>
+      matchesProfitImpact(filters.profitImpact, transaction)
+    )
+    .filter(transaction =>
+      matchesPaymentState(filters.paymentState, transaction)
+    )
     .filter(transaction => matchesSearch(filters.search, transaction))
     .sort((left, right) => right.date.getTime() - left.date.getTime());
 
-  return typeof limit === 'number' ? transactions.slice(0, limit) : transactions;
+  return typeof limit === 'number'
+    ? transactions.slice(0, limit)
+    : transactions;
 }
 
 export function summarizeFinanceTransactions(
@@ -1476,7 +1491,9 @@ export function summarizeFinanceTransactions(
     netProfit: roundCurrency(totalIncome - totalExpenses),
     totalTransactions: transactions.length,
     averageTransactionValue:
-      transactions.length > 0 ? roundCurrency(totalValue / transactions.length) : 0,
+      transactions.length > 0
+        ? roundCurrency(totalValue / transactions.length)
+        : 0,
     topPaymentMethod: displayPaymentMethod(topPaymentMethod),
   };
 }
@@ -1569,7 +1586,10 @@ export function buildExpenseBreakdown(
           ? 'COST_OF_GOODS_SOLD'
           : transaction.category;
 
-      breakdown.set(key, roundCurrency((breakdown.get(key) || 0) + transaction.profitOut));
+      breakdown.set(
+        key,
+        roundCurrency((breakdown.get(key) || 0) + transaction.profitOut)
+      );
     });
 
   return Object.fromEntries(breakdown.entries());
@@ -1709,8 +1729,7 @@ async function getInventorySnapshot(asOfDate?: Date) {
   const effectiveDate = asOfDate || new Date();
   const now = new Date();
   const includeHistoricalAdjustments =
-    !isSameDay(effectiveDate, now) &&
-    effectiveDate.getTime() < now.getTime();
+    !isSameDay(effectiveDate, now) && effectiveDate.getTime() < now.getTime();
 
   const productSelect: any = {
     id: true,
@@ -1754,7 +1773,8 @@ async function getInventorySnapshot(asOfDate?: Date) {
     const currentStock = Number(product.stock || 0);
     const reversalQuantity = includeHistoricalAdjustments
       ? (product.stockTransactions || []).reduce(
-          (sum: number, item: { quantity: number }) => sum + Number(item.quantity || 0),
+          (sum: number, item: { quantity: number }) =>
+            sum + Number(item.quantity || 0),
           0
         )
       : 0;
@@ -1810,6 +1830,7 @@ export async function getReceivablesSnapshot(options?: {
         select: {
           amount: true,
           payment_method: true,
+          created_at: true,
         },
       },
       transaction_payments: {
@@ -1817,6 +1838,7 @@ export async function getReceivablesSnapshot(options?: {
           amount: true,
           payment_date: true,
           payment_method: true,
+          created_at: true,
         },
       },
     } as any,
@@ -1837,6 +1859,15 @@ export async function getReceivablesSnapshot(options?: {
             return sum;
           }
 
+          const paymentDate = payment.created_at
+            ? new Date(payment.created_at)
+            : sale.created_at
+              ? new Date(sale.created_at)
+              : null;
+          if (paymentDate && paymentDate.getTime() > asOfDate.getTime()) {
+            return sum;
+          }
+
           return sum + toAmount(payment.amount);
         },
         0
@@ -1845,7 +1876,9 @@ export async function getReceivablesSnapshot(options?: {
         (sum: number, payment: any) => {
           const paymentDate = payment.payment_date
             ? new Date(payment.payment_date)
-            : null;
+            : payment.created_at
+              ? new Date(payment.created_at)
+              : null;
           if (paymentDate && paymentDate.getTime() > asOfDate.getTime()) {
             return sum;
           }
@@ -1910,7 +1943,9 @@ export async function getReceivablesSnapshot(options?: {
     .filter(Boolean) as ReceivablesSnapshot['receivables'];
 
   const customerIds = new Set(
-    receivables.map(receivable => receivable.customer?.id || receivable.transactionNumber)
+    receivables.map(
+      receivable => receivable.customer?.id || receivable.transactionNumber
+    )
   );
   const totalOutstanding = receivables.reduce(
     (sum, receivable) => sum + receivable.outstandingAmount,
@@ -2084,10 +2119,14 @@ export async function getManualFinanceOverlapEntries(
   return transactions
     .filter(transaction => {
       if (transaction.type === FINANCIAL_TYPES.INCOME) {
-        return isManualIncomeSourceBlocked(transaction.incomeDetails?.incomeSource);
+        return isManualIncomeSourceBlocked(
+          transaction.incomeDetails?.incomeSource
+        );
       }
 
-      return isManualExpenseTypeBlocked(transaction.expenseDetails?.expenseType);
+      return isManualExpenseTypeBlocked(
+        transaction.expenseDetails?.expenseType
+      );
     })
     .map(transaction => {
       const category =

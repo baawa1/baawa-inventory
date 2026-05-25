@@ -25,6 +25,7 @@ export interface FinancialTransaction {
   transactionNumber: string;
   type: 'EXPENSE' | 'INCOME';
   amount: number;
+  amountRestricted?: boolean;
   eventType: string;
   displayLabel: string;
   source: 'MANUAL' | 'POS' | 'STOCK';
@@ -159,7 +160,9 @@ async function getApiErrorMessage(
   response: Response,
   fallbackMessage: string
 ): Promise<string> {
-  const errorPayload = (await response.json().catch(() => ({}))) as ApiErrorPayload;
+  const errorPayload = (await response
+    .json()
+    .catch(() => ({}))) as ApiErrorPayload;
   return errorPayload.error || errorPayload.message || fallbackMessage;
 }
 
@@ -302,7 +305,9 @@ export function useFinancialReportHistory(limit: number = 20) {
   return useQuery<{ success: boolean; data: FinanceReportHistoryEntry[] }>({
     queryKey: ['financial-report-history', limit],
     queryFn: async () => {
-      const response = await fetch(`/api/finance/reports/history?limit=${limit}`);
+      const response = await fetch(
+        `/api/finance/reports/history?limit=${limit}`
+      );
 
       if (!response.ok) {
         const errorData = await response.json().catch(() => ({}));

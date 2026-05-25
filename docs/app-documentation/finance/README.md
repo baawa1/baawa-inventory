@@ -35,6 +35,7 @@ Current reporting model:
 - Can review all finance transactions.
 - Can edit only transactions they created, and only while the transaction is still mutable.
 - Cannot access finance overview KPIs, reports, analytics, forecasts, exports, or overlap audit.
+- Cannot view sensitive inventory-cost fields. Stock-purchase ledger rows remain visible for operational traceability, but purchase amounts and cash impact are restricted.
 
 ### Staff
 - No finance access.
@@ -146,6 +147,7 @@ Key behaviors:
 - Stock purchases affect cash and inventory, not immediate profit.
 - Owner funding affects cash, not profit.
 - Debt sales recognise only collected cash as income while moving unpaid balances into receivables.
+- Receivable snapshots use payment dates, falling back to payment creation dates for older payment rows without explicit payment dates.
 - Legacy overlap filtering so blocked manual duplicates do not inflate report totals.
 
 ## Overlap Audit

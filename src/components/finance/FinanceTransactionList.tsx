@@ -137,6 +137,10 @@ function formatSignedAmount(value: number) {
   return `${prefix}${formatCurrency(Math.abs(value))}`;
 }
 
+function RestrictedValue() {
+  return <span className="text-muted-foreground text-sm">Restricted</span>;
+}
+
 function EffectBadge({
   value,
   positiveColor,
@@ -151,7 +155,9 @@ function EffectBadge({
   }
 
   return (
-    <span className={`text-sm font-medium ${value > 0 ? positiveColor : negativeColor}`}>
+    <span
+      className={`text-sm font-medium ${value > 0 ? positiveColor : negativeColor}`}
+    >
       {formatSignedAmount(value)}
     </span>
   );
@@ -209,7 +215,11 @@ function LedgerDetailDialog({
               <div>
                 <p className="text-muted-foreground">Cash Impact</p>
                 <p className="font-medium">
-                  {formatSignedAmount(transaction.netCashImpact)}
+                  {transaction.amountRestricted ? (
+                    <RestrictedValue />
+                  ) : (
+                    formatSignedAmount(transaction.netCashImpact)
+                  )}
                 </p>
               </div>
               {canViewSensitiveFields ? (
@@ -257,9 +267,7 @@ function LedgerDetailDialog({
   );
 }
 
-export function FinanceTransactionList({
-  user,
-}: FinanceTransactionListProps) {
+export function FinanceTransactionList({ user }: FinanceTransactionListProps) {
   const [selectedTransaction, setSelectedTransaction] =
     useState<FinancialTransaction | null>(null);
   const [pagination, setPagination] = useState({
@@ -391,7 +399,8 @@ export function FinanceTransactionList({
   );
 
   const defaultVisibleColumns = useMemo(
-    () => columns.filter(column => column.defaultVisible).map(column => column.key),
+    () =>
+      columns.filter(column => column.defaultVisible).map(column => column.key),
     [columns]
   );
 
@@ -453,8 +462,20 @@ export function FinanceTransactionList({
         case 'source':
           return <Badge variant="outline">{transaction.source}</Badge>;
         case 'amount':
-          return <span className="font-medium">{formatCurrency(transaction.amount)}</span>;
+          if (transaction.amountRestricted) {
+            return <RestrictedValue />;
+          }
+
+          return (
+            <span className="font-medium">
+              {formatCurrency(transaction.amount)}
+            </span>
+          );
         case 'cash':
+          if (transaction.amountRestricted) {
+            return <RestrictedValue />;
+          }
+
           return (
             <EffectBadge
               value={transaction.netCashImpact}
@@ -583,9 +604,7 @@ export function FinanceTransactionList({
         renderCell={renderCell}
         renderActions={renderActions}
         pagination={currentPagination}
-        onPageChange={page =>
-          setPagination(prev => ({ ...prev, page }))
-        }
+        onPageChange={page => setPagination(prev => ({ ...prev, page }))}
         onPageSizeChange={limit =>
           setPagination(prev => ({ ...prev, limit, page: 1 }))
         }

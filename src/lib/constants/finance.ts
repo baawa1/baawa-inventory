@@ -11,8 +11,11 @@ export type FinancialType =
 
 // Financial Status (must match Prisma FinancialStatus enum exactly)
 export const FINANCIAL_STATUS = {
+  PENDING: 'PENDING',
   COMPLETED: 'COMPLETED',
   CANCELLED: 'CANCELLED',
+  APPROVED: 'APPROVED',
+  REJECTED: 'REJECTED',
 } as const;
 
 export type FinancialStatus =
@@ -65,8 +68,11 @@ export const FINANCIAL_TYPE_LABELS = {
 } as const;
 
 export const FINANCIAL_STATUS_LABELS = {
+  [FINANCIAL_STATUS.PENDING]: 'Pending',
   [FINANCIAL_STATUS.COMPLETED]: 'Completed',
   [FINANCIAL_STATUS.CANCELLED]: 'Cancelled',
+  [FINANCIAL_STATUS.APPROVED]: 'Approved',
+  [FINANCIAL_STATUS.REJECTED]: 'Rejected',
 } as const;
 
 export const EXPENSE_TYPE_LABELS = {

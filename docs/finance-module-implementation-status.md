@@ -7,7 +7,7 @@
 The finance module is no longer in the earlier "single manual ledger" shape. It now runs on a consolidated model with explicit access rules and a shared reporting layer.
 
 Implemented:
-- Unified aggregation for manual finance, POS sales, and stock purchase expense.
+- Unified aggregation for manual finance, POS sales, stock purchase cash movement, and inventory value.
 - Admin-only finance overview and reporting surfaces.
 - Manager transaction review access without report access.
 - Manual overlap prevention for `SALES` income and `INVENTORY_PURCHASES` expense.
