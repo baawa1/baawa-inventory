@@ -52,7 +52,7 @@ export interface ExportableData {
  * Generate a unique transaction number with retry logic for race condition handling
  * Format: FIN-YYYYMMDD-XXXX (e.g., FIN-20241201-0001)
  */
-export async function generateTransactionNumber(): Promise<string> {
+export async function generateFinanceTransactionNumber(): Promise<string> {
   const maxRetries = 5;
   const today = new Date();
   const dateString = today.toISOString().slice(0, 10).replace(/-/g, '');
@@ -146,7 +146,7 @@ export function calculateTaxAmount(amount: number, taxRate: number): number {
 /**
  * Format currency amount for display
  */
-export function formatCurrency(
+export function formatFinanceCurrency(
   amount: number | string | null | undefined
 ): string {
   if (amount === null || amount === undefined) return '₦0.00';
@@ -428,4 +428,3 @@ export function calculatePreviousPeriod(
     end: previousEnd,
   };
 }
-

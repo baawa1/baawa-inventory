@@ -8,7 +8,7 @@ import { useTableState } from '@/hooks/useTableState';
 
 // Mobile-optimized components
 import { DashboardPageLayout } from '@/components/layouts/DashboardPageLayout';
-import { MobileDashboardFiltersBar, FilterConfig } from '@/components/layouts/MobileDashboardFiltersBar';
+import { MobileDashboardFiltersBar, type MobileDashboardFilterConfig } from '@/components/layouts/MobileDashboardFiltersBar';
 import { MobileDashboardTable } from '@/components/layouts/MobileDashboardTable';
 
 // Shared utilities
@@ -122,7 +122,7 @@ export default function AuditLogsPage() {
   }, [errorMessage]);
 
   // Filters config
-  const filterConfigs: FilterConfig[] = React.useMemo(() => [
+  const filterConfigs: MobileDashboardFilterConfig[] = React.useMemo(() => [
     {
       key: 'user',
       label: 'User ID',

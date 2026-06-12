@@ -1,7 +1,7 @@
 import { useMemo } from 'react';
 import { useSession } from 'next-auth/react';
 import { hasPermission } from '@/lib/auth/roles';
-import type { UserRole } from '@/lib/auth/roles';
+import type { AuthUserRole } from '@/lib/auth/roles';
 
 /**
  * Custom hook that provides a centralized way to check user permissions
@@ -10,7 +10,7 @@ import type { UserRole } from '@/lib/auth/roles';
  */
 export function usePermissions() {
   const { data: session } = useSession();
-  const userRole = session?.user?.role as UserRole;
+  const userRole = session?.user?.role as AuthUserRole;
 
   return useMemo(() => {
     if (!userRole) {
@@ -206,6 +206,6 @@ export function useHasPermission(permission: keyof typeof import('@/lib/auth/rol
   
   return useMemo(() => {
     if (!session?.user?.role) return false;
-    return hasPermission(session.user.role as UserRole, permission);
+    return hasPermission(session.user.role as AuthUserRole, permission);
   }, [session?.user?.role, permission]);
 }

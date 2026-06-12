@@ -2,7 +2,7 @@ import { redirect } from 'next/navigation';
 import { auth } from '#root/auth';
 import { TransactionHistory } from '@/components/pos/TransactionHistory';
 import { DashboardPageLayout } from '@/components/layouts/DashboardPageLayout';
-import { ALL_ROLES, UserRole } from '@/lib/auth/roles';
+import { ALL_ROLES, type AuthUserRole } from '@/lib/auth/roles';
 
 export const metadata = {
   title: 'Transaction History - BaaWA Inventory POS',
@@ -17,7 +17,7 @@ export default async function TransactionHistoryPage() {
   }
 
   // Check role permissions - all authenticated users can access transaction history
-  if (!ALL_ROLES.includes(session.user.role as UserRole)) {
+  if (!ALL_ROLES.includes(session.user.role as AuthUserRole)) {
     redirect('/unauthorized');
   }
 

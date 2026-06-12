@@ -14,8 +14,6 @@ import type {
   SalesOrderByClause,
   SalesSelectClause,
   SalesTransactionWithIncludes,
-  PaginatedResponse,
-  ApiResponse,
 } from '@/types/api';
 
 // GET /api/sales - List sales transactions with optional filtering and pagination

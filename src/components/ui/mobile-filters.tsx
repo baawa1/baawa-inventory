@@ -34,7 +34,7 @@ export interface FilterOption {
   label: string;
 }
 
-export interface FilterConfig {
+interface FilterConfig {
   key: string;
   label: string;
   type: 'select' | 'text' | 'boolean' | 'date';

@@ -9,7 +9,10 @@ import {
   createSupplierSchema,
   supplierQuerySchema,
 } from '@/lib/validations/supplier';
-import { handleApiError, createApiResponse } from '@/lib/api-error-handler-new';
+import {
+  handleApiError,
+  createRawApiResponse,
+} from '@/lib/api-error-handler-new';
 import { Prisma } from '@prisma/client';
 
 // GET /api/suppliers - List suppliers with optional filtering and pagination
@@ -108,7 +111,7 @@ export const GET = withAuth(async (request: AuthenticatedRequest) => {
       }
     });
 
-    return createApiResponse({
+    return createRawApiResponse({
       success: true,
       data: transformedSuppliers,
       pagination: {
@@ -181,7 +184,7 @@ export const POST = withPermission(
         },
       };
 
-      return createApiResponse(
+      return createRawApiResponse(
         {
           success: true,
           message: 'Supplier created successfully',

@@ -14,7 +14,7 @@ import {
   SelectValue,
 } from '@/components/ui/select';
 
-export interface FilterConfig {
+export interface MobileDashboardFilterConfig {
   key: string;
   label: string;
   type: 'select' | 'text' | 'boolean' | 'date';
@@ -32,7 +32,7 @@ interface MobileDashboardFiltersBarProps {
   searchValue: string;
   onSearchChange: (value: string) => void;
   isSearching?: boolean;
-  filters?: FilterConfig[];
+  filters?: MobileDashboardFilterConfig[];
   filterValues?: Record<string, any>;
   onFilterChange?: (key: string, value: any) => void;
   onResetFilters?: () => void;

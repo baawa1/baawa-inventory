@@ -4,7 +4,11 @@ import { useState } from 'react';
 import { useCategories } from '@/hooks/api/categories';
 import { useBrands } from '@/hooks/api/brands';
 import { useSuppliers } from '@/hooks/api/suppliers';
-import type { Category, Brand, Supplier } from './types';
+import type {
+  AddProductBrand,
+  AddProductCategory,
+  AddProductSupplier,
+} from './types';
 
 export function useFormData() {
   // Use TanStack Query hooks for data fetching
@@ -32,9 +36,9 @@ export function useFormData() {
   const loading = categoriesLoading || brandsLoading || suppliersLoading;
 
   // Extract data arrays with proper fallbacks
-  const categories: Category[] = categoriesData?.data || [];
-  const brands: Brand[] = brandsData?.data || [];
-  const suppliers: Supplier[] = suppliersData?.data || [];
+  const categories: AddProductCategory[] = categoriesData?.data || [];
+  const brands: AddProductBrand[] = brandsData?.data || [];
+  const suppliers: AddProductSupplier[] = suppliersData?.data || [];
 
   // Handle errors (TanStack Query handles retry and error states automatically)
   const hasError = categoriesError || brandsError || suppliersError;

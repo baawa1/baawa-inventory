@@ -31,6 +31,8 @@ export function normalizePaymentStatus(
   return trimmed.toUpperCase();
 }
 
-export function isSuccessfulPaymentStatus(status?: string | null): boolean {
+export function isNormalizedSuccessfulPaymentStatus(
+  status?: string | null
+): boolean {
   return normalizePaymentStatus(status) === 'PAID';
 }

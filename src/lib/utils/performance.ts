@@ -3,7 +3,7 @@
 import React, { useCallback, useMemo, useRef, useState, useEffect } from 'react';
 
 // Debounce hook for performance optimization
-export function useDebounce<T>(value: T, delay: number): T {
+export function usePerformanceDebounce<T>(value: T, delay: number): T {
   const [debouncedValue, setDebouncedValue] = useState(value);
 
   useEffect(() => {
@@ -261,7 +261,7 @@ export function useOptimizedFilter<T>(
   filterFn: (_item: T, _term: string) => boolean,
   debounceMs: number = 300
 ) {
-  const debouncedSearchTerm = useDebounce(searchTerm, debounceMs);
+  const debouncedSearchTerm = usePerformanceDebounce(searchTerm, debounceMs);
 
   const filteredItems = useMemo(() => {
     if (!debouncedSearchTerm.trim()) {

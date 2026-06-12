@@ -27,7 +27,7 @@ import {
 } from '@/components/ui/select';
 import { Badge } from '@/components/ui/badge';
 import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert';
-import { formatCurrency } from '@/lib/utils/finance';
+import { formatFinanceCurrency } from '@/lib/utils/finance';
 import { AlertTriangle, TrendingUp, TrendingDown, Calendar } from 'lucide-react';
 
 interface ForecastData {
@@ -127,7 +127,7 @@ export function CashFlowForecastDashboard() {
           </CardHeader>
           <CardContent>
             <div className="text-2xl font-bold">
-              {formatCurrency(data.metrics.current.cashPosition)}
+              {formatFinanceCurrency(data.metrics.current.cashPosition)}
             </div>
             <p className="text-xs text-muted-foreground">
               as of {new Date(data.metrics.current.date).toLocaleDateString()}
@@ -141,7 +141,7 @@ export function CashFlowForecastDashboard() {
           </CardHeader>
           <CardContent>
             <div className="text-2xl font-bold">
-              {formatCurrency(data.metrics.thirtyDay.projectedCashPosition)}
+              {formatFinanceCurrency(data.metrics.thirtyDay.projectedCashPosition)}
             </div>
             <div className="flex items-center gap-1">
               {thirtyDayChange >= 0 ? (
@@ -155,7 +155,7 @@ export function CashFlowForecastDashboard() {
                 }`}
               >
                 {thirtyDayChange >= 0 ? '+' : ''}
-                {formatCurrency(thirtyDayChange)}
+                {formatFinanceCurrency(thirtyDayChange)}
               </span>
             </div>
           </CardContent>
@@ -173,7 +173,7 @@ export function CashFlowForecastDashboard() {
                   : 'text-red-600'
               }`}
             >
-              {formatCurrency(data.metrics.averages.dailyNetCashFlow)}
+              {formatFinanceCurrency(data.metrics.averages.dailyNetCashFlow)}
             </div>
             <p className="text-xs text-muted-foreground">average per day</p>
           </CardContent>
@@ -216,9 +216,9 @@ export function CashFlowForecastDashboard() {
                   })
                 }
               />
-              <YAxis tickFormatter={v => formatCurrency(v)} />
+              <YAxis tickFormatter={v => formatFinanceCurrency(v)} />
               <Tooltip
-                formatter={(v) => formatCurrency(Number(v) || 0)}
+                formatter={(v) => formatFinanceCurrency(Number(v) || 0)}
                 labelFormatter={v =>
                   new Date(v).toLocaleDateString('en-NG', {
                     weekday: 'short',
@@ -260,10 +260,10 @@ export function CashFlowForecastDashboard() {
           </CardHeader>
           <CardContent>
             <div className="text-2xl font-bold text-green-600">
-              {formatCurrency(data.metrics.thirtyDay.totalProjectedIncome)}
+              {formatFinanceCurrency(data.metrics.thirtyDay.totalProjectedIncome)}
             </div>
             <p className="text-xs text-muted-foreground">
-              ~{formatCurrency(data.metrics.averages.dailyIncome)}/day
+              ~{formatFinanceCurrency(data.metrics.averages.dailyIncome)}/day
             </p>
           </CardContent>
         </Card>
@@ -274,10 +274,10 @@ export function CashFlowForecastDashboard() {
           </CardHeader>
           <CardContent>
             <div className="text-2xl font-bold text-red-600">
-              {formatCurrency(data.metrics.thirtyDay.totalProjectedExpense)}
+              {formatFinanceCurrency(data.metrics.thirtyDay.totalProjectedExpense)}
             </div>
             <p className="text-xs text-muted-foreground">
-              ~{formatCurrency(data.metrics.averages.dailyExpense)}/day
+              ~{formatFinanceCurrency(data.metrics.averages.dailyExpense)}/day
             </p>
           </CardContent>
         </Card>

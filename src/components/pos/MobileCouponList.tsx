@@ -12,7 +12,7 @@ import {
 
 // Mobile-optimized components
 import { DashboardPageLayout } from '@/components/layouts/DashboardPageLayout';
-import { MobileDashboardFiltersBar, FilterConfig } from '@/components/layouts/MobileDashboardFiltersBar';
+import { MobileDashboardFiltersBar, type MobileDashboardFilterConfig } from '@/components/layouts/MobileDashboardFiltersBar';
 import { MobileDashboardTable } from '@/components/layouts/MobileDashboardTable';
 
 import { Button } from '@/components/ui/button';
@@ -194,7 +194,7 @@ export function MobileCouponList({ user }: MobileCouponListProps) {
   );
 
   // Filter configurations
-  const filterConfigs: FilterConfig[] = useMemo(
+  const filterConfigs: MobileDashboardFilterConfig[] = useMemo(
     () => [
       {
         key: 'type',

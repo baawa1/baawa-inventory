@@ -28,7 +28,9 @@ export interface ApiErrorResponse {
   code?: string;
 }
 
-export type ApiResponse<T = unknown> = ApiSuccessResponse<T> | ApiErrorResponse;
+export type ApiResponseEnvelope<T = unknown> =
+  | ApiSuccessResponse<T>
+  | ApiErrorResponse;
 
 /**
  * Create standardized API responses

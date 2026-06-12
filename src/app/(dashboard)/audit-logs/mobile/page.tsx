@@ -2,7 +2,7 @@
 import * as React from 'react';
 import { auditLogColumns } from '@/components/admin/AuditLogTable';
 import { DashboardPageLayout } from '@/components/layouts/DashboardPageLayout';
-import { MobileDashboardFiltersBar, FilterConfig } from '@/components/layouts/MobileDashboardFiltersBar';
+import { MobileDashboardFiltersBar, type MobileDashboardFilterConfig } from '@/components/layouts/MobileDashboardFiltersBar';
 import { MobileDashboardTable } from '@/components/layouts/MobileDashboardTable';
 import { useAuditLogs, type AuditLog } from '@/hooks/api/audit-logs';
 import { Badge } from '@/components/ui/badge';
@@ -68,7 +68,7 @@ export default function MobileAuditLogsPage() {
   }, [errorMessage]);
 
   // Filters config for MobileDashboardFiltersBar
-  const filters: FilterConfig[] = [
+  const filters: MobileDashboardFilterConfig[] = [
     {
       key: 'user',
       label: 'User ID',

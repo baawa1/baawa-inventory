@@ -5,7 +5,7 @@ import { envConfig } from '@/lib/config/env-validation';
 
 // ===== TYPE DEFINITIONS =====
 
-export interface ApiError {
+export interface ApiErrorPayload {
   message: string;
   code?: string;
   details?: unknown;
@@ -48,7 +48,7 @@ export interface SuccessResponse<T = ApiResponseData> {
   data: T;
 }
 
-export interface PaginatedResponse<T = ApiResponseData> {
+interface PaginatedResponse<T = ApiResponseData> {
   success: true;
   message?: string;
   data: T[];
@@ -257,7 +257,7 @@ export function handleApiError(
 /**
  * Creates a standardized API response
  */
-export function createApiResponse<T = ApiResponseData>(
+export function createRawApiResponse<T = ApiResponseData>(
   data: T,
   status: number = 200
 ): NextResponse {

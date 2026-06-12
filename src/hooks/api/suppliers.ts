@@ -7,7 +7,7 @@ import {
 } from '@/lib/validations/supplier';
 
 // Use the centralized types
-export type Supplier = ApiSupplier;
+export type SupplierApiModel = ApiSupplier;
 export type CreateSupplierData = CreateSupplierFormData;
 export type UpdateSupplierData = UpdateSupplierBodyData;
 
@@ -27,7 +27,7 @@ export interface SupplierPagination {
 }
 
 export interface SupplierResponse {
-  data: Supplier[];
+  data: SupplierApiModel[];
   pagination: SupplierPagination;
 }
 
@@ -64,7 +64,9 @@ const fetchSuppliers = async (
   };
 };
 
-const createSupplier = async (data: CreateSupplierData): Promise<Supplier> => {
+const createSupplier = async (
+  data: CreateSupplierData
+): Promise<SupplierApiModel> => {
   const response = await fetch('/api/suppliers', {
     method: 'POST',
     headers: {
@@ -107,7 +109,7 @@ const updateSupplier = async ({
 }: {
   id: number;
   data: UpdateSupplierData;
-}): Promise<Supplier> => {
+}): Promise<SupplierApiModel> => {
   const response = await fetch(`/api/suppliers/${id}`, {
     method: 'PUT',
     headers: {
@@ -227,7 +229,7 @@ export const useSupplierOptions = () => {
         }
 
         const result: {
-          data?: Supplier[];
+          data?: SupplierApiModel[];
           pagination?: { totalPages?: number };
         } = await response.json();
 

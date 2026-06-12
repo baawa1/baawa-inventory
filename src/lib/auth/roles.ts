@@ -12,7 +12,8 @@ export const USER_ROLES = {
 } as const;
 
 // Type for user roles based on the USER_ROLES object
-export type UserRole = (typeof USER_ROLES)[keyof typeof USER_ROLES];
+type UserRole = (typeof USER_ROLES)[keyof typeof USER_ROLES];
+export type AuthUserRole = UserRole;
 
 // Array of all valid roles for validation purposes
 export const ALL_ROLES = Object.values(USER_ROLES);

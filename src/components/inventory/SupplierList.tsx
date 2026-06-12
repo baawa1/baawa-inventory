@@ -8,7 +8,7 @@ import { useDebounce } from '@/hooks/useDebounce';
 import {
   useSuppliers,
   useDeleteSupplier,
-  type Supplier as APISupplier,
+  type SupplierApiModel as APISupplier,
 } from '@/hooks/api/suppliers';
 import { InventoryPageLayout } from '@/components/inventory/InventoryPageLayout';
 import SupplierDetailModal from '@/components/inventory/SupplierDetailModal';

@@ -75,14 +75,14 @@ export interface ProductListResponse {
   };
 }
 
-export interface Brand {
+interface ProductBrand {
   id: number;
   name: string;
   description?: string;
   isActive: boolean;
 }
 
-export interface Category {
+interface ProductCategory {
   id: number;
   name: string;
   description?: string;
@@ -130,7 +130,7 @@ const fetchProductById = async (id: number): Promise<Product> => {
 
 const fetchBrands = async (
   filters: { isActive?: boolean; limit?: number } = {}
-): Promise<Brand[]> => {
+): Promise<ProductBrand[]> => {
   const searchParams = new URLSearchParams();
   if (filters.isActive !== undefined)
     searchParams.set('isActive', filters.isActive.toString());
@@ -148,7 +148,7 @@ const fetchBrands = async (
 
 const fetchCategories = async (
   filters: { isActive?: boolean; limit?: number } = {}
-): Promise<Category[]> => {
+): Promise<ProductCategory[]> => {
   const searchParams = new URLSearchParams();
   if (filters.isActive !== undefined)
     searchParams.set('isActive', filters.isActive.toString());
@@ -233,7 +233,7 @@ export function useProduct(id: number) {
   });
 }
 
-export function useBrands(
+export function useProductBrands(
   filters: { isActive?: boolean; limit?: number } = {}
 ) {
   return useQuery({
@@ -244,7 +244,7 @@ export function useBrands(
   });
 }
 
-export function useCategories(
+export function useProductCategories(
   filters: { isActive?: boolean; limit?: number } = {}
 ) {
   return useQuery({

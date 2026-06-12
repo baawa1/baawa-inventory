@@ -36,14 +36,14 @@ export interface BrandResponse {
   pagination: BrandPagination;
 }
 
-export interface CreateBrandData {
+interface CreateBrandData {
   name: string;
   description?: string;
   image?: string;
   website?: string;
 }
 
-export interface UpdateBrandData extends Partial<CreateBrandData> {
+interface UpdateBrandData extends Partial<CreateBrandData> {
   isActive?: boolean;
 }
 

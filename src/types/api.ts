@@ -451,7 +451,7 @@ export type FinancialTransactionWithIncludes =
   }>;
 
 // Response Types
-export interface PaginatedResponse<T> {
+export interface ApiPaginatedResponse<T> {
   data: T[];
   pagination: {
     page: number;
@@ -463,7 +463,7 @@ export interface PaginatedResponse<T> {
   };
 }
 
-export interface ApiResponse<T> {
+export interface ApiRouteResponse<T> {
   success: boolean;
   data?: T;
   message?: string;
@@ -475,27 +475,27 @@ export interface ApiResponse<T> {
 }
 
 // Error Types
-export interface ApiError {
+export interface ApiValidationError {
   field: string;
   message: string;
 }
 
 export interface ValidationError {
   error: string;
-  details: ApiError[];
+  details: ApiValidationError[];
 }
 
 // Utility Types
 export type SortOrder = 'asc' | 'desc';
 
-export type PaymentStatus =
+export type ApiPaymentStatus =
   | 'PENDING'
   | 'COMPLETED'
   | 'FAILED'
   | 'CANCELLED'
   | 'REFUNDED';
 
-export type PaymentMethod =
+export type ApiPaymentMethod =
   | 'CASH'
   | 'BANK_TRANSFER'
   | 'POS_MACHINE'
@@ -504,14 +504,14 @@ export type PaymentMethod =
 
 export type TransactionType = 'INCOME' | 'EXPENSE';
 
-export type ProductStatus =
+export type ApiProductStatus =
   | 'ACTIVE'
   | 'INACTIVE'
   | 'DISCONTINUED';
 
-export type UserRole = 'ADMIN' | 'MANAGER' | 'STAFF';
+export type ApiUserRole = 'ADMIN' | 'MANAGER' | 'STAFF';
 
-export type UserStatus =
+export type ApiUserStatus =
   | 'PENDING'
   | 'VERIFIED'
   | 'APPROVED'

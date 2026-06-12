@@ -29,13 +29,13 @@ import {
   DEFAULT_DATE_RANGE_PRESET,
   getDateRangePreset,
 } from '@/lib/utils/date-range';
-import { hasPermission, type UserRole } from '@/lib/auth/roles';
+import { hasPermission, type AuthUserRole } from '@/lib/auth/roles';
 
 interface User {
   id: string;
   email?: string | null;
   name?: string | null;
-  role: UserRole;
+  role: AuthUserRole;
   status: string;
   isEmailVerified: boolean;
 }

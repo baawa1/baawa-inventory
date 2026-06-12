@@ -22,7 +22,7 @@ export const USER_STATUS = {
   SUSPENDED: 'SUSPENDED',
 } as const;
 
-export type UserStatus = (typeof USER_STATUS)[keyof typeof USER_STATUS];
+type UserStatus = (typeof USER_STATUS)[keyof typeof USER_STATUS];
 
 // Valid user statuses for POS access
 export const POS_ALLOWED_STATUSES: UserStatus[] = [USER_STATUS.APPROVED];
@@ -47,7 +47,7 @@ export const PAYMENT_METHODS = {
   DEBT: 'DEBT',
 } as const;
 
-export type PaymentMethod =
+type PaymentMethod =
   (typeof PAYMENT_METHODS)[keyof typeof PAYMENT_METHODS];
 
 // Financial Types (must match Prisma FinancialType enum exactly)
@@ -113,7 +113,7 @@ export const PAYMENT_STATUS = {
   CANCELLED: 'CANCELLED',
 } as const;
 
-export type PaymentStatus =
+export type AppPaymentStatus =
   (typeof PAYMENT_STATUS)[keyof typeof PAYMENT_STATUS];
 
 // Transaction Status Constants (must match Prisma TransactionStatus enum exactly)
@@ -151,7 +151,8 @@ export const DISCOUNT_TYPE = {
   PERCENTAGE: 'PERCENTAGE',
 } as const;
 
-export type DiscountType = (typeof DISCOUNT_TYPE)[keyof typeof DISCOUNT_TYPE];
+export type AppDiscountType =
+  (typeof DISCOUNT_TYPE)[keyof typeof DISCOUNT_TYPE];
 
 // Stock Reconciliation Status (must match Prisma StockReconciliationStatus enum exactly)
 export const STOCK_RECONCILIATION_STATUS = {

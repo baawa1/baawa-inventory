@@ -18,14 +18,19 @@ import {
 } from '@/components/ui/select';
 import { SearchableSelect } from '@/components/ui/searchable-select';
 
-import type { CreateProductData, Category, Brand, Supplier } from './types';
+import type {
+  AddProductBrand,
+  AddProductCategory,
+  AddProductSupplier,
+  CreateProductData,
+} from './types';
 import { formatCategoryHierarchy } from '@/lib/utils/category';
 
 interface CategoryBrandSectionProps {
   form: UseFormReturn<CreateProductData>;
-  categories: Category[];
-  brands: Brand[];
-  suppliers: Supplier[];
+  categories: AddProductCategory[];
+  brands: AddProductBrand[];
+  suppliers: AddProductSupplier[];
   loading: boolean;
 }
 

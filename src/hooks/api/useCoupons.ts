@@ -26,7 +26,7 @@ export interface Coupon {
   wordpress_id?: number | null;
 }
 
-export interface CouponFilters {
+interface CouponFilters {
   search: string;
   status: string;
   sortBy: string;

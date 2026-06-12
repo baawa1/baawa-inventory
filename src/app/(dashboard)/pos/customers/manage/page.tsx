@@ -1,7 +1,7 @@
 import { redirect } from 'next/navigation';
 import { auth } from '#root/auth';
 import { CustomerList } from '@/components/pos/CustomerList';
-import { ALL_ROLES, UserRole } from '@/lib/auth/roles';
+import { ALL_ROLES, type AuthUserRole } from '@/lib/auth/roles';
 
 export const metadata = {
   title: 'Customer Management - BaaWA Inventory POS',
@@ -16,7 +16,7 @@ export default async function CustomerManagementPage() {
   }
 
   // Check role permissions - all authenticated users can access customers
-  if (!ALL_ROLES.includes(session.user.role as UserRole)) {
+  if (!ALL_ROLES.includes(session.user.role as AuthUserRole)) {
     redirect('/unauthorized');
   }
 

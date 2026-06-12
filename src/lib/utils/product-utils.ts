@@ -130,7 +130,7 @@ export function calculateSearchRelevance(
 /**
  * Format currency for display
  */
-export function formatCurrency(amount: number): string {
+export function formatProductCurrency(amount: number): string {
   return new Intl.NumberFormat('en-NG', {
     style: 'currency',
     currency: 'NGN',

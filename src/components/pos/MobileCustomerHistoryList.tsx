@@ -22,7 +22,7 @@ import {
 
 // Mobile-optimized components
 import { DashboardPageLayout } from '@/components/layouts/DashboardPageLayout';
-import { MobileDashboardFiltersBar, FilterConfig } from '@/components/layouts/MobileDashboardFiltersBar';
+import { MobileDashboardFiltersBar, type MobileDashboardFilterConfig } from '@/components/layouts/MobileDashboardFiltersBar';
 import { MobileDashboardTable } from '@/components/layouts/MobileDashboardTable';
 
 // Icons
@@ -228,7 +228,7 @@ export function MobileCustomerHistoryList({ user }: MobileCustomerHistoryListPro
   );
 
   // Filter configurations (empty since we only have search)
-  const filterConfigs: FilterConfig[] = [];
+  const filterConfigs: MobileDashboardFilterConfig[] = [];
 
   // Handle filter changes
   const handleFilterChange = useCallback((key: string, value: any) => {

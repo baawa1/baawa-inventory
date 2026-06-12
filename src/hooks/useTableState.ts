@@ -7,7 +7,7 @@ export interface TableFilters {
   [key: string]: any;
 }
 
-export interface PaginationState {
+interface PaginationState {
   page: number;
   limit: number;
   totalPages: number;

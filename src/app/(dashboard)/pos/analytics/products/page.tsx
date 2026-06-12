@@ -1,7 +1,7 @@
 import { redirect } from 'next/navigation';
 import { auth } from '#root/auth';
 import { ProductPerformance } from '@/components/pos/ProductPerformance';
-import { ALL_ROLES, UserRole } from '@/lib/auth/roles';
+import { ALL_ROLES, type AuthUserRole } from '@/lib/auth/roles';
 
 export const metadata = {
   title: 'Product Performance - BaaWA Inventory POS',
@@ -16,7 +16,7 @@ export default async function ProductPerformancePage() {
   }
 
   // Check role permissions - all authenticated users can access product performance
-  if (!ALL_ROLES.includes(session.user.role as UserRole)) {
+  if (!ALL_ROLES.includes(session.user.role as AuthUserRole)) {
     redirect('/unauthorized');
   }
 

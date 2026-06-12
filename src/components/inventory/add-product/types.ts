@@ -3,7 +3,7 @@ import { createProductSchema } from '@/lib/validations/product';
 
 export type CreateProductData = z.infer<typeof createProductSchema>;
 
-export interface Category {
+export interface AddProductCategory {
   id: number;
   name: string;
   parent?:
@@ -19,12 +19,12 @@ export interface Category {
   updatedAt: string;
 }
 
-export interface Brand {
+export interface AddProductBrand {
   id: number;
   name: string;
 }
 
-export interface Supplier {
+export interface AddProductSupplier {
   id: number;
   name: string;
   email: string | null;
@@ -35,9 +35,9 @@ export interface FormState {
   loading: boolean;
   isSubmitting: boolean;
   submitError: string | null;
-  categories: Category[];
-  brands: Brand[];
-  suppliers: Supplier[];
+  categories: AddProductCategory[];
+  brands: AddProductBrand[];
+  suppliers: AddProductSupplier[];
 }
 
 // Default form values that match the schema

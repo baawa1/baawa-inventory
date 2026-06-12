@@ -9,7 +9,7 @@ import { useDebounce } from '@/hooks/useDebounce';
 import {
   useSuppliers,
   useDeleteSupplier,
-  type Supplier as APISupplier,
+  type SupplierApiModel as APISupplier,
 } from '@/hooks/api/suppliers';
 
 // Permissions
@@ -38,7 +38,7 @@ import {
 import { DashboardPageLayout } from '@/components/layouts/DashboardPageLayout';
 import {
   MobileDashboardFiltersBar,
-  FilterConfig,
+  type MobileDashboardFilterConfig,
 } from '@/components/layouts/MobileDashboardFiltersBar';
 import { MobileDashboardTable } from '@/components/layouts/MobileDashboardTable';
 
@@ -149,7 +149,7 @@ const MobileSupplierList = ({ user: _user }: MobileSupplierListProps) => {
     });
   }, []);
 
-  const filterConfigs: FilterConfig[] = useMemo(() => [], []);
+  const filterConfigs: MobileDashboardFilterConfig[] = useMemo(() => [], []);
 
   const handleFilterChange = (key: string, value: string | boolean) => {
     setFilters(prev => {

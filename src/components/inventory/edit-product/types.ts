@@ -5,7 +5,7 @@ import { updateProductSchema } from '@/lib/validations/product';
 export type UpdateProductFormData = z.infer<typeof updateProductSchema>;
 
 // Product entity type
-export interface Product {
+export interface EditProduct {
   id: number;
   name: string;
   description: string | null;
@@ -32,7 +32,7 @@ export interface Product {
 }
 
 // Reference data types
-export interface Category {
+export interface EditProductCategory {
   id: number;
   name: string;
   parent?:
@@ -48,12 +48,12 @@ export interface Category {
   updatedAt: string;
 }
 
-export interface Brand {
+export interface EditProductBrand {
   id: number;
   name: string;
 }
 
-export interface Supplier {
+export interface EditProductSupplier {
   id: number;
   name: string;
 }
@@ -70,10 +70,10 @@ export interface FormState {
 
 // Form data with reference data
 export interface FormData {
-  categories: Category[];
-  brands: Brand[];
-  suppliers: Supplier[];
-  product: Product | null;
+  categories: EditProductCategory[];
+  brands: EditProductBrand[];
+  suppliers: EditProductSupplier[];
+  product: EditProduct | null;
 }
 
 // Props for the main form component

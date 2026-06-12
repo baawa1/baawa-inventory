@@ -25,8 +25,6 @@ import type {
   ProductIncludeClause,
   ProductWithIncludes,
   ProductUpdateData,
-  PaginatedResponse,
-  ApiResponse,
 } from '@/types/api';
 
 // Use the same validation schema as the form

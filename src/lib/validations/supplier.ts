@@ -78,7 +78,7 @@ export type UpdateSupplierFormData = z.infer<typeof updateSupplierSchema>;
 export type UpdateSupplierBodyData = z.infer<typeof updateSupplierBodySchema>;
 
 // Database supplier interface (matches Prisma schema)
-export interface Supplier {
+interface Supplier {
   id: number;
   name: string;
   contactPerson: string | null;

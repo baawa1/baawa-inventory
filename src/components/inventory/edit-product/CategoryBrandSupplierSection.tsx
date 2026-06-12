@@ -18,14 +18,19 @@ import {
 import { InlineLoading } from '@/components/ui/loading';
 import { SearchableSelect } from '@/components/ui/searchable-select';
 
-import { UpdateProductFormData, Category, Brand, Supplier } from './types';
+import {
+  EditProductBrand,
+  EditProductCategory,
+  EditProductSupplier,
+  UpdateProductFormData,
+} from './types';
 import { formatCategoryHierarchy } from '@/lib/utils/category';
 
 interface CategoryBrandSupplierSectionProps {
   form: UseFormReturn<UpdateProductFormData>;
-  categories: Category[];
-  brands: Brand[];
-  suppliers: Supplier[];
+  categories: EditProductCategory[];
+  brands: EditProductBrand[];
+  suppliers: EditProductSupplier[];
   loadingCategories: boolean;
   loadingBrands: boolean;
   loadingSuppliers: boolean;
