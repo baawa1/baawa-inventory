@@ -22,8 +22,8 @@ async function handleSearchProducts(request: AuthenticatedRequest) {
     const { searchParams } = new URL(request.url);
     const validatedParams = searchParamsSchema.parse({
       search: searchParams.get('search'),
-      limit: searchParams.get('limit'),
-      status: searchParams.get('status'),
+      limit: searchParams.get('limit') ?? undefined,
+      status: searchParams.get('status') ?? undefined,
       category: searchParams.get('category') || undefined,
       brand: searchParams.get('brand') || undefined,
     });
